@@ -235,10 +235,10 @@ void CG_SHUDElementNecrologRoutine(void* context)
 
 	textSize = element->config.fontsize.value[0];
 	iconSize = element->config.rect.value[3];
-	if (entry->attacker == 1022 && entry->mod >= 1 && entry->mod <= 13)
+	if (entry->attacker == 1022)
 	{
-		strcpy(truncatedAttacker, "^1enviroment");
-		entry->attackerLength = 10;
+		strcpy(truncatedAttacker, "^1world");
+		entry->attackerLength = 5;
 	}
 	else
 	{
@@ -256,43 +256,50 @@ void CG_SHUDElementNecrologRoutine(void* context)
 	SetTeamColor(targetColor, entry->targetTeam);
 
 	if (element->config.alignH.value == SUPERHUD_ALIGNH_LEFT)
-	{
-		currentX = element->config.rect.value[0];
+{
+    if (entry->attacker == entry->target)
+    {
+        currentX = element->config.rect.value[0] + 12; // Добавляем отступ 24 пикселя, если attacker равен target
+    }
+    else
+    {
+        currentX = element->config.rect.value[0]; // Без отступа, если attacker не равен target
+    }
 
-		if (entry->attacker != entry->target)
-		{
-			element->ctxAttacker.text = truncatedAttacker;
-			element->ctxAttacker.coord.named.x = currentX;
-			barY = element->ctxAttacker.coord.named.y + textSize + 2;
-			barWidth = entry->attackerLength * textSize;
+    if (entry->attacker != entry->target)
+    {
+        element->ctxAttacker.text = truncatedAttacker;
+        element->ctxAttacker.coord.named.x = currentX;
+        barY = element->ctxAttacker.coord.named.y + textSize + 2;
+        barWidth = entry->attackerLength * textSize;
 
-			DrawObituaryBar(currentX, barY, barWidth, textSize, attackerColor, element->config.obituarystyle.value, entry->attackerTeam);
-			CG_SHUDTextPrint(&element->config, &element->ctxAttacker);
+        DrawObituaryBar(currentX, barY, barWidth, textSize, attackerColor, element->config.obituarystyle.value, entry->attackerTeam);
+        CG_SHUDTextPrint(&element->config, &element->ctxAttacker);
 
-			currentX += barWidth + spacing;
-		}
+        currentX += barWidth + spacing;
+    }
 
-		iconShader = CG_GetModIcon(entry->mod);
-		if (iconShader)
-		{
-			element->ctxMod.image = iconShader;
-			element->ctxMod.coord.named.x = currentX;
-			element->ctxMod.coord.named.w = iconSize;
-			element->ctxMod.coord.named.h = iconSize;
-			element->ctxMod.coord.named.y = element->ctxAttacker.coord.named.y + (textSize - iconSize) / 2; // Центрирование по вертикали
-			CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxMod);
-		}
+    iconShader = CG_GetModIcon(entry->mod);
+    if (iconShader)
+    {
+        element->ctxMod.image = iconShader;
+        element->ctxMod.coord.named.x = currentX;
+        element->ctxMod.coord.named.w = iconSize;
+        element->ctxMod.coord.named.h = iconSize;
+        element->ctxMod.coord.named.y = element->ctxAttacker.coord.named.y + (textSize - iconSize) / 2; // Центрирование по вертикали
+        CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxMod);
+    }
 
-		currentX += iconSize + spacing;
-		element->ctxTarget.text = truncatedTarget;
-		element->ctxTarget.coord.named.x = currentX;
-		barY = element->ctxTarget.coord.named.y + textSize + 2;
-		barWidth = entry->targetLength * textSize;
+    currentX += iconSize + spacing;
+    element->ctxTarget.text = truncatedTarget;
+    element->ctxTarget.coord.named.x = currentX;
+    barY = element->ctxTarget.coord.named.y + textSize + 2;
+    barWidth = entry->targetLength * textSize;
 
-		DrawObituaryBar(currentX, barY, barWidth, textSize, targetColor, element->config.obituarystyle.value, entry->targetTeam);
-		CG_SHUDTextPrint(&element->config, &element->ctxTarget);
+    DrawObituaryBar(currentX, barY, barWidth, textSize, targetColor, element->config.obituarystyle.value, entry->targetTeam);
+    CG_SHUDTextPrint(&element->config, &element->ctxTarget);
+}
 
-	}
 	else if (element->config.alignH.value == SUPERHUD_ALIGNH_RIGHT)
 	{
 		currentX = element->config.rect.value[0] + element->config.rect.value[2];
