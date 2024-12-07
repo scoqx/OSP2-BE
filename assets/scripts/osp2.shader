@@ -165,3 +165,63 @@ ObituariesMelted {
         rgbGen identity
     }
 }
+
+ObituariesRocketDirect {
+    {
+        map icons/iconw_rocket.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        depthWrite
+        rgbGen identity
+    }
+    {
+        map icons/obituaries/targetHit.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        depthWrite
+        rgbGen identity
+    }
+}
+
+ObituariesGrenadeDirect {
+    {
+        map icons/iconw_grenade.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        depthWrite
+        rgbGen identity
+    }
+    {
+        map icons/obituaries/targetHit.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        depthWrite
+        rgbGen identity
+    }
+}
+
+ObituariesPlasmaDirect {
+    {
+        map icons/iconw_plasma.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        depthWrite
+        rgbGen identity
+    }
+    {
+        map icons/obituaries/targetHit.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        depthWrite
+        rgbGen identity
+    }
+}
+
+ObituariesBFGDirect {
+    {
+        map icons/iconw_BFG.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        depthWrite
+        rgbGen identity
+    }
+    {
+        map icons/obituaries/targetHit.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        depthWrite
+        rgbGen identity
+    }
+}
