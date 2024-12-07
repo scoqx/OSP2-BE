@@ -2,13 +2,14 @@
 #include "cg_superhud_private.h"
 #include "../qcommon/qcommon.h"
 
-#define FPS_MAX_FRAMES  32
+#define FPS_FRAMES 4
+
 typedef struct
 {
 	superhudConfig_t config;
-	//float timeAverage;
-	int framesNum;
 	int timePrev;
+	int frameIndex;
+	int timeArray[FPS_FRAMES];
 	superhudTextContext_t ctx;
 } shudElementFPS_t;
 
@@ -24,37 +25,43 @@ void* CG_SHUDElementFPSCreate(const superhudConfig_t* config)
 	return element;
 }
 
+
+
 void CG_SHUDElementFPSRoutine(void* context)
 {
 	shudElementFPS_t* element = (shudElementFPS_t*)context;
-	float     fps_val;
-	int     fps_val_int;
-	int     t;
+	int i, total, fps, t, frameTime;
 
 	// don't use serverTime, because that will be drifting to
 	// correct for internet lag changes, timescales, timedemos, etc
 	t = trap_Milliseconds();
-	if (element->timePrev == 0)
-	{
-		// skip first measure result
-		element->timePrev = t;
-		return;
-	}
-
-	fps_val = 1000.0f / (t - element->timePrev);
+	frameTime = t - element->timePrev;
 	element->timePrev = t;
 
-	fps_val_int = (int)fps_val;
-	if (fps_val - (float)fps_val_int > 0.5f)
+	element->timeArray[element->frameIndex % FPS_FRAMES] = frameTime;
+	element->frameIndex++;
+	if (element->frameIndex > FPS_FRAMES)
 	{
-		++fps_val_int;
-	}
+		// average multiple frames together to smooth changes out a bit
+		total = 0;
+		for (i = 0; i < FPS_FRAMES; i++)
+		{
+			total += element->timeArray[i];
+		}
+		if (!total)
+		{
+			total = 1;
+		}
+		fps = 1000 * FPS_FRAMES / total;
 
-	element->ctx.text = va("%ifps", fps_val_int);
+		element->ctx.text = va("%ifps", fps);
+	}
 
 	CG_SHUDFill(&element->config);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
+
+
 
 
 void CG_SHUDElementFPSDestroy(void* context)
