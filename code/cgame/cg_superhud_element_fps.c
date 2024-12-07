@@ -6,7 +6,7 @@
 typedef struct
 {
 	superhudConfig_t config;
-	float timeAverage;
+	//float timeAverage;
 	int framesNum;
 	int timePrev;
 	superhudTextContext_t ctx;
@@ -40,17 +40,10 @@ void CG_SHUDElementFPSRoutine(void* context)
 		element->timePrev = t;
 		return;
 	}
-	element->timeAverage *= element->framesNum;
-	element->timeAverage += t - element->timePrev;
-	element->timeAverage /= ++element->framesNum;
+
+	fps_val = 1000.0f / (t - element->timePrev);
 	element->timePrev = t;
 
-	if (element->framesNum > FPS_MAX_FRAMES)
-	{
-		element->framesNum = FPS_MAX_FRAMES;
-	}
-
-	fps_val = 1000.0f / element->timeAverage;
 	fps_val_int = (int)fps_val;
 	if (fps_val - (float)fps_val_int > 0.5f)
 	{
@@ -60,9 +53,9 @@ void CG_SHUDElementFPSRoutine(void* context)
 	element->ctx.text = va("%ifps", fps_val_int);
 
 	CG_SHUDFill(&element->config);
-
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
+
 
 void CG_SHUDElementFPSDestroy(void* context)
 {
