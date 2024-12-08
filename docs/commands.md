@@ -31,6 +31,17 @@
 
 ---
 
+    cg_switchUniqueColors
+
+Выбор таблицы цветов для cg_enemyModelColorsUnique
+
+`0` стандартная
+
+`1` светлые цвета
+
+
+---
+
     cg_enemyRailColors
     cg_teamRailColors
     cg_playerRailColors
