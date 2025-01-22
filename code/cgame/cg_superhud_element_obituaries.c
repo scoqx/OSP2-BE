@@ -193,8 +193,39 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		element->ctxTarget.background[3] = 0;
 	}
 	CG_SHUDTextPrint(&element->config, &element->ctxTarget);
+	
+	if (entry->target == cg.predictedPlayerState.clientNum || entry->attacker == cg.predictedPlayerState.clientNum)
+    {
+     CG_SHUDElementObituariesDrawFrame(
+        entry->runtime.baseX, // baseX
+        element->ctxMod.coord.named.y, // y
+        entry->runtime.attackerWidth, // attackerWidth
+        entry->runtime.spacing, // spacing
+        element->ctxMod.coord.named.w, // iconWidth
+        entry->runtime.targetWidth, // targetWidth
+        element->config.fontsize.value[0], // fontSize
+        element->ctxMod.coord.named.h, // iconHeight
+        colorRed // color
+        );
+    }
 }
 
+void CG_SHUDElementObituariesDrawFrame(
+    float baseX, float y, float attackerWidth, float spacing, float iconWidth, float targetWidth, float fontSize, float iconHeight, const float* color
+)
+{
+
+    float frameOffset = fontSize / 10;
+    float frameThickness = fontSize * 0.05;
+    float x = baseX - frameOffset;
+    float width = attackerWidth + spacing * 2 + iconWidth + targetWidth + 2 * frameThickness + frameOffset * 2;
+    float height = iconHeight + 2 * frameThickness;
+
+    CG_FillRect(x, y - frameThickness, width, frameThickness, color); // Top
+    CG_FillRect(x, y + height - frameThickness, width, frameThickness, color); // Bottom
+    CG_FillRect(x, y - frameThickness, frameThickness, height, color); // Left
+    CG_FillRect(x + width - frameThickness, y - frameThickness, frameThickness, height, color); // Right
+}
 
 static int CG_TruncateStringWithCodes(const char* input, char* output, int maxVisibleChars)
 {
