@@ -157,7 +157,17 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	}
 
 	currentX = entry->runtime.baseX;
-
+	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target)
+	{
+		// Рисуем фон, используя цвет и прозрачность из конфига
+		CG_FillRect(
+			entry->runtime.baseX - (element->config.fontsize.value[0] / 5), // X
+			element->ctxMod.coord.named.y + (element->config.fontsize.value[0] / 5), // Y
+			entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->config.fontsize.value[0] / 5) * 3, // Ширина
+			element->ctxMod.coord.named.h - (element->config.fontsize.value[0] / 5) * 2, // Высота
+			element->config.bgcolor.value // Цвет и прозрачность из конфига
+		);
+	}
 	if (entry->attacker != entry->target)
 	{
 		element->ctxAttacker.text = entry->runtime.truncatedAttacker;
@@ -193,33 +203,6 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		element->ctxTarget.background[3] = 0;
 	}
 	CG_SHUDTextPrint(&element->config, &element->ctxTarget);
-	    if (entry->target == cg.predictedPlayerState.clientNum || entry->attacker == cg.predictedPlayerState.clientNum)
-	    {
-	        float frameThickness = element->config.fontsize.value[0] / 10; // Толщина полоски
-	        float frameOffset = element->config.fontsize.value[0] / 4; // Отступ от краёв
-	        float x = entry->runtime.baseX - frameOffset; // Начальная координата X
-			float y = element->ctxMod.coord.named.y + frameOffset;
-	        float width = entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + 2 * frameThickness + frameOffset * 2; // Общая ширина
-	        float height = element->ctxMod.coord.named.h - frameOffset * 2; // Высота полоски
-	
-	        // Левая полоска
-	        CG_FillRect(
-	            x, // x
-	            y, // y
-	            frameThickness, // width (толщина полоски)
-	            height, // height
-	            colorRed // color
-	);
-	
-	        // Правая полоска
-	        CG_FillRect(
-	            x + width - frameThickness, // x
-	            y, // y
-	            frameThickness, // width (толщина полоски)
-	            height, // height
-	            colorRed // color
-	);
-    }
 }
 
 static int CG_TruncateStringWithCodes(const char* input, char* output, int maxVisibleChars)
