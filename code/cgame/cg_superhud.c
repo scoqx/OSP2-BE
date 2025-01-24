@@ -332,8 +332,11 @@ void CG_SHUDRoutine(void)
 	{
 		CG_OSPDrawCenterString();
 	}
-
+	
+	if (!cg_shud_fightSound.integer == 0)
+	{
 	CG_SHUDFreezeFight();
+	}
 
 	while (last)
 	{
