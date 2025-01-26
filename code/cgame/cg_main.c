@@ -364,6 +364,7 @@ vmCvar_t           cg_stackHitSounds;
 vmCvar_t           cg_drawCenterMessages;
 vmCvar_t           cg_itemsRespawnAnimation;
 vmCvar_t			cg_gunSwitchAnimation;
+vmCvar_t		   cg_shud_fightSound;
 
 static cvarTable_t cvarTable[] =
 {
@@ -641,6 +642,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
  	{ &cg_itemsRespawnAnimation, "cg_itemsRespawnAnimation", "1", CVAR_ARCHIVE },
 	{ &cg_gunSwitchAnimation, "cg_gunSwitchAnimation", "1", CVAR_ARCHIVE },
+	{ &cg_shud_fightSound, "cg_shud_fightSound", "1", CVAR_ARCHIVE },
 
 };
 
