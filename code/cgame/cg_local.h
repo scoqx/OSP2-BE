@@ -1483,6 +1483,7 @@ extern vmCvar_t           cg_lightningHitsoundRateFix;
 extern vmCvar_t           cg_stackHitSounds;
 extern vmCvar_t           cg_drawCenterMessages;
 extern vmCvar_t           cg_itemsRespawnAnimation;
+extern vmCvar_t				cg_gunSwitchAnimation;
 extern vmCvar_t			  cg_shud_fightSound;
 
 //
