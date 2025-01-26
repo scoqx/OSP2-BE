@@ -1032,10 +1032,17 @@ static int CG_MapTorsoToWeaponFrame(clientInfo_t* ci, int frame)
 {
 
 	// change weapon
-	if (frame >= ci->animations[TORSO_DROP].firstFrame
-	        && frame < ci->animations[TORSO_DROP].firstFrame + 9)
+	if (cg_gunSwitchAnimation.integer == 0) {
+		if (frame >= ci->animations[TORSO_DROP].firstFrame
+				&& frame < ci->animations[TORSO_DROP].firstFrame + 9) {
+			return 0;
+		}
+	} else if (cg_gunSwitchAnimation.integer == 1) {
+		if (frame >= ci->animations[TORSO_DROP].firstFrame
+			&& frame < ci->animations[TORSO_DROP].firstFrame + 9)
 	{
 		return frame - ci->animations[TORSO_DROP].firstFrame + 6;
+	}
 	}
 
 	// stand attack
