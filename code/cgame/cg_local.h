@@ -1483,8 +1483,8 @@ extern vmCvar_t           cg_lightningHitsoundRateFix;
 extern vmCvar_t           cg_stackHitSounds;
 extern vmCvar_t           cg_drawCenterMessages;
 extern vmCvar_t           cg_itemsRespawnAnimation;
-extern vmCvar_t				cg_gunSwitchAnimation;
-extern vmCvar_t			  cg_shud_fightSound;
+extern vmCvar_t             cg_gunSwitchAnimation;
+extern vmCvar_t           cg_shud_fightSound;
 
 //
 // cg_main.c
@@ -1794,6 +1794,13 @@ void CG_PositionRotatedEntityOnTag(refEntity_t* entity, const refEntity_t* paren
 //
 // cg_weapons.c
 //
+
+#define DRAW_GUN_SHOW               1  // 000001
+#define DRAW_GUN_NO_MOVE_ANIMATION  2  // 000010
+#define DRAW_GUN_NO_SWITCH_ANIMATION 4  // 001000
+#define DRAW_GUN_NO_FIRE_ANIMATION  8 // 010000
+#define DRAW_GUN_GHOST              16  // 000100
+
 void CG_NextWeapon_f(void);
 void CG_PrevWeapon_f(void);
 void CG_Weapon_f(void);

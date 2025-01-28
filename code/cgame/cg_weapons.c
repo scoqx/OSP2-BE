@@ -1032,31 +1032,42 @@ static int CG_MapTorsoToWeaponFrame(clientInfo_t* ci, int frame)
 {
 
 	// change weapon
-	if (cg_gunSwitchAnimation.integer == 0) {
-		if (frame >= ci->animations[TORSO_DROP].firstFrame
-				&& frame < ci->animations[TORSO_DROP].firstFrame + 9) {
+	if (frame >= ci->animations[TORSO_DROP].firstFrame && frame < ci->animations[TORSO_DROP].firstFrame + 9)
+	{
+		if (cg_drawGun.integer & DRAW_GUN_NO_SWITCH_ANIMATION)
+		{
 			return 0;
 		}
-	} else if (cg_gunSwitchAnimation.integer == 1) {
-		if (frame >= ci->animations[TORSO_DROP].firstFrame
-			&& frame < ci->animations[TORSO_DROP].firstFrame + 9)
-	{
-		return frame - ci->animations[TORSO_DROP].firstFrame + 6;
-	}
+		else
+		{
+			return frame - ci->animations[TORSO_DROP].firstFrame + 6;
+		}
 	}
 
 	// stand attack
-	if (frame >= ci->animations[TORSO_ATTACK].firstFrame
-	        && frame < ci->animations[TORSO_ATTACK].firstFrame + 6)
+	if (frame >= ci->animations[TORSO_ATTACK].firstFrame && frame < ci->animations[TORSO_ATTACK].firstFrame + 6)
 	{
-		return 1 + frame - ci->animations[TORSO_ATTACK].firstFrame;
+		if (cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION)
+		{
+			return 0;
+		}
+		else
+		{
+			return 1 + frame - ci->animations[TORSO_ATTACK].firstFrame;
+		}
 	}
 
-	// stand attack 2
-	if (frame >= ci->animations[TORSO_ATTACK2].firstFrame
-	        && frame < ci->animations[TORSO_ATTACK2].firstFrame + 6)
+// stand attack 2
+	if (frame >= ci->animations[TORSO_ATTACK2].firstFrame && frame < ci->animations[TORSO_ATTACK2].firstFrame + 6)
 	{
-		return 1 + frame - ci->animations[TORSO_ATTACK2].firstFrame;
+		if (cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION)
+		{
+			return 0;
+		}
+		else
+		{
+			return 1 + frame - ci->animations[TORSO_ATTACK2].firstFrame;
+		}
 	}
 
 	return 0;
@@ -1078,7 +1089,7 @@ static void CG_CalculateWeaponPosition(vec3_t origin, vec3_t angles)
 	VectorCopy(cg.refdef.vieworg, origin);
 	VectorCopy(cg.refdefViewAngles, angles);
 
-	if (cg_drawGun.integer == 2 || cg_drawGun.integer == 3) return;
+	if (cg_drawGun.integer & DRAW_GUN_NO_MOVE_ANIMATION) return;
 
 	// on odd legs, invert some angles
 	if (cg.bobcycle & 1)
@@ -1510,7 +1521,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	}
 
 	CG_PositionEntityOnTag(&gun, parent, parent->hModel, "tag_weapon");
-	if ((cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
+	if ((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON))
 	{
 		CG_UpdateGunShaderRGBA(&gun);
 		gun.customShader = cgs.media.firstPersonGun;
@@ -1534,7 +1545,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		AnglesToAxis(angles, barrel.axis);
 
 		CG_PositionRotatedEntityOnTag(&barrel, &gun, weapon->weaponModel, "tag_barrel");
-		if ((cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
+		if ((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON))
 		{
 			CG_UpdateGunShaderRGBA(&barrel);
 			barrel.customShader = cgs.media.firstPersonGun;
