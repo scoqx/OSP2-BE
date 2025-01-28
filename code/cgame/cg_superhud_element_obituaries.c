@@ -33,7 +33,7 @@ static void* CG_SHUDElementObituariesCreate(const superhudConfig_t* config, int 
 		lcfg.alignV.value = SUPERHUD_ALIGNV_CENTER;
 		lcfg.alignV.isSet = qtrue;
 	}
-  
+
 	CG_SHUDTextMakeContext(&lcfg, &element->ctxAttacker);
 	CG_SHUDDrawMakeContext(&lcfg, &element->ctxMod);
 	CG_SHUDTextMakeContext(&lcfg, &element->ctxTarget);
@@ -110,7 +110,7 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 	if (entry->target >= 0 && entry->target < MAX_CLIENTS)
 	{
 
-    (void)CG_TruncateStringWithCodes(cgs.clientinfo[entry->target].name, entry->runtime.truncatedTarget, entry->runtime.maxVisibleChars);
+		(void)CG_TruncateStringWithCodes(cgs.clientinfo[entry->target].name, entry->runtime.truncatedTarget, entry->runtime.maxVisibleChars);
 	}
 
 	entry->runtime.attackerWidth = CG_OSPDrawStringLenPix(entry->runtime.truncatedAttacker, element->config.fontsize.value[0], MAX_QPATH, element->ctxAttacker.flags);
@@ -161,11 +161,11 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	{
 		// Рисуем фон, используя цвет и прозрачность из конфига
 		CG_FillRect(
-			entry->runtime.baseX - (element->config.fontsize.value[0] / 5), // X
-			element->ctxMod.coord.named.y + (element->config.fontsize.value[0] / 5), // Y
-			entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->config.fontsize.value[0] / 5) * 3, // Ширина
-			element->ctxMod.coord.named.h - (element->config.fontsize.value[0] / 5) * 2, // Высота
-			element->config.bgcolor.value // Цвет и прозрачность из конфига
+		    entry->runtime.baseX - (element->config.fontsize.value[0] / 5), // X
+		    element->ctxMod.coord.named.y - (element->config.fontsize.value[0] / 5), // Y
+		    entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->config.fontsize.value[0] / 5) * 3, // Ширина
+		    element->ctxMod.coord.named.h + (element->config.fontsize.value[0] / 5) * 2, // Высота
+		    element->config.bgcolor.value // Цвет и прозрачность из конфига
 		);
 	}
 	if (entry->attacker != entry->target)
