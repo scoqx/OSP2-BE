@@ -23,7 +23,7 @@ OSP2-BE features:
 - cg_shud_fightSound 0 - disable fight sound at respawn for freeze mod
 - cg_drawCenterMessages 0 - disable center messages (welcome server msg, frag msg etc.)
 - cg_drawDamage 3/4 - enable red border when damage recieve. (3 - classic + border, 4 - border only)
-- cg_drawGun reworked. Bitmaks: 2 - no movement animation, 4 - no switch animation, 8 - no fire animation, 16 - ghost shader. 3 still Quake Live analog (ghost shader + no movement animation)  
+- cg_drawGun reworked. bitmask: 2 - no movement animation, 4 - no switch animation, 8 - no fire animation, 16 - ghost shader. 3 still Quake Live analog (ghost shader + no movement animation)  
 
 ![shot-Dec-17-2024_17 11 28](https://github.com/user-attachments/assets/97452e84-d981-4458-8fb8-92b88cd6dad1)
 
