@@ -157,9 +157,8 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	}
 
 	currentX = entry->runtime.baseX;
-	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target)
+	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target) // Фон для всего элемента
 	{
-		// Рисуем фон, используя цвет и прозрачность из конфига
 		CG_FillRect(
 		entry->runtime.baseX - (element->ctxMod.coord.named.h * 0.05), // X
 		element->ctxAttacker.coord.named.y - (element->ctxAttacker.coord.named.h * 0.55), // Y
