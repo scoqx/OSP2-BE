@@ -161,12 +161,12 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	{
 		// Рисуем фон, используя цвет и прозрачность из конфига
 		CG_FillRect(
-		    entry->runtime.baseX - (element->config.fontsize.value[0] / 5), // X
-		    element->ctxMod.coord.named.y - (element->config.fontsize.value[0] / 5), // Y
-		    entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->config.fontsize.value[0] / 5) * 3, // Ширина
-		    element->ctxMod.coord.named.h + (element->config.fontsize.value[0] / 5) * 2, // Высота
-		    element->config.bgcolor.value // Цвет и прозрачность из конфига
-		);
+		entry->runtime.baseX - (element->ctxMod.coord.named.h * 0.05), // X
+		element->ctxAttacker.coord.named.y - (element->ctxAttacker.coord.named.h * 0.55), // Y
+		entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->ctxMod.coord.named.h * 0.15), // Ширина
+		element->ctxAttacker.coord.named.h * 1.1, // Высота
+		element->config.bgcolor.value // Цвет и прозрачность из конфига
+	);
 	}
 	if (entry->attacker != entry->target)
 	{
