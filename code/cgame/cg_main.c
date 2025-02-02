@@ -362,8 +362,8 @@ vmCvar_t           cg_conObituaries;
 vmCvar_t           cg_lightningHitsoundRateFix;
 vmCvar_t           cg_stackHitSounds;
 vmCvar_t           cg_drawCenterMessages;
+vmCvar_t           cg_unfreezeAlert;
 vmCvar_t           cg_itemsRespawnAnimation;
-vmCvar_t           cg_shud_fightSound;
 
 static cvarTable_t cvarTable[] =
 {
@@ -639,9 +639,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_lightningHitsoundRateFix, "cg_lightningHitsoundRateFix",      "1", CVAR_ARCHIVE },
 	{ &cg_stackHitSounds,           "cg_stackHitSounds",   "1", CVAR_ARCHIVE },
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
+	{ &cg_unfreezeAlert, "cg_unfreezeAlert", "0", CVAR_ARCHIVE },
 	{ &cg_itemsRespawnAnimation, "cg_itemsRespawnAnimation", "1", CVAR_ARCHIVE },
-	{ &cg_shud_fightSound, "cg_shud_fightSound", "1", CVAR_ARCHIVE },
-
 };
 
 #define CG_VARS_HASH_SIZE 512

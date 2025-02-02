@@ -1482,8 +1482,8 @@ extern vmCvar_t           cg_conObituaries;
 extern vmCvar_t           cg_lightningHitsoundRateFix;
 extern vmCvar_t           cg_stackHitSounds;
 extern vmCvar_t           cg_drawCenterMessages;
+extern vmCvar_t           cg_unfreezeAlert;
 extern vmCvar_t           cg_itemsRespawnAnimation;
-extern vmCvar_t           cg_shud_fightSound;
 
 //
 // cg_main.c
