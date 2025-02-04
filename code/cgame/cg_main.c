@@ -364,6 +364,7 @@ vmCvar_t           cg_stackHitSounds;
 vmCvar_t           cg_drawCenterMessages;
 vmCvar_t           cg_unfreezeAlert;
 vmCvar_t           cg_itemsRespawnAnimation;
+vmCvar_t		cg_predictStepOffset;
 
 static cvarTable_t cvarTable[] =
 {
@@ -641,6 +642,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
 	{ &cg_unfreezeAlert, "cg_unfreezeAlert", "0", CVAR_ARCHIVE },
 	{ &cg_itemsRespawnAnimation, "cg_itemsRespawnAnimation", "1", CVAR_ARCHIVE },
+	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
 };
 
 #define CG_VARS_HASH_SIZE 512
