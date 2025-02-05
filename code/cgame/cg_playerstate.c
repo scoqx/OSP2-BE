@@ -339,21 +339,13 @@ static void CG_PlayHitSound(sfxHandle_t sound, playerState_t* ps, playerState_t*
 	trap_S_StartLocalSound(sound, CHAN_LOCAL_SOUND);
 }
 
-// for damageSound 1
+// for DamageSound
 int hit_hp;
 int hit_ar;
 int hit_sum;
 
-void CG_HitSound(playerState_t* ps, playerState_t* ops)
+void CG_DamageSound(playerState_t* ps, playerState_t* ops)
 {
-	static int delayedDmg = 0;
-	static int stackedDmg = 0;
-
-	int deltaTime  = cg.time - cgs.osp.lastHitTime;
-	int hits    = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
-	int lgcd    = ops->powerups[PW_HASTE] ? 25 : 50; //lg ms cooldown, do we really need 25ms for haste?
-	
-	// damageSound 1
 	hit_hp = ps->stats[STAT_HEALTH] - ops->stats[STAT_HEALTH];
 	hit_ar = ps->stats[STAT_ARMOR] - ops->stats[STAT_ARMOR];
 
@@ -369,8 +361,17 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 			trap_S_StartLocalSound(cgs.media.gotDamageSounds[soundIndex], CHAN_LOCAL_SOUND);
     	}
     }
+}
 
-	//
+void CG_HitSound(playerState_t* ps, playerState_t* ops)
+{
+	static int delayedDmg = 0;
+	static int stackedDmg = 0;
+
+	int deltaTime  = cg.time - cgs.osp.lastHitTime;
+	int hits    = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
+	int lgcd    = ops->powerups[PW_HASTE] ? 25 : 50; //lg ms cooldown, do we really need 25ms for haste?
+	
 	if (!hits && !delayedDmg)
 	{
 		return;
@@ -456,6 +457,9 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 	{
 		return;
 	}
+	
+	// incoming damage changes
+	CG_DamageSound(ps, ops);
 
 	// hit changes
 	CG_HitSound(ps, ops);
@@ -468,7 +472,6 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 			CG_PainEvent(&cg.predictedPlayerEntity, ps->stats[STAT_HEALTH]);
 		}
 	}
-
 
 	// if we are going into the intermission, don't start any voices
 	if (cg.intermissionStarted)
