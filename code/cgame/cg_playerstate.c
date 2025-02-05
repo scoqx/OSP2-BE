@@ -106,11 +106,6 @@ void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
 	// show the attacking player's head and name in corner
 	cg.attackerTime = cg.time;
 
-	if (cg_damageSound.integer)
-	{
-		trap_S_StartLocalSound(cgs.media.gotDamageSound, CHAN_LOCAL_SOUND);
-	}
-
 	// the lower on health you are, the greater the view kick will be
 	health = cg.snap->ps.stats[STAT_HEALTH];
 	if (health < 40)
@@ -163,7 +158,6 @@ void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
 		}
 
 		cg.v_dmg_roll = kick * left;
-
 		cg.v_dmg_pitch = -kick * front;
 
 		if (front <= 0.1)
@@ -345,6 +339,11 @@ static void CG_PlayHitSound(sfxHandle_t sound, playerState_t* ps, playerState_t*
 	trap_S_StartLocalSound(sound, CHAN_LOCAL_SOUND);
 }
 
+// for damageSound 1
+int hit_hp;
+int hit_ar;
+int hit_sum;
+
 void CG_HitSound(playerState_t* ps, playerState_t* ops)
 {
 	static int delayedDmg = 0;
@@ -353,7 +352,25 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 	int deltaTime  = cg.time - cgs.osp.lastHitTime;
 	int hits    = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
 	int lgcd    = ops->powerups[PW_HASTE] ? 25 : 50; //lg ms cooldown, do we really need 25ms for haste?
+	
+	// damageSound 1
+	hit_hp = ps->stats[STAT_HEALTH] - ops->stats[STAT_HEALTH];
+	hit_ar = ps->stats[STAT_ARMOR] - ops->stats[STAT_ARMOR];
 
+	if (cg_damageSound.integer && cg.attackerTime != 0)
+	{
+        hit_sum = hit_hp + hit_ar;
+
+		if (hit_sum <= -3) {
+			int soundIndex = (hit_sum >= -25) ? 0 :
+							(hit_sum >= -50) ? 1 :
+							(hit_sum >= -75) ? 2 : 3;
+
+			trap_S_StartLocalSound(cgs.media.gotDamageSounds[soundIndex], CHAN_LOCAL_SOUND);
+    	}
+    }
+
+	//
 	if (!hits && !delayedDmg)
 	{
 		return;
@@ -379,7 +396,6 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		else
 		{
 			damage = atta & 0x00FF;
-
 		}
 
 		if (cg_lightningHitsoundRateFix.integer && ops->weapon == WP_LIGHTNING && deltaTime < lgcd) //no need lg collisions < cooldown ms
