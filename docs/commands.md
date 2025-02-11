@@ -83,6 +83,16 @@
 
 ---
 
+    cg_enemyModelColorsUniqueLight
+
+Выбирает для cg_enemyModelColorsUnique только светлые цвета, которые хорошо видно на тёмном фоне.
+
+`0` отключено
+
+`1` включено
+
+---
+
     cg_enemyRailColors
     cg_teamRailColors
     cg_playerRailColors

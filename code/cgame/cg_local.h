@@ -1438,6 +1438,7 @@ extern vmCvar_t           cg_teamFrozenColor;
 extern vmCvar_t           cg_teamFrozenFoe;
 
 extern vmCvar_t           cg_enemyModelColorsUnique;
+extern vmCvar_t           cg_enemyModelColorsUniqueLight;
 extern vmCvar_t           cg_enemyModelColors;
 extern vmCvar_t           cg_enemyRailColors;
 extern vmCvar_t           cg_enemyFrozenColor;
