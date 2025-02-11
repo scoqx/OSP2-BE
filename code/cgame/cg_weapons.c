@@ -1164,6 +1164,10 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	qboolean isOurClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
 	qboolean isDelagEnabled =  cg_delag.integer & 1 || cg_delag.integer & 2;
 
+  const qboolean nomip = cg_nomip.integer & 1;
+  
+  playerState_t* ps;
+
 	if (cent->currentState.weapon != WP_LIGHTNING) return;
 
 	if (isOurClient)
@@ -1288,24 +1292,70 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 
 	beam.reType = RT_LIGHTNING;
 
-	// select lightning shader
+  beam.shaderRGBA[0] = 255;
+  beam.shaderRGBA[1] = 255;
+  beam.shaderRGBA[2] = 255;
+
+  if (!isOurClient) // me != enemy ???
 	{
-		int shaft_type = cg_altLightning.integer;
-		const qboolean nomip = cg_nomip.integer & 1;
+    // if (cg.predictedPlayerState.clientNum != cent->currentState.number) // me != enemy
+    /* my team */
+    if (cg.snap->ps.persistant[PERS_TEAM] == cgs.clientinfo[cent->currentState.number].team && cgs.gametype >= GT_TEAM)
+    {
+      int team_shaft_type = cg_teamLightning.integer == 0 ? cg_altLightning.integer : cg_teamLightning.integer;
+      float opaque = 1.0f - cg_teamLightningOpaque.value;
+      
+      if (team_shaft_type >= 1 && team_shaft_type < LIGHTNING_NUMBER_OF_SHADERS)
+      {
+        beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[team_shaft_type] : cgs.media.lightningBolt[team_shaft_type];
+      }
+      
+      if (cg_teamLightnings.integer)
+      {
+        beam.shaderRGBA[0] = 0;
+        beam.shaderRGBA[1] = 0;
+        beam.shaderRGBA[2] = 255;
+      }
+      // beam.shaderRGBA[3] = (opaque >= 0.0f && opaque <= 1.0f) ? 255 * opaque : 255;
+      beam.shaderRGBA[3] = 255;
+    }
+    else if (cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype == GT_FFA) /* enemy team */
+    {
+      int enemy_shaft_type = cg_enemyLightning.integer == 0 ? cg_altLightning.integer : cg_enemyLightning.integer;
+      float opaque = 1.0f - cg_enemyLightningOpaque.value;
 
-		if (shaft_type >= LIGHTNING_NUMBER_OF_SHADERS || shaft_type < 0)
+      if (enemy_shaft_type >= 1 && enemy_shaft_type < LIGHTNING_NUMBER_OF_SHADERS)
+      {
+        beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[enemy_shaft_type] : cgs.media.lightningBolt[enemy_shaft_type];
+      }
+
+      if (cg_teamLightnings.integer)
 		{
-			shaft_type = LIGHTNING_DEFAULT_SHADER;
+        beam.shaderRGBA[0] = 255;
+        beam.shaderRGBA[1] = 0;
+        beam.shaderRGBA[2] = 0;
 		}
-
-		beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[shaft_type] : cgs.media.lightningBolt[shaft_type];
+      // beam.shaderRGBA[3] = (opaque >= 0.0f && opaque <= 1.0f) ? 255 * opaque : 255;
+      beam.shaderRGBA[3] = 255;
+    }
+  }
+  else
+  {
+    float opaque = 1.0f - cg_lightningOpaque.value;
+    int self_shaft_type = (cg_altLightning.integer >= LIGHTNING_NUMBER_OF_SHADERS || cg_altLightning.integer < 0) ? LIGHTNING_DEFAULT_SHADER : cg_altLightning.integer;
+    //int self_shaft_type = cg_altLightning.integer;
+    beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[self_shaft_type] : cgs.media.lightningBolt[self_shaft_type];
+    // beam.shaderRGBA[3] = (opaque >= 0.0f && opaque <= 1.0f) ? 255 * opaque : 255;
+    beam.shaderRGBA[3] = 255;
 	}
 
-	if (!(isOurClient && cg_lightningHide.integer))
+  if (!(isOurClient && cg_lightningOpaque.value < 1.0f))
 	{
 		trap_R_AddRefEntityToScene(&beam);
 	}
 
+
+  /* LG impact */
 	if (trace.fraction < 1.0 && cg_lightningImpact.integer)
 	{
 		vec3_t  angles;

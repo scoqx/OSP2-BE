@@ -210,7 +210,12 @@ vmCvar_t           cg_smokeradius_gl;
 vmCvar_t           cg_smokeradius_rl;
 vmCvar_t           cg_swapSkins;
 vmCvar_t           cg_teamRails;
+vmCvar_t           cg_teamLightnings;
+vmCvar_t           cg_teamLightning;
+vmCvar_t           cg_enemyLightning;
 vmCvar_t           cg_trueLightning;
+vmCvar_t           cg_teamLightningOpaque;
+vmCvar_t           cg_enemyLightningOpaque;
 vmCvar_t           cg_useScreenShotJPEG;
 vmCvar_t           ch_3waveFont;
 vmCvar_t           ch_ColorLocations;
@@ -267,7 +272,7 @@ vmCvar_t           cg_noLeadSounds;
 vmCvar_t           cg_fragSound;
 vmCvar_t           cg_lightningHideCrosshair;
 vmCvar_t           cg_lightningSilent;
-vmCvar_t           cg_lightningHide;
+vmCvar_t           cg_lightningOpaque;
 
 vmCvar_t           cg_delag;
 vmCvar_t           cg_drawHitBox;
@@ -513,6 +518,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_smokeradius_rl, "cg_smokeradius_rl", "64", CVAR_ARCHIVE },
 	{ &cg_swapSkins, "cg_swapSkins", "0", 0, CG_LocalEventCvarChanged_cg_swapSkins},
 	{ &cg_teamRails, "cg_teamRails", "0", CVAR_ARCHIVE },
+	{ &cg_teamLightnings, "cg_teamLightnings", "0", CVAR_ARCHIVE },
+	{ &cg_teamLightning, "cg_teamLightning", "0", CVAR_ARCHIVE },
+	{ &cg_enemyLightning, "cg_enemyLightning", "0", CVAR_ARCHIVE },
+	{ &cg_teamLightningOpaque, "cg_teamLightningOpaque", "1.0", CVAR_ARCHIVE },
+	{ &cg_enemyLightningOpaque, "cg_enemyLightningOpaque", "1.0", CVAR_ARCHIVE },
 	{ &cg_trueLightning, "cg_trueLightning", "1.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_trueLightning},
 	{ &cg_useScreenShotJPEG, "cg_useScreenShotJPEG", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_useScreenShotJPEG},
 	{ &ch_3waveFont, "ch_3waveFont", "0", CVAR_ARCHIVE },
@@ -576,7 +586,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_fragSound, "cg_fragSound", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_fragSound},
 	{ &cg_lightningHideCrosshair, "cg_lightningHideCrosshair", "0", CVAR_ARCHIVE },
 	{ &cg_lightningSilent, "cg_lightningSilent", "0", CVAR_ARCHIVE },
-	{ &cg_lightningHide, "cg_lightningHide", "0", CVAR_ARCHIVE },
+	{ &cg_lightningOpaque, "cg_lightningOpaque", "1.0", CVAR_ARCHIVE },
 	{ &cg_delag, "cg_delag", "1", CVAR_ARCHIVE },
 	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE },
 	{ &cg_projectileNudge, "cg_projectileNudge", "0", CVAR_ARCHIVE },
