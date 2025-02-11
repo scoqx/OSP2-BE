@@ -66,54 +66,6 @@ void* CG_SHUDElementTempAccLastCreate(const superhudConfig_t* config)
 	return CG_SHUDElementTempAccCreate(config, SHUD_ELEMENT_TEMPACC_LAST);
 }
 
-void CG_SHUDElementTempAccRoutine(void* context)
-{
-	shudElementTempAcc_t* element = (shudElementTempAcc_t*)context;
-	float accuracy;
-	char accuracyStr[32];
-	vec4_t color;
-
-	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
-
-	CG_SHUDEventTempAccUpdateAndCalc(&tempAccCounters);
-
-	switch (element->type)
-	{
-		case SHUD_ELEMENT_TEMPACC_CURRENT:
-			accuracy = tempAccCounters.currentAccuracy;
-			break;
-		case SHUD_ELEMENT_TEMPACC_LAST:
-			accuracy = tempAccCounters.lastAccuracy;
-			break;
-		default:
-			return;
-	}
-
-	if (accuracy == 0)
-	{
-		element->ctx.text = "";
-	}
-	else
-	{
-		Com_sprintf(accuracyStr, sizeof(accuracyStr), "%.0f%%", accuracy);
-		element->ctx.text = va("%s", accuracyStr);
-	}
-
-	if (element->config.style.isSet)
-	{
-		CG_SHUDEStylesTempAcc_Color(color, element->config.style.value, &element->config, accuracy);
-	}
-	else
-	{
-		Vector4Copy(element->config.color.value.rgba, color);
-	}
-
-	Vector4Copy(color, element->config.color.value.rgba);
-
-	CG_SHUDFill(&element->config);
-	CG_SHUDTextPrint(&element->config, &element->ctx);
-}
-
 void CG_SHUDEventTempAccUpdateAndCalc(shudElementTempAccCounters_t* counters)
 {
 	static float lastAccuracy = 0.0f;
@@ -221,6 +173,55 @@ static void CG_SHUDEStylesTempAcc_Color(vec4_t color, int style, const superhudC
 		Vector4Copy(config->color.value.rgba, color);
 	}
 }
+
+void CG_SHUDElementTempAccRoutine(void* context)
+{
+	shudElementTempAcc_t* element = (shudElementTempAcc_t*)context;
+	float accuracy;
+	char accuracyStr[32];
+	vec4_t color;
+
+	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+
+	CG_SHUDEventTempAccUpdateAndCalc(&tempAccCounters);
+
+	switch (element->type)
+	{
+		case SHUD_ELEMENT_TEMPACC_CURRENT:
+			accuracy = tempAccCounters.currentAccuracy;
+			break;
+		case SHUD_ELEMENT_TEMPACC_LAST:
+			accuracy = tempAccCounters.lastAccuracy;
+			break;
+		default:
+			return;
+	}
+
+	if (accuracy == 0)
+	{
+		element->ctx.text = "";
+	}
+	else
+	{
+		Com_sprintf(accuracyStr, sizeof(accuracyStr), "%.0f%%", accuracy);
+		element->ctx.text = va("%s", accuracyStr);
+	}
+
+	if (element->config.style.isSet)
+	{
+		CG_SHUDEStylesTempAcc_Color(color, element->config.style.value, &element->config, accuracy);
+	}
+	else
+	{
+		Vector4Copy(element->config.color.value.rgba, color);
+	}
+
+	Vector4Copy(color, element->config.color.value.rgba);
+
+	CG_SHUDFill(&element->config);
+	CG_SHUDTextPrint(&element->config, &element->ctx);
+}
+
 
 void CG_SHUDElementTempAccDestroy(void* context)
 {
