@@ -552,35 +552,79 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 
 	teamname[0] = 0;
 	modelloaded = qtrue;
+	
 	if (!CG_RegisterClientModelname(ci, ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName, teamname))
 	{
+		// Set DefaultModel & DefaultSkin based on cg_enemyModelDefault.string
+		char DefaultModel[128] = DEFAULT_MODEL;
+		char DefaultSkin[128] = "pm";
+		qhandle_t modelHandle;
+		qhandle_t skinHandle;
+		
+		char filename[MAX_QPATH];
+
 		if (cg_buildScript.integer)
 		{
 			CG_Error("CG_RegisterClientModelname( %s, %s, %s, %s %s ) failed", ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName, teamname);
 		}
 
-		// fall back to default team name
-		if (cgs.gametype >= GT_TEAM)
+		if (cg_enemyModelDefault.string && strlen(cg_enemyModelDefault.string) > 0)
 		{
-			if (!CG_RegisterClientModelname(ci, ci->modelName, ci->skinName, ci->headModelName, ci->skinName, teamname))
+			char buffer[128];
+			char* delimiter;
+
+			strncpy(buffer, cg_enemyModelDefault.string, sizeof(buffer) - 1);
+			buffer[sizeof(buffer) - 1] = '\0'; // Set the last character to '\0'
+			delimiter = strchr(buffer, '/'); // Find first '/'
+
+			if (delimiter != NULL)
 			{
-				const char* skin = ci->rt == TEAM_RED ? "red" : "blue";
-				if (!CG_RegisterClientModelname(ci, "sarge", skin, "sarge", skin, teamname))
-				{
-					CG_Error("DEFAULT_TEAM_MODEL / skin (%s/%s) failed to register", DEFAULT_TEAM_MODEL, skin);
-					modelloaded = qfalse;
-				}
+				*delimiter = '\0'; // Replace '/' with '\0'
+				strncpy(DefaultModel, buffer, sizeof(DefaultModel) - 1);
+				DefaultModel[sizeof(DefaultModel) - 1] = '\0';
+
+				strncpy(DefaultSkin, delimiter + 1, sizeof(DefaultSkin) - 1);
+				DefaultSkin[sizeof(DefaultSkin) - 1] = '\0';
+			}
+			else
+			{
+				strncpy(DefaultModel, buffer, sizeof(DefaultModel) - 1);
+				DefaultModel[sizeof(DefaultModel) - 1] = '\0';
+
+				strncpy(DefaultSkin, "pm", sizeof(DefaultSkin) - 1);
+				DefaultSkin[sizeof(DefaultSkin) - 1] = '\0';
+			}
+	
+			// Check if model is present
+			Com_sprintf(filename, sizeof(filename), "models/players/%s/lower.md3", DefaultModel);
+			modelHandle = trap_R_RegisterModel(filename);
+			if (modelHandle == 0)
+			{
+				Com_Printf("^3Model '%s' does not exist. Using default model 'sarge'.\n", DefaultModel);
+				// Switch to default model
+				strncpy(DefaultModel, "sarge", sizeof(DefaultModel) - 1);
+				DefaultModel[sizeof(DefaultModel) - 1] = '\0';
+			}
+			
+			// Check if skin is present
+			Com_sprintf(filename, MAX_QPATH, "models/players/%s/lower_%s.skin", DefaultModel, DefaultSkin);
+			skinHandle = trap_R_RegisterSkin(filename);
+			if (skinHandle == 0)
+			{
+				Com_Printf("^3Skin '%s' does not exist for model '%s'. Using default skin.\n", DefaultSkin, DefaultModel);
+				// Switch to default skin
+				strncpy(DefaultSkin, "default", sizeof(DefaultSkin) - 1);
+				DefaultSkin[sizeof(DefaultSkin) - 1] = '\0';
 			}
 		}
-		else
+
+		// Fall back to default team name
+		if (!CG_RegisterClientModelname(ci, ci->modelName, DefaultSkin, ci->headModelName, DefaultSkin, teamname))
 		{
-			if (!CG_RegisterClientModelname(ci, ci->modelName, "default", ci->headModelName, "default", teamname))
+			if (!CG_RegisterClientModelname(ci, DefaultModel, DefaultSkin, DefaultModel, DefaultSkin, teamname))
 			{
-				if (!CG_RegisterClientModelname(ci, "sarge", "default", "sarge", "default", teamname))
-				{
-					CG_Error("DEFAULT_TEAM_MODEL / skin (%s/%s) failed to register", DEFAULT_TEAM_MODEL, "default");
-					modelloaded = qfalse;
-				}
+				CG_Error("DEFAULT_TEAM_MODEL / skin (%s/%s) failed to register", DefaultModel, DefaultSkin);
+				modelloaded = qfalse;
 			}
 		}
 	}

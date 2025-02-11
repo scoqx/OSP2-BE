@@ -1328,6 +1328,7 @@ extern vmCvar_t           cg_shud;
 extern vmCvar_t           cg_enableBreath;
 extern vmCvar_t           cg_enemyColors;
 extern vmCvar_t           cg_enemyModel;
+extern vmCvar_t           cg_enemyModelDefault;
 extern vmCvar_t           cg_teamModel;
 extern vmCvar_t           cg_execVstr;
 extern vmCvar_t           cg_fallKick;

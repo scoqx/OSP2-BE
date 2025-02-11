@@ -93,6 +93,16 @@
 
 ---
 
+    cg_enemyModelDefault "tankjr/pm"
+
+В случае, если по каким-то причинам отсутствует выбранная модель в cg_enemyModel, то подгружаем выбранную по умолчанию, включая яркий pm-скин. По умолчанию sarge/default, здесь можно заменить на свой.
+
+`` отключено когда пустое
+
+`tankjr/pm` выбрана модель и скин по умолчанию вместо "sarge/default"
+
+---
+
     cg_enemyRailColors
     cg_teamRailColors
     cg_playerRailColors
