@@ -184,6 +184,7 @@ vmCvar_t           cg_shud;
 vmCvar_t           cg_enableBreath;
 vmCvar_t           cg_enemyColors;
 vmCvar_t           cg_enemyModel;
+vmCvar_t           cg_enemyModelDefault;
 vmCvar_t           cg_teamModel;
 vmCvar_t           cg_execVstr;
 vmCvar_t           cg_fallKick;
@@ -210,7 +211,12 @@ vmCvar_t           cg_smokeradius_gl;
 vmCvar_t           cg_smokeradius_rl;
 vmCvar_t           cg_swapSkins;
 vmCvar_t           cg_teamRails;
+vmCvar_t           cg_teamLightnings;
+vmCvar_t           cg_altTeamLightning;
+vmCvar_t           cg_altEnemyLightning;
 vmCvar_t           cg_trueLightning;
+vmCvar_t           cg_altTeamLightningOpaque;
+vmCvar_t           cg_altEnemyLightningOpaque;
 vmCvar_t           cg_useScreenShotJPEG;
 vmCvar_t           ch_3waveFont;
 vmCvar_t           ch_ColorLocations;
@@ -267,7 +273,7 @@ vmCvar_t           cg_noLeadSounds;
 vmCvar_t           cg_fragSound;
 vmCvar_t           cg_lightningHideCrosshair;
 vmCvar_t           cg_lightningSilent;
-vmCvar_t           cg_lightningHide;
+vmCvar_t           cg_lightningOpaque;
 
 vmCvar_t           cg_delag;
 vmCvar_t           cg_drawHitBox;
@@ -275,6 +281,7 @@ vmCvar_t           cg_projectileNudge;
 vmCvar_t           cg_hideScores;
 
 vmCvar_t           cg_enemyModelColorsUnique;
+vmCvar_t           cg_enemyModelColorsUniqueLight;
 vmCvar_t           cg_playerModelColors;
 vmCvar_t           cg_playerRailColors;
 vmCvar_t           cg_playerFrozenColor;
@@ -487,6 +494,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_enableBreath, "cg_enableBreath", "1",  CVAR_ARCHIVE},
 	{ &cg_enemyColors, "cg_enemyColors", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyColors},
 	{ &cg_enemyModel, "cg_enemyModel", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyModel},
+	{ &cg_enemyModelDefault, "cg_enemyModelDefault", "", CVAR_ARCHIVE},
 	{ &cg_teamModel, "cg_teamModel", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamModel},
 	{ &cg_execVstr, "cg_execVstr", "", CVAR_ARCHIVE },
 	{ &cg_fallKick, "cg_fallKick", "0", CVAR_ARCHIVE },
@@ -513,6 +521,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_smokeradius_rl, "cg_smokeradius_rl", "64", CVAR_ARCHIVE },
 	{ &cg_swapSkins, "cg_swapSkins", "0", 0, CG_LocalEventCvarChanged_cg_swapSkins},
 	{ &cg_teamRails, "cg_teamRails", "0", CVAR_ARCHIVE },
+	{ &cg_teamLightnings, "cg_teamLightnings", "0", CVAR_ARCHIVE },
+	{ &cg_altTeamLightning, "cg_altTeamLightning", "0", CVAR_ARCHIVE },
+	{ &cg_altEnemyLightning, "cg_altEnemyLightning", "0", CVAR_ARCHIVE },
+	{ &cg_altTeamLightningOpaque, "cg_altTeamLightningOpaque", "1.0", CVAR_ARCHIVE },
+	{ &cg_altEnemyLightningOpaque, "cg_altEnemyLightningOpaque", "1.0", CVAR_ARCHIVE },
 	{ &cg_trueLightning, "cg_trueLightning", "1.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_trueLightning},
 	{ &cg_useScreenShotJPEG, "cg_useScreenShotJPEG", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_useScreenShotJPEG},
 	{ &ch_3waveFont, "ch_3waveFont", "0", CVAR_ARCHIVE },
@@ -576,7 +589,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_fragSound, "cg_fragSound", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_fragSound},
 	{ &cg_lightningHideCrosshair, "cg_lightningHideCrosshair", "0", CVAR_ARCHIVE },
 	{ &cg_lightningSilent, "cg_lightningSilent", "0", CVAR_ARCHIVE },
-	{ &cg_lightningHide, "cg_lightningHide", "0", CVAR_ARCHIVE },
+	{ &cg_lightningOpaque, "cg_lightningOpaque", "1.0", CVAR_ARCHIVE },
 	{ &cg_delag, "cg_delag", "1", CVAR_ARCHIVE },
 	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE },
 	{ &cg_projectileNudge, "cg_projectileNudge", "0", CVAR_ARCHIVE },
@@ -597,6 +610,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_enemyRailColors,   "cg_enemyRailColors", "",   CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyRailColors},
 	{ &cg_enemyFrozenColor,  "cg_enemyFrozenColor", "",  CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyFrozenColor},
 	{ &cg_enemyModelColorsUnique, "cg_enemyModelColorsUnique", "1", CVAR_ARCHIVE, NULL},
+	{ &cg_enemyModelColorsUniqueLight, "cg_enemyModelColorsUniqueLight", "0", CVAR_ARCHIVE, NULL},
 	{ &cg_teamFrozenFoe,   "cg_teamFrozenFoe", "1",   CVAR_ARCHIVE },
 
 	{ &cg_chatEnable, "cg_chatEnable", "3", CVAR_ARCHIVE},
