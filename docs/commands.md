@@ -730,7 +730,7 @@
 
 ---
 
-    cg_teamLightning 0-15
+    cg_altTeamLightning 0-15
 
 Расширенная настройка отрисовки луча шафта.
 
@@ -746,7 +746,7 @@
 
 ---
 
-    cg_enemyLightnings 0-15
+    cg_altEnemyLightning 0-15
 
 Расширенная настройка отрисовки луча шафта.
 
@@ -763,7 +763,7 @@
 
 ---
 
-    cg_teamLightningOpaque 0.0-1.0
+    cg_altTeamLightningOpaque 0.0-1.0
 
 Степень непрозрачности луча шафта
 
@@ -773,7 +773,7 @@
 
 ---
 
-    cg_enemyLightningOpaque 0.0-1.0
+    cg_altEnemyLightningOpaque 0.0-1.0
 
 Степень непрозрачности луча шафта
 

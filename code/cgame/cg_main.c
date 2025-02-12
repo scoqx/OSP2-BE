@@ -212,11 +212,11 @@ vmCvar_t           cg_smokeradius_rl;
 vmCvar_t           cg_swapSkins;
 vmCvar_t           cg_teamRails;
 vmCvar_t           cg_teamLightnings;
-vmCvar_t           cg_teamLightning;
-vmCvar_t           cg_enemyLightning;
+vmCvar_t           cg_altTeamLightning;
+vmCvar_t           cg_altEnemyLightning;
 vmCvar_t           cg_trueLightning;
-vmCvar_t           cg_teamLightningOpaque;
-vmCvar_t           cg_enemyLightningOpaque;
+vmCvar_t           cg_altTeamLightningOpaque;
+vmCvar_t           cg_altEnemyLightningOpaque;
 vmCvar_t           cg_useScreenShotJPEG;
 vmCvar_t           ch_3waveFont;
 vmCvar_t           ch_ColorLocations;
@@ -522,10 +522,10 @@ static cvarTable_t cvarTable[] =
 	{ &cg_swapSkins, "cg_swapSkins", "0", 0, CG_LocalEventCvarChanged_cg_swapSkins},
 	{ &cg_teamRails, "cg_teamRails", "0", CVAR_ARCHIVE },
 	{ &cg_teamLightnings, "cg_teamLightnings", "0", CVAR_ARCHIVE },
-	{ &cg_teamLightning, "cg_teamLightning", "0", CVAR_ARCHIVE },
-	{ &cg_enemyLightning, "cg_enemyLightning", "0", CVAR_ARCHIVE },
-	{ &cg_teamLightningOpaque, "cg_teamLightningOpaque", "1.0", CVAR_ARCHIVE },
-	{ &cg_enemyLightningOpaque, "cg_enemyLightningOpaque", "1.0", CVAR_ARCHIVE },
+	{ &cg_altTeamLightning, "cg_altTeamLightning", "0", CVAR_ARCHIVE },
+	{ &cg_altEnemyLightning, "cg_altEnemyLightning", "0", CVAR_ARCHIVE },
+	{ &cg_altTeamLightningOpaque, "cg_altTeamLightningOpaque", "1.0", CVAR_ARCHIVE },
+	{ &cg_altEnemyLightningOpaque, "cg_altEnemyLightningOpaque", "1.0", CVAR_ARCHIVE },
 	{ &cg_trueLightning, "cg_trueLightning", "1.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_trueLightning},
 	{ &cg_useScreenShotJPEG, "cg_useScreenShotJPEG", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_useScreenShotJPEG},
 	{ &ch_3waveFont, "ch_3waveFont", "0", CVAR_ARCHIVE },

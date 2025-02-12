@@ -1302,8 +1302,8 @@ void CG_LightningBolt(centity_t* cent, float* origin)
     /* my team */
     if (cg.snap->ps.persistant[PERS_TEAM] == cgs.clientinfo[cent->currentState.number].team && cgs.gametype >= GT_TEAM)
     {
-      int team_shaft_type = cg_teamLightning.integer == 0 ? cg_altLightning.integer : cg_teamLightning.integer;
-      float opaque = 1.0f - cg_teamLightningOpaque.value;
+      int team_shaft_type = cg_altTeamLightning.integer == 0 ? cg_altLightning.integer : cg_altTeamLightning.integer;
+      float opaque = 1.0f - cg_altTeamLightningOpaque.value;
       
       if (team_shaft_type >= 1 && team_shaft_type < LIGHTNING_NUMBER_OF_SHADERS)
       {
@@ -1321,8 +1321,8 @@ void CG_LightningBolt(centity_t* cent, float* origin)
     }
     else if (cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype == GT_FFA) /* enemy team */
     {
-      int enemy_shaft_type = cg_enemyLightning.integer == 0 ? cg_altLightning.integer : cg_enemyLightning.integer;
-      float opaque = 1.0f - cg_enemyLightningOpaque.value;
+      int enemy_shaft_type = cg_altEnemyLightning.integer == 0 ? cg_altLightning.integer : cg_altEnemyLightning.integer;
+      float opaque = 1.0f - cg_altEnemyLightningOpaque.value;
 
       if (enemy_shaft_type >= 1 && enemy_shaft_type < LIGHTNING_NUMBER_OF_SHADERS)
       {
