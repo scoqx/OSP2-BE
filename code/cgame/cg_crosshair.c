@@ -19,6 +19,8 @@ static void CG_DrawCrosshairSpeed(void)
 	                    0);
 }
 
+// Weapon memory
+int wp_prev;
 static qhandle_t CG_CrosshairGetShader(void)
 {
 	qhandle_t shader;
@@ -27,32 +29,104 @@ static qhandle_t CG_CrosshairGetShader(void)
 	switch (cg.predictedPlayerState.weapon)
 	{
 		case WP_GAUNTLET:
-			crosshair = cg_drawCrosshairGauntlet.integer;
+			if (cg_drawCrosshairGauntlet.integer)
+			{
+				crosshair = cg_drawCrosshairGauntlet.integer;
+			}
+			else if (wp_prev != cg.predictedPlayerState.weapon)
+			{
+				wp_prev = cg.predictedPlayerState.weapon;
+				trap_SendConsoleCommand(cg_drawCrosshairGauntlet.string);
+			}
 			break;
 		case WP_MACHINEGUN:
-			crosshair = cg_drawCrosshairMachinegun.integer;
+			if (cg_drawCrosshairMachinegun.integer)
+			{
+				crosshair = cg_drawCrosshairMachinegun.integer;
+			}
+			else if (wp_prev != cg.predictedPlayerState.weapon)
+			{
+				wp_prev = cg.predictedPlayerState.weapon;
+				trap_SendConsoleCommand(cg_drawCrosshairMachinegun.string);
+			}
 			break;
 		case WP_SHOTGUN:
-			crosshair = cg_drawCrosshairShotgun.integer;
+			if (cg_drawCrosshairShotgun.integer)
+			{
+				crosshair = cg_drawCrosshairShotgun.integer;
+			}
+			else if (wp_prev != cg.predictedPlayerState.weapon)
+			{
+				wp_prev = cg.predictedPlayerState.weapon;
+				trap_SendConsoleCommand(cg_drawCrosshairShotgun.string);
+			}
 			break;
 		case WP_GRENADE_LAUNCHER:
-			crosshair = cg_drawCrosshairGrenadeLauncher.integer;
+			if (cg_drawCrosshairGrenadeLauncher.integer)
+			{
+				crosshair = cg_drawCrosshairGrenadeLauncher.integer;
+			}
+			else if (wp_prev != cg.predictedPlayerState.weapon)
+			{
+				wp_prev = cg.predictedPlayerState.weapon;
+				trap_SendConsoleCommand(cg_drawCrosshairGrenadeLauncher.string);
+			}
 			break;
 		case WP_ROCKET_LAUNCHER:
-			crosshair = cg_drawCrosshairRocketLauncher.integer;
+			if (cg_drawCrosshairRocketLauncher.integer)
+			{
+				crosshair = cg_drawCrosshairRocketLauncher.integer;
+			}
+			else if (wp_prev != cg.predictedPlayerState.weapon)
+			{
+				wp_prev = cg.predictedPlayerState.weapon;
+				trap_SendConsoleCommand(cg_drawCrosshairRocketLauncher.string);
+			}
 			break;
 		case WP_LIGHTNING:
 			if (cg_lightningHideCrosshair.integer && cg.predictedPlayerState.eFlags & EF_FIRING) return 0;
-			crosshair = cg_drawCrosshairLightning.integer;
+			if (cg_drawCrosshairLightning.integer)
+			{
+				crosshair = cg_drawCrosshairLightning.integer;
+			}
+			else if (wp_prev != cg.predictedPlayerState.weapon)
+			{
+				wp_prev = cg.predictedPlayerState.weapon;
+				trap_SendConsoleCommand(cg_drawCrosshairLightning.string);
+			}
 			break;
 		case WP_RAILGUN:
-			crosshair = cg_drawCrosshairRailgun.integer;
+			if (cg_drawCrosshairRailgun.integer)
+			{
+				crosshair = cg_drawCrosshairRailgun.integer;
+			}
+			else if (wp_prev != cg.predictedPlayerState.weapon)
+			{
+				wp_prev = cg.predictedPlayerState.weapon;
+				trap_SendConsoleCommand(cg_drawCrosshairRailgun.string);
+			}
 			break;
 		case WP_PLASMAGUN:
-			crosshair = cg_drawCrosshairPlasmagun.integer;
+			if (cg_drawCrosshairPlasmagun.integer)
+			{
+				crosshair = cg_drawCrosshairPlasmagun.integer;
+			}
+			else if (wp_prev != cg.predictedPlayerState.weapon)
+			{
+				wp_prev = cg.predictedPlayerState.weapon;
+				trap_SendConsoleCommand(cg_drawCrosshairPlasmagun.string);
+			}
 			break;
 		case WP_BFG:
-			crosshair = cg_drawCrosshairBFG.integer;
+			if (cg_drawCrosshairBFG.integer)
+			{
+				crosshair = cg_drawCrosshairBFG.integer;
+			}
+			else if (wp_prev != cg.predictedPlayerState.weapon)
+			{
+				wp_prev = cg.predictedPlayerState.weapon;
+				trap_SendConsoleCommand(cg_drawCrosshairBFG.string);
+			}
 			break;
 		default:
 			crosshair = cg_drawCrosshair.integer;
