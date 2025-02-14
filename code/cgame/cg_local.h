@@ -322,6 +322,7 @@ typedef struct playerColors_s
 	vec3_t railCore;
 	vec3_t railRings;
 	vec3_t frozen;
+	vec3_t lightning;
 
 } playerColors_t;
 
@@ -759,6 +760,8 @@ typedef struct
 #define LIGHTNING_DEFAULT_SHADER 0
 	qhandle_t   lightningBolt[LIGHTNING_NUMBER_OF_SHADERS];
 	qhandle_t   lightningBoltNoPicMip[LIGHTNING_NUMBER_OF_SHADERS];
+	qhandle_t   enemyLightningBolt[LIGHTNING_NUMBER_OF_SHADERS];
+	qhandle_t   enemyLightningBoltNoPicMip[LIGHTNING_NUMBER_OF_SHADERS];
 
 	qhandle_t   friendShader;
 	qhandle_t   frozenFoeTagShader;
@@ -1015,6 +1018,8 @@ typedef struct playerColorsOverride_s
 	qboolean isRailColorSet;
 	qboolean isModelColorSet;
 	qboolean isFrozenColorSet;
+	qboolean isLightningColorSet;
+
 } playerColorsOverride_t;
 
 #define  OSP_SERVER_MODE_VQ3      0
@@ -1485,6 +1490,7 @@ extern vmCvar_t           cg_drawCenterMessages;
 extern vmCvar_t           cg_unfreezeAlert;
 extern vmCvar_t           cg_itemsRespawnAnimation;
 extern vmCvar_t			cg_predictStepOffset;
+extern vmCvar_t			cg_enemyLightningColor;
 
 //
 // cg_main.c
@@ -2349,6 +2355,7 @@ void CG_LocalEventCvarChanged_cg_dlightRG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_dlightPG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_dlightBFG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_conObituaries(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

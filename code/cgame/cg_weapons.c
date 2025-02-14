@@ -771,31 +771,53 @@ void CG_RegisterWeapon(int weaponNum)
 				{
 					cgs.media.lightningBolt[0] = trap_R_RegisterShader("lightningBoltNew");
 					cgs.media.lightningBoltNoPicMip[0] = trap_R_RegisterShader("lightningBoltNewNoPicMip");
+					cgs.media.enemyLightningBolt[0] = trap_R_RegisterShader("enemyLightningBoltNew");
+					cgs.media.enemyLightningBoltNoPicMip[0] = trap_R_RegisterShader("enemyLightningBoltNewNoPicMip");
 					if (!cgs.media.lightningBoltNoPicMip[0])
 					{
 						cgs.media.lightningBoltNoPicMip[0] = cgs.media.lightningBolt[0];
+					}
+					if (!cgs.media.enemyLightningBoltNoPicMip[0])
+					{
+						cgs.media.enemyLightningBoltNoPicMip[0] = cgs.media.enemyLightningBolt[0];
 					}
 				}
 				else if (i == 1)//cg_altLightning 1
 				{
 					cgs.media.lightningBolt[1] = trap_R_RegisterShader("lightningBolt");
 					cgs.media.lightningBoltNoPicMip[1] = trap_R_RegisterShader("lightningBoltNoPicMip");
+					cgs.media.enemyLightningBolt[1] = trap_R_RegisterShader("enemyLightningBolt");
+					cgs.media.enemyLightningBoltNoPicMip[1] = trap_R_RegisterShader("enemyLightningBoltNoPicMip");
 					if (!cgs.media.lightningBoltNoPicMip[1])
 					{
 						cgs.media.lightningBoltNoPicMip[1] = cgs.media.lightningBolt[1];
+					}
+					if (!cgs.media.enemyLightningBoltNoPicMip[1])
+					{
+						cgs.media.enemyLightningBoltNoPicMip[1] = cgs.media.enemyLightningBolt[1];
 					}
 				}
 				else //cg_altLightning > 1
 				{
 					cgs.media.lightningBolt[i] = trap_R_RegisterShader(va("lightningBoltNew%i", i));
+					cgs.media.enemyLightningBolt[i] = trap_R_RegisterShader(va("enemyLightningBoltNew%i", i));
 					if (!cgs.media.lightningBolt[i])
 					{
 						cgs.media.lightningBolt[i] = cgs.media.lightningBolt[0];
 					}
+					if (!cgs.media.enemyLightningBolt[i])
+					{
+						cgs.media.enemyLightningBolt[i] = cgs.media.enemyLightningBolt[0];
+					}
 					cgs.media.lightningBoltNoPicMip[i] = trap_R_RegisterShader(va("lightningBoltNewNoPicMip%i", i));
+					cgs.media.enemyLightningBoltNoPicMip[i] = trap_R_RegisterShader(va("enemyLightningBoltNewNoPicMip%i", i));
 					if (!cgs.media.lightningBoltNoPicMip[i])
 					{
 						cgs.media.lightningBoltNoPicMip[i] = cgs.media.lightningBolt[i];
+					}
+					if (!cgs.media.enemyLightningBoltNoPicMip[i])
+					{
+						cgs.media.enemyLightningBoltNoPicMip[i] = cgs.media.enemyLightningBolt[i];
 					}
 				}
 			}
@@ -1163,7 +1185,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	float tl;
 	qboolean isOurClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
 	qboolean isDelagEnabled =  cg_delag.integer & 1 || cg_delag.integer & 2;
-
+	// clientInfo_t *ci = &cgs.clientinfo[cent->currentState.number];
 	if (cent->currentState.weapon != WP_LIGHTNING) return;
 
 	if (isOurClient)
@@ -1288,23 +1310,37 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 
 	beam.reType = RT_LIGHTNING;
 
-	// select lightning shader
+{
+    int shaft_type = cg_altLightning.integer; // default
+    int enemy_shaft_type = cg_altLightning.integer; // enemy
+    const qboolean nomip = cg_nomip.integer & 1;
+
+    if (shaft_type >= LIGHTNING_NUMBER_OF_SHADERS || shaft_type < 0)
+    {
+        shaft_type = LIGHTNING_DEFAULT_SHADER;
+    }
+	if (!isOurClient && cg_enemyLightningColor.integer > 0 && // enemy
+		(cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype == GT_FFA))
 	{
-		int shaft_type = cg_altLightning.integer;
-		const qboolean nomip = cg_nomip.integer & 1;
-
-		if (shaft_type >= LIGHTNING_NUMBER_OF_SHADERS || shaft_type < 0)
-		{
-			shaft_type = LIGHTNING_DEFAULT_SHADER;
-		}
-
+		beam.customShader = nomip ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
+        beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
+        beam.shaderRGBA[1] = cgs.osp.enemyColors.lightning[1] * 255;
+        beam.shaderRGBA[2] = cgs.osp.enemyColors.lightning[2] * 255;
+        beam.shaderRGBA[3] = 255;
+        
+    }
+    else // everyone else
+    {
 		beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[shaft_type] : cgs.media.lightningBolt[shaft_type];
-	}
+    }
+}
 
-	if (!(isOurClient && cg_lightningHide.integer))
-	{
-		trap_R_AddRefEntityToScene(&beam);
-	}
+
+if (!(isOurClient && cg_lightningHide.integer))
+{
+    trap_R_AddRefEntityToScene(&beam);
+}
+
 
 	if (trace.fraction < 1.0 && cg_lightningImpact.integer)
 	{
@@ -1443,7 +1479,6 @@ static void CG_UpdateGunShaderRGBA(refEntity_t* gun)
 	gun->shaderRGBA[2] = 255 * color[2];
 	gun->shaderRGBA[3] = 255 * color[3];
 }
-
 
 /*
 =============
