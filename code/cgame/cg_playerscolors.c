@@ -30,7 +30,36 @@ static const vec3_t uniqueColorTable[UNIQUE_COLORS_TABLE_SIZE] =
 	{ 1, 1, 1 },       /* White */
 };
 
-#define UNIQUE_COLOR(CI) uniqueColorTable[CI%UNIQUE_COLORS_TABLE_SIZE]
+static const vec3_t uniqueColorTableLight[UNIQUE_COLORS_TABLE_SIZE] = {
+	{ 0, 1, 0 },       /* Green */
+	{ 1, 1, 0 },       /* Yellow */
+	{ 0, 1, 1 },       /* Cyan */
+	{ 1, 0.4, 1 },     /* Soft Magenta */
+	{ 1, 0.67, 0.32 }, /* Orange */
+	{ 0.37, 1, 0.37 }, /* Lime Green */
+	{ 0, 0.75, 1 },    /* Sky Blue */
+	{ 1, 0.35, 0.35 }, /* Soft Red */
+	{ 0.93, 0.5, 0.93 }, /* Purple */
+	{ 1, 0.35, 0.47 }, /* Light Tomato */
+	{ 0.9, 0.9, 0.5 }, /* Light Gold */
+	{ 0.5, 0.9, 0.9 }, /* Light Cyan */
+	{ 0.5, 0.5, 1 },   /* Light Blue */
+	{ 1, 1, 0.35 },    /* Light Yellow */
+	{ 0.1, 0.85, 0.85 }, /* Teal */
+	{ 1, 0.6, 0.6 },   /* Light Red */
+	{ 1, 0.4, 0.75 },  /* Pink */
+	{ 0.25, 0.75, 0.5 }, /* Mint Green */
+	{ 1, 0.8, 0.6 },   /* Peach */
+	{ 0.6, 1, 0.8 },   /* Light Turquoise */
+	{ 0.8, 0.6, 1 },   /* Lavender */
+	{ 1, 0.6, 0.8 },   /* Light Pink */
+	{ 0.6, 0.8, 1 },   /* Light Purple */
+	{ 0, 1, 0.6 }      /* Aqua Green */
+};
+
+
+#define UNIQUE_COLOR(CI) ((cg_uniqueColorTable.integer == 2) ? uniqueColorTableLight[CI % UNIQUE_COLORS_TABLE_SIZE] : uniqueColorTable[CI % UNIQUE_COLORS_TABLE_SIZE])
+
 
 void CG_PlayerColorsFromCS(playerColors_t* colors, playerColorsOverride_t* override, const char* color1, const char* color2)
 {

@@ -366,6 +366,7 @@ vmCvar_t           cg_unfreezeAlert;
 vmCvar_t           cg_itemsRespawnAnimation;
 vmCvar_t		cg_predictStepOffset;
 vmCvar_t		cg_enemyLightningColor;
+vmCvar_t		cg_uniqueColorTable;
 
 static cvarTable_t cvarTable[] =
 {
@@ -645,6 +646,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_itemsRespawnAnimation, "cg_itemsRespawnAnimation", "1", CVAR_ARCHIVE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
 	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "6", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
 };
 
 #define CG_VARS_HASH_SIZE 512

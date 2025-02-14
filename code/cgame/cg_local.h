@@ -1491,6 +1491,7 @@ extern vmCvar_t           cg_unfreezeAlert;
 extern vmCvar_t           cg_itemsRespawnAnimation;
 extern vmCvar_t			cg_predictStepOffset;
 extern vmCvar_t			cg_enemyLightningColor;
+extern vmCvar_t			cg_uniqueColorTable;
 
 //
 // cg_main.c
