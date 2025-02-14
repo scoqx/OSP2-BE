@@ -108,7 +108,8 @@ static void CG_PlayerColorsLoadOverrides(playerColors_t* colors,
         playerColorsOverride_t* override,
         vmCvar_t* modelColors,
         vmCvar_t* railColors,
-        vmCvar_t* frozenColor)
+        vmCvar_t* frozenColor,
+		vmCvar_t* lightningColor)
 {
 	if (modelColors)
 	{
@@ -185,6 +186,25 @@ static void CG_PlayerColorsLoadOverrides(playerColors_t* colors,
 			CG_Hex16GetColor(&frozenColor->string[4], &colors->frozen[2]);
 		}
 	}
+	if (lightningColor)
+	{
+		int len = strlen(lightningColor->string);
+		// one number per color format
+		if (len == 1)
+		{
+			if (override) override->isLightningColorSet = qtrue;
+			CG_OSPColorFromChar(lightningColor->string[0], colors->lightning);
+		}
+
+		// 8bit hex format: rrggbb
+		if (len == 6)
+		{
+			if (override) override->isLightningColorSet = qtrue;
+			CG_Hex16GetColor(&lightningColor->string[0], &colors->lightning[0]);
+			CG_Hex16GetColor(&lightningColor->string[2], &colors->lightning[1]);
+			CG_Hex16GetColor(&lightningColor->string[4], &colors->lightning[2]);
+		}
+}
 }
 
 static void CG_RebuildOurPlayerColors(void)
@@ -202,7 +222,8 @@ static void CG_RebuildOurPlayerColors(void)
 	                             NULL,
 	                             &cg_playerModelColors,
 	                             &cg_playerRailColors,
-	                             &cg_playerFrozenColor);
+	                             &cg_playerFrozenColor,
+								 NULL);
 }
 
 void CG_RebuildPlayerColors(void)
@@ -217,7 +238,8 @@ void CG_RebuildPlayerColors(void)
 	                             &cgs.osp.teamColorsOverride,
 	                             &cg_teamModelColors,
 	                             &cg_teamRailColors,
-	                             &cg_teamFrozenColor);
+	                             &cg_teamFrozenColor,
+								NULL);
 
 	/* Enemy colors */
 	/* Do not load default */
@@ -227,7 +249,8 @@ void CG_RebuildPlayerColors(void)
 	                             &cgs.osp.enemyColorsOverride,
 	                             &cg_enemyModelColors,
 	                             &cg_enemyRailColors,
-	                             &cg_enemyFrozenColor);
+	                             &cg_enemyFrozenColor,
+								 &cg_enemyLightningColor);
 }
 
 void CG_ModelUniqueColors(int clientNum, playerColors_t* colors)
