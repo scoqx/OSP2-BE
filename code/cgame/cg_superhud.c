@@ -308,7 +308,7 @@ void CG_SHUDRoutine(void)
 	{
 		CG_OSPDrawCenterString();
 	}
-
+  
 	while (last)
 	{
 		// check visibility

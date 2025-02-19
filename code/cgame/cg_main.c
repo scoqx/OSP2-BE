@@ -363,7 +363,10 @@ vmCvar_t           cg_lightningHitsoundRateFix;
 vmCvar_t           cg_stackHitSounds;
 vmCvar_t           cg_drawCenterMessages;
 vmCvar_t           cg_unfreezeAlert;
+vmCvar_t           cg_itemsRespawnAnimation;
 vmCvar_t		cg_predictStepOffset;
+vmCvar_t		cg_enemyLightningColor;
+vmCvar_t		cg_uniqueColorTable;
 
 static cvarTable_t cvarTable[] =
 {
@@ -636,14 +639,14 @@ static cvarTable_t cvarTable[] =
 	{ &cg_gunColor,       "cg_gunColor",      "white", CVAR_ARCHIVE },
 	{ &cg_gunOpaque,      "cg_gunOpaque",      "0.15", CVAR_ARCHIVE },
 	{ &cg_conObituaries,  "cg_conObituaries",   "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_conObituaries },
-
 	{ &cg_lightningHitsoundRateFix, "cg_lightningHitsoundRateFix",      "1", CVAR_ARCHIVE },
 	{ &cg_stackHitSounds,           "cg_stackHitSounds",   "1", CVAR_ARCHIVE },
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
-
 	{ &cg_unfreezeAlert, "cg_unfreezeAlert", "0", CVAR_ARCHIVE },
+	{ &cg_itemsRespawnAnimation, "cg_itemsRespawnAnimation", "1", CVAR_ARCHIVE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
-	
+	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "6", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -1017,8 +1020,11 @@ static void CG_RegisterSounds(void)
 	cgs.media.hitSounds[2] = trap_S_RegisterSound("sound/feedback/hit75.wav", qfalse);
 	cgs.media.hitSounds[3] = trap_S_RegisterSound("sound/feedback/hit100.wav", qfalse);
 	cgs.media.hitHighSound = trap_S_RegisterSound("sound/feedback/hithigh.wav", qfalse);
-	cgs.media.gotDamageSound = trap_S_RegisterSound("sound/feedback/damage.wav", qfalse);
-
+	// QC incoming damage sound
+    cgs.media.gotDamageSounds[0] = trap_S_RegisterSound("sound/feedback/damage_qc25.wav", qfalse);
+    cgs.media.gotDamageSounds[1] = trap_S_RegisterSound("sound/feedback/damage_qc50.wav", qfalse);
+    cgs.media.gotDamageSounds[2] = trap_S_RegisterSound("sound/feedback/damage_qc75.wav", qfalse);
+    cgs.media.gotDamageSounds[3] = trap_S_RegisterSound("sound/feedback/damage_qc100.wav", qfalse);
 
 	cgs.media.impressiveSound = trap_S_RegisterSound("sound/feedback/impressive.wav", qtrue);
 	cgs.media.excellentSound = trap_S_RegisterSound("sound/feedback/excellent.wav", qtrue);
@@ -1408,7 +1414,6 @@ static void CG_RegisterGraphics(void)
 	cgs.media.obituariesFallenCrashed = trap_R_RegisterShader("ObituariesFallenCrashed");
 	cgs.media.obituariesFalling = trap_R_RegisterShader("ObituariesFalling");
 	cgs.media.obituariesSkull = trap_R_RegisterShader("ObituariesSkull");
-
 
 	memset(cg_items, 0, sizeof(cg_items));
 	memset(cg_weapons, 0, sizeof(cg_weapons));

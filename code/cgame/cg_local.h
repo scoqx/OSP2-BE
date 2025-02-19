@@ -322,6 +322,7 @@ typedef struct playerColors_s
 	vec3_t railCore;
 	vec3_t railRings;
 	vec3_t frozen;
+	vec3_t lightning;
 
 } playerColors_t;
 
@@ -759,6 +760,8 @@ typedef struct
 #define LIGHTNING_DEFAULT_SHADER 0
 	qhandle_t   lightningBolt[LIGHTNING_NUMBER_OF_SHADERS];
 	qhandle_t   lightningBoltNoPicMip[LIGHTNING_NUMBER_OF_SHADERS];
+	qhandle_t   enemyLightningBolt[LIGHTNING_NUMBER_OF_SHADERS];
+	qhandle_t   enemyLightningBoltNoPicMip[LIGHTNING_NUMBER_OF_SHADERS];
 
 	qhandle_t   friendShader;
 	qhandle_t   frozenFoeTagShader;
@@ -882,7 +885,7 @@ typedef struct
 	qhandle_t	obituariesFallenCrashed;
 	qhandle_t	obituariesFalling;
 	qhandle_t	obituariesSkull;
-	
+  
 	// sounds
 	sfxHandle_t quadSound;
 	sfxHandle_t tracerSound;
@@ -929,7 +932,7 @@ typedef struct
 	sfxHandle_t hitSoundHighArmor;
 	sfxHandle_t hitSoundLowArmor;
 	sfxHandle_t hitTeamSound;
-	sfxHandle_t gotDamageSound;
+	sfxHandle_t gotDamageSounds[4];
 	sfxHandle_t impressiveSound;
 	sfxHandle_t excellentSound;
 	sfxHandle_t deniedSound;
@@ -1027,6 +1030,8 @@ typedef struct playerColorsOverride_s
 	qboolean isRailColorSet;
 	qboolean isModelColorSet;
 	qboolean isFrozenColorSet;
+	qboolean isLightningColorSet;
+
 } playerColorsOverride_t;
 
 #define  OSP_SERVER_MODE_VQ3      0
@@ -1491,12 +1496,15 @@ extern vmCvar_t           cg_dlightBFG;
 extern vmCvar_t           cg_gunColor;
 extern vmCvar_t           cg_gunOpaque;
 extern vmCvar_t           cg_conObituaries;
-
 extern vmCvar_t           cg_lightningHitsoundRateFix;
 extern vmCvar_t           cg_stackHitSounds;
 extern vmCvar_t           cg_drawCenterMessages;
 extern vmCvar_t           cg_unfreezeAlert;
-extern vmCvar_t			cg_predictStepOffset;
+
+extern vmCvar_t           cg_itemsRespawnAnimation;
+extern vmCvar_t			  cg_predictStepOffset;
+extern vmCvar_t			cg_enemyLightningColor;
+extern vmCvar_t			cg_uniqueColorTable;
 
 //
 // cg_main.c
@@ -1806,6 +1814,13 @@ void CG_PositionRotatedEntityOnTag(refEntity_t* entity, const refEntity_t* paren
 //
 // cg_weapons.c
 //
+
+#define DRAW_GUN_SHOW               1  // 000001
+#define DRAW_GUN_NO_MOVE_ANIMATION  2  // 000010
+#define DRAW_GUN_NO_SWITCH_ANIMATION 4  // 001000
+#define DRAW_GUN_NO_FIRE_ANIMATION  8 // 010000
+#define DRAW_GUN_GHOST              16  // 000100
+
 void CG_NextWeapon_f(void);
 void CG_PrevWeapon_f(void);
 void CG_Weapon_f(void);
@@ -2354,6 +2369,8 @@ void CG_LocalEventCvarChanged_cg_dlightRG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_dlightPG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_dlightBFG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_conObituaries(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart);
+
 #ifdef __cplusplus
 }
 #endif
