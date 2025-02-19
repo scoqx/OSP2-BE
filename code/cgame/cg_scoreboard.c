@@ -79,6 +79,8 @@ int sumPingBlue;
 int sumPingRed;
 int sumThawsBlue;
 int sumThawsRed;
+int sumPlayersRed;
+int sumPlayersBlue;
 
 /*
 =================
@@ -1061,13 +1063,16 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 			sumPingRed += score->ping;
 			sumScoresRed += score->score;
 			sumThawsRed += score->scoreFlags;
+			sumPlayersRed++;  // Подсчёт количества игроков в красной команде
 		}
 		else if (team == TEAM_BLUE)
 		{
 			sumPingBlue += score->ping;
 			sumScoresBlue += score->score;
 			sumThawsBlue += score->scoreFlags;
+			sumPlayersBlue++;  // Подсчёт количества игроков в синей команде
 		}
+
 		if (team == TEAM_SPECTATOR && !isCAGame && ci->rt == TEAM_SPECTATOR)
 		{
 			int tmp = scoresPrinted / 2;
@@ -1102,7 +1107,6 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 			}
 			else if (team != TEAM_SPECTATOR)
 			{
-				// draw red/blue teams
 				if (ci->team != TEAM_SPECTATOR)
 				{
 					CG_OSPDrawClientScore(x, y + 18 * scoresPrinted++, score, color, fade);
@@ -1112,9 +1116,8 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 					CG_OSPDrawClientScore(x, y + 18 * scoresPrinted++, score, readyColor, fade);
 				}
 			}
-			else if (ci->rt == TEAM_SPECTATOR) //if team == spec and rt == spec
+			else if (ci->rt == TEAM_SPECTATOR)
 			{
-				// draw spectators
 				if (isReady)
 				{
 					CG_OSPDrawClientScore(x, y + 18 * scoresPrinted++, score, readyColor, fade);
@@ -1124,7 +1127,6 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 					CG_OSPDrawClientScore(x, y + 18 * scoresPrinted++, score, color, fade);
 				}
 			}
-
 		}
 	}
 	return scoresPrinted;
@@ -1144,6 +1146,8 @@ qboolean CG_OSPDrawScoretable(void)
 	sumPingRed = 0;
 	sumThawsBlue = 0;
 	sumThawsRed = 0;
+	sumPlayersRed = 0;
+	sumPlayersBlue = 0;
 
 	if (cg_hideScores.integer)
 	{
@@ -1262,7 +1266,7 @@ qboolean CG_OSPDrawScoretable(void)
 		{
 			tmpStr = va("^1Points  Players  AvgPing");
 			CG_OSPDrawString(116, 64, tmpStr, colorWhite, 8, 16, 256, DS_HLEFT | DS_SHADOW, NULL);
-			Com_sprintf(string, 128, "^3%3i^7  %2i  %3i", sumScoresRed, drewRed, sumPingRed / drewRed);
+			Com_sprintf(string, 128, "^3%3i^7  %2i  %3i", sumScoresRed, sumPlayersRed, sumPingRed / sumPlayersRed);
 			CG_OSPDrawString(116, 80, string, colorWhite, 16, 20, 256, DS_HLEFT | DS_SHADOW, NULL);
 		}
 		else
@@ -1271,14 +1275,14 @@ qboolean CG_OSPDrawScoretable(void)
 			{
 				tmpStr = va("^1Players  AvgPing");
 				CG_OSPDrawString(80, 64, tmpStr, colorWhite, 8, 16, 256, DS_HLEFT | DS_SHADOW, NULL);
-				Com_sprintf(string, 128, " %2i  %3i", drewRed, sumPingRed / drewRed);
+				Com_sprintf(string, 128, " %2i  %3i", sumPlayersRed, sumPingRed / sumPlayersRed);
 				CG_OSPDrawString(64, 80, string, colorWhite, 16, 20, 256, DS_HLEFT | DS_SHADOW, NULL);
 			}
 			else if (CG_OSPIsGameTypeFreeze()) // Freeze Tag
 			{
 				tmpStr = va("^1Scores   Thaws Players");
 				CG_OSPDrawString(80, 64, tmpStr, colorWhite, 8, 16, 256, DS_HLEFT | DS_SHADOW, NULL);
-				Com_sprintf(string, 128, " %3i %3i  %2i", sumScoresRed, sumThawsRed, drewRed);
+				Com_sprintf(string, 128, " %3i %3i  %2i", sumScoresRed, sumThawsRed, sumPlayersRed);
 				CG_OSPDrawString(64, 80, string, colorWhite, 16, 20, 256, DS_HLEFT | DS_SHADOW, NULL);
 			}
 		}
@@ -1292,21 +1296,21 @@ qboolean CG_OSPDrawScoretable(void)
 		{
 			tmpStr = va("^4Points  Players  AvgPing");
 			CG_OSPDrawString(436, 64, tmpStr, colorWhite, 8, 16, 256, DS_HLEFT | DS_SHADOW, NULL);
-			Com_sprintf(string, 128, "^3%3i^7  %2i  %3i", sumScoresBlue, drewBlue, sumPingBlue / drewBlue);
+			Com_sprintf(string, 128, "^3%3i^7  %2i  %3i", sumScoresBlue, sumPlayersBlue, sumPingBlue / sumPlayersBlue);
 			CG_OSPDrawString(436, 80, string, colorWhite, 16, 20, 256, DS_HLEFT | DS_SHADOW, NULL);
 		}
 		else if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) // Обычный TDM
 		{
 			tmpStr = va("^4Players  AvgPing");
 			CG_OSPDrawString(400, 64, tmpStr, colorWhite, 8, 16, 256, DS_HLEFT | DS_SHADOW, NULL);
-			Com_sprintf(string, 128, " %2i  %3i", drewBlue, sumPingBlue / drewBlue);
+			Com_sprintf(string, 128, " %2i  %3i", sumPlayersBlue, sumPingBlue / sumPlayersBlue);
 			CG_OSPDrawString(384, 80, string, colorWhite, 16, 20, 256, DS_HLEFT | DS_SHADOW, NULL);
 		}
 		else if (CG_OSPIsGameTypeFreeze()) // Freeze Tag
 		{
 			tmpStr = va("^4Scores   Thaws Players");
 			CG_OSPDrawString(400, 64, tmpStr, colorWhite, 8, 16, 256, DS_HLEFT | DS_SHADOW, NULL);
-			Com_sprintf(string, 128, " %3i %3i  %2i", sumScoresBlue, sumThawsBlue, drewBlue);
+			Com_sprintf(string, 128, " %3i %3i  %2i", sumScoresBlue, sumThawsBlue, sumPlayersBlue);
 			CG_OSPDrawString(384, 80, string, colorWhite, 16, 20, 256, DS_HLEFT | DS_SHADOW, NULL);
 		}
 	}
