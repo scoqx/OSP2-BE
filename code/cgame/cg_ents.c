@@ -369,8 +369,8 @@ static void CG_Item(centity_t* cent)
 	ent.nonNormalizedAxes = qfalse;
 
 	// if just respawned, slowly scale up
-	
-		if (cg_itemsRespawnAnimation.value == 1)
+
+	if (cg_itemsRespawnAnimation.value == 1)
 	{
 		msec = cg.time - cent->miscTime;
 		if (msec >= 0 && msec < ITEM_SCALEUP_TIME)

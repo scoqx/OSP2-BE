@@ -351,16 +351,17 @@ void CG_DamageSound(playerState_t* ps, playerState_t* ops)
 
 	if (cg_damageSound.integer && cg.attackerTime != 0)
 	{
-        hit_sum = hit_hp + hit_ar;
+		hit_sum = hit_hp + hit_ar;
 
-		if (hit_sum <= -3) {
+		if (hit_sum <= -3)
+		{
 			int soundIndex = (hit_sum >= -25) ? 0 :
-							(hit_sum >= -50) ? 1 :
-							(hit_sum >= -75) ? 2 : 3;
+			                 (hit_sum >= -50) ? 1 :
+			                 (hit_sum >= -75) ? 2 : 3;
 
 			trap_S_StartLocalSound(cgs.media.gotDamageSounds[soundIndex], CHAN_LOCAL_SOUND);
-    	}
-    }
+		}
+	}
 }
 
 void CG_HitSound(playerState_t* ps, playerState_t* ops)
@@ -371,7 +372,7 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 	int deltaTime  = cg.time - cgs.osp.lastHitTime;
 	int hits    = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
 	int lgcd    = ops->powerups[PW_HASTE] ? 25 : 50; //lg ms cooldown, do we really need 25ms for haste?
-	
+
 	if (!hits && !delayedDmg)
 	{
 		return;
@@ -457,7 +458,7 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 	{
 		return;
 	}
-	
+
 	// incoming damage changes
 	CG_DamageSound(ps, ops);
 

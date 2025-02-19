@@ -538,7 +538,7 @@ void* CG_SHUDElementTempAccCurrentCreate(const superhudConfig_t* config);
 void* CG_SHUDElementTempAccLastCreate(const superhudConfig_t* config);
 void CG_SHUDElementTempAccRoutine(void* context);
 void CG_SHUDElementTempAccDestroy(void* context);
-  
+
 void* CG_SHUDElementWarmupInfoCreate(const superhudConfig_t* config);
 void CG_SHUDElementWarmupInfoRoutine(void* context);
 void CG_SHUDElementWarmupInfoDestroy(void* context);

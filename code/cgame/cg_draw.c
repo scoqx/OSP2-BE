@@ -2334,7 +2334,7 @@ static void CG_Draw2D(void)
 	{
 		CG_SHUDRoutine();
 		CG_DrawWarmupShud();
-    		if (cg_damageDraw.integer == 3 || cg_damageDraw.integer == 4)
+		if (cg_damageDraw.integer == 3 || cg_damageDraw.integer == 4)
 		{
 			CG_DrawRedDamageIndicators();
 		}

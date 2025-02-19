@@ -1310,36 +1310,36 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 
 	beam.reType = RT_LIGHTNING;
 
-{
-    int shaft_type = cg_altLightning.integer; // default
-    int enemy_shaft_type = cg_altLightning.integer; // enemy
-    const qboolean nomip = cg_nomip.integer & 1;
-
-    if (shaft_type >= LIGHTNING_NUMBER_OF_SHADERS || shaft_type < 0)
-    {
-        shaft_type = LIGHTNING_DEFAULT_SHADER;
-    }
-	if (!isOurClient && cg_enemyLightningColor.integer > 0 && // enemy
-		(cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype == GT_FFA))
 	{
-		beam.customShader = nomip ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
-        beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
-        beam.shaderRGBA[1] = cgs.osp.enemyColors.lightning[1] * 255;
-        beam.shaderRGBA[2] = cgs.osp.enemyColors.lightning[2] * 255;
-        beam.shaderRGBA[3] = 255;
-        
-    }
-    else // everyone else
-    {
-		beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[shaft_type] : cgs.media.lightningBolt[shaft_type];
-    }
-}
+		int shaft_type = cg_altLightning.integer; // default
+		int enemy_shaft_type = cg_altLightning.integer; // enemy
+		const qboolean nomip = cg_nomip.integer & 1;
+
+		if (shaft_type >= LIGHTNING_NUMBER_OF_SHADERS || shaft_type < 0)
+		{
+			shaft_type = LIGHTNING_DEFAULT_SHADER;
+		}
+		if (!isOurClient && cg_enemyLightningColor.integer > 0 && // enemy
+		        (cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype == GT_FFA))
+		{
+			beam.customShader = nomip ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
+			beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
+			beam.shaderRGBA[1] = cgs.osp.enemyColors.lightning[1] * 255;
+			beam.shaderRGBA[2] = cgs.osp.enemyColors.lightning[2] * 255;
+			beam.shaderRGBA[3] = 255;
+
+		}
+		else // everyone else
+		{
+			beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[shaft_type] : cgs.media.lightningBolt[shaft_type];
+		}
+	}
 
 
-if (!(isOurClient && cg_lightningHide.integer))
-{
-    trap_R_AddRefEntityToScene(&beam);
-}
+	if (!(isOurClient && cg_lightningHide.integer))
+	{
+		trap_R_AddRefEntityToScene(&beam);
+	}
 
 
 	if (trace.fraction < 1.0 && cg_lightningImpact.integer)
