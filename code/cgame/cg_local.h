@@ -885,6 +885,7 @@ typedef struct
 	qhandle_t	obituariesFallenCrashed;
 	qhandle_t	obituariesFalling;
 	qhandle_t	obituariesSkull;
+  
 	// sounds
 	sfxHandle_t quadSound;
 	sfxHandle_t tracerSound;
@@ -1499,8 +1500,9 @@ extern vmCvar_t           cg_lightningHitsoundRateFix;
 extern vmCvar_t           cg_stackHitSounds;
 extern vmCvar_t           cg_drawCenterMessages;
 extern vmCvar_t           cg_unfreezeAlert;
+
 extern vmCvar_t           cg_itemsRespawnAnimation;
-extern vmCvar_t			cg_predictStepOffset;
+extern vmCvar_t			  cg_predictStepOffset;
 extern vmCvar_t			cg_enemyLightningColor;
 extern vmCvar_t			cg_uniqueColorTable;
 

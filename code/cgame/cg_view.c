@@ -466,7 +466,7 @@ static void CG_OffsetFirstPersonView(void)
 	if (cg_predictStepOffset.integer)
 	{
 	// add step offset
-	CG_StepOffset();
+	 CG_StepOffset();
 	}
 
 	// add kick offset
