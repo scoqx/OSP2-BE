@@ -75,6 +75,116 @@ lightningBoltNew2
 	}
 }
 
+lightningBoltNew3
+{
+	cull none
+	nopicmip
+	nomipmaps
+	{
+ 		map gfx/misc/shaftBE.tga
+    		blendFunc GL_ONE GL_ONE
+		rgbgen wave sin 1 0.5 0 7.1
+		tcmod scale  2 1
+		tcMod scroll -5 0
+	}
+	{
+		map gfx/misc/shaftBE.tga
+		blendFunc GL_ONE GL_ONE
+		rgbgen wave sin 1 0.8 0 8.1
+		tcmod scale  -1.3 -1
+		tcMod scroll -7.2 0
+	}
+}
+
+// Enemy lightning bolt
+
+
+
+enemyLightningBolt
+{
+	nopicmip
+  	nomipmaps
+	cull none
+	{
+		map gfx/misc/lightning3_alpha.tga
+		blendFunc blend
+                rgbgen vertex
+                tcmod scale  2 1
+		tcMod scroll -5 0
+	}
+    {
+		map gfx/misc/lightning3_alpha.tga
+		blendFunc blend
+                rgbgen vertex
+                tcmod scale  -1.3 -1
+		tcMod scroll -7.2 0
+	}
+}
+
+enemyLightningBoltNew
+{
+	nopicmip
+  	nomipmaps
+	cull none
+	{
+		map gfx/misc/lightning3new_alpha.tga
+		blendFunc blend
+		rgbgen vertex
+		tcmod scale  2 1
+		tcMod scroll -5 0
+	}
+
+	{
+		map gfx/misc/lightning3new_alpha.tga
+		blendFunc blend
+		rgbgen vertex
+		tcmod scale  -1.3 -1
+		tcMod scroll -7.2 0
+	}
+}
+
+enemyLightningBoltNew2
+{
+	nopicmip
+  	nomipmaps
+	cull none
+	{
+		map gfx/misc/shaft2_alpha.jpg
+		blendFunc blend
+		rgbgen vertex
+		tcmod scale  0.2 1
+		tcMod scroll -5 0
+	}
+	{
+		map gfx/misc/shaft2_alpha.jpg
+		blendFunc blend
+		rgbgen vertex
+		tcmod scale  -0.3 -1
+		tcMod scroll -7.2 0
+	}
+}
+
+enemyLightningBoltNew3
+{
+  nopicmip
+  nomipmaps
+  cull none
+  {
+    map gfx/misc/shaftBE_alpha.tga
+    		blendFunc blend
+		rgbgen vertex
+		tcmod scale  2 1
+		tcMod scroll -5 0
+  }
+    {
+    map gfx/misc/shaftBE_alpha.tga
+		blendFunc blend
+		rgbgen wave sin 1 0.8 0 8.1
+		tcmod scale  -1.3 -1
+		tcMod scroll -7.2 0
+  }
+}
+
 damageIndicator2
 {
 	sort nearest
