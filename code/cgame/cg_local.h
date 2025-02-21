@@ -1505,6 +1505,7 @@ extern vmCvar_t           cg_itemsRespawnAnimation;
 extern vmCvar_t           cg_predictStepOffset;
 extern vmCvar_t         cg_enemyLightningColor;
 extern vmCvar_t         cg_uniqueColorTable;
+extern vmCvar_t			cg_noVoteBeep;
 
 //
 // cg_main.c

@@ -1888,8 +1888,8 @@ static void CG_DrawVote(void)
 		return;
 	}
 
-	// play a talk beep whenever it is modified
-	if (cgs.voteModified)
+	// play a talk beep whenever it is modified or no
+	if (cgs.voteModified && !cg_noVoteBeep.integer)
 	{
 		cgs.voteModified = qfalse;
 		trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
