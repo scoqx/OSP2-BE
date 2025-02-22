@@ -88,6 +88,11 @@ typedef struct
 	} color;
 	struct
 	{
+		superhudColor_t value;
+		qboolean isSet;
+	} color2;
+	struct
+	{
 		superhudDirection_t value;
 		qboolean isSet;
 	} direction;
@@ -593,6 +598,7 @@ typedef struct
 	float koeff; //multiplier
 	vec4_t bar[2]; // coord of two bars
 	vec4_t color_top; // color of bar
+	vec4_t color2_top; // color of top bar of doublebar
 	vec4_t color_back; // color of background
 	qboolean two_bars; // one or two bars
 } superhudBarContext_t;
