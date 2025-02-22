@@ -109,6 +109,7 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 
 	if (entry->target >= 0 && entry->target < MAX_CLIENTS)
 	{
+
 		(void)CG_TruncateStringWithCodes(cgs.clientinfo[entry->target].name, entry->runtime.truncatedTarget, entry->runtime.maxVisibleChars);
 	}
 
@@ -156,7 +157,16 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	}
 
 	currentX = entry->runtime.baseX;
-
+	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target) // Фон для всего элемента
+	{
+		CG_FillRect(
+		    entry->runtime.baseX - (element->ctxMod.coord.named.h * 0.05), // X
+		    element->ctxAttacker.coord.named.y - (element->ctxAttacker.coord.named.h * 0.55), // Y
+		    entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->ctxMod.coord.named.h * 0.15), // Ширина
+		    element->ctxAttacker.coord.named.h * 1.1, // Высота
+		    element->config.bgcolor.value // Цвет и прозрачность из конфига
+		);
+	}
 	if (entry->attacker != entry->target)
 	{
 		element->ctxAttacker.text = entry->runtime.truncatedAttacker;
@@ -193,7 +203,6 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	}
 	CG_SHUDTextPrint(&element->config, &element->ctxTarget);
 }
-
 
 static int CG_TruncateStringWithCodes(const char* input, char* output, int maxVisibleChars)
 {

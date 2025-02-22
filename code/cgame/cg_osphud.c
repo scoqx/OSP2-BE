@@ -3880,7 +3880,7 @@ static void CG_OSPDrawVote(void)
 	if (cgs.voteTime == 0) return;
 
 	CG_OSPGetClientFontSize(&cf_Vote, &w, &h);
-	if (cgs.voteModified)
+	if (cgs.voteModified && !cg_noVoteBeep.integer)
 	{
 		cgs.voteModified = 0;
 		trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
