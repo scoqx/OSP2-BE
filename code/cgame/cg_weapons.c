@@ -771,31 +771,53 @@ void CG_RegisterWeapon(int weaponNum)
 				{
 					cgs.media.lightningBolt[0] = trap_R_RegisterShader("lightningBoltNew");
 					cgs.media.lightningBoltNoPicMip[0] = trap_R_RegisterShader("lightningBoltNewNoPicMip");
+					cgs.media.enemyLightningBolt[0] = trap_R_RegisterShader("enemyLightningBoltNew");
+					cgs.media.enemyLightningBoltNoPicMip[0] = trap_R_RegisterShader("enemyLightningBoltNewNoPicMip");
 					if (!cgs.media.lightningBoltNoPicMip[0])
 					{
 						cgs.media.lightningBoltNoPicMip[0] = cgs.media.lightningBolt[0];
+					}
+					if (!cgs.media.enemyLightningBoltNoPicMip[0])
+					{
+						cgs.media.enemyLightningBoltNoPicMip[0] = cgs.media.enemyLightningBolt[0];
 					}
 				}
 				else if (i == 1)//cg_altLightning 1
 				{
 					cgs.media.lightningBolt[1] = trap_R_RegisterShader("lightningBolt");
 					cgs.media.lightningBoltNoPicMip[1] = trap_R_RegisterShader("lightningBoltNoPicMip");
+					cgs.media.enemyLightningBolt[1] = trap_R_RegisterShader("enemyLightningBolt");
+					cgs.media.enemyLightningBoltNoPicMip[1] = trap_R_RegisterShader("enemyLightningBoltNoPicMip");
 					if (!cgs.media.lightningBoltNoPicMip[1])
 					{
 						cgs.media.lightningBoltNoPicMip[1] = cgs.media.lightningBolt[1];
+					}
+					if (!cgs.media.enemyLightningBoltNoPicMip[1])
+					{
+						cgs.media.enemyLightningBoltNoPicMip[1] = cgs.media.enemyLightningBolt[1];
 					}
 				}
 				else //cg_altLightning > 1
 				{
 					cgs.media.lightningBolt[i] = trap_R_RegisterShader(va("lightningBoltNew%i", i));
+					cgs.media.enemyLightningBolt[i] = trap_R_RegisterShader(va("enemyLightningBoltNew%i", i));
 					if (!cgs.media.lightningBolt[i])
 					{
 						cgs.media.lightningBolt[i] = cgs.media.lightningBolt[0];
 					}
+					if (!cgs.media.enemyLightningBolt[i])
+					{
+						cgs.media.enemyLightningBolt[i] = cgs.media.enemyLightningBolt[0];
+					}
 					cgs.media.lightningBoltNoPicMip[i] = trap_R_RegisterShader(va("lightningBoltNewNoPicMip%i", i));
+					cgs.media.enemyLightningBoltNoPicMip[i] = trap_R_RegisterShader(va("enemyLightningBoltNewNoPicMip%i", i));
 					if (!cgs.media.lightningBoltNoPicMip[i])
 					{
 						cgs.media.lightningBoltNoPicMip[i] = cgs.media.lightningBolt[i];
+					}
+					if (!cgs.media.enemyLightningBoltNoPicMip[i])
+					{
+						cgs.media.enemyLightningBoltNoPicMip[i] = cgs.media.enemyLightningBolt[i];
 					}
 				}
 			}
@@ -1032,24 +1054,42 @@ static int CG_MapTorsoToWeaponFrame(clientInfo_t* ci, int frame)
 {
 
 	// change weapon
-	if (frame >= ci->animations[TORSO_DROP].firstFrame
-	        && frame < ci->animations[TORSO_DROP].firstFrame + 9)
+	if (frame >= ci->animations[TORSO_DROP].firstFrame && frame < ci->animations[TORSO_DROP].firstFrame + 9)
 	{
-		return frame - ci->animations[TORSO_DROP].firstFrame + 6;
+		if (cg_drawGun.integer & DRAW_GUN_NO_SWITCH_ANIMATION)
+		{
+			return 0;
+		}
+		else
+		{
+			return frame - ci->animations[TORSO_DROP].firstFrame + 6;
+		}
 	}
 
 	// stand attack
-	if (frame >= ci->animations[TORSO_ATTACK].firstFrame
-	        && frame < ci->animations[TORSO_ATTACK].firstFrame + 6)
+	if (frame >= ci->animations[TORSO_ATTACK].firstFrame && frame < ci->animations[TORSO_ATTACK].firstFrame + 6)
 	{
-		return 1 + frame - ci->animations[TORSO_ATTACK].firstFrame;
+		if (cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION)
+		{
+			return 0;
+		}
+		else
+		{
+			return 1 + frame - ci->animations[TORSO_ATTACK].firstFrame;
+		}
 	}
 
-	// stand attack 2
-	if (frame >= ci->animations[TORSO_ATTACK2].firstFrame
-	        && frame < ci->animations[TORSO_ATTACK2].firstFrame + 6)
+// stand attack 2
+	if (frame >= ci->animations[TORSO_ATTACK2].firstFrame && frame < ci->animations[TORSO_ATTACK2].firstFrame + 6)
 	{
-		return 1 + frame - ci->animations[TORSO_ATTACK2].firstFrame;
+		if (cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION)
+		{
+			return 0;
+		}
+		else
+		{
+			return 1 + frame - ci->animations[TORSO_ATTACK2].firstFrame;
+		}
 	}
 
 	return 0;
@@ -1071,7 +1111,7 @@ static void CG_CalculateWeaponPosition(vec3_t origin, vec3_t angles)
 	VectorCopy(cg.refdef.vieworg, origin);
 	VectorCopy(cg.refdefViewAngles, angles);
 
-	if (cg_drawGun.integer == 2 || cg_drawGun.integer == 3) return;
+	if (cg_drawGun.integer & DRAW_GUN_NO_MOVE_ANIMATION) return;
 
 	// on odd legs, invert some angles
 	if (cg.bobcycle & 1)
@@ -1145,7 +1185,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	float tl;
 	qboolean isOurClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
 	qboolean isDelagEnabled =  cg_delag.integer & 1 || cg_delag.integer & 2;
-
+	// clientInfo_t *ci = &cgs.clientinfo[cent->currentState.number];
 	if (cent->currentState.weapon != WP_LIGHTNING) return;
 
 	if (isOurClient)
@@ -1270,23 +1310,37 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 
 	beam.reType = RT_LIGHTNING;
 
-	// select lightning shader
 	{
-		int shaft_type = cg_altLightning.integer;
+		int shaft_type = cg_altLightning.integer; // default
+		int enemy_shaft_type = cg_altLightning.integer; // enemy
 		const qboolean nomip = cg_nomip.integer & 1;
 
 		if (shaft_type >= LIGHTNING_NUMBER_OF_SHADERS || shaft_type < 0)
 		{
 			shaft_type = LIGHTNING_DEFAULT_SHADER;
 		}
+		if (!isOurClient && cg_enemyLightningColor.integer > 0 && // enemy
+		        (cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype == GT_FFA))
+		{
+			beam.customShader = nomip ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
+			beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
+			beam.shaderRGBA[1] = cgs.osp.enemyColors.lightning[1] * 255;
+			beam.shaderRGBA[2] = cgs.osp.enemyColors.lightning[2] * 255;
+			beam.shaderRGBA[3] = 255;
 
-		beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[shaft_type] : cgs.media.lightningBolt[shaft_type];
+		}
+		else // everyone else
+		{
+			beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[shaft_type] : cgs.media.lightningBolt[shaft_type];
+		}
 	}
+
 
 	if (!(isOurClient && cg_lightningHide.integer))
 	{
 		trap_R_AddRefEntityToScene(&beam);
 	}
+
 
 	if (trace.fraction < 1.0 && cg_lightningImpact.integer)
 	{
@@ -1425,7 +1479,6 @@ static void CG_UpdateGunShaderRGBA(refEntity_t* gun)
 	gun->shaderRGBA[3] = 255 * color[3];
 }
 
-
 /*
 =============
 CG_AddPlayerWeapon
@@ -1502,7 +1555,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	}
 
 	CG_PositionEntityOnTag(&gun, parent, parent->hModel, "tag_weapon");
-	if ((cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
+	if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) || (cg_drawGun.integer == 3))
 	{
 		CG_UpdateGunShaderRGBA(&gun);
 		gun.customShader = cgs.media.firstPersonGun;
@@ -1526,7 +1579,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		AnglesToAxis(angles, barrel.axis);
 
 		CG_PositionRotatedEntityOnTag(&barrel, &gun, weapon->weaponModel, "tag_barrel");
-		if ((cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
+		if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) || (cg_drawGun.integer == 3))
 		{
 			CG_UpdateGunShaderRGBA(&barrel);
 			barrel.customShader = cgs.media.firstPersonGun;
