@@ -1610,11 +1610,6 @@ void CG_StartMusic(void)
 }
 
 
-void CG_OSPInitCTF(void)
-{
-	//not implemented yet
-}
-
 /*
 =================
 CG_Init
@@ -1863,7 +1858,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_InitMarkPolys();
 
-	CG_OSPInitCTF();
+	CG_InitCTFLocations();
 
 	// remove the last loading update
 	cg.infoScreenText[0] = 0;
