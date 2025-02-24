@@ -555,6 +555,17 @@ void* CG_SHUDElementLocationCreate(const superhudConfig_t* config);
 void CG_SHUDElementLocationRoutine(void* context);
 void CG_SHUDElementLocationDestroy(void* context);
 
+void* CG_SHUDElementCWSCreate(const superhudConfig_t* config);
+void CG_SHUDElementCWSRoutine(void* context);
+void CG_SHUDElementCWSDestroy(void* context);
+void CG_SHUDEventCWSParse(void);
+
+void* CG_SHUDElementCWSIconCreate(const superhudConfig_t* config);
+void CG_SHUDElementCWSIconRoutine(void* context);
+void CG_SHUDElementCWSIconDestroy(void* context);
+
+
+
 /*
  * cg_superhud_util.c
  */
@@ -717,6 +728,9 @@ typedef struct
 		int numberOfActive;
 		int lastUpdateTime;
 	} powerupsCache;
+	struct {
+		int lastTrackedWeapon;
+	} weaponStats;
 } superhudGlobalContext_t;
 
 superhudGlobalContext_t* CG_SHUDGetContext(void);
