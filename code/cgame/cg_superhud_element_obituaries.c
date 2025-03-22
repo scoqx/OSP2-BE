@@ -115,6 +115,7 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
   }
 
 
+
 	entry->runtime.attackerWidth = CG_OSPDrawStringLenPix(entry->runtime.attackerName, element->config.fontsize.value[0], element->ctxAttacker.flags, entry->runtime.maxNameLenPix);
 	entry->runtime.targetWidth = CG_OSPDrawStringLenPix(entry->runtime.targetName, element->config.fontsize.value[0], element->ctxTarget.flags, entry->runtime.maxNameLenPix);
 
@@ -159,7 +160,16 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	}
 
 	currentX = entry->runtime.baseX;
-
+	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target) // Фон для всего элемента
+	{
+		CG_FillRect(
+		    entry->runtime.baseX - (element->ctxMod.coord.named.h * 0.05), // X
+		    element->ctxAttacker.coord.named.y - (element->ctxAttacker.coord.named.h * 0.55), // Y
+		    entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->ctxMod.coord.named.h * 0.15), // Ширина
+		    element->ctxAttacker.coord.named.h * 1.1, // Высота
+		    element->config.bgcolor.value // Цвет и прозрачность из конфига
+		);
+	}
 	if (entry->attacker != entry->target)
 	{
 		element->ctxAttacker.text = entry->runtime.attackerName;
@@ -198,6 +208,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	element->ctxTarget.width = entry->runtime.maxNameLenPix;
 	CG_SHUDTextPrint(&element->config, &element->ctxTarget);
 }
+
 
 static void CG_SHUDObituarySetTeamColor(vec4_t color, int team)
 {
