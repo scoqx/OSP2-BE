@@ -10,70 +10,64 @@ typedef struct
 } drawBarCoords_t;
 
 
-static void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color, qboolean alphaOverride) {
-	clientInfo_t* ci;
-	const superhudColor_t* in = &config->color.value;
-	const float* target;
-	team_t team;
+static void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color, qboolean alphaOverride) 
+{
+    const superhudColor_t* in = &config->color.value;
+    const float* target;
+    team_t team;
+    float finalAlpha = 1.0f;
 
-	if (!config->color.isSet)
-	{
-		if (alphaOverride)
-		{
-			Vector4Copy(colorWhite, color);
-		}
-		else
-		{
-			VectorCopy(colorWhite, color);
-		}
-		return;
-	}
+    if (!config->color.isSet) {
+        if (alphaOverride) {
+            Vector4Copy(colorWhite, color);
+        } else {
+            VectorCopy(colorWhite, color);
+        }
+        return;
+    }
 
-	switch (in->type)
-	{
-		case SUPERHUD_COLOR_RGBA:
-			target = in->rgba;
-			break;
-		case SUPERHUD_COLOR_T:
-			team = CG_SHUDGetOurActiveTeam();
-			if (team == TEAM_RED)
-			{
-				target = colorRed;
-				break;
-			}
-			else if (team == TEAM_BLUE)
-			{
-				target = colorBlue;
-				break;
-			}
-			target = colorRed;
-			break;
-		case SUPERHUD_COLOR_E:
-			team = CG_SHUDGetOurActiveTeam();
-			if (team == TEAM_RED)
-			{
-				target = colorBlue;
-				break;
-			}
-			else if (team == TEAM_BLUE)
-			{
-				target = colorRed;
-				break;
-			}
-			target = colorBlue;
-			break;
-		case SUPERHUD_COLOR_I:
-			target = colorWhite;
-			break;
-	}
-	if (alphaOverride)
-	{
-		Vector4Copy(target, color);
-	}
-	else
-	{
-		VectorCopy(target, color);
-	}
+
+    switch (in->type) {
+        case SUPERHUD_COLOR_RGBA:
+            target = in->rgba;
+            finalAlpha = in->rgba[3];
+            break;
+            
+        case SUPERHUD_COLOR_T:
+            team = CG_SHUDGetOurActiveTeam();
+            target = (team == TEAM_BLUE) ? colorBlue : colorRed;
+            break;
+            
+        case SUPERHUD_COLOR_E:
+            team = CG_SHUDGetOurActiveTeam();
+            target = (team == TEAM_BLUE) ? colorRed : colorBlue;
+            break;
+            
+        case SUPERHUD_COLOR_I:
+            target = colorWhite;
+            break;
+            
+        default:
+            target = colorWhite;
+            break;
+    }
+
+
+    if (config->color2.isSet) {
+        finalAlpha = config->color2.value.rgba[3];
+    }
+
+
+    if (alphaOverride) {
+        color[0] = target[0];
+        color[1] = target[1];
+        color[2] = target[2];
+        color[3] = finalAlpha;
+    } else {
+        color[0] = target[0];
+        color[1] = target[1];
+        color[2] = target[2];
+    }
 }
 
 static void CG_SHUDConfigDefaultsCheck(superhudConfig_t* config)
