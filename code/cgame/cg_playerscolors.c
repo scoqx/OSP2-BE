@@ -30,7 +30,37 @@ static const vec3_t uniqueColorTable[UNIQUE_COLORS_TABLE_SIZE] =
 	{ 1, 1, 1 },       /* White */
 };
 
-#define UNIQUE_COLOR(CI) uniqueColorTable[CI%UNIQUE_COLORS_TABLE_SIZE]
+static const vec3_t uniqueColorTableLight[UNIQUE_COLORS_TABLE_SIZE] =
+{
+	{ 0, 1, 0 },       /* Green */
+	{ 1, 1, 0 },       /* Yellow */
+	{ 0, 1, 1 },       /* Cyan */
+	{ 1, 0.4, 1 },     /* Soft Magenta */
+	{ 1, 0.67, 0.32 }, /* Orange */
+	{ 0.37, 1, 0.37 }, /* Lime Green */
+	{ 0, 0.75, 1 },    /* Sky Blue */
+	{ 1, 0.35, 0.35 }, /* Soft Red */
+	{ 0.93, 0.5, 0.93 }, /* Purple */
+	{ 1, 0.35, 0.47 }, /* Light Tomato */
+	{ 0.9, 0.9, 0.5 }, /* Light Gold */
+	{ 0.5, 0.9, 0.9 }, /* Light Cyan */
+	{ 0.5, 0.5, 1 },   /* Light Blue */
+	{ 1, 1, 0.35 },    /* Light Yellow */
+	{ 0.1, 0.85, 0.85 }, /* Teal */
+	{ 1, 0.6, 0.6 },   /* Light Red */
+	{ 1, 0.4, 0.75 },  /* Pink */
+	{ 0.25, 0.75, 0.5 }, /* Mint Green */
+	{ 1, 0.8, 0.6 },   /* Peach */
+	{ 0.6, 1, 0.8 },   /* Light Turquoise */
+	{ 0.8, 0.6, 1 },   /* Lavender */
+	{ 1, 0.6, 0.8 },   /* Light Pink */
+	{ 0.6, 0.8, 1 },   /* Light Purple */
+	{ 0, 1, 0.6 }      /* Aqua Green */
+};
+
+
+#define UNIQUE_COLOR(CI) ((cg_uniqueColorTable.integer == 2) ? uniqueColorTableLight[CI % UNIQUE_COLORS_TABLE_SIZE] : uniqueColorTable[CI % UNIQUE_COLORS_TABLE_SIZE])
+
 
 void CG_PlayerColorsFromCS(playerColors_t* colors, playerColorsOverride_t* override, const char* color1, const char* color2)
 {
@@ -108,7 +138,8 @@ static void CG_PlayerColorsLoadOverrides(playerColors_t* colors,
         playerColorsOverride_t* override,
         vmCvar_t* modelColors,
         vmCvar_t* railColors,
-        vmCvar_t* frozenColor)
+        vmCvar_t* frozenColor,
+        vmCvar_t* lightningColor)
 {
 	if (modelColors)
 	{
@@ -185,6 +216,25 @@ static void CG_PlayerColorsLoadOverrides(playerColors_t* colors,
 			CG_Hex16GetColor(&frozenColor->string[4], &colors->frozen[2]);
 		}
 	}
+	if (lightningColor)
+	{
+		int len = strlen(lightningColor->string);
+		// one number per color format
+		if (len == 1)
+		{
+			if (override) override->isLightningColorSet = qtrue;
+			CG_OSPColorFromChar(lightningColor->string[0], colors->lightning);
+		}
+
+		// 8bit hex format: rrggbb
+		if (len == 6)
+		{
+			if (override) override->isLightningColorSet = qtrue;
+			CG_Hex16GetColor(&lightningColor->string[0], &colors->lightning[0]);
+			CG_Hex16GetColor(&lightningColor->string[2], &colors->lightning[1]);
+			CG_Hex16GetColor(&lightningColor->string[4], &colors->lightning[2]);
+		}
+	}
 }
 
 static void CG_RebuildOurPlayerColors(void)
@@ -202,7 +252,8 @@ static void CG_RebuildOurPlayerColors(void)
 	                             NULL,
 	                             &cg_playerModelColors,
 	                             &cg_playerRailColors,
-	                             &cg_playerFrozenColor);
+	                             &cg_playerFrozenColor,
+	                             NULL);
 }
 
 void CG_RebuildPlayerColors(void)
@@ -217,7 +268,8 @@ void CG_RebuildPlayerColors(void)
 	                             &cgs.osp.teamColorsOverride,
 	                             &cg_teamModelColors,
 	                             &cg_teamRailColors,
-	                             &cg_teamFrozenColor);
+	                             &cg_teamFrozenColor,
+	                             NULL);
 
 	/* Enemy colors */
 	/* Do not load default */
@@ -227,7 +279,8 @@ void CG_RebuildPlayerColors(void)
 	                             &cgs.osp.enemyColorsOverride,
 	                             &cg_enemyModelColors,
 	                             &cg_enemyRailColors,
-	                             &cg_enemyFrozenColor);
+	                             &cg_enemyFrozenColor,
+	                             &cg_enemyLightningColor);
 }
 
 void CG_ModelUniqueColors(int clientNum, playerColors_t* colors)
