@@ -12,8 +12,6 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 ## ✨ BE-Features
 
 ## 0.01
-
-CHANGELOG
 ```
 Cvars:
 + cg_itemsRespawnAnimation
@@ -33,6 +31,8 @@ SHUD:
 + Armor bar over HP bar
 
 ```
+![shot-Mar-27-2025_00 30 21](https://github.com/user-attachments/assets/11e8a2cf-8ef6-4984-a427-5af8ac9de650)
+
 
 ## 📞 Contacts
 
