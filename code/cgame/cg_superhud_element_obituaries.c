@@ -115,11 +115,10 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
   }
 
 
-	CG_FontSelect(element->ctxAttacker.fontIndex); // update font metrics to make right calculation
-	entry->runtime.attackerWidth = CG_OSPDrawStringLenPix(entry->runtime.attackerName, element->config.fontsize.value[0], element->ctxAttacker.flags, entry->runtime.maxNameLenPix);
-	CG_FontSelect(element->ctxTarget.fontIndex);
-	entry->runtime.targetWidth = CG_OSPDrawStringLenPix(entry->runtime.targetName, element->config.fontsize.value[0], element->ctxTarget.flags, entry->runtime.maxNameLenPix);
 
+  	CG_FontSelect(element->ctxAttacker.fontIndex); // update font metrics
+	entry->runtime.attackerWidth = CG_OSPDrawStringLenPix(entry->runtime.attackerName, element->config.fontsize.value[0], element->ctxAttacker.flags, entry->runtime.maxNameLenPix);
+	entry->runtime.targetWidth = CG_OSPDrawStringLenPix(entry->runtime.targetName, element->config.fontsize.value[0], element->ctxTarget.flags, entry->runtime.maxNameLenPix);
 	if (element->config.alignH.value == SUPERHUD_ALIGNH_LEFT)
 	{
 		entry->runtime.baseX = element->config.rect.value[0];
@@ -130,7 +129,7 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 	}
 	else // SUPERHUD_ALIGNH_CENTER
 	{
-		entry->runtime.baseX = element->config.rect.value[0]+ (element->config.rect.value[2] / 2) - (element->ctxMod.coord.named.w / 2) - entry->runtime.attackerWidth;
+		entry->runtime.baseX = (element->config.rect.value[2] / 2) - (element->ctxMod.coord.named.w / 2) - entry->runtime.attackerWidth;
 	}
 
 	entry->runtime.isInitialized = qtrue;

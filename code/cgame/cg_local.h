@@ -1604,6 +1604,8 @@ int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int t
 
 void CG_OSPDrawStringPrepare(const char* from, char* to, int size);
 void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background);
+void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background, vec4_t border, vec4_t borderColor);
+
 void CG_FontSelect(int index);
 int CG_FontIndexFromName(const char* name);
 
@@ -2164,7 +2166,9 @@ int CG_NewParticleArea(int num);
 
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
-#define OSP_VERSION "0.06-test"
+// #define OSP_VERSION "0.06-test" // OSP2 ogirinal
+#define OSP_VERSION "0.01a" // BE
+
 
 
 //

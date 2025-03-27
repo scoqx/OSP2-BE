@@ -23,6 +23,7 @@ void* CG_SHUDElementNGCreate(const superhudConfig_t* config)
 	}
 
 	CG_SHUDTextMakeContext(&element->config, &element->tctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	element->tctx.coord.named.x = 320;
 	element->tctx.coord.named.y = 232;
@@ -53,7 +54,7 @@ void CG_SHUDElementNGRoutine(void* context)
 	aw = element->config.rect.value[2];
 	ah = element->config.rect.value[3];
 
-	CG_SHUDFill(&element->config);
+	CG_SHUDDrawBorder(&element->config);
 
 	trap_R_SetColor(NULL);
 

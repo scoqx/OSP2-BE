@@ -37,6 +37,7 @@ static void* CG_SHUDElementScoreCreate(const superhudConfig_t* config, shudEleme
 	}
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	element->type = type;
 
@@ -142,7 +143,6 @@ void CG_SHUDElementScoreRoutine(void* context)
 
 	element->ctx.text = va(element->config.text.value, scores);
 
-	CG_SHUDFill(&element->config);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

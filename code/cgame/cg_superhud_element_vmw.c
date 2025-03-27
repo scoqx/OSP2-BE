@@ -15,6 +15,7 @@ void* CG_SHUDElementVMWCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	return element;
 }
@@ -43,7 +44,6 @@ void CG_SHUDElementVMWRoutine(void* context)
 	}
 	element->ctx.text = va("VOTE(%i):%s yes(F1):%i no(F2):%i", time, &cgs.voteString, cgs.voteYes, cgs.voteNo);
 
-	CG_SHUDFill(&element->config);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

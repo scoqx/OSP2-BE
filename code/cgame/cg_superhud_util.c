@@ -223,10 +223,10 @@ void CG_SHUDTextMakeContext(const superhudConfig_t* in, superhudTextContext_t* o
 
 	out->fontIndex = CG_FontIndexFromName(config.font.isSet ? config.font.value : "sansman");
 	out->width = SCREEN_WIDTH;
-
 	CG_SHUDConfigPickColor(&config, out->color, qtrue);
 	Vector4Copy(out->color, out->color_origin);
 }
+
 
 void CG_SHUDDrawMakeContext(const superhudConfig_t* in, superhudDrawContext_t* out)
 {
@@ -454,7 +454,7 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 	CG_SHUDConfigPickColor(cfg, ctx->color, qfalse);
 
 	CG_FontSelect(ctx->fontIndex);
-	CG_OSPDrawString(ctx->coord.named.x,
+	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                 ctx->coord.named.y,
 	                 ctx->text,
 	                 ctx->color,
@@ -462,7 +462,9 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 	                 ctx->coord.named.h,
 	                 ctx->width,
 	                 ctx->flags,
-	                 ctx->background);
+	                 ctx->background,
+					 ctx->border,
+					 ctx->borderColor);
 }
 
 
@@ -786,6 +788,46 @@ void CG_SHUDDrawStretchPic(superhudCoord_t coord, const superhudCoord_t coordPic
 	                      shader);
 	trap_R_SetColor(NULL);
 }
+
+qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg) 
+{
+	vec4_t coord;
+    if (!cfg->border.isSet || !cfg->rect.isSet || !cfg->borderColor.isSet) {
+        return qfalse;
+    }
+
+    Vector4Copy(cfg->rect.value, coord);
+
+    CG_AdjustFrom640(&coord[0], &coord[1], &coord[2], &coord[3]);
+    
+    CG_OSPDrawBorderFrame(coord[0], coord[1], coord[2], coord[3], cfg->border.value, cfg->borderColor.value);
+    
+    return qtrue;
+}
+
+void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ctx)
+{
+  	qboolean drawBackground = (cfg->bgcolor.isSet && cfg->fill.isSet);
+    qboolean drawBorder = (cfg->border.isSet && cfg->borderColor.isSet);
+
+    if (!drawBackground && !drawBorder)
+    {
+        return;
+    }
+
+    if (drawBackground)
+    {
+		Vector4Copy(cfg->bgcolor.value, ctx->background);
+    }
+
+    if (drawBorder)
+    {
+		Vector4Copy(cfg->border.value, ctx->border);
+		Vector4Copy(cfg->borderColor.value, ctx->borderColor);
+    }
+}
+
+
 
 void CG_SHUDDrawStretchPicCtx(const superhudConfig_t* cfg, superhudDrawContext_t* ctx)
 {

@@ -14,10 +14,10 @@ void* CG_SHUDElementFollowMessageCreate(const superhudConfig_t* config)
 
 	SHUD_ELEMENT_INIT(element, config);
 
-	CG_SHUDFill(&element->config);
-
+	
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
-
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
+	
 	return element;
 }
 
@@ -33,6 +33,7 @@ void CG_SHUDElementFollowMessageRoutine(void* context)
 
 	str = cgs.clientinfo[cg.snap->ps.clientNum].name;
 	element->ctx.text = va("Following %s", str);
+
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

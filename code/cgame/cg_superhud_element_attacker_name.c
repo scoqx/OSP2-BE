@@ -15,6 +15,7 @@ void* CG_SHUDElementAttackerNameCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	if (!element->config.time.isSet)
 	{
@@ -52,8 +53,6 @@ void CG_SHUDElementAttackerNameRoutine(void* context)
 		cg.attackerTime = 0;
 		return;
 	}
-
-	CG_SHUDFill(&element->config);
 
 	info = CG_ConfigString(CS_PLAYERS + clientNum);
 	element->ctx.text = Info_ValueForKey(info, "n");

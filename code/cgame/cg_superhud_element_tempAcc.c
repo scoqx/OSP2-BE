@@ -50,6 +50,7 @@ static void* CG_SHUDElementTempAccCreate(const superhudConfig_t* config, shudEle
 	}
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	element->type = type;
 
@@ -218,7 +219,6 @@ void CG_SHUDElementTempAccRoutine(void* context)
 
 	Vector4Copy(color, element->config.color.value.rgba);
 
-	CG_SHUDFill(&element->config);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

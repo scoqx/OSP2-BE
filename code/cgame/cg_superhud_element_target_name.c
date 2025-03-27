@@ -15,6 +15,7 @@ void* CG_SHUDElementTargetNameCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	return element;
 }
@@ -59,7 +60,6 @@ void CG_SHUDElementTargetNameRoutine(void* context)
 	if (!hide)
 	{
 		Com_sprintf(s, 1024, "%s", ci->name);
-		CG_SHUDFill(&element->config);
 		element->ctx.text = s;
 		CG_SHUDTextPrint(&element->config, &element->ctx);
 		element->ctx.text = NULL;
