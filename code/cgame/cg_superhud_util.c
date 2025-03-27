@@ -26,11 +26,10 @@ static void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color,
         return;
     }
 
-
     switch (in->type) {
         case SUPERHUD_COLOR_RGBA:
             target = in->rgba;
-            finalAlpha = in->rgba[3];
+            finalAlpha = in->rgba[3]; // Берём альфу из исходного цвета
             break;
             
         case SUPERHUD_COLOR_T:
@@ -52,12 +51,12 @@ static void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color,
             break;
     }
 
-
-    if (config->color2.isSet) {
+    // Если color2 задан и исходный color — это буква (T, E, I), то заменяем только альфу
+    if (config->color2.isSet && in->type != SUPERHUD_COLOR_RGBA) {
         finalAlpha = config->color2.value.rgba[3];
     }
 
-
+    // Применяем цвет
     if (alphaOverride) {
         color[0] = target[0];
         color[1] = target[1];
@@ -69,6 +68,7 @@ static void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color,
         color[2] = target[2];
     }
 }
+
 
 static void CG_SHUDConfigDefaultsCheck(superhudConfig_t* config)
 {

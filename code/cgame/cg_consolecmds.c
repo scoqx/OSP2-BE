@@ -383,7 +383,7 @@ void CG_OSPHUDprev_f(void)
 
 void CG_OSPClientVersion_f(void)
 {
-	CG_Printf("^3OSP2-BE Client Version:^7 %s\n", OSP_VERSION);
+	CG_Printf("^3OSP2 Client Version:^7 %s\n", OSP_VERSION);
 }
 
 #define CG_YES_NO_STR(VAL) ((VAL) ? "^2Yes" : "^1No")
