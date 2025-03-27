@@ -2592,14 +2592,16 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 	trap_R_SetColor(NULL);
 }
 
-static void CG_OSPDrawCompiledText(float ax, float ay, float aw, float ah, text_command_t* text_commands, qhandle_t sh, int proportional, float fade, vec4_t color)
+static void CG_OSPDrawCompiledText(float ax, float ay, float aw, float ah, text_command_t* text_commands, qhandle_t sh, int proportional, float fade, vec4_t baseColor, int shadowPass)
 {
     const font_metric_t* fm;
     const float* tc;
     float x_end, aw1;
     text_command_t* curr;
     int i;
+    vec4_t color;
     
+    Vector4Copy(baseColor, color);
     trap_R_SetColor(color);
     
     for (i = 0; text_commands[i].type != OSP_TEXT_CMD_STOP; ++i)
@@ -2634,19 +2636,36 @@ static void CG_OSPDrawCompiledText(float ax, float ay, float aw, float ah, text_
                 break;
             }
             case OSP_TEXT_CMD_TEXT_COLOR:
+                if (!shadowPass)
+                {
+                    VectorCopy(curr->value.color, color);
+                    color[3] = fade;
+                    if (color[3] > 1.0f)
+                        color[3] = 1.0f;
+                    trap_R_SetColor(color);
+                }
+                break;
             case OSP_TEXT_CMD_SHADOW_COLOR:
-                VectorCopy(curr->value.color, color);
-                color[3] = fade;
-                trap_R_SetColor(color);
+                if (shadowPass)
+                {
+                    VectorCopy(curr->value.color, color);
+                    color[3] = fade;
+                    if (color[3] > 1.0f)
+                        color[3] = 1.0f;
+                    trap_R_SetColor(color);
+                }
                 break;
             case OSP_TEXT_CMD_FADE:
                 fade = curr->value.fade;
                 color[3] = fade;
+                if (color[3] > 1.0f)
+                    color[3] = 1.0f;
                 trap_R_SetColor(color);
                 break;
         }
     }
 }
+
 
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background, vec4_t border, vec4_t borderColor)
 {
@@ -2657,10 +2676,10 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
     int proportional;
     qhandle_t sh;
     text_command_t* text_commands;
-    vec4_t color;
+    vec4_t color, shadowColor;
     float fade = 1.0f;
-	float mw;
-	
+    float mw, xx_add, yy_add;
+    
     if (!string) return;
     text_commands = CG_CompileText(string);
     if (!text_commands) return;
@@ -2706,13 +2725,19 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
     
     if (hasShadow)
     {
-        VectorCopy(colorBlack, color);
-        color[3] = fade;
-        CG_OSPDrawCompiledText(ax + aw / 10.0f, ay + ah / 10.0f, aw, ah, text_commands, sh, proportional, fade, color);
+        xx_add = aw / 10.0f;
+        yy_add = ah / 10.0f;
+
+        VectorCopy(colorBlack, shadowColor);
+        shadowColor[3] = fade;
+        if (setColor && shadowColor[3] > setColor[3])
+            shadowColor[3] = setColor[3];
+
+        CG_OSPDrawCompiledText(ax + xx_add, ay + yy_add, aw, ah, text_commands, sh, proportional, fade, shadowColor, /* shadowPass */ 1);
     }
     
     Vector4Copy(setColor, color);
-    CG_OSPDrawCompiledText(ax, ay, aw, ah, text_commands, sh, proportional, fade, color);
+    CG_OSPDrawCompiledText(ax, ay, aw, ah, text_commands, sh, proportional, fade, color, /* shadowPass */ 0);
     
     CG_CompiledTextDestroy(text_commands);
     trap_R_SetColor(NULL);
