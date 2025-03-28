@@ -81,6 +81,7 @@ void CG_SHUDElementSBAmBRoutine(void* context)
 	}
 
 	CG_SHUDFill(&element->config);
+	CG_SHUDDrawBorder(&element->config);
 	CG_SHUDBarPrint(&element->config, &element->ctx, ammo);
 }
 

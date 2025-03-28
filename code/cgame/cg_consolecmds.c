@@ -418,6 +418,11 @@ void CG_OSPCredits_f(void)
 {
 	char string[1024];
 
+	strcpy(&string[0],   "      ^0^BBLACK EDITION  ");
+	strcpy(&string[128], " ^3https://github.com/scoqx/OSP2-BE  ");
+	
+	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 18, 18, string, 130.0f, colorBlack, colorWhite);
+	
 	strcpy(&string[0],   "     ^BOSP2 Tourney DM/CA/CTF ");
 	strcpy(&string[128], " ^3https://github.com/snems/OSP2  ");
 	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 20, 20, string, 180.0f, colorYellow, colorLtGrey);
@@ -428,6 +433,7 @@ void CG_OSPCredits_f(void)
 	strcpy(&string[384], "    ^Bx0ry            https://github.com/xq3e/engine  ");
 	strcpy(&string[512], "    ^BNeil Toronto    http://ra.is/unlagged  ");
 	strcpy(&string[640], "    ^BRatmod          https://github.com/rdntcntrl/ratoa_gamecode");
+	
 	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 6, 128, 10, 10, string, 260.0f, colorWhite, colorBlue);
 
 	strcpy(&string[0],   "    ^BSpecial thanks to:  ");

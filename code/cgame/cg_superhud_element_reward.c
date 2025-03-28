@@ -99,8 +99,8 @@ void CG_SHUDElementRewardRoutine(void* context)
 			return;
 		}
 	}
-
 	CG_SHUDFill(&element->config);
+	CG_SHUDDrawBorder(&element->config);
 
 	if (element->type == SHUD_REWARD_ICON)
 	{

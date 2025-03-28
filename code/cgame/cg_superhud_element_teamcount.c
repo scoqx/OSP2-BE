@@ -30,6 +30,7 @@ void* CG_SHUDElementTeamCountCreate(const superhudConfig_t* config, qboolean ene
 	}
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	element->enemy = enemy;
 
@@ -74,7 +75,6 @@ void CG_SHUDElementTeamCountRoutine(void* context)
 
 	if (count >= 0)
 	{
-		CG_SHUDFill(&element->config);
 		element->ctx.text = va(element->config.text.value, count);
 		CG_SHUDTextPrint(&element->config, &element->ctx);
 	}

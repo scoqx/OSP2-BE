@@ -26,6 +26,7 @@ void* CG_SHUDElementRankMessageCreate(const superhudConfig_t* config)
 	gctx = CG_SHUDGetContext();
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	element->time = &gctx->rankmessage.time;
 	element->ctx.text = gctx->rankmessage.message;
@@ -47,8 +48,6 @@ void CG_SHUDElementRankMessageRoutine(void* context)
 		*element->time = 0;
 		return;
 	}
-
-	CG_SHUDFill(&element->config);
 
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }

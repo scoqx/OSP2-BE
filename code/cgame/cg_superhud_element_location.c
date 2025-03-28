@@ -24,6 +24,7 @@ void* CG_SHUDElementLocationCreate(const superhudConfig_t* config)
 	gctx = CG_SHUDGetContext();
 
 	CG_SHUDTextMakeContext(&element->config, &element->lastLocation);
+	CG_SHUDFillAndFrameForText(&element->config, &element->lastLocation);
 
 	return element;
 }
@@ -61,7 +62,6 @@ void CG_SHUDElementLocationRoutine(void* context)
 
 	element->lastLocation.text = newLocation;
 
-	CG_SHUDFill(&element->config);
 	CG_SHUDTextPrint(&element->config, &element->lastLocation);
 }
 

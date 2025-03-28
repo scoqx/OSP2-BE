@@ -73,6 +73,7 @@ void CG_SHUDElementAttackerIconRoutine(void* context)
 	}
 
 	CG_SHUDFill(&element->config);
+	CG_SHUDDrawBorder(&element->config);
 	CG_DrawHead(element->config.rect.value[0], element->config.rect.value[1], element->config.rect.value[2], element->config.rect.value[3], clientNum, element->angles);
 }
 

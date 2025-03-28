@@ -15,6 +15,7 @@ void* CG_SHUDElementAmmoMessageCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	return element;
 }
@@ -41,8 +42,6 @@ void CG_SHUDElementAmmoMessageRoutine(void* context)
 	{
 		element->ctx.text = "LOW AMMO WARNING";
 	}
-	CG_SHUDFill(&element->config);
-
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

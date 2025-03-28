@@ -1,59 +1,54 @@
-# OSP2
+# OSP2-BE: Extended OSP2 version
 
-This Quake 3 mod is an attempt to recover old OSP mod source codes and improve it.
+## 🔧 Contributions
 
-Based on vanilla Q3 and OSP files analysis. 
+OSP2-BE incorporates code from several notable Quake mods and projects:
+- **OSP2 by snems**: [Github Link](https://github.com/snems/OSP2)
+- **baseq3a by Cyrax**: [GitHub Link](https://github.com/ec-/baseq3a)
+- **XQ3E Engine**: [GitHub Link](https://github.com/xq3e/engine)
+- **Unlagged Mod by Nail Toronto**
+- **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
-Also used code from :
+## ✨ BE-Features
 
- - baseq3a from Cyrax: https://github.com/ec-/baseq3a
- - XQ3E: https://github.com/xq3e/engine, 
- - unlagged mod written by Nail Toronto 
- - Ratmod https://github.com/rdntcntrl/ratoa_gamecode
+## 0.01
+```
+Cvars:
++ cg_itemsRespawnAnimation
++ cg_drawDamage (3/4)
++ cg_enemyLightning
++ cg_uniqueColorTable
++ cg_noVoteBeep
+* cg_drawGun (reworked)
+
+SHUD:
++ Border (border, borderColor)
+* Background for text elements (reworked)
++ Background for client events in obituaries
++ Temporal LG accuracy
++ Item pickup style 2
++ Color E/T transparency via color2
++ Armor bar over HP bar
+
+```
+![shot-Mar-27-2025_00 30 21](https://github.com/user-attachments/assets/11e8a2cf-8ef6-4984-a427-5af8ac9de650)
 
 
-# Features
+## 📞 Contacts
 
-- VQ3/Promode physics support
-- CPMA like SuperHUD
-- Proportional fonts
-- Multilevel hitsounds and fragsound
-- Crosshair decoration and animations
-- Client side /mute for players
+Join the OSP2-BE community on Telegram for updates, discussions, and support:
+- [Telegram Channel](https://t.me/q3osp2)
+- [Telegram Chat](https://t.me/q3_osp2)
 
-And many other small features
+## 🛠 New Commands
 
-![alt text](https://github.com/snems/OSP2/blob/master/docs/shot.jpg?raw=true)
+See [docs/commands.md](docs/commands.md) for a comprehensive list of new commands and how to use them.
 
-## Mod state
+Example configuration file: `OSP2.cfg` located inside the mod directory.
 
-Only cgame now.
+## 📥 Installation
 
+To install OSP2-BE:
 
-## Contacts
-
-Telegram [channel](https://t.me/q3osp2).
-
-Telegram [chat](https://t.me/q3_osp2).
-
-## New commands
-
-See [docs/commands.md](docs/commands.md)
-
-Example config: OSP2.cfg inside mod.
-
-## How to install
-
-- Install Quake3 and OSP mod v1.03
-- copy pack or library into `osp` folder
-
-## How to build
-
-Only linux qvm, other builds are not supported yet.
-
-### Linux qvm
-
-   `cd build/linux-qvm`
-
-   `make` 
-
+1. **Install Quake 3** and the **OSP mod v1.03**.
+2. Copy the mod files (pack or library) into the `osp` folder within your Quake 3 directory.

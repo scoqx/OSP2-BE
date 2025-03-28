@@ -29,6 +29,7 @@ void* CG_SHUDElementSBAmCCreate(const superhudConfig_t* config)
 	}
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	return element;
 }
@@ -52,7 +53,6 @@ void CG_SHUDElementSBAmCRoutine(void* context)
 
 	element->ctx.text = va(element->config.text.value, ammo > 0 ? ammo : 0);
 
-	CG_SHUDFill(&element->config);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

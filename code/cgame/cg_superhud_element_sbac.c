@@ -29,6 +29,7 @@ void* CG_SHUDElementSBACCreate(const superhudConfig_t* config)
 	}
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 	element->ctx.flags |= DS_FORCE_COLOR;
 
 	return element;
@@ -47,7 +48,6 @@ void CG_SHUDElementSBACRoutine(void* context)
 	element->config.color.value.type = SUPERHUD_COLOR_RGBA;
 	CG_ColorForHealth(element->config.color.value.rgba, NULL);
 
-	CG_SHUDFill(&element->config);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 
