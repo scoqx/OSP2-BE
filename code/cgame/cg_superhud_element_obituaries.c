@@ -86,7 +86,7 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 	entry->runtime.maxVisibleChars = 13;
 	entry->runtime.spacing = element->config.rect.value[3] / 2.0f;
 
-	entry->runtime.maxNameLenPix = (element->config.rect.value[2] - (element->config.rect.value[3] + entry->runtime.spacing * 2))/2;
+	entry->runtime.maxNameLenPix = (element->config.rect.value[2] - (element->config.rect.value[3] + entry->runtime.spacing * 2)) / 2;
 
 	entry->runtime.iconShader = CG_SHUDObituaryGetModIcon(entry->mod, entry->unfrozen);
 
@@ -104,20 +104,21 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 		strcpy(entry->runtime.attackerName, "^1world");
 	}
 	else if (entry->attacker >= 0 && entry->attacker < MAX_CLIENTS)
-  {
-  	Q_strncpyz(entry->runtime.attackerName, cgs.clientinfo[entry->attacker].name, MAX_QPATH);
-  }
+	{
+		Q_strncpyz(entry->runtime.attackerName, cgs.clientinfo[entry->attacker].name, MAX_QPATH);
+	}
 
 
-  if (entry->target >= 0 && entry->target < MAX_CLIENTS)
-  {
-  	Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name, MAX_QPATH);
-  }
+	if (entry->target >= 0 && entry->target < MAX_CLIENTS)
+	{
+		Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name, MAX_QPATH);
+	}
 
 
+	CG_FontSelect(element->ctxAttacker.fontIndex); // update font metrics to make right calculation
 
-  	CG_FontSelect(element->ctxAttacker.fontIndex); // update font metrics
 	entry->runtime.attackerWidth = CG_OSPDrawStringLenPix(entry->runtime.attackerName, element->config.fontsize.value[0], element->ctxAttacker.flags, entry->runtime.maxNameLenPix);
+	CG_FontSelect(element->ctxTarget.fontIndex);
 	entry->runtime.targetWidth = CG_OSPDrawStringLenPix(entry->runtime.targetName, element->config.fontsize.value[0], element->ctxTarget.flags, entry->runtime.maxNameLenPix);
 	if (element->config.alignH.value == SUPERHUD_ALIGNH_LEFT)
 	{
@@ -129,7 +130,7 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 	}
 	else // SUPERHUD_ALIGNH_CENTER
 	{
-		entry->runtime.baseX = (element->config.rect.value[2] / 2) - (element->ctxMod.coord.named.w / 2) - entry->runtime.attackerWidth;
+    entry->runtime.baseX = element->config.rect.value[0] + (element->config.rect.value[2] / 2) - (element->ctxMod.coord.named.w / 2) - entry->runtime.attackerWidth;
 	}
 
 	entry->runtime.isInitialized = qtrue;

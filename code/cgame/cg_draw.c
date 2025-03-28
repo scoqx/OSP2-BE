@@ -736,7 +736,7 @@ void CG_DrawTimer2(void)
 	msec = cg.time - cgs.levelStartTime;
 
 	if (msec < 0) msec *= -1;
-	
+
 	seconds = msec / 1000;
 	mins = seconds / 60;
 	seconds -= mins * 60;
@@ -2304,7 +2304,7 @@ static void CG_DrawTestFont(const char* font)
 			to_print[0] = (char)c;
 			c++;
 			if (to_print[0] == 0) to_print[0] = ' ';
-			CG_OSPDrawString(offs_x + x * 20, offs_y + y * 20, to_print, colorWhite, 16, 16, 4*16, DS_HCENTER | DS_PROPORTIONAL, NULL);
+			CG_OSPDrawString(offs_x + x * 20, offs_y + y * 20, to_print, colorWhite, 16, 16, 4 * 16, DS_HCENTER | DS_PROPORTIONAL, NULL);
 		}
 	}
 

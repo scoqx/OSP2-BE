@@ -9,7 +9,6 @@ typedef struct
 	vec4_t bar2_bottom;
 } drawBarCoords_t;
 
-
 static void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color, qboolean alphaOverride) 
 {
     const superhudColor_t* in = &config->color.value;
@@ -839,7 +838,7 @@ void CG_SHUDDrawStretchPicCtx(const superhudConfig_t* cfg, superhudDrawContext_t
 int CG_SHUDGetAmmo(int wpi)
 {
 	int ammo = cg.snap->ps.ammo[wpi];
-	
+
 	if (ammo < 0) ammo = 0;
 	if (ammo > 999) ammo = 999;
 	return ammo;
