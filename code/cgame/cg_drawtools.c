@@ -2358,14 +2358,11 @@ int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int t
 	{
 		return 0;
 	}
-
-	if (text_commands)
-    {
-        RestrictCompiledString(text_commands, charWidth, flags & DS_PROPORTIONAL, toWidth);
-        rez = DrawCompiledStringLength(text_commands, charWidth, flags & DS_PROPORTIONAL);
-        CG_CompiledTextDestroy(text_commands);  // fix
-    }
-    return rez;
+  
+	RestrictCompiledString(text_commands, charWidth, flags & DS_PROPORTIONAL, toWidth);
+	rez = DrawCompiledStringLength(text_commands, charWidth, flags & DS_PROPORTIONAL);
+	CG_CompiledTextDestroy(text_commands);
+	return rez;
 }
 
 
