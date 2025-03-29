@@ -15,6 +15,7 @@ void* CG_SHUDElementPlayerSpeedCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	return element;
 }
@@ -23,8 +24,10 @@ void CG_SHUDElementPlayerSpeedRoutine(void* context)
 {
 	shudElementPlayerSpeed_t* element = (shudElementPlayerSpeed_t*)context;
 
-	CG_SHUDFill(&element->config);
+	
 	element->ctx.text = va("%dups", (int)cg.xyspeed);
+	
+
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

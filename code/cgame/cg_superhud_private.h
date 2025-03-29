@@ -80,6 +80,16 @@ typedef struct
 	{
 		vec4_t value;
 		qboolean isSet;
+	} border;
+	struct
+	{
+		vec4_t value;
+		qboolean isSet;
+	} borderColor;
+	struct
+	{
+		vec4_t value;
+		qboolean isSet;
 	} hlcolor;
 	struct
 	{
@@ -577,6 +587,8 @@ typedef struct
 	vec4_t color_origin;
 	vec4_t color;
 	vec4_t background;
+	vec4_t border;
+	vec4_t borderColor;
 	int width;
 	int fontIndex;
 	const char* text;

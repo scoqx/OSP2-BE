@@ -15,7 +15,8 @@ void* CG_SHUDElementNGPCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
-
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
+	
 	return element;
 }
 
@@ -35,7 +36,6 @@ void CG_SHUDElementNGPRoutine(void* context)
 		ping = (int)(cgs.osp.pingMs);
 	}
 
-	CG_SHUDFill(&element->config);
 	element->ctx.text = va("%ims", ping);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }

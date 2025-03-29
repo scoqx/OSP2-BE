@@ -83,6 +83,7 @@ void CG_SHUDElementFlagStatusRoutine(void* context)
 	}
 
 	CG_SHUDFill(&element->config);
+	CG_SHUDDrawBorder(&element->config);
 
 	if (item)
 	{

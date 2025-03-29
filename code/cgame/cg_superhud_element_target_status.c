@@ -15,6 +15,7 @@ void* CG_SHUDElementTargetStatusCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	return element;
 }
@@ -49,7 +50,7 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 			char color;
 			CG_GetColorForHealth(ci->health, ci->armor, NULL, &color);
 			Com_sprintf(s, 1024, "^5[^%c%i/%i^5]", color, ci->health, ci->armor);
-			CG_SHUDFill(&element->config);
+
 			element->ctx.text = s;
 			CG_SHUDTextPrint(&element->config, &element->ctx);
 			element->ctx.text = NULL;
