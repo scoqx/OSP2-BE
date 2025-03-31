@@ -1501,12 +1501,12 @@ extern vmCvar_t           cg_conObituaries;
 extern vmCvar_t           cg_lightningHitsoundRateFix;
 extern vmCvar_t           cg_stackHitSounds;
 extern vmCvar_t           cg_drawCenterMessages;
-extern vmCvar_t           cg_unfreezeAlert;
-extern vmCvar_t           cg_itemsRespawnAnimation;
 extern vmCvar_t           cg_predictStepOffset;
+extern vmCvar_t           cg_itemsRespawnAnimation;
 extern vmCvar_t         cg_enemyLightningColor;
 extern vmCvar_t         cg_uniqueColorTable;
 extern vmCvar_t			    cg_noVoteBeep;
+
 
 //
 // cg_main.c
