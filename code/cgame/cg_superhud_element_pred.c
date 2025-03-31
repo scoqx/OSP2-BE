@@ -36,6 +36,7 @@ void CG_SHUDElementDecorRoutine(void* context)
 	{
 		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx);
 	}
+	CG_SHUDDrawBorder(&element->config);
 }
 
 void CG_SHUDElementDecorDestroy(void* context)

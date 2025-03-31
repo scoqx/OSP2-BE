@@ -196,6 +196,7 @@ void CG_SHUDElementPwRoutine(void* context)
 	}
 
 	CG_SHUDFill(&element->config);
+	CG_SHUDDrawBorder(&element->config);
 
 	pwElement = &pw->element[element->pwIndex - 1];
 

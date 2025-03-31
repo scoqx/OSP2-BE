@@ -24,7 +24,8 @@ static void* CG_SHUDElementNameCreate(const superhudConfig_t* config, enum shudE
 	element->type = type;
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
-
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
+	
 	return element;
 }
 
@@ -167,8 +168,6 @@ void CG_SHUDElementNameRoutine(void* context)
 
 	CG_SHUDElementNameGetPair(&own, &nme);
 
-	CG_SHUDFill(&element->config);
-
 	if (element->type == SHUDENAME_TYPE_OWN)
 	{
 		element->ctx.text = own;
@@ -177,6 +176,7 @@ void CG_SHUDElementNameRoutine(void* context)
 	{
 		element->ctx.text = nme;
 	}
+
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

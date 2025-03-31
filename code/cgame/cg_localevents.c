@@ -403,3 +403,9 @@ void CG_LocalEventCvarChanged_cg_conObituaries(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
 }
+
+void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart)
+{
+	CG_RebuildPlayerColors();
+	CG_UpdateAllClientsInfo();
+}

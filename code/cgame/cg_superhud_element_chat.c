@@ -19,6 +19,7 @@ static void* CG_SHUDElementChatCreate(const superhudConfig_t* config, int line)
 	element->gctx = CG_SHUDGetContext();
 	element->index = line;
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 	element->ctx.width = (int)config->rect.value[2];
 
 	return element;
@@ -134,8 +135,6 @@ void CG_SHUDElementChatRoutine(void* context)
 		entry->time = 0;
 		return;
 	}
-
-	CG_SHUDFill(&element->config);
 
 	element->ctx.text = entry->message;
 	CG_SHUDTextPrint(&element->config, &element->ctx);

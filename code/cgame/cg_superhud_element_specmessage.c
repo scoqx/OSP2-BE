@@ -15,6 +15,7 @@ void* CG_SHUDElementSpecMessageCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	element->ctx.text = "^1SPECTATOR";
 	return element;
@@ -26,7 +27,6 @@ void CG_SHUDElementSpecMessageRoutine(void* context)
 
 	if (CG_IsSpectator())
 	{
-		CG_SHUDFill(&element->config);
 		CG_SHUDTextPrint(&element->config, &element->ctx);
 	}
 }

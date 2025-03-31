@@ -19,7 +19,8 @@ void* CG_SHUDElementFPSCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
-
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
+	
 	return element;
 }
 
@@ -58,8 +59,9 @@ void CG_SHUDElementFPSRoutine(void* context)
 
 	element->ctx.text = va("%ifps", fps_val_int);
 
-	CG_SHUDFill(&element->config);
+	// CG_SHUDFill(&element->config);
 
+	// CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 
