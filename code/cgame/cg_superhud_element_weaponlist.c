@@ -224,9 +224,9 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 
 			if (align == SUPERHUD_ALIGNH_RIGHT)
 			{
-				element->tmp_config.rect.value[0] += offsetX;
+				element->tmp_config.rect.value[0] += (offsetX + offsetX);
 			}
-
+			else
 			{
 				element->tmp_config.rect.value[0] -= offsetX;
 				element->tmp_config.rect.value[1] -= offsetY;
