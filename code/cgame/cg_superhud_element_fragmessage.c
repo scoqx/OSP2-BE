@@ -46,7 +46,7 @@ void CG_SHUDElementFragMessageRoutine(void* context)
 		*element->time = 0;
 		return;
 	}
-	
+
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

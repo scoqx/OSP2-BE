@@ -14,10 +14,10 @@ void* CG_SHUDElementFollowMessageCreate(const superhudConfig_t* config)
 
 	SHUD_ELEMENT_INIT(element, config);
 
-	
+
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
-	
+
 	return element;
 }
 

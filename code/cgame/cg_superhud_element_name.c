@@ -25,7 +25,7 @@ static void* CG_SHUDElementNameCreate(const superhudConfig_t* config, enum shudE
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
-	
+
 	return element;
 }
 

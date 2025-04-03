@@ -17,7 +17,7 @@ void* CG_SHUDElementGameTimeCreate(const superhudConfig_t* config)
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
-	
+
 	return element;
 }
 
@@ -39,7 +39,7 @@ void CG_SHUDElementGameTimeRoutine(void* context)
 		seconds -= mins * 60;
 		tens = seconds / 10;
 		seconds -= tens * 10;
-		
+
 		element->ctx.text = va("%i:%i%i", mins, tens, seconds);
 		CG_SHUDTextPrint(&element->config, &element->ctx);
 	}

@@ -16,7 +16,7 @@ void* CG_SHUDElementNGPCreate(const superhudConfig_t* config)
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
-	
+
 	return element;
 }
 

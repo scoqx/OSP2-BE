@@ -2237,7 +2237,7 @@ void CG_DrawDamageFrame()
 	{
 		return;
 	}
-	
+
 	if (!cg.damageValue || cg.time - cg.damageTime <= 0 || cg.time - cg.damageTime >= DAMAGE_TIME)
 	{
 		return;
@@ -2248,7 +2248,7 @@ void CG_DrawDamageFrame()
 	Vector4Set(red, 1.0f, 0.0f, 0.0f, (float)cg_damageFrameOpaque.value);
 	Vector4Set(borderSize, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value);
 
-	
+
 
 	CG_OSPDrawFrame(x, y, w, h, borderSize, red, qtrue);
 

@@ -3885,7 +3885,7 @@ static void CG_OSPDrawVote(void)
 		cgs.voteModified = 0;
 		if (!cg_noVoteBeep.integer)
 		{
-		trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
+			trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
 		}
 	}
 
