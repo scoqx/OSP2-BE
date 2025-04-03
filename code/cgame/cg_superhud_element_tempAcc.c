@@ -14,11 +14,6 @@ static void* CG_SHUDElementTempAccCreate(const superhudConfig_t* config)
 {
 	shudElementTempAcc_t* element;
 
-	if (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE) // ignore promode
-	{
-		return NULL;
-	}
-
 	SHUD_ELEMENT_INIT(element, config);
 
 	element->gctx = CG_SHUDGetContext();
@@ -67,6 +62,11 @@ void CG_SHUDElementTempAccRoutine(void* context)
 	vec4_t color;
 
 	superhudTempAccEntry_t* entry = &element->gctx->tempAcc.weapon[WP_LIGHTNING];
+
+	if (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE) // ignore promode
+	{
+		return;
+	}
 
 	CG_GetWeaponTempAccuracy(WP_LIGHTNING);
 
