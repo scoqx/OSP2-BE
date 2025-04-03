@@ -2222,26 +2222,36 @@ void CG_DrawWarmup(void)
 	}
 }
 
-void CG_DrawRedDamageIndicators()
+void CG_DrawDamageFrame()
 {
-	float s = 0.0f;     // start point
-	float x = 640.0f;
-	float y = 480.0f;
-	float w = 2.0f;     // width
-	float h = 2.0f;     // height
-	vec4_t red = {1.0f, 0.0f, 0.0f, 0.5f};
-	CG_AdjustFrom640(&x, &y, &w, &h);
 
+	float x = 0.0f;     //
+	float y = 0.0f;     //
+	float w = 640.0f;
+	float h = 480.0f;
+	vec4_t borderSize;
+	vec4_t red;
+
+
+	if (cg_damageDrawFrame.integer == 0)
+	{
+		return;
+	}
+	
 	if (!cg.damageValue || cg.time - cg.damageTime <= 0 || cg.time - cg.damageTime >= DAMAGE_TIME)
 	{
 		return;
 	}
-	trap_R_SetColor(red);
-	trap_R_DrawStretchPic(s, s, x, h, 0, 0, 0, 0, cgs.media.whiteShader);                   // top
-	trap_R_DrawStretchPic(s, y - h, x, h, 0, 0, 0, 0, cgs.media.whiteShader);               // bottom
-	trap_R_DrawStretchPic(s, s + h, w, y - h - h, 0, 0, 0, 0, cgs.media.whiteShader);       // left
-	trap_R_DrawStretchPic(x - w, s + h, w, y - h - h, 0, 0, 0, 0, cgs.media.whiteShader);   // right
-	trap_R_SetColor(NULL);
+
+	CG_AdjustFrom640(&x, &y, &w, &h);
+
+	Vector4Set(red, 1.0f, 0.0f, 0.0f, (float)cg_damageFrameOpaque.value);
+	Vector4Set(borderSize, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value);
+
+	
+
+	CG_OSPDrawFrame(x, y, w, h, borderSize, red, qtrue);
+
 }
 
 void CG_DrawWarmupShud(void)
@@ -2338,15 +2348,12 @@ static void CG_Draw2D(void)
 	{
 		CG_SHUDRoutine();
 		CG_DrawWarmupShud();
-		if (cg_damageDraw.integer == 3 || cg_damageDraw.integer == 4)
-		{
-			CG_DrawRedDamageIndicators();
-		}
 		return;
 	}
 
 	if (cg_enableOSPHUD.integer)
 	{
+		CG_DrawDamageFrame();
 		CG_OSPHUDRoutine();
 		return;
 	}

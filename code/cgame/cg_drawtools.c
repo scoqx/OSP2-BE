@@ -169,6 +169,60 @@ void CG_FillRect(float x, float y, float width, float height, const float* color
 	trap_R_SetColor(NULL);
 }
 
+
+void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner)
+{
+	if (!borderSize || !color)
+	{
+		return;
+	}
+
+	trap_R_SetColor(color);
+
+	// Если требуется нарисовать внутреннюю рамку (inner)
+	if (inner)
+	{
+		if (borderSize[0] > 0.0f)   // Left
+		{
+			trap_R_DrawStretchPic(x, y + borderSize[1], borderSize[0], h - borderSize[1] - borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[1] > 0.0f)   // Top
+		{
+			trap_R_DrawStretchPic(x, y, w, borderSize[1], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[2] > 0.0f)   // Right
+		{
+			trap_R_DrawStretchPic(x + w - borderSize[2], y + borderSize[1], borderSize[2], h - borderSize[1] - borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[3] > 0.0f)   // Bottom
+		{
+			trap_R_DrawStretchPic(x, y + h - borderSize[3], w, borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+	}
+	else // Если рисуем внешнюю рамку (outer)
+	{
+		if (borderSize[0] > 0.0f)   // Left
+		{
+			trap_R_DrawStretchPic(x - borderSize[0], y, borderSize[0], h, 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[1] > 0.0f)   // Top
+		{
+			trap_R_DrawStretchPic(x - borderSize[0], y - borderSize[1], w + borderSize[0] + borderSize[2], borderSize[1], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[2] > 0.0f)   // Right
+		{
+			trap_R_DrawStretchPic(x + w, y, borderSize[2], h, 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[3] > 0.0f)   // Bottom
+		{
+			trap_R_DrawStretchPic(x - borderSize[0], y + h, w + borderSize[0] + borderSize[2], borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+	}
+
+	trap_R_SetColor(NULL);
+}
+
+
 /*
 ================
 CG_DrawSides
@@ -2358,7 +2412,7 @@ int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int t
 	{
 		return 0;
 	}
-  
+
 	RestrictCompiledString(text_commands, charWidth, flags & DS_PROPORTIONAL, toWidth);
 	rez = DrawCompiledStringLength(text_commands, charWidth, flags & DS_PROPORTIONAL);
 	CG_CompiledTextDestroy(text_commands);
@@ -2615,7 +2669,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	text_commands = CG_CompileText(string);
 	if (!text_commands)
 		return;
-	
+
 
 	CG_AdjustFrom640(&x, &y, &charWidth, &charHeight);
 
@@ -2633,7 +2687,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		RestrictCompiledString(text_commands, aw, proportional, mw);
 	}
 
-	if (background || (flags & (DS_HCENTER | DS_HRIGHT)))
+	if (hasBorder || background || (flags & (DS_HCENTER | DS_HRIGHT)))
 	{
 		expectedLenght = DrawCompiledStringLength(text_commands, aw, proportional);
 	}
@@ -2680,7 +2734,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 
 	if (hasBorder)
 	{
-		CG_OSPDrawBorderFrame(ax, ay, expectedLenght, ah, border, borderColor);
+		CG_OSPDrawFrame(ax, ay, expectedLenght, ah, border, borderColor, qfalse);
 	}
 
 
@@ -2847,32 +2901,3 @@ int CG_OSPDrawStringWithShadow(int x, int y, const char* str, int charWidth, int
 	return CG_OSPDrawStringOld(x, y, str, charWidth, charHeight, color, maxChars, qfalse);
 }
 
-void CG_OSPDrawBorderFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color)
-{
-	if (!x || !y || !w || !h || !borderSize || !color) {
-        return;
-    }
-
-    // CG_AdjustFrom640(&coord[0], &coord[1], &coord[2], &coord[3]);
-
-    trap_R_SetColor(color);
-
-    if (borderSize[0] > 0.0f)   // Left
-    {
-        trap_R_DrawStretchPic(x - borderSize[0], y, borderSize[0], h, 0, 0, 0, 0, cgs.media.whiteShader);
-    }
-    if (borderSize[1] > 0.0f)   // Top
-    {
-        trap_R_DrawStretchPic(x - borderSize[0], y - borderSize[1], w + borderSize[0] + borderSize[2], borderSize[1], 0, 0, 0, 0, cgs.media.whiteShader);
-    }
-    if (borderSize[2] > 0.0f)   // Right
-    {
-        trap_R_DrawStretchPic(x + w, y, borderSize[2], h, 0, 0, 0, 0, cgs.media.whiteShader);
-    }
-    if (borderSize[3] > 0.0f)   // Bottom
-    {
-        trap_R_DrawStretchPic(x - borderSize[0], y + h, w + borderSize[0] + borderSize[2], borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
-    }
-
-    trap_R_SetColor(NULL);
-}

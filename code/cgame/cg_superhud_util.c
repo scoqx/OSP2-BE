@@ -9,63 +9,72 @@ typedef struct
 	vec4_t bar2_bottom;
 } drawBarCoords_t;
 
-static void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color, qboolean alphaOverride) 
+static void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color, qboolean alphaOverride)
 {
-    const superhudColor_t* in = &config->color.value;
-    const float* target;
-    team_t team;
-    float finalAlpha = 1.0f;
+	const superhudColor_t* in = &config->color.value;
+	const float* target;
+	team_t team;
+	float finalAlpha = 1.0f;
 
-    if (!config->color.isSet) {
-        if (alphaOverride) {
-            Vector4Copy(colorWhite, color);
-        } else {
-            VectorCopy(colorWhite, color);
-        }
-        return;
-    }
+	if (!config->color.isSet)
+	{
+		if (alphaOverride)
+		{
+			Vector4Copy(colorWhite, color);
+		}
+		else
+		{
+			VectorCopy(colorWhite, color);
+		}
+		return;
+	}
 
-    switch (in->type) {
-        case SUPERHUD_COLOR_RGBA:
-            target = in->rgba;
-            finalAlpha = in->rgba[3]; // Берём альфу из исходного цвета
-            break;
-            
-        case SUPERHUD_COLOR_T:
-            team = CG_SHUDGetOurActiveTeam();
-            target = (team == TEAM_BLUE) ? colorBlue : colorRed;
-            break;
-            
-        case SUPERHUD_COLOR_E:
-            team = CG_SHUDGetOurActiveTeam();
-            target = (team == TEAM_BLUE) ? colorRed : colorBlue;
-            break;
-            
-        case SUPERHUD_COLOR_I:
-            target = colorWhite;
-            break;
-            
-        default:
-            target = colorWhite;
-            break;
-    }
+	switch (in->type)
+	{
+		case SUPERHUD_COLOR_RGBA:
+			target = in->rgba;
+			finalAlpha = in->rgba[3]; // Берём альфу из исходного цвета
+			break;
 
-    // Если color2 задан и исходный color — это буква (T, E, I), то заменяем только альфу
-    if (config->color2.isSet && in->type != SUPERHUD_COLOR_RGBA) {
-        finalAlpha = config->color2.value.rgba[3];
-    }
+		case SUPERHUD_COLOR_T:
+			team = CG_SHUDGetOurActiveTeam();
+			target = (team == TEAM_BLUE) ? colorBlue : colorRed;
+			break;
 
-    // Применяем цвет
-    if (alphaOverride) {
-        color[0] = target[0];
-        color[1] = target[1];
-        color[2] = target[2];
-        color[3] = finalAlpha;
-    } else {
-        color[0] = target[0];
-        color[1] = target[1];
-        color[2] = target[2];
-    }
+		case SUPERHUD_COLOR_E:
+			team = CG_SHUDGetOurActiveTeam();
+			target = (team == TEAM_BLUE) ? colorRed : colorBlue;
+			break;
+
+		case SUPERHUD_COLOR_I:
+			target = colorWhite;
+			break;
+
+		default:
+			target = colorWhite;
+			break;
+	}
+
+	// Если color2 задан и исходный color — это буква (T, E, I), то заменяем только альфу
+	if (config->color2.isSet && in->type != SUPERHUD_COLOR_RGBA)
+	{
+		finalAlpha = config->color2.value.rgba[3];
+	}
+
+	// Применяем цвет
+	if (alphaOverride)
+	{
+		color[0] = target[0];
+		color[1] = target[1];
+		color[2] = target[2];
+		color[3] = finalAlpha;
+	}
+	else
+	{
+		color[0] = target[0];
+		color[1] = target[1];
+		color[2] = target[2];
+	}
 }
 
 
@@ -454,16 +463,16 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 
 	CG_FontSelect(ctx->fontIndex);
 	CG_OSPDrawStringNew(ctx->coord.named.x,
-	                 ctx->coord.named.y,
-	                 ctx->text,
-	                 ctx->color,
-	                 ctx->coord.named.w,
-	                 ctx->coord.named.h,
-	                 ctx->width,
-	                 ctx->flags,
-	                 ctx->background,
-					 ctx->border,
-					 ctx->borderColor);
+	                    ctx->coord.named.y,
+	                    ctx->text,
+	                    ctx->color,
+	                    ctx->coord.named.w,
+	                    ctx->coord.named.h,
+	                    ctx->width,
+	                    ctx->flags,
+	                    ctx->background,
+	                    ctx->border,
+	                    ctx->borderColor);
 }
 
 
@@ -788,42 +797,61 @@ void CG_SHUDDrawStretchPic(superhudCoord_t coord, const superhudCoord_t coordPic
 	trap_R_SetColor(NULL);
 }
 
-qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg) 
+void CG_SHUDDrawBorderDirect(const superhudCoord_t* coord, const vec4_t border, const vec4_t borderColor)
+{
+	vec4_t tmpCoord;
+	if (coord == 0)
+	{
+		return;
+	}
+
+	Vector4Copy(coord->arr, tmpCoord);
+
+	CG_AdjustFrom640(&tmpCoord[0], &tmpCoord[1], &tmpCoord[2], &tmpCoord[3]);
+
+	CG_OSPDrawFrame(tmpCoord[0], tmpCoord[1], tmpCoord[2], tmpCoord[3],
+	                (float*)border, (float*)borderColor, qtrue);
+
+}
+
+qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg)
 {
 	vec4_t coord;
-    if (!cfg->border.isSet || !cfg->rect.isSet || !cfg->borderColor.isSet) {
-        return qfalse;
-    }
+	if (!cfg->border.isSet || !cfg->rect.isSet || !cfg->borderColor.isSet)
+	{
+		return qfalse;
+	}
 
-    Vector4Copy(cfg->rect.value, coord);
+	Vector4Copy(cfg->rect.value, coord);
 
-    CG_AdjustFrom640(&coord[0], &coord[1], &coord[2], &coord[3]);
-    
-    CG_OSPDrawBorderFrame(coord[0], coord[1], coord[2], coord[3], cfg->border.value, cfg->borderColor.value);
-    
-    return qtrue;
+	CG_AdjustFrom640(&coord[0], &coord[1], &coord[2], &coord[3]);
+
+	CG_OSPDrawFrame(coord[0], coord[1], coord[2], coord[3],
+	                (float*)cfg->border.value, (float*)cfg->borderColor.value, qfalse);
+
+	return qtrue;
 }
 
 void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ctx)
 {
-  	qboolean drawBackground = (cfg->bgcolor.isSet && cfg->fill.isSet);
-    qboolean drawBorder = (cfg->border.isSet && cfg->borderColor.isSet);
+	qboolean drawBackground = (cfg->bgcolor.isSet && cfg->fill.isSet);
+	qboolean drawBorder = (cfg->border.isSet && cfg->borderColor.isSet);
 
-    if (!drawBackground && !drawBorder)
-    {
-        return;
-    }
+	if (!drawBackground && !drawBorder)
+	{
+		return;
+	}
 
-    if (drawBackground)
-    {
+	if (drawBackground)
+	{
 		Vector4Copy(cfg->bgcolor.value, ctx->background);
-    }
+	}
 
-    if (drawBorder)
-    {
+	if (drawBorder)
+	{
 		Vector4Copy(cfg->border.value, ctx->border);
 		Vector4Copy(cfg->borderColor.value, ctx->borderColor);
-    }
+	}
 }
 
 
@@ -842,5 +870,101 @@ int CG_SHUDGetAmmo(int wpi)
 	if (ammo < 0) ammo = 0;
 	if (ammo > 999) ammo = 999;
 	return ammo;
+}
+
+void CG_SHUDParseStatsInfo(void)
+{
+	char args[1024];
+	int i, weaponIndex, arg_cnt;
+	int hits, shots, kills, deaths, dmgGiven, dmgReceived;
+	int pickUps, drops;
+
+	superhudGlobalContext_t* shudCtx = CG_SHUDGetContext();
+	customStats_t* ws = &shudCtx->customStats;
+
+
+	for (i = 0; i < 24; ++i)
+	{
+		trap_Argv(i + 1, args, sizeof(args));
+		statsInfo[i] = atoi(args);
+	}
+
+	if (cgs.osp.gameTypeFreeze)
+	{
+		trap_Argv(OSP_STATS_LOSSES + 1, args, sizeof(args));
+		statsInfo[OSP_STATS_LOSSES] = atoi(args);
+
+
+		statsInfo[OSP_STATS_LOSSES] &= cgs.osp.stats_mask;
+	}
+
+	if (statsInfo[OSP_STATS_WEAPON_MASK] == 0)
+	{
+		return;
+	}
+
+	arg_cnt = 23;
+
+	for (weaponIndex = 0; weaponIndex < MAX_WEAPONS; weaponIndex++)
+	{
+		if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << weaponIndex))
+		{
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			hits = atoi(args);
+
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			shots = atoi(args);
+
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			kills = atoi(args);
+
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			deaths = atoi(args);
+
+			// has to be divided by 65536 to get proper values
+			pickUps = shots / 65536;
+			drops = hits / 65536;
+
+			shots = shots % 65536;
+			hits = hits % 65536;
+
+			ws->stats[weaponIndex].hits = hits;
+			ws->stats[weaponIndex].shots = shots;
+			ws->stats[weaponIndex].kills = kills;
+			ws->stats[weaponIndex].deaths = deaths;
+			ws->stats[weaponIndex].pickUps = pickUps;
+			ws->stats[weaponIndex].drops = drops;
+			ws->stats[weaponIndex].accuracy = (shots > 0) ? ((float)hits / shots) * 100.0f : 0.0f;
+
+		}
+	}
+
+	ws->kdratio = (statsInfo[OSP_STATS_KILLS] > 0 && (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) == 0) ?
+	              (float)statsInfo[OSP_STATS_KILLS] :
+	              ((statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) > 0) ?
+	              (float)statsInfo[OSP_STATS_KILLS] / (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) : 0.0f;
+
+	if (statsInfo[OSP_STATS_DMG_GIVEN] > 0)
+	{
+		ws->damageKoeff = (float)statsInfo[OSP_STATS_DMG_GIVEN] /
+		                  (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
+	}
+
+}
+
+void CG_SHUDRequestStatsInfo(void)
+{
+	static int lastRequestTime = 0;
+	int currentTime = cg.time;
+
+	// interval is 1 second for requests
+	if (currentTime - lastRequestTime < 1000)
+	{
+		return;
+	}
+
+	lastRequestTime = currentTime;
+	cgs.shudWstatsCalled = qtrue;
+	trap_SendClientCommand("getstatsinfo");
 }
 

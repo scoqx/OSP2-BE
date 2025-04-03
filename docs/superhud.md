@@ -73,7 +73,6 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | TeamCount_OWN                 | Количество живых игроков в своей команде (только фриз).      |
 | Team1-Team16                  | Тимоверлей.                                                  |
 | tempAcc_current               | Временная точность LG. Текущая                               |
-| tempAcc_last                  | Временная точность LG. Последняя                             |
 | VoteMessageWorld              | Строка голосования.                                          |
 | WeaponList                    | Список доступного оружия.                                    |
 | RewardIcons                   | Изображение полученной медали.                               |
@@ -82,6 +81,8 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | WarmupInfo                    | Обратный отсчет/"waiting for players".                       |
 | GameType                      | Режим игры(только во время warmup).                          |
 | Location                      | Сообщение с названием локации при ее изменении.              |
+| CurrentWeaponStats            | Вывод точности для оружия (cg_shud_currentWeapons)           |
+| CurrentWeaponStats_icon       | Вывод иконки для точности оружия                             |
 
 ## Команды
 
