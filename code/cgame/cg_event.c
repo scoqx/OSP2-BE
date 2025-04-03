@@ -483,7 +483,10 @@ static void CG_Obituary(entityState_t* ent)
 		return;
 	}
 	// we don't know what it was
-	CG_Printf("%s died.\n", targetName);
+	if (!cg_conObituaries.integer == 0)
+	{
+		CG_Printf("%s died.\n", targetName);
+	}
 }
 
 //==========================================================================
