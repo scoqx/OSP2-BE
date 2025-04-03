@@ -199,6 +199,69 @@ void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
 
 
 
+void CG_UpdateWeaponTracking(int weapon)
+{
+    static int lastHitCount = 0;
+    int currentAmmo, currentHits;
+
+    // Получаем указатель на структуру отслеживания оружия
+    weaponStats_t *ws = &cgs.be.weaponStats[weapon];
+    playerState_t *ps = &cg.snap->ps;
+
+    // Сброс статистики, если игрок умер или сменил оружие
+    if (ps->weapon != weapon || ps->stats[STAT_HEALTH] <= 0)
+    {
+        ws->onTrack = qfalse;
+        ws->hitsStart = 0;
+        ws->hitsCurrent = 0;
+        ws->shotsStart = 0;
+        ws->lastAmmo = 0;
+        lastHitCount = 0;
+        return;
+    }
+
+    // Сброс, если прошло больше 1 секунды без атак
+    if (ws->onTrack && (cg.time - ws->lastAttackTime > 1000))
+    {
+        ws->onTrack = qfalse;
+        ws->hitsStart = 0;
+        ws->hitsCurrent = 0;
+        ws->shotsStart = 0;
+        ws->lastAmmo = 0;
+        lastHitCount = 0;
+        return;
+    }
+
+    // Получаем текущее количество патронов и количество попаданий
+    currentAmmo = ps->ammo[weapon];
+    currentHits = ps->persistant[PERS_HITS];
+
+    // Если оружие уже "на треке", обновляем данные
+    if (ws->onTrack)
+    {
+        ws->lastAttackTime = cg.time;
+        ws->hitsCurrent = currentHits;
+        ws->lastAmmo = currentAmmo;
+        return;
+    }
+
+    // Начало нового "трека" (первая атака)
+    ws->hitsStart = currentHits;
+    ws->hitsCurrent = currentHits;
+    ws->shotsStart = currentAmmo;
+    ws->lastAmmo = currentAmmo;
+    ws->lastAttackTime = cg.time;
+    ws->onTrack = qtrue;
+
+    // Инициализация для Lightning
+    if (ps->weapon == weapon)
+    {
+        lastHitCount = currentHits;
+    }
+}
+
+
+
 
 /*
 ================
@@ -665,6 +728,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 		CG_CheckLocalSounds(ps, ops);
 	}
 
+	CG_UpdateWeaponTracking(WP_LIGHTNING);
 	// check for going low on ammo
 	CG_CheckAmmo();
 
