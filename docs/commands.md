@@ -14,7 +14,7 @@
 
 ---
 
- cg_damageFrameSize
+    cg_damageFrameSize
  
 Толщина рамки damageDrawFrame
 
