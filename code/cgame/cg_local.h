@@ -1034,19 +1034,6 @@ typedef struct playerColorsOverride_s
 
 } playerColorsOverride_t;
 
-typedef struct cgs_be_s
-{
-	struct
-	{
-		int hitsStart;
-		int shotsStart;
-		int lastAmmo;
-		int lastAttackTime;
-		int hitsCurrent;
-		qboolean onTrack;
-	} weaponStats[WP_NUM_WEAPONS];
-} cgs_be_t;
-
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
 #define  OSP_SERVER_MODE_CQ3      2
@@ -1190,8 +1177,6 @@ typedef struct
 
 	qboolean  newHud;
 
-	qboolean  shudWstatsCalled;
-
 	//
 	// locally derived information from gamestate
 	//
@@ -1229,7 +1214,6 @@ typedef struct
 	// media
 	cgMedia_t       media;
 	cgs_osp_t osp;
-	cgs_be_t be;
 } cgs_t;
 
 //==============================================================================
@@ -1521,11 +1505,9 @@ extern vmCvar_t           cg_predictStepOffset;
 extern vmCvar_t           cg_itemsRespawnAnimation;
 extern vmCvar_t         cg_enemyLightningColor;
 extern vmCvar_t         cg_uniqueColorTable;
-extern vmCvar_t             cg_noVoteBeep;
-extern vmCvar_t         cg_damageDrawFrame;
-extern vmCvar_t         cg_damageFrameSize;
-extern vmCvar_t         cg_damageFrameOpaque;
-extern vmCvar_t         cg_shud_currentWeapons;
+extern vmCvar_t			    cg_noVoteBeep;
+
+
 //
 // cg_main.c
 //
@@ -1693,8 +1675,6 @@ int CG_OSPDrawStringWithShadow(int x, int y, const char* str, int charWidth, int
 int CG_OSPDrawStringOld(int x, int y, const char* str, int charWidth, int charHeight, vec4_t const colors, int maxChars, qboolean disableColorChange);
 qboolean CG_Hex16GetColor(const char* str, float* color);
 
-void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
-
 //
 // cg_draw.c
 //
@@ -1774,7 +1754,6 @@ void CG_OSPDrawCenterString(void);
 void CG_OSPSetColor(vec4_t color);
 void CG_OSPDrawPic(float x, float y, float w, float h, qhandle_t hShader);
 void CG_OSPDraw3DModel(float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t pos, vec3_t angles, vec3_t angles2);
-void CG_DrawDamageFrame();
 
 #define LAG_SAMPLES     1024
 #define MAX_LAGOMETER_PING  900
@@ -1869,8 +1848,6 @@ void CG_DrawWeaponSelect(void);
 void CG_OutOfAmmoChange(void);   // should this be in pmove?
 
 void CG_UpdateWeaponDlightColor(weapon_t weapon);
-
-float CG_GetWeaponTempAccuracy(int weapon);
 
 //
 // cg_marks.c
@@ -2189,7 +2166,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.02" // BE
+#define OSP_VERSION "be-0.01d" // BE
 
 
 

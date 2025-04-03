@@ -369,13 +369,7 @@ vmCvar_t           cg_unfreezeAlert;
 vmCvar_t           cg_itemsRespawnAnimation;
 vmCvar_t        cg_enemyLightningColor;
 vmCvar_t        cg_uniqueColorTable;
-vmCvar_t        cg_noVoteBeep;
-vmCvar_t        cg_damageDrawFrame;
-vmCvar_t        cg_damageFrameSize;
-vmCvar_t        cg_damageFrameOpaque;
-vmCvar_t            cg_shud_currentWeapons;
-
-
+vmCvar_t		cg_noVoteBeep;
 
 static cvarTable_t cvarTable[] =
 {
@@ -653,15 +647,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_lightningHitsoundRateFix, "cg_lightningHitsoundRateFix",      "1", CVAR_ARCHIVE },
 	{ &cg_stackHitSounds,           "cg_stackHitSounds",   "1", CVAR_ARCHIVE },
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
-	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
+  { &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
 	{ &cg_itemsRespawnAnimation, "cg_itemsRespawnAnimation", "1", CVAR_ARCHIVE },
 	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "6", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
 	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
 	{ &cg_noVoteBeep, "cg_noVoteBeep", "0", CVAR_ARCHIVE },
-	{ &cg_damageDrawFrame, "cg_damageDrawFrame", "1", CVAR_ARCHIVE },
-	{ &cg_damageFrameSize, "cg_damageFrameSize", "2", CVAR_ARCHIVE },
-	{ &cg_damageFrameOpaque, "cg_damageFrameOpaque", "0.5", CVAR_ARCHIVE },
-	{ &cg_shud_currentWeapons, "cg_shud_currentWeapons", "226",  CVAR_ARCHIVE },
 };
 
 #define CG_VARS_HASH_SIZE 512

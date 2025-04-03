@@ -12,11 +12,10 @@ typedef struct
 	float w; // width of one weapon
 	float h; // height of one weapon
 	float ammoWidth; // width of ammo field
+
 	int ammoMax;
 	int weaponNum;
 	char ammo[WP_NUM_WEAPONS][8];
-	vec4_t border[WP_NUM_WEAPONS];
-	vec4_t borderColor[WP_NUM_WEAPONS];
 	superhudDrawContext_t back[WP_NUM_WEAPONS];
 	superhudDrawContext_t weaponIcon[WP_NUM_WEAPONS];
 	superhudTextContext_t ammoCount[WP_NUM_WEAPONS];
@@ -55,7 +54,6 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 	int total;
 	int ammo_max = 0;
 	int weapon;
-	float offsetX, offsetY;
 
 	if (!cg.snap)
 	{
@@ -112,7 +110,7 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 	{
 		if ((statWeapons & (1 << wpi)) != 0)
 		{
-			// icon
+			//icon
 			element->tmp_config.alignV.value = SUPERHUD_ALIGNV_TOP;
 			element->tmp_config.alignV.isSet = qtrue;
 
@@ -135,8 +133,9 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 			CG_SHUDDrawMakeContext(&element->tmp_config, &element->weaponIcon[element->weaponNum]);
 			element->weaponIcon[element->weaponNum].image = cg_weapons[wpi].weaponIcon;
 
-			// selection and background
+			//selection and background
 			element->tmp_config.rect.value[0] = x;
+			// For right ammo is left to icon
 			if (align == SUPERHUD_ALIGNH_RIGHT)
 			{
 				element->tmp_config.rect.value[0] -= element->ammoWidth;
@@ -145,6 +144,8 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 			element->tmp_config.rect.value[2] = w + element->ammoWidth;
 			element->tmp_config.rect.value[3] = h;
 			CG_SHUDDrawMakeContext(&element->tmp_config, &element->back[element->weaponNum]);
+			//element will be set to color
+			//but if weapon not selected, set background color
 			if (wpi != weapon)
 			{
 				if (element->config.bgcolor.isSet)
@@ -168,33 +169,8 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 				}
 			}
 
-			if (wpi == weapon)
-			{
-				if (element->config.border.isSet)
-				{
-					Vector4Copy(element->config.border.value, element->border[element->weaponNum]);
-				}
-				else
-				{
-					Vector4Set(element->border[element->weaponNum], 0, 0, 0, 0);
-				}
-
-				if (element->config.borderColor.isSet)
-				{
-					Vector4Copy(element->config.borderColor.value, element->borderColor[element->weaponNum]);
-				}
-				else
-				{
-					Vector4Set(element->borderColor[element->weaponNum], 1, 1, 1, 0);
-				}
-			}
-			else
-			{
-				Vector4Set(element->border[element->weaponNum], 0, 0, 0, 0);
-				Vector4Set(element->borderColor[element->weaponNum], 0, 0, 0, 0);
-			}
-
-			// ammo
+			//ammo
+			// For right ammo is left to icon
 			if (align != SUPERHUD_ALIGNH_RIGHT)
 			{
 				element->tmp_config.rect.value[0] = x + w;
@@ -217,20 +193,6 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 			element->tmp_config.alignH.value = SUPERHUD_ALIGNH_LEFT;
 			element->tmp_config.alignH.isSet = qtrue;
 
-			// Offset for text
-			offsetX = element->tmp_config.fontsize.value[0] / 8;
-			offsetY = element->tmp_config.fontsize.value[1] / 16;
-
-
-			if (align == SUPERHUD_ALIGNH_RIGHT)
-			{
-				element->tmp_config.rect.value[0] += offsetX;
-			}
-
-			{
-				element->tmp_config.rect.value[0] -= offsetX;
-				element->tmp_config.rect.value[1] -= offsetY;
-			}
 
 			CG_SHUDTextMakeContext(&element->tmp_config, &element->ammoCount[element->weaponNum]);
 			element->ammoCount[element->weaponNum].text = &element->ammo[element->weaponNum][0];
@@ -271,7 +233,6 @@ void CG_SHUDElementWeaponListRoutine(void* context)
 		CG_SHUDFillWithColor(&element->back[i].coord, element->back[i].color);
 		CG_SHUDDrawStretchPicCtx(&element->config, &element->weaponIcon[i]);
 		CG_SHUDTextPrint(&element->config, &element->ammoCount[i]);
-		CG_SHUDDrawBorderDirect(&element->back[i].coord, element->border[i], element->borderColor[i]);
 	}
 }
 
