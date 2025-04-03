@@ -1034,18 +1034,17 @@ typedef struct playerColorsOverride_s
 
 } playerColorsOverride_t;
 
-typedef struct weaponStats_s {
-    int hitsStart;
-    int shotsStart;
-    int lastAmmo;
-    int lastAttackTime;
-    int hitsCurrent;
-	int damageFixed;
-    qboolean onTrack;
-} weaponStats_t;
-
-typedef struct cgs_be_s {
-    weaponStats_t weaponStats[WP_NUM_WEAPONS];
+typedef struct cgs_be_s
+{
+	struct
+	{
+		int hitsStart;
+		int shotsStart;
+		int lastAmmo;
+		int lastAttackTime;
+		int hitsCurrent;
+		qboolean onTrack;
+	} weaponStats[WP_NUM_WEAPONS];
 } cgs_be_t;
 
 #define  OSP_SERVER_MODE_VQ3      0
@@ -2190,7 +2189,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.02b" // BE
+#define OSP_VERSION "be-0.02a" // BE
 
 
 

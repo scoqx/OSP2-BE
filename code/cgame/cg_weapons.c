@@ -2130,6 +2130,7 @@ static qboolean CG_IsDoubleShoot(weapon_t weap)
 	return qfalse;
 }
 
+// Функция для расчета точности
 float CG_GetWeaponTempAccuracy(int weapon)
 {
 	static int lastHits[WP_NUM_WEAPONS] = {0};
@@ -2175,6 +2176,93 @@ float CG_GetWeaponTempAccuracy(int weapon)
 }
 
 
+void CG_UpdateWeaponTracking(int weapon)
+{
+	static int lastHitCount = 0;
+	static int detectedDamage = 0;
+	int currentAmmo, currentHits;
+	int delta, newHits;
+
+	// Сброс статистики, если игрок умер или сменил оружие
+	if (cg.snap->ps.weapon != weapon || cg.snap->ps.stats[STAT_HEALTH] <= 0)
+	{
+		cgs.be.weaponStats[weapon].onTrack = qfalse;
+		cgs.be.weaponStats[weapon].hitsStart = 0;
+		cgs.be.weaponStats[weapon].hitsCurrent = 0;
+		cgs.be.weaponStats[weapon].shotsStart = 0;
+		cgs.be.weaponStats[weapon].lastAmmo = 0;
+		lastHitCount = 0;
+		detectedDamage = 0;
+		return;
+	}
+
+	// Сброс, если прошло больше 1 секунды без атак
+	if (cgs.be.weaponStats[weapon].onTrack &&
+	        (cg.time - cgs.be.weaponStats[weapon].lastAttackTime > 1000))
+	{
+		cgs.be.weaponStats[weapon].onTrack = qfalse;
+		cgs.be.weaponStats[weapon].hitsStart = 0;
+		cgs.be.weaponStats[weapon].hitsCurrent = 0;
+		cgs.be.weaponStats[weapon].shotsStart = 0;
+		cgs.be.weaponStats[weapon].lastAmmo = 0;
+		lastHitCount = 0;
+		detectedDamage = 0;
+		return;
+	}
+
+	currentAmmo = cg.snap->ps.ammo[weapon];
+	currentHits = cg.snap->ps.persistant[PERS_HITS];
+
+	// Если оружие уже "на треке", обновляем данные
+	if (cgs.be.weaponStats[weapon].onTrack)
+	{
+		cgs.be.weaponStats[weapon].lastAttackTime = cg.time;
+
+		// Логика для Lightning: подсчёт попаданий через delta/detectedDamage
+		if (weapon == WP_LIGHTNING)
+		{
+			delta = currentHits - lastHitCount;
+
+			if (delta > 0)
+			{
+				if (detectedDamage == 0)
+				{
+					detectedDamage = delta; // Первый урон = эталон
+				}
+
+				newHits = (detectedDamage > 0) ? delta / detectedDamage : 1;
+				cgs.be.weaponStats[weapon].hitsCurrent += newHits;
+			}
+
+			lastHitCount = currentHits;
+		}
+		else
+		{
+			// Для других оружий просто берём текущие hits
+			cgs.be.weaponStats[weapon].hitsCurrent = currentHits;
+		}
+
+		cgs.be.weaponStats[weapon].lastAmmo = currentAmmo;
+		return;
+	}
+
+	// Начало нового "трека" (первая атака)
+	cgs.be.weaponStats[weapon].hitsStart = currentHits;
+	cgs.be.weaponStats[weapon].hitsCurrent = currentHits;
+	cgs.be.weaponStats[weapon].shotsStart = currentAmmo;
+	cgs.be.weaponStats[weapon].lastAmmo = currentAmmo;
+	cgs.be.weaponStats[weapon].lastAttackTime = cg.time;
+	cgs.be.weaponStats[weapon].onTrack = qtrue;
+
+	// Инициализация для Lightning
+	if (weapon == WP_LIGHTNING)
+	{
+		lastHitCount = currentHits;
+		detectedDamage = 0;
+	}
+}
+
+
 /*
 ================
 CG_FireWeapon
@@ -2201,6 +2289,7 @@ void CG_FireWeapon(centity_t* cent)
 
 
 	weap = &cg_weapons[ ent->weapon ];
+	CG_UpdateWeaponTracking(ent->weapon);
 	if (cent->currentState.number == cg.predictedPlayerState.clientNum && CG_IsDoubleShoot(ent->weapon))
 	{
 		return;
