@@ -10,7 +10,31 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## 0.02
+```
+Cvars:
+*cg_drawDamage (3/4) reworked to:
+    + cg_damageDrawFrame;
+    + cg_damageFrameSize;
+    + cg_damageFrameOpaque;
 
++ cg_shud_currentWeapons;
+
+SHUD:
++ Current Weapon Stats shows accuracy
+    + CurrentWeaponStats
+    + CurrentWeaponStats_icon
+
+* tempAcc reworked:
+    * fixed calc
+    - tempAcc_last
+    
+
+* weaponlist:
+    + border for choosen weapon
+
++ various fixes
+```
 ## 0.01
 ```
 Cvars:
@@ -29,7 +53,6 @@ SHUD:
 + Item pickup style 2
 + Color E/T transparency via color2
 + Armor bar over HP bar
-
 ```
 ![shot-Mar-27-2025_00 30 21](https://github.com/user-attachments/assets/11e8a2cf-8ef6-4984-a427-5af8ac9de650)
 
