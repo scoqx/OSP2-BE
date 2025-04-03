@@ -303,7 +303,7 @@ void CG_SHUDRoutine(void)
 	const qboolean is_spectator = CG_IsSpectator();
 
 	CG_DrawCrosshair();
-
+	CG_DrawDamageFrame();
 	if (CG_DrawIntermission() == 0)
 	{
 		CG_OSPDrawCenterString();
@@ -452,5 +452,17 @@ void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen
 	entry->runtime.isInitialized = qfalse;
 
 	++ctx->obituaries.index;
+}
+
+void CG_SHUDEventTempAccuracy(int weapon, float accuracy)
+{
+	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+	superhudTempAccEntry_t* entry = &ctx->tempAcc.weapon[weapon];
+
+
+	memset(entry, 0, sizeof(*entry));
+
+	entry->tempAccuracy = accuracy;
+
 }
 

@@ -710,7 +710,7 @@ static void CG_DamageBlendBlob(void)
 	ent.renderfx = RF_FIRST_PERSON;
 
 	VectorMA(cg.refdef.vieworg, 8, cg.refdef.viewaxis[0], ent.origin);
-	if (cg_damageDraw.integer == 1 || cg_damageDraw.integer == 3)
+	if (cg_damageDraw.integer == 1)
 	{
 		VectorMA(ent.origin, cg.damageX * -8, cg.refdef.viewaxis[1], ent.origin);
 		VectorMA(ent.origin, cg.damageY * 8, cg.refdef.viewaxis[2], ent.origin);

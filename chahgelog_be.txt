@@ -1,0 +1,43 @@
+27.05.2025 be v 0.01
+
+Cvars:
++ cg_itemsRespawnAnimation
++ cg_drawDamage (3/4)
++ cg_enemyLightning
++ cg_uniqueColorTable
++ cg_noVoteBeep
+* cg_drawGun (reworked)
+
+SHUD:
++ Border (border, borderColor)
+* Background for text elements (reworked)
++ Background for client events in obituaries
++ Temporal LG accuracy
++ Item pickup style 2
++ Color E/T transparency via color2
++ Armor bar over HP bar
+
+03.04.2025 be v0.02
+
+Cvars:
+*cg_drawDamage (3/4) reworked to:
+    + cg_damageDrawFrame;
+    + cg_damageFrameSize;
+    + cg_damageFrameOpaque;
+
++ cg_shud_currentWeapons;
+
+SHUD:
++ Current Weapon Stats shows accuracy
+    + CurrentWeaponStats
+    + CurrentWeaponStats_icon
+
+* tempAcc reworked:
+    * fixed calc
+    - tempAcc_last
+    
+
+* weaponlist:
+    + border for choosen weapon
+
++ various fixes
