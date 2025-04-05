@@ -2224,35 +2224,63 @@ void CG_DrawWarmup(void)
 
 void CG_DrawDamageFrame()
 {
-
-	float x = 0.0f;     //
-	float y = 0.0f;     //
+	float x = 0.0f;
+	float y = 0.0f;
 	float w = 640.0f;
 	float h = 480.0f;
-	vec4_t borderSize;
+	vec4_t borderSizeOriginal;
+	float size = cg_damageFrameSize.value;
+
+	int i;
 	vec4_t red;
 
-
 	if (cg_damageDrawFrame.integer == 0)
-	{
 		return;
-	}
 
 	if (!cg.damageValue || cg.time - cg.damageTime <= 0 || cg.time - cg.damageTime >= DAMAGE_TIME)
-	{
 		return;
-	}
 
 	CG_AdjustFrom640(&x, &y, &w, &h);
 
-	Vector4Set(red, 1.0f, 0.0f, 0.0f, (float)cg_damageFrameOpaque.value);
-	Vector4Set(borderSize, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value);
+	if (cg_damageDrawFrame.integer == 2)
+	{
+		Vector4Set(red, 1.0f, 0.0f, 0.0f, cg_damageFrameOpaque.value);
+		Vector4Set(borderSizeOriginal, size, size, size, size);
+		CG_OSPDrawFrame(x, y, w, h, borderSizeOriginal, red, qtrue);
+	}
+	else
+	{
 
+		float t, falloff, currentAlpha;
+		const float step = 1.0f;
+		const float stepCount = size;
+		const float baseAlpha = cg_damageFrameOpaque.value;
+		for (i = 0; i < (int)stepCount; i++)
+		{
+			vec4_t borderSize;
+			t = (float)i / (stepCount - 1);
 
+			falloff = (1.0f - t) * (1.0f - t) * (0.25f + 0.75f * (1.0f - t));
+			if (falloff < 0.0f) falloff = 0.0f;
 
-	CG_OSPDrawFrame(x, y, w, h, borderSize, red, qtrue);
+			currentAlpha = baseAlpha * falloff;
+			if (currentAlpha <= 0.001f)
+				break;
 
+			Vector4Set(red, 1.0f, 0.0f, 0.0f, currentAlpha);
+			Vector4Set(borderSize, step, step, step, step);
+			CG_OSPDrawFrame(x, y, w, h, borderSize, red, qtrue);
+
+			x += step;
+			y += step;
+			w -= step * 2;
+			h -= step * 2;
+		}
+	}
 }
+
+
+
 
 void CG_DrawWarmupShud(void)
 {

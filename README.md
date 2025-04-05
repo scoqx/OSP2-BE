@@ -10,10 +10,21 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## 0.03
+```
+Cvars:
+* cg_drawHitBox enabled. Server permission required
+    + cg_hitBoxColor <color>
+    * HQ shader (lol)
+
+* cg_damageDrawFrame variations
+  + 1 gradient
+  + 2 old solid border
+```
 ## 0.02
 ```
 Cvars:
-*cg_drawDamage (3/4) reworked to:
+* cg_drawDamage (3/4) reworked to:
     + cg_damageDrawFrame;
     + cg_damageFrameSize;
     + cg_damageFrameOpaque;

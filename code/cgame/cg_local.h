@@ -1034,18 +1034,21 @@ typedef struct playerColorsOverride_s
 
 } playerColorsOverride_t;
 
-typedef struct weaponStats_s {
-    int hitsStart;
-    int shotsStart;
-    int lastAmmo;
-    int lastAttackTime;
-    int hitsCurrent;
+typedef struct weaponStats_s
+{
+	int hitsStart;
+	int shotsStart;
+	int lastAmmo;
+	int lastAttackTime;
+	int hitsCurrent;
 	int damageFixed;
-    qboolean onTrack;
+	qboolean onTrack;
 } weaponStats_t;
 
-typedef struct cgs_be_s {
-    weaponStats_t weaponStats[WP_NUM_WEAPONS];
+typedef struct cgs_be_s
+{
+	vec4_t hitBoxColor;
+	weaponStats_t weaponStats[WP_NUM_WEAPONS];
 } cgs_be_t;
 
 #define  OSP_SERVER_MODE_VQ3      0
@@ -1071,6 +1074,7 @@ typedef struct cgs_osp_s
 	int serverConfigMaximumTimenudge;
 	int serverConfigMinimumMaxpackets;
 	int serverConfigMaximumMaxpackets;
+	int serverConfigXHitBox;
 	int nextCvarsUpdateTime;
 	int cvarsUpdateDelay;
 	qboolean isOSPv1;
@@ -1527,6 +1531,7 @@ extern vmCvar_t         cg_damageDrawFrame;
 extern vmCvar_t         cg_damageFrameSize;
 extern vmCvar_t         cg_damageFrameOpaque;
 extern vmCvar_t         cg_shud_currentWeapons;
+extern vmCvar_t         cg_hitBoxColor;
 //
 // cg_main.c
 //
@@ -2190,7 +2195,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.02b" // BE
+#define OSP_VERSION "be-0.03" // BE
 
 
 
@@ -2261,6 +2266,7 @@ void CG_OSPConfigCustomClientSet(int value);
 void CG_OSPConfigCustomClient2Set(int value);
 void CG_OSPConfigModeSet(int value);
 void CG_OSPConfigFreezeModeSet(int value);
+void CG_OSPConfigXHitBoxSet(int value);
 
 qboolean CG_IsSpectator(void);
 qboolean CG_IsFollowing(void);
@@ -2403,6 +2409,11 @@ void CG_LocalEventCvarChanged_cg_dlightPG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_dlightBFG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_conObituaries(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_hitBoxColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_damageDrawFrame(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_damageFrameSize(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_damageFrameOpaque(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

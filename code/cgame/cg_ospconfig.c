@@ -226,6 +226,27 @@ void CG_OSPConfigMaxTimenudgeSet(int value)
 	CG_CvarTouch("cl_timenudge");
 }
 
+void CG_OSPConfigXHitBoxSet(int value)
+{
+	const char* config;
+	const char* valueStr;
+
+	config = CG_ConfigString(X_HCK_PS_ENEMY_HITBOX);
+	valueStr = Info_ValueForKey(config, "x_hck_ps_enemy_hitbox");
+
+	if (valueStr && *valueStr)
+	{
+		value = atoi(valueStr);
+	}
+	else
+	{
+		value = 0;
+	}
+
+	cgs.osp.serverConfigXHitBox = value;
+}
+
+
 /*
  * Unknown cs 0x368
  */

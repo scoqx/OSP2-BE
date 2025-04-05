@@ -2176,7 +2176,11 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	float extx, exty, extz;
 	vec3_t corners[8];
 
-	if (!cg_drawHitBox.integer || !cg.demoPlayback)
+	if (!cg_drawHitBox.integer)
+	{
+		return;
+	}
+	if (!cgs.osp.serverConfigXHitBox)
 	{
 		return;
 	}
@@ -2247,30 +2251,23 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	verts[3].st[0] = 1;
 	verts[3].st[1] = 0;
 
+
 	// set the polygon's vertex colors
-	if (ci->team == TEAM_RED)
+	for (i = 0; i < 4; i++)
 	{
-		for (i = 0; i < 4; i++)
+		if (cg_hitBoxColor.integer || cg_hitBoxColor.string)
 		{
-			verts[i].modulate[0] = 160;
-			verts[i].modulate[1] = 0;
-			verts[i].modulate[2] = 0;
-			verts[i].modulate[3] = 255;
+			vec4_t color;
+			Vector4Copy(cgs.be.hitBoxColor, color);
+
+			color[0] = color[0] * 255;
+			color[1] = color[1] * 255;
+			color[2] = color[2] * 255;
+			color[3] = color[3] * 255;
+
+			Vector4Copy(color, verts[i].modulate);
 		}
-	}
-	else if (ci->team == TEAM_BLUE)
-	{
-		for (i = 0; i < 4; i++)
-		{
-			verts[i].modulate[0] = 0;
-			verts[i].modulate[1] = 0;
-			verts[i].modulate[2] = 192;
-			verts[i].modulate[3] = 255;
-		}
-	}
-	else
-	{
-		for (i = 0; i < 4; i++)
+		else
 		{
 			verts[i].modulate[0] = 0;
 			verts[i].modulate[1] = 128;

@@ -407,6 +407,10 @@ static void CG_ConfigStringModified(void)
 	{
 		CG_ShaderStateChanged();
 	}
+	else if (num == X_HCK_PS_ENEMY_HITBOX)
+	{
+		CG_OSPConfigXHitBoxSet(atoi(str));
+	}
 
 }
 

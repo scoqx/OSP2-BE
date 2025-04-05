@@ -374,6 +374,7 @@ vmCvar_t        cg_damageDrawFrame;
 vmCvar_t        cg_damageFrameSize;
 vmCvar_t        cg_damageFrameOpaque;
 vmCvar_t            cg_shud_currentWeapons;
+vmCvar_t        cg_hitBoxColor;
 
 
 
@@ -591,7 +592,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_lightningSilent, "cg_lightningSilent", "0", CVAR_ARCHIVE },
 	{ &cg_lightningHide, "cg_lightningHide", "0", CVAR_ARCHIVE },
 	{ &cg_delag, "cg_delag", "1", CVAR_ARCHIVE },
-	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE },
+	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawHitBox },
 	{ &cg_projectileNudge, "cg_projectileNudge", "0", CVAR_ARCHIVE },
 	{ &cg_hideScores, "cg_hideScores", "0", CVAR_ARCHIVE },
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
@@ -647,7 +648,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_dlightRG,       "cg_dlightRG",       "FF8000", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightRG },
 	{ &cg_dlightPG,       "cg_dlightPG",       "9999FF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightPG },
 	{ &cg_dlightBFG,      "cg_dlightBFG",      "FFB2FF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightBFG },
-	{ &cg_gunColor,       "cg_gunColor",      "white", CVAR_ARCHIVE },
+	{ &cg_gunColor,       "cg_gunColor",      "White", CVAR_ARCHIVE },
 	{ &cg_gunOpaque,      "cg_gunOpaque",      "0.15", CVAR_ARCHIVE },
 	{ &cg_conObituaries,  "cg_conObituaries",   "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_conObituaries },
 	{ &cg_lightningHitsoundRateFix, "cg_lightningHitsoundRateFix",      "1", CVAR_ARCHIVE },
@@ -658,10 +659,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "6", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
 	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
 	{ &cg_noVoteBeep, "cg_noVoteBeep", "0", CVAR_ARCHIVE },
-	{ &cg_damageDrawFrame, "cg_damageDrawFrame", "1", CVAR_ARCHIVE },
-	{ &cg_damageFrameSize, "cg_damageFrameSize", "2", CVAR_ARCHIVE },
-	{ &cg_damageFrameOpaque, "cg_damageFrameOpaque", "0.5", CVAR_ARCHIVE },
+	{ &cg_damageDrawFrame, "cg_damageDrawFrame", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageDrawFrame },
+	{ &cg_damageFrameSize, "cg_damageFrameSize", "64", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageFrameSize },
+	{ &cg_damageFrameOpaque, "cg_damageFrameOpaque", "0.2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageFrameOpaque },
 	{ &cg_shud_currentWeapons, "cg_shud_currentWeapons", "226",  CVAR_ARCHIVE },
+	{ &cg_hitBoxColor, "cg_hitBoxColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -1665,6 +1667,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("ch_crosshairDecorColor");
 	CG_CvarTouch("ch_crosshairDecorActionColor");
 
+	CG_CvarTouch("cg_hitBoxColor");
+
 	CG_CvarTouch("ch_crosshairDecorOpaque");
 	CG_CvarTouch("ch_crosshairOpaque");
 	CG_CvarTouch("ch_crosshairActionScale");
@@ -1683,6 +1687,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_dlightRG");
 	CG_CvarTouch("cg_dlightPG");
 	CG_CvarTouch("cg_dlightBFG");
+
+
+
 
 	CG_InitConsoleCommands();
 
@@ -1791,6 +1798,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_OSPConfigMaxTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MAX)));
 		CG_OSPConfigClanBaseTDMSet(atoi(CG_ConfigString(CS_OSP_CLAN_BASE_TEAM_DM)));
 		CG_OSPConfigFreezeModeSet(atoi(CG_ConfigString(CS_OSP_FREEZE_GAME_TYPE)));
+		CG_OSPConfigXHitBoxSet(atoi(CG_ConfigString(X_HCK_PS_ENEMY_HITBOX)));
 
 
 		/****/
