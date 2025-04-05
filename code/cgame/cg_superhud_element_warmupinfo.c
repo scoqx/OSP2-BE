@@ -28,8 +28,6 @@ void CG_SHUDElementWarmupInfoRoutine(void* context)
 
 	int sec = cg.warmup;
 
-	CG_SHUDFill(&element->config);
-
 	element->ctx.text = NULL;
 
 	if (sec < 0)

@@ -31,8 +31,9 @@ void CG_SHUDElementHoldableItemRoutine(void* context)
 	{
 		element->ctx.image = 0;
 	}
-
 	CG_SHUDFill(&element->config);
+	CG_SHUDDrawBorder(&element->config);
+
 	CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx);
 }
 
