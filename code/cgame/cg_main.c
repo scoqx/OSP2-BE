@@ -375,6 +375,7 @@ vmCvar_t        cg_damageFrameSize;
 vmCvar_t        cg_damageFrameOpaque;
 vmCvar_t            cg_shud_currentWeapons;
 vmCvar_t        cg_hitBoxColor;
+vmCvar_t        cg_drawGunForceAspect;
 
 
 
@@ -664,6 +665,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_damageFrameOpaque, "cg_damageFrameOpaque", "0.2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageFrameOpaque },
 	{ &cg_shud_currentWeapons, "cg_shud_currentWeapons", "226",  CVAR_ARCHIVE },
 	{ &cg_hitBoxColor, "cg_hitBoxColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
+	{ &cg_drawGunForceAspect, "cg_drawGunForceAspect", "0", CVAR_ARCHIVE },
 };
 
 #define CG_VARS_HASH_SIZE 512

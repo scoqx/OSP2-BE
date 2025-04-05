@@ -1532,6 +1532,7 @@ extern vmCvar_t         cg_damageFrameSize;
 extern vmCvar_t         cg_damageFrameOpaque;
 extern vmCvar_t         cg_shud_currentWeapons;
 extern vmCvar_t         cg_hitBoxColor;
+extern vmCvar_t         cg_drawGunForceAspect;
 //
 // cg_main.c
 //
@@ -2195,7 +2196,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.03" // BE
+#define OSP_VERSION "be-0.031" // BE
 
 
 

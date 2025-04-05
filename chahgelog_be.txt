@@ -1,6 +1,5 @@
 27.05.2025 be v 0.01
 
-Cvars:
 + cg_itemsRespawnAnimation
 + cg_drawDamage (3/4)
 + cg_enemyLightning
@@ -19,7 +18,6 @@ SHUD:
 
 03.04.2025 be v0.02
 
-Cvars:
 *cg_drawDamage (3/4) reworked to:
     + cg_damageDrawFrame;
     + cg_damageFrameSize;
@@ -41,3 +39,19 @@ SHUD:
     + border for choosen weapon
 
 + various fixes
+
+05.04.2025 be v0.03
+
+* cg_drawHitBox enabled. Server permission required
+    + cg_hitBoxColor <color>
+    * HQ shader (lol)
+
+* cg_damageDrawFrame variations
+  + 1 gradient
+  + 2 old solid border
+
+ 05.04.2025 be v0.031
+
+  + cg_drawGunForceAspect
+  * clientconfig
+    + Hitbox permission from server

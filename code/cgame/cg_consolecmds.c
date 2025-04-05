@@ -412,6 +412,7 @@ void CG_OSPClientConfig_f(void)
 	CG_Printf("    ^3Timenudge maximum:           ^3%s\n", cgs.osp.serverConfigMaximumTimenudge ? va("%i", cgs.osp.serverConfigMaximumTimenudge) : "-");
 	CG_Printf("    ^3Maxpackets minimum:          ^3%s\n", cgs.osp.serverConfigMinimumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3Maxpackets maximum:          ^3%s\n", cgs.osp.serverConfigMaximumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
+	CG_Printf("    ^3HitBox (XQ3E):                %s\n", CG_YES_NO_STR(cgs.osp.serverConfigXHitBox));
 }
 
 void CG_OSPCredits_f(void)

@@ -1588,6 +1588,10 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		gun.customShader = cgs.media.firstPersonGun;
 
 	}
+	if ((gun.renderfx & RF_FIRST_PERSON) && cg_drawGunForceAspect.integer)
+	{
+		VectorScale(gun.axis[1], 0.75f, gun.axis[1]);
+	}
 
 	CG_AddWeaponWithPowerups(&gun, cent->currentState.powerups);
 
@@ -1611,6 +1615,11 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			CG_UpdateGunShaderRGBA(&barrel);
 			barrel.customShader = cgs.media.firstPersonGun;
 		}
+		if ((barrel.renderfx & RF_FIRST_PERSON) && cg_drawGunForceAspect.integer)
+		{
+			VectorScale(barrel.axis[1], 0.75f, barrel.axis[1]);
+		}
+
 		CG_AddWeaponWithPowerups(&barrel, cent->currentState.powerups);
 	}
 

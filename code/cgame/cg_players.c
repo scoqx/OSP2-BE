@@ -2180,6 +2180,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	{
 		return;
 	}
+
 	if (!cgs.osp.serverConfigXHitBox)
 	{
 		return;
@@ -2194,6 +2195,11 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 
 	// don't draw it for dead players
 	if (cent->currentState.eFlags & EF_DEAD)
+	{
+		return;
+	}
+	// don't draw it for frozen players
+	if (cgs.osp.gameTypeFreeze && (cent->currentState.weapon == WP_NONE) && (cent->currentState.powerups & (1 << PW_BATTLESUIT)))// or frozen
 	{
 		return;
 	}
