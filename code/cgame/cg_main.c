@@ -364,7 +364,20 @@ vmCvar_t           cg_conObituaries;
 vmCvar_t           cg_lightningHitsoundRateFix;
 vmCvar_t           cg_stackHitSounds;
 vmCvar_t           cg_drawCenterMessages;
-vmCvar_t           cg_predictStepOffset;
+vmCvar_t        cg_predictStepOffset;
+vmCvar_t           cg_unfreezeAlert;
+vmCvar_t           cg_itemsRespawnAnimation;
+vmCvar_t        cg_enemyLightningColor;
+vmCvar_t        cg_uniqueColorTable;
+vmCvar_t        cg_noVoteBeep;
+vmCvar_t        cg_damageDrawFrame;
+vmCvar_t        cg_damageFrameSize;
+vmCvar_t        cg_damageFrameOpaque;
+vmCvar_t            cg_shud_currentWeapons;
+vmCvar_t        cg_hitBoxColor;
+vmCvar_t        cg_drawGunForceAspect;
+
+
 
 static cvarTable_t cvarTable[] =
 {
@@ -580,7 +593,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_lightningSilent, "cg_lightningSilent", "0", CVAR_ARCHIVE },
 	{ &cg_lightningHide, "cg_lightningHide", "0", CVAR_ARCHIVE },
 	{ &cg_delag, "cg_delag", "1", CVAR_ARCHIVE },
-	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE },
+	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawHitBox },
 	{ &cg_projectileNudge, "cg_projectileNudge", "0", CVAR_ARCHIVE },
 	{ &cg_hideScores, "cg_hideScores", "0", CVAR_ARCHIVE },
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
@@ -636,15 +649,23 @@ static cvarTable_t cvarTable[] =
 	{ &cg_dlightRG,       "cg_dlightRG",       "FF8000", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightRG },
 	{ &cg_dlightPG,       "cg_dlightPG",       "9999FF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightPG },
 	{ &cg_dlightBFG,      "cg_dlightBFG",      "FFB2FF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightBFG },
-	{ &cg_gunColor,       "cg_gunColor",      "white", CVAR_ARCHIVE },
+	{ &cg_gunColor,       "cg_gunColor",      "White", CVAR_ARCHIVE },
 	{ &cg_gunOpaque,      "cg_gunOpaque",      "0.15", CVAR_ARCHIVE },
 	{ &cg_conObituaries,  "cg_conObituaries",   "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_conObituaries },
-
 	{ &cg_lightningHitsoundRateFix, "cg_lightningHitsoundRateFix",      "1", CVAR_ARCHIVE },
 	{ &cg_stackHitSounds,           "cg_stackHitSounds",   "1", CVAR_ARCHIVE },
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
-
+	{ &cg_itemsRespawnAnimation, "cg_itemsRespawnAnimation", "1", CVAR_ARCHIVE },
+	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "6", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
+	{ &cg_noVoteBeep, "cg_noVoteBeep", "0", CVAR_ARCHIVE },
+	{ &cg_damageDrawFrame, "cg_damageDrawFrame", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageDrawFrame },
+	{ &cg_damageFrameSize, "cg_damageFrameSize", "64", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageFrameSize },
+	{ &cg_damageFrameOpaque, "cg_damageFrameOpaque", "0.2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageFrameOpaque },
+	{ &cg_shud_currentWeapons, "cg_shud_currentWeapons", "226",  CVAR_ARCHIVE },
+	{ &cg_hitBoxColor, "cg_hitBoxColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
+	{ &cg_drawGunForceAspect, "cg_drawGunForceAspect", "0", CVAR_ARCHIVE },
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -1028,8 +1049,11 @@ static void CG_RegisterSounds(void)
 	cgs.media.hitSounds[2] = trap_S_RegisterSound("sound/feedback/hit75.wav", qfalse);
 	cgs.media.hitSounds[3] = trap_S_RegisterSound("sound/feedback/hit100.wav", qfalse);
 	cgs.media.hitHighSound = trap_S_RegisterSound("sound/feedback/hithigh.wav", qfalse);
-	cgs.media.gotDamageSound = trap_S_RegisterSound("sound/feedback/damage.wav", qfalse);
-
+	// QC incoming damage sound
+	cgs.media.gotDamageSounds[0] = trap_S_RegisterSound("sound/feedback/damage_qc25.wav", qfalse);
+	cgs.media.gotDamageSounds[1] = trap_S_RegisterSound("sound/feedback/damage_qc50.wav", qfalse);
+	cgs.media.gotDamageSounds[2] = trap_S_RegisterSound("sound/feedback/damage_qc75.wav", qfalse);
+	cgs.media.gotDamageSounds[3] = trap_S_RegisterSound("sound/feedback/damage_qc100.wav", qfalse);
 
 	cgs.media.impressiveSound = trap_S_RegisterSound("sound/feedback/impressive.wav", qtrue);
 	cgs.media.excellentSound = trap_S_RegisterSound("sound/feedback/excellent.wav", qtrue);
@@ -1420,7 +1444,6 @@ static void CG_RegisterGraphics(void)
 	cgs.media.obituariesFalling = trap_R_RegisterShader("ObituariesFalling");
 	cgs.media.obituariesSkull = trap_R_RegisterShader("ObituariesSkull");
 
-
 	memset(cg_items, 0, sizeof(cg_items));
 	memset(cg_weapons, 0, sizeof(cg_weapons));
 
@@ -1646,6 +1669,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("ch_crosshairDecorColor");
 	CG_CvarTouch("ch_crosshairDecorActionColor");
 
+	CG_CvarTouch("cg_hitBoxColor");
+
 	CG_CvarTouch("ch_crosshairDecorOpaque");
 	CG_CvarTouch("ch_crosshairOpaque");
 	CG_CvarTouch("ch_crosshairActionScale");
@@ -1664,6 +1689,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_dlightRG");
 	CG_CvarTouch("cg_dlightPG");
 	CG_CvarTouch("cg_dlightBFG");
+
+
+
 
 	CG_InitConsoleCommands();
 
@@ -1772,6 +1800,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_OSPConfigMaxTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MAX)));
 		CG_OSPConfigClanBaseTDMSet(atoi(CG_ConfigString(CS_OSP_CLAN_BASE_TEAM_DM)));
 		CG_OSPConfigFreezeModeSet(atoi(CG_ConfigString(CS_OSP_FREEZE_GAME_TYPE)));
+		CG_OSPConfigXHitBoxSet(atoi(CG_ConfigString(X_HCK_PS_ENEMY_HITBOX)));
 
 
 		/****/

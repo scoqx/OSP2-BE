@@ -403,3 +403,46 @@ void CG_LocalEventCvarChanged_cg_conObituaries(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
 }
+
+void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart)
+{
+	CG_RebuildPlayerColors();
+	CG_UpdateAllClientsInfo();
+}
+
+void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
+{
+
+
+	if (cgs.osp.serverConfigXHitBox != 1 && cg_drawHitBox.integer)
+	{
+		CG_Printf("^3HitBox has been disabled on this server.\n");
+		// trap_Cvar_Set("cg_drawHitBox", "0");
+
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_hitBoxColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.hitBoxColor);
+}
+
+void CG_LocalEventCvarChanged_cg_damageFrameSize(cvarTable_t* cvart)
+{
+	if (cg_damageDrawFrame.integer == 1)
+	{
+		cvart->vmCvar->value = Com_Clamp(2, 512, cvart->vmCvar->value);
+	}
+	else
+		cvart->vmCvar->value = Com_Clamp(1, 512, cvart->vmCvar->value);
+}
+
+void CG_LocalEventCvarChanged_cg_damageFrameOpaque(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0.1f, 1.0f, cvart->vmCvar->value);
+
+}
+void CG_LocalEventCvarChanged_cg_damageDrawFrame(cvarTable_t* cvart)
+{
+	CG_CvarTouch("cg_damageFrameSize");
+}

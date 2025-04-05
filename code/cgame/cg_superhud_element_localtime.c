@@ -17,6 +17,7 @@ void* CG_SHUDElementLocalTimeCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 	element->ctx.text = &element->s[0];
 
 	return element;
@@ -33,8 +34,6 @@ void CG_SHUDElementLocalTimeRoutine(void* context)
 		trap_RealTime(&qtime);
 		Com_sprintf(element->s, MAX_QPATH, "%02d:%02d", qtime.tm_hour, qtime.tm_min);
 	}
-	CG_SHUDFill(&element->config);
-
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

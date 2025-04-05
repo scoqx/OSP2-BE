@@ -25,6 +25,7 @@ void CG_SHUDElementSBABRoutine(void* context)
 	float ap = cg.snap->ps.stats[STAT_ARMOR];
 
 	CG_SHUDFill(&element->config);
+	CG_SHUDDrawBorder(&element->config);
 
 	if (element->config.style.value == 1) // default
 	{

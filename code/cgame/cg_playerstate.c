@@ -106,11 +106,6 @@ void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
 	// show the attacking player's head and name in corner
 	cg.attackerTime = cg.time;
 
-	if (cg_damageSound.integer)
-	{
-		trap_S_StartLocalSound(cgs.media.gotDamageSound, CHAN_LOCAL_SOUND);
-	}
-
 	// the lower on health you are, the greater the view kick will be
 	health = cg.snap->ps.stats[STAT_HEALTH];
 	if (health < 40)
@@ -163,7 +158,6 @@ void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
 		}
 
 		cg.v_dmg_roll = kick * left;
-
 		cg.v_dmg_pitch = -kick * front;
 
 		if (front <= 0.1)
@@ -201,6 +195,69 @@ void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
 	cg.damageValue = kick;
 	cg.v_dmg_time = cg.time + DAMAGE_TIME;
 	cg.damageTime = cg.snap->serverTime;
+}
+
+
+
+void CG_UpdateWeaponTracking(int weapon)
+{
+	static int lastHitCount = 0;
+	int currentAmmo, currentHits;
+
+	// Получаем указатель на структуру отслеживания оружия
+	weaponStats_t* ws = &cgs.be.weaponStats[weapon];
+	playerState_t* ps = &cg.snap->ps;
+
+	// Сброс статистики, если игрок умер или сменил оружие
+	if (ps->weapon != weapon || ps->stats[STAT_HEALTH] <= 0)
+	{
+		ws->onTrack = qfalse;
+		ws->hitsStart = 0;
+		ws->hitsCurrent = 0;
+		ws->shotsStart = 0;
+		ws->lastAmmo = 0;
+		lastHitCount = 0;
+		return;
+	}
+
+	// Сброс, если прошло больше 1 секунды без атак
+	if (ws->onTrack && (cg.time - ws->lastAttackTime > 1000))
+	{
+		ws->onTrack = qfalse;
+		ws->hitsStart = 0;
+		ws->hitsCurrent = 0;
+		ws->shotsStart = 0;
+		ws->lastAmmo = 0;
+		lastHitCount = 0;
+		return;
+	}
+
+	// Получаем текущее количество патронов и количество попаданий
+	currentAmmo = ps->ammo[weapon];
+	currentHits = ps->persistant[PERS_HITS];
+
+	// Если оружие уже "на треке", обновляем данные
+	if (ws->onTrack)
+	{
+		ws->lastAttackTime = cg.time;
+		ws->hitsCurrent = currentHits;
+		ws->lastAmmo = currentAmmo;
+		return;
+	}
+
+	// Начало нового "трека" (первая атака)
+	ws->hitsStart = currentHits;
+	ws->hitsCurrent = currentHits;
+	ws->shotsStart = currentAmmo;
+	ws->lastAmmo = currentAmmo;
+	ws->lastAttackTime = cg.time;
+	ws->onTrack = qtrue;
+
+	// Инициализация для Lightning
+	if (ps->weapon == weapon)
+	{
+		lastHitCount = currentHits;
+	}
 }
 
 
@@ -345,6 +402,31 @@ static void CG_PlayHitSound(sfxHandle_t sound, playerState_t* ps, playerState_t*
 	trap_S_StartLocalSound(sound, CHAN_LOCAL_SOUND);
 }
 
+// for DamageSound
+int hit_hp;
+int hit_ar;
+int hit_sum;
+
+void CG_DamageSound(playerState_t* ps, playerState_t* ops)
+{
+	hit_hp = ps->stats[STAT_HEALTH] - ops->stats[STAT_HEALTH];
+	hit_ar = ps->stats[STAT_ARMOR] - ops->stats[STAT_ARMOR];
+
+	if (cg_damageSound.integer && cg.attackerTime != 0)
+	{
+		hit_sum = hit_hp + hit_ar;
+
+		if (hit_sum <= -3)
+		{
+			int soundIndex = (hit_sum >= -25) ? 0 :
+			                 (hit_sum >= -50) ? 1 :
+			                 (hit_sum >= -75) ? 2 : 3;
+
+			trap_S_StartLocalSound(cgs.media.gotDamageSounds[soundIndex], CHAN_LOCAL_SOUND);
+		}
+	}
+}
+
 void CG_HitSound(playerState_t* ps, playerState_t* ops)
 {
 	static int delayedDmg = 0;
@@ -379,7 +461,6 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		else
 		{
 			damage = atta & 0x00FF;
-
 		}
 
 		if (cg_lightningHitsoundRateFix.integer && ops->weapon == WP_LIGHTNING && deltaTime < lgcd) //no need lg collisions < cooldown ms
@@ -441,6 +522,9 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 		return;
 	}
 
+	// incoming damage changes
+	CG_DamageSound(ps, ops);
+
 	// hit changes
 	CG_HitSound(ps, ops);
 
@@ -452,7 +536,6 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 			CG_PainEvent(&cg.predictedPlayerEntity, ps->stats[STAT_HEALTH]);
 		}
 	}
-
 
 	// if we are going into the intermission, don't start any voices
 	if (cg.intermissionStarted)
@@ -645,6 +728,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 		CG_CheckLocalSounds(ps, ops);
 	}
 
+	CG_UpdateWeaponTracking(WP_LIGHTNING);
 	// check for going low on ammo
 	CG_CheckAmmo();
 

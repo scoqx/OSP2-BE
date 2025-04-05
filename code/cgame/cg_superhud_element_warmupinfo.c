@@ -16,6 +16,7 @@ void* CG_SHUDElementWarmupInfoCreate(const superhudConfig_t* config)
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 
 	return element;
 }
@@ -53,8 +54,6 @@ void CG_SHUDElementWarmupInfoRoutine(void* context)
 	{
 		return;
 	}
-	CG_SHUDFill(&element->config);
-
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

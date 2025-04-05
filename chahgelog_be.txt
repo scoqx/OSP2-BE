@@ -1,0 +1,57 @@
+27.05.2025 be v 0.01
+
++ cg_itemsRespawnAnimation
++ cg_drawDamage (3/4)
++ cg_enemyLightning
++ cg_uniqueColorTable
++ cg_noVoteBeep
+* cg_drawGun (reworked)
+
+SHUD:
++ Border (border, borderColor)
+* Background for text elements (reworked)
++ Background for client events in obituaries
++ Temporal LG accuracy
++ Item pickup style 2
++ Color E/T transparency via color2
++ Armor bar over HP bar
+
+03.04.2025 be v0.02
+
+*cg_drawDamage (3/4) reworked to:
+    + cg_damageDrawFrame;
+    + cg_damageFrameSize;
+    + cg_damageFrameOpaque;
+
++ cg_shud_currentWeapons;
+
+SHUD:
++ Current Weapon Stats shows accuracy
+    + CurrentWeaponStats
+    + CurrentWeaponStats_icon
+
+* tempAcc reworked:
+    * fixed calc
+    - tempAcc_last
+    
+
+* weaponlist:
+    + border for choosen weapon
+
++ various fixes
+
+05.04.2025 be v0.03
+
+* cg_drawHitBox enabled. Server permission required
+    + cg_hitBoxColor <color>
+    * HQ shader (lol)
+
+* cg_damageDrawFrame variations
+  + 1 gradient
+  + 2 old solid border
+
+ 05.04.2025 be v0.031
+
+  + cg_drawGunForceAspect
+  * clientconfig
+    + Hitbox permission from server

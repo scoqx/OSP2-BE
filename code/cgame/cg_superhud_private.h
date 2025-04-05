@@ -80,6 +80,16 @@ typedef struct
 	{
 		vec4_t value;
 		qboolean isSet;
+	} border;
+	struct
+	{
+		vec4_t value;
+		qboolean isSet;
+	} borderColor;
+	struct
+	{
+		vec4_t value;
+		qboolean isSet;
 	} hlcolor;
 	struct
 	{
@@ -539,8 +549,7 @@ void* CG_SHUDElementObituaries8Create(const superhudConfig_t* config);
 void CG_SHUDElementObituariesRoutine(void* context);
 void CG_SHUDElementObituariesDestroy(void* context);
 
-void* CG_SHUDElementTempAccCurrentCreate(const superhudConfig_t* config);
-void* CG_SHUDElementTempAccLastCreate(const superhudConfig_t* config);
+void* CG_SHUDElementTempAccCreate(const superhudConfig_t* config);
 void CG_SHUDElementTempAccRoutine(void* context);
 void CG_SHUDElementTempAccDestroy(void* context);
 
@@ -558,6 +567,14 @@ void CG_SHUDElementLocationDestroy(void* context);
 void* CG_SHUDElementHoldableItemCreate(const superhudConfig_t* config);
 void CG_SHUDElementHoldableItemRoutine(void* context);
 void CG_SHUDElementHoldableItemDestroy(void* context);
+void* CG_SHUDElementCWSCreate(const superhudConfig_t* config);
+void CG_SHUDElementCWSRoutine(void* context);
+void CG_SHUDElementCWSDestroy(void* context);
+void CG_SHUDEventCWSParse(void);
+
+void* CG_SHUDElementCWSIconCreate(const superhudConfig_t* config);
+void CG_SHUDElementCWSIconRoutine(void* context);
+void CG_SHUDElementCWSIconDestroy(void* context);
 
 /*
  * cg_superhud_util.c
@@ -581,6 +598,8 @@ typedef struct
 	vec4_t color_origin;
 	vec4_t color;
 	vec4_t background;
+	vec4_t border;
+	vec4_t borderColor;
 	int width;
 	int fontIndex;
 	const char* text;
@@ -686,6 +705,30 @@ typedef struct
 	} runtime;
 } superhudObituariesEntry_t;
 
+typedef struct
+{
+	float tempAccuracy;
+} superhudTempAccEntry_t;
+
+typedef struct
+{
+	int lastTrackedWeapon;
+	float lastAccuracy;
+	qboolean customWstatsCalled;
+	float kdratio;
+	float damageKoeff;
+	struct
+	{
+		float accuracy;
+		int kills;
+		int deaths;
+		int hits;
+		int shots;
+		int pickUps;
+		int drops;
+	} stats[WP_NUM_WEAPONS];
+} customStats_t;
+
 #define SHUD_MAX_OBITUARIES_LINES 8
 #define SHUD_MAX_CHAT_LINES 16
 #define SHUD_MAX_POWERUPS 8
@@ -722,6 +765,11 @@ typedef struct
 		int numberOfActive;
 		int lastUpdateTime;
 	} powerupsCache;
+	struct
+	{
+		superhudTempAccEntry_t weapon[WP_NUM_WEAPONS];
+	} tempAcc;
+	customStats_t customStats;
 } superhudGlobalContext_t;
 
 superhudGlobalContext_t* CG_SHUDGetContext(void);

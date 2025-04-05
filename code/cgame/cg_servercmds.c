@@ -407,6 +407,10 @@ static void CG_ConfigStringModified(void)
 	{
 		CG_ShaderStateChanged();
 	}
+	else if (num == X_HCK_PS_ENEMY_HITBOX)
+	{
+		CG_OSPConfigXHitBoxSet(atoi(str));
+	}
 
 }
 
@@ -1193,12 +1197,19 @@ void CG_ServerCommand(void)
 		}
 		return;
 	}
-//statsinfo
+	//statsinfo
 	if (Q_stricmp(cmd, "statsinfo") == 0)
-	{
-		CG_OSPShowStatsInfo();
-		return;
-	}
+		if (cgs.shudWstatsCalled)
+		{
+			CG_SHUDParseStatsInfo();
+			cgs.shudWstatsCalled = qfalse;
+			return;
+		}
+		else
+		{
+			CG_OSPShowStatsInfo();
+			return;
+		}
 //viewlist
 	if (Q_stricmp(cmd, "viewlist") == 0)
 	{

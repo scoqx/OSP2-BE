@@ -25,6 +25,7 @@ void CG_SHUDElementSBHBRoutine(void* context)
 	float hp = cg.snap->ps.stats[STAT_HEALTH];
 
 	CG_SHUDFill(&element->config);
+	CG_SHUDDrawBorder(&element->config);
 
 	if (element->config.style.value == 1) // default
 	{

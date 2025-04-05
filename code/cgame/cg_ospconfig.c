@@ -226,6 +226,35 @@ void CG_OSPConfigMaxTimenudgeSet(int value)
 	CG_CvarTouch("cl_timenudge");
 }
 
+void CG_OSPConfigXHitBoxSet(int value)
+{
+    const char* config;
+    const char* valueStr;
+    const char* cheatsStr;
+
+    config = CG_ConfigString(X_HCK_PS_ENEMY_HITBOX);
+    valueStr = Info_ValueForKey(config, "x_hck_ps_enemy_hitbox");
+
+    if (valueStr && *valueStr)
+    {
+        value = atoi(valueStr);
+    }
+    else
+    {
+        value = 0;
+    }
+
+    // Получаем системную информацию и проверяем, включены ли чит-коды
+    cheatsStr = Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "sv_cheats");
+    if (cheatsStr[0] == '1')
+    {
+        value = 1;
+    }
+
+    cgs.osp.serverConfigXHitBox = value;
+}
+
+
 /*
  * Unknown cs 0x368
  */

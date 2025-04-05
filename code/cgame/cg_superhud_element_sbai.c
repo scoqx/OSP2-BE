@@ -28,7 +28,9 @@ void CG_SHUDElementSBAIRoutine(void* context)
 		shudElementStatusbarArmorIcon* element = (shudElementStatusbarArmorIcon*)context;
 		if (index > 2) index = 0;
 		element->ctx.image = cgs.media.armorIcon[index];
+
 		CG_SHUDFill(&element->config);
+		CG_SHUDDrawBorder(&element->config);
 		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx);
 	}
 }
