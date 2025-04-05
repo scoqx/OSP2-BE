@@ -81,6 +81,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | WarmupInfo                    | Обратный отсчет/"waiting for players".                       |
 | GameType                      | Режим игры(только во время warmup).                          |
 | Location                      | Сообщение с названием локации при ее изменении.              |
+| Holdable_item			            | Носимый предмет (Medkit, Personal teleporter и т.д)	         |
 | CurrentWeaponStats            | Вывод точности для оружия (cg_shud_currentWeapons)           |
 | CurrentWeaponStats_icon       | Вывод иконки для точности оружия                             |
 

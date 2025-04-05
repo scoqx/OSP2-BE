@@ -143,6 +143,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "obituary7", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementObituaries7Create, CG_SHUDElementObituariesRoutine, CG_SHUDElementObituariesDestroy },
 	{ "obituary8", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementObituaries8Create, CG_SHUDElementObituariesRoutine, CG_SHUDElementObituariesDestroy },
 	{ "location",  0, CG_SHUDElementLocationCreate, CG_SHUDElementLocationRoutine, CG_SHUDElementLocationDestroy },
+	{ "holdable_item", SE_IM | SE_DEAD, CG_SHUDElementHoldableItemCreate, CG_SHUDElementHoldableItemRoutine, CG_SHUDElementHoldableItemDestroy },
 	{ "tempAcc_current", SE_IM | SE_DEAD, CG_SHUDElementTempAccCreate, CG_SHUDElementTempAccRoutine, CG_SHUDElementTempAccDestroy },
 	{ "tempAcc_last",  },
 	{ "currentWeaponStats", SE_IM | SE_DEAD, CG_SHUDElementCWSCreate, CG_SHUDElementCWSRoutine, CG_SHUDElementCWSDestroy },
