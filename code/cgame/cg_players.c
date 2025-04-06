@@ -2204,7 +2204,10 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	{
 		return;
 	}
-
+	if (cent->currentState.powerups & (1 << PW_INVIS))
+	{
+		return;
+	}
 	if (cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR
 	        && cg.snap->ps.persistant[PERS_TEAM] != TEAM_FREE
 	        && cg.snap->ps.persistant[PERS_TEAM] == team)
