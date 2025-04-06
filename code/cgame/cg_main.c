@@ -1659,6 +1659,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cgs.media.whiteShader           = trap_R_RegisterShader("white");
 	cgs.media.whiteAlphaShader      = trap_R_RegisterShader("whiteAlpha");
 	cgs.media.whiteAlphaShader_nocull      = trap_R_RegisterShader("whiteAlpha_nocull");
+	cgs.media.WhiteAlphaShader_cullback    = trap_R_RegisterShader("whiteAlpha_cullback");
 	cgs.media.charsetProp           = trap_R_RegisterShaderNoMip("menu/art/font1_prop.tga");
 	cgs.media.charsetPropGlow     = trap_R_RegisterShaderNoMip("menu/art/font1_prop_glo.tga");
 	cgs.media.charsetPropB        = trap_R_RegisterShaderNoMip("menu/art/font2_prop.tga");

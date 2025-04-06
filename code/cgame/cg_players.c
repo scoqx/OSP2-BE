@@ -2175,61 +2175,34 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	vec3_t maxs = {15, 15, 32};
 	float extx, exty, extz;
 	vec3_t corners[8];
-	qhandle_t hitboxShader, hitboxShaderNoCull;
+	qhandle_t hitboxShaderEdge, hitboxShaderSide;
+	float hitBoxOffset = 0.005f;
 
-	if (!cg_drawHitBox.integer)
-	{
-		return;
-	}
-
-	if (!cgs.osp.serverConfigXHitBox)
-	{
-		return;
-	}
-
-	// don't draw it if it's us in first-person
-	if (cent->currentState.number == cg.predictedPlayerState.clientNum &&
-	        !cg.renderingThirdPerson)
-	{
-		return;
-	}
-
-	// don't draw it for dead players
-	if (cent->currentState.eFlags & EF_DEAD)
-	{
-		return;
-	}
-	// don't draw it for frozen players
-	if (cgs.osp.gameTypeFreeze && (cent->currentState.weapon == WP_NONE) && (cent->currentState.powerups & (1 << PW_BATTLESUIT)))// or frozen
-	{
-		return;
-	}
-	if (cent->currentState.powerups & (1 << PW_INVIS))
-	{
-		return;
-	}
-	if (cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR
-	        && cg.snap->ps.persistant[PERS_TEAM] != TEAM_FREE
-	        && cg.snap->ps.persistant[PERS_TEAM] == team)
-	{
+	if (!cg_drawHitBox.integer || !cgs.osp.serverConfigXHitBox) {
 		return;
 	}
 	
+	// don't draw it if it's us in first-person, for dead players, for frozen players, for invisible players
+	if (cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson ||
+		cent->currentState.eFlags & EF_DEAD ||
+		(cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && cent->currentState.powerups & (1 << PW_BATTLESUIT)) ||
+		cent->currentState.powerups & (1 << PW_INVIS)) {
+		return;
+	}
+	// don't draw it if it's a teammate, spectator or free player
+	if (cg.snap->ps.persistant[PERS_TEAM] == team &&
+		cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR &&
+		cg.snap->ps.persistant[PERS_TEAM] != TEAM_FREE) {
+		return;
+	}
+
 	// if they don't exist, forget it
-	if (cg_drawHitBox.integer == 1)
-	{
-		if (!cgs.osp.hboxShader || !cgs.osp.hboxShader_nocull)
-		{
-			return;
-		}
+	if ((cg_drawHitBox.integer == 1 && (!cgs.osp.hboxShader || !cgs.osp.hboxShader_nocull)) ||
+    (cg_drawHitBox.integer == 2 && (!cgs.media.whiteAlphaShader || !cgs.media.WhiteAlphaShader_cullback)) ||
+    (cg_drawHitBox.integer == 3 && (!cgs.media.whiteAlphaShader || !cgs.media.whiteAlphaShader_nocull))) {
+    return;
 	}
-	else if (cg_drawHitBox.integer == 2)
-	{
-		if (!cgs.media.whiteAlphaShader || !cgs.media.whiteAlphaShader_nocull)
-		{
-			return;
-		}
-	}
+
 
 	// get the player's client info
 	ci = &cgs.clientinfo[cent->currentState.clientNum];
@@ -2310,17 +2283,36 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	for (i = 0; i < 4; i++)
 	{
 		VectorCopy(corners[i], corners[i + 4]);
+		if ((cg_drawHitBox.integer == 2))
+		{
+		corners[i + 4][2] -= extz - hitBoxOffset;
+		}
+		else 
 		corners[i + 4][2] -= extz;
 	}
+		for (i = 0; i < 8; i++)
+	{
+		if (cg_drawHitBox.integer == 2)
+		{
+			corners[i][0] -= hitBoxOffset * ((corners[i][0] > cent->lerpOrigin[0]) ? 1 : -1); // X внутрь
+			corners[i][1] -= hitBoxOffset * ((corners[i][1] > cent->lerpOrigin[1]) ? 1 : -1); // Y внутрь
+		}
+	}
+
 	if (cg_drawHitBox.integer == 1)
 	{
-		hitboxShader = cgs.osp.hboxShader;
-		hitboxShaderNoCull = cgs.osp.hboxShader_nocull;
+		hitboxShaderEdge = cgs.osp.hboxShader;
+		hitboxShaderSide = cgs.osp.hboxShader_nocull;
 	}
-	else
+	else if (cg_drawHitBox.integer == 2)
 	{
-		hitboxShader = cgs.media.whiteAlphaShader;
-		hitboxShaderNoCull = cgs.media.whiteAlphaShader_nocull;
+		hitboxShaderEdge = cgs.media.whiteAlphaShader_nocull;
+		hitboxShaderSide = cgs.media.WhiteAlphaShader_cullback;
+	}
+	else 
+	{	
+		hitboxShaderEdge = cgs.media.whiteAlphaShader;
+		hitboxShaderSide = cgs.media.whiteAlphaShader_nocull;
 	}
 	
 	// top
@@ -2328,42 +2320,42 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	VectorCopy(corners[1], verts[1].xyz);
 	VectorCopy(corners[2], verts[2].xyz);
 	VectorCopy(corners[3], verts[3].xyz);
-	trap_R_AddPolyToScene(hitboxShader, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderEdge, 4, verts);
 
 	// bottom
 	VectorCopy(corners[7], verts[0].xyz);
 	VectorCopy(corners[6], verts[1].xyz);
 	VectorCopy(corners[5], verts[2].xyz);
 	VectorCopy(corners[4], verts[3].xyz);
-	trap_R_AddPolyToScene(hitboxShader, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderEdge, 4, verts);
 
 	// top side
 	VectorCopy(corners[3], verts[0].xyz);
 	VectorCopy(corners[2], verts[1].xyz);
 	VectorCopy(corners[6], verts[2].xyz);
 	VectorCopy(corners[7], verts[3].xyz);
-	trap_R_AddPolyToScene(hitboxShaderNoCull, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 
 	// left side
 	VectorCopy(corners[2], verts[0].xyz);
 	VectorCopy(corners[1], verts[1].xyz);
 	VectorCopy(corners[5], verts[2].xyz);
 	VectorCopy(corners[6], verts[3].xyz);
-	trap_R_AddPolyToScene(hitboxShaderNoCull, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 
 	// right side
 	VectorCopy(corners[0], verts[0].xyz);
 	VectorCopy(corners[3], verts[1].xyz);
 	VectorCopy(corners[7], verts[2].xyz);
 	VectorCopy(corners[4], verts[3].xyz);
-	trap_R_AddPolyToScene(hitboxShaderNoCull, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 
 	// bottom side
 	VectorCopy(corners[1], verts[0].xyz);
 	VectorCopy(corners[0], verts[1].xyz);
 	VectorCopy(corners[4], verts[2].xyz);
 	VectorCopy(corners[5], verts[3].xyz);
-	trap_R_AddPolyToScene(hitboxShaderNoCull, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 }
 
 /*

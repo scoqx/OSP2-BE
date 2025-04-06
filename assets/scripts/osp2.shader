@@ -357,3 +357,14 @@ whiteAlpha_nocull
 		rgbGen vertex
 	}
 }
+
+whiteAlpha_cullback
+{
+	nopicmip
+	cull back
+	{
+		map *white
+		blendFunc GL_ONE GL_ONE
+		rgbGen vertex
+	}
+}

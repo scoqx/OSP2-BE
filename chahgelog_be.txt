@@ -50,14 +50,18 @@ SHUD:
   + 1 gradient
   + 2 old solid border
 
- 05.04.2025 be v0.031
+05.04.2025 be v0.031
 
   + cg_drawGunForceAspect
   * clientconfig
     + Hitbox permission from server
 
- 06.04.2025 be v0.032
+06.04.2025 be v0.032
 
-  + cg_hitBoxColor 2
+  + cg_drawHitBox 2
+
+07.04.2025 be v0.032
+
+  + cg_drawHitBox 3
     
 

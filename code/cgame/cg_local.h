@@ -698,6 +698,7 @@ typedef struct
 	qhandle_t   whiteShader;
 	qhandle_t   whiteAlphaShader;
 	qhandle_t   whiteAlphaShader_nocull;
+	qhandle_t   WhiteAlphaShader_cullback;
 
 	qhandle_t   redCubeModel;
 	qhandle_t   blueCubeModel;
@@ -2198,7 +2199,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.032" // BE
+#define OSP_VERSION "be-0.033" // BE
 
 
 
