@@ -60,4 +60,3 @@ UI_SRC = \
  ui_cdkey ui_mods \
  bg_misc bg_lib \
  q_math q_shared \
-

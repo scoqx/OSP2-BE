@@ -758,6 +758,7 @@ typedef struct
 		{
 			int time;
 			int powerup;
+			qboolean isHoldable;
 		} element[SHUD_MAX_POWERUPS];
 		int numberOfActive;
 		int lastUpdateTime;
