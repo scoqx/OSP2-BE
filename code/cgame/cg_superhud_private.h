@@ -564,9 +564,6 @@ void* CG_SHUDElementLocationCreate(const superhudConfig_t* config);
 void CG_SHUDElementLocationRoutine(void* context);
 void CG_SHUDElementLocationDestroy(void* context);
 
-void* CG_SHUDElementHoldableItemCreate(const superhudConfig_t* config);
-void CG_SHUDElementHoldableItemRoutine(void* context);
-void CG_SHUDElementHoldableItemDestroy(void* context);
 void* CG_SHUDElementCWSCreate(const superhudConfig_t* config);
 void CG_SHUDElementCWSRoutine(void* context);
 void CG_SHUDElementCWSDestroy(void* context);

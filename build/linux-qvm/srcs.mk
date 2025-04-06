@@ -43,7 +43,6 @@ CG_SRC = \
  cg_superhud_element_weaponlist \
  cg_superhud_element_obituaries \
  cg_superhud_element_warmupinfo cg_superhud_element_gametype cg_superhud_element_location\
- cg_superhud_element_holdableItem \
  cg_superhud_element_tempAcc \
  cg_superhud_element_currentWeaponStats \
  cg_superhud_element_currentWeaponStats_icon \
