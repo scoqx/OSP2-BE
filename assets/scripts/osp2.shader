@@ -335,3 +335,25 @@ ObituariesBFGDirect {
         rgbGen identity
     }
 }
+
+
+whiteAlpha
+{
+	nopicmip
+	{
+		map *white
+		blendFunc GL_ONE GL_ONE
+		rgbGen vertex
+	}
+}
+
+whiteAlpha_nocull
+{
+	nopicmip
+	cull none
+	{
+		map *white
+		blendFunc GL_ONE GL_ONE
+		rgbGen vertex
+	}
+}

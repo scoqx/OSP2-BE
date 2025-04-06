@@ -2175,6 +2175,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	vec3_t maxs = {15, 15, 32};
 	float extx, exty, extz;
 	vec3_t corners[8];
+	qhandle_t hitboxShader, hitboxShaderNoCull;
 
 	if (!cg_drawHitBox.integer)
 	{
@@ -2210,11 +2211,21 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	{
 		return;
 	}
-
+	
 	// if they don't exist, forget it
-	if (!cgs.osp.hboxShader || !cgs.osp.hboxShader_nocull)
+	if (cg_drawHitBox.integer == 1)
 	{
-		return;
+		if (!cgs.osp.hboxShader || !cgs.osp.hboxShader_nocull)
+		{
+			return;
+		}
+	}
+	else if (cg_drawHitBox.integer == 2)
+	{
+		if (!cgs.media.whiteAlphaShader || !cgs.media.whiteAlphaShader_nocull)
+		{
+			return;
+		}
 	}
 
 	// get the player's client info
@@ -2298,48 +2309,58 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		VectorCopy(corners[i], corners[i + 4]);
 		corners[i + 4][2] -= extz;
 	}
-
+	if (cg_drawHitBox.integer == 1)
+	{
+		hitboxShader = cgs.osp.hboxShader;
+		hitboxShaderNoCull = cgs.osp.hboxShader_nocull;
+	}
+	else
+	{
+		hitboxShader = cgs.media.whiteAlphaShader;
+		hitboxShaderNoCull = cgs.media.whiteAlphaShader_nocull;
+	}
+	
 	// top
 	VectorCopy(corners[0], verts[0].xyz);
 	VectorCopy(corners[1], verts[1].xyz);
 	VectorCopy(corners[2], verts[2].xyz);
 	VectorCopy(corners[3], verts[3].xyz);
-	trap_R_AddPolyToScene(cgs.osp.hboxShader, 4, verts);
+	trap_R_AddPolyToScene(hitboxShader, 4, verts);
 
 	// bottom
 	VectorCopy(corners[7], verts[0].xyz);
 	VectorCopy(corners[6], verts[1].xyz);
 	VectorCopy(corners[5], verts[2].xyz);
 	VectorCopy(corners[4], verts[3].xyz);
-	trap_R_AddPolyToScene(cgs.osp.hboxShader, 4, verts);
+	trap_R_AddPolyToScene(hitboxShader, 4, verts);
 
 	// top side
 	VectorCopy(corners[3], verts[0].xyz);
 	VectorCopy(corners[2], verts[1].xyz);
 	VectorCopy(corners[6], verts[2].xyz);
 	VectorCopy(corners[7], verts[3].xyz);
-	trap_R_AddPolyToScene(cgs.osp.hboxShader_nocull, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderNoCull, 4, verts);
 
 	// left side
 	VectorCopy(corners[2], verts[0].xyz);
 	VectorCopy(corners[1], verts[1].xyz);
 	VectorCopy(corners[5], verts[2].xyz);
 	VectorCopy(corners[6], verts[3].xyz);
-	trap_R_AddPolyToScene(cgs.osp.hboxShader_nocull, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderNoCull, 4, verts);
 
 	// right side
 	VectorCopy(corners[0], verts[0].xyz);
 	VectorCopy(corners[3], verts[1].xyz);
 	VectorCopy(corners[7], verts[2].xyz);
 	VectorCopy(corners[4], verts[3].xyz);
-	trap_R_AddPolyToScene(cgs.osp.hboxShader_nocull, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderNoCull, 4, verts);
 
 	// bottom side
 	VectorCopy(corners[1], verts[0].xyz);
 	VectorCopy(corners[0], verts[1].xyz);
 	VectorCopy(corners[4], verts[2].xyz);
 	VectorCopy(corners[5], verts[3].xyz);
-	trap_R_AddPolyToScene(cgs.osp.hboxShader_nocull, 4, verts);
+	trap_R_AddPolyToScene(hitboxShaderNoCull, 4, verts);
 }
 
 /*
