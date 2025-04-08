@@ -12,8 +12,10 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 ## ✨ BE-Features
 <details>
   <summary>Player outline</summary>
-  ![shot-Apr-09-2025_02 46 24](https://github.com/user-attachments/assets/ff247a28-303d-40b0-b194-25048af65231)
-  ![shot-Apr-09-2025_02 47 01](https://github.com/user-attachments/assets/fe9a03e3-7f00-4fbb-9e96-014e3bd6d33d)
+  ![shot-Apr-09-2025_02 46 24](https://github.com/user-attachments/assets/d12bd790-b9f7-48ec-b590-c4029c1d0e2c)
+
+  ![shot-Apr-09-2025_02 47 01](https://github.com/user-attachments/assets/a385d395-caec-4743-a327-b0a335ae4e8b)
+
 </details>
 
 <details>
