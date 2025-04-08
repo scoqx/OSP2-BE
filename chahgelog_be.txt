@@ -64,4 +64,11 @@ SHUD:
 
   + cg_drawHitBox 3
     
+08.04.2025 be v0.04
 
+  + cg_drawOutline
+  + cg_enemyOutlineColor
+  + cg_teamOutlineColor
+  + cg_enemyOutlineColorUnique
+  + cg_enemyOutlineSize
+  + cg_teamOutlineSize

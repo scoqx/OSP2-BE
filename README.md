@@ -10,6 +10,16 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## 0.04
+```
+  + cg_drawOutline
+  + cg_enemyOutlineColor
+  + cg_teamOutlineColor
+  + cg_enemyOutlineColorUnique
+  + cg_enemyOutlineSize
+  + cg_teamOutlineSize
+  
+```
 ## 0.033
 ```
   + cg_drawHitBox 3

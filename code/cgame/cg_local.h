@@ -699,6 +699,15 @@ typedef struct
 	qhandle_t   whiteAlphaShader;
 	qhandle_t   whiteAlphaShader_nocull;
 	qhandle_t   WhiteAlphaShader_cullback;
+	qhandle_t   outlineThinShader;
+	qhandle_t   outlineMediumShader;
+	qhandle_t   outlineWideShader;
+	qhandle_t   teamOutlineThinShader;
+	qhandle_t   teamOutlineMediumShader;
+	qhandle_t   teamOutlineWideShader;
+
+	qhandle_t   outlineShader;
+	qhandle_t 	teamOutlineShader;
 
 	qhandle_t   redCubeModel;
 	qhandle_t   blueCubeModel;
@@ -1051,6 +1060,10 @@ typedef struct weaponStats_s
 typedef struct cgs_be_s
 {
 	vec4_t hitBoxColor;
+	vec4_t enemyOutlineColor;
+	vec4_t teamOutlineColor;
+
+
 	weaponStats_t weaponStats[WP_NUM_WEAPONS];
 } cgs_be_t;
 
@@ -1536,9 +1549,28 @@ extern vmCvar_t         cg_damageFrameOpaque;
 extern vmCvar_t         cg_shud_currentWeapons;
 extern vmCvar_t         cg_hitBoxColor;
 extern vmCvar_t         cg_drawGunForceAspect;
+extern vmCvar_t         cg_drawOutline;
+extern vmCvar_t         cg_teamOutlineColor;
+extern vmCvar_t         cg_enemyOutlineColor;
+extern vmCvar_t         cg_enemyOutlineColorUnique;
+extern vmCvar_t			cg_enemyOutlineSize;
+extern vmCvar_t			cg_teamOutlineSize;
+extern vmCvar_t		 	be_run;
 //
 // cg_main.c
 //
+
+
+#define UNIQUE_COLORS_TABLE_SIZE 24
+
+extern const vec3_t uniqueColorTable[UNIQUE_COLORS_TABLE_SIZE];
+extern const vec3_t uniqueColorTableLight[UNIQUE_COLORS_TABLE_SIZE];
+
+#define UNIQUE_COLOR(CI) ((cg_uniqueColorTable.integer == 2) ? uniqueColorTableLight[CI % UNIQUE_COLORS_TABLE_SIZE] : uniqueColorTable[CI % UNIQUE_COLORS_TABLE_SIZE])
+
+
+
+
 typedef struct cvarTable_s cvarTable_t;
 
 struct cvarTable_s
@@ -2199,7 +2231,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.033" // BE
+#define OSP_VERSION "be-0.04" // BE
 
 
 
@@ -2418,6 +2450,8 @@ void CG_LocalEventCvarChanged_cg_hitBoxColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_damageDrawFrame(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_damageFrameSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_damageFrameOpaque(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_enemyOutlineColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamOutlineColor(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

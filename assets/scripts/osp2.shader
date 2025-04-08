@@ -368,3 +368,39 @@ whiteAlpha_cullback
 		rgbGen vertex
 	}
 }
+
+outlineWide
+{
+	nopicmip
+    deformVertexes wave 1 sin 1.8 0 0 0
+	cull back
+	{
+		map *white
+		blendFunc GL_ONE GL_ONE
+		rgbGen entity	
+	}
+}
+
+outlineMedium
+{
+	nopicmip
+    deformVertexes wave 1 sin 1.1 0 0 0
+	cull back
+	{
+		map *white
+		blendFunc GL_ONE GL_ONE
+		rgbGen entity	
+	}
+}   
+
+outlineThin
+{
+	nopicmip
+    deformVertexes wave 1000 sin 0.45 0 1000 1
+	cull back
+	{
+		map *white
+		blendFunc GL_ONE GL_ONE
+		rgbGen entity	
+	}
+}

@@ -1,8 +1,6 @@
 #include "cg_local.h"
 
-#define UNIQUE_COLORS_TABLE_SIZE 24
-
-static const vec3_t uniqueColorTable[UNIQUE_COLORS_TABLE_SIZE] =
+const vec3_t uniqueColorTable[UNIQUE_COLORS_TABLE_SIZE] =
 {
 	{ 1, 0, 0 },       /* Red */
 	{ 0, 1, 0 },       /* Green */
@@ -30,7 +28,7 @@ static const vec3_t uniqueColorTable[UNIQUE_COLORS_TABLE_SIZE] =
 	{ 1, 1, 1 },       /* White */
 };
 
-static const vec3_t uniqueColorTableLight[UNIQUE_COLORS_TABLE_SIZE] =
+const vec3_t uniqueColorTableLight[UNIQUE_COLORS_TABLE_SIZE] =
 {
 	{ 0, 1, 0 },       /* Green */
 	{ 1, 1, 0 },       /* Yellow */
@@ -57,10 +55,6 @@ static const vec3_t uniqueColorTableLight[UNIQUE_COLORS_TABLE_SIZE] =
 	{ 0.6, 0.8, 1 },   /* Light Purple */
 	{ 0, 1, 0.6 }      /* Aqua Green */
 };
-
-
-#define UNIQUE_COLOR(CI) ((cg_uniqueColorTable.integer == 2) ? uniqueColorTableLight[CI % UNIQUE_COLORS_TABLE_SIZE] : uniqueColorTable[CI % UNIQUE_COLORS_TABLE_SIZE])
-
 
 void CG_PlayerColorsFromCS(playerColors_t* colors, playerColorsOverride_t* override, const char* color1, const char* color2)
 {

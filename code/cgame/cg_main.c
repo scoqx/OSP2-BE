@@ -376,6 +376,13 @@ vmCvar_t        cg_damageFrameOpaque;
 vmCvar_t            cg_shud_currentWeapons;
 vmCvar_t        cg_hitBoxColor;
 vmCvar_t        cg_drawGunForceAspect;
+vmCvar_t		cg_drawOutline;
+vmCvar_t		cg_enemyOutlineColor;
+vmCvar_t		cg_teamOutlineColor;
+vmCvar_t		cg_enemyOutlineColorUnique;
+vmCvar_t		cg_enemyOutlineSize;
+vmCvar_t		cg_teamOutlineSize;
+vmCvar_t	be_run;
 
 
 
@@ -657,7 +664,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
 	{ &cg_itemsRespawnAnimation, "cg_itemsRespawnAnimation", "1", CVAR_ARCHIVE },
-	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "6", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
 	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
 	{ &cg_noVoteBeep, "cg_noVoteBeep", "0", CVAR_ARCHIVE },
 	{ &cg_damageDrawFrame, "cg_damageDrawFrame", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageDrawFrame },
@@ -666,6 +673,15 @@ static cvarTable_t cvarTable[] =
 	{ &cg_shud_currentWeapons, "cg_shud_currentWeapons", "226",  CVAR_ARCHIVE },
 	{ &cg_hitBoxColor, "cg_hitBoxColor", "004444", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
 	{ &cg_drawGunForceAspect, "cg_drawGunForceAspect", "0", CVAR_ARCHIVE },
+	{ &be_run, "be_run", "0", CVAR_ARCHIVE },
+	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE },
+	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "Magenta", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
+	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
+	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE, },
+	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE, },
+	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE, }
+
+
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -1444,6 +1460,26 @@ static void CG_RegisterGraphics(void)
 	cgs.media.obituariesFalling = trap_R_RegisterShader("ObituariesFalling");
 	cgs.media.obituariesSkull = trap_R_RegisterShader("ObituariesSkull");
 
+	cgs.media.whiteAlphaShader      = trap_R_RegisterShader("whiteAlpha");
+	cgs.media.whiteAlphaShader_nocull      = trap_R_RegisterShader("whiteAlpha_nocull");
+	cgs.media.WhiteAlphaShader_cullback    = trap_R_RegisterShader("whiteAlpha_cullback");
+
+// Enemy outline
+cgs.media.outlineShader = 
+	(cg_enemyOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
+	(cg_enemyOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
+	(cg_enemyOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
+	trap_R_RegisterShader("outlineThin");
+
+// Team outline
+cgs.media.teamOutlineShader =
+	(cg_teamOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
+	(cg_teamOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
+	(cg_teamOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
+	trap_R_RegisterShader("outlineThin");
+
+	
+
 	memset(cg_items, 0, sizeof(cg_items));
 	memset(cg_weapons, 0, sizeof(cg_weapons));
 
@@ -1657,9 +1693,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cgs.media.charsetShader1        = trap_R_RegisterShader("gfx/2d/bigchars1");
 	cgs.media.charsetShader       = trap_R_RegisterShader("gfx/2d/bigchars");
 	cgs.media.whiteShader           = trap_R_RegisterShader("white");
-	cgs.media.whiteAlphaShader      = trap_R_RegisterShader("whiteAlpha");
-	cgs.media.whiteAlphaShader_nocull      = trap_R_RegisterShader("whiteAlpha_nocull");
-	cgs.media.WhiteAlphaShader_cullback    = trap_R_RegisterShader("whiteAlpha_cullback");
+
 	cgs.media.charsetProp           = trap_R_RegisterShaderNoMip("menu/art/font1_prop.tga");
 	cgs.media.charsetPropGlow     = trap_R_RegisterShaderNoMip("menu/art/font1_prop_glo.tga");
 	cgs.media.charsetPropB        = trap_R_RegisterShaderNoMip("menu/art/font2_prop.tga");
@@ -1673,6 +1707,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("ch_crosshairDecorActionColor");
 
 	CG_CvarTouch("cg_hitBoxColor");
+	CG_CvarTouch("cg_enemyOutlineColor");
+	CG_CvarTouch("cg_teamOutlineColor");
 
 	CG_CvarTouch("ch_crosshairDecorOpaque");
 	CG_CvarTouch("ch_crosshairOpaque");

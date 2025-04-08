@@ -2358,6 +2358,117 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 }
 
+
+void CG_AddOutline(centity_t* cent) {
+    clientInfo_t* ci;
+    refEntity_t orig[3], enlarged[3];
+    int clientNum, i, j;
+    int renderfx = RF_LIGHTING_ORIGIN;
+	int outlineSize;
+    float shadowPlane = 0.0f;
+    vec4_t color[3];
+    qboolean isSpectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+    qboolean isEnemy;
+
+    clientNum = cent->currentState.clientNum;
+    if (!cg_drawOutline.integer || clientNum < 0 || clientNum >= MAX_CLIENTS) {
+        return;
+    }
+    ci = &cgs.clientinfo[clientNum];
+    if (!ci->infoValid) {
+        return;
+    }
+
+    if (cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson ||
+        cent->currentState.eFlags & EF_DEAD ||
+        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && cent->currentState.powerups & (1 << PW_BATTLESUIT)) ||
+        cent->currentState.powerups & (1 << PW_INVIS)) {
+        return;
+    }
+
+    if (cgs.gametype == GT_FFA) {
+        isEnemy = qtrue;
+    } else {
+        isEnemy = (ci->team != cg.snap->ps.persistant[PERS_TEAM]);
+    }
+
+    if ((cg_drawOutline.integer == 1 && isEnemy) ||
+        (cg_drawOutline.integer == 2 && !isEnemy) ||
+        (cg_drawOutline.integer == 3)) {
+
+        memset(orig, 0, sizeof(orig));
+        memset(enlarged, 0, sizeof(enlarged));
+
+        CG_PlayerAngles(cent, orig[2].axis, orig[1].axis, orig[0].axis);
+        CG_PlayerAnimation(cent, &orig[2].oldframe, &orig[2].frame, &orig[2].backlerp,
+                                   &orig[1].oldframe, &orig[1].frame, &orig[1].backlerp);
+
+        orig[2].hModel = ci->legsModel;
+        orig[1].hModel = ci->torsoModel;
+        orig[0].hModel = ci->headModel;
+
+        VectorCopy(cent->lerpOrigin, orig[2].origin);
+        VectorCopy(cent->lerpOrigin, orig[2].lightingOrigin);
+
+        CG_PositionRotatedEntityOnTag(&orig[1], &orig[2], ci->legsModel, "tag_torso");
+        CG_PositionRotatedEntityOnTag(&orig[0], &orig[1], ci->torsoModel, "tag_head");
+				
+		for (i = 0; i < 3; i++) {
+			enlarged[i] = orig[i];
+			enlarged[i].shadowPlane = shadowPlane;
+			enlarged[i].renderfx = renderfx;
+			enlarged[i].customShader = cgs.media.outlineShader;
+		}
+		
+
+        if (isSpectator) {
+            for (i = 0; i < 3; i++) {
+                Vector4Copy(ci->team == TEAM_RED ? cgs.be.teamOutlineColor : cgs.be.enemyOutlineColor, color[i]);
+            }
+        } else {
+            if (isEnemy) {
+                vec3_t uniqueColor;
+                vec4_t tmpColor;
+
+                if (cg_enemyOutlineColorUnique.integer == 0) {
+                    for (i = 0; i < 3; i++) {
+                        Vector4Copy(cgs.be.enemyOutlineColor, color[i]);
+						enlarged[i].customShader = cgs.media.outlineShader;
+                    }
+                } else {
+                    VectorCopy(UNIQUE_COLOR(clientNum), uniqueColor);
+                    tmpColor[0] = uniqueColor[0];
+                    tmpColor[1] = uniqueColor[1];
+                    tmpColor[2] = uniqueColor[2];
+                    tmpColor[3] = 1.0f;
+
+                    for (i = 0; i < 3; i++) {
+                        if (cg_enemyOutlineColorUnique.integer & (1 << i)) {
+                            VectorCopy(tmpColor, color[i]);
+                        } else {
+                            Vector4Copy(cgs.be.enemyOutlineColor, color[i]);
+                        }
+                    }
+                }
+            } else {
+                for (i = 0; i < 3; i++) {
+                    Vector4Copy(cgs.be.teamOutlineColor, color[i]);
+					enlarged[i].customShader = cgs.media.teamOutlineShader;
+                }
+            }
+        }
+
+        for (i = 0; i < 3; i++) {
+            for (j = 0; j < 4; j++) {
+                color[i][j] *= 255;
+            }
+            Vector4Copy(color[i], enlarged[i].shaderRGBA);
+            trap_R_AddRefEntityToScene(&enlarged[i]);
+        }
+    }
+}
+
+
 /*
 ===============
 CG_Player
@@ -2629,6 +2740,7 @@ void CG_Player(centity_t* cent)
 
 	CG_AddHitBox(cent, ci->team);
 
+	CG_AddOutline(cent);
 }
 
 

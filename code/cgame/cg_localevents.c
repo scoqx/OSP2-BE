@@ -446,3 +446,13 @@ void CG_LocalEventCvarChanged_cg_damageDrawFrame(cvarTable_t* cvart)
 {
 	CG_CvarTouch("cg_damageFrameSize");
 }
+
+void CG_LocalEventCvarChanged_cg_enemyOutlineColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.enemyOutlineColor);
+}
+
+void CG_LocalEventCvarChanged_cg_teamOutlineColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.teamOutlineColor);
+}
