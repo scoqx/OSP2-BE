@@ -600,7 +600,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_lightningSilent, "cg_lightningSilent", "0", CVAR_ARCHIVE },
 	{ &cg_lightningHide, "cg_lightningHide", "0", CVAR_ARCHIVE },
 	{ &cg_delag, "cg_delag", "1", CVAR_ARCHIVE },
-	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawHitBox },
 	{ &cg_projectileNudge, "cg_projectileNudge", "0", CVAR_ARCHIVE },
 	{ &cg_hideScores, "cg_hideScores", "0", CVAR_ARCHIVE },
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
@@ -671,16 +670,16 @@ static cvarTable_t cvarTable[] =
 	{ &cg_damageFrameSize, "cg_damageFrameSize", "64", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageFrameSize },
 	{ &cg_damageFrameOpaque, "cg_damageFrameOpaque", "0.2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageFrameOpaque },
 	{ &cg_shud_currentWeapons, "cg_shud_currentWeapons", "226",  CVAR_ARCHIVE },
+	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawHitBox },
 	{ &cg_hitBoxColor, "cg_hitBoxColor", "004444", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
 	{ &cg_drawGunForceAspect, "cg_drawGunForceAspect", "0", CVAR_ARCHIVE },
-	{ &be_run, "be_run", "0", CVAR_ARCHIVE },
-	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE },
-	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "Magenta", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
-	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
-	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE, },
-	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE, },
-	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE, }
-
+	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE| CVAR_NEW },
+	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE| CVAR_NEW },
+	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "Magenta", CVAR_ARCHIVE| CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
+	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE| CVAR_NEW, },
+	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE| CVAR_NEW },
+	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE| CVAR_NEW, CG_LocalEventCvarChanged_cg_teamOutlineColor },
+	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
 
 };
 
@@ -2064,3 +2063,34 @@ char* CG_OSPGetCvarName(vmCvar_t* cvar)
 	return NULL;
 }
 
+void CG_PrintNewCommandsBE(void) {
+	int i;
+	int startIndex = -1;
+	int numCommands = sizeof(cvarTable) / sizeof(cvarTable[0]);
+
+	// Найдём индекс "cg_itemsRespawnAnimation"
+	for (i = 0; i < numCommands; i++) {
+		if (!strcmp(cvarTable[i].cvarName, "cg_itemsRespawnAnimation")) {
+			startIndex = i + 1; // начинаем со следующего
+			break;
+		}
+	}
+
+	if (startIndex < 0) {
+		CG_Printf("cg_itemsRespawnAnimation not found\n");
+		return;
+	}
+
+	for (i = startIndex; i < numCommands; i++) {
+		if (cvarTable[i].cvarFlags & CVAR_NEW) {
+			CG_Printf("  ^2%s\n", cvarTable[i].cvarName);
+		} else {
+			CG_Printf("  %s\n", cvarTable[i].cvarName);
+		}
+
+		// Прерываемся, если достигли be_run
+		if (!strcmp(cvarTable[i].cvarName, "be_run")) {
+			break;
+		}
+	}
+}

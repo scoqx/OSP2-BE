@@ -10,36 +10,39 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+
+## 0.041
+```
++ belist
+```
 ## 0.04
 ```
-  + cg_drawOutline
-  + cg_enemyOutlineColor
-  + cg_teamOutlineColor
-  + cg_enemyOutlineColorUnique
-  + cg_enemyOutlineSize
-  + cg_teamOutlineSize
-  
++ cg_drawOutline
++ cg_enemyOutlineColor
++ cg_teamOutlineColor
++ cg_enemyOutlineColorUnique
++ cg_enemyOutlineSize
++ cg_teamOutlineSize
 ```
 ## 0.033
 ```
-  + cg_drawHitBox 3
-  
++ cg_drawHitBox 3
 ```
 ## 0.032
 ```
-  + cg_drawHitBox 2
++ cg_drawHitBox 2
 ```
 ## 0.031
 ```
-  + cg_drawGunForceAspect
-  * clientconfig
-    + Hitbox permission from server
++ cg_drawGunForceAspect
+* clientconfig
+  + Hitbox permission from server
 ```
 ## 0.03
 ```
 * cg_drawHitBox enabled. Server permission required
-    + cg_hitBoxColor <color>
-    * HQ shader (lol)
+  + cg_hitBoxColor <color>
+  * HQ shader (lol)
 
 * cg_damageDrawFrame variations
   + 1 gradient
@@ -48,24 +51,24 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 ## 0.02
 ```
 * cg_drawDamage (3/4) reworked to:
-    + cg_damageDrawFrame;
-    + cg_damageFrameSize;
-    + cg_damageFrameOpaque;
+  + cg_damageDrawFrame;
+  + cg_damageFrameSize;
+  + cg_damageFrameOpaque;
 
 + cg_shud_currentWeapons;
 
 SHUD:
 + Current Weapon Stats shows accuracy
-    + CurrentWeaponStats
-    + CurrentWeaponStats_icon
+  + CurrentWeaponStats
+  + CurrentWeaponStats_icon
 
 * tempAcc reworked:
-    * fixed calc
-    - tempAcc_last
+  * fixed calc
+  - tempAcc_last
     
 
 * weaponlist:
-    + border for choosen weapon
+  + border for choosen weapon
 
 + various fixes
 ```

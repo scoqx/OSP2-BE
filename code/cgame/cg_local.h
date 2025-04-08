@@ -1559,18 +1559,6 @@ extern vmCvar_t		 	be_run;
 //
 // cg_main.c
 //
-
-
-#define UNIQUE_COLORS_TABLE_SIZE 24
-
-extern const vec3_t uniqueColorTable[UNIQUE_COLORS_TABLE_SIZE];
-extern const vec3_t uniqueColorTableLight[UNIQUE_COLORS_TABLE_SIZE];
-
-#define UNIQUE_COLOR(CI) ((cg_uniqueColorTable.integer == 2) ? uniqueColorTableLight[CI % UNIQUE_COLORS_TABLE_SIZE] : uniqueColorTable[CI % UNIQUE_COLORS_TABLE_SIZE])
-
-
-
-
 typedef struct cvarTable_s cvarTable_t;
 
 struct cvarTable_s
@@ -1615,6 +1603,7 @@ void CG_CvarResetToDefault(const char* name);
 
 qhandle_t CG_GetFragSound(void);
 
+void CG_PrintNewCommandsBE(void);
 //
 // cg_view.c
 //
@@ -2231,7 +2220,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.04" // BE
+#define OSP_VERSION "be-0.041" // BE
 
 
 
@@ -2351,6 +2340,14 @@ void CG_PredictWeaponEffects(centity_t* cent);
 //
 // cg_playerscolors.c
 //
+
+#define UNIQUE_COLORS_TABLE_SIZE 24
+
+extern const vec3_t uniqueColorTable[UNIQUE_COLORS_TABLE_SIZE];
+extern const vec3_t uniqueColorTableLight[UNIQUE_COLORS_TABLE_SIZE];
+
+#define UNIQUE_COLOR(CI) ((cg_uniqueColorTable.integer == 2) ? uniqueColorTableLight[CI % UNIQUE_COLORS_TABLE_SIZE] : uniqueColorTable[CI % UNIQUE_COLORS_TABLE_SIZE])
+
 void CG_RebuildPlayerColors(void);
 void CG_PlayerColorsLoadDefault(playerColors_t* colors);
 void CG_ClientInfoUpdateColors(clientInfo_t* ci, int clientNum);
