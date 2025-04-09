@@ -357,7 +357,6 @@ void CG_Bleed(vec3_t origin, int entityNum)
 		ex->refEntity.shaderRGBA[1] = cgs.be.altBloodColor[1] * 255;
 		ex->refEntity.shaderRGBA[2] = cgs.be.altBloodColor[2] * 255;
 		ex->refEntity.shaderRGBA[3] = cgs.be.altBloodColor[3] * 255;
-		CG_Printf("Bleed reType: %i\n", ex->refEntity.reType);
 	}
 	else
 	{
