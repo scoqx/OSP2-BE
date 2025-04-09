@@ -10,7 +10,10 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
-
+## 0.042
+```
++cg_underwaterFovWarp
+```
 ## 0.041
 ```
 + belist

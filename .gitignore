@@ -5,3 +5,4 @@ build/linux/build/
 build/linux/project.tasks
 build/linux/strace_out
 build/tests/build/
+build/linux-qvm/Makefile

@@ -1555,6 +1555,7 @@ extern vmCvar_t         cg_enemyOutlineColor;
 extern vmCvar_t         cg_enemyOutlineColorUnique;
 extern vmCvar_t			cg_enemyOutlineSize;
 extern vmCvar_t			cg_teamOutlineSize;
+extern vmCvar_t			cg_underwaterFovWarp;
 extern vmCvar_t		 	be_run;
 //
 // cg_main.c
@@ -2220,7 +2221,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.041" // BE
+#define OSP_VERSION "be-0.042" // BE
 
 
 

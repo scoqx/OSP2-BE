@@ -73,6 +73,10 @@ SHUD:
   + cg_enemyOutlineSize
   + cg_teamOutlineSize
 
-  09.04.2025 be v0.041
+09.04.2025 be v0.041
   
   + belist
+
+09.04.2025 be v0.042
+
+  +cg_underwaterFovWarp

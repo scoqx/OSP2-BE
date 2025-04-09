@@ -626,7 +626,7 @@ static int CG_CalcFov(void)
 
 	// warp if underwater
 	contents = CG_PointContents(cg.refdef.vieworg, -1);
-	if (contents & (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA))
+	if (contents & (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA) && cg_underwaterFovWarp.integer)
 	{
 		phase = cg.time / 1000.0 * WAVE_FREQUENCY * M_PI * 2;
 		v = WAVE_AMPLITUDE * sin(phase);

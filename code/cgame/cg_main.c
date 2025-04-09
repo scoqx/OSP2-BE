@@ -382,6 +382,7 @@ vmCvar_t		cg_teamOutlineColor;
 vmCvar_t		cg_enemyOutlineColorUnique;
 vmCvar_t		cg_enemyOutlineSize;
 vmCvar_t		cg_teamOutlineSize;
+vmCvar_t		cg_underwaterFovWarp;
 vmCvar_t	be_run;
 
 
@@ -673,12 +674,13 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawHitBox },
 	{ &cg_hitBoxColor, "cg_hitBoxColor", "004444", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
 	{ &cg_drawGunForceAspect, "cg_drawGunForceAspect", "0", CVAR_ARCHIVE },
-	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE| CVAR_NEW },
-	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE| CVAR_NEW },
-	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "Magenta", CVAR_ARCHIVE| CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
-	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE| CVAR_NEW, },
-	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE| CVAR_NEW },
-	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE| CVAR_NEW, CG_LocalEventCvarChanged_cg_teamOutlineColor },
+	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "Magenta", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
+	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamOutlineColor },
+	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE | CVAR_NEW	}
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
 
 };
