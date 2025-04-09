@@ -2178,7 +2178,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	qhandle_t hitboxShaderEdge, hitboxShaderSide;
 	float hitBoxOffset = 0.005f;
 
-	if (!cg_drawHitBox.integer || !cgs.osp.serverConfigXHitBox) {
+	if (!cg_drawHitBox.integer && (!cgs.osp.serverConfigXHitBox || !cg.demoPlayback)) {
 		return;
 	}
 	

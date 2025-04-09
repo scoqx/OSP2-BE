@@ -415,10 +415,11 @@ void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
 
 
 	if (cgs.osp.serverConfigXHitBox != 1 && cg_drawHitBox.integer)
-	{
-		CG_Printf("^3HitBox has been disabled on this server.\n");
-		// trap_Cvar_Set("cg_drawHitBox", "0");
-
+	{	
+		if (!cg.demoPlayback) 
+		{
+			CG_Printf("^3HitBox has been disabled on this server.\n");
+		}
 	}
 }
 
