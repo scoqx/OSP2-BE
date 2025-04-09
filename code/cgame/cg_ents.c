@@ -518,7 +518,12 @@ static void CG_Missile(centity_t* cent)
 		ent.radius = 16;
 		ent.rotation = 0;
 		ent.customShader = cgs.media.plasmaBallShader;
-		if (cg_oldPlasma.integer || !cg_altPlasma.integer || !(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG))
+
+		if (cg_altPlasma.integer == 2)
+		{
+			ent.customShader = cgs.media.plasmaOldBallShader;
+		}
+		else if (cg_oldPlasma.integer || !cg_altPlasma.integer || !(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG))
 		{
 			if ((cg_nomip.integer & 2) == 0)
 			{
@@ -539,11 +544,12 @@ static void CG_Missile(centity_t* cent)
 			{
 				ent.customShader = cgs.media.plasmaNewBallNoPicMipShader;
 			}
-
 		}
+
 		trap_R_AddRefEntityToScene(&ent);
 		return;
 	}
+
 
 	// flicker between two skins
 	ent.skinNum = cg.clientFrame & 1;

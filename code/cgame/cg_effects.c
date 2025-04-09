@@ -350,19 +350,31 @@ void CG_Bleed(vec3_t origin, int entityNum)
 	ex->refEntity.rotation = rand() % 360;
 	ex->refEntity.radius = 24;
 
-	if ((cg_nomip.integer & 0x80) == 0)
+	if (cg_altBlood.integer == 1)
 	{
-		ex->refEntity.customShader = cgs.media.bloodExplosionShader;
+		ex->refEntity.customShader = cgs.media.bloodExplosionSparkShader;
+		ex->refEntity.shaderRGBA[0] = cgs.be.altBloodColor[0] * 255;
+		ex->refEntity.shaderRGBA[1] = cgs.be.altBloodColor[1] * 255;
+		ex->refEntity.shaderRGBA[2] = cgs.be.altBloodColor[2] * 255;
+		ex->refEntity.shaderRGBA[3] = cgs.be.altBloodColor[3] * 255;
+		CG_Printf("Bleed reType: %i\n", ex->refEntity.reType);
 	}
 	else
 	{
-		ex->refEntity.customShader = cgs.media.bloodExplosionNoPicMipShader;
+		if ((cg_nomip.integer & 0x80) == 0)
+		{
+			ex->refEntity.customShader = cgs.media.bloodExplosionShader;
+		}
+		else
+		{
+			ex->refEntity.customShader = cgs.media.bloodExplosionNoPicMipShader;
+		}
 	}
 
 	// don't show player's own blood in view
 	if (entityNum == cg.snap->ps.clientNum)
 	{
-		ex->refEntity.renderfx |= RF_THIRD_PERSON;
+		ex->refEntity.renderfx |= RF_THIRD_PERSON | RF_DEPTHHACK;
 	}
 }
 

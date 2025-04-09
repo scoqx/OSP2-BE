@@ -948,6 +948,12 @@ void CG_RegisterWeapon(int weaponNum)
 				cgs.media.plasmaNewExplosionShaderNoPicMip = cgs.media.plasmaExplosionShader;
 			}
 
+			cgs.media.plasmaOldExplosionShader = trap_R_RegisterShader("plasmaExplosion_old");
+			if (!cgs.media.plasmaOldExplosionShader)
+			{
+				cgs.media.plasmaOldExplosionShader = cgs.media.plasmaOldExplosionShader;
+			}
+
 			cgs.media.railRingsShader = trap_R_RegisterShader("railDisc");
 			cgs.media.railRingsShaderNoPicMip = trap_R_RegisterShader("railDiscNoPicMip");
 			if (!cgs.media.railRingsShaderNoPicMip)
@@ -2406,9 +2412,9 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 					mark = cgs.media.energyMarkNoPicMipShader;
 				}
 			}
-			else
+			else if (cg_altPlasma.integer == 1)
 			{
-				if ((cg_nomip.integer & 0x2) == 0)
+				if ((cg_nomip.integer & 2) == 0)
 				{
 					shader = cgs.media.plasmaNewExplosionShader;
 					mark = cgs.media.energyMarkShader;
@@ -2419,8 +2425,35 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 					mark = cgs.media.energyMarkNoPicMipShader;
 				}
 			}
+			else if (cg_altPlasma.integer == 2)
+			{
+				if ((cg_nomip.integer & 2) == 0)
+				{
+					shader = cgs.media.plasmaOldExplosionShader; // fallback in case old version failed
+					if (cgs.media.plasmaOldExplosionShader)
+					{
+						shader = cgs.media.plasmaExplosionShader; // default
+					}
+					if (cgs.media.plasmaOldExplosionShader)
+					{
+						shader = cgs.media.plasmaOldExplosionShader; // use old if available
+					}
+					mark = cgs.media.energyMarkPlasmaShader;
+				}
+				else
+				{
+					shader = cgs.media.plasmaExplosionShaderNoPicMip; // fallback
+					if (cgs.media.plasmaOldExplosionShader)
+					{
+						shader = cgs.media.plasmaOldExplosionShader; // use old for mip-disabled too
+					}
+					mark = cgs.media.energyMarkNoPicMipShader;
+				}
+			}
+
 			radius = 16;
 			break;
+
 		case WP_BFG:
 			mod = cgs.media.dishFlashModel;
 			sfx = cgs.media.sfx_rockexp;

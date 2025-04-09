@@ -707,7 +707,7 @@ typedef struct
 	qhandle_t   teamOutlineWideShader;
 
 	qhandle_t   outlineShader;
-	qhandle_t 	teamOutlineShader;
+	qhandle_t   teamOutlineShader;
 
 	qhandle_t   redCubeModel;
 	qhandle_t   blueCubeModel;
@@ -828,6 +828,8 @@ typedef struct
 	qhandle_t   energyMarkShader;
 	qhandle_t   energyMarkNoPicMipShader;
 
+	qhandle_t   energyMarkPlasmaShader; // be
+
 	// powerup shaders
 	qhandle_t freezeShader;
 	qhandle_t freezeMarkShader;
@@ -865,6 +867,12 @@ typedef struct
 	qhandle_t   bfgExplosionShaderNoPicMip;
 	qhandle_t   bloodExplosionShader;
 	qhandle_t   bloodExplosionNoPicMipShader;
+	qhandle_t   bloodExplosionSparkShader;
+	// pre-alpha shaders
+	qhandle_t   plasmaOldBallShader;
+	qhandle_t   plasmaOldBallNoPicMipShader;
+	qhandle_t   plasmaOldExplosionShader;
+	qhandle_t   plasmaOldExplosionNoPicMipShader;
 
 	// special effects models
 	qhandle_t   teleportEffectModel;
@@ -1062,7 +1070,7 @@ typedef struct cgs_be_s
 	vec4_t hitBoxColor;
 	vec4_t enemyOutlineColor;
 	vec4_t teamOutlineColor;
-
+	vec4_t altBloodColor;
 
 	weaponStats_t weaponStats[WP_NUM_WEAPONS];
 } cgs_be_t;
@@ -1553,10 +1561,12 @@ extern vmCvar_t         cg_drawOutline;
 extern vmCvar_t         cg_teamOutlineColor;
 extern vmCvar_t         cg_enemyOutlineColor;
 extern vmCvar_t         cg_enemyOutlineColorUnique;
-extern vmCvar_t			cg_enemyOutlineSize;
-extern vmCvar_t			cg_teamOutlineSize;
-extern vmCvar_t			cg_underwaterFovWarp;
-extern vmCvar_t		 	be_run;
+extern vmCvar_t         cg_enemyOutlineSize;
+extern vmCvar_t         cg_teamOutlineSize;
+extern vmCvar_t         cg_underwaterFovWarp;
+extern vmCvar_t         cg_altBlood;
+extern vmCvar_t         cg_altBloodColor;
+extern vmCvar_t         be_run;
 //
 // cg_main.c
 //
@@ -2221,7 +2231,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.042a" // BE
+#define OSP_VERSION "be-0.05" // BE
 
 
 
@@ -2450,6 +2460,8 @@ void CG_LocalEventCvarChanged_cg_damageFrameSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_damageFrameOpaque(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyOutlineColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamOutlineColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_altBloodColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_altBlood(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

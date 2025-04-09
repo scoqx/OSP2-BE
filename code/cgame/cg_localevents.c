@@ -415,8 +415,8 @@ void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
 
 
 	if (cgs.osp.serverConfigXHitBox != 1 && cg_drawHitBox.integer)
-	{	
-		if (!cg.demoPlayback) 
+	{
+		if (!cg.demoPlayback)
 		{
 			CG_Printf("^3HitBox has been disabled on this server.\n");
 		}
@@ -456,4 +456,9 @@ void CG_LocalEventCvarChanged_cg_enemyOutlineColor(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_cg_teamOutlineColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.teamOutlineColor);
+}
+
+void CG_LocalEventCvarChanged_cg_altBloodColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.altBloodColor);
 }

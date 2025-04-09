@@ -404,3 +404,47 @@ outlineThin
 		rgbGen entity	
 	}
 }
+
+plasmaExplosion_old
+{
+	cull disable
+	{
+		clampmap models/weaphits/plasmaboom_old.tga
+		blendfunc add
+                tcMod stretch triangle .6 0.1 0 8
+                tcmod rotate 999
+                rgbGen wave inversesawtooth 0 1 0 1.5
+	}
+}
+
+sprites/plasma_old
+{
+	cull disable
+	{
+		clampmap sprites/plasma_old.tga
+		blendfunc GL_ONE GL_ONE
+                tcMod rotate 931
+	}
+}
+
+gfx/damage/plasma_mrk_be
+{
+	polygonOffset
+	{
+		map gfx/damage/plasma_mrk_be.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+gfx/misc/spark
+{
+	nopicmip
+	{
+		map gfx/misc/spark.jpg
+		blendfunc add
+		rgbGen entity
+	}
+}
+

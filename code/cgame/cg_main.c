@@ -376,14 +376,16 @@ vmCvar_t        cg_damageFrameOpaque;
 vmCvar_t            cg_shud_currentWeapons;
 vmCvar_t        cg_hitBoxColor;
 vmCvar_t        cg_drawGunForceAspect;
-vmCvar_t		cg_drawOutline;
-vmCvar_t		cg_enemyOutlineColor;
-vmCvar_t		cg_teamOutlineColor;
-vmCvar_t		cg_enemyOutlineColorUnique;
-vmCvar_t		cg_enemyOutlineSize;
-vmCvar_t		cg_teamOutlineSize;
-vmCvar_t		cg_underwaterFovWarp;
-vmCvar_t	be_run;
+vmCvar_t        cg_drawOutline;
+vmCvar_t        cg_enemyOutlineColor;
+vmCvar_t        cg_teamOutlineColor;
+vmCvar_t        cg_enemyOutlineColorUnique;
+vmCvar_t        cg_enemyOutlineSize;
+vmCvar_t        cg_teamOutlineSize;
+vmCvar_t        cg_underwaterFovWarp;
+vmCvar_t        cg_altBlood;
+vmCvar_t        cg_altBloodColor;
+vmCvar_t    be_run;
 
 
 
@@ -674,13 +676,15 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawHitBox },
 	{ &cg_hitBoxColor, "cg_hitBoxColor", "004444", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
 	{ &cg_drawGunForceAspect, "cg_drawGunForceAspect", "0", CVAR_ARCHIVE },
-	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "Magenta", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
-	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE | CVAR_NEW, },
-	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamOutlineColor },
-	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE | CVAR_NEW	}
+	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE  },
+	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE },
+	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "Magenta", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
+	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE },
+	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE },
+	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
+	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altBloodColor }
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
 
 };
@@ -1274,6 +1278,12 @@ static void CG_RegisterGraphics(void)
 		cgs.media.plasmaNewBallNoPicMipShader = cgs.media.plasmaNewBallShader;
 	}
 
+	// pre alpha plasma ball
+	cgs.media.plasmaOldBallShader = trap_R_RegisterShader("sprites/plasma_old");
+	cgs.media.plasmaOldBallNoPicMipShader = cgs.media.plasmaOldBallShader; // vashe poh no picmip
+
+
+
 	cgs.media.grenadeCPMANoPicMipShader = trap_R_RegisterShaderNoMip("grenadeCPMA_NPM");
 	cgs.media.grenadeCPMAModel = trap_R_RegisterModel("models/ammo/grenadeCPMA.md3");
 
@@ -1432,6 +1442,7 @@ static void CG_RegisterGraphics(void)
 		cgs.media.bloodExplosionNoPicMipShader = cgs.media.bloodExplosionShader;
 
 	}
+	cgs.media.bloodExplosionSparkShader = trap_R_RegisterShader("gfx/misc/spark");
 
 	cgs.media.bulletFlashModel = trap_R_RegisterModel("models/weaphits/bullet.md3");
 	cgs.media.ringFlashModel = trap_R_RegisterModel("models/weaphits/ring02.md3");
@@ -1461,25 +1472,26 @@ static void CG_RegisterGraphics(void)
 	cgs.media.obituariesFalling = trap_R_RegisterShader("ObituariesFalling");
 	cgs.media.obituariesSkull = trap_R_RegisterShader("ObituariesSkull");
 
+	// be extention
 	cgs.media.whiteAlphaShader      = trap_R_RegisterShader("whiteAlpha");
 	cgs.media.whiteAlphaShader_nocull      = trap_R_RegisterShader("whiteAlpha_nocull");
 	cgs.media.WhiteAlphaShader_cullback    = trap_R_RegisterShader("whiteAlpha_cullback");
 
-// Enemy outline
-cgs.media.outlineShader = 
-	(cg_enemyOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
-	(cg_enemyOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
-	(cg_enemyOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
-	trap_R_RegisterShader("outlineThin");
+	// Enemy outline
+	cgs.media.outlineShader =
+	    (cg_enemyOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
+	    (cg_enemyOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
+	    (cg_enemyOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
+	    trap_R_RegisterShader("outlineThin");
 
-// Team outline
-cgs.media.teamOutlineShader =
-	(cg_teamOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
-	(cg_teamOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
-	(cg_teamOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
-	trap_R_RegisterShader("outlineThin");
+	// Team outline
+	cgs.media.teamOutlineShader =
+	    (cg_teamOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
+	    (cg_teamOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
+	    (cg_teamOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
+	    trap_R_RegisterShader("outlineThin");
 
-	
+
 
 	memset(cg_items, 0, sizeof(cg_items));
 	memset(cg_weapons, 0, sizeof(cg_weapons));
@@ -1519,6 +1531,7 @@ cgs.media.teamOutlineShader =
 	}
 
 	cgs.media.energyMarkShader = trap_R_RegisterShader("gfx/damage/plasma_mrk");
+	cgs.media.energyMarkPlasmaShader = trap_R_RegisterShader("gfx/damage/plasma_mrk_be");
 	cgs.media.energyMarkNoPicMipShader = trap_R_RegisterShader("gfx/damage/plasma_mrkNopPicMip");
 	if (!cgs.media.energyMarkNoPicMipShader)
 	{
@@ -1710,6 +1723,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_hitBoxColor");
 	CG_CvarTouch("cg_enemyOutlineColor");
 	CG_CvarTouch("cg_teamOutlineColor");
+	CG_CvarTouch("cg_altBloodColor");
 
 	CG_CvarTouch("ch_crosshairDecorOpaque");
 	CG_CvarTouch("ch_crosshairOpaque");
@@ -2065,33 +2079,42 @@ char* CG_OSPGetCvarName(vmCvar_t* cvar)
 	return NULL;
 }
 
-void CG_PrintNewCommandsBE(void) {
+void CG_PrintNewCommandsBE(void)
+{
 	int i;
 	int startIndex = -1;
 	int numCommands = sizeof(cvarTable) / sizeof(cvarTable[0]);
 
 	// Найдём индекс "cg_itemsRespawnAnimation"
-	for (i = 0; i < numCommands; i++) {
-		if (!strcmp(cvarTable[i].cvarName, "cg_itemsRespawnAnimation")) {
+	for (i = 0; i < numCommands; i++)
+	{
+		if (!strcmp(cvarTable[i].cvarName, "cg_itemsRespawnAnimation"))
+		{
 			startIndex = i + 1; // начинаем со следующего
 			break;
 		}
 	}
 
-	if (startIndex < 0) {
+	if (startIndex < 0)
+	{
 		CG_Printf("cg_itemsRespawnAnimation not found\n");
 		return;
 	}
 
-	for (i = startIndex; i < numCommands; i++) {
-		if (cvarTable[i].cvarFlags & CVAR_NEW) {
+	for (i = startIndex; i < numCommands; i++)
+	{
+		if (cvarTable[i].cvarFlags & CVAR_NEW)
+		{
 			CG_Printf("  ^2%s\n", cvarTable[i].cvarName);
-		} else {
+		}
+		else
+		{
 			CG_Printf("  %s\n", cvarTable[i].cvarName);
 		}
 
 		// Прерываемся, если достигли be_run
-		if (!strcmp(cvarTable[i].cvarName, "be_run")) {
+		if (!strcmp(cvarTable[i].cvarName, "be_run"))
+		{
 			break;
 		}
 	}

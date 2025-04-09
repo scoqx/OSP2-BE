@@ -80,3 +80,10 @@ SHUD:
 09.04.2025 be v0.042
 
   +cg_underwaterFovWarp
+
+10.04.2025 be v0.05
+
+  + cg_altBlood
+  + cg_altBloodColor
+  * cg_altPlasma 
+    + variation 2
