@@ -634,12 +634,13 @@ void CG_RemoveChatEscapeChar(char* text)
 					text[l++] = '^';
 					text[l++] = '3';
 					break;
-
+				case '^':
+					++i;
+					text[l++] = '^';
+					text[l++] = '^';
+					break;
 				default:
-					if (command != '^')
-					{
-						++i;
-					}
+					++i;
 			}
 		}
 
