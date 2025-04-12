@@ -68,8 +68,11 @@ void CG_SHUDElementCWSRoutine(void* context)
 	{
 		return;
 	}
-
+	if (element->config.style.value == 1)
 	Com_sprintf(textBuffer, sizeof(textBuffer), "^7%.1f%%", ws->stats[ws->lastTrackedWeapon].accuracy);
+	else
+	Com_sprintf(textBuffer, sizeof(textBuffer), "^7%.0f%%", ws->stats[ws->lastTrackedWeapon].accuracy);
+
 	element->ctx.text = textBuffer;
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 	CG_SHUDTextPrint(&element->config, &element->ctx);

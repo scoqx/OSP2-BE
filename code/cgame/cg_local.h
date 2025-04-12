@@ -1614,7 +1614,7 @@ void CG_CvarResetToDefault(const char* name);
 
 qhandle_t CG_GetFragSound(void);
 
-void CG_PrintNewCommandsBE(void);
+void CG_PrintNewCommandsBE_f(void);
 //
 // cg_view.c
 //

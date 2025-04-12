@@ -145,8 +145,8 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "location",  0, CG_SHUDElementLocationCreate, CG_SHUDElementLocationRoutine, CG_SHUDElementLocationDestroy },
 	{ "tempAcc_current", SE_IM | SE_DEAD, CG_SHUDElementTempAccCreate, CG_SHUDElementTempAccRoutine, CG_SHUDElementTempAccDestroy },
 	{ "tempAcc_last",  },
-	{ "currentWeaponStats", SE_IM | SE_DEAD, CG_SHUDElementCWSCreate, CG_SHUDElementCWSRoutine, CG_SHUDElementCWSDestroy },
-	{ "currentWeaponStats_icon", SE_IM | SE_DEAD, CG_SHUDElementCWSIconCreate, CG_SHUDElementCWSIconRoutine, CG_SHUDElementCWSIconDestroy },
+	{ "currentWeaponStats", SE_IM, CG_SHUDElementCWSCreate, CG_SHUDElementCWSRoutine, CG_SHUDElementCWSDestroy },
+	{ "currentWeaponStats_icon", SE_IM, CG_SHUDElementCWSIconCreate, CG_SHUDElementCWSIconRoutine, CG_SHUDElementCWSIconDestroy },
 	{ NULL },
 };
 

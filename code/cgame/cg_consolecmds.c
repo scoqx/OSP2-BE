@@ -827,7 +827,7 @@ static consoleCommand_t commands[] =
 	{ "unmute", CG_UnMute_f },
 	{ "showfont", CG_ShowFont_f },
 	{ "dpi", CG_DPI_f },
-	{ "belist", CG_PrintNewCommandsBE },
+	{ "belist", CG_PrintNewCommandsBE_f },
 };
 
 

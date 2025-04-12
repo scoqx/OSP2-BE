@@ -123,28 +123,38 @@ static qboolean CG_SHUDScoresGetNME(int* scores)
 
 void CG_SHUDElementScoreRoutine(void* context)
 {
-	shudElementScore* element = (shudElementScore*)context;
-	int scores;
-	qboolean result = qfalse;
+    shudElementScore* element = (shudElementScore*)context;
+    int scores;
+    qboolean result = qfalse;
 
-	switch (element->type)
-	{
-		case SHUD_ELEMENT_SCORE_OWN:
-			result = CG_SHUDScoresGetOWN(&scores);
-			break;
-		case SHUD_ELEMENT_SCORE_NME:
-			result = CG_SHUDScoresGetNME(&scores);
-			break;
-		case SHUD_ELEMENT_SCORE_MAX:
-			result = CG_SHUDScoresGetMax(&scores);
-			break;
-	}
-	if (!result) return;
+    switch (element->type)
+    {
+        case SHUD_ELEMENT_SCORE_OWN:
+            result = CG_SHUDScoresGetOWN(&scores);
+            break;
 
-	element->ctx.text = va(element->config.text.value, scores);
+        case SHUD_ELEMENT_SCORE_NME:
+            result = CG_SHUDScoresGetNME(&scores);
 
-	CG_SHUDTextPrint(&element->config, &element->ctx);
+            if (!result && element->config.style.value == 2 && CG_SHUDGetOurActiveTeam() == TEAM_FREE)
+            {
+                scores = 0;
+                result = qtrue;
+            }
+            break;
+
+        case SHUD_ELEMENT_SCORE_MAX:
+            result = CG_SHUDScoresGetMax(&scores);
+            break;
+    }
+
+    if (!result)
+        return;
+
+    element->ctx.text = va(element->config.text.value, scores);
+    CG_SHUDTextPrint(&element->config, &element->ctx);
 }
+
 
 void CG_SHUDElementScoreDestroy(void* context)
 {

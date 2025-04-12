@@ -2079,7 +2079,7 @@ char* CG_OSPGetCvarName(vmCvar_t* cvar)
 	return NULL;
 }
 
-void CG_PrintNewCommandsBE(void)
+void CG_PrintNewCommandsBE_f(void)
 {
 	int i;
 	int startIndex = -1;

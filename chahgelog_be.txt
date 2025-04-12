@@ -79,7 +79,7 @@ SHUD:
 
 09.04.2025 be v0.042
 
-  +cg_underwaterFovWarp
+  + cg_underwaterFovWarp
 
 10.04.2025 be v0.05
 
@@ -87,3 +87,14 @@ SHUD:
   + cg_altBloodColor
   * cg_altPlasma 
     + variation 2
+
+12.04.2025 be v0.051
+
+  * cg_drawOutline team colors fixed
+
+  SHUD:
+  + tempAcc styles variations
+  + CurrentWeaponStats styles variations
+  + scoresScore_NME	style
+  + Configs (m1rqlstyle, AGENT, diwoc_light, cybra, RTG, zoti)
+

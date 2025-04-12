@@ -2,6 +2,9 @@
 #include "cg_superhud_private.h"
 #include "../qcommon/qcommon.h"
 
+#define SHUD_STYLE_FLOAT       (1 << 0)
+#define SHUD_STYLE_COLORIZED   (1 << 1)
+
 typedef struct
 {
 	superhudConfig_t config;
@@ -26,27 +29,23 @@ static void* CG_SHUDElementTempAccCreate(const superhudConfig_t* config)
 
 static void CG_SHUDEStylesTempAcc_Color(vec4_t color, const superhudConfig_t* config, float accuracy)
 {
-	if (config->style.isSet)
+	if (config->style.isSet && (config->style.value & SHUD_STYLE_COLORIZED))
 	{
-		if (config->style.value == 1)
+		if (accuracy < 30.0f)
 		{
-			const vec4_t colors[] =
-			{
-				{1.0f, 0.0f, 0.0f, 1.0f}, // < 30%
-				{1.0f, 1.0f, 0.0f, 1.0f}, // < 50%
-				{0.0f, 1.0f, 0.0f, 1.0f}, // < 60%
-				{1.0f, 0.0f, 1.0f, 1.0f}  // >= 60%
-			};
-
-			int index = (accuracy < 30.0f) ? 0 :
-			            (accuracy < 50.0f) ? 1 :
-			            (accuracy < 60.0f) ? 2 : 3;
-
-			Vector4Copy(colors[index], color);
+			Vector4Copy(colorRed, color);
+		}
+		else if (accuracy < 50.0f)
+		{
+			Vector4Copy(colorYellow, color);
+		}
+		else if (accuracy < 60.0f)
+		{
+			Vector4Copy(colorGreen, color);
 		}
 		else
 		{
-			Vector4Copy(config->color.value.rgba, color);
+			Vector4Copy(colorMagenta, color);
 		}
 	}
 	else
@@ -63,26 +62,30 @@ void CG_SHUDElementTempAccRoutine(void* context)
 
 	superhudTempAccEntry_t* entry = &element->gctx->tempAcc.weapon[WP_LIGHTNING];
 
-	if (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE) // ignore promode
+	if (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE)
 	{
 		return;
 	}
 
 	CG_GetWeaponTempAccuracy(WP_LIGHTNING);
 
-	Com_sprintf(accuracyStr, sizeof(accuracyStr), "%.0f%%", entry->tempAccuracy);
-	element->ctx.text = va("%s", accuracyStr);
+	if (element->config.style.value & SHUD_STYLE_FLOAT)
+		Com_sprintf(accuracyStr, sizeof(accuracyStr), "%.1f%%", entry->tempAccuracy);
+	else
+		Com_sprintf(accuracyStr, sizeof(accuracyStr), "%.0f%%", entry->tempAccuracy);
 
+	element->ctx.text = va("%s", accuracyStr);
 
 	CG_SHUDEStylesTempAcc_Color(color, &element->config, entry->tempAccuracy);
 
 	Vector4Copy(color, element->config.color.value.rgba);
 
-	if (!entry->tempAccuracy <= 0)
+	if (entry->tempAccuracy > 0)
 	{
 		CG_SHUDTextPrint(&element->config, &element->ctx);
 	}
 }
+
 
 
 void CG_SHUDElementTempAccDestroy(void* context)
