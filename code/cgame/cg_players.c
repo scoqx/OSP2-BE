@@ -2368,21 +2368,16 @@ void CG_AddOutline(centity_t* cent)
     clientInfo_t* ci;
     refEntity_t orig[3], enlarged[3];
     int clientNum, i, j;
-    int renderfx = RF_LIGHTING_ORIGIN;
-    int outlineSize;
-    float shadowPlane = 0.0f;
     vec4_t color[3];
     qboolean isSpectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
     qboolean isEnemy;
-    qboolean isOurTeam;
-    qboolean isRedTeamWhileSpec;
-    qboolean isTeamMate;
 
     clientNum = cent->currentState.clientNum;
     if (!cg_drawOutline.integer || clientNum < 0 || clientNum >= MAX_CLIENTS)
     {
         return;
     }
+
     ci = &cgs.clientinfo[clientNum];
     if (!ci->infoValid)
     {
@@ -2390,30 +2385,22 @@ void CG_AddOutline(centity_t* cent)
     }
 
     if (cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson ||
-            cent->currentState.eFlags & EF_DEAD ||
-            (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && cent->currentState.powerups & (1 << PW_BATTLESUIT)) ||
-            cent->currentState.powerups & (1 << PW_INVIS))
+        cent->currentState.eFlags & EF_DEAD ||
+        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && cent->currentState.powerups & (1 << PW_BATTLESUIT)) ||
+        cent->currentState.powerups & (1 << PW_INVIS))
     {
         return;
     }
 
     // Check if it's a team-based game or a FFA-like game.
-    if (cgs.gametype <= GT_SINGLE_PLAYER) // FFA, TOURNAMENT, SINGLEPLAYER = ALL ENEMIES
-    {
-        isEnemy = qtrue;
-    }
-    else if (cgs.gametype >= GT_TEAM) // Team games (GT_TEAM, GT_CTF, etc.)
-    {
-        isOurTeam = cgs.clientinfo[cg.clientNum].rt == ci->rt;
-        isRedTeamWhileSpec = cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED;
-        isTeamMate = isOurTeam || isRedTeamWhileSpec;
-        isEnemy = !isTeamMate; // Enemy is anyone who is not our teammate
-    }
+    isEnemy = (cgs.gametype <= GT_SINGLE_PLAYER) || 
+              (cgs.gametype >= GT_TEAM && !(cgs.clientinfo[cg.clientNum].rt == ci->rt || 
+              (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED)));
 
     // Outline conditions
     if ((cg_drawOutline.integer == 1 && isEnemy) ||
-            (cg_drawOutline.integer == 2 && !isEnemy) ||
-            (cg_drawOutline.integer == 3))
+        (cg_drawOutline.integer == 2 && !isEnemy) ||
+        (cg_drawOutline.integer == 3))
     {
         memset(orig, 0, sizeof(orig));
         memset(enlarged, 0, sizeof(enlarged));
@@ -2435,16 +2422,17 @@ void CG_AddOutline(centity_t* cent)
         for (i = 0; i < 3; i++)
         {
             enlarged[i] = orig[i];
-            enlarged[i].shadowPlane = shadowPlane;
-            enlarged[i].renderfx = renderfx;
+            enlarged[i].shadowPlane = 0.0f;
+            enlarged[i].renderfx = RF_LIGHTING_ORIGIN;
             enlarged[i].customShader = cgs.media.outlineShader;
         }
 
+        // Set color based on team and enemy status
         if (isSpectator)
         {
             for (i = 0; i < 3; i++)
             {
-                Vector4Copy(ci->team == TEAM_RED ? cgs.be.teamOutlineColor : cgs.be.enemyOutlineColor, color[i]);
+                Vector4Copy(ci->rt == TEAM_RED ? cgs.be.teamOutlineColor : cgs.be.enemyOutlineColor, color[i]);
             }
         }
         else
@@ -2459,7 +2447,6 @@ void CG_AddOutline(centity_t* cent)
                     for (i = 0; i < 3; i++)
                     {
                         Vector4Copy(cgs.be.enemyOutlineColor, color[i]);
-                        enlarged[i].customShader = cgs.media.outlineShader;
                     }
                 }
                 else
@@ -2488,11 +2475,11 @@ void CG_AddOutline(centity_t* cent)
                 for (i = 0; i < 3; i++)
                 {
                     Vector4Copy(cgs.be.teamOutlineColor, color[i]);
-                    enlarged[i].customShader = cgs.media.teamOutlineShader;
                 }
             }
         }
 
+        // Apply the color and add entities to the scene
         for (i = 0; i < 3; i++)
         {
             for (j = 0; j < 4; j++)
@@ -2504,6 +2491,7 @@ void CG_AddOutline(centity_t* cent)
         }
     }
 }
+
 
 
 /*
