@@ -102,12 +102,12 @@ void CG_SHUDElementRewardRoutine(void* context)
 	CG_SHUDFill(&element->config);
 	CG_SHUDDrawBorder(&element->config);
 
-	if (element->type == SHUD_REWARD_ICON)
+	if (element->type == SHUD_REWARD_ICON && cg_drawRewards.integer != 2)
 	{
 		element->ctx.d.image = cg.rewardShader[0];
 		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx.d);
 	}
-	else if (cg.rewardCount[0])
+	else if (cg.rewardCount[0] && cg_drawRewards.integer != 2)
 	{
 		element->ctx.t.text = va(element->config.text.value, cg.rewardCount[0]);
 		CG_SHUDTextPrint(&element->config, &element->ctx.t);

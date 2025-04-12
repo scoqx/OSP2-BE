@@ -425,7 +425,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawCrosshairPlasmagun, "cg_drawCrosshairPlasmagun", "-1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairBFG, "cg_drawCrosshairBFG", "-1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE },
-	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE },
 	{ &cg_crosshairSize, "cg_crosshairSize", "24", CVAR_ARCHIVE },
 	{ &cg_crosshairAspectRatioFix, "cg_crosshairAspectRatioFix", "1", CVAR_ARCHIVE },
 	{ &cg_crosshairHealth, "cg_crosshairHealth", "0", CVAR_ARCHIVE },
@@ -491,7 +490,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_oldPlasma, "cg_oldPlasma", "1", CVAR_ARCHIVE },
 	{ &cg_altGrenades, "cg_altGrenades", "0", CVAR_ARCHIVE},
 	{ &cg_altLightning, "cg_altLightning", "0", CVAR_ARCHIVE},
-	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE},
 	{ &cg_ammoCheck, "cg_ammoCheck", "0", CVAR_ARCHIVE },
 	{ &cg_autoAction, "cg_autoAction", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_autoAction},
 	{ &cg_clientLog, "cg_clientLog", "0", CVAR_ARCHIVE },
@@ -682,9 +680,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE },
 	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE },
 	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
-	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
 	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altBloodColor }
+	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altBloodColor },
+	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE | CVAR_UPDATED }
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
 
 };
@@ -2105,11 +2105,15 @@ void CG_PrintNewCommandsBE_f(void)
 	{
 		if (cvarTable[i].cvarFlags & CVAR_NEW)
 		{
-			CG_Printf("  ^2%s\n", cvarTable[i].cvarName);
+			CG_Printf("^2+  %s\n", cvarTable[i].cvarName);
+		}
+		else if (cvarTable[i].cvarFlags & CVAR_UPDATED)
+		{
+			CG_Printf("^3*  %s\n", cvarTable[i].cvarName);
 		}
 		else
 		{
-			CG_Printf("  %s\n", cvarTable[i].cvarName);
+			CG_Printf("   %s\n", cvarTable[i].cvarName);
 		}
 
 		// Прерываемся, если достигли be_run

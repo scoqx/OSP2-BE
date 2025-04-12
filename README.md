@@ -10,98 +10,42 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
-## 0.051
+## 0.051/0.052
 ```
   * cg_drawOutline team colors fixed
+  * cg_drawRewards 2
 
   SHUD:
   + tempAcc styles variations
   + CurrentWeaponStats styles variations
   + scoresScore_NME	style
   + Configs (m1rqlstyle, AGENT, diwoc_light, cybra, , zoti)
-
 ```
-## 0.05
+## Extended features
 ```
-  + cg_altBlood
-  + cg_altBloodColor
-  * cg_altPlasma 
-    + variation 2
-```
-## 0.042
-```
-+cg_underwaterFovWarp
-```
-## 0.041
-```
-+ belist
-```
-## 0.04
-```
+Cvars:
++ cg_altBlood
++ cg_altBloodColor
+* cg_altPlasma 
+  + variation 2
++ cg_damageDrawFrame;
++ cg_damageFrameSize;
++ cg_damageFrameOpaque;
+* cg_drawGun (reworked)
++ cg_drawGunForceAspect
+* cg_drawHitBox enabled. Server permission required
++ cg_hitBoxColor <color>
++ cg_itemsRespawnAnimation
++ cg_enemyLightningColor
++ cg_uniqueColorTable
++ cg_noVoteBeep
++ cg_underwaterFovWarp
 + cg_drawOutline
 + cg_enemyOutlineColor
 + cg_teamOutlineColor
 + cg_enemyOutlineColorUnique
 + cg_enemyOutlineSize
 + cg_teamOutlineSize
-```
-## 0.033
-```
-+ cg_drawHitBox 3
-```
-## 0.032
-```
-+ cg_drawHitBox 2
-```
-## 0.031
-```
-+ cg_drawGunForceAspect
-* clientconfig
-  + Hitbox permission from server
-```
-## 0.03
-```
-* cg_drawHitBox enabled. Server permission required
-  + cg_hitBoxColor <color>
-  * HQ shader (lol)
-
-* cg_damageDrawFrame variations
-  + 1 gradient
-  + 2 old solid border
-```
-## 0.02
-```
-* cg_drawDamage (3/4) reworked to:
-  + cg_damageDrawFrame;
-  + cg_damageFrameSize;
-  + cg_damageFrameOpaque;
-
-+ cg_shud_currentWeapons;
-
-SHUD:
-+ Current Weapon Stats shows accuracy
-  + CurrentWeaponStats
-  + CurrentWeaponStats_icon
-
-* tempAcc reworked:
-  * fixed calc
-  - tempAcc_last
-    
-
-* weaponlist:
-  + border for choosen weapon
-
-+ various fixes
-```
-## 0.01
-```
-Cvars:
-+ cg_itemsRespawnAnimation
-+ cg_drawDamage (3/4)
-+ cg_enemyLightning
-+ cg_uniqueColorTable
-+ cg_noVoteBeep
-* cg_drawGun (reworked)
 
 SHUD:
 + Border (border, borderColor)
@@ -111,6 +55,13 @@ SHUD:
 + Item pickup style 2
 + Color E/T transparency via color2
 + Armor bar over HP bar
+
++ Current Weapon Stats shows accuracy
+  + CurrentWeaponStats
+  + CurrentWeaponStats_icon
+
+* weaponlist:
+  + border for choosen weapon
 ```
 ![shot-Mar-27-2025_00 30 21](https://github.com/user-attachments/assets/11e8a2cf-8ef6-4984-a427-5af8ac9de650)
 

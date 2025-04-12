@@ -13,7 +13,7 @@ typedef struct
 }
 shudElementTempAcc_t;
 
-static void* CG_SHUDElementTempAccCreate(const superhudConfig_t* config)
+void* CG_SHUDElementTempAccCreate(const superhudConfig_t* config)
 {
 	shudElementTempAcc_t* element;
 

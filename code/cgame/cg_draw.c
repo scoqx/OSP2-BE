@@ -1485,6 +1485,23 @@ void CG_DrawReward(void)
 		return;
 	}
 
+	if (cg_drawRewards.integer == 2)
+	{
+		if (cg.rewardStack > 0)
+		{
+			for (i = 0; i < cg.rewardStack; i++)
+			{
+				cg.rewardSound[i] = cg.rewardSound[i + 1];
+				cg.rewardShader[i] = cg.rewardShader[i + 1];
+				cg.rewardCount[i] = cg.rewardCount[i + 1];
+			}
+			cg.rewardTime = cg.time;
+			cg.rewardStack--;
+			trap_S_StartLocalSound(cg.rewardSound[0], CHAN_ANNOUNCER);
+		}
+		return; 
+	}
+
 	color = CG_FadeColor(cg.rewardTime, REWARD_TIME);
 	if (!color)
 	{
@@ -1518,11 +1535,12 @@ void CG_DrawReward(void)
 	if (cg.rewardCount[0] > 1)
 	{
 		Com_sprintf(buf, sizeof(buf), "%d", cg.rewardCount[0]);
-		CG_DrawString(x + w / 2.0f, y + h, buf, color, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, 16,  DS_HCENTER | DS_PROPORTIONAL);
+		CG_DrawString(x + w / 2.0f, y + h, buf, color, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, 16, DS_HCENTER | DS_PROPORTIONAL);
 	}
 
 	trap_R_SetColor(NULL);
 }
+
 
 
 /*
