@@ -2424,7 +2424,7 @@ void CG_AddOutline(centity_t* cent)
 			enlarged[i] = orig[i];
 			enlarged[i].shadowPlane = 0.0f;
 			enlarged[i].renderfx = RF_LIGHTING_ORIGIN;
-			enlarged[i].customShader = cgs.media.outlineShader;
+			enlarged[i].customShader = isEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
 		}
 
 		// Set color based on team and enemy status
