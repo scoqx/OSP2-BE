@@ -32,9 +32,9 @@ Cvars:
 + cg_altBloodColor
 * cg_altPlasma 
   + variation 2
-+ cg_damageDrawFrame;
-+ cg_damageFrameSize;
-+ cg_damageFrameOpaque;
++ cg_damageDrawFrame
++ cg_damageFrameSize
++ cg_damageFrameOpaque
 * cg_drawGun (reworked)
 + cg_drawGunForceAspect
 * cg_drawHitBox enabled. Server permission required
