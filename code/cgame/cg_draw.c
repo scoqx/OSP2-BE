@@ -1499,7 +1499,7 @@ void CG_DrawReward(void)
 			cg.rewardStack--;
 			trap_S_StartLocalSound(cg.rewardSound[0], CHAN_ANNOUNCER);
 		}
-		return; 
+		return;
 	}
 
 	color = CG_FadeColor(cg.rewardTime, REWARD_TIME);
@@ -2543,7 +2543,10 @@ int CG_OSPDrawLeftSlidingWindow(float timeAppearance, float timeShow, float time
 	minTimeIndex = -1;
 	minTime = 9999999;
 	i = 0;
-
+	if (cg_noSlidingWindow.integer)
+	{
+		return;
+	}
 	/* find free window */
 	do
 	{
@@ -2625,6 +2628,10 @@ void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context)
 	float calc_pos_y;
 	int i;
 	time_u1 = context->hideBeforeRealtime - trap_Milliseconds();
+	if (cg_noSlidingWindow.integer)
+	{
+		return;
+	}
 	if (time_u1 < context->timeHiding - context->timeShow)
 	{
 		if (time_u1 < context->timeAppearance)
@@ -2793,7 +2800,7 @@ void CG_OSPDrawCenterString(void)
 	float* fadeColor;
 	char* to_print;
 	int y;
-	if (cg_drawCenterMessages.value == 0)
+	if (!cg_drawCenterMessages.integer)
 	{
 		return;
 	}

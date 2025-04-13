@@ -101,3 +101,7 @@ SHUD:
 12.04.2025 be v0.052
 
   * cg_drawRewards 2
+
+13.04.2025 be v0.053
+
+  + cg_noSlidingWindow

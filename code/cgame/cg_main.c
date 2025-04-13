@@ -385,6 +385,7 @@ vmCvar_t        cg_teamOutlineSize;
 vmCvar_t        cg_underwaterFovWarp;
 vmCvar_t        cg_altBlood;
 vmCvar_t        cg_altBloodColor;
+vmCvar_t        cg_noSlidingWindow;
 vmCvar_t    be_run;
 
 
@@ -684,7 +685,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altBloodColor },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE | CVAR_UPDATED }
+	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE | CVAR_NEW }
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
 
 };

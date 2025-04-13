@@ -2365,131 +2365,131 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 
 void CG_AddOutline(centity_t* cent)
 {
-    clientInfo_t* ci;
-    refEntity_t orig[3], enlarged[3];
-    int clientNum, i, j;
-    vec4_t color[3];
-    qboolean isSpectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
-    qboolean isEnemy;
+	clientInfo_t* ci;
+	refEntity_t orig[3], enlarged[3];
+	int clientNum, i, j;
+	vec4_t color[3];
+	qboolean isSpectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+	qboolean isEnemy;
 
-    clientNum = cent->currentState.clientNum;
-    if (!cg_drawOutline.integer || clientNum < 0 || clientNum >= MAX_CLIENTS)
-    {
-        return;
-    }
+	clientNum = cent->currentState.clientNum;
+	if (!cg_drawOutline.integer || clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
 
-    ci = &cgs.clientinfo[clientNum];
-    if (!ci->infoValid)
-    {
-        return;
-    }
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid)
+	{
+		return;
+	}
 
-    if (cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson ||
-        cent->currentState.eFlags & EF_DEAD ||
-        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && cent->currentState.powerups & (1 << PW_BATTLESUIT)) ||
-        cent->currentState.powerups & (1 << PW_INVIS))
-    {
-        return;
-    }
+	if (cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson ||
+	        cent->currentState.eFlags & EF_DEAD ||
+	        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && cent->currentState.powerups & (1 << PW_BATTLESUIT)) ||
+	        cent->currentState.powerups & (1 << PW_INVIS))
+	{
+		return;
+	}
 
-    // Check if it's a team-based game or a FFA-like game.
-    isEnemy = (cgs.gametype <= GT_SINGLE_PLAYER) || 
-              (cgs.gametype >= GT_TEAM && !(cgs.clientinfo[cg.clientNum].rt == ci->rt || 
-              (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED)));
+	// Check if it's a team-based game or a FFA-like game.
+	isEnemy = (cgs.gametype <= GT_SINGLE_PLAYER) ||
+	          (cgs.gametype >= GT_TEAM && !(cgs.clientinfo[cg.clientNum].rt == ci->rt ||
+	                                        (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED)));
 
-    // Outline conditions
-    if ((cg_drawOutline.integer == 1 && isEnemy) ||
-        (cg_drawOutline.integer == 2 && !isEnemy) ||
-        (cg_drawOutline.integer == 3))
-    {
-        memset(orig, 0, sizeof(orig));
-        memset(enlarged, 0, sizeof(enlarged));
+	// Outline conditions
+	if ((cg_drawOutline.integer == 1 && isEnemy) ||
+	        (cg_drawOutline.integer == 2 && !isEnemy) ||
+	        (cg_drawOutline.integer == 3))
+	{
+		memset(orig, 0, sizeof(orig));
+		memset(enlarged, 0, sizeof(enlarged));
 
-        CG_PlayerAngles(cent, orig[2].axis, orig[1].axis, orig[0].axis);
-        CG_PlayerAnimation(cent, &orig[2].oldframe, &orig[2].frame, &orig[2].backlerp,
-                           &orig[1].oldframe, &orig[1].frame, &orig[1].backlerp);
+		CG_PlayerAngles(cent, orig[2].axis, orig[1].axis, orig[0].axis);
+		CG_PlayerAnimation(cent, &orig[2].oldframe, &orig[2].frame, &orig[2].backlerp,
+		                   &orig[1].oldframe, &orig[1].frame, &orig[1].backlerp);
 
-        orig[2].hModel = ci->legsModel;
-        orig[1].hModel = ci->torsoModel;
-        orig[0].hModel = ci->headModel;
+		orig[2].hModel = ci->legsModel;
+		orig[1].hModel = ci->torsoModel;
+		orig[0].hModel = ci->headModel;
 
-        VectorCopy(cent->lerpOrigin, orig[2].origin);
-        VectorCopy(cent->lerpOrigin, orig[2].lightingOrigin);
+		VectorCopy(cent->lerpOrigin, orig[2].origin);
+		VectorCopy(cent->lerpOrigin, orig[2].lightingOrigin);
 
-        CG_PositionRotatedEntityOnTag(&orig[1], &orig[2], ci->legsModel, "tag_torso");
-        CG_PositionRotatedEntityOnTag(&orig[0], &orig[1], ci->torsoModel, "tag_head");
+		CG_PositionRotatedEntityOnTag(&orig[1], &orig[2], ci->legsModel, "tag_torso");
+		CG_PositionRotatedEntityOnTag(&orig[0], &orig[1], ci->torsoModel, "tag_head");
 
-        for (i = 0; i < 3; i++)
-        {
-            enlarged[i] = orig[i];
-            enlarged[i].shadowPlane = 0.0f;
-            enlarged[i].renderfx = RF_LIGHTING_ORIGIN;
-            enlarged[i].customShader = cgs.media.outlineShader;
-        }
+		for (i = 0; i < 3; i++)
+		{
+			enlarged[i] = orig[i];
+			enlarged[i].shadowPlane = 0.0f;
+			enlarged[i].renderfx = RF_LIGHTING_ORIGIN;
+			enlarged[i].customShader = cgs.media.outlineShader;
+		}
 
-        // Set color based on team and enemy status
-        if (isSpectator)
-        {
-            for (i = 0; i < 3; i++)
-            {
-                Vector4Copy(ci->rt == TEAM_RED ? cgs.be.teamOutlineColor : cgs.be.enemyOutlineColor, color[i]);
-            }
-        }
-        else
-        {
-            if (isEnemy)
-            {
-                vec3_t uniqueColor;
-                vec4_t tmpColor;
+		// Set color based on team and enemy status
+		if (isSpectator)
+		{
+			for (i = 0; i < 3; i++)
+			{
+				Vector4Copy(ci->rt == TEAM_RED ? cgs.be.teamOutlineColor : cgs.be.enemyOutlineColor, color[i]);
+			}
+		}
+		else
+		{
+			if (isEnemy)
+			{
+				vec3_t uniqueColor;
+				vec4_t tmpColor;
 
-                if (cg_enemyOutlineColorUnique.integer == 0)
-                {
-                    for (i = 0; i < 3; i++)
-                    {
-                        Vector4Copy(cgs.be.enemyOutlineColor, color[i]);
-                    }
-                }
-                else
-                {
-                    VectorCopy(UNIQUE_COLOR(clientNum), uniqueColor);
-                    tmpColor[0] = uniqueColor[0];
-                    tmpColor[1] = uniqueColor[1];
-                    tmpColor[2] = uniqueColor[2];
-                    tmpColor[3] = 1.0f;
+				if (cg_enemyOutlineColorUnique.integer == 0)
+				{
+					for (i = 0; i < 3; i++)
+					{
+						Vector4Copy(cgs.be.enemyOutlineColor, color[i]);
+					}
+				}
+				else
+				{
+					VectorCopy(UNIQUE_COLOR(clientNum), uniqueColor);
+					tmpColor[0] = uniqueColor[0];
+					tmpColor[1] = uniqueColor[1];
+					tmpColor[2] = uniqueColor[2];
+					tmpColor[3] = 1.0f;
 
-                    for (i = 0; i < 3; i++)
-                    {
-                        if (cg_enemyOutlineColorUnique.integer & (1 << i))
-                        {
-                            VectorCopy(tmpColor, color[i]);
-                        }
-                        else
-                        {
-                            Vector4Copy(cgs.be.enemyOutlineColor, color[i]);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                for (i = 0; i < 3; i++)
-                {
-                    Vector4Copy(cgs.be.teamOutlineColor, color[i]);
-                }
-            }
-        }
+					for (i = 0; i < 3; i++)
+					{
+						if (cg_enemyOutlineColorUnique.integer & (1 << i))
+						{
+							VectorCopy(tmpColor, color[i]);
+						}
+						else
+						{
+							Vector4Copy(cgs.be.enemyOutlineColor, color[i]);
+						}
+					}
+				}
+			}
+			else
+			{
+				for (i = 0; i < 3; i++)
+				{
+					Vector4Copy(cgs.be.teamOutlineColor, color[i]);
+				}
+			}
+		}
 
-        // Apply the color and add entities to the scene
-        for (i = 0; i < 3; i++)
-        {
-            for (j = 0; j < 4; j++)
-            {
-                color[i][j] *= 255;
-            }
-            Vector4Copy(color[i], enlarged[i].shaderRGBA);
-            trap_R_AddRefEntityToScene(&enlarged[i]);
-        }
-    }
+		// Apply the color and add entities to the scene
+		for (i = 0; i < 3; i++)
+		{
+			for (j = 0; j < 4; j++)
+			{
+				color[i][j] *= 255;
+			}
+			Vector4Copy(color[i], enlarged[i].shaderRGBA);
+			trap_R_AddRefEntityToScene(&enlarged[i]);
+		}
+	}
 }
 
 
