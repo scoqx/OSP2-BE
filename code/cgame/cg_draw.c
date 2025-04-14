@@ -2366,6 +2366,93 @@ static void CG_DrawTestFont(const char* font)
 
 }
 
+void CG_OSPDrawNewCredits(void)
+{
+	int i;
+
+	// Координаты и размеры для текста
+	float x = 100.0f;
+	float y = 100.0f;
+	float w = 440.0f;
+	float h = 250.0f;
+	float charHeight = 14, charWidth = 8;
+	float textX = (440 / 2) + x;
+	float textY = y + 2.0f;
+	float lineY;
+	int borderSize = 10;
+	int direction = 12;
+	float speed = 0.005f;
+	float gradientScale = 0.05f;
+	vec4_t color = { 0.05, 0.05, 0.05, 0.8 };
+	vec4_t border = { 0, 0, 0, 2 };
+	float firstLineHeight;
+	float baseY;
+
+	char* credits[] =
+	{
+		"^7OSP2 BLACK EDITION",
+		"^3https://github.com/scoqx/OSP2-BE",
+		"^7Based on OSP2 by Snems",
+		"^3https://github.com/snems/OSP2",
+		"^7Special thanks to:",
+		"^7Snems, Mus1n, Mirage",
+		"^7MrX, Paragon, Zenx",
+		"^7Q3MSK.NET   http://q3msk.net",
+		"",
+		"",
+		"",
+		"Based on source codes:",
+		"^BOSP   https://www.orangesmoothie.org",
+		"^BCyrax   https://github.com/ec-/baseq3a",
+		"^Bx0ry   https://github.com/xq3e/engine",
+		"^BNeil Toronto   http://ra.is/unlagged",
+		"^BRatmod   https://github.com/rdntcntrl/ratoa_gamecode",
+		NULL
+	};
+
+	// if (!cgs.be.showCredits) {
+	//     return; // Если флаг не активен, не рисуем кредиты
+	// }
+
+	// Отрисовка фона
+	CG_FillRect(x, y, w, h, color);
+
+	firstLineHeight = charHeight * 1.5f;
+	CG_FontSelect(6);
+
+	// Отрисовка первой строки (увеличенный размер)
+	CG_OSPDrawStringNew(
+	    textX, textY,
+	    credits[0],
+	    colorWhite,
+	    charWidth * 1.5f, firstLineHeight,
+	    w,
+	    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
+	    NULL, border, colorWhite
+	);
+
+	CG_FontSelect(4);
+	baseY = textY + firstLineHeight;
+
+	// Отрисовка остальных строк
+	for (i = 1; credits[i] != NULL; i++)
+	{
+		lineY = baseY + (i - 1) * charHeight;
+		CG_OSPDrawStringNew(
+		    textX, lineY,
+		    credits[i],
+		    colorWhite,
+		    charWidth, charHeight,
+		    w,
+		    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
+		    NULL, NULL, NULL
+		);
+	}
+
+	// Отрисовка границы с анимацией
+	CG_OSPDrawRainbowFrameOptimized(x, y, w, h, borderSize, direction, speed, gradientScale);
+}
+
 /*
 =================
 CG_Draw2D
@@ -2389,11 +2476,15 @@ static void CG_Draw2D(void)
 		CG_DrawTestFont(cgs.osp.testFont);
 		return;
 	}
-
+	if (cgs.be.showCredits)
+	{
+		CG_OSPDrawNewCredits();
+	}
 	if (cg_shud.integer)
 	{
 		CG_SHUDRoutine();
 		CG_DrawWarmupShud();
+
 		return;
 	}
 
@@ -2545,7 +2636,7 @@ int CG_OSPDrawLeftSlidingWindow(float timeAppearance, float timeShow, float time
 	i = 0;
 	if (cg_noSlidingWindow.integer)
 	{
-		return;
+		return -1;
 	}
 	/* find free window */
 	do
@@ -2861,3 +2952,4 @@ void CG_OSPDrawCenterString(void)
 	}
 	trap_R_SetColor(NULL);
 }
+

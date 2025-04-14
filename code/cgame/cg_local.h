@@ -1072,6 +1072,8 @@ typedef struct cgs_be_s
 	vec4_t teamOutlineColor;
 	vec4_t altBloodColor;
 
+	qboolean showCredits;
+
 	weaponStats_t weaponStats[WP_NUM_WEAPONS];
 } cgs_be_t;
 
@@ -1693,6 +1695,8 @@ typedef struct
 
 text_command_t* CG_CompileText(const char* text);
 void CG_CompiledTextDestroy(text_command_t* root);
+void CG_OSPDrawRainbowFrameOptimized(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale);
+void CG_OSPDrawGradientRectOptimized(int startX, int startY, int rectWidth, int rectHeight, int direction, float speed, float gradientScale);
 
 // flags for CG_DrawString
 enum

@@ -2874,7 +2874,6 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	trap_R_SetColor(NULL);
 }
 
-
 int CG_OSPDrawStringWithShadow(int x, int y, const char* str, int charWidth, int charHeight, const vec4_t color, int maxChars)
 {
 	int shift_x;
@@ -2902,3 +2901,65 @@ int CG_OSPDrawStringWithShadow(int x, int y, const char* str, int charWidth, int
 	return CG_OSPDrawStringOld(x, y, str, charWidth, charHeight, color, maxChars, qfalse);
 }
 
+void CG_OSPDrawGradientRectOptimized(int startX, int startY, int rectWidth, int rectHeight,
+                                     int direction, float speed, float gradientScale)
+{
+	int i, j;
+	int block = 3; // "Качество" градиента. Больше = ниже
+	float phase, timeParam;
+	float color[4];
+	float dx, dy;
+	float angle;
+
+	// Преобразование "direction" в угол (в радианах) с шагом 2π/64
+	angle = (2.0f * M_PI * (float)(direction % 64)) / (float)64;
+	dx = cos(angle);
+	dy = sin(angle);
+
+	// Параметр времени: cg.time – глобальная переменная (обычно в миллисекундах)
+	timeParam = ((float)cg.time) * speed;
+
+	// Проходим по области блоками
+	for (i = 0; i < rectHeight; i += block)
+	{
+		int blockHeight = block;
+		if (i + blockHeight > rectHeight)
+			blockHeight = rectHeight - i;
+		for (j = 0; j < rectWidth; j += block)
+		{
+			int blockWidth = block;
+			if (j + blockWidth > rectWidth)
+				blockWidth = rectWidth - j;
+			// Абсолютные координаты для расчёта фазы
+			phase = timeParam + ((startX + j) * dx + (startY + i) * dy) * gradientScale;
+			color[0] = (float)(sin(phase) * 0.5f + 0.5f);
+			color[1] = (float)(sin(phase + 2.094f) * 0.5f + 0.5f);
+			color[2] = (float)(sin(phase + 4.188f) * 0.5f + 0.5f);
+			color[3] = 1.0f;
+			trap_R_SetColor(color);
+			CG_FillRect((float)(startX + j), (float)(startY + i),
+			            (float)blockWidth, (float)blockHeight, color);
+		}
+	}
+	trap_R_SetColor(NULL);
+}
+
+
+void CG_OSPDrawRainbowFrameOptimized(float x, float y, float width, float height,
+                                     int border, int direction, float speed, float gradientScale)
+{
+	int outerX, outerY, outerW, outerH;
+
+	outerX = (int)(x - border);
+	outerY = (int)(y - border);
+	outerW = (int)(width + 2 * border);
+	outerH = (int)(height + 2 * border);
+
+	CG_OSPDrawGradientRectOptimized(outerX, outerY, outerW, border, direction, speed, gradientScale);
+
+	CG_OSPDrawGradientRectOptimized(outerX, (int)(y + height), outerW, border, direction, speed, gradientScale);
+
+	CG_OSPDrawGradientRectOptimized(outerX, (int)y, border, (int)height, direction, speed, gradientScale);
+
+	CG_OSPDrawGradientRectOptimized((int)(x + width), (int)y, border, (int)height, direction, speed, gradientScale);
+}

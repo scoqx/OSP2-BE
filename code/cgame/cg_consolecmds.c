@@ -446,7 +446,16 @@ void CG_OSPCredits_f(void)
 	strcpy(&string[256], "    ^BMrX, Paragon, Zenx");
 	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 3, 128, 10, 10, string, 310.0f, colorWhite, colorRed);
 }
-
+void CG_OSPDrawNewCredits_f(void)
+{
+	if (!cgs.be.showCredits)
+	{
+		cgs.be.showCredits = qtrue;
+		CG_Printf("Type /credits again to close");
+	}
+	else
+		cgs.be.showCredits = qfalse;
+}
 void CG_OSPMoTD_f(void)
 {
 	if (cgs.osp.numberOfStringsMotd > 0)
@@ -846,7 +855,7 @@ static consoleCommand_t commands[] =
 	{ "select", CG_OSPSelect_f },
 	{ "clientversion", CG_OSPClientVersion_f },
 	{ "clientconfig", CG_OSPClientConfig_f },
-	{ "credits", CG_OSPCredits_f },
+	{ "credits", CG_OSPDrawNewCredits_f },
 	{ "motd", CG_OSPMoTD_f },
 	{ "myname", CG_OSPMyName_f },
 	{ "serverversion", CG_OSPServerVersion_f },
