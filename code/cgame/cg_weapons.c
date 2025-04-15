@@ -200,6 +200,10 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	localEntity_t* le;
 	refEntity_t*   re;
 
+#define RADIUS   4
+#define ROTATION 1
+#define SPACING  5
+
 	start[2] -= 4;
 	VectorCopy(start, move);
 	VectorSubtract(end, start, vec);
@@ -274,7 +278,7 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	AxisClear(re->axis);
 
 	VectorMA(move, 20, vec, move);
-	VectorScale(vec, cg_railTrailSpacing.integer, vec);
+	VectorScale(vec, SPACING, vec);
 
 	if (cg_oldRail.integer != 0)
 	{
@@ -312,11 +316,11 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	skip = -1;
 
 	j = 18;
-	for (i = 0; i < len; i += cg_railTrailSpacing.integer)
+	for (i = 0; i < len; i += SPACING)
 	{
 		if (i != skip)
 		{
-			skip = i + cg_railTrailSpacing.integer;
+			skip = i + SPACING;
 			le = CG_AllocLocalEntity();
 			re = &le->refEntity;
 			le->leFlags = LEF_PUFF_DONT_SCALE;
@@ -351,7 +355,7 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 			le->pos.trTime = cg.time;
 
 			VectorCopy(move, move2);
-			VectorMA(move2, cg_railTrailRadius.integer, axis[j], move2);
+			VectorMA(move2, RADIUS, axis[j], move2);
 			VectorCopy(move2, le->pos.trBase);
 
 			le->pos.trDelta[0] = axis[j][0] * 6;
@@ -361,7 +365,7 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 
 		VectorAdd(move, vec, move);
 
-		j = j + cg_railTrailRotation.integer < 36 ? j + cg_railTrailRotation.integer : (j + cg_railTrailRotation.integer) % 36;
+		j = j + ROTATION < 36 ? j + ROTATION : (j + ROTATION) % 36;
 	}
 }
 
@@ -2586,92 +2590,7 @@ SHOTGUN TRACING
 
 ============================================================================
 */
-/*
-===============
-CG_Tracer
-===============
-*/
-void CG_Tracer(vec3_t source, vec3_t dest)
-{
-	vec3_t      forward, right;
-	polyVert_t  verts[4];
-	vec3_t      line;
-	float       len, begin, end;
-	vec3_t      start, finish;
-	vec3_t      midpoint;
 
-	// tracer
-	VectorSubtract(dest, source, forward);
-	len = VectorNormalize(forward);
-
-	// start at least a little ways from the muzzle
-	if (len < 100)
-	{
-		return;
-	}
-	begin = 50 + random() * (len - 60);
-	end = begin + cg_tracerLength.value;
-	if (end > len)
-	{
-		end = len;
-	}
-	VectorMA(source, begin, forward, start);
-	VectorMA(source, end, forward, finish);
-
-	line[0] = DotProduct(forward, cg.refdef.viewaxis[1]);
-	line[1] = DotProduct(forward, cg.refdef.viewaxis[2]);
-
-	VectorScale(cg.refdef.viewaxis[1], line[1], right);
-	VectorMA(right, -line[0], cg.refdef.viewaxis[2], right);
-	VectorNormalize(right);
-
-	VectorMA(finish, cg_tracerWidth.value, right, verts[0].xyz);
-	verts[0].st[0] = 0;
-	verts[0].st[1] = 1;
-	verts[0].modulate[0] = 255;
-	verts[0].modulate[1] = 255;
-	verts[0].modulate[2] = 255;
-	verts[0].modulate[3] = 255;
-
-	VectorMA(finish, -cg_tracerWidth.value, right, verts[1].xyz);
-	verts[1].st[0] = 1;
-	verts[1].st[1] = 0;
-	verts[1].modulate[0] = 255;
-	verts[1].modulate[1] = 255;
-	verts[1].modulate[2] = 255;
-	verts[1].modulate[3] = 255;
-
-	VectorMA(start, -cg_tracerWidth.value, right, verts[2].xyz);
-	verts[2].st[0] = 1;
-	verts[2].st[1] = 1;
-	verts[2].modulate[0] = 255;
-	verts[2].modulate[1] = 255;
-	verts[2].modulate[2] = 255;
-	verts[2].modulate[3] = 255;
-
-	VectorMA(start, cg_tracerWidth.value, right, verts[3].xyz);
-	verts[3].st[0] = 0;
-	verts[3].st[1] = 0;
-	verts[3].modulate[0] = 255;
-	verts[3].modulate[1] = 255;
-	verts[3].modulate[2] = 255;
-	verts[3].modulate[3] = 255;
-
-	trap_R_AddPolyToScene(cgs.media.tracerShader, 4, verts);
-
-	midpoint[0] = (start[0] + finish[0]) * 0.5;
-	midpoint[1] = (start[1] + finish[1]) * 0.5;
-	midpoint[2] = (start[2] + finish[2]) * 0.5;
-
-	// add the tracer sound
-	trap_S_StartSound(midpoint, ENTITYNUM_WORLD, CHAN_AUTO, cgs.media.tracerSound);
-
-}
-/*
-================
-CG_ShotgunPellet
-================
-*/
 /*
 ================
 CG_ShotgunPellet
@@ -2680,21 +2599,14 @@ CG_ShotgunPellet
 static void CG_ShotgunPellet(vec3_t start, vec3_t end, int skipNum)
 {
 	trace_t     tr;
-	int         sourceContentType, destContentType;
+	int sourceContentType, destContentType;
 
 	CG_Trace(&tr, start, NULL, NULL, end, skipNum, MASK_SHOT);
-
-	if (!(tr.surfaceFlags & SURF_NOIMPACT))
-	{
-		if (random() < cg_tracerChance.value)
-		{
-			CG_Tracer(start, tr.endpos);
-		}
-	}
 
 	sourceContentType = trap_CM_PointContents(start, 0);
 	destContentType = trap_CM_PointContents(tr.endpos, 0);
 
+	// FIXME: should probably move this cruft into CG_BubbleTrail
 	if (sourceContentType == destContentType)
 	{
 		if (sourceContentType & CONTENTS_WATER)
@@ -2705,12 +2617,14 @@ static void CG_ShotgunPellet(vec3_t start, vec3_t end, int skipNum)
 	else if (sourceContentType & CONTENTS_WATER)
 	{
 		trace_t trace;
+
 		trap_CM_BoxTrace(&trace, end, start, NULL, NULL, 0, CONTENTS_WATER);
 		CG_BubbleTrail(start, trace.endpos, 32);
 	}
 	else if (destContentType & CONTENTS_WATER)
 	{
 		trace_t trace;
+
 		trap_CM_BoxTrace(&trace, start, end, NULL, NULL, 0, CONTENTS_WATER);
 		CG_BubbleTrail(tr.endpos, trace.endpos, 32);
 	}
@@ -2726,6 +2640,11 @@ static void CG_ShotgunPellet(vec3_t start, vec3_t end, int skipNum)
 	}
 	else
 	{
+		if (tr.surfaceFlags & SURF_NOIMPACT)
+		{
+			// SURF_NOIMPACT will not make a flame puff or a mark
+			return;
+		}
 		if (tr.surfaceFlags & SURF_METALSTEPS)
 		{
 			CG_MissileHitWall(WP_SHOTGUN, 0, tr.endpos, tr.plane.normal, IMPACTSOUND_METAL);
@@ -2736,7 +2655,6 @@ static void CG_ShotgunPellet(vec3_t start, vec3_t end, int skipNum)
 		}
 	}
 }
-
 
 /*
 ================
@@ -2836,6 +2754,90 @@ BULLETS
 
 ============================================================================
 */
+
+
+/*
+===============
+CG_Tracer
+===============
+*/
+void CG_Tracer(vec3_t source, vec3_t dest)
+{
+	vec3_t      forward, right;
+	polyVert_t  verts[4];
+	vec3_t      line;
+	float       len, begin, end;
+	vec3_t      start, finish;
+	vec3_t      midpoint;
+
+	// tracer
+	VectorSubtract(dest, source, forward);
+	len = VectorNormalize(forward);
+
+	// start at least a little ways from the muzzle
+	if (len < 100)
+	{
+		return;
+	}
+	begin = 50 + random() * (len - 60);
+	end = begin + cg_tracerLength.value;
+	if (end > len)
+	{
+		end = len;
+	}
+	VectorMA(source, begin, forward, start);
+	VectorMA(source, end, forward, finish);
+
+	line[0] = DotProduct(forward, cg.refdef.viewaxis[1]);
+	line[1] = DotProduct(forward, cg.refdef.viewaxis[2]);
+
+	VectorScale(cg.refdef.viewaxis[1], line[1], right);
+	VectorMA(right, -line[0], cg.refdef.viewaxis[2], right);
+	VectorNormalize(right);
+
+	VectorMA(finish, cg_tracerWidth.value, right, verts[0].xyz);
+	verts[0].st[0] = 0;
+	verts[0].st[1] = 1;
+	verts[0].modulate[0] = 255;
+	verts[0].modulate[1] = 255;
+	verts[0].modulate[2] = 255;
+	verts[0].modulate[3] = 255;
+
+	VectorMA(finish, -cg_tracerWidth.value, right, verts[1].xyz);
+	verts[1].st[0] = 1;
+	verts[1].st[1] = 0;
+	verts[1].modulate[0] = 255;
+	verts[1].modulate[1] = 255;
+	verts[1].modulate[2] = 255;
+	verts[1].modulate[3] = 255;
+
+	VectorMA(start, -cg_tracerWidth.value, right, verts[2].xyz);
+	verts[2].st[0] = 1;
+	verts[2].st[1] = 1;
+	verts[2].modulate[0] = 255;
+	verts[2].modulate[1] = 255;
+	verts[2].modulate[2] = 255;
+	verts[2].modulate[3] = 255;
+
+	VectorMA(start, cg_tracerWidth.value, right, verts[3].xyz);
+	verts[3].st[0] = 0;
+	verts[3].st[1] = 0;
+	verts[3].modulate[0] = 255;
+	verts[3].modulate[1] = 255;
+	verts[3].modulate[2] = 255;
+	verts[3].modulate[3] = 255;
+
+	trap_R_AddPolyToScene(cgs.media.tracerShader, 4, verts);
+
+	midpoint[0] = (start[0] + finish[0]) * 0.5;
+	midpoint[1] = (start[1] + finish[1]) * 0.5;
+	midpoint[2] = (start[2] + finish[2]) * 0.5;
+
+	// add the tracer sound
+	trap_S_StartSound(midpoint, ENTITYNUM_WORLD, CHAN_AUTO, cgs.media.tracerSound);
+
+}
+
 
 /*
 ======================
