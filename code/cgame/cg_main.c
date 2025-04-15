@@ -387,7 +387,10 @@ vmCvar_t        cg_altBlood;
 vmCvar_t        cg_altBloodColor;
 vmCvar_t        cg_noSlidingWindow;
 vmCvar_t    be_run;
-
+vmCvar_t    cg_railTrailRadius;
+vmCvar_t    cg_railTrailRotation;
+vmCvar_t    cg_railTrailSpacing;
+vmCvar_t	cg_shotGunTracer;
 
 
 static cvarTable_t cvarTable[] =
@@ -686,7 +689,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altBloodColor },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE | CVAR_NEW }
+	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_railTrailRadius, "cg_railTrailRadius", "4", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_railTrailRotation, "cg_railTrailRotation", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_railTrailSpacing, "cg_railTrailSpacing", "5", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_shotGunTracer, "cg_shotGunTracer", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
 
 };

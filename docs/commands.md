@@ -9,6 +9,34 @@
 
 ---
 
+    cg_shotGunTracer 0/1			
+
+След летящей дроби шотгана.
+
+ `0` - отключено
+
+ `1` - включено
+
+---
+
+    cg_railTrailRadius
+    
+Радиус спирали (oldRail 0)
+
+---
+
+    cg_railTrailRotation
+
+Степень вращения (oldRail 0) (наверное)
+
+---
+
+    cg_railTrailSpacing
+
+Шаг спирали (oldRail 0)
+
+---
+
     cg_noSlidingWindow
 
 Отключает выезжающие окна (+wstats, приветственное сообщение и подобное)

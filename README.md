@@ -10,6 +10,13 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## 0.054t
+```
+  + cg_railTrailRadius
+  + cg_railTrailRotation
+  + cg_railTrailSpacing
+  + cg_shotGunTracer
+```
 ## 0.053
 ```
   + cg_noSlidingWindow

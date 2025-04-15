@@ -105,3 +105,10 @@ SHUD:
 13.04.2025 be v0.053
 
   + cg_noSlidingWindow
+
+15.04.2025 be v0.054-test
+
+  + cg_railTrailRadius
+  + cg_railTrailRotation
+  + cg_railTrailSpacing
+  + cg_shotGunTracer

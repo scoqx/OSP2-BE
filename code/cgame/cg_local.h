@@ -1569,6 +1569,10 @@ extern vmCvar_t         cg_underwaterFovWarp;
 extern vmCvar_t         cg_altBlood;
 extern vmCvar_t         cg_altBloodColor;
 extern vmCvar_t         cg_noSlidingWindow;
+extern vmCvar_t         cg_railTrailRadius;
+extern vmCvar_t         cg_railTrailRotation;
+extern vmCvar_t         cg_railTrailSpacing;
+extern vmCvar_t			cg_shotGunTracer;
 extern vmCvar_t         be_run;
 //
 // cg_main.c
@@ -2236,7 +2240,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.053a" // BE
+#define OSP_VERSION "be-0.054t" // BE
 
 
 
