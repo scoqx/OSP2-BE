@@ -117,7 +117,18 @@ or generates more localentities along a trail.
 
 ====================================================================================
 */
+void CG_MakeGhost(localEntity_t* le)
+{
+	refEntity_t* re;
 
+	re = &le->refEntity;
+	if (be_run.integer)
+		re->customShader = cgs.media.whiteAlphaShader;
+	re->shaderRGBA[0] = 255;
+	re->shaderRGBA[1] = 255;
+	re->shaderRGBA[2] = 255;
+	re->shaderRGBA[3] = 200;
+}
 /*
 ================
 CG_BloodTrail
@@ -753,6 +764,7 @@ void CG_AddLocalEntities(void)
 		}
 		switch (le->leType)
 		{
+				CG_MakeGhost(le);
 			default:
 				CG_Error("Bad leType: %i", le->leType);
 				break;
