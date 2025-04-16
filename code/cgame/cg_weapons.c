@@ -196,9 +196,10 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	vec3_t axis[36], move, move2, vec, temp;
 	float  len;
 	int    i, j, skip;
-
 	localEntity_t* le;
 	refEntity_t*   re;
+
+
 
 	start[2] -= 4;
 	VectorCopy(start, move);
@@ -274,7 +275,7 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	AxisClear(re->axis);
 
 	VectorMA(move, 20, vec, move);
-	VectorScale(vec, cg_railTrailSpacing.integer, vec);
+	VectorScale(vec, cg_railRingsSpacing.integer, vec);
 
 	if (cg_oldRail.integer != 0)
 	{
@@ -288,7 +289,7 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 
 		re->shaderTime = cg.time / 1000.0f;
 		re->reType = RT_RAIL_RINGS;
-		re->radius = 1.1f;
+		re->radius = cg_railRingsSize.value;
 		if (cg_nomip.integer & 0x20)
 		{
 			re->customShader = cgs.media.railRingsShaderNoPicMip;
@@ -312,11 +313,11 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	skip = -1;
 
 	j = 18;
-	for (i = 0; i < len; i += cg_railTrailSpacing.integer)
+	for (i = 0; i < len; i += cg_railRingsSpacing.integer)
 	{
 		if (i != skip)
 		{
-			skip = i + cg_railTrailSpacing.integer;
+			skip = i + cg_railRingsSpacing.integer;
 			le = CG_AllocLocalEntity();
 			re = &le->refEntity;
 			le->leFlags = LEF_PUFF_DONT_SCALE;
@@ -327,7 +328,7 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 
 			re->shaderTime = cg.time / 1000.0f;
 			re->reType = RT_SPRITE;
-			re->radius = 1.1f;
+			re->radius = cg_railRingsSize.value;
 			if (cg_nomip.integer & 0x20)
 			{
 				re->customShader = cgs.media.railRingsShaderNoPicMip;
@@ -346,13 +347,22 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 			le->color[1] = ci->colors.railRings[1] * 0.75;
 			le->color[2] = ci->colors.railRings[2] * 0.75;
 			le->color[3] = 1.0f;
-
-			le->pos.trType = TR_LINEAR;
+			if (cg_railStaticRings.integer)
+				le->pos.trType = TR_STATIONARY;
+			else
+				le->pos.trType = TR_LINEAR;
 			le->pos.trTime = cg.time;
 
-			VectorCopy(move, move2);
-			VectorMA(move2, cg_railTrailRadius.integer, axis[j], move2);
-			VectorCopy(move2, le->pos.trBase);
+			if (!cg_railRingsRotation.integer)
+			{
+				VectorCopy(move, le->pos.trBase);
+			}
+			else
+			{
+				VectorCopy(move, move2);
+				VectorMA(move2, cg_railRingsRadius.value, axis[j], move2);
+				VectorCopy(move2, le->pos.trBase);
+			}
 
 			le->pos.trDelta[0] = axis[j][0] * 6;
 			le->pos.trDelta[1] = axis[j][1] * 6;
@@ -361,7 +371,10 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 
 		VectorAdd(move, vec, move);
 
-		j = j + cg_railTrailRotation.integer < 36 ? j + cg_railTrailRotation.integer : (j + cg_railTrailRotation.integer) % 36;
+		if (cg_railRingsRotation.integer)
+		{
+			j = j + cg_railRingsRotation.integer < 36 ? j + cg_railRingsRotation.integer : (j + cg_railRingsRotation.integer) % 36;
+		}
 	}
 }
 
@@ -1516,17 +1529,16 @@ sound should only be done on the world model case.
 */
 void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent, int team)
 {
-	refEntity_t gun;
-	refEntity_t barrel;
-	refEntity_t flash;
-	vec3_t      angles;
-	weapon_t    weaponNum;
+	refEntity_t      gun;
+	refEntity_t      barrel;
+	refEntity_t      flash;
+	vec3_t           angles;
+	weapon_t         weaponNum;
 	weaponInfo_t*    weapon;
-	centity_t*   nonPredictedCent;
-//	int  col;
+	centity_t*       nonPredictedCent;
+	orientation_t    lerped;
 
 	weaponNum = cent->currentState.weapon;
-
 	CG_RegisterWeapon(weaponNum);
 	weapon = &cg_weapons[weaponNum];
 
@@ -1539,15 +1551,12 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	// set custom shading for railgun refire rate
 	if (ps)
 	{
-		if (cg.predictedPlayerState.weapon == WP_RAILGUN
-		        && cg.predictedPlayerState.weaponstate == WEAPON_FIRING)
+		if (cg.predictedPlayerState.weapon == WP_RAILGUN &&
+		        cg.predictedPlayerState.weaponstate == WEAPON_FIRING)
 		{
-			float   f;
-
-			f = (float)cg.predictedPlayerState.weaponTime / 1500;
+			float f = (float)cg.predictedPlayerState.weaponTime / 1500;
 			gun.shaderRGBA[1] = 0;
-			gun.shaderRGBA[0] =
-			    gun.shaderRGBA[2] = 255 * (1.0 - f);
+			gun.shaderRGBA[0] = gun.shaderRGBA[2] = 255 * (1.0f - f);
 		}
 		else
 		{
@@ -1570,7 +1579,6 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		cent->pe.lightningFiring = qfalse;
 		if ((cent->currentState.eFlags & EF_FIRING) && weapon->firingSound)
 		{
-			// lightning gun and guantlet make a different sound when fire is held down
 			if (cg.snap->ps.weaponstate == WEAPON_READY || cg.snap->ps.weaponstate == WEAPON_FIRING)
 			{
 				trap_S_AddLoopingSound(cent->currentState.number, cent->lerpOrigin, vec3_origin, weapon->firingSound);
@@ -1583,12 +1591,38 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		}
 	}
 
-	CG_PositionEntityOnTag(&gun, parent, parent->hModel, "tag_weapon");
-	if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) || (cg_drawGun.integer == 3))
+	/*
+	   	// Make weapon appear left-handed for 2 and centered for 3
+	*/
+	trap_R_LerpTag(&lerped, parent->hModel, parent->oldframe, parent->frame,
+	               1.0f - parent->backlerp, "tag_weapon");
+	VectorCopy(parent->origin, gun.origin);
+	VectorMA(gun.origin, lerped.origin[0], parent->axis[0], gun.origin);
+
+	if (ps) {
+		if (cg_gunPos.integer == 2) {
+			VectorMA(gun.origin, -lerped.origin[1], parent->axis[1], gun.origin);
+		}
+		else if (cg_gunPos.integer == 3) {
+			// centered by default
+		}
+		else {
+			VectorMA(gun.origin, lerped.origin[1], parent->axis[1], gun.origin);
+		}
+	} else {
+		VectorMA(gun.origin, lerped.origin[1], parent->axis[1], gun.origin);
+	}
+	
+
+	VectorMA(gun.origin, lerped.origin[2], parent->axis[2], gun.origin);
+	MatrixMultiply(lerped.axis, parent->axis, gun.axis);
+	gun.backlerp = parent->backlerp;
+
+	if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
+	        (cg_drawGun.integer == 3))
 	{
 		CG_UpdateGunShaderRGBA(&gun);
 		gun.customShader = cgs.media.firstPersonGun;
-
 	}
 	if ((gun.renderfx & RF_FIRST_PERSON) && cg_drawGunForceAspect.integer)
 	{
@@ -1606,13 +1640,14 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		barrel.renderfx = parent->renderfx;
 
 		barrel.hModel = weapon->barrelModel;
-		angles[YAW] = 0;
+		angles[YAW]   = 0;
 		angles[PITCH] = 0;
-		angles[ROLL] = CG_MachinegunSpinAngle(cent);
+		angles[ROLL]  = CG_MachinegunSpinAngle(cent);
 		AnglesToAxis(angles, barrel.axis);
 
 		CG_PositionRotatedEntityOnTag(&barrel, &gun, weapon->weaponModel, "tag_barrel");
-		if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) || (cg_drawGun.integer == 3))
+		if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
+		        (cg_drawGun.integer == 3))
 		{
 			CG_UpdateGunShaderRGBA(&barrel);
 			barrel.customShader = cgs.media.firstPersonGun;
@@ -1627,15 +1662,10 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 
 	// make sure we aren't looking at cg.predictedPlayerEntity for LG
 	nonPredictedCent = &cg_entities[cent->currentState.clientNum];
-
-	// if the index of the nonPredictedCent is not the same as the clientNum
-	// then this is a fake player (like on teh single player podiums), so
-	// go ahead and use the cent
 	if ((nonPredictedCent - cg_entities) != cent->currentState.clientNum)
 	{
 		nonPredictedCent = cent;
 	}
-
 	// add the flash
 	if ((weaponNum == WP_LIGHTNING || weaponNum == WP_GAUNTLET || weaponNum == WP_GRAPPLING_HOOK)
 	        && (nonPredictedCent->currentState.eFlags & EF_FIRING))
@@ -1655,7 +1685,6 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	VectorCopy(parent->lightingOrigin, flash.lightingOrigin);
 	flash.shadowPlane = parent->shadowPlane;
 	flash.renderfx = parent->renderfx;
-
 	flash.hModel = weapon->flashModel;
 	if (!flash.hModel)
 	{
@@ -1669,16 +1698,13 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	// colorize the railgun blast
 	if (weaponNum == WP_RAILGUN)
 	{
-		clientInfo_t*    ci;
-
-		ci = &cgs.clientinfo[ cent->currentState.clientNum ];
+		clientInfo_t* ci = &cgs.clientinfo[cent->currentState.clientNum];
 		flash.shaderRGBA[0] = 255 * ci->colors.railCore[0];
 		flash.shaderRGBA[1] = 255 * ci->colors.railCore[1];
 		flash.shaderRGBA[2] = 255 * ci->colors.railCore[2];
 	}
 
 	CG_PositionRotatedEntityOnTag(&flash, &gun, weapon->weaponModel, "tag_flash");
-
 	if (cg_muzzleFlash.integer || cent->currentState.clientNum != cg.clientNum)
 	{
 		trap_R_AddRefEntityToScene(&flash);
@@ -1689,17 +1715,18 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	{
 		// add lightning bolt
 		CG_LightningBolt(nonPredictedCent, flash.origin);
-
 		// add rail trail
 		CG_SpawnRailTrail(cent, flash.origin);
-
 		if (weapon->flashDlightColor[0] || weapon->flashDlightColor[1] || weapon->flashDlightColor[2])
 		{
-			trap_R_AddLightToScene(flash.origin, 300 + (rand() & 31), weapon->flashDlightColor[0],
-			                       weapon->flashDlightColor[1], weapon->flashDlightColor[2]);
+			trap_R_AddLightToScene(flash.origin, 300 + (rand() & 31),
+			                       weapon->flashDlightColor[0],
+			                       weapon->flashDlightColor[1],
+			                       weapon->flashDlightColor[2]);
 		}
 	}
 }
+
 
 /*
 ==============

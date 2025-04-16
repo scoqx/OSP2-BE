@@ -462,3 +462,24 @@ void CG_LocalEventCvarChanged_cg_altBloodColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.altBloodColor);
 }
+
+void CG_LocalEventCvarChanged_cg_railRingsRadius(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0.05f, 16, cvart->vmCvar->value);
+}
+
+void CG_LocalEventCvarChanged_cg_railRingsRotation(cvarTable_t* cvart)
+{
+	cvart->vmCvar->integer = Com_Clamp(0, 2, cvart->vmCvar->integer);
+}
+
+void CG_LocalEventCvarChanged_cg_railRingsSpacing(cvarTable_t* cvart)
+{
+	cvart->vmCvar->integer = Com_Clamp(4, 128, cvart->vmCvar->integer);
+}
+
+void CG_LocalEventCvarChanged_cg_railRingsSize(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0.05f, 4, cvart->vmCvar->value);
+}
+

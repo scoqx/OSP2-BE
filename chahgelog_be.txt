@@ -106,9 +106,12 @@ SHUD:
 
   + cg_noSlidingWindow
 
-15.04.2025 be v0.054-test
-
-  + cg_railTrailRadius
-  + cg_railTrailRotation
-  + cg_railTrailSpacing
+15.04.2025 be v0.054t1
+  + cg_gunPos
   + cg_shotGunTracer
+  + cg_railStaticRings
+  + cg_railRingsSize 
+  
+  * cg_railTrailRadius -> cg_railRingsRadius
+  * cg_railTrailRotation -> cg_railRingsRotation
+  * cg_railTrailSpacing -> cg_railRingsSpacing

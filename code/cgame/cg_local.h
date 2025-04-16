@@ -1569,10 +1569,13 @@ extern vmCvar_t         cg_underwaterFovWarp;
 extern vmCvar_t         cg_altBlood;
 extern vmCvar_t         cg_altBloodColor;
 extern vmCvar_t         cg_noSlidingWindow;
-extern vmCvar_t         cg_railTrailRadius;
-extern vmCvar_t         cg_railTrailRotation;
-extern vmCvar_t         cg_railTrailSpacing;
-extern vmCvar_t			cg_shotGunTracer;
+extern vmCvar_t         cg_shotGunTracer;
+extern vmCvar_t         cg_railRingsRadius;
+extern vmCvar_t         cg_railRingsRotation;
+extern vmCvar_t         cg_railRingsSpacing;
+extern vmCvar_t         cg_railRingsSize;
+extern vmCvar_t         cg_railStaticRings;
+extern vmCvar_t         cg_gunPos;
 extern vmCvar_t         be_run;
 //
 // cg_main.c
@@ -2240,7 +2243,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.054t" // BE
+#define OSP_VERSION "be-0.054t1" // BE
 
 
 
@@ -2471,6 +2474,12 @@ void CG_LocalEventCvarChanged_cg_enemyOutlineColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamOutlineColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_altBloodColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_altBlood(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_railRingsRadius(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_railRingsRotation(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_railRingsSpacing(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_railRingsSize(cvarTable_t* cvart);
+
+
 
 #ifdef __cplusplus
 }

@@ -9,31 +9,61 @@
 
 ---
 
-    cg_shotGunTracer 0/1			
+    cg_gunPos
 
-След летящей дроби шотгана.
+Выбор с какой стороны рисовать оружие
 
- `0` - отключено
+ `1` - справа
 
- `1` - включено
+ `2` - слева 
+ 
+ `3` - по центру
 
 ---
 
-    cg_railTrailRadius
+    cg_railStaticRings
+
+Более статичная спираль рейла (oldRail 0)
+
+ `0` - отключено (по умолчанию)
+
+ `1` - включено (статичная)
+
+---
+
+    cg_railRingsSize
+
+Размер колец спирали рейла.
+
+---
+
+    cg_railRingsRadius
     
 Радиус спирали (oldRail 0)
 
 ---
 
-    cg_railTrailRotation
+    cg_railRingsRotation
 
-Степень вращения (oldRail 0) (наверное)
+Степень вращения (oldRail 0)
+
+ `0` - отключено
 
 ---
 
-    cg_railTrailSpacing
+    cg_railRingsSpacing
 
 Шаг спирали (oldRail 0)
+
+---
+
+    cg_shotGunTracer 0/1			
+
+След летящей дроби шотгана
+
+ `0` - отключено
+
+ `1` - включено
 
 ---
 
