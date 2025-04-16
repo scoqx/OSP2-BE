@@ -1599,6 +1599,26 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	VectorCopy(parent->origin, gun.origin);
 	VectorMA(gun.origin, lerped.origin[0], parent->axis[0], gun.origin);
 
+	// offset for each weapon to set it excatly in the center (pos3)
+	if (ps  && cg.predictedPlayerState.weapon == WP_ROCKET_LAUNCHER) {
+		VectorMA(gun.origin, 0.4, parent->axis[1], gun.origin);
+	}
+	else if (ps && cg.predictedPlayerState.weapon == WP_LIGHTNING) {
+		VectorMA(gun.origin, 0.425, parent->axis[1], gun.origin);
+	}
+	else if (ps && cg.predictedPlayerState.weapon == WP_SHOTGUN) {
+		VectorMA(gun.origin, 0.05, parent->axis[1], gun.origin);
+	}
+	else if (ps && cg.predictedPlayerState.weapon == WP_BFG) {
+		VectorMA(gun.origin, 0.225, parent->axis[1], gun.origin);
+	}
+	else if (ps && cg.predictedPlayerState.weapon == WP_RAILGUN) {
+		VectorMA(gun.origin, 0.45, parent->axis[1], gun.origin);
+	}
+	else if (ps && (cg.predictedPlayerState.weapon == WP_MACHINEGUN || cg.predictedPlayerState.weapon == WP_GRENADE_LAUNCHER) ) {
+		VectorMA(gun.origin, 0.275, parent->axis[1], gun.origin);
+	}
+
 	if (ps) {
 		if (cg_gunPos.integer == 2) {
 			VectorMA(gun.origin, -lerped.origin[1], parent->axis[1], gun.origin);
