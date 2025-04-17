@@ -11,6 +11,12 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 
 ## ✨ BE-Features
 
+## v0.055t
+```
+  * +wstats additional data
+    + Kill/death ratio (K/D)
+    + Damage given/recieved Ratio
+```
 ## 0.054t1
 ```
   + cg_gunPos

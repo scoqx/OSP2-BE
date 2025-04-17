@@ -115,3 +115,11 @@ SHUD:
   * cg_railTrailRadius -> cg_railRingsRadius
   * cg_railTrailRotation -> cg_railRingsRotation
   * cg_railTrailSpacing -> cg_railRingsSpacing
+
+16.04.2025 be v0.054t2
+  * gun pos fixed
+
+17.04.2025 be v0.055t
+  * +wstats additional data
+    + Kill/death ratio (K/D)
+    + Damage given/recieved Ratio
