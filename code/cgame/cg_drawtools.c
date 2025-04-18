@@ -2910,7 +2910,7 @@ void CG_OSPDrawGradientRectOptimized(int startX, int startY, int rectWidth, int 
 	float color[4];
 	float dx, dy;
 	float angle;
-
+	float brightness;
 	// Преобразование "direction" в угол (в радианах) с шагом 2π/64
 	angle = (2.0f * M_PI * (float)(direction % 64)) / (float)64;
 	dx = cos(angle);
@@ -2932,9 +2932,13 @@ void CG_OSPDrawGradientRectOptimized(int startX, int startY, int rectWidth, int 
 				blockWidth = rectWidth - j;
 			// Абсолютные координаты для расчёта фазы
 			phase = timeParam + ((startX + j) * dx + (startY + i) * dy) * gradientScale;
-			color[0] = (float)(sin(phase) * 0.5f + 0.5f);
-			color[1] = (float)(sin(phase + 2.094f) * 0.5f + 0.5f);
-			color[2] = (float)(sin(phase + 4.188f) * 0.5f + 0.5f);
+			brightness = sin(phase) * 0.3f + 0.3f;
+			// color[0] = (float)(sin(phase) * 0.5f + 0.5f);
+			// color[1] = (float)(sin(phase + 2.094f) * 0.5f + 0.5f);
+			// color[2] = (float)(sin(phase + 4.188f) * 0.5f + 0.5f);
+			
+			color[0] = color[1] = color[2] = brightness;	
+
 			color[3] = 1.0f;
 			trap_R_SetColor(color);
 			CG_FillRect((float)(startX + j), (float)(startY + i),

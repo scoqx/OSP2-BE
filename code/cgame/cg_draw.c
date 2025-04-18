@@ -2391,9 +2391,9 @@ void CG_OSPDrawNewCredits(void)
 	char* credits[] =
 	{
 		"^7OSP2 BLACK EDITION",
-		"^3https://github.com/scoqx/OSP2-BE",
+		"^7^Bhttps://github.com/scoqx/OSP2-BE",
 		"^7Based on OSP2 by Snems",
-		"^3https://github.com/snems/OSP2",
+		"^7^Bhttps://github.com/snems/OSP2",
 		"^7Special thanks to:",
 		"^7Snems, Mus1n, Mirage",
 		"^7MrX, Paragon, Zenx",
@@ -2402,11 +2402,11 @@ void CG_OSPDrawNewCredits(void)
 		"",
 		"",
 		"Based on source codes:",
-		"^BOSP   https://www.orangesmoothie.org",
-		"^BCyrax   https://github.com/ec-/baseq3a",
-		"^Bx0ry   https://github.com/xq3e/engine",
-		"^BNeil Toronto   http://ra.is/unlagged",
-		"^BRatmod   https://github.com/rdntcntrl/ratoa_gamecode",
+		"^7OSP   ^Bhttps://www.orangesmoothie.org",
+		"^7Cyrax   ^Bhttps://github.com/ec-/baseq3a",
+		"^7x0ry   ^Bhttps://github.com/xq3e/engine",
+		"^7Neil Toronto   ^Bhttp://ra.is/unlagged",
+		"^7Ratmod   ^Bhttps://github.com/rdntcntrl/ratoa_gamecode",
 		NULL
 	};
 
