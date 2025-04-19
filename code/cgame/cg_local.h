@@ -1155,7 +1155,7 @@ typedef struct cgs_osp_s
 	struct
 	{
 		qboolean forceChat;
-
+		qboolean key[4];
 	} shud;
 } cgs_osp_t;
 

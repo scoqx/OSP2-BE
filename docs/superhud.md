@@ -113,6 +113,8 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | Textstyle     | flags          | Флаги текста. 1 - без тени.                               |
 | Time          | milliseconds   | Время отображения на экране.                              |
 | Style         | flags          | Стиль элемента - цифра                                    |
+| VisFlags      | string         | Изменить дефолтные настройки видимости                    |
+
 
 
 
@@ -147,8 +149,25 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 - Direction - Направление полосы
 
 Только для здоровья и брони:
-- Style 1 - цвет зависит от хп, 2 - обе полосы в одном месте, цвет задаётся через `color` и `color2`,  
+- Style 1 - цвет зависит от хп, 2 - обе полосы в одном месте, цвет задаётся через `color` и `color2`, 
 
+### VisFlags 
+
+Варианты: 
+- im - видно в режиме intermission
+- teamonly - видно в только в командных режимах
+- spectator - видно в режиме спектатора
+- dead - видно если игрок мертв
+- demohide - скрывать в режиме просмотра демо
+- scoreshide - скрывать в режиме просмотра счета
+- key1show - скрывать если не нажата кнопка +shudkey1
+- key2show - скрывать если не нажата кнопка +shudkey2
+- key3show - скрывать если не нажата кнопка +shudkey3
+- key4show - скрывать если не нажата кнопка +shudkey4
+
+Можно указывать несколько вариантов через пробел:
+
+    visflags teamonly key1show;
 ### Obituary1 - Obituary8
 
 - Style 1 - цвет команды на фоне ника, при этом можно задать прозрачность фона через `BgColor`.
