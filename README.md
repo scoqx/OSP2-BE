@@ -11,6 +11,12 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 
 ## ✨ BE-Features
 
+## v0.057
+```
+SHUD:
++ hud/California.cfg (by Musin)
++ hud resourses (gfx/2d/hudres/)
+```
 ## v0.056x
 ```
   + cg_noSlidingWindow 2 option 

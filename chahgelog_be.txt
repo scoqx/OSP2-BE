@@ -140,3 +140,9 @@ SHUD:
   + playerStats_DR_icon
   
   * visflags: showempty only for weapon/playerStats
+
+22.04.2025 be v0.057
+
+  SHUD:
+  + hud/California.cfg (by Musin)
+  + hud resourses (gfx/2d/hudres/)
