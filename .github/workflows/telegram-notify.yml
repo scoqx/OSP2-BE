@@ -14,14 +14,20 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          COMMIT_URL="${{ github.head_commit.url }}"
           COMMIT_MSG="${{ github.head_commit.message }}"
-          COMMIT_AUTHOR="${{ github.head_commit.author.name }}"
-          REPO_NAME="${{ github.repository }}"
-          GITHUB_ACTOR="${{ github.actor }}"
+          COMMIT_URL="${{ github.head_commit.url }}"
 
-          MESSAGE="✅ *Новый коммит в репозитории* _${REPO_NAME}_\n\n👤 Автор: *${COMMIT_AUTHOR}*\n🧑‍💻 От пользователя: \`${GITHUB_ACTOR}\`\n\n💬 Сообщение:\n\`\`\`\n${COMMIT_MSG}\n\`\`\`\n🔗 [Смотреть коммит](${COMMIT_URL})"
+          # Формируем сообщение с заголовком и описанием
+          MESSAGE="*${COMMIT_MSG}*\n\n"
+          MESSAGE="${MESSAGE}> ${COMMIT_MSG}\n"
 
+          # Ссылка на файл
+          MESSAGE="${MESSAGE}[zz-osp-pak8.pk3](https://github.com/snems/OSP2/releases/download/latest/zz-osp-pak8.pk3) "
+
+          # Ссылка на чат
+          MESSAGE="${MESSAGE}[💬 Чат](https://t.me/q3osp2be_chat)"
+
+          # Отправка сообщения в Telegram
           curl -s -X POST https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage \
             -d chat_id="$TELEGRAM_CHAT_ID" \
             -d text="$MESSAGE" \
