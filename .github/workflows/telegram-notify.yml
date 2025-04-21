@@ -17,13 +17,14 @@ jobs:
         run: |
           COMMIT_MSG="${{ github.head_commit.message }}"
           COMMIT_URL="${{ github.head_commit.url }}"
+          COMMIT_AUTHOR="${{ github.head_commit.author.name }}"
  
           # Формируем сообщение с заголовком и описанием
           MESSAGE="*${COMMIT_MSG}*\n\n"
-          MESSAGE="${MESSAGE}> ${COMMIT_MSG}\n"
+          MESSAGE="${MESSAGE}> ${COMMIT_MSG}\n\n"
  
           # Ссылка на файл
-          MESSAGE="${MESSAGE}[zz-osp-pak8.pk3](https://github.com/scoqx/OSP2-BE/releases/download/latest/zz-osp-pak8.pk3) "
+          MESSAGE="${MESSAGE}[zz-osp-pak8.pk3](https://github.com/scoqx/OSP2-BE/releases/download/latest/zz-osp-pak8.pk3)\n"
  
           # Ссылка на чат
           MESSAGE="${MESSAGE}[💬 Чат](https://t.me/q3osp2be_chat)"
