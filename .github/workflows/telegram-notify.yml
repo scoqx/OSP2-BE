@@ -15,22 +15,22 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          # Получаем сообщение последнего коммита
           COMMIT_MSG="${{ github.head_commit.message }}"
-          COMMIT_URL="${{ github.head_commit.url }}"
-          COMMIT_AUTHOR="${{ github.head_commit.author.name }}"
- 
-          # Формируем сообщение с заголовком и описанием
-          MESSAGE="*${COMMIT_MSG}*\n\n"
-          MESSAGE="${MESSAGE}> ${COMMIT_MSG}\n\n"
- 
-          # Ссылка на файл
-          MESSAGE="${MESSAGE}[zz-osp-pak8.pk3](https://github.com/scoqx/OSP2-BE/releases/download/latest/zz-osp-pak8.pk3)\n"
- 
-          # Ссылка на чат
-          MESSAGE="${MESSAGE}[💬 Чат](https://t.me/q3osp2be_chat)"
- 
-          # Отправка сообщения в Telegram
-          curl -s -X POST https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage \
+          # Извлекаем заголовок (первая строка) и описание (остальные строки)
+          COMMIT_TITLE=$(echo "$COMMIT_MSG" | head -n1)
+          COMMIT_DESC=$(echo "$COMMIT_MSG" | tail -n +2)
+
+          # Формируем сообщение с использованием printf, чтобы настоящие переходы на строку сохранились
+          MESSAGE=$(printf "*%s*\n\n" "$COMMIT_TITLE")
+          if [ -n "$COMMIT_DESC" ]; then
+            MESSAGE+=$(printf "> %s\n\n" "$COMMIT_DESC")
+          fi
+          MESSAGE+=$(printf "[zz-osp-pak8.pk3](https://github.com/scoqx/OSP2-BE/releases/download/latest/zz-osp-pak8.pk3)\n")
+          MESSAGE+=$(printf "[💬 Чат](https://t.me/q3osp2be_chat)")
+
+          # Отправляем сообщение в Telegram
+          curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
             -d chat_id="$TELEGRAM_CHAT_ID" \
             -d text="$MESSAGE" \
             -d parse_mode="Markdown"
