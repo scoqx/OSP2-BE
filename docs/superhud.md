@@ -76,7 +76,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | VoteMessageWorld              | Строка голосования.                                          |
 | WeaponList                    | Список доступного оружия.                                    |
 | RewardIcons                   | Изображение полученной медали.                               |
-| RewardNumbers                 | Счетчик полученных медалей.                                  |
+| RewardNumbers         1        | Счетчик полученных медалей.                                  |
 | PostDecorate                  | Отрисовка разделителей и т.п.                                |
 | WarmupInfo                    | Обратный отсчет/"waiting for players".                       |
 | GameType                      | Режим игры(только во время warmup).                          |
