@@ -1888,8 +1888,8 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	vec3_t      end, mins = {-15, -15, 0}, maxs = {15, 15, 2};
 	trace_t     trace;
 	float       alpha;
-	float		yawAngle = 0;
-
+	float		yawAngle = cent->pe.legs.yawAngle;
+	qhandle_t 	shadowMarkShader = cgs.media.shadowMarkShader;
 	*shadowPlane = 0;
 
 	if (cg_shadows.integer == 0)
@@ -1917,7 +1917,7 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 
 	*shadowPlane = trace.endpos[2] + 1;
 
-	if (cg_shadows.integer != 1)     // no mark for stencil or projection shadows
+	if (!(cg_shadows.integer <= 2))     // no mark for stencil or projection shadows
 	{
 		return qtrue;
 	}
@@ -1930,11 +1930,11 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 
 	// add the mark as a temporary, so it goes directly to the renderer
 	// without taking a spot in the cg_marks array
-	if (!cg_staticPlayerShadow.integer)
+	if (cg_shadows.integer == 2)
 	{
-		yawAngle =  cent->pe.legs.yawAngle;
+		yawAngle = 0;
 	}
-	CG_ImpactMark(cgs.media.shadowMarkShader, trace.endpos, trace.plane.normal,
+	CG_ImpactMark(shadowMarkShader, trace.endpos, trace.plane.normal,
 	              yawAngle, alpha, alpha, alpha, 1, qfalse, 24, qtrue, qtrue);
 
 	return qtrue;
@@ -2181,7 +2181,6 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	float extx, exty, extz;
 	vec3_t corners[8];
 	qhandle_t hitboxShaderEdge, hitboxShaderSide;
-	float hitBoxOffset = 0.005f;
 
 	if (!cg_drawHitBox.integer && (!cgs.osp.serverConfigXHitBox || !cg.demoPlayback))
 	{
@@ -2292,22 +2291,9 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	for (i = 0; i < 4; i++)
 	{
 		VectorCopy(corners[i], corners[i + 4]);
-		if ((cg_drawHitBox.integer == 2))
-		{
-			corners[i + 4][2] -= extz - hitBoxOffset;
-		}
-		else
-			corners[i + 4][2] -= extz;
+		corners[i + 4][2] -= extz;
 	}
-	for (i = 0; i < 8; i++)
-	{
-		if (cg_drawHitBox.integer == 2)
-		{
-			corners[i][0] -= hitBoxOffset * ((corners[i][0] > cent->lerpOrigin[0]) ? 1 : -1); // X внутрь
-			corners[i][1] -= hitBoxOffset * ((corners[i][1] > cent->lerpOrigin[1]) ? 1 : -1); // Y внутрь
-		}
-	}
-
+	
 	if (cg_drawHitBox.integer == 1)
 	{
 		hitboxShaderEdge = cgs.osp.hboxShader;
@@ -2374,7 +2360,8 @@ void CG_AddOutline(centity_t* cent)
 	refEntity_t orig[3], enlarged[3];
 	int clientNum, i, j;
 	vec4_t color[3];
-	qboolean isSpectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+	qboolean isSpectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) &&
+							(cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
 	qboolean isEnemy;
 
 	clientNum = cent->currentState.clientNum;

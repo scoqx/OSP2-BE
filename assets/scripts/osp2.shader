@@ -360,6 +360,7 @@ whiteAlpha_nocull
 
 whiteAlpha_cullback
 {
+	polygonOffset
 	nopicmip
 	cull back
 	{

@@ -11,9 +11,12 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 
 ## ✨ BE-Features
 
-## v0.056t/u
+## v0.056k
 ```
-  + cg_staticPlayerShadow
+  + cg_noSlidingWindow 2 option 
+    * 1 disable MoTD
+    * 2 disable any sliding window
+  + cg_shadows 2 option - static player shadow
   SHUD:
   + weaponStats_## - accuracy
   + weaponStats_##_icon
@@ -49,8 +52,8 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
   * cg_drawRewards 2
 
   SHUD:
-  + tempAcc styles variations
-  + CurrentWeaponStats styles variations
+  + tempAcc styles options
+  + CurrentWeaponStats styles options
   + scoresScore_NME	style
   + Configs (m1rqlstyle, AGENT, diwoc_light, cybra, zoti)
 ```
@@ -60,7 +63,7 @@ Cvars:
 + cg_altBlood
 + cg_altBloodColor
 * cg_altPlasma 
-  + variation 2
+  + option 2
 + cg_damageDrawFrame
 + cg_damageFrameSize
 + cg_damageFrameOpaque

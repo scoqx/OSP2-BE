@@ -46,7 +46,7 @@ SHUD:
     + cg_hitBoxColor <color>
     * HQ shader (lol)
 
-* cg_damageDrawFrame variations
+* cg_damageDrawFrame options
   + 1 gradient
   + 2 old solid border
 
@@ -86,15 +86,15 @@ SHUD:
   + cg_altBlood
   + cg_altBloodColor
   * cg_altPlasma 
-    + variation 2
+    + option 2
 
 12.04.2025 be v0.051
 
   * cg_drawOutline team colors fixed
 
   SHUD:
-  + tempAcc styles variations
-  + CurrentWeaponStats styles variations
+  + tempAcc styles options
+  + CurrentWeaponStats styles options
   + scoresScore_NME	style
   + Configs (m1rqlstyle, AGENT, diwoc_light, cybra, RTG, zoti)
 
@@ -124,8 +124,12 @@ SHUD:
     + Kill/death ratio (K/D)
     + Damage given/recieved Ratio
 
-21.04.2025 be v0.056t/u
-  + cg_staticPlayerShadow
+21.04.2025 be v0.056k
+  + cg_noSlidingWindow 2 option 
+    * 1 disable MoTD
+    * 2 disable any sliding window
+  + cg_shadows 2 option - static player shadow
+
   SHUD:
   + weaponStats_## - accuracy
   + weaponStats_##_icon

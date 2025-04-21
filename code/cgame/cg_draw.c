@@ -2634,7 +2634,7 @@ int CG_OSPDrawLeftSlidingWindow(float timeAppearance, float timeShow, float time
 	minTimeIndex = -1;
 	minTime = 9999999;
 	i = 0;
-	if (cg_noSlidingWindow.integer)
+	if (cg_noSlidingWindow.integer == 2)
 	{
 		return -1;
 	}
@@ -2719,7 +2719,7 @@ void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context)
 	float calc_pos_y;
 	int i;
 	time_u1 = context->hideBeforeRealtime - trap_Milliseconds();
-	if (cg_noSlidingWindow.integer)
+	if (cg_noSlidingWindow.integer == 2)
 	{
 		return;
 	}

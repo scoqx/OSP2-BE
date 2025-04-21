@@ -1580,7 +1580,7 @@ extern vmCvar_t         cg_railRingsSize;
 extern vmCvar_t         cg_railStaticRings;
 extern vmCvar_t         cg_gunPos;
 extern vmCvar_t         be_run;
-extern vmCvar_t			cg_staticPlayerShadow;
+
 //
 // cg_main.c
 //
@@ -2247,7 +2247,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.056u" // BE
+#define OSP_VERSION "be-0.056k" // BE
 
 
 

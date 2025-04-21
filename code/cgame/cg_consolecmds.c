@@ -458,6 +458,10 @@ void CG_OSPDrawNewCredits_f(void)
 }
 void CG_OSPMoTD_f(void)
 {
+	if (cg_noSlidingWindow.integer)
+	{
+		return;
+	}
 	if (cgs.osp.numberOfStringsMotd > 0)
 	{
 		CG_OSPDrawLeftSlidingWindow(0.5, 1.2, 12.0, 1.0, cgs.osp.numberOfStringsMotd, 64, 10, 10, cgs.osp.motd[0], 400, NULL, NULL);

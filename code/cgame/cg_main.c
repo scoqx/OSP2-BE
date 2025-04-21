@@ -394,7 +394,8 @@ vmCvar_t        cg_railRingsSize;
 vmCvar_t        cg_railStaticRings;
 vmCvar_t        cg_gunPos;
 vmCvar_t        cg_shotGunTracer;
-vmCvar_t		cg_staticPlayerShadow;
+vmCvar_t		cg_altShadow;
+vmCvar_t		cg_altShadowColor;
 
 
 
@@ -412,7 +413,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_fov, "cg_fov", "90", CVAR_ARCHIVE },
 	{ &cg_viewsize, "cg_viewsize", "100", CVAR_ARCHIVE },
 	{ &cg_stereoSeparation, "cg_stereoSeparation", "0.4", CVAR_ARCHIVE },
-	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_shadows},
 	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE },
 	{ &cg_draw2D, "cg_draw2D", "1", CVAR_ARCHIVE },
 	{ &cg_drawStatus, "cg_drawStatus", "1", CVAR_ARCHIVE },
@@ -692,18 +692,20 @@ static cvarTable_t cvarTable[] =
 	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
 	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
-	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE },
+	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE },
+	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE },
+	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_shotGunTracer, "cg_shotGunTracer", "1", CVAR_ARCHIVE },
-	{ &cg_railRingsRadius, "cg_railRingsRadius", "4.0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_railRingsRadius },
-	{ &cg_railRingsRotation, "cg_railRingsRotation", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_railRingsRotation },
-	{ &cg_railRingsSpacing, "cg_railRingsSpacing", "5", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_railRingsSpacing },
-	{ &cg_railRingsSize, "cg_railRingsSize", "1.1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_railRingsSize },
-	{ &cg_railStaticRings, "cg_railStaticRings", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_railRingsRadius, "cg_railRingsRadius", "4.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsRadius },
+	{ &cg_railRingsRotation, "cg_railRingsRotation", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsRotation },
+	{ &cg_railRingsSpacing, "cg_railRingsSpacing", "5", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsSpacing },
+	{ &cg_railRingsSize, "cg_railRingsSize", "1.1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsSize },
+	{ &cg_railStaticRings, "cg_railStaticRings", "0", CVAR_ARCHIVE },
 	{ &cg_gunPos, "cg_gunPos", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_staticPlayerShadow, "cg_staticPlayerShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
-
+	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_shadows},
+	// { &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
+	// { &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altShadowColor },
+	
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
 
 };
