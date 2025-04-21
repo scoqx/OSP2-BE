@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   telegram:
@@ -16,17 +17,17 @@ jobs:
         run: |
           COMMIT_MSG="${{ github.head_commit.message }}"
           COMMIT_URL="${{ github.head_commit.url }}"
-
+ 
           # Формируем сообщение с заголовком и описанием
           MESSAGE="*${COMMIT_MSG}*\n\n"
           MESSAGE="${MESSAGE}> ${COMMIT_MSG}\n"
-
+ 
           # Ссылка на файл
           MESSAGE="${MESSAGE}[zz-osp-pak8.pk3](https://github.com/snems/OSP2/releases/download/latest/zz-osp-pak8.pk3) "
-
+ 
           # Ссылка на чат
           MESSAGE="${MESSAGE}[💬 Чат](https://t.me/q3osp2be_chat)"
-
+ 
           # Отправка сообщения в Telegram
           curl -s -X POST https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage \
             -d chat_id="$TELEGRAM_CHAT_ID" \
