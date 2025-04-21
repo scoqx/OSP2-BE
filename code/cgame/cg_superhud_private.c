@@ -161,10 +161,10 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "weaponStats_LG_icon", SE_IM, CG_SHUDElementIconCreateLG, CG_SHUDElementWeaponStatsRoutine, CG_SHUDElementWeaponStatsDestroy },
 	{ "weaponStats_RG_icon", SE_IM, CG_SHUDElementIconCreateRG, CG_SHUDElementWeaponStatsRoutine, CG_SHUDElementWeaponStatsDestroy },
 	{ "weaponStats_PG_icon", SE_IM, CG_SHUDElementIconCreatePG, CG_SHUDElementWeaponStatsRoutine, CG_SHUDElementWeaponStatsDestroy },
-	{ "playerStats_DG", SE_IM, CG_SHUDElementCreatePlayerStatsDG, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
-	{ "playerStats_DR", SE_IM, CG_SHUDElementCreatePlayerStatsDR, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
-	{ "playerStats_DG_icon", SE_IM, CG_SHUDElementCreatePlayerStatsDGIcon, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
-	{ "playerStats_DR_icon", SE_IM, CG_SHUDElementCreatePlayerStatsDRIcon, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
+	// { "playerStats_DG", SE_IM, CG_SHUDElementCreatePlayerStatsDG, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
+	// { "playerStats_DR", SE_IM, CG_SHUDElementCreatePlayerStatsDR, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
+	// { "playerStats_DG_icon", SE_IM, CG_SHUDElementCreatePlayerStatsDGIcon, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
+	// { "playerStats_DR_icon", SE_IM, CG_SHUDElementCreatePlayerStatsDRIcon, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
 	{ NULL },
 };
 
