@@ -1888,6 +1888,7 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	vec3_t      end, mins = {-15, -15, 0}, maxs = {15, 15, 2};
 	trace_t     trace;
 	float       alpha;
+	float		yawAngle = 0;
 
 	*shadowPlane = 0;
 
@@ -1929,8 +1930,12 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 
 	// add the mark as a temporary, so it goes directly to the renderer
 	// without taking a spot in the cg_marks array
+	if (!cg_staticPlayerShadow.integer)
+	{
+		yawAngle =  cent->pe.legs.yawAngle;
+	}
 	CG_ImpactMark(cgs.media.shadowMarkShader, trace.endpos, trace.plane.normal,
-	              cent->pe.legs.yawAngle, alpha, alpha, alpha, 1, qfalse, 24, qtrue, qtrue);
+	              yawAngle, alpha, alpha, alpha, 1, qfalse, 24, qtrue, qtrue);
 
 	return qtrue;
 }

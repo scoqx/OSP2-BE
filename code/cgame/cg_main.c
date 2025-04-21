@@ -394,6 +394,7 @@ vmCvar_t        cg_railRingsSize;
 vmCvar_t        cg_railStaticRings;
 vmCvar_t        cg_gunPos;
 vmCvar_t        cg_shotGunTracer;
+vmCvar_t		cg_staticPlayerShadow;
 
 
 
@@ -693,14 +694,15 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_shotGunTracer, "cg_shotGunTracer", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE },
+	{ &cg_shotGunTracer, "cg_shotGunTracer", "1", CVAR_ARCHIVE },
 	{ &cg_railRingsRadius, "cg_railRingsRadius", "4.0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_railRingsRadius },
 	{ &cg_railRingsRotation, "cg_railRingsRotation", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_railRingsRotation },
 	{ &cg_railRingsSpacing, "cg_railRingsSpacing", "5", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_railRingsSpacing },
 	{ &cg_railRingsSize, "cg_railRingsSize", "1.1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_railRingsSize },
 	{ &cg_railStaticRings, "cg_railStaticRings", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_gunPos, "cg_gunPos", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_staticPlayerShadow, "cg_staticPlayerShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
 
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
 
@@ -1488,6 +1490,9 @@ static void CG_RegisterGraphics(void)
 	cgs.media.obituariesFallenCrashed = trap_R_RegisterShader("ObituariesFallenCrashed");
 	cgs.media.obituariesFalling = trap_R_RegisterShader("ObituariesFalling");
 	cgs.media.obituariesSkull = trap_R_RegisterShader("ObituariesSkull");
+
+	cgs.media.arrowUp = trap_R_RegisterShader("gfx/2d/arrow_up");
+	cgs.media.arrowDown = trap_R_RegisterShader("gfx/2d/arrow_down");
 
 	// be extention
 	cgs.media.whiteAlphaShader      = trap_R_RegisterShader("whiteAlpha");

@@ -448,3 +448,22 @@ gfx/misc/spark
 	}
 }
 
+gfx/2d/arrow_down
+{
+    nopicmip
+    {
+       clampmap gfx/2d/arrow.tga
+       blendFunc blend
+       rgbGen vertex
+    }
+}
+gfx/2d/arrow_up
+{
+    nopicmip
+    {
+       clampmap gfx/2d/arrow.tga
+       blendFunc blend
+	   tcMod transform -1 0 0 -1 1 1
+       rgbGen vertex
+    }
+}

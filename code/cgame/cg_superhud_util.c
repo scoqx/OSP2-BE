@@ -939,15 +939,17 @@ void CG_SHUDParseStatsInfo(void)
 		}
 	}
 
-	ws->kdratio = (statsInfo[OSP_STATS_KILLS] > 0 && (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) == 0) ?
-	              (float)statsInfo[OSP_STATS_KILLS] :
-	              ((statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) > 0) ?
-	              (float)statsInfo[OSP_STATS_KILLS] / (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) : 0.0f;
+	// in default stats
+	// ws->kdratio = (statsInfo[OSP_STATS_KILLS] > 0 && (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) == 0) ?
+	//               (float)statsInfo[OSP_STATS_KILLS] :
+	//               ((statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) > 0) ?
+	//               (float)statsInfo[OSP_STATS_KILLS] / (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) : 0.0f;
 
 	if (statsInfo[OSP_STATS_DMG_GIVEN] > 0)
 	{
-		ws->damageKoeff = (float)statsInfo[OSP_STATS_DMG_GIVEN] /
-		                  (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
+		// in default stats
+		// ws->damageKoeff = (float)statsInfo[OSP_STATS_DMG_GIVEN] /
+		//                   (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
 	}
 
 }

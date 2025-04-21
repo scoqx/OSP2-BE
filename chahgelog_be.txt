@@ -123,3 +123,15 @@ SHUD:
   * +wstats additional data
     + Kill/death ratio (K/D)
     + Damage given/recieved Ratio
+
+21.04.2025 be v0.056t/u
+  + cg_staticPlayerShadow
+  SHUD:
+  + weaponStats_## - accuracy
+  + weaponStats_##_icon
+
+  + playerStats_DG
+  + playerStats_DR
+  + playerStats_DG_icon
+  + playerStats_DR_icon
+  

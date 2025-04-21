@@ -587,9 +587,6 @@ void* CG_SHUDElementWeaponStatsCreateRL(const superhudConfig_t* config);
 void* CG_SHUDElementWeaponStatsCreateLG(const superhudConfig_t* config);
 void* CG_SHUDElementWeaponStatsCreateRG(const superhudConfig_t* config);
 void* CG_SHUDElementWeaponStatsCreatePG(const superhudConfig_t* config);
-void CG_SHUDElementWeaponStatsRoutine(void* context);
-void CG_SHUDElementWeaponStatsDestroy(void* context);
-
 void* CG_SHUDElementIconCreateCurrentWeapon(const superhudConfig_t* config);
 void* CG_SHUDElementIconCreateMG(const superhudConfig_t* config);
 void* CG_SHUDElementIconCreateSG(const superhudConfig_t* config);
@@ -598,8 +595,17 @@ void* CG_SHUDElementIconCreateRL(const superhudConfig_t* config);
 void* CG_SHUDElementIconCreateLG(const superhudConfig_t* config);
 void* CG_SHUDElementIconCreateRG(const superhudConfig_t* config);
 void* CG_SHUDElementIconCreatePG(const superhudConfig_t* config);
-void CG_SHUDElementWeaponStatsIconRoutine(void* context);
-void CG_SHUDElementWeaponStatsIconDestroy(void* context);
+void CG_SHUDElementWeaponStatsRoutine(void* context);
+void CG_SHUDElementWeaponStatsDestroy(void* context);
+
+
+void* CG_SHUDElementCreatePlayerStatsDG(const superhudConfig_t* config);
+void* CG_SHUDElementCreatePlayerStatsDR(const superhudConfig_t* config);
+void* CG_SHUDElementCreatePlayerStatsDRIcon(const superhudConfig_t* config);
+void* CG_SHUDElementCreatePlayerStatsDGIcon(const superhudConfig_t* config);
+void CG_SHUDElementPlayerStatsRoutine(void* context);
+void CG_SHUDElementPlayerStatsDestroy(void* context);
+
 
 /*
  * cg_superhud_util.c
@@ -740,8 +746,8 @@ typedef struct
 	int lastTrackedWeapon;
 	int weapActive[WP_NUM_WEAPONS];
 	float lastAccuracy;
-	float kdratio;
-	float damageKoeff;
+	// float kdratio;
+	// float damageKoeff;
 	struct
 	{
 		float accuracy;

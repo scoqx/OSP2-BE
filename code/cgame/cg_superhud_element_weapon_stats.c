@@ -13,7 +13,6 @@ typedef struct {
     superhudDrawContext_t drawCtx;
     shudElementWeaponStatsType_t type;
     int weaponIndex;
-    qboolean isCurrent;
 } shudElementWeaponStats_t;
 
 // === Универсальная функция создания ===

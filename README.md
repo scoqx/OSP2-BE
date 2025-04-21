@@ -11,11 +11,16 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 
 ## ✨ BE-Features
 
-## v0.056t
+## v0.056t/u
 ```
+  + cg_staticPlayerShadow
   SHUD:
   + weaponStats_## - accuracy
   + weaponStats_##_icon
+  + playerStats_DG
+  + playerStats_DR
+  + playerStats_DG_icon
+  + playerStats_DR_icon
 ```
 ## v0.055t
 ```

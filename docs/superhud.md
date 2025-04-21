@@ -81,10 +81,14 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | WarmupInfo                    | Обратный отсчет/"waiting for players".                       |
 | GameType                      | Режим игры(только во время warmup).                          |
 | Location                      | Сообщение с названием локации при ее изменении.              |
-| CurrentWeaponStats            | Вывод точности для оружия (cg_shud_currentWeapons)           |
-| CurrentWeaponStats_icon       | Вывод иконки для точности оружия                             |
-| weaponStats_##                | Вывод точности для выбранного оружия (MG,SG,GL,RL,LG,PG,RG)  |
-| weaponStats_##_icon           | Вывод иконки для точности выбранного оружия                  |
+| CurrentWeaponStats            | Точность для оружия (cg_shud_currentWeapons)                 |
+| CurrentWeaponStats_icon       | Иконка для точности оружия                                   |
+| weaponStats_##                | Точности для выбранного оружия (MG,SG,GL,RL,LG,PG,RG)        |
+| weaponStats_##_icon           | Иконка для точности выбранного оружия                        |
+| playerStats_DG                | Количество нанесённого урона                                 |
+| playerStats_DR                | Количество полученного урона                                 |
+| playerStats_DG_icon           | Иконка для количества нанесённого урона                      |
+| playerStats_DR_icon           | Иконка для количества полученного урона                      |
 
 ## Команды
 
