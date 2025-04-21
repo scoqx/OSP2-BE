@@ -11,6 +11,12 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 
 ## ✨ BE-Features
 
+## v0.056t
+```
+  SHUD:
+  + weaponStats_## - accuracy
+  + weaponStats_##_icon
+```
 ## v0.055t
 ```
   * +wstats additional data

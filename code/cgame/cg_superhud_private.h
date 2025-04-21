@@ -579,14 +579,27 @@ void* CG_SHUDElementLocationCreate(const superhudConfig_t* config);
 void CG_SHUDElementLocationRoutine(void* context);
 void CG_SHUDElementLocationDestroy(void* context);
 
-void* CG_SHUDElementCWSCreate(const superhudConfig_t* config);
-void CG_SHUDElementCWSRoutine(void* context);
-void CG_SHUDElementCWSDestroy(void* context);
-void CG_SHUDEventCWSParse(void);
+void* CG_SHUDElementCreateCurrentWeapon(const superhudConfig_t* config);
+void* CG_SHUDElementWeaponStatsCreateMG(const superhudConfig_t* config);
+void* CG_SHUDElementWeaponStatsCreateSG(const superhudConfig_t* config);
+void* CG_SHUDElementWeaponStatsCreateGL(const superhudConfig_t* config);
+void* CG_SHUDElementWeaponStatsCreateRL(const superhudConfig_t* config);
+void* CG_SHUDElementWeaponStatsCreateLG(const superhudConfig_t* config);
+void* CG_SHUDElementWeaponStatsCreateRG(const superhudConfig_t* config);
+void* CG_SHUDElementWeaponStatsCreatePG(const superhudConfig_t* config);
+void CG_SHUDElementWeaponStatsRoutine(void* context);
+void CG_SHUDElementWeaponStatsDestroy(void* context);
 
-void* CG_SHUDElementCWSIconCreate(const superhudConfig_t* config);
-void CG_SHUDElementCWSIconRoutine(void* context);
-void CG_SHUDElementCWSIconDestroy(void* context);
+void* CG_SHUDElementIconCreateCurrentWeapon(const superhudConfig_t* config);
+void* CG_SHUDElementIconCreateMG(const superhudConfig_t* config);
+void* CG_SHUDElementIconCreateSG(const superhudConfig_t* config);
+void* CG_SHUDElementIconCreateGL(const superhudConfig_t* config);
+void* CG_SHUDElementIconCreateRL(const superhudConfig_t* config);
+void* CG_SHUDElementIconCreateLG(const superhudConfig_t* config);
+void* CG_SHUDElementIconCreateRG(const superhudConfig_t* config);
+void* CG_SHUDElementIconCreatePG(const superhudConfig_t* config);
+void CG_SHUDElementWeaponStatsIconRoutine(void* context);
+void CG_SHUDElementWeaponStatsIconDestroy(void* context);
 
 /*
  * cg_superhud_util.c
@@ -725,8 +738,8 @@ typedef struct
 typedef struct
 {
 	int lastTrackedWeapon;
+	int weapActive[WP_NUM_WEAPONS];
 	float lastAccuracy;
-	qboolean customWstatsCalled;
 	float kdratio;
 	float damageKoeff;
 	struct

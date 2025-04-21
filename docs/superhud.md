@@ -83,6 +83,8 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | Location                      | Сообщение с названием локации при ее изменении.              |
 | CurrentWeaponStats            | Вывод точности для оружия (cg_shud_currentWeapons)           |
 | CurrentWeaponStats_icon       | Вывод иконки для точности оружия                             |
+| weaponStats_##                | Вывод точности для выбранного оружия (MG,SG,GL,RL,LG,PG,RG)  |
+| weaponStats_##_icon           | Вывод иконки для точности выбранного оружия                  |
 
 ## Команды
 
@@ -181,7 +183,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 
 - Границы для цветов <30, <50, <60, >60
 
-## CurrentWeaponStats
+## WeaponStats_## и CurrentWeaponStats
 
 - Style 1 — дробное число с одним знаком после запятой
 
