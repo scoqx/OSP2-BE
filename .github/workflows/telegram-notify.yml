@@ -3,7 +3,7 @@ name: Telegram Notify on Push
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
           MESSAGE="${MESSAGE}> ${COMMIT_MSG}\n"
  
           # Ссылка на файл
-          MESSAGE="${MESSAGE}[zz-osp-pak8.pk3](https://github.com/snems/OSP2/releases/download/latest/zz-osp-pak8.pk3) "
+          MESSAGE="${MESSAGE}[zz-osp-pak8.pk3](https://github.com/scoqx/OSP2-BE/releases/download/latest/zz-osp-pak8.pk3) "
  
           # Ссылка на чат
           MESSAGE="${MESSAGE}[💬 Чат](https://t.me/q3osp2be_chat)"
