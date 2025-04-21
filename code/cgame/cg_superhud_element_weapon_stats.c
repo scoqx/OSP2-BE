@@ -29,6 +29,7 @@ void* CG_SHUDElementWeaponStatsCreate(const superhudConfig_t* config, shudElemen
 	if (type == SHUD_ELEMENT_WEAPON_STATS_TEXT)
 	{
 		CG_SHUDTextMakeContext(&element->config, &element->textCtx);
+		CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);
 	}
 	else
 	{
@@ -157,11 +158,10 @@ void CG_SHUDElementWeaponStatsRoutine(void* context)
 		if (element->type == SHUD_ELEMENT_WEAPON_STATS_TEXT)
 		{
 			if (element->config.style.value == 1)
-				Q_strncpyz(textBuffer, "^70.0%", sizeof(textBuffer));
+				Q_strncpyz(textBuffer, "0.0%", sizeof(textBuffer));
 			else
-				Q_strncpyz(textBuffer, "^70%", sizeof(textBuffer));
+				Q_strncpyz(textBuffer, "0%", sizeof(textBuffer));
 			element->textCtx.text = textBuffer;
-			CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);
 			CG_SHUDTextPrint(&element->config, &element->textCtx);
 		}
 		else if (element->type == SHUD_ELEMENT_WEAPON_STATS_ICON)
@@ -179,9 +179,9 @@ void CG_SHUDElementWeaponStatsRoutine(void* context)
 	if (element->type == SHUD_ELEMENT_WEAPON_STATS_TEXT)
 	{
 		if (element->config.style.value == 1)
-			Com_sprintf(textBuffer, sizeof(textBuffer), "^7%.1f%%", ws->stats[weapon].accuracy);
+			Com_sprintf(textBuffer, sizeof(textBuffer), "%.1f%%", ws->stats[weapon].accuracy);
 		else
-			Com_sprintf(textBuffer, sizeof(textBuffer), "^7%.0f%%", ws->stats[weapon].accuracy);
+			Com_sprintf(textBuffer, sizeof(textBuffer), "%.0f%%", ws->stats[weapon].accuracy);
 
 		element->textCtx.text = textBuffer;
 		CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);

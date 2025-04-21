@@ -29,6 +29,7 @@ static void* CG_SHUDElementPwCreate(const superhudConfig_t* config, enum shudPWT
 	if (pwType == SHUDPWTYPE_TIME)
 	{
 		CG_SHUDTextMakeContext(&element->config, &element->textCtx);
+		CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);
 	}
 	else
 	{

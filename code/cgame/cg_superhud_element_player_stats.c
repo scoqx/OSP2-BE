@@ -26,6 +26,7 @@ void* CG_SHUDElementPlayerStatsCreate(const superhudConfig_t* config, shudElemen
 	if (type == SHUD_ELEMENT_PLAYER_STATS_DG || type == SHUD_ELEMENT_PLAYER_STATS_DR)
 	{
 		CG_SHUDTextMakeContext(&element->config, &element->textCtx);
+		CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);
 	}
 	else
 	{
@@ -76,17 +77,15 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 	{
 		case SHUD_ELEMENT_PLAYER_STATS_DG:
 			if (dmgGiven <= 0 && !(element->config.visflags.isSet && (element->config.visflags.value & SE_SHOW_EMPTY))) return;
-			Com_sprintf(buffer, sizeof(buffer), "^7%d", dmgGiven);
+			Com_sprintf(buffer, sizeof(buffer), "%d", dmgGiven);
 			element->textCtx.text = buffer;
-			CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);
 			CG_SHUDTextPrint(&element->config, &element->textCtx);
 			return;
 
 		case SHUD_ELEMENT_PLAYER_STATS_DR:
 			if (dmgGiven <= 0 && !(element->config.visflags.isSet && (element->config.visflags.value & SE_SHOW_EMPTY))) return;
-			Com_sprintf(buffer, sizeof(buffer), "^7%d", dmgReceived);
+			Com_sprintf(buffer, sizeof(buffer), "%d", dmgReceived);
 			element->textCtx.text = buffer;
-			CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);
 			CG_SHUDTextPrint(&element->config, &element->textCtx);
 			return;
 
