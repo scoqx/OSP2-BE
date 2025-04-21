@@ -1592,7 +1592,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	}
 
 	/*
-	   	// Make weapon appear left-handed for 2 and centered for 3
+	    // Make weapon appear left-handed for 2 and centered for 3
 	*/
 	trap_R_LerpTag(&lerped, parent->hModel, parent->oldframe, parent->frame,
 	               1.0f - parent->backlerp, "tag_weapon");
@@ -1600,39 +1600,51 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	VectorMA(gun.origin, lerped.origin[0], parent->axis[0], gun.origin);
 
 	// offset for each weapon to set it excatly in the center (pos3)
-	if (ps  && cg.predictedPlayerState.weapon == WP_ROCKET_LAUNCHER) {
+	if (ps  && cg.predictedPlayerState.weapon == WP_ROCKET_LAUNCHER)
+	{
 		VectorMA(gun.origin, 0.4, parent->axis[1], gun.origin);
 	}
-	else if (ps && cg.predictedPlayerState.weapon == WP_LIGHTNING) {
+	else if (ps && cg.predictedPlayerState.weapon == WP_LIGHTNING)
+	{
 		VectorMA(gun.origin, 0.425, parent->axis[1], gun.origin);
 	}
-	else if (ps && cg.predictedPlayerState.weapon == WP_SHOTGUN) {
+	else if (ps && cg.predictedPlayerState.weapon == WP_SHOTGUN)
+	{
 		VectorMA(gun.origin, 0.05, parent->axis[1], gun.origin);
 	}
-	else if (ps && cg.predictedPlayerState.weapon == WP_BFG) {
+	else if (ps && cg.predictedPlayerState.weapon == WP_BFG)
+	{
 		VectorMA(gun.origin, 0.225, parent->axis[1], gun.origin);
 	}
-	else if (ps && cg.predictedPlayerState.weapon == WP_RAILGUN) {
+	else if (ps && cg.predictedPlayerState.weapon == WP_RAILGUN)
+	{
 		VectorMA(gun.origin, 0.45, parent->axis[1], gun.origin);
 	}
-	else if (ps && (cg.predictedPlayerState.weapon == WP_MACHINEGUN || cg.predictedPlayerState.weapon == WP_GRENADE_LAUNCHER) ) {
+	else if (ps && (cg.predictedPlayerState.weapon == WP_MACHINEGUN || cg.predictedPlayerState.weapon == WP_GRENADE_LAUNCHER))
+	{
 		VectorMA(gun.origin, 0.275, parent->axis[1], gun.origin);
 	}
 
-	if (ps) {
-		if (cg_gunPos.integer == 2) {
+	if (ps)
+	{
+		if (cg_gunPos.integer == 2)
+		{
 			VectorMA(gun.origin, -lerped.origin[1], parent->axis[1], gun.origin);
 		}
-		else if (cg_gunPos.integer == 3) {
+		else if (cg_gunPos.integer == 3)
+		{
 			// centered by default
 		}
-		else {
+		else
+		{
 			VectorMA(gun.origin, lerped.origin[1], parent->axis[1], gun.origin);
 		}
-	} else {
+	}
+	else
+	{
 		VectorMA(gun.origin, lerped.origin[1], parent->axis[1], gun.origin);
 	}
-	
+
 
 	VectorMA(gun.origin, lerped.origin[2], parent->axis[2], gun.origin);
 	MatrixMultiply(lerped.axis, parent->axis, gun.axis);

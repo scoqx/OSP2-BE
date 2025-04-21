@@ -394,8 +394,8 @@ vmCvar_t        cg_railRingsSize;
 vmCvar_t        cg_railStaticRings;
 vmCvar_t        cg_gunPos;
 vmCvar_t        cg_shotGunTracer;
-vmCvar_t		cg_altShadow;
-vmCvar_t		cg_altShadowColor;
+// vmCvar_t        cg_altShadow;
+// vmCvar_t        cg_altShadowColor;
 
 
 
@@ -705,7 +705,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_shadows},
 	// { &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
 	// { &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altShadowColor },
-	
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
 
 };

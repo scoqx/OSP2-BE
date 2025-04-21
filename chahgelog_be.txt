@@ -124,7 +124,7 @@ SHUD:
     + Kill/death ratio (K/D)
     + Damage given/recieved Ratio
 
-21.04.2025 be v0.056k
+21.04.2025 be v0.056x
   + cg_noSlidingWindow 2 option 
     * 1 disable MoTD
     * 2 disable any sliding window
@@ -139,3 +139,4 @@ SHUD:
   + playerStats_DG_icon
   + playerStats_DR_icon
   
+  * visflags: showempty only for weapon/playerStats

@@ -266,7 +266,7 @@ typedef enum
 #define SE_IM         0x00000001 // available in intermission view
 #define SE_IM_STR "im"
 #define SE_TEAM_ONLY  0x00000002 // team only
-#define SE_TEAM_ONLY_STR "teamonly" 
+#define SE_TEAM_ONLY_STR "teamonly"
 #define SE_SPECT      0x00000004 // available in spectator and not folowing view
 #define SE_SPECT_STR      "spectator"
 #define SE_DEAD       0x00000008 // available if dead or freeze
@@ -284,6 +284,8 @@ typedef enum
 #define SE_KEY3_SHOW_STR  "key3show"
 #define SE_KEY4_SHOW  0x00000200 // show if key pressed
 #define SE_KEY4_SHOW_STR  "key4show"
+#define SE_SHOW_EMPTY  0x00000400 // show if empty
+#define SE_SHOW_EMPTY_STR  "showempty"
 
 typedef struct superHUDConfigElement_s
 {

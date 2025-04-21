@@ -1888,8 +1888,8 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	vec3_t      end, mins = {-15, -15, 0}, maxs = {15, 15, 2};
 	trace_t     trace;
 	float       alpha;
-	float		yawAngle = cent->pe.legs.yawAngle;
-	qhandle_t 	shadowMarkShader = cgs.media.shadowMarkShader;
+	float       yawAngle = cent->pe.legs.yawAngle;
+	qhandle_t   shadowMarkShader = cgs.media.shadowMarkShader;
 	*shadowPlane = 0;
 
 	if (cg_shadows.integer == 0)
@@ -2293,7 +2293,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		VectorCopy(corners[i], corners[i + 4]);
 		corners[i + 4][2] -= extz;
 	}
-	
+
 	if (cg_drawHitBox.integer == 1)
 	{
 		hitboxShaderEdge = cgs.osp.hboxShader;
@@ -2361,7 +2361,7 @@ void CG_AddOutline(centity_t* cent)
 	int clientNum, i, j;
 	vec4_t color[3];
 	qboolean isSpectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) &&
-							(cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
+	                       (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
 	qboolean isEnemy;
 
 	clientNum = cent->currentState.clientNum;

@@ -11,7 +11,7 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 
 ## ✨ BE-Features
 
-## v0.056k
+## v0.056x
 ```
   + cg_noSlidingWindow 2 option 
     * 1 disable MoTD
@@ -24,6 +24,8 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
   + playerStats_DR
   + playerStats_DG_icon
   + playerStats_DR_icon
+
+  * visflags: showempty only for weapon/playerStats
 ```
 ## v0.055t
 ```

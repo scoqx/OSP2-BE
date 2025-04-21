@@ -701,16 +701,16 @@ void CG_OSPShowStatsInfo(void)
 		effiency = 100.0f * tmp / (statsInfo[OSP_STATS_DEATHS] + tmp);
 		if (effiency < 0) effiency = 0;
 	}
-	if (statsInfo[OSP_STATS_DMG_GIVEN] > 0 || statsInfo[OSP_STATS_DMG_RCVD] > 0 )
+	if (statsInfo[OSP_STATS_DMG_GIVEN] > 0 || statsInfo[OSP_STATS_DMG_RCVD] > 0)
 	{
 		damageRatio = (float)statsInfo[OSP_STATS_DMG_GIVEN] /
-		                  (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
+		              (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
 	}
 
 	kd = (statsInfo[OSP_STATS_KILLS] > 0 && (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) == 0) ?
-	              (float)statsInfo[OSP_STATS_KILLS] :
-	              ((statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) > 0) ?
-	              (float)statsInfo[OSP_STATS_KILLS] / (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) : 0.0f;
+	     (float)statsInfo[OSP_STATS_KILLS] :
+	     ((statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) > 0) ?
+	     (float)statsInfo[OSP_STATS_KILLS] / (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) : 0.0f;
 
 	if (cgs.gametype == GT_TOURNAMENT)
 	{
@@ -720,7 +720,7 @@ void CG_OSPShowStatsInfo(void)
 		                          statsInfo[OSP_STATS_KILLS],
 		                          statsInfo[OSP_STATS_DEATHS],
 		                          statsInfo[OSP_STATS_SUCIDES],
-								  kd,
+		                          kd,
 		                          effiency,
 		                          statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask,
 		                          statsInfo[OSP_STATS_LOSSES] & cgs.osp.stats_mask));
@@ -737,7 +737,7 @@ void CG_OSPShowStatsInfo(void)
 			                          statsInfo[OSP_STATS_DEATHS],
 			                          statsInfo[OSP_STATS_SUCIDES],
 			                          statsInfo[OSP_STATS_TEAM_KILLS],
-									  kd,
+			                          kd,
 			                          effiency));
 		}
 		else
@@ -751,7 +751,7 @@ void CG_OSPShowStatsInfo(void)
 			                          statsInfo[OSP_STATS_DEATHS],
 			                          statsInfo[OSP_STATS_SUCIDES],
 			                          statsInfo[OSP_STATS_TEAM_KILLS],
-									  kd,
+			                          kd,
 			                          effiency));
 		}
 	}
@@ -772,7 +772,7 @@ void CG_OSPShowStatsInfo(void)
 		                          statsInfo[OSP_STATS_ASSIST],
 		                          statsInfo[OSP_STATS_DEFENCES],
 		                          statsInfo[OSP_STATS_RETURNS],
-								kd));
+		                          kd));
 
 	}
 	else if (cgs.gametype == GT_CA)
@@ -782,7 +782,7 @@ void CG_OSPShowStatsInfo(void)
 		                          statsInfo[OSP_STATS_SCORE],
 		                          statsInfo[OSP_STATS_KILLS],
 		                          statsInfo[OSP_STATS_DEATHS],
-								  kd,
+		                          kd,
 		                          effiency,
 		                          statsInfo[OSP_STATS_DMG_GIVEN] / 100,
 		                          statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask));
@@ -796,7 +796,7 @@ void CG_OSPShowStatsInfo(void)
 		                          statsInfo[OSP_STATS_DEATHS],
 		                          statsInfo[OSP_STATS_SUCIDES],
 		                          kd,
-								  effiency));
+		                          effiency));
 	}
 	strcpy(&strings[2][0], " ");
 	strcpy(&strings[3][0], "^5Weapon       ^3Accrcy ^7Hits/Atts ^2Klls ^1Dths ^3PkUp ^1Drop");
@@ -896,7 +896,7 @@ void CG_OSPShowStatsInfo(void)
 		{
 			strcpy(&strings[row++][0], va("^3Damage Given: ^7%-8d ^2Armor : ^7%d %s", statsInfo[OSP_STATS_DMG_GIVEN], statsInfo[OSP_STATS_WINS] >> cgs.osp.stats_shift, str2));
 			strcpy(&strings[row++][0], va("^3Damage Recvd: ^7%-8d ^2Health: ^7%d %s", statsInfo[OSP_STATS_DMG_RCVD], statsInfo[OSP_STATS_LOSSES] >> cgs.osp.stats_shift, str1));
-			
+
 			if (cgs.gametype == GT_TEAM)
 			{
 				strcpy(&strings[row++][0], va("^1Team Damage : ^7%d", statsInfo[OSP_STATS_DMG_TEAM]));

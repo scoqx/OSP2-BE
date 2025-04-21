@@ -2936,8 +2936,8 @@ void CG_OSPDrawGradientRectOptimized(int startX, int startY, int rectWidth, int 
 			// color[0] = (float)(sin(phase) * 0.5f + 0.5f);
 			// color[1] = (float)(sin(phase + 2.094f) * 0.5f + 0.5f);
 			// color[2] = (float)(sin(phase + 4.188f) * 0.5f + 0.5f);
-			
-			color[0] = color[1] = color[2] = brightness;	
+
+			color[0] = color[1] = color[2] = brightness;
 
 			color[3] = 1.0f;
 			trap_R_SetColor(color);
