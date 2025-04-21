@@ -48,7 +48,8 @@ void CG_SHUDElementPlayerStatsRoutine(void* context) {
     int dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
     char buffer[64];
     static int lastRequestTime = 0;
-
+    if (CG_OSPIsStatsHidden(qtrue, qtrue))
+    return;
     // Update the stats if the player has taken damage or given damage
     if (cg.time - cg.damageTime <= 10 || cg.time - cgs.osp.lastHitTime <= 100) {
         CG_SHUDRequestStatsInfo();
