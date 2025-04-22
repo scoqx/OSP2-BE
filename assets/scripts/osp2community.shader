@@ -1,18 +1,3 @@
-gfx/2d/hudres/timer
-{
-    {
-        map gfx/2d/hudres/timer.tga
-        blendfunc blend
-        rgbgen vertex   
-    }
-	{
-        map gfx/2d/clockHand.tga
-        tcMod rotate 40
-        blendfunc blend
-		rgbgen vertex   
-    }
-}
-
 gfx/2d/hudres/Grid
 {
     {
@@ -43,7 +28,23 @@ gfx/2d/hudres/background
         blendFunc GL_DST_COLOR GL_ONE_MINUS_DST_ALPHA
         rgbGen identity
     }
-}b
+}
+
+gfx/2d/hudres/Timer
+{
+    {
+        map gfx/2d/hudres/Timer.tga
+        blendfunc blend
+        rgbgen vertex   
+    }
+	{
+        map gfx/2d/hudres/ClockHand.tga
+        tcMod rotate 40
+        blendfunc blend
+		rgbgen vertex   
+    }
+}
+
 
 gfx/2d/hudres/Timer2
 {
