@@ -468,3 +468,12 @@ gfx/2d/arrow_up
        rgbGen vertex
     }
 }
+markShadowNew
+{
+	polygonOffset
+	{
+		map gfx/misc/whiteCircle.tga
+		blendfunc add
+		rgbGen vertex
+	}	
+}

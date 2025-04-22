@@ -1890,6 +1890,7 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	float       alpha;
 	float       yawAngle = cent->pe.legs.yawAngle;
 	qhandle_t   shadowMarkShader = cgs.media.shadowMarkShader;
+	vec4_t		color = { 1, 1, 1, 1 };
 	*shadowPlane = 0;
 
 	if (cg_shadows.integer == 0)
@@ -1917,25 +1918,44 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 
 	*shadowPlane = trace.endpos[2] + 1;
 
-	if (!(cg_shadows.integer <= 2))     // no mark for stencil or projection shadows
+	if (cg_shadows.integer != 1 && cg_shadows.integer != -1) // no mark for stencil or projection shadows
 	{
 		return qtrue;
 	}
 
-	// fade the shadow out with height
-	alpha = 1.0 - trace.fraction;
+	
+
 
 	// bk0101022 - hack / FPE - bogus planes?
 	//assert( DotProduct( trace.plane.normal, trace.plane.normal ) != 0.0f )
 
-	// add the mark as a temporary, so it goes directly to the renderer
-	// without taking a spot in the cg_marks array
-	if (cg_shadows.integer == 2)
+	// use alternate shader
+	if (cg_altShadow.integer)
+	{
+		shadowMarkShader = cgs.media.shadowMarkShaderNew;
+		color[0] = cgs.be.altShadowColor[0];
+		color[1] = cgs.be.altShadowColor[1];
+		color[2] = cgs.be.altShadowColor[2];
+		trace.fraction = trace.fraction - 0.1875;
+		if (trace.fraction < 0)
+		{
+			trace.fraction = 0;
+		}
+	}
+	// fade the shadow out with height
+	color[0] = color[0] * (1.0f - trace.fraction);
+	color[1] = color[1] * (1.0f - trace.fraction);
+	color[2] = color[2] * (1.0f - trace.fraction);
+	// make shadow mark static
+	if (cg_shadows.integer == -1)
 	{
 		yawAngle = 0;
 	}
+
+	// add the mark as a temporary, so it goes directly to the renderer
+	// without taking a spot in the cg_marks array
 	CG_ImpactMark(shadowMarkShader, trace.endpos, trace.plane.normal,
-	              yawAngle, alpha, alpha, alpha, 1, qfalse, 24, qtrue, qtrue);
+	              yawAngle, color[0], color[1], color[2], 1, qfalse, 24, qtrue, qtrue);
 
 	return qtrue;
 }

@@ -813,6 +813,7 @@ typedef struct
 	qhandle_t   numberShaders[11];
 
 	qhandle_t   shadowMarkShader;
+	qhandle_t	shadowMarkShaderNew;
 
 	qhandle_t   botSkillShaders[5];
 
@@ -1074,6 +1075,7 @@ typedef struct cgs_be_s
 	vec4_t enemyOutlineColor;
 	vec4_t teamOutlineColor;
 	vec4_t altBloodColor;
+	vec4_t altShadowColor;
 
 	qboolean showCredits;
 
@@ -1579,6 +1581,11 @@ extern vmCvar_t         cg_railRingsSpacing;
 extern vmCvar_t         cg_railRingsSize;
 extern vmCvar_t         cg_railStaticRings;
 extern vmCvar_t         cg_gunPos;
+extern vmCvar_t			cg_altShadow;
+extern vmCvar_t			cg_altShadowColor;
+extern vmCvar_t			cg_scoreboardShowId;
+
+
 extern vmCvar_t         be_run;
 
 //
@@ -2482,6 +2489,7 @@ void CG_LocalEventCvarChanged_cg_railRingsRadius(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_railRingsRotation(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_railRingsSpacing(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_railRingsSize(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_altShadowColor(cvarTable_t* cvart);
 
 
 

@@ -167,13 +167,13 @@ void CG_OSPCvarsRestrictValues(void)
 		changed = qtrue;
 	}
 
-	if (cg_shadows.integer > 2)
+	if (cg_shadows.integer > 1)
 	{
 		trap_Cvar_Set("cg_shadows", "1");
 		changed = qtrue;
 	}
 
-	if (cg_shadows.integer < 0)
+	if (cg_shadows.integer < -1)
 	{
 		trap_Cvar_Set("cg_shadows", "0");
 		changed = qtrue;

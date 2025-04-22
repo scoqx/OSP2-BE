@@ -199,7 +199,6 @@ static void CG_DrawClientScore(int y, score_t* score, float* color, float fade, 
 	{
 		CG_DrawHead(headx, y, 16, 16, score->client, headAngles);
 	}
-
 	// draw the score line
 	if (score->ping == -1)
 	{
@@ -267,6 +266,13 @@ static void CG_DrawClientScore(int y, score_t* score, float* color, float fade, 
 		hcolor[3] = fade * 0.7;
 		CG_FillRect(SB_SCORELINE_X + BIGCHAR_WIDTH + (SB_RATING_WIDTH / 2.0), y,
 		            640 - SB_SCORELINE_X - BIGCHAR_WIDTH, BIGCHAR_HEIGHT + 1, hcolor);
+	}
+	if (cg_scoreboardShowId.integer) {
+		int idX = 20 + ICON_SIZE + 8;
+		char playerID[MAX_QPATH];
+		Com_sprintf(playerID, sizeof(playerID), "%i", score->client);
+		CG_FontSelect(0);
+		CG_OSPDrawString(idX, y + 2 , playerID, colorWhite, 14, 14, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | DS_PROPORTIONAL, NULL);
 	}
 
 	CG_FontSelect(0);
@@ -948,7 +954,7 @@ static void CG_OSPDrawClientScore(int x, int y, const score_t* score, const floa
 	char string[1024];
 	clientInfo_t* ci;
 	vec3_t  headAngles;
-
+	
 	if (score->client < 0 || score->client >= cgs.maxclients)
 	{
 		Com_Printf("Bad score->client: %i\n", score->client);
@@ -976,19 +982,25 @@ static void CG_OSPDrawClientScore(int x, int y, const score_t* score, const floa
 		CG_DrawFlagModel(x + 4, y, 16.0f, 16.0f, TEAM_BLUE, qfalse);
 	}
 	trap_R_SetColor(NULL);
+
+	if (cg_scoreboardShowId.integer)
+	{	
+	Com_sprintf(string, 1024, "%i", score->client);
+	CG_OSPDrawString(x + 20, y + 4, string, colorWhite, 6, 10, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW, NULL);
+	}
 	VectorClear(headAngles);
 	headAngles[1] = 180.0f;
-	CG_DrawHead(x + 20, y, 16.0f, 16.0f, score->client, headAngles);
+	CG_DrawHead(x + 22, y, 16.0f, 16.0f, score->client, headAngles);
 
 	if (!cg.warmup && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze && cg.snap->ps.stats[ STAT_CLIENTS_READY ] & (1 << score->client))
 	{
-		CG_OSPDrawPic(x + 20, y, 16.0f, 16.0f, cgs.media.frozenFoeTagShader);
+		CG_OSPDrawPic(x + 22, y, 16.0f, 16.0f, cgs.media.frozenFoeTagShader);
 	}
 
 	if (score->ping == -1)
 	{
 		Com_sprintf(string, 1024, " ^2connecting^7      %s", ci->name);
-		CG_OSPDrawString(x + 32, y + 2, string, colorWhite, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+		CG_OSPDrawString(x + 34, y + 2, string, colorWhite, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 	}
 	else
 	{
@@ -1014,7 +1026,7 @@ static void CG_OSPDrawClientScore(int x, int y, const score_t* score, const floa
 			pingColor = 6;
 		}
 		Com_sprintf(string, 1024, "%3i", score->score);
-		CG_OSPDrawString(x + 44, y, string, color, 12, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+		CG_OSPDrawString(x + 46, y, string, color, 12, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 		if (cgs.gametype == GT_TEAM)
 		{
 			if (cgs.osp.gameTypeFreeze)
@@ -1025,18 +1037,18 @@ static void CG_OSPDrawClientScore(int x, int y, const score_t* score, const floa
 			{
 				Com_sprintf(string, 1024, "^%i%3i", score->scoreFlags < 0 ? 3 : 7, score->scoreFlags);
 			}
-			CG_OSPDrawString(x + 88, y + 4, string, color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+			CG_OSPDrawString(x + 90, y + 4, string, color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 		}
 		else
 		{
-			CG_OSPDrawString(x + 88, y + 4, " 0", color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+			CG_OSPDrawString(x + 90, y + 4, " 0", color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 		}
 		Com_sprintf(string, 1024, "^%i%3i", pingColor, score->ping);
-		CG_OSPDrawString(x + 116, y, string, color, 12, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+		CG_OSPDrawString(x + 118, y, string, color, 12, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 		Com_sprintf(string, 1024, "%3i", score->time);
-		CG_OSPDrawString(x + 148, y, string, color, 12, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+		CG_OSPDrawString(x + 150, y, string, color, 12, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 		Com_sprintf(string, 1024, "%s", &ci->name);
-		CG_OSPDrawString(x + 200, y + 4, string, color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+		CG_OSPDrawString(x + 202, y + 4, string, color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 	}
 	if (cgs.clientinfo[score->client].st)
 	{

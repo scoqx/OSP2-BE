@@ -11,6 +11,13 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 
 ## ✨ BE-Features
 
+## v0.058
+```
+* cg_shadows 2 -> -1
++ cg_altShadow
++ cg_altShadowColor
++ cg_scoreboardShowId
+```
 ## v0.057
 ```
 SHUD:
@@ -33,38 +40,6 @@ SHUD:
 
   * visflags: showempty only for weapon/playerStats
 ```
-## v0.055t
-```
-  * +wstats additional data
-    + Kill/death ratio (K/D)
-    + Damage given/recieved Ratio
-```
-## 0.054t1
-```
-  + cg_gunPos
-  + cg_shotGunTracer
-  + cg_railStaticRings
-  + cg_railRingsSize 
-
-  * cg_railTrailRadius -> cg_railRingsRadius
-  * cg_railTrailRotation -> cg_railRingsRotation
-  * cg_railTrailSpacing -> cg_railRingsSpacing
-```
-## 0.053
-```
-  + cg_noSlidingWindow
-```
-## 0.051/0.052
-```
-  * cg_drawOutline team colors fixed
-  * cg_drawRewards 2
-
-  SHUD:
-  + tempAcc styles options
-  + CurrentWeaponStats styles options
-  + scoresScore_NME	style
-  + Configs (m1rqlstyle, AGENT, diwoc_light, cybra, zoti)
-```
 ## Extended features
 ```
 Cvars:
@@ -78,11 +53,14 @@ Cvars:
 * cg_drawGun (reworked)
 + cg_drawGunForceAspect
 * cg_drawHitBox enabled. Server permission required
+* cg_drawRewards 2
++ cg_gunPos
 + cg_hitBoxColor <color>
 + cg_itemsRespawnAnimation
 + cg_enemyLightningColor
 + cg_uniqueColorTable
 + cg_noVoteBeep
++ cg_noSlidingWindow
 + cg_underwaterFovWarp
 + cg_drawOutline
 + cg_enemyOutlineColor
@@ -90,6 +68,12 @@ Cvars:
 + cg_enemyOutlineColorUnique
 + cg_enemyOutlineSize
 + cg_teamOutlineSize
++ cg_railRingsRadius
++ cg_railRingsRotation
++ cg_railRingsSpacing
++ cg_shotGunTracer
++ cg_railStaticRings
++ cg_railRingsSize 
 
 SHUD:
 + Border (border, borderColor)
@@ -99,13 +83,19 @@ SHUD:
 + Item pickup style 2
 + Color E/T transparency via color2
 + Armor bar over HP bar
-
++ tempAcc styles options
++ CurrentWeaponStats styles options
++ scoresScore_NME	style
++ Configs (m1rqlstyle, AGENT, diwoc_light, cybra, zoti, RTG)
 + Current Weapon Stats shows accuracy
   + CurrentWeaponStats
   + CurrentWeaponStats_icon
-
 * weaponlist:
   + border for choosen weapon
+
+* +wstats additional data
+  + Kill/death ratio (K/D)
+  + Damage given/recieved Ratio
 ```
 ![shot-Mar-27-2025_00 30 21](https://github.com/user-attachments/assets/11e8a2cf-8ef6-4984-a427-5af8ac9de650)
 
