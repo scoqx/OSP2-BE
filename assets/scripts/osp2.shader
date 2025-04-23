@@ -505,3 +505,15 @@ markShadowNew2
 		tcmod rotate 50
 	}	
 }
+
+markShadowNew3
+{
+	nopicmip
+  	nomipmaps
+	polygonOffset
+	{
+		map gfx/damage/shadow_fx02.tga
+		blendfunc add
+		rgbGen vertex
+	}	
+}
