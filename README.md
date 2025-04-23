@@ -12,7 +12,7 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 ## ✨ BE-Features
 ## v0.059
 ```
-* cg_altShadows/cg_altBlood multipy shaders support
+* cg_altShadows/cg_altBlood multiply shaders support
   * markShadowNew, markShadowNew2, markShadowNew3...
   * bloodExplosionNew, bloodExplosionNew2, bloodExplosionNew3...
  SHUD: 

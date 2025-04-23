@@ -156,7 +156,7 @@ SHUD:
 
 23.04.2025 be v0.058
 
-* cg_altShadows/cg_altBlood multipy shaders support
+* cg_altShadows/cg_altBlood multiply shaders support
   + cg_altShadow 2
   * markShadowNew, markShadowNew2, markShadowNew3...
   * bloodExplosionNew, bloodExplosionNew2, bloodExplosionNew3...
