@@ -154,12 +154,13 @@ SHUD:
 + cg_altShadowColor
 + cg_scoreboardShowId
 
-23.04.2025 be v0.058
+23.04.2025 be v0.059t
 
 * cg_altShadows/cg_altBlood multiply shaders support
   + cg_altShadow 2
   * markShadowNew, markShadowNew2, markShadowNew3...
   * bloodExplosionNew, bloodExplosionNew2, bloodExplosionNew3...
  SHUD: 
++ playerStats_damage_ratio
 + shadowColor for text
 * visflags: noempty for enemyscore, tempAcc

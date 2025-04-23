@@ -2756,6 +2756,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		{
 			Vector4Copy(colorBlack, color);
 		}
+		fade = shadowColor[3];
 		color[3] = fade;
 		trap_R_SetColor(color);
 

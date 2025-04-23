@@ -89,6 +89,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | playerStats_DR                | Количество полученного урона                                 |
 | playerStats_DG_icon           | Иконка для количества нанесённого урона                      |
 | playerStats_DR_icon           | Иконка для количества полученного урона                      |
+| playerStats_damage_ratio      | Коэфициент урона                                             |
 
 ## Команды
 
@@ -170,21 +171,22 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 - key2show - скрывать если не нажата кнопка +shudkey2
 - key3show - скрывать если не нажата кнопка +shudkey3
 - key4show - скрывать если не нажата кнопка +shudkey4
-- showempty - показывать пустые значения (пока для двух групп элементов, weapon/player stats)
+- showempty - показывать пустые значения `для  элементов, weapon/player stats, tempAcc, Score_NME`
 
 Можно указывать несколько вариантов через пробел:
 
     visflags teamonly key1show;
+
 ### Obituary1 - Obituary8
 
 - Style 1 - цвет команды на фоне ника, при этом можно задать прозрачность фона через `BgColor`.
-- Rect (3 аргумент) - устанавливает масимальную ширину строчки
+- Выделение событий клиента через bgcolor, первые 3 аргумента, т.е. RGB. Например `BgColor 0.3 0.3 0.3 0.3` Будет выделять ваши события прозрачным белым 
 
 ## tempAcc_current
 
 - Битовая маска для `Style`:
     1 - Дробное число с одним знакоп после запятой
-    2 - Цветное число
+    2 - Цвет числа определяется по границам 
 
 - Границы для цветов <30, <50, <60, >60
 
@@ -192,6 +194,8 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 
 - Style 1 — дробное число с одним знаком после запятой
 
-## Score_NME
+## PlayerStats_damage_ratio
 
-- Style 2 - выводит "0" если вы единственный игрок в игре, режим FFA
+- Битовая маска для `Style`
+    1 - выводит процент вместо коэфициента (Коэфициент * 100)
+    2 - Цвет числа определяется по границам 
