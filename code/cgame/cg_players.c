@@ -1889,8 +1889,9 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	trace_t     trace;
 	float       alpha;
 	float       yawAngle = cent->pe.legs.yawAngle;
-	qhandle_t   shadowMarkShader = cgs.media.shadowMarkShader;
-	vec4_t		color = { 1, 1, 1, 1 };
+	int         alt = cg_altShadow.integer;
+	qhandle_t shadowMarkShader;
+	vec4_t      color = { 1, 1, 1, 1 };
 	*shadowPlane = 0;
 
 	if (cg_shadows.integer == 0)
@@ -1923,20 +1924,32 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 		return qtrue;
 	}
 
-	
+
 
 
 	// bk0101022 - hack / FPE - bogus planes?
 	//assert( DotProduct( trace.plane.normal, trace.plane.normal ) != 0.0f )
 
 	// use alternate shader
+	if (alt <= 0)
+	{
+		shadowMarkShader = cgs.media.shadowMarkShader;
+	}
+	else if (alt < MAX_ALT_SHADERS)
+	{
+		shadowMarkShader = cgs.media.shadowMarkShaderNew[alt - 1];
+	}
+	else
+	{
+		shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
+	}
+
 	if (cg_altShadow.integer)
 	{
-		shadowMarkShader = cgs.media.shadowMarkShaderNew;
 		color[0] = cgs.be.altShadowColor[0];
 		color[1] = cgs.be.altShadowColor[1];
 		color[2] = cgs.be.altShadowColor[2];
-		trace.fraction = trace.fraction - 0.1875;
+		trace.fraction = trace.fraction - 0.1875; // brightness fix for alt shadows
 		if (trace.fraction < 0)
 		{
 			trace.fraction = 0;

@@ -451,10 +451,11 @@ void CG_OSPDrawNewCredits_f(void)
 	if (!cgs.be.showCredits)
 	{
 		cgs.be.showCredits = qtrue;
-		CG_Printf("Type /credits again to close");
 	}
 	else
+	{
 		cgs.be.showCredits = qfalse;
+	}
 }
 void CG_OSPMoTD_f(void)
 {

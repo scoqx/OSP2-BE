@@ -10,7 +10,16 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v0.059
+```
+* cg_altShadows/cg_altBlood multipy shaders support
+  * markShadowNew, markShadowNew2, markShadowNew3...
+  * bloodExplosionNew, bloodExplosionNew2, bloodExplosionNew3...
+ SHUD: 
++ shadowColor for text
+* visflags: noempty for enemyscore, tempAcc
 
+```
 ## v0.058
 ```
 * cg_shadows 2 -> -1

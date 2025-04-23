@@ -798,7 +798,7 @@ void CG_RegisterWeapon(int weaponNum)
 
 
 
-			for (i = 0; i < LIGHTNING_NUMBER_OF_SHADERS; ++i)
+			for (i = 0; i < MAX_ALT_SHADERS; ++i)
 			{
 				if (i == 0)//cg_altLightning 0
 				{
@@ -1354,12 +1354,12 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		int enemy_shaft_type = cg_altLightning.integer; // enemy
 		const qboolean nomip = cg_nomip.integer & 1;
 
-		if (shaft_type >= LIGHTNING_NUMBER_OF_SHADERS || shaft_type < 0)
+		if (shaft_type >= MAX_ALT_SHADERS || shaft_type < 0)
 		{
 			shaft_type = LIGHTNING_DEFAULT_SHADER;
 		}
 		if (!isOurClient && cg_enemyLightningColor.integer > 0 && // enemy
-		        (cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype == GT_FFA))
+		        (cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype <= GT_SINGLE_PLAYER))
 		{
 			beam.customShader = nomip ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
 			beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;

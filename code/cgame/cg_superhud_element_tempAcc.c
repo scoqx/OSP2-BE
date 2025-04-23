@@ -80,11 +80,15 @@ void CG_SHUDElementTempAccRoutine(void* context)
 
 	Vector4Copy(color, element->config.color.value.rgba);
 
-	if (entry->tempAccuracy > 0)
+	if (entry->tempAccuracy > 0 ||
+	        (entry->tempAccuracy == 0 &&
+	         element->config.visflags.isSet &&
+	         (element->config.visflags.value & SE_SHOW_EMPTY)))
 	{
 		CG_SHUDTextPrint(&element->config, &element->ctx);
 	}
 }
+
 
 
 

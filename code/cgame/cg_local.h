@@ -98,6 +98,8 @@ extern "C" {
 #define DEFAULT_REDTEAM_NAME        "Stroggs"
 #define DEFAULT_BLUETEAM_NAME       "Pagans"
 
+#define MAX_ALT_SHADERS 16
+
 typedef enum
 {
 	FOOTSTEP_NORMAL,
@@ -768,12 +770,11 @@ typedef struct
 	qhandle_t   unk_media_62;
 	qhandle_t   unk_media_63;
 
-#define LIGHTNING_NUMBER_OF_SHADERS 16
 #define LIGHTNING_DEFAULT_SHADER 0
-	qhandle_t   lightningBolt[LIGHTNING_NUMBER_OF_SHADERS];
-	qhandle_t   lightningBoltNoPicMip[LIGHTNING_NUMBER_OF_SHADERS];
-	qhandle_t   enemyLightningBolt[LIGHTNING_NUMBER_OF_SHADERS];
-	qhandle_t   enemyLightningBoltNoPicMip[LIGHTNING_NUMBER_OF_SHADERS];
+	qhandle_t   lightningBolt[MAX_ALT_SHADERS];
+	qhandle_t   lightningBoltNoPicMip[MAX_ALT_SHADERS];
+	qhandle_t   enemyLightningBolt[MAX_ALT_SHADERS];
+	qhandle_t   enemyLightningBoltNoPicMip[MAX_ALT_SHADERS];
 
 	qhandle_t   friendShader;
 	qhandle_t   frozenFoeTagShader;
@@ -813,7 +814,7 @@ typedef struct
 	qhandle_t   numberShaders[11];
 
 	qhandle_t   shadowMarkShader;
-	qhandle_t	shadowMarkShaderNew;
+	qhandle_t   shadowMarkShaderNew[MAX_ALT_SHADERS];
 
 	qhandle_t   botSkillShaders[5];
 
@@ -868,7 +869,7 @@ typedef struct
 	qhandle_t   bfgExplosionShaderNoPicMip;
 	qhandle_t   bloodExplosionShader;
 	qhandle_t   bloodExplosionNoPicMipShader;
-	qhandle_t   bloodExplosionSparkShader;
+	qhandle_t   bloodExplosionShaderNew[MAX_ALT_SHADERS];
 	// pre-alpha shaders
 	qhandle_t   plasmaOldBallShader;
 	qhandle_t   plasmaOldBallNoPicMipShader;
@@ -1581,9 +1582,9 @@ extern vmCvar_t         cg_railRingsSpacing;
 extern vmCvar_t         cg_railRingsSize;
 extern vmCvar_t         cg_railStaticRings;
 extern vmCvar_t         cg_gunPos;
-extern vmCvar_t			cg_altShadow;
-extern vmCvar_t			cg_altShadowColor;
-extern vmCvar_t			cg_scoreboardShowId;
+extern vmCvar_t         cg_altShadow;
+extern vmCvar_t         cg_altShadowColor;
+extern vmCvar_t         cg_scoreboardShowId;
 
 
 extern vmCvar_t         be_run;
@@ -1684,7 +1685,7 @@ int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int t
 
 void CG_OSPDrawStringPrepare(const char* from, char* to, int size);
 void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background);
-void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background, vec4_t border, vec4_t borderColor);
+void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor, vec4_t shadowColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background, vec4_t border, vec4_t borderColor);
 
 void CG_FontSelect(int index);
 int CG_FontIndexFromName(const char* name);
@@ -1713,8 +1714,8 @@ typedef struct
 
 text_command_t* CG_CompileText(const char* text);
 void CG_CompiledTextDestroy(text_command_t* root);
-void CG_OSPDrawRainbowFrameOptimized(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale);
-void CG_OSPDrawGradientRectOptimized(int startX, int startY, int rectWidth, int rectHeight, int direction, float speed, float gradientScale);
+void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale);
+void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight, int direction, float speed, float gradientScale);
 
 // flags for CG_DrawString
 enum
@@ -2254,7 +2255,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.057" // BE
+#define OSP_VERSION "be-0.059" // BE
 
 
 

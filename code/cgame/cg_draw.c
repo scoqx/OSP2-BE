@@ -2370,7 +2370,6 @@ void CG_OSPDrawNewCredits(void)
 {
 	int i;
 
-	// Координаты и размеры для текста
 	float x = 100.0f;
 	float y = 100.0f;
 	float w = 440.0f;
@@ -2390,51 +2389,67 @@ void CG_OSPDrawNewCredits(void)
 
 	char* credits[] =
 	{
-		"^7OSP2 BLACK EDITION",
-		"^7^Bhttps://github.com/scoqx/OSP2-BE",
-		"^7Based on OSP2 by Snems",
-		"^7^Bhttps://github.com/snems/OSP2",
-		"^7Special thanks to:",
-		"^7Snems, Mus1n, Mirage",
-		"^7MrX, Paragon, Zenx",
-		"^7Q3MSK.NET   http://q3msk.net",
+		"OSP2 BLACK EDITION",
+		"https://github.com/scoqx/OSP2-BE",
+		"Based on OSP2 by Snems",
+		"https://github.com/snems/OSP2",
+		"Special thanks to:",
+		"Snems, Mus1n, Mirage",
+		"MrX, Paragon, Zenx",
+		"Q3MSK.NET   http://q3msk.net",
 		"",
 		"",
 		"",
 		"Based on source codes:",
-		"^7OSP   ^Bhttps://www.orangesmoothie.org",
-		"^7Cyrax   ^Bhttps://github.com/ec-/baseq3a",
-		"^7x0ry   ^Bhttps://github.com/xq3e/engine",
-		"^7Neil Toronto   ^Bhttp://ra.is/unlagged",
-		"^7Ratmod   ^Bhttps://github.com/rdntcntrl/ratoa_gamecode",
+		"OSP   ^Bhttps://www.orangesmoothie.org",
+		"Cyrax   ^Bhttps://github.com/ec-/baseq3a",
+		"x0ry   ^Bhttps://github.com/xq3e/engine",
+		"Neil Toronto   ^Bhttp://ra.is/unlagged",
+		"Ratmod   ^Bhttps://github.com/rdntcntrl/ratoa_gamecode",
 		NULL
 	};
+	static int startTime = 0;
 
-	// if (!cgs.be.showCredits) {
-	//     return; // Если флаг не активен, не рисуем кредиты
-	// }
+	if (!cgs.be.showCredits)
+	{
+		startTime = 0;
+		return;
+	}
 
-	// Отрисовка фона
+	if (startTime == 0)
+	{
+		startTime = cg.time;
+	}
+
+	if (cg.time - startTime > 5000)
+	{
+		cgs.be.showCredits = qfalse;
+		startTime = 0;
+		return;
+	}
+
+	// background
 	CG_FillRect(x, y, w, h, color);
 
 	firstLineHeight = charHeight * 1.5f;
 	CG_FontSelect(6);
 
-	// Отрисовка первой строки (увеличенный размер)
+	// title
 	CG_OSPDrawStringNew(
 	    textX, textY,
 	    credits[0],
 	    colorWhite,
+	    colorBlack,
 	    charWidth * 1.5f, firstLineHeight,
 	    w,
 	    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
-	    NULL, border, colorWhite
+	    NULL, border, colorBlack
 	);
 
 	CG_FontSelect(4);
 	baseY = textY + firstLineHeight;
 
-	// Отрисовка остальных строк
+	// credits
 	for (i = 1; credits[i] != NULL; i++)
 	{
 		lineY = baseY + (i - 1) * charHeight;
@@ -2442,6 +2457,7 @@ void CG_OSPDrawNewCredits(void)
 		    textX, lineY,
 		    credits[i],
 		    colorWhite,
+		    colorBlack,
 		    charWidth, charHeight,
 		    w,
 		    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
@@ -2449,8 +2465,24 @@ void CG_OSPDrawNewCredits(void)
 		);
 	}
 
-	// Отрисовка границы с анимацией
-	CG_OSPDrawRainbowFrameOptimized(x, y, w, h, borderSize, direction, speed, gradientScale);
+	// version
+	CG_FontSelect(5);
+
+	CG_OSPDrawStringNew(
+	    x + w - 2, y,
+	    OSP_VERSION,
+	    colorBlack,
+	    colorWhite,
+	    8, 12,
+	    0,
+	    DS_SHADOW | DS_PROPORTIONAL | DS_HRIGHT,
+	    NULL, NULL, NULL
+	);
+
+
+
+	// border
+	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale);
 }
 
 /*

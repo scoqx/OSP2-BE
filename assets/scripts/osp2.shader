@@ -340,6 +340,7 @@ ObituariesBFGDirect {
 whiteAlpha
 {
 	nopicmip
+  	nomipmaps
 	{
 		map *white
 		blendFunc GL_ONE GL_ONE
@@ -350,6 +351,7 @@ whiteAlpha
 whiteAlpha_nocull
 {
 	nopicmip
+  	nomipmaps
 	cull none
 	{
 		map *white
@@ -362,6 +364,7 @@ whiteAlpha_cullback
 {
 	polygonOffset
 	nopicmip
+  	nomipmaps
 	cull back
 	{
 		map *white
@@ -373,6 +376,7 @@ whiteAlpha_cullback
 outlineWide
 {
 	nopicmip
+  	nomipmaps
     deformVertexes wave 1 sin 1.8 0 0 0
 	cull back
 	{
@@ -385,6 +389,7 @@ outlineWide
 outlineMedium
 {
 	nopicmip
+  	nomipmaps
     deformVertexes wave 1 sin 1.1 0 0 0
 	cull back
 	{
@@ -397,6 +402,7 @@ outlineMedium
 outlineThin
 {
 	nopicmip
+  	nomipmaps
     deformVertexes wave 1000 sin 0.45 0 1000 1
 	cull back
 	{
@@ -408,6 +414,8 @@ outlineThin
 
 plasmaExplosion_old
 {
+	nopicmip
+  	nomipmaps
 	cull disable
 	{
 		clampmap models/weaphits/plasmaboom_old.tga
@@ -420,6 +428,8 @@ plasmaExplosion_old
 
 sprites/plasma_old
 {
+	nopicmip
+  	nomipmaps
 	cull disable
 	{
 		clampmap sprites/plasma_old.tga
@@ -430,6 +440,8 @@ sprites/plasma_old
 
 gfx/damage/plasma_mrk_be
 {
+	nopicmip
+  	nomipmaps
 	polygonOffset
 	{
 		map gfx/damage/plasma_mrk_be.tga
@@ -439,11 +451,12 @@ gfx/damage/plasma_mrk_be
 	}
 }
 
-gfx/misc/spark
+bloodExplosionNew
 {
 	nopicmip
+  	nomipmaps
 	{
-		map gfx/misc/spark.jpg
+		map gfx/damage/altBlood.jpg
 		blendfunc add
 		rgbGen entity
 	}
@@ -451,16 +464,15 @@ gfx/misc/spark
 
 gfx/2d/arrow_down
 {
-    nopicmip
     {
        clampmap gfx/2d/arrow.tga
        blendFunc blend
        rgbGen vertex
     }
 }
+
 gfx/2d/arrow_up
 {
-    nopicmip
     {
        clampmap gfx/2d/arrow.tga
        blendFunc blend
@@ -468,12 +480,28 @@ gfx/2d/arrow_up
        rgbGen vertex
     }
 }
+
 markShadowNew
 {
+	nopicmip
+  	nomipmaps
 	polygonOffset
 	{
-		map gfx/misc/whiteCircle.tga
+		map gfx/damage/altShadow.tga
 		blendfunc add
 		rgbGen vertex
+	}	
+}
+
+markShadowNew2
+{
+	nopicmip
+  	nomipmaps
+	polygonOffset
+	{
+		clampmap gfx/damage/altShadow2.tga
+		blendfunc add
+		rgbGen vertex
+		tcmod rotate 50
 	}	
 }

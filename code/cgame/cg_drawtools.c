@@ -2645,7 +2645,10 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 	trap_R_SetColor(NULL);
 }
 
-void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background, vec4_t border, vec4_t borderColor)
+void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor,
+                         vec4_t shadowColor,
+                         float charWidth, float charHeight, int maxWidth, int flags,
+                         vec4_t background, vec4_t border, vec4_t borderColor)
 {
 	const font_metric_t* fm;
 	const float*     tc; // texture coordinates for char
@@ -2745,8 +2748,14 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 
 		// calculate shadow offsets
 		yy_add = xx_add = charWidth / 10.0f;
-
-		VectorCopy(colorBlack, color);
+		if (shadowColor)
+		{
+			VectorCopy(shadowColor, color);
+		}
+		else
+		{
+			Vector4Copy(colorBlack, color);
+		}
 		color[3] = fade;
 		trap_R_SetColor(color);
 
@@ -2901,8 +2910,8 @@ int CG_OSPDrawStringWithShadow(int x, int y, const char* str, int charWidth, int
 	return CG_OSPDrawStringOld(x, y, str, charWidth, charHeight, color, maxChars, qfalse);
 }
 
-void CG_OSPDrawGradientRectOptimized(int startX, int startY, int rectWidth, int rectHeight,
-                                     int direction, float speed, float gradientScale)
+void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight,
+                            int direction, float speed, float gradientScale)
 {
 	int i, j;
 	int block = 3; // "Качество" градиента. Больше = ниже
@@ -2949,8 +2958,8 @@ void CG_OSPDrawGradientRectOptimized(int startX, int startY, int rectWidth, int 
 }
 
 
-void CG_OSPDrawRainbowFrameOptimized(float x, float y, float width, float height,
-                                     int border, int direction, float speed, float gradientScale)
+void CG_OSPDrawGradientFrame(float x, float y, float width, float height,
+                             int border, int direction, float speed, float gradientScale)
 {
 	int outerX, outerY, outerW, outerH;
 
@@ -2959,11 +2968,11 @@ void CG_OSPDrawRainbowFrameOptimized(float x, float y, float width, float height
 	outerW = (int)(width + 2 * border);
 	outerH = (int)(height + 2 * border);
 
-	CG_OSPDrawGradientRectOptimized(outerX, outerY, outerW, border, direction, speed, gradientScale);
+	CG_OSPDrawGradientRect(outerX, outerY, outerW, border, direction, speed, gradientScale);
 
-	CG_OSPDrawGradientRectOptimized(outerX, (int)(y + height), outerW, border, direction, speed, gradientScale);
+	CG_OSPDrawGradientRect(outerX, (int)(y + height), outerW, border, direction, speed, gradientScale);
 
-	CG_OSPDrawGradientRectOptimized(outerX, (int)y, border, (int)height, direction, speed, gradientScale);
+	CG_OSPDrawGradientRect(outerX, (int)y, border, (int)height, direction, speed, gradientScale);
 
-	CG_OSPDrawGradientRectOptimized((int)(x + width), (int)y, border, (int)height, direction, speed, gradientScale);
+	CG_OSPDrawGradientRect((int)(x + width), (int)y, border, (int)height, direction, speed, gradientScale);
 }

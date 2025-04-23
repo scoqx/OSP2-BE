@@ -229,8 +229,19 @@ void CG_SHUDTextMakeContext(const superhudConfig_t* in, superhudTextContext_t* o
 		out->flags |= DS_SHADOW;
 	}
 
+	if (!config.shadowColor.isSet)
+	{
+		Vector4Copy(colorBlack, out->shadowColor);
+	}
+	else
+	{
+		Vector4Copy(config.shadowColor.value, out->shadowColor);
+	}
+
 	out->fontIndex = CG_FontIndexFromName(config.font.isSet ? config.font.value : "sansman");
 	out->width = SCREEN_WIDTH;
+
+
 	CG_SHUDConfigPickColor(&config, out->color, qtrue);
 	Vector4Copy(out->color, out->color_origin);
 }
@@ -466,6 +477,7 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 	                    ctx->coord.named.y,
 	                    ctx->text,
 	                    ctx->color,
+	                    ctx->shadowColor, // default shadow color - black
 	                    ctx->coord.named.w,
 	                    ctx->coord.named.h,
 	                    ctx->width,

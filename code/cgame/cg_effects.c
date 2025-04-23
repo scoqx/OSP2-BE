@@ -332,7 +332,8 @@ This is the spurt of blood when a character gets hit
 */
 void CG_Bleed(vec3_t origin, int entityNum)
 {
-	localEntity_t*   ex;
+	localEntity_t* ex;
+	int alt = cg_altBlood.integer;
 
 	if (!com_blood.integer)
 	{
@@ -350,9 +351,13 @@ void CG_Bleed(vec3_t origin, int entityNum)
 	ex->refEntity.rotation = rand() % 360;
 	ex->refEntity.radius = 24;
 
-	if (cg_altBlood.integer == 1)
+	if (alt)
 	{
-		ex->refEntity.customShader = cgs.media.bloodExplosionSparkShader;
+		if (alt < MAX_ALT_SHADERS)
+			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[alt - 1];
+		else
+			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[0];
+
 		ex->refEntity.shaderRGBA[0] = cgs.be.altBloodColor[0] * 255;
 		ex->refEntity.shaderRGBA[1] = cgs.be.altBloodColor[1] * 255;
 		ex->refEntity.shaderRGBA[2] = cgs.be.altBloodColor[2] * 255;
@@ -361,13 +366,9 @@ void CG_Bleed(vec3_t origin, int entityNum)
 	else
 	{
 		if ((cg_nomip.integer & 0x80) == 0)
-		{
 			ex->refEntity.customShader = cgs.media.bloodExplosionShader;
-		}
 		else
-		{
 			ex->refEntity.customShader = cgs.media.bloodExplosionNoPicMipShader;
-		}
 	}
 
 	// don't show player's own blood in view
@@ -376,6 +377,7 @@ void CG_Bleed(vec3_t origin, int entityNum)
 		ex->refEntity.renderfx |= RF_THIRD_PERSON | RF_DEPTHHACK;
 	}
 }
+
 
 
 

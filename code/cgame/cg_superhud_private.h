@@ -175,6 +175,11 @@ typedef struct
 	} rect;
 	struct
 	{
+		vec4_t value;
+		qboolean isSet;
+	} shadowColor;
+	struct
+	{
 		int value;
 		qboolean isSet;
 	} style;
@@ -630,6 +635,7 @@ typedef struct
 	int flags;
 	vec4_t color_origin;
 	vec4_t color;
+	vec4_t shadowColor;
 	vec4_t background;
 	vec4_t border;
 	vec4_t borderColor;

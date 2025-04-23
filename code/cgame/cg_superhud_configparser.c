@@ -35,7 +35,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseHlSize(configFileInf
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorder(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorderColor(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseStyle(configFileInfo_t* finfo, superhudConfig_t* config);
-static superhudConfigParseStatus_t CG_SHUDConfigCommandParseColor2(configFileInfo_t* finfo, superhudConfig_t* config);
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseShadowColor(configFileInfo_t* finfo, superhudConfig_t* config);
 
 static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 {
@@ -61,6 +61,7 @@ static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 	{ "monospace", CG_SHUDConfigCommandParseMonospace },
 	{ "offset", CG_SHUDConfigCommandParseOffset },
 	{ "rect", CG_SHUDConfigCommandParseRect },
+	{ "shadowColor", CG_SHUDConfigCommandParseShadowColor },
 	{ "text", CG_SHUDConfigCommandParseText },
 	{ "textalign", CG_SHUDConfigCommandParseTextAlign },
 	{ "textoffset", CG_SHUDConfigCommandParseTextOffset },
@@ -1104,6 +1105,20 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseStyle(configFileInfo
 
 	config->style.isSet = qtrue;
 	return SUPERHUD_CONFIG_OK;
+}
+
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseShadowColor(configFileInfo_t* finfo, superhudConfig_t* config)
+{
+	superhudConfigParseStatus_t status;
+
+	config->shadowColor.isSet = qfalse;
+
+	status = CG_SHUDParseVec4t(finfo, config->shadowColor.value);
+	if (status != SUPERHUD_CONFIG_OK) return status;
+
+	config->shadowColor.isSet = qtrue;
+
+	return status;
 }
 
 /*

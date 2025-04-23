@@ -395,7 +395,7 @@ vmCvar_t        cg_railStaticRings;
 vmCvar_t        cg_gunPos;
 vmCvar_t        cg_altShadow;
 vmCvar_t        cg_altShadowColor;
-vmCvar_t		cg_scoreboardShowId;
+vmCvar_t        cg_scoreboardShowId;
 
 
 vmCvar_t        be_run;
@@ -692,7 +692,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE },
 	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
 	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
-	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE },
+	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE },
 	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE },
@@ -703,7 +703,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_railRingsSpacing, "cg_railRingsSpacing", "5", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsSpacing },
 	{ &cg_railRingsSize, "cg_railRingsSize", "1.1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsSize },
 	{ &cg_railStaticRings, "cg_railStaticRings", "0", CVAR_ARCHIVE },
-	{ &cg_gunPos, "cg_gunPos", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_gunPos, "cg_gunPos", "1", CVAR_ARCHIVE  },
 	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_shadows},
 	{ &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altShadowColor },
@@ -1466,8 +1466,23 @@ static void CG_RegisterGraphics(void)
 	{
 		cgs.media.bloodExplosionNoPicMipShader = cgs.media.bloodExplosionShader;
 
+
 	}
-	cgs.media.bloodExplosionSparkShader = trap_R_RegisterShader("gfx/misc/spark");
+	for (i = 0; i < MAX_ALT_SHADERS; i++)
+	{
+		if (i == 0)
+		{
+			cgs.media.bloodExplosionShaderNew[0] = trap_R_RegisterShader("bloodExplosionNew");
+		}
+		else
+		{
+			cgs.media.bloodExplosionShaderNew[i] = trap_R_RegisterShader(va("bloodExplosionNew%i", i + 1));
+			if (!cgs.media.bloodExplosionShaderNew[i])
+			{
+				cgs.media.bloodExplosionShaderNew[i] = cgs.media.bloodExplosionShaderNew[0];
+			}
+		}
+	}
 
 	cgs.media.bulletFlashModel = trap_R_RegisterModel("models/weaphits/bullet.md3");
 	cgs.media.ringFlashModel = trap_R_RegisterModel("models/weaphits/ring02.md3");
@@ -1567,10 +1582,24 @@ static void CG_RegisterGraphics(void)
 	}
 
 	cgs.media.shadowMarkShader = trap_R_RegisterShader("markShadow");
-	cgs.media.shadowMarkShaderNew = trap_R_RegisterShader("markShadowNew");
+	for (i = 0; i < MAX_ALT_SHADERS; i++)
+	{
+		if (i == 0)
+		{
+			cgs.media.shadowMarkShaderNew[0] = trap_R_RegisterShader("markShadowNew");
+		}
+		else
+		{
+			cgs.media.shadowMarkShaderNew[i] = trap_R_RegisterShader(va("markShadowNew%i", i + 1));
+			if (!cgs.media.shadowMarkShaderNew[i])
+			{
+				cgs.media.shadowMarkShaderNew[i] = cgs.media.shadowMarkShaderNew[0];
+			}
+		}
+	}
+
 	cgs.media.wakeMarkShader = trap_R_RegisterShader("wake");
 	cgs.media.bloodMarkShader = trap_R_RegisterShader("bloodMark");
-
 	// get the shader handles
 	cgs.osp.hboxShader = trap_R_RegisterShader("gfx/misc/hbox");
 	cgs.osp.hboxShader_nocull = trap_R_RegisterShader("gfx/misc/hbox_nocull");
@@ -2115,12 +2144,12 @@ void CG_PrintNewCommandsBE_f(void)
 	int startIndex = -1;
 	int numCommands = sizeof(cvarTable) / sizeof(cvarTable[0]);
 
-	// Найдём индекс "cg_itemsRespawnAnimation"
+	// start from cg_itemsRespawnAnimation
 	for (i = 0; i < numCommands; i++)
 	{
 		if (!strcmp(cvarTable[i].cvarName, "cg_itemsRespawnAnimation"))
 		{
-			startIndex = i + 1; // начинаем со следующего
+			startIndex = i + 1;
 			break;
 		}
 	}
@@ -2145,8 +2174,7 @@ void CG_PrintNewCommandsBE_f(void)
 		{
 			CG_Printf("   %s\n", cvarTable[i].cvarName);
 		}
-
-		// Прерываемся, если достигли be_run
+		// end of list
 		if (!strcmp(cvarTable[i].cvarName, "be_run"))
 		{
 			break;
