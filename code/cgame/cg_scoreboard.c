@@ -163,18 +163,23 @@ static void CG_DrawClientScore(int y, score_t* score, float* color, float fade, 
 		}
 
 		// draw the wins / losses
-		if (cgs.gametype == GT_TOURNAMENT)
+	if (cgs.gametype == GT_TOURNAMENT)
+	{
+		int score_x = iconx;
+		if (cg_scoreboardShowId.integer)
+			score_x -= 20;
+		
+		Com_sprintf(string, sizeof(string), "%i/%i", ci->wins, ci->losses);
+		if (ci->handicap < 100 && !ci->botSkill)
 		{
-			Com_sprintf(string, sizeof(string), "%i/%i", ci->wins, ci->losses);
-			if (ci->handicap < 100 && !ci->botSkill)
-			{
-				CG_DrawSmallStringColor(iconx, y, string, color, DS_HLEFT | DS_VCENTER, 2);
-			}
-			else
-			{
-				CG_DrawSmallStringColor(iconx, y, string, color, DS_HLEFT, 2);
-			}
+			CG_DrawSmallStringColor(score_x, y, string, color, DS_HLEFT | DS_VCENTER, 2);
 		}
+		else
+		{
+			CG_DrawSmallStringColor(score_x, y, string, color, DS_HLEFT, 2);
+		}
+	}	
+
 	}
 
 	// draw the face
