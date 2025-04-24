@@ -614,11 +614,6 @@ void* CG_SHUDElementCreatePlayerStatsDGIcon(const superhudConfig_t* config);
 void CG_SHUDElementPlayerStatsRoutine(void* context);
 void CG_SHUDElementPlayerStatsDestroy(void* context);
 
-void* CG_SHUDElementOTRealFireTime(const superhudConfig_t* config);
-void CG_SHUDElementObserverToolsRoutine(void* context);
-void CG_SHUDElementObserverToolsCDestroy(void* context);
-
-
 
 /*
  * cg_superhud_util.c

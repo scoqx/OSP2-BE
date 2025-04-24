@@ -66,6 +66,9 @@ void CG_SHUDElementSBAmCRoutine(void* context)
 		Vector4Copy(element->config.color.value.rgba, element->ctx.color);
 	}
 
+
+
+	
 	element->ctx.text = va(element->config.text.value, ammo > 0 ? ammo : 0);
 
 	CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);
