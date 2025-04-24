@@ -487,6 +487,29 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 	                    ctx->borderColor);
 }
 
+void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* ctx, qboolean colorOverride)
+{
+	if (!ctx->text || !ctx->text[0])
+	{
+		return;
+	}
+	if (colorOverride)
+	CG_SHUDConfigPickColor(cfg, ctx->color, qfalse);
+	
+	CG_FontSelect(ctx->fontIndex);
+	CG_OSPDrawStringNew(ctx->coord.named.x,
+	                    ctx->coord.named.y,
+	                    ctx->text,
+	                    ctx->color,
+	                    ctx->shadowColor, // default shadow color - black
+	                    ctx->coord.named.w,
+	                    ctx->coord.named.h,
+	                    ctx->width,
+	                    ctx->flags,
+	                    ctx->background,
+	                    ctx->border,
+	                    ctx->borderColor);
+}
 
 static void CG_SHUDBarPreparePrintLTR(const superhudBarContext_t* ctx, float value, drawBarCoords_t* coords)
 {

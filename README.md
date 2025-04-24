@@ -10,6 +10,12 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v.0.059e
+```
++ StatusBar_AmmoCount shading when realoading
+  * dark grey by default, or color2 is set
+  * disable by style (any)
+```
 ## v0.059t
 ```
 * cg_altShadows/cg_altBlood multiply shaders support

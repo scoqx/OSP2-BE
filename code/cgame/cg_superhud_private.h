@@ -704,6 +704,7 @@ void CG_SHUDDrawStretchPic(superhudCoord_t coord, const superhudCoord_t coordPic
 void CG_SHUDDrawMakeContext(const superhudConfig_t* cfg, superhudDrawContext_t* out);
 
 void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* pos);
+void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* pos, qboolean colorOverride);
 void CG_SHUDDrawStretchPicCtx(const superhudConfig_t* cfg, superhudDrawContext_t* out);
 void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, float value);
 qboolean CG_SHUDFill(const superhudConfig_t* cfg);

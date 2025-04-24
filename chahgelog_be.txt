@@ -164,3 +164,9 @@ SHUD:
 + playerStats_damage_ratio
 + shadowColor for text
 * visflags: noempty for enemyscore, tempAcc
+
+24 be v.0.059e
+
++ StatusBar_AmmoCount shading when realoading
+  * dark grey by default, or color2 is set
+  * disable by style (any)

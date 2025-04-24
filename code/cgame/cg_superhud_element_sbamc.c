@@ -38,22 +38,40 @@ void CG_SHUDElementSBAmCRoutine(void* context)
 {
 	shudElementStatusbarAmmoCount* element = (shudElementStatusbarAmmoCount*)context;
 	int wp;
+	int  isFiring;
 	int ammo;
 
 	if (!cg.snap)
 	{
 		return;
-	}
+	}	
 
 	wp = cg.snap->ps.weapon;
+
+	isFiring = (cg.predictedPlayerState.weaponstate == WEAPON_FIRING) ? 1 : 0;
 
 	if (wp == WP_NONE || wp == WP_GAUNTLET) return;
 
 	ammo = CG_SHUDGetAmmo(wp);
 
+	if (isFiring && !element->config.style.isSet) // any style to ignore shading
+	{
+		if (element->config.color2.isSet)
+		Vector4Copy(element->config.color2.value.rgba, element->ctx.color);
+		else
+		Vector4Copy(colorDkGrey, element->ctx.color);
+	}
+	else
+	{
+		Vector4Copy(element->config.color.value.rgba, element->ctx.color);
+	}
+
+
+
+	
 	element->ctx.text = va(element->config.text.value, ammo > 0 ? ammo : 0);
 
-	CG_SHUDTextPrint(&element->config, &element->ctx);
+	CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);
 }
 
 void CG_SHUDElementSBAmCDestroy(void* context)
