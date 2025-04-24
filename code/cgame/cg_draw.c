@@ -2370,44 +2370,23 @@ void CG_OSPDrawNewCredits(void)
 {
 	int i;
 
-	float x = 100.0f;
-	float y = 100.0f;
-	float w = 440.0f;
-	float h = 250.0f;
+	float x = 150.0f;
+	float y = 64.0f;
+	float w = 340.0f;
+	float h = 60.0f;
 	float charHeight = 14, charWidth = 8;
-	float textX = (440 / 2) + x;
+	float textX = (w / 2) + x;
 	float textY = y + 2.0f;
 	float lineY;
 	int borderSize = 10;
-	int direction = 12;
-	float speed = 0.005f;
+	int direction = 24;
+	float speed = 0.0125f;
 	float gradientScale = 0.05f;
-	vec4_t color = { 0.05, 0.05, 0.05, 0.8 };
+	vec4_t color = { 0, 0, 0, 0.8 };
 	vec4_t border = { 0, 0, 0, 2 };
-	float firstLineHeight;
-	float baseY;
 
-	char* credits[] =
-	{
-		"OSP2 BLACK EDITION",
-		"https://github.com/scoqx/OSP2-BE",
-		"Based on OSP2 by Snems",
-		"https://github.com/snems/OSP2",
-		"Special thanks to:",
-		"Snems, Mus1n, Mirage",
-		"MrX, Paragon, Zenx",
-		"Q3MSK.NET   http://q3msk.net",
-		"",
-		"",
-		"",
-		"Based on source codes:",
-		"OSP   ^Bhttps://www.orangesmoothie.org",
-		"Cyrax   ^Bhttps://github.com/ec-/baseq3a",
-		"x0ry   ^Bhttps://github.com/xq3e/engine",
-		"Neil Toronto   ^Bhttp://ra.is/unlagged",
-		"Ratmod   ^Bhttps://github.com/rdntcntrl/ratoa_gamecode",
-		NULL
-	};
+	char* credits = "Lol++";
+
 	static int startTime = 0;
 
 	if (!cgs.be.showCredits)
@@ -2430,50 +2409,30 @@ void CG_OSPDrawNewCredits(void)
 
 	// background
 	CG_FillRect(x, y, w, h, color);
-
-	firstLineHeight = charHeight * 1.5f;
+	
 	CG_FontSelect(6);
-
-	// title
-	CG_OSPDrawStringNew(
-	    textX, textY,
-	    credits[0],
-	    colorWhite,
-	    colorBlack,
-	    charWidth * 1.5f, firstLineHeight,
-	    w,
-	    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
-	    NULL, border, colorBlack
-	);
-
-	CG_FontSelect(4);
-	baseY = textY + firstLineHeight;
-
+	
 	// credits
-	for (i = 1; credits[i] != NULL; i++)
-	{
-		lineY = baseY + (i - 1) * charHeight;
 		CG_OSPDrawStringNew(
-		    textX, lineY,
-		    credits[i],
-		    colorWhite,
-		    colorBlack,
-		    charWidth, charHeight,
-		    w,
-		    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
-		    NULL, NULL, NULL
+			textX, textY,
+			credits,
+			colorBlack,
+			colorRed,
+			charWidth, charHeight,
+			0,
+			DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
+			NULL, border, colorBlack
 		);
-	}
 
+	
 	// version
 	CG_FontSelect(5);
-
 	CG_OSPDrawStringNew(
 	    x + w - 2, y,
 	    OSP_VERSION,
 	    colorBlack,
-	    colorWhite,
-	    8, 12,
+	    colorRed,
+	    charWidth, charHeight,
 	    0,
 	    DS_SHADOW | DS_PROPORTIONAL | DS_HRIGHT,
 	    NULL, NULL, NULL

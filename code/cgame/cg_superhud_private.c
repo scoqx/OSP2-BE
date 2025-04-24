@@ -166,6 +166,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "playerStats_DG_icon", SE_IM, CG_SHUDElementCreatePlayerStatsDGIcon, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
 	{ "playerStats_DR_icon", SE_IM, CG_SHUDElementCreatePlayerStatsDRIcon, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
 	{ "playerStats_damageRatio", SE_IM, CG_SHUDElementCreatePlayerStatsDamageRatio, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
+	{ "ot_firing", 0, CG_SHUDElementOTRealFireTime, CG_SHUDElementObserverToolsRoutine, CG_SHUDElementObserverToolsCDestroy },
 	{ NULL },
 };
 
