@@ -30,7 +30,7 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
  SHUD: 
 + playerStats_damage_ratio
 + shadowColor for text
-* visflags: noempty for enemyscore, tempAcc
+* visflags: showempty for enemyscore, tempAcc
 ```
 ## v0.058
 ```
