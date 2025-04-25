@@ -1842,12 +1842,25 @@ void CG_ScanForCrosshairEntity(void)
 		}
 		return;
 	}
-
-	// if the player is in fog, don't show it
+	// if the player is in fog, don't show it — unless it's a teammate in team game
 	content = trap_CM_PointContents(trace.endpos, 0);
 	if (content & CONTENTS_FOG)
 	{
-		return;
+		if (cgs.gametype >= GT_TEAM)
+		{
+			if (cgs.clientinfo[trace.entityNum].team == cg.snap->ps.persistant[PERS_TEAM])
+			{
+
+			}
+			else
+			{
+				return;
+			}
+		}
+		else
+		{
+			return;
+		}
 	}
 
 	// if the player is invisible, don't show it
