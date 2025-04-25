@@ -44,7 +44,7 @@ void CG_SHUDElementSBAmCRoutine(void* context)
 	if (!cg.snap)
 	{
 		return;
-	}	
+	}
 
 	wp = cg.snap->ps.weapon;
 
@@ -57,9 +57,9 @@ void CG_SHUDElementSBAmCRoutine(void* context)
 	if (isFiring && !element->config.style.isSet) // any style to ignore shading
 	{
 		if (element->config.color2.isSet)
-		Vector4Copy(element->config.color2.value.rgba, element->ctx.color);
+			Vector4Copy(element->config.color2.value.rgba, element->ctx.color);
 		else
-		Vector4Copy(colorDkGrey, element->ctx.color);
+			Vector4Copy(colorDkGrey, element->ctx.color);
 	}
 	else
 	{
@@ -68,7 +68,7 @@ void CG_SHUDElementSBAmCRoutine(void* context)
 
 
 
-	
+
 	element->ctx.text = va(element->config.text.value, ammo > 0 ? ammo : 0);
 
 	CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);

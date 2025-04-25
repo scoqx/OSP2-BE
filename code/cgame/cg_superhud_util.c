@@ -494,8 +494,8 @@ void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* ctx
 		return;
 	}
 	if (colorOverride)
-	CG_SHUDConfigPickColor(cfg, ctx->color, qfalse);
-	
+		CG_SHUDConfigPickColor(cfg, ctx->color, qfalse);
+
 	CG_FontSelect(ctx->fontIndex);
 	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                    ctx->coord.named.y,

@@ -1844,7 +1844,7 @@ void CG_ScanForCrosshairEntity(void)
 	}
 	// if the player is in fog, don't show it — unless it's a teammate in team game
 	content = trap_CM_PointContents(trace.endpos, 0);
-	if (content & CONTENTS_FOG)
+	if (content & CONTENTS_FOG && !cg.crosshairIgnoreFog)
 	{
 		if (cgs.gametype >= GT_TEAM)
 		{

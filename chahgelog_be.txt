@@ -165,8 +165,14 @@ SHUD:
 + shadowColor for text
 * visflags: noempty for enemyscore, tempAcc
 
-24 be v.0.059e
+24.04.2025 be v.0.059e
 
 + StatusBar_AmmoCount shading when realoading
   * dark grey by default, or color2 is set
   * disable by style (any)
+
+24.04.2025 be v.0.059j
+
+* crosshairNames
+  + teammates names in fog
+  + ignore fog on maps: Asylum, Quarantine, oxodm32, oxodm90, rjldm3, gen_q1dm1

@@ -1736,6 +1736,51 @@ void CG_StartMusic(void)
 	trap_S_StartBackgroundTrack(parm1, parm2);
 }
 
+/*
+======================
+CG_CheckFogBypass
+Ignore fog on some maps
+======================
+*/
+void CG_CheckFogBypass(void)
+{
+	char mapname[64];
+	int i;
+	const char* fogBypassMaps[] = { "oxodm68.bsp",
+	                                "oxodm32.bsp",
+	                                "quarantine.bsp",
+	                                "asylum.bsp",
+	                                "rjldm3.bsp",
+	                                "gen_q1dm1.bsp",
+	                                NULL
+	                              };
+
+	if (cgs.mapname && cgs.mapname[0] != '\0')
+	{
+		const char* mapPrefix = "maps/";
+		const char* mapStart = strstr(cgs.mapname, mapPrefix);
+
+		if (mapStart)
+		{
+			Q_strncpyz(mapname, mapStart + strlen(mapPrefix), sizeof(mapname));
+		}
+		else
+		{
+			Q_strncpyz(mapname, cgs.mapname, sizeof(mapname));
+		}
+
+		for (i = 0; fogBypassMaps[i] != NULL; i++)
+		{
+			if (Q_stricmp(fogBypassMaps[i], mapname) == 0)
+			{
+				cg.crosshairIgnoreFog = 1;
+				return;
+			}
+		}
+	}
+
+	cg.crosshairIgnoreFog = 0;
+}
 
 /*
 =================
@@ -1920,6 +1965,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 		/****/
 		CG_OSPCvarsRestrictValues();
+
+		/*Check maps for buggy fog*/
+		CG_CheckFogBypass();
 
 		/* MOTD */
 		for (i = 0, cgs.osp.numberOfStringsMotd = 0;

@@ -10,7 +10,13 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
-## v.0.059e
+## v0.059j
+```
+* crosshairNames
+  + teammates names in fog
+  + ignore fog on maps: Asylum, Quarantine, oxodm32, oxodm90, rjldm3, gen_q1dm1
+```
+## v0.059e
 ```
 + StatusBar_AmmoCount shading when realoading
   * dark grey by default, or color2 is set
@@ -32,28 +38,6 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 + cg_altShadow
 + cg_altShadowColor
 + cg_scoreboardShowId
-```
-## v0.057
-```
-SHUD:
-+ hud/California.cfg (by Musin)
-+ hud resourses (gfx/2d/hudres/)
-```
-## v0.056x
-```
-  + cg_noSlidingWindow 2 option 
-    * 1 disable MoTD
-    * 2 disable any sliding window
-  + cg_shadows 2 option - static player shadow
-  SHUD:
-  + weaponStats_## - accuracy
-  + weaponStats_##_icon
-  + playerStats_DG
-  + playerStats_DR
-  + playerStats_DG_icon
-  + playerStats_DR_icon
-
-  * visflags: showempty only for weapon/playerStats
 ```
 ## Extended features
 ```
@@ -91,6 +75,15 @@ Cvars:
 + cg_railRingsSize 
 
 SHUD:
+Elements:
++ tempAcc_current - temp acc for lg
++ weaponStats_## - accuracy
++ weaponStats_##_icon
++ playerStats_DG
++ playerStats_DR
++ playerStats_DG_icon
++ playerStats_DR_icon
+Other:
 + Border (border, borderColor)
 * Background for text elements (reworked)
 + Background for client events in obituaries
@@ -101,12 +94,13 @@ SHUD:
 + tempAcc styles options
 + CurrentWeaponStats styles options
 + scoresScore_NME	style
-+ Configs (m1rqlstyle, AGENT, diwoc_light, cybra, zoti, RTG)
++ Configs (m1rqlstyle, AGENT, diwoc_light, cybra, zoti, RTG, California)
 + Current Weapon Stats shows accuracy
   + CurrentWeaponStats
   + CurrentWeaponStats_icon
 * weaponlist:
   + border for choosen weapon
+* visflags: showempty only for weapon/playerStats  
 
 * +wstats additional data
   + Kill/death ratio (K/D)
