@@ -183,3 +183,7 @@ SHUD:
   * 2 - disable icon, 4 - disable float sprite, 8 - disable sound
 * restricted names in scoreboard
 * restricted strings have "." instead of "..." at the end
+
+27.04.2025 be v0.059q
+
+* tempAcc 1 sec timeout restored

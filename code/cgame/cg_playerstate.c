@@ -204,7 +204,6 @@ void CG_UpdateWeaponTracking(int weapon)
 	static int lastHitCount = 0;
 	int currentAmmo, currentHits;
 
-	// Получаем указатель на структуру отслеживания оружия
 	weaponStats_t* ws = &cgs.be.weaponStats[weapon];
 	playerState_t* ps = &cg.snap->ps;
 
@@ -239,7 +238,12 @@ void CG_UpdateWeaponTracking(int weapon)
 	// Если оружие уже "на треке", обновляем данные
 	if (ws->onTrack)
 	{
-		ws->lastAttackTime = cg.time;
+		// Только если сейчас атака — обновляем lastAttackTime
+		if (ps->weaponstate == WEAPON_FIRING)
+		{
+			ws->lastAttackTime = cg.time;
+		}
+
 		ws->hitsCurrent = currentHits;
 		ws->lastAmmo = currentAmmo;
 		return;
@@ -259,6 +263,7 @@ void CG_UpdateWeaponTracking(int weapon)
 		lastHitCount = currentHits;
 	}
 }
+
 
 
 
