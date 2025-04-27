@@ -144,6 +144,21 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 
 - Style 2 - вывод времени подбора предмета (без названия предмета)
 
+### Font
+
+Доступные шрифты:
+
+- id
+- idblock
+- sansman
+- m1rage
+- elite_emoji
+- diablo
+- eternal
+- qlnumbers
+- elite
+- elitebigchars
+
 ### WeaponList 
 
 - Список оружия. Командой `Rect` указывается размер иконки одного оружия. Размер текстового поля определяется автоматически исходя из размера шрифта. 

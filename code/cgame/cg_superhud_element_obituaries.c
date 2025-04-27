@@ -81,6 +81,27 @@ void* CG_SHUDElementObituaries8Create(const superhudConfig_t* config)
 	return CG_SHUDElementObituariesCreate(config, 8);
 }
 
+static void CG_SHUDElementObituariesUpdatePosition(shudElementObituaries_t* element, superhudObituariesEntry_t* entry)
+{
+	CG_FontSelect(element->ctxAttacker.fontIndex); // update font metrics to make right calculation
+	entry->runtime.attackerWidth = CG_OSPDrawStringLenPix(entry->runtime.attackerName, element->config.fontsize.value[0], element->ctxAttacker.flags, entry->runtime.maxNameLenPix);
+	CG_FontSelect(element->ctxTarget.fontIndex);
+	entry->runtime.targetWidth = CG_OSPDrawStringLenPix(entry->runtime.targetName, element->config.fontsize.value[0], element->ctxTarget.flags, entry->runtime.maxNameLenPix);
+
+	if (element->config.alignH.value == SUPERHUD_ALIGNH_LEFT)
+	{
+		entry->runtime.baseX = element->config.rect.value[0];
+	}
+	else if (element->config.alignH.value == SUPERHUD_ALIGNH_RIGHT)
+	{
+		entry->runtime.baseX = element->config.rect.value[0] + element->config.rect.value[2] - (entry->runtime.attackerWidth + element->ctxMod.coord.named.w + entry->runtime.targetWidth + 2 * entry->runtime.spacing);
+	}
+	else // SUPERHUD_ALIGNH_CENTER
+	{
+		entry->runtime.baseX = element->config.rect.value[0] + (element->config.rect.value[2] / 2) - (element->ctxMod.coord.named.w / 2) - entry->runtime.attackerWidth;
+	}
+}
+
 static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* element, superhudObituariesEntry_t* entry)
 {
 	entry->runtime.maxVisibleChars = 13;
@@ -114,25 +135,6 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 		Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name, MAX_QPATH);
 	}
 
-
-	CG_FontSelect(element->ctxAttacker.fontIndex); // update font metrics to make right calculation
-
-	entry->runtime.attackerWidth = CG_OSPDrawStringLenPix(entry->runtime.attackerName, element->config.fontsize.value[0], element->ctxAttacker.flags, entry->runtime.maxNameLenPix);
-	CG_FontSelect(element->ctxTarget.fontIndex);
-	entry->runtime.targetWidth = CG_OSPDrawStringLenPix(entry->runtime.targetName, element->config.fontsize.value[0], element->ctxTarget.flags, entry->runtime.maxNameLenPix);
-	if (element->config.alignH.value == SUPERHUD_ALIGNH_LEFT)
-	{
-		entry->runtime.baseX = element->config.rect.value[0];
-	}
-	else if (element->config.alignH.value == SUPERHUD_ALIGNH_RIGHT)
-	{
-		entry->runtime.baseX = element->config.rect.value[0] + element->config.rect.value[2] - (entry->runtime.attackerWidth + element->ctxMod.coord.named.w + entry->runtime.targetWidth + 2 * entry->runtime.spacing);
-	}
-	else // SUPERHUD_ALIGNH_CENTER
-	{
-		entry->runtime.baseX = element->config.rect.value[0] + (element->config.rect.value[2] / 2) - (element->ctxMod.coord.named.w / 2) - entry->runtime.attackerWidth;
-	}
-
 	entry->runtime.isInitialized = qtrue;
 }
 
@@ -160,17 +162,10 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		CG_SHUDElementObituariesInitializeRuntime(element, entry);
 	}
 
+	CG_SHUDElementObituariesUpdatePosition(element, entry);
+
 	currentX = entry->runtime.baseX;
-	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target) // Фон для всего элемента
-	{
-		CG_FillRect(
-		    entry->runtime.baseX - (element->ctxMod.coord.named.h * 0.05), // X
-		    element->ctxAttacker.coord.named.y - (element->ctxAttacker.coord.named.h * 0.55), // Y
-		    entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->ctxMod.coord.named.h * 0.15), // Ширина
-		    element->ctxAttacker.coord.named.h * 1.1, // Высота
-		    element->config.bgcolor.value // Цвет и прозрачность из конфига
-		);
-	}
+
 	if (entry->attacker != entry->target)
 	{
 		element->ctxAttacker.text = entry->runtime.attackerName;
@@ -209,7 +204,6 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	element->ctxTarget.width = entry->runtime.maxNameLenPix;
 	CG_SHUDTextPrint(&element->config, &element->ctxTarget);
 }
-
 
 static void CG_SHUDObituarySetTeamColor(vec4_t color, int team)
 {
