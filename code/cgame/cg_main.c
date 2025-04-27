@@ -697,7 +697,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE },
-	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE },
+	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_shotGunTracer, "cg_shotGunTracer", "1", CVAR_ARCHIVE },
 	{ &cg_railRingsRadius, "cg_railRingsRadius", "4.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsRadius },

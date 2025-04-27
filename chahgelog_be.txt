@@ -176,3 +176,10 @@ SHUD:
 * crosshairNames
   + teammates names in fog
   + ignore fog on maps: Asylum, Quarantine, oxodm32, oxodm90, rjldm3, gen_q1dm1
+
+27.04.2025 be v0.059o
+
+* cg_drawRewards bitmask
+  * 2 - disable icon, 4 - disable float sprite, 8 - disable sound
+* restricted names in scoreboard
+* restricted strings have "." instead of "..." at the end

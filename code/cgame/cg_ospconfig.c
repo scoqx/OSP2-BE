@@ -243,14 +243,12 @@ void CG_OSPConfigXHitBoxSet(int value)
 	{
 		value = 0;
 	}
-
-	// Получаем системную информацию и проверяем, включены ли чит-коды
+	// ignore x_hck if cheats are enabled
 	cheatsStr = Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "sv_cheats");
 	if (cheatsStr[0] == '1')
 	{
 		value = 1;
 	}
-
 	cgs.osp.serverConfigXHitBox = value;
 }
 

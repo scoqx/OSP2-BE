@@ -100,8 +100,8 @@ static void CG_DrawClientScore(int y, score_t* score, float* color, float fade, 
 
 	ci = &cgs.clientinfo[score->client];
 
-	iconx = SB_BOTICON_X + BIGCHAR_WIDTH;
-	headx = SB_HEAD_X + BIGCHAR_WIDTH;
+	iconx = SB_BOTICON_X + BIGCHAR_WIDTH; //48
+	headx = SB_HEAD_X + BIGCHAR_WIDTH; // 80
 
 	// draw the handicap or bot skill marker (unless player has flag)
 	if (ci->powerups & (1 << PW_NEUTRALFLAG))
@@ -271,6 +271,8 @@ static void CG_DrawClientScore(int y, score_t* score, float* color, float fade, 
 		hcolor[3] = fade * 0.7;
 		CG_FillRect(SB_SCORELINE_X + BIGCHAR_WIDTH + (SB_RATING_WIDTH / 2.0), y,
 		            640 - SB_SCORELINE_X - BIGCHAR_WIDTH, BIGCHAR_HEIGHT + 1, hcolor);
+	// 640 - 80 - 16 = 544 - 384 = 256
+	// 128 + 16 * 16 = 384 				
 	}
 	if (cg_scoreboardShowId.integer)
 	{
@@ -285,7 +287,7 @@ static void CG_DrawClientScore(int y, score_t* score, float* color, float fade, 
 	CG_OSPDrawString(128, y, string, color, 16, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 
 	CG_FontSelect(2);
-	CG_OSPDrawString(128 + 16 * 16, y, ci->name, color, 16, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | DS_PROPORTIONAL, NULL);
+	CG_OSPDrawString(128 + 16 * 16, y, ci->name, color, 16, 16, 256, DS_HLEFT | DS_SHADOW | DS_PROPORTIONAL, NULL);
 
 	// add the "ready" marker for intermission exiting
 	if (cg.warmup == 0 && cg.predictedPlayerState.pm_type != PM_INTERMISSION)
@@ -1054,7 +1056,8 @@ static void CG_OSPDrawClientScore(int x, int y, const score_t* score, const floa
 		Com_sprintf(string, 1024, "%3i", score->time);
 		CG_OSPDrawString(x + 150, y, string, color, 12, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 		Com_sprintf(string, 1024, "%s", &ci->name);
-		CG_OSPDrawString(x + 202, y + 4, string, color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+		CG_OSPDrawString(x + 202, y + 4, string, color, 8, 12, 102, DS_HLEFT | DS_SHADOW, NULL);
+		
 	}
 	if (cgs.clientinfo[score->client].st)
 	{

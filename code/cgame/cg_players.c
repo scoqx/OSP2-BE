@@ -24,6 +24,41 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../qcommon/l_crc.h"
 
+static qboolean CG_IsEnemy(const clientInfo_t *ci) {
+    if (cgs.gametype <= GT_SINGLE_PLAYER) {
+        return qtrue;
+    }
+
+    if (cgs.gametype >= GT_TEAM) {
+        int clientIndex = (cg.clientNum >= 0 && cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR)
+                          ? cg.snap->ps.clientNum : cg.clientNum;
+
+        if ((cgs.clientinfo[clientIndex].infoValid && cgs.clientinfo[clientIndex].rt == ci->rt) ||
+            (cgs.clientinfo[cg.clientNum].infoValid &&
+             cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR &&
+             cgs.clientinfo[cg.snap->ps.clientNum].infoValid &&
+             ci->rt == cgs.clientinfo[cg.snap->ps.clientNum].rt))
+        {
+            return qfalse;
+        }
+
+        return qtrue;
+    }
+
+    return qfalse;
+}
+
+// static qboolean CG_IsTeammate(const clientInfo_t* ci) {
+// 	const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
+
+// 	// Если мы за спектатора, считаем команду Red нашей командой
+// 	if (local->rt == TEAM_SPECTATOR) {
+// 		return (ci->rt == TEAM_RED) ? qtrue : qfalse;
+// 	}
+
+// 	return (local->rt == ci->rt) ? qtrue : qfalse;
+// }
+
 char*    cg_customSoundNames[MAX_CUSTOM_SOUNDS] =
 {
 	"*death1.wav",
@@ -1808,40 +1843,43 @@ static void CG_PlayerSprites(centity_t* cent)
 		return;
 	}
 
-	if (cent->currentState.eFlags & EF_AWARD_IMPRESSIVE)
+	if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSPRITE))
 	{
-		CG_PlayerFloatSprite(cent, cgs.media.medalImpressive, NULL);
-		return;
-	}
+		if (cent->currentState.eFlags & EF_AWARD_IMPRESSIVE)
+		{
+			CG_PlayerFloatSprite(cent, cgs.media.medalImpressive, NULL);
+			return;
+		}
 
-	if (cent->currentState.eFlags & EF_AWARD_EXCELLENT)
-	{
-		CG_PlayerFloatSprite(cent, cgs.media.medalExcellent, NULL);
-		return;
-	}
+		if (cent->currentState.eFlags & EF_AWARD_EXCELLENT)
+		{
+			CG_PlayerFloatSprite(cent, cgs.media.medalExcellent, NULL);
+			return;
+		}
 
-	if (cent->currentState.eFlags & EF_AWARD_GAUNTLET)
-	{
-		CG_PlayerFloatSprite(cent, cgs.media.medalGauntlet, NULL);
-		return;
-	}
+		if (cent->currentState.eFlags & EF_AWARD_GAUNTLET)
+		{
+			CG_PlayerFloatSprite(cent, cgs.media.medalGauntlet, NULL);
+			return;
+		}
 
-	if (cent->currentState.eFlags & EF_AWARD_DEFEND)
-	{
-		CG_PlayerFloatSprite(cent, cgs.media.medalDefend, NULL);
-		return;
-	}
+		if (cent->currentState.eFlags & EF_AWARD_DEFEND)
+		{
+			CG_PlayerFloatSprite(cent, cgs.media.medalDefend, NULL);
+			return;
+		}
 
-	if (cent->currentState.eFlags & EF_AWARD_ASSIST)
-	{
-		CG_PlayerFloatSprite(cent, cgs.media.medalAssist, NULL);
-		return;
-	}
+		if (cent->currentState.eFlags & EF_AWARD_ASSIST)
+		{
+			CG_PlayerFloatSprite(cent, cgs.media.medalAssist, NULL);
+			return;
+		}
 
-	if (cent->currentState.eFlags & EF_AWARD_CAP)
-	{
-		CG_PlayerFloatSprite(cent, cgs.media.medalCapture, NULL);
-		return;
+		if (cent->currentState.eFlags & EF_AWARD_CAP)
+		{
+			CG_PlayerFloatSprite(cent, cgs.media.medalCapture, NULL);
+			return;
+		}
 	}
 
 	cl = &cgs.clientinfo[ cent->currentState.clientNum ];
@@ -2215,10 +2253,21 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	vec3_t corners[8];
 	qhandle_t hitboxShaderEdge, hitboxShaderSide;
 
-	if (!cg_drawHitBox.integer && (!cgs.osp.serverConfigXHitBox || !cg.demoPlayback))
+	if (!cg_drawHitBox.integer) 
 	{
 		return;
 	}
+
+	if (!cg.demoPlayback)
+	{
+		if (!cgs.osp.serverConfigXHitBox)
+		{
+			return;
+		}
+	}	
+
+	// get the player's client info
+	ci = &cgs.clientinfo[cent->currentState.clientNum];
 
 	// don't draw it if it's us in first-person, for dead players, for frozen players, for invisible players
 	if (cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson ||
@@ -2237,16 +2286,10 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	}
 
 	// if they don't exist, forget it
-	if ((cg_drawHitBox.integer == 1 && (!cgs.osp.hboxShader || !cgs.osp.hboxShader_nocull)) ||
-	        (cg_drawHitBox.integer == 2 && (!cgs.media.whiteAlphaShader || !cgs.media.WhiteAlphaShader_cullback)) ||
-	        (cg_drawHitBox.integer == 3 && (!cgs.media.whiteAlphaShader || !cgs.media.whiteAlphaShader_nocull)))
+	if (!CG_IsEnemy(ci)) 
 	{
 		return;
 	}
-
-
-	// get the player's client info
-	ci = &cgs.clientinfo[cent->currentState.clientNum];
 
 	// if it's us
 	if (cent->currentState.number == cg.predictedPlayerState.clientNum)

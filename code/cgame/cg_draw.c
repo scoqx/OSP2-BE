@@ -1475,30 +1475,13 @@ CG_DrawReward
 */
 void CG_DrawReward(void)
 {
-	float*   color;
-	int     i;
-	float   x, y, w, h;
-	char    buf[32];
+	float* color;
+	int i;
+	float x, y, w, h;
+	char buf[32];
 
 	if (!cg_drawRewards.integer)
 	{
-		return;
-	}
-
-	if (cg_drawRewards.integer == 2)
-	{
-		if (cg.rewardStack > 0)
-		{
-			for (i = 0; i < cg.rewardStack; i++)
-			{
-				cg.rewardSound[i] = cg.rewardSound[i + 1];
-				cg.rewardShader[i] = cg.rewardShader[i + 1];
-				cg.rewardCount[i] = cg.rewardCount[i + 1];
-			}
-			cg.rewardTime = cg.time;
-			cg.rewardStack--;
-			trap_S_StartLocalSound(cg.rewardSound[0], CHAN_ANNOUNCER);
-		}
 		return;
 	}
 
@@ -1515,8 +1498,12 @@ void CG_DrawReward(void)
 			}
 			cg.rewardTime = cg.time;
 			cg.rewardStack--;
+
 			color = CG_FadeColor(cg.rewardTime, REWARD_TIME);
-			trap_S_StartLocalSound(cg.rewardSound[0], CHAN_ANNOUNCER);
+
+			if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSOUND)) {
+				trap_S_StartLocalSound(cg.rewardSound[0], CHAN_ANNOUNCER);
+			}
 		}
 		else
 		{
@@ -1530,9 +1517,13 @@ void CG_DrawReward(void)
 	h = ICON_SIZE - 4;
 	y = 46;
 	x = 320 - w / 2.0;
-	CG_DrawPic(x, y, w, h, cg.rewardShader[0]);
 
-	if (cg.rewardCount[0] > 1)
+	if (!(cg_drawRewards.integer & DRAW_REWARDS_NOICON))
+	{
+		CG_DrawPic(x, y, w, h, cg.rewardShader[0]);
+	}
+
+	if (cg.rewardCount[0] > 1 && !(cg_drawRewards.integer & DRAW_REWARDS_NOICON))
 	{
 		Com_sprintf(buf, sizeof(buf), "%d", cg.rewardCount[0]);
 		CG_DrawString(x + w / 2.0f, y + h, buf, color, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, 16, DS_HCENTER | DS_PROPORTIONAL);
@@ -1540,6 +1531,7 @@ void CG_DrawReward(void)
 
 	trap_R_SetColor(NULL);
 }
+
 
 
 

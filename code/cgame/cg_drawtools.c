@@ -2362,39 +2362,25 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 		}
 	}
 
-	/* replace tail with "..." */
+	/* replace tail with "." */
 	if (restricted)
-	{
-		int replacedWithDots;
-		float three_dot_size = GetSymbolSize('.', proportional, charWidth) * 3;
-		float erased_size;
+{
 
-		/* first, erase characters is enough to insert "..." */
-		for (erased_size = 0; (i > 0) && (erased_size < three_dot_size); --i)
-		{
-			curr = &cmd[i];
-			if (curr->type == OSP_TEXT_CMD_CHAR)
-			{
-				erased_size += GetSymbolSize(curr->value.character, proportional, charWidth);
-			}
-		}
+    curr = &cmd[i];
+    if (curr->type == OSP_TEXT_CMD_CHAR)
+    {
+        curr->value.character = '.';
+    }
 
-		/* second, insert "..." */
-		for (replacedWithDots = 0; (i < (OSP_TEXT_CMD_MAX - 1)) && (replacedWithDots < 3); ++i)
-		{
-			curr = &cmd[i];
-			if (curr->type == OSP_TEXT_CMD_CHAR)
-			{
-				curr->value.character = '.';
-				++replacedWithDots;
-			}
-		}
+    if (i + 1 < OSP_TEXT_CMD_MAX) {
+        cmd[i + 1].type = OSP_TEXT_CMD_STOP;
+    }
+}
 
-		/* set stop of text */
-		cmd[i].type = OSP_TEXT_CMD_STOP;
-	}
+	
 
-	return ax;
+return ax;
+
 }
 
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth)

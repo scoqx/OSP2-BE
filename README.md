@@ -10,6 +10,13 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v0.059o
+```
+* cg_drawRewards bitmask
+  * 2 - disable icon, 4 - disable float sprite, 8 - disable sound
+* restricted names in scoreboard
+* restricted strings have "." instead of "..." at the end
+```
 ## v0.059j
 ```
 * crosshairNames

@@ -59,9 +59,9 @@ void CG_SHUDElementRewardRoutine(void* context)
 {
 	shudElementStatusbarRewards* element = (shudElementStatusbarRewards*)context;
 
-	int     i;
-	float*   color_origin;
-	float*   color;
+	int i;
+	float* color_origin;
+	float* color;
 
 	if (!cg_drawRewards.integer)
 	{
@@ -92,27 +92,38 @@ void CG_SHUDElementRewardRoutine(void* context)
 			cg.rewardTime = cg.time;
 			cg.rewardStack--;
 			CG_SHUDGetFadeColor(color_origin, color, &element->config, cg.rewardTime);
-			trap_S_StartLocalSound(cg.rewardSound[0], CHAN_ANNOUNCER);
+
+			if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSOUND)) {
+				trap_S_StartLocalSound(cg.rewardSound[0], CHAN_ANNOUNCER);
+			}
 		}
 		else
 		{
 			return;
 		}
 	}
+
 	CG_SHUDFill(&element->config);
 	CG_SHUDDrawBorder(&element->config);
 
-	if (element->type == SHUD_REWARD_ICON && cg_drawRewards.integer != 2)
+	if (element->type == SHUD_REWARD_ICON)
 	{
-		element->ctx.d.image = cg.rewardShader[0];
-		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx.d);
+		if (!(cg_drawRewards.integer & DRAW_REWARDS_NOICON))
+		{
+			element->ctx.d.image = cg.rewardShader[0];
+			CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx.d);
+		}
 	}
-	else if (cg.rewardCount[0] && cg_drawRewards.integer != 2)
+	else
 	{
-		element->ctx.t.text = va(element->config.text.value, cg.rewardCount[0]);
-		CG_SHUDTextPrint(&element->config, &element->ctx.t);
+		if (cg.rewardCount[0] && !(cg_drawRewards.integer & DRAW_REWARDS_NOICON))
+		{
+			element->ctx.t.text = va(element->config.text.value, cg.rewardCount[0]);
+			CG_SHUDTextPrint(&element->config, &element->ctx.t);
+		}
 	}
 }
+
 
 void CG_SHUDElementRewardDestroy(void* context)
 {

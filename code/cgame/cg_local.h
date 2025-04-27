@@ -100,6 +100,10 @@ extern "C" {
 
 #define MAX_ALT_SHADERS 16
 
+#define DRAW_REWARDS_NOICON (1 << 1)
+#define DRAW_REWARDS_NOSPRITE (1 << 2)
+#define DRAW_REWARDS_NOSOUND (1 << 3)
+
 typedef enum
 {
 	FOOTSTEP_NORMAL,
@@ -2257,7 +2261,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.059j" // BE
+#define OSP_VERSION "be-0.059o" // BE
 
 
 
