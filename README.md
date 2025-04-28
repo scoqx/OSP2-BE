@@ -10,6 +10,13 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v0.06
+```
+* SHUD:
+  + grid
+  + tempAcc_icon
+  - tempAcc_last
+```
 ## v0.059q
 ```
 * tempAcc 1 sec timeout restored

@@ -187,3 +187,10 @@ SHUD:
 27.04.2025 be v0.059q
 
 * tempAcc 1 sec timeout restored
+
+28.04.2025 be v0.06
+
+* SHUD:
+  + grid
+  + tempAcc_icon
+  - tempAcc_last

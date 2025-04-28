@@ -916,6 +916,8 @@ typedef struct
 	qhandle_t  arrowUp;
 	qhandle_t  arrowDown;
 
+	qhandle_t  tempAccIcon;
+
 	// sounds
 	sfxHandle_t quadSound;
 	sfxHandle_t tracerSound;
@@ -2261,7 +2263,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.059q" // BE
+#define OSP_VERSION "be-0.06" // BE
 
 
 

@@ -571,7 +571,9 @@ void* CG_SHUDElementObituaries8Create(const superhudConfig_t* config);
 void CG_SHUDElementObituariesRoutine(void* context);
 void CG_SHUDElementObituariesDestroy(void* context);
 
-void* CG_SHUDElementTempAccCreate(const superhudConfig_t* config);
+
+void* CG_SHUDElementTempAccTextCreate(const superhudConfig_t* config);
+void* CG_SHUDElementTempAccIconCreate(const superhudConfig_t* config);
 void CG_SHUDElementTempAccRoutine(void* context);
 void CG_SHUDElementTempAccDestroy(void* context);
 
@@ -614,6 +616,9 @@ void* CG_SHUDElementCreatePlayerStatsDGIcon(const superhudConfig_t* config);
 void CG_SHUDElementPlayerStatsRoutine(void* context);
 void CG_SHUDElementPlayerStatsDestroy(void* context);
 
+void* CG_SHUDElementGridCreate(const superhudConfig_t* config);
+void CG_SHUDElementGridRoutine(void* context);
+void CG_SHUDElementGridDestroy(void* context);
 
 /*
  * cg_superhud_util.c

@@ -5,6 +5,7 @@ static superhudGlobalContext_t superhudGlobalContext;
 static superHUDConfigElement_t superHUDConfigItemElements[] =
 {
 	{ "!default", 0, },
+	{ "grid", 0, CG_SHUDElementGridCreate, CG_SHUDElementGridRoutine, CG_SHUDElementGridDestroy },
 	{ "predecorate", 0, CG_SHUDElementDecorCreate, CG_SHUDElementDecorRoutine, CG_SHUDElementDecorDestroy },
 	{ "ammomessage", 0, CG_SHUDElementAmmoMessageCreate, CG_SHUDElementAmmoMessageRoutine, CG_SHUDElementAmmoMessageDestroy },
 	{ "attackericon", 0, CG_SHUDElementAttackerIconCreate, CG_SHUDElementAttackerIconRoutine, CG_SHUDElementAttackerIconDestroy },
@@ -143,8 +144,8 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "obituary7", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementObituaries7Create, CG_SHUDElementObituariesRoutine, CG_SHUDElementObituariesDestroy },
 	{ "obituary8", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementObituaries8Create, CG_SHUDElementObituariesRoutine, CG_SHUDElementObituariesDestroy },
 	{ "location",  0, CG_SHUDElementLocationCreate, CG_SHUDElementLocationRoutine, CG_SHUDElementLocationDestroy },
-	{ "tempAcc_current", SE_IM | SE_DEAD, CG_SHUDElementTempAccCreate, CG_SHUDElementTempAccRoutine, CG_SHUDElementTempAccDestroy },
-	{ "tempAcc_last",  },
+	{ "tempAcc_current", SE_IM | SE_DEAD, CG_SHUDElementTempAccTextCreate, CG_SHUDElementTempAccRoutine, CG_SHUDElementTempAccDestroy },
+	{ "tempAcc_icon", SE_IM | SE_DEAD, CG_SHUDElementTempAccIconCreate, CG_SHUDElementTempAccRoutine, CG_SHUDElementTempAccDestroy },
 	{ "currentWeaponStats", SE_IM, CG_SHUDElementCreateCurrentWeapon, CG_SHUDElementWeaponStatsRoutine, CG_SHUDElementWeaponStatsDestroy },
 	{ "weaponStats_MG", SE_IM, CG_SHUDElementWeaponStatsCreateMG, CG_SHUDElementWeaponStatsRoutine, CG_SHUDElementWeaponStatsDestroy },
 	{ "weaponStats_SG", SE_IM, CG_SHUDElementWeaponStatsCreateSG, CG_SHUDElementWeaponStatsRoutine, CG_SHUDElementWeaponStatsDestroy },

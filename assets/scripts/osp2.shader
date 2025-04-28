@@ -517,3 +517,18 @@ markShadowNew3
 		rgbGen vertex
 	}	
 }
+
+// temporal accuracy
+tempAcc_LG_Icon 
+{
+    {
+        map icons/interim.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        rgbGen identity
+    }
+    {
+        map icons/iconw_lightning.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        rgbGen identity
+    }
+}
