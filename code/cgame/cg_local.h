@@ -1406,6 +1406,7 @@ extern vmCvar_t           cg_shud;
 extern vmCvar_t           cg_enableBreath;
 extern vmCvar_t           cg_enemyColors;
 extern vmCvar_t           cg_enemyModel;
+extern vmCvar_t           cg_teamColors;
 extern vmCvar_t           cg_teamModel;
 extern vmCvar_t           cg_execVstr;
 extern vmCvar_t           cg_fallKick;
@@ -2440,6 +2441,7 @@ void CG_LocalEventCvarChanged_r_fullbright(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_swapSkins(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyModel(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamModel(cvarTable_t* cvart);
 
 void CG_LocalEventCvarChanged_handicap(cvarTable_t* cvart);
