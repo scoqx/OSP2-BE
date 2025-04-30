@@ -1683,7 +1683,7 @@ gfx/2d/crosshair_80
 {
     nopicmip
     {
-       clampmap gfx/2d/crosshair_80.tga
+       clampmap gfx/2d/crosshair_81.png
        blendFunc blend
        rgbGen vertex
     }
@@ -1692,7 +1692,7 @@ gfx/2d/crosshair_80_r45
 {
     nopicmip
     {
-       clampmap gfx/2d/crosshair_80.tga
+       clampmap gfx/2d/crosshair_81.png
        blendFunc blend
        tcMod transform 0.707 0.707 -0.707 0.707 0.5 -0.207
        rgbGen vertex
