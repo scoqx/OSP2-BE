@@ -169,7 +169,11 @@ void CG_FillRect(float x, float y, float width, float height, const float* color
 	trap_R_SetColor(NULL);
 }
 
-
+/*
+================
+CG_OSPDrawFrame
+=================
+*/
 void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner)
 {
 	if (!borderSize || !color)
@@ -222,6 +226,45 @@ void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4
 	trap_R_SetColor(NULL);
 }
 
+/*
+================
+CG_OSPDrawBlurFrame
+=================
+*/
+void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t color)
+{
+    vec4_t borderSizeOriginal;
+    vec4_t red;
+    int i;
+
+    float t, falloff, currentAlpha;
+    const float step = 1.0f;
+    const float stepCount = size;
+    const float baseAlpha = color[3];
+
+	Vector4Set(borderSizeOriginal, size, size, size, size);
+
+    for (i = 0; i < (int)stepCount; i++)
+    {
+        t = (float)i / (stepCount - 1);
+        falloff = (1.0f - t) * (1.0f - t) * (0.25f + 0.75f * (1.0f - t));
+        if (falloff < 0.0f) falloff = 0.0f;
+
+        currentAlpha = baseAlpha * falloff;
+        if (currentAlpha <= 0.001f)
+            break;
+
+        Vector4Set(red, color[0], color[1], color[2], currentAlpha);
+
+        Vector4Set(borderSizeOriginal, step, step, step, step);
+        CG_OSPDrawFrame(x, y, w, h, borderSizeOriginal, red, qtrue);
+
+        x += step;
+        y += step;
+        w -= step * 2;
+        h -= step * 2;
+    }
+}
 
 /*
 ================
@@ -2899,25 +2942,29 @@ int CG_OSPDrawStringWithShadow(int x, int y, const char* str, int charWidth, int
 	return CG_OSPDrawStringOld(x, y, str, charWidth, charHeight, color, maxChars, qfalse);
 }
 
+//
+// Gradient (iridescent color) rect and border
+// using for credits
+
 void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight,
                             int direction, float speed, float gradientScale)
 {
 	int i, j;
-	int block = 3; // "Качество" градиента. Больше = ниже
+	int block = 3; // "quality". 1 is the best. Don't use it
 	float phase, timeParam;
 	float color[4];
 	float dx, dy;
 	float angle;
 	float brightness;
-	// Преобразование "direction" в угол (в радианах) с шагом 2π/64
+
 	angle = (2.0f * M_PI * (float)(direction % 64)) / (float)64;
 	dx = cos(angle);
 	dy = sin(angle);
 
-	// Параметр времени: cg.time – глобальная переменная (обычно в миллисекундах)
+
 	timeParam = ((float)cg.time) * speed;
 
-	// Проходим по области блоками
+
 	for (i = 0; i < rectHeight; i += block)
 	{
 		int blockHeight = block;
@@ -2928,9 +2975,11 @@ void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeigh
 			int blockWidth = block;
 			if (j + blockWidth > rectWidth)
 				blockWidth = rectWidth - j;
-			// Абсолютные координаты для расчёта фазы
+
 			phase = timeParam + ((startX + j) * dx + (startY + i) * dy) * gradientScale;
 			brightness = sin(phase) * 0.3f + 0.3f;
+
+			// rainbow block lol
 			// color[0] = (float)(sin(phase) * 0.5f + 0.5f);
 			// color[1] = (float)(sin(phase + 2.094f) * 0.5f + 0.5f);
 			// color[2] = (float)(sin(phase + 4.188f) * 0.5f + 0.5f);

@@ -39,16 +39,18 @@ void CG_SHUDElementSBACRoutine(void* context)
 {
 	shudElementStatusbarHealthCount* element = (shudElementStatusbarHealthCount*)context;
 	int ap = cg.snap->ps.stats[STAT_ARMOR];
-
-	if (ap <= 0) return;
-
+	qboolean configColor;
+	if (ap <= 0 && !(element->config.visflags.value & SE_SHOW_EMPTY)) 
+	return;
+	else
+	configColor = qtrue;
 	element->ctx.text = va(element->config.text.value, ap > 0 ? ap : 0);
 
 	element->config.color.isSet = qtrue;
 	element->config.color.value.type = SUPERHUD_COLOR_RGBA;
 	CG_ColorForHealth(element->config.color.value.rgba, NULL);
-
-	CG_SHUDTextPrint(&element->config, &element->ctx);
+	CG_SHUDTextPrintNew(&element->config, &element->ctx, configColor);
+	
 }
 
 void CG_SHUDElementSBACDestroy(void* context)

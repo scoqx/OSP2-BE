@@ -188,7 +188,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 - key2show - скрывать если не нажата кнопка +shudkey2
 - key3show - скрывать если не нажата кнопка +shudkey3
 - key4show - скрывать если не нажата кнопка +shudkey4
-- showempty - показывать пустые значения `для  элементов: weapon/player stats, tempAcc, Score_NME`
+- showempty - показывать пустые значения `для  элементов: weapon/player stats, tempAcc, Score_NME, StatusBar_ArmorCount`
 
 Можно указывать несколько вариантов через пробел:
 

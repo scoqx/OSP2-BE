@@ -118,16 +118,25 @@ void CG_SHUDElementWeaponStatsRoutine(void* context)
 	static int lastHits = 0;
 	char textBuffer[MAX_QPATH];
 	int weaponIndex = weapon - WP_GAUNTLET;
+	static qboolean wasSpectator = qfalse;
 	qboolean trackAccuracy = (cg_shud_currentWeapons.integer & (1 << weaponIndex)) != 0;
+	qboolean isSpectator = CG_IsSpectator();
+	qboolean becameSpectator = (isSpectator && !wasSpectator);
+	static int lastClientNum = -1;
+    qboolean clientChanged = (cg.snap ? cg.snap->ps.clientNum : -1) != lastClientNum;
+    lastClientNum = cg.snap ? cg.snap->ps.clientNum : -1;
 
-	if (trackAccuracy &&
-	        (ps->weaponstate == WEAPON_FIRING || ps->persistant[PERS_HITS] != lastHits) &&
-	        (cg.time - lastUpdateTime >= updateInterval))
-	{
-		lastUpdateTime = cg.time;
-		lastHits = ps->persistant[PERS_HITS];
-		CG_SHUDRequestStatsInfo();
-	}
+    if (trackAccuracy &&
+        (ps->weaponstate == WEAPON_FIRING || ps->persistant[PERS_HITS] != lastHits || becameSpectator || clientChanged) &&
+        (cg.time - lastUpdateTime >= updateInterval))
+    {
+        lastUpdateTime = cg.time;
+        lastHits = ps->persistant[PERS_HITS];
+        CG_SHUDRequestStatsInfo();
+    }
+
+    wasSpectator = isSpectator;
+	
 
 	// === 0 - CURRENT ===
 	if (element->weaponIndex == 0)

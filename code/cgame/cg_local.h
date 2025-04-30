@@ -1770,6 +1770,7 @@ int CG_OSPDrawStringOld(int x, int y, const char* str, int charWidth, int charHe
 qboolean CG_Hex16GetColor(const char* str, float* color);
 
 void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
+void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t color); // inner
 
 //
 // cg_draw.c
@@ -2264,7 +2265,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.06" // BE
+#define OSP_VERSION "be-0.06a" // BE
 
 
 

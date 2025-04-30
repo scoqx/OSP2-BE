@@ -194,3 +194,11 @@ SHUD:
   + grid
   + tempAcc_icon
   - tempAcc_last
+
+30.04.2025 be v0.06a
+
+* SHUD:
+  * Player/Weapon stats fix
+  * StatusBar_ArmorCount 
+    + visflags: showempty
+    + color works for '0'

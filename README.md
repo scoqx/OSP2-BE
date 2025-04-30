@@ -10,6 +10,14 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v0.06a
+```
+* SHUD:
+  * Player/Weapon stats fix
+  * StatusBar_ArmorCount 
+    + visflags: showempty
+    + color works for '0'
+```
 ## v0.06
 ```
 * SHUD:
@@ -40,30 +48,14 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
   * dark grey by default, or color2 is set
   * disable by style (any)
 ```
-## v0.059t
-```
-* cg_altShadows/cg_altBlood multiply shaders support
-  * markShadowNew, markShadowNew2, markShadowNew3...
-  * bloodExplosionNew, bloodExplosionNew2, bloodExplosionNew3...
- SHUD: 
-+ playerStats_damage_ratio
-+ shadowColor for text
-* visflags: showempty for enemyscore, tempAcc
-```
-## v0.058
-```
-* cg_shadows 2 -> -1
-+ cg_altShadow
-+ cg_altShadowColor
-+ cg_scoreboardShowId
-```
 ## Extended features
-```
 Cvars:
-+ cg_altBlood
++ cg_altBlood multiply shaders support
 + cg_altBloodColor
 * cg_altPlasma 
   + option 2
++ cg_altShadow multiply shaders support
++ cg_altShadowColor
 + cg_damageDrawFrame
 + cg_damageFrameSize
 + cg_damageFrameOpaque
@@ -91,6 +83,9 @@ Cvars:
 + cg_shotGunTracer
 + cg_railStaticRings
 + cg_railRingsSize 
++ cg_scoreboardShowId
+* cg_shadows
+  + option -1
 
 SHUD:
 Elements:
@@ -101,8 +96,10 @@ Elements:
 + playerStats_DR
 + playerStats_DG_icon
 + playerStats_DR_icon
++ playerStats_damage_ratio
 Other:
-+ Border (border, borderColor)
++ ShadowColor for text
++ Border (border, `borderColor)
 * Background for text elements (reworked)
 + Background for client events in obituaries
 + Temporal LG accuracy
@@ -118,7 +115,9 @@ Other:
   + CurrentWeaponStats_icon
 * weaponlist:
   + border for choosen weapon
-* visflags: showempty only for weapon/playerStats  
+* visflags: showempty for weapon/playerStats, enemyscore, tempAcc
+
+
 
 * +wstats additional data
   + Kill/death ratio (K/D)

@@ -108,32 +108,40 @@ static void CG_SHUDStyleDamageRatioColor(vec4_t color, const superhudConfig_t* c
 
 void CG_SHUDElementPlayerStatsRoutine(void* context)
 {
-	shudElementPlayerStats_t* element = (shudElementPlayerStats_t*)context;
-	customStats_t* ws = &CG_SHUDGetContext()->customStats;
+    shudElementPlayerStats_t* element = (shudElementPlayerStats_t*)context;
+    customStats_t* ws = &CG_SHUDGetContext()->customStats;
 
-	float damageRatio = ws->damageKoeff;
-	int dmgGiven = statsInfo[OSP_STATS_DMG_GIVEN];
-	int dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
+    float damageRatio = ws->damageKoeff;
+    int dmgGiven = statsInfo[OSP_STATS_DMG_GIVEN];
+    int dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
 
-	char buffer[64];
-	static int lastUpdateTime = 0;
-	static int updateInterval = 2000;
-	static int lastClientNum = -1;
-	int currentClientNum = cg.snap ? cg.snap->ps.clientNum : -1;
-	qboolean clientChanged = (currentClientNum != lastClientNum);
-	vec4_t ratioColor;
+    char buffer[64];
+    static int lastUpdateTime = 0;
+    static int updateInterval = 2000;
+    static int lastClientNum = -1;
+    int currentClientNum = cg.snap ? cg.snap->ps.clientNum : -1;
+    qboolean clientChanged = (currentClientNum != lastClientNum);
+    vec4_t ratioColor;
 
-	if (CG_OSPIsStatsHidden(qtrue, qtrue))
-		return;
-	// Update the stats if the player has taken damage or given damage
-	if ((cg.time - cg.damageTime <= 100 || cg.time - cgs.osp.lastHitTime <= 100 || clientChanged) &&
-	        (cg.time - lastUpdateTime >= updateInterval))
+    // Переменные для отслеживания смены состояния на спектатора
+    static qboolean wasSpectator = qfalse;
+    qboolean isSpectator = CG_IsSpectator();
+    qboolean becameSpectator = (isSpectator && !wasSpectator);
 
-	{
-		lastUpdateTime = cg.time;
-		CG_SHUDRequestStatsInfo();
-		lastClientNum = currentClientNum;
-	}
+    if (CG_OSPIsStatsHidden(qtrue, qtrue))
+        return;
+
+    // Обновление статистики, если игрок получил или нанёс урон, или был изменён игрок
+    if ((cg.time - cg.damageTime <= 100 || cg.time - cgs.osp.lastHitTime <= 100 || clientChanged || becameSpectator) &&
+        (cg.time - lastUpdateTime >= updateInterval))
+    {
+        lastUpdateTime = cg.time;
+        CG_SHUDRequestStatsInfo();
+        lastClientNum = currentClientNum;
+    }
+
+    // Обновление переменной wasSpectator в конце
+    wasSpectator = isSpectator;
 
 	switch (element->type)
 	{
