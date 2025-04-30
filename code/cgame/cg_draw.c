@@ -1893,6 +1893,10 @@ void CG_DrawCrosshairNames(void)
 	}
 
 	color = CG_FadeColor(cg.crosshairClientTime, 1000);
+	if ( !color )
+	{
+		return;
+	}
 	name = cgs.clientinfo[ cg.crosshairClientNum ].name;
 	CG_DrawBigString(SCREEN_WIDTH / 2.0f, 170, name, 0.5f * color[3], DS_HCENTER | DS_SHADOW, 0);
 }
@@ -1919,7 +1923,10 @@ static void CG_DrawVote(void)
 	if (cgs.voteModified && !cg_noVoteBeep.integer)
 	{
 		cgs.voteModified = qfalse;
-		trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
+		if (!cg_noVoteBeep.integer)
+		{
+			trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
+		}
 	}
 
 	sec = (VOTE_TIME - (cg.time - cgs.voteTime)) / 1000;
