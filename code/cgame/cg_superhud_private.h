@@ -292,6 +292,12 @@ typedef enum
 #define SE_SHOW_EMPTY  0x00000400 // show if empty
 #define SE_SHOW_EMPTY_STR  "showempty"
 
+#define SHUD_CHECK_SHOW_EMPTY(element) ( \
+    ((element) != NULL) && \
+    ((element)->config.visflags.isSet) && \
+    (((element)->config.visflags.value & SE_SHOW_EMPTY) != 0) \
+)
+
 typedef struct superHUDConfigElement_s
 {
 	const char* name;

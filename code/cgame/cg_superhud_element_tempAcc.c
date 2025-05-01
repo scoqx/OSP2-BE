@@ -28,13 +28,14 @@ void* CG_SHUDElementTempAccCreate(const superhudConfig_t* config, shudElementTem
 	SHUD_ELEMENT_INIT(element, config);
 
 	element->type = type;
-	
+
 	element->gctx = CG_SHUDGetContext();
-	if (element->type == SHUD_ELEMENT_TEMPACC_TEXT) {
-	CG_SHUDTextMakeContext(&element->config, &element->textCtx);
-	CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);
+	if (element->type == SHUD_ELEMENT_TEMPACC_TEXT)
+	{
+		CG_SHUDTextMakeContext(&element->config, &element->textCtx);
+		CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);
 	}
-	else 
+	else
 	{
 		CG_SHUDDrawMakeContext(&element->config, &element->drawCtx);
 	}
@@ -85,14 +86,16 @@ void CG_SHUDElementTempAccRoutine(void* context)
 	vec4_t color;
 	char accuracyStr[8];
 
-	if (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE) {
+	if (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE)
+	{
 		return;
 	}
 
 	CG_GetWeaponTempAccuracy(WP_LIGHTNING);
 
 	if (entry->tempAccuracy <= 0.0f &&
-		(!element->config.visflags.isSet || !(element->config.visflags.value & SE_SHOW_EMPTY))) {
+	        (!(SHUD_CHECK_SHOW_EMPTY_FLAG(element))))
+	{
 		return;
 	}
 

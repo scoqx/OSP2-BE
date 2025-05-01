@@ -109,59 +109,63 @@ void* CG_SHUDElementIconCreatePG(const superhudConfig_t* config)
 void CG_SHUDElementWeaponStatsRoutine(void* context)
 {
 	shudElementWeaponStats_t* element = (shudElementWeaponStats_t*)context;
-	customStats_t* ws = &CG_SHUDGetContext()->customStats;
+	customStats_t* cs = &CG_SHUDGetContext()->customStats;
 	playerState_t* ps = &cg.snap->ps;
 
 	int weapon = (element->weaponIndex == 0) ? ps->weapon : element->weaponIndex;
+	int weaponIndex = weapon - WP_GAUNTLET;
+	qboolean trackAccuracy = (cg_shud_currentWeapons.integer & (1 << weaponIndex)) != 0;
+
 	int updateInterval = (weapon == WP_RAILGUN) ? 1500 : 1000;
 	static int lastUpdateTime = 0;
 	static int lastHits = 0;
-	char textBuffer[MAX_QPATH];
-	int weaponIndex = weapon - WP_GAUNTLET;
 	static qboolean wasSpectator = qfalse;
-	qboolean trackAccuracy = (cg_shud_currentWeapons.integer & (1 << weaponIndex)) != 0;
+	static int lastClientNum = -1;
 	qboolean isSpectator = CG_IsSpectator();
 	qboolean becameSpectator = (isSpectator && !wasSpectator);
-	static int lastClientNum = -1;
-    qboolean clientChanged = (cg.snap ? cg.snap->ps.clientNum : -1) != lastClientNum;
-    lastClientNum = cg.snap ? cg.snap->ps.clientNum : -1;
+	qboolean clientChanged = (cg.snap ? cg.snap->ps.clientNum : -1) != lastClientNum;
 
-    if (trackAccuracy &&
-        (ps->weaponstate == WEAPON_FIRING || ps->persistant[PERS_HITS] != lastHits || becameSpectator || clientChanged) &&
-        (cg.time - lastUpdateTime >= updateInterval))
-    {
-        lastUpdateTime = cg.time;
-        lastHits = ps->persistant[PERS_HITS];
-        CG_SHUDRequestStatsInfo();
-    }
+	char textBuffer[MAX_QPATH];
 
-    wasSpectator = isSpectator;
-	
+	lastClientNum = cg.snap ? cg.snap->ps.clientNum : -1;
 
-	// === 0 - CURRENT ===
+	// update statsInfo if
+	if (trackAccuracy &&
+	        (ps->weaponstate == WEAPON_FIRING || // firing
+	         ps->persistant[PERS_HITS] != lastHits || // hit
+	         becameSpectator || clientChanged) && // client changed or free float
+	        (cg.time - lastUpdateTime >= updateInterval)) // 1 or 1.5 sec
+	{
+		lastUpdateTime = cg.time;
+		lastHits = ps->persistant[PERS_HITS];
+		CG_SHUDRequestStatsInfo();
+	}
+
+	wasSpectator = isSpectator;
+
 	if (element->weaponIndex == 0)
 	{
-		if (trackAccuracy && ws->stats[weapon].shots > 0)
+		if (trackAccuracy && cs->stats[weapon].shots > 0)
 		{
-			ws->lastTrackedWeapon = weapon;
+			cs->lastTrackedWeapon = weapon;
 		}
 
-		if (ws->lastTrackedWeapon < 0)
+		if (cs->lastTrackedWeapon < 0)
 		{
-			if (!(element->config.visflags.isSet && (element->config.visflags.value & SE_SHOW_EMPTY)))
+			if (!SHUD_CHECK_SHOW_EMPTY_FLAG(element))
 				return;
 			weapon = ps->weapon;
 		}
 		else
 		{
-			weapon = ws->lastTrackedWeapon;
+			weapon = cs->lastTrackedWeapon;
 		}
 	}
 
 	// If no shots fired, show 0% accuracy or empty icon (based on config)
-	if (ws->stats[weapon].shots <= 0)
+	if (cs->stats[weapon].shots <= 0)
 	{
-		if (!(element->config.visflags.isSet && (element->config.visflags.value & SE_SHOW_EMPTY)))
+		if (!SHUD_CHECK_SHOW_EMPTY_FLAG(element))
 			return;
 
 		if (element->type == SHUD_ELEMENT_WEAPON_STATS_TEXT)
@@ -184,13 +188,12 @@ void CG_SHUDElementWeaponStatsRoutine(void* context)
 		return;
 	}
 
-	// === NORMAL RENDERING ===
 	if (element->type == SHUD_ELEMENT_WEAPON_STATS_TEXT)
 	{
 		if (element->config.style.value == 1)
-			Com_sprintf(textBuffer, sizeof(textBuffer), "%.1f%%", ws->stats[weapon].accuracy);
+			Com_sprintf(textBuffer, sizeof(textBuffer), "%.1f%%", cs->stats[weapon].accuracy);
 		else
-			Com_sprintf(textBuffer, sizeof(textBuffer), "%.0f%%", ws->stats[weapon].accuracy);
+			Com_sprintf(textBuffer, sizeof(textBuffer), "%.0f%%", cs->stats[weapon].accuracy);
 
 		element->textCtx.text = textBuffer;
 		CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);

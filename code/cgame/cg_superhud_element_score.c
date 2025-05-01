@@ -136,8 +136,7 @@ void CG_SHUDElementScoreRoutine(void* context)
 		case SHUD_ELEMENT_SCORE_NME:
 			result = CG_SHUDScoresGetNME(&scores);
 
-			if (!result && element->config.visflags.isSet &&
-			        (element->config.visflags.value & SE_SHOW_EMPTY) &&
+			if (!result && SHUD_CHECK_SHOW_EMPTY_FLAG(element) &&
 			        CG_SHUDGetOurActiveTeam() == TEAM_FREE)
 			{
 				scores = 0;

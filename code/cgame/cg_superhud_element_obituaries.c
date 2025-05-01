@@ -165,7 +165,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	CG_SHUDElementObituariesUpdatePosition(element, entry);
 
 	currentX = entry->runtime.baseX;
-	
+
 	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target) // Фон для всего элемента
 	{
 		CG_FillRect(

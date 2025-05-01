@@ -1522,7 +1522,7 @@ static void CG_RegisterGraphics(void)
 	cgs.media.arrowDown = trap_R_RegisterShader("gfx/2d/arrow_down");
 
 	cgs.media.tempAccIcon = trap_R_RegisterShader("tempAcc_LG_Icon");
-	
+
 	// be extention
 	cgs.media.whiteAlphaShader      = trap_R_RegisterShader("whiteAlpha");
 	cgs.media.whiteAlphaShader_nocull      = trap_R_RegisterShader("whiteAlpha_nocull");

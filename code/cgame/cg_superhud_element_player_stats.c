@@ -108,52 +108,54 @@ static void CG_SHUDStyleDamageRatioColor(vec4_t color, const superhudConfig_t* c
 
 void CG_SHUDElementPlayerStatsRoutine(void* context)
 {
-    shudElementPlayerStats_t* element = (shudElementPlayerStats_t*)context;
-    customStats_t* ws = &CG_SHUDGetContext()->customStats;
+	shudElementPlayerStats_t* element = (shudElementPlayerStats_t*)context;
+	customStats_t* ws = &CG_SHUDGetContext()->customStats;
 
-    float damageRatio = ws->damageKoeff;
-    int dmgGiven = statsInfo[OSP_STATS_DMG_GIVEN];
-    int dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
+	float damageRatio = ws->damageKoeff;
+	int dmgGiven = statsInfo[OSP_STATS_DMG_GIVEN];
+	int dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
 
-    char buffer[64];
-    static int lastUpdateTime = 0;
-    static int updateInterval = 2000;
-    static int lastClientNum = -1;
-    int currentClientNum = cg.snap ? cg.snap->ps.clientNum : -1;
-    qboolean clientChanged = (currentClientNum != lastClientNum);
-    vec4_t ratioColor;
+	char buffer[64];
+	vec4_t ratioColor;
 
-    // Переменные для отслеживания смены состояния на спектатора
-    static qboolean wasSpectator = qfalse;
-    qboolean isSpectator = CG_IsSpectator();
-    qboolean becameSpectator = (isSpectator && !wasSpectator);
+	static int lastUpdateTime = 0;
+	const int updateInterval = 2000;
+	static int lastClientNum = -1;
+	int currentClientNum = (cg.snap ? cg.snap->ps.clientNum : -1);
+	qboolean clientChanged = (currentClientNum != lastClientNum);
 
-    if (CG_OSPIsStatsHidden(qtrue, qtrue))
-        return;
+	static qboolean wasSpectator = qfalse;
+	qboolean isSpectator = CG_IsSpectator();
+	qboolean becameSpectator = (isSpectator && !wasSpectator);
 
-    // Обновление статистики, если игрок получил или нанёс урон, или был изменён игрок
-    if ((cg.time - cg.damageTime <= 100 || cg.time - cgs.osp.lastHitTime <= 100 || clientChanged || becameSpectator) &&
-        (cg.time - lastUpdateTime >= updateInterval))
-    {
-        lastUpdateTime = cg.time;
-        CG_SHUDRequestStatsInfo();
-        lastClientNum = currentClientNum;
-    }
+	if (CG_OSPIsStatsHidden(qtrue, qtrue))
+		return;
 
-    // Обновление переменной wasSpectator в конце
-    wasSpectator = isSpectator;
+	// update statsInfo if
+	if ((cg.time - cg.damageTime <= 100 ||              // damage recieved
+	        cg.time - cgs.osp.lastHitTime <= 100 ||         // damage dealt
+	        clientChanged || becameSpectator) &&            // client changed or free float
+	        (cg.time - lastUpdateTime >= updateInterval))   // 2 sec interval
+	{
+		lastUpdateTime = cg.time;
+		CG_SHUDRequestStatsInfo();
+		lastClientNum = currentClientNum;
+	}
+
+	wasSpectator = isSpectator;
 
 	switch (element->type)
 	{
 		case SHUD_ELEMENT_PLAYER_STATS_DG:
-			if (dmgGiven <= 0 && !(element->config.visflags.isSet && (element->config.visflags.value & SE_SHOW_EMPTY))) return;
+			if (dmgGiven <= 0 && !SHUD_CHECK_SHOW_EMPTY_FLAG(element)) return;
+
 			Com_sprintf(buffer, sizeof(buffer), "%d", dmgGiven);
 			element->textCtx.text = buffer;
 			CG_SHUDTextPrint(&element->config, &element->textCtx);
 			return;
 
 		case SHUD_ELEMENT_PLAYER_STATS_DR:
-			if (dmgGiven <= 0 && !(element->config.visflags.isSet && (element->config.visflags.value & SE_SHOW_EMPTY))) return;
+			if (dmgReceived <= 0 && !SHUD_CHECK_SHOW_EMPTY_FLAG(element)) return;
 			Com_sprintf(buffer, sizeof(buffer), "%d", dmgReceived);
 			element->textCtx.text = buffer;
 			CG_SHUDTextPrint(&element->config, &element->textCtx);
@@ -162,7 +164,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 		{
 			if (damageRatio <= 0.0f)
 			{
-				if (!(element->config.visflags.isSet && (element->config.visflags.value & SE_SHOW_EMPTY)))
+				if (!SHUD_CHECK_SHOW_EMPTY_FLAG(element))
 				{
 					return;
 				}
@@ -192,7 +194,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 			return;
 		}
 		case SHUD_ELEMENT_PLAYER_STATS_DG_ICON:
-			if (dmgGiven <= 0 && !(element->config.visflags.isSet && (element->config.visflags.value & SE_SHOW_EMPTY))) return;
+			if (dmgGiven <= 0 && !!SHUD_CHECK_SHOW_EMPTY_FLAG(element)) return;
 			element->drawCtx.image = cgs.media.arrowUp;
 			CG_SHUDDrawBorder(&element->config);
 			CG_SHUDFill(&element->config);
@@ -200,7 +202,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 			return;
 
 		case SHUD_ELEMENT_PLAYER_STATS_DR_ICON:
-			if (dmgGiven <= 0 && !(element->config.visflags.isSet && (element->config.visflags.value & SE_SHOW_EMPTY))) return;
+			if (dmgReceived <= 0 && !SHUD_CHECK_SHOW_EMPTY_FLAG(element)) return;
 			element->drawCtx.image = cgs.media.arrowDown;
 			CG_SHUDDrawBorder(&element->config);
 			CG_SHUDFill(&element->config);

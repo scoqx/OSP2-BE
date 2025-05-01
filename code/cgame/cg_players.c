@@ -24,39 +24,42 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../qcommon/l_crc.h"
 
-static qboolean CG_IsEnemy(const clientInfo_t *ci) {
-    if (cgs.gametype <= GT_SINGLE_PLAYER) {
-        return qtrue;
-    }
+static qboolean CG_IsEnemy(const clientInfo_t* ci)
+{
+	if (cgs.gametype <= GT_SINGLE_PLAYER)
+	{
+		return qtrue;
+	}
 
-    if (cgs.gametype >= GT_TEAM) {
-        int clientIndex = (cg.clientNum >= 0 && cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR)
-                          ? cg.snap->ps.clientNum : cg.clientNum;
+	if (cgs.gametype >= GT_TEAM)
+	{
+		int clientIndex = (cg.clientNum >= 0 && cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR)
+		                  ? cg.snap->ps.clientNum : cg.clientNum;
 
-        if ((cgs.clientinfo[clientIndex].infoValid && cgs.clientinfo[clientIndex].rt == ci->rt) ||
-            (cgs.clientinfo[cg.clientNum].infoValid &&
-             cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR &&
-             cgs.clientinfo[cg.snap->ps.clientNum].infoValid &&
-             ci->rt == cgs.clientinfo[cg.snap->ps.clientNum].rt))
-        {
-            return qfalse;
-        }
+		if ((cgs.clientinfo[clientIndex].infoValid && cgs.clientinfo[clientIndex].rt == ci->rt) ||
+		        (cgs.clientinfo[cg.clientNum].infoValid &&
+		         cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR &&
+		         cgs.clientinfo[cg.snap->ps.clientNum].infoValid &&
+		         ci->rt == cgs.clientinfo[cg.snap->ps.clientNum].rt))
+		{
+			return qfalse;
+		}
 
-        return qtrue;
-    }
+		return qtrue;
+	}
 
-    return qfalse;
+	return qfalse;
 }
 
 // static qboolean CG_IsTeammate(const clientInfo_t* ci) {
-// 	const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
+//  const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
 
-// 	// Если мы за спектатора, считаем команду Red нашей командой
-// 	if (local->rt == TEAM_SPECTATOR) {
-// 		return (ci->rt == TEAM_RED) ? qtrue : qfalse;
-// 	}
+//  // Если мы за спектатора, считаем команду Red нашей командой
+//  if (local->rt == TEAM_SPECTATOR) {
+//      return (ci->rt == TEAM_RED) ? qtrue : qfalse;
+//  }
 
-// 	return (local->rt == ci->rt) ? qtrue : qfalse;
+//  return (local->rt == ci->rt) ? qtrue : qfalse;
 // }
 
 char*    cg_customSoundNames[MAX_CUSTOM_SOUNDS] =
@@ -2253,7 +2256,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	vec3_t corners[8];
 	qhandle_t hitboxShaderEdge, hitboxShaderSide;
 
-	if (!cg_drawHitBox.integer) 
+	if (!cg_drawHitBox.integer)
 	{
 		return;
 	}
@@ -2264,7 +2267,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		{
 			return;
 		}
-	}	
+	}
 
 	// get the player's client info
 	ci = &cgs.clientinfo[cent->currentState.clientNum];
@@ -2286,7 +2289,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	}
 
 	// if they don't exist, forget it
-	if (!CG_IsEnemy(ci)) 
+	if (!CG_IsEnemy(ci))
 	{
 		return;
 	}

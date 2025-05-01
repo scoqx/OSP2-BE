@@ -1501,7 +1501,8 @@ void CG_DrawReward(void)
 
 			color = CG_FadeColor(cg.rewardTime, REWARD_TIME);
 
-			if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSOUND)) {
+			if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSOUND))
+			{
 				trap_S_StartLocalSound(cg.rewardSound[0], CHAN_ANNOUNCER);
 			}
 		}
@@ -1893,7 +1894,7 @@ void CG_DrawCrosshairNames(void)
 	}
 
 	color = CG_FadeColor(cg.crosshairClientTime, 1000);
-	if ( !color )
+	if (!color)
 	{
 		return;
 	}

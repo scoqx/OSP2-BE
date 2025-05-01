@@ -93,7 +93,8 @@ void CG_SHUDElementRewardRoutine(void* context)
 			cg.rewardStack--;
 			CG_SHUDGetFadeColor(color_origin, color, &element->config, cg.rewardTime);
 
-			if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSOUND)) {
+			if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSOUND))
+			{
 				trap_S_StartLocalSound(cg.rewardSound[0], CHAN_ANNOUNCER);
 			}
 		}

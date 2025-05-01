@@ -233,37 +233,37 @@ CG_OSPDrawBlurFrame
 */
 void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t color)
 {
-    vec4_t borderSizeOriginal;
-    vec4_t red;
-    int i;
+	vec4_t borderSizeOriginal;
+	vec4_t red;
+	int i;
 
-    float t, falloff, currentAlpha;
-    const float step = 1.0f;
-    const float stepCount = size;
-    const float baseAlpha = color[3];
+	float t, falloff, currentAlpha;
+	const float step = 1.0f;
+	const float stepCount = size;
+	const float baseAlpha = color[3];
 
 	Vector4Set(borderSizeOriginal, size, size, size, size);
 
-    for (i = 0; i < (int)stepCount; i++)
-    {
-        t = (float)i / (stepCount - 1);
-        falloff = (1.0f - t) * (1.0f - t) * (0.25f + 0.75f * (1.0f - t));
-        if (falloff < 0.0f) falloff = 0.0f;
+	for (i = 0; i < (int)stepCount; i++)
+	{
+		t = (float)i / (stepCount - 1);
+		falloff = (1.0f - t) * (1.0f - t) * (0.25f + 0.75f * (1.0f - t));
+		if (falloff < 0.0f) falloff = 0.0f;
 
-        currentAlpha = baseAlpha * falloff;
-        if (currentAlpha <= 0.001f)
-            break;
+		currentAlpha = baseAlpha * falloff;
+		if (currentAlpha <= 0.001f)
+			break;
 
-        Vector4Set(red, color[0], color[1], color[2], currentAlpha);
+		Vector4Set(red, color[0], color[1], color[2], currentAlpha);
 
-        Vector4Set(borderSizeOriginal, step, step, step, step);
-        CG_OSPDrawFrame(x, y, w, h, borderSizeOriginal, red, qtrue);
+		Vector4Set(borderSizeOriginal, step, step, step, step);
+		CG_OSPDrawFrame(x, y, w, h, borderSizeOriginal, red, qtrue);
 
-        x += step;
-        y += step;
-        w -= step * 2;
-        h -= step * 2;
-    }
+		x += step;
+		y += step;
+		w -= step * 2;
+		h -= step * 2;
+	}
 }
 
 /*
@@ -2409,22 +2409,23 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 
 	/* replace tail with "." */
 	if (restricted)
-{
+	{
 
-    curr = &cmd[i];
-    if (curr->type == OSP_TEXT_CMD_CHAR)
-    {
-        curr->value.character = '.';
-    }
+		curr = &cmd[i];
+		if (curr->type == OSP_TEXT_CMD_CHAR)
+		{
+			curr->value.character = '.';
+		}
 
-    if (i + 1 < OSP_TEXT_CMD_MAX) {
-        cmd[i + 1].type = OSP_TEXT_CMD_STOP;
-    }
-}
+		if (i + 1 < OSP_TEXT_CMD_MAX)
+		{
+			cmd[i + 1].type = OSP_TEXT_CMD_STOP;
+		}
+	}
 
-	
 
-return ax;
+
+	return ax;
 
 }
 
