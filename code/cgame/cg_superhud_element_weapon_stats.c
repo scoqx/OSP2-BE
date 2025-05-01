@@ -152,7 +152,7 @@ void CG_SHUDElementWeaponStatsRoutine(void* context)
 
 		if (cs->lastTrackedWeapon < 0)
 		{
-			if (!SHUD_CHECK_SHOW_EMPTY_FLAG(element))
+			if (!SHUD_CHECK_SHOW_EMPTY(element))
 				return;
 			weapon = ps->weapon;
 		}
@@ -165,7 +165,7 @@ void CG_SHUDElementWeaponStatsRoutine(void* context)
 	// If no shots fired, show 0% accuracy or empty icon (based on config)
 	if (cs->stats[weapon].shots <= 0)
 	{
-		if (!SHUD_CHECK_SHOW_EMPTY_FLAG(element))
+		if (!SHUD_CHECK_SHOW_EMPTY(element))
 			return;
 
 		if (element->type == SHUD_ELEMENT_WEAPON_STATS_TEXT)

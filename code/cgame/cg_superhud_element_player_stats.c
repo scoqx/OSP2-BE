@@ -147,7 +147,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 	switch (element->type)
 	{
 		case SHUD_ELEMENT_PLAYER_STATS_DG:
-			if (dmgGiven <= 0 && !SHUD_CHECK_SHOW_EMPTY_FLAG(element)) return;
+			if (dmgGiven <= 0 && !SHUD_CHECK_SHOW_EMPTY(element)) return;
 
 			Com_sprintf(buffer, sizeof(buffer), "%d", dmgGiven);
 			element->textCtx.text = buffer;
@@ -155,7 +155,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 			return;
 
 		case SHUD_ELEMENT_PLAYER_STATS_DR:
-			if (dmgReceived <= 0 && !SHUD_CHECK_SHOW_EMPTY_FLAG(element)) return;
+			if (dmgReceived <= 0 && !SHUD_CHECK_SHOW_EMPTY(element)) return;
 			Com_sprintf(buffer, sizeof(buffer), "%d", dmgReceived);
 			element->textCtx.text = buffer;
 			CG_SHUDTextPrint(&element->config, &element->textCtx);
@@ -164,7 +164,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 		{
 			if (damageRatio <= 0.0f)
 			{
-				if (!SHUD_CHECK_SHOW_EMPTY_FLAG(element))
+				if (!SHUD_CHECK_SHOW_EMPTY(element))
 				{
 					return;
 				}
@@ -194,7 +194,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 			return;
 		}
 		case SHUD_ELEMENT_PLAYER_STATS_DG_ICON:
-			if (dmgGiven <= 0 && !!SHUD_CHECK_SHOW_EMPTY_FLAG(element)) return;
+			if (dmgGiven <= 0 && !!SHUD_CHECK_SHOW_EMPTY(element)) return;
 			element->drawCtx.image = cgs.media.arrowUp;
 			CG_SHUDDrawBorder(&element->config);
 			CG_SHUDFill(&element->config);
@@ -202,7 +202,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 			return;
 
 		case SHUD_ELEMENT_PLAYER_STATS_DR_ICON:
-			if (dmgReceived <= 0 && !SHUD_CHECK_SHOW_EMPTY_FLAG(element)) return;
+			if (dmgReceived <= 0 && !SHUD_CHECK_SHOW_EMPTY(element)) return;
 			element->drawCtx.image = cgs.media.arrowDown;
 			CG_SHUDDrawBorder(&element->config);
 			CG_SHUDFill(&element->config);

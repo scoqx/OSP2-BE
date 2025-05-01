@@ -136,7 +136,7 @@ void CG_SHUDElementScoreRoutine(void* context)
 		case SHUD_ELEMENT_SCORE_NME:
 			result = CG_SHUDScoresGetNME(&scores);
 
-			if (!result && SHUD_CHECK_SHOW_EMPTY_FLAG(element) &&
+			if (!result && SHUD_CHECK_SHOW_EMPTY(element) &&
 			        CG_SHUDGetOurActiveTeam() == TEAM_FREE)
 			{
 				scores = 0;

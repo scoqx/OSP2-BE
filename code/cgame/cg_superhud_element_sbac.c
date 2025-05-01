@@ -40,7 +40,7 @@ void CG_SHUDElementSBACRoutine(void* context)
 	shudElementStatusbarHealthCount* element = (shudElementStatusbarHealthCount*)context;
 	int ap = cg.snap->ps.stats[STAT_ARMOR];
 
-	if (ap <= 0 && !SHUD_CHECK_SHOW_EMPTY_FLAG(element))
+	if (ap <= 0 && !SHUD_CHECK_SHOW_EMPTY(element))
 		return;
 
 	element->ctx.text = va(element->config.text.value, ap > 0 ? ap : 0);

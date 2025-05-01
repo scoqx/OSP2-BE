@@ -94,7 +94,7 @@ void CG_SHUDElementTempAccRoutine(void* context)
 	CG_GetWeaponTempAccuracy(WP_LIGHTNING);
 
 	if (entry->tempAccuracy <= 0.0f &&
-	        (!(SHUD_CHECK_SHOW_EMPTY_FLAG(element))))
+	        (!(SHUD_CHECK_SHOW_EMPTY(element))))
 	{
 		return;
 	}
