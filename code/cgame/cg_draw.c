@@ -2468,7 +2468,7 @@ void CG_OSPDrawNewCredits(void)
 
 
 	// border
-	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale);
+	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, qtrue);
 }
 
 /*

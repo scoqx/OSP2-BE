@@ -2948,7 +2948,7 @@ int CG_OSPDrawStringWithShadow(int x, int y, const char* str, int charWidth, int
 // using for credits
 
 void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight,
-                            int direction, float speed, float gradientScale)
+                            int direction, float speed, float gradientScale, qboolean monochrome)
 {
 	int i, j;
 	int block = 3; // "quality". 1 is the best. Don't use it
@@ -2980,12 +2980,16 @@ void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeigh
 			phase = timeParam + ((startX + j) * dx + (startY + i) * dy) * gradientScale;
 			brightness = sin(phase) * 0.3f + 0.3f;
 
-			// rainbow block lol
-			// color[0] = (float)(sin(phase) * 0.5f + 0.5f);
-			// color[1] = (float)(sin(phase + 2.094f) * 0.5f + 0.5f);
-			// color[2] = (float)(sin(phase + 4.188f) * 0.5f + 0.5f);
-
-			color[0] = color[1] = color[2] = brightness;
+			if (!monochrome)
+			{
+				color[0] = (float)(sin(phase) * 0.5f + 0.5f);
+				color[1] = (float)(sin(phase + 2.094f) * 0.5f + 0.5f);
+				color[2] = (float)(sin(phase + 4.188f) * 0.5f + 0.5f);
+			}
+			else
+			{
+				color[0] = color[1] = color[2] = brightness;
+			}
 
 			color[3] = 1.0f;
 			trap_R_SetColor(color);
@@ -2998,7 +3002,7 @@ void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeigh
 
 
 void CG_OSPDrawGradientFrame(float x, float y, float width, float height,
-                             int border, int direction, float speed, float gradientScale)
+                             int border, int direction, float speed, float gradientScale, qboolean monochrome)
 {
 	int outerX, outerY, outerW, outerH;
 
@@ -3007,11 +3011,11 @@ void CG_OSPDrawGradientFrame(float x, float y, float width, float height,
 	outerW = (int)(width + 2 * border);
 	outerH = (int)(height + 2 * border);
 
-	CG_OSPDrawGradientRect(outerX, outerY, outerW, border, direction, speed, gradientScale);
+	CG_OSPDrawGradientRect(outerX, outerY, outerW, border, direction, speed, gradientScale, monochrome);
 
-	CG_OSPDrawGradientRect(outerX, (int)(y + height), outerW, border, direction, speed, gradientScale);
+	CG_OSPDrawGradientRect(outerX, (int)(y + height), outerW, border, direction, speed, gradientScale, monochrome);
 
-	CG_OSPDrawGradientRect(outerX, (int)y, border, (int)height, direction, speed, gradientScale);
+	CG_OSPDrawGradientRect(outerX, (int)y, border, (int)height, direction, speed, gradientScale, monochrome);
 
-	CG_OSPDrawGradientRect((int)(x + width), (int)y, border, (int)height, direction, speed, gradientScale);
+	CG_OSPDrawGradientRect((int)(x + width), (int)y, border, (int)height, direction, speed, gradientScale, monochrome);
 }

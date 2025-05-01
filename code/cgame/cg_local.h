@@ -1724,8 +1724,8 @@ typedef struct
 
 text_command_t* CG_CompileText(const char* text);
 void CG_CompiledTextDestroy(text_command_t* root);
-void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale);
-void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight, int direction, float speed, float gradientScale);
+void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale, qboolean monochrome);
+void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight, int direction, float speed, float gradientScale, qboolean monochrome);
 
 // flags for CG_DrawString
 enum

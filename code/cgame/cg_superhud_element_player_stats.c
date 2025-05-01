@@ -188,9 +188,10 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 			}
 
 			CG_SHUDStyleDamageRatioColor(ratioColor, &element->config, damageRatio);
-			Vector4Copy(ratioColor, element->config.color.value.rgba);
+			Vector4Copy(ratioColor, element->textCtx.color);
+
 			element->textCtx.text = buffer;
-			CG_SHUDTextPrint(&element->config, &element->textCtx);
+			CG_SHUDTextPrintNew(&element->config, &element->textCtx, qfalse);
 			return;
 		}
 		case SHUD_ELEMENT_PLAYER_STATS_DG_ICON:
