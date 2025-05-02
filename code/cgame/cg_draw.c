@@ -2356,19 +2356,21 @@ void CG_OSPDrawNewCredits(void)
 {
 	int i;
 
+	int showTime = 8000;
+
 	float x = 100.0f;
 	float y = 100.0f;
 	float w = 440.0f;
-	float h = 250.0f;
+	float h = 260.0f;
 	float charHeight = 14, charWidth = 8;
-	float textX = (440 / 2) + x;
+	float textX = (w / 2) + x;
 	float textY = y + 2.0f;
 	float lineY;
-	int borderSize = 10;
+	int borderSize = 2;
 	int direction = 12;
 	float speed = 0.005f;
 	float gradientScale = 0.05f;
-	vec4_t color = { 0.05, 0.05, 0.05, 0.8 };
+	vec4_t bgColor = { 0.05, 0.05, 0.05, 0.5 };
 	vec4_t border = { 0, 0, 0, 2 };
 	float firstLineHeight;
 	float baseY;
@@ -2407,7 +2409,7 @@ void CG_OSPDrawNewCredits(void)
 		startTime = cg.time;
 	}
 
-	if (cg.time - startTime > 5000)
+	if (cg.time - startTime > showTime)
 	{
 		cgs.be.showCredits = qfalse;
 		startTime = 0;
@@ -2415,27 +2417,43 @@ void CG_OSPDrawNewCredits(void)
 	}
 
 	// background
-	CG_FillRect(x, y, w, h, color);
+	CG_FillRect(x, y, w, h, bgColor);
 
-	firstLineHeight = charHeight * 1.5f;
-	CG_FontSelect(6);
+	// version
+	CG_FontSelect(4);
+
+	CG_OSPDrawStringNew(
+	    x + w - 2, y,
+	    OSP_VERSION,
+	    colorBlack,
+	    NULL,
+	    6, 8,
+	    0,
+	    DS_PROPORTIONAL | DS_HRIGHT,
+	    NULL, NULL, NULL
+	);
+
+	firstLineHeight = charHeight * 2.0f;
 
 	// title
+	CG_FontSelect(0);
+
 	CG_OSPDrawStringNew(
 	    textX, textY,
 	    credits[0],
 	    colorWhite,
 	    colorBlack,
-	    charWidth * 1.5f, firstLineHeight,
+	    charWidth * 2, firstLineHeight,
 	    w,
 	    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
 	    NULL, border, colorBlack
 	);
 
-	CG_FontSelect(4);
 	baseY = textY + firstLineHeight;
 
 	// credits
+	CG_FontSelect(4);
+
 	for (i = 1; credits[i] != NULL; i++)
 	{
 		lineY = baseY + (i - 1) * charHeight;
@@ -2450,25 +2468,10 @@ void CG_OSPDrawNewCredits(void)
 		    NULL, NULL, NULL
 		);
 	}
-
-	// version
-	CG_FontSelect(5);
-
-	CG_OSPDrawStringNew(
-	    x + w - 2, y,
-	    OSP_VERSION,
-	    colorBlack,
-	    colorWhite,
-	    8, 12,
-	    0,
-	    DS_SHADOW | DS_PROPORTIONAL | DS_HRIGHT,
-	    NULL, NULL, NULL
-	);
-
-
-
 	// border
-	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, qtrue);
+	// CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, 0);
+	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, 0);
+	// CG_OSPDrawGradientFrame(x - borderSize, y - borderSize, w + borderSize * 2, h + borderSize * 2, 1, direction, speed, gradientScale, 2);
 }
 
 /*
@@ -2497,6 +2500,7 @@ static void CG_Draw2D(void)
 	if (cgs.be.showCredits)
 	{
 		CG_OSPDrawNewCredits();
+		return;
 	}
 	if (cg_shud.integer)
 	{
