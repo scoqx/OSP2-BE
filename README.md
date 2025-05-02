@@ -122,7 +122,7 @@ Other:
 * +wstats additional data
   + Kill/death ratio (K/D)
   + Damage given/recieved Ratio
-
+```
 ![shot-Mar-27-2025_00 30 21](https://github.com/user-attachments/assets/11e8a2cf-8ef6-4984-a427-5af8ac9de650)
 
 
