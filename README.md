@@ -13,6 +13,7 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 ## v0.06c2
 ```
  + cg_teamIndicator;
+ + cg_teamIndicatorAdjust;
  + cg_teamIndicatorColor;
  + cg_teamIndicatorOpaque;
  + cg_teamIndicatorBgColor;
