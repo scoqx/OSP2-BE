@@ -2365,6 +2365,7 @@ static float GetSymbolSize(char sym, qboolean proportional, float charWidth)
 	return charWidth;
 }
 
+//Restrict by width (px)
 static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboolean proportional, float toWidth)
 {
 	const font_metric_t* fm;
@@ -2427,6 +2428,54 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 
 	return ax;
 
+}
+
+//Restrict by chars (count) 
+
+static float RestrictCompiledStringChars(text_command_t* cmd, int maxChars)
+{
+	int chars = 0;
+	int i;
+	text_command_t* curr;
+	qboolean restricted = qfalse;
+
+	if (!cmd || maxChars <= 0)
+		return 0;
+
+	for (i = 0; i < OSP_TEXT_CMD_MAX; ++i)
+	{
+		curr = &cmd[i];
+
+		if (curr->type == OSP_TEXT_CMD_CHAR)
+		{
+			chars++;
+			if (chars >= maxChars)
+			{
+				restricted = qtrue;
+				break;
+			}
+		}
+		else if (curr->type == OSP_TEXT_CMD_STOP)
+		{
+			break;
+		}
+	}
+
+	if (restricted)
+	{
+		curr = &cmd[i];
+		if (curr->type == OSP_TEXT_CMD_CHAR)
+		{
+			curr->value.character = '.';
+		}
+
+		if (i + 1 < OSP_TEXT_CMD_MAX)
+		{
+			cmd[i + 1].type = OSP_TEXT_CMD_STOP;
+		}
+	}
+
+	return (float)chars;
 }
 
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth)
@@ -2677,6 +2726,15 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 	trap_R_SetColor(NULL);
 }
 
+/*
+===
+Draw string new
+NULL shadow - black (still need DS_SHADOW)
+NULL is allowed for the last 3 arguments
+Set DS_MAX_WIDTH_IS_CHARS to enable character count restriction
+===
+*/
+
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor,
                          vec4_t shadowColor,
                          float charWidth, float charHeight, int maxWidth, int flags,
@@ -2687,7 +2745,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	float           ax, ay, aw, aw1, ah; // absolute positions/dimensions
 	float           scale;
 	float           x_end, xx;
-	float                   fade = 1.0f;
+	float           fade = 1.0f;
 	vec4_t          color;
 	float           xx_add, yy_add;
 	int             i;
@@ -2717,6 +2775,11 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 
 	proportional = (flags & DS_PROPORTIONAL);
 
+	if (flags & DS_MAX_WIDTH_IS_CHARS)
+	{
+		RestrictCompiledStringChars(text_commands, (int)maxWidth);
+	}
+	else
 	{
 		float mw = maxWidth;
 		CG_AdjustFrom640(NULL, NULL, &mw, NULL);
@@ -3028,4 +3091,36 @@ void CG_OSPDrawGradientFrame(float x, float y, float width, float height,
 	CG_OSPDrawGradientRect(outerX, (int)y, border, (int)height, direction, speed, gradientScale, colored);
 
 	CG_OSPDrawGradientRect((int)(x + width), (int)y, border, (int)height, direction, speed, gradientScale, colored);
+}
+
+/*
+===
+From world to screen
+===
+*/
+qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y)
+{
+	vec3_t trans;
+	float xc, yc;
+	float px, py;
+	float z;
+
+	VectorSubtract(world, cg.refdef.vieworg, trans);
+
+	px = DotProduct(trans, cg.refdef.viewaxis[1]);   // right
+	py = DotProduct(trans, cg.refdef.viewaxis[2]);   // up
+	z  = DotProduct(trans, cg.refdef.viewaxis[0]);   // forward
+
+	if (z <= 0.001f)
+	{
+		return qfalse;
+	}
+
+	xc = SCREEN_WIDTH / 2;
+	yc = SCREEN_HEIGHT / 2;
+
+	*x = xc - px * (xc / tan(cg.refdef.fov_x * M_PI / 360.0f)) / z;
+	*y = yc - py * (yc / tan(cg.refdef.fov_y * M_PI / 360.0f)) / z;
+
+	return qtrue;
 }

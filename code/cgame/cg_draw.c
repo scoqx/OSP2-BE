@@ -2253,6 +2253,11 @@ void CG_DrawWarmup(void)
 	}
 }
 
+/*
+===
+Damage frame
+===
+*/
 void CG_DrawDamageFrame()
 {
 	float x = 0.0f;
@@ -2352,6 +2357,11 @@ static void CG_DrawTestFont(const char* font)
 
 }
 
+/*
+===
+New credits
+===
+*/
 void CG_OSPDrawNewCredits(void)
 {
 	int i;
@@ -2469,10 +2479,170 @@ void CG_OSPDrawNewCredits(void)
 		);
 	}
 	// border
-	// CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, 0);
 	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, 0);
-	// CG_OSPDrawGradientFrame(x - borderSize, y - borderSize, w + borderSize * 2, h + borderSize * 2, 1, direction, speed, gradientScale, 2);
 }
+
+/*
+===
+Team Indicator
+===
+*/
+teamIndicator_t teamIndicator;
+
+float lastLift[MAX_CLIENTS];
+
+void CG_DrawPlayerOverlay(int clientNum) {
+	centity_t* cent = &cg_entities[clientNum];
+	clientInfo_t* ci = &cgs.clientinfo[clientNum];
+
+	char tmpName[MAX_QPATH];
+
+	vec3_t headPos, bodyPos, legsPos;
+	vec3_t viewer, toTarget;
+	float hx, hy;
+	float w, h;
+	float dist, lift, rawLift, t;
+	vec4_t nameColor = { 1, 1, 1, 1};
+	vec4_t bgColor = {0.0f, 0.0f, 0.0f, 0.5f};
+
+	const float distMin = 0.0f;
+	const float distMax = 2500.0f;
+	const float liftMin = 58.0f;
+	const float liftMax = 128.0f;
+	float liftMinAdj = liftMin + cg_teamIndicatorOffset.value;
+	float liftMaxAdj = liftMax + cg_teamIndicatorOffset.value;	
+	const float smoothFactor = 0.2f;
+
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS) return;
+
+	// Расстояние до игрока
+	VectorCopy(cg.refdef.vieworg, viewer);
+	VectorSubtract(cent->lerpOrigin, viewer, toTarget);
+	dist = VectorLength(toTarget);
+
+	// Интерполяция размеров и подъема
+	t = (dist - distMin) / (distMax - distMin);
+	if (t < 0.0f) t = 0.0f;
+	if (t > 1.0f) t = 1.0f;
+
+	// Размер шрифта
+	h = (12.0f - (t * 8.0f)) * cg_teamIndicatorAdjust.value;     // от 12 до 4 по высоте
+	w = (h * 0.8f) * cg_teamIndicatorAdjust.value;               // ширина на 20% меньше
+
+	// "Сырой" lift без сглаживания
+	rawLift = liftMinAdj + t * (liftMaxAdj - liftMinAdj);
+
+	// Сглаживание подъема
+	lift = lastLift[clientNum] + (rawLift - lastLift[clientNum]) * smoothFactor;
+	lastLift[clientNum] = lift;
+
+	VectorCopy(cent->lerpOrigin, headPos); headPos[2] += lift;
+
+	if (!CG_WorldCoordToScreen(headPos, &hx, &hy)) return;
+
+	if (cg_teamIndicator.integer & TI_NAME_CLEAN)
+    Q_strncpyz(tmpName, ci->name_clean, sizeof(tmpName));
+	else
+    Q_strncpyz(tmpName, ci->name, sizeof(tmpName));
+
+	Vector4Copy(teamIndicator.bgColor, bgColor);
+	Vector4Copy(teamIndicator.color, nameColor);
+	bgColor[3] = cg_teamIndicatorBgOpaque.value;
+	nameColor[3] = cg_teamIndicatorOpaque.value;
+
+
+	CG_OSPDrawStringNew(
+		hx, hy,
+		tmpName,
+		nameColor,
+		NULL,
+		w, h,
+		cg_teamIndicatorMaxLength.integer,
+		DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER | DS_MAX_WIDTH_IS_CHARS,
+		bgColor,
+		NULL,
+		NULL
+	);
+	
+	// health and armod
+	if (cg_teamIndicator.integer & TI_STATS)
+		{
+		int health = ci->health;
+		int armor  = ci->armor;
+		float h2, w2;
+		char statsText[16];
+		vec4_t statsColor;
+		if (health == 0)
+		return;
+		Com_sprintf(statsText, sizeof(statsText), "[%d/%d]", health, armor);
+		
+		CG_GetColorForHealth(health, armor, statsColor, NULL);
+
+		statsColor[3] = nameColor[3];
+
+		h2 = h - 2.0f;
+		if (h2 < 4.0f) h2 = 4.0f; // не меньше 4
+		w2 = h2 * 0.8f;
+
+		CG_OSPDrawStringNew(
+			hx, hy + h,
+			statsText,
+			statsColor,
+			NULL,
+			w2, h2,
+			SCREEN_WIDTH,
+			DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
+			bgColor,
+			NULL,
+			NULL
+		);
+	}
+}
+
+
+qboolean CG_IsPlayerValidAndVisible(int clientNum) {
+	centity_t* cent = &cg_entities[clientNum];
+	clientInfo_t* ci = &cgs.clientinfo[clientNum];
+
+	if (!cent->currentValid || cent->currentState.eType != ET_PLAYER)
+		return qfalse;
+
+	if (!ci || CG_IsEnemy(ci))
+		return qfalse;
+	else
+	{
+	trace_t tr;
+	vec3_t traceStart, traceEnd;
+
+	VectorCopy(cg.refdef.vieworg, traceStart);
+	VectorCopy(cent->lerpOrigin, traceEnd);
+	traceEnd[2] += 24.0f;
+
+	CG_Trace(&tr, traceStart, NULL, NULL, traceEnd, cg.snap->ps.clientNum, CONTENTS_SOLID);
+	if (tr.fraction < 1.0f)
+		return qfalse;
+
+	return qtrue;
+	}
+}
+
+
+void CG_DrawPlayerNamesOnScreen(void) {
+	int i;
+
+	CG_FontSelect(4);
+
+	for (i = 0; i < cgs.maxclients; i++) {
+		if (i == cg.snap->ps.clientNum)
+			continue;
+
+		if (!CG_IsPlayerValidAndVisible(i))
+			continue;
+
+		CG_DrawPlayerOverlay(i);
+	}
+}
+
 
 /*
 =================
@@ -2501,6 +2671,10 @@ static void CG_Draw2D(void)
 	{
 		CG_OSPDrawNewCredits();
 		return;
+	}
+	if (cg_teamIndicator.integer)
+	{
+		CG_DrawPlayerNamesOnScreen();
 	}
 	if (cg_shud.integer)
 	{

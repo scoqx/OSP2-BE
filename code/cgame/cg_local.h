@@ -1595,6 +1595,14 @@ extern vmCvar_t         cg_gunPos;
 extern vmCvar_t         cg_altShadow;
 extern vmCvar_t         cg_altShadowColor;
 extern vmCvar_t         cg_scoreboardShowId;
+extern vmCvar_t		cg_teamIndicator;
+extern vmCvar_t		cg_teamIndicatorColor;
+extern vmCvar_t		cg_teamIndicatorOpaque;
+extern vmCvar_t		cg_teamIndicatorBgColor;
+extern vmCvar_t		cg_teamIndicatorBgOpaque;
+extern vmCvar_t		cg_teamIndicatorOffset;
+extern vmCvar_t 	cg_teamIndicatorMaxLength;
+extern vmCvar_t		cg_teamIndicatorAdjust;
 
 
 extern vmCvar_t         be_run;
@@ -1700,6 +1708,8 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 void CG_FontSelect(int index);
 int CG_FontIndexFromName(const char* name);
 
+qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y);
+
 #define OSP_TEXT_CMD_MAX 2048
 
 typedef enum
@@ -1739,6 +1749,7 @@ enum
 	DS_HRIGHT       = 0x10,// horizontal right
 	DS_VTOP         = 0x20,// vertical top
 	DS_VCENTER      = 0x40,// vertical center
+	DS_MAX_WIDTH_IS_CHARS = 0x80,// flag for calculation 
 };
 void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxChars, int flags);
 
@@ -1868,6 +1879,22 @@ typedef struct
 
 extern lagometer_t     lagometer;
 
+// team indicator
+typedef struct{
+	vec4_t color;
+	vec4_t bgColor;
+	
+}teamIndicator_t;
+
+extern teamIndicator_t teamIndicator;
+
+enum {
+    TI_NAME        = 1,
+    TI_NAME_CLEAN  = 2,
+    TI_STATS       = 4,
+    TI_FROZEN      = 8
+};
+
 
 //
 // cg_player.c
@@ -1879,6 +1906,8 @@ void CG_NewClientInfo(int clientNum);
 sfxHandle_t CG_CustomSound(int clientNum, const char* soundName);
 void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
+
+qboolean CG_IsEnemy(const clientInfo_t* ci);
 
 //
 // cg_predict.c
@@ -2265,7 +2294,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.06b1" // BE
+#define OSP_VERSION "be-0.06c2" // BE
 
 
 
@@ -2502,8 +2531,13 @@ void CG_LocalEventCvarChanged_cg_railRingsRotation(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_railRingsSpacing(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_railRingsSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_altShadowColor(cvarTable_t* cvart);
-
-
+void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamIndicatorColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamIndicatorBgColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamIndicatorOffset(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

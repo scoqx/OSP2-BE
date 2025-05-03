@@ -399,8 +399,14 @@ vmCvar_t        cg_gunPos;
 vmCvar_t        cg_altShadow;
 vmCvar_t        cg_altShadowColor;
 vmCvar_t        cg_scoreboardShowId;
-
-
+vmCvar_t		cg_teamIndicator;
+vmCvar_t		cg_teamIndicatorAdjust;
+vmCvar_t		cg_teamIndicatorColor;
+vmCvar_t		cg_teamIndicatorOpaque;
+vmCvar_t		cg_teamIndicatorBgColor;
+vmCvar_t		cg_teamIndicatorBgOpaque;
+vmCvar_t		cg_teamIndicatorOffset;
+vmCvar_t		cg_teamIndicatorMaxLength;
 vmCvar_t        be_run;
 
 
@@ -482,7 +488,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawTeamOverlay},
 	{ &teamoverlay, "teamoverlay", "0", CVAR_USERINFO | CVAR_ROM },
 	{ &cg_stats, "cg_stats", "0",  },
-	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE },
 	{ &cg_buildScript, "com_buildScript", "0",  },
 	{ &cg_paused, "cl_paused", "0", CVAR_ROM },
 	{ &com_blood, "com_blood", "1", CVAR_ARCHIVE },
@@ -698,11 +703,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE },
 	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
 	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
-	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE },
 	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE },
 	{ &cg_shotGunTracer, "cg_shotGunTracer", "1", CVAR_ARCHIVE },
 	{ &cg_railRingsRadius, "cg_railRingsRadius", "4.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsRadius },
 	{ &cg_railRingsRotation, "cg_railRingsRotation", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsRotation },
@@ -710,14 +715,21 @@ static cvarTable_t cvarTable[] =
 	{ &cg_railRingsSize, "cg_railRingsSize", "1.1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsSize },
 	{ &cg_railStaticRings, "cg_railStaticRings", "0", CVAR_ARCHIVE },
 	{ &cg_gunPos, "cg_gunPos", "1", CVAR_ARCHIVE  },
-	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_shadows},
+	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_shadows},
 	{ &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altShadowColor },
-	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE | CVAR_NEW },
-
+	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
+	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE },
+	{ &cg_teamIndicator, "cg_teamIndicator", "6", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teamIndicatorAdjust, "cg_teamIndicatorAdjust", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorAdjust },
+	{ &cg_teamIndicatorColor, "cg_teamIndicatorColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorColor },
+	{ &cg_teamIndicatorOpaque, "cg_teamIndicatorOpaque", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorOpaque },
+	{ &cg_teamIndicatorBgColor, "cg_teamIndicatorBgColor", "444444", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorBgColor },
+	{ &cg_teamIndicatorBgOpaque, "cg_teamIndicatorBgOpaque", "0.4", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque },
+	{ &cg_teamIndicatorOffset, "cg_teamIndicatorOffset", "12", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorOffset },
+	{ &cg_teamIndicatorMaxLength, "cg_teamIndicatorMaxLength", "13", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength },
+	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
-
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -1856,8 +1868,13 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_dlightPG");
 	CG_CvarTouch("cg_dlightBFG");
 
-
-
+	CG_CvarTouch("cg_teamIndicatorColor");
+	CG_CvarTouch("cg_teamIndicatorOpaque");
+	CG_CvarTouch("cg_teamIndicatorBgColor");
+	CG_CvarTouch("cg_teamIndicatorBgOpaque");
+	CG_CvarTouch("cg_teamIndicatorOffset");
+	CG_CvarTouch("cg_teamIndicatorMaxLength");
+	CG_CvarTouch("cg_teamIndicatorAdjust");
 
 	CG_InitConsoleCommands();
 

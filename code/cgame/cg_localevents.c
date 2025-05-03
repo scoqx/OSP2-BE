@@ -424,7 +424,7 @@ void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
 	{
 		if (!cg.demoPlayback)
 		{
-			CG_Printf("^3HitBox has been disabled on this server.\n");
+			CG_Printf("^3HitBox is disabled on this server.\n");
 		}
 	}
 }
@@ -492,3 +492,32 @@ void CG_LocalEventCvarChanged_cg_altShadowColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.altShadowColor);
 }
+void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0.5f, 2, cvart->vmCvar->value);
+}
+void CG_LocalEventCvarChanged_cg_teamIndicatorColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, teamIndicator.color);
+}
+void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
+}
+void CG_LocalEventCvarChanged_cg_teamIndicatorBgColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, teamIndicator.bgColor);
+}
+void CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
+}
+void CG_LocalEventCvarChanged_cg_teamIndicatorOffset(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(-16, 32, cvart->vmCvar->value);
+}
+void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart)
+{
+	cvart->vmCvar->integer = Com_Clamp(1, MAX_QPATH, cvart->vmCvar->integer);
+}
+

@@ -24,7 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../qcommon/l_crc.h"
 
-static qboolean CG_IsEnemy(const clientInfo_t* ci)
+qboolean CG_IsEnemy(const clientInfo_t* ci)
 {
 	if (cgs.gametype <= GT_SINGLE_PLAYER)
 	{
@@ -1910,7 +1910,7 @@ static void CG_PlayerSprites(centity_t* cent)
 			{
 				CG_PlayerFloatSprite(cent, cgs.media.frozenFoeTagShader, NULL);
 			}
-			else
+			else if (cg_drawFriend.integer != 2)
 			{
 				vec4_t color;
 				// Black color for low hp is transparent, skip it

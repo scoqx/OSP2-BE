@@ -202,3 +202,15 @@ SHUD:
   * StatusBar_ArmorCount 
     + visflags: showempty
     + color works for '0'
+
+03.05.2025 be v0.06c2
+
+ + cg_teamIndicator;
+ + cg_teamIndicatorColor;
+ + cg_teamIndicatorOpaque;
+ + cg_teamIndicatorBgColor;
+ + cg_teamIndicatorBgOpaque;
+ + cg_teamIndicatorOffset;
+ + cg_teamIndicatorMaxLength;
+ * cg_drawFriend
+    + option 2 (draw only freeze foe)

@@ -10,6 +10,18 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v0.06c2
+```
+ + cg_teamIndicator;
+ + cg_teamIndicatorColor;
+ + cg_teamIndicatorOpaque;
+ + cg_teamIndicatorBgColor;
+ + cg_teamIndicatorBgOpaque;
+ + cg_teamIndicatorOffset;
+ + cg_teamIndicatorMaxLength;
+ * cg_drawFriend
+    + option 2 (draw only freeze foe)
+```
 ## v0.06a
 ```
 * SHUD:
@@ -42,13 +54,8 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
   + teammates names in fog
   + ignore fog on maps: Asylum, Quarantine, oxodm32, oxodm90, rjldm3, gen_q1dm1
 ```
-## v0.059e
-```
-+ StatusBar_AmmoCount shading when realoading
-  * dark grey by default, or color2 is set
-  * disable by style (any)
-```
 ## Extended features
+```
 Cvars:
 + cg_altBlood multiply shaders support
 + cg_altBloodColor
@@ -68,7 +75,6 @@ Cvars:
 + cg_itemsRespawnAnimation
 + cg_enemyLightningColor
 + cg_uniqueColorTable
-+ cg_noVoteBeep
 + cg_noSlidingWindow
 + cg_underwaterFovWarp
 + cg_drawOutline
@@ -116,7 +122,9 @@ Other:
 * weaponlist:
   + border for choosen weapon
 * visflags: showempty for weapon/playerStats, enemyscore, tempAcc
-
++ StatusBar_AmmoCount shading when realoading
+  * dark grey by default, or color2 is set
+  * disable by style (any)
 
 
 * +wstats additional data
