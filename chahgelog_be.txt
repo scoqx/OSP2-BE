@@ -206,6 +206,7 @@ SHUD:
 03.05.2025 be v0.06c2
 
  + cg_teamIndicator;
+ + cg_teamIndicatorAdjust;
  + cg_teamIndicatorColor;
  + cg_teamIndicatorOpaque;
  + cg_teamIndicatorBgColor;
