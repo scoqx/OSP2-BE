@@ -121,7 +121,7 @@ void CG_SHUDElementWeaponStatsRoutine(void* context)
 	static int lastHits = 0;
 	static qboolean wasSpectator = qfalse;
 	static int lastClientNum = -1;
-	qboolean isSpectator = CG_IsSpectator();
+	qboolean isSpectator = CG_IsSpectatorOnScreen();
 	qboolean becameSpectator = (isSpectator && !wasSpectator);
 	qboolean clientChanged = (cg.snap ? cg.snap->ps.clientNum : -1) != lastClientNum;
 

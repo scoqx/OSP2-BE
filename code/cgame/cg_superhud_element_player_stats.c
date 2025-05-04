@@ -125,7 +125,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 	qboolean clientChanged = (currentClientNum != lastClientNum);
 
 	static qboolean wasSpectator = qfalse;
-	qboolean isSpectator = CG_IsSpectator();
+	qboolean isSpectator = CG_IsSpectatorOnScreen();
 	qboolean becameSpectator = (isSpectator && !wasSpectator);
 
 	if (CG_OSPIsStatsHidden(qtrue, qtrue))

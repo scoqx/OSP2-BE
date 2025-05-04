@@ -520,4 +520,25 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart)
 {
 	cvart->vmCvar->integer = Com_Clamp(1, MAX_QPATH, cvart->vmCvar->integer);
 }
+void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart)
+{
+	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	{
+		trap_Cvar_Set("cg_scoreboardFont", 0);
+	}
+}
+void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart)
+{
+	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	{
+		trap_Cvar_Set("cg_teamIndicatorFont", 0);
+	}
+}
+void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
+{
+	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	{
+		trap_Cvar_Set("cg_centerMessagesFont", 0);
+	}
+}
 

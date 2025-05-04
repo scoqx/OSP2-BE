@@ -311,7 +311,7 @@ void CG_SHUDRoutine(void)
 	const qboolean is_dead = cg.predictedPlayerState.pm_type == PM_DEAD || cg.predictedPlayerState.pm_type == PM_FREEZE;
 	const qboolean is_intermission = cg.predictedPlayerState.pm_type == PM_INTERMISSION;
 	const qboolean is_team_game = cgs.gametype >= GT_TEAM;
-	const qboolean is_spectator = CG_IsSpectator();
+	const qboolean is_spectator = CG_IsSpectatorOnScreen();
 	const qboolean is_scores = cg.showScores;
 
 	CG_DrawCrosshair();

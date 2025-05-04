@@ -399,14 +399,18 @@ vmCvar_t        cg_gunPos;
 vmCvar_t        cg_altShadow;
 vmCvar_t        cg_altShadowColor;
 vmCvar_t        cg_scoreboardShowId;
-vmCvar_t		cg_teamIndicator;
-vmCvar_t		cg_teamIndicatorAdjust;
-vmCvar_t		cg_teamIndicatorColor;
-vmCvar_t		cg_teamIndicatorOpaque;
-vmCvar_t		cg_teamIndicatorBgColor;
-vmCvar_t		cg_teamIndicatorBgOpaque;
-vmCvar_t		cg_teamIndicatorOffset;
-vmCvar_t		cg_teamIndicatorMaxLength;
+vmCvar_t        cg_teamIndicator;
+vmCvar_t        cg_teamIndicatorAdjust;
+vmCvar_t        cg_teamIndicatorColor;
+vmCvar_t        cg_teamIndicatorOpaque;
+vmCvar_t        cg_teamIndicatorBgColor;
+vmCvar_t        cg_teamIndicatorBgOpaque;
+vmCvar_t        cg_teamIndicatorOffset;
+vmCvar_t        cg_teamIndicatorMaxLength;
+vmCvar_t        cg_scoreboardBE;
+vmCvar_t        cg_scoreboardFont;
+vmCvar_t        cg_teamIndicatorFont;
+vmCvar_t        cg_centerMessagesFont;
 vmCvar_t        be_run;
 
 
@@ -444,7 +448,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawCrosshairRailgun, "cg_drawCrosshairRailgun", "-1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairPlasmagun, "cg_drawCrosshairPlasmagun", "-1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairBFG, "cg_drawCrosshairBFG", "-1", CVAR_ARCHIVE },
-	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE },
 	{ &cg_crosshairSize, "cg_crosshairSize", "24", CVAR_ARCHIVE },
 	{ &cg_crosshairAspectRatioFix, "cg_crosshairAspectRatioFix", "1", CVAR_ARCHIVE },
 	{ &cg_crosshairHealth, "cg_crosshairHealth", "0", CVAR_ARCHIVE },
@@ -719,6 +722,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
 	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE },
+	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_teamIndicator, "cg_teamIndicator", "6", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamIndicatorAdjust, "cg_teamIndicatorAdjust", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorAdjust },
 	{ &cg_teamIndicatorColor, "cg_teamIndicatorColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorColor },
@@ -727,9 +731,13 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamIndicatorBgOpaque, "cg_teamIndicatorBgOpaque", "0.4", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque },
 	{ &cg_teamIndicatorOffset, "cg_teamIndicatorOffset", "12", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorOffset },
 	{ &cg_teamIndicatorMaxLength, "cg_teamIndicatorMaxLength", "13", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength },
-	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_teamIndicatorFont, "cg_teamIndicatorFont", "4", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorFont, },
+	{ &cg_scoreboardBE, "cg_scoreboardBE", "0", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_scoreboardFont, "cg_scoreboardFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardFont },
+	{ &cg_centerMessagesFont, "cg_centerMessagesFont", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_centerMessagesFont },
+	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 
-	// { &be_run, "be_run", "0", CVAR_ARCHIVE }
+	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -1538,7 +1546,7 @@ static void CG_RegisterGraphics(void)
 	// be extention
 	cgs.media.whiteAlphaShader      = trap_R_RegisterShader("whiteAlpha");
 	cgs.media.whiteAlphaShader_nocull      = trap_R_RegisterShader("whiteAlpha_nocull");
-	cgs.media.WhiteAlphaShader_cullback    = trap_R_RegisterShader("whiteAlpha_cullback");
+	cgs.media.whiteAlphaShader_cullback    = trap_R_RegisterShader("whiteAlpha_cullback");
 
 	// Enemy outline
 	cgs.media.outlineShader =

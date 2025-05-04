@@ -215,3 +215,18 @@ SHUD:
  + cg_teamIndicatorMaxLength;
  * cg_drawFriend
     + option 2 (draw only freeze foe)
+
+04.05.2025 be v0.06d
+
++ cg_scoreboardBE - alt default scoreboard
++ cg_scoreboardFont - font for alt scoreboard
+* cg_teamIndicator: 
+  + 8 bitmask (show icons (only for dead now))
+  + show all names while spectating
++ cg_teamIndicatorFont
++ cg_centerMesagesFont
+* cg_drawCrosshairNames:
+  + 2 option - teammates
+  + 3 option - enemies
+
+* SHUD: StatusBar_ArmorCount fix

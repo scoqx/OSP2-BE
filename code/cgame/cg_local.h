@@ -348,7 +348,7 @@ typedef struct
 	char            name_codes[MAX_QPATH * 2];
 	char            name[MAX_QPATH];
 	qboolean        nameIsInvisible;
-	team_t          team;
+	team_t          team; // best
 
 	unsigned short  xid; //crc32 like in xq3e
 	unsigned char   xidStr[5];
@@ -408,8 +408,8 @@ typedef struct
 
 	sfxHandle_t     sounds[MAX_CUSTOM_SOUNDS];
 	vec3_t          customLocation;
-	team_t          rt;
-	team_t          st;
+	team_t          rt; // probably for CA
+	team_t          st; // 1 for coach
 } clientInfo_t;
 
 
@@ -705,7 +705,7 @@ typedef struct
 	qhandle_t   whiteShader;
 	qhandle_t   whiteAlphaShader;
 	qhandle_t   whiteAlphaShader_nocull;
-	qhandle_t   WhiteAlphaShader_cullback;
+	qhandle_t   whiteAlphaShader_cullback;
 	qhandle_t   outlineThinShader;
 	qhandle_t   outlineMediumShader;
 	qhandle_t   outlineWideShader;
@@ -1595,16 +1595,18 @@ extern vmCvar_t         cg_gunPos;
 extern vmCvar_t         cg_altShadow;
 extern vmCvar_t         cg_altShadowColor;
 extern vmCvar_t         cg_scoreboardShowId;
-extern vmCvar_t		cg_teamIndicator;
-extern vmCvar_t		cg_teamIndicatorColor;
-extern vmCvar_t		cg_teamIndicatorOpaque;
-extern vmCvar_t		cg_teamIndicatorBgColor;
-extern vmCvar_t		cg_teamIndicatorBgOpaque;
-extern vmCvar_t		cg_teamIndicatorOffset;
-extern vmCvar_t 	cg_teamIndicatorMaxLength;
-extern vmCvar_t		cg_teamIndicatorAdjust;
-
-
+extern vmCvar_t     cg_teamIndicator;
+extern vmCvar_t     cg_teamIndicatorColor;
+extern vmCvar_t     cg_teamIndicatorOpaque;
+extern vmCvar_t     cg_teamIndicatorBgColor;
+extern vmCvar_t     cg_teamIndicatorBgOpaque;
+extern vmCvar_t     cg_teamIndicatorOffset;
+extern vmCvar_t     cg_teamIndicatorMaxLength;
+extern vmCvar_t     cg_teamIndicatorAdjust;
+extern vmCvar_t     cg_teamIndicatorFont;
+extern vmCvar_t     cg_scoreboardBE;
+extern vmCvar_t     cg_scoreboardFont;
+extern vmCvar_t     cg_centerMessagesFont;
 extern vmCvar_t         be_run;
 
 //
@@ -1706,6 +1708,7 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor, vec4_t shadowColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background, vec4_t border, vec4_t borderColor);
 
 void CG_FontSelect(int index);
+qboolean CG_FontAvailable(int index);
 int CG_FontIndexFromName(const char* name);
 
 qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y);
@@ -1749,7 +1752,7 @@ enum
 	DS_HRIGHT       = 0x10,// horizontal right
 	DS_VTOP         = 0x20,// vertical top
 	DS_VCENTER      = 0x40,// vertical center
-	DS_MAX_WIDTH_IS_CHARS = 0x80,// flag for calculation 
+	DS_MAX_WIDTH_IS_CHARS = 0x80,// flag for calculation
 };
 void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxChars, int flags);
 
@@ -1880,19 +1883,21 @@ typedef struct
 extern lagometer_t     lagometer;
 
 // team indicator
-typedef struct{
+typedef struct
+{
 	vec4_t color;
 	vec4_t bgColor;
-	
-}teamIndicator_t;
+
+} teamIndicator_t;
 
 extern teamIndicator_t teamIndicator;
 
-enum {
-    TI_NAME        = 1,
-    TI_NAME_CLEAN  = 2,
-    TI_STATS       = 4,
-    TI_FROZEN      = 8
+enum
+{
+	TI_NAME        = 1,
+	TI_NAME_CLEAN  = 2,
+	TI_STATS       = 4,
+	TI_ICON      = 8
 };
 
 
@@ -1908,6 +1913,7 @@ void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
 
 qboolean CG_IsEnemy(const clientInfo_t* ci);
+qboolean CG_IsLocalClientSpectator(void);
 
 //
 // cg_predict.c
@@ -2043,6 +2049,7 @@ qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
 void CG_OSPShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
+qboolean CG_OSPDrawScoretableNew(void);
 
 //
 // cg_consolecmds.c
@@ -2294,7 +2301,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.06c3" // BE
+#define OSP_VERSION "be-0.06d" // BE
 
 
 
@@ -2367,7 +2374,7 @@ void CG_OSPConfigModeSet(int value);
 void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigXHitBoxSet(int value);
 
-qboolean CG_IsSpectator(void);
+qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsFollowing(void);
 
 //
@@ -2538,6 +2545,10 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorBgColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorOffset(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart);
+
 
 #ifdef __cplusplus
 }

@@ -325,7 +325,7 @@ void CG_OSPConfigFreezeModeSet(int value)
 	}
 }
 
-qboolean CG_IsSpectator(void)
+qboolean CG_IsSpectatorOnScreen(void)
 {
 	return (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
 }

@@ -726,16 +726,29 @@ static int fonts_num = sizeof(fonts) / sizeof(fonts[0]);
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
 
+qboolean CG_FontAvailable(int index)
+{
+	if (index >= 0 && index < fonts_num)
+	{
+		return qtrue;
+	}
+	CG_Printf("Nonexistent font number: ^1%d\n", index);
+	return qfalse;
+}
+
 
 void CG_FontSelect(int index)
 {
-	if (index < 0 || index >= fonts_num)
+	if (CG_FontAvailable(index))
 	{
-		CG_Error("Requested nonexistent font number: %d\n", index);
-	}
+		if (index < 0 || index >= fonts_num)
+		{
+			CG_Error("Requested nonexistent font number: %d\n", index);
+		}
 
-	font = &fonts[index];
-	metrics = &font->metrics[0];
+		font = &fonts[index];
+		metrics = &font->metrics[0];
+	}
 }
 
 int CG_FontIndexFromName(const char* name)
@@ -2430,7 +2443,7 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 
 }
 
-//Restrict by chars (count) 
+//Restrict by chars (count)
 
 static float RestrictCompiledStringChars(text_command_t* cmd, int maxChars)
 {

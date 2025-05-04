@@ -10,6 +10,21 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v0.06d
+```
+* cg_teamIndicator: 
+  + 8 bitmask (show icons (only for dead now))
+  + show all names while spectating
++ cg_teamIndicatorFont
++ cg_scoreboardBE - alt default scoreboard
++ cg_scoreboardFont - font for alt scoreboard
++ cg_centerMesagesFont
+* cg_drawCrosshairNames:
+  + 2 option - teammates
+  + 3 option - enemies
+
+* SHUD: StatusBar_ArmorCount fix
+```
 ## v0.06c2
 ```
  + cg_teamIndicator;

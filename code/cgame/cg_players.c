@@ -24,8 +24,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../qcommon/l_crc.h"
 
+
+
+
+qboolean CG_IsLocalClientSpectator(void)
+{
+	const clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
+
+	if (cgs.gametype == GT_CA)
+	{
+		return (ci->rt == TEAM_SPECTATOR) ? qtrue : qfalse;
+	}
+	else
+	{
+		return (ci->team == TEAM_SPECTATOR) ? qtrue : qfalse;
+	}
+}
+
+
+
+
+
 qboolean CG_IsEnemy(const clientInfo_t* ci)
 {
+	if (CG_IsLocalClientSpectator())
+	{
+		return (ci->team == TEAM_BLUE);
+	}
+
 	if (cgs.gametype <= GT_SINGLE_PLAYER)
 	{
 		return qtrue;
@@ -33,16 +59,29 @@ qboolean CG_IsEnemy(const clientInfo_t* ci)
 
 	if (cgs.gametype >= GT_TEAM)
 	{
-		int clientIndex = (cg.clientNum >= 0 && cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR)
+		int clientIndex = (cg.clientNum >= 0 && cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
 		                  ? cg.snap->ps.clientNum : cg.clientNum;
 
-		if ((cgs.clientinfo[clientIndex].infoValid && cgs.clientinfo[clientIndex].rt == ci->rt) ||
-		        (cgs.clientinfo[cg.clientNum].infoValid &&
-		         cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR &&
-		         cgs.clientinfo[cg.snap->ps.clientNum].infoValid &&
-		         ci->rt == cgs.clientinfo[cg.snap->ps.clientNum].rt))
+		if (!cgs.clientinfo[clientIndex].infoValid)
 		{
-			return qfalse;
+			return qtrue;
+		}
+
+		if (cgs.gametype == GT_CA)
+		{
+			// Для CA сравнение по rt
+			if (cgs.clientinfo[clientIndex].rt == ci->rt)
+			{
+				return qfalse;
+			}
+		}
+		else
+		{
+			// Для остальных — по team
+			if (cgs.clientinfo[clientIndex].team == ci->team)
+			{
+				return qfalse;
+			}
 		}
 
 		return qtrue;
@@ -50,6 +89,13 @@ qboolean CG_IsEnemy(const clientInfo_t* ci)
 
 	return qfalse;
 }
+
+
+
+
+
+
+
 
 // static qboolean CG_IsTeammate(const clientInfo_t* ci) {
 //  const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
@@ -560,6 +606,7 @@ static qboolean CG_RegisterClientModelname(clientInfo_t* ci, const char* modelNa
 	{
 		if (headName[0] != '*')
 		{
+			// here
 			Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/icon_%s.tga", headName, headSkinName);
 			ci->modelIcon = trap_R_RegisterShaderNoMip(filename);
 		}
@@ -680,7 +727,7 @@ static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new)
 }
 
 
-static void CG_UpdateModelFromString(char *modelName, char *skinName, const char *resultModelString, qboolean isOurClient, team_t team)
+static void CG_UpdateModelFromString(char* modelName, char* skinName, const char* resultModelString, qboolean isOurClient, team_t team)
 {
 	const char* nameModel;
 	const char* nameSkin = NULL;
@@ -1033,6 +1080,10 @@ void CG_NewClientInfo(int clientNum)
 	// team
 	v = Info_ValueForKey(configstring, "t");
 	newInfo.team = atoi(v);
+
+	// hmodel
+	// v = Info_ValueForKey(configstring, "hmodel");
+	// Q_strncpyz(newInfo.originalHeadModel, v, sizeof(newInfo.originalHeadModel));
 
 
 	// rt
@@ -2396,7 +2447,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	else if (cg_drawHitBox.integer == 2)
 	{
 		hitboxShaderEdge = cgs.media.whiteAlphaShader_nocull;
-		hitboxShaderSide = cgs.media.WhiteAlphaShader_cullback;
+		hitboxShaderSide = cgs.media.whiteAlphaShader_cullback;
 	}
 	else
 	{
@@ -2447,6 +2498,49 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 }
 
+qboolean CG_IsEnemyFixed(const clientInfo_t* target)
+{
+	const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
+	int myStateTeam = cg.snap->ps.persistant[PERS_TEAM]; // состояние (может быть спектатором)
+	int myRealTeam  = local->team;                       // реальная команда
+
+	// В SP/FFA все — враги
+	if (cgs.gametype <= GT_SINGLE_PLAYER || cgs.gametype == GT_FFA || cgs.gametype == GT_TOURNAMENT)
+	{
+		return qtrue;
+	}
+
+	// Если в состоянии спектатора (слежу за кем-то)
+	if (myStateTeam == TEAM_SPECTATOR)
+	{
+		// Я — спектатор, но слежу за командой (myRealTeam)
+		if (myRealTeam == TEAM_RED)
+		{
+			return target->team == TEAM_BLUE;
+		}
+		if (myRealTeam == TEAM_BLUE)
+		{
+			return target->team == TEAM_RED;
+		}
+		// Если слежу за спектатором или не за кем — никто не враг
+		return qfalse;
+	}
+
+	// В обычной команде
+	if (myStateTeam == TEAM_RED)
+	{
+		return target->team == TEAM_BLUE;
+	}
+	if (myStateTeam == TEAM_BLUE)
+	{
+		return target->team == TEAM_RED;
+	}
+
+	// Остальные случаи — не враг
+	return qfalse;
+}
+
+
 
 void CG_AddOutline(centity_t* cent)
 {
@@ -2454,8 +2548,8 @@ void CG_AddOutline(centity_t* cent)
 	refEntity_t orig[3], enlarged[3];
 	int clientNum, i, j;
 	vec4_t color[3];
-	qboolean isSpectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) &&
-	                       (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
+	qboolean isSpectator = CG_IsLocalClientSpectator();
+
 	qboolean isEnemy;
 
 	clientNum = cent->currentState.clientNum;
@@ -2479,9 +2573,13 @@ void CG_AddOutline(centity_t* cent)
 	}
 
 	// Check if it's a team-based game or a FFA-like game.
+
 	isEnemy = (cgs.gametype <= GT_SINGLE_PLAYER) ||
-	          (cgs.gametype >= GT_TEAM && !(cgs.clientinfo[cg.clientNum].rt == ci->rt ||
-	                                        (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED)));
+	          (cgs.gametype >= GT_TEAM && (
+	               (cgs.clientinfo[cg.clientNum].team != ci->team && ci->team != TEAM_SPECTATOR) ||
+	               (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR && ci->team == TEAM_BLUE)
+	           ));
+
 
 	// Outline conditions
 	if ((cg_drawOutline.integer == 1 && isEnemy) ||
@@ -2518,7 +2616,7 @@ void CG_AddOutline(centity_t* cent)
 		{
 			for (i = 0; i < 3; i++)
 			{
-				Vector4Copy(ci->rt == TEAM_RED ? cgs.be.teamOutlineColor : cgs.be.enemyOutlineColor, color[i]);
+				Vector4Copy(ci->team == TEAM_RED ? cgs.be.teamOutlineColor : cgs.be.enemyOutlineColor, color[i]);
 			}
 		}
 		else
