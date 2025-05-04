@@ -1884,6 +1884,10 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_teamIndicatorMaxLength");
 	CG_CvarTouch("cg_teamIndicatorAdjust");
 
+	CG_CvarTouch("cg_teamIndicatorFont");
+	CG_CvarTouch("cg_scoreboardFont");
+	CG_CvarTouch("cg_centerMessagesFont");
+
 	CG_InitConsoleCommands();
 
 	if (cg_clientLog.integer)
