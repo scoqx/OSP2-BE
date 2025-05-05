@@ -1773,7 +1773,7 @@ void CG_CheckFogBypass(void)
 	char mapname[64];
 	int i;
 	const char* fogBypassMaps[] = { "oxodm68.bsp",
-	                                "oxodm32.bsp",
+	                                "oxodm19.bsp",
 	                                "quarantine.bsp",
 	                                "asylum.bsp",
 	                                "rjldm3.bsp",
