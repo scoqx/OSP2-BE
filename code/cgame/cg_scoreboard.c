@@ -1892,14 +1892,10 @@ qboolean CG_OSPDrawScoretableNew(void)
 	colorRect[2] = 1.0f;
 	CG_FillRect(328.0, (float)y, 304.0f, 48.0, colorRect);
 
-	CG_OSPDrawStringNew(8, 87, va("%d", cg.teamScores[0]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
-	
-	CG_OSPDrawStringNew(328, 87, va("%d", cg.teamScores[1]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
+	// main team scores
+	CG_OSPDrawStringNew(leftX - 32, 87, va("%d", cg.teamScores[0]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
+	CG_OSPDrawStringNew(rightX - 32, 87, va("%d", cg.teamScores[1]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
 
-	// CG_OSPDrawField(8, y, cg.teamScores[0]);
-	// trap_R_SetColor(NULL);
-	// CG_OSPDrawField(328, y, cg.teamScores[1]);
-	// trap_R_SetColor(NULL);
 	y = 116;
 
 	{

@@ -230,3 +230,9 @@ SHUD:
   + 3 option - enemies
 
 * SHUD: StatusBar_ArmorCount fix
+
+05.05.2025 be v0.06d3
+
+* scoreboard fixes
+* reduced spacing in obituaries
+* superhud/hud/ diwocfull.cfg -> diwoc2.cfg 
