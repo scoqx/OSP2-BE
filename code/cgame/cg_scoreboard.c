@@ -1958,7 +1958,7 @@ qboolean CG_OSPDrawScoretableNew(void)
 		}
 		else
 		{
-			tmpArgStr = "PL ";
+			tmpArgStr = "PL";
 		}
 
 		tmpStr2 = tmpArgStr;

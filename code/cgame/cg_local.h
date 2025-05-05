@@ -611,7 +611,7 @@ typedef struct
 	// crosshair client ID
 	int         crosshairClientNum;
 	int         crosshairClientTime;
-	qboolean    crosshairIgnoreFog; // true if the crosshair client is valid
+	qboolean    crosshairIgnoreFog;
 
 	// powerup active flashing
 	int         powerupActive;
@@ -2301,7 +2301,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.06d3" // BE
+#define OSP_VERSION "be-0.06d4" // BE
 
 
 
