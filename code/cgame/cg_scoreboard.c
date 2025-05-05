@@ -1296,11 +1296,11 @@ static void CG_OSPDrawClientScore(int x, int y, const score_t* score, const floa
 			{
 				Com_sprintf(string, 1024, "^%i%3i", score->scoreFlags < 0 ? 3 : 7, score->scoreFlags);
 			}
-			CG_OSPDrawString(x + 112, y + 4, string, color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+			CG_OSPDrawString(x + 90, y + 4, string, color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 		}
 		else
 		{
-			CG_OSPDrawString(x + 112, y + 4, "0", color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+			CG_OSPDrawString(x + 90, y + 4, " 0", color, 8, 12, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 		}
 		Com_sprintf(string, 1024, "^%i%3i", pingColor, score->ping);
 		CG_OSPDrawString(x + 118, y, string, color, 12, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
