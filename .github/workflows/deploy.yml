@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch:  # Добавлено для ручного запуска через GitHub UI
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -24,18 +24,31 @@ jobs:
           echo "✅ Version file created:"
           cat version.json
 
+      - name: Commit version.json to master
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add version.json
+          git commit -m "Update version.json" || echo "No changes to commit"
+          git push origin master
+
       - name: Checkout gh-pages branch
         run: |
           git fetch origin gh-pages
-          git checkout gh-pages
+          git checkout gh-pages || git checkout --orphan gh-pages  # Если ветка не существует, создаём новую
 
-      - name: Copy version.json from master branch
+      - name: Copy version.json from master to gh-pages
         run: |
-          # Извлекаем version.json только из мастера без его сохранения в master
-          git checkout master -- version.json
+          git checkout master -- version.json  # Копируем файл из master в gh-pages
 
-      - name: Commit version.json to gh-pages and push
+      - name: Check if version.json exists in gh-pages and commit
         run: |
+          if git ls-files --error-unmatch version.json > /dev/null 2>&1; then
+            echo "version.json exists in gh-pages. Updating it."
+          else
+            echo "version.json not found in gh-pages. Creating it."
+          fi
           git add version.json
           git commit -m "Update version.json on gh-pages" || echo "No changes to commit"
           git push origin gh-pages
+
