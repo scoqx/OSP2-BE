@@ -8,16 +8,16 @@ body {
 }
 
 header {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 80px;
+  height: 48px;
   background-color: black;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 24px;
   z-index: 1000;
 }
 
@@ -32,9 +32,9 @@ nav a {
 }
 
 .language-switch {
-  position: fixed;
+  position: absolute;
   top: 20px;
-  right: 20px;
+  right: 80px;
 }
 
 .language-switch button {
@@ -53,7 +53,7 @@ main {
   margin: 0 auto;
 }
 
-h1, h2, p {
+p {
   text-align: left;
 }
 
@@ -63,7 +63,9 @@ h1 {
   top: 24px;
   z-index: 1100;
 }
-
+h2 {
+  text-align: left;
+}
 
 .command-block {
   margin-bottom: 20px;
@@ -86,4 +88,68 @@ code {
 
 ul {
   padding-left: 20px;
+}
+
+.slider {
+  position: relative;
+  max-width: 90vw; /* или убери max-width вообще */
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.slide {
+  display: none;
+  width: 99%; /* Используем 100% для ширины, чтобы картинка всегда занимала доступную ширину */
+  height: auto; /* Сохраняем пропорции */
+  border: 2px solid white; /* Белая рамка вокруг изображения */
+  border-radius: 10px;
+  margin: 0 auto; /* Центрируем картинку */
+}
+
+
+.slide.active {
+  display: block;
+}
+
+
+.slider button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  color: white;
+  font-size: 24px;
+}
+
+.slider .prev {
+  left: 12px;
+}
+
+.slider .next {
+  right: 12px;
+}
+.thumbnails {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.thumbnail {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border: 2px solid transparent;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.3s, border 0.3s;
+}
+
+.thumbnail.active {
+  border-color: white;
+  opacity: 1;
 }
