@@ -24,17 +24,15 @@ jobs:
           echo "✅ Version file created:"
           cat version.json
 
-      - name: Commit version.json to gh-pages
+      - name: Checkout gh-pages branch
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          # Checkout gh-pages branch
           git fetch origin gh-pages
           git checkout gh-pages
-          # Copy version.json from the master branch
+
+      - name: Copy version.json to gh-pages and push
+        run: |
+          # Копируем файл version.json в текущую директорию
           cp ../version.json .
           git add version.json
-          git commit -m "Update version.json" || echo "No changes to commit"
-          # Push changes to gh-pages
+          git commit -m "Update version.json on gh-pages" || echo "No changes to commit"
           git push origin gh-pages
-
