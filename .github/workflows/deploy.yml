@@ -24,15 +24,34 @@ jobs:
           echo "✅ Version file created:"
           cat version.json
 
+      - name: Delete version.json if it exists
+        run: |
+          # Удаляем version.json, если он существует в ветке master
+          rm -f version.json
+
+      - name: Stash local changes to avoid conflicts
+        run: |
+          git stash -u
+
       - name: Checkout gh-pages branch
         run: |
           git fetch origin gh-pages
           git checkout gh-pages
 
+      - name: Remove version.json from gh-pages if exists
+        run: |
+          # Удаляем version.json, если он существует в ветке gh-pages
+          rm -f version.json
+
       - name: Copy version.json to gh-pages and push
         run: |
-          # Копируем файл version.json в текущую директорию
+          # Копируем файл version.json в текущую директорию из ветки master
           cp ../version.json .
           git add version.json
           git commit -m "Update version.json on gh-pages" || echo "No changes to commit"
           git push origin gh-pages
+
+      - name: Switch back to master branch
+        run: |
+          git checkout master
+          git stash pop
