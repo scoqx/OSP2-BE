@@ -20,7 +20,7 @@ jobs:
 
       - name: Extract version and create version.json
         run: |
-          python /util/extract_version.py
+          python util/extract_version.py
           echo "✅ Version file created:"
           cat version.json
 
