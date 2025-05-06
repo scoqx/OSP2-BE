@@ -4,26 +4,30 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch:
+  workflow_dispatch:  # Для ручного запуска через UI GitHub
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
+      # Шаг 1: Checkout ветки master
       - name: Checkout master branch
         uses: actions/checkout@v3
 
+      # Шаг 2: Установить Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
+      # Шаг 3: Извлекаем версию и создаём version.json
       - name: Extract version and create version.json
         run: |
           python util/extract_version.py
           echo "✅ Version file created:"
           cat version.json
 
+      # Шаг 4: Проверка, есть ли изменения, и коммитим их в master
       - name: Commit version.json to master
         run: |
           git config user.name "GitHub Actions"
@@ -32,23 +36,20 @@ jobs:
           git commit -m "Update version.json" || echo "No changes to commit"
           git push origin master
 
+      # Шаг 5: Переключаемся на ветку gh-pages и проверяем файл version.json
       - name: Checkout gh-pages branch
         run: |
           git fetch origin gh-pages
           git checkout gh-pages || git checkout --orphan gh-pages  # Если ветка не существует, создаём новую
 
+      # Шаг 6: Копируем файл version.json из master в gh-pages
       - name: Copy version.json from master to gh-pages
         run: |
           git checkout master -- version.json  # Копируем файл из master в gh-pages
 
-      - name: Check if version.json exists in gh-pages and commit
+      # Шаг 7: Проверяем, существует ли файл version.json в gh-pages, и обновляем его
+      - name: Commit version.json to gh-pages
         run: |
-          if git ls-files --error-unmatch version.json > /dev/null 2>&1; then
-            echo "version.json exists in gh-pages. Updating it."
-          else
-            echo "version.json not found in gh-pages. Creating it."
-          fi
           git add version.json
           git commit -m "Update version.json on gh-pages" || echo "No changes to commit"
           git push origin gh-pages
-
