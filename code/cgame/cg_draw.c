@@ -1979,7 +1979,7 @@ qboolean CG_DrawIntermission(void)
 			if (!cg_scoreboardBE.integer)
 				return CG_OSPDrawScoretable();
 			else
-				return CG_OSPDrawScoretableNew();
+				return CG_BEDrawTeamScoretable();
 		}
 	}
 	return CG_DrawOldScoreboard();

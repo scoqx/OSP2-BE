@@ -37,11 +37,17 @@ CG_ParseScores
 */
 static void CG_ParseScores(void)
 {
-	int     i, powerups;
+	int i, client, base, powerups, index;
+	int extraScoreClients[MAX_CLIENTS];
+	int extraScoreCount;
+	qboolean clientInScores[MAX_CLIENTS];
+
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		clientInScores[i] = qfalse;
+	}
 
 	cg.numScores = atoi(CG_Argv(1));
-	if (cg.numScores > MAX_CLIENTS)
-	{
+	if (cg.numScores > MAX_CLIENTS) {
 		cg.numScores = MAX_CLIENTS;
 	}
 
@@ -49,32 +55,54 @@ static void CG_ParseScores(void)
 	cg.teamScores[1] = atoi(CG_Argv(3));
 
 	memset(cg.scores, 0, sizeof(cg.scores));
-	for (i = 0 ; i < cg.numScores ; i++)
-	{
-		//
-		cg.scores[i].client = atoi(CG_Argv(i * 14 + 4));
-		cg.scores[i].score = atoi(CG_Argv(i * 14 + 5));
-		cg.scores[i].ping = atoi(CG_Argv(i * 14 + 6));
-		cg.scores[i].time = atoi(CG_Argv(i * 14 + 7));
-		cg.scores[i].scoreFlags = atoi(CG_Argv(i * 14 + 8));
-		powerups = atoi(CG_Argv(i * 14 + 9));
-		cg.scores[i].accuracy = atoi(CG_Argv(i * 14 + 10));
-		cg.scores[i].impressiveCount = atoi(CG_Argv(i * 14 + 11));
-		cg.scores[i].excellentCount = atoi(CG_Argv(i * 14 + 12));
-		cg.scores[i].guantletCount = atoi(CG_Argv(i * 14 + 13));
-		cg.scores[i].defendCount = atoi(CG_Argv(i * 14 + 14));
-		cg.scores[i].assistCount = atoi(CG_Argv(i * 14 + 15));
-		cg.scores[i].perfect = atoi(CG_Argv(i * 14 + 16));
-		cg.scores[i].captures = atoi(CG_Argv(i * 14 + 17));
 
-		if (cg.scores[i].client < 0 || cg.scores[i].client >= MAX_CLIENTS)
-		{
-			cg.scores[i].client = 0;
+	for (i = 0; i < cg.numScores; i++) {
+		base = i * 14 + 4;
+		client = atoi(CG_Argv(base));
+		if (client < 0 || client >= MAX_CLIENTS) {
+			client = 0;
 		}
-		cgs.clientinfo[ cg.scores[i].client ].score = cg.scores[i].score;
-		cgs.clientinfo[ cg.scores[i].client ].powerups = powerups;
 
-		cg.scores[i].team = cgs.clientinfo[cg.scores[i].client].team;
+		cg.scores[i].client = client;
+		clientInScores[client] = qtrue;
+
+		cg.scores[i].score = atoi(CG_Argv(base + 1));
+		cg.scores[i].ping = atoi(CG_Argv(base + 2));
+		cg.scores[i].time = atoi(CG_Argv(base + 3));
+		cg.scores[i].scoreFlags = atoi(CG_Argv(base + 4));
+		powerups = atoi(CG_Argv(base + 5));
+		cg.scores[i].accuracy = atoi(CG_Argv(base + 6));
+		cg.scores[i].impressiveCount = atoi(CG_Argv(base + 7));
+		cg.scores[i].excellentCount = atoi(CG_Argv(base + 8));
+		cg.scores[i].guantletCount = atoi(CG_Argv(base + 9));
+		cg.scores[i].defendCount = atoi(CG_Argv(base + 10));
+		cg.scores[i].assistCount = atoi(CG_Argv(base + 11));
+		cg.scores[i].perfect = atoi(CG_Argv(base + 12));
+		cg.scores[i].captures = atoi(CG_Argv(base + 13));
+
+		cgs.clientinfo[client].score = cg.scores[i].score;
+		cgs.clientinfo[client].powerups = powerups;
+		cg.scores[i].team = cgs.clientinfo[client].team;
+	}
+
+	extraScoreCount = 0;
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		if (!cgs.clientinfo[i].infoValid) {
+			continue;
+		}
+		if (!clientInScores[i]) {
+			extraScoreClients[extraScoreCount++] = i;
+		}
+	}
+
+	for (i = 0; i < extraScoreCount; i++) {
+		index = cg.numScores + i;
+		if (index >= MAX_CLIENTS) {
+			break;
+		}
+		client = extraScoreClients[i];
+		cg.scores[index].client = client;
+		cg.scores[index].team = cgs.clientinfo[client].team;
 	}
 }
 

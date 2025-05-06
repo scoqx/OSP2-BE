@@ -1174,6 +1174,21 @@ void CG_UpdateAllClientsInfo(void)
 	}
 }
 
+int CG_CountRealClients(void)
+{
+    int i;
+    int count = 0;
+
+    for (i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (cgs.clientinfo[i].infoValid)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
 /*
 =============================================================================
 

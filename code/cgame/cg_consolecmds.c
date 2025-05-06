@@ -165,6 +165,7 @@ static void CG_ScoresDown_f(void)
 	if (!cg.demoPlayback && cg.scoresRequestTime < cg.time)
 	{
 		cg.scoresRequestTime = cg.time + 2000;
+		cg.realNumClients = CG_CountRealClients();
 		trap_SendClientCommand("score");
 		if (!cg.showScores)
 		{

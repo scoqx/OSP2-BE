@@ -591,6 +591,8 @@ typedef struct
 	int         spectatorPaintX2;                                       // current paint x
 	int         spectatorOffset;                                        // current offset from start
 	int         spectatorPaintLen;                                  // current offset from start
+	
+	int 		realNumClients;
 
 	// skull trails
 	skulltrail_t    skulltrails[MAX_CLIENTS];
@@ -1084,7 +1086,6 @@ typedef struct cgs_be_s
 	vec4_t teamOutlineColor;
 	vec4_t altBloodColor;
 	vec4_t altShadowColor;
-
 	qboolean showCredits;
 
 	weaponStats_t weaponStats[WP_NUM_WEAPONS];
@@ -2049,7 +2050,7 @@ qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
 void CG_OSPShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
-qboolean CG_OSPDrawScoretableNew(void);
+qboolean CG_BEDrawTeamScoretable(void);
 
 //
 // cg_consolecmds.c
@@ -2301,7 +2302,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.06d4" // BE
+#define OSP_VERSION "be-0.06d5" // BE
 
 
 
