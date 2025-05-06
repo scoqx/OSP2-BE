@@ -5,16 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gallery</title>
   <link rel="stylesheet" href="style.css" />
-  <script defer src="script.js"></script>
+  <script defer src="scripts/language.js"></script>
+  <script defer src="scripts/gallery.js"></script>
+
 </head>
 <body>
   <header>
+    <div class="logo-title">
+      <img src="../assets/gfx/2d/blender_180.png" alt="Logo" class="logo-icon">
+      <span id="galleryTitle">Gallery</span>
+    </div>
     <nav>
       <a id="nav-home" href="index.html">Home</a>
       <a id="nav-gallery" href="gallery.html">Gallery</a>
       <a id="nav-commands" href="commands.html">Console Commands</a>
-      <a id="nav-download" href="download.html">Download</a>
-      <a id="nav-contact" href="contact.html">Contact</a>
+      <!-- <a id="nav-downloads" href="downloads.html">Downloads</a> -->
+      <!-- <a id="nav-contact" href="contact.html">Contact</a> -->
     </nav>
     <div class="language-switch">
       <button id="langBtn">RU</button>
@@ -22,7 +28,14 @@
   </header>
 
   <main>
-    <h1>Gallery</h1>
+    <div class="thumbnails">
+      <img src="images/1.jpg" class="thumbnail active" data-index="0" alt="Thumb 1">
+      <img src="images/2.jpg" class="thumbnail" data-index="1" alt="Thumb 2">
+      <img src="images/3.jpg" class="thumbnail" data-index="2" alt="Thumb 3">
+      <img src="images/4.jpg" class="thumbnail" data-index="3" alt="Thumb 4">
+      <img src="images/5.jpg" class="thumbnail" data-index="4" alt="Thumb 5">
+    </div>
+
     <div class="slider">
       <img src="images/1.jpg" alt="Image 1" class="slide active">
       <img src="images/2.jpg" alt="Image 2" class="slide">
@@ -32,14 +45,6 @@
     
       <button class="prev">&#10094;</button>
       <button class="next">&#10095;</button>
-    
-      <div class="thumbnails">
-        <img src="images/1.jpg" class="thumbnail active" data-index="0" alt="Thumb 1">
-        <img src="images/2.jpg" class="thumbnail" data-index="1" alt="Thumb 2">
-        <img src="images/3.jpg" class="thumbnail" data-index="2" alt="Thumb 3">
-        <img src="images/4.jpg" class="thumbnail" data-index="3" alt="Thumb 4">
-        <img src="images/5.jpg" class="thumbnail" data-index="4" alt="Thumb 5">
-      </div>
     </div>
     
     

@@ -5,28 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>OSP2-BE</title>
   <link rel="stylesheet" href="style.css" />
-  <script defer src="script.js"></script>
+  <script defer src="scripts/language.js"></script>
+  <script src="scripts/index.js"></script>
 </head>
 <body>
   <header>
+    <div class="logo-title">
+      <img src="../assets/gfx/2d/blender_180.png" alt="Logo" class="logo-icon">
+      <span id="title">OSP2-BE</span>
+    </div>
     <nav>
       <a id="nav-home" href="index.html">Home</a>
       <a id="nav-gallery" href="gallery.html">Gallery</a>
       <a id="nav-commands" href="commands.html">Console Commands</a>
-      <a id="nav-download" href="download.html">Download</a>
-      <a id="nav-contact" href="contact.html">Contact</a>
+      <!-- <a id="nav-downloads" href="downloads.html">Downloads</a> -->
+      <!-- <a id="nav-contact" href="contact.html">Contact</a> -->
     </nav>
+  
     <div class="language-switch">
       <button id="langBtn">RU</button>
     </div>
   </header>
 
   <main>
-    <h1 id="title">OSP2-BE</h1>
-    <h2 id="subtitle">Quake 3 Arena mod</h2>
-    <p id="desc">Extended edition of the OSP2.<br/>OSP2 is an attempt to recover the old OSP mod source code and improve upon it.<br/>
-    Based on vanilla Q3 and OSP files analysis.</p>
-    <a id="downloadBtn" href="https://github.com/scoqx/OSP2-BE/releases/download/latest/zz-osp-pak8.pk3" target="_blank">Download</a>
+    <div class="content-wrapper">
+      <div class="main-text">
+        <h2 id="subtitle">Quake 3 Arena mod</h2>
+        <p id="desc">
+          Extended edition of the OSP2.<br/>
+          OSP2 is an attempt to recover the old OSP mod source code and improve upon it.<br/>
+          Based on vanilla Q3 and OSP files analysis.
+        </p>
+      </div>
+      <div class="download-card">
+        <h3 id="lastVersion">Latest version</h3>
+        <p id="version-text">. . .</p>
+        <a class="download-button" id="downloadBtn"  href="#" target="_blank">Download</a>
+      </div>
+    </div>
   </main>
+  
+  
 </body>
 </html>
