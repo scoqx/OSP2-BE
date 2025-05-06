@@ -4,26 +4,30 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch:
+  workflow_dispatch:  # Для ручного запуска через UI GitHub
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
+      # Шаг 1: Checkout ветки master
       - name: Checkout master branch
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      # Шаг 2: Установить Python
+        - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
+      # Шаг 3: Извлекаем версию и создаём version.json
       - name: Extract version and create version.json
         run: |
           python util/extract_version.py
           echo "✅ Version file created:"
           cat version.json
 
+      # Шаг 4: Проверка, есть ли изменения, и коммитим их в master
       - name: Commit version.json to master
         run: |
           git config user.name "GitHub Actions"
@@ -32,19 +36,22 @@ jobs:
           git commit -m "Update version.json" || echo "No changes to commit"
           git push origin master
 
-      - name: Checkout bh-pages branch
+      # Шаг 5: Переключаемся на ветку gh-pages и проверяем файл version.json
+      - name: Checkout gh-pages branch
         run: |
-          git fetch origin bh-pages
-          git checkout bh-pages || git checkout --orphan bh-pages
-          
-      - name: Copy version.json to docs folder on bh-pages
-        run: |
-          git checkout master -- version.json
-          mkdir -p docs
-          mv version.json docs/
+          git fetch origin gh-pages
+          git checkout gh-pages || git checkout --orphan gh-pages  # Если ветка не существует, создаём новую
 
-      - name: Commit version.json to bh-pages
+      # Шаг 6: Перемещаем или перезаписываем файл version.json в папке docs на ветке gh-pages
+      - name: Copy version.json to docs folder on gh-pages
         run: |
-          git add version.json
-          git commit -m "Update version.json on bh-pages" || echo "No changes to commit"
-          git push origin bh-pages
+          git checkout master -- version.json  # Копируем файл из master
+          mkdir -p docs  # Создаём папку docs, если её нет
+          mv version.json docs/  # Перемещаем файл в папку docs
+
+      # Шаг 7: Коммитим изменения в gh-pages
+      - name: Commit version.json to gh-pages
+        run: |
+          git add docs/version.json  # Добавляем файл в папку docs
+          git commit -m "Update version.json on gh-pages" || echo "No changes to commit"
+          git push origin gh-pages
