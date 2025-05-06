@@ -1,10 +1,10 @@
-name: Deploy to GitHub Pages
+name: Deploy version.json to GitHub Pages
 
 on:
   push:
     branches:
       - master
-  workflow_dispatch:  # ← Добавлено для ручного запуска через GitHub UI
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -31,16 +31,9 @@ jobs:
           git add version.json
           git commit -m "Update version.json" || echo "No changes to commit"
 
-      - name: Push changes to master
+      - name: Deploy version.json to gh-pages
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: master
-
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs 
-          publish_branch: gh-pages
-          force_orphan: true
+          branch: gh-pages
+          files: version.json

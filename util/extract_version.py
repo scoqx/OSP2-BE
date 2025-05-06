@@ -1,12 +1,22 @@
 import re
-import json
 
-with open("code/cgame/cg_local.h", "r", encoding="utf-8") as f:
-    content = f.read()
-    match = re.search(r'#define\s+OSP_VERSION\s+"(.+?)"', content)
-    if not match:
-        raise ValueError("OSP_VERSION не найден в cg_local.h")
-    version = match.group(1)
+file_path = 'code/cgame/cg_local.h'
 
-with open("version.json", "w", encoding="utf-8") as f:
-    json.dump({"version": version}, f)
+with open(file_path, 'r') as file:
+    lines = file.readlines()
+
+for line in lines:
+    if "#define OSP_VERSION" in line and not line.strip().startswith('//'):
+        match = re.search(r'"(.*?)"', line)
+        if match:
+            version = match.group(1)
+            break
+
+if version:
+    import json
+    with open('version.json', 'w') as json_file:
+        json.dump({"version": version}, json_file)
+
+    print(f"✅ Version extracted: {version}")
+else:
+    print("Version not found")
