@@ -2850,10 +2850,9 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	}
 
 
-	if (flags & DS_SHADOW)
+	if (flags & DS_SHADOW && (shadowColor[3] != 0))
 	{
 		xx = ax;
-
 		// calculate shadow offsets
 		yy_add = xx_add = charWidth / 10.0f;
 		if (shadowColor)

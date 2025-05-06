@@ -34,6 +34,7 @@ static void* CG_SHUDElementRewardCreate(const superhudConfig_t* config, shudRewa
 	else
 	{
 		CG_SHUDTextMakeContext(&element->config, &element->ctx.t);
+		CG_SHUDFillAndFrameForText(&element->config, &element->ctx.t);
 	}
 
 	if (!element->config.text.isSet)
@@ -104,15 +105,14 @@ void CG_SHUDElementRewardRoutine(void* context)
 		}
 	}
 
-	CG_SHUDFill(&element->config);
-	CG_SHUDDrawBorder(&element->config);
-
 	if (element->type == SHUD_REWARD_ICON)
 	{
 		if (!(cg_drawRewards.integer & DRAW_REWARDS_NOICON))
 		{
 			element->ctx.d.image = cg.rewardShader[0];
 			CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx.d);
+			CG_SHUDFill(&element->config);
+			CG_SHUDDrawBorder(&element->config);
 		}
 	}
 	else
