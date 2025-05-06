@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch:
+  workflow_dispatch:  # Добавлено для ручного запуска через GitHub UI
 
 jobs:
   build-and-deploy:
@@ -24,16 +24,17 @@ jobs:
           echo "✅ Version file created:"
           cat version.json
 
-      - name: Commit version.json
+      - name: Commit version.json to gh-pages
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          # Checkout gh-pages branch
+          git fetch origin gh-pages
+          git checkout gh-pages
+          # Copy version.json from the master branch
+          cp ../version.json .
           git add version.json
           git commit -m "Update version.json" || echo "No changes to commit"
+          # Push changes to gh-pages
+          git push origin gh-pages
 
-      - name: Deploy version.json to gh-pages
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: gh-pages
-          files: version.json
