@@ -410,6 +410,8 @@ typedef struct
 	vec3_t          customLocation;
 	team_t          rt; // probably for CA
 	team_t          st; // 1 for coach
+	qboolean        isFrozenEnt; // from cent
+	int             frozenEntity; // entity num
 } clientInfo_t;
 
 
@@ -591,8 +593,8 @@ typedef struct
 	int         spectatorPaintX2;                                       // current paint x
 	int         spectatorOffset;                                        // current offset from start
 	int         spectatorPaintLen;                                  // current offset from start
-	
-	int 		realNumClients;
+
+	int         realNumClients;
 
 	// skull trails
 	skulltrail_t    skulltrails[MAX_CLIENTS];
@@ -1898,7 +1900,8 @@ enum
 	TI_NAME        = 1,
 	TI_NAME_CLEAN  = 2,
 	TI_STATS       = 4,
-	TI_ICON      = 8
+	TI_FROZEN      = 8,
+	TI_ICON      = 16
 };
 
 
@@ -1915,6 +1918,7 @@ void CG_UpdateAllClientsInfo(void);
 
 qboolean CG_IsEnemy(const clientInfo_t* ci);
 qboolean CG_IsLocalClientSpectator(void);
+qboolean CG_IsFrozenEntity(const centity_t* cent);
 
 //
 // cg_predict.c

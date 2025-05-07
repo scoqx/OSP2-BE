@@ -236,3 +236,12 @@ SHUD:
 * scoreboard fixes
 * reduced spacing in obituaries
 * superhud/hud/ diwocfull.cfg -> diwoc2.cfg 
+
+07.05.2025 be v0.06d7
+
+* cg_teamIndicator bitmask:
+  * 8 show data for frozen player
+  * 16 enable icons
+* Replace OSP2 net.png image
+* various fixes
+* huds updated

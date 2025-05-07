@@ -41,18 +41,14 @@ qboolean CG_IsLocalClientSpectator(void)
 	}
 }
 
-
-
-
-
 qboolean CG_IsEnemy(const clientInfo_t* ci)
 {
 	if (CG_IsLocalClientSpectator())
 	{
 		if (cgs.gametype == GT_CA)
-		return (ci->rt == TEAM_BLUE);
+			return (ci->rt == TEAM_BLUE);
 		else
-		return (ci->team == TEAM_BLUE);
+			return (ci->team == TEAM_BLUE);
 	}
 
 	if (cgs.gametype <= GT_SINGLE_PLAYER)
@@ -91,23 +87,29 @@ qboolean CG_IsEnemy(const clientInfo_t* ci)
 	return qfalse;
 }
 
+qboolean CG_IsFrozenEntity(const centity_t* cent)
+{
+	if (!cent)
+		return qfalse;
 
+	if (cent->currentState.eType != ET_PLAYER)
+		return qfalse;
 
+	if (!(cent->currentState.powerups & (1 << PW_BATTLESUIT)))
+		return qfalse;
 
+	if (cent->currentState.weapon != WP_NONE)
+		return qfalse;
 
+	if (cent - cg_entities >= MAX_CLIENTS &&
+	        cent->currentState.otherEntityNum >= 0 &&
+	        cent->currentState.otherEntityNum < MAX_CLIENTS)
+	{
+		return qtrue;
+	}
 
-
-
-// static qboolean CG_IsTeammate(const clientInfo_t* ci) {
-//  const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
-
-//  // Если мы за спектатора, считаем команду Red нашей командой
-//  if (local->rt == TEAM_SPECTATOR) {
-//      return (ci->rt == TEAM_RED) ? qtrue : qfalse;
-//  }
-
-//  return (local->rt == ci->rt) ? qtrue : qfalse;
-// }
+	return qfalse;
+}
 
 char*    cg_customSoundNames[MAX_CUSTOM_SOUNDS] =
 {
@@ -1177,17 +1179,17 @@ void CG_UpdateAllClientsInfo(void)
 
 int CG_CountRealClients(void)
 {
-    int i;
-    int count = 0;
+	int i;
+	int count = 0;
 
-    for (i = 0; i < MAX_CLIENTS; i++)
-    {
-        if (cgs.clientinfo[i].infoValid)
-        {
-            count++;
-        }
-    }
-    return count;
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		if (cgs.clientinfo[i].infoValid)
+		{
+			count++;
+		}
+	}
+	return count;
 }
 
 /*

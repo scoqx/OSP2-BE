@@ -42,12 +42,14 @@ static void CG_ParseScores(void)
 	int extraScoreCount;
 	qboolean clientInScores[MAX_CLIENTS];
 
-	for (i = 0; i < MAX_CLIENTS; i++) {
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
 		clientInScores[i] = qfalse;
 	}
 
 	cg.numScores = atoi(CG_Argv(1));
-	if (cg.numScores > MAX_CLIENTS) {
+	if (cg.numScores > MAX_CLIENTS)
+	{
 		cg.numScores = MAX_CLIENTS;
 	}
 
@@ -56,10 +58,12 @@ static void CG_ParseScores(void)
 
 	memset(cg.scores, 0, sizeof(cg.scores));
 
-	for (i = 0; i < cg.numScores; i++) {
+	for (i = 0; i < cg.numScores; i++)
+	{
 		base = i * 14 + 4;
 		client = atoi(CG_Argv(base));
-		if (client < 0 || client >= MAX_CLIENTS) {
+		if (client < 0 || client >= MAX_CLIENTS)
+		{
 			client = 0;
 		}
 
@@ -86,18 +90,23 @@ static void CG_ParseScores(void)
 	}
 
 	extraScoreCount = 0;
-	for (i = 0; i < MAX_CLIENTS; i++) {
-		if (!cgs.clientinfo[i].infoValid) {
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		if (!cgs.clientinfo[i].infoValid)
+		{
 			continue;
 		}
-		if (!clientInScores[i]) {
+		if (!clientInScores[i])
+		{
 			extraScoreClients[extraScoreCount++] = i;
 		}
 	}
 
-	for (i = 0; i < extraScoreCount; i++) {
+	for (i = 0; i < extraScoreCount; i++)
+	{
 		index = cg.numScores + i;
-		if (index >= MAX_CLIENTS) {
+		if (index >= MAX_CLIENTS)
+		{
 			break;
 		}
 		client = extraScoreClients[i];
