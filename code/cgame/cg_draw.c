@@ -2581,8 +2581,7 @@ void CG_DrawPlayerOverlay(int clientNum)
 	nameColor[3] = cg_teamIndicatorOpaque.value;
 
 
-	if ((cg_teamIndicator.integer & TI_NAME_CLEAN)
-	        && (cg_teamIndicator.integer & TI_NAME));
+	if ((cg_teamIndicator.integer & (TI_NAME_CLEAN | TI_NAME)) != 0)
 	{
 
 		if (cg_teamIndicator.integer & TI_NAME_CLEAN)
@@ -2592,75 +2591,68 @@ void CG_DrawPlayerOverlay(int clientNum)
 
 		// draw name
 		CG_OSPDrawStringNew(
-		    headX, headY,
-		    tmpName,
-		    nameColor,
-		    NULL,
-		    w, h,
-		    cg_teamIndicatorMaxLength.integer,
-		    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER | DS_MAX_WIDTH_IS_CHARS,
-		    bgColor,
-		    NULL,
-		    NULL
+			headX, headY,
+			tmpName,
+			nameColor,
+			NULL,
+			w, h,
+			cg_teamIndicatorMaxLength.integer,
+			DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER | DS_MAX_WIDTH_IS_CHARS,
+			bgColor,
+			NULL,
+			NULL
 		);
 
-
-
-		// health and armod
-		if (cg_teamIndicator.integer & TI_STATS)
-		{
-			int health = ci->health;
-			int armor  = ci->armor;
-			float h2, w2;
-			char statsText[16];
-			vec4_t statsColor;
-			if (health > 0)
-			{
-
-				Com_sprintf(statsText, sizeof(statsText), "[%d/%d]", health, armor);
-
-				CG_GetColorForHealth(health, armor, statsColor, NULL);
-
-				statsColor[3] = nameColor[3];
-
-				h2 = h - 2.0f;
-				if (h2 < 4.0f) h2 = 4.0f; // не меньше 4
-				w2 = h2 * 0.8f;
-
-				CG_OSPDrawStringNew(
-				    headX, headY + h,
-				    statsText,
-				    statsColor,
-				    NULL,
-				    w2, h2,
-				    SCREEN_WIDTH,
-				    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
-				    bgColor,
-				    NULL,
-				    NULL
-				);
-			}
-		}
 	}
-	if (cg_teamIndicator.integer & TI_ICON)
+
+	// health and armod
+	if (cg_teamIndicator.integer & TI_STATS)
 	{
-		iconSize = h;
-		iconX = headX - (iconSize / 2);
-		iconY = headY + iconSize;
-
-		if (cent->currentState.eFlags & EF_DEAD)
+		int health = ci->health;
+		int armor  = ci->armor;
+		float h2, w2;
+		char statsText[16];
+		vec4_t statsColor;
+		if (health > 0)
 		{
-			// if (cgs.osp.gameTypeFreeze &&
-			//  (cent->currentState.powerups & (1 << PW_BATTLESUIT)))
-			// {
-			//  CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.frozenFoeTagShader);
-			// }
-			// else
-			// {
-			CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.obituariesSkull);
-			// }
+
+			Com_sprintf(statsText, sizeof(statsText), "[%d/%d]", health, armor);
+
+			CG_GetColorForHealth(health, armor, statsColor, NULL);
+
+			statsColor[3] = nameColor[3];
+
+			h2 = h - 2.0f;
+			if (h2 < 4.0f) h2 = 4.0f;
+			w2 = h2 * 0.8f;
+
+			CG_OSPDrawStringNew(
+				headX, headY + h,
+				statsText,
+				statsColor,
+				NULL,
+				w2, h2,
+				SCREEN_WIDTH,
+				DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
+				bgColor,
+				NULL,
+				NULL
+			);
 		}
 	}
+
+if (cg_teamIndicator.integer & TI_ICON)
+{
+	iconSize = h;
+	iconX = headX - (iconSize / 2);
+	iconY = headY + iconSize;
+
+	if (cent->currentState.eFlags & EF_DEAD)
+	{
+		CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.obituariesSkull);
+	}
+	// else if (ci->isFrozen)
+}
 }
 
 
