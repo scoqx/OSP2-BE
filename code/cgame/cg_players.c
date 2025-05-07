@@ -49,6 +49,9 @@ qboolean CG_IsEnemy(const clientInfo_t* ci)
 {
 	if (CG_IsLocalClientSpectator())
 	{
+		if (cgs.gametype == GT_CA)
+		return (ci->rt == TEAM_BLUE);
+		else
 		return (ci->team == TEAM_BLUE);
 	}
 
@@ -69,7 +72,6 @@ qboolean CG_IsEnemy(const clientInfo_t* ci)
 
 		if (cgs.gametype == GT_CA)
 		{
-			// Для CA сравнение по rt
 			if (cgs.clientinfo[clientIndex].rt == ci->rt)
 			{
 				return qfalse;
@@ -77,7 +79,6 @@ qboolean CG_IsEnemy(const clientInfo_t* ci)
 		}
 		else
 		{
-			// Для остальных — по team
 			if (cgs.clientinfo[clientIndex].team == ci->team)
 			{
 				return qfalse;
