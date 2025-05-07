@@ -7,44 +7,41 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy-version:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout master branch
         uses: actions/checkout@v3
+        with:
+          ref: master
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Extract version and create version.json
+      - name: Generate version.json
         run: |
           python util/extract_version.py
-          echo "✅ Version file created:"
+          echo "✅ version.json created:"
           cat version.json
 
-      - name: Commit version.json to master
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add version.json
-          git commit -m "Update version.json" || echo "No changes to commit"
-          git push origin master
+      - name: Save version.json for transfer
+        run: cp version.json /tmp/version.json
 
       - name: Checkout bh-pages branch
         run: |
           git fetch origin bh-pages
-          git checkout bh-pages || git checkout --orphan bh-pages  # Если ветка не существует, создаём новую
+          git checkout bh-pages || git checkout --orphan bh-pages
+          git reset --hard
 
-      - name: Copy version.json to docs folder on bh-pages
+      - name: Move version.json to docs/ and commit
         run: |
-          git checkout master -- version.json  # Копируем файл из master
-          mkdir -p docs  # Создаём папку docs, если её нет
-          mv version.json docs/  # Перемещаем файл в папку docs
-
-      - name: Commit version.json to bh-pages
-        run: |
-          git add docs/version.json  # Добавляем файл в папку docs
-          git commit -m "Update version.json on bh-pages" || echo "No changes to commit"
+          mkdir -p docs
+          cp /tmp/version.json docs/version.json
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add docs/version.json
+          git status
+          git commit -m "Update version.json in docs on bh-pages" || echo "No changes to commit"
           git push origin bh-pages
