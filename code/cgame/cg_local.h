@@ -1892,17 +1892,17 @@ typedef struct
 	vec4_t color;
 	vec4_t bgColor;
 
-} teamIndicator_t;
+} playerIndicator_t;
 
-extern teamIndicator_t teamIndicator;
+extern playerIndicator_t playerIndicator;
 
 enum
 {
-	TI_NAME        = 1,
-	TI_NAME_CLEAN  = 2,
-	TI_STATS       = 4,
-	TI_FROZEN      = 8,
-	TI_ICON      = 16
+	PI_NAME        = 1,
+	PI_NAME_CLEAN  = 2,
+	PI_STATS       = 4,
+	PI_FROZEN      = 8,
+	PI_ICON      = 16
 };
 
 

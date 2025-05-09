@@ -2516,11 +2516,11 @@ void CG_OSPDrawNewCredits(void)
 Team Indicator
 ===
 */
-teamIndicator_t teamIndicator;
+playerIndicator_t playerIndicator;
 
 float lastLift[MAX_CLIENTS];
 
-void CG_DrawPlayerOverlay(int clientNum)
+void CG_DrawPlayerIndicator(int clientNum)
 {
 	centity_t* cent;
 	clientInfo_t* ci;
@@ -2534,21 +2534,26 @@ void CG_DrawPlayerOverlay(int clientNum)
 	float dist, lift, rawLift, t;
 	vec4_t nameColor = { 1, 1, 1, 1 };
 	vec4_t bgColor = { 0.0f, 0.0f, 0.0f, 0.5f };
-	int font;
+	int font = cg_teamIndicatorFont.integer;
 	float liftMinAdj, liftMaxAdj;
 	const float distMin = 0.0f;
 	const float distMax = 2500.0f;
 	const float liftMin = 58.0f;
 	const float liftMax = 128.0f;
 	const float smoothFactor = 0.2f;
+	int scanRange = MAX_CLIENTS;
 
-	if (clientNum < 0 || clientNum >= MAX_GENTITIES)
+	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN)) {
+		scanRange = MAX_GENTITIES;
+	}
+
+	if (clientNum < 0 || clientNum >= scanRange)
 		return;
 
 	cent = &cg_entities[clientNum];
-	ci = NULL;
-	actualClientNum = -1;
-	font = cg_teamIndicatorFont.integer;
+
+	// actualClientNum = -1;
+
 	liftMinAdj = liftMin + cg_teamIndicatorOffset.value;
 	liftMaxAdj = liftMax + cg_teamIndicatorOffset.value;
 
@@ -2561,11 +2566,8 @@ void CG_DrawPlayerOverlay(int clientNum)
 		if (actualClientNum < 0 || actualClientNum >= MAX_CLIENTS)
 			return;
 
-		if (!(cg_teamIndicator.integer & TI_FROZEN))
-			return;
-
 		ci = &cgs.clientinfo[actualClientNum];
-		if (!ci || !ci->infoValid || !ci->isFrozenEnt || ci->frozenEntity != clientNum)
+		if (!ci->infoValid || !ci->isFrozenEnt && ci->frozenEntity != clientNum)
 			return;
 
 		cent = &cg_entities[ci->frozenEntity];
@@ -2577,7 +2579,7 @@ void CG_DrawPlayerOverlay(int clientNum)
 			return;
 
 		ci = &cgs.clientinfo[clientNum];
-		if (!ci || !ci->infoValid)
+		if (!ci->infoValid)
 			return;
 
 		if (ci->isFrozenEnt &&
@@ -2611,12 +2613,12 @@ void CG_DrawPlayerOverlay(int clientNum)
 		return;
 
 	CG_FontSelect(font);
-	Vector4Copy(teamIndicator.bgColor, bgColor);
-	Vector4Copy(teamIndicator.color, nameColor);
+	Vector4Copy(playerIndicator.bgColor, bgColor);
+	Vector4Copy(playerIndicator.color, nameColor);
 	bgColor[3] = cg_teamIndicatorBgOpaque.value;
 	nameColor[3] = cg_teamIndicatorOpaque.value;
 
-	if ((cg_teamIndicator.integer & (TI_NAME_CLEAN | TI_NAME)) != 0)
+	if ((cg_teamIndicator.integer & (PI_NAME_CLEAN | PI_NAME)) != 0)
 	{
 		vec4_t border;
 		vec4_t borderColor;
@@ -2631,9 +2633,9 @@ void CG_DrawPlayerOverlay(int clientNum)
 			borderColor[3] = cg_teamIndicatorOpaque.value;
 		}
 
-		if (cg_teamIndicator.integer & TI_NAME_CLEAN)
+		if (cg_teamIndicator.integer & PI_NAME_CLEAN)
 			Q_strncpyz(tmpName, ci->name_clean, sizeof(tmpName));
-		else if (cg_teamIndicator.integer & TI_NAME)
+		else if (cg_teamIndicator.integer & PI_NAME)
 			Q_strncpyz(tmpName, ci->name, sizeof(tmpName));
 
 		CG_OSPDrawStringNew(
@@ -2650,7 +2652,7 @@ void CG_DrawPlayerOverlay(int clientNum)
 		);
 	}
 
-	if (cg_teamIndicator.integer & TI_STATS)
+	if (cg_teamIndicator.integer & PI_STATS)
 	{
 		int health;
 		int armor;
@@ -2686,7 +2688,7 @@ void CG_DrawPlayerOverlay(int clientNum)
 		}
 	}
 
-	if (cg_teamIndicator.integer & TI_ICON)
+	if (cg_teamIndicator.integer & PI_ICON)
 	{
 		float iconSize;
 		float iconX, iconY;
@@ -2702,7 +2704,7 @@ void CG_DrawPlayerOverlay(int clientNum)
 		{
 			CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.obituariesSkull);
 		}
-		else if (ci->isFrozenEnt)
+		else if (ci->isFrozenEnt && (cg_teamIndicator.integer & PI_FROZEN))
 		{
 			trap_R_SetColor(color);
 			CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.frozenFoeTagShader);
@@ -2715,15 +2717,20 @@ void CG_DrawPlayerOverlay(int clientNum)
 qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
 {
 	centity_t* cent;
-	clientInfo_t* ci = NULL;
+	clientInfo_t* ci;
 	clientInfo_t* player = &cgs.clientinfo[cg.clientNum];
 
 	trace_t tr;
 	vec3_t traceStart, traceEnd;
 
 	int clientNum;
+	int freezeLimit = MAX_CLIENTS;
 
-	if (clientOrEntityNum < 0 || clientOrEntityNum >= MAX_GENTITIES)
+	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN)) {
+		freezeLimit = MAX_GENTITIES;
+	}
+	
+	if (clientOrEntityNum < 0 || clientOrEntityNum >= freezeLimit)
 		return qfalse;
 
 	cent = &cg_entities[clientOrEntityNum];
@@ -2732,8 +2739,7 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
 		return qfalse;
 
 	clientNum = clientOrEntityNum;
-
-	// If it's a frozen entity (like a frozen body)
+ 
 	if (clientOrEntityNum >= MAX_CLIENTS && CG_IsFrozenEntity(cent))
 	{
 		clientNum = cent->currentState.otherEntityNum;
@@ -2741,21 +2747,16 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
 		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
 			return qfalse;
 
-		if (!(cg_teamIndicator.integer & TI_FROZEN))
-			return qfalse;
-
 		ci = &cgs.clientinfo[clientNum];
 		if (!ci->infoValid)
 			return qfalse;
 
-		// Доп. проверка: frozenEntity должен быть валиден
 		if (clientOrEntityNum < 0 || clientOrEntityNum >= MAX_GENTITIES)
 			return qfalse;
 
 		if (!cg_entities[clientOrEntityNum].currentValid)
 			return qfalse;
 
-		// Обновление статуса (опционально — если это реально нужно для отрисовки)
 		ci->isFrozenEnt = qtrue;
 		ci->frozenEntity = clientOrEntityNum;
 
@@ -2771,20 +2772,18 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
 			return qfalse;
 
 		ci->isFrozenEnt = qfalse;
-		ci->frozenEntity = -1;
+		ci->frozenEntity = 0;
 	}
 
 	if (ci->team == TEAM_SPECTATOR)
 		return qfalse;
 
-	// Только союзников, если не наблюдатель
 	if (!CG_IsLocalClientSpectator())
 	{
 		if (CG_IsEnemy(ci))
 			return qfalse;
 	}
 
-	// Проверка на прямую видимость
 	VectorCopy(cg.refdef.vieworg, traceStart);
 	VectorCopy(cent->lerpOrigin, traceEnd);
 	traceEnd[2] += 24.0f;
@@ -2797,15 +2796,16 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
 }
 
 
-void CG_DrawPlayerNamesOnScreen(void)
+void CG_DrawPlayerIndicatorOnScreen(void)
 {
 	int i, range;
-	if (cgs.osp.gameTypeFreeze)
-		range = MAX_GENTITIES;
-	else
-		range = cgs.maxclients;
+	int scanRange = MAX_CLIENTS;
 
-	for (i = 0; i < range; i++)
+	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN)) {
+		scanRange = MAX_GENTITIES;
+	}
+
+	for (i = 0; i < scanRange; i++)
 	{
 		if (i == cg.snap->ps.clientNum)
 			continue;
@@ -2813,7 +2813,7 @@ void CG_DrawPlayerNamesOnScreen(void)
 		if (!CG_IsPlayerValidAndVisible(i))
 			continue;
 
-		CG_DrawPlayerOverlay(i);
+		CG_DrawPlayerIndicator(i);
 	}
 }
 
@@ -2848,7 +2848,7 @@ static void CG_Draw2D(void)
 	}
 	if (cg_teamIndicator.integer)
 	{
-		CG_DrawPlayerNamesOnScreen();
+		CG_DrawPlayerIndicatorOnScreen();
 	}
 	if (cg_shud.integer)
 	{

@@ -498,7 +498,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, teamIndicator.color);
+	CG_LocalEventCvarParseColor(cvart, playerIndicator.color);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart)
 {
@@ -506,7 +506,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, teamIndicator.bgColor);
+	CG_LocalEventCvarParseColor(cvart, playerIndicator.bgColor);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque(cvarTable_t* cvart)
 {

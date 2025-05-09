@@ -89,7 +89,10 @@ qboolean CG_IsEnemy(const clientInfo_t* ci)
 
 qboolean CG_IsFrozenEntity(const centity_t* cent)
 {
-	if (!cent)
+	if (!cent->currentValid)
+		return qfalse;
+
+	if (!cgs.osp.gameTypeFreeze)
 		return qfalse;
 
 	if (cent->currentState.eType != ET_PLAYER)
@@ -103,7 +106,7 @@ qboolean CG_IsFrozenEntity(const centity_t* cent)
 
 	if (cent - cg_entities >= MAX_CLIENTS &&
 	        cent->currentState.otherEntityNum >= 0 &&
-	        cent->currentState.otherEntityNum < MAX_CLIENTS)
+	        cent->currentState.otherEntityNum <= MAX_CLIENTS)
 	{
 		return qtrue;
 	}

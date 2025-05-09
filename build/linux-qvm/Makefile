@@ -28,9 +28,9 @@ vm/cgame.qvm: $(cg_asm)
 	$(Q3ASM) -o $@ $(cg_asm)
 
 
-#$(PK3): vm/cgame.qvm
-#	$(7Z) $@ vm/*.qvm vm/*.jts ../../assets/*
-#	cp -v $@ '/mnt/c/Program Files (x86)/Steam/steamapps/common/Quake 3 Arena/osp/'
+$(PK3): vm/cgame.qvm
+	$(7Z) $@ vm/*.qvm vm/*.jts ../../assets/*
+	cp -v $@ '/mnt/c/Program Files (x86)/Steam/steamapps/common/Quake 3 Arena/osp/'
 
 #vm/ui.qvm: $(ui_asm)
 #	$(Q3ASM) -o $@ $(ui_asm)

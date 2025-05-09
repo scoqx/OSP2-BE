@@ -840,7 +840,7 @@ void CG_RegisterWeapon(int weaponNum)
 					}
 					if (!cgs.media.enemyLightningBolt[i])
 					{
-						cgs.media.enemyLightningBolt[i] = cgs.media.enemyLightningBolt[0];
+						cgs.media.enemyLightningBolt[i] = cgs.media.lightningBolt[0];
 					}
 					cgs.media.lightningBoltNoPicMip[i] = trap_R_RegisterShader(va("lightningBoltNewNoPicMip%i", i));
 					cgs.media.enemyLightningBoltNoPicMip[i] = trap_R_RegisterShader(va("enemyLightningBoltNewNoPicMip%i", i));
@@ -1219,6 +1219,8 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	vec3_t forward;
 	trace_t trace;
 	vec3_t endPoint;
+	int shaft_type = cg_altLightning.integer; // default
+	int enemy_shaft_type = cg_altLightning.integer; // enemy
 	int i;
 	vec3_t angle;
 	float tl;
@@ -1349,37 +1351,30 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 
 	beam.reType = RT_LIGHTNING;
 
+	if (shaft_type >= MAX_ALT_SHADERS || shaft_type < 0)
 	{
-		int shaft_type = cg_altLightning.integer; // default
-		int enemy_shaft_type = cg_altLightning.integer; // enemy
-		const qboolean nomip = cg_nomip.integer & 1;
-
-		if (shaft_type >= MAX_ALT_SHADERS || shaft_type < 0)
-		{
-			shaft_type = LIGHTNING_DEFAULT_SHADER;
-		}
-		if (!isOurClient && cg_enemyLightningColor.integer > 0 && // enemy
-		        (cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype <= GT_SINGLE_PLAYER))
-		{
-			beam.customShader = nomip ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
-			beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
-			beam.shaderRGBA[1] = cgs.osp.enemyColors.lightning[1] * 255;
-			beam.shaderRGBA[2] = cgs.osp.enemyColors.lightning[2] * 255;
-			beam.shaderRGBA[3] = 255;
-
-		}
-		else // everyone else
-		{
-			beam.customShader = nomip ? cgs.media.lightningBoltNoPicMip[shaft_type] : cgs.media.lightningBolt[shaft_type];
-		}
+		shaft_type = LIGHTNING_DEFAULT_SHADER;
 	}
+	
+	if (!isOurClient && cg_enemyLightningColor.integer > 0 && // enemy
+	        (cg.snap->ps.persistant[PERS_TEAM] != cgs.clientinfo[cent->currentState.number].team || cgs.gametype <= GT_SINGLE_PLAYER))
+	{
+		beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
+		beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
+		beam.shaderRGBA[1] = cgs.osp.enemyColors.lightning[1] * 255;
+		beam.shaderRGBA[2] = cgs.osp.enemyColors.lightning[2] * 255;
+		beam.shaderRGBA[3] = 255;
 
+	}
+	else // everyone else
+	{
+		beam.customShader = cg_nomip.integer & 1 ? cgs.media.lightningBoltNoPicMip[shaft_type] : cgs.media.lightningBolt[shaft_type];
+	}
 
 	if (!(isOurClient && cg_lightningHide.integer))
 	{
 		trap_R_AddRefEntityToScene(&beam);
 	}
-
 
 	if (trace.fraction < 1.0 && cg_lightningImpact.integer)
 	{
