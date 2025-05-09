@@ -1460,7 +1460,8 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 			sumScoresBlue += score->score;
 			sumThawsBlue += score->scoreFlags;
 		}
-		if (team == TEAM_SPECTATOR && !isCAGame && ci->rt == TEAM_SPECTATOR)
+
+		if (team == TEAM_SPECTATOR && ci->rt == TEAM_SPECTATOR)
 		{
 			int tmp = scoresPrinted / 2;
 			if (scoresPrinted % 2 == 0)
@@ -1469,14 +1470,14 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 			}
 			else
 			{
-				CG_OSPDrawClientScoreNew((x + 320), y + 18 * tmp - 18, score, color, fade);
+				CG_OSPDrawClientScoreNew(x + 320, y + 18 * tmp - 18, score, color, fade);
 			}
 			++scoresPrinted;
 		}
 		else
 		{
 			qboolean isReady;
-			isReady = cg.snap->ps.stats[ STAT_CLIENTS_READY ] & (1 << score->client);
+			isReady = cg.snap->ps.stats[STAT_CLIENTS_READY] & (1 << score->client);
 
 			if (!isCAGame)
 			{
@@ -1494,7 +1495,7 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 			}
 			else if (team != TEAM_SPECTATOR)
 			{
-				// draw red/blue teams
+				// draw red/blue teams in CA
 				if (ci->team != TEAM_SPECTATOR)
 				{
 					CG_OSPDrawClientScoreNew(x, y + 18 * scoresPrinted++, score, color, fade);
@@ -1504,9 +1505,8 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 					CG_OSPDrawClientScoreNew(x, y + 18 * scoresPrinted++, score, readyColor, fade);
 				}
 			}
-			else if (ci->rt == TEAM_SPECTATOR) //if team == spec and rt == spec
+			else if (ci->rt == TEAM_SPECTATOR) // redundant but left for clarity
 			{
-				// draw spectators
 				if (isReady)
 				{
 					CG_OSPDrawClientScoreNew(x, y + 18 * scoresPrinted++, score, readyColor, fade);
@@ -1516,11 +1516,12 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 					CG_OSPDrawClientScoreNew(x, y + 18 * scoresPrinted++, score, color, fade);
 				}
 			}
-
 		}
 	}
+
 	return scoresPrinted;
 }
+
 
 qboolean CG_OSPDrawScoretable(void)
 {
