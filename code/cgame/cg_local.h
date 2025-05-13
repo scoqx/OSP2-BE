@@ -1918,6 +1918,7 @@ void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
 
 qboolean CG_IsEnemy(const clientInfo_t* ci);
+qboolean CG_IsEnemyFixed(const clientInfo_t* target);
 qboolean CG_IsLocalClientSpectator(void);
 qboolean CG_IsFrozenEntity(const centity_t* cent);
 
@@ -2307,7 +2308,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.06d7" // BE
+#define OSP_VERSION "be-0.06e" // BE
 
 
 

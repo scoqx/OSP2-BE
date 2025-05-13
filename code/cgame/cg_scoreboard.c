@@ -1948,14 +1948,15 @@ qboolean CG_BEDrawTeamScoretable(void)
 
 		if (cgs.gametype >= GT_CTF)
 		{
+			float offset = 16;
 			tmpStr1 = "^1Points";
 			tmpStr2 = "Players";
 			tmpStr3 = "AvgPing";
 			tmpX = leftX + 76;
 
 			CG_OSPDrawStringNew(tmpX, row1Y, tmpStr1, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
-			CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
-			CG_OSPDrawStringNew(tmpX + titlePos2X, row1Y, tmpStr3, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(tmpX + titlePos1X + offset, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(tmpX + titlePos2X + offset, row1Y, tmpStr3, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 
 			Com_sprintf(tmpStr4, 128, "^3%3i^7", sumScoresRed);
 			CG_OSPDrawStringNew(tmpX, row2Y, tmpStr4, colorWhite, colorBlack, bWidth2, bHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
@@ -2018,14 +2019,15 @@ qboolean CG_BEDrawTeamScoretable(void)
 		float tmpX;
 		if (cgs.gametype >= GT_CTF)
 		{
+			float offset = 16;
 			tmpStr1 = "^4Points";
 			tmpStr2 = "Players";
 			tmpStr3 = "AvgPing";
 			tmpX = rightX + 76;
 
 			CG_OSPDrawStringNew(tmpX, row1Y, tmpStr1, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
-			CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
-			CG_OSPDrawStringNew(tmpX + titlePos2X, row1Y, tmpStr3, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(tmpX + titlePos1X + offset, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(tmpX + titlePos2X + offset, row1Y, tmpStr3, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 
 			Com_sprintf(tmpStr4, 128, "^3%i^7", sumScoresBlue);
 			CG_OSPDrawStringNew(tmpX, row2Y, tmpStr4, colorWhite, colorBlack, bWidth2, bHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);

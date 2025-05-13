@@ -87,6 +87,51 @@ qboolean CG_IsEnemy(const clientInfo_t* ci)
 	return qfalse;
 }
 
+
+qboolean CG_IsEnemyFixed(const clientInfo_t* target)
+{
+	const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
+	int myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
+	int myRealTeam  = local->team;
+	int enemyTeam = target->team;
+
+	if (CG_OSPIsGameTypeCA(cgs.gametype))
+	{
+	myRealTeam = local->rt;
+	enemyTeam = target->rt;
+	}
+
+	if (cgs.gametype <= GT_SINGLE_PLAYER)
+	{
+		return qtrue;
+	}
+
+	if (myStateTeam == TEAM_SPECTATOR)
+	{
+		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
+		{
+			return enemyTeam == TEAM_BLUE;
+		}
+		if (myRealTeam == TEAM_BLUE)
+		{
+			return enemyTeam == TEAM_RED;
+		}
+		return qfalse;
+	}
+
+	if (myStateTeam == TEAM_RED)
+	{
+		return enemyTeam == TEAM_BLUE;
+	}
+	if (myStateTeam == TEAM_BLUE)
+	{
+		return enemyTeam == TEAM_RED;
+	}
+
+	return qfalse;
+}
+
+
 qboolean CG_IsFrozenEntity(const centity_t* cent)
 {
 	if (!cent->currentValid)
@@ -2376,7 +2421,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	}
 
 	// if they don't exist, forget it
-	if (!CG_IsEnemy(ci))
+	if (!CG_IsEnemyFixed(ci))
 	{
 		return;
 	}
@@ -2519,50 +2564,6 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 }
 
-qboolean CG_IsEnemyFixed(const clientInfo_t* target)
-{
-	const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
-	int myStateTeam = cg.snap->ps.persistant[PERS_TEAM]; // состояние (может быть спектатором)
-	int myRealTeam  = local->team;                       // реальная команда
-
-	// В SP/FFA все — враги
-	if (cgs.gametype <= GT_SINGLE_PLAYER || cgs.gametype == GT_FFA || cgs.gametype == GT_TOURNAMENT)
-	{
-		return qtrue;
-	}
-
-	// Если в состоянии спектатора (слежу за кем-то)
-	if (myStateTeam == TEAM_SPECTATOR)
-	{
-		// Я — спектатор, но слежу за командой (myRealTeam)
-		if (myRealTeam == TEAM_RED)
-		{
-			return target->team == TEAM_BLUE;
-		}
-		if (myRealTeam == TEAM_BLUE)
-		{
-			return target->team == TEAM_RED;
-		}
-		// Если слежу за спектатором или не за кем — никто не враг
-		return qfalse;
-	}
-
-	// В обычной команде
-	if (myStateTeam == TEAM_RED)
-	{
-		return target->team == TEAM_BLUE;
-	}
-	if (myStateTeam == TEAM_BLUE)
-	{
-		return target->team == TEAM_RED;
-	}
-
-	// Остальные случаи — не враг
-	return qfalse;
-}
-
-
-
 void CG_AddOutline(centity_t* cent)
 {
 	clientInfo_t* ci;
@@ -2594,13 +2595,18 @@ void CG_AddOutline(centity_t* cent)
 	}
 
 	// Check if it's a team-based game or a FFA-like game.
-
-	isEnemy = (cgs.gametype <= GT_SINGLE_PLAYER) ||
-	          (cgs.gametype >= GT_TEAM && (
-	               (cgs.clientinfo[cg.clientNum].team != ci->team && ci->team != TEAM_SPECTATOR) ||
-	               (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR && ci->team == TEAM_BLUE)
-	           ));
-
+	// if (!CG_OSPIsGameTypeCA(cgs.gametype))
+	// {
+	// isEnemy = (cgs.gametype <= GT_SINGLE_PLAYER) ||
+	//           (cgs.gametype >= GT_TEAM && (
+	//                (cgs.clientinfo[cg.clientNum].team != ci->team && ci->team != TEAM_SPECTATOR) ||
+	//                (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR && ci->team == TEAM_BLUE)
+	//            ));
+	// }
+	// else
+	// {
+	isEnemy = CG_IsEnemyFixed(ci);
+	// }
 
 	// Outline conditions
 	if ((cg_drawOutline.integer == 1 && isEnemy) ||
