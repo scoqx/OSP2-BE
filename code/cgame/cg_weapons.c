@@ -2474,31 +2474,31 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 					mark = cgs.media.energyMarkNoPicMipShader;
 				}
 			}
-			else if (cg_altPlasma.integer == 2)
-			{
-				if ((cg_nomip.integer & 2) == 0)
-				{
-					shader = cgs.media.plasmaOldExplosionShader; // fallback in case old version failed
-					if (cgs.media.plasmaOldExplosionShader)
-					{
-						shader = cgs.media.plasmaExplosionShader; // default
-					}
-					if (cgs.media.plasmaOldExplosionShader)
-					{
-						shader = cgs.media.plasmaOldExplosionShader; // use old if available
-					}
-					mark = cgs.media.energyMarkPlasmaShader;
-				}
-				else
-				{
-					shader = cgs.media.plasmaExplosionShaderNoPicMip; // fallback
-					if (cgs.media.plasmaOldExplosionShader)
-					{
-						shader = cgs.media.plasmaOldExplosionShader; // use old for mip-disabled too
-					}
-					mark = cgs.media.energyMarkNoPicMipShader;
-				}
-			}
+			// else if (cg_altPlasma.integer == 2)
+			// {
+			// 	if ((cg_nomip.integer & 2) == 0)
+			// 	{
+			// 		shader = cgs.media.plasmaOldExplosionShader; // fallback in case old version failed
+			// 		if (cgs.media.plasmaOldExplosionShader)
+			// 		{
+			// 			shader = cgs.media.plasmaExplosionShader; // default
+			// 		}
+			// 		if (cgs.media.plasmaOldExplosionShader)
+			// 		{
+			// 			shader = cgs.media.plasmaOldExplosionShader; // use old if available
+			// 		}
+			// 		mark = cgs.media.energyMarkPlasmaShader;
+			// 	}
+			// 	else
+			// 	{
+			// 		shader = cgs.media.plasmaExplosionShaderNoPicMip; // fallback
+			// 		if (cgs.media.plasmaOldExplosionShader)
+			// 		{
+			// 			shader = cgs.media.plasmaOldExplosionShader; // use old for mip-disabled too
+			// 		}
+			// 		mark = cgs.media.energyMarkNoPicMipShader;
+			// 	// }
+			// }
 
 			radius = 16;
 			break;

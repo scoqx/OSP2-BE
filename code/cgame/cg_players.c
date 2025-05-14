@@ -2062,7 +2062,7 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	trace_t     trace;
 	float       alpha;
 	float       yawAngle = cent->pe.legs.yawAngle;
-	int         alt = cg_altShadow.integer;
+	// int         alt = cg_altShadow.integer;
 	qhandle_t shadowMarkShader;
 	vec4_t      color = { 1, 1, 1, 1 };
 	*shadowPlane = 0;
@@ -2104,30 +2104,30 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	//assert( DotProduct( trace.plane.normal, trace.plane.normal ) != 0.0f )
 
 	// use alternate shader
-	if (alt <= 0)
-	{
+	// if (alt <= 0)
+	// {
 		shadowMarkShader = cgs.media.shadowMarkShader;
-	}
-	else if (alt < MAX_ALT_SHADERS)
-	{
-		shadowMarkShader = cgs.media.shadowMarkShaderNew[alt - 1];
-	}
-	else
-	{
-		shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
-	}
-
-	if (cg_altShadow.integer)
-	{
-		color[0] = cgs.be.altShadowColor[0];
-		color[1] = cgs.be.altShadowColor[1];
-		color[2] = cgs.be.altShadowColor[2];
-		trace.fraction = trace.fraction - 0.1875; // brightness fix for alt shadows
-		if (trace.fraction < 0)
-		{
-			trace.fraction = 0;
-		}
-	}
+	// }
+	// else if (alt < MAX_ALT_SHADERS)
+	// {
+	// 	shadowMarkShader = cgs.media.shadowMarkShaderNew[alt - 1];
+	// }
+	// else
+	// {
+	// 	shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
+	// }
+	
+	// if (cg_altShadow.integer)
+	// {
+	// 	color[0] = cgs.be.altShadowColor[0];
+	// 	color[1] = cgs.be.altShadowColor[1];
+	// 	color[2] = cgs.be.altShadowColor[2];
+	// 	trace.fraction = trace.fraction - 0.1875; // brightness fix for alt shadows
+	// 	if (trace.fraction < 0)
+	// 	{
+	// 		trace.fraction = 0;
+	// 	}
+	// }
 	// fade the shadow out with height
 	color[0] = color[0] * (1.0f - trace.fraction);
 	color[1] = color[1] * (1.0f - trace.fraction);

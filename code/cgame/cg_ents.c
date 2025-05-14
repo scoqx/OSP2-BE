@@ -519,7 +519,7 @@ static void CG_Missile(centity_t* cent)
 		ent.rotation = 0;
 		ent.customShader = cgs.media.plasmaBallShader;
 
-		if (cg_altPlasma.integer == 2)
+		if (cg_altPlasma.integer == 2 && cgs.osp.serverConfigXHitBox == 1)
 		{
 			ent.customShader = cgs.media.plasmaOldBallShader;
 		}
