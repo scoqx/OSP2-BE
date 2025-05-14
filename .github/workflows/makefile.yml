@@ -38,7 +38,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: qvm
-        path: build/linux-qvm/zz-osp-pak8.pk3
+        path: build/linux-qvm/zz-osp-pak8be.pk3
         if-no-files-found: error
         retention-days: 5
 
