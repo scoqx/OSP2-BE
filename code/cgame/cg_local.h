@@ -1087,7 +1087,7 @@ typedef struct cgs_be_s
 	vec4_t enemyOutlineColor;
 	vec4_t teamOutlineColor;
 	vec4_t altBloodColor;
-	// vec4_t altShadowColor;
+	vec4_t altShadowColor;
 	qboolean showCredits;
 
 	weaponStats_t weaponStats[WP_NUM_WEAPONS];
@@ -1584,7 +1584,7 @@ extern vmCvar_t         cg_enemyOutlineColor;
 extern vmCvar_t         cg_enemyOutlineColorUnique;
 extern vmCvar_t         cg_enemyOutlineSize;
 extern vmCvar_t         cg_teamOutlineSize;
-// extern vmCvar_t         cg_underwaterFovWarp;
+extern vmCvar_t         cg_underwaterFovWarp;
 extern vmCvar_t         cg_altBlood;
 extern vmCvar_t         cg_altBloodColor;
 extern vmCvar_t         cg_noSlidingWindow;
@@ -1595,8 +1595,8 @@ extern vmCvar_t         cg_railRingsSpacing;
 extern vmCvar_t         cg_railRingsSize;
 extern vmCvar_t         cg_railStaticRings;
 extern vmCvar_t         cg_gunPos;
-// extern vmCvar_t         cg_altShadow;
-// extern vmCvar_t         cg_altShadowColor;
+extern vmCvar_t         cg_altShadow;
+extern vmCvar_t         cg_altShadowColor;
 extern vmCvar_t         cg_scoreboardShowId;
 extern vmCvar_t     cg_teamIndicator;
 extern vmCvar_t     cg_teamIndicatorColor;
@@ -2308,7 +2308,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.06e-whitelist" // BE
+#define OSP_VERSION "be-0.06e" // BE
 
 
 

@@ -488,10 +488,10 @@ void CG_LocalEventCvarChanged_cg_railRingsSize(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(0.05f, 4, cvart->vmCvar->value);
 }
-// void CG_LocalEventCvarChanged_cg_altShadowColor(cvarTable_t* cvart)
-// {
-// 	CG_LocalEventCvarParseColor(cvart, cgs.be.altShadowColor);
-// }
+void CG_LocalEventCvarChanged_cg_altShadowColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.altShadowColor);
+}
 void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(0.5f, 2, cvart->vmCvar->value);

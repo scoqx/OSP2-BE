@@ -385,7 +385,7 @@ vmCvar_t        cg_teamOutlineColor;
 vmCvar_t        cg_enemyOutlineColorUnique;
 vmCvar_t        cg_enemyOutlineSize;
 vmCvar_t        cg_teamOutlineSize;
-// vmCvar_t        cg_underwaterFovWarp;
+vmCvar_t        cg_underwaterFovWarp;
 vmCvar_t        cg_altBlood;
 vmCvar_t        cg_altBloodColor;
 vmCvar_t        cg_noSlidingWindow;
@@ -396,8 +396,8 @@ vmCvar_t        cg_railRingsSpacing;
 vmCvar_t        cg_railRingsSize;
 vmCvar_t        cg_railStaticRings;
 vmCvar_t        cg_gunPos;
-// vmCvar_t        cg_altShadow;
-// vmCvar_t        cg_altShadowColor;
+vmCvar_t        cg_altShadow;
+vmCvar_t        cg_altShadowColor;
 vmCvar_t        cg_scoreboardShowId;
 vmCvar_t        cg_teamIndicator;
 vmCvar_t        cg_teamIndicatorAdjust;
@@ -705,7 +705,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE },
 	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE },
 	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
-	// { &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
+	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
 	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE },
@@ -719,8 +719,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_railStaticRings, "cg_railStaticRings", "0", CVAR_ARCHIVE },
 	{ &cg_gunPos, "cg_gunPos", "1", CVAR_ARCHIVE  },
 	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_shadows},
-	// { &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
-	// { &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
+	{ &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
 	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE },
 	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_teamIndicator, "cg_teamIndicator", "14", CVAR_ARCHIVE | CVAR_NEW },
@@ -1855,7 +1855,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_enemyOutlineColor");
 	CG_CvarTouch("cg_teamOutlineColor");
 	CG_CvarTouch("cg_altBloodColor");
-	// CG_CvarTouch("cg_altShadowColor");
+	CG_CvarTouch("cg_altShadowColor");
 
 	CG_CvarTouch("ch_crosshairDecorOpaque");
 	CG_CvarTouch("ch_crosshairOpaque");
