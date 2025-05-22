@@ -113,6 +113,7 @@ static void CG_ParseScores(void)
 		cg.scores[index].client = client;
 		cg.scores[index].team = cgs.clientinfo[client].team;
 	}
+	cg.realNumClients = CG_CountRealClients();
 }
 
 /*
