@@ -110,8 +110,8 @@ void CG_SHUDElementRewardRoutine(void* context)
 		if (!(cg_drawRewards.integer & DRAW_REWARDS_NOICON))
 		{
 			element->ctx.d.image = cg.rewardShader[0];
-			CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx.d);
 			CG_SHUDFill(&element->config);
+			CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx.d);
 			CG_SHUDDrawBorder(&element->config);
 		}
 	}

@@ -2780,7 +2780,7 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
 
 	if (!CG_IsLocalClientSpectator())
 	{
-		if (CG_IsEnemyFixed(ci))
+		if (CG_IsEnemy(ci))
 			return qfalse;
 	}
 

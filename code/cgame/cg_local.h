@@ -691,6 +691,11 @@ typedef struct
 	int         lastServerTime;
 	playerState_t savedPmoveStates[NUM_SAVED_STATES];
 	int         stateHead, stateTail;
+	vec3_t lastViewOrigin;
+    vec3_t lastViewAngles;
+	usercmd_t lastFreeLookCmd;
+	qboolean freeLookInitialized;
+	qboolean freeLookCmdInitialized;
 
 } cg_t;
 
@@ -1089,7 +1094,7 @@ typedef struct cgs_be_s
 	vec4_t altBloodColor;
 	vec4_t altShadowColor;
 	qboolean showCredits;
-
+	qboolean isHealthLow;
 	weaponStats_t weaponStats[WP_NUM_WEAPONS];
 } cgs_be_t;
 
@@ -1610,6 +1615,7 @@ extern vmCvar_t     cg_teamIndicatorFont;
 extern vmCvar_t     cg_scoreboardBE;
 extern vmCvar_t     cg_scoreboardFont;
 extern vmCvar_t     cg_centerMessagesFont;
+extern vmCvar_t		cg_railCustomChamber;
 extern vmCvar_t         be_run;
 
 //
@@ -1917,8 +1923,7 @@ sfxHandle_t CG_CustomSound(int clientNum, const char* soundName);
 void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
 
-qboolean CG_IsEnemy(const clientInfo_t* ci);
-qboolean CG_IsEnemyFixed(const clientInfo_t* target);
+qboolean CG_IsEnemy(const clientInfo_t* target);
 qboolean CG_IsLocalClientSpectator(void);
 qboolean CG_IsFrozenEntity(const centity_t* cent);
 
@@ -2099,6 +2104,11 @@ qboolean CG_CustomLocationsTeamChatCode(const char* str, vec3_t cloc, char** clo
 void CG_CustomLocationsAddEntry(vec3_t pos, const char* str);
 void CG_InitCTFLocations(void);
 const char* CG_GetCTFLocation(int loc);
+
+//
+//cg_cvardescriptions.c
+//
+void CG_RegisterCvarDescriptions(void);
 //===============================================
 
 //
@@ -2308,7 +2318,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.06e" // BE
+#define OSP_VERSION "be-0.07" // BE
 
 
 

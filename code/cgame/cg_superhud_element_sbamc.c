@@ -40,7 +40,7 @@ void CG_SHUDElementSBAmCRoutine(void* context)
 	int wp;
 	int  isFiring;
 	int ammo;
-
+	vec4_t finalColor;
 	if (!cg.snap)
 	{
 		return;
@@ -54,20 +54,31 @@ void CG_SHUDElementSBAmCRoutine(void* context)
 
 	ammo = CG_SHUDGetAmmo(wp);
 
-	if (isFiring && !element->config.style.isSet) // any style to ignore shading
+	if (ammo == 0)
 	{
-		if (element->config.color2.isSet)
-			Vector4Copy(element->config.color2.value.rgba, element->ctx.color);
-		else
-			Vector4Copy(colorDkGrey, element->ctx.color);
+		Vector4Copy(colorRed, finalColor);
+		finalColor[3] = element->config.color.value.rgba[3];
 	}
 	else
 	{
-		Vector4Copy(element->config.color.value.rgba, element->ctx.color);
+		if (isFiring && !element->config.style.isSet)
+		{
+			if (element->config.color2.isSet)
+			{
+				Vector4Copy(element->config.color2.value.rgba, finalColor);
+			}
+			else
+			{
+				Vector4Copy(colorDkGrey, finalColor);
+			}
+		}
+		else
+		{
+			Vector4Copy(element->config.color.value.rgba, finalColor);
+		}
 	}
 
-
-
+	Vector4Copy(finalColor, element->ctx.color);
 
 	element->ctx.text = va(element->config.text.value, ammo > 0 ? ammo : 0);
 

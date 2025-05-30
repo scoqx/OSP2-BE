@@ -27,25 +27,36 @@ void CG_SHUDElementSBHBRoutine(void* context)
 	CG_SHUDFill(&element->config);
 	CG_SHUDDrawBorder(&element->config);
 
-	if (element->config.style.value == 1) // default
-	{
+	if (element->config.style.value == 1) {
 		CG_ColorForHealth(element->ctx.color_top, NULL);
-	}
-	else if (element->config.style.value == 2)
-	{
-		Vector4Copy(element->config.color.value.rgba, element->ctx.color_top);
-		if (!element->config.color2.isSet) // set same color if color2 isn't set
+	} else if (element->config.style.value == 3) {
+		if (cgs.be.isHealthLow) 
 		{
-			Vector4Copy(element->ctx.color_top, element->ctx.color2_top);
-			element->ctx.color2_top[3] *= 3; // make more visible
-		}
-		else
-		{
-			Vector4Copy(element->config.color2.value.rgba, element->ctx.color2_top);
+			CG_ColorForHealth(element->ctx.color_top, NULL);
+			element->ctx.color_top[3] = element->config.color.value.rgba[3];
+
+			if (!element->config.color2.isSet) {
+				Vector4Copy(element->ctx.color_top, element->ctx.color2_top);
+				element->ctx.color2_top[3] *= 3;
+			} else {
+				CG_ColorForHealth(element->ctx.color2_top, NULL);
+				element->ctx.color2_top[3] = element->config.color2.value.rgba[3];
+			}
+		} else {
+			Vector4Copy(element->config.color.value.rgba, element->ctx.color_top);
+
+			if (!element->config.color2.isSet) {
+				Vector4Copy(element->ctx.color_top, element->ctx.color2_top);
+				element->ctx.color2_top[3] *= 3;
+			} else {
+				Vector4Copy(element->config.color2.value.rgba, element->ctx.color2_top);
+			}
 		}
 	}
+
 	CG_SHUDBarPrint(&element->config, &element->ctx, hp);
 }
+
 
 void CG_SHUDElementSBHBDestroy(void* context)
 {

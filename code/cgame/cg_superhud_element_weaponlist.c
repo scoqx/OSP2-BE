@@ -55,6 +55,7 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 	int total;
 	int ammo_max = 0;
 	int weapon;
+	int ammo;
 	float offsetX, offsetY;
 
 	if (!cg.snap)
@@ -235,13 +236,27 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 			CG_SHUDTextMakeContext(&element->tmp_config, &element->ammoCount[element->weaponNum]);
 			element->ammoCount[element->weaponNum].text = &element->ammo[element->weaponNum][0];
 
+			ammo = CG_SHUDGetAmmo(wpi); 
+
 			if (align != SUPERHUD_ALIGNH_RIGHT)
 			{
-				Com_sprintf(&element->ammo[element->weaponNum][0], 8, " %i", CG_SHUDGetAmmo(wpi));
+				Com_sprintf(&element->ammo[element->weaponNum][0], 8, " %i", ammo);
 			}
 			else
 			{
-				Com_sprintf(&element->ammo[element->weaponNum][0], 8, "%i ", CG_SHUDGetAmmo(wpi));
+				Com_sprintf(&element->ammo[element->weaponNum][0], 8, "%i ", ammo);
+			}
+
+			if (ammo == 0)
+			{
+				vec4_t tmpColor;
+				Vector4Copy(colorRed, tmpColor);
+				tmpColor[3]= element->tmp_config.color.value.rgba[3];
+				Vector4Copy(tmpColor, element->ammoCount[element->weaponNum].color);
+			}
+			else
+			{
+				Vector4Copy(element->tmp_config.color.value.rgba, element->ammoCount[element->weaponNum].color);
 			}
 
 			if (align == SUPERHUD_ALIGNH_CENTER)
@@ -270,7 +285,7 @@ void CG_SHUDElementWeaponListRoutine(void* context)
 	{
 		CG_SHUDFillWithColor(&element->back[i].coord, element->back[i].color);
 		CG_SHUDDrawStretchPicCtx(&element->config, &element->weaponIcon[i]);
-		CG_SHUDTextPrint(&element->config, &element->ammoCount[i]);
+		CG_SHUDTextPrintNew(&element->config, &element->ammoCount[i], qfalse);
 		CG_SHUDDrawBorderDirect(&element->back[i].coord, element->border[i], element->borderColor[i]);
 	}
 }

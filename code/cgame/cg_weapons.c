@@ -1357,7 +1357,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		shaft_type = LIGHTNING_DEFAULT_SHADER;
 	}
 	
-	if (!isOurClient && cg_enemyLightningColor.integer > 0 && CG_IsEnemyFixed(target))
+	if (!isOurClient && cg_enemyLightningColor.integer > 0 && CG_IsEnemy(target))
 	{
 		beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
 		beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
@@ -1523,6 +1523,7 @@ sound should only be done on the world model case.
 */
 void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent, int team)
 {
+	clientInfo_t*    ci;
 	refEntity_t      gun;
 	refEntity_t      barrel;
 	refEntity_t      flash;
@@ -1544,22 +1545,65 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 
 	// set custom shading for railgun refire rate
 	if (ps)
-	{
-		if (cg.predictedPlayerState.weapon == WP_RAILGUN &&
+{
+	if (cg.predictedPlayerState.weapon == WP_RAILGUN &&
 		        cg.predictedPlayerState.weaponstate == WEAPON_FIRING)
 		{
 			float f = (float)cg.predictedPlayerState.weaponTime / 1500;
+
+			if (cg_railCustomChamber.integer)
+			{
+			ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
+
+			gun.shaderRGBA[0] = 255 * ci->colors.railCore[0] * (1.0f - f);
+			gun.shaderRGBA[1] = 255 * ci->colors.railCore[1] * (1.0f - f);
+			gun.shaderRGBA[2] = 255 * ci->colors.railCore[2] * (1.0f - f);
+			gun.shaderRGBA[3] = 255;
+			}
+			else
+			{
 			gun.shaderRGBA[1] = 0;
 			gun.shaderRGBA[0] = gun.shaderRGBA[2] = 255 * (1.0f - f);
+			}
+
+		}
+	else
+	{
+		if (cg_railCustomChamber.integer == 2)
+		{
+		ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
+			
+		gun.shaderRGBA[0] = 255 * ci->colors.railRings[0];
+		gun.shaderRGBA[1] = 255 * ci->colors.railRings[1];
+		gun.shaderRGBA[2] = 255 * ci->colors.railRings[2];
 		}
 		else
 		{
-			gun.shaderRGBA[0] = 255;
+		gun.shaderRGBA[0] = 255;
+		gun.shaderRGBA[1] = 255;
+		gun.shaderRGBA[2] = 255;
+		gun.shaderRGBA[3] = 255;
+		}
+	}
+}
+ else {
+	if (cent->currentState.weapon == WP_RAILGUN) {
+		if (cg_railCustomChamber.integer == 2) {
+			ci = &cgs.clientinfo[cent->currentState.clientNum];
+
+			gun.shaderRGBA[0] = 255 * ci->colors.railRings[0];
+			gun.shaderRGBA[1] = 255 * ci->colors.railRings[1];
+			gun.shaderRGBA[2] = 255 * ci->colors.railRings[2];
+			gun.shaderRGBA[3] = 255;
+		} else {
+			gun.shaderRGBA[0] = 0;
 			gun.shaderRGBA[1] = 255;
-			gun.shaderRGBA[2] = 255;
+			gun.shaderRGBA[2] = 0;
 			gun.shaderRGBA[3] = 255;
 		}
 	}
+}
+
 
 	gun.hModel = weapon->weaponModel;
 	if (!gun.hModel)
@@ -1594,6 +1638,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	VectorMA(gun.origin, lerped.origin[0], parent->axis[0], gun.origin);
 
 	// offset for each weapon to set it excatly in the center (pos3)
+	// magic numbers ye ye. Other way is fix md3 files
 	if (ps  && cg.predictedPlayerState.weapon == WP_ROCKET_LAUNCHER)
 	{
 		VectorMA(gun.origin, 0.4, parent->axis[1], gun.origin);

@@ -370,7 +370,7 @@ static void CG_Item(centity_t* cent)
 
 	// if just respawned, slowly scale up
 
-	if (cg_itemsRespawnAnimation.value == 1)
+	if (cg_itemsRespawnAnimation.integer)
 	{
 		msec = cg.time - cent->miscTime;
 		if (msec >= 0 && msec < ITEM_SCALEUP_TIME)
@@ -408,6 +408,24 @@ static void CG_Item(centity_t* cent)
 		ent.nonNormalizedAxes = qtrue;
 	}
 
+	// set railgun color to client's rail rings color
+	if (item->giType == IT_WEAPON && item->giTag == WP_RAILGUN) {
+		if (cg_railCustomChamber.integer == 2)
+		{
+		clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
+		ent.shaderRGBA[0] = 255 * ci->colors.railRings[0];
+		ent.shaderRGBA[1] = 255 * ci->colors.railRings[1];
+		ent.shaderRGBA[2] = 255 * ci->colors.railRings[2];
+		ent.shaderRGBA[3] = 255;
+		}
+		else
+		{
+		ent.shaderRGBA[0] = 0;
+		ent.shaderRGBA[1] = 255;
+		ent.shaderRGBA[2] = 0;
+		ent.shaderRGBA[3] = 255;
+		}
+	}
 
 	// add to refresh list
 	trap_R_AddRefEntityToScene(&ent);

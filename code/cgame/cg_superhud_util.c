@@ -290,7 +290,7 @@ void CG_SHUDBarMakeContext(const superhudConfig_t* in, superhudBarContext_t* out
 		config.style.isSet = qtrue;
 		config.style.value = 1;
 	}
-	else if (config.style.value < 1 || config.style.value > 2)
+	else if (config.style.value < 1 || config.style.value > 3) // need to rework
 	{
 		config.style.value = 1;
 	}
@@ -322,7 +322,7 @@ void CG_SHUDBarMakeContext(const superhudConfig_t* in, superhudBarContext_t* out
 				out->bar[1][2] = bar_width;//w
 				out->bar[1][3] = bar_height;//h height is same as in first bar
 			}
-			else if (config.style.value == 2) // style 2 - same start point for both bars
+			else if (config.style.value == 2 || config.style.value == 3) // style 2 - same start point for both bars
 			{
 				// all the same for same bars
 				out->bar[1][0] = out->bar[0][0] = x; // x
@@ -352,7 +352,7 @@ void CG_SHUDBarMakeContext(const superhudConfig_t* in, superhudBarContext_t* out
 				out->bar[1][2] = bar_width;//w
 				out->bar[1][3] = bar_height;//h
 			}
-			else if (config.style.value == 2)   // style 2 - same start point for both bars
+			else if (config.style.value == 2 || config.style.value == 3)   // style 2 - same start point for both bars
 			{
 				// all the same for same bars
 				out->bar[1][0] = out->bar[0][0] = x; // x
@@ -674,7 +674,7 @@ void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, flo
 	                      cgs.media.whiteShader);
 	if (ctx->two_bars)
 	{
-		if (cfg->style.value == 2)
+		if (cfg->style.value == 2 || cfg->style.value == 3)
 		{
 			trap_R_SetColor(ctx->color2_top); // 2nd bar color
 		}

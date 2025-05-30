@@ -57,6 +57,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "keyup_left", 0, },
 	{ "keyup_right", 0, },
 	{ "localtime", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementLocalTimeCreate, CG_SHUDElementLocalTimeRoutine, CG_SHUDElementLocalTimeDestroy },
+	{ "localdate", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementLocalDateCreate, CG_SHUDElementLocalTimeRoutine, CG_SHUDElementLocalTimeDestroy },
 	{ "multiview", 0, },
 	{ "name_nme", 0, CG_SHUDElementNameNMECreate, CG_SHUDElementNameRoutine, CG_SHUDElementNameDestroy  },
 	{ "name_own", 0, CG_SHUDElementNameOWNCreate, CG_SHUDElementNameRoutine, CG_SHUDElementNameDestroy  },

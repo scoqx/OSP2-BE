@@ -1606,6 +1606,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 		{
 			*ccolor = COLOR_RED;
 		}
+		cgs.be.isHealthLow = qtrue;
 	}
 	else if (health >= cg_healthMid.integer)
 	{
@@ -1617,6 +1618,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 		{
 			*ccolor = COLOR_WHITE;
 		}
+		cgs.be.isHealthLow = qfalse;
 	}
 	else
 	{
@@ -1628,6 +1630,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 		{
 			*ccolor = COLOR_YELLOW;
 		}
+		cgs.be.isHealthLow = qfalse;
 	}
 
 	if (hcolor)

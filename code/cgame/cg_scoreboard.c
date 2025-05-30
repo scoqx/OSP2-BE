@@ -1807,6 +1807,12 @@ qboolean CG_BEDrawTeamScoretable(void)
 	{
 		return qfalse;
 	}
+	if (cg.scoresRequestTime + 2000 < cg.time) // in some situations the score is appears without pressing +scores
+	{
+		cg.scoresRequestTime = cg.time;
+		trap_SendClientCommand("score");
+		cg.realNumClients = CG_CountRealClients();
+	}
 	if (!cg.showScores && cg.predictedPlayerState.pm_type != PM_DEAD && cg.predictedPlayerState.pm_type != PM_INTERMISSION)
 	{
 		color = (vec4_t*)CG_FadeColor(cg.scoreFadeTime, 0xc8);

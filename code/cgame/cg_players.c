@@ -41,54 +41,8 @@ qboolean CG_IsLocalClientSpectator(void)
 	}
 }
 
-qboolean CG_IsEnemy(const clientInfo_t* ci)
-{
-	if (CG_IsLocalClientSpectator())
-	{
-		if (cgs.gametype == GT_CA)
-			return (ci->rt == TEAM_BLUE);
-		else
-			return (ci->team == TEAM_BLUE);
-	}
 
-	if (cgs.gametype <= GT_SINGLE_PLAYER)
-	{
-		return qtrue;
-	}
-
-	if (cgs.gametype >= GT_TEAM)
-	{
-		int clientIndex = (cg.clientNum >= 0 && cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
-		                  ? cg.snap->ps.clientNum : cg.clientNum;
-
-		if (!cgs.clientinfo[clientIndex].infoValid)
-		{
-			return qtrue;
-		}
-
-		if (cgs.gametype == GT_CA)
-		{
-			if (cgs.clientinfo[clientIndex].rt == ci->rt)
-			{
-				return qfalse;
-			}
-		}
-		else
-		{
-			if (cgs.clientinfo[clientIndex].team == ci->team)
-			{
-				return qfalse;
-			}
-		}
-
-		return qtrue;
-	}
-
-	return qfalse;
-}
-
-
-qboolean CG_IsEnemyFixed(const clientInfo_t* target)
+qboolean CG_IsEnemy(const clientInfo_t* target)
 {
 	const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
 	int myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
@@ -2421,7 +2375,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	}
 
 	// if they don't exist, forget it
-	if (!CG_IsEnemyFixed(ci))
+	if (!CG_IsEnemy(ci))
 	{
 		return;
 	}
@@ -2594,21 +2548,8 @@ void CG_AddOutline(centity_t* cent)
 		return;
 	}
 
-	// Check if it's a team-based game or a FFA-like game.
-	// if (!CG_OSPIsGameTypeCA(cgs.gametype))
-	// {
-	// isEnemy = (cgs.gametype <= GT_SINGLE_PLAYER) ||
-	//           (cgs.gametype >= GT_TEAM && (
-	//                (cgs.clientinfo[cg.clientNum].team != ci->team && ci->team != TEAM_SPECTATOR) ||
-	//                (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR && ci->team == TEAM_BLUE)
-	//            ));
-	// }
-	// else
-	// {
-	isEnemy = CG_IsEnemyFixed(ci);
-	// }
-
-	// Outline conditions
+	isEnemy = CG_IsEnemy(ci);
+	
 	if ((cg_drawOutline.integer == 1 && isEnemy) ||
 	        (cg_drawOutline.integer == 2 && !isEnemy) ||
 	        (cg_drawOutline.integer == 3))

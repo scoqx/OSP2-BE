@@ -450,6 +450,7 @@ void CG_SHUDElementPlayerSpeedRoutine(void* context);
 void CG_SHUDElementPlayerSpeedDestroy(void* context);
 
 void* CG_SHUDElementLocalTimeCreate(const superhudConfig_t* config);
+void* CG_SHUDElementLocalDateCreate(const superhudConfig_t* config);
 void CG_SHUDElementLocalTimeRoutine(void* context);
 void CG_SHUDElementLocalTimeDestroy(void* context);
 

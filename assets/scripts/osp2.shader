@@ -340,7 +340,6 @@ ObituariesBFGDirect {
 whiteAlpha
 {
 	nopicmip
-  	nomipmaps
 	{
 		map *white
 		blendFunc GL_ONE GL_ONE
@@ -351,7 +350,6 @@ whiteAlpha
 whiteAlpha_nocull
 {
 	nopicmip
-  	nomipmaps
 	cull none
 	{
 		map *white
@@ -364,7 +362,6 @@ whiteAlpha_cullback
 {
 	polygonOffset
 	nopicmip
-  	nomipmaps
 	cull back
 	{
 		map *white
@@ -531,4 +528,15 @@ tempAcc_LG_Icon
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         rgbGen identity
     }
+}
+
+disconnectedNew
+{
+	nopicmip
+	{
+		map gfx/2d/net.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        depthWrite
+		rgbGen identity
+	}
 }

@@ -411,6 +411,7 @@ vmCvar_t        cg_scoreboardBE;
 vmCvar_t        cg_scoreboardFont;
 vmCvar_t        cg_teamIndicatorFont;
 vmCvar_t        cg_centerMessagesFont;
+vmCvar_t		cg_railCustomChamber;
 vmCvar_t        be_run;
 
 
@@ -709,7 +710,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE },
-	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE },
 	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE },
 	{ &cg_shotGunTracer, "cg_shotGunTracer", "1", CVAR_ARCHIVE },
 	{ &cg_railRingsRadius, "cg_railRingsRadius", "4.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsRadius },
@@ -719,10 +720,10 @@ static cvarTable_t cvarTable[] =
 	{ &cg_railStaticRings, "cg_railStaticRings", "0", CVAR_ARCHIVE },
 	{ &cg_gunPos, "cg_gunPos", "1", CVAR_ARCHIVE  },
 	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_shadows},
-	{ &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE },
 	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
 	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE },
-	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE },
 	{ &cg_teamIndicator, "cg_teamIndicator", "14", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamIndicatorAdjust, "cg_teamIndicatorAdjust", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorAdjust },
 	{ &cg_teamIndicatorColor, "cg_teamIndicatorColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorColor },
@@ -736,7 +737,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_scoreboardFont, "cg_scoreboardFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardFont },
 	{ &cg_centerMessagesFont, "cg_centerMessagesFont", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_centerMessagesFont },
 	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE | CVAR_UPDATED },
-
+	{ &cg_railCustomChamber, "cg_railCustomChamber", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1349,8 +1350,7 @@ static void CG_RegisterGraphics(void)
 
 	cgs.media.bloodTrailShader = trap_R_RegisterShader("bloodTrail");
 	cgs.media.lagometerShader = trap_R_RegisterShader("lagometer");
-	cgs.media.connectionShader = trap_R_RegisterShader("disconnected");
-
+	cgs.media.connectionShader = trap_R_RegisterShader("disconnectedNew");
 	cgs.media.waterBubbleShader = trap_R_RegisterShader("waterBubble");
 
 	cgs.media.tracerShader = trap_R_RegisterShader("gfx/misc/tracer");
@@ -1821,6 +1821,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	const char*  s;
 
 	// clear everything
+	memset(&cgs.be, 0, sizeof(cgs.be));
 	memset(&cgs, 0, sizeof(cgs));
 	memset(&cg, 0, sizeof(cg));
 	memset(cg_entities, 0, sizeof(cg_entities));
@@ -1844,7 +1845,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cgs.media.charsetPropB        = trap_R_RegisterShaderNoMip("menu/art/font2_prop.tga");
 
 	CG_RegisterCvars();
-
+	CG_RegisterCvarDescriptions();
+	
 	//init variables
 	CG_CvarTouch("ch_crosshairColor");
 	CG_CvarTouch("ch_crosshairActionColor");

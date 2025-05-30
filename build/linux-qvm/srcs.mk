@@ -14,7 +14,7 @@ CG_SRC = \
  cg_servercmds cg_snapshot cg_view cg_weapons \
  bg_slidemove bg_pmove bg_lib bg_misc \
  q_math q_shared cg_ospconfig cg_osputil cg_osphud cg_unlagged cg_playerscolors\
- cg_localevents cg_customloc common\
+ cg_localevents cg_customloc cg_cvardescriptions common\
  cg_superhud cg_superhud_configparser cg_superhud_util cg_superhud_private\
  cg_superhud_element_fps \
  cg_superhud_element_sbhc cg_superhud_element_sbhi cg_superhud_element_sbhb \
