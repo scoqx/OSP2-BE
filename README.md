@@ -10,6 +10,21 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## V0.07
+```
++ Description for commands. Requires Q3E version dated April 14, 2025 or later
++ cg_railCustomChamber
+  * 1 - reloading color = core color
+  * 2 - standing color = rings color
+* Rail chamber color in other player hands/in world have green color by default (QL-like), if cg_railCustomChamber = 2 - using this color 
+* ScoreboardBE parse info fix
+* updated diwoc's hud
+
+* SHUD:
+  + element 'localdate'
+  + style 3 for StatusBar_HealthBar/StatusBar_ArmorBar 
+  * StatusBar_AmmoCount/WeaponList -  shows ammo in red when it's 0
+```
 ## v0.06d7
 ```
 * cg_teamIndicator bitmask:
@@ -55,30 +70,6 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
     + visflags: showempty
     + color works for '0'
 ```
-## v0.06
-```
-* SHUD:
-  + grid
-  + tempAcc_icon
-  - tempAcc_last
-```
-## v0.059q
-```
-* tempAcc 1 sec timeout restored
-```
-## v0.059o
-```
-* cg_drawRewards bitmask
-  * 2 - disable icon, 4 - disable float sprite, 8 - disable sound
-* restricted names in scoreboard
-* restricted strings have "." instead of "..." at the end
-```
-## v0.059j
-```
-* crosshairNames
-  + teammates names in fog
-  + ignore fog on maps: Asylum, Quarantine, oxodm32, oxodm90, rjldm3, gen_q1dm1
-```
 ## Extended features
 ```
 Cvars:
@@ -94,7 +85,8 @@ Cvars:
 * cg_drawGun (reworked)
 + cg_drawGunForceAspect
 * cg_drawHitBox enabled. Server permission required
-* cg_drawRewards 2
+* cg_drawRewards bitmask
+  * 2 - disable icon, 4 - disable float sprite, 8 - disable sound
 + cg_gunPos
 + cg_hitBoxColor <color>
 + cg_itemsRespawnAnimation
@@ -128,6 +120,8 @@ Elements:
 + playerStats_DG_icon
 + playerStats_DR_icon
 + playerStats_damage_ratio
++ grid
++ tempAcc_icon
 Other:
 + ShadowColor for text
 + Border (border, `borderColor)
@@ -155,6 +149,11 @@ Other:
 * +wstats additional data
   + Kill/death ratio (K/D)
   + Damage given/recieved Ratio
+* crosshairNames
+  + teammates names in fog
+  + ignore fog on maps: Asylum, Quarantine, oxodm32, oxodm90, rjldm3, gen_q1dm1
+* restricted names in scoreboard
+* restricted strings have "." instead of "..." at the end
 ```
 ![shot-Mar-27-2025_00 30 21](https://github.com/user-attachments/assets/11e8a2cf-8ef6-4984-a427-5af8ac9de650)
 

@@ -251,7 +251,6 @@
 + cg_railCustomChamber
   * 1 - reloading color = core color
   * 2 - standing color = rings color
-  
 * Rail chamber color in other player hands/in world have green color by default (QL-like), if cg_railCustomChamber = 2 - using this color 
 * ScoreboardBE parse info fix
 * updated diwoc's hud
@@ -260,6 +259,4 @@
 * SHUD:
   + element 'localdate'
   + style 3 for StatusBar_HealthBar/StatusBar_ArmorBar 
-
-  * ammo_count - 0 ammo is red
-  * weaponlist - 0 ammo is red
+  * StatusBar_AmmoCount/WeaponList -  shows ammo in red when it's 0
