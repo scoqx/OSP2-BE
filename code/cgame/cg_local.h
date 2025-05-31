@@ -2106,7 +2106,7 @@ void CG_InitCTFLocations(void);
 const char* CG_GetCTFLocation(int loc);
 
 //
-// cg_cvardescriptions.c
+//cg_cvardescriptions.c
 //
 void CG_RegisterCvarDescriptions(void);
 //===============================================
