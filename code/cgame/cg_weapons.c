@@ -1563,6 +1563,8 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	qboolean isFreeFloat = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) &&
                        !(cg.snap->ps.pm_flags & PMF_FOLLOW);
 	qboolean usedBrightColor = qfalse;
+	qboolean isSpectatingFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) && 
+                             (cent->currentState.number == cg.snap->ps.clientNum);
 
 	if (isWorldModel && cent->currentState.number >= 0 && cent->currentState.number < MAX_CLIENTS) {
 		// For world models, determine team/enemy by comparing teams
@@ -1735,7 +1737,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	MatrixMultiply(lerped.axis, parent->axis, gun.axis);
 	gun.backlerp = parent->backlerp;
 
-	if ((cg_drawBrightWeapons.integer & 1) && isOwnGun) {
+	if ((cg_drawBrightWeapons.integer & 1) && (isOwnGun || isSpectatingFollow)) {
 		CG_SetWeaponBrightColor(&gun, weaponNum);
 		usedBrightColor = qtrue;
 		gun.customShader = cgs.media.firstPersonGun;
