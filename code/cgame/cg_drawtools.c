@@ -2404,10 +2404,10 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 	text_command_t* curr;
 	qboolean restricted = qfalse;
 
-	size = CompiledStringSize(cmd);
-
 	if (!cmd || toWidth == 0)
 		return 0;
+
+	size = CompiledStringSize(cmd);
 
 	for (i = 0; i < size; ++i)
 	{
@@ -2418,20 +2418,21 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 			fm = &metrics[(unsigned char)curr->value.character ];
 			if (proportional)
 			{
-				ax += fm->space1 * charWidth;          // add extra space if required by metrics
-				x_end = ax + fm->space2 * charWidth;   // final position
+				ax += fm->space1 * charWidth;
+				x_end = ax + fm->space2 * charWidth;
 			}
 			else
 			{
 				x_end = ax + charWidth;
 			}
 
-			ax = x_end;
-			if (ax >= toWidth)
+			if (x_end > toWidth)
 			{
 				restricted = qtrue;
 				break;
 			}
+
+			ax = x_end;
 		}
 		else if (curr->type == OSP_TEXT_CMD_STOP)
 		{
@@ -2439,31 +2440,26 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 		}
 	}
 
-	/* replace tail with "." */
 	if (restricted)
 	{
-		int replacedWithDots;
-		float three_dot_size = GetSymbolSize('.', proportional, charWidth) * 3;
-		float erased_size;
-		int erased_cmds;
-
-		/* first, erase characters is enough to insert "..." */
-		for (erased_size = 0, erased_cmds = 0; (i > 0) && (erased_size < three_dot_size || erased_cmds < 4); --i, ++erased_cmds)
+		while (i > 0)
 		{
-			curr = &cmd[i];
-			if (curr->type == OSP_TEXT_CMD_CHAR)
+			float dotSize = GetSymbolSize('.', proportional, charWidth);
+			float prevSize = GetSymbolSize(cmd[i - 1].value.character, proportional, charWidth);
+
+			if ((ax - prevSize + dotSize) <= toWidth)
 			{
-				erased_size += GetSymbolSize(curr->value.character, proportional, charWidth);
+				--i;
+				ax = ax - prevSize + dotSize;
+				break;
 			}
+			--i;
+			ax -= prevSize;
 		}
 
-		/* second, insert "..." */
-		for (replacedWithDots = 0; (i < (size - 1)) && (replacedWithDots < 3); ++i)
-		{
-			curr = &cmd[i];
-			curr->type = OSP_TEXT_CMD_CHAR;
-			curr->value.character = '.';
-		}
+		curr = &cmd[i];
+		curr->type = OSP_TEXT_CMD_CHAR;
+		curr->value.character = '.';
 
 		if (i + 1 < OSP_TEXT_CMD_MAX)
 		{
@@ -2471,11 +2467,9 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 		}
 	}
 
-
-
 	return ax;
-
 }
+
 
 //Restrict by chars (count)
 

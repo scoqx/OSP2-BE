@@ -31,7 +31,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] = {
     { "ch_weaponListDrawAll", "^1Not working" },
     { "ch_weaponListFlash", "^1Not working" },
     */
-    { "cg_autoAction", "Automatically performs actions at certain points in the game. Bitmask:\n1 - Save stats to a local text file at the end of a match.\n  2 - End-level screenshot\n  4 - Automatically records a match\n  8 - Team's weapon stats\n  16 - All players' weapon stats" },
+    { "cg_autoAction", "Automatically performs actions at certain points in the game. Bitmask:\n  1 - Save stats to a local text file at the end of a match.\n  2 - End-level screenshot\n  4 - Automatically records a match\n  8 - Team's weapon stats\n  16 - All players' weapon stats" },
     { "cg_enemyModel", "Select model for enemies. Use ^2/pm^7 (e.g. Sarge/pm) models to apply enemy colors." },
     { "cg_autoswitch", "Automatically switches to the picked-up weapon. Set ^20^7 to disable autoswitching." },
     { "cg_drawGun", "First person view weapon appearence. Bitmask:\n  ^20^7 - hidden\n  ^21^7 - default\n  ^22^7 - no movement animation\n  ^23^7 - qlive style (preset, not bitmask)\n  ^24^7 - no switch animation\n  ^28^7 - no fire animation\n  ^216^7 - ghost shader" },
@@ -155,7 +155,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] = {
     { "cg_smokedensity_gl", "Grenade smoke trail density." },
     { "cg_smokedensity_rl", "Rocket smoke trail density." },
     { "cg_swapSkins", "Swap enemy and team model skins. Set ^20^7 to use correct team skins." },
-    { "cg_teamRails", "Use team-colored railgun trails, use ^3cg_teamRailColors ^7and ^3cg_enemyRailColors to set color.\n Set ^20^7 to disable." },
+    { "cg_teamRails", "Use team-colored railgun trails, use ^3cg_teamRailColors ^7and ^3cg_enemyRailColors^7 to set color.\n Set ^20^7 to disable." },
     { "cg_trueLightning", "Adjust lightning gun shaft lag\n  ^20.0^7 - full lag (baseq3 feel)\n  ^21.0^7 - no lag (shaft follows crosshair)" },
     { "ch_3waveFont", "^1Useless command^7\nSelect charset for OSP HUD" },
     { "ch_ColorLocations", "Colorize location messages. Set ^20^7 to use plain text" },

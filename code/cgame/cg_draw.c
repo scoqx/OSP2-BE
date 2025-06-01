@@ -2652,7 +2652,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 		);
 	}
 
-	if (cg_teamIndicator.integer & PI_STATS)
+	if (cg_teamIndicator.integer & PI_STATS && !(cgs.gametype == GT_CA))
 	{
 		int health;
 		int armor;
