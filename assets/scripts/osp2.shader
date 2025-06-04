@@ -203,7 +203,7 @@ firstPersonGun {
     {
         map gfx/2d/white64.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-        depthWrite
+        //depthWrite
         rgbGen entity
 	alphaGen entity
     }
