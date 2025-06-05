@@ -260,3 +260,9 @@
   + element 'localdate'
   + style 3 for StatusBar_HealthBar/StatusBar_ArmorBar 
   * StatusBar_AmmoCount/WeaponList -  shows ammo in red when it's 0
+
+06.06.2025 be v0.08
++ Fullbright player models support (use /fb. e.g. keel/fb)
++ cg_drawBrightWeapons
+* rail chamber default color is white
+* various fixes

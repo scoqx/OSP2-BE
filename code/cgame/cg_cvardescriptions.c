@@ -310,6 +310,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] = {
     { "cg_centerMessagesFont", "Font selection for center messages\n  ^20^7 - ^210^7" },
     { "cg_drawCrosshairNames", "Display names when crosshair is on target\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - only allies\n  ^23^7 - only enemies" },
     { "cg_railCustomChamber", "Colorize rail chamber using custom colors. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - reloading using core color\n  ^22^7 - ready to fire using rings color" },
+    { "cg_drawBrightWeapons", "Render weapons with a single bright color for better visibility. Bitmask:\n  ^21^7 - own\n  ^22^7 - teamamtes\n  ^24^7 - enemies\n  ^28^7 - world"}
 };
 
 

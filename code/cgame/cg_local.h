@@ -1998,6 +1998,8 @@ void CG_OutOfAmmoChange(void);   // should this be in pmove?
 void CG_UpdateWeaponDlightColor(weapon_t weapon);
 
 float CG_GetWeaponTempAccuracy(int weapon);
+void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum);
+
 
 //
 // cg_marks.c
@@ -2321,7 +2323,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.07c" // BE
+#define OSP_VERSION "be-0.08" // BE
 
 
 

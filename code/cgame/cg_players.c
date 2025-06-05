@@ -55,6 +55,11 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 	enemyTeam = target->rt;
 	}
 
+
+	if (target == local) {
+		return qfalse;
+	}
+
 	if (cgs.gametype <= GT_SINGLE_PLAYER)
 	{
 		return qtrue;
@@ -782,7 +787,7 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 			}
 		}
 	}
-	else if (!isPmSkin || !isFbSkin)
+	else if (!(isPmSkin || isFbSkin))
 	{
 		nameSkin = "default";
 	}

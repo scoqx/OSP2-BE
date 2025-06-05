@@ -10,7 +10,14 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
-## V0.07
+## v0.08
+```
++ Fullbright player models support (use /fb. e.g. keel/fb)
++ cg_drawBrightWeapons
+* rail chamber default color is white
+* various fixes
+```
+## v0.07
 ```
 + Description for commands. Requires Q3E version dated April 14, 2025 or later
 + cg_railCustomChamber

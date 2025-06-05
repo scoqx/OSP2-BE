@@ -27,16 +27,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 static void CG_GrenadeTrail(centity_t* ent, const weaponInfo_t* wi);
 
 static const vec3_t weaponBrightColors[WP_NUM_WEAPONS] = {
-    {0, 0, 0}, // WP_NONE (unused)
-    {0.0f, 0.976f, 1.0f},      // WP_GAUNTLET      (cyan)
+    {0, 0, 0}, 	// WP_NONE (unused)
+    {1.0f, 1.0f, 1.0f},      // WP_GAUNTLET      (white)
     {1.0f, 1.0f, 0.0f},        // WP_MACHINEGUN    (yellow)
-    {0.933f, 0.515f, 0.0f},    // WP_SHOTGUN       (orange)
-    {0.02f, 0.702f, 0.125f},   // WP_GRENADE_LAUNCHER (forest green)
-    {0.996f, 0.0f, 0.0f},      // WP_ROCKET_LAUNCHER (red)
+    {1.0f, 0.5f, 0.0f},    // WP_SHOTGUN       (orange)
+    {0.0f, 1.0f, 0.0f},   // WP_GRENADE_LAUNCHER (forest green)
+    {1.0f, 0.0f, 0.0f},      // WP_ROCKET_LAUNCHER (red)
     {1.0f, 1.0f, 1.0f},        // WP_LIGHTNING     (white)
-    {0.0f, 1.0f, 0.004f},      // WP_RAILGUN       (green)
-    {0.757f, 0.0f, 0.937f},    // WP_PLASMAGUN     (magenta)
-    {0.0f, 0.392f, 0.933f},    // WP_BFG           (blue)
+    {0.0f, 1.0f, 1.0f},      // WP_RAILGUN       (green)
+    {1.0f, 0.0f, 1.0f},    // WP_PLASMAGUN     (magenta)
+    {0.0f, 0.0f, 1.0f},    // WP_BFG           (blue)
 };
 
 /*
@@ -1534,6 +1534,15 @@ void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum) {
     }
 }
 
+void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum) {
+    if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS) {
+        ent->shaderRGBA[0] = 255 * weaponBrightColors[weaponNum][0];
+        ent->shaderRGBA[1] = 255 * weaponBrightColors[weaponNum][1];
+        ent->shaderRGBA[2] = 255 * weaponBrightColors[weaponNum][2];
+        ent->shaderRGBA[3] = 255;
+    }
+}
+
 /*
 =============
 CG_AddPlayerWeapon
@@ -1556,30 +1565,12 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	orientation_t    lerped;
 	// Determine context
 	qboolean isOwnGun = (ps && cent->currentState.number == cg.clientNum);
-	qboolean isWorldModel = (ps == NULL);
-	qboolean isTeammate = qfalse;
-	qboolean isEnemy = qfalse;
-	qboolean isWeaponOnMap = (!ps && cent->currentState.eType == ET_ITEM);
-	qboolean isFreeFloat = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) &&
-                       !(cg.snap->ps.pm_flags & PMF_FOLLOW);
+
+	qboolean isEnemy = CG_IsEnemy(&cgs.clientinfo[cent->currentState.number]);
+	qboolean isTeammate = !isEnemy && (cent->currentState.number != cg.clientNum);
 	qboolean usedBrightColor = qfalse;
 	qboolean isSpectatingFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) && 
                              (cent->currentState.number == cg.snap->ps.clientNum);
-
-	if (isWorldModel && cent->currentState.number >= 0 && cent->currentState.number < MAX_CLIENTS) {
-		// For world models, determine team/enemy by comparing teams
-		int entTeam = cgs.clientinfo[cent->currentState.number].team;
-		int myTeam = cgs.clientinfo[cg.clientNum].team;
-		if (entTeam && myTeam && entTeam == myTeam) {
-			isTeammate = qtrue;
-		} else if (entTeam && myTeam && entTeam != myTeam) {
-			isEnemy = qtrue;
-		}
-	} else if (ps) {
-		// For view weapon, use original logic
-		isTeammate = (!isOwnGun && cgs.clientinfo[cg.clientNum].team == cgs.clientinfo[cent->currentState.number].team);
-		isEnemy = CG_IsEnemy(&cgs.clientinfo[cent->currentState.number]);
-	}
 
 	weaponNum = cent->currentState.weapon;
 	CG_RegisterWeapon(weaponNum);
@@ -1644,9 +1635,9 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			gun.shaderRGBA[2] = 255 * ci->colors.railRings[2];
 			gun.shaderRGBA[3] = 255;
 		} else {
-			gun.shaderRGBA[0] = 0;
+			gun.shaderRGBA[0] = 255;
 			gun.shaderRGBA[1] = 255;
-			gun.shaderRGBA[2] = 0;
+			gun.shaderRGBA[2] = 255;
 			gun.shaderRGBA[3] = 255;
 		}
 	}
@@ -1749,12 +1740,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		CG_SetWeaponBrightColor(&gun, weaponNum);
 		usedBrightColor = qtrue;
 		gun.customShader = cgs.media.firstPersonGun;
-	} else if ((cg_drawBrightWeapons.integer & 16) && isFreeFloat) {
-		CG_SetWeaponBrightColor(&gun, weaponNum);
-		usedBrightColor = qtrue;
-		gun.customShader = cgs.media.firstPersonGun;
 	}
-
 	if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
 		(cg_drawGun.integer == 3))
 	{

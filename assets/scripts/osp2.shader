@@ -199,13 +199,14 @@ damageIndicator2
 
 //first person  Gun (cg_drawgun 3 shader)
 
-firstPersonGun {
+firstPersonGun 
+{
+	sort nearest
     {
         map gfx/2d/white64.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-        //depthWrite
         rgbGen entity
-	alphaGen entity
+		alphaGen entity
     }
 }
 
@@ -378,7 +379,7 @@ outlineWide
 	cull back
 	{
 		map *white
-		blendFunc GL_ONE GL_ONE
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
 		rgbGen entity	
 	}
 }
@@ -391,7 +392,7 @@ outlineMedium
 	cull back
 	{
 		map *white
-		blendFunc GL_ONE GL_ONE
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
 		rgbGen entity	
 	}
 }   
@@ -404,7 +405,7 @@ outlineThin
 	cull back
 	{
 		map *white
-		blendFunc GL_ONE GL_ONE
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
 		rgbGen entity	
 	}
 }
