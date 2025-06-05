@@ -737,6 +737,7 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	const char* nameModel;
 	const char* nameSkin = NULL;
 	qboolean isPmSkin = qfalse;
+	qboolean isFbSkin = qfalse;
 	char* ptr;
 
 	char tmpStr[MAX_QPATH];
@@ -752,11 +753,12 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	}
 
 	isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "pm") == 0)) ? qtrue : qfalse;
+	isFbSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
 
 	if (isOurClient)
 	{
 		// our player only pm or default
-		if (qfalse && !isPmSkin)
+		if (qfalse && !isPmSkin && !isFbSkin)
 		{
 			nameSkin = "default";
 		}
@@ -764,7 +766,7 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	else if (cgs.gametype >= GT_TEAM)
 	{
 		// in team games users able to set pm skin only
-		if (!nameSkin || !isPmSkin)
+		if (!nameSkin || (!isPmSkin && !isFbSkin))
 		{
 			if (team == TEAM_BLUE)
 			{
@@ -780,7 +782,7 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 			}
 		}
 	}
-	else if (!isPmSkin)
+	else if (!isPmSkin || !isFbSkin)
 	{
 		nameSkin = "default";
 	}
@@ -902,6 +904,7 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 	CG_UpdateModelFromString(&ci->modelName[0], &ci->skinName[0], resultModelString, isOurClient, ci->rt);
 	CG_UpdateModelFromString(&ci->headModelName[0], &ci->headSkinName[0], resultHModelString, isOurClient, ci->rt);
 	ci->isPmSkin = (Q_stricmp(ci->skinName, "pm") == 0) ? qtrue : qfalse;
+	ci->isFbSkin = (Q_stricmp(ci->skinName, "fb") == 0) ? qtrue : qfalse;
 }
 
 /*
@@ -2765,7 +2768,7 @@ void CG_Player(centity_t* cent)
 	legs.renderfx = renderfx;
 	VectorCopy(legs.origin, legs.oldorigin);    // don't positionally lerp at all
 
-	if (ci->isPmSkin)
+	if (ci->isPmSkin || ci->isFbSkin)
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -2819,7 +2822,7 @@ void CG_Player(centity_t* cent)
 	torso.shadowPlane = shadowPlane;
 	torso.renderfx = renderfx;
 
-	if (ci->isPmSkin)
+	if (ci->isPmSkin || ci->isFbSkin)
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -2873,7 +2876,7 @@ void CG_Player(centity_t* cent)
 	head.shadowPlane = shadowPlane;
 	head.renderfx = renderfx;
 
-	if (ci->isPmSkin)
+	if (ci->isPmSkin || ci->isFbSkin)
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;

@@ -380,6 +380,7 @@ typedef struct
 	char            modelName[MAX_QPATH];
 	char            skinName[MAX_QPATH];
 	qboolean        isPmSkin;
+	qboolean	isFbSkin;
 	char            headModelName[MAX_QPATH];
 	char            headSkinName[MAX_QPATH];
 	char            redTeam[MAX_TEAMNAME];
@@ -1567,6 +1568,7 @@ extern vmCvar_t           cg_dlightPG;
 extern vmCvar_t           cg_dlightBFG;
 extern vmCvar_t           cg_gunColor;
 extern vmCvar_t           cg_gunOpaque;
+extern vmCvar_t           cg_drawBrightWeapons;
 extern vmCvar_t           cg_conObituaries;
 extern vmCvar_t           cg_lightningHitsoundRateFix;
 extern vmCvar_t           cg_stackHitSounds;
@@ -1617,6 +1619,7 @@ extern vmCvar_t     cg_scoreboardFont;
 extern vmCvar_t     cg_centerMessagesFont;
 extern vmCvar_t		cg_railCustomChamber;
 extern vmCvar_t         be_run;
+
 
 //
 // cg_main.c
