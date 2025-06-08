@@ -412,7 +412,7 @@ vmCvar_t        cg_scoreboardBE;
 vmCvar_t        cg_scoreboardFont;
 vmCvar_t        cg_teamIndicatorFont;
 vmCvar_t        cg_centerMessagesFont;
-vmCvar_t		cg_railCustomChamber;
+vmCvar_t        cg_railCustomChamber;
 vmCvar_t        be_run;
 
 
@@ -1546,9 +1546,9 @@ static void CG_RegisterGraphics(void)
 	cgs.media.tempAccIcon = trap_R_RegisterShader("tempAcc_LG_Icon");
 
 	// be extention
-	cgs.media.whiteAlphaShader      = trap_R_RegisterShader("whiteAlpha");
-	cgs.media.whiteAlphaShader_nocull      = trap_R_RegisterShader("whiteAlpha_nocull");
-	cgs.media.whiteAlphaShader_cullback    = trap_R_RegisterShader("whiteAlpha_cullback");
+	cgs.media.hboxShaderNew      = trap_R_RegisterShader("hboxNew");
+	cgs.media.hboxShaderNew_nocull      = trap_R_RegisterShader("hboxNew_nocull");
+	cgs.media.hboxShaderNew_cullback    = trap_R_RegisterShader("hboxNew_cullback");
 
 	// Enemy outline
 	cgs.media.outlineShader =
@@ -1848,7 +1848,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_RegisterCvars();
 	CG_RegisterCvarDescriptions();
-	
+
 	//init variables
 	CG_CvarTouch("ch_crosshairColor");
 	CG_CvarTouch("ch_crosshairActionColor");
@@ -2271,15 +2271,15 @@ void CG_PrintNewCommandsBE_f(void)
 	}
 }
 
-static void trap_Cvar_SetDescription_local(const char *name, const char *description)
+static void trap_Cvar_SetDescription_local(const char* name, const char* description)
 {
 	(void)name;
 	(void)description;
 }
-typedef void (setCvarDescription_t)(const char *name, const char *description);
-typedef qboolean (trap_GetValue_t)( char *value, int valueSize, const char *key );
+typedef void (setCvarDescription_t)(const char* name, const char* description);
+typedef qboolean(trap_GetValue_t)(char* value, int valueSize, const char* key);
 
-void CG_SetCvarDescription(const char *name, const char *description)
+void CG_SetCvarDescription(const char* name, const char* description)
 {
 	static setCvarDescription_t* setDescription = NULL;
 
@@ -2290,19 +2290,20 @@ void CG_SetCvarDescription(const char *name, const char *description)
 		trap_GetValue_t* trap_GetValue;
 
 		setDescription = trap_Cvar_SetDescription_local;
-		trap_Cvar_VariableStringBuffer( "//trap_GetValue", value, sizeof( value ) );
+		trap_Cvar_VariableStringBuffer("//trap_GetValue", value, sizeof(value));
 
-		if ( value[0] ) {
+		if (value[0])
+		{
 			addr = atoi(value);
 #ifdef Q3_VM
-			addr = ~addr; 
+			addr = ~addr;
 #endif
 			trap_GetValue = (trap_GetValue_t*)(addr);
-			if ( trap_GetValue( value, sizeof( value ), "trap_Cvar_SetDescription_Q3E" ) ) 
+			if (trap_GetValue(value, sizeof(value), "trap_Cvar_SetDescription_Q3E"))
 			{
 				addr = atoi(value);
 #ifdef Q3_VM
-			addr = ~addr; 
+				addr = ~addr;
 #endif
 				setDescription = (setCvarDescription_t*)addr;
 			}

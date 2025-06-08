@@ -266,3 +266,8 @@
 + cg_drawBrightWeapons
 * rail chamber default color is white
 * various fixes
+
+08.06.2025 be v0.081
++ cg_scoreboardBE 3 - old style team scores
++ outline optimisation
+* hitbox shaders renamed

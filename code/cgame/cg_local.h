@@ -380,7 +380,7 @@ typedef struct
 	char            modelName[MAX_QPATH];
 	char            skinName[MAX_QPATH];
 	qboolean        isPmSkin;
-	qboolean	isFbSkin;
+	qboolean    isFbSkin;
 	char            headModelName[MAX_QPATH];
 	char            headSkinName[MAX_QPATH];
 	char            redTeam[MAX_TEAMNAME];
@@ -693,7 +693,7 @@ typedef struct
 	playerState_t savedPmoveStates[NUM_SAVED_STATES];
 	int         stateHead, stateTail;
 	vec3_t lastViewOrigin;
-    vec3_t lastViewAngles;
+	vec3_t lastViewAngles;
 	usercmd_t lastFreeLookCmd;
 	qboolean freeLookInitialized;
 	qboolean freeLookCmdInitialized;
@@ -713,9 +713,9 @@ typedef struct
 	qhandle_t   charsetPropGlow;
 	qhandle_t   charsetPropB;
 	qhandle_t   whiteShader;
-	qhandle_t   whiteAlphaShader;
-	qhandle_t   whiteAlphaShader_nocull;
-	qhandle_t   whiteAlphaShader_cullback;
+	qhandle_t   hboxShaderNew;
+	qhandle_t   hboxShaderNew_nocull;
+	qhandle_t   hboxShaderNew_cullback;
 	qhandle_t   outlineThinShader;
 	qhandle_t   outlineMediumShader;
 	qhandle_t   outlineWideShader;
@@ -1617,7 +1617,7 @@ extern vmCvar_t     cg_teamIndicatorFont;
 extern vmCvar_t     cg_scoreboardBE;
 extern vmCvar_t     cg_scoreboardFont;
 extern vmCvar_t     cg_centerMessagesFont;
-extern vmCvar_t		cg_railCustomChamber;
+extern vmCvar_t     cg_railCustomChamber;
 extern vmCvar_t         be_run;
 
 
@@ -1685,7 +1685,7 @@ void CG_AddBufferedSound(sfxHandle_t sfx);
 
 void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoPlayback);
 float CG_DrawLagometer(float pos);
-void CG_SetCvarDescription(const char *name, const char *description);
+void CG_SetCvarDescription(const char* name, const char* description);
 
 
 //
@@ -2323,7 +2323,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.08" // BE
+#define OSP_VERSION "be-0.081" // BE
 
 
 

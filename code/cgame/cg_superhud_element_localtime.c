@@ -44,37 +44,37 @@ void* CG_SHUDElementLocalDateCreate(const superhudConfig_t* config)
 
 void CG_SHUDElementLocalTimeRoutine(void* context)
 {
-    shudElementLocalTime_t* element = (shudElementLocalTime_t*)context;
-    qtime_t qtime;
+	shudElementLocalTime_t* element = (shudElementLocalTime_t*)context;
+	qtime_t qtime;
 
-    if (cg.time - element->timePrev > 1000)
-    {
-        element->timePrev = cg.time;
-        trap_RealTime(&qtime);
-		if(element->type == SHUD_ELEMENT_LOCAL_TIME)
+	if (cg.time - element->timePrev > 1000)
+	{
+		element->timePrev = cg.time;
+		trap_RealTime(&qtime);
+		if (element->type == SHUD_ELEMENT_LOCAL_TIME)
 		{
 			Com_sprintf(element->s, MAX_QPATH, "%02d:%02d", qtime.tm_hour, qtime.tm_min);
 		}
-		else if(element->type == SHUD_ELEMENT_LOCAL_DATE)
+		else if (element->type == SHUD_ELEMENT_LOCAL_DATE)
 		{
-			if(element->config.style.isSet && element->config.style.value == 1)
+			if (element->config.style.isSet && element->config.style.value == 1)
 			{
 				Com_sprintf(element->s, MAX_QPATH, "%02d.%02d.%04d",
-							qtime.tm_mon + 1,
-							qtime.tm_mday,
-							qtime.tm_year + 1900
-							);
+				            qtime.tm_mon + 1,
+				            qtime.tm_mday,
+				            qtime.tm_year + 1900
+				           );
 			}
 			else
-			    Com_sprintf(element->s, MAX_QPATH, "%02d.%02d.%04d",
-                qtime.tm_mday,
-                qtime.tm_mon + 1,
-                qtime.tm_year + 1900
-				);
+				Com_sprintf(element->s, MAX_QPATH, "%02d.%02d.%04d",
+				            qtime.tm_mday,
+				            qtime.tm_mon + 1,
+				            qtime.tm_year + 1900
+				           );
 		}
 
-    }
-    CG_SHUDTextPrint(&element->config, &element->ctx);
+	}
+	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 
 void CG_SHUDElementLocalTimeDestroy(void* context)

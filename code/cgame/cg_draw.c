@@ -2543,7 +2543,8 @@ void CG_DrawPlayerIndicator(int clientNum)
 	const float smoothFactor = 0.2f;
 	int scanRange = MAX_CLIENTS;
 
-	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN)) {
+	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
+	{
 		scanRange = MAX_GENTITIES;
 	}
 
@@ -2726,10 +2727,11 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
 	int clientNum;
 	int freezeLimit = MAX_CLIENTS;
 
-	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN)) {
+	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
+	{
 		freezeLimit = MAX_GENTITIES;
 	}
-	
+
 	if (clientOrEntityNum < 0 || clientOrEntityNum >= freezeLimit)
 		return qfalse;
 
@@ -2739,7 +2741,7 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
 		return qfalse;
 
 	clientNum = clientOrEntityNum;
- 
+
 	if (clientOrEntityNum >= MAX_CLIENTS && CG_IsFrozenEntity(cent))
 	{
 		clientNum = cent->currentState.otherEntityNum;
@@ -2801,7 +2803,8 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 	int i, range;
 	int scanRange = MAX_CLIENTS;
 
-	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN)) {
+	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
+	{
 		scanRange = MAX_GENTITIES;
 	}
 

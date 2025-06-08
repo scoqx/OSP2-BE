@@ -339,15 +339,15 @@ static void CG_ParseColorStr24Bit(const char* str, vec4_t out)
 
 // static void CG_ParseColorStr32Bit(const char* str, vec4_t out)
 // {
-// 	char hexstr[9] = {'0','0','0','0','0','0','0','0', 0};
-// 	const int len = strlen(str);
+//  char hexstr[9] = {'0','0','0','0','0','0','0','0', 0};
+//  const int len = strlen(str);
 
-// 	Q_strncpyz(&hexstr[8 - len], str, len + 1);
+//  Q_strncpyz(&hexstr[8 - len], str, len + 1);
 
-// 	out[3] = CG_FloatColorFromHex8bit(hexstr[0], hexstr[1]); // A
-// 	out[0] = CG_FloatColorFromHex8bit(hexstr[2], hexstr[3]); // R
-// 	out[1] = CG_FloatColorFromHex8bit(hexstr[4], hexstr[5]); // G
-// 	out[2] = CG_FloatColorFromHex8bit(hexstr[6], hexstr[7]); // B
+//  out[3] = CG_FloatColorFromHex8bit(hexstr[0], hexstr[1]); // A
+//  out[0] = CG_FloatColorFromHex8bit(hexstr[2], hexstr[3]); // R
+//  out[1] = CG_FloatColorFromHex8bit(hexstr[4], hexstr[5]); // G
+//  out[2] = CG_FloatColorFromHex8bit(hexstr[6], hexstr[7]); // B
 // }
 
 qboolean CG_ParseColorStr(const char* str, vec4_t out)
@@ -447,8 +447,8 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 	}
 	// else if (len == 8)
 	// {
-	// 	CG_ParseColorStr32Bit(ptr, out);
-	// 	return qtrue;
+	//  CG_ParseColorStr32Bit(ptr, out);
+	//  return qtrue;
 	// }
 
 

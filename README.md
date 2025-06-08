@@ -10,6 +10,12 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v0.081
+```
++ cg_scoreboardBE 3 - old style team scores
++ outline optimisation
+* hitbox shaders renamed
+```
 ## v0.08
 ```
 + Fullbright player models support (use /fb. e.g. keel/fb)

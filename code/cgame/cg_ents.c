@@ -406,7 +406,7 @@ static void CG_Item(centity_t* cent)
 		VectorScale(ent.axis[1], 1.5, ent.axis[1]);
 		VectorScale(ent.axis[2], 1.5, ent.axis[2]);
 		ent.nonNormalizedAxes = qtrue;
-		if (cg_drawBrightWeapons.integer & 8) 
+		if (cg_drawBrightWeapons.integer & 8)
 		{
 			ent.customShader = cgs.media.firstPersonGun;
 			CG_SetWeaponBrightColorWorld(&ent, item->giTag);
@@ -414,21 +414,22 @@ static void CG_Item(centity_t* cent)
 	}
 
 	// set railgun color to client's rail rings color
-	if (item->giType == IT_WEAPON && item->giTag == WP_RAILGUN && !(cg_drawBrightWeapons.integer & 8)) {
+	if (item->giType == IT_WEAPON && item->giTag == WP_RAILGUN && !(cg_drawBrightWeapons.integer & 8))
+	{
 		if (cg_railCustomChamber.integer == 2)
 		{
-		clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
-		ent.shaderRGBA[0] = 255 * ci->colors.railRings[0];
-		ent.shaderRGBA[1] = 255 * ci->colors.railRings[1];
-		ent.shaderRGBA[2] = 255 * ci->colors.railRings[2];
-		ent.shaderRGBA[3] = 255;
+			clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
+			ent.shaderRGBA[0] = 255 * ci->colors.railRings[0];
+			ent.shaderRGBA[1] = 255 * ci->colors.railRings[1];
+			ent.shaderRGBA[2] = 255 * ci->colors.railRings[2];
+			ent.shaderRGBA[3] = 255;
 		}
 		else
 		{
-		ent.shaderRGBA[0] = 255;
-		ent.shaderRGBA[1] = 255;
-		ent.shaderRGBA[2] = 255;
-		ent.shaderRGBA[3] = 255;
+			ent.shaderRGBA[0] = 255;
+			ent.shaderRGBA[1] = 255;
+			ent.shaderRGBA[2] = 255;
+			ent.shaderRGBA[3] = 255;
 		}
 	}
 

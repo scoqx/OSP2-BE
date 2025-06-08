@@ -236,7 +236,7 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 			CG_SHUDTextMakeContext(&element->tmp_config, &element->ammoCount[element->weaponNum]);
 			element->ammoCount[element->weaponNum].text = &element->ammo[element->weaponNum][0];
 
-			ammo = CG_SHUDGetAmmo(wpi); 
+			ammo = CG_SHUDGetAmmo(wpi);
 
 			if (align != SUPERHUD_ALIGNH_RIGHT)
 			{
@@ -251,7 +251,7 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 			{
 				vec4_t tmpColor;
 				Vector4Copy(colorRed, tmpColor);
-				tmpColor[3]= element->tmp_config.color.value.rgba[3];
+				tmpColor[3] = element->tmp_config.color.value.rgba[3];
 				Vector4Copy(tmpColor, element->ammoCount[element->weaponNum].color);
 			}
 			else

@@ -26,17 +26,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static void CG_GrenadeTrail(centity_t* ent, const weaponInfo_t* wi);
 
-static const vec3_t weaponBrightColors[WP_NUM_WEAPONS] = {
-    {0, 0, 0}, 	// WP_NONE (unused)
-    {1.0f, 1.0f, 1.0f},      // WP_GAUNTLET      (white)
-    {1.0f, 1.0f, 0.0f},        // WP_MACHINEGUN    (yellow)
-    {1.0f, 0.5f, 0.0f},    // WP_SHOTGUN       (orange)
-    {0.0f, 1.0f, 0.0f},   // WP_GRENADE_LAUNCHER (forest green)
-    {1.0f, 0.0f, 0.0f},      // WP_ROCKET_LAUNCHER (red)
-    {1.0f, 1.0f, 1.0f},        // WP_LIGHTNING     (white)
-    {0.0f, 1.0f, 1.0f},      // WP_RAILGUN       (green)
-    {1.0f, 0.0f, 1.0f},    // WP_PLASMAGUN     (magenta)
-    {0.0f, 0.0f, 1.0f},    // WP_BFG           (blue)
+static const vec3_t weaponBrightColors[WP_NUM_WEAPONS] =
+{
+	{0, 0, 0},  // WP_NONE (unused)
+	{1.0f, 1.0f, 1.0f},      // WP_GAUNTLET      (white)
+	{1.0f, 1.0f, 0.0f},        // WP_MACHINEGUN    (yellow)
+	{1.0f, 0.5f, 0.0f},    // WP_SHOTGUN       (orange)
+	{0.0f, 1.0f, 0.0f},   // WP_GRENADE_LAUNCHER (forest green)
+	{1.0f, 0.0f, 0.0f},      // WP_ROCKET_LAUNCHER (red)
+	{1.0f, 1.0f, 1.0f},        // WP_LIGHTNING     (white)
+	{0.0f, 1.0f, 1.0f},      // WP_RAILGUN       (green)
+	{1.0f, 0.0f, 1.0f},    // WP_PLASMAGUN     (magenta)
+	{0.0f, 0.0f, 1.0f},    // WP_BFG           (blue)
 };
 
 /*
@@ -1369,7 +1370,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	{
 		shaft_type = LIGHTNING_DEFAULT_SHADER;
 	}
-	
+
 	if (!isOurClient && cg_enemyLightningColor.integer > 0 && CG_IsEnemy(target))
 	{
 		beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
@@ -1525,22 +1526,26 @@ static void CG_UpdateGunShaderRGBA(refEntity_t* gun)
 	gun->shaderRGBA[3] = 255 * color[3];
 }
 
-void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum) {
-    if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS) {
-        gun->shaderRGBA[0] = 255 * weaponBrightColors[weaponNum][0];
-        gun->shaderRGBA[1] = 255 * weaponBrightColors[weaponNum][1];
-        gun->shaderRGBA[2] = 255 * weaponBrightColors[weaponNum][2];
-        gun->shaderRGBA[3] = 255;
-    }
+void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum)
+{
+	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
+	{
+		gun->shaderRGBA[0] = 255 * weaponBrightColors[weaponNum][0];
+		gun->shaderRGBA[1] = 255 * weaponBrightColors[weaponNum][1];
+		gun->shaderRGBA[2] = 255 * weaponBrightColors[weaponNum][2];
+		gun->shaderRGBA[3] = 255;
+	}
 }
 
-void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum) {
-    if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS) {
-        ent->shaderRGBA[0] = 255 * weaponBrightColors[weaponNum][0];
-        ent->shaderRGBA[1] = 255 * weaponBrightColors[weaponNum][1];
-        ent->shaderRGBA[2] = 255 * weaponBrightColors[weaponNum][2];
-        ent->shaderRGBA[3] = 255;
-    }
+void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum)
+{
+	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
+	{
+		ent->shaderRGBA[0] = 255 * weaponBrightColors[weaponNum][0];
+		ent->shaderRGBA[1] = 255 * weaponBrightColors[weaponNum][1];
+		ent->shaderRGBA[2] = 255 * weaponBrightColors[weaponNum][2];
+		ent->shaderRGBA[3] = 255;
+	}
 }
 
 /*
@@ -1569,8 +1574,8 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	qboolean isEnemy = CG_IsEnemy(&cgs.clientinfo[cent->currentState.number]);
 	qboolean isTeammate = !isEnemy && (cent->currentState.number != cg.clientNum);
 	qboolean usedBrightColor = qfalse;
-	qboolean isSpectatingFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) && 
-                             (cent->currentState.number == cg.snap->ps.clientNum);
+	qboolean isSpectatingFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+	                              (cent->currentState.number == cg.snap->ps.clientNum);
 
 	weaponNum = cent->currentState.weapon;
 	CG_RegisterWeapon(weaponNum);
@@ -1584,64 +1589,69 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 
 	// set custom shading for railgun refire rate
 	if (ps)
-{
-	if (cg.predictedPlayerState.weapon == WP_RAILGUN &&
+	{
+		if (cg.predictedPlayerState.weapon == WP_RAILGUN &&
 		        cg.predictedPlayerState.weaponstate == WEAPON_FIRING)
 		{
 			float f = (float)cg.predictedPlayerState.weaponTime / 1500;
 
 			if (cg_railCustomChamber.integer)
 			{
-			ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
+				ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
 
-			gun.shaderRGBA[0] = 255 * ci->colors.railCore[0] * (1.0f - f);
-			gun.shaderRGBA[1] = 255 * ci->colors.railCore[1] * (1.0f - f);
-			gun.shaderRGBA[2] = 255 * ci->colors.railCore[2] * (1.0f - f);
-			gun.shaderRGBA[3] = 255;
+				gun.shaderRGBA[0] = 255 * ci->colors.railCore[0] * (1.0f - f);
+				gun.shaderRGBA[1] = 255 * ci->colors.railCore[1] * (1.0f - f);
+				gun.shaderRGBA[2] = 255 * ci->colors.railCore[2] * (1.0f - f);
+				gun.shaderRGBA[3] = 255;
 			}
 			else
 			{
-			gun.shaderRGBA[1] = 0;
-			gun.shaderRGBA[0] = gun.shaderRGBA[2] = 255 * (1.0f - f);
+				gun.shaderRGBA[1] = 0;
+				gun.shaderRGBA[0] = gun.shaderRGBA[2] = 255 * (1.0f - f);
 			}
 
 		}
-	else
-	{
-		if (cg_railCustomChamber.integer == 2)
-		{
-		ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
-			
-		gun.shaderRGBA[0] = 255 * ci->colors.railRings[0];
-		gun.shaderRGBA[1] = 255 * ci->colors.railRings[1];
-		gun.shaderRGBA[2] = 255 * ci->colors.railRings[2];
-		}
 		else
 		{
-		gun.shaderRGBA[0] = 255;
-		gun.shaderRGBA[1] = 255;
-		gun.shaderRGBA[2] = 255;
-		gun.shaderRGBA[3] = 255;
-		}
-	}
-}
- else {
-	if (cent->currentState.weapon == WP_RAILGUN) {
-		if (cg_railCustomChamber.integer == 2) {
-			ci = &cgs.clientinfo[cent->currentState.clientNum];
+			if (cg_railCustomChamber.integer == 2)
+			{
+				ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
 
-			gun.shaderRGBA[0] = 255 * ci->colors.railRings[0];
-			gun.shaderRGBA[1] = 255 * ci->colors.railRings[1];
-			gun.shaderRGBA[2] = 255 * ci->colors.railRings[2];
-			gun.shaderRGBA[3] = 255;
-		} else {
-			gun.shaderRGBA[0] = 255;
-			gun.shaderRGBA[1] = 255;
-			gun.shaderRGBA[2] = 255;
-			gun.shaderRGBA[3] = 255;
+				gun.shaderRGBA[0] = 255 * ci->colors.railRings[0];
+				gun.shaderRGBA[1] = 255 * ci->colors.railRings[1];
+				gun.shaderRGBA[2] = 255 * ci->colors.railRings[2];
+			}
+			else
+			{
+				gun.shaderRGBA[0] = 255;
+				gun.shaderRGBA[1] = 255;
+				gun.shaderRGBA[2] = 255;
+				gun.shaderRGBA[3] = 255;
+			}
 		}
 	}
-}
+	else
+	{
+		if (cent->currentState.weapon == WP_RAILGUN)
+		{
+			if (cg_railCustomChamber.integer == 2)
+			{
+				ci = &cgs.clientinfo[cent->currentState.clientNum];
+
+				gun.shaderRGBA[0] = 255 * ci->colors.railRings[0];
+				gun.shaderRGBA[1] = 255 * ci->colors.railRings[1];
+				gun.shaderRGBA[2] = 255 * ci->colors.railRings[2];
+				gun.shaderRGBA[3] = 255;
+			}
+			else
+			{
+				gun.shaderRGBA[0] = 255;
+				gun.shaderRGBA[1] = 255;
+				gun.shaderRGBA[2] = 255;
+				gun.shaderRGBA[3] = 255;
+			}
+		}
+	}
 
 
 	gun.hModel = weapon->weaponModel;
@@ -1728,23 +1738,29 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	MatrixMultiply(lerped.axis, parent->axis, gun.axis);
 	gun.backlerp = parent->backlerp;
 
-	if ((cg_drawBrightWeapons.integer & 1) && (isOwnGun || isSpectatingFollow)) {
+	if ((cg_drawBrightWeapons.integer & 1) && (isOwnGun || isSpectatingFollow))
+	{
 		CG_SetWeaponBrightColor(&gun, weaponNum);
 		usedBrightColor = qtrue;
 		gun.customShader = cgs.media.firstPersonGun;
-	} else if ((cg_drawBrightWeapons.integer & 2) && isTeammate) {
+	}
+	else if ((cg_drawBrightWeapons.integer & 2) && isTeammate)
+	{
 		CG_SetWeaponBrightColor(&gun, weaponNum);
 		usedBrightColor = qtrue;
 		gun.customShader = cgs.media.firstPersonGun;
-	} else if ((cg_drawBrightWeapons.integer & 4) && isEnemy) {
+	}
+	else if ((cg_drawBrightWeapons.integer & 4) && isEnemy)
+	{
 		CG_SetWeaponBrightColor(&gun, weaponNum);
 		usedBrightColor = qtrue;
 		gun.customShader = cgs.media.firstPersonGun;
 	}
 	if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
-		(cg_drawGun.integer == 3))
+	        (cg_drawGun.integer == 3))
 	{
-		if (!usedBrightColor) {
+		if (!usedBrightColor)
+		{
 			CG_UpdateGunShaderRGBA(&gun); // fallback to cg_gunColor or normal
 		}
 		gun.customShader = cgs.media.firstPersonGun;
@@ -1773,11 +1789,14 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		CG_PositionRotatedEntityOnTag(&barrel, &gun, weapon->weaponModel, "tag_barrel");
 
 		// Always apply bright color if usedBrightColor is set
-		if (usedBrightColor) {
+		if (usedBrightColor)
+		{
 			CG_SetWeaponBrightColor(&barrel, weaponNum);
 			barrel.customShader = cgs.media.firstPersonGun;
-		} else if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
-				(cg_drawGun.integer == 3)) {
+		}
+		else if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
+		         (cg_drawGun.integer == 3))
+		{
 			CG_UpdateGunShaderRGBA(&barrel);
 			barrel.customShader = cgs.media.firstPersonGun;
 		}

@@ -338,7 +338,7 @@ ObituariesBFGDirect {
 }
 
 
-whiteAlpha
+hboxNew
 {
 	nopicmip
 	{
@@ -348,8 +348,9 @@ whiteAlpha
 	}
 }
 
-whiteAlpha_nocull
+hboxNew_nocull
 {
+	polygonOffset
 	nopicmip
 	cull none
 	{
@@ -359,7 +360,7 @@ whiteAlpha_nocull
 	}
 }
 
-whiteAlpha_cullback
+hboxNew_cullback
 {
 	polygonOffset
 	nopicmip

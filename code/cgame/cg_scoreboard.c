@@ -314,7 +314,7 @@ static void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade
 	float bWidth = 14;
 	float bHeight = 16;
 	int font = cg_scoreboardFont.integer;
-	int proportional = (cg_scoreboardBE.integer == 1) ? DS_PROPORTIONAL : 0;
+	int proportional = ((cg_scoreboardBE.integer == 1) || (cg_scoreboardBE.integer == 3)) ? DS_PROPORTIONAL : 0;
 
 	if (score->client < 0 || score->client >= cgs.maxclients)
 	{
@@ -1324,7 +1324,7 @@ static void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const f
 	}
 	trap_R_SetColor(NULL);
 
-	if (cg_scoreboardBE.integer == 1)
+	if (cg_scoreboardBE.integer == 1 || cg_scoreboardBE.integer == 3)
 	{
 		proportional = DS_PROPORTIONAL;
 	}
@@ -1829,7 +1829,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 	}
 	y = 40;
 
-	if (cg_scoreboardBE.integer == 1)
+	if (cg_scoreboardBE.integer == 1 || cg_scoreboardBE.integer == 3)
 	{
 		proportional = DS_PROPORTIONAL;
 	}
@@ -1857,9 +1857,20 @@ qboolean CG_BEDrawTeamScoretable(void)
 	colorRect[2] = 1.0f;
 	CG_FillRect(328.0, (float)y, 304.0f, 48.0, colorRect);
 
+
 	// main team scores
-	CG_OSPDrawStringNew(leftX - 32, 87, va("%d", cg.teamScores[0]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
-	CG_OSPDrawStringNew(rightX - 32, 87, va("%d", cg.teamScores[1]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
+	if (cg_scoreboardBE.integer == 3)
+	{
+		CG_OSPDrawField(8, y, cg.teamScores[0]);
+		trap_R_SetColor(NULL);
+		CG_OSPDrawField(328, y, cg.teamScores[1]);
+		trap_R_SetColor(NULL);
+	}
+	else
+	{
+		CG_OSPDrawStringNew(leftX - 32, 87, va("%d", cg.teamScores[0]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(rightX - 32, 87, va("%d", cg.teamScores[1]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
+	}
 
 	y = 116;
 
