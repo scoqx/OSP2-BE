@@ -692,11 +692,6 @@ typedef struct
 	int         lastServerTime;
 	playerState_t savedPmoveStates[NUM_SAVED_STATES];
 	int         stateHead, stateTail;
-	vec3_t lastViewOrigin;
-	vec3_t lastViewAngles;
-	usercmd_t lastFreeLookCmd;
-	qboolean freeLookInitialized;
-	qboolean freeLookCmdInitialized;
 
 } cg_t;
 
