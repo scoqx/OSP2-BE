@@ -1,5 +1,8 @@
 name: Deploy version.json to GitHub Pages
 
+permissions:
+  contents: write-all
+
 on:
   push:
     branches:
