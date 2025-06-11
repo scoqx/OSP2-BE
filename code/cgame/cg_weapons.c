@@ -1779,10 +1779,13 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		VectorCopy(parent->lightingOrigin, barrel.lightingOrigin);
 		barrel.shadowPlane = parent->shadowPlane;
 		barrel.renderfx = parent->renderfx;
-
+		
 		barrel.hModel = weapon->barrelModel;
 		angles[YAW]   = 0;
 		angles[PITCH] = 0;
+		if ((cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION) && (barrel.renderfx & RF_FIRST_PERSON))
+		angles[ROLL] = 0;
+		else
 		angles[ROLL]  = CG_MachinegunSpinAngle(cent);
 		AnglesToAxis(angles, barrel.axis);
 
