@@ -1,7 +1,7 @@
 name: Deploy version.json to GitHub Pages
 
 permissions:
-  contents: write-all
+  contents: write
 
 on:
   push:
