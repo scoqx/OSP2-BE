@@ -582,12 +582,64 @@ static void CG_Missile(centity_t* cent)
 
 	if (cent->currentState.weapon == WP_GRENADE_LAUNCHER && cg_altGrenades.integer)
 	{
-		if ((cg_nomip.integer & 8) && cgs.media.grenadeCPMANoPicMipShader)
+		if (cg_altGrenades.integer == 2)
 		{
-			ent.customShader = cgs.media.grenadeCPMANoPicMipShader;
+			int owner = s1->otherEntityNum;
+
+			if (owner >= 0 && owner < MAX_CLIENTS)
+			{
+				const clientInfo_t* ci = &cgs.clientinfo[owner];
+
+				if (CG_IsEnemy(ci))
+				{
+					ent.shaderRGBA[0] = cgs.be.enemyGrenadesColor[0] * 255;
+					ent.shaderRGBA[1] = cgs.be.enemyGrenadesColor[1] * 255;
+					ent.shaderRGBA[2] = cgs.be.enemyGrenadesColor[2] * 255;
+
+					if (cg_drawBrightWeapons.integer & 4 && cgs.media.firstPersonGun)
+					{
+						ent.customShader = cgs.media.firstPersonGun;
+					}
+					else
+					{
+						ent.customShader = cgs.media.grenadeCPMANoPicMipShaderNew;
+					}
+				}
+				else
+				{
+					ent.shaderRGBA[0] = cgs.be.altGrenadesColor[0] * 255;
+					ent.shaderRGBA[1] = cgs.be.altGrenadesColor[1] * 255;
+					ent.shaderRGBA[2] = cgs.be.altGrenadesColor[2] * 255;
+
+					if ((cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && cgs.media.firstPersonGun)
+					{
+						ent.customShader = cgs.media.firstPersonGun;
+					}
+					else
+					{
+						ent.customShader = cgs.media.grenadeCPMANoPicMipShaderNew;
+					}
+				}
+
+				ent.shaderRGBA[3] = 255;
+			}
+			else
+			{
+				ent.customShader = cgs.media.grenadeCPMANoPicMipShaderNew;
+			}
 		}
+		else
+		{
+			if ((cg_nomip.integer & 8) && cgs.media.grenadeCPMANoPicMipShader)
+			{
+				ent.customShader = cgs.media.grenadeCPMANoPicMipShader;
+			}
+		}
+
 		ent.hModel = cgs.media.grenadeCPMAModel;
 	}
+
+
 
 	// convert direction of travel into axis
 	if (VectorNormalize2(s1->pos.trDelta, ent.axis[0]) == 0)

@@ -2276,7 +2276,10 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 			}
 			else
 			{
+				if(!cg_altBattleSuit.integer)
 				ent->customShader = cgs.media.battleSuitShader;
+				else
+				ent->customShader = cgs.media.battleSuitShaderNew;
 				trap_R_AddRefEntityToScene(ent);
 			}
 		}

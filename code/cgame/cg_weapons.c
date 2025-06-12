@@ -1496,7 +1496,10 @@ static void CG_AddWeaponWithPowerups(refEntity_t* gun, int powerups)
 
 		if (powerups & (1 << PW_BATTLESUIT))
 		{
+			if(!cg_altBattleSuit.integer)
 			gun->customShader = cgs.media.battleWeaponShader;
+			else
+			gun->customShader = cgs.media.battleWeaponShaderNew;
 			trap_R_AddRefEntityToScene(gun);
 		}
 		if (powerups & (1 << PW_QUAD))
@@ -1779,14 +1782,14 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		VectorCopy(parent->lightingOrigin, barrel.lightingOrigin);
 		barrel.shadowPlane = parent->shadowPlane;
 		barrel.renderfx = parent->renderfx;
-		
+
 		barrel.hModel = weapon->barrelModel;
 		angles[YAW]   = 0;
 		angles[PITCH] = 0;
 		if ((cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION) && (barrel.renderfx & RF_FIRST_PERSON))
-		angles[ROLL] = 0;
+			angles[ROLL] = 0;
 		else
-		angles[ROLL]  = CG_MachinegunSpinAngle(cent);
+			angles[ROLL]  = CG_MachinegunSpinAngle(cent);
 		AnglesToAxis(angles, barrel.axis);
 
 		CG_PositionRotatedEntityOnTag(&barrel, &gun, weapon->weaponModel, "tag_barrel");

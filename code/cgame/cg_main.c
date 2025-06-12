@@ -413,6 +413,9 @@ vmCvar_t        cg_scoreboardFont;
 vmCvar_t        cg_teamIndicatorFont;
 vmCvar_t        cg_centerMessagesFont;
 vmCvar_t        cg_railCustomChamber;
+vmCvar_t        cg_altGrenadesColor;
+vmCvar_t        cg_enemyGrenadesColor;
+vmCvar_t		cg_altBattleSuit;
 vmCvar_t        be_run;
 
 
@@ -726,20 +729,23 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
 	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE },
 	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE },
-	{ &cg_teamIndicator, "cg_teamIndicator", "14", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamIndicatorAdjust, "cg_teamIndicatorAdjust", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorAdjust },
-	{ &cg_teamIndicatorColor, "cg_teamIndicatorColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorColor },
-	{ &cg_teamIndicatorOpaque, "cg_teamIndicatorOpaque", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorOpaque },
-	{ &cg_teamIndicatorBgColor, "cg_teamIndicatorBgColor", "444444", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorBgColor },
-	{ &cg_teamIndicatorBgOpaque, "cg_teamIndicatorBgOpaque", "0.4", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque },
-	{ &cg_teamIndicatorOffset, "cg_teamIndicatorOffset", "12", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorOffset },
-	{ &cg_teamIndicatorMaxLength, "cg_teamIndicatorMaxLength", "13", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength },
-	{ &cg_teamIndicatorFont, "cg_teamIndicatorFont", "4", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorFont, },
-	{ &cg_scoreboardBE, "cg_scoreboardBE", "0", CVAR_ARCHIVE | CVAR_NEW, },
-	{ &cg_scoreboardFont, "cg_scoreboardFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardFont },
-	{ &cg_centerMessagesFont, "cg_centerMessagesFont", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_centerMessagesFont },
+	{ &cg_teamIndicator, "cg_teamIndicator", "14", CVAR_ARCHIVE },
+	{ &cg_teamIndicatorAdjust, "cg_teamIndicatorAdjust", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorAdjust },
+	{ &cg_teamIndicatorColor, "cg_teamIndicatorColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorColor },
+	{ &cg_teamIndicatorOpaque, "cg_teamIndicatorOpaque", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorOpaque },
+	{ &cg_teamIndicatorBgColor, "cg_teamIndicatorBgColor", "444444", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorBgColor },
+	{ &cg_teamIndicatorBgOpaque, "cg_teamIndicatorBgOpaque", "0.4", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque },
+	{ &cg_teamIndicatorOffset, "cg_teamIndicatorOffset", "12", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorOffset },
+	{ &cg_teamIndicatorMaxLength, "cg_teamIndicatorMaxLength", "13", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength },
+	{ &cg_teamIndicatorFont, "cg_teamIndicatorFont", "4", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFont, },
+	{ &cg_scoreboardBE, "cg_scoreboardBE", "0", CVAR_ARCHIVE, },
+	{ &cg_scoreboardFont, "cg_scoreboardFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardFont },
+	{ &cg_centerMessagesFont, "cg_centerMessagesFont", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_centerMessagesFont },
 	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_railCustomChamber, "cg_railCustomChamber", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_altGrenadesColor, "cg_altGrenadesColor", "7", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altGrenadesColor },
+	{ &cg_enemyGrenadesColor, "cg_enemyGrenadesColor", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyGrenadesColor },
+	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1334,11 +1340,12 @@ static void CG_RegisterGraphics(void)
 
 	// pre alpha plasma ball
 	cgs.media.plasmaOldBallShader = trap_R_RegisterShader("sprites/plasma_old");
-	cgs.media.plasmaOldBallNoPicMipShader = cgs.media.plasmaOldBallShader; // vashe poh no picmip
+	cgs.media.plasmaOldBallNoPicMipShader = cgs.media.plasmaOldBallShader;
 
 
 
 	cgs.media.grenadeCPMANoPicMipShader = trap_R_RegisterShaderNoMip("grenadeCPMA_NPM");
+	cgs.media.grenadeCPMANoPicMipShaderNew = trap_R_RegisterShaderNoMip("grenadeCPMANew");
 	cgs.media.grenadeCPMAModel = trap_R_RegisterModel("models/ammo/grenadeCPMA.md3");
 
 	if (!cgs.media.grenadeCPMAModel)
@@ -1418,7 +1425,9 @@ static void CG_RegisterGraphics(void)
 	cgs.media.quadShader = trap_R_RegisterShader("powerups/quad");
 	cgs.media.quadWeaponShader = trap_R_RegisterShader("powerups/quadWeapon");
 	cgs.media.battleSuitShader = trap_R_RegisterShader("powerups/battleSuit");
+	cgs.media.battleSuitShaderNew = trap_R_RegisterShader("powerups/battleSuitNew");
 	cgs.media.battleWeaponShader = trap_R_RegisterShader("powerups/battleWeapon");
+	cgs.media.battleWeaponShaderNew = trap_R_RegisterShader("powerups/battleWeaponNew");
 	cgs.media.invisShader = trap_R_RegisterShader("powerups/invisibility");
 	cgs.media.regenShader = trap_R_RegisterShader("powerups/regen");
 	cgs.media.hastePuffShader = trap_R_RegisterShader("hasteSmokePuff");
@@ -1891,6 +1900,10 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_teamIndicatorFont");
 	CG_CvarTouch("cg_scoreboardFont");
 	CG_CvarTouch("cg_centerMessagesFont");
+
+	CG_CvarTouch("cg_altGrenadesColor");
+	CG_CvarTouch("cg_enemyGrenadesColor");
+
 
 	CG_InitConsoleCommands();
 

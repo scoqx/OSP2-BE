@@ -541,4 +541,12 @@ void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
 		trap_Cvar_Set("cg_centerMessagesFont", 0);
 	}
 }
+void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.altGrenadesColor);
+}
+void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.enemyGrenadesColor);
+}
 

@@ -1,6 +1,22 @@
 # OSP2-BE: Extended OSP2 version
 
+## 🔧 Contributions
+
+OSP2-BE incorporates code from several notable Quake mods and projects:
+- **OSP2 by snems**: [Github Link](https://github.com/snems/OSP2)
+- **baseq3a by Cyrax**: [GitHub Link](https://github.com/ec-/baseq3a)
+- **XQ3E Engine**: [GitHub Link](https://github.com/xq3e/engine)
+- **Unlagged Mod by Nail Toronto**
+- **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
+
 ## ✨ BE-Features
+## v0.083
+```
++ cg_altGrenades 2
++ cg_altGrenadesColor (cg_altGrenades 2 only)
++ cg_enemyGrenadesColor (cg_altGrenades 2 only)
++ cg_altBattleSuit
+```
 ## v0.081
 ```
 + cg_scoreboardBE 3 - old style team scores
@@ -180,12 +196,3 @@ To install OSP2-BE:
 
 1. **Install Quake 3** and the **OSP mod v1.03**.
 2. Copy the mod files (pack or library) into the `osp` folder within your Quake 3 directory.
-
-## 🔧 Contributions
-
-OSP2-BE incorporates code from several notable Quake mods and projects:
-- **OSP2 by snems**: [Github Link](https://github.com/snems/OSP2)
-- **baseq3a by Cyrax**: [GitHub Link](https://github.com/ec-/baseq3a)
-- **XQ3E Engine**: [GitHub Link](https://github.com/xq3e/engine)
-- **Unlagged Mod by Nail Toronto**
-- **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)

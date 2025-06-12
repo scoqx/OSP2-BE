@@ -817,6 +817,7 @@ typedef struct
 	qhandle_t   plasmaNewBallShader;
 	qhandle_t   plasmaNewBallNoPicMipShader;
 	qhandle_t   grenadeCPMANoPicMipShader;
+	qhandle_t   grenadeCPMANoPicMipShaderNew;
 	qhandle_t   grenadeCPMAModel;
 	qhandle_t   waterBubbleShader;
 	qhandle_t   bloodTrailShader;
@@ -851,7 +852,9 @@ typedef struct
 	qhandle_t   invisShader;
 	qhandle_t   regenShader;
 	qhandle_t   battleSuitShader;
+	qhandle_t   battleSuitShaderNew;
 	qhandle_t   battleWeaponShader;
+	qhandle_t   battleWeaponShaderNew;
 	qhandle_t   hastePuffShader;
 	qhandle_t   redKamikazeShader;
 	qhandle_t   blueKamikazeShader;
@@ -1089,6 +1092,8 @@ typedef struct cgs_be_s
 	vec4_t teamOutlineColor;
 	vec4_t altBloodColor;
 	vec4_t altShadowColor;
+	vec4_t altGrenadesColor;
+	vec4_t enemyGrenadesColor;
 	qboolean showCredits;
 	qboolean isHealthLow;
 	weaponStats_t weaponStats[WP_NUM_WEAPONS];
@@ -1600,19 +1605,22 @@ extern vmCvar_t         cg_gunPos;
 extern vmCvar_t         cg_altShadow;
 extern vmCvar_t         cg_altShadowColor;
 extern vmCvar_t         cg_scoreboardShowId;
-extern vmCvar_t     cg_teamIndicator;
-extern vmCvar_t     cg_teamIndicatorColor;
-extern vmCvar_t     cg_teamIndicatorOpaque;
-extern vmCvar_t     cg_teamIndicatorBgColor;
-extern vmCvar_t     cg_teamIndicatorBgOpaque;
-extern vmCvar_t     cg_teamIndicatorOffset;
-extern vmCvar_t     cg_teamIndicatorMaxLength;
-extern vmCvar_t     cg_teamIndicatorAdjust;
-extern vmCvar_t     cg_teamIndicatorFont;
-extern vmCvar_t     cg_scoreboardBE;
-extern vmCvar_t     cg_scoreboardFont;
-extern vmCvar_t     cg_centerMessagesFont;
-extern vmCvar_t     cg_railCustomChamber;
+extern vmCvar_t         cg_teamIndicator;
+extern vmCvar_t         cg_teamIndicatorColor;
+extern vmCvar_t         cg_teamIndicatorOpaque;
+extern vmCvar_t         cg_teamIndicatorBgColor;
+extern vmCvar_t         cg_teamIndicatorBgOpaque;
+extern vmCvar_t         cg_teamIndicatorOffset;
+extern vmCvar_t         cg_teamIndicatorMaxLength;
+extern vmCvar_t         cg_teamIndicatorAdjust;
+extern vmCvar_t         cg_teamIndicatorFont;
+extern vmCvar_t         cg_scoreboardBE;
+extern vmCvar_t         cg_scoreboardFont;
+extern vmCvar_t         cg_centerMessagesFont;
+extern vmCvar_t         cg_railCustomChamber;
+extern vmCvar_t         cg_altGrenadesColor;
+extern vmCvar_t         cg_enemyGrenadesColor;
+extern vmCvar_t			cg_altBattleSuit;
 extern vmCvar_t         be_run;
 
 
@@ -2318,7 +2326,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.082" // BE
+#define OSP_VERSION "be-0.083" // BE
 
 
 
@@ -2565,6 +2573,10 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart);
+
+
 
 
 #ifdef __cplusplus

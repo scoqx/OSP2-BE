@@ -2417,7 +2417,8 @@ void CG_OSPDrawNewCredits(void)
 	char* credits[] =
 	{
 		"OSP2 BLACK EDITION",
-		"https://github.com/scoqx/OSP2-BE",
+		"Created by diwoc",
+		// "https://github.com/scoqx/OSP2-BE",
 		"Based on OSP2 by Snems",
 		"https://github.com/snems/OSP2",
 		"Special thanks to:",

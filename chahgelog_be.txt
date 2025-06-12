@@ -271,3 +271,9 @@
 + cg_scoreboardBE 3 - old style team scores
 + outline optimisation
 * hitbox shaders renamed
+
+12.06.2025 be v0.083
++ cg_altGrenades 2
++ cg_altGrenadesColor (cg_altGrenades 2 only)
++ cg_enemyGrenadesColor (cg_altGrenades 2 only)
++ cg_altBattleSuit
