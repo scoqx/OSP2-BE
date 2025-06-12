@@ -19,47 +19,62 @@ on:
       - 'docs/*'
       - 'build/*'
       - 'util/*'
+  workflow_dispatch:
 
 jobs:
   linux-qvm:
     runs-on: ubuntu-latest
 
     steps:
-
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: build
-      working-directory: build/linux-qvm
-      run: | 
-        make
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: qvm
-        path: build/linux-qvm/zz-osp-pak8be.pk3
-        if-no-files-found: error
-        retention-days: 5
-
-  create-latest:
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: [linux-qvm]
-    permissions: write-all
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Create latest build
-        uses: czietz/action-automatic-releases@latest
+      - uses: actions/checkout@v4
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: "latest"
-          prerelease: false
-          title: Latest Build
-          files: |
-            qvm
+          submodules: recursive
 
+      - name: build
+        working-directory: build/linux-qvm
+        run: |
+          make
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qvm
+          path: build/linux-qvm/zz-osp-pak8be.pk3
+          if-no-files-found: error
+          retention-days: 5
 
+  deploy-to-gh-pages:
+    needs: linux-qvm
+    runs-on: ubuntu-latest
+    env:
+      TARGET_REPO: scoqx/scoqx.github.io
+      TARGET_BRANCH: main
+      GIT_USER_NAME: GitHub Actions
+      GIT_USER_EMAIL: actions@github.com
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: qvm
+          path: qvm_artifact
+
+      - name: Checkout target repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.TARGET_REPO }}
+          ref: ${{ env.TARGET_BRANCH }}
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          path: target-repo
+
+      - name: Copy artifact to assets folder
+        run: |
+          mkdir -p target-repo/assets
+          cp qvm_artifact/zz-osp-pak8be.pk3 target-repo/assets/
+
+      - name: Commit and push changes
+        run: |
+          cd target-repo
+          git config user.name "${{ env.GIT_USER_NAME }}"
+          git config user.email "${{ env.GIT_USER_EMAIL }}"
+          git add assets/zz-osp-pak8be.pk3
+          git diff --quiet --cached || git commit -m "Update zz-osp-pak8be.pk3 [auto]"
+          git push origin ${{ env.TARGET_BRANCH }}
