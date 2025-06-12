@@ -48,7 +48,6 @@ jobs:
         env:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
-
       - name: Checkout target repo scoqx.github.io
         uses: actions/checkout@v3
         with:
@@ -56,10 +55,19 @@ jobs:
           ref: ${{ env.TARGET_BRANCH }}
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           path: target-repo
+          fetch-depth: 0  # Очень важно для пуша
+
+      - name: Show target-repo contents before copy
+        run: ls -l target-repo
 
       - name: Copy version.json to target repo root
         run: |
           cp version.json target-repo/version.json
+
+      - name: Check version.json hashes
+        run: |
+          md5sum version.json
+          md5sum target-repo/version.json
 
       - name: Commit and push to target repo
         run: |
@@ -67,5 +75,6 @@ jobs:
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
           git add version.json
-          git diff --quiet --cached || git commit -m "Update version.json [auto]"
+          # если есть изменения — коммитим
+          git diff --cached --quiet || git commit -m "Update version.json [auto]"
           git push origin ${{ env.TARGET_BRANCH }}
