@@ -1,3 +1,7 @@
+# This repository is abandoned
+
+# New mod location https://scoqx.github.io/
+
 # OSP2-BE: Extended OSP2 version
 
 ## 🔧 Contributions
