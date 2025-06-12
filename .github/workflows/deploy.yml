@@ -36,6 +36,19 @@ jobs:
           echo "✅ version.json created:"
           cat version.json
 
+      - name: Проверка наличия PAT
+        run: |
+          if [ -z "${{ secrets.PERSONAL_ACCESS_TOKEN }}" ]; then
+            echo "❌ Секрет PERSONAL_ACCESS_TOKEN отсутствует или пустой"
+            exit 1
+          else
+            echo "✅ Секрет PERSONAL_ACCESS_TOKEN доступен"
+            echo "Длина токена: ${#PERSONAL_ACCESS_TOKEN}"
+          fi
+        env:
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+
       - name: Checkout target repo scoqx.github.io
         uses: actions/checkout@v3
         with:
