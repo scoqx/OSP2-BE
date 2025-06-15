@@ -315,8 +315,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_altGrenadesColor", "Color for alternative grenades. Requires ^3cg_altGrenades^7 set to ^22^7.\n \"^2color^7\" - use color name, digit or hex" },
 	{ "cg_enemyGrenadesColor", "Color for enemy grenades (not supported everywhere). Requires ^3cg_altGrenades^7 set to ^22^7.\n \"^2color^7\" - use color name, digit or hex" },
 	{ "cg_altBattleSuit", "Alternative battle suit effect:\n  ^20^7 - Disabled\n  ^21^7 - Enabled" },
-	{ "cg_itemFx", "Changes how items are rendered in the world. Bitmask:\n  ^20^7 - static\n  ^21^7 - bounce\n  ^22^7 - rotating\n  ^24^7 - scale"}
-	{ "cg_bubbleTrail", "Enables the drawing of bubble trails drawn by projectiles entering water. Set ^20^7 to disable."}
+	{ "cg_itemFx", "Changes how items are rendered in the world. Bitmask:\n  ^20^7 - static\n  ^21^7 - bounce\n  ^22^7 - rotating\n  ^24^7 - scale"},
+	{ "cg_bubbleTrail", "Enables the drawing of bubble trails drawn by projectiles entering water. Set ^20^7 to disable."},
 };
 
 
