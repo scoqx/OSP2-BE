@@ -31,6 +31,20 @@ void CG_SHUDElementSBHBRoutine(void* context)
 	{
 		CG_ColorForHealth(element->ctx.color_top, NULL);
 	}
+	else if (element->config.style.value == 2)
+	{
+		Vector4Copy(element->config.color.value.rgba, element->ctx.color_top);
+
+		if (!element->config.color2.isSet)
+		{
+			Vector4Copy(element->ctx.color_top, element->ctx.color2_top);
+			element->ctx.color2_top[3] *= 3;
+		}
+		else
+		{
+			Vector4Copy(element->config.color2.value.rgba, element->ctx.color2_top);
+		}
+	}
 	else if (element->config.style.value == 3)
 	{
 		if (cgs.be.isHealthLow)
@@ -67,6 +81,7 @@ void CG_SHUDElementSBHBRoutine(void* context)
 
 	CG_SHUDBarPrint(&element->config, &element->ctx, hp);
 }
+
 
 
 void CG_SHUDElementSBHBDestroy(void* context)

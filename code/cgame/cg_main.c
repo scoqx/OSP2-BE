@@ -370,7 +370,6 @@ vmCvar_t           cg_stackHitSoundsTimeout;
 vmCvar_t           cg_drawCenterMessages;
 vmCvar_t        cg_predictStepOffset;
 vmCvar_t           cg_unfreezeAlert;
-vmCvar_t           cg_itemsRespawnAnimation;
 vmCvar_t        cg_enemyLightningColor;
 vmCvar_t        cg_uniqueColorTable;
 vmCvar_t        cg_noVoteBeep;
@@ -416,6 +415,8 @@ vmCvar_t        cg_railCustomChamber;
 vmCvar_t        cg_altGrenadesColor;
 vmCvar_t        cg_enemyGrenadesColor;
 vmCvar_t		cg_altBattleSuit;
+vmCvar_t		cg_itemFx;
+vmCvar_t		cg_bubbleTrail;
 vmCvar_t        be_run;
 
 
@@ -436,14 +437,14 @@ static cvarTable_t cvarTable[] =
 	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE },
 	{ &cg_draw2D, "cg_draw2D", "1", CVAR_ARCHIVE },
 	{ &cg_drawStatus, "cg_drawStatus", "1", CVAR_ARCHIVE },
-	{ &cg_drawTimer, "cg_drawTimer", "0", CVAR_ARCHIVE },
+	{ &cg_drawTimer, "cg_drawTimer", "1", CVAR_ARCHIVE },
 	{ &cg_drawFPS, "cg_drawFPS", "0", CVAR_ARCHIVE },
 	{ &cg_drawSnapshot, "cg_drawSnapshot", "0", CVAR_ARCHIVE },
 	{ &cg_draw3dIcons, "cg_draw3dIcons", "1", CVAR_ARCHIVE },
 	{ &cg_drawIcons, "cg_drawIcons", "1", CVAR_ARCHIVE },
 	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE },
 	{ &cg_drawAttacker, "cg_drawAttacker", "1", CVAR_ARCHIVE },
-	{ &cg_drawCrosshair, "cg_drawCrosshair", "10", CVAR_ARCHIVE },
+	{ &cg_drawCrosshair, "cg_drawCrosshair", "16", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairGauntlet, "cg_drawCrosshairGauntlet", "-1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairMachinegun, "cg_drawCrosshairMachinegun", "-1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairShotgun, "cg_drawCrosshairShotgun", "-1", CVAR_ARCHIVE },
@@ -629,8 +630,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_lightningHideCrosshair, "cg_lightningHideCrosshair", "0", CVAR_ARCHIVE },
 	{ &cg_lightningSilent, "cg_lightningSilent", "0", CVAR_ARCHIVE },
 	{ &cg_lightningHide, "cg_lightningHide", "0", CVAR_ARCHIVE },
-	{ &cg_delag, "cg_delag", "1", CVAR_ARCHIVE },
-	{ &cg_projectileNudge, "cg_projectileNudge", "0", CVAR_ARCHIVE },
+	{ &cg_delag, "cg_delag", "0", CVAR_ARCHIVE },
+	{ &cg_projectileNudge, "cg_projectileNudge", "3", CVAR_ARCHIVE },
 	{ &cg_hideScores, "cg_hideScores", "0", CVAR_ARCHIVE },
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
 	{ &cg_spectGlow, "cg_spectGlow", "0", CVAR_ARCHIVE },
@@ -694,7 +695,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_stackHitSoundsTimeout,    "cg_stackHitSoundsTimeout",   "500", CVAR_ARCHIVE },
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
-	{ &cg_itemsRespawnAnimation, "cg_itemsRespawnAnimation", "1", CVAR_ARCHIVE },
 	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
 	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
 	{ &cg_noVoteBeep, "cg_noVoteBeep", "0", CVAR_ARCHIVE },
@@ -746,6 +746,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altGrenadesColor, "cg_altGrenadesColor", "7", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altGrenadesColor },
 	{ &cg_enemyGrenadesColor, "cg_enemyGrenadesColor", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyGrenadesColor },
 	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -2246,10 +2248,10 @@ void CG_PrintNewCommandsBE_f(void)
 	int startIndex = -1;
 	int numCommands = sizeof(cvarTable) / sizeof(cvarTable[0]);
 
-	// start from cg_itemsRespawnAnimation
+	// start from cg_enemyLightningColor
 	for (i = 0; i < numCommands; i++)
 	{
-		if (!strcmp(cvarTable[i].cvarName, "cg_itemsRespawnAnimation"))
+		if (!strcmp(cvarTable[i].cvarName, "cg_enemyLightningColor"))
 		{
 			startIndex = i + 1;
 			break;
@@ -2258,7 +2260,7 @@ void CG_PrintNewCommandsBE_f(void)
 
 	if (startIndex < 0)
 	{
-		CG_Printf("cg_itemsRespawnAnimation not found\n");
+		CG_Printf("cg_enemyLightningColor not found\n");
 		return;
 	}
 

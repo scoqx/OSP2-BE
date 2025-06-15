@@ -321,22 +321,38 @@ static void CG_Item(centity_t* cent)
 	}
 
 	// items bob up and down continuously
-	scale = 0.005 + cent->currentState.number * 0.00001;
-	cent->lerpOrigin[2] += 4 + cos((cg.time + 1000) *  scale) * 4;
+	if (cg_itemFx.integer & 1)
+	{
+		scale = 0.005 + cent->currentState.number * 0.00001;
+		cent->lerpOrigin[2] += 4 + cos((cg.time + 1000) * scale) * 4;
+	}
 
 	memset(&ent, 0, sizeof(ent));
 
 	// autorotate at one of two speeds
-	if (item->giType == IT_HEALTH)
+	if (cg_itemFx.integer & 2)
 	{
-		VectorCopy(cg.autoAnglesFast, cent->lerpAngles);
-		AxisCopy(cg.autoAxisFast, ent.axis);
+		if (item->giType == IT_HEALTH)
+		{
+			VectorCopy(cg.autoAnglesFast, cent->lerpAngles);
+			AxisCopy(cg.autoAxisFast, ent.axis);
+		}
+		else
+		{
+			VectorCopy(cg.autoAngles, cent->lerpAngles);
+			AxisCopy(cg.autoAxis, ent.axis);
+		}
 	}
 	else
 	{
-		VectorCopy(cg.autoAngles, cent->lerpAngles);
-		AxisCopy(cg.autoAxis, ent.axis);
+		VectorClear(cent->lerpAngles);
+		AxisClear(ent.axis);
+		ent.axis[0][0] = 1;
+		ent.axis[1][1] = 1;
+		ent.axis[2][2] = 1;
 	}
+
+
 
 	wi = NULL;
 	// the weapons have their origin where they attatch to player
@@ -369,8 +385,7 @@ static void CG_Item(centity_t* cent)
 	ent.nonNormalizedAxes = qfalse;
 
 	// if just respawned, slowly scale up
-
-	if (cg_itemsRespawnAnimation.integer)
+	if (cg_itemFx.integer & 4)
 	{
 		msec = cg.time - cent->miscTime;
 		if (msec >= 0 && msec < ITEM_SCALEUP_TIME)

@@ -109,7 +109,6 @@ Cvars:
   * 2 - disable icon, 4 - disable float sprite, 8 - disable sound
 + cg_gunPos
 + cg_hitBoxColor <color>
-+ cg_itemsRespawnAnimation
 + cg_enemyLightningColor
 + cg_uniqueColorTable
 + cg_noSlidingWindow

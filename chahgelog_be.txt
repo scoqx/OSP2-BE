@@ -277,3 +277,14 @@
 + cg_altGrenadesColor (cg_altGrenades 2 only)
 + cg_enemyGrenadesColor (cg_altGrenades 2 only)
 + cg_altBattleSuit
+
+15.06.2025 be v0.084
++ cg_itemFx - bitmask
+ * 1 - bounce
+ * 2 - rotating
+ * 4 - scale
++ cg_bubbleTrail
+* cg_altBattleSuit shader changed
+* enemy cg_altLightning 3 changed
+* changed some default values for cvars
+- cg_itemsRespawnAnimation

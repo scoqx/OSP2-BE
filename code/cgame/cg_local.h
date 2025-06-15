@@ -1575,7 +1575,6 @@ extern vmCvar_t           cg_stackHitSounds;
 extern vmCvar_t           cg_stackHitSoundsTimeout;
 extern vmCvar_t           cg_drawCenterMessages;
 extern vmCvar_t           cg_predictStepOffset;
-extern vmCvar_t           cg_itemsRespawnAnimation;
 extern vmCvar_t         cg_enemyLightningColor;
 extern vmCvar_t         cg_uniqueColorTable;
 extern vmCvar_t             cg_noVoteBeep;
@@ -1621,6 +1620,8 @@ extern vmCvar_t         cg_railCustomChamber;
 extern vmCvar_t         cg_altGrenadesColor;
 extern vmCvar_t         cg_enemyGrenadesColor;
 extern vmCvar_t			cg_altBattleSuit;
+extern vmCvar_t			cg_itemFx;
+extern vmCvar_t			cg_bubbleTrail;
 extern vmCvar_t         be_run;
 
 
@@ -2326,7 +2327,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.083" // BE
+#define OSP_VERSION "be-0.084" // BE
 
 
 

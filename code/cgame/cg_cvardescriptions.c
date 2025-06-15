@@ -262,7 +262,6 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_stackHitSoundsTimeout", "Clear damage count timeout for ^3cg_stackHitSounds^7 - \"milliseconds\"." },
 	{ "cg_drawCenterMessages", "Displays messages in the center of the screen (Welcome message, frag, etc.). Set ^0^7 to hide." },
 	{ "cg_predictStepOffset", "Smoother step-up movement. Set ^20^7 to disable smoothness. Also fix climbing aim issue." },
-	{ "cg_itemsRespawnAnimation", "Animation for 3D item respawns. Set ^20^7 to remove animation." },
 	{ "cg_enemyLightningColor", "Lightning gun beam color for enemies\n  ^20^7 - default beam\n \"^2color^7\" - digit or hex" },
 	{ "cg_uniqueColorTable", "Unique color table for ^3enemy unique color(s)^7\n  ^21^7 - default\n  ^22^7 - bright" },
 	{ "cg_noVoteBeep", "Disables voting beep sound. Set ^20^7 to enable beep sound." },
@@ -316,6 +315,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_altGrenadesColor", "Color for alternative grenades. Requires ^3cg_altGrenades^7 set to ^22^7.\n \"^2color^7\" - use color name, digit or hex" },
 	{ "cg_enemyGrenadesColor", "Color for enemy grenades (not supported everywhere). Requires ^3cg_altGrenades^7 set to ^22^7.\n \"^2color^7\" - use color name, digit or hex" },
 	{ "cg_altBattleSuit", "Alternative battle suit effect:\n  ^20^7 - Disabled\n  ^21^7 - Enabled" },
+	{ "cg_itemFx", "Changes how items are rendered in the world. Bitmask:\n  ^20^7 - static\n  ^21^7 - bounce\n  ^22^7 - rotating\n  ^24^7 - scale"}
+	{ "cg_bubbleTrail", "Enables the drawing of bubble trails drawn by projectiles entering water. Set ^20^7 to disable."}
 };
 
 
