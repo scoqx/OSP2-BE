@@ -44,15 +44,19 @@ jobs:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           path: target-repo
 
-      - name: Copy version.json to target repo root
+      - name: Copy files to target repo
         run: |
+          mkdir -p target-repo/assets
           cp version.json target-repo/version.json
+          cp assets/OSP2.cfg target-repo/assets/OSP2.cfg
+          cp assets/OSP2English.cfg target-repo/assets/OSP2English.cfg
+          cp changelog_be.txt target-repo/assets/changelog_be.txt
 
       - name: Commit and push to target repo
         run: |
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add version.json
-          git diff --quiet --cached || git commit -m "Update version.json [auto]"
+          git add version.json assets/
+          git diff --quiet --cached || git commit -m "Update version.json and assets [auto]"
           git push origin ${{ env.TARGET_BRANCH }}
