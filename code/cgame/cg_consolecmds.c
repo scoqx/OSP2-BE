@@ -880,26 +880,6 @@ void CG_DPI_f(void)
 	CG_Printf("^1cm/360:       ^2%.2f\n", local_360);
 }
 
-void CGH_Snems(void)
-{
-	CG_Printf("Creator of the OSP2\n");
-}
-
-void CGH_Diwoc(void)
-{
-	CG_Printf("Creator of the OSP2-BE\n");
-}
-
-void CGH_MrX(void)
-{
-	CG_Printf("Is noob admin\n");
-}
-
-void CGH_Musin(void)
-{
-	CG_Printf("pieroga ne videl\n");
-}
-
 void CG_Stub_f(void) { }
 
 typedef struct
@@ -1000,13 +980,6 @@ static consoleCommand_t commands[] =
 	{ "belist", CG_PrintNewCommandsBE_f },
 };
 
-static const consoleCommand_t hiddenCommands[] = {
-	{ "snems", CGH_Snems },
-	{ "diwoc", CGH_Diwoc },
-	{ "mrx", CGH_MrX },
-	{ "musin", CGH_Musin },
-};
-
 /*
 =================
 CG_ConsoleCommand
@@ -1019,15 +992,6 @@ qboolean CG_ConsoleCommand(void)
 {
 	const char* cmd = CG_Argv(0);
 	int i;
-
-	for (i = 0; i < sizeof(hiddenCommands) / sizeof(hiddenCommands[0]); i++)
-	{
-		if (!Q_stricmp(cmd, hiddenCommands[i].cmd))
-		{
-			hiddenCommands[i].function();
-			return qtrue;
-		}
-	}
 
 	for (i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
 	{
