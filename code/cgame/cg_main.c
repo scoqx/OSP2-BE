@@ -414,9 +414,9 @@ vmCvar_t        cg_centerMessagesFont;
 vmCvar_t        cg_railCustomChamber;
 vmCvar_t        cg_altGrenadesColor;
 vmCvar_t        cg_enemyGrenadesColor;
-vmCvar_t		cg_altBattleSuit;
-vmCvar_t		cg_itemFx;
-vmCvar_t		cg_bubbleTrail;
+vmCvar_t        cg_altBattleSuit;
+vmCvar_t        cg_itemFx;
+vmCvar_t        cg_bubbleTrail;
 vmCvar_t        be_run;
 
 
@@ -741,10 +741,10 @@ static cvarTable_t cvarTable[] =
 	{ &cg_scoreboardBE, "cg_scoreboardBE", "0", CVAR_ARCHIVE, },
 	{ &cg_scoreboardFont, "cg_scoreboardFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardFont },
 	{ &cg_centerMessagesFont, "cg_centerMessagesFont", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_centerMessagesFont },
-	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_railCustomChamber, "cg_railCustomChamber", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_altGrenadesColor, "cg_altGrenadesColor", "7", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_altGrenadesColor },
-	{ &cg_enemyGrenadesColor, "cg_enemyGrenadesColor", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyGrenadesColor },
+	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE },
+	{ &cg_railCustomChamber, "cg_railCustomChamber", "1", CVAR_ARCHIVE },
+	{ &cg_altGrenadesColor, "cg_altGrenadesColor", "7", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altGrenadesColor },
+	{ &cg_enemyGrenadesColor, "cg_enemyGrenadesColor", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyGrenadesColor },
 	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE | CVAR_NEW },
@@ -1566,14 +1566,14 @@ static void CG_RegisterGraphics(void)
 	    (cg_enemyOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
 	    (cg_enemyOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
 	    (cg_enemyOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
-	    trap_R_RegisterShader("outlineThin");
+	    trap_R_RegisterShader("outlineMedium");
 
 	// Team outline
 	cgs.media.teamOutlineShader =
 	    (cg_teamOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
 	    (cg_teamOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
 	    (cg_teamOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
-	    trap_R_RegisterShader("outlineThin");
+	    trap_R_RegisterShader("outlineMedium");
 
 
 

@@ -159,7 +159,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_swapSkins", "Swap enemy and team model skins. Set ^20^7 to use correct team skins." },
 	{ "cg_teamRails", "Use team-colored railgun trails, use ^3cg_teamRailColors ^7and ^3cg_enemyRailColors^7 to set color.\n Set ^20^7 to disable." },
 	{ "cg_trueLightning", "Adjust lightning gun shaft lag\n  ^20.0^7 - full lag (baseq3 feel)\n  ^21.0^7 - no lag (shaft follows crosshair)" },
-	{ "ch_3waveFont", "^1Useless command^7\nSelect charset for OSP HUD" },
+	{ "ch_3waveFont", "Select charset for OSP HUD" },
 	{ "ch_ColorLocations", "Colorize location messages. Set ^20^7 to use plain text" },
 	{ "ch_crosshairColor", "Select crosshair color.\n \"^2color^7\" - use color name, digit or hex" },
 	{ "cf_CrosshairNames", "Select crosshair names size. Requires ^3cg_enableOSPhud^7 ^21^7\n  Use format ^2width^7x^2height^7" },

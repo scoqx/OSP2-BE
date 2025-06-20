@@ -2417,15 +2417,14 @@ void CG_OSPDrawNewCredits(void)
 	char* credits[] =
 	{
 		"OSP2 BLACK EDITION",
-		"Created by diwoc",
-		// "https://github.com/scoqx/OSP2-BE",
+		"by diwoc",
+		"https://scoqx.github.io/",
+		"",
 		"Based on OSP2 by Snems",
 		"https://github.com/snems/OSP2",
+		"",
 		"Special thanks to:",
-		"",
 		"Snems, kr3m, Mirage",
-		"",
-		"",
 		"",
 		"",
 		"Based on source codes:",
@@ -2476,7 +2475,7 @@ void CG_OSPDrawNewCredits(void)
 	firstLineHeight = charHeight * 2.0f;
 
 	// title
-	CG_FontSelect(0);
+	CG_FontSelect(2);
 
 	CG_OSPDrawStringNew(
 	    textX, textY,
@@ -2509,7 +2508,7 @@ void CG_OSPDrawNewCredits(void)
 		);
 	}
 	// border
-	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, 0);
+	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, 2);
 }
 
 /*
@@ -2644,7 +2643,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 		    headX, headY,
 		    tmpName,
 		    nameColor,
-		    NULL,
+		    colorBlack,
 		    w, h,
 		    cg_teamIndicatorMaxLength.integer,
 		    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER | DS_MAX_WIDTH_IS_CHARS,
@@ -2820,7 +2819,6 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 		CG_DrawPlayerIndicator(i);
 	}
 }
-
 
 /*
 =================

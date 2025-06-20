@@ -2276,10 +2276,10 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 			}
 			else
 			{
-				if(!cg_altBattleSuit.integer)
-				ent->customShader = cgs.media.battleSuitShader;
+				if (!cg_altBattleSuit.integer)
+					ent->customShader = cgs.media.battleSuitShader;
 				else
-				ent->customShader = cgs.media.battleSuitShaderNew;
+					ent->customShader = cgs.media.battleSuitShaderNew;
 				trap_R_AddRefEntityToScene(ent);
 			}
 		}
@@ -2568,11 +2568,17 @@ void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 	{
 		return;
 	}
+	if (isEnemy && !cg_enemyOutlineSize.integer)
+	{
+		return;
+	}
+	if (!isEnemy && !cg_teamOutlineSize.integer)
+	{
+		return;
+	}
 
-	// Устанавливаем шейдер для outline в ent
 	ent->customShader = isEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
 
-	// Выбираем цвет
 	if (isSpectator)
 	{
 		if (ci->team == TEAM_RED)
@@ -2619,7 +2625,6 @@ void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 		}
 	}
 
-	// Преобразуем цвет в shaderRGBA
 	for (i = 0; i < 4; i++)
 	{
 		ent->shaderRGBA[i] = (unsigned char)(color[i] * 255);
@@ -2627,6 +2632,7 @@ void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 
 	trap_R_AddRefEntityToScene(ent);
 }
+
 
 /*
 ===============
@@ -2728,12 +2734,16 @@ void CG_Player(centity_t* cent)
 	}
 
 
-	if (cent->currentState.eFlags & EF_DEAD && cg_deadBodyInvisible.integer)
+	if (cg.snap->ps.pm_type != PM_INTERMISSION)
 	{
-		legs.customShader = cgs.media.invisShader;
-		torso.customShader = cgs.media.invisShader;
-		head.customShader = cgs.media.invisShader;
+		if ((cent->currentState.eFlags & EF_DEAD) && cg_deadBodyInvisible.integer)
+		{
+			legs.customShader = cgs.media.invisShader;
+			torso.customShader = cgs.media.invisShader;
+			head.customShader = cgs.media.invisShader;
+		}
 	}
+
 	//
 	// add the legs
 	//

@@ -917,6 +917,17 @@ static void CG_OSPPrintXStats(void)
 		{
 			CG_Printf("\n^3Damage Given: ^7%-6d ^2Armor Taken : ^7%d %s\n", damage_given, armor_taken, tmp_str);
 			CG_Printf("^3Damage Recvd: ^7%-6d ^2Health Taken: ^7%d %s\n", damage_rcvd, health_taken, tmp_str2);
+
+			if (damage_given != 0)
+			{
+				float damage_ratio;
+				if (damage_rcvd == 0)
+					damage_ratio = (float)damage_given;
+				else
+					damage_ratio = (float)damage_given / damage_rcvd;
+
+				CG_Printf("^3Damage Ratio: ^7%.2f\n", damage_ratio);
+			}
 		}
 		else
 		{

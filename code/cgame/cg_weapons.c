@@ -1496,10 +1496,10 @@ static void CG_AddWeaponWithPowerups(refEntity_t* gun, int powerups)
 
 		if (powerups & (1 << PW_BATTLESUIT))
 		{
-			if(!cg_altBattleSuit.integer)
-			gun->customShader = cgs.media.battleWeaponShader;
+			if (!cg_altBattleSuit.integer)
+				gun->customShader = cgs.media.battleWeaponShader;
 			else
-			gun->customShader = cgs.media.battleWeaponShaderNew;
+				gun->customShader = cgs.media.battleWeaponShaderNew;
 			trap_R_AddRefEntityToScene(gun);
 		}
 		if (powerups & (1 << PW_QUAD))
