@@ -243,9 +243,8 @@ void CG_OSPConfigXHitBoxSet(int value)
 	{
 		value = 0;
 	}
-	// ignore x_hck if cheats are enabled
-	cheatsStr = Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "sv_cheats");
-	if (cheatsStr[0] == '1')
+	// ignore x_hck if cheats are enabled/server is local
+	if (cgs.cheatsEnabled || cgs.localServer)
 	{
 		value = 1;
 	}

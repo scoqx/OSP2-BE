@@ -1210,6 +1210,7 @@ typedef struct
 	int             processedSnapshotNum;// the number of snapshots cgame has requested
 
 	qboolean        localServer;        // detected on startup by checking sv_running
+	qboolean        cheatsEnabled;      // detected on startup by checking sv_cheats
 
 	// parsed from serverinfo
 	gametype_t      gametype;
@@ -2327,7 +2328,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.084a" // BE
+#define OSP_VERSION "be-0.084b" // BE
 
 
 

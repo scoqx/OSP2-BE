@@ -418,8 +418,6 @@ void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
 {
-
-
 	if (cgs.osp.serverConfigXHitBox != 1 && cg_drawHitBox.integer)
 	{
 		if (!cg.demoPlayback)

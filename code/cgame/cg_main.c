@@ -838,6 +838,9 @@ void CG_RegisterCvars(void)
 	trap_Cvar_VariableStringBuffer("sv_running", var, sizeof(var));
 	cgs.localServer = atoi(var) == 0 ? 0 : 1;
 
+	trap_Cvar_VariableStringBuffer("sv_cheats", var, sizeof(var));
+	cgs.cheatsEnabled = atoi(var) == 0 ? 0 : 1;
+
 	trap_Cvar_Set("ui_recordSPDemo", ch_recordMessage.integer > 0 ? "0" : "1");
 
 	//forceModelModificationCount = cg_forceModel.modificationCount;
