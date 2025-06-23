@@ -434,7 +434,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_fov, "cg_fov", "90", CVAR_ARCHIVE },
 	{ &cg_viewsize, "cg_viewsize", "100", CVAR_ARCHIVE },
 	{ &cg_stereoSeparation, "cg_stereoSeparation", "0.4", CVAR_ARCHIVE },
-	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE },
 	{ &cg_draw2D, "cg_draw2D", "1", CVAR_ARCHIVE },
 	{ &cg_drawStatus, "cg_drawStatus", "1", CVAR_ARCHIVE },
 	{ &cg_drawTimer, "cg_drawTimer", "1", CVAR_ARCHIVE },
@@ -748,6 +747,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 

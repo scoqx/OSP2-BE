@@ -288,3 +288,7 @@
 * enemy cg_altLightning 3 changed
 * changed some default values for cvars
 - cg_itemsRespawnAnimation
+
+23.06.2025 be v0.084c
++ cg_gibs 2 (more blood)
+* various fixes

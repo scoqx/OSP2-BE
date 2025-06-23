@@ -1760,7 +1760,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		gun.customShader = cgs.media.firstPersonGun;
 	}
 	if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
-	        (cg_drawGun.integer == 3))
+	        (cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
 	{
 		if (!usedBrightColor)
 		{
@@ -1801,7 +1801,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			barrel.customShader = cgs.media.firstPersonGun;
 		}
 		else if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
-		         (cg_drawGun.integer == 3))
+		         (cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
 		{
 			CG_UpdateGunShaderRGBA(&barrel);
 			barrel.customShader = cgs.media.firstPersonGun;

@@ -44,7 +44,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_fov", "Field of view - degrees" },
 	{ "cg_viewsize", "Size of the game view - percentage" },
 	{ "cg_stereoSeparation", "3D stereo separation level" },
-	{ "cg_gibs", "Sets the display of animated explosions and flying body parts. Set ^20^7 to disable gibs." },
+	{ "cg_gibs", "Sets the display of animated explosions and flying body parts. Set ^20^7 to disable gibs.\n  ^21^7 - enabled\n  ^22^7 - more blood and gibs" },
 	{ "cg_draw2D", "Displays 2D HUD elements. Set ^20^7 to disable." },
 	{ "cg_drawStatus", "Show player status information. Set ^20^7 to hide." },
 	{ "cg_drawTimer", "Show match timer\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - draw in center" },
