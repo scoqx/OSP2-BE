@@ -317,6 +317,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_altBattleSuit", "Alternative battle suit effect:\n  ^20^7 - Disabled\n  ^21^7 - Enabled" },
 	{ "cg_itemFx", "Changes how items are rendered in the world. Bitmask:\n  ^20^7 - static\n  ^21^7 - bounce\n  ^22^7 - rotating\n  ^24^7 - scale"},
 	{ "cg_bubbleTrail", "Enables the drawing of bubble trails drawn by projectiles entering water. Set ^20^7 to disable."},
+	{ "cg_ignoreServerMessages", "Hides the message from server. Bitmask:\n  ^20^7 - show messages\n  ^21^7 - hide killer HP/AP (Q3MSK FFA only)\n  ^22^7 - hide ^1chat fragged^7\n  ^24^7 - hide server's chat-messages"},
 };
 
 

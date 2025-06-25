@@ -171,8 +171,10 @@ void CG_FragmentBounceMark(localEntity_t* le, trace_t* trace)
 	if (le->leMarkType == LEMT_BLOOD)
 	{
 		// more gibs and blood
-		if (cg_gibs.integer == 2) {
-			for (i = 0; i < 4; i++) {
+		if (cg_gibs.integer == 2)
+		{
+			for (i = 0; i < 4; i++)
+			{
 				vec3_t offset;
 				VectorCopy(trace->endpos, offset);
 				offset[0] += crandom() * 16;
@@ -181,24 +183,29 @@ void CG_FragmentBounceMark(localEntity_t* le, trace_t* trace)
 
 				radius = 32 + (rand() & 63);
 
-				if (le->refEntity.customShader == cgs.media.freezeShader) {
+				if (le->refEntity.customShader == cgs.media.freezeShader)
+				{
 					CG_ImpactMark(cgs.media.freezeMarkShader, offset, trace->plane.normal, random() * 360,
 					              1, 1, 1, 1, qtrue, radius, qfalse, qfalse);
 				}
-				else {
+				else
+				{
 					CG_ImpactMark(cgs.media.bloodMarkShader, offset, trace->plane.normal, random() * 360,
 					              1, 1, 1, 1, qtrue, radius, qfalse, qfalse);
 				}
 			}
 		}
-		else {
+		else
+		{
 			// default
 			radius = 16 + (rand() & 31);
-			if (le->refEntity.customShader == cgs.media.freezeShader) {
+			if (le->refEntity.customShader == cgs.media.freezeShader)
+			{
 				CG_ImpactMark(cgs.media.freezeMarkShader, trace->endpos, trace->plane.normal, random() * 360,
 				              1, 1, 1, 1, qtrue, radius, qfalse, qfalse);
 			}
-			else {
+			else
+			{
 				CG_ImpactMark(cgs.media.bloodMarkShader, trace->endpos, trace->plane.normal, random() * 360,
 				              1, 1, 1, 1, qtrue, radius, qfalse, qfalse);
 			}

@@ -1121,11 +1121,35 @@ void CG_ServerCommand(void)
 		CG_ConfigStringModified();
 		return;
 	}
-//print
+// print
 	if (strcmp(cmd, "print") == 0)
 	{
-		Q_strncpyz(text, CG_Argv(1), 1024);
+		Q_strncpyz(text, CG_Argv(1), sizeof(text));
 		CG_RemoveChatEscapeChar(text);
+
+		// фильтрация говна сервера к3мск по маске "had <число> health and <число> armor left"
+		if (cg_ignoreServerMessages.integer & 1)
+		{
+			// Проверка фильтра "had <число> health and <число> armor left"
+			const char* had_pos = strstr(text, " had ");
+			if (had_pos)
+			{
+				size_t nick_len = had_pos - text;
+				if (nick_len > 0)
+				{
+					return;
+				}
+			}
+		}
+
+		if (cg_ignoreServerMessages.integer & 2)
+		{
+			// Проверяем, есть ли в тексте "chat fragged"
+			if (strstr(text, "chat fragged") != NULL)
+			{
+				return;
+			}
+		}
 		CG_Printf("%s", text);
 		return;
 	}
@@ -1143,6 +1167,12 @@ void CG_ServerCommand(void)
 		{
 			return;
 		}
+
+		if ((ma != MESSAGE_ALLOWED_PLAYER) && (ma != MESSAGE_NOTALLOWED) && (cg_ignoreServerMessages.integer & 4))
+		{
+			return;
+		}
+
 
 		isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_COMMMON_ENABLED;
 		isShudChatEnabled = cg_shudChatEnable.integer & CG_CHAT_COMMMON_ENABLED && ma == MESSAGE_ALLOWED_PLAYER;
@@ -1182,6 +1212,12 @@ void CG_ServerCommand(void)
 		{
 			return;
 		}
+
+		if ((ma != MESSAGE_ALLOWED_PLAYER) && (ma != MESSAGE_NOTALLOWED) && (cg_ignoreServerMessages.integer & 4))
+		{
+			return;
+		}
+
 
 		isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_TEAM_ENABLED;
 		isShudChatEnabled = cg_shudChatEnable.integer & CG_CHAT_TEAM_ENABLED && ma == MESSAGE_ALLOWED_PLAYER;

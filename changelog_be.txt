@@ -292,3 +292,9 @@
 23.06.2025 be v0.084c
 + cg_gibs 2 (more blood)
 * various fixes
+
+25.06.2025 be v0.084d
++ cg_ignoreServerMessages - Hides the message from server. Bitmask
+  * 1 - killer HP/AP (Q3MSK, FFA server)
+  * 2 - chat fragged (not only q3msk)
+  * 4 - server's chat messages

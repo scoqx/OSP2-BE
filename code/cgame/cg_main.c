@@ -417,6 +417,7 @@ vmCvar_t        cg_enemyGrenadesColor;
 vmCvar_t        cg_altBattleSuit;
 vmCvar_t        cg_itemFx;
 vmCvar_t        cg_bubbleTrail;
+vmCvar_t        cg_ignoreServerMessages;
 vmCvar_t        be_run;
 
 
@@ -748,6 +749,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 

@@ -1623,6 +1623,7 @@ extern vmCvar_t         cg_enemyGrenadesColor;
 extern vmCvar_t         cg_altBattleSuit;
 extern vmCvar_t         cg_itemFx;
 extern vmCvar_t         cg_bubbleTrail;
+extern vmCvar_t         cg_ignoreServerMessages;
 extern vmCvar_t         be_run;
 
 
@@ -2328,7 +2329,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.084c" // BE
+#define OSP_VERSION "be-0.084d" // BE
 
 
 
