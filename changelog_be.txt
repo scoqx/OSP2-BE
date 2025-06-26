@@ -298,3 +298,6 @@
   * 1 - killer HP/AP (Q3MSK, FFA server)
   * 2 - chat fragged (not only q3msk)
   * 4 - server's chat messages
+
+27.06.2025 be v0.084e
++ cg_drawAmmoWarning 2 - QL-like system + ammo low sound

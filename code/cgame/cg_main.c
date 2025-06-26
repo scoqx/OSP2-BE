@@ -442,7 +442,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawSnapshot, "cg_drawSnapshot", "0", CVAR_ARCHIVE },
 	{ &cg_draw3dIcons, "cg_draw3dIcons", "1", CVAR_ARCHIVE },
 	{ &cg_drawIcons, "cg_drawIcons", "1", CVAR_ARCHIVE },
-	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE },
 	{ &cg_drawAttacker, "cg_drawAttacker", "1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshair, "cg_drawCrosshair", "16", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairGauntlet, "cg_drawCrosshairGauntlet", "-1", CVAR_ARCHIVE },
@@ -745,11 +744,12 @@ static cvarTable_t cvarTable[] =
 	{ &cg_railCustomChamber, "cg_railCustomChamber", "1", CVAR_ARCHIVE },
 	{ &cg_altGrenadesColor, "cg_altGrenadesColor", "7", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altGrenadesColor },
 	{ &cg_enemyGrenadesColor, "cg_enemyGrenadesColor", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyGrenadesColor },
-	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE },
 	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "2", CVAR_ARCHIVE | CVAR_UPDATED },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1125,6 +1125,7 @@ static void CG_RegisterSounds(void)
 	cgs.media.respawnSound = trap_S_RegisterSound("sound/items/respawn1.wav", qfalse);
 
 	cgs.media.noAmmoSound = trap_S_RegisterSound("sound/weapons/noammo.wav", qfalse);
+	cgs.media.lowAmmoSound = trap_S_RegisterSound("sound/weapons/lowammo.wav", qfalse);
 
 	cgs.media.talkSound = trap_S_RegisterSound("sound/player/talk.wav", qfalse);
 	cgs.media.landSound = trap_S_RegisterSound("sound/player/land1.wav", qfalse);
