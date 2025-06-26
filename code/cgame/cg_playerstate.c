@@ -35,7 +35,8 @@ If the ammo has gone low enough to generate the warning, play a sound
 ==============
 */
 
-static int lowAmmoThresholds[WP_NUM_WEAPONS] = {
+static int lowAmmoThresholds[WP_NUM_WEAPONS] =
+{
 	/* WP_NONE */            0,
 	/* WP_GAUNTLET */        0,
 	/* WP_MACHINEGUN */      29,
@@ -51,96 +52,113 @@ static int lowAmmoThresholds[WP_NUM_WEAPONS] = {
 
 void CG_CheckAmmo(void)
 {
-    int weapon;
-    int ammo;
-    int threshold;
-    int i;
-    int weapons;
-    int total;
-    int previous;
-    static int lowAmmoWarningPrev[WP_NUM_WEAPONS] = {0};
-    static int lastWeapon = WP_NONE;
-    int currentWarning;
+	int weapon;
+	int ammo;
+	int threshold;
+	int i;
+	int weapons;
+	int total;
+	int previous;
+	static int lowAmmoWarningPrev[WP_NUM_WEAPONS] = {0};
+	static int lastWeapon = WP_NONE;
+	int currentWarning;
 
 	if (cg.snap->ps.weapon == WP_NONE || // also skip sound when joining server as spectator
-    cg.snap->ps.weapon == WP_GAUNTLET || 
-    cg.snap->ps.weapon == WP_GRAPPLING_HOOK || 
-    !cg_drawAmmoWarning.integer)
+	        cg.snap->ps.weapon == WP_GAUNTLET ||
+	        cg.snap->ps.weapon == WP_GRAPPLING_HOOK ||
+	        !cg_drawAmmoWarning.integer)
 	{
 		cg.lowAmmoWarning = 0;
 		return;
 	}
 
 	// new calc
-    if (cg_drawAmmoWarning.integer == 2) {
-        weapon = cg.snap->ps.weapon;
-        ammo = cg.snap->ps.ammo[weapon];
-        threshold = lowAmmoThresholds[weapon];
+	if (cg_drawAmmoWarning.integer == 2)
+	{
+		weapon = cg.snap->ps.weapon;
+		ammo = cg.snap->ps.ammo[weapon];
+		threshold = lowAmmoThresholds[weapon];
 
-        currentWarning = 0;
-        if (ammo == 0) {
-            currentWarning = 2;
-        } else if (threshold > 0 && ammo <= threshold) {
-            currentWarning = 1;
-        }
+		currentWarning = 0;
+		if (ammo == 0)
+		{
+			currentWarning = 2;
+		}
+		else if (threshold > 0 && ammo <= threshold)
+		{
+			currentWarning = 1;
+		}
 
-        cg.lowAmmoWarning = currentWarning;
+		cg.lowAmmoWarning = currentWarning;
 
-        if (currentWarning != lowAmmoWarningPrev[weapon] || (currentWarning != 0 && weapon != lastWeapon)) {
-            if (currentWarning == 1) {
-                trap_S_StartLocalSound(cgs.media.lowAmmoSound, CHAN_LOCAL_SOUND);
-            } else if (currentWarning == 2) {
-                trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
-            }
-        }
+		if (currentWarning != lowAmmoWarningPrev[weapon] || (currentWarning != 0 && weapon != lastWeapon))
+		{
+			if (currentWarning == 1)
+			{
+				trap_S_StartLocalSound(cgs.media.lowAmmoSound, CHAN_LOCAL_SOUND);
+			}
+			else if (currentWarning == 2)
+			{
+				trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
+			}
+		}
 
-        lastWeapon = weapon;
-        lowAmmoWarningPrev[weapon] = currentWarning;
+		lastWeapon = weapon;
+		lowAmmoWarningPrev[weapon] = currentWarning;
 
-        return;
-    }
+		return;
+	}
 	// default osp
-    if (cg_drawAmmoWarning.integer == 1) {
-        weapons = cg.snap->ps.stats[STAT_WEAPONS];
-        total = 0;
+	if (cg_drawAmmoWarning.integer == 1)
+	{
+		weapons = cg.snap->ps.stats[STAT_WEAPONS];
+		total = 0;
 
-        for (i = WP_MACHINEGUN; i < WP_NUM_WEAPONS; i++) {
-            if (!(weapons & (1 << i))) {
-                continue;
-            }
-            switch (i) {
-                case WP_ROCKET_LAUNCHER:
-                case WP_GRENADE_LAUNCHER:
-                case WP_RAILGUN:
-                case WP_SHOTGUN:
-                    total += cg.snap->ps.ammo[i] * 1000;
-                    break;
-                default:
-                    total += cg.snap->ps.ammo[i] * 200;
-                    break;
-            }
-            if (total >= 5000) {
-                cg.lowAmmoWarning = 0;
-                return;
-            }
-        }
+		for (i = WP_MACHINEGUN; i < WP_NUM_WEAPONS; i++)
+		{
+			if (!(weapons & (1 << i)))
+			{
+				continue;
+			}
+			switch (i)
+			{
+				case WP_ROCKET_LAUNCHER:
+				case WP_GRENADE_LAUNCHER:
+				case WP_RAILGUN:
+				case WP_SHOTGUN:
+					total += cg.snap->ps.ammo[i] * 1000;
+					break;
+				default:
+					total += cg.snap->ps.ammo[i] * 200;
+					break;
+			}
+			if (total >= 5000)
+			{
+				cg.lowAmmoWarning = 0;
+				return;
+			}
+		}
 
-        previous = cg.lowAmmoWarning;
+		previous = cg.lowAmmoWarning;
 
-        if (total == 0) {
-            cg.lowAmmoWarning = 2;
-        } else {
-            cg.lowAmmoWarning = 1;
-        }
+		if (total == 0)
+		{
+			cg.lowAmmoWarning = 2;
+		}
+		else
+		{
+			cg.lowAmmoWarning = 1;
+		}
 
-        if (cg.lowAmmoWarning != previous) {
-            trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
-        }
+		if (cg.lowAmmoWarning != previous)
+		{
+			trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
+		}
 
-        return;
-    }
+		return;
+	}
 
-    cg.lowAmmoWarning = 0;
+	cg.lowAmmoWarning = 0;
 }
 
 
@@ -791,7 +809,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	}
 
 	if (cg_shud.integer)
-	CG_UpdateWeaponTracking(WP_LIGHTNING);
+		CG_UpdateWeaponTracking(WP_LIGHTNING);
 	// check for going low on ammo
 	CG_CheckAmmo();
 
