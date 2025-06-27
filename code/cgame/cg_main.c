@@ -629,7 +629,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_lightningHideCrosshair, "cg_lightningHideCrosshair", "0", CVAR_ARCHIVE },
 	{ &cg_lightningSilent, "cg_lightningSilent", "0", CVAR_ARCHIVE },
 	{ &cg_lightningHide, "cg_lightningHide", "0", CVAR_ARCHIVE },
-	{ &cg_delag, "cg_delag", "0", CVAR_ARCHIVE },
+	{ &cg_delag, "cg_delag", "4", CVAR_ARCHIVE },
 	{ &cg_projectileNudge, "cg_projectileNudge", "3", CVAR_ARCHIVE },
 	{ &cg_hideScores, "cg_hideScores", "0", CVAR_ARCHIVE },
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
@@ -749,7 +749,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "2", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
