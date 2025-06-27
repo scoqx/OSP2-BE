@@ -300,4 +300,4 @@
   * 4 - server's chat messages
 
 27.06.2025 be v0.084e
-+ cg_drawAmmoWarning 2 - QL-like system + ammo low sound
++ cg_drawAmmoWarning 2 - QL-like counting system + ammo low sound
