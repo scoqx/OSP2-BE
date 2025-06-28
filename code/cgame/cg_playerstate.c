@@ -66,7 +66,6 @@ void CG_CheckAmmo(void)
 	static int prevWeaponState = WEAPON_READY;
 	static int prevAmmo = 0;
 
-	/* Флаг сброса состояния, чтобы не делать лишних присваиваний */
 	static int resetDone = 0;
 
 	if (!cg.snap || cg.snap->ps.weapon == WP_NONE || !cg_drawAmmoWarning.integer)
@@ -82,6 +81,7 @@ void CG_CheckAmmo(void)
 	}
 	resetDone = 0;
 
+	// no ammo sounds when trying to shot without ammo
 	weapon = cg.snap->ps.weapon;
 	ammo = cg.snap->ps.ammo[weapon];
 	{
