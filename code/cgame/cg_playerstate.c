@@ -39,13 +39,13 @@ static int lowAmmoThresholds[WP_NUM_WEAPONS] =
 {
 	/* WP_NONE */            0,
 	/* WP_GAUNTLET */        0,
-	/* WP_MACHINEGUN */      29,
+	/* WP_MACHINEGUN */      30,
 	/* WP_SHOTGUN */         5,
 	/* WP_GRENADE_LAUNCHER */5,
 	/* WP_ROCKET_LAUNCHER */ 5,
-	/* WP_LIGHTNING */       29,
+	/* WP_LIGHTNING */       30,
 	/* WP_RAILGUN */         5,
-	/* WP_PLASMAGUN */       29,
+	/* WP_PLASMAGUN */       30,
 	/* WP_BFG */             5,
 	/* WP_GRAPPLING_HOOK */  0
 };
