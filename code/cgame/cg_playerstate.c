@@ -52,80 +52,80 @@ static int lowAmmoThresholds[WP_NUM_WEAPONS] =
 
 void CG_CheckAmmo(void)
 {
-    int weapon;
-    int ammo;
-    int threshold;
-    int i;
-    int weapons;
-    int total;
-    int previous;
+	int weapon;
+	int ammo;
+	int threshold;
+	int i;
+	int weapons;
+	int total;
+	int previous;
 	int currentWarning;
-    static int lowAmmoWarningPrev[WP_NUM_WEAPONS] = {0};
-    static int lastWeapon = WP_NONE;
+	static int lowAmmoWarningPrev[WP_NUM_WEAPONS] = {0};
+	static int lastWeapon = WP_NONE;
 
-    static int prevWeaponState = WEAPON_READY;
-    static int prevAmmo = 0;
+	static int prevWeaponState = WEAPON_READY;
+	static int prevAmmo = 0;
 
-    /* Флаг сброса состояния, чтобы не делать лишних присваиваний */
-    static int resetDone = 0;
+	/* Флаг сброса состояния, чтобы не делать лишних присваиваний */
+	static int resetDone = 0;
 
-    if (!cg.snap || cg.snap->ps.weapon == WP_NONE || !cg_drawAmmoWarning.integer)
-    {
-        cg.lowAmmoWarning = 0;
-        if (!resetDone)
-        {
-            prevWeaponState = WEAPON_READY;
-            prevAmmo = 0;
-            resetDone = 1;
-        }
-        return;
-    }
-    resetDone = 0;
+	if (!cg.snap || cg.snap->ps.weapon == WP_NONE || !cg_drawAmmoWarning.integer)
+	{
+		cg.lowAmmoWarning = 0;
+		if (!resetDone)
+		{
+			prevWeaponState = WEAPON_READY;
+			prevAmmo = 0;
+			resetDone = 1;
+		}
+		return;
+	}
+	resetDone = 0;
 
-    weapon = cg.snap->ps.weapon;
-    ammo = cg.snap->ps.ammo[weapon];
-    {
-        int currentWeaponState = cg.snap->ps.weaponstate;
+	weapon = cg.snap->ps.weapon;
+	ammo = cg.snap->ps.ammo[weapon];
+	{
+		int currentWeaponState = cg.snap->ps.weaponstate;
 
 		if (currentWeaponState == WEAPON_FIRING && ammo == 0 &&
-            !(prevWeaponState == WEAPON_FIRING && prevAmmo == 0))
-        {
-            trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
-        }
+		        !(prevWeaponState == WEAPON_FIRING && prevAmmo == 0))
+		{
+			trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
+		}
 
-        prevWeaponState = currentWeaponState;
-        prevAmmo = ammo;
-    }
+		prevWeaponState = currentWeaponState;
+		prevAmmo = ammo;
+	}
 
-    if (cg_drawAmmoWarning.integer == 1)
-    {
-        threshold = lowAmmoThresholds[weapon];
-        currentWarning = 0;
+	if (cg_drawAmmoWarning.integer == 1)
+	{
+		threshold = lowAmmoThresholds[weapon];
+		currentWarning = 0;
 
-        if (ammo == 0)
-            currentWarning = 2;
-        else if (threshold > 0 && ammo <= threshold)
-            currentWarning = 1;
+		if (ammo == 0)
+			currentWarning = 2;
+		else if (threshold > 0 && ammo <= threshold)
+			currentWarning = 1;
 
-        cg.lowAmmoWarning = currentWarning;
+		cg.lowAmmoWarning = currentWarning;
 
-        if (currentWarning != lowAmmoWarningPrev[weapon] || (currentWarning != 0 && weapon != lastWeapon))
-        {
-            if (currentWarning == 1)
-            {
-                trap_S_StartLocalSound(cgs.media.lowAmmoSound, CHAN_LOCAL_SOUND);
-            }
-            else if (currentWarning == 2)
-            {
-            	trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
-            }
-        }
+		if (currentWarning != lowAmmoWarningPrev[weapon] || (currentWarning != 0 && weapon != lastWeapon))
+		{
+			if (currentWarning == 1)
+			{
+				trap_S_StartLocalSound(cgs.media.lowAmmoSound, CHAN_LOCAL_SOUND);
+			}
+			else if (currentWarning == 2)
+			{
+				trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
+			}
+		}
 
-        lastWeapon = weapon;
-        lowAmmoWarningPrev[weapon] = currentWarning;
+		lastWeapon = weapon;
+		lowAmmoWarningPrev[weapon] = currentWarning;
 
-        return;
-    }
+		return;
+	}
 	// default osp
 	if (cg_drawAmmoWarning.integer == 2)
 	{
