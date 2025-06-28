@@ -60,6 +60,7 @@ void CG_CheckAmmo(void)
 	int total;
 	int previous;
 	int currentWarning;
+
 	static int lowAmmoWarningPrev[WP_NUM_WEAPONS] = {0};
 	static int lastWeapon = WP_NONE;
 
@@ -68,7 +69,7 @@ void CG_CheckAmmo(void)
 
 	static int resetDone = 0;
 
-	if (!cg.snap || cg.snap->ps.weapon == WP_NONE || !cg_drawAmmoWarning.integer)
+	if (cg.snap->ps.weapon == WP_NONE || !cg_drawAmmoWarning.integer)
 	{
 		cg.lowAmmoWarning = 0;
 		if (!resetDone)
