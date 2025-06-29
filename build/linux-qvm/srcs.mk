@@ -46,7 +46,6 @@ CG_SRC = \
  cg_superhud_element_tempAcc \
  cg_superhud_element_weapon_stats cg_superhud_element_player_stats cg_superhud_element_player_name \
  cg_superhud_element_grid \
- cg_superhud_element_label \
  l_crc \
  cg_chatfilter cg_crosshair\
 

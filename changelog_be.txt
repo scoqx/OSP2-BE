@@ -309,5 +309,5 @@
 + cg_healthMidColor
 
 * SHUD:
-  + Prelabel, Postlabel - new element, draw text string on hud. Use { text "bla-bla" }
+  * Predecorate/Postdecorate - added feature to use { text "string"; } to pring text on the HUD
   + player_name - new element
