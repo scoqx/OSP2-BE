@@ -1628,9 +1628,9 @@ extern vmCvar_t         cg_altBattleSuit;
 extern vmCvar_t         cg_itemFx;
 extern vmCvar_t         cg_bubbleTrail;
 extern vmCvar_t         cg_ignoreServerMessages;
-extern vmCvar_t			cg_healthColor;
-extern vmCvar_t			cg_healthLowColor;
-extern vmCvar_t			cg_healthMidColor;
+extern vmCvar_t         cg_healthColor;
+extern vmCvar_t         cg_healthLowColor;
+extern vmCvar_t         cg_healthMidColor;
 extern vmCvar_t         be_run;
 
 

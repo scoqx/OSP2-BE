@@ -16,7 +16,7 @@ void* CG_SHUDElementLabelCreate(const superhudConfig_t* config)
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 
-	if (config->text.isSet) 
+	if (config->text.isSet)
 	{
 		element->ctx.text = element->config.text.value;
 	}

@@ -43,29 +43,29 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 
 	ci = &cgs.clientinfo[cg.crosshairClientNum];
 
-if ((ci->team == cg.snap->ps.persistant[PERS_TEAM]) || (cgs.osp.gameTypeFreeze && ci->team == cgs.clientinfo[cg.snap->ps.clientNum].team))
-{
-	if (ci->team != TEAM_FREE && ci->team == cg.snap->ps.persistant[PERS_TEAM] && ch_TeamCrosshairHealth.integer != 0 && !(cg.snap->ps.pm_flags & PMF_FOLLOW))
+	if ((ci->team == cg.snap->ps.persistant[PERS_TEAM]) || (cgs.osp.gameTypeFreeze && ci->team == cgs.clientinfo[cg.snap->ps.clientNum].team))
 	{
-		vec4_t hcolor;
-		char s[1024];
-
-		CG_GetColorForHealth(ci->health, ci->armor, hcolor, NULL);
-
-		Com_sprintf(s, sizeof(s), "[%i/%i]", ci->health, ci->armor);
-
-		element->ctx.text = s;
-
-		VectorCopy(hcolor, element->ctx.color);
-		if (element->config.color.isSet)
+		if (ci->team != TEAM_FREE && ci->team == cg.snap->ps.persistant[PERS_TEAM] && ch_TeamCrosshairHealth.integer != 0 && !(cg.snap->ps.pm_flags & PMF_FOLLOW))
 		{
-			element->ctx.color[3] = element->config.color.value.rgba[3];
-		}
-		CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);
+			vec4_t hcolor;
+			char s[1024];
 
-		element->ctx.text = NULL;
+			CG_GetColorForHealth(ci->health, ci->armor, hcolor, NULL);
+
+			Com_sprintf(s, sizeof(s), "[%i/%i]", ci->health, ci->armor);
+
+			element->ctx.text = s;
+
+			VectorCopy(hcolor, element->ctx.color);
+			if (element->config.color.isSet)
+			{
+				element->ctx.color[3] = element->config.color.value.rgba[3];
+			}
+			CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);
+
+			element->ctx.text = NULL;
+		}
 	}
-}
 
 }
 

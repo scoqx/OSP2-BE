@@ -23,24 +23,24 @@ void* CG_SHUDElementPlayerNameCreate(const superhudConfig_t* config)
 
 void CG_SHUDElementPlayerNameRoutine(void* context)
 {
-    shudElementPlayerName* element = (shudElementPlayerName*)context;
+	shudElementPlayerName* element = (shudElementPlayerName*)context;
 
-    char textBuffer[MAX_QPATH];
+	char textBuffer[MAX_QPATH];
 
-    int clientNum = cg.snap->ps.clientNum;
+	int clientNum = cg.snap->ps.clientNum;
 
-    if (clientNum >= 0 && clientNum < MAX_CLIENTS && cgs.clientinfo[clientNum].infoValid)
-    {
-        Q_strncpyz(textBuffer, cgs.clientinfo[clientNum].name, sizeof(textBuffer));
-    }
-    else
-    {
-        Q_strncpyz(textBuffer, "---", sizeof(textBuffer));
-    }
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS && cgs.clientinfo[clientNum].infoValid)
+	{
+		Q_strncpyz(textBuffer, cgs.clientinfo[clientNum].name, sizeof(textBuffer));
+	}
+	else
+	{
+		Q_strncpyz(textBuffer, "---", sizeof(textBuffer));
+	}
 
-    element->ctx.text = textBuffer;
+	element->ctx.text = textBuffer;
 
-    CG_SHUDTextPrint(&element->config, &element->ctx);
+	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 
 

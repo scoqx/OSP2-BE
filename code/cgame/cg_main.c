@@ -419,9 +419,9 @@ vmCvar_t        cg_altBattleSuit;
 vmCvar_t        cg_itemFx;
 vmCvar_t        cg_bubbleTrail;
 vmCvar_t        cg_ignoreServerMessages;
-vmCvar_t		cg_healthColor;
-vmCvar_t		cg_healthLowColor;
-vmCvar_t		cg_healthMidColor;
+vmCvar_t        cg_healthColor;
+vmCvar_t        cg_healthLowColor;
+vmCvar_t        cg_healthMidColor;
 vmCvar_t        be_run;
 
 
