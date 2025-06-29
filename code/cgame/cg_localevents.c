@@ -547,4 +547,18 @@ void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.enemyGrenadesColor);
 }
+void CG_LocalEventCvarChanged_cg_healthColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.healthColor);
+}
+
+void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.healthLowColor);
+}
+
+void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.healthMidColor);
+}
 

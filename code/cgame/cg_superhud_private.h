@@ -502,6 +502,14 @@ void* CG_SHUDElementFlagStatusOWNCreate(const superhudConfig_t* config);
 void CG_SHUDElementFlagStatusRoutine(void* context);
 void CG_SHUDElementFlagStatusDestroy(void* context);
 
+void* CG_SHUDElementLabelCreate(const superhudConfig_t* config);
+void CG_SHUDElementLabelRoutine(void* context);
+void CG_SHUDElementLabelDestroy(void* context);
+
+void* CG_SHUDElementPlayerNameCreate(const superhudConfig_t* config);
+void CG_SHUDElementPlayerNameRoutine(void* context);
+void CG_SHUDElementPlayerNameDestroy(void* context);
+
 #define SUPERHUD_UPDATE_TIME 50
 
 void* CG_SHUDElementPwTime1Create(const superhudConfig_t* config);

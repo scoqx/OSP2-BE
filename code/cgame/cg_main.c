@@ -419,6 +419,9 @@ vmCvar_t        cg_altBattleSuit;
 vmCvar_t        cg_itemFx;
 vmCvar_t        cg_bubbleTrail;
 vmCvar_t        cg_ignoreServerMessages;
+vmCvar_t		cg_healthColor;
+vmCvar_t		cg_healthLowColor;
+vmCvar_t		cg_healthMidColor;
 vmCvar_t        be_run;
 
 
@@ -751,6 +754,9 @@ static cvarTable_t cvarTable[] =
 	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_healthColor, "cg_healthColor", "Yellow", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthColor },
+	{ &cg_healthLowColor, "cg_healthLowColor", "Red", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthLowColor },
+	{ &cg_healthMidColor, "cg_healthMidColor", "White", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthMidColor },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1913,6 +1919,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_altGrenadesColor");
 	CG_CvarTouch("cg_enemyGrenadesColor");
 
+	CG_CvarTouch("cg_healthColor");
+	CG_CvarTouch("cg_healthLowColor");
+	CG_CvarTouch("cg_healthMidColor");
 
 	CG_InitConsoleCommands();
 

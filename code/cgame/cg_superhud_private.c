@@ -7,6 +7,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "!default", 0, },
 	{ "grid", 0, CG_SHUDElementGridCreate, CG_SHUDElementGridRoutine, CG_SHUDElementGridDestroy },
 	{ "predecorate", 0, CG_SHUDElementDecorCreate, CG_SHUDElementDecorRoutine, CG_SHUDElementDecorDestroy },
+	{ "prelabel", 0, CG_SHUDElementLabelCreate, CG_SHUDElementLabelRoutine, CG_SHUDElementLabelDestroy },
 	{ "ammomessage", 0, CG_SHUDElementAmmoMessageCreate, CG_SHUDElementAmmoMessageRoutine, CG_SHUDElementAmmoMessageDestroy },
 	{ "attackericon", 0, CG_SHUDElementAttackerIconCreate, CG_SHUDElementAttackerIconRoutine, CG_SHUDElementAttackerIconDestroy },
 	{ "attackername", 0, CG_SHUDElementAttackerNameCreate, CG_SHUDElementAttackerNameRoutine, CG_SHUDElementAttackerNameDestroy },
@@ -168,6 +169,8 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "playerStats_DG_icon", SE_IM, CG_SHUDElementCreatePlayerStatsDGIcon, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
 	{ "playerStats_DR_icon", SE_IM, CG_SHUDElementCreatePlayerStatsDRIcon, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
 	{ "playerStats_damageRatio", SE_IM, CG_SHUDElementCreatePlayerStatsDamageRatio, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
+	{ "postlabel", 0, CG_SHUDElementLabelCreate, CG_SHUDElementLabelRoutine, CG_SHUDElementLabelDestroy },
+	{ "player_name", 0, CG_SHUDElementPlayerNameCreate, CG_SHUDElementPlayerNameRoutine, CG_SHUDElementPlayerNameDestroy },
 	{ NULL },
 };
 

@@ -93,6 +93,9 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | playerStats_DG_icon           | Иконка для количества нанесённого урона                      |
 | playerStats_DR_icon           | Иконка для количества полученного урона                      |
 | playerStats_damage_ratio      | Коэфициент урона                                             |
+| Prelabel                      | Вывод текстовой строки  (задний план)                        |
+| Postlabel                     | Вывод текстовой строки  (передний план)                      |
+| player_name                   | Имя игрока                                                   |
 
 ## Команды
 

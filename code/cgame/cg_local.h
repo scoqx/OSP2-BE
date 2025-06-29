@@ -1097,6 +1097,9 @@ typedef struct cgs_be_s
 	vec4_t enemyGrenadesColor;
 	qboolean showCredits;
 	qboolean isHealthLow;
+	vec4_t healthColor;
+	vec4_t healthLowColor;
+	vec4_t healthMidColor;
 	weaponStats_t weaponStats[WP_NUM_WEAPONS];
 } cgs_be_t;
 
@@ -1625,6 +1628,9 @@ extern vmCvar_t         cg_altBattleSuit;
 extern vmCvar_t         cg_itemFx;
 extern vmCvar_t         cg_bubbleTrail;
 extern vmCvar_t         cg_ignoreServerMessages;
+extern vmCvar_t			cg_healthColor;
+extern vmCvar_t			cg_healthLowColor;
+extern vmCvar_t			cg_healthMidColor;
 extern vmCvar_t         be_run;
 
 
@@ -2340,7 +2346,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.084f" // BE
+#define OSP_VERSION "be-0.085" // BE
 
 
 
@@ -2589,8 +2595,9 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart);
-
-
+void CG_LocalEventCvarChanged_cg_healthColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart);
 
 
 #ifdef __cplusplus

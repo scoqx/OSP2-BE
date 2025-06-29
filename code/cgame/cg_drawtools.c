@@ -1562,9 +1562,8 @@ CG_GetColorForHealth
 */
 void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 {
-	int     count;
-	int     max;
-
+	int count;
+	int max;
 
 	if (!cg_healthColorLevels.integer)
 	{
@@ -1572,13 +1571,11 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 		return;
 	}
 
-	// calculate the total points of damage that can
-	// be sustained at the current health / armor level
 	if (health <= 0)
 	{
 		if (hcolor)
 		{
-			VectorClear(hcolor);     // black
+			VectorClear(hcolor); // black
 			hcolor[3] = 1;
 		}
 		if (ccolor)
@@ -1600,7 +1597,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 	{
 		if (hcolor)
 		{
-			VectorCopy(colorRed, hcolor);
+			VectorCopy(cgs.be.healthLowColor, hcolor);
 		}
 		if (ccolor)
 		{
@@ -1612,7 +1609,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 	{
 		if (hcolor)
 		{
-			VectorCopy(colorWhite, hcolor);
+			VectorCopy(cgs.be.healthMidColor, hcolor);
 		}
 		if (ccolor)
 		{
@@ -1624,7 +1621,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 	{
 		if (hcolor)
 		{
-			VectorSet(hcolor, 1, 0.7, 0);
+			VectorCopy(cgs.be.healthColor, hcolor);
 		}
 		if (ccolor)
 		{
@@ -1635,9 +1632,10 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 
 	if (hcolor)
 	{
-		hcolor[3] = 1.0;
+		hcolor[3] = 1.0f;
 	}
 }
+
 
 /*
 =================

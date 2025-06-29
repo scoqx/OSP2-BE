@@ -302,3 +302,12 @@
 27.06.2025 be v0.084e
 + cg_drawAmmoWarning 1 - new counting system + ammo low sound
   * 2 - default old
+
+29.06.2025 be v0.085 
++ cg_healthColor
++ cg_healthLowColor
++ cg_healthMidColor
+
+* SHUD:
+  + Prelabel, Postlabel - new element, draw text string on hud. Use { text "bla-bla" }
+  + player_name - new element

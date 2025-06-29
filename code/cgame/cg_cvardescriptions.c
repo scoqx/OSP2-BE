@@ -320,6 +320,9 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_itemFx", "Changes how items are rendered in the world. Bitmask:\n  ^20^7 - static\n  ^21^7 - bounce\n  ^22^7 - rotating\n  ^24^7 - scale"},
 	{ "cg_bubbleTrail", "Enables the drawing of bubble trails drawn by projectiles entering water. Set ^20^7 to disable."},
 	{ "cg_ignoreServerMessages", "Hides the message from server. Bitmask:\n  ^20^7 - show messages\n  ^21^7 - hide killer HP/AP (Q3MSK FFA only)\n  ^22^7 - hide ^1chat fragged^7\n  ^24^7 - hide server's chat-messages"},
+	{ "cg_healthColor", "Health/armor color, requires ^3cg_healthColorLevels^7 ^21^7\n \"^2color^7\" - use color name, digit or hex"},
+	{ "cg_healthLowColor", "Health/armor color when reaching cg_healthLow, requires ^3cg_healthColorLevels^7 ^21^7\n \"^2color^7\" - use color name, digit or hex"},
+	{ "cg_healthMidColor", "Health/armor color when reaching cg_healthMid, requires ^3cg_healthColorLevels^7 ^21^7\n \"^2color^7\" - use color name, digit or hex"},
 };
 
 

@@ -232,6 +232,10 @@ void CG_SHUDTextMakeContext(const superhudConfig_t* in, superhudTextContext_t* o
 	if (!config.shadowColor.isSet)
 	{
 		Vector4Copy(colorBlack, out->shadowColor);
+		if (config.color.isSet)
+		{
+		out->shadowColor[3] = config.color.value.rgba[3];
+		}
 	}
 	else
 	{
