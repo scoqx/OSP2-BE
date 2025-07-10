@@ -303,10 +303,11 @@
 + cg_drawAmmoWarning 1 - new counting system + ammo low sound
   * 2 - default old
 
-29.06.2025 be v0.085a 
+29.06.2025 be v0.085b 
 + cg_healthColor
 + cg_healthLowColor
 + cg_healthMidColor
+* r_fullbright 1 unlocked
 
 * SHUD:
   * Predecorate/Postdecorate - added feature to use { text "string"; } to pring text on the HUD

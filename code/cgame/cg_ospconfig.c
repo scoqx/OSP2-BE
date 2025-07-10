@@ -131,11 +131,11 @@ void CG_OSPCvarsRestrictValues(void)
 		return;
 	}
 
-	if (r_fullbright.integer)
-	{
-		trap_Cvar_Set("r_fullbright", "0");
-		changed = qtrue;
-	}
+	// if (r_fullbright.integer)
+	// {
+	// 	trap_Cvar_Set("r_fullbright", "0");
+	// 	changed = qtrue;
+	// }
 
 	if (r_lodCurveError.integer != 250)
 	{
