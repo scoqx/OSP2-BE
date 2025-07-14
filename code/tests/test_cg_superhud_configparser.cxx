@@ -736,10 +736,10 @@ TEST_CASE("Test SuperHUD: parse BGCOLOR command", "[cgame][cg_superhud_configpar
     CHECK(comResult.item->parse(&info, &config) == SUPERHUD_CONFIG_OK);
     CHECK(config.bgcolor.isSet == qtrue);
 
-    CHECK(config.bgcolor.value[0] == 0.1f);
-    CHECK(config.bgcolor.value[1] == -0.2f);
-    CHECK(config.bgcolor.value[2] == 0.3f);
-    CHECK(config.bgcolor.value[3] == -0.4f);
+    CHECK(config.bgcolor.value.rgba[0] == 0.1f);
+    CHECK(config.bgcolor.value.rgba[1] == -0.2f);
+    CHECK(config.bgcolor.value.rgba[2] == 0.3f);
+    CHECK(config.bgcolor.value.rgba[3] == -0.4f);
   }
 
   {

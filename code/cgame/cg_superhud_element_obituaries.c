@@ -114,26 +114,47 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 	CG_SHUDObituarySetTeamColor(entry->runtime.attackerColor, entry->attackerTeam);
 	CG_SHUDObituarySetTeamColor(entry->runtime.targetColor, entry->targetTeam);
 
-	if (element->config.bgcolor.isSet)
+	if (element->config.style.isSet && element->config.style.value)
 	{
-		entry->runtime.attackerColor[3] = element->config.bgcolor.value[3];
-		entry->runtime.targetColor[3] = element->config.bgcolor.value[3];
+		if (element->config.bgcolor.isSet && element->config.style.value == 1)
+		{
+			entry->runtime.attackerColor[3] = element->config.bgcolor.value.rgba[3];
+			entry->runtime.targetColor[3] = element->config.bgcolor.value.rgba[3];
+		}
+		else if(element->config.color.isSet && element->config.style.value == 2)
+		{
+			entry->runtime.attackerColor[3] = element->config.color.value.rgba[3];
+			entry->runtime.targetColor[3] = element->config.color.value.rgba[3];
+		}
 	}
-
 	if (entry->attacker == ENTITYNUM_WORLD)
 	{
 		strcpy(entry->runtime.attackerName, "^1world");
 	}
 	else if (entry->attacker >= 0 && entry->attacker < MAX_CLIENTS)
 	{
-		Q_strncpyz(entry->runtime.attackerName, cgs.clientinfo[entry->attacker].name, MAX_QPATH);
+		if (cgs.gametype >= GT_TEAM && (element->config.style.isSet && element->config.style.value == 2))
+		{
+			Q_strncpyz(entry->runtime.attackerName, cgs.clientinfo[entry->attacker].name_clean, MAX_QPATH);
+		}
+		else
+		{
+			Q_strncpyz(entry->runtime.attackerName, cgs.clientinfo[entry->attacker].name, MAX_QPATH);
+		}
 	}
-
 
 	if (entry->target >= 0 && entry->target < MAX_CLIENTS)
 	{
-		Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name, MAX_QPATH);
+		if (cgs.gametype >= GT_TEAM && (element->config.style.isSet && element->config.style.value == 2))
+		{
+			Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name_clean, MAX_QPATH);
+		}
+		else
+		{
+			Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name, MAX_QPATH);
+		}
 	}
+
 
 	entry->runtime.isInitialized = qtrue;
 }
@@ -173,7 +194,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		    element->ctxAttacker.coord.named.y - (element->ctxAttacker.coord.named.h * 0.55), // Y
 		    entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->ctxMod.coord.named.h * 0.15), // Ширина
 		    element->ctxAttacker.coord.named.h * 1.1, // Высота
-		    element->config.bgcolor.value // Цвет и прозрачность из конфига
+		    element->config.bgcolor.value.rgba // Цвет и прозрачность из конфига
 		);
 	}
 	if (entry->attacker != entry->target)
@@ -181,9 +202,16 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		element->ctxAttacker.text = entry->runtime.attackerName;
 		element->ctxAttacker.coord.named.x = currentX;
 
-		if ((entry->attackerTeam == TEAM_RED || entry->attackerTeam == TEAM_BLUE) && element->config.style.isSet && element->config.style.value)
+		if ((entry->attackerTeam == TEAM_RED || entry->attackerTeam == TEAM_BLUE) && element->config.style.isSet)
 		{
-			Vector4Copy(entry->runtime.attackerColor, element->ctxAttacker.background);
+			if (element->config.style.value == 1)
+			{
+				Vector4Copy(entry->runtime.attackerColor, element->ctxAttacker.background);
+			}
+			else if (element->config.style.value == 2)
+			{
+				Vector4Copy(entry->runtime.attackerColor, element->ctxAttacker.color);
+			}
 		}
 		else
 		{
@@ -191,7 +219,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		}
 
 		element->ctxAttacker.width = entry->runtime.maxNameLenPix;
-		CG_SHUDTextPrint(&element->config, &element->ctxAttacker);
+		CG_SHUDTextPrintNew(&element->config, &element->ctxAttacker, qfalse);
 		currentX += entry->runtime.attackerWidth;
 	}
 	if (entry->runtime.iconShader)
@@ -203,16 +231,23 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	}
 	element->ctxTarget.text = entry->runtime.targetName;
 	element->ctxTarget.coord.named.x = currentX;
-	if ((entry->targetTeam == TEAM_RED || entry->targetTeam == TEAM_BLUE) && element->config.style.isSet && element->config.style.value)
+	if ((entry->targetTeam == TEAM_RED || entry->targetTeam == TEAM_BLUE) && element->config.style.isSet)
 	{
-		Vector4Copy(entry->runtime.targetColor, element->ctxTarget.background);
+		if (element->config.style.value == 1)
+		{
+			Vector4Copy(entry->runtime.targetColor, element->ctxTarget.background);
+		}
+		else if (element->config.style.value == 2)
+		{
+			Vector4Copy(entry->runtime.targetColor, element->ctxTarget.color);
+		}
 	}
 	else
 	{
 		element->ctxTarget.background[3] = 0;
 	}
 	element->ctxTarget.width = entry->runtime.maxNameLenPix;
-	CG_SHUDTextPrint(&element->config, &element->ctxTarget);
+	CG_SHUDTextPrintNew(&element->config, &element->ctxTarget, qfalse);
 }
 
 static void CG_SHUDObituarySetTeamColor(vec4_t color, int team)

@@ -150,7 +150,7 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 			{
 				if (element->config.bgcolor.isSet)
 				{
-					Vector4Copy(element->tmp_config.bgcolor.value, element->back[element->weaponNum].color);
+    				CG_SHUDConfigPickBgColor(&element->tmp_config, element->back[element->weaponNum].color, qfalse);
 				}
 				else
 				{
@@ -182,13 +182,14 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 
 				if (element->config.borderColor.isSet)
 				{
-					Vector4Copy(element->config.borderColor.value, element->borderColor[element->weaponNum]);
+					CG_SHUDConfigPickBorderColor(&element->config, element->borderColor[element->weaponNum], qfalse);
 				}
 				else
 				{
 					Vector4Set(element->borderColor[element->weaponNum], 1, 1, 1, 0);
 				}
 			}
+			
 			else
 			{
 				Vector4Set(element->border[element->weaponNum], 0, 0, 0, 0);
@@ -277,6 +278,7 @@ void CG_SHUDElementWeaponListRoutine(void* context)
 {
 	shudElementWeaponList_t* element = (shudElementWeaponList_t*)context;
 	int i;
+	vec4_t bgColor;
 
 	CG_SHUDElementWeaponListSetup(element, element->config.textAlign.value);
 

@@ -73,9 +73,14 @@ typedef struct
 	} angles;
 	struct
 	{
-		vec4_t value;
+		superhudColor_t value;
 		qboolean isSet;
 	} bgcolor;
+	struct
+	{
+		superhudColor_t value;
+		qboolean isSet;
+	} bgcolor2;
 	struct
 	{
 		vec4_t value;
@@ -83,9 +88,14 @@ typedef struct
 	} border;
 	struct
 	{
-		vec4_t value;
+		superhudColor_t value;
 		qboolean isSet;
 	} borderColor;
+	struct
+	{
+		superhudColor_t value;
+		qboolean isSet;
+	} borderColor2;
 	struct
 	{
 		vec4_t value;
@@ -729,6 +739,8 @@ team_t CG_SHUDGetOurActiveTeam(void);
 qboolean CG_SHUDGetFadeColor(const vec4_t from_color, vec4_t out, const superhudConfig_t* cfg, int startTime);
 void CG_SHUDFillWithColor(const superhudCoord_t* coord, const float* color);
 void CG_SHUDElementCompileTeamOverlayConfig(int fontWidth, shudTeamOverlay_t* configOut);
+void CG_SHUDConfigPickBgColor(const superhudConfig_t* config, float* color, qboolean alphaOverride);
+
 
 typedef struct
 {
