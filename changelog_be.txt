@@ -319,3 +319,4 @@ SHUD:
  * Obituaries style 2 - colored nicknames in team modes
  * bgcolor, bordercolor team colors support 'E' and 'T'
  + bgcolor2, bordercolor2 - set alpha when 'E' or 'T' setted (like color2)
+ + docs/superhud inside the mod.pk3
