@@ -320,3 +320,7 @@ SHUD:
  * bgcolor, bordercolor team colors support 'E' and 'T'
  + bgcolor2, bordercolor2 - set alpha when 'E' or 'T' setted (like color2)
  + docs/superhud inside the mod.pk3
+
+ 14.07.2025 be v0.087
+ + cg_redTeamColor
+ + cg_blueTeamColor

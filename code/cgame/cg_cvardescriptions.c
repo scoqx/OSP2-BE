@@ -323,6 +323,9 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_healthColor", "Health/armor color, requires ^3cg_healthColorLevels^7 ^21^7\n \"^2color^7\" - use color name, digit or hex"},
 	{ "cg_healthLowColor", "Health/armor color when reaching cg_healthLow, requires ^3cg_healthColorLevels^7 ^21^7\n \"^2color^7\" - use color name, digit or hex"},
 	{ "cg_healthMidColor", "Health/armor color when reaching cg_healthMid, requires ^3cg_healthColorLevels^7 ^21^7\n \"^2color^7\" - use color name, digit or hex"},
+	{ "cg_redTeamColor", "Set red team color. \"^2color^7\" - use color name, digit or hex"},
+	{ "cg_blueTeamColor", "Set blue team color. \"^2color^7\" - use color name, digit or hex"},
+
 };
 
 

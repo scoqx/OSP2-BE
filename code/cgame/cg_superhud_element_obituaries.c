@@ -255,10 +255,10 @@ static void CG_SHUDObituarySetTeamColor(vec4_t color, int team)
 	switch (team)
 	{
 		case TEAM_RED:
-			VectorCopy(colorRed, color);
+			VectorCopy(cgs.be.redTeamColor, color);
 			break;
 		case TEAM_BLUE:
-			VectorCopy(colorBlue, color);
+			VectorCopy(cgs.be.blueTeamColor, color);
 			break;
 		default:
 			VectorCopy(colorWhite, color);

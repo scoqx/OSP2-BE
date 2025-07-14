@@ -422,6 +422,8 @@ vmCvar_t        cg_ignoreServerMessages;
 vmCvar_t        cg_healthColor;
 vmCvar_t        cg_healthLowColor;
 vmCvar_t        cg_healthMidColor;
+vmCvar_t        cg_redTeamColor;
+vmCvar_t        cg_blueTeamColor;
 vmCvar_t        be_run;
 
 
@@ -757,6 +759,10 @@ static cvarTable_t cvarTable[] =
 	{ &cg_healthColor, "cg_healthColor", "Yellow", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthColor },
 	{ &cg_healthLowColor, "cg_healthLowColor", "Red", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthLowColor },
 	{ &cg_healthMidColor, "cg_healthMidColor", "White", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthMidColor },
+	{ &cg_redTeamColor, "cg_redTeamColor", "Red", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_redTeamColor },
+	{ &cg_blueTeamColor, "cg_blueTeamColor", "Blue", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_blueTeamColor },
+
+
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1922,6 +1928,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_healthColor");
 	CG_CvarTouch("cg_healthLowColor");
 	CG_CvarTouch("cg_healthMidColor");
+
+	CG_CvarTouch("cg_redTeamColor");
+	CG_CvarTouch("cg_blueTeamColor");
 
 	CG_InitConsoleCommands();
 

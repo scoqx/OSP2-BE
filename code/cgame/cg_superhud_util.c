@@ -177,12 +177,12 @@ static void CG_SHUDConfigPickColorGeneric(
 
         case SUPERHUD_COLOR_T:
             team = CG_SHUDGetOurActiveTeam();
-            target = (team == TEAM_BLUE) ? colorBlue : colorRed;
+            target = (team == TEAM_BLUE) ? cgs.be.blueTeamColor : cgs.be.redTeamColor;
             break;
 
         case SUPERHUD_COLOR_E:
             team = CG_SHUDGetOurActiveTeam();
-            target = (team == TEAM_BLUE) ? colorRed : colorBlue;
+            target = (team == TEAM_BLUE) ? cgs.be.redTeamColor : cgs.be.blueTeamColor;
             break;
 
         case SUPERHUD_COLOR_I:

@@ -253,23 +253,23 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	{
 		if (ci->team == TEAM_RED)
 		{
-			re->shaderRGBA[0] = 255;
-			re->shaderRGBA[1] = 0;
-			re->shaderRGBA[2] = 0;
+			re->shaderRGBA[0] = cgs.be.redTeamColor[0] * 255;
+			re->shaderRGBA[1] = cgs.be.redTeamColor[1] * 255;
+			re->shaderRGBA[2] = cgs.be.redTeamColor[2] * 255;
 
-			le->color[0] = 0.75;
-			le->color[1] = 0;
-			le->color[2] = 0;
+			le->color[0] = cgs.be.redTeamColor[0] * 0.75;
+			le->color[1] = cgs.be.redTeamColor[1] * 0.75;
+			le->color[2] = cgs.be.redTeamColor[2] * 0.75;
 		}
 		else if (ci->team == TEAM_BLUE)
 		{
-			re->shaderRGBA[0] = 0;
-			re->shaderRGBA[1] = 0;
-			re->shaderRGBA[2] = 255;
+			re->shaderRGBA[0] = cgs.be.blueTeamColor[0] * 255;
+			re->shaderRGBA[1] = cgs.be.blueTeamColor[1] * 255;
+			re->shaderRGBA[2] = cgs.be.blueTeamColor[2] * 255;
 
-			le->color[0] = 0;
-			le->color[1] = 0;
-			le->color[2] = 0.75;
+			le->color[0] = cgs.be.blueTeamColor[0] * 0.75;
+			le->color[1] = cgs.be.blueTeamColor[1] * 0.75;
+			le->color[2] = cgs.be.blueTeamColor[2] * 0.75;
 		}
 	}
 	else

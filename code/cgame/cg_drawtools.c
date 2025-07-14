@@ -1471,17 +1471,15 @@ CG_TeamColor
 */
 float* CG_TeamColor(int team)
 {
-	static vec4_t   red = {1, 0.2f, 0.2f, 1};
-	static vec4_t   blue = {0.2f, 0.2f, 1, 1};
 	static vec4_t   other = {1, 1, 1, 1};
 	static vec4_t   spectator = {0.7f, 0.7f, 0.7f, 1};
 
 	switch (team)
 	{
 		case TEAM_RED:
-			return red;
+			return cgs.be.redTeamColor;
 		case TEAM_BLUE:
-			return blue;
+			return cgs.be.blueTeamColor;
 		case TEAM_SPECTATOR:
 			return spectator;
 		default:
@@ -3161,4 +3159,21 @@ qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y)
 	*y = yc - py * (yc / tan(cg.refdef.fov_y * M_PI / 360.0f)) / z;
 
 	return qtrue;
+}
+
+void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor) {
+	int i;
+    float maxVal = inColor[0];
+    if (inColor[1] > maxVal) maxVal = inColor[1];
+    if (inColor[2] > maxVal) maxVal = inColor[2];
+
+    for (i = 0; i < 3; i++) {
+        if (inColor[i] == maxVal) {
+            outColor[i] = inColor[i];
+        } else {
+            outColor[i] = inColor[i] * 0.3f;
+        }
+    }
+
+    outColor[3] = inColor[3] * 0.15f;
 }

@@ -385,23 +385,20 @@ void CG_DrawTeamBackground(int x, int y, int w, int h, float alpha, int team)
 {
 	vec4_t      hcolor;
 
-	hcolor[3] = alpha;
+	
 	if (team == TEAM_RED)
 	{
-		hcolor[0] = 1;
-		hcolor[1] = 0;
-		hcolor[2] = 0;
+		Vector4Copy(cgs.be.redTeamColor, hcolor);
 	}
 	else if (team == TEAM_BLUE)
 	{
-		hcolor[0] = 0;
-		hcolor[1] = 0;
-		hcolor[2] = 1;
+		Vector4Copy(cgs.be.blueTeamColor, hcolor);
 	}
 	else
 	{
 		return;
 	}
+	hcolor[3] = alpha;
 	trap_R_SetColor(hcolor);
 	CG_DrawPicOld(x, y, w, h, cgs.media.teamStatusBar);
 	trap_R_SetColor(NULL);
@@ -841,16 +838,16 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 
 	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED)
 	{
-		hcolor[0] = 1.0f;
-		hcolor[1] = 0.0f;
-		hcolor[2] = 0.0f;
+		hcolor[0] = cgs.be.redTeamColor[0];
+		hcolor[1] = cgs.be.redTeamColor[1];
+		hcolor[2] = cgs.be.redTeamColor[2];
 		hcolor[3] = 0.33f;
 	}
 	else     // if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE )
 	{
-		hcolor[0] = 0.0f;
-		hcolor[1] = 0.0f;
-		hcolor[2] = 1.0f;
+		hcolor[0] = cgs.be.blueTeamColor[0];
+		hcolor[1] = cgs.be.blueTeamColor[1];
+		hcolor[2] = cgs.be.blueTeamColor[2];
 		hcolor[3] = 0.33f;
 	}
 	trap_R_SetColor(hcolor);
@@ -1025,9 +1022,9 @@ static float CG_DrawScores(float y)
 	if (cgs.gametype >= GT_TEAM)
 	{
 		x = 640;
-		color[0] = 0.0f;
-		color[1] = 0.0f;
-		color[2] = 1.0f;
+		color[0] = cgs.be.redTeamColor[0];
+		color[1] = cgs.be.redTeamColor[1];
+		color[2] = cgs.be.redTeamColor[2];
 		color[3] = 0.33f;
 		s = va("%2i", s2);
 		w = CG_DrawStrlen(s) * BIGCHAR_WIDTH + 8;
@@ -1053,9 +1050,9 @@ static float CG_DrawScores(float y)
 				}
 			}
 		}
-		color[0] = 1.0f;
-		color[1] = 0.0f;
-		color[2] = 0.0f;
+		color[0] = cgs.be.blueTeamColor[0];
+		color[1] = cgs.be.blueTeamColor[1];
+		color[2] = cgs.be.blueTeamColor[2];
 		color[3] = 0.33f;
 		s = va("%2i", s1);
 		w = CG_DrawStrlen(s) * BIGCHAR_WIDTH + 8;
@@ -1412,16 +1409,16 @@ static void CG_DrawTeamInfo(void)
 
 		if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED)
 		{
-			hcolor[0] = 1.0f;
-			hcolor[1] = 0.0f;
-			hcolor[2] = 0.0f;
+			hcolor[0] = cgs.be.redTeamColor[0];
+			hcolor[1] = cgs.be.redTeamColor[1];
+			hcolor[2] = cgs.be.redTeamColor[2];
 			hcolor[3] = 0.33f;
 		}
 		else if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE)
 		{
-			hcolor[0] = 0.0f;
-			hcolor[1] = 0.0f;
-			hcolor[2] = 1.0f;
+			hcolor[0] = cgs.be.blueTeamColor[0];
+			hcolor[1] = cgs.be.blueTeamColor[1];
+			hcolor[2] = cgs.be.blueTeamColor[2];
 			hcolor[3] = 0.33f;
 		}
 		else
