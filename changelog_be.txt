@@ -324,3 +324,7 @@ SHUD:
  14.07.2025 be v0.087
  + cg_redTeamColor
  + cg_blueTeamColor
+
+ 16.07.2025 be v0.087a
+  * FIX Scoreboard with
+    * cg_redTeamColor cg_blueTeamColor

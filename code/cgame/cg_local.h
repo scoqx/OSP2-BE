@@ -2087,6 +2087,8 @@ void CG_OSPShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
 
+extern vec4_t scoreboard_rtColor;
+extern vec4_t scoreboard_btColor;
 //
 // cg_consolecmds.c
 //
@@ -2352,7 +2354,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.087" // BE
+#define OSP_VERSION "be-0.087a" // BE
 
 
 

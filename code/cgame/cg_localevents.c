@@ -562,8 +562,11 @@ void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.redTeamColor);
+	CG_LocalEventCvarParseColor(cvart, scoreboard_rtColor);
+
 }
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.blueTeamColor);
+	CG_LocalEventCvarParseColor(cvart, scoreboard_btColor);
 }
