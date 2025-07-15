@@ -26,7 +26,7 @@ sprites/frozenFoeTag
   nomipmaps
   nopicmip
   {
-    map sprites/frozenFoeTag.tga
+    map sprites/frozenFoeTag2.tga
     blendFunc blend
     rgbgen vertex
   }

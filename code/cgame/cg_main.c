@@ -425,6 +425,12 @@ vmCvar_t        cg_healthMidColor;
 vmCvar_t        cg_redTeamColor;
 vmCvar_t        cg_blueTeamColor;
 vmCvar_t        be_run;
+vmCvar_t        cg_friendHudMarkerMaxDist;
+vmCvar_t        cg_friendHudMarkerSize;
+vmCvar_t        cg_friendHudMarkerMaxScale;
+vmCvar_t        cg_friendHudMarkerMinScale;
+vmCvar_t        cg_friendsWallhack;
+vmCvar_t        cg_drawHudMarkers;
 
 
 static cvarTable_t cvarTable[] =
@@ -752,17 +758,21 @@ static cvarTable_t cvarTable[] =
 	{ &cg_enemyGrenadesColor, "cg_enemyGrenadesColor", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyGrenadesColor },
 	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE },
 	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE },
 	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE | CVAR_UPDATED },
+	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE },
+	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE },
 	{ &cg_healthColor, "cg_healthColor", "Yellow", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthColor },
 	{ &cg_healthLowColor, "cg_healthLowColor", "Red", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthLowColor },
 	{ &cg_healthMidColor, "cg_healthMidColor", "White", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthMidColor },
 	{ &cg_redTeamColor, "cg_redTeamColor", "Red", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_redTeamColor },
 	{ &cg_blueTeamColor, "cg_blueTeamColor", "Blue", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_blueTeamColor },
-
-
+	{ &cg_friendHudMarkerMaxDist, "cg_friendHudMarkerMaxDist", "0", CVAR_ARCHIVE },
+	{ &cg_friendHudMarkerSize, "cg_friendHudMarkerSize", "2.0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_friendHudMarkerMaxScale, "cg_friendHudMarkerMaxScale", "0.5", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_friendHudMarkerMinScale, "cg_friendHudMarkerMinScale", "0.0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_friendsWallhack, "cg_friendsWallhack", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_drawHudMarkers, "cg_drawHudMarkers", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1478,8 +1488,10 @@ static void CG_RegisterGraphics(void)
 	if (cgs.gametype >= GT_TEAM || cg_buildScript.integer)
 	{
 		cgs.media.frozenFoeTagShader = trap_R_RegisterShader("sprites/frozenFoeTag");
+		cgs.media.frozenFoeTagShaderWallhack = trap_R_RegisterShader("sprites/frozenFoeTagWallhack");
 		cgs.media.frozenShader = trap_R_RegisterShader("textures/effects/frozen");
 		cgs.media.friendShader = trap_R_RegisterShader("sprites/foe");
+		cgs.media.friendShaderWallhack = trap_R_RegisterShader("sprites/foe2");
 		cgs.media.redQuadShader = trap_R_RegisterShader("powerups/blueflag");
 	}
 
@@ -1853,7 +1865,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	const char*  s;
 
 	// clear everything
-	memset(&cgs.be, 0, sizeof(cgs.be));
 	memset(&cgs, 0, sizeof(cgs));
 	memset(&cg, 0, sizeof(cg));
 	memset(cg_entities, 0, sizeof(cg_entities));

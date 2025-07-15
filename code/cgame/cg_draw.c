@@ -2550,8 +2550,6 @@ void CG_DrawPlayerIndicator(int clientNum)
 
 	cent = &cg_entities[clientNum];
 
-	// actualClientNum = -1;
-
 	liftMinAdj = liftMin + cg_teamIndicatorOffset.value;
 	liftMaxAdj = liftMax + cg_teamIndicatorOffset.value;
 
@@ -2710,90 +2708,6 @@ void CG_DrawPlayerIndicator(int clientNum)
 		}
 	}
 }
-
-
-qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
-{
-	centity_t* cent;
-	clientInfo_t* ci;
-	clientInfo_t* player = &cgs.clientinfo[cg.clientNum];
-
-	trace_t tr;
-	vec3_t traceStart, traceEnd;
-
-	int clientNum;
-	int freezeLimit = MAX_CLIENTS;
-
-	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
-	{
-		freezeLimit = MAX_GENTITIES;
-	}
-
-	if (clientOrEntityNum < 0 || clientOrEntityNum >= freezeLimit)
-		return qfalse;
-
-	cent = &cg_entities[clientOrEntityNum];
-
-	if (!cent->currentValid || cent->currentState.eType != ET_PLAYER)
-		return qfalse;
-
-	clientNum = clientOrEntityNum;
-
-	if (clientOrEntityNum >= MAX_CLIENTS && CG_IsFrozenEntity(cent))
-	{
-		clientNum = cent->currentState.otherEntityNum;
-
-		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-			return qfalse;
-
-		ci = &cgs.clientinfo[clientNum];
-		if (!ci->infoValid)
-			return qfalse;
-
-		if (clientOrEntityNum < 0 || clientOrEntityNum >= MAX_GENTITIES)
-			return qfalse;
-
-		if (!cg_entities[clientOrEntityNum].currentValid)
-			return qfalse;
-
-		ci->isFrozenEnt = qtrue;
-		ci->frozenEntity = clientOrEntityNum;
-
-		cent = &cg_entities[clientOrEntityNum];
-	}
-	else
-	{
-		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-			return qfalse;
-
-		ci = &cgs.clientinfo[clientNum];
-		if (!ci->infoValid)
-			return qfalse;
-
-		ci->isFrozenEnt = qfalse;
-		ci->frozenEntity = 0;
-	}
-
-	if (ci->team == TEAM_SPECTATOR)
-		return qfalse;
-
-	if (!CG_IsLocalClientSpectator())
-	{
-		if (CG_IsEnemy(ci))
-			return qfalse;
-	}
-
-	VectorCopy(cg.refdef.vieworg, traceStart);
-	VectorCopy(cent->lerpOrigin, traceEnd);
-	traceEnd[2] += 24.0f;
-
-	CG_Trace(&tr, traceStart, NULL, NULL, traceEnd, cg.snap->ps.clientNum, CONTENTS_SOLID);
-	if (tr.fraction < 1.0f)
-		return qfalse;
-
-	return qtrue;
-}
-
 
 void CG_DrawPlayerIndicatorOnScreen(void)
 {

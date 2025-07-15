@@ -104,6 +104,9 @@ extern "C" {
 #define DRAW_REWARDS_NOSPRITE (1 << 2)
 #define DRAW_REWARDS_NOSOUND (1 << 3)
 
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+
 typedef enum
 {
 	FOOTSTEP_NORMAL,
@@ -787,7 +790,9 @@ typedef struct
 	qhandle_t   enemyLightningBoltNoPicMip[MAX_ALT_SHADERS];
 
 	qhandle_t   friendShader;
+	qhandle_t   friendShaderWallhack;
 	qhandle_t   frozenFoeTagShader;
+	qhandle_t   frozenFoeTagShaderWallhack;
 	qhandle_t   frozenShader;
 
 	qhandle_t   balloonShader;
@@ -1635,6 +1640,12 @@ extern vmCvar_t         cg_healthLowColor;
 extern vmCvar_t         cg_healthMidColor;
 extern vmCvar_t        cg_redTeamColor;
 extern vmCvar_t        cg_blueTeamColor;
+extern vmCvar_t        cg_friendHudMarkerMaxDist;
+extern vmCvar_t        cg_friendHudMarkerSize;
+extern vmCvar_t        cg_friendHudMarkerMaxScale;
+extern vmCvar_t        cg_friendHudMarkerMinScale;
+extern vmCvar_t        cg_drawHudMarkers;
+extern vmCvar_t        cg_friendsWallhack;
 extern vmCvar_t         be_run;
 
 
@@ -2064,6 +2075,9 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
                                 qhandle_t hModel, qhandle_t shader, int msec,
                                 qboolean isSprite);
 
+void CG_HudBorderMarker ( vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle );
+
+
 //
 // cg_snapshot.c
 //
@@ -2087,6 +2101,8 @@ void CG_OSPShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
 
+extern vec4_t rtColor;
+extern vec4_t btColor;
 //
 // cg_consolecmds.c
 //
@@ -2116,6 +2132,7 @@ void CG_StringMakeEscapeCharRAW(const char* in, char* out, int max);
 void CG_Respawn(void);
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
+qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum);
 
 //
 // cg_customloc.c

@@ -588,3 +588,92 @@ void CG_BigExplode(vec3_t playerOrigin)
 	CG_LaunchExplode(origin, velocity, cgs.media.smoke2);
 }
 
+/*
+ * Draw an indicator at the screen border
+ */
+void CG_HudBorderMarker ( vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle ) {
+	vec3_t dir;
+	float front, left, up;
+	vec3_t flu;
+	float r, inc, az;
+	// half FOV
+	float hfov_y = cg.refdef.fov_y * M_PI/360;
+	float hfov_x = cg.refdef.fov_x * M_PI/360;
+
+	VectorSubtract(origin, cg.refdef.vieworg, dir);
+
+	front = DotProduct (dir, cg.refdef.viewaxis[0] );
+	left = DotProduct (dir, cg.refdef.viewaxis[1] );
+	up = DotProduct (dir, cg.refdef.viewaxis[2] );
+
+	flu[0] = front;
+	flu[1] = left;
+	flu[2] = up;
+
+	r = VectorLength(flu);
+	az = atan2(flu[1],flu[0]);
+	inc = acos(flu[2]/r);
+	inc = M_PI/2.0 - inc;
+
+	if (fabs(az) < hfov_x && fabs(inc) < hfov_y) {
+		// inside fov, no need to draw marker
+		// Note: this isn't entirely accurate
+		return;
+	}  else {
+		refEntity_t ent;
+		float phi;
+		float dist = 8;
+		vec3_t middleOfPlane;
+		vec3_t planeAxis[2];
+		float ratio;
+		float circleSz = 100;
+		float r;
+		float h1,h2;
+
+		memset( &ent, 0, sizeof( ent ) );
+		ent.reType = RT_SPRITE;
+		ent.renderfx = RF_FIRST_PERSON;
+
+		phi = atan2(-flu[2], flu[1]);
+		ent.rotation = phi/M_PI*180;
+		ent.rotation += baseAngle;
+
+		// make sure it stays the same size regardless of fov
+		ent.radius =  0.5 * radius * tan(hfov_x);
+		ent.customShader = shader;
+		
+		ent.shaderRGBA[0] = color[0] * 255;
+		ent.shaderRGBA[1] = color[1] * 255;
+		ent.shaderRGBA[2] = color[2] * 255;
+		ent.shaderRGBA[3] = color[3] * 127;
+
+		ratio = tan(hfov_y)/tan(hfov_x);
+	
+		VectorScale(cg.refdef.viewaxis[0], dist, middleOfPlane);
+		r = dist/cos(hfov_x);
+		VectorScale(cg.refdef.viewaxis[1], r * sin(hfov_x) - ent.radius, planeAxis[0]);
+
+		r = dist/cos(hfov_y);
+		VectorScale(cg.refdef.viewaxis[2], -(r * sin(hfov_y) - ent.radius), planeAxis[1]);
+
+		r = cos(phi) * circleSz;
+		VectorScale(planeAxis[0], r, ent.origin);
+
+		r = sin(phi) * circleSz * 1.0/ratio;
+		VectorMA(ent.origin, r, planeAxis[1], ent.origin);
+
+		h1 = fabs(VectorLength(planeAxis[0])/cos(phi));
+		h2 = fabs(VectorLength(planeAxis[1])/sin(phi));
+		if (h2 < h1) {
+			h1 = h2;
+		}
+		if (VectorLength(ent.origin) > h1) {
+			VectorNormalize(ent.origin);
+			VectorScale(ent.origin, h1, ent.origin);
+		}
+
+		VectorAdd(middleOfPlane, ent.origin, ent.origin);
+		VectorAdd(cg.refdef.vieworg, ent.origin, ent.origin);
+		trap_R_AddRefEntityToScene( &ent );
+	}
+}

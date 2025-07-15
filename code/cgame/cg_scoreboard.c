@@ -24,6 +24,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 
 
+vec4_t rtColor = {1, 0, 0, 1}; // по умолчанию — красный
+vec4_t btColor = {0, 0, 1, 1}; // синий
+
+
 #define SCOREBOARD_X        (0)
 
 #define SB_HEADER           86
@@ -85,7 +89,7 @@ int sumThawsRed;
 CG_DrawScoreboard
 =================
 */
-static void CG_DrawClientScore(int y, score_t* score, float* color, float fade, qboolean largeFormat)
+void CG_DrawClientScore(int y, score_t* score, float* color, float fade, qboolean largeFormat)
 {
 	char    string[1024];
 	vec3_t  headAngles;
@@ -305,7 +309,7 @@ static void CG_DrawClientScore(int y, score_t* score, float* color, float fade, 
 CG_BEDrawClientScore
 =================
 */
-static void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qboolean largeFormat)
+void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qboolean largeFormat)
 {
 	char string[1024], string2[1024], string3[1024];
 	vec3_t headAngles;
@@ -491,7 +495,7 @@ static void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade
 	{
 		if (cg.snap->ps.stats[STAT_CLIENTS_READY] & (1 << score->client))
 		{
-			static const vec4_t readyColor = { 0.5f, 0.5f, 0.5f, 0.5f };
+			const vec4_t readyColor = { 0.5f, 0.5f, 0.5f, 0.5f };
 			CG_OSPDrawStringNew(iconx, y, "^3READY", readyColor, colorBlack, bWidth, bHeight, 256,
 			                    DS_SHADOW | proportional, NULL, NULL, NULL);
 		}
@@ -513,7 +517,7 @@ CG_TeamScoreboard
 isn't for team. Uses only for single player modes
 =================
 */
-static int CG_TeamScoreboard(int y, team_t team, float fade, int maxClients, int lineHeight)
+int CG_TeamScoreboard(int y, team_t team, float fade, int maxClients, int lineHeight)
 {
 	int     i;
 	score_t* score;
@@ -754,7 +758,7 @@ qboolean CG_DrawOldScoreboard(void)
 CG_CenterGiantLine
 ================
 */
-static void CG_CenterGiantLine(float y, const char* string)
+void CG_CenterGiantLine(float y, const char* string)
 {
 	float       x;
 	vec4_t      color;
@@ -1162,11 +1166,11 @@ void CG_OSPShowStatsInfo(void)
 		                  &strings[0][0],
 		                  wpos,
 		                  NULL,
-		                  statsInfo[OSP_STATS_TEAM] == TEAM_RED ? cgs.be.redTeamColor : (statsInfo[OSP_STATS_TEAM] == TEAM_BLUE ? cgs.be.blueTeamColor : NULL));
+		                  statsInfo[OSP_STATS_TEAM] == TEAM_RED ? rtColor : (statsInfo[OSP_STATS_TEAM] == TEAM_BLUE ? btColor : NULL));
 	}
 }
 
-static void CG_OSPDrawClientScore(int x, int y, const score_t* score, const float* color, float fade)
+void CG_OSPDrawClientScore(int x, int y, const score_t* score, const float* color, float fade)
 {
 	char string[1024];
 	clientInfo_t* ci;
@@ -1285,7 +1289,7 @@ static void CG_OSPDrawClientScore(int x, int y, const score_t* score, const floa
 	return;
 }
 
-static void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* color, float fade)
+void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* color, float fade)
 {
 	char string[1024];
 	float lWidth = 6, lHeight = 10;
@@ -1417,7 +1421,7 @@ static void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const f
 	return;
 }
 
-static void CG_OSPDrawClientScoreNew(int x, int y, const score_t* score, const float* color, float fade)
+void CG_OSPDrawClientScoreNew(int x, int y, const score_t* score, const float* color, float fade)
 {
 	if (cg_scoreboardBE.integer)
 		CG_BEDrawTeamClientScore(x, y, score, color, fade);
@@ -1426,7 +1430,7 @@ static void CG_OSPDrawClientScoreNew(int x, int y, const score_t* score, const f
 }
 
 
-static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScores)
+int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScores)
 {
 	int i;
 	qboolean isCAGame;
@@ -1434,7 +1438,7 @@ static int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScore
 	clientInfo_t* ci;
 	score_t* score;
 	vec4_t color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	static const vec4_t readyColor = { 0.5f, 0.5f, 0.5f, 0.5f };
+	const vec4_t readyColor = { 0.5f, 0.5f, 0.5f, 0.5f };
 	color[3] = fade;
 
 	isCAGame = CG_OSPIsGameTypeCA(cgs.gametype);
@@ -1582,10 +1586,10 @@ qboolean CG_OSPDrawScoretable(void)
 
 	y = 64;
 
-	CG_OSPAdjustTeamColor(cgs.be.redTeamColor, colorRect);
+	CG_OSPAdjustTeamColor(rtColor, colorRect);
 	CG_FillRect(8.0f, (float)y, 304.0f, 48.0f, colorRect);
 
-	CG_OSPAdjustTeamColor(cgs.be.blueTeamColor, colorRect);
+	CG_OSPAdjustTeamColor(btColor, colorRect);
 	CG_FillRect(328.0f, (float)y, 304.0f, 48.0f, colorRect);
 
 	CG_OSPDrawField(8, y, cg.teamScores[0]);
@@ -1731,10 +1735,10 @@ qboolean CG_OSPDrawScoretable(void)
 
 		y = y + 18 * max + 36;
 
-		CG_OSPAdjustTeamColor(cgs.be.redTeamColor, bgColor);
+		CG_OSPAdjustTeamColor(rtColor, bgColor);
 		CG_FillRect(8.0f, 112.0f, 304.0f, (float)y - 148, bgColor);
 
-		CG_OSPAdjustTeamColor(cgs.be.blueTeamColor, bgColor);
+		CG_OSPAdjustTeamColor(btColor, bgColor);
 		CG_FillRect(328.0f, 112.0f, 304.0f, (float)y - 148, bgColor);
 
 		drewSpect = CG_OSPDrawTeamScores(0, y, TEAM_SPECTATOR, *color[0], 24);
@@ -1842,10 +1846,10 @@ qboolean CG_BEDrawTeamScoretable(void)
 
 
 	y = 64;
-	CG_OSPAdjustTeamColor(cgs.be.redTeamColor, colorRect);
+	CG_OSPAdjustTeamColor(rtColor, colorRect);
 	CG_FillRect(8.0f, (float)y, 304.0f, 48.0f, colorRect);
 
-	CG_OSPAdjustTeamColor(cgs.be.blueTeamColor, colorRect);
+	CG_OSPAdjustTeamColor(btColor, colorRect);
 	CG_FillRect(328.0f, (float)y, 304.0f, 48.0f, colorRect);
 
 
@@ -1894,7 +1898,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		tmpStr4 = "Min";
 		tmpStr5 = "Name";
 
-		CG_OSPDrawStringNew(leftX + pos1X, y, tmpStr1, cgs.be.redTeamColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(leftX + pos1X, y, tmpStr1, rtColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(leftX + pos2X, y, tmpStr2, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(leftX + pos3X, y, tmpStr3, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(leftX + pos4X, y, tmpStr4, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
@@ -1934,7 +1938,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		tmpStr4 = "Min";
 		tmpStr5 = "Name";
 
-		CG_OSPDrawStringNew(rightX + pos1X, y, tmpStr1, cgs.be.blueTeamColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(rightX + pos1X, y, tmpStr1, btColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(rightX + pos2X, y, tmpStr2, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(rightX + pos3X, y, tmpStr3, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(rightX + pos4X, y, tmpStr4, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
@@ -1963,7 +1967,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 			tmpStr3 = "AvgPing";
 			tmpX = leftX + 76;
 
-			CG_OSPDrawStringNew(tmpX, row1Y, tmpStr1, cgs.be.redTeamColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(tmpX, row1Y, tmpStr1, rtColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(tmpX + titlePos1X + offset, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(tmpX + titlePos2X + offset, row1Y, tmpStr3, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 
@@ -1984,7 +1988,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 				tmpStr2 = "AvgPing";
 				tmpX = leftX + 64;
 
-				CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr1, cgs.be.redTeamColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+				CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr1, rtColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 				CG_OSPDrawStringNew(tmpX + titlePos2X, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 
 				Com_sprintf(tmpStr4, 128, "%i", drewRed);
@@ -2000,7 +2004,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 				tmpStr3 = "Players";
 				tmpX = leftX + 40;
 
-				CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr1, cgs.be.redTeamColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+				CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr1, rtColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 				CG_OSPDrawStringNew(tmpX + titlePos2X, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 				CG_OSPDrawStringNew(tmpX + titlePos3X, row1Y, tmpStr3, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 
@@ -2034,7 +2038,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 			tmpStr3 = "AvgPing";
 			tmpX = rightX + 76;
 
-			CG_OSPDrawStringNew(tmpX, row1Y, tmpStr1, cgs.be.blueTeamColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(tmpX, row1Y, tmpStr1, btColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(tmpX + titlePos1X + offset, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(tmpX + titlePos2X + offset, row1Y, tmpStr3, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 
@@ -2053,7 +2057,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 			tmpStr2 = "AvgPing";
 			tmpX = rightX + 64;
 
-			CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr1, cgs.be.blueTeamColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr1, btColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(tmpX + titlePos2X, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 
 			Com_sprintf(tmpStr4, 128, "%i", drewBlue);
@@ -2069,7 +2073,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 			tmpStr3 = "Players";
 			tmpX = rightX + 40;
 
-			CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr1, cgs.be.blueTeamColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(tmpX + titlePos1X, row1Y, tmpStr1, btColor, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(tmpX + titlePos2X, row1Y, tmpStr2, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(tmpX + titlePos3X, row1Y, tmpStr3, colorWhite, colorBlack, mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 
@@ -2098,7 +2102,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		char* tmpStr1 = "Red";
 		char* tmpStr2 = "Team";
 		char* tmpStr3 = "Spectator";
-		CG_OSPDrawStringNew(leftX + 20, y - 14, tmpStr1, cgs.be.redTeamColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(leftX + 20, y - 14, tmpStr1, rtColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(leftX + 60, y - 14, tmpStr2, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(leftX + 100, y - 14, tmpStr3, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
 	}
@@ -2108,7 +2112,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		char* tmpStr1 = "Blue";
 		char* tmpStr2 = "Team";
 		char* tmpStr3 = "Spectator";
-		CG_OSPDrawStringNew(rightX + 20, y - 14, tmpStr1, cgs.be.blueTeamColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(rightX + 20, y - 14, tmpStr1, btColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(rightX + 60, y - 14, tmpStr2, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
 		CG_OSPDrawStringNew(rightX + 100, y - 14, tmpStr3, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
 	}
@@ -2122,10 +2126,10 @@ qboolean CG_BEDrawTeamScoretable(void)
 
 		y = y + 18 * max + 36;
 
-		CG_OSPAdjustTeamColor(cgs.be.redTeamColor, bgColor);
+		CG_OSPAdjustTeamColor(rtColor, bgColor);
 		CG_FillRect(8.0f, 112.0f, 304.0f, (float)y - 148, bgColor);
 
-		CG_OSPAdjustTeamColor(cgs.be.blueTeamColor, bgColor);
+		CG_OSPAdjustTeamColor(btColor, bgColor);
 		CG_FillRect(328.0f, 112.0f, 304.0f, (float)y - 148, bgColor);
 
 		drewSpect = CG_OSPDrawTeamScores(0, y, TEAM_SPECTATOR, *color[0], 24);
