@@ -1496,7 +1496,7 @@ static void CG_RegisterGraphics(void)
 	if (cgs.gametype >= GT_TEAM || cg_buildScript.integer)
 	{
 		cgs.media.frozenFoeTagShader = trap_R_RegisterShader("sprites/frozenFoeTag");
-		cgs.media.frozenFoeTagShaderWallhack = trap_R_RegisterShader("sprites/frozenFoeTagWallhack");
+		cgs.media.frozenFoeTagShaderWallhack = trap_R_RegisterShader("sprites/frozenFoeTag2");
 		cgs.media.frozenShader = trap_R_RegisterShader("textures/effects/frozen");
 		cgs.media.friendShader = trap_R_RegisterShader("sprites/foe");
 		cgs.media.friendShaderWallhack = trap_R_RegisterShader("sprites/foe2");
