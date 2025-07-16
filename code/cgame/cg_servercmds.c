@@ -1174,7 +1174,7 @@ void CG_BERequestStatsInfo(void)
 
 void CG_MaybeRequestStatsInfo(void) {
 
-    if (CG_BE_Timer(1000)) {
+    if (CG_BE_Timer(1500)) {
         CG_BERequestStatsInfo();
     }
 }
