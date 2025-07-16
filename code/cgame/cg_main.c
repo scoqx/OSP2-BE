@@ -424,6 +424,10 @@ vmCvar_t        cg_healthLowColor;
 vmCvar_t        cg_healthMidColor;
 vmCvar_t        cg_redTeamColor;
 vmCvar_t        cg_blueTeamColor;
+vmCvar_t        cg_drawAccuracy;
+vmCvar_t        cg_accuracyFontSize;
+vmCvar_t        cg_accuracyIconSize;
+vmCvar_t        cg_accuracyFont;
 vmCvar_t        be_run;
 vmCvar_t        cg_friendHudMarkerMaxDist;
 vmCvar_t        cg_friendHudMarkerSize;
@@ -762,17 +766,21 @@ static cvarTable_t cvarTable[] =
 	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE },
 	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE },
-	{ &cg_healthColor, "cg_healthColor", "Yellow", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthColor },
-	{ &cg_healthLowColor, "cg_healthLowColor", "Red", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthLowColor },
-	{ &cg_healthMidColor, "cg_healthMidColor", "White", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthMidColor },
-	{ &cg_redTeamColor, "cg_redTeamColor", "Red", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_redTeamColor },
-	{ &cg_blueTeamColor, "cg_blueTeamColor", "Blue", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_blueTeamColor },
-	{ &cg_friendHudMarkerMaxDist, "cg_friendHudMarkerMaxDist", "0", CVAR_ARCHIVE },
+	{ &cg_healthColor, "cg_healthColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_healthColor },
+	{ &cg_healthLowColor, "cg_healthLowColor", "Red", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_healthLowColor },
+	{ &cg_healthMidColor, "cg_healthMidColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_healthMidColor },
+	{ &cg_redTeamColor, "cg_redTeamColor", "Red", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_redTeamColor },
+	{ &cg_blueTeamColor, "cg_blueTeamColor", "Blue", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_blueTeamColor },
+	{ &cg_friendHudMarkerMaxDist, "cg_friendHudMarkerMaxDist", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendHudMarkerSize, "cg_friendHudMarkerSize", "2.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendHudMarkerMaxScale, "cg_friendHudMarkerMaxScale", "0.5", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendHudMarkerMinScale, "cg_friendHudMarkerMinScale", "0.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendsWallhack, "cg_friendsWallhack", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_drawHudMarkers, "cg_drawHudMarkers", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE | CVAR_NEW},
+	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE | CVAR_NEW},
+	{ &cg_accuracyIconSize, "cg_accuracyIconSize", "18", CVAR_ARCHIVE | CVAR_NEW},
+	{ &cg_accuracyFont, "cg_accuracyFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_accuracyFont, },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 

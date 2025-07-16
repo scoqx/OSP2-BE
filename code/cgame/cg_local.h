@@ -1091,6 +1091,27 @@ typedef struct weaponStats_s
 	qboolean onTrack;
 } weaponStats_t;
 
+
+typedef struct {
+	int lastTrackedWeapon;
+	int weapActive[WP_NUM_WEAPONS];
+	float lastAccuracy;
+	float kdratio;
+	float damageKoeff;
+	struct {
+		float accuracy;
+		int kills;
+		int deaths;
+		int hits;
+		int shots;
+		int pickUps;
+		int drops;
+	} stats[WP_NUM_WEAPONS];
+	
+	qboolean customStatsCalled;
+	int statsLastRequestTime;
+} newStatsInfo_t;
+
 typedef struct cgs_be_s
 {
 	vec4_t hitBoxColor;
@@ -1105,10 +1126,14 @@ typedef struct cgs_be_s
 	vec4_t healthColor;
 	vec4_t healthLowColor;
 	vec4_t healthMidColor;
-	weaponStats_t weaponStats[WP_NUM_WEAPONS];
 	vec4_t redTeamColor;
 	vec4_t blueTeamColor;
+	vec4_t playerIndicatorColor;
+	vec4_t playerIndicatorBgColor;
+	weaponStats_t weaponStats[WP_NUM_WEAPONS];
+	newStatsInfo_t newStats;
 } cgs_be_t;
+
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -1118,6 +1143,8 @@ typedef struct cgs_be_s
 
 #define  CS_OSP_CUSTOM_CLIENT_DEFAULT 47
 #define  CS_OSP_CUSTOM_CLIENT2_DEFAULT 0
+
+
 
 typedef struct cgs_osp_s
 {
@@ -1294,7 +1321,7 @@ typedef struct
 	// media
 	cgMedia_t       media;
 	cgs_osp_t osp;
-	cgs_be_t be;
+	cgs_be_t  be;
 } cgs_t;
 
 //==============================================================================
@@ -1646,6 +1673,10 @@ extern vmCvar_t        cg_friendHudMarkerMaxScale;
 extern vmCvar_t        cg_friendHudMarkerMinScale;
 extern vmCvar_t        cg_drawHudMarkers;
 extern vmCvar_t        cg_friendsWallhack;
+extern vmCvar_t        cg_drawAccuracy;
+extern vmCvar_t        cg_accuracyFontSize;
+extern vmCvar_t        cg_accuracyIconSize;
+extern vmCvar_t			cg_accuracyFont;
 extern vmCvar_t         be_run;
 
 
@@ -1909,6 +1940,7 @@ void CG_OSPSetColor(vec4_t color);
 void CG_OSPDrawPic(float x, float y, float w, float h, qhandle_t hShader);
 void CG_OSPDraw3DModel(float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t pos, vec3_t angles, vec3_t angles2);
 void CG_DrawDamageFrame();
+void CG_DrawWeaponStatsWrapper(void);
 
 #define LAG_SAMPLES     1024
 #define MAX_LAGOMETER_PING  900
@@ -1925,16 +1957,6 @@ typedef struct
 
 extern lagometer_t     lagometer;
 
-// team indicator
-typedef struct
-{
-	vec4_t color;
-	vec4_t bgColor;
-
-} playerIndicator_t;
-
-extern playerIndicator_t playerIndicator;
-
 enum
 {
 	PI_NAME        = 1,
@@ -1943,7 +1965,6 @@ enum
 	PI_FROZEN      = 8,
 	PI_ICON      = 16
 };
-
 
 //
 // cg_player.c
@@ -2101,8 +2122,8 @@ void CG_OSPShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
 
-extern vec4_t rtColor;
-extern vec4_t btColor;
+extern vec4_t scoreboard_rtColor;
+extern vec4_t scoreboard_btColor;
 //
 // cg_consolecmds.c
 //
@@ -2126,6 +2147,8 @@ void CG_RemoveChatEscapeChar(char* text);
 void CG_RemoveChatEscapeCharAll(char* text);
 void CG_StringMakeEscapeCharRAW(const char* in, char* out, int max);
 
+// void CG_BERequestStatsInfo(void);
+void CG_MaybeRequestStatsInfo(void);
 //
 // cg_playerstate.c
 //
@@ -2146,6 +2169,11 @@ void CG_CustomLocationsAddEntry(vec3_t pos, const char* str);
 void CG_InitCTFLocations(void);
 const char* CG_GetCTFLocation(int loc);
 
+
+//
+//cg_beutil.c
+//
+qboolean CG_BE_Timer(int msec);
 //
 //cg_cvardescriptions.c
 //
@@ -2369,7 +2397,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.087" // BE
+#define OSP_VERSION "be-0.088" // BE
 
 
 
@@ -2623,6 +2651,7 @@ void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

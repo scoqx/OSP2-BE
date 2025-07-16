@@ -325,7 +325,10 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_healthMidColor", "Health/armor color when reaching cg_healthMid, requires ^3cg_healthColorLevels^7 ^21^7\n \"^2color^7\" - use color name, digit or hex"},
 	{ "cg_redTeamColor", "Set red team color. \"^2color^7\" - use color name, digit or hex"},
 	{ "cg_blueTeamColor", "Set blue team color. \"^2color^7\" - use color name, digit or hex"},
-
+	{ "cg_drawAccuracy", "Draw weapon accuracy in scoreboard. Set ^20^7 to disable.\n  ^21^7 - left\n  ^22^7 - top\n  ^23^7 - right\n  ^24^7 - bottom"},
+	{ "cg_accuracyFontSize", "Set font size for weapon accuracy"},
+	{ "cg_accuracyIconSize", "Set icon size for weapon accuracy"},
+	{ "cg_accuracyFont", "Font selection for weapon accuracy.\n  ^20^7 - ^210^7"},
 };
 
 

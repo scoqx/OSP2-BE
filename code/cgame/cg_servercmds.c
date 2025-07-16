@@ -201,7 +201,8 @@ static void CG_ParseWarmup(void)
 
 	if (warmup == 0 && cg.warmup)
 	{
-
+		// Очистка новой статистики
+        memset(&cgs.be.newStats, 0, sizeof(cgs.be.newStats));
 	}
 	else if (warmup > 0 && cg.warmup <= 0)
 	{
@@ -1080,6 +1081,104 @@ static void CG_InjectCustomLoc(char* str, int size)
 	}
 }
 
+void CG_BEParseStatsInfo(void)
+{
+	static int lastStatsInfo[MAX_QPATH] = { 0 };
+	char args[1024];
+	int i, weaponIndex, arg_cnt;
+	int hits, shots, kills, deaths;
+	int pickUps, drops;
+	qboolean changed = qfalse;
+
+	newStatsInfo_t* ws = &cgs.be.newStats;
+
+	int totalArgs = trap_Argc();
+
+	for (i = 0; i < totalArgs - 1 && i < MAX_QPATH; i++)
+	{
+		trap_Argv(i + 1, args, sizeof(args));
+		statsInfo[i] = atoi(args);
+
+		if (statsInfo[i] != lastStatsInfo[i])
+			changed = qtrue;
+	}
+
+	if (!changed)
+		return;
+
+	memcpy(lastStatsInfo, statsInfo, sizeof(int) * MAX_QPATH);
+
+	if (cgs.osp.gameTypeFreeze)
+	{
+		statsInfo[OSP_STATS_LOSSES] &= cgs.osp.stats_mask;
+	}
+
+	if (statsInfo[OSP_STATS_WEAPON_MASK] == 0)
+	{
+		return;
+	}
+
+	arg_cnt = 23;
+
+	for (weaponIndex = 0; weaponIndex < WP_NUM_WEAPONS; weaponIndex++)
+	{
+		if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << weaponIndex))
+		{
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			hits = atoi(args);
+
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			shots = atoi(args);
+
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			kills = atoi(args);
+
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			deaths = atoi(args);
+
+			pickUps = shots / 65536;
+			drops = hits / 65536;
+
+			shots = shots % 65536;
+			hits = hits % 65536;
+
+			ws->stats[weaponIndex].hits = hits;
+			ws->stats[weaponIndex].shots = shots;
+			ws->stats[weaponIndex].kills = kills;
+			ws->stats[weaponIndex].deaths = deaths;
+			ws->stats[weaponIndex].pickUps = pickUps;
+			ws->stats[weaponIndex].drops = drops;
+			ws->stats[weaponIndex].accuracy = (shots > 0) ? ((float)hits / shots) * 100.0f : 0.0f;
+		}
+	}
+
+	ws->kdratio = (statsInfo[OSP_STATS_KILLS] > 0 && (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) == 0) ?
+	              (float)statsInfo[OSP_STATS_KILLS] :
+	              ((statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) > 0) ?
+	              (float)statsInfo[OSP_STATS_KILLS] / (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) : 0.0f;
+
+	if (statsInfo[OSP_STATS_DMG_GIVEN] > 0)
+	{
+		ws->damageKoeff = (float)statsInfo[OSP_STATS_DMG_GIVEN] /
+		                  (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
+	}
+}
+
+
+void CG_BERequestStatsInfo(void)
+{
+    newStatsInfo_t* ns = &cgs.be.newStats;
+    cgs.be.newStats.statsLastRequestTime = qtrue;
+    trap_SendClientCommand("getstatsinfo");
+}
+
+void CG_MaybeRequestStatsInfo(void) {
+
+    if (CG_BE_Timer(1000)) {
+        CG_BERequestStatsInfo();
+    }
+}
+
 /*
 =================
 CG_ServerCommand
@@ -1284,10 +1383,10 @@ void CG_ServerCommand(void)
 	}
 	//statsinfo
 	if (Q_stricmp(cmd, "statsinfo") == 0)
-		if (cgs.shudWstatsCalled)
+		if (cgs.be.newStats.statsLastRequestTime)
 		{
-			CG_SHUDParseStatsInfo();
-			cgs.shudWstatsCalled = qfalse;
+			CG_BEParseStatsInfo();
+			cgs.be.newStats.statsLastRequestTime = qfalse;
 			return;
 		}
 		else

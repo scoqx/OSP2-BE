@@ -496,7 +496,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, playerIndicator.color);
+	CG_LocalEventCvarParseColor(cvart, cgs.be.playerIndicatorColor);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart)
 {
@@ -504,7 +504,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, playerIndicator.bgColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.be.playerIndicatorBgColor);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque(cvarTable_t* cvart)
 {
@@ -562,12 +562,18 @@ void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.redTeamColor);
-	CG_LocalEventCvarParseColor(cvart, rtColor);
+	CG_LocalEventCvarParseColor(cvart, scoreboard_rtColor);
 
 }
-
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.blueTeamColor);
-	CG_LocalEventCvarParseColor(cvart, btColor);
+	CG_LocalEventCvarParseColor(cvart, scoreboard_btColor);
+}
+void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
+{
+	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	{
+		trap_Cvar_Set("cg_accuracyFont", 0);
+	}
 }
