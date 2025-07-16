@@ -424,6 +424,10 @@ vmCvar_t        cg_healthLowColor;
 vmCvar_t        cg_healthMidColor;
 vmCvar_t        cg_redTeamColor;
 vmCvar_t        cg_blueTeamColor;
+vmCvar_t        cg_drawAccuracy;
+vmCvar_t        cg_accuracyFontSize;
+vmCvar_t        cg_accuracyIconSize;
+vmCvar_t        cg_accuracyFont;
 vmCvar_t        be_run;
 
 
@@ -751,18 +755,20 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altGrenadesColor, "cg_altGrenadesColor", "7", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altGrenadesColor },
 	{ &cg_enemyGrenadesColor, "cg_enemyGrenadesColor", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyGrenadesColor },
 	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE },
-	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_healthColor, "cg_healthColor", "Yellow", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthColor },
-	{ &cg_healthLowColor, "cg_healthLowColor", "Red", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthLowColor },
-	{ &cg_healthMidColor, "cg_healthMidColor", "White", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_healthMidColor },
-	{ &cg_redTeamColor, "cg_redTeamColor", "Red", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_redTeamColor },
-	{ &cg_blueTeamColor, "cg_blueTeamColor", "Blue", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventCvarChanged_cg_blueTeamColor },
-
-
+	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE },
+	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE },
+	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE  },
+	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE },
+	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE },
+	{ &cg_healthColor, "cg_healthColor", "Yellow", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_healthColor },
+	{ &cg_healthLowColor, "cg_healthLowColor", "Red", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_healthLowColor },
+	{ &cg_healthMidColor, "cg_healthMidColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_healthMidColor },
+	{ &cg_redTeamColor, "cg_redTeamColor", "Red", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_redTeamColor },
+	{ &cg_blueTeamColor, "cg_blueTeamColor", "Blue", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_blueTeamColor },
+	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE | CVAR_NEW},
+	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE | CVAR_NEW},
+	{ &cg_accuracyIconSize, "cg_accuracyIconSize", "18", CVAR_ARCHIVE | CVAR_NEW},
+	{ &cg_accuracyFont, "cg_accuracyFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_accuracyFont, },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 

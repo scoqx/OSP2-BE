@@ -109,7 +109,7 @@ void* CG_SHUDElementIconCreatePG(const superhudConfig_t* config)
 void CG_SHUDElementWeaponStatsRoutine(void* context)
 {
 	shudElementWeaponStats_t* element = (shudElementWeaponStats_t*)context;
-	customStats_t* cs = &CG_SHUDGetContext()->customStats;
+	newStatsInfo_t* cs = &cgs.be.newStats;
 	playerState_t* ps = &cg.snap->ps;
 
 	int weapon = (element->weaponIndex == 0) ? ps->weapon : element->weaponIndex;
@@ -138,7 +138,7 @@ void CG_SHUDElementWeaponStatsRoutine(void* context)
 	{
 		lastUpdateTime = cg.time;
 		lastHits = ps->persistant[PERS_HITS];
-		CG_SHUDRequestStatsInfo();
+		CG_MaybeRequestStatsInfo();
 	}
 
 	wasSpectator = isSpectator;

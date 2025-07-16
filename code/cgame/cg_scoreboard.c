@@ -745,7 +745,8 @@ qboolean CG_DrawOldScoreboard(void)
 			}
 		}
 	}
-
+	if (cg_drawAccuracy.integer)
+	CG_DrawWeaponStatsWrapper();
 	return qtrue;
 }
 
@@ -1750,7 +1751,8 @@ qboolean CG_OSPDrawScoretable(void)
 		}
 	}
 
-
+	if (cg_drawAccuracy.integer)
+	CG_DrawWeaponStatsWrapper();
 	return qtrue;
 }
 
@@ -2134,13 +2136,14 @@ qboolean CG_BEDrawTeamScoretable(void)
 
 		if (drewSpect)
 		{
-			CG_OSPDrawString(SCREEN_WIDTH / 2.0f, y - 32, "Spectator", colorWhite, 8, 12, SCREEN_WIDTH, DS_HCENTER | DS_SHADOW, NULL);
+			CG_OSPDrawString(SCREEN_WIDTH / 2.0f, y - 32, "Spectator", colorWhite, 8, 12, SCREEN_WIDTH, DS_HCENTER | DS_SHADOW | proportional, NULL);
 			bgColor[0] = bgColor[1] = bgColor[2] = 0.5f;
 			bgColor[3] = 0.2f;
 			CG_FillRect(8.0f, (float)y - 0x22, 624.0f, (float)(9 * drewSpect + 9 + 20), bgColor);
 		}
 	}
-
+	if (cg_drawAccuracy.integer)
+	CG_DrawWeaponStatsWrapper();
 	return qtrue;
 }
 

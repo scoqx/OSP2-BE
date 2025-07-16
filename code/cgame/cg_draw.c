@@ -2513,8 +2513,6 @@ void CG_OSPDrawNewCredits(void)
 Team Indicator
 ===
 */
-playerIndicator_t playerIndicator;
-
 float lastLift[MAX_CLIENTS];
 
 void CG_DrawPlayerIndicator(int clientNum)
@@ -2611,8 +2609,8 @@ void CG_DrawPlayerIndicator(int clientNum)
 		return;
 
 	CG_FontSelect(font);
-	Vector4Copy(playerIndicator.bgColor, bgColor);
-	Vector4Copy(playerIndicator.color, nameColor);
+	Vector4Copy(cgs.be.playerIndicatorBgColor, bgColor);
+	Vector4Copy(cgs.be.playerIndicatorColor, nameColor);
 	bgColor[3] = cg_teamIndicatorBgOpaque.value;
 	nameColor[3] = cg_teamIndicatorOpaque.value;
 
@@ -2816,6 +2814,153 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 		CG_DrawPlayerIndicator(i);
 	}
 }
+
+typedef enum {
+    STATS_POS_TOP,
+    STATS_POS_BOTTOM,
+    STATS_POS_LEFT,
+    STATS_POS_RIGHT
+} shudWeaponStatsPos_t;
+
+void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float textSize) {
+    float iconX = 0.0f, iconY = 0.0f;
+    const float blockSpacing = 4.0f, textOffset = 2.0f;
+    int wp, visibleCount = 0;
+    char accStr[16];
+    int textFlags;
+    newStatsInfo_t* ws = &cgs.be.newStats;
+    float charWidth = textSize * 0.75f;
+    int maxCharCount = 4;
+    float approxTextWidth = charWidth * maxCharCount;
+    int shots;
+    qboolean horizontal, iconBeforeText;
+    float textX, textY;
+    int font = cg_accuracyFont.integer;
+    qhandle_t icon;
+
+    CG_MaybeRequestStatsInfo();
+
+    for (wp = WP_MACHINEGUN; wp <= WP_PLASMAGUN; wp++)
+        if (ws->stats[wp].shots > 0) visibleCount++;
+    if (visibleCount == 0) return;
+
+    switch (position) {
+        case STATS_POS_TOP:
+            iconY = 0.0f;
+            iconX = (SCREEN_WIDTH - visibleCount * (iconSize + textOffset + approxTextWidth + blockSpacing) + blockSpacing) * 0.5f;
+            break;
+        case STATS_POS_BOTTOM:
+            iconY = SCREEN_HEIGHT - iconSize;
+            iconX = (SCREEN_WIDTH - visibleCount * (iconSize + textOffset + approxTextWidth + blockSpacing) + blockSpacing) * 0.5f;
+            break;
+        case STATS_POS_LEFT:
+            iconX = 0.0f;
+            iconY = (SCREEN_HEIGHT - visibleCount * (iconSize + blockSpacing) + blockSpacing) * 0.5f;
+            break;
+        case STATS_POS_RIGHT:
+            iconX = SCREEN_WIDTH - iconSize;
+            iconY = (SCREEN_HEIGHT - visibleCount * (iconSize + blockSpacing) + blockSpacing) * 0.5f;
+            break;
+    }
+
+    horizontal = (position == STATS_POS_TOP || position == STATS_POS_BOTTOM) ? qtrue : qfalse;
+    iconBeforeText = (position != STATS_POS_RIGHT) ? qtrue : qfalse;
+
+    {
+        float bgX = iconX;
+        float bgY = iconY;
+        float bgW, bgH;
+        vec4_t bgColor = { 0, 0, 0, 0.25f };
+
+        if (horizontal) {
+            bgW = visibleCount * (iconSize + textOffset + approxTextWidth + blockSpacing) - blockSpacing;
+            bgH = iconSize;
+        } else {
+            bgW = iconSize + textOffset + approxTextWidth;
+            bgH = visibleCount * (iconSize + blockSpacing) - blockSpacing;
+			if (position == STATS_POS_RIGHT) {
+				bgX -= approxTextWidth;
+        	}
+        }
+
+        trap_R_SetColor(bgColor);
+        CG_FillRect(bgX, bgY, bgW, bgH, bgColor);
+        trap_R_SetColor(NULL);
+    }
+
+    for (wp = WP_MACHINEGUN; wp <= WP_PLASMAGUN; wp++) {
+        shots = ws->stats[wp].shots;
+        if (shots <= 0)
+            continue;
+
+        icon = cg_weapons[wp].weaponIcon;
+        Com_sprintf(accStr, sizeof(accStr), "%.0f%%", ws->stats[wp].accuracy);
+        textFlags = DS_SHADOW | DS_PROPORTIONAL;
+        textFlags |= iconBeforeText ? DS_HLEFT : DS_HRIGHT;
+
+        textX = iconBeforeText ? iconX + iconSize + textOffset : iconX - textOffset;
+        textY = iconY + (iconSize - textSize) * 0.5f;
+
+        if (iconBeforeText) {
+            if (icon) {
+                trap_R_SetColor(colorWhite);
+                CG_DrawPic(iconX, iconY, iconSize, iconSize, icon);
+                trap_R_SetColor(NULL);
+            }
+        }
+        CG_FontSelect(font);
+        CG_OSPDrawStringNew(textX, textY, accStr, colorWhite, colorBlack, charWidth, textSize,
+                           SCREEN_WIDTH, textFlags, NULL, NULL, NULL);
+
+        if (!iconBeforeText) {
+            if (icon) {
+                trap_R_SetColor(colorWhite);
+                CG_DrawPic(iconX, iconY, iconSize, iconSize, icon);
+                trap_R_SetColor(NULL);
+            }
+        }
+
+        if (horizontal)
+            iconX += iconSize + textOffset + approxTextWidth + blockSpacing;
+        else
+            iconY += iconSize + blockSpacing;
+    }
+}
+
+
+void CG_DrawWeaponStatsWrapper(void) {
+
+    shudWeaponStatsPos_t position;
+	float iconSize;
+    float textSize;
+
+    if (!cg_drawAccuracy.integer)
+        return;
+
+	iconSize = cg_accuracyIconSize.value;
+    textSize = cg_accuracyFontSize.value;
+
+
+    switch (cg_drawAccuracy.integer) {
+        case 1:
+            position = STATS_POS_LEFT;
+            break;
+        case 2:
+            position = STATS_POS_TOP;
+            break;
+        case 3:
+            position = STATS_POS_RIGHT;
+            break;
+        case 4:
+            position = STATS_POS_BOTTOM;
+            break;
+        default:
+            return;
+    }
+
+    CG_DrawWeaponStats(position, iconSize, textSize);
+}
+
 
 /*
 =================

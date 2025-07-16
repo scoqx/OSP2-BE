@@ -47,7 +47,8 @@ CG_SRC = \
  cg_superhud_element_weapon_stats cg_superhud_element_player_stats cg_superhud_element_player_name \
  cg_superhud_element_grid \
  l_crc \
- cg_chatfilter cg_crosshair\
+ cg_chatfilter cg_crosshair \
+ cg_beutil \
 
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \
