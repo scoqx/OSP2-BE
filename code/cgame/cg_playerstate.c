@@ -529,7 +529,7 @@ void CG_HitDamage(playerState_t* ps, playerState_t* ops) {
 	hits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
 	if (hits < 0) {
 		// Friendly fire
-		cgs.osp.lastHitTime = cg.time;
+		// cgs.osp.lastHitTime = cg.time;
 		cgs.osp.lastHitDamage = 0;
 		return;
 	}
@@ -541,7 +541,7 @@ void CG_HitDamage(playerState_t* ps, playerState_t* ops) {
 	atta = ps->persistant[PERS_ATTACKEE_ARMOR];
 	damage = (atta == 0) ? hits : (atta & 0x00FF);
 
-	cgs.osp.lastHitTime = cg.time;
+	// cgs.osp.lastHitTime = cg.time;
 	cgs.osp.lastHitDamage = damage;
 }
 

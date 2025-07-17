@@ -631,7 +631,7 @@ static cvarTable_t cvarTable[] =
 	{ &s_ambient, "s_ambient", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_s_ambient},
 	{ &cl_maxpackets, "cl_maxpackets", "30", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cl_maxpackets},
 	{ &cl_timenudge, "cl_timenudge", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cl_timenudge},
-	{ &snaps, "snaps", "20", CVAR_ARCHIVE, CG_LocalEventCvarChanged_snaps},
+	{ &snaps, "snaps", "40", CVAR_ARCHIVE, CG_LocalEventCvarChanged_snaps},
 	{ &r_shownormals, "r_shownormals", "0", CVAR_LATCH | CVAR_CHEAT, CG_LocalEventCvarChanged_r_shownormals},
 	{ &r_fullbright, "r_fullbright", "0", CVAR_LATCH, CG_LocalEventCvarChanged_r_fullbright},
 	{ &r_lodCurveError, "r_lodCurveError", "250", CVAR_LATCH, CG_LocalEventCvarChanged_r_lodCurveError},
