@@ -519,6 +519,33 @@ void CG_DamageSound(playerState_t* ps, playerState_t* ops)
 	}
 }
 
+void CG_HitDamage(playerState_t* ps, playerState_t* ops) {
+	int atta, hits, damage;
+
+	// vrode pohuy
+	// if (!(OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED()) || !(cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE) || !(cgs.osp.server_mode == OSP_SERVER_MODE_CQ3))
+	// return;
+	
+	hits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
+	if (hits < 0) {
+		// Friendly fire
+		cgs.osp.lastHitTime = cg.time;
+		cgs.osp.lastHitDamage = 0;
+		return;
+	}
+
+	if (hits == 0) {
+		return;
+	}
+
+	atta = ps->persistant[PERS_ATTACKEE_ARMOR];
+	damage = (atta == 0) ? hits : (atta & 0x00FF);
+
+	cgs.osp.lastHitTime = cg.time;
+	cgs.osp.lastHitDamage = damage;
+}
+
+
 void CG_HitSound(playerState_t* ps, playerState_t* ops)
 {
 	static int delayedDmg = 0;
@@ -818,6 +845,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	        && ps->persistant[PERS_TEAM] != TEAM_SPECTATOR)
 	{
 		CG_CheckLocalSounds(ps, ops);
+		CG_HitDamage(ps, ops);
 	}
 
 	if (cg_shud.integer)

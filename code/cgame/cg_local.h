@@ -1199,12 +1199,23 @@ typedef struct cgs_osp_s
 	playerColors_t enemyColors;
 	playerColorsOverride_t enemyColorsOverride;
 	int lastHitTime;
+	int lastHitDamage;
 	struct
 	{
 		vec4_t color;
 		vec4_t actionColor;
+
+		vec4_t actionColorLow;
+		vec4_t actionColorMid;
+		vec4_t actionColorHigh;
+		
 		vec4_t decorColor;
 		vec4_t decorActionColor;
+		
+		vec4_t decorActionColorLow;
+		vec4_t decorActionColorMid;
+		vec4_t decorActionColorHigh;
+
 		int distance;
 	} crosshair;
 	struct
@@ -1666,6 +1677,12 @@ extern vmCvar_t        cg_drawAccuracy;
 extern vmCvar_t        cg_accuracyFontSize;
 extern vmCvar_t        cg_accuracyIconSize;
 extern vmCvar_t			cg_accuracyFont;
+extern vmCvar_t        ch_crosshairActionColorLow;
+extern vmCvar_t        ch_crosshairActionColorMid;
+extern vmCvar_t        ch_crosshairActionColorHigh;
+extern vmCvar_t        ch_crosshairDecorActionColorLow;
+extern vmCvar_t        ch_crosshairDecorActionColorMid;
+extern vmCvar_t        ch_crosshairDecorActionColorHigh;
 extern vmCvar_t         be_run;
 
 
@@ -2382,7 +2399,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.088" // BE
+#define OSP_VERSION "be-0.089" // BE
 
 
 
