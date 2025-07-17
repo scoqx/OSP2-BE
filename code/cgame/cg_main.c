@@ -428,6 +428,14 @@ vmCvar_t        cg_drawAccuracy;
 vmCvar_t        cg_accuracyFontSize;
 vmCvar_t        cg_accuracyIconSize;
 vmCvar_t        cg_accuracyFont;
+
+vmCvar_t        ch_crosshairActionColorLow;
+vmCvar_t        ch_crosshairActionColorMid;
+vmCvar_t        ch_crosshairActionColorHigh;
+vmCvar_t        ch_crosshairDecorActionColorLow;
+vmCvar_t        ch_crosshairDecorActionColorMid;
+vmCvar_t        ch_crosshairDecorActionColorHigh;
+
 vmCvar_t        be_run;
 vmCvar_t        cg_friendHudMarkerMaxDist;
 vmCvar_t        cg_friendHudMarkerSize;
@@ -781,6 +789,12 @@ static cvarTable_t cvarTable[] =
 	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE | CVAR_NEW},
 	{ &cg_accuracyIconSize, "cg_accuracyIconSize", "18", CVAR_ARCHIVE | CVAR_NEW},
 	{ &cg_accuracyFont, "cg_accuracyFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_accuracyFont, },
+	{ &ch_crosshairActionColorLow,  "ch_crosshairActionColorLow", "white",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairActionColor},
+	{ &ch_crosshairActionColorMid,  "ch_crosshairActionColorMid", "yellow",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairActionColor},
+	{ &ch_crosshairActionColorHigh,  "ch_crosshairActionColorHigh", "orange",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairActionColor},
+	{ &ch_crosshairDecorActionColorLow,  "ch_crosshairDecorActionColorLow", "white",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor},
+	{ &ch_crosshairDecorActionColorMid,  "ch_crosshairDecorActionColorMid", "yellow",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor},
+	{ &ch_crosshairDecorActionColorHigh,  "ch_crosshairDecorActionColorHigh", "orange",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor},
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1901,8 +1915,16 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	//init variables
 	CG_CvarTouch("ch_crosshairColor");
 	CG_CvarTouch("ch_crosshairActionColor");
+	CG_CvarTouch("ch_crosshairActionColorLow");
+	CG_CvarTouch("ch_crosshairActionColorMid");
+	CG_CvarTouch("ch_crosshairActionColorHigh");
+
 	CG_CvarTouch("ch_crosshairDecorColor");
 	CG_CvarTouch("ch_crosshairDecorActionColor");
+	CG_CvarTouch("ch_crosshairDecorActionColorLow");
+	CG_CvarTouch("ch_crosshairDecorActionColorMid");
+	CG_CvarTouch("ch_crosshairDecorActionColorHigh");
+
 
 	CG_CvarTouch("cg_hitBoxColor");
 	CG_CvarTouch("cg_enemyOutlineColor");

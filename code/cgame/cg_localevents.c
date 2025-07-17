@@ -312,7 +312,18 @@ void CG_LocalEventCvarChanged_ch_crosshairColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_ch_crosshairActionColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColor);
+    if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColor") == 0) {
+        CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColor);
+    }
+    if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColorLow") == 0) {
+        CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColorLow);
+    }
+    if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColorMid") == 0) {
+        CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColorMid);
+    }
+    if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColorHigh") == 0) {
+        CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColorHigh);
+    }
 }
 
 void CG_LocalEventCvarChanged_ch_crosshairDecorColor(cvarTable_t* cvart)
@@ -322,8 +333,20 @@ void CG_LocalEventCvarChanged_ch_crosshairDecorColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_ch_crosshairDecorActionColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColor);
+    if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColor") == 0) {
+        CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColor);
+    }
+    if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColorLow") == 0) {
+        CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColorLow);
+    }
+    if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColorMid") == 0) {
+        CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColorMid);
+    }
+    if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColorHigh") == 0) {
+        CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColorHigh);
+    }
 }
+
 
 void CG_LocalEventCvarChanged_ch_crosshairDecorOpaque(cvarTable_t* cvart)
 {

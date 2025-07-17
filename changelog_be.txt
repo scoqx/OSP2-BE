@@ -334,3 +334,18 @@ SHUD:
   + cg_accuracyFontSize
   + cg_accuracyIconSize
   + cg_accuracyFont
+
+  17.07.2025 be v0.089
+   + ch_crosshairAction bitmask 8 - hitcolor by damage
+   + ch_crosshairDecorAction bitmask 8 - hitcolor by damage
+    Set colors:
+   + ch_crosshairActionColorLow
+   + ch_crosshairActionColorMid
+   + ch_crosshairActionColorHigh
+   + ch_crosshairDecorActionColorLow
+   + ch_crosshairDecorActionColorMid
+   + ch_crosshairDecorActionColorHigh
+
+   + color names: orange, pink
+  SHUD:
+  + hud config - lwp9k 
