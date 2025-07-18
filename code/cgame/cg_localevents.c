@@ -600,3 +600,84 @@ void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
 		trap_Cvar_Set("cg_accuracyFont", 0);
 	}
 }
+
+void CG_LocalEventCvarChanged_cg_markEnemy(cvarTable_t* cvart)
+{
+	int clientNum;
+	const char* str = cvart->vmCvar->string;
+
+	if (Q_stricmp(str, "-1") == 0) {
+		return;
+	}
+	// Сброс всех пометок
+	memset(cgs.be.marked, qfalse, sizeof(cgs.be.marked));
+
+	while (*str) {
+		// Пропустить пробелы
+		while (*str == ' ') {
+			str++;
+		}
+
+		if (!*str)
+			break;
+
+		// Прочитать номер клиента
+		clientNum = atoi(str);
+
+		// Установить флаг, если в пределах допустимого
+		if (clientNum >= 0 && clientNum < MAX_CLIENTS) {
+			cgs.be.marked[clientNum] = qtrue;
+		} else {
+			CG_Printf("cg_markEnemy: invalid clientNum %d\n", clientNum);
+		}
+
+		// Перейти к следующему числу
+		while (*str && *str != ' ') {
+			str++;
+		}
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_markEnemyColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.markedColor);
+}
+
+void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
+{
+	int clientNum;
+	const char* str = cvart->vmCvar->string;
+
+	if (Q_stricmp(str, "-1") == 0) {
+		return;
+	}
+
+	// Сброс всех пометок
+	memset(cgs.be.markedTeam, qfalse, sizeof(cgs.be.markedTeam));
+
+	while (*str) {
+		while (*str == ' ') {
+			str++;
+		}
+
+		if (!*str)
+			break;
+
+		clientNum = atoi(str);
+
+		if (clientNum >= 0 && clientNum < MAX_CLIENTS) {
+			cgs.be.markedTeam[clientNum] = qtrue;
+		} else {
+			CG_Printf("cg_markTeam: invalid clientNum %d\n", clientNum);
+		}
+
+		while (*str && *str != ' ') {
+			str++;
+		}
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.markedTeamColor);
+}

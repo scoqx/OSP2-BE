@@ -2772,248 +2772,457 @@ Set DS_MAX_WIDTH_IS_CHARS to enable character count restriction
 ===
 */
 
+// void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor,
+//                          vec4_t shadowColor,
+//                          float charWidth, float charHeight, int maxWidth, int flags,
+//                          vec4_t background, vec4_t border, vec4_t borderColor)
+// {
+// 	const font_metric_t* fm;
+// 	const float*     tc; // texture coordinates for char
+// 	float           ax, ay, aw, aw1, ah; // absolute positions/dimensions
+// 	float           scale;
+// 	float           x_end, xx;
+// 	float           fade = 1.0f;
+// 	vec4_t          color;
+// 	float           xx_add, yy_add;
+// 	int             i;
+// 	qhandle_t       sh;
+// 	int hasBorder = (border != NULL);
+// 	int             proportional;
+// 	text_command_t* text_commands;
+// 	text_command_t* curr;
+// 	float           expectedLenght = 0;
+
+// 	if (!string)
+// 		return;
+
+
+// 	text_commands = CG_CompileText(string);
+// 	if (!text_commands)
+// 		return;
+
+
+// 	CG_AdjustFrom640(&x, &y, &charWidth, &charHeight);
+
+// 	ax = x;
+// 	ay = y;
+
+// 	aw = charWidth;
+// 	ah = charHeight;
+
+// 	proportional = (flags & DS_PROPORTIONAL);
+
+// 	if (flags & DS_MAX_WIDTH_IS_CHARS)
+// 	{
+// 		RestrictCompiledStringChars(text_commands, (int)maxWidth);
+// 	}
+// 	else
+// 	{
+// 		float mw = maxWidth;
+// 		CG_AdjustFrom640(NULL, NULL, &mw, NULL);
+// 		RestrictCompiledString(text_commands, aw, proportional, mw);
+// 	}
+
+// 	if (hasBorder || background || (flags & (DS_HCENTER | DS_HRIGHT)))
+// 	{
+// 		expectedLenght = DrawCompiledStringLength(text_commands, aw, proportional);
+// 	}
+
+
+// 	if (flags & (DS_HCENTER | DS_HRIGHT))
+// 	{
+// 		if (flags & DS_HCENTER)
+// 		{
+// 			ax -= 0.5f * expectedLenght;
+// 		}
+// 		else
+// 		{
+// 			ax -= expectedLenght;
+// 		}
+// 	}
+
+// 	if (flags & DS_VCENTER)
+// 	{
+// 		ay -= ah / 2;
+// 	}
+// 	else if (flags & DS_VTOP)
+// 	{
+// 		ay -= ah;
+// 	}
+
+// 	sh = font->shader[0]; // low-res shader by default
+
+// 	// select hi-res shader if accepted
+// 	for (i = 1; i < font->shaderCount; i++)
+// 	{
+// 		if (ah >= font->shaderThreshold[i])
+// 		{
+// 			sh = font->shader[i];
+// 		}
+// 	}
+
+// 	if (background)
+// 	{
+// 		trap_R_SetColor(background);
+// 		trap_R_DrawStretchPic(ax, ay, expectedLenght, ah, 0, 0, 0, 0, cgs.media.whiteShader);
+// 		trap_R_SetColor(colorWhite);
+// 	}
+
+// 	if (hasBorder)
+// 	{
+// 		CG_OSPDrawFrame(ax, ay, expectedLenght, ah, border, borderColor, qfalse);
+// 	}
+
+
+// 	if (flags & DS_SHADOW && (shadowColor[3] != 0))
+// 	{
+// 		xx = ax;
+// 		// calculate shadow offsets
+// 		yy_add = xx_add = charWidth / 10.0f;
+// 		if (shadowColor)
+// 		{
+// 			VectorCopy(shadowColor, color);
+// 		}
+// 		else
+// 		{
+// 			Vector4Copy(colorBlack, color);
+// 		}
+// 		fade = shadowColor[3];
+// 		color[3] = fade;
+// 		trap_R_SetColor(color);
+
+// 		for (i = 0; i < OSP_TEXT_CMD_MAX && text_commands[i].type != OSP_TEXT_CMD_STOP; ++i)
+// 		{
+// 			curr = &text_commands[i];
+// 			switch (curr->type)
+// 			{
+// 				case OSP_TEXT_CMD_CHAR:
+// 					fm = &metrics[(unsigned char)curr->value.character ];
+// 					if (proportional)
+// 					{
+// 						tc = fm->tc_prop;
+// 						aw1 = fm->width * aw;
+// 						ax += fm->space1 * aw;          // add extra space if required by metrics
+// 						x_end = ax + fm->space2 * aw;   // final position
+// 					}
+// 					else
+// 					{
+// 						tc = fm->tc_mono;
+// 						aw1 = aw;
+// 						x_end = ax + aw;
+// 					}
+
+// 					if (ax >= cgs.glconfig.vidWidth)
+// 						break;
+
+// 					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+
+// 					ax = x_end;
+// 					break;
+// 				case OSP_TEXT_CMD_SHADOW_COLOR:
+// 					VectorCopy(curr->value.color, color);
+// 					color[3] = fade;
+// 					if (setColor && color[3] > setColor[3])
+// 					{
+// 						color[3] = setColor[3];
+// 					}
+// 					trap_R_SetColor(color);
+// 					break;
+// 				case OSP_TEXT_CMD_FADE:
+// 					fade = curr->value.fade;
+// 					color[3] = fade;
+// 					if (setColor && color[3] > setColor[3])
+// 					{
+// 						color[3] = setColor[3];
+// 					}
+// 					trap_R_SetColor(color);
+// 					break;
+// 				case OSP_TEXT_CMD_STOP:
+// 				case OSP_TEXT_CMD_TEXT_COLOR:
+// 					break;
+// 			}
+// 		}
+
+// 		// recover altered parameters
+// 		ax = xx;
+// 	}
+
+
+// 	Vector4Copy(setColor, color);
+// 	trap_R_SetColor(color);
+// 	fade = 1.0f;
+
+// 	for (i = 0; i < OSP_TEXT_CMD_MAX && text_commands[i].type != OSP_TEXT_CMD_STOP; ++i)
+// 	{
+// 		curr = &text_commands[i];
+// 		switch (curr->type)
+// 		{
+// 			case OSP_TEXT_CMD_CHAR:
+// 			{
+// 				//avoid compiler bug
+// 				//after cast curr->value.character to unsigned char it still could be less than zero
+// 				int index = curr->value.character;
+// 				if (index < 0) index += 256;
+// 				fm = &metrics[(unsigned char)index ];
+// 			}
+// 			if (proportional)
+// 			{
+// 				tc = fm->tc_prop;
+// 				aw1 = fm->width * aw;
+// 				ax += fm->space1 * aw;          // add extra space if required by metrics
+// 				x_end = ax + fm->space2 * aw;   // final position
+// 			}
+// 			else
+// 			{
+// 				tc = fm->tc_mono;
+// 				aw1 = aw;
+// 				x_end = ax + aw;
+// 			}
+
+// 			if (ax >= cgs.glconfig.vidWidth)
+// 				break;
+
+// 			trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+
+// 			ax = x_end;
+// 			break;
+// 			case OSP_TEXT_CMD_TEXT_COLOR:
+// 				VectorCopy(curr->value.color, color);
+// 				color[3] = fade;
+// 				if (setColor && color[3] > setColor[3])
+// 				{
+// 					color[3] = setColor[3];
+// 				}
+// 				trap_R_SetColor(color);
+// 				break;
+// 			case OSP_TEXT_CMD_FADE:
+// 				fade = curr->value.fade;
+// 				color[3] = fade;
+// 				if (setColor && color[3] > setColor[3])
+// 				{
+// 					color[3] = setColor[3];
+// 				}
+// 				trap_R_SetColor(color);
+// 				break;
+// 			case OSP_TEXT_CMD_SHADOW_COLOR:
+// 			case OSP_TEXT_CMD_STOP:
+// 				break;
+// 		}
+// 	}
+
+// 	CG_CompiledTextDestroy(text_commands);
+
+// 	trap_R_SetColor(NULL);
+// }
+
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor,
                          vec4_t shadowColor,
                          float charWidth, float charHeight, int maxWidth, int flags,
                          vec4_t background, vec4_t border, vec4_t borderColor)
 {
-	const font_metric_t* fm;
-	const float*     tc; // texture coordinates for char
-	float           ax, ay, aw, aw1, ah; // absolute positions/dimensions
-	float           scale;
-	float           x_end, xx;
-	float           fade = 1.0f;
-	vec4_t          color;
-	float           xx_add, yy_add;
-	int             i;
-	qhandle_t       sh;
-	int hasBorder = (border != NULL);
-	int             proportional;
-	text_command_t* text_commands;
-	text_command_t* curr;
-	float           expectedLenght = 0;
+    const font_metric_t* fm;
+    const float* tc; // texture coordinates for char
+    float ax, ay, aw, aw1, ah; // absolute positions/dimensions
+    float x_end, xx;
+    float fade;
+    vec4_t color;
+    float xx_add, yy_add;
+    int i, hasBorder, proportional;
+    qhandle_t sh;
+    text_command_t* text_commands;
+    text_command_t* curr;
+    float expectedLenght;
 
-	if (!string)
-		return;
+    /* Объявления дополнительных переменных для однопроходного цикла */
+    int shadowEnabled;
+    float shadowFade;
+    vec4_t shadowCol;
 
+    if (!string)
+        return;
 
-	text_commands = CG_CompileText(string);
-	if (!text_commands)
-		return;
+    text_commands = CG_CompileText(string);
+    if (!text_commands)
+        return;
 
+    CG_AdjustFrom640(&x, &y, &charWidth, &charHeight);
 
-	CG_AdjustFrom640(&x, &y, &charWidth, &charHeight);
+    ax = x;
+    ay = y;
 
-	ax = x;
-	ay = y;
+    aw = charWidth;
+    ah = charHeight;
 
-	aw = charWidth;
-	ah = charHeight;
+    proportional = (flags & DS_PROPORTIONAL) ? 1 : 0;
+    hasBorder = (border != NULL) ? 1 : 0;
+    expectedLenght = 0.0f;
 
-	proportional = (flags & DS_PROPORTIONAL);
+    if (flags & DS_MAX_WIDTH_IS_CHARS)
+    {
+        RestrictCompiledStringChars(text_commands, maxWidth);
+    }
+    else
+    {
+        float mw = (float)maxWidth;
+        CG_AdjustFrom640(NULL, NULL, &mw, NULL);
+        RestrictCompiledString(text_commands, aw, proportional, mw);
+    }
 
-	if (flags & DS_MAX_WIDTH_IS_CHARS)
-	{
-		RestrictCompiledStringChars(text_commands, (int)maxWidth);
-	}
-	else
-	{
-		float mw = maxWidth;
-		CG_AdjustFrom640(NULL, NULL, &mw, NULL);
-		RestrictCompiledString(text_commands, aw, proportional, mw);
-	}
+    if (hasBorder || background || (flags & (DS_HCENTER | DS_HRIGHT)))
+    {
+        expectedLenght = DrawCompiledStringLength(text_commands, aw, proportional);
+    }
 
-	if (hasBorder || background || (flags & (DS_HCENTER | DS_HRIGHT)))
-	{
-		expectedLenght = DrawCompiledStringLength(text_commands, aw, proportional);
-	}
+    if (flags & (DS_HCENTER | DS_HRIGHT))
+    {
+        if (flags & DS_HCENTER)
+        {
+            ax -= 0.5f * expectedLenght;
+        }
+        else
+        {
+            ax -= expectedLenght;
+        }
+    }
 
+    if (flags & DS_VCENTER)
+    {
+        ay -= ah / 2;
+    }
+    else if (flags & DS_VTOP)
+    {
+        ay -= ah;
+    }
 
-	if (flags & (DS_HCENTER | DS_HRIGHT))
-	{
-		if (flags & DS_HCENTER)
-		{
-			ax -= 0.5f * expectedLenght;
-		}
-		else
-		{
-			ax -= expectedLenght;
-		}
-	}
+    sh = font->shader[0]; /* low-res shader by default */
+    for (i = 1; i < font->shaderCount; i++)
+    {
+        if (ah >= font->shaderThreshold[i])
+        {
+            sh = font->shader[i];
+        }
+    }
 
-	if (flags & DS_VCENTER)
-	{
-		ay -= ah / 2;
-	}
-	else if (flags & DS_VTOP)
-	{
-		ay -= ah;
-	}
+    if (background)
+    {
+        trap_R_SetColor(background);
+        trap_R_DrawStretchPic(ax, ay, expectedLenght, ah, 0, 0, 0, 0, cgs.media.whiteShader);
+        trap_R_SetColor(colorWhite);
+    }
 
-	sh = font->shader[0]; // low-res shader by default
+    if (hasBorder)
+    {
+        CG_OSPDrawFrame(ax, ay, expectedLenght, ah, border, borderColor, 0);
+    }
 
-	// select hi-res shader if accepted
-	for (i = 1; i < font->shaderCount; i++)
-	{
-		if (ah >= font->shaderThreshold[i])
-		{
-			sh = font->shader[i];
-		}
-	}
+    shadowEnabled = (flags & DS_SHADOW) && (shadowColor[3] != 0.0f);
+    if (shadowEnabled)
+    {
+        xx_add = charWidth / 10.0f;
+        yy_add = xx_add;
+        VectorCopy(shadowColor, shadowCol);
+        shadowFade = shadowColor[3];
+        shadowCol[3] = shadowFade;
+    }
+    else
+    {
+        shadowFade = 1.0f;
+    }
 
-	if (background)
-	{
-		trap_R_SetColor(background);
-		trap_R_DrawStretchPic(ax, ay, expectedLenght, ah, 0, 0, 0, 0, cgs.media.whiteShader);
-		trap_R_SetColor(colorWhite);
-	}
+    fade = 1.0f;
+    Vector4Copy(setColor, color);
 
-	if (hasBorder)
-	{
-		CG_OSPDrawFrame(ax, ay, expectedLenght, ah, border, borderColor, qfalse);
-	}
+    /* Сохраним начальный x для сброса между тенью и текстом */
+    xx = ax;
 
+    for (i = 0; i < OSP_TEXT_CMD_MAX && text_commands[i].type != OSP_TEXT_CMD_STOP; i++)
+    {
+        curr = &text_commands[i];
 
-	if (flags & DS_SHADOW && (shadowColor[3] != 0))
-	{
-		xx = ax;
-		// calculate shadow offsets
-		yy_add = xx_add = charWidth / 10.0f;
-		if (shadowColor)
-		{
-			VectorCopy(shadowColor, color);
-		}
-		else
-		{
-			Vector4Copy(colorBlack, color);
-		}
-		fade = shadowColor[3];
-		color[3] = fade;
-		trap_R_SetColor(color);
+        switch (curr->type)
+        {
+            case OSP_TEXT_CMD_CHAR:
+            {
+                int index = curr->value.character;
+                if (index < 0)
+                    index += 256;
+                fm = &metrics[(unsigned char)index];
 
-		for (i = 0; i < OSP_TEXT_CMD_MAX && text_commands[i].type != OSP_TEXT_CMD_STOP; ++i)
-		{
-			curr = &text_commands[i];
-			switch (curr->type)
-			{
-				case OSP_TEXT_CMD_CHAR:
-					fm = &metrics[(unsigned char)curr->value.character ];
-					if (proportional)
-					{
-						tc = fm->tc_prop;
-						aw1 = fm->width * aw;
-						ax += fm->space1 * aw;          // add extra space if required by metrics
-						x_end = ax + fm->space2 * aw;   // final position
-					}
-					else
-					{
-						tc = fm->tc_mono;
-						aw1 = aw;
-						x_end = ax + aw;
-					}
+                if (proportional)
+                {
+                    tc = fm->tc_prop;
+                    aw1 = fm->width * aw;
+                }
+                else
+                {
+                    tc = fm->tc_mono;
+                    aw1 = aw;
+                }
 
-					if (ax >= cgs.glconfig.vidWidth)
-						break;
+                /* Отрисовка тени */
+                if (shadowEnabled)
+                {
+                    trap_R_SetColor(shadowCol);
+                    trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+                }
 
-					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+                /* Отрисовка символа */
+                trap_R_SetColor(color);
+                trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
 
-					ax = x_end;
-					break;
-				case OSP_TEXT_CMD_SHADOW_COLOR:
-					VectorCopy(curr->value.color, color);
-					color[3] = fade;
-					if (setColor && color[3] > setColor[3])
-					{
-						color[3] = setColor[3];
-					}
-					trap_R_SetColor(color);
-					break;
-				case OSP_TEXT_CMD_FADE:
-					fade = curr->value.fade;
-					color[3] = fade;
-					if (setColor && color[3] > setColor[3])
-					{
-						color[3] = setColor[3];
-					}
-					trap_R_SetColor(color);
-					break;
-				case OSP_TEXT_CMD_STOP:
-				case OSP_TEXT_CMD_TEXT_COLOR:
-					break;
-			}
-		}
+                /* Обновляем позицию */
+                if (proportional)
+                {
+                    ax += fm->space1 * aw;
+                    x_end = ax + fm->space2 * aw;
+                }
+                else
+                {
+                    x_end = ax + aw;
+                }
+                ax = x_end;
+            }
+            break;
 
-		// recover altered parameters
-		ax = xx;
-	}
+            case OSP_TEXT_CMD_TEXT_COLOR:
+                VectorCopy(curr->value.color, color);
+                color[3] = fade;
+                if (setColor && color[3] > setColor[3])
+                {
+                    color[3] = setColor[3];
+                }
+                break;
 
+            case OSP_TEXT_CMD_SHADOW_COLOR:
+                VectorCopy(curr->value.color, shadowCol);
+                shadowCol[3] = shadowFade;
+                if (setColor && shadowCol[3] > setColor[3])
+                {
+                    shadowCol[3] = setColor[3];
+                }
+                break;
 
-	Vector4Copy(setColor, color);
-	trap_R_SetColor(color);
-	fade = 1.0f;
+            case OSP_TEXT_CMD_FADE:
+                fade = curr->value.fade;
+                color[3] = fade;
+                shadowCol[3] = fade;
+                if (setColor)
+                {
+                    if (color[3] > setColor[3]) color[3] = setColor[3];
+                    if (shadowCol[3] > setColor[3]) shadowCol[3] = setColor[3];
+                }
+                break;
 
-	for (i = 0; i < OSP_TEXT_CMD_MAX && text_commands[i].type != OSP_TEXT_CMD_STOP; ++i)
-	{
-		curr = &text_commands[i];
-		switch (curr->type)
-		{
-			case OSP_TEXT_CMD_CHAR:
-			{
-				//avoid compiler bug
-				//after cast curr->value.character to unsigned char it still could be less than zero
-				int index = curr->value.character;
-				if (index < 0) index += 256;
-				fm = &metrics[(unsigned char)index ];
-			}
-			if (proportional)
-			{
-				tc = fm->tc_prop;
-				aw1 = fm->width * aw;
-				ax += fm->space1 * aw;          // add extra space if required by metrics
-				x_end = ax + fm->space2 * aw;   // final position
-			}
-			else
-			{
-				tc = fm->tc_mono;
-				aw1 = aw;
-				x_end = ax + aw;
-			}
+            case OSP_TEXT_CMD_STOP:
+                break;
+        }
+    }
 
-			if (ax >= cgs.glconfig.vidWidth)
-				break;
-
-			trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
-
-			ax = x_end;
-			break;
-			case OSP_TEXT_CMD_TEXT_COLOR:
-				VectorCopy(curr->value.color, color);
-				color[3] = fade;
-				if (setColor && color[3] > setColor[3])
-				{
-					color[3] = setColor[3];
-				}
-				trap_R_SetColor(color);
-				break;
-			case OSP_TEXT_CMD_FADE:
-				fade = curr->value.fade;
-				color[3] = fade;
-				if (setColor && color[3] > setColor[3])
-				{
-					color[3] = setColor[3];
-				}
-				trap_R_SetColor(color);
-				break;
-			case OSP_TEXT_CMD_SHADOW_COLOR:
-			case OSP_TEXT_CMD_STOP:
-				break;
-		}
-	}
-
-	CG_CompiledTextDestroy(text_commands);
-
-	trap_R_SetColor(NULL);
+    CG_CompiledTextDestroy(text_commands);
+    trap_R_SetColor(NULL);
 }
+
+
 
 int CG_OSPDrawStringWithShadow(int x, int y, const char* str, int charWidth, int charHeight, const vec4_t color, int maxChars)
 {

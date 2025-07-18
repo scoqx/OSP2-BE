@@ -1114,6 +1114,10 @@ typedef struct {
 
 typedef struct cgs_be_s
 {
+	qboolean marked[MAX_CLIENTS];
+	vec4_t markedColor;
+	qboolean markedTeam[MAX_CLIENTS];
+	vec4_t markedTeamColor;
 	vec4_t hitBoxColor;
 	vec4_t enemyOutlineColor;
 	vec4_t teamOutlineColor;
@@ -1694,6 +1698,10 @@ extern vmCvar_t        ch_crosshairActionColorHigh;
 extern vmCvar_t        ch_crosshairDecorActionColorLow;
 extern vmCvar_t        ch_crosshairDecorActionColorMid;
 extern vmCvar_t        ch_crosshairDecorActionColorHigh;
+extern vmCvar_t			cg_markEnemy;
+extern vmCvar_t			cg_markedColor;
+extern vmCvar_t		cg_markTeam;
+extern vmCvar_t		cg_markTeamColor;
 extern vmCvar_t         be_run;
 
 
@@ -2415,7 +2423,7 @@ qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
 // #define OSP_VERSION "be-0.088" // BE
-#define OSP_VERSION "be-test" // BE
+#define OSP_VERSION "be-0.9test" // BE
 
 
 
@@ -2671,6 +2679,11 @@ void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_markEnemy(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_markEnemyColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);
+
 
 #ifdef __cplusplus
 }

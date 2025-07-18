@@ -436,14 +436,18 @@ vmCvar_t        ch_crosshairDecorActionColorLow;
 vmCvar_t        ch_crosshairDecorActionColorMid;
 vmCvar_t        ch_crosshairDecorActionColorHigh;
 
-vmCvar_t        be_run;
+
 vmCvar_t        cg_friendHudMarkerMaxDist;
 vmCvar_t        cg_friendHudMarkerSize;
 vmCvar_t        cg_friendHudMarkerMaxScale;
 vmCvar_t        cg_friendHudMarkerMinScale;
 vmCvar_t        cg_friendsWallhack;
 vmCvar_t        cg_drawHudMarkers;
-
+vmCvar_t		cg_markEnemy;
+vmCvar_t		cg_markEnemyColor;
+vmCvar_t		cg_markTeam;
+vmCvar_t		cg_markTeamColor;
+vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
 {
@@ -795,6 +799,10 @@ static cvarTable_t cvarTable[] =
 	{ &ch_crosshairDecorActionColorLow,  "ch_crosshairDecorActionColorLow", "white",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor},
 	{ &ch_crosshairDecorActionColorMid,  "ch_crosshairDecorActionColorMid", "yellow",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor},
 	{ &ch_crosshairDecorActionColorHigh,  "ch_crosshairDecorActionColorHigh", "orange",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor},
+	{ &cg_markEnemy, "cg_markEnemy", "-1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markEnemy },
+	{ &cg_markEnemyColor, "cg_markEnemyColor", "Yellow", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markEnemyColor },
+	{ &cg_markTeam, "cg_markTeam", "-1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markTeam },
+	{ &cg_markTeamColor, "cg_markTeamColor", "Pink", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markTeamColor  }
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1972,6 +1980,12 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_CvarTouch("cg_redTeamColor");
 	CG_CvarTouch("cg_blueTeamColor");
+
+	CG_CvarTouch("cg_markEnemy");
+	CG_CvarTouch("cg_markEnemyColor");
+
+	CG_CvarTouch("cg_markTeam");
+	CG_CvarTouch("cg_markTeamColor");
 
 	CG_InitConsoleCommands();
 
