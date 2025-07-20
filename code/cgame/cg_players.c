@@ -2813,11 +2813,11 @@ void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 	{
 		if (isEnemy)
 		{
-			if (cgs.be.marked[clientNum])
+			/* if (cgs.be.marked[clientNum])
 			{
 				Vector4Copy(cgs.be.markedColor, color);
 			}
-			else if (cg_enemyOutlineColorUnique.integer == 0)
+			else  */if (cg_enemyOutlineColorUnique.integer == 0)
 			{
 				Vector4Copy(cgs.be.enemyOutlineColor, color);
 			}

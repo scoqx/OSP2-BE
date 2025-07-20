@@ -802,8 +802,8 @@ static cvarTable_t cvarTable[] =
 	{ &ch_crosshairDecorActionColorLow,  "ch_crosshairDecorActionColorLow", "white",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor },
 	{ &ch_crosshairDecorActionColorMid,  "ch_crosshairDecorActionColorMid", "yellow",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor },
 	{ &ch_crosshairDecorActionColorHigh,  "ch_crosshairDecorActionColorHigh", "orange",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor },
-	{ &cg_markEnemy, "cg_markEnemy", "-1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markEnemy },
-	{ &cg_markEnemyColor, "cg_markEnemyColor", "Yellow", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markEnemyColor },
+	// { &cg_markEnemy, "cg_markEnemy", "-1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markEnemy },
+	// { &cg_markEnemyColor, "cg_markEnemyColor", "Yellow", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markEnemyColor },
 	{ &cg_markTeam, "cg_markTeam", "-1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markTeam },
 	{ &cg_markTeamColor, "cg_markTeamColor", "Pink", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markTeamColor  },
 	{ &cg_mySound, "cg_mySound", "", CVAR_ARCHIVE | CVAR_NEW | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
@@ -1987,8 +1987,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_redTeamColor");
 	CG_CvarTouch("cg_blueTeamColor");
 
-	CG_CvarTouch("cg_markEnemy");
-	CG_CvarTouch("cg_markEnemyColor");
+	// CG_CvarTouch("cg_markEnemy");
+	// CG_CvarTouch("cg_markEnemyColor");
 
 	CG_CvarTouch("cg_markTeam");
 	CG_CvarTouch("cg_markTeamColor");
