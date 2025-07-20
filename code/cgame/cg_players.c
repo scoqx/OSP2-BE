@@ -149,31 +149,43 @@ CG_CustomSound
 
 ================
 */
-sfxHandle_t CG_CustomSound(int clientNum, const char* soundName)
-{
-	clientInfo_t* ci;
-	int         i;
+sfxHandle_t	CG_CustomSound( int clientNum, const char *soundName ) {
+	clientInfo_t *ci;
+	int			i;
+	int myteam;
+	clientInfo_t *myself;
 
-	if (soundName[0] != '*')
-	{
-		return trap_S_RegisterSound(soundName, qfalse);
+	if (cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) {
+		myteam = cgs.clientinfo[cg.snap->ps.clientNum].team;
+		myself = &cgs.clientinfo[cg.snap->ps.clientNum];
+	} else {
+		myteam = cg.snap->ps.persistant[PERS_TEAM];
+		myself = &cgs.clientinfo[cg.clientNum];
 	}
 
-	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-	{
+	if ( soundName[0] != '*' ) {
+		return trap_S_RegisterSound( soundName, qfalse );
+	}
+
+	if ( clientNum < 0 || clientNum >= MAX_CLIENTS ) {
 		clientNum = 0;
 	}
 	ci = &cgs.clientinfo[ clientNum ];
 
-	for (i = 0 ; i < MAX_CUSTOM_SOUNDS && cg_customSoundNames[i] ; i++)
-	{
-		if (!strcmp(soundName, cg_customSoundNames[i]))
-		{
+	for ( i = 0 ; i < MAX_CUSTOM_SOUNDS && cg_customSoundNames[i] ; i++ ) {
+		if ( !strcmp( soundName, cg_customSoundNames[i] ) ) {
+			if (ci == myself && cgs.mySounds[i]) {
+				return cgs.mySounds[i];
+			} else if ((myteam != TEAM_FREE && ci->team == myteam) && cgs.teamSounds[i]) {
+					return cgs.teamSounds[i];
+			} else if (((ci->team != myteam) || (myteam == TEAM_FREE && ci != myself)) && cgs.enemySounds[i]) {
+				return cgs.enemySounds[i];
+			}
 			return ci->sounds[i];
 		}
 	}
 
-	CG_Error("Unknown custom sound: %s", soundName);
+	CG_Error( "Unknown custom sound: %s", soundName );
 	return 0;
 }
 
@@ -631,6 +643,38 @@ static qboolean CG_RegisterClientModelname(clientInfo_t* ci, const char* modelNa
 	return qtrue;
 }
 
+void CG_LoadForcedSounds(void) {
+	char mySoundModel[MAX_QPATH];
+	char teamSoundModel[MAX_QPATH];
+	char enemySoundModel[MAX_QPATH];
+	char *s;
+	int i;
+
+	trap_Cvar_VariableStringBuffer( "cg_mySound", mySoundModel, sizeof( mySoundModel ) );
+	trap_Cvar_VariableStringBuffer( "cg_teamSound", teamSoundModel, sizeof( teamSoundModel ) );
+	trap_Cvar_VariableStringBuffer( "cg_enemySound", enemySoundModel, sizeof( enemySoundModel ) );
+
+	for ( i = 0 ; i < MAX_CUSTOM_SOUNDS ; i++ ) {
+		s = cg_customSoundNames[i];
+		if ( !s ) {
+			break;
+		}
+
+		cgs.mySounds[i] = 0;
+		cgs.teamSounds[i] = 0;
+		cgs.enemySounds[i] = 0;
+
+		if (mySoundModel[0]) {
+			cgs.mySounds[i] = trap_S_RegisterSound( va("sound/player/%s/%s", mySoundModel, s + 1), qfalse );
+		}
+		if (teamSoundModel[0]) {
+			cgs.teamSounds[i] = trap_S_RegisterSound( va("sound/player/%s/%s", teamSoundModel, s + 1), qfalse );
+		}
+		if (enemySoundModel[0]) {
+			cgs.enemySounds[i] = trap_S_RegisterSound( va("sound/player/%s/%s", enemySoundModel, s + 1), qfalse );
+		}
+	}
+}
 
 /*
 ===================

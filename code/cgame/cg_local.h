@@ -1310,7 +1310,7 @@ typedef struct
 	vec3_t          inlineModelMidpoints[MAX_MODELS];
 
 	clientInfo_t    clientinfo[MAX_CLIENTS];
-
+	
 	// teamchat width is *3 because of embedded color codes
 	char            teamChatMsgs[TEAMCHAT_HEIGHT][TEAMCHAT_WIDTH * 3 + 1];
 	int             teamChatMsgTimes[TEAMCHAT_HEIGHT];
@@ -1332,6 +1332,10 @@ typedef struct
 	int acceptOrderTime;
 	int acceptTask;
 	int acceptLeader;
+
+	sfxHandle_t		mySounds[MAX_CUSTOM_SOUNDS];
+	sfxHandle_t		teamSounds[MAX_CUSTOM_SOUNDS];
+	sfxHandle_t		enemySounds[MAX_CUSTOM_SOUNDS];
 
 	// media
 	cgMedia_t       media;
@@ -1702,6 +1706,9 @@ extern vmCvar_t			cg_markEnemy;
 extern vmCvar_t			cg_markedColor;
 extern vmCvar_t		cg_markTeam;
 extern vmCvar_t		cg_markTeamColor;
+extern vmCvar_t		cg_mySound;
+extern vmCvar_t		cg_teamSound;
+extern vmCvar_t		cg_enemySound;
 extern vmCvar_t         be_run;
 
 
@@ -1999,6 +2006,7 @@ void CG_ResetPlayerEntity(centity_t* cent);
 void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int team);
 void CG_NewClientInfo(int clientNum);
 sfxHandle_t CG_CustomSound(int clientNum, const char* soundName);
+void CG_LoadForcedSounds(void);
 void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
 
@@ -2181,6 +2189,7 @@ void CG_Respawn(void);
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
 qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum);
+
 
 //
 // cg_customloc.c
@@ -2683,6 +2692,7 @@ void CG_LocalEventCvarChanged_cg_markEnemy(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markEnemyColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart);
 
 
 #ifdef __cplusplus

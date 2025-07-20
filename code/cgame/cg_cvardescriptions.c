@@ -335,7 +335,17 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "ch_crosshairDecorActionColorLow", "Low damage color for crosshair decorator action (used with ^3ch_crosshairDecorAction ^28^7).\n\"^2color^7\" - color name, digit or hex" },
 	{ "ch_crosshairDecorActionColorMid", "Medium damage color for crosshair decorator action (used with ^3ch_crosshairDecorAction ^28^7).\n\"^2color^7\" - color name, digit or hex" },
 	{ "ch_crosshairDecorActionColorHigh", "High damage color for crosshair decorator action (used with ^3ch_crosshairDecorAction ^28^7).\n\"^2color^7\" - color name, digit or hex" },
-
+	{ "cg_mySound", "Set player model sound set. \"^2model^7\" - model name, e.g. ^2keel^7" },
+	{ "cg_teamSound", "Set teammate model sound set. \"^2model^7\" - model name, e.g. ^2keel^7" },
+	{ "cg_enemySound", "Set enemy model sound set. \"^2model^7\" - model name, e.g. ^2keel^7" },
+	{ "cg_markTeam", "Mark teammate(s) to change outline color. \"^2-1^7\" disables it. Player IDs separated by spaces, e.g. ^20 3 7^7" },
+	{ "cg_markTeamColor", "Outline color for marked teammates. \"^2color^7\" - name, digit or hex" },
+	{ "cg_friendHudMarkerMaxDist", "Maximum distance at which the teammate HUD marker is visible. ^20^7 - unlimited." },
+	{ "cg_friendHudMarkerSize", "Base size of the teammate HUD marker." },
+	{ "cg_friendHudMarkerMaxScale", "Maximum additional scale factor based on distance (applied to base size)." },
+	{ "cg_friendHudMarkerMinScale", "Minimum scale factor based on distance." },
+	{ "cg_friendsWallhack", "Show teammate markers through walls\n  ^20^7 - disabled\n  ^21^7 - enabled." },
+	{ "cg_drawHudMarkers", "Whether to display teammate markers on the HUD." },
 };
 
 

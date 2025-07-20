@@ -447,6 +447,9 @@ vmCvar_t		cg_markEnemy;
 vmCvar_t		cg_markEnemyColor;
 vmCvar_t		cg_markTeam;
 vmCvar_t		cg_markTeamColor;
+vmCvar_t		cg_mySound;
+vmCvar_t		cg_teamSound;
+vmCvar_t		cg_enemySound;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -789,20 +792,23 @@ static cvarTable_t cvarTable[] =
 	{ &cg_friendHudMarkerMinScale, "cg_friendHudMarkerMinScale", "0.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_drawHudMarkers, "cg_drawHudMarkers", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE | CVAR_NEW},
-	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE | CVAR_NEW},
-	{ &cg_accuracyIconSize, "cg_accuracyIconSize", "18", CVAR_ARCHIVE | CVAR_NEW},
+	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_accuracyIconSize, "cg_accuracyIconSize", "18", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_accuracyFont, "cg_accuracyFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_accuracyFont, },
-	{ &ch_crosshairActionColorLow,  "ch_crosshairActionColorLow", "white",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairActionColor},
-	{ &ch_crosshairActionColorMid,  "ch_crosshairActionColorMid", "yellow",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairActionColor},
-	{ &ch_crosshairActionColorHigh,  "ch_crosshairActionColorHigh", "orange",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairActionColor},
-	{ &ch_crosshairDecorActionColorLow,  "ch_crosshairDecorActionColorLow", "white",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor},
-	{ &ch_crosshairDecorActionColorMid,  "ch_crosshairDecorActionColorMid", "yellow",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor},
-	{ &ch_crosshairDecorActionColorHigh,  "ch_crosshairDecorActionColorHigh", "orange",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor},
+	{ &ch_crosshairActionColorLow,  "ch_crosshairActionColorLow", "white",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairActionColor },
+	{ &ch_crosshairActionColorMid,  "ch_crosshairActionColorMid", "yellow",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairActionColor },
+	{ &ch_crosshairActionColorHigh,  "ch_crosshairActionColorHigh", "orange",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairActionColor },
+	{ &ch_crosshairDecorActionColorLow,  "ch_crosshairDecorActionColorLow", "white",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor },
+	{ &ch_crosshairDecorActionColorMid,  "ch_crosshairDecorActionColorMid", "yellow",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor },
+	{ &ch_crosshairDecorActionColorHigh,  "ch_crosshairDecorActionColorHigh", "orange",  CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ch_crosshairDecorActionColor },
 	{ &cg_markEnemy, "cg_markEnemy", "-1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markEnemy },
 	{ &cg_markEnemyColor, "cg_markEnemyColor", "Yellow", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markEnemyColor },
 	{ &cg_markTeam, "cg_markTeam", "-1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markTeam },
-	{ &cg_markTeamColor, "cg_markTeamColor", "Pink", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markTeamColor  }
+	{ &cg_markTeamColor, "cg_markTeamColor", "Pink", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markTeamColor  },
+	{ &cg_mySound, "cg_mySound", "", CVAR_ARCHIVE | CVAR_NEW | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
+	{ &cg_teamSound, "cg_teamSound", "", CVAR_ARCHIVE | CVAR_NEW | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
+	{ &cg_enemySound, "cg_enemySound", "", CVAR_ARCHIVE | CVAR_NEW | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound }
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -2194,6 +2200,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	trap_S_ClearLoopingSounds(qtrue);
 
+	CG_LoadForcedSounds();
 	CG_CustomLocationsLoad();
 
 	cgs.osp.decals_number = 0;
