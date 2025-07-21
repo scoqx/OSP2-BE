@@ -235,61 +235,61 @@ static void CG_CrosshairGetHitColor(const vec4_t base_color, const vec4_t hit_co
 
 static void CG_CrosshairGetColor(vec4_t hcolor)
 {
-    if (cg_crosshairHealth.integer != 0)
-    {
-        CG_ColorForHealth(hcolor, NULL);
-    }
-    else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
-    {
-        CG_CrosshairPickDamageColor(
-            cgs.osp.crosshair.color,
-            cgs.osp.crosshair.actionColorLow,
-            cgs.osp.crosshair.actionColorMid,
-            cgs.osp.crosshair.actionColorHigh,
-            cgs.osp.crosshair.actionColor, // VeryHigh
-            cgs.osp.lastHitDamage,
-            ch_crosshairActionTime.integer,
-            hcolor
-        );
-    }
-    else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR)
-    {
-        CG_CrosshairGetHitColor(cgs.osp.crosshair.color, cgs.osp.crosshair.actionColor, ch_crosshairActionTime.integer, hcolor);
-    }
-    else
-    {
-        VectorCopy(cgs.osp.crosshair.color, hcolor);
-    }
+	if (cg_crosshairHealth.integer != 0)
+	{
+		CG_ColorForHealth(hcolor, NULL);
+	}
+	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
+	{
+		CG_CrosshairPickDamageColor(
+		    cgs.osp.crosshair.color,
+		    cgs.osp.crosshair.actionColorLow,
+		    cgs.osp.crosshair.actionColorMid,
+		    cgs.osp.crosshair.actionColorHigh,
+		    cgs.osp.crosshair.actionColor, // VeryHigh
+		    cgs.osp.lastHitDamage,
+		    ch_crosshairActionTime.integer,
+		    hcolor
+		);
+	}
+	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR)
+	{
+		CG_CrosshairGetHitColor(cgs.osp.crosshair.color, cgs.osp.crosshair.actionColor, ch_crosshairActionTime.integer, hcolor);
+	}
+	else
+	{
+		VectorCopy(cgs.osp.crosshair.color, hcolor);
+	}
 
-    hcolor[3] = CG_CrosshairGetOpaque();
+	hcolor[3] = CG_CrosshairGetOpaque();
 }
 
 
 static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 {
-    if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
-    {
-        CG_CrosshairPickDamageColor(
-            cgs.osp.crosshair.decorColor,
-            cgs.osp.crosshair.decorActionColorLow,
-            cgs.osp.crosshair.decorActionColorMid,
-            cgs.osp.crosshair.decorActionColorHigh,
-            cgs.osp.crosshair.decorActionColor, // VeryHigh
-            cgs.osp.lastHitDamage,
-            ch_crosshairDecorActionTime.integer,
-            hcolor
-        );
-    }
-    else if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR)
-    {
-        CG_CrosshairGetHitColor(cgs.osp.crosshair.decorColor, cgs.osp.crosshair.decorActionColor, ch_crosshairDecorActionTime.integer, hcolor);
-    }
-    else
-    {
-        VectorCopy(cgs.osp.crosshair.decorColor, hcolor);
-    }
+	if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
+	{
+		CG_CrosshairPickDamageColor(
+		    cgs.osp.crosshair.decorColor,
+		    cgs.osp.crosshair.decorActionColorLow,
+		    cgs.osp.crosshair.decorActionColorMid,
+		    cgs.osp.crosshair.decorActionColorHigh,
+		    cgs.osp.crosshair.decorActionColor, // VeryHigh
+		    cgs.osp.lastHitDamage,
+		    ch_crosshairDecorActionTime.integer,
+		    hcolor
+		);
+	}
+	else if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR)
+	{
+		CG_CrosshairGetHitColor(cgs.osp.crosshair.decorColor, cgs.osp.crosshair.decorActionColor, ch_crosshairDecorActionTime.integer, hcolor);
+	}
+	else
+	{
+		VectorCopy(cgs.osp.crosshair.decorColor, hcolor);
+	}
 
-    hcolor[3] = CG_CrosshairDecorGetOpaque();
+	hcolor[3] = CG_CrosshairDecorGetOpaque();
 }
 
 void CG_DrawCrosshair(void)

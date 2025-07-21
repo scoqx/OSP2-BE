@@ -2740,7 +2740,7 @@ static float CG_OSPHUDDrawScores(float y)
 			len = CG_DrawStrlen(s);
 			w = len * fontScoresW + 8;
 			x -= w;
-			
+
 			color[0] = cgs.be.redTeamColor[0];
 			color[1] = cgs.be.redTeamColor[1];
 			color[2] = cgs.be.redTeamColor[2];

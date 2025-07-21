@@ -149,43 +149,56 @@ CG_CustomSound
 
 ================
 */
-sfxHandle_t	CG_CustomSound( int clientNum, const char *soundName ) {
-	clientInfo_t *ci;
-	int			i;
+sfxHandle_t CG_CustomSound(int clientNum, const char* soundName)
+{
+	clientInfo_t* ci;
+	int         i;
 	int myteam;
-	clientInfo_t *myself;
+	clientInfo_t* myself;
 
-	if (cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) {
+	if (cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	{
 		myteam = cgs.clientinfo[cg.snap->ps.clientNum].team;
 		myself = &cgs.clientinfo[cg.snap->ps.clientNum];
-	} else {
+	}
+	else
+	{
 		myteam = cg.snap->ps.persistant[PERS_TEAM];
 		myself = &cgs.clientinfo[cg.clientNum];
 	}
 
-	if ( soundName[0] != '*' ) {
-		return trap_S_RegisterSound( soundName, qfalse );
+	if (soundName[0] != '*')
+	{
+		return trap_S_RegisterSound(soundName, qfalse);
 	}
 
-	if ( clientNum < 0 || clientNum >= MAX_CLIENTS ) {
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
 		clientNum = 0;
 	}
 	ci = &cgs.clientinfo[ clientNum ];
 
-	for ( i = 0 ; i < MAX_CUSTOM_SOUNDS && cg_customSoundNames[i] ; i++ ) {
-		if ( !strcmp( soundName, cg_customSoundNames[i] ) ) {
-			if (ci == myself && cgs.mySounds[i]) {
+	for (i = 0 ; i < MAX_CUSTOM_SOUNDS && cg_customSoundNames[i] ; i++)
+	{
+		if (!strcmp(soundName, cg_customSoundNames[i]))
+		{
+			if (ci == myself && cgs.mySounds[i])
+			{
 				return cgs.mySounds[i];
-			} else if ((myteam != TEAM_FREE && ci->team == myteam) && cgs.teamSounds[i]) {
-					return cgs.teamSounds[i];
-			} else if (((ci->team != myteam) || (myteam == TEAM_FREE && ci != myself)) && cgs.enemySounds[i]) {
+			}
+			else if ((myteam != TEAM_FREE && ci->team == myteam) && cgs.teamSounds[i])
+			{
+				return cgs.teamSounds[i];
+			}
+			else if (((ci->team != myteam) || (myteam == TEAM_FREE && ci != myself)) && cgs.enemySounds[i])
+			{
 				return cgs.enemySounds[i];
 			}
 			return ci->sounds[i];
 		}
 	}
 
-	CG_Error( "Unknown custom sound: %s", soundName );
+	CG_Error("Unknown custom sound: %s", soundName);
 	return 0;
 }
 
@@ -643,20 +656,23 @@ static qboolean CG_RegisterClientModelname(clientInfo_t* ci, const char* modelNa
 	return qtrue;
 }
 
-void CG_LoadForcedSounds(void) {
+void CG_LoadForcedSounds(void)
+{
 	char mySoundModel[MAX_QPATH];
 	char teamSoundModel[MAX_QPATH];
 	char enemySoundModel[MAX_QPATH];
-	char *s;
+	char* s;
 	int i;
 
-	trap_Cvar_VariableStringBuffer( "cg_mySound", mySoundModel, sizeof( mySoundModel ) );
-	trap_Cvar_VariableStringBuffer( "cg_teamSound", teamSoundModel, sizeof( teamSoundModel ) );
-	trap_Cvar_VariableStringBuffer( "cg_enemySound", enemySoundModel, sizeof( enemySoundModel ) );
+	trap_Cvar_VariableStringBuffer("cg_mySound", mySoundModel, sizeof(mySoundModel));
+	trap_Cvar_VariableStringBuffer("cg_teamSound", teamSoundModel, sizeof(teamSoundModel));
+	trap_Cvar_VariableStringBuffer("cg_enemySound", enemySoundModel, sizeof(enemySoundModel));
 
-	for ( i = 0 ; i < MAX_CUSTOM_SOUNDS ; i++ ) {
+	for (i = 0 ; i < MAX_CUSTOM_SOUNDS ; i++)
+	{
 		s = cg_customSoundNames[i];
-		if ( !s ) {
+		if (!s)
+		{
 			break;
 		}
 
@@ -664,14 +680,17 @@ void CG_LoadForcedSounds(void) {
 		cgs.teamSounds[i] = 0;
 		cgs.enemySounds[i] = 0;
 
-		if (mySoundModel[0]) {
-			cgs.mySounds[i] = trap_S_RegisterSound( va("sound/player/%s/%s", mySoundModel, s + 1), qfalse );
+		if (mySoundModel[0])
+		{
+			cgs.mySounds[i] = trap_S_RegisterSound(va("sound/player/%s/%s", mySoundModel, s + 1), qfalse);
 		}
-		if (teamSoundModel[0]) {
-			cgs.teamSounds[i] = trap_S_RegisterSound( va("sound/player/%s/%s", teamSoundModel, s + 1), qfalse );
+		if (teamSoundModel[0])
+		{
+			cgs.teamSounds[i] = trap_S_RegisterSound(va("sound/player/%s/%s", teamSoundModel, s + 1), qfalse);
 		}
-		if (enemySoundModel[0]) {
-			cgs.enemySounds[i] = trap_S_RegisterSound( va("sound/player/%s/%s", enemySoundModel, s + 1), qfalse );
+		if (enemySoundModel[0])
+		{
+			cgs.enemySounds[i] = trap_S_RegisterSound(va("sound/player/%s/%s", enemySoundModel, s + 1), qfalse);
 		}
 	}
 }
@@ -1960,47 +1979,51 @@ static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color
 	trap_R_AddRefEntityToScene(&ent);
 }
 
-static qhandle_t CG_GetPlayerSpriteShader(centity_t *cent) {
-	qhandle_t *shaderarr;
+static qhandle_t CG_GetPlayerSpriteShader(centity_t* cent)
+{
+	qhandle_t* shaderarr;
 	int totalhp;
 
-	if (CG_IsFrozenEntity(cent)) {
+	if (CG_IsFrozenEntity(cent))
+	{
 		return cgs.media.frozenFoeTagShader;
 	}
 
 	// if (cgs.ratFlags & RAT_FRIENDSWALLHACK) {
-	// 	shaderarr = cgs.media.friendThroughWallColorShaders;
+	//  shaderarr = cgs.media.friendThroughWallColorShaders;
 	// }
 
 	return cgs.media.friendShader;
 }
 
-static qboolean CG_FriendVisible(centity_t *cent) {
+static qboolean CG_FriendVisible(centity_t* cent)
+{
 	vec3_t start, end;
 	trace_t trace;
 
 	VectorCopy(cg.refdef.vieworg, start);
 	VectorCopy(cent->lerpOrigin, end);
 	end[2] += 24.0f;
-	CG_Trace(&trace, start, vec3_origin, vec3_origin, end, 
-         cg.snap->ps.clientNum, CONTENTS_SOLID);
+	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
+	         cg.snap->ps.clientNum, CONTENTS_SOLID);
 
-	CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin, 
-			cg.snap->ps.clientNum,
-			CONTENTS_SOLID);
+	CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin,
+	         cg.snap->ps.clientNum,
+	         CONTENTS_SOLID);
 
-	if (trace.fraction == 1.0) {
+	if (trace.fraction == 1.0)
+	{
 		return qtrue;
 	}
 	return qfalse;
 
 	//VectorCopy( cg.refdef.vieworg, start );
-	//CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin, 
-	//		cg.snap->ps.clientNum,
-	//		CONTENTS_SOLID |CONTENTS_BODY );
+	//CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin,
+	//      cg.snap->ps.clientNum,
+	//      CONTENTS_SOLID |CONTENTS_BODY );
 
 	//if (trace.entityNum <= MAX_CLIENTS && trace.entityNum == cent->currentState.clientNum) {
-	//	return qtrue;
+	//  return qtrue;
 	//}
 	//return qfalse;
 }
@@ -2082,7 +2105,8 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
 	return qtrue;
 }
 
-static void CG_FriendHudMarker(centity_t *cent) {
+static void CG_FriendHudMarker(centity_t* cent)
+{
 	int team;
 	float distance;
 	float hfov_x;
@@ -2091,20 +2115,23 @@ static void CG_FriendHudMarker(centity_t *cent) {
 	clientInfo_t* cl;
 	team = cgs.clientinfo[cent->currentState.clientNum].team;
 	if (cgs.gametype < GT_TEAM
-		|| !cg_teamIndicator.integer
-		|| cg.snap->ps.persistant[PERS_TEAM] != team
-		|| (cent->currentState.eFlags & EF_DEAD && !CG_IsFrozenEntity(cent))
-		|| cent->currentState.number == cg.snap->ps.clientNum
-		|| cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) {
+	        || !cg_teamIndicator.integer
+	        || cg.snap->ps.persistant[PERS_TEAM] != team
+	        || (cent->currentState.eFlags & EF_DEAD && !CG_IsFrozenEntity(cent))
+	        || cent->currentState.number == cg.snap->ps.clientNum
+	        || cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	{
 		return;
 	}
 
-	if (!cg_friendsWallhack.integer && !CG_FriendVisible(cent)) {
+	if (!cg_friendsWallhack.integer && !CG_FriendVisible(cent))
+	{
 		return;
 	}
 
 	distance = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
-	if (cg_friendHudMarkerMaxDist.integer > 0 && distance > cg_friendHudMarkerMaxDist.value) {
+	if (cg_friendHudMarkerMaxDist.integer > 0 && distance > cg_friendHudMarkerMaxDist.value)
+	{
 		return;
 	}
 
@@ -2115,19 +2142,22 @@ static void CG_FriendHudMarker(centity_t *cent) {
 	size = MAX(cg_friendHudMarkerMinScale.value, size);
 
 	cl = &cgs.clientinfo[cent->currentState.clientNum];
-	if (cl->health > 0) {
+	if (cl->health > 0)
+	{
 		CG_GetColorForHealth(cl->health, cl->armor, color, NULL);
-	} else {
+	}
+	else
+	{
 		Vector4Copy(colorWhite, color);
 		color[3] = 1.0f;
 	}
 
 	CG_HudBorderMarker(
-		cent->lerpOrigin,
-		color,
-		cg_friendHudMarkerSize.value * size,
-		CG_GetPlayerSpriteShader(cent),
-		270
+	    cent->lerpOrigin,
+	    color,
+	    cg_friendHudMarkerSize.value * size,
+	    CG_GetPlayerSpriteShader(cent),
+	    270
 	);
 }
 
@@ -2203,9 +2233,9 @@ static void CG_PlayerSprites(centity_t* cent)
 			{
 				qhandle_t shader;
 				if (cg_friendsWallhack.integer)
-				shader = cgs.media.frozenFoeTagShaderWallhack;
+					shader = cgs.media.frozenFoeTagShaderWallhack;
 				else
-				shader = cgs.media.frozenFoeTagShader;
+					shader = cgs.media.frozenFoeTagShader;
 				CG_PlayerFloatSprite(cent, shader, NULL);
 			}
 			else if (cg_drawFriend.integer != 2)
@@ -2222,9 +2252,9 @@ static void CG_PlayerSprites(centity_t* cent)
 					VectorCopy(colorRed, color);
 				}
 				if (cg_friendsWallhack.integer)
-				shader = cgs.media.friendShaderWallhack;
+					shader = cgs.media.friendShaderWallhack;
 				else
-				shader = cgs.media.friendShader;
+					shader = cgs.media.friendShader;
 				CG_PlayerFloatSprite(cent, shader, color);
 			}
 			return;
@@ -2815,7 +2845,7 @@ void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 		{
 			/* if (cgs.be.marked[clientNum])
 			{
-				Vector4Copy(cgs.be.markedColor, color);
+			    Vector4Copy(cgs.be.markedColor, color);
 			}
 			else  */if (cg_enemyOutlineColorUnique.integer == 0)
 			{
@@ -2941,7 +2971,7 @@ void CG_Player(centity_t* cent)
 	CG_PlayerSplash(cent);
 
 	if (cg_drawHudMarkers.integer)
-	CG_FriendHudMarker(cent);
+		CG_FriendHudMarker(cent);
 
 	if (cg_shadows.integer == 3 && shadow)
 	{
@@ -3039,7 +3069,7 @@ void CG_Player(centity_t* cent)
 	CG_AddRefEntityWithPowerups(&legs, &cent->currentState, ci->team);
 
 	if (cg_drawOutline.integer)
-	CG_AddOutline(&legs, cent);
+		CG_AddOutline(&legs, cent);
 
 	//
 	// add the torso
@@ -3096,7 +3126,7 @@ void CG_Player(centity_t* cent)
 	CG_AddRefEntityWithPowerups(&torso, &cent->currentState, ci->team);
 
 	if (cg_drawOutline.integer)
-	CG_AddOutline(&torso, cent);
+		CG_AddOutline(&torso, cent);
 
 	//
 	// add the head
@@ -3157,12 +3187,12 @@ void CG_Player(centity_t* cent)
 	CG_AddRefEntityWithPowerups(&head, &cent->currentState, ci->team);
 
 	if (cg_drawOutline.integer)
-	CG_AddOutline(&head, cent);
+		CG_AddOutline(&head, cent);
 
 	CG_AddPlayerWeapon(&torso, NULL, cent, ci->team);
 
 	if (cg_drawHitBox.integer)
-	CG_AddHitBox(cent, ci->team);
+		CG_AddHitBox(cent, ci->team);
 }
 
 

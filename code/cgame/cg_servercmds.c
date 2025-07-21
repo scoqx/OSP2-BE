@@ -202,7 +202,7 @@ static void CG_ParseWarmup(void)
 	if (warmup == 0 && cg.warmup)
 	{
 		// Очистка новой статистики
-        memset(&cgs.be.newStats, 0, sizeof(cgs.be.newStats));
+		memset(&cgs.be.newStats, 0, sizeof(cgs.be.newStats));
 	}
 	else if (warmup > 0 && cg.warmup <= 0)
 	{
@@ -1168,16 +1168,18 @@ void CG_BEParseStatsInfo(void)
 
 void CG_BERequestStatsInfo(void)
 {
-    newStatsInfo_t* ns = &cgs.be.newStats;
-    cgs.be.newStats.statsLastRequestTime = qtrue;
-    trap_SendClientCommand("getstatsinfo");
+	newStatsInfo_t* ns = &cgs.be.newStats;
+	cgs.be.newStats.statsLastRequestTime = qtrue;
+	trap_SendClientCommand("getstatsinfo");
 }
 
-void CG_MaybeRequestStatsInfo(void) {
+void CG_MaybeRequestStatsInfo(void)
+{
 
-    if (CG_BE_Timer(1500)) {
-        CG_BERequestStatsInfo();
-    }
+	if (CG_BE_Timer(1500))
+	{
+		CG_BERequestStatsInfo();
+	}
 }
 
 /*

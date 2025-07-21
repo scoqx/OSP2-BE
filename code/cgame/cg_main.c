@@ -443,16 +443,16 @@ vmCvar_t        cg_friendHudMarkerMaxScale;
 vmCvar_t        cg_friendHudMarkerMinScale;
 vmCvar_t        cg_friendsWallhack;
 vmCvar_t        cg_drawHudMarkers;
-vmCvar_t		cg_markEnemy;
-vmCvar_t		cg_markEnemyColor;
-vmCvar_t		cg_markTeam;
-vmCvar_t		cg_markTeamColor;
-vmCvar_t		cg_mySound;
-vmCvar_t		cg_teamSound;
-vmCvar_t		cg_enemySound;
-vmCvar_t		cg_scoreboardRtColors;
-vmCvar_t		cg_scoreboardBtColors;
-vmCvar_t		cg_scoreboardSpecColor;
+vmCvar_t        cg_markEnemy;
+vmCvar_t        cg_markEnemyColor;
+vmCvar_t        cg_markTeam;
+vmCvar_t        cg_markTeamColor;
+vmCvar_t        cg_mySound;
+vmCvar_t        cg_teamSound;
+vmCvar_t        cg_enemySound;
+vmCvar_t        cg_scoreboardRtColors;
+vmCvar_t        cg_scoreboardBtColors;
+vmCvar_t        cg_scoreboardSpecColor;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
