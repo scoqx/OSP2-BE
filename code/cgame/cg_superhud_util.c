@@ -11,225 +11,225 @@ typedef struct
 
 // static void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color, qboolean alphaOverride)
 // {
-// 	const superhudColor_t* in = &config->color.value;
-// 	const float* target;
-// 	team_t team;
-// 	float finalAlpha = 1.0f;
+//  const superhudColor_t* in = &config->color.value;
+//  const float* target;
+//  team_t team;
+//  float finalAlpha = 1.0f;
 
-// 	if (!config->color.isSet)
-// 	{
-// 		if (alphaOverride)
-// 		{
-// 			Vector4Copy(colorWhite, color);
-// 		}
-// 		else
-// 		{
-// 			VectorCopy(colorWhite, color);
-// 		}
-// 		return;
-// 	}
+//  if (!config->color.isSet)
+//  {
+//      if (alphaOverride)
+//      {
+//          Vector4Copy(colorWhite, color);
+//      }
+//      else
+//      {
+//          VectorCopy(colorWhite, color);
+//      }
+//      return;
+//  }
 
-// 	switch (in->type)
-// 	{
-// 		case SUPERHUD_COLOR_RGBA:
-// 			target = in->rgba;
-// 			finalAlpha = in->rgba[3]; // Берём альфу из исходного цвета
-// 			break;
+//  switch (in->type)
+//  {
+//      case SUPERHUD_COLOR_RGBA:
+//          target = in->rgba;
+//          finalAlpha = in->rgba[3]; // Берём альфу из исходного цвета
+//          break;
 
-// 		case SUPERHUD_COLOR_T:
-// 			team = CG_SHUDGetOurActiveTeam();
-// 			target = (team == TEAM_BLUE) ? colorBlue : colorRed;
-// 			break;
+//      case SUPERHUD_COLOR_T:
+//          team = CG_SHUDGetOurActiveTeam();
+//          target = (team == TEAM_BLUE) ? colorBlue : colorRed;
+//          break;
 
-// 		case SUPERHUD_COLOR_E:
-// 			team = CG_SHUDGetOurActiveTeam();
-// 			target = (team == TEAM_BLUE) ? colorRed : colorBlue;
-// 			break;
+//      case SUPERHUD_COLOR_E:
+//          team = CG_SHUDGetOurActiveTeam();
+//          target = (team == TEAM_BLUE) ? colorRed : colorBlue;
+//          break;
 
-// 		case SUPERHUD_COLOR_I:
-// 			target = colorWhite;
-// 			break;
+//      case SUPERHUD_COLOR_I:
+//          target = colorWhite;
+//          break;
 
-// 		default:
-// 			target = colorWhite;
-// 			break;
-// 	}
+//      default:
+//          target = colorWhite;
+//          break;
+//  }
 
-// 	// Если color2 задан и исходный color — это буква (T, E, I), то заменяем только альфу
-// 	if (config->color2.isSet && in->type != SUPERHUD_COLOR_RGBA)
-// 	{
-// 		finalAlpha = config->color2.value.rgba[3];
-// 	}
+//  // Если color2 задан и исходный color — это буква (T, E, I), то заменяем только альфу
+//  if (config->color2.isSet && in->type != SUPERHUD_COLOR_RGBA)
+//  {
+//      finalAlpha = config->color2.value.rgba[3];
+//  }
 
-// 	// Применяем цвет
-// 	if (alphaOverride)
-// 	{
-// 		color[0] = target[0];
-// 		color[1] = target[1];
-// 		color[2] = target[2];
-// 		color[3] = finalAlpha;
-// 	}
-// 	else
-// 	{
-// 		color[0] = target[0];
-// 		color[1] = target[1];
-// 		color[2] = target[2];
-// 	}
+//  // Применяем цвет
+//  if (alphaOverride)
+//  {
+//      color[0] = target[0];
+//      color[1] = target[1];
+//      color[2] = target[2];
+//      color[3] = finalAlpha;
+//  }
+//  else
+//  {
+//      color[0] = target[0];
+//      color[1] = target[1];
+//      color[2] = target[2];
+//  }
 // }
 
 // static void CG_SHUDConfigPickBgColor(const superhudConfig_t* config, float* color, qboolean alphaOverride)
 // {
-// 	const superhudColor_t* in = &config->bgcolor.value;
-// 	const float* target;
-// 	team_t team;
-// 	float finalAlpha = 1.0f;  // по умолчанию 1
+//  const superhudColor_t* in = &config->bgcolor.value;
+//  const float* target;
+//  team_t team;
+//  float finalAlpha = 1.0f;  // по умолчанию 1
 
-// 	if (!config->bgcolor.isSet)
-// 	{
-// 		if (alphaOverride)
-// 		{
-// 			Vector4Copy(colorWhite, color);
-// 		}
-// 		else
-// 		{
-// 			VectorCopy(colorWhite, color);
-// 		}
-// 		return;
-// 	}
+//  if (!config->bgcolor.isSet)
+//  {
+//      if (alphaOverride)
+//      {
+//          Vector4Copy(colorWhite, color);
+//      }
+//      else
+//      {
+//          VectorCopy(colorWhite, color);
+//      }
+//      return;
+//  }
 
-// 	switch (in->type)
-// 	{
-// 		case SUPERHUD_COLOR_RGBA:
-// 			target = in->rgba;
-// 			finalAlpha = in->rgba[3];  // Берём альфу из исходного цвета
-// 			break;
+//  switch (in->type)
+//  {
+//      case SUPERHUD_COLOR_RGBA:
+//          target = in->rgba;
+//          finalAlpha = in->rgba[3];  // Берём альфу из исходного цвета
+//          break;
 
-// 		case SUPERHUD_COLOR_T:
-// 			team = CG_SHUDGetOurActiveTeam();
-// 			target = (team == TEAM_BLUE) ? colorBlue : colorRed;
-// 			break;
+//      case SUPERHUD_COLOR_T:
+//          team = CG_SHUDGetOurActiveTeam();
+//          target = (team == TEAM_BLUE) ? colorBlue : colorRed;
+//          break;
 
-// 		case SUPERHUD_COLOR_E:
-// 			team = CG_SHUDGetOurActiveTeam();
-// 			target = (team == TEAM_BLUE) ? colorRed : colorBlue;
-// 			break;
+//      case SUPERHUD_COLOR_E:
+//          team = CG_SHUDGetOurActiveTeam();
+//          target = (team == TEAM_BLUE) ? colorRed : colorBlue;
+//          break;
 
-// 		case SUPERHUD_COLOR_I:
-// 		default:
-// 			target = colorWhite;
-// 			break;
-// 	}
+//      case SUPERHUD_COLOR_I:
+//      default:
+//          target = colorWhite;
+//          break;
+//  }
 
-// 	// Если bgcolor2 задан и исходный цвет не RGBA, заменяем только альфу
-// 	if (config->bgcolor2.isSet && in->type != SUPERHUD_COLOR_RGBA)
-// 	{
-// 		finalAlpha = config->bgcolor2.value.rgba[3];
-// 	}
+//  // Если bgcolor2 задан и исходный цвет не RGBA, заменяем только альфу
+//  if (config->bgcolor2.isSet && in->type != SUPERHUD_COLOR_RGBA)
+//  {
+//      finalAlpha = config->bgcolor2.value.rgba[3];
+//  }
 
-// 	if (alphaOverride)
-// 	{
-// 		color[0] = target[0];
-// 		color[1] = target[1];
-// 		color[2] = target[2];
-// 		color[3] = finalAlpha;
-// 	}
-// 	else
-// 	{
-// 		color[0] = target[0];
-// 		color[1] = target[1];
-// 		color[2] = target[2];
-// 		color[3] = finalAlpha;  // Всегда задаём альфу и здесь
-// 	}
+//  if (alphaOverride)
+//  {
+//      color[0] = target[0];
+//      color[1] = target[1];
+//      color[2] = target[2];
+//      color[3] = finalAlpha;
+//  }
+//  else
+//  {
+//      color[0] = target[0];
+//      color[1] = target[1];
+//      color[2] = target[2];
+//      color[3] = finalAlpha;  // Всегда задаём альфу и здесь
+//  }
 // }
 
 static void CG_SHUDConfigPickColorGeneric(
-    const qboolean *mainIsSet,
+    const qboolean* mainIsSet,
     const superhudColor_t* mainValue,
-    const qboolean *altIsSet,
+    const qboolean* altIsSet,
     const superhudColor_t* altValue,
     float* color,
     qboolean alphaOverride)
 {
-    const superhudColor_t* in = mainValue;
-    const float* target;
-    team_t team;
-    float finalAlpha = 1.0f;
+	const superhudColor_t* in = mainValue;
+	const float* target;
+	team_t team;
+	float finalAlpha = 1.0f;
 
-    if (!(*mainIsSet))
-    {
-        if (alphaOverride)
-        {
-            Vector4Copy(colorWhite, color);
-        }
-        else
-        {
-            VectorCopy(colorWhite, color);
-        }
-        return;
-    }
+	if (!(*mainIsSet))
+	{
+		if (alphaOverride)
+		{
+			Vector4Copy(colorWhite, color);
+		}
+		else
+		{
+			VectorCopy(colorWhite, color);
+		}
+		return;
+	}
 
-    switch (in->type)
-    {
-        case SUPERHUD_COLOR_RGBA:
-            target = in->rgba;
-            finalAlpha = in->rgba[3];
-            break;
+	switch (in->type)
+	{
+		case SUPERHUD_COLOR_RGBA:
+			target = in->rgba;
+			finalAlpha = in->rgba[3];
+			break;
 
-        case SUPERHUD_COLOR_T:
-            team = CG_SHUDGetOurActiveTeam();
-            target = (team == TEAM_BLUE) ? cgs.be.blueTeamColor : cgs.be.redTeamColor;
-            break;
+		case SUPERHUD_COLOR_T:
+			team = CG_SHUDGetOurActiveTeam();
+			target = (team == TEAM_BLUE) ? cgs.be.blueTeamColor : cgs.be.redTeamColor;
+			break;
 
-        case SUPERHUD_COLOR_E:
-            team = CG_SHUDGetOurActiveTeam();
-            target = (team == TEAM_BLUE) ? cgs.be.redTeamColor : cgs.be.blueTeamColor;
-            break;
+		case SUPERHUD_COLOR_E:
+			team = CG_SHUDGetOurActiveTeam();
+			target = (team == TEAM_BLUE) ? cgs.be.redTeamColor : cgs.be.blueTeamColor;
+			break;
 
-        case SUPERHUD_COLOR_I:
-        default:
-            target = colorWhite;
-            break;
-    }
+		case SUPERHUD_COLOR_I:
+		default:
+			target = colorWhite;
+			break;
+	}
 
-    if ((*altIsSet) && in->type != SUPERHUD_COLOR_RGBA)
-    {
-        finalAlpha = altValue->rgba[3];
-    }
+	if ((*altIsSet) && in->type != SUPERHUD_COLOR_RGBA)
+	{
+		finalAlpha = altValue->rgba[3];
+	}
 
-    if (alphaOverride)
-    {
-        color[0] = target[0];
-        color[1] = target[1];
-        color[2] = target[2];
-        color[3] = finalAlpha;
-    }
-    else
-    {
-        color[0] = target[0];
-        color[1] = target[1];
-        color[2] = target[2];
-        color[3] = finalAlpha;
-    }
+	if (alphaOverride)
+	{
+		color[0] = target[0];
+		color[1] = target[1];
+		color[2] = target[2];
+		color[3] = finalAlpha;
+	}
+	else
+	{
+		color[0] = target[0];
+		color[1] = target[1];
+		color[2] = target[2];
+		color[3] = finalAlpha;
+	}
 }
 void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color, qboolean alphaOverride)
 {
-    CG_SHUDConfigPickColorGeneric(&config->color.isSet, &config->color.value,
-                                 &config->color2.isSet, &config->color2.value,
-                                 color, alphaOverride);
+	CG_SHUDConfigPickColorGeneric(&config->color.isSet, &config->color.value,
+	                              &config->color2.isSet, &config->color2.value,
+	                              color, alphaOverride);
 }
 
 void CG_SHUDConfigPickBgColor(const superhudConfig_t* config, float* color, qboolean alphaOverride)
 {
-    CG_SHUDConfigPickColorGeneric(&config->bgcolor.isSet, &config->bgcolor.value,
-                                 &config->bgcolor2.isSet, &config->bgcolor2.value,
-                                 color, alphaOverride);
+	CG_SHUDConfigPickColorGeneric(&config->bgcolor.isSet, &config->bgcolor.value,
+	                              &config->bgcolor2.isSet, &config->bgcolor2.value,
+	                              color, alphaOverride);
 }
 
 void CG_SHUDConfigPickBorderColor(const superhudConfig_t* config, float* color, qboolean alphaOverride)
 {
-    CG_SHUDConfigPickColorGeneric(&config->borderColor.isSet, &config->borderColor.value,
-                                 &config->borderColor2.isSet, &config->borderColor2.value,
-                                 color, alphaOverride);
+	CG_SHUDConfigPickColorGeneric(&config->borderColor.isSet, &config->borderColor.value,
+	                              &config->borderColor2.isSet, &config->borderColor2.value,
+	                              color, alphaOverride);
 }
 
 
@@ -907,7 +907,7 @@ qboolean CG_SHUDFill(const superhudConfig_t* cfg)
 	if (cfg->bgcolor.isSet)
 	{
 		CG_SHUDConfigPickBgColor(cfg, bgColor, qfalse);
-		
+
 		trap_R_SetColor(bgColor);
 		trap_R_DrawStretchPic(x, y, w, h, 0, 0, 0, 0, cgs.media.whiteShader);
 		trap_R_SetColor(NULL);
@@ -1018,46 +1018,46 @@ void CG_SHUDDrawBorderDirect(const superhudCoord_t* coord, const vec4_t border, 
 
 qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg)
 {
-    vec4_t coord;
-    vec4_t borderColor;
+	vec4_t coord;
+	vec4_t borderColor;
 
-    if (!cfg->border.isSet || !cfg->rect.isSet || !cfg->borderColor.isSet)
-    {
-        return qfalse;
-    }
+	if (!cfg->border.isSet || !cfg->rect.isSet || !cfg->borderColor.isSet)
+	{
+		return qfalse;
+	}
 
-    Vector4Copy(cfg->rect.value, coord);
-    CG_AdjustFrom640(&coord[0], &coord[1], &coord[2], &coord[3]);
+	Vector4Copy(cfg->rect.value, coord);
+	CG_AdjustFrom640(&coord[0], &coord[1], &coord[2], &coord[3]);
 
-    CG_SHUDConfigPickBorderColor(cfg, borderColor, qfalse);
+	CG_SHUDConfigPickBorderColor(cfg, borderColor, qfalse);
 
-    CG_OSPDrawFrame(coord[0], coord[1], coord[2], coord[3],
-                    (float*)cfg->border.value, borderColor, qfalse);
+	CG_OSPDrawFrame(coord[0], coord[1], coord[2], coord[3],
+	                (float*)cfg->border.value, borderColor, qfalse);
 
-    return qtrue;
+	return qtrue;
 }
 
 
 void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ctx)
 {
-    qboolean drawBackground = (cfg->bgcolor.isSet && cfg->fill.isSet);
-    qboolean drawBorder = (cfg->border.isSet && cfg->borderColor.isSet);
+	qboolean drawBackground = (cfg->bgcolor.isSet && cfg->fill.isSet);
+	qboolean drawBorder = (cfg->border.isSet && cfg->borderColor.isSet);
 
-    if (!drawBackground && !drawBorder)
-    {
-        return;
-    }
+	if (!drawBackground && !drawBorder)
+	{
+		return;
+	}
 
-    if (drawBackground)
-    {
-        CG_SHUDConfigPickBgColor(cfg, ctx->background, qfalse);
-    }
+	if (drawBackground)
+	{
+		CG_SHUDConfigPickBgColor(cfg, ctx->background, qfalse);
+	}
 
-    if (drawBorder)
-    {
-        Vector4Copy(cfg->border.value, ctx->border);
-        CG_SHUDConfigPickBorderColor(cfg, ctx->borderColor, qfalse);
-    }
+	if (drawBorder)
+	{
+		Vector4Copy(cfg->border.value, ctx->border);
+		CG_SHUDConfigPickBorderColor(cfg, ctx->borderColor, qfalse);
+	}
 }
 
 

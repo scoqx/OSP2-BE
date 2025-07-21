@@ -819,16 +819,16 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseDoublebar(configFile
  */
 // static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBgColor(configFileInfo_t* finfo, superhudConfig_t* config)
 // {
-// 	superhudConfigParseStatus_t status;
+//  superhudConfigParseStatus_t status;
 
-// 	config->bgcolor.isSet = qfalse;
+//  config->bgcolor.isSet = qfalse;
 
-// 	status = CG_SHUDParseVec4t(finfo, config->bgcolor.value.rgba);
-// 	if (status != SUPERHUD_CONFIG_OK) return status;
+//  status = CG_SHUDParseVec4t(finfo, config->bgcolor.value.rgba);
+//  if (status != SUPERHUD_CONFIG_OK) return status;
 
-// 	config->bgcolor.isSet = qtrue;
+//  config->bgcolor.isSet = qtrue;
 
-// 	return status;
+//  return status;
 // }
 
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBgColor(configFileInfo_t* finfo, superhudConfig_t* config)

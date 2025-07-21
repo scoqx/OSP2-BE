@@ -966,13 +966,16 @@ static void PM_WalkMove(void)
 	}
 
 	// clamp the speed lower if wading or walking on the bottom
-	if ( pm->waterlevel ) {
-		float	waterScale;
+	if (pm->waterlevel)
+	{
+		float   waterScale;
 
-		if (pm->waterlevel != 1) {
+		if (pm->waterlevel != 1)
+		{
 			waterScale = pm->waterlevel / 3.0;
-			waterScale = 1.0 - ( 1.0 - pm_swimScale ) * waterScale;
-			if ( wishspeed > pm->ps->speed * waterScale ) {
+			waterScale = 1.0 - (1.0 - pm_swimScale) * waterScale;
+			if (wishspeed > pm->ps->speed * waterScale)
+			{
 				wishspeed = pm->ps->speed * waterScale;
 			}
 		}

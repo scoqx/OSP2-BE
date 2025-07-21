@@ -121,7 +121,7 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 			entry->runtime.attackerColor[3] = element->config.bgcolor.value.rgba[3];
 			entry->runtime.targetColor[3] = element->config.bgcolor.value.rgba[3];
 		}
-		else if(element->config.color.isSet && element->config.style.value == 2)
+		else if (element->config.color.isSet && element->config.style.value == 2)
 		{
 			entry->runtime.attackerColor[3] = element->config.color.value.rgba[3];
 			entry->runtime.targetColor[3] = element->config.color.value.rgba[3];

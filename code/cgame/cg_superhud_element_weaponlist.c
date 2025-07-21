@@ -150,7 +150,7 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 			{
 				if (element->config.bgcolor.isSet)
 				{
-    				CG_SHUDConfigPickBgColor(&element->tmp_config, element->back[element->weaponNum].color, qfalse);
+					CG_SHUDConfigPickBgColor(&element->tmp_config, element->back[element->weaponNum].color, qfalse);
 				}
 				else
 				{
@@ -189,7 +189,7 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 					Vector4Set(element->borderColor[element->weaponNum], 1, 1, 1, 0);
 				}
 			}
-			
+
 			else
 			{
 				Vector4Set(element->border[element->weaponNum], 0, 0, 0, 0);

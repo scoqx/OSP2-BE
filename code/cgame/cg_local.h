@@ -1092,13 +1092,15 @@ typedef struct weaponStats_s
 } weaponStats_t;
 
 
-typedef struct {
+typedef struct
+{
 	int lastTrackedWeapon;
 	int weapActive[WP_NUM_WEAPONS];
 	float lastAccuracy;
 	float kdratio;
 	float damageKoeff;
-	struct {
+	struct
+	{
 		float accuracy;
 		int kills;
 		int deaths;
@@ -1107,7 +1109,7 @@ typedef struct {
 		int pickUps;
 		int drops;
 	} stats[WP_NUM_WEAPONS];
-	
+
 	qboolean customStatsCalled;
 	int statsLastRequestTime;
 } newStatsInfo_t;
@@ -1217,10 +1219,10 @@ typedef struct cgs_osp_s
 		vec4_t actionColorLow;
 		vec4_t actionColorMid;
 		vec4_t actionColorHigh;
-		
+
 		vec4_t decorColor;
 		vec4_t decorActionColor;
-		
+
 		vec4_t decorActionColorLow;
 		vec4_t decorActionColorMid;
 		vec4_t decorActionColorHigh;
@@ -1310,7 +1312,7 @@ typedef struct
 	vec3_t          inlineModelMidpoints[MAX_MODELS];
 
 	clientInfo_t    clientinfo[MAX_CLIENTS];
-	
+
 	// teamchat width is *3 because of embedded color codes
 	char            teamChatMsgs[TEAMCHAT_HEIGHT][TEAMCHAT_WIDTH * 3 + 1];
 	int             teamChatMsgTimes[TEAMCHAT_HEIGHT];
@@ -1333,9 +1335,9 @@ typedef struct
 	int acceptTask;
 	int acceptLeader;
 
-	sfxHandle_t		mySounds[MAX_CUSTOM_SOUNDS];
-	sfxHandle_t		teamSounds[MAX_CUSTOM_SOUNDS];
-	sfxHandle_t		enemySounds[MAX_CUSTOM_SOUNDS];
+	sfxHandle_t     mySounds[MAX_CUSTOM_SOUNDS];
+	sfxHandle_t     teamSounds[MAX_CUSTOM_SOUNDS];
+	sfxHandle_t     enemySounds[MAX_CUSTOM_SOUNDS];
 
 	// media
 	cgMedia_t       media;
@@ -1695,23 +1697,23 @@ extern vmCvar_t        cg_friendsWallhack;
 extern vmCvar_t        cg_drawAccuracy;
 extern vmCvar_t        cg_accuracyFontSize;
 extern vmCvar_t        cg_accuracyIconSize;
-extern vmCvar_t			cg_accuracyFont;
+extern vmCvar_t         cg_accuracyFont;
 extern vmCvar_t        ch_crosshairActionColorLow;
 extern vmCvar_t        ch_crosshairActionColorMid;
 extern vmCvar_t        ch_crosshairActionColorHigh;
 extern vmCvar_t        ch_crosshairDecorActionColorLow;
 extern vmCvar_t        ch_crosshairDecorActionColorMid;
 extern vmCvar_t        ch_crosshairDecorActionColorHigh;
-extern vmCvar_t			cg_markEnemy;
-extern vmCvar_t			cg_markedColor;
-extern vmCvar_t		cg_markTeam;
-extern vmCvar_t		cg_markTeamColor;
-extern vmCvar_t		cg_mySound;
-extern vmCvar_t		cg_teamSound;
-extern vmCvar_t		cg_enemySound;
-extern vmCvar_t		cg_scoreboardRtColors;
-extern vmCvar_t		cg_scoreboardBtColors;
-extern vmCvar_t		cg_scoreboardSpecColor;
+extern vmCvar_t         cg_markEnemy;
+extern vmCvar_t         cg_markedColor;
+extern vmCvar_t     cg_markTeam;
+extern vmCvar_t     cg_markTeamColor;
+extern vmCvar_t     cg_mySound;
+extern vmCvar_t     cg_teamSound;
+extern vmCvar_t     cg_enemySound;
+extern vmCvar_t     cg_scoreboardRtColors;
+extern vmCvar_t     cg_scoreboardBtColors;
+extern vmCvar_t     cg_scoreboardSpecColor;
 extern vmCvar_t         be_run;
 
 
@@ -2132,7 +2134,7 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
                                 qhandle_t hModel, qhandle_t shader, int msec,
                                 qboolean isSprite);
 
-void CG_HudBorderMarker ( vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle );
+void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle);
 
 
 //
