@@ -2194,7 +2194,6 @@ void CG_RemoveChatEscapeChar(char* text);
 void CG_RemoveChatEscapeCharAll(char* text);
 void CG_StringMakeEscapeCharRAW(const char* in, char* out, int max);
 
-// void CG_BERequestStatsInfo(void);
 void CG_MaybeRequestStatsInfo(void);
 //
 // cg_playerstate.c
