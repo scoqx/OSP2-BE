@@ -979,6 +979,7 @@ int Q_PrintStrlen(const char* string);
 // removes color sequences from string
 char* Q_CleanStr(char* string);
 
+char *Q_strtok(char *s, const char *delim);
 //=============================================
 
 // 64-bit integers for global rankings interface

@@ -346,6 +346,9 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_friendHudMarkerMinScale", "Minimum scale factor based on distance." },
 	{ "cg_friendsWallhack", "Show teammate markers through walls\n  ^20^7 - disabled\n  ^21^7 - enabled." },
 	{ "cg_drawHudMarkers", "Whether to display teammate markers on the HUD." },
+	{ "cg_scoreboardRtColors", "Color of the red team scoreboard. ^3cg_scoreboardBE^7 must be enabled \n  ^2<color> <color>^7 separated by space. For example \"^2Red Green^7\" or \"^20099FF 99FF00^7\" or \"^24 Red^7\"." },
+	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color>^7 separated by space. For example \"^2Red Green^7\" or \"^20099FF 99FF00^7\" or \"^24 Red^7\"." },
+	{ "cg_scoreboardSpecColor", "Color of the spectator scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color>^7." },
 };
 
 

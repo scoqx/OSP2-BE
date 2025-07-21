@@ -364,3 +364,8 @@ SHUD:
 + cg_teamSound
 + cg_enemySound
 
+21.07.2025 be v0.9b
+Only for cg_scoreboardBE
++ cg_scoreboardRtColors
++ cg_scoreboardBtColors
++ cg_scoreboardSpecColor

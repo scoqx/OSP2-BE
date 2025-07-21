@@ -3371,7 +3371,7 @@ qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y)
 }
 
 void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor) {
-	int i;
+    int i;
     float maxVal = inColor[0];
     if (inColor[1] > maxVal) maxVal = inColor[1];
     if (inColor[2] > maxVal) maxVal = inColor[2];
@@ -3379,10 +3379,13 @@ void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor) {
     for (i = 0; i < 3; i++) {
         if (inColor[i] == maxVal) {
             outColor[i] = inColor[i];
+        } else if (inColor[i] == 0.0f) {
+            outColor[i] = 0.3f;
         } else {
-            outColor[i] = inColor[i] * 0.3f;
+            outColor[i] = inColor[i];
         }
     }
 
     outColor[3] = inColor[3] * 0.15f;
 }
+

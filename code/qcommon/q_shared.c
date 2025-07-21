@@ -1084,6 +1084,35 @@ char*     QDECL va(char* format, ...)
 	return buf;
 }
 
+// Q_strok
+char *Q_strtok(char *s, const char *delim) {
+    static char *nextToken; 
+    char *token;
+
+    if (s)
+        nextToken = s;
+
+    if (!nextToken)
+        return NULL;
+
+    while (*nextToken && strchr(delim, *nextToken))
+        nextToken++;
+
+    if (!*nextToken) {
+        nextToken = NULL;
+        return NULL;
+    }
+
+    token = nextToken;
+    while (*nextToken && !strchr(delim, *nextToken))
+        nextToken++;
+
+    if (*nextToken) {
+        *nextToken = '\0';
+        nextToken++;
+    }
+    return token;
+}
 
 /*
 =====================================================================

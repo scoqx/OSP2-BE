@@ -450,6 +450,9 @@ vmCvar_t		cg_markTeamColor;
 vmCvar_t		cg_mySound;
 vmCvar_t		cg_teamSound;
 vmCvar_t		cg_enemySound;
+vmCvar_t		cg_scoreboardRtColors;
+vmCvar_t		cg_scoreboardBtColors;
+vmCvar_t		cg_scoreboardSpecColor;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -808,7 +811,10 @@ static cvarTable_t cvarTable[] =
 	{ &cg_markTeamColor, "cg_markTeamColor", "Pink", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_markTeamColor  },
 	{ &cg_mySound, "cg_mySound", "", CVAR_ARCHIVE | CVAR_NEW | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
 	{ &cg_teamSound, "cg_teamSound", "", CVAR_ARCHIVE | CVAR_NEW | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
-	{ &cg_enemySound, "cg_enemySound", "", CVAR_ARCHIVE | CVAR_NEW | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound }
+	{ &cg_enemySound, "cg_enemySound", "", CVAR_ARCHIVE | CVAR_NEW | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
+	{ &cg_scoreboardRtColors, "cg_scoreboardRtColors", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardRtColors },
+	{ &cg_scoreboardBtColors, "cg_scoreboardBtColors", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardBtColors },
+	{ &cg_scoreboardSpecColor, "cg_scoreboardSpecColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardSpecColor },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1993,6 +1999,10 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_markTeam");
 	CG_CvarTouch("cg_markTeamColor");
 
+	CG_CvarTouch("cg_scoreboardRtColors");
+	CG_CvarTouch("cg_scoreboardBtColors");
+
+	CG_CvarTouch("cg_scoreboardSpecColor");
 	CG_InitConsoleCommands();
 
 	if (cg_clientLog.integer)

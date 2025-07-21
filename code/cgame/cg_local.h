@@ -1709,6 +1709,9 @@ extern vmCvar_t		cg_markTeamColor;
 extern vmCvar_t		cg_mySound;
 extern vmCvar_t		cg_teamSound;
 extern vmCvar_t		cg_enemySound;
+extern vmCvar_t		cg_scoreboardRtColors;
+extern vmCvar_t		cg_scoreboardBtColors;
+extern vmCvar_t		cg_scoreboardSpecColor;
 extern vmCvar_t         be_run;
 
 
@@ -2157,6 +2160,15 @@ qboolean CG_BEDrawTeamScoretable(void);
 
 extern vec4_t scoreboard_rtColor;
 extern vec4_t scoreboard_btColor;
+extern qboolean isCustomScoreboardColorIsSet_rt;
+extern qboolean isCustomScoreboardColorIsSet_bt;
+extern qboolean isCustomScoreboardColorIsSet_spec;
+extern vec4_t scoreboard_rtColorBody;
+extern vec4_t scoreboard_btColorBody;
+extern vec4_t scoreboard_rtColorTitle;
+extern vec4_t scoreboard_btColorTitle;
+extern vec4_t scoreboard_specColor;
+
 //
 // cg_consolecmds.c
 //
@@ -2432,7 +2444,7 @@ qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
 // #define OSP_VERSION "be-0.088" // BE
-#define OSP_VERSION "be-0.9a" // BE
+#define OSP_VERSION "be-0.9b" // BE
 
 
 
@@ -2693,6 +2705,9 @@ void CG_LocalEventCvarChanged_cg_markEnemyColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart);
 
 
 #ifdef __cplusplus
