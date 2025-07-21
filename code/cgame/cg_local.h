@@ -2446,7 +2446,7 @@ qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
 // #define OSP_VERSION "be-0.088" // BE
-#define OSP_VERSION "be-0.9b" // BE
+#define OSP_VERSION "be-0.9c" // BE
 
 
 
