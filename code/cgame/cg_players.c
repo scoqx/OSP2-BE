@@ -1988,11 +1988,6 @@ static qhandle_t CG_GetPlayerSpriteShader(centity_t* cent)
 	{
 		return cgs.media.frozenFoeTagShader;
 	}
-
-	// if (cgs.ratFlags & RAT_FRIENDSWALLHACK) {
-	//  shaderarr = cgs.media.friendThroughWallColorShaders;
-	// }
-
 	return cgs.media.friendShader;
 }
 
@@ -2016,16 +2011,6 @@ static qboolean CG_FriendVisible(centity_t* cent)
 		return qtrue;
 	}
 	return qfalse;
-
-	//VectorCopy( cg.refdef.vieworg, start );
-	//CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin,
-	//      cg.snap->ps.clientNum,
-	//      CONTENTS_SOLID |CONTENTS_BODY );
-
-	//if (trace.entityNum <= MAX_CLIENTS && trace.entityNum == cent->currentState.clientNum) {
-	//  return qtrue;
-	//}
-	//return qfalse;
 }
 
 qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)

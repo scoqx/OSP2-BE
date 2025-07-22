@@ -1037,7 +1037,6 @@ qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg)
 	return qtrue;
 }
 
-
 void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ctx)
 {
 	qboolean drawBackground = (cfg->bgcolor.isSet && cfg->fill.isSet);
@@ -1059,10 +1058,6 @@ void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ct
 		CG_SHUDConfigPickBorderColor(cfg, ctx->borderColor, qfalse);
 	}
 }
-
-
-
-
 
 void CG_SHUDDrawStretchPicCtx(const superhudConfig_t* cfg, superhudDrawContext_t* ctx)
 {

@@ -369,3 +369,12 @@ Only for cg_scoreboardBE
 + cg_scoreboardRtColors
 + cg_scoreboardBtColors
 + cg_scoreboardSpecColor
+
+22.07.2025 be v0.9e
+Only for cg_scoreboardBE
++ cg_scoreboardDrawPowerUps
+SHUD
++ FPS style 1
++ Localtime style 1
+* fix powerup timer: starts from 30, last displayed second is 1 (previously 29 to 0)
+

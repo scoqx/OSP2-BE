@@ -236,6 +236,14 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 - Color - основной цвет линий сетки.
 - Color2 (опционально) - второстепенный цвет. Если задан, линии сетки будут чередоваться между основным цветом (Color) и второстепенным (Color2).
 
+## localtime
+
+- Style 1 - 12-часовой формат времени
+
 ## localdate
 
 - Style 1 - ММ.ДД.ГГГГ (MM.DD.YYYY)
+
+## FPS
+
+- Style 1 -  число FPS без суффикса "fps"

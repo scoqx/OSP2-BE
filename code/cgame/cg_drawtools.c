@@ -174,9 +174,16 @@ void CG_FillRect(float x, float y, float width, float height, const float* color
 CG_OSPDrawFrame
 =================
 */
+vec4_t defaultBorderSize = {1, 1, 1, 1};
+
 void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner)
 {
 	if (!borderSize || !color)
+	{
+		return;
+	}
+
+	if (borderSize[0] <= 0.0f && borderSize[1] <= 0.0f && borderSize[2] <= 0.0f && borderSize[3] <= 0.0f)
 	{
 		return;
 	}
@@ -222,7 +229,6 @@ void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4
 			trap_R_DrawStretchPic(x - borderSize[0], y + h, w + borderSize[0] + borderSize[2], borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
 		}
 	}
-
 	trap_R_SetColor(NULL);
 }
 

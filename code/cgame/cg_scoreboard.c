@@ -1297,6 +1297,98 @@ void CG_OSPDrawClientScore(int x, int y, const score_t* score, const float* colo
 	return;
 }
 
+static void CG_OSPDrawPowerupFrame(int x, int y, const clientInfo_t* ci)
+{
+	vec4_t borderSize;
+	qboolean drawAny = qfalse;
+
+	team_t myTeam = cgs.clientinfo[cg.clientNum].team;
+
+	float x1 = (float)x + 8;
+	float y1 = (float)y;
+	float w1 = 304.0f;
+	float h1 = 17.0f;
+
+	if (myTeam != TEAM_SPECTATOR && ci->team != myTeam && ci->team != TEAM_SPECTATOR)
+	{
+		return;
+	}
+
+	if (cg_scoreboardDrawPowerUps.integer == 2)
+	{
+		Vector4Set(borderSize, 2, 0, 0, 0);
+	}
+	else
+	{
+		Vector4Copy(defaultBorderSize, borderSize);
+	}
+
+
+	CG_AdjustFrom640(&x1, &y1, &w1, &h1);
+
+	if (ci->powerups & (1 << PW_QUAD))
+	{
+		drawAny = qtrue;
+		CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorCyan, qtrue);
+	}
+
+	if (ci->powerups & (1 << PW_BATTLESUIT))
+	{
+		x1 += borderSize[0];
+		y1 += borderSize[1];
+		w1 -= borderSize[0] + borderSize[2];
+		h1 -= borderSize[1] + borderSize[3];
+		drawAny = qtrue;
+		CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorOrange, qtrue);
+	}
+
+	if (ci->powerups & (1 << PW_HASTE))
+	{
+		x1 += borderSize[0];
+		y1 += borderSize[1];
+		w1 -= borderSize[0] + borderSize[2];
+		h1 -= borderSize[1] + borderSize[3];
+		drawAny = qtrue;
+		CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorYellow, qtrue);
+	}
+
+	if (ci->powerups & (1 << PW_INVIS))
+	{
+		x1 += borderSize[0];
+		y1 += borderSize[1];
+		w1 -= borderSize[0] + borderSize[2];
+		h1 -= borderSize[1] + borderSize[3];
+		drawAny = qtrue;
+		CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorWhite, qtrue);
+	}
+
+	if (ci->powerups & (1 << PW_REGEN))
+	{
+		x1 += borderSize[0];
+		y1 += borderSize[1];
+		w1 -= borderSize[0] + borderSize[2];
+		h1 -= borderSize[1] + borderSize[3];
+		drawAny = qtrue;
+		CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorRed, qtrue);
+	}
+
+	if (ci->powerups & (1 << PW_FLIGHT))
+	{
+		x1 += borderSize[0];
+		y1 += borderSize[1];
+		w1 -= borderSize[0] + borderSize[2];
+		h1 -= borderSize[1] + borderSize[3];
+		drawAny = qtrue;
+		CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorMagenta, qtrue);
+	}
+
+	if (!drawAny)
+	{
+		return;
+	}
+}
+
+
 void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* color, float fade)
 {
 	char string[1024];
@@ -1315,7 +1407,6 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 	}
 
 	ci = &cgs.clientinfo[score->client];
-
 	if (score->client == cg.snap->ps.clientNum)
 	{
 		vec4_t ourColor;
@@ -1335,6 +1426,11 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 		CG_DrawFlagModel(x + 4, y, 16.0f, 16.0f, TEAM_BLUE, qfalse);
 	}
 	trap_R_SetColor(NULL);
+
+	if (cg_scoreboardDrawPowerUps.integer)
+	{
+		CG_OSPDrawPowerupFrame(x, y, ci);
+	}
 
 	if (cg_scoreboardBE.integer == 1 || cg_scoreboardBE.integer == 3)
 	{

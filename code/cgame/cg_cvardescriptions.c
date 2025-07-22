@@ -349,6 +349,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_scoreboardRtColors", "Color of the red team scoreboard. ^3cg_scoreboardBE^7 must be enabled \n  ^2<color> <color>^7 separated by space. For example \"^2Red Green^7\" or \"^20099FF 99FF00^7\" or \"^24 Red^7\"." },
 	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color>^7 separated by space. For example \"^2Red Green^7\" or \"^20099FF 99FF00^7\" or \"^24 Red^7\"." },
 	{ "cg_scoreboardSpecColor", "Color of the spectator scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color>^7." },
+	{ "cg_scoreboardDrawPowerUps", "Draw colored frame on scoreboard for players who have active powerups. Set ^20^7 to disable\n  ^21^7 - full frame\n  ^2^7 - left border only" },
 };
 
 

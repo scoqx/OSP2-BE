@@ -194,7 +194,7 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 			if (item)
 			{
 				pw->element[i].powerup = trap_R_RegisterShader(item->icon);
-				pw->element[i].time /= 1000;
+				pw->element[i].time = (pw->element[i].time + 999) / 1000;
 			}
 		}
 	}
