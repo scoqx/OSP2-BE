@@ -1162,14 +1162,15 @@ void CG_BEParseStatsInfo(void)
 		ws->damageKoeff = (float)statsInfo[OSP_STATS_DMG_GIVEN] /
 		                  (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
 	}
-	cgs.be.newStats.statsLastRequestTime = qfalse;
+	cgs.be.newStats.customStatsCalled = qfalse;
 }
 
 
 void CG_BERequestStatsInfo(void)
 {
 	newStatsInfo_t* ns = &cgs.be.newStats;
-	cgs.be.newStats.statsLastRequestTime = qtrue;
+	cgs.be.newStats.customStatsCalled = qtrue;
+	// cgs.be.newStats.statsLastRequestTime = cg.time;
 	trap_SendClientCommand("getstatsinfo");
 }
 
@@ -1386,10 +1387,10 @@ void CG_ServerCommand(void)
 	}
 	//statsinfo
 	if (Q_stricmp(cmd, "statsinfo") == 0)
-		if (cgs.be.newStats.statsLastRequestTime)
+		if (cgs.be.newStats.customStatsCalled)
 		{
 			CG_BEParseStatsInfo();
-			// cgs.be.newStats.statsLastRequestTime = qfalse;
+			cgs.be.newStats.customStatsCalled = qfalse;
 			return;
 		}
 		else
