@@ -784,7 +784,6 @@ typedef struct
 	int lastTrackedWeapon;
 	float lastAccuracy;
 	float kdratio;
-	float damageKoeff;
 	struct
 	{
 		float accuracy;

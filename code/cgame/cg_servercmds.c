@@ -1181,6 +1181,9 @@ void CG_BEParseStatsInfo(void)
 	              (float)killsTotal / (deathsTotal + suicides) : 0.0f;
 
 	// Efficiency: kills / (kills + deaths)
+	ws->dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
+	ws->dmgGiven	= statsInfo[OSP_STATS_DMG_GIVEN];
+
 	ws->efficiency = (killsTotal + deathsTotal > 0) ?
 	                 (100.0f * (float)killsTotal / (killsTotal + deathsTotal)) : 0.0f;
 	if (ws->efficiency < 0.0f)
@@ -1204,7 +1207,7 @@ void CG_BEParseStatsInfo(void)
 	ws->assists  = statsInfo[OSP_STATS_ASSIST];
 	ws->defences = statsInfo[OSP_STATS_DEFENCES];
 	ws->returns  = statsInfo[OSP_STATS_RETURNS];
-	ws->flagTime = statsInfo[OSP_STATS_TIME];  // в мс
+	ws->flagTime = statsInfo[OSP_STATS_TIME];
 
 	cgs.be.newStats.customStatsCalled = qfalse;
 }

@@ -23,186 +23,224 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_scoreboard -- draw the scoreboard on top of the game screen
 #include "cg_local.h"
 
+
 #define MAX_TOKEN_LEN MAX_QPATH
 
-static char tokens[64][16][64];
+static char tokens[32][12][64];
+vec4_t tokenColors[32][12];
 
+vec4_t colorA = {1, 0, 0, 1};
+vec4_t colorB = {0, 1, 0, 1};
+vec4_t colorC = {0, 0, 1, 1};
+vec4_t colorD = {1, 1, 0, 1};
+vec4_t colorE = {0, 1, 1, 1};
+vec4_t colorF = {1, 0, 1, 1};
+vec4_t colorG = {0, 0, 0, 1};
 
-void CG_OSPBuildGeneralStatsTokens(char tokens[64][16][MAX_TOKEN_LEN], int startRow, int *outRows, int *outCols) {
-    int col, row;
-    const newStatsInfo_t *s = &cgs.be.newStats;
-    int mins = s->flagTime / 60;
-    float secs = (float)(s->flagTime % 60);
-    int cols = 0;
-
-    // Обнуляем строки в текущем блоке на всякий случай (защита от мусора)
-    for (row = 0; row < 3; row++) {
-        for (col = 0; col < 16; col++) {
-            tokens[row][col][0] = '\0';
+void CG_OSPInitTokenColors(const vec4_t color) {
+    int row, col;
+    for (row = 0; row < 32; row++) {
+        for (col = 0; col < 12; col++) {
+            Vector4Copy(color, tokenColors[row][col]);
         }
     }
-
-    if (cgs.gametype == GT_TOURNAMENT) {
-        strcpy(tokens[0][0], "^B^3Score");
-        strcpy(tokens[0][1], "^2Klls");
-        strcpy(tokens[0][2], "^1Dths");
-        strcpy(tokens[0][3], "Sui");
-        strcpy(tokens[0][4], "^3K/D");
-        strcpy(tokens[0][5], "^3Effcny");
-        strcpy(tokens[0][6], "^2WINS");
-        strcpy(tokens[0][7], "^1LOSSES");
-
-        Com_sprintf(tokens[1][0], MAX_TOKEN_LEN, "%d", s->score);
-        Com_sprintf(tokens[1][1], MAX_TOKEN_LEN, "%d", s->kills);
-        Com_sprintf(tokens[1][2], MAX_TOKEN_LEN, "%d", s->deaths);
-        Com_sprintf(tokens[1][3], MAX_TOKEN_LEN, "%d", s->suicides);
-        Com_sprintf(tokens[1][4], MAX_TOKEN_LEN, "%.1f", s->kdratio);
-        Com_sprintf(tokens[1][5], MAX_TOKEN_LEN, "%.1f", s->efficiency);
-        Com_sprintf(tokens[1][6], MAX_TOKEN_LEN, "%d", s->wins);
-        Com_sprintf(tokens[1][7], MAX_TOKEN_LEN, "%d", s->losses);
-
-        cols = 8;
-    }
-    else if (cgs.osp.gameTypeFreeze) {
-        strcpy(tokens[0][0], "^B^3Score");
-        strcpy(tokens[0][1], "WINS");
-        strcpy(tokens[0][2], "^2Klls");
-        strcpy(tokens[0][3], "Thws");
-        strcpy(tokens[0][4], "^1Dths");
-        strcpy(tokens[0][5], "Sui");
-        strcpy(tokens[0][6], "^1TmKlls");
-        strcpy(tokens[0][7], "^3K/D");
-        strcpy(tokens[0][8], "^3Effcny");
-
-        Com_sprintf(tokens[1][0], MAX_TOKEN_LEN, "%d", s->score);
-        Com_sprintf(tokens[1][1], MAX_TOKEN_LEN, "%d", s->wins);
-        Com_sprintf(tokens[1][2], MAX_TOKEN_LEN, "%d", s->kills);
-        Com_sprintf(tokens[1][3], MAX_TOKEN_LEN, "%d", s->losses); // Thaws = losses
-        Com_sprintf(tokens[1][4], MAX_TOKEN_LEN, "%d", s->deaths);
-        Com_sprintf(tokens[1][5], MAX_TOKEN_LEN, "%d", s->suicides);
-        Com_sprintf(tokens[1][6], MAX_TOKEN_LEN, "%d", s->teamKills);
-        Com_sprintf(tokens[1][7], MAX_TOKEN_LEN, "%.1f", s->kdratio);
-        Com_sprintf(tokens[1][8], MAX_TOKEN_LEN, "%.1f", s->efficiency);
-
-        cols = 9;
-    }
-    else if (cgs.gametype == GT_TEAM) {
-        strcpy(tokens[0][0], "^B^3Score");
-        strcpy(tokens[0][1], "NET");
-        strcpy(tokens[0][2], "^2Klls");
-        strcpy(tokens[0][3], "^1Dths");
-        strcpy(tokens[0][4], "Sui");
-        strcpy(tokens[0][5], "^1TmKlls");
-        strcpy(tokens[0][6], "^3K/D");
-        strcpy(tokens[0][7], "^3Effcny");
-
-        Com_sprintf(tokens[1][0], MAX_TOKEN_LEN, "%d", s->score);
-        Com_sprintf(tokens[1][1], MAX_TOKEN_LEN, "%d", s->score - s->deaths);
-        Com_sprintf(tokens[1][2], MAX_TOKEN_LEN, "%d", s->kills);
-        Com_sprintf(tokens[1][3], MAX_TOKEN_LEN, "%d", s->deaths);
-        Com_sprintf(tokens[1][4], MAX_TOKEN_LEN, "%d", s->suicides);
-        Com_sprintf(tokens[1][5], MAX_TOKEN_LEN, "%d", s->teamKills);
-        Com_sprintf(tokens[1][6], MAX_TOKEN_LEN, "%.1f", s->kdratio);
-        Com_sprintf(tokens[1][7], MAX_TOKEN_LEN, "%.1f", s->efficiency);
-
-        cols = 8;
-    }
-    else if (cgs.gametype == GT_CTF) {
-        strcpy(tokens[0][0], "^B^3Score");
-        strcpy(tokens[0][1], "^2Klls");
-        strcpy(tokens[0][2], "^1Dths");
-        strcpy(tokens[0][3], "^3Caps");
-        strcpy(tokens[0][4], "^2Ftime");
-        strcpy(tokens[0][5], "Asst");
-        strcpy(tokens[0][6], "Dfns");
-        strcpy(tokens[0][7], "Rtrn");
-        strcpy(tokens[0][8], "KD");
-
-        Com_sprintf(tokens[1][0], MAX_TOKEN_LEN, "%d", s->score);
-        Com_sprintf(tokens[1][1], MAX_TOKEN_LEN, "%d", s->kills);
-        Com_sprintf(tokens[1][2], MAX_TOKEN_LEN, "%d", s->deaths);
-        Com_sprintf(tokens[1][3], MAX_TOKEN_LEN, "%d", s->caps);
-        Com_sprintf(tokens[1][4], MAX_TOKEN_LEN, "%d:%02.1f", mins, secs);
-        Com_sprintf(tokens[1][5], MAX_TOKEN_LEN, "%d", s->assists);
-        Com_sprintf(tokens[1][6], MAX_TOKEN_LEN, "%d", s->defences);
-        Com_sprintf(tokens[1][7], MAX_TOKEN_LEN, "%d", s->returns);
-        Com_sprintf(tokens[1][8], MAX_TOKEN_LEN, "%.1f", s->kdratio);
-
-        cols = 9;
-    }
-    else if (cgs.gametype == GT_CA) {
-        strcpy(tokens[0][0], "^B^3Score");
-        strcpy(tokens[0][1], "^2Klls");
-        strcpy(tokens[0][2], "^1Dths");
-        strcpy(tokens[0][3], "^3K/D");
-        strcpy(tokens[0][4], "^3Effcny");
-        strcpy(tokens[0][5], "^5DmgScr");
-        strcpy(tokens[0][6], "^2WINS");
-
-        Com_sprintf(tokens[1][0], MAX_TOKEN_LEN, "%d", s->score);
-        Com_sprintf(tokens[1][1], MAX_TOKEN_LEN, "%d", s->kills);
-        Com_sprintf(tokens[1][2], MAX_TOKEN_LEN, "%d", s->deaths);
-        Com_sprintf(tokens[1][3], MAX_TOKEN_LEN, "%.1f", s->kdratio);
-        Com_sprintf(tokens[1][4], MAX_TOKEN_LEN, "%.1f", s->efficiency);
-        Com_sprintf(tokens[1][5], MAX_TOKEN_LEN, "%d", (int)(s->damageKoeff));
-        Com_sprintf(tokens[1][6], MAX_TOKEN_LEN, "%d", s->wins);
-
-        cols = 7;
-    }
-    else {
-        strcpy(tokens[0][0], "^B^3Score");
-        strcpy(tokens[0][1], "^2Klls");
-        strcpy(tokens[0][2], "^1Dths");
-        strcpy(tokens[0][3], "Sui");
-        strcpy(tokens[0][4], "^3K/D");
-        strcpy(tokens[0][5], "^3Effcny");
-
-        Com_sprintf(tokens[1][0], MAX_TOKEN_LEN, "%d", s->score);
-        Com_sprintf(tokens[1][1], MAX_TOKEN_LEN, "%d", s->kills);
-        Com_sprintf(tokens[1][2], MAX_TOKEN_LEN, "%d", s->deaths);
-        Com_sprintf(tokens[1][3], MAX_TOKEN_LEN, "%d", s->suicides);
-        Com_sprintf(tokens[1][4], MAX_TOKEN_LEN, "%.1f", s->kdratio);
-        Com_sprintf(tokens[1][5], MAX_TOKEN_LEN, "%.1f", s->efficiency);
-
-        cols = 6;
-    }
-
-    // Явно устанавливаем пустую строку для третьей строки (обычно пустой)
-    strcpy(tokens[2][0], " ");
-    for (col = 1; col < 16; col++) {
-        tokens[2][col][0] = '\0';
-    }
-
-    *outRows = 3;
-    *outCols = cols;
 }
 
 
-qboolean CG_OSPBuildWeaponStatsTokens(char tokens[][16][64], int *rowOut) {
-    const newStatsInfo_t *s = &cgs.be.newStats;
-    int col;
-    int row = *rowOut;
-    qboolean any = qfalse;
-    int i;
-    const char *name;
-    const weaponStats_t *ws;
 
-    // Заголовок — явно обнуляем все токены для безопасности
-    strcpy(tokens[row][0], "^5Weapon");
-    strcpy(tokens[row][1], "^3Accrcy");
-    strcpy(tokens[row][2], "^7Hits/Atts");
-    strcpy(tokens[row][3], "^2Klls");
-    strcpy(tokens[row][4], "^1Dths");
-    strcpy(tokens[row][5], "^3PkUp");
-    strcpy(tokens[row][6], "^1Drop");
-    for (col = 7; col < 16; col++) {
+void CG_OSPSetToken(int row, int col, const char *label, const char *value, const vec4_t color) {
+    Q_strncpyz(tokens[row][col], label, MAX_TOKEN_LEN);
+    Q_strncpyz(tokens[row + 1][col], value, MAX_TOKEN_LEN);
+    if (color) {
+        Vector4Copy(color, tokenColors[row][col]);
+        Vector4Copy(color, tokenColors[row + 1][col]);
+    }
+}
+
+void CG_OSPSetTokenLabel(int row, int col, const char *label, const vec4_t color) {
+    Q_strncpyz(tokens[row][col], label, MAX_TOKEN_LEN);
+    if (color) {
+        Vector4Copy(color, tokenColors[row][col]);
+    }
+}
+
+void CG_OSPSetTokenValueInt(int row, int col, const char *fmt, int value, const vec4_t color) {
+    char buf[MAX_TOKEN_LEN];
+    Com_sprintf(buf, sizeof(buf), fmt, value);
+    Q_strncpyz(tokens[row + 1][col], buf, MAX_TOKEN_LEN);
+    if (color) {
+        Vector4Copy(color, tokenColors[row + 1][col]);
+    }
+}
+
+void CG_OSPSetTokenValueFloat(int row, int col, const char *fmt, float value, const vec4_t color) {
+    char buf[MAX_TOKEN_LEN];
+    Com_sprintf(buf, sizeof(buf), fmt, value);
+    Q_strncpyz(tokens[row + 1][col], buf, MAX_TOKEN_LEN);
+    if (color) {
+        Vector4Copy(color, tokenColors[row + 1][col]);
+    }
+}
+
+void CG_OSPSetWeaponTokenColored(int row, int col, const char *text, const vec4_t color) {
+    Q_strncpyz(tokens[row][col], text, MAX_TOKEN_LEN);
+    if (color) {
+        Vector4Copy(color, tokenColors[row][col]);
+    }
+}
+
+
+
+void CG_OSPSetTokenRow(char tokens[32][12][MAX_TOKEN_LEN], int row,
+                       const char *labels[], const char *values[], int count) {
+    int col;
+    for (col = 0; col < count; col++) {
+        strcpy(tokens[row][col], labels[col]);
+        strcpy(tokens[row + 1][col], values[col]);
+    }
+}
+
+void CG_OSPSetWeaponTokenRow(char tokens[][12][MAX_TOKEN_LEN], int row,
+                              const char *values[], int count) {
+    int col;
+    for (col = 0; col < count; col++) {
+        strcpy(tokens[row][col], values[col]);
+    }
+    for (col = count; col < 12; col++) {
         tokens[row][col][0] = '\0';
     }
+}
+
+void CG_OSPSetBonusTokenRow(char tokens[][12][MAX_TOKEN_LEN], int row,
+                             const char *fields[], int count) {
+    int col;
+    for (col = 0; col < count; col++) {
+        strcpy(tokens[row][col], fields[col]);
+    }
+    for (col = count; col < 12; col++) {
+        tokens[row][col][0] = '\0';
+    }
+}
+
+
+void CG_OSPBuildGeneralStatsTokens(char tokens[32][12][MAX_TOKEN_LEN], int startRow, int *outRows, int *outCols) {
+    int i;
+    int row;
+    int col = 0;
+    const newStatsInfo_t *s = &cgs.be.newStats;
+    int mins = s->flagTime / 60;
+    float secs = (float)(s->flagTime % 60);
+    vec4_t c = {1 , 1, 1, 1};
+
+    // Очистка первых трёх строк
+    for (row = 0; row < 3; row++) {
+        for (i = 0; i < 12; i++) {
+            tokens[row][i][0] = '\0';
+        }
+    }
+
+
+    if (cgs.gametype == GT_TOURNAMENT) {
+        CG_OSPSetTokenLabel(0, col, "Score", colorA);   CG_OSPSetTokenValueInt(0, col++, "%d", s->score, c);
+        CG_OSPSetTokenLabel(0, col, "Kills", colorB);    CG_OSPSetTokenValueInt(0, col++, "%d", s->kills, c);
+        CG_OSPSetTokenLabel(0, col, "Deaths", c);    CG_OSPSetTokenValueInt(0, col++, "%d", s->deaths, c);
+        CG_OSPSetTokenLabel(0, col, "Suicides",  c);    CG_OSPSetTokenValueInt(0, col++, "%d", s->suicides, c);
+        CG_OSPSetTokenLabel(0, col, "K/D",  c);    CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->kdratio, c);
+        CG_OSPSetTokenLabel(0, col, "Effiecnity", c);  CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->efficiency, c);
+        CG_OSPSetTokenLabel(0, col, "WINS", c);    CG_OSPSetTokenValueInt(0, col++, "%d", s->wins, c);
+        CG_OSPSetTokenLabel(0, col, "LOSSES", c);  CG_OSPSetTokenValueInt(0, col++, "%d", s->losses, c);
+    }
+    else if (cgs.osp.gameTypeFreeze) {
+        CG_OSPSetTokenLabel(0, col, "Score", colorA);   CG_OSPSetTokenValueInt(0, col++, "%d", s->score, c);
+        CG_OSPSetTokenLabel(0, col, "WINS", colorB);    CG_OSPSetTokenValueInt(0, col++, "%d", s->wins, c);
+        CG_OSPSetTokenLabel(0, col, "Kills", c);    CG_OSPSetTokenValueInt(0, col++, "%d", s->kills, c);
+        CG_OSPSetTokenLabel(0, col, "Thaws", c);    CG_OSPSetTokenValueInt(0, col++, "%d", s->losses, c);
+        CG_OSPSetTokenLabel(0, col, "Deaths", c);    CG_OSPSetTokenValueInt(0, col++, "%d", s->deaths, c);
+        CG_OSPSetTokenLabel(0, col, "Suicides",  c);    CG_OSPSetTokenValueInt(0, col++, "%d", s->suicides, c);
+        CG_OSPSetTokenLabel(0, col, "TeamKills", c);  CG_OSPSetTokenValueInt(0, col++, "%d", s->teamKills, c);
+        CG_OSPSetTokenLabel(0, col, "K/D",  c);    CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->kdratio, c);
+        CG_OSPSetTokenLabel(0, col, "Effiecnity", c);  CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->efficiency, c);
+    }
+    else if (cgs.gametype == GT_TEAM) {
+        CG_OSPSetTokenLabel(0, col, "Score", colorA);   CG_OSPSetTokenValueInt(0, col++, "%d", s->score, c);
+        CG_OSPSetTokenLabel(0, col, "NET",   colorB);   CG_OSPSetTokenValueInt(0, col++, "%d", s->score - s->deaths, c);
+        CG_OSPSetTokenLabel(0, col, "Kills",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->kills, c);
+        CG_OSPSetTokenLabel(0, col, "Deaths",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->deaths, c);
+        CG_OSPSetTokenLabel(0, col, "Suicides",   c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->suicides, c);
+        CG_OSPSetTokenLabel(0, col, "TeamKills",c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->teamKills, c);
+        CG_OSPSetTokenLabel(0, col, "K/D",   c);   CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->kdratio, c);
+        CG_OSPSetTokenLabel(0, col, "Effiecnity",c);   CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->efficiency, c);
+    }
+    else if (cgs.gametype == GT_CTF) {
+        CG_OSPSetTokenLabel(0, col, "Score", colorA);   CG_OSPSetTokenValueInt(0, col++, "%d", s->score, c);
+        CG_OSPSetTokenLabel(0, col, "Kills",  colorB);   CG_OSPSetTokenValueInt(0, col++, "%d", s->kills, c);
+        CG_OSPSetTokenLabel(0, col, "Deaths",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->deaths, c);
+        CG_OSPSetTokenLabel(0, col, "Caps",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->caps, c);
+        {
+            char timeStr[MAX_TOKEN_LEN];
+            Com_sprintf(timeStr, sizeof(timeStr), "%d:%02.1f", mins, secs);
+            Q_strncpyz(tokens[1][col], timeStr, MAX_TOKEN_LEN);
+            CG_OSPSetTokenLabel(0, col++, "Ftime", c);
+        }
+        CG_OSPSetTokenLabel(0, col, "Asst",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->assists, c);
+        CG_OSPSetTokenLabel(0, col, "Dfns",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->defences, c);
+        CG_OSPSetTokenLabel(0, col, "Rtrn",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->returns, c);
+        CG_OSPSetTokenLabel(0, col, "KD",    c);   CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->kdratio, c);
+    }
+    else if (cgs.gametype == GT_CA) {
+        CG_OSPSetTokenLabel(0, col, "Score", colorA);   CG_OSPSetTokenValueInt(0, col++, "%d", s->score, c);
+        CG_OSPSetTokenLabel(0, col, "Kills",  colorB);   CG_OSPSetTokenValueInt(0, col++, "%d", s->kills, c);
+        CG_OSPSetTokenLabel(0, col, "Deaths",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->deaths, c);
+        CG_OSPSetTokenLabel(0, col, "K/D",   c);   CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->kdratio, c);
+        CG_OSPSetTokenLabel(0, col, "Effiecnity",c);   CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->efficiency, c);
+        CG_OSPSetTokenLabel(0, col, "DmgScr",c);   CG_OSPSetTokenValueInt(0, col++, "%d", (int)(s->damageRatio), c);
+        CG_OSPSetTokenLabel(0, col, "WINS",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->wins, c);
+    }
+    else {
+        CG_OSPSetTokenLabel(0, col, "Score", colorA);   CG_OSPSetTokenValueInt(0, col++, "%d", s->score, c);
+        CG_OSPSetTokenLabel(0, col, "Kills",  colorB);   CG_OSPSetTokenValueInt(0, col++, "%d", s->kills, c);
+        CG_OSPSetTokenLabel(0, col, "Deaths",  c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->deaths, c);
+        CG_OSPSetTokenLabel(0, col, "Suicides",   c);   CG_OSPSetTokenValueInt(0, col++, "%d", s->suicides, c);
+        CG_OSPSetTokenLabel(0, col, "K/D",   c);   CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->kdratio, c);
+        CG_OSPSetTokenLabel(0, col, "Effiecnity",c);   CG_OSPSetTokenValueFloat(0, col++, "%.1f", s->efficiency, c);
+    }
+
+    // Очистка третьей строки
+    Q_strncpyz(tokens[2][0], " ", MAX_TOKEN_LEN);
+    for (i = 1; i < 12; i++) {
+        tokens[2][i][0] = '\0';
+    }
+
+    *outRows = 3;
+    *outCols = col;
+}
+
+
+
+qboolean CG_OSPBuildWeaponStatsTokens(char tokens[][12][64], int *rowOut) {
+    const newStatsInfo_t *s = &cgs.be.newStats;
+    int col, row, i;
+    const char *name;
+    const weaponStats_t *ws;
+    char buf[64];
+    qboolean any = qfalse;
+    vec4_t c = {1, 1, 1, 1};
+
+    row = *rowOut;
+
+    // Заголовок
+    CG_OSPSetWeaponTokenColored(row, 0, "Weapon", c);
+    CG_OSPSetWeaponTokenColored(row, 1, "Accrcy", c);
+    CG_OSPSetWeaponTokenColored(row, 2, "Hits/Atts", c);
+    CG_OSPSetWeaponTokenColored(row, 3, "Kills", c);
+    CG_OSPSetWeaponTokenColored(row, 4, "Deaths", c);
+    CG_OSPSetWeaponTokenColored(row, 5, "PkUp", c);
+    CG_OSPSetWeaponTokenColored(row, 6, "Drop", c);
     row++;
 
     // Разделитель
-    strcpy(tokens[row][0], "^7-------------------------------------------------");
-    for (col = 1; col < 16; col++) {
+    CG_OSPSetWeaponTokenColored(row, 0, "-------------------------------------------------", c);
+    for (col = 1; col < 12; col++) {
         tokens[row][col][0] = '\0';
     }
     row++;
@@ -215,205 +253,184 @@ qboolean CG_OSPBuildWeaponStatsTokens(char tokens[][16][64], int *rowOut) {
             continue;
         }
 
-        name = weaponNames[i];
-        strcpy(tokens[row][0], name);  // Weapon name
+        col = 0;
 
-        // Accuracy and hits/atts
+        CG_OSPSetWeaponTokenColored(row, col++, weaponNames[i], c);
+
         if (ws->shots > 0 || ws->hits > 0) {
-            Com_sprintf(tokens[row][1], MAX_TOKEN_LEN, "^3%3.1f", ws->accuracy);
-            Com_sprintf(tokens[row][2], MAX_TOKEN_LEN, "^7%d/%d", ws->hits, ws->shots);
+            Com_sprintf(buf, sizeof(buf), "%3.1f", ws->accuracy);
+            CG_OSPSetWeaponTokenColored(row, col++, buf, c);
+
+            Com_sprintf(buf, sizeof(buf), "%d/%d", ws->hits, ws->shots);
+            CG_OSPSetWeaponTokenColored(row, col++, buf, c);
         } else {
-            strcpy(tokens[row][1], "");
-            strcpy(tokens[row][2], "");
+            CG_OSPSetWeaponTokenColored(row, col++, "", c);
+            CG_OSPSetWeaponTokenColored(row, col++, "", c);
         }
 
-        // Kills / Deaths
-        Com_sprintf(tokens[row][3], MAX_TOKEN_LEN, "^2%d", ws->kills);
-        Com_sprintf(tokens[row][4], MAX_TOKEN_LEN, "^1%d", ws->deaths);
+        Com_sprintf(buf, sizeof(buf), "%d", ws->kills);
+        CG_OSPSetWeaponTokenColored(row, col++, buf, c);
 
-        // Pickups / Drops (только для оружия после WP_SHOTGUN)
+        Com_sprintf(buf, sizeof(buf), "%d", ws->deaths);
+        CG_OSPSetWeaponTokenColored(row, col++, buf, c);
+
         if (i > WP_SHOTGUN) {
-            Com_sprintf(tokens[row][5], MAX_TOKEN_LEN, "^3%d", ws->pickUps);
-            Com_sprintf(tokens[row][6], MAX_TOKEN_LEN, "^1%d", ws->drops);
+            Com_sprintf(buf, sizeof(buf), "%d", ws->pickUps);
+            CG_OSPSetWeaponTokenColored(row, col++, buf, c);
+
+            Com_sprintf(buf, sizeof(buf), "%d", ws->drops);
+            CG_OSPSetWeaponTokenColored(row, col++, buf, c);
         } else {
-            strcpy(tokens[row][5], "");
-            strcpy(tokens[row][6], "");
+            CG_OSPSetWeaponTokenColored(row, col++, "", c);
+            CG_OSPSetWeaponTokenColored(row, col++, "", c);
         }
 
-        // Обнулим остаток столбцов на всякий случай
-        for (col = 7; col < 16; col++) {
+        for (; col < 12; col++) {
             tokens[row][col][0] = '\0';
         }
 
-        any = qtrue;
         row++;
+        any = qtrue;
     }
 
     if (!any) {
-        strcpy(tokens[row][0], "^3No additional weapon info available.");
-        for (col = 1; col < 16; col++) {
-            tokens[row][col][0] = '\0';
-        }
-        row++;
-        strcpy(tokens[row][0], " ");
-        for (col = 1; col < 16; col++) {
-            tokens[row][col][0] = '\0';
-        }
-        row++;
+        CG_OSPSetWeaponTokenColored(row++, 0, "No additional weapon info available.", c);
+        CG_OSPSetWeaponTokenColored(row++, 0, " ", c);
     }
 
     *rowOut = row;
     return any;
 }
 
-void CG_OSPBuildBonusStatsTokens(char tokens[][16][64], int *rowOut, qboolean hasWeaponStats) {
-    int col;
+
+void CG_OSPBuildBonusStatsTokens(char tokens[32][12][MAX_TOKEN_LEN], int *rowOut, int hasWeaponStats) {
     const newStatsInfo_t *s = &cgs.be.newStats;
     int row = *rowOut;
+    char buf[MAX_TOKEN_LEN];
+    char armorText[MAX_TOKEN_LEN];
+    char healthText[MAX_TOKEN_LEN];
 
-    char armorBuf[MAX_TOKEN_LEN] = "";
-    char healthBuf[MAX_TOKEN_LEN] = "";
 
-    // Armor breakdown
+    vec4_t c = {1, 1, 1, 1};
+
+    // Armor buffer
+    buf[0] = '\0';
     if (s->ga > 0)
-        Com_sprintf(armorBuf + strlen(armorBuf), sizeof(armorBuf) - strlen(armorBuf), "^7%d ^2GA", s->ga);
+        Com_sprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%d ^2GA^7", s->ga);
     if (s->ya > 0)
-        Com_sprintf(armorBuf + strlen(armorBuf), sizeof(armorBuf) - strlen(armorBuf), "%s^7%d ^3YA", armorBuf[0] ? " ^7" : "", s->ya);
+        Com_sprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s%d ^3YA^7", buf[0] ? " " : "", s->ya);
     if (s->ra > 0)
-        Com_sprintf(armorBuf + strlen(armorBuf), sizeof(armorBuf) - strlen(armorBuf), "%s^7%d ^1RA", armorBuf[0] ? " ^7" : "", s->ra);
+        Com_sprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s%d ^1RA^7", buf[0] ? " " : "", s->ra);
+    if (buf[0])
+        Com_sprintf(armorText, sizeof(armorText), "(%s)", buf);
+    else
+        armorText[0] = '\0';
 
-    // Health breakdown
+    // Health buffer
     if (s->megahealth > 0)
-        Com_sprintf(healthBuf, sizeof(healthBuf), "^7%d ^5MH", s->megahealth);
+        Com_sprintf(healthText, sizeof(healthText), "(%d ^5MH^7)", s->megahealth);
+    else
+        healthText[0] = '\0';
 
     // Пустая строка
-    strcpy(tokens[row][0], " ");
-    for (col = 1; col < 16; col++) {
-        tokens[row][col][0] = '\0';
-    }
-    row++;
+    CG_OSPSetWeaponTokenColored(row++, 0, " ", c);
 
     if (!hasWeaponStats) {
-        strcpy(tokens[row][0], "^2Armor Taken:");
-        Com_sprintf(tokens[row][1], MAX_TOKEN_LEN, "^7%d", s->wins);
-        if (armorBuf[0])
-            Com_sprintf(tokens[row][2], MAX_TOKEN_LEN, "^2(%s^2)", armorBuf);
-        else
-            strcpy(tokens[row][2], "");
-        for (col = 3; col < 16; col++) {
-            tokens[row][col][0] = '\0';
-        }
+        CG_OSPSetTokenLabel(row, 0, "Armor Taken:", c);
+        CG_OSPSetTokenValueInt(row, 2, "%d", s->wins, c);
+        Q_strncpyz(tokens[row + 1][3], armorText, MAX_TOKEN_LEN);
+        Vector4Copy(c, tokenColors[row + 1][3]);
         row++;
 
-        strcpy(tokens[row][0], "^2Health Taken:");
-        Com_sprintf(tokens[row][1], MAX_TOKEN_LEN, "^7%d", s->losses);
-        if (healthBuf[0])
-            Com_sprintf(tokens[row][2], MAX_TOKEN_LEN, "^2(%s^2)", healthBuf);
-        else
-            strcpy(tokens[row][2], "");
-        for (col = 3; col < 16; col++) {
-            tokens[row][col][0] = '\0';
-        }
+        CG_OSPSetTokenLabel(row, 0, "Health Taken:", c);
+        CG_OSPSetTokenValueInt(row, 2, "%d", s->losses, c);
+        Q_strncpyz(tokens[row + 1][3], healthText, MAX_TOKEN_LEN);
+        Vector4Copy(c, tokenColors[row + 1][3]);
         row++;
     } else {
-        // Damage Given
-        strcpy(tokens[row][0], "^3Damage Given:");
-        Com_sprintf(tokens[row][1], MAX_TOKEN_LEN, "^7%d", (int)(s->damageKoeff * 100));
-        strcpy(tokens[row][2], "^2Armor:");
-        Com_sprintf(tokens[row][3], MAX_TOKEN_LEN, "^7%d", s->wins);
-        if (armorBuf[0])
-            Com_sprintf(tokens[row][4], MAX_TOKEN_LEN, "^2(%s^2)", armorBuf);
-        else
-            strcpy(tokens[row][4], "");
-        for (col = 5; col < 16; col++) {
-            tokens[row][col][0] = '\0';
-        }
+        CG_OSPSetTokenLabel(row, 0, "Damage Given:", c);
+        CG_OSPSetTokenValueInt(row, 2, "%d", (int)s->dmgGiven, c);
+        CG_OSPSetTokenLabel(row, 3, "Armor:", c);
+        CG_OSPSetTokenValueInt(row, 4, "%d", s->wins, c);
+        Q_strncpyz(tokens[row + 1][5], armorText, MAX_TOKEN_LEN);
+        Vector4Copy(c, tokenColors[row + 1][5]);
         row++;
 
-        // Damage Received
-        strcpy(tokens[row][0], "^3Damage Recvd:");
-        Com_sprintf(tokens[row][1], MAX_TOKEN_LEN, "^7%d", (int)(s->damageKoeff * 100 / s->damageRatio));
-        strcpy(tokens[row][2], "^2Health:");
-        Com_sprintf(tokens[row][3], MAX_TOKEN_LEN, "^7%d", s->losses);
-        if (healthBuf[0])
-            Com_sprintf(tokens[row][4], MAX_TOKEN_LEN, "^2(%s^2)", healthBuf);
-        else
-            strcpy(tokens[row][4], "");
-        for (col = 5; col < 16; col++) {
-            tokens[row][col][0] = '\0';
-        }
+        CG_OSPSetTokenLabel(row, 0, "Damage Recvd:", c);
+        CG_OSPSetTokenValueInt(row, 2, "%d", (int)s->dmgReceived, c);
+        CG_OSPSetTokenLabel(row, 3, "Health:", c);
+        CG_OSPSetTokenValueInt(row, 4, "%d", s->losses, c);
+        Q_strncpyz(tokens[row + 1][5], healthText, MAX_TOKEN_LEN);
+        Vector4Copy(c, tokenColors[row + 1][5]);
         row++;
 
         if (cgs.gametype == GT_TEAM) {
-            strcpy(tokens[row][0], "^1Team Damage:");
-            Com_sprintf(tokens[row][1], MAX_TOKEN_LEN, "^7%d", s->teamKills);
-            for (col = 2; col < 16; col++) {
-                tokens[row][col][0] = '\0';
-            }
+            CG_OSPSetTokenLabel(row, 0, "Team Damage:", c);
+            CG_OSPSetTokenValueInt(row, 2, "%d", s->teamKills, c);
             row++;
         }
 
-        strcpy(tokens[row][0], "^3Damage Ratio:");
-        Com_sprintf(tokens[row][1], MAX_TOKEN_LEN, "^7%.2f", s->damageRatio);
-        for (col = 2; col < 16; col++) {
-            tokens[row][col][0] = '\0';
-        }
+        CG_OSPSetTokenLabel(row, 0, "Damage Ratio:", c);
+        CG_OSPSetTokenValueFloat(row, 2, "%.2f", s->damageRatio, c);
         row++;
     }
 
     *rowOut = row;
 }
 
-void CG_OSPDrawStatsWindowTokens(char tokens[64][16][64], int rows, int maxColsPerRow[64]) {
-	const float x = 32.0f;
-	const float y = 120.0f;
-	const float colSpacing = 8.0f;
-	const float rowSpacing = 14.0f;
-	const float padding = 8.0f;
 
-	const float baseColWidth = 64.0f;
-	const float lineHeight = rowSpacing;
-	float maxWidth = 0.0f;
+
+void CG_OSPDrawStatsWindowTokens(char tokens[32][12][MAX_TOKEN_LEN], int rows, int maxColsPerRow[12]) {
+    const float x = 4.0f;
+    const float y = 340.0f;
+    const float colSpacing = 4.0f;
+    const float rowSpacing = 8.0f;
+    const float padding = 6.0f;
+    const vec2_t fontSize = { 6, 8 };
+    const float baseColWidth = 36.0f;
+    const float lineHeight = rowSpacing;
+    float maxWidth = 0.0f;
     float width;
     float windowHeight;
-	int i, j;
+    float widthCutoff = 0.0f;
+    int i, j;
     float baseX, baseY;
-	vec4_t bgColor = { 0.1f, 0.1f, 0.1f, 0.75f };
-	vec4_t teamColor;
+    vec4_t bgColor = { 0.1f, 0.1f, 0.1f, 0.75f };
+    vec4_t teamColor;
     const char *text;
+    vec4_t defaultColor = {1, 1, 1, 1};
+    Vector4Copy(scoreboard_rtColor, teamColor);
+
+    for (i = 0; i < rows; ++i) {
+        width = maxColsPerRow[i] * baseColWidth;
+        if (maxColsPerRow[i] > 1)
+            width += (maxColsPerRow[i] - 1) * colSpacing - widthCutoff;
+        if (width > maxWidth)
+            maxWidth = width;
+    }
 
 
-	Vector4Copy(scoreboard_rtColor, teamColor);
-	// Вычисляем ширину окна: ширина максимального ряда по колонкам
-	for (i = 0; i < rows; ++i) {
-		width = 0.0f;
-		for (j = 0; j < maxColsPerRow[i]; ++j)
-			width += baseColWidth; // фиксированная ширина пока
-		if (width > maxWidth)
-			maxWidth = width;
-	}
+    windowHeight = rows * lineHeight + padding * 2;
+    CG_FontSelect(4);
+    CG_FillRect(x, y, maxWidth + padding * 2, windowHeight, bgColor);
+    CG_OSPDrawFrameAdjusted(x, y, maxWidth + padding * 2, windowHeight, defaultBorderSize, teamColor, 0);
 
-	windowHeight = rows * lineHeight + padding * 2;
+    for (i = 0; i < rows; ++i) {
+    baseY = y + padding + i * rowSpacing;
+    for (j = 0; j < maxColsPerRow[i]; ++j) {
+        baseX = x + padding + j * (baseColWidth + colSpacing);
+        text = tokens[i][j];
 
-	CG_FillRect(x, y, maxWidth + padding * 2, windowHeight, bgColor);
-	CG_OSPDrawFrameAdjusted(x, y, maxWidth + padding * 2, windowHeight, defaultBorderSize, teamColor, qfalse);
-
-	// Рисуем каждую ячейку
-	for (i = 0; i < rows; ++i) {
-		baseY = y + padding + i * rowSpacing;
-		for (j = 0; j < maxColsPerRow[i]; ++j) {
-			baseX = x + padding + j * baseColWidth;
-			text = tokens[i][j];
-			if (text[0]) {
-				CG_OSPDrawStringNew(baseX, baseY, text, colorWhite, colorBlack, 8, 8, SCREEN_WIDTH, DS_PROPORTIONAL | DS_SHADOW, NULL, NULL, NULL);
-			}
-		}
-	}
-
-	wstatsWndId = 1;
+        if (text[0]) {
+            CG_OSPDrawStringNew(baseX, baseY, text,
+            tokenColors[i][j], colorBlack,
+            fontSize[0], fontSize[1],
+            SCREEN_WIDTH, DS_PROPORTIONAL | DS_SHADOW,
+            NULL, NULL, NULL);
+        }
+    }
 }
-
-
+}
 
 void CG_OSPShowStatsInfoNew(void) {
     int i, c;
@@ -422,36 +439,34 @@ void CG_OSPShowStatsInfoNew(void) {
     int rowsAdded;
     int maxColsPerRow[64]; // для каждой строки — количество колонок
     qboolean hasWeapons;
+    int bonusStartRow, bonusRowsCount;
 
     // General
+    CG_OSPInitTokenColors(colorWhite);
     CG_OSPBuildGeneralStatsTokens(tokens, row, &rowsAdded, &cols);
-
-    // Запоминаем количество колонок для строк, которые добавили
-    maxColsPerRow[row] = cols;
-    maxColsPerRow[row + 1] = cols;
-    maxColsPerRow[row + 2] = 1;
-
-    // Увеличиваем row на количество добавленных строк
+    for (i = row; i < row + rowsAdded; i++) {
+        maxColsPerRow[i] = cols;
+    }
     row += rowsAdded;
 
-	// Weapon
-	hasWeapons = CG_OSPBuildWeaponStatsTokens(&tokens[row], &row);
-	// здесь `row` обновляется внутри
+    // Weapon
+    hasWeapons = CG_OSPBuildWeaponStatsTokens(tokens, &row);
 
-	// Посчитаем количество колонок для каждой weapon-строки
-	for (i = 3; i < row; i++) {
-		c = 0;
-		while (c < 16 && tokens[i][c][0])
-			++c;
-		maxColsPerRow[i] = c ? c : 1;
-	}
+    for (i = 3; i < row; i++) {
+        c = 0;
+        while (c < 12 && tokens[i][c][0])
+            ++c;
+        maxColsPerRow[i] = c ? c : 1;
+    }
 
-	// Bonus
-	CG_OSPBuildBonusStatsTokens(&tokens[row], &cols, hasWeapons);
-	for (i = row; i < row + cols; ++i)
-		maxColsPerRow[i] = 8;
-	row += cols;
+    // Bonus
+    bonusStartRow = row;
+    CG_OSPBuildBonusStatsTokens(tokens, &row, hasWeapons);
+    bonusRowsCount = row - bonusStartRow;
 
-	// Отрисовка
-	CG_OSPDrawStatsWindowTokens(tokens, row, maxColsPerRow);
+    for (i = bonusStartRow; i < row; ++i) {
+        maxColsPerRow[i] = 8;
+    }
+
+    CG_OSPDrawStatsWindowTokens(tokens, row, maxColsPerRow);
 }

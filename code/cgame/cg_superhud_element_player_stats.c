@@ -110,7 +110,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 {
 	shudElementPlayerStats_t* element = (shudElementPlayerStats_t*)context;
 	newStatsInfo_t* ws = &cgs.be.newStats;
-	float damageRatio = ws->damageKoeff;
+	float damageRatio = ws->damageRatio;
 	int dmgGiven = statsInfo[OSP_STATS_DMG_GIVEN];
 	int dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
 

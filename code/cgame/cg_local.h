@@ -1105,8 +1105,9 @@ typedef	struct {
 typedef struct {
 	float kdratio;
 	float efficiency;
+	float dmgGiven;
+	float dmgReceived;
 	float damageRatio;
-	float damageKoeff;
 	float lastAccuracy;
 
 	int score;

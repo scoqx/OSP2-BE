@@ -509,7 +509,6 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 	}
 }
 
-
 void CG_DrawClientScoreNew(int y, score_t* score, float* color, float fade, qboolean largeFormat)
 {
 	if (cg_scoreboardBE.integer)
@@ -1385,7 +1384,6 @@ static void CG_OSPDrawPowerupFrame(int x, int y, const clientInfo_t* ci)
 		return;
 	}
 }
-
 
 void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* color, float fade)
 {
