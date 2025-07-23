@@ -1088,6 +1088,13 @@ void CG_BEParseStatsInfo(void)
 	int i, weaponIndex, arg_cnt;
 	int hits, shots, kills, deaths;
 	int pickUps, drops;
+	int killsTotal;
+	int deathsTotal;
+	int suicides;
+	int dmgGiven;
+	int dmgReceived;
+	int wins;
+	int losses;
 	qboolean changed = qfalse;
 
 	newStatsInfo_t* ws = &cgs.be.newStats;
@@ -1152,24 +1159,62 @@ void CG_BEParseStatsInfo(void)
 		}
 	}
 
-	ws->kdratio = (statsInfo[OSP_STATS_KILLS] > 0 && (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) == 0) ?
-	              (float)statsInfo[OSP_STATS_KILLS] :
-	              ((statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) > 0) ?
-	              (float)statsInfo[OSP_STATS_KILLS] / (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) : 0.0f;
+	// Общие показатели
+	killsTotal = statsInfo[OSP_STATS_KILLS];
+	deathsTotal = statsInfo[OSP_STATS_DEATHS];
+	suicides = statsInfo[OSP_STATS_SUCIDES];
+	dmgGiven = statsInfo[OSP_STATS_DMG_GIVEN];
+	dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
+	wins = statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask;
+	losses = statsInfo[OSP_STATS_LOSSES] & cgs.osp.stats_mask;
 
-	if (statsInfo[OSP_STATS_DMG_GIVEN] > 0)
-	{
-		ws->damageKoeff = (float)statsInfo[OSP_STATS_DMG_GIVEN] /
-		                  (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
-	}
-	cgs.be.newStats.statsLastRequestTime = qfalse;
+	// MH / Armor pickups
+	ws->megahealth = statsInfo[OSP_STATS_MH];
+	ws->ga         = statsInfo[OSP_STATS_GA];
+	ws->ya         = statsInfo[OSP_STATS_YA];
+	ws->ra         = statsInfo[OSP_STATS_RA];
+
+	// K/D ratio
+	ws->kdratio = (killsTotal > 0 && (deathsTotal + suicides) == 0) ?
+	              (float)killsTotal :
+	              ((deathsTotal + suicides) > 0) ?
+	              (float)killsTotal / (deathsTotal + suicides) : 0.0f;
+
+	// Efficiency: kills / (kills + deaths)
+	ws->efficiency = (killsTotal + deathsTotal > 0) ?
+	                 (100.0f * (float)killsTotal / (killsTotal + deathsTotal)) : 0.0f;
+	if (ws->efficiency < 0.0f)
+		ws->efficiency = 0.0f;
+
+	// Damage ratio
+	ws->damageRatio = (dmgGiven > 0 || dmgReceived > 0) ?
+	                  (float)dmgGiven / (dmgReceived > 0 ? dmgReceived : 1) : 0.0f;
+
+	// Дополнительные поля
+	ws->score     = statsInfo[OSP_STATS_SCORE];
+	ws->kills     = killsTotal;
+	ws->deaths    = deathsTotal;
+	ws->suicides  = suicides;
+	ws->teamKills = statsInfo[OSP_STATS_TEAM_KILLS];
+	ws->wins      = wins;
+	ws->losses    = losses;
+
+	// CTF / Objective data
+	ws->caps     = statsInfo[OSP_STATS_CAPS];
+	ws->assists  = statsInfo[OSP_STATS_ASSIST];
+	ws->defences = statsInfo[OSP_STATS_DEFENCES];
+	ws->returns  = statsInfo[OSP_STATS_RETURNS];
+	ws->flagTime = statsInfo[OSP_STATS_TIME];  // в мс
+
+	cgs.be.newStats.customStatsCalled = qfalse;
 }
+
 
 
 void CG_BERequestStatsInfo(void)
 {
 	newStatsInfo_t* ns = &cgs.be.newStats;
-	cgs.be.newStats.statsLastRequestTime = qtrue;
+	cgs.be.newStats.customStatsCalled = qtrue;
 	trap_SendClientCommand("getstatsinfo");
 }
 
@@ -1386,10 +1431,10 @@ void CG_ServerCommand(void)
 	}
 	//statsinfo
 	if (Q_stricmp(cmd, "statsinfo") == 0)
-		if (cgs.be.newStats.statsLastRequestTime)
+		if (cgs.be.newStats.customStatsCalled)
 		{
 			CG_BEParseStatsInfo();
-			// cgs.be.newStats.statsLastRequestTime = qfalse;
+			cgs.be.newStats.customStatsCalled = qfalse;
 			return;
 		}
 		else

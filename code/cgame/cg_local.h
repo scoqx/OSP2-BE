@@ -1089,30 +1089,44 @@ typedef struct weaponStats_s
 	int hitsCurrent;
 	int damageFixed;
 	qboolean onTrack;
-} weaponStats_t;
+} customWeaponStats_t;
 
 
-typedef struct
-{
-	int lastTrackedWeapon;
-	int weapActive[WP_NUM_WEAPONS];
-	float lastAccuracy;
-	float kdratio;
-	float damageKoeff;
-	struct
-	{
-		float accuracy;
-		int kills;
-		int deaths;
+typedef	struct {
 		int hits;
 		int shots;
+		int kills;
+		int deaths;
 		int pickUps;
 		int drops;
-	} stats[WP_NUM_WEAPONS];
+		float accuracy;
+} weaponStats_t;
+
+typedef struct {
+	float kdratio;
+	float efficiency;
+	float damageRatio;
+	float damageKoeff;
+	float lastAccuracy;
+
+	int score;
+	int kills, deaths, suicides, teamKills;
+	int wins, losses;
+	int caps, assists, defences, returns;
+	int flagTime;
+
+	int lastTrackedWeapon;
+
+	int megahealth;
+	int ra;
+	int ya;
+	int ga;
 
 	qboolean customStatsCalled;
 	int statsLastRequestTime;
+	weaponStats_t stats[WP_NUM_WEAPONS];
 } newStatsInfo_t;
+
 
 typedef struct cgs_be_s
 {
@@ -1136,7 +1150,7 @@ typedef struct cgs_be_s
 	vec4_t blueTeamColor;
 	vec4_t playerIndicatorColor;
 	vec4_t playerIndicatorBgColor;
-	weaponStats_t weaponStats[WP_NUM_WEAPONS];
+	customWeaponStats_t weaponStats[WP_NUM_WEAPONS];
 	newStatsInfo_t newStats;
 } cgs_be_t;
 
@@ -1897,6 +1911,7 @@ int CG_OSPDrawStringOld(int x, int y, const char* str, int charWidth, int charHe
 qboolean CG_Hex16GetColor(const char* str, float* color);
 
 void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
+void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
 void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t color); // inner
 
 //
@@ -2159,6 +2174,7 @@ void CG_DrawInformation(void);
 qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
 void CG_OSPShowStatsInfo(void);
+void CG_OSPShowStatsInfoNew(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
 

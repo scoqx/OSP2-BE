@@ -232,6 +232,62 @@ void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4
 	trap_R_SetColor(NULL);
 }
 
+void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner)
+{
+	if (!borderSize || !color)
+	{
+		return;
+	}
+
+	if (borderSize[0] <= 0.0f && borderSize[1] <= 0.0f && borderSize[2] <= 0.0f && borderSize[3] <= 0.0f)
+	{
+		return;
+	}
+	CG_AdjustFrom640(&x, &y, &w, &h);
+	trap_R_SetColor(color);
+
+	// Если требуется нарисовать внутреннюю рамку (inner)
+	if (inner)
+	{
+		if (borderSize[0] > 0.0f)   // Left
+		{
+			trap_R_DrawStretchPic(x, y + borderSize[1], borderSize[0], h - borderSize[1] - borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[1] > 0.0f)   // Top
+		{
+			trap_R_DrawStretchPic(x, y, w, borderSize[1], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[2] > 0.0f)   // Right
+		{
+			trap_R_DrawStretchPic(x + w - borderSize[2], y + borderSize[1], borderSize[2], h - borderSize[1] - borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[3] > 0.0f)   // Bottom
+		{
+			trap_R_DrawStretchPic(x, y + h - borderSize[3], w, borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+	}
+	else // Если рисуем внешнюю рамку (outer)
+	{
+		if (borderSize[0] > 0.0f)   // Left
+		{
+			trap_R_DrawStretchPic(x - borderSize[0], y, borderSize[0], h, 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[1] > 0.0f)   // Top
+		{
+			trap_R_DrawStretchPic(x - borderSize[0], y - borderSize[1], w + borderSize[0] + borderSize[2], borderSize[1], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[2] > 0.0f)   // Right
+		{
+			trap_R_DrawStretchPic(x + w, y, borderSize[2], h, 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[3] > 0.0f)   // Bottom
+		{
+			trap_R_DrawStretchPic(x - borderSize[0], y + h, w + borderSize[0] + borderSize[2], borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+	}
+	trap_R_SetColor(NULL);
+}
+
 /*
 ================
 CG_OSPDrawBlurFrame

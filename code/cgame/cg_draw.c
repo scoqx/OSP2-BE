@@ -2925,6 +2925,8 @@ static void CG_Draw2D(void)
 	if (cg_shud.integer)
 	{
 		CG_SHUDRoutine();
+		CG_OSPShowStatsInfoNew();
+
 		CG_DrawWarmupShud();
 		return;
 	}
