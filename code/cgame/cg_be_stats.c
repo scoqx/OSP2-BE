@@ -536,17 +536,6 @@ void CG_BEStatsBuildGeneral(char tokens[32][12][MAX_TOKEN_LEN], int startRow, in
         CG_BEStatsBuildGeneral_Default(tokens, outCols);
     }
 
-    // if (style == 2) {
-    //     Q_strncpyz(tokens[2][0], " ", MAX_TOKEN_LEN);
-    //     for (i = 1; i < 12; i++) {
-    //         tokens[2][i][0] = '\0';
-    //     }
-    //     Q_strncpyz(tokens[3][0], " ", MAX_TOKEN_LEN);
-    //     for (i = 1; i < 12; i++) {
-    //         tokens[3][i][0] = '\0';
-    //     }
-    // }
-
     *outRows = numRows;
 }
 
@@ -887,6 +876,7 @@ void CG_BEStatsShowStatsInfo(void)
 	int row = 0;
 	int rowsAdded;
     static qboolean initialized = qfalse;
+    CG_Printf("CG_BEStatsShowStatsInfo called\n");
 
 	// Очистка таблицы
 	memset(tokens, 0, sizeof(tokens));
