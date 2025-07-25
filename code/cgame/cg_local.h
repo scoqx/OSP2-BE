@@ -1092,21 +1092,24 @@ typedef struct weaponStats_s
 } customWeaponStats_t;
 
 
-typedef	struct {
-		int hits;
-		int shots;
-		int kills;
-		int deaths;
-		int pickUps;
-		int drops;
-		float accuracy;
+typedef struct
+{
+	int hits;
+	int shots;
+	int kills;
+	int deaths;
+	int pickUps;
+	int drops;
+	float accuracy;
 } weaponStats_t;
 
-typedef struct {
+typedef struct
+{
 	float kdratio;
 	float efficiency;
 	float dmgGiven;
 	float dmgReceived;
+	float teamDamage;
 	float damageRatio;
 	float lastAccuracy;
 
@@ -1118,12 +1121,16 @@ typedef struct {
 
 	int lastTrackedWeapon;
 
+	int armor;
+	int health;
+
 	int megahealth;
 	int ra;
 	int ya;
 	int ga;
 
 	qboolean customStatsCalled;
+	qboolean drawWindow;
 	int statsLastRequestTime;
 	weaponStats_t stats[WP_NUM_WEAPONS];
 } newStatsInfo_t;
@@ -1730,6 +1737,9 @@ extern vmCvar_t     cg_scoreboardRtColors;
 extern vmCvar_t     cg_scoreboardBtColors;
 extern vmCvar_t     cg_scoreboardSpecColor;
 extern vmCvar_t     cg_scoreboardDrawPowerUps;
+extern vmCvar_t        cg_bestats_textW;
+extern vmCvar_t        cg_bestats_textH;
+extern vmCvar_t        cg_bestats_font;
 extern vmCvar_t         be_run;
 
 
@@ -2175,7 +2185,7 @@ void CG_DrawInformation(void);
 qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
 void CG_OSPShowStatsInfo(void);
-void CG_OSPShowStatsInfoNew(void);
+void CG_BEStatsShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
 
@@ -2237,9 +2247,15 @@ const char* CG_GetCTFLocation(int loc);
 
 
 //
-//cg_beutil.c
+//cg_be_util.c
 //
 qboolean CG_BE_Timer(int msec);
+
+//
+//cg_be_stats
+//
+void CG_BEStatsResetInit(void);
+
 //
 //cg_cvardescriptions.c
 //
@@ -2727,6 +2743,7 @@ void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
 
 
 #ifdef __cplusplus

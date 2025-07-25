@@ -454,6 +454,9 @@ vmCvar_t        cg_scoreboardRtColors;
 vmCvar_t        cg_scoreboardBtColors;
 vmCvar_t        cg_scoreboardSpecColor;
 vmCvar_t        cg_scoreboardDrawPowerUps;
+vmCvar_t        cg_bestats_textW;
+vmCvar_t        cg_bestats_textH;
+vmCvar_t        cg_bestats_font;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -817,6 +820,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_scoreboardBtColors, "cg_scoreboardBtColors", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardBtColors },
 	{ &cg_scoreboardSpecColor, "cg_scoreboardSpecColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardSpecColor },
 	{ &cg_scoreboardDrawPowerUps, "cg_scoreboardDrawPowerUps", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_bestats_textW, "cg_bestats_textW", "6", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_bestats_textH, "cg_bestats_textH", "8", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_bestats_font, "cg_bestats_font", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_font },
+
+
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 

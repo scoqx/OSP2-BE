@@ -496,6 +496,15 @@ void CG_OSPWStatsUp_f(void)
 	wstatsWndId = 0;
 	wstatsEnabled = 0;
 }
+void CG_BEStatsDown_f(void)
+{
+	cgs.be.newStats.drawWindow = qtrue;
+}
+void CG_BEStatsUp_f(void)
+{
+	cgs.be.newStats.drawWindow = qfalse;
+	CG_BEStatsResetInit();
+}
 
 void CG_ShudChatDown_f(void)
 {
@@ -916,6 +925,8 @@ static consoleCommand_t commands[] =
 	{ "-scores", CG_ScoresUp_f },
 	{ "+wstats", CG_OSPWStatsDown_f },
 	{ "-wstats", CG_OSPWStatsUp_f },
+	{ "+bstats", CG_BEStatsDown_f },
+	{ "-bstats", CG_BEStatsUp_f },
 	{ "+zoom", CG_ZoomDown_f },
 	{ "-zoom", CG_ZoomUp_f },
 	{ "+zoomtoggle", CG_ZoomToggle_f},

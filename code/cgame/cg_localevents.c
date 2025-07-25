@@ -793,3 +793,10 @@ void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
 	isCustomScoreboardColorIsSet_spec = qtrue;
 }
 
+void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
+{
+	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	{
+		trap_Cvar_Set("cg_bestats_font", 0);
+	}
+}

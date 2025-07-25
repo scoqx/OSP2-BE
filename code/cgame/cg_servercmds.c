@@ -1174,6 +1174,9 @@ void CG_BEParseStatsInfo(void)
 	ws->ya         = statsInfo[OSP_STATS_YA];
 	ws->ra         = statsInfo[OSP_STATS_RA];
 
+	ws->armor  = statsInfo[OSP_STATS_WINS] >> cgs.osp.stats_shift;
+	ws->health = statsInfo[OSP_STATS_LOSSES] >> cgs.osp.stats_shift;
+
 	// K/D ratio
 	ws->kdratio = (killsTotal > 0 && (deathsTotal + suicides) == 0) ?
 	              (float)killsTotal :
@@ -1182,7 +1185,7 @@ void CG_BEParseStatsInfo(void)
 
 	// Efficiency: kills / (kills + deaths)
 	ws->dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
-	ws->dmgGiven	= statsInfo[OSP_STATS_DMG_GIVEN];
+	ws->dmgGiven    = statsInfo[OSP_STATS_DMG_GIVEN];
 
 	ws->efficiency = (killsTotal + deathsTotal > 0) ?
 	                 (100.0f * (float)killsTotal / (killsTotal + deathsTotal)) : 0.0f;
@@ -1199,6 +1202,7 @@ void CG_BEParseStatsInfo(void)
 	ws->deaths    = deathsTotal;
 	ws->suicides  = suicides;
 	ws->teamKills = statsInfo[OSP_STATS_TEAM_KILLS];
+	ws->teamDamage = statsInfo[OSP_STATS_DMG_TEAM];
 	ws->wins      = wins;
 	ws->losses    = losses;
 
@@ -1224,7 +1228,7 @@ void CG_BERequestStatsInfo(void)
 void CG_MaybeRequestStatsInfo(void)
 {
 
-	if (CG_BE_Timer(1500))
+	if (CG_BE_Timer(2000))
 	{
 		CG_BERequestStatsInfo();
 	}
