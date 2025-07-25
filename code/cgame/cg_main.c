@@ -454,9 +454,14 @@ vmCvar_t        cg_scoreboardRtColors;
 vmCvar_t        cg_scoreboardBtColors;
 vmCvar_t        cg_scoreboardSpecColor;
 vmCvar_t        cg_scoreboardDrawPowerUps;
-vmCvar_t        cg_bestats_textW;
-vmCvar_t        cg_bestats_textH;
+vmCvar_t        cg_bestats_style;
+vmCvar_t        cg_bestats_textSize;
 vmCvar_t        cg_bestats_font;
+vmCvar_t		cg_bestats_pos;
+vmCvar_t		cg_bestats_bgStyle;
+vmCvar_t		cg_bestats_wpStyle;
+vmCvar_t		cg_bestats_bgColor;
+vmCvar_t		cg_bestats_bgOpaque;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -820,11 +825,14 @@ static cvarTable_t cvarTable[] =
 	{ &cg_scoreboardBtColors, "cg_scoreboardBtColors", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardBtColors },
 	{ &cg_scoreboardSpecColor, "cg_scoreboardSpecColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_scoreboardSpecColor },
 	{ &cg_scoreboardDrawPowerUps, "cg_scoreboardDrawPowerUps", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_bestats_textW, "cg_bestats_textW", "6", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_bestats_textH, "cg_bestats_textH", "8", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_bestats_style, "cg_bestats_style", "1", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_bestats_textSize, "cg_bestats_textSize", "6 8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_textSize },
 	{ &cg_bestats_font, "cg_bestats_font", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_font },
-
-
+	{ &cg_bestats_pos, "cg_bestats_pos", "4 340", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_pos },
+	{ &cg_bestats_bgStyle, "cg_bestats_bgStyle", "1", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_bestats_wpStyle, "cg_bestats_wpStyle", "1", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_bestats_bgColor, "cg_bestats_bgColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_bgColor },
+	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.75", CVAR_ARCHIVE | CVAR_NEW, },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1660,6 +1668,9 @@ static void CG_RegisterGraphics(void)
 
 
 
+	// be_stats
+	cgs.media.beStats_background = trap_R_RegisterShader("gfx/misc/colorbar");
+
 	memset(cg_items, 0, sizeof(cg_items));
 	memset(cg_weapons, 0, sizeof(cg_weapons));
 
@@ -2013,6 +2024,13 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_scoreboardBtColors");
 
 	CG_CvarTouch("cg_scoreboardSpecColor");
+
+
+	CG_CvarTouch("cg_bestats_textSize");
+	CG_CvarTouch("cg_bestats_pos");
+	CG_CvarTouch("cg_bestats_font");
+	CG_CvarTouch("cg_bestats_bgColor");
+	
 	CG_InitConsoleCommands();
 
 	if (cg_clientLog.integer)

@@ -4,6 +4,75 @@
 int global_handicap; // unused?
 //	void         (*onChanged)(cvarTable_t *cvart);
 
+
+void CG_ParseCvarTwoStrings(const cvarTable_t *cvart, char *out1, char *out2, int outSize) {
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char *token1, *token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (cvart->vmCvar->string[0] == '\0') return;
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2) return;
+
+	Q_strncpyz(out1, token1, outSize);
+	Q_strncpyz(out2, token2, outSize);
+}
+
+void CG_ParseCvarTwoInts(const cvarTable_t *cvart, int *out1, int *out2) {
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char *token1, *token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (cvart->vmCvar->string[0] == '\0') return;
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2) return;
+
+	*out1 = atoi(token1);
+	*out2 = atoi(token2);
+}
+
+void CG_ParseCvarTwoFloats(const cvarTable_t *cvart, float *out1, float *out2) {
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char *token1, *token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (cvart->vmCvar->string[0] == '\0') return;
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2) return;
+
+	*out1 = (float)atof(token1);
+	*out2 = (float)atof(token2);
+}
+
+void CG_ParseCvarTwoColors(const cvarTable_t *cvart, vec4_t out1, vec4_t out2) {
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char *token1, *token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (cvart->vmCvar->string[0] == '\0') return;
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2) return;
+
+	CG_ParseColorStr(token1, out1);
+	CG_ParseColorStr(token2, out2);
+}
+
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
 {
 	if ((cg_drawTeamOverlay.integer > 0) ||
@@ -800,3 +869,25 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
 		trap_Cvar_Set("cg_bestats_font", 0);
 	}
 }
+
+void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart)
+{
+	CG_ParseCvarTwoFloats(cvart, &cgs.be.newStats.settings.x, &cgs.be.newStats.settings.y);
+}
+
+void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart)
+{
+	CG_ParseCvarTwoFloats(cvart, &cgs.be.newStats.settings.textSize[0], &cgs.be.newStats.settings.textSize[1]);
+}
+void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0]) {
+		cgs.be.newStats.settings.bgColorIsSet = qfalse;
+	}
+	else {
+		CG_LocalEventCvarParseColor(cvart, cgs.be.newStats.settings.bgColor);
+		cgs.be.newStats.settings.bgColorIsSet = qtrue;
+	}
+}
+
+

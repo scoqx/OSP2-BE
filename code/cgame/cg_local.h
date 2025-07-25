@@ -931,6 +931,9 @@ typedef struct
 
 	qhandle_t  tempAccIcon;
 
+	//be_stats
+	qhandle_t	beStats_background;
+
 	// sounds
 	sfxHandle_t quadSound;
 	sfxHandle_t tracerSound;
@@ -1103,6 +1106,15 @@ typedef struct
 	float accuracy;
 } weaponStats_t;
 
+typedef struct 
+{
+	float x, y;
+	vec2_t textSize;
+	vec4_t bgColor;
+	qboolean bgColorIsSet;
+	float bgOpaque;
+}globalBeStatsSettings_t;
+
 typedef struct
 {
 	float kdratio;
@@ -1133,7 +1145,9 @@ typedef struct
 	qboolean drawWindow;
 	int statsLastRequestTime;
 	weaponStats_t stats[WP_NUM_WEAPONS];
+	globalBeStatsSettings_t settings;
 } newStatsInfo_t;
+
 
 
 typedef struct cgs_be_s
@@ -1737,9 +1751,14 @@ extern vmCvar_t     cg_scoreboardRtColors;
 extern vmCvar_t     cg_scoreboardBtColors;
 extern vmCvar_t     cg_scoreboardSpecColor;
 extern vmCvar_t     cg_scoreboardDrawPowerUps;
-extern vmCvar_t        cg_bestats_textW;
-extern vmCvar_t        cg_bestats_textH;
+extern vmCvar_t        cg_bestats_style;
+extern vmCvar_t        cg_bestats_textSize;
 extern vmCvar_t        cg_bestats_font;
+extern vmCvar_t        cg_bestats_pos;
+extern vmCvar_t        cg_bestats_bgStyle;
+extern vmCvar_t        cg_bestats_wpStyle;
+extern vmCvar_t			cg_bestats_bgColor;
+extern vmCvar_t			cg_bestats_bgOpaque;
 extern vmCvar_t         be_run;
 
 
@@ -1834,6 +1853,7 @@ void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean corre
 void CG_FillRect(float x, float y, float width, float height, const float* color);
 void CG_DrawPicOld(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader);
+void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader);
 
 float CG_OSPDrawStringLength(const char* string, float ax, float aw, int proportional);
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth);
@@ -1848,6 +1868,8 @@ int CG_FontIndexFromName(const char* name);
 
 qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y);
 void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor);
+void CG_OSPAdjustTeamColorHalfed(const vec4_t inColor, vec4_t outColor);
+
 
 
 #define OSP_TEXT_CMD_MAX 2048
@@ -1878,6 +1900,7 @@ void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int bo
 void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight, int direction, float speed, float gradientScale, int colored);
 
 extern vec4_t defaultBorderSize;
+extern vec4_t thicBorderSize;
 // flags for CG_DrawString
 enum
 {
@@ -2744,7 +2767,9 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
-
+void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }
