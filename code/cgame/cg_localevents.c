@@ -872,21 +872,21 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart)
 {
-	CG_ParseCvarTwoFloats(cvart, &cgs.be.newStats.settings.x, &cgs.be.newStats.settings.y);
+	CG_ParseCvarTwoFloats(cvart, &cgs.be.settings.x, &cgs.be.settings.y);
 }
 
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart)
 {
-	CG_ParseCvarTwoFloats(cvart, &cgs.be.newStats.settings.textSize[0], &cgs.be.newStats.settings.textSize[1]);
+	CG_ParseCvarTwoFloats(cvart, &cgs.be.settings.textSize[0], &cgs.be.settings.textSize[1]);
 }
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0]) {
-		cgs.be.newStats.settings.bgColorIsSet = qfalse;
+		cgs.be.settings.bgColorIsSet = qfalse;
 	}
 	else {
-		CG_LocalEventCvarParseColor(cvart, cgs.be.newStats.settings.bgColor);
-		cgs.be.newStats.settings.bgColorIsSet = qtrue;
+		CG_LocalEventCvarParseColor(cvart, cgs.be.settings.bgColor);
+		cgs.be.settings.bgColorIsSet = qtrue;
 	}
 }
 

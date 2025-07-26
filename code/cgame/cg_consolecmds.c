@@ -460,11 +460,7 @@ void CG_OSPDrawNewCredits_f(void)
 }
 void CG_OSPMoTD_f(void)
 {
-	if (cg_noSlidingWindow.integer)
-	{
-		return;
-	}
-	if (cgs.osp.numberOfStringsMotd > 0)
+	if (!cg_noSlidingWindow.integer && cgs.osp.numberOfStringsMotd > 0)
 	{
 		CG_OSPDrawLeftSlidingWindow(0.5, 1.2, 12.0, 1.0, cgs.osp.numberOfStringsMotd, 64, 10, 10, cgs.osp.motd[0], 400, NULL, NULL);
 	}
@@ -473,34 +469,34 @@ void CG_OSPMyName_f(void)
 {
 	CG_Printf("Your name is: '%s^7'\n", cgs.clientinfo[ cg.clientNum ].name);
 }
+// void CG_OSPWStatsDown_f(void)
+// {
+// 	if (wstatsWndId == 0)
+// 	{
+// 		if (wstatsEnabled == qfalse)
+// 		{
+// 			trap_SendClientCommand("getstatsinfo");
+// 			wstatsEnabled = qtrue;
+// 		}
+// 	}
+// }
+// void CG_OSPWStatsUp_f(void)
+// {
+// 	if (wstatsWndId > 0)
+// 	{
+// 		OSP_SlidingPrintContext_t* window = &ospPrintContext[wstatsWndId - 1];
+// 		window->hideBeforeRealtime = trap_Milliseconds() + window->timeAppearance;
+// 		window->hideBeforeCGTime = cg.time + window->timeAppearance;
+// 		window->timeHiding = window->hideBeforeRealtime;
+// 	}
+// 	wstatsWndId = 0;
+// 	wstatsEnabled = 0;
+// }
 void CG_OSPWStatsDown_f(void)
-{
-	if (wstatsWndId == 0)
-	{
-		if (wstatsEnabled == qfalse)
-		{
-			trap_SendClientCommand("getstatsinfo");
-			wstatsEnabled = qtrue;
-		}
-	}
-}
-void CG_OSPWStatsUp_f(void)
-{
-	if (wstatsWndId > 0)
-	{
-		OSP_SlidingPrintContext_t* window = &ospPrintContext[wstatsWndId - 1];
-		window->hideBeforeRealtime = trap_Milliseconds() + window->timeAppearance;
-		window->hideBeforeCGTime = cg.time + window->timeAppearance;
-		window->timeHiding = window->hideBeforeRealtime;
-	}
-	wstatsWndId = 0;
-	wstatsEnabled = 0;
-}
-void CG_BEStatsDown_f(void)
 {
 	cgs.be.newStats.drawWindow = qtrue;
 }
-void CG_BEStatsUp_f(void)
+void CG_OSPWStatsUp_f(void)
 {
 	cgs.be.newStats.drawWindow = qfalse;
 	CG_BEStatsResetInit();
@@ -972,8 +968,8 @@ static consoleCommand_t commands[] =
 	{ "-scores", CG_ScoresUp_f },
 	{ "+wstats", CG_OSPWStatsDown_f },
 	{ "-wstats", CG_OSPWStatsUp_f },
-	{ "+bstats", CG_BEStatsDown_f },
-	{ "-bstats", CG_BEStatsUp_f },
+	// { "+bstats", CG_BEStatsDown_f },
+	// { "-bstats", CG_BEStatsUp_f },
 	{ "+zoom", CG_ZoomDown_f },
 	{ "-zoom", CG_ZoomUp_f },
 	{ "+zoomtoggle", CG_ZoomToggle_f},

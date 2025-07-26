@@ -4196,6 +4196,10 @@ void CG_OSPHUDRoutine(void)
 		{
 			CG_OSPDrawCenterString();
 		}
+		if (cgs.be.newStats.drawWindow)
+		{
+		CG_BEStatsShowStatsInfo();
+		}
 	}
 }
 

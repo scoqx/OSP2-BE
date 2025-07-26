@@ -355,7 +355,7 @@ static void CG_ConfigStringModified(void)
 	}
 	else if (num == CS_INTERMISSION)
 	{
-		CG_OSPWStatsUp_f();
+		// CG_OSPWStatsUp_f();
 		cg.intermissionStarted = atoi(str);
 		if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_SPECTATOR &&
 		        CG_OSPIsGameTypeCA(cgs.gametype) &&
@@ -1438,17 +1438,19 @@ void CG_ServerCommand(void)
 	}
 	//statsinfo
 	if (Q_stricmp(cmd, "statsinfo") == 0)
-		if (cgs.be.newStats.customStatsCalled)
-		{
+		// if (cgs.be.newStats.customStatsCalled)
+		// {
 			CG_BEParseStatsInfo();
 			cgs.be.newStats.customStatsCalled = qfalse;
 			return;
-		}
-		else
-		{
-			CG_OSPShowStatsInfo();
-			return;
-		}
+		// }
+
+		// else
+		// {
+		// 	CG_OSPShowStatsInfo();
+		// 	return;
+		// }
+		
 //viewlist
 	if (Q_stricmp(cmd, "viewlist") == 0)
 	{

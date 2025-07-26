@@ -23,9 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_scoreboard -- draw the scoreboard on top of the game screen
 #include "cg_local.h"
 
-
 #define MAX_TOKEN_LEN MAX_QPATH
-
 
 typedef struct beStatsSettings_t
 {
@@ -67,47 +65,54 @@ beStatsSettings_t beStatsSettings;
 
 static qboolean beStatsInitialized = qfalse;
 
-static char tokens[32][12][64];
-vec4_t tokenColors[32][12];
-float tokenWidth[32][12];
+typedef struct {
+    char text[64];
+    int textFlags;
+    float offset;
+    vec4_t color;
+    float width;
+} BEStatToken_t;
 
+BEStatToken_t tokens[32][12];
 
-void CG_BEStatsInitSettings(void)
+qboolean CG_BEStatsInitSettings(void)
 {
 	beStatsSettings_t* set = &beStatsSettings;
-	globalBeStatsSettings_t* inc = &cgs.be.newStats.settings;
+	globalBeStatsSettings_t* inc = &cgs.be.settings;
 
-    set->x = inc->x;
-    set->y = inc->y;
+	if (!inc) return qfalse;
+
+	set->x = inc->x;
+	set->y = inc->y;
 
 	set->textWidth = inc->textSize[0];
 	set->textHeight = inc->textSize[1];
 
-	set->iconSizeW = set->textWidth * 1.1;
-    set->iconSizeH = set->textHeight * 1.1;
+	set->iconSizeW = set->textWidth * 1.2f;
+	set->iconSizeH = set->textHeight * 1.2f;
 
-    set->padding = (set->textHeight + set->textWidth) / 8;
+	set->padding = (set->textHeight + set->textWidth) / 8;
+	set->rowHeight  = set->textHeight * 1;
+	set->rowSpacing = set->textHeight;
+	set->colSpacing = set->textWidth * cg_bestats_spacingAdjust.value;
+	set->baseColWidth = set->textWidth * 5;
 
-    set->rowHeight  = set->textHeight;
-    set->rowSpacing = set->textHeight;
-    set->colSpacing = set->textWidth;
-    set->baseColWidth = set->textWidth * 6;
+	set->widthCutoff = set->textWidth * cg_bestats_widthCutoff.value;
 
-    set->widthCutoff = 0;
+	return qtrue;
 }
 
-void CG_BEStatsInitColors(const vec4_t color)
+qboolean CG_BEStatsInitColors(const vec4_t color)
 {
 	beStatsSettings_t* set = &beStatsSettings;
 	int row, col;
-	for (row = 0; row < 32; row++)
-	{
-		for (col = 0; col < 12; col++)
-		{
-			Vector4Copy(color, tokenColors[row][col]);
-		}
 
-	}
+	if (!set) return qfalse;
+
+	for (row = 0; row < 32; row++)
+		for (col = 0; col < 12; col++)
+			Vector4Copy(color, tokens[row][col].color);
+
 	// Default color sets
 	Vector4Copy(color, set->defaultColor);
 	Vector4Set(set->colorR, 1, 0, 0, 1);
@@ -117,96 +122,121 @@ void CG_BEStatsInitColors(const vec4_t color)
 	Vector4Set(set->colorC, 0, 1, 1, 1);
 	Vector4Set(set->colorM, 1, 0, 1, 1);
 
-	// Team colors
+	// Team color logic
 	if (cgs.gametype >= GT_TEAM) {
-		if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED) {
+		team_t team = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+			? cgs.clientinfo[cg.clientNum].team
+			: cg.snap->ps.persistant[PERS_TEAM];
+
+		if (team == TEAM_RED) {
 			Vector4Copy(cgs.be.redTeamColor, set->teamColor);
-		} else if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE) {
+		} else if (team == TEAM_BLUE) {
 			Vector4Copy(cgs.be.blueTeamColor, set->teamColor);
 		} else {
-			Vector4Copy(colorMdGrey, set->teamColor);
+			Vector4Copy(colorDkGrey, set->teamColor);
 		}
 	} else {
-		Vector4Copy(colorMdGrey, set->teamColor);
+		Vector4Copy(colorDkGrey, set->teamColor);
 	}
 
-	// Window colors
-	// Vector4Set(set->bgColor, set->teamColor[0], set->teamColor[1], set->teamColor[2], (set->teamColor[3] / 2));
-	if (!cgs.be.newStats.settings.bgColorIsSet)
-		CG_OSPAdjustTeamColorHalfed(set->teamColor, set->bgColor);
-	else {
-		Vector4Set(set->bgColor, cgs.be.newStats.settings.bgColor[0], cgs.be.newStats.settings.bgColor[1], cgs.be.newStats.settings.bgColor[2], cg_bestats_bgOpaque.value);
+	// Background color
+	if (!cgs.be.settings.bgColorIsSet) {
+		CG_OSPAdjustTeamColorBEStats(set->teamColor, set->bgColor);
+		set->bgColor[3] = cg_bestats_bgOpaque.value;
+	} else {
+		Vector4Set(set->bgColor, cgs.be.settings.bgColor[0], cgs.be.settings.bgColor[1], cgs.be.settings.bgColor[2], cg_bestats_bgOpaque.value);
 	}
 
 	Vector4Copy(colorBlack, set->borderColor);
+
+	return qtrue;
 }
 
-
-void CG_BEStatsInit(void) {
-    if (!beStatsInitialized)
-    {
-        CG_BEStatsInitSettings();
-        CG_BEStatsInitColors(colorWhite);
-        // CG_Printf("Init ^2Once\n");
-        beStatsInitialized = qtrue;
+qboolean CG_BEStatsInitTokenDefaults(void)
+{
+    int i, j;
+    int flags, bit;
+    for (i = 0; i < 32; ++i) {
+        for (j = 0; j < 12; ++j) {
+            tokens[i][j].offset = 0;
+        }
     }
+    return qtrue;
+}
+
+void CG_BEStatsInit(void)
+{
+	if (!beStatsInitialized)
+	{
+		if (!CG_BEStatsInitSettings()) {
+			CG_Printf("BEStats: Failed to init settings\n");
+			return;
+		}
+		if (!CG_BEStatsInitColors(colorWhite)) {
+			CG_Printf("BEStats: Failed to init colors\n");
+			return;
+		}
+		if (!CG_BEStatsInitTokenDefaults()) {
+			CG_Printf("BEStats: Failed to init token defaults\n");
+			return;
+		}
+
+		beStatsInitialized = qtrue;
+	}
 }
 
 void CG_BEStatsResetInit(void) {
 	beStatsInitialized = qfalse;
 }
 
-
-void CG_BEStatsSetTokenLabel(int row, int col, const char* label, const vec4_t color)
+void CG_BEStatsSetTokenLabel(BEStatToken_t tokens[32][12], int row, int col, const char* label, const vec4_t color)
 {
-	Q_strncpyz(tokens[row][col], label, MAX_TOKEN_LEN);
-	if (color)
-	{
-		Vector4Copy(color, tokenColors[row][col]);
-	}
+    Q_strncpyz(tokens[row][col].text, label, sizeof(tokens[row][col].text));
+    if (color)
+    {
+        Vector4Copy(color, tokens[row][col].color);
+    }
 }
 
-void CG_BEStatsSetTokenValueInt(int row, int col, const char* fmt, int value, const vec4_t color)
+void CG_BEStatsSetTokenValueInt(BEStatToken_t tokens[32][12], int row, int col, const char* fmt, int value, const vec4_t color)
 {
-	char buf[MAX_TOKEN_LEN];
-	Com_sprintf(buf, sizeof(buf), fmt, value);
-	Q_strncpyz(tokens[row][col], buf, MAX_TOKEN_LEN);
-	if (color)
-	{
-		Vector4Copy(color, tokenColors[row][col]);
-	}
+    char buf[MAX_TOKEN_LEN];
+    Com_sprintf(buf, sizeof(buf), fmt, value);
+    Q_strncpyz(tokens[row][col].text, buf, sizeof(tokens[row][col].text));
+    if (color)
+    {
+        Vector4Copy(color, tokens[row][col].color);
+    }
 }
 
-void CG_BEStatsSetTokenValueFloat(int row, int col, const char* fmt, float value, const vec4_t color)
+void CG_BEStatsSetTokenValueFloat(BEStatToken_t tokens[32][12], int row, int col, const char* fmt, float value, const vec4_t color)
 {
-	char buf[MAX_TOKEN_LEN];
-	Com_sprintf(buf, sizeof(buf), fmt, value);
-	Q_strncpyz(tokens[row][col], buf, MAX_TOKEN_LEN);
-	if (color)
-	{
-		Vector4Copy(color, tokenColors[row][col]);
-	}
+    char buf[MAX_TOKEN_LEN];
+    Com_sprintf(buf, sizeof(buf), fmt, value);
+    Q_strncpyz(tokens[row][col].text, buf, sizeof(tokens[row][col].text));
+    if (color)
+    {
+        Vector4Copy(color, tokens[row][col].color);
+    }
 }
 
-void CG_BEStatsSetTokenWidth(int row, int col, float multipy)
+
+
+void CG_BEStatsSetTokenWidth(BEStatToken_t tokens[32][12], int row, int col, float multiply)
 {
-	tokenWidth[row][col] = beStatsSettings.textWidth * multipy;
+    tokens[row][col].width = beStatsSettings.colSpacing * multiply;
 }
 
-void CG_BEStatsSetTokenLabelValueInt(int rowLabel, int col, const char* label, const vec4_t labelColor,
-                                     int rowValue, int value, const char* fmt, const vec4_t valueColor)
+void CG_BEStatsAddTokenTextFlags(BEStatToken_t tokens[32][12], int row, int col, int textFlags)
 {
-    CG_BEStatsSetTokenLabel(rowLabel, col, label, labelColor);
-    CG_BEStatsSetTokenValueInt(rowValue, col, fmt, value, valueColor);
+    tokens[row][col].textFlags = textFlags;
 }
 
-void CG_BEStatsSetTokenLabelValueFloat(int rowLabel, int col, const char* label, const vec4_t labelColor,
-                                       int rowValue, float value, const char* fmt, const vec4_t valueColor)
-{
-    CG_BEStatsSetTokenLabel(rowLabel, col, label, labelColor);
-    CG_BEStatsSetTokenValueFloat(rowValue, col, fmt, value, valueColor);
-}
 
+void CG_BEStatsSetTokenOffset(BEStatToken_t tokens[32][12], int row, int col, float multiply)
+{
+    tokens[row][col].offset = beStatsSettings.colSpacing * multiply;
+}
 
 qhandle_t CG_BEStatsResolveMediaHandle(const char* mediaPath) {
     if (!mediaPath) return 0;
@@ -216,7 +246,6 @@ qhandle_t CG_BEStatsResolveMediaHandle(const char* mediaPath) {
         const char* fieldName = mediaPath + 10;
 
         if (strcmp(fieldName, "whiteShader") == 0) return cgs.media.whiteShader;
-        // Добавь другие поля по мере необходимости
 
         Com_Printf("^1Unknown cgs.media field: %s\n", fieldName);
         return 0;
@@ -248,124 +277,115 @@ qhandle_t CG_BEStatsResolveMediaHandle(const char* mediaPath) {
     return 0;
 }
 
-static void CG_BEStatsBuildGeneral_Tournament(char tokens[32][12][MAX_TOKEN_LEN], int* outCols)
+static void CG_BEStatsBuildGeneral_Tournament(BEStatToken_t tokens[32][12], int* outCols)
 {
     int col = 0;
     const newStatsInfo_t* s = &cgs.be.newStats;
 
-    CG_BEStatsSetTokenLabel(0, col, "Score", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->score, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Score", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->score, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Klls", beStatsSettings.colorG);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->kills, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Klls", beStatsSettings.colorG);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->kills, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Dths", beStatsSettings.colorR);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Dths", beStatsSettings.colorR);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Sui", beStatsSettings.colorR);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->suicides, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Sui", beStatsSettings.colorR);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->suicides, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "K/D", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueFloat(1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "K/D", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Effncy", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueFloat(1, col++, "%.1f", s->efficiency, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Effncy", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->efficiency, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "WINS", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->wins, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "WINS", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->wins, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "LOSSES", beStatsSettings.colorR);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->losses, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "LOSSES", beStatsSettings.colorR);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->losses, beStatsSettings.defaultColor);
 
     *outCols = col;
 }
 
-static void CG_BEStatsBuildGeneral_Team(char tokens[32][12][MAX_TOKEN_LEN], int* outCols, qboolean isFreeze)
+
+static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCols)
 {
     int col = 0;
     const newStatsInfo_t* s = &cgs.be.newStats;
-    int style = cg_bestats_style.integer;  // предположим, это глобальная переменная или настройка
-
+    int style = cg_bestats_style.integer;  // глобальная переменная/настройка
+    qboolean isFreeze = cgs.osp.gameTypeFreeze;
     if (style == 2) {
-        // Второй стиль — 5 строк с двумя рядами заголовков и значений
-
-        // Первая строка — заголовки
-        CG_BEStatsSetTokenLabel(0, col, "Score", beStatsSettings.colorY);
+        // Titles
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Score", beStatsSettings.colorY);
         col++;
-        CG_BEStatsSetTokenLabel(0, col, "Klls", beStatsSettings.colorG);
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Kills", beStatsSettings.colorG);
         col++;
         if (isFreeze) {
-            CG_BEStatsSetTokenLabel(0, col, "Thaws", beStatsSettings.colorG);
-        } else {
-            CG_BEStatsSetTokenLabel(0, col, "Wins/Net", beStatsSettings.colorY);
+            CG_BEStatsSetTokenLabel(tokens, 0, col, "Thaws", beStatsSettings.colorC);
         }
         col++;
-
-        // Вторая строка — значения под первыми заголовками
+        // Values
         col = 0;
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->score, beStatsSettings.defaultColor);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->kills, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->score, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->kills, beStatsSettings.defaultColor);
         if (isFreeze) {
-            CG_BEStatsSetTokenValueInt(1, col++, "%d", s->losses, beStatsSettings.defaultColor);
-        } else {
-            CG_BEStatsSetTokenValueInt(1, col++, "%d", s->wins, beStatsSettings.defaultColor);
-            // Можно сюда добавить "Net" (score - deaths) как отдельное поле, если нужно
+            CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->losses, beStatsSettings.defaultColor);
         }
-
-        // Третья строка — новые заголовки
+        // Titles 2
         col = 0;
-		CG_BEStatsSetTokenLabel(2, col++, "K/D", beStatsSettings.colorY);
-        CG_BEStatsSetTokenLabel(2, col++, "Dths", beStatsSettings.colorR);
-        CG_BEStatsSetTokenLabel(2, col++, "Sui", beStatsSettings.colorR);
-
-        // Четвёртая строка — значения под ними
+        CG_BEStatsSetTokenLabel(tokens, 2, col++, "K/D", beStatsSettings.colorY);
+        CG_BEStatsSetTokenLabel(tokens, 2, col++, "Deaths", beStatsSettings.colorR);
+        CG_BEStatsSetTokenLabel(tokens, 2, col++, "Suicides", beStatsSettings.colorR);
+        // Values 2
         col = 0;
-        CG_BEStatsSetTokenValueInt(3, col++, "%d", s->deaths, beStatsSettings.defaultColor);
-        CG_BEStatsSetTokenValueInt(3, col++, "%d", s->suicides, beStatsSettings.defaultColor);
-        CG_BEStatsSetTokenValueFloat(3, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenValueFloat(tokens, 3, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenValueInt(tokens, 3, col++, "%d", s->deaths, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenValueInt(tokens, 3, col++, "%d", s->suicides, beStatsSettings.defaultColor);
 
-        // Пятая строка — пустая, не трогаем
+        // 5th row is empty
 
-        *outCols = col; // 3 колонки
+        *outCols = col; // 3
 
     } else {
-        // Стандартный стиль — одна строка с колонками
-
+        // Default
         col = 0;
-
-        CG_BEStatsSetTokenLabel(0, col, "Score", beStatsSettings.colorY);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->score, beStatsSettings.defaultColor);
-
+        // Title + Value
+        // Score
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Score", beStatsSettings.colorY);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->score, beStatsSettings.defaultColor);
+        // wtf?
         if (isFreeze) {
-            CG_BEStatsSetTokenLabel(0, col, "WINS", beStatsSettings.colorY);
-            CG_BEStatsSetTokenValueInt(1, col++, "%d", s->wins, beStatsSettings.defaultColor);
+            CG_BEStatsSetTokenLabel(tokens, 0, col, "WINS", beStatsSettings.colorY);
+            CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->wins, beStatsSettings.defaultColor);
         } else {
-            CG_BEStatsSetTokenLabel(0, col, "NET", beStatsSettings.colorY);
-            CG_BEStatsSetTokenValueInt(1, col++, "%d", s->score - s->deaths, beStatsSettings.defaultColor);
+            CG_BEStatsSetTokenLabel(tokens, 0, col, "NET", beStatsSettings.colorY);
+            CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->score - s->deaths, beStatsSettings.defaultColor);
         }
-
-        CG_BEStatsSetTokenLabel(0, col, "Klls", beStatsSettings.colorG);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->kills, beStatsSettings.defaultColor);
-
+        // Kills
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Klls", beStatsSettings.colorG);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->kills, beStatsSettings.defaultColor);
+        // Thaws
         if (isFreeze) {
-            CG_BEStatsSetTokenLabel(0, col, "Thaws", beStatsSettings.colorG);
-            CG_BEStatsSetTokenValueInt(1, col++, "%d", s->losses, beStatsSettings.defaultColor);
+            CG_BEStatsSetTokenLabel(tokens, 0, col, "Thaws", beStatsSettings.colorC);
+            CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->losses, beStatsSettings.defaultColor);
         }
-
-        CG_BEStatsSetTokenLabel(0, col, "Dths", beStatsSettings.colorR);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
-
-        CG_BEStatsSetTokenLabel(0, col, "Sui", beStatsSettings.colorR);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->suicides, beStatsSettings.defaultColor);
-
-        CG_BEStatsSetTokenLabel(0, col, "TmKills", beStatsSettings.defaultColor);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->teamKills, beStatsSettings.defaultColor);
-
-        CG_BEStatsSetTokenLabel(0, col, "K/D", beStatsSettings.colorY);
-        CG_BEStatsSetTokenValueFloat(1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
-
-        CG_BEStatsSetTokenLabel(0, col, "Effncy", beStatsSettings.colorY);
-        CG_BEStatsSetTokenValueFloat(1, col++, "%.1f", s->efficiency, beStatsSettings.defaultColor);
+        // Death
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Dths", beStatsSettings.colorR);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
+        // Suicides
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Sui", beStatsSettings.colorR);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->suicides, beStatsSettings.defaultColor);
+        // Team Kills
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "TmKills", beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->teamKills, beStatsSettings.defaultColor);
+        // KD  
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "K/D", beStatsSettings.colorY);
+        CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
+        // Effiencity
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Effncy", beStatsSettings.colorY);
+        CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->efficiency, beStatsSettings.defaultColor);
 
         *outCols = col;
     }
@@ -373,7 +393,7 @@ static void CG_BEStatsBuildGeneral_Team(char tokens[32][12][MAX_TOKEN_LEN], int*
 
 
 
-static void CG_BEStatsBuildGeneral_CTF(char tokens[32][12][MAX_TOKEN_LEN], int* outCols)
+static void CG_BEStatsBuildGeneral_CTF(BEStatToken_t tokens[32][12], int* outCols)
 {
     int col = 0;
     const newStatsInfo_t* s = &cgs.be.newStats;
@@ -381,150 +401,140 @@ static void CG_BEStatsBuildGeneral_CTF(char tokens[32][12][MAX_TOKEN_LEN], int* 
     float secs = (float)(s->flagTime % 60);
     char timeStr[MAX_TOKEN_LEN];
 
-    CG_BEStatsSetTokenLabel(0, col, "Score", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->score, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Score", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->score, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Klls", beStatsSettings.colorG);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->kills, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Klls", beStatsSettings.colorG);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->kills, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Dths", beStatsSettings.colorR);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Dths", beStatsSettings.colorR);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Caps", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->caps, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Caps", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->caps, beStatsSettings.defaultColor);
 
     Com_sprintf(timeStr, sizeof(timeStr), "%d:%02.1f", mins, secs);
-    Q_strncpyz(tokens[1][col], timeStr, MAX_TOKEN_LEN);
-    CG_BEStatsSetTokenLabel(0, col++, "Ftime", beStatsSettings.colorG);
+    Q_strncpyz(tokens[1][col].text, timeStr, MAX_TOKEN_LEN);
+    Vector4Copy(beStatsSettings.defaultColor, tokens[1][col].color);
+    CG_BEStatsSetTokenLabel(tokens, 0, col++, "Ftime", beStatsSettings.colorG);
 
-    CG_BEStatsSetTokenLabel(0, col, "Asst", beStatsSettings.colorG);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->assists, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Asst", beStatsSettings.colorG);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->assists, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Dfns", beStatsSettings.colorG);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->defences, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Dfns", beStatsSettings.colorG);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->defences, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Rtrn", beStatsSettings.colorG);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->returns, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Rtrn", beStatsSettings.colorG);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->returns, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "K/D", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueFloat(1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "K/D", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
 
     *outCols = col;
 }
 
-static void CG_BEStatsBuildGeneral_CA(char tokens[32][12][MAX_TOKEN_LEN], int* outCols)
+
+static void CG_BEStatsBuildGeneral_CA(BEStatToken_t tokens[32][12], int* outCols)
 {
     int col = 0;
     const newStatsInfo_t* s = &cgs.be.newStats;
 
-    CG_BEStatsSetTokenLabel(0, col, "Score", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->score, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Score", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->score, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Klls", beStatsSettings.colorG);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->kills, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Klls", beStatsSettings.colorG);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->kills, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Dths", beStatsSettings.colorR);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Dths", beStatsSettings.colorR);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "K/D", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueFloat(1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "K/D", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "Effncy", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueFloat(1, col++, "%.1f", s->efficiency, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "Effncy", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->efficiency, beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "DmgScr", beStatsSettings.colorC);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", (int)(s->dmgGiven / 100), beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "DmgScr", beStatsSettings.colorC);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", (int)(s->dmgGiven / 100), beStatsSettings.defaultColor);
 
-    CG_BEStatsSetTokenLabel(0, col, "WINS", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueInt(1, col++, "%d", s->wins, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, 0, col, "WINS", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->wins, beStatsSettings.defaultColor);
 
     *outCols = col;
 }
 
-static void CG_BEStatsBuildGeneral_Default(char tokens[32][12][MAX_TOKEN_LEN], int* outCols)
+static void CG_BEStatsBuildGeneral_Default(BEStatToken_t tokens[32][12], int* outCols)
 {
     int style = cg_bestats_style.integer;
     const newStatsInfo_t* s = &cgs.be.newStats;
 
     if (style == 2) {
-        // style == 2 — 5 строк по твоему макету
-
+        // style == 2 — 5 строк 
         // 1 строка: заголовки Score Klls K/D
-        CG_BEStatsSetTokenLabel(0, 0, "Score", beStatsSettings.colorY);
-        CG_BEStatsSetTokenLabel(0, 1, "Klls", beStatsSettings.colorG);
-        CG_BEStatsSetTokenLabel(0, 2, "K/D", beStatsSettings.colorY);
-
+        CG_BEStatsSetTokenLabel(tokens, 0, 0, "Score", beStatsSettings.colorY);
+        CG_BEStatsSetTokenLabel(tokens, 0, 1, "Kills", beStatsSettings.colorG);
         // 2 строка: значения для Score Klls K/D
-        CG_BEStatsSetTokenValueInt(1, 0, "%d", s->score, beStatsSettings.defaultColor);
-        CG_BEStatsSetTokenValueInt(1, 1, "%d", s->kills, beStatsSettings.defaultColor);
-        CG_BEStatsSetTokenValueFloat(1, 2, "%.1f", s->kdratio, beStatsSettings.defaultColor);
-
+        CG_BEStatsSetTokenValueInt(tokens, 1, 0, "%d", s->score, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenValueInt(tokens, 1, 1, "%d", s->kills, beStatsSettings.defaultColor);
         // 3 строка: заголовки Dths Sui
-        CG_BEStatsSetTokenLabel(2, 0, "Dths", beStatsSettings.colorR);
-        CG_BEStatsSetTokenLabel(2, 1, "Sui", beStatsSettings.colorR);
-
+        CG_BEStatsSetTokenLabel(tokens, 2, 0, "K/D", beStatsSettings.colorY);
+        CG_BEStatsSetTokenLabel(tokens, 2, 1, "Deaths", beStatsSettings.colorR);
+        CG_BEStatsSetTokenLabel(tokens, 2, 2, "Suicides", beStatsSettings.colorR);
         // 4 строка: значения для Dths Sui
-        CG_BEStatsSetTokenValueInt(3, 0, "%d", s->deaths, beStatsSettings.defaultColor);
-        CG_BEStatsSetTokenValueInt(3, 1, "%d", s->suicides, beStatsSettings.defaultColor);
-
+        CG_BEStatsSetTokenValueFloat(tokens, 3, 0, "%.1f", s->kdratio, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenValueInt(tokens, 3, 1, "%d", s->deaths, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenValueInt(tokens, 3, 2, "%d", s->suicides, beStatsSettings.defaultColor);
         *outCols = 3; // максимум по столбцам (для первой и второй строки)
     }
     else {
-
         int col = 0;
 
-        CG_BEStatsSetTokenLabel(0, col, "Score", beStatsSettings.colorY);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->score, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Score", beStatsSettings.colorY);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->score, beStatsSettings.defaultColor);
 
-        CG_BEStatsSetTokenLabel(0, col, "Klls", beStatsSettings.colorG);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->kills, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Klls", beStatsSettings.colorG);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->kills, beStatsSettings.defaultColor);
 
-        CG_BEStatsSetTokenLabel(0, col, "Dths", beStatsSettings.colorR);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Dths", beStatsSettings.colorR);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->deaths, beStatsSettings.defaultColor);
 
-        CG_BEStatsSetTokenLabel(0, col, "Sui", beStatsSettings.colorR);
-        CG_BEStatsSetTokenValueInt(1, col++, "%d", s->suicides, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Sui", beStatsSettings.colorR);
+        CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->suicides, beStatsSettings.defaultColor);
 
-        CG_BEStatsSetTokenLabel(0, col, "K/D", beStatsSettings.colorY);
-        CG_BEStatsSetTokenValueFloat(1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "K/D", beStatsSettings.colorY);
+        CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);
 
-        CG_BEStatsSetTokenLabel(0, col, "Effncy", beStatsSettings.colorY);
-        CG_BEStatsSetTokenValueFloat(1, col++, "%.1f", s->efficiency, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, 0, col, "Effncy", beStatsSettings.colorY);
+        CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->efficiency, beStatsSettings.defaultColor);
 
         *outCols = col;
     }
 }
 
 
-void CG_BEStatsBuildGeneral(char tokens[32][12][MAX_TOKEN_LEN], int startRow, int* outRows, int* outCols)
+
+void CG_BEStatsBuildGeneral(BEStatToken_t tokens[32][12], int startRow, int* outRows, int* outCols)
 {
-    int i;
-	int row;
+    int i, row;
     int style = cg_bestats_style.integer;
     int numRows = (style == 2) ? 5 : 3;
 
-    // Очистка строк 0 и 1 всегда
     for (i = 0; i < 12; i++) {
-        tokens[0][i][0] = '\0';  // заголовки
-        tokens[1][i][0] = '\0';  // значения
+        tokens[0][i].text[0] = '\0';
+        tokens[1][i].text[0] = '\0';
     }
 
-    // Очистка запасных строк в зависимости от numRows
     for (row = 2; row < numRows; row++) {
         for (i = 0; i < 12; i++) {
-            tokens[row][i][0] = '\0';
+            tokens[row][i].text[0] = '\0';
         }
     }
 
-    // Вызов специфичных функций заполнения
     if (cgs.gametype == GT_TOURNAMENT) {
         CG_BEStatsBuildGeneral_Tournament(tokens, outCols);
     }
-    else if (cgs.osp.gameTypeFreeze) {
-        CG_BEStatsBuildGeneral_Team(tokens, outCols, qtrue);
-    }
     else if (cgs.gametype == GT_TEAM) {
-        CG_BEStatsBuildGeneral_Team(tokens, outCols, qfalse);
+        CG_BEStatsBuildGeneral_Team(tokens, outCols);
     }
     else if (cgs.gametype == GT_CTF) {
         CG_BEStatsBuildGeneral_CTF(tokens, outCols);
@@ -541,39 +551,47 @@ void CG_BEStatsBuildGeneral(char tokens[32][12][MAX_TOKEN_LEN], int startRow, in
 
 
 
-qboolean CG_BEStatsBuildWeaponStats(char tokens[][12][64], int* rowOut)
+
+
+qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 {
     const newStatsInfo_t* s = &cgs.be.newStats;
     int col, row, i;
     const weaponStats_t* ws;
     char buf[64];
     qboolean any = qfalse;
-	int statsStyle = cg_bestats_style.integer;
+    int statsStyle = cg_bestats_style.integer;
     row = *rowOut;
 
     // Заголовок
-    CG_BEStatsSetTokenLabel(row, 0, (cg_bestats_wpStyle.integer == 2 || statsStyle == 2) ? "WP" : "Weapon", beStatsSettings.defaultColor);
-    CG_BEStatsSetTokenWidth(row, 0, (cg_bestats_wpStyle.integer == 2 || statsStyle == 2) ? 1.0f : 10.0f);
-	CG_BEStatsSetTokenLabel(row, 1, (statsStyle == 2) ? "Acc" : "Accrcy", beStatsSettings.colorY);
-	if (statsStyle == 2)
-		CG_BEStatsSetTokenWidth(row, 1, 3.0f);
-    CG_BEStatsSetTokenLabel(row, 2, "Hits/Atts", beStatsSettings.defaultColor);
-    CG_BEStatsSetTokenLabel(row, 3, "Kills", beStatsSettings.colorG);
+    CG_BEStatsSetTokenLabel(tokens, row, 0, (statsStyle == 2) ? "WP" : "Weapon", beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenWidth(tokens, row, 0, (statsStyle == 2) ? 1.4f : 10.0f);
+
+    CG_BEStatsSetTokenLabel(tokens, row, 1, (statsStyle == 2) ? "Acc" : "Accrcy", beStatsSettings.colorY);
+    if (statsStyle == 2)
+        CG_BEStatsSetTokenWidth(tokens, row, 1, 3.0f);
+
+    CG_BEStatsSetTokenLabel(tokens, row, 2, "Hits/Atts", beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenWidth(tokens, row, 2, 8.0f);
+    CG_BEStatsSetTokenOffset(tokens, row, 2, 4.0f);
+    CG_BEStatsAddTokenTextFlags(tokens, row, 2, DS_HCENTER);
+
+    CG_BEStatsSetTokenLabel(tokens, row, 3, "Kills", beStatsSettings.colorG);
 
     if (statsStyle != 2)
     {
-        CG_BEStatsSetTokenLabel(row, 4, "Dths", beStatsSettings.colorR);
-        CG_BEStatsSetTokenLabel(row, 5, "PkUp", beStatsSettings.colorG);
-        CG_BEStatsSetTokenLabel(row, 6, "Drop", beStatsSettings.colorR);
+        CG_BEStatsSetTokenLabel(tokens, row, 4, "Dths", beStatsSettings.colorR);
+        CG_BEStatsSetTokenLabel(tokens, row, 5, "PkUp", beStatsSettings.colorG);
+        CG_BEStatsSetTokenLabel(tokens, row, 6, "Drop", beStatsSettings.colorR);
     }
 
     row++;
 
     // Разделитель
-    CG_BEStatsSetTokenLabel(row, 0, "#hr", beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, row, 0, "#hr", beStatsSettings.defaultColor);
     for (col = 1; col < 12; col++)
     {
-        tokens[row][col][0] = '\0';
+        tokens[row][col].text[0] = '\0';
     }
     row++;
 
@@ -593,56 +611,66 @@ qboolean CG_BEStatsBuildWeaponStats(char tokens[][12][64], int* rowOut)
         {
             // Иконка оружия
             Com_sprintf(buf, sizeof(buf), "#image cg_weapons[%d].weaponIcon", i);
-            CG_BEStatsSetTokenLabel(row, col, buf, beStatsSettings.defaultColor);
-            CG_BEStatsSetTokenWidth(row, col, 1.0f);
-			col++;
-			// Accuracy
-			Com_sprintf(buf, sizeof(buf), "%.1f", ws->accuracy);
-			CG_BEStatsSetTokenLabel(row, col, buf, beStatsSettings.colorY);
-			CG_BEStatsSetTokenWidth(row, col, 3.0f);
-			col++;
+            CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.defaultColor);
+            CG_BEStatsSetTokenWidth(tokens, row, col, 1.4f);
+            col++;
+
+            // Accuracy
+            Com_sprintf(buf, sizeof(buf), "%.1f", ws->accuracy);
+            CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.colorY);
+            CG_BEStatsSetTokenWidth(tokens, row, col, 3.0f);
+            col++;
         }
         else
         {
             // Название оружия
-            CG_BEStatsSetTokenLabel(row, col, weaponNames[i], beStatsSettings.defaultColor);
-            CG_BEStatsSetTokenWidth(row, col, 10.0f);
-			col++;
-			// Accuracy
-			Com_sprintf(buf, sizeof(buf), "%.1f", ws->accuracy);
-			CG_BEStatsSetTokenLabel(row, col++, buf, beStatsSettings.colorY);
-			col++;
+            CG_BEStatsSetTokenLabel(tokens, row, col, weaponNames[i], beStatsSettings.defaultColor);
+            CG_BEStatsSetTokenWidth(tokens, row, col, 10.0f);
+            col++;
+
+            // Accuracy
+            Com_sprintf(buf, sizeof(buf), "%.1f", ws->accuracy);
+            CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.colorY);
+            col++;
         }
-
-
 
         // Hits/Atts
         Com_sprintf(buf, sizeof(buf), "%d/%d", ws->hits, ws->shots);
-        CG_BEStatsSetTokenLabel(row, col++, buf, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenWidth(tokens, row, col, 8.0f);
+        CG_BEStatsSetTokenOffset(tokens, row, 2, 4.0f);
+        CG_BEStatsAddTokenTextFlags(tokens, row, col, DS_HCENTER);
+
+
+        col++;
 
         // Kills
         Com_sprintf(buf, sizeof(buf), "%d", ws->kills);
-        CG_BEStatsSetTokenLabel(row, col++, buf, beStatsSettings.colorG);
+        CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.colorG);
+        col++;
 
-        if (cg_bestats_style.integer != 2)
+        if (statsStyle != 2)
         {
             // Deaths
             Com_sprintf(buf, sizeof(buf), "%d", ws->deaths);
-            CG_BEStatsSetTokenLabel(row, col++, buf, beStatsSettings.colorR);
+            CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.colorR);
+            col++;
 
             // PickUps
             Com_sprintf(buf, sizeof(buf), "%d", ws->pickUps);
-            CG_BEStatsSetTokenLabel(row, col++, buf, beStatsSettings.colorG);
+            CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.colorG);
+            col++;
 
             // Drops
             Com_sprintf(buf, sizeof(buf), "%d", ws->drops);
-            CG_BEStatsSetTokenLabel(row, col++, buf, beStatsSettings.colorR);
+            CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.colorR);
+            col++;
         }
 
         // Очищаем остальные токены на этой строке
         for (; col < 12; col++)
         {
-            tokens[row][col][0] = '\0';
+            tokens[row][col].text[0] = '\0';
         }
 
         row++;
@@ -650,12 +678,12 @@ qboolean CG_BEStatsBuildWeaponStats(char tokens[][12][64], int* rowOut)
     }
 
     if (!any)
-	{
-		if (statsStyle == 2)
-			CG_BEStatsSetTokenLabel(row++, 0, "No weapon data", beStatsSettings.colorY);
-		else 
-			CG_BEStatsSetTokenLabel(row++, 0, "No additional weapon info available.", beStatsSettings.colorY);
-        CG_BEStatsSetTokenLabel(row++, 0, " ", beStatsSettings.defaultColor);
+    {
+        if (statsStyle == 2)
+            CG_BEStatsSetTokenLabel(tokens, row++, 0, "No weapon data", beStatsSettings.colorY);
+        else 
+            CG_BEStatsSetTokenLabel(tokens, row++, 0, "No additional weapon info available.", beStatsSettings.colorY);
+        CG_BEStatsSetTokenLabel(tokens, row++, 0, " ", beStatsSettings.defaultColor);
     }
 
     *rowOut = row;
@@ -664,14 +692,16 @@ qboolean CG_BEStatsBuildWeaponStats(char tokens[][12][64], int* rowOut)
 
 
 
-void CG_BEStatsBuildBonusStats(char tokens[32][12][MAX_TOKEN_LEN], int* rowOut)
+
+
+void CG_BEStatsBuildBonusStats(BEStatToken_t tokens[32][12], int* rowOut)
 {
     const newStatsInfo_t* s = &cgs.be.newStats;
     int row = *rowOut;
     char buf[MAX_TOKEN_LEN];
     char armorText[MAX_TOKEN_LEN];
     char healthText[MAX_TOKEN_LEN];
-
+    int statsStyle = cg_bestats_style.integer;
     // Формируем пояснения для брони
     buf[0] = '\0';
     if (s->ga > 0)
@@ -692,43 +722,47 @@ void CG_BEStatsBuildBonusStats(char tokens[32][12][MAX_TOKEN_LEN], int* rowOut)
         healthText[0] = '\0';
 
     // Пустая строка - всегда выводим
-    CG_BEStatsSetTokenLabel(row++, 0, " ", beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, row++, 0, " ", beStatsSettings.defaultColor);
 
     // Всегда выводим основные строки:
-    CG_BEStatsSetTokenLabel(row, 0, "Damage Given:", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueInt(row, 2, "%d", (int)s->dmgGiven, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, row, 0, (statsStyle == 2) ? "DG" : "Damage Given:", (statsStyle == 2) ? beStatsSettings.colorG : beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueInt(tokens, row, (statsStyle == 2) ? 1 : 2, "%d", (int)s->dmgGiven, beStatsSettings.defaultColor);
+    if (statsStyle == 2)
+        CG_BEStatsSetTokenWidth(tokens, row, 0, 2.0f);
 
-    if (cg_bestats_style.integer != 2)
+    if (statsStyle != 2)
     {
         // Вывод брони только если стиль != 2
-        CG_BEStatsSetTokenLabel(row, 3, "Armor:", beStatsSettings.colorG);
-        CG_BEStatsSetTokenValueInt(row, 4, "%d", s->armor, beStatsSettings.defaultColor);
-        Q_strncpyz(tokens[row][5], armorText, MAX_TOKEN_LEN);
-        Vector4Copy(beStatsSettings.defaultColor, tokenColors[row][5]);
+        CG_BEStatsSetTokenLabel(tokens, row, 3, "Armor:", beStatsSettings.colorG);
+        CG_BEStatsSetTokenValueInt(tokens, row, 4, "%d", s->armor, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, row, 5, armorText, beStatsSettings.defaultColor);
     }
     row++;
 
-    CG_BEStatsSetTokenLabel(row, 0, "Damage Recvd:", beStatsSettings.colorY);
-    CG_BEStatsSetTokenValueInt(row, 2, "%d", (int)s->dmgReceived, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, row, 0, (statsStyle == 2) ? "DR" : "Damage Recvd:", (statsStyle == 2) ? beStatsSettings.colorR : beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueInt(tokens, row, (statsStyle == 2) ? 1 : 2, "%d", (int)s->dmgReceived, beStatsSettings.defaultColor);
+    if (statsStyle == 2)
+        CG_BEStatsSetTokenWidth(tokens, row, 0, 2.0f);
 
-    if (cg_bestats_style.integer != 2)
+    if (statsStyle != 2)
     {
-        CG_BEStatsSetTokenLabel(row, 3, "Health:", beStatsSettings.colorG);
-        CG_BEStatsSetTokenValueInt(row, 4, "%d", s->health, beStatsSettings.defaultColor);
-        Vector4Copy(beStatsSettings.defaultColor, tokenColors[row][5]);
-        Q_strncpyz(tokens[row][5], healthText, MAX_TOKEN_LEN);
+        CG_BEStatsSetTokenLabel(tokens, row, 3, "Health:", beStatsSettings.colorG);
+        CG_BEStatsSetTokenValueInt(tokens, row, 4, "%d", s->health, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, row, 5, healthText, beStatsSettings.defaultColor);
     }
     row++;
 
-    if (cgs.gametype == GT_TEAM && cg_bestats_style.integer != 2)
+    if (cgs.gametype == GT_TEAM && statsStyle != 2)
     {
-        CG_BEStatsSetTokenLabel(row, 0, "Team Damage:", beStatsSettings.colorR);
-        CG_BEStatsSetTokenValueInt(row, 2, "%d", s->teamDamage, beStatsSettings.defaultColor);
+        CG_BEStatsSetTokenLabel(tokens, row, 0, "Team Damage:", beStatsSettings.colorR);
+        CG_BEStatsSetTokenValueInt(tokens, row, 2, "%d", s->teamDamage, beStatsSettings.defaultColor);
         row++;
     }
 
-    CG_BEStatsSetTokenLabel(row, 0, "Damage Ratio:", beStatsSettings.colorG);
-    CG_BEStatsSetTokenValueFloat(row, 2, "%.2f", s->damageRatio, beStatsSettings.defaultColor);
+    CG_BEStatsSetTokenLabel(tokens, row, 0, (statsStyle == 2) ? "RT" : "Damage Ratio:", beStatsSettings.colorY);
+    CG_BEStatsSetTokenValueFloat(tokens, row, (statsStyle == 2) ? 1 : 2, "%.2f", s->damageRatio, beStatsSettings.defaultColor);
+    if (statsStyle == 2)
+        CG_BEStatsSetTokenWidth(tokens, row, 0, 2.0f);
     row++;
 
     *rowOut = row;
@@ -736,24 +770,25 @@ void CG_BEStatsBuildBonusStats(char tokens[32][12][MAX_TOKEN_LEN], int* rowOut)
 
 
 
+
+
 void CG_BEStatsDrawWindowBackground(float x, float y, float w, float h) {
 	beStatsSettings_t* set = &beStatsSettings;
 	int style = cg_bestats_bgStyle.integer;
 	
-	if (style == 1) {
+	if (style == 2) {
 		// trap_R_SetColor(bgColor);
 		CG_AdjustFrom640(&x, &y, &w, &h);
 		trap_R_DrawStretchPic(x, y, w, h,
-								0, 0, 1, 1, cgs.media.beStats_background);
+								0, 0, 1, 1, cgs.media.teamStatusBar);
 		// trap_R_SetColor(NULL);
 	}
 	else {
-		set->teamColor[3] = 0.35;
 		CG_FillRect(x, y, w, h, set->bgColor);
 	}						  
 }
 
-void CG_BEStatsDrawWindow(char tokens[32][12][MAX_TOKEN_LEN], int rows)
+void CG_BEStatsDrawWindow(BEStatToken_t tokens[32][12], int rows)
 {
     beStatsSettings_t* set = &beStatsSettings;
     float maxWidth = 0.0f;
@@ -761,23 +796,22 @@ void CG_BEStatsDrawWindow(char tokens[32][12][MAX_TOKEN_LEN], int rows)
     float colWidth;
     int i, j;
     const char* text;
+    int textFlags = DS_PROPORTIONAL | DS_SHADOW;
 
-    // Вычисление максимальной ширины окна по всем строкам
     for (i = 0; i < rows; ++i)
     {
         float rowWidth = 0.0f;
 
-        // Найти последнюю непустую колонку в строке
         int lastNonEmpty = -1;
         for (j = 0; j < 12; ++j)
         {
-            if (tokens[i][j][0] != '\0')
+            if (tokens[i][j].text[0] != '\0')
                 lastNonEmpty = j;
         }
 
         for (j = 0; j <= lastNonEmpty; ++j)
         {
-            colWidth = tokenWidth[i][j] > 0 ? tokenWidth[i][j] : set->baseColWidth;
+            colWidth = (tokens[i][j].width > 0.0f) ? tokens[i][j].width : set->baseColWidth;
             rowWidth += colWidth;
 
             if (j < lastNonEmpty)
@@ -803,24 +837,23 @@ void CG_BEStatsDrawWindow(char tokens[32][12][MAX_TOKEN_LEN], int rows)
     CG_BEStatsDrawWindowBackground(set->x, set->y, windowWidth, set->height);
     CG_OSPDrawFrameAdjusted(set->x, set->y, windowWidth, set->height, defaultBorderSize, set->borderColor, 0);
 
-    // Отрисовка текста и спец. токенов
+    // Specials (#)
     for (i = 0; i < rows; ++i)
     {
         float baseY = set->y + set->padding + i * set->rowSpacing;
         float baseX = set->x + set->padding;
 
-        // Найти последнюю непустую колонку
         int lastNonEmpty = -1;
         for (j = 0; j < 12; ++j)
         {
-            if (tokens[i][j][0] != '\0')
+            if (tokens[i][j].text[0] != '\0')
                 lastNonEmpty = j;
         }
 
         for (j = 0; j <= lastNonEmpty; ++j)
         {
-            text = tokens[i][j];
-            colWidth = tokenWidth[i][j] > 0 ? tokenWidth[i][j] : set->baseColWidth;
+            text = tokens[i][j].text;
+            colWidth = (tokens[i][j].width > 0.0f) ? tokens[i][j].width : set->baseColWidth;
 
             if (text[0] == '#')
             {
@@ -846,9 +879,9 @@ void CG_BEStatsDrawWindow(char tokens[32][12][MAX_TOKEN_LEN], int rows)
                     }
                     else
                     {
-                        CG_OSPDrawStringNew(baseX, baseY, "[img?]", beStatsSettings.colorR, colorBlack,
+                        CG_OSPDrawStringNew(baseX + tokens[i][j].offset, baseY, "[img?]", beStatsSettings.colorR, colorBlack,
                                             set->textWidth, set->textHeight,
-                                            SCREEN_WIDTH, DS_PROPORTIONAL | DS_SHADOW,
+                                            SCREEN_WIDTH, textFlags | tokens[i][j].textFlags,
                                             NULL, NULL, NULL);
                     }
 
@@ -859,10 +892,10 @@ void CG_BEStatsDrawWindow(char tokens[32][12][MAX_TOKEN_LEN], int rows)
 
             if (text[0])
             {
-                CG_OSPDrawStringNew(baseX, baseY, text,
-                                    tokenColors[i][j], colorBlack,
+                CG_OSPDrawStringNew(baseX + tokens[i][j].offset, baseY, text,
+                                    tokens[i][j].color, colorBlack,
                                     set->textWidth, set->textHeight,
-                                    SCREEN_WIDTH, DS_PROPORTIONAL | DS_SHADOW,
+                                    SCREEN_WIDTH, textFlags | tokens[i][j].textFlags,
                                     NULL, NULL, NULL);
             }
 
@@ -873,27 +906,24 @@ void CG_BEStatsDrawWindow(char tokens[32][12][MAX_TOKEN_LEN], int rows)
 
 void CG_BEStatsShowStatsInfo(void)
 {
-	int row = 0;
-	int rowsAdded;
+    int row = 0;
+    int rowsAdded;
     static qboolean initialized = qfalse;
-    CG_Printf("CG_BEStatsShowStatsInfo called\n");
 
-	// Очистка таблицы
-	memset(tokens, 0, sizeof(tokens));
-	memset(tokenColors, 0, sizeof(tokenColors));
-	memset(tokenWidth, 0, sizeof(tokenWidth));
-
-	// General
-	CG_BEStatsInit();
-	CG_MaybeRequestStatsInfo();
-	CG_BEStatsBuildGeneral(tokens, row, &rowsAdded, NULL);
-	row += rowsAdded;
-
-	// Weapon
-	CG_BEStatsBuildWeaponStats(tokens, &row);
-
-	// Bonus
-	CG_BEStatsBuildBonusStats(tokens, &row);
-
-	CG_BEStatsDrawWindow(tokens, row);
+    // Clear table
+    memset(tokens, 0, sizeof(tokens));
+    // Init
+    CG_BEStatsInit();
+    // Request Stats
+    CG_MaybeRequestStatsInfo();
+    // General
+    CG_BEStatsBuildGeneral(tokens, row, &rowsAdded, NULL);
+    row += rowsAdded;
+    // Weapon
+    CG_BEStatsBuildWeaponStats(tokens, &row);
+    // Bonus
+    CG_BEStatsBuildBonusStats(tokens, &row);
+    // Draw
+    CG_BEStatsDrawWindow(tokens, row);
 }
+

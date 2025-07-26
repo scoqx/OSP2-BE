@@ -2903,9 +2903,14 @@ static void CG_Draw2D(void)
 		return;
 	}
 
-	if (cg_draw2D.integer == 0)
+	if (!cg_draw2D.integer)
 	{
 		return;
+	}
+	
+	if (cg_damageDrawFrame.integer)
+	{
+		CG_DrawDamageFrame();
 	}
 
 	if (strlen(cgs.osp.testFont))
@@ -2913,27 +2918,27 @@ static void CG_Draw2D(void)
 		CG_DrawTestFont(cgs.osp.testFont);
 		return;
 	}
+
 	if (cgs.be.showCredits)
 	{
 		CG_OSPDrawNewCredits();
 		return;
 	}
+
 	if (cg_teamIndicator.integer)
 	{
 		CG_DrawPlayerIndicatorOnScreen();
 	}
+
 	if (cg_shud.integer)
 	{
 		CG_SHUDRoutine();
-		if (cgs.be.newStats.drawWindow)
-			CG_BEStatsShowStatsInfo();
 		CG_DrawWarmupShud();
 		return;
 	}
 
 	if (cg_enableOSPHUD.integer)
 	{
-		CG_DrawDamageFrame();
 		CG_OSPHUDRoutine();
 		return;
 	}

@@ -459,9 +459,10 @@ vmCvar_t        cg_bestats_textSize;
 vmCvar_t        cg_bestats_font;
 vmCvar_t		cg_bestats_pos;
 vmCvar_t		cg_bestats_bgStyle;
-vmCvar_t		cg_bestats_wpStyle;
 vmCvar_t		cg_bestats_bgColor;
 vmCvar_t		cg_bestats_bgOpaque;
+vmCvar_t		cg_bestats_spacingAdjust;
+vmCvar_t		cg_bestats_widthCutoff;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -830,9 +831,10 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_font, "cg_bestats_font", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_font },
 	{ &cg_bestats_pos, "cg_bestats_pos", "4 340", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_pos },
 	{ &cg_bestats_bgStyle, "cg_bestats_bgStyle", "1", CVAR_ARCHIVE | CVAR_NEW, },
-	{ &cg_bestats_wpStyle, "cg_bestats_wpStyle", "1", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_bestats_bgColor, "cg_bestats_bgColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_bgColor },
 	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.75", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_bestats_spacingAdjust, "cg_bestats_spacingAdjust", "1", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "0", CVAR_ARCHIVE | CVAR_NEW, },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -1665,11 +1667,6 @@ static void CG_RegisterGraphics(void)
 	    (cg_teamOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
 	    (cg_teamOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
 	    trap_R_RegisterShader("outlineMedium");
-
-
-
-	// be_stats
-	cgs.media.beStats_background = trap_R_RegisterShader("gfx/misc/colorbar");
 
 	memset(cg_items, 0, sizeof(cg_items));
 	memset(cg_weapons, 0, sizeof(cg_weapons));

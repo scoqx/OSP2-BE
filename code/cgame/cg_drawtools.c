@@ -3467,28 +3467,15 @@ void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor)
 	outColor[3] = inColor[3] * 0.15f;
 }
 
-void CG_OSPAdjustTeamColorHalfed(const vec4_t inColor, vec4_t outColor)
+void CG_OSPAdjustTeamColorBEStats(const vec4_t inColor, vec4_t outColor)
 {
+	const float factor = 0.5f;
 	int i;
-	float maxVal = inColor[0];
-	if (inColor[1] > maxVal) maxVal = inColor[1];
-	if (inColor[2] > maxVal) maxVal = inColor[2];
 
 	for (i = 0; i < 3; i++)
 	{
-		if (inColor[i] == maxVal)
-		{
-			outColor[i] = inColor[i];
-		}
-		else if (inColor[i] == 0.0f)
-		{
-			outColor[i] = 0.3f;
-		}
-		else
-		{
-			outColor[i] = inColor[i];
-		}
+		outColor[i] = inColor[i] * factor;
 	}
 
-	outColor[3] = inColor[3] * 0.5f;
+	outColor[3] = inColor[3] * 0.33f;
 }
