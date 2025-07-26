@@ -828,7 +828,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_style, "cg_bestats_style", "1", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_bestats_textSize, "cg_bestats_textSize", "6 8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_textSize },
 	{ &cg_bestats_font, "cg_bestats_font", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_font },
-	{ &cg_bestats_pos, "cg_bestats_pos", "4 340", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_pos },
+	{ &cg_bestats_pos, "cg_bestats_pos", "4 320", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_pos },
 	{ &cg_bestats_bgColor, "cg_bestats_bgColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_bgColor },
 	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.7", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_bestats_spacingAdjust, "cg_bestats_spacingAdjust", "1", CVAR_ARCHIVE | CVAR_NEW, },
