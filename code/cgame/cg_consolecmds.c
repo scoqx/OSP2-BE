@@ -471,26 +471,26 @@ void CG_OSPMyName_f(void)
 }
 // void CG_OSPWStatsDown_f(void)
 // {
-// 	if (wstatsWndId == 0)
-// 	{
-// 		if (wstatsEnabled == qfalse)
-// 		{
-// 			trap_SendClientCommand("getstatsinfo");
-// 			wstatsEnabled = qtrue;
-// 		}
-// 	}
+//  if (wstatsWndId == 0)
+//  {
+//      if (wstatsEnabled == qfalse)
+//      {
+//          trap_SendClientCommand("getstatsinfo");
+//          wstatsEnabled = qtrue;
+//      }
+//  }
 // }
 // void CG_OSPWStatsUp_f(void)
 // {
-// 	if (wstatsWndId > 0)
-// 	{
-// 		OSP_SlidingPrintContext_t* window = &ospPrintContext[wstatsWndId - 1];
-// 		window->hideBeforeRealtime = trap_Milliseconds() + window->timeAppearance;
-// 		window->hideBeforeCGTime = cg.time + window->timeAppearance;
-// 		window->timeHiding = window->hideBeforeRealtime;
-// 	}
-// 	wstatsWndId = 0;
-// 	wstatsEnabled = 0;
+//  if (wstatsWndId > 0)
+//  {
+//      OSP_SlidingPrintContext_t* window = &ospPrintContext[wstatsWndId - 1];
+//      window->hideBeforeRealtime = trap_Milliseconds() + window->timeAppearance;
+//      window->hideBeforeCGTime = cg.time + window->timeAppearance;
+//      window->timeHiding = window->hideBeforeRealtime;
+//  }
+//  wstatsWndId = 0;
+//  wstatsEnabled = 0;
 // }
 void CG_OSPWStatsDown_f(void)
 {
@@ -885,8 +885,9 @@ void CG_DPI_f(void)
 	CG_Printf("^1cm/360:       ^2%.2f\n", local_360);
 }
 
-void CG_FillNewStatsInfo(void) {
-	newStatsInfo_t *info = &cgs.be.newStats;
+void CG_FillNewStatsInfo(void)
+{
+	newStatsInfo_t* info = &cgs.be.newStats;
 
 	int i;
 
@@ -920,7 +921,8 @@ void CG_FillNewStatsInfo(void) {
 	info->ya            = 4;
 	info->ga            = 1;
 
-	for (i = 0; i < WP_NUM_WEAPONS; i++) {
+	for (i = 0; i < WP_NUM_WEAPONS; i++)
+	{
 		info->stats[i].shots = 3210 + i * 10;
 		info->stats[i].hits = 1234 + i * 5;
 		info->stats[i].kills = 10 + i;

@@ -4198,7 +4198,7 @@ void CG_OSPHUDRoutine(void)
 		}
 		if (cgs.be.newStats.drawWindow)
 		{
-		CG_BEStatsShowStatsInfo();
+			CG_BEStatsShowStatsInfo();
 		}
 	}
 }

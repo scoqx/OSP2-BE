@@ -5,9 +5,10 @@ int global_handicap; // unused?
 //	void         (*onChanged)(cvarTable_t *cvart);
 
 
-void CG_ParseCvarTwoStrings(const cvarTable_t *cvart, char *out1, char *out2, int outSize) {
+void CG_ParseCvarTwoStrings(const cvarTable_t* cvart, char* out1, char* out2, int outSize)
+{
 	char buffer[MAX_CVAR_VALUE_STRING];
-	char *token1, *token2;
+	char* token1, *token2;
 
 	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
 	if (cvart->vmCvar->string[0] == '\0') return;
@@ -22,9 +23,10 @@ void CG_ParseCvarTwoStrings(const cvarTable_t *cvart, char *out1, char *out2, in
 	Q_strncpyz(out2, token2, outSize);
 }
 
-void CG_ParseCvarTwoInts(const cvarTable_t *cvart, int *out1, int *out2) {
+void CG_ParseCvarTwoInts(const cvarTable_t* cvart, int* out1, int* out2)
+{
 	char buffer[MAX_CVAR_VALUE_STRING];
-	char *token1, *token2;
+	char* token1, *token2;
 
 	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
 	if (cvart->vmCvar->string[0] == '\0') return;
@@ -39,9 +41,10 @@ void CG_ParseCvarTwoInts(const cvarTable_t *cvart, int *out1, int *out2) {
 	*out2 = atoi(token2);
 }
 
-void CG_ParseCvarTwoFloats(const cvarTable_t *cvart, float *out1, float *out2) {
+void CG_ParseCvarTwoFloats(const cvarTable_t* cvart, float* out1, float* out2)
+{
 	char buffer[MAX_CVAR_VALUE_STRING];
-	char *token1, *token2;
+	char* token1, *token2;
 
 	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
 	if (cvart->vmCvar->string[0] == '\0') return;
@@ -56,9 +59,10 @@ void CG_ParseCvarTwoFloats(const cvarTable_t *cvart, float *out1, float *out2) {
 	*out2 = (float)atof(token2);
 }
 
-void CG_ParseCvarTwoColors(const cvarTable_t *cvart, vec4_t out1, vec4_t out2) {
+void CG_ParseCvarTwoColors(const cvarTable_t* cvart, vec4_t out1, vec4_t out2)
+{
 	char buffer[MAX_CVAR_VALUE_STRING];
-	char *token1, *token2;
+	char* token1, *token2;
 
 	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
 	if (cvart->vmCvar->string[0] == '\0') return;
@@ -881,10 +885,12 @@ void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
 {
-	if (!cvart->vmCvar->string[0]) {
+	if (!cvart->vmCvar->string[0])
+	{
 		cgs.be.settings.bgColorIsSet = qfalse;
 	}
-	else {
+	else
+	{
 		CG_LocalEventCvarParseColor(cvart, cgs.be.settings.bgColor);
 		cgs.be.settings.bgColorIsSet = qtrue;
 	}

@@ -457,11 +457,11 @@ vmCvar_t        cg_scoreboardDrawPowerUps;
 vmCvar_t        cg_bestats_style;
 vmCvar_t        cg_bestats_textSize;
 vmCvar_t        cg_bestats_font;
-vmCvar_t		cg_bestats_pos;
-vmCvar_t		cg_bestats_bgColor;
-vmCvar_t		cg_bestats_bgOpaque;
-vmCvar_t		cg_bestats_spacingAdjust;
-vmCvar_t		cg_bestats_widthCutoff;
+vmCvar_t        cg_bestats_pos;
+vmCvar_t        cg_bestats_bgColor;
+vmCvar_t        cg_bestats_bgOpaque;
+vmCvar_t        cg_bestats_spacingAdjust;
+vmCvar_t        cg_bestats_widthCutoff;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -2025,7 +2025,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_bestats_pos");
 	CG_CvarTouch("cg_bestats_font");
 	CG_CvarTouch("cg_bestats_bgColor");
-	
+
 	CG_InitConsoleCommands();
 
 	if (cg_clientLog.integer)

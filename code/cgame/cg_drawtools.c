@@ -389,12 +389,13 @@ void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader)
 	trap_R_DrawStretchPic(x, y, width, height, 0, 0, 1, 1, hShader);
 }
 
-void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader) {
-    if (!shader) return;
-    trap_R_SetColor(color);
-    CG_AdjustFrom640(&x, &y, &w, &h);
-    trap_R_DrawStretchPic(x, y, w, h, 0, 0, 1, 1, shader);
-    trap_R_SetColor(NULL);
+void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader)
+{
+	if (!shader) return;
+	trap_R_SetColor(color);
+	CG_AdjustFrom640(&x, &y, &w, &h);
+	trap_R_DrawStretchPic(x, y, w, h, 0, 0, 1, 1, shader);
+	trap_R_SetColor(NULL);
 }
 
 

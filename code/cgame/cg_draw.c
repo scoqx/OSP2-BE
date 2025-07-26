@@ -2907,7 +2907,7 @@ static void CG_Draw2D(void)
 	{
 		return;
 	}
-	
+
 	if (cg_damageDrawFrame.integer)
 	{
 		CG_DrawDamageFrame();
