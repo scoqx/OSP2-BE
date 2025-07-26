@@ -378,3 +378,15 @@ SHUD
 + Localtime style 1
 * fix powerup timer: starts from 30, last displayed second is 1 (previously 29 to 0)
 
+27.07.2025 be v0.91
+
+Description later
+
++ cg_bestats_style
++ cg_bestats_textSize
++ cg_bestats_font
++ cg_bestats_pos
++ cg_bestats_bgColor
++ cg_bestats_bgOpaque
++ cg_bestats_spacingAdjust
++ cg_bestats_widthCutoff
