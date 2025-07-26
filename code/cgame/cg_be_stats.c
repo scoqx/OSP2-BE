@@ -1059,7 +1059,7 @@ void CG_BEStatsShowStatsInfo(void)
 	int rowsAdded;
 	static qboolean initialized = qfalse;
 
-	// Clear table
+	// Clear table here
 	memset(tokens, 0, sizeof(tokens));
 	// Init
 	CG_BEStatsInit();
