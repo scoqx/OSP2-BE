@@ -379,9 +379,9 @@ SHUD
 * fix powerup timer: starts from 30, last displayed second is 1 (previously 29 to 0)
 
 27.07.2025 be v0.91
++wstats reworked
 
-Description later
-
+description later
 + cg_bestats_style
 + cg_bestats_textSize
 + cg_bestats_font
