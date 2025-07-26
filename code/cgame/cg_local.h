@@ -1103,14 +1103,14 @@ typedef struct
 	float accuracy;
 } weaponStats_t;
 
-typedef struct 
+typedef struct
 {
 	float x, y;
 	vec2_t textSize;
 	vec4_t bgColor;
 	qboolean bgColorIsSet;
 	float bgOpaque;
-}globalBeStatsSettings_t;
+} globalBeStatsSettings_t;
 
 typedef struct
 {
@@ -1752,10 +1752,10 @@ extern vmCvar_t        cg_bestats_style;
 extern vmCvar_t        cg_bestats_textSize;
 extern vmCvar_t        cg_bestats_font;
 extern vmCvar_t        cg_bestats_pos;
-extern vmCvar_t			cg_bestats_bgColor;
-extern vmCvar_t			cg_bestats_bgOpaque;
-extern vmCvar_t			cg_bestats_spacingAdjust;
-extern vmCvar_t			cg_bestats_widthCutoff;
+extern vmCvar_t         cg_bestats_bgColor;
+extern vmCvar_t         cg_bestats_bgOpaque;
+extern vmCvar_t         cg_bestats_spacingAdjust;
+extern vmCvar_t         cg_bestats_widthCutoff;
 extern vmCvar_t         be_run;
 
 

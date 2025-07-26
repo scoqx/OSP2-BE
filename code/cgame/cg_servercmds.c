@@ -1438,18 +1438,18 @@ void CG_ServerCommand(void)
 	//statsinfo
 	if (Q_stricmp(cmd, "statsinfo") == 0)
 		// if (cgs.be.newStats.customStatsCalled)
-		{
-			CG_BEParseStatsInfo();
-			cgs.be.newStats.customStatsCalled = qfalse;
-			return;
-		}
+	{
+		CG_BEParseStatsInfo();
+		cgs.be.newStats.customStatsCalled = qfalse;
+		return;
+	}
 
-		// else
-		// {
-		// 	CG_OSPShowStatsInfo();
-		// 	return;
-		// }
-		
+	// else
+	// {
+	//  CG_OSPShowStatsInfo();
+	//  return;
+	// }
+
 //viewlist
 	if (Q_stricmp(cmd, "viewlist") == 0)
 	{
