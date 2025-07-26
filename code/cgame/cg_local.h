@@ -1089,30 +1089,62 @@ typedef struct weaponStats_s
 	int hitsCurrent;
 	int damageFixed;
 	qboolean onTrack;
-} weaponStats_t;
+} customWeaponStats_t;
 
 
 typedef struct
 {
-	int lastTrackedWeapon;
-	int weapActive[WP_NUM_WEAPONS];
-	float lastAccuracy;
+	int hits;
+	int shots;
+	int kills;
+	int deaths;
+	int pickUps;
+	int drops;
+	float accuracy;
+} weaponStats_t;
+
+typedef struct
+{
+	float x, y;
+	vec2_t textSize;
+	vec4_t bgColor;
+	qboolean bgColorIsSet;
+	float bgOpaque;
+} globalBeStatsSettings_t;
+
+typedef struct
+{
 	float kdratio;
-	float damageKoeff;
-	struct
-	{
-		float accuracy;
-		int kills;
-		int deaths;
-		int hits;
-		int shots;
-		int pickUps;
-		int drops;
-	} stats[WP_NUM_WEAPONS];
+	float efficiency;
+	float dmgGiven;
+	float dmgReceived;
+	float teamDamage;
+	float damageRatio;
+	float lastAccuracy;
+
+	int score;
+	int kills, deaths, suicides, teamKills;
+	int wins, losses;
+	int caps, assists, defences, returns;
+	int flagTime;
+
+	int lastTrackedWeapon;
+
+	int armor;
+	int health;
+
+	int megahealth;
+	int ra;
+	int ya;
+	int ga;
 
 	qboolean customStatsCalled;
+	qboolean drawWindow;
 	int statsLastRequestTime;
+	weaponStats_t stats[WP_NUM_WEAPONS];
 } newStatsInfo_t;
+
+
 
 typedef struct cgs_be_s
 {
@@ -1136,8 +1168,9 @@ typedef struct cgs_be_s
 	vec4_t blueTeamColor;
 	vec4_t playerIndicatorColor;
 	vec4_t playerIndicatorBgColor;
-	weaponStats_t weaponStats[WP_NUM_WEAPONS];
+	customWeaponStats_t weaponStats[WP_NUM_WEAPONS];
 	newStatsInfo_t newStats;
+	globalBeStatsSettings_t settings;
 } cgs_be_t;
 
 
@@ -1715,6 +1748,14 @@ extern vmCvar_t     cg_scoreboardRtColors;
 extern vmCvar_t     cg_scoreboardBtColors;
 extern vmCvar_t     cg_scoreboardSpecColor;
 extern vmCvar_t     cg_scoreboardDrawPowerUps;
+extern vmCvar_t        cg_bestats_style;
+extern vmCvar_t        cg_bestats_textSize;
+extern vmCvar_t        cg_bestats_font;
+extern vmCvar_t        cg_bestats_pos;
+extern vmCvar_t         cg_bestats_bgColor;
+extern vmCvar_t         cg_bestats_bgOpaque;
+extern vmCvar_t         cg_bestats_spacingAdjust;
+extern vmCvar_t         cg_bestats_widthCutoff;
 extern vmCvar_t         be_run;
 
 
@@ -1809,6 +1850,7 @@ void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean corre
 void CG_FillRect(float x, float y, float width, float height, const float* color);
 void CG_DrawPicOld(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader);
+void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader);
 
 float CG_OSPDrawStringLength(const char* string, float ax, float aw, int proportional);
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth);
@@ -1823,6 +1865,8 @@ int CG_FontIndexFromName(const char* name);
 
 qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y);
 void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor);
+void CG_OSPAdjustTeamColorBEStats(const vec4_t inColor, vec4_t outColor);
+
 
 
 #define OSP_TEXT_CMD_MAX 2048
@@ -1853,6 +1897,7 @@ void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int bo
 void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight, int direction, float speed, float gradientScale, int colored);
 
 extern vec4_t defaultBorderSize;
+extern vec4_t thicBorderSize;
 // flags for CG_DrawString
 enum
 {
@@ -1897,6 +1942,7 @@ int CG_OSPDrawStringOld(int x, int y, const char* str, int charWidth, int charHe
 qboolean CG_Hex16GetColor(const char* str, float* color);
 
 void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
+void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
 void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t color); // inner
 
 //
@@ -2159,6 +2205,7 @@ void CG_DrawInformation(void);
 qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
 void CG_OSPShowStatsInfo(void);
+void CG_BEStatsShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
 
@@ -2220,9 +2267,15 @@ const char* CG_GetCTFLocation(int loc);
 
 
 //
-//cg_beutil.c
+//cg_be_util.c
 //
 qboolean CG_BE_Timer(int msec);
+
+//
+//cg_be_stats
+//
+void CG_BEStatsResetInit(void);
+
 //
 //cg_cvardescriptions.c
 //
@@ -2710,7 +2763,10 @@ void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart);
-
+void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

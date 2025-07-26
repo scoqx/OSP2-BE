@@ -175,6 +175,7 @@ CG_OSPDrawFrame
 =================
 */
 vec4_t defaultBorderSize = {1, 1, 1, 1};
+vec4_t thicBorderSize = {2, 2, 2, 2};
 
 void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner)
 {
@@ -188,6 +189,62 @@ void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4
 		return;
 	}
 
+	trap_R_SetColor(color);
+
+	// Если требуется нарисовать внутреннюю рамку (inner)
+	if (inner)
+	{
+		if (borderSize[0] > 0.0f)   // Left
+		{
+			trap_R_DrawStretchPic(x, y + borderSize[1], borderSize[0], h - borderSize[1] - borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[1] > 0.0f)   // Top
+		{
+			trap_R_DrawStretchPic(x, y, w, borderSize[1], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[2] > 0.0f)   // Right
+		{
+			trap_R_DrawStretchPic(x + w - borderSize[2], y + borderSize[1], borderSize[2], h - borderSize[1] - borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[3] > 0.0f)   // Bottom
+		{
+			trap_R_DrawStretchPic(x, y + h - borderSize[3], w, borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+	}
+	else // Если рисуем внешнюю рамку (outer)
+	{
+		if (borderSize[0] > 0.0f)   // Left
+		{
+			trap_R_DrawStretchPic(x - borderSize[0], y, borderSize[0], h, 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[1] > 0.0f)   // Top
+		{
+			trap_R_DrawStretchPic(x - borderSize[0], y - borderSize[1], w + borderSize[0] + borderSize[2], borderSize[1], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[2] > 0.0f)   // Right
+		{
+			trap_R_DrawStretchPic(x + w, y, borderSize[2], h, 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (borderSize[3] > 0.0f)   // Bottom
+		{
+			trap_R_DrawStretchPic(x - borderSize[0], y + h, w + borderSize[0] + borderSize[2], borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+	}
+	trap_R_SetColor(NULL);
+}
+
+void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner)
+{
+	if (!borderSize || !color)
+	{
+		return;
+	}
+
+	if (borderSize[0] <= 0.0f && borderSize[1] <= 0.0f && borderSize[2] <= 0.0f && borderSize[3] <= 0.0f)
+	{
+		return;
+	}
+	CG_AdjustFrom640(&x, &y, &w, &h);
 	trap_R_SetColor(color);
 
 	// Если требуется нарисовать внутреннюю рамку (inner)
@@ -330,6 +387,15 @@ void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader)
 {
 	CG_AdjustFrom640(&x, &y, &width, &height);
 	trap_R_DrawStretchPic(x, y, width, height, 0, 0, 1, 1, hShader);
+}
+
+void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader)
+{
+	if (!shader) return;
+	trap_R_SetColor(color);
+	CG_AdjustFrom640(&x, &y, &w, &h);
+	trap_R_DrawStretchPic(x, y, w, h, 0, 0, 1, 1, shader);
+	trap_R_SetColor(NULL);
 }
 
 
@@ -3402,3 +3468,15 @@ void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor)
 	outColor[3] = inColor[3] * 0.15f;
 }
 
+void CG_OSPAdjustTeamColorBEStats(const vec4_t inColor, vec4_t outColor)
+{
+	const float factor = 0.5f;
+	int i;
+
+	for (i = 0; i < 3; i++)
+	{
+		outColor[i] = inColor[i] * factor;
+	}
+
+	outColor[3] = inColor[3] * 0.33f;
+}

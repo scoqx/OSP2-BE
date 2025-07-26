@@ -291,7 +291,7 @@ void CG_UpdateWeaponTracking(int weapon)
 	static int lastHitCount = 0;
 	int currentAmmo, currentHits;
 
-	weaponStats_t* ws = &cgs.be.weaponStats[weapon];
+	customWeaponStats_t* ws = &cgs.be.weaponStats[weapon];
 	playerState_t* ps = &cg.snap->ps;
 
 	// Сброс статистики, если игрок умер или сменил оружие
