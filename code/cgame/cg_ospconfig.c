@@ -131,6 +131,7 @@ void CG_OSPCvarsRestrictValues(void)
 		return;
 	}
 
+	// why blocked?
 	// if (r_fullbright.integer)
 	// {
 	//  trap_Cvar_Set("r_fullbright", "0");

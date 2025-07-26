@@ -1752,7 +1752,6 @@ extern vmCvar_t        cg_bestats_style;
 extern vmCvar_t        cg_bestats_textSize;
 extern vmCvar_t        cg_bestats_font;
 extern vmCvar_t        cg_bestats_pos;
-extern vmCvar_t        cg_bestats_bgStyle;
 extern vmCvar_t			cg_bestats_bgColor;
 extern vmCvar_t			cg_bestats_bgOpaque;
 extern vmCvar_t			cg_bestats_spacingAdjust;

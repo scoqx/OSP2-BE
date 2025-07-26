@@ -458,7 +458,6 @@ vmCvar_t        cg_bestats_style;
 vmCvar_t        cg_bestats_textSize;
 vmCvar_t        cg_bestats_font;
 vmCvar_t		cg_bestats_pos;
-vmCvar_t		cg_bestats_bgStyle;
 vmCvar_t		cg_bestats_bgColor;
 vmCvar_t		cg_bestats_bgOpaque;
 vmCvar_t		cg_bestats_spacingAdjust;
@@ -830,11 +829,10 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_textSize, "cg_bestats_textSize", "6 8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_textSize },
 	{ &cg_bestats_font, "cg_bestats_font", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_font },
 	{ &cg_bestats_pos, "cg_bestats_pos", "4 340", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_pos },
-	{ &cg_bestats_bgStyle, "cg_bestats_bgStyle", "1", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_bestats_bgColor, "cg_bestats_bgColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_bgColor },
-	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.75", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.7", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_bestats_spacingAdjust, "cg_bestats_spacingAdjust", "1", CVAR_ARCHIVE | CVAR_NEW, },
-	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "0", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE | CVAR_NEW, },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
