@@ -682,51 +682,6 @@ void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
 	}
 }
 
-void CG_LocalEventCvarChanged_cg_markEnemy(cvarTable_t* cvart)
-{
-	int clientNum;
-	const char* str = cvart->vmCvar->string;
-
-	memset(cgs.be.marked, qfalse, sizeof(cgs.be.marked));
-
-	if (Q_stricmp(str, "-1") == 0)
-	{
-		return;
-	}
-
-	while (*str)
-	{
-		while (*str == ' ')
-		{
-			str++;
-		}
-
-		if (!*str)
-			break;
-
-		clientNum = atoi(str);
-
-		if (clientNum >= 0 && clientNum < MAX_CLIENTS)
-		{
-			cgs.be.marked[clientNum] = qtrue;
-		}
-		else
-		{
-			CG_Printf("cg_markEnemy: invalid clientNum %d\n", clientNum);
-		}
-
-		while (*str && *str != ' ')
-		{
-			str++;
-		}
-	}
-}
-
-void CG_LocalEventCvarChanged_cg_markEnemyColor(cvarTable_t* cvart)
-{
-	CG_LocalEventCvarParseColor(cvart, cgs.be.markedColor);
-}
-
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
 {
 	int clientNum;
