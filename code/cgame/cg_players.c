@@ -2098,6 +2098,8 @@ static void CG_FriendHudMarker(centity_t* cent)
 	float size;
 	vec4_t color;
 	clientInfo_t* cl;
+	qboolean wallhackEnabled = (cg_friendsWallhack.integer != 0) && !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH);
+
 	team = cgs.clientinfo[cent->currentState.clientNum].team;
 	if (cgs.gametype < GT_TEAM
 	        || !cg_teamIndicator.integer
@@ -2109,7 +2111,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 		return;
 	}
 
-	if ((cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) || !cg_friendsWallhack.integer && !CG_FriendVisible(cent))
+	if (!wallhackEnabled && !CG_FriendVisible(cent))
 	{
 		return;
 	}
@@ -2145,6 +2147,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 	    270
 	);
 }
+
 
 /*
 ===============
