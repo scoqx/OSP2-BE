@@ -370,7 +370,6 @@ vmCvar_t           cg_stackHitSounds;
 vmCvar_t           cg_stackHitSoundsTimeout;
 vmCvar_t           cg_drawCenterMessages;
 vmCvar_t        cg_predictStepOffset;
-vmCvar_t           cg_unfreezeAlert;
 vmCvar_t        cg_enemyLightningColor;
 vmCvar_t        cg_uniqueColorTable;
 vmCvar_t        cg_noVoteBeep;

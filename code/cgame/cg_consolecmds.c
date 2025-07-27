@@ -419,34 +419,34 @@ void CG_OSPClientConfig_f(void)
 	CG_Printf("    ^3Maxpackets maximum:          ^3%s\n", cgs.osp.serverConfigMaximumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3HitBox (XQ3E):               %s\n", CG_YES_NO_STR(cgs.osp.serverConfigXHitBox));
 }
+// todel
+// void CG_OSPCredits_f(void)
+// {
+// 	char string[1024];
 
-void CG_OSPCredits_f(void)
-{
-	char string[1024];
+// 	strcpy(&string[0],   "      ^0^BBLACK EDITION  ");
+// 	strcpy(&string[128], " ^3https://github.com/scoqx/OSP2-BE  ");
 
-	strcpy(&string[0],   "      ^0^BBLACK EDITION  ");
-	strcpy(&string[128], " ^3https://github.com/scoqx/OSP2-BE  ");
+// 	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 18, 18, string, 130.0f, colorBlack, colorWhite);
 
-	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 18, 18, string, 130.0f, colorBlack, colorWhite);
+// 	strcpy(&string[0],   "     ^BOSP2 Tourney DM/CA/CTF ");
+// 	strcpy(&string[128], " ^3https://github.com/snems/OSP2  ");
+// 	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 20, 20, string, 180.0f, colorYellow, colorLtGrey);
 
-	strcpy(&string[0],   "     ^BOSP2 Tourney DM/CA/CTF ");
-	strcpy(&string[128], " ^3https://github.com/snems/OSP2  ");
-	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 20, 20, string, 180.0f, colorYellow, colorLtGrey);
+// 	strcpy(&string[0],   "    ^BBased on source codes:  ");
+// 	strcpy(&string[128], "    ^BOSP             https://www.orangesmoothie.org  ");
+// 	strcpy(&string[256], "    ^BCyrax           https://github.com/ec-/baseq3a  ");
+// 	strcpy(&string[384], "    ^Bx0ry            https://github.com/xq3e/engine  ");
+// 	strcpy(&string[512], "    ^BNeil Toronto    http://ra.is/unlagged  ");
+// 	strcpy(&string[640], "    ^BRatmod          https://github.com/rdntcntrl/ratoa_gamecode");
 
-	strcpy(&string[0],   "    ^BBased on source codes:  ");
-	strcpy(&string[128], "    ^BOSP             https://www.orangesmoothie.org  ");
-	strcpy(&string[256], "    ^BCyrax           https://github.com/ec-/baseq3a  ");
-	strcpy(&string[384], "    ^Bx0ry            https://github.com/xq3e/engine  ");
-	strcpy(&string[512], "    ^BNeil Toronto    http://ra.is/unlagged  ");
-	strcpy(&string[640], "    ^BRatmod          https://github.com/rdntcntrl/ratoa_gamecode");
+// 	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 6, 128, 10, 10, string, 260.0f, colorWhite, colorBlue);
 
-	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 6, 128, 10, 10, string, 260.0f, colorWhite, colorBlue);
-
-	strcpy(&string[0],   "    ^BSpecial thanks to:  ");
-	strcpy(&string[128], "    ^BQ3MSK.ru        http://q3msk.ru  ");
-	strcpy(&string[256], "    ^BMrX, Paragon, Zenx");
-	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 3, 128, 10, 10, string, 310.0f, colorWhite, colorRed);
-}
+// 	strcpy(&string[0],   "    ^BSpecial thanks to:  ");
+// 	strcpy(&string[128], "    ^BQ3MSK.ru        http://q3msk.ru  ");
+// 	strcpy(&string[256], "    ^BMrX, Paragon, Zenx");
+// 	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 3, 128, 10, 10, string, 310.0f, colorWhite, colorRed);
+// }
 void CG_OSPDrawNewCredits_f(void)
 {
 	if (!cgs.be.showCredits)
@@ -460,15 +460,17 @@ void CG_OSPDrawNewCredits_f(void)
 }
 void CG_OSPMoTD_f(void)
 {
-	if (!cg_noSlidingWindow.integer && cgs.osp.numberOfStringsMotd > 0)
-	{
-		CG_OSPDrawLeftSlidingWindow(0.5, 1.2, 12.0, 1.0, cgs.osp.numberOfStringsMotd, 64, 10, 10, cgs.osp.motd[0], 400, NULL, NULL);
-	}
+	// need rework
+	// if (!cg_noSlidingWindow.integer && cgs.osp.numberOfStringsMotd > 0)
+	// {
+	// 	CG_OSPDrawLeftSlidingWindow(0.5, 1.2, 12.0, 1.0, cgs.osp.numberOfStringsMotd, 64, 10, 10, cgs.osp.motd[0], 400, NULL, NULL);
+	// }
 }
 void CG_OSPMyName_f(void)
 {
 	CG_Printf("Your name is: '%s^7'\n", cgs.clientinfo[ cg.clientNum ].name);
 }
+// todel
 // void CG_OSPWStatsDown_f(void)
 // {
 //  if (wstatsWndId == 0)

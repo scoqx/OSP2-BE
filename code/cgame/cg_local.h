@@ -1950,23 +1950,24 @@ void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t 
 //
 // cg_draw.c
 //
-typedef struct
-{
-	int charHeight;
-	int charWidth;
-	int maxStringLen;
-	int hideBeforeRealtime;
-	int numberOfStrings;
-	int hideBeforeCGTime;
-	int timeAppearance;
-	int timeShow;
-	int timeHiding;
-	int showFromCGTime;
-	int windowPosX;
-	char string[24][128];
-	vec4_t borderColor;
-	vec4_t bodyColor;
-} OSP_SlidingPrintContext_t;
+// todel
+// typedef struct
+// {
+// 	int charHeight;
+// 	int charWidth;
+// 	int maxStringLen;
+// 	int hideBeforeRealtime;
+// 	int numberOfStrings;
+// 	int hideBeforeCGTime;
+// 	int timeAppearance;
+// 	int timeShow;
+// 	int timeHiding;
+// 	int showFromCGTime;
+// 	int windowPosX;
+// 	char string[24][128];
+// 	vec4_t borderColor;
+// 	vec4_t bodyColor;
+// } OSP_SlidingPrintContext_t;
 extern  int sortedTeamPlayers[TEAM_MAXOVERLAY];
 extern  int numSortedTeamPlayers;
 extern  int drawTeamOverlayModificationCount;
@@ -1974,7 +1975,7 @@ extern  char systemChat[256];
 extern  char teamChat1[256];
 extern  char teamChat2[256];
 extern  int frameTime;
-extern OSP_SlidingPrintContext_t ospPrintContext[16];
+// extern OSP_SlidingPrintContext_t ospPrintContext[16]; // todel
 extern const char* monthName[12];
 extern const char* dayOfWeekName[7];
 
@@ -2019,8 +2020,8 @@ void CG_DrawAmmoWarning(void);
 void CG_DrawReward(void);
 void CG_DrawWarmup(void);
 void CG_ScanForCrosshairEntity(void);
-void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context);
-int CG_OSPDrawLeftSlidingWindow(float arg0, float arg1, float arg2, float time3Sec, int numberOfLines, int sizeOfLine, int w, int h, char* text, int windowPosX, float* borderColor, float* bodyColor);
+// void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context);
+// int CG_OSPDrawLeftSlidingWindow(float arg0, float arg1, float arg2, float time3Sec, int numberOfLines, int sizeOfLine, int w, int h, char* text, int windowPosX, float* borderColor, float* bodyColor);
 void CG_OSPDrawIntermission(void);
 void CG_OSPDrawCenterString(void);
 void CG_OSPSetColor(vec4_t color);

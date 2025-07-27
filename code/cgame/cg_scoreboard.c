@@ -882,301 +882,301 @@ void CG_DrawOldTourneyScoreboard(void)
 		}
 	}
 }
+// todel
+// void CG_OSPShowStatsInfo(void)
+// {
+// 	char args[1024];
+// 	char strings[24][128];
+// 	int i;
+// 	int arg_cnt;
+// 	int tmp;
+// 	float tmpf;
+// 	int row;
+// 	float effiency;
+// 	int w_hits;
+// 	int w_attacks;
+// 	int w_kills;
+// 	int w_deaths;
+// 	float kd;
+// 	float damageRatio;
+// 	qboolean flag = qfalse;
 
-void CG_OSPShowStatsInfo(void)
-{
-	char args[1024];
-	char strings[24][128];
-	int i;
-	int arg_cnt;
-	int tmp;
-	float tmpf;
-	int row;
-	float effiency;
-	int w_hits;
-	int w_attacks;
-	int w_kills;
-	int w_deaths;
-	float kd;
-	float damageRatio;
-	qboolean flag = qfalse;
+// 	if (!cg.demoPlayback && wstatsWndId <= 0 && !wstatsEnabled)
+// 	{
+// 		return;
+// 	}
 
-	if (!cg.demoPlayback && wstatsWndId <= 0 && !wstatsEnabled)
-	{
-		return;
-	}
+// 	wstatsEnabled = qfalse;
 
-	wstatsEnabled = qfalse;
+// 	for (i = 0; i < 24; ++i)
+// 	{
+// 		trap_Argv(i + 1, args, 1024);
+// 		statsInfo[i] = atoi(args);
 
-	for (i = 0; i < 24; ++i)
-	{
-		trap_Argv(i + 1, args, 1024);
-		statsInfo[i] = atoi(args);
+// 		if (i == 0 && statsInfo[i] == 0)
+// 		{
+// 			return;
+// 		}
+// 	}
+// 	if (!CG_OSPIsGameTypeCA(cgs.gametype) && !cgs.osp.gameTypeFreeze)
+// 	{
+// 		tmp = statsInfo[OSP_STATS_SCORE];
+// 	}
+// 	else
+// 	{
+// 		tmp = statsInfo[OSP_STATS_KILLS];
+// 	}
 
-		if (i == 0 && statsInfo[i] == 0)
-		{
-			return;
-		}
-	}
-	if (!CG_OSPIsGameTypeCA(cgs.gametype) && !cgs.osp.gameTypeFreeze)
-	{
-		tmp = statsInfo[OSP_STATS_SCORE];
-	}
-	else
-	{
-		tmp = statsInfo[OSP_STATS_KILLS];
-	}
+// 	if ((tmp + statsInfo[OSP_STATS_DEATHS]) == 0)
+// 	{
+// 		effiency = 0;
+// 	}
+// 	else
+// 	{
+// 		effiency = 100.0f * tmp / (statsInfo[OSP_STATS_DEATHS] + tmp);
+// 		if (effiency < 0) effiency = 0;
+// 	}
+// 	if (statsInfo[OSP_STATS_DMG_GIVEN] > 0 || statsInfo[OSP_STATS_DMG_RCVD] > 0)
+// 	{
+// 		damageRatio = (float)statsInfo[OSP_STATS_DMG_GIVEN] /
+// 		              (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
+// 	}
 
-	if ((tmp + statsInfo[OSP_STATS_DEATHS]) == 0)
-	{
-		effiency = 0;
-	}
-	else
-	{
-		effiency = 100.0f * tmp / (statsInfo[OSP_STATS_DEATHS] + tmp);
-		if (effiency < 0) effiency = 0;
-	}
-	if (statsInfo[OSP_STATS_DMG_GIVEN] > 0 || statsInfo[OSP_STATS_DMG_RCVD] > 0)
-	{
-		damageRatio = (float)statsInfo[OSP_STATS_DMG_GIVEN] /
-		              (statsInfo[OSP_STATS_DMG_RCVD] > 0 ? statsInfo[OSP_STATS_DMG_RCVD] : 1);
-	}
+// 	kd = (statsInfo[OSP_STATS_KILLS] > 0 && (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) == 0) ?
+// 	     (float)statsInfo[OSP_STATS_KILLS] :
+// 	     ((statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) > 0) ?
+// 	     (float)statsInfo[OSP_STATS_KILLS] / (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) : 0.0f;
 
-	kd = (statsInfo[OSP_STATS_KILLS] > 0 && (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) == 0) ?
-	     (float)statsInfo[OSP_STATS_KILLS] :
-	     ((statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) > 0) ?
-	     (float)statsInfo[OSP_STATS_KILLS] / (statsInfo[OSP_STATS_DEATHS] + statsInfo[OSP_STATS_SUCIDES]) : 0.0f;
+// 	if (cgs.gametype == GT_TOURNAMENT)
+// 	{
+// 		strcpy(&strings[0][0], "^B^3Score  ^2Klls ^1Dths Sui   ^3K/D   ^3Effcny ^2WINS ^1LOSSES");
+// 		strcpy(&strings[1][0], va("%5d  %4d %4d %3d %3.1f %6.1f ^3%4d^7 %6d",
+// 		                          statsInfo[OSP_STATS_SCORE],
+// 		                          statsInfo[OSP_STATS_KILLS],
+// 		                          statsInfo[OSP_STATS_DEATHS],
+// 		                          statsInfo[OSP_STATS_SUCIDES],
+// 		                          kd,
+// 		                          effiency,
+// 		                          statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask,
+// 		                          statsInfo[OSP_STATS_LOSSES] & cgs.osp.stats_mask));
+// 	}
+// 	else if (cgs.gametype == GT_TEAM)
+// 	{
+// 		if (cgs.osp.gameTypeFreeze == 0)
+// 		{
+// 			strcpy(&strings[0][0], "^B^3Score NET  ^2Klls ^1Dths Sui ^1TmKlls   ^3K/D ^3Effcny");
+// 			strcpy(&strings[1][0], va("%5d ^5%3d^7  %4d %4d %3d %6d %3.1f %4.1f",
+// 			                          statsInfo[OSP_STATS_SCORE],
+// 			                          statsInfo[OSP_STATS_SCORE] - statsInfo[OSP_STATS_DEATHS],
+// 			                          statsInfo[OSP_STATS_KILLS],
+// 			                          statsInfo[OSP_STATS_DEATHS],
+// 			                          statsInfo[OSP_STATS_SUCIDES],
+// 			                          statsInfo[OSP_STATS_TEAM_KILLS],
+// 			                          kd,
+// 			                          effiency));
+// 		}
+// 		else
+// 		{
+// 			strcpy(&strings[0][0], "^B^3Score WINS  ^2Klls Thws ^1Dths Sui ^1TmKlls   ^3K/D ^3Effcny");
+// 			strcpy(&strings[1][0], va("%5d ^5%4d^7  %4d %4d %4d %3d %6d %3.1f %4.1f",
+// 			                          statsInfo[OSP_STATS_SCORE],
+// 			                          statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask,
+// 			                          statsInfo[OSP_STATS_KILLS],
+// 			                          statsInfo[OSP_STATS_LOSSES] & cgs.osp.stats_mask,
+// 			                          statsInfo[OSP_STATS_DEATHS],
+// 			                          statsInfo[OSP_STATS_SUCIDES],
+// 			                          statsInfo[OSP_STATS_TEAM_KILLS],
+// 			                          kd,
+// 			                          effiency));
+// 		}
+// 	}
+// 	else if (cgs.gametype == GT_CTF)
+// 	{
+// 		int flag_time_int;
+// 		int flag_time_float;
+// 		flag_time_int = statsInfo[OSP_STATS_TIME] / 1000 / 60;
+// 		flag_time_float = ((float)statsInfo[OSP_STATS_TIME] - 60000.0f * (float)flag_time_int) / 1000.0f;
+// 		strcpy(&strings[0][0], "^B^3Score  ^2Klls ^1Dths ^3Caps   ^2Ftime Asst Dfns Rtrn KD");
+// 		strcpy(&strings[1][0], va("%5d  %4d %4d ^3%4d^7 %2d:%02.1f %4d ^5%4d^7 %4d %.1f",
+// 		                          statsInfo[OSP_STATS_SCORE],
+// 		                          statsInfo[OSP_STATS_KILLS],
+// 		                          statsInfo[OSP_STATS_DEATHS],
+// 		                          statsInfo[OSP_STATS_CAPS],
+// 		                          flag_time_int,
+// 		                          flag_time_float,
+// 		                          statsInfo[OSP_STATS_ASSIST],
+// 		                          statsInfo[OSP_STATS_DEFENCES],
+// 		                          statsInfo[OSP_STATS_RETURNS],
+// 		                          kd));
 
-	if (cgs.gametype == GT_TOURNAMENT)
-	{
-		strcpy(&strings[0][0], "^B^3Score  ^2Klls ^1Dths Sui   ^3K/D   ^3Effcny ^2WINS ^1LOSSES");
-		strcpy(&strings[1][0], va("%5d  %4d %4d %3d %3.1f %6.1f ^3%4d^7 %6d",
-		                          statsInfo[OSP_STATS_SCORE],
-		                          statsInfo[OSP_STATS_KILLS],
-		                          statsInfo[OSP_STATS_DEATHS],
-		                          statsInfo[OSP_STATS_SUCIDES],
-		                          kd,
-		                          effiency,
-		                          statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask,
-		                          statsInfo[OSP_STATS_LOSSES] & cgs.osp.stats_mask));
-	}
-	else if (cgs.gametype == GT_TEAM)
-	{
-		if (cgs.osp.gameTypeFreeze == 0)
-		{
-			strcpy(&strings[0][0], "^B^3Score NET  ^2Klls ^1Dths Sui ^1TmKlls   ^3K/D ^3Effcny");
-			strcpy(&strings[1][0], va("%5d ^5%3d^7  %4d %4d %3d %6d %3.1f %4.1f",
-			                          statsInfo[OSP_STATS_SCORE],
-			                          statsInfo[OSP_STATS_SCORE] - statsInfo[OSP_STATS_DEATHS],
-			                          statsInfo[OSP_STATS_KILLS],
-			                          statsInfo[OSP_STATS_DEATHS],
-			                          statsInfo[OSP_STATS_SUCIDES],
-			                          statsInfo[OSP_STATS_TEAM_KILLS],
-			                          kd,
-			                          effiency));
-		}
-		else
-		{
-			strcpy(&strings[0][0], "^B^3Score WINS  ^2Klls Thws ^1Dths Sui ^1TmKlls   ^3K/D ^3Effcny");
-			strcpy(&strings[1][0], va("%5d ^5%4d^7  %4d %4d %4d %3d %6d %3.1f %4.1f",
-			                          statsInfo[OSP_STATS_SCORE],
-			                          statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask,
-			                          statsInfo[OSP_STATS_KILLS],
-			                          statsInfo[OSP_STATS_LOSSES] & cgs.osp.stats_mask,
-			                          statsInfo[OSP_STATS_DEATHS],
-			                          statsInfo[OSP_STATS_SUCIDES],
-			                          statsInfo[OSP_STATS_TEAM_KILLS],
-			                          kd,
-			                          effiency));
-		}
-	}
-	else if (cgs.gametype == GT_CTF)
-	{
-		int flag_time_int;
-		int flag_time_float;
-		flag_time_int = statsInfo[OSP_STATS_TIME] / 1000 / 60;
-		flag_time_float = ((float)statsInfo[OSP_STATS_TIME] - 60000.0f * (float)flag_time_int) / 1000.0f;
-		strcpy(&strings[0][0], "^B^3Score  ^2Klls ^1Dths ^3Caps   ^2Ftime Asst Dfns Rtrn KD");
-		strcpy(&strings[1][0], va("%5d  %4d %4d ^3%4d^7 %2d:%02.1f %4d ^5%4d^7 %4d %.1f",
-		                          statsInfo[OSP_STATS_SCORE],
-		                          statsInfo[OSP_STATS_KILLS],
-		                          statsInfo[OSP_STATS_DEATHS],
-		                          statsInfo[OSP_STATS_CAPS],
-		                          flag_time_int,
-		                          flag_time_float,
-		                          statsInfo[OSP_STATS_ASSIST],
-		                          statsInfo[OSP_STATS_DEFENCES],
-		                          statsInfo[OSP_STATS_RETURNS],
-		                          kd));
+// 	}
+// 	else if (cgs.gametype == GT_CA)
+// 	{
+// 		strcpy(&strings[0][0], "^B^3Score  ^2Klls ^1Dths   ^3K/D ^3Effcny ^5DmgScr  ^2WINS");
+// 		strcpy(&strings[1][0], va("%5d  %4d %4d %3.1f %4.1f ^3%6d^5  %4d",
+// 		                          statsInfo[OSP_STATS_SCORE],
+// 		                          statsInfo[OSP_STATS_KILLS],
+// 		                          statsInfo[OSP_STATS_DEATHS],
+// 		                          kd,
+// 		                          effiency,
+// 		                          statsInfo[OSP_STATS_DMG_GIVEN] / 100,
+// 		                          statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask));
+// 	}
+// 	else
+// 	{
+// 		strcpy(&strings[0][0], "^B^3Score  ^2Klls ^1Dths Sui   ^3K/D  ^3Effcny");
+// 		strcpy(&strings[1][0], va("%5d  %4d %4d %3d %3.1f  %4.1f",
+// 		                          statsInfo[OSP_STATS_SCORE],
+// 		                          statsInfo[OSP_STATS_KILLS],
+// 		                          statsInfo[OSP_STATS_DEATHS],
+// 		                          statsInfo[OSP_STATS_SUCIDES],
+// 		                          kd,
+// 		                          effiency));
+// 	}
+// 	strcpy(&strings[2][0], " ");
+// 	strcpy(&strings[3][0], "^5Weapon       ^3Accrcy ^7Hits/Atts ^2Klls ^1Dths ^3PkUp ^1Drop");
+// 	strcpy(&strings[4][0], "^7-------------------------------------------------");
+// 	i = 1;
+// 	row = 5;
+// 	arg_cnt = 23;
 
-	}
-	else if (cgs.gametype == GT_CA)
-	{
-		strcpy(&strings[0][0], "^B^3Score  ^2Klls ^1Dths   ^3K/D ^3Effcny ^5DmgScr  ^2WINS");
-		strcpy(&strings[1][0], va("%5d  %4d %4d %3.1f %4.1f ^3%6d^5  %4d",
-		                          statsInfo[OSP_STATS_SCORE],
-		                          statsInfo[OSP_STATS_KILLS],
-		                          statsInfo[OSP_STATS_DEATHS],
-		                          kd,
-		                          effiency,
-		                          statsInfo[OSP_STATS_DMG_GIVEN] / 100,
-		                          statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask));
-	}
-	else
-	{
-		strcpy(&strings[0][0], "^B^3Score  ^2Klls ^1Dths Sui   ^3K/D  ^3Effcny");
-		strcpy(&strings[1][0], va("%5d  %4d %4d %3d %3.1f  %4.1f",
-		                          statsInfo[OSP_STATS_SCORE],
-		                          statsInfo[OSP_STATS_KILLS],
-		                          statsInfo[OSP_STATS_DEATHS],
-		                          statsInfo[OSP_STATS_SUCIDES],
-		                          kd,
-		                          effiency));
-	}
-	strcpy(&strings[2][0], " ");
-	strcpy(&strings[3][0], "^5Weapon       ^3Accrcy ^7Hits/Atts ^2Klls ^1Dths ^3PkUp ^1Drop");
-	strcpy(&strings[4][0], "^7-------------------------------------------------");
-	i = 1;
-	row = 5;
-	arg_cnt = 23;
+// 	do
+// 	{
+// 		if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << i))
+// 		{
+// 			w_hits = atoi(CG_Argv(arg_cnt++));
+// 			w_attacks = atoi(CG_Argv(arg_cnt++));
+// 			w_kills = atoi(CG_Argv(arg_cnt++));
+// 			w_deaths = atoi(CG_Argv(arg_cnt++));
 
-	do
-	{
-		if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << i))
-		{
-			w_hits = atoi(CG_Argv(arg_cnt++));
-			w_attacks = atoi(CG_Argv(arg_cnt++));
-			w_kills = atoi(CG_Argv(arg_cnt++));
-			w_deaths = atoi(CG_Argv(arg_cnt++));
+// 			strcpy(&strings[row][0], va("%-12s: ", weaponNames[i]));
+// 			if ((w_attacks & cgs.osp.stats_mask) || (w_hits & cgs.osp.stats_mask))
+// 			{
+// 				if ((w_attacks & cgs.osp.stats_mask) == 0)
+// 				{
+// 					tmpf = 0;
+// 				}
+// 				else
+// 				{
+// 					tmpf = 100.0 * (float)(w_hits & cgs.osp.stats_mask) / (float)(w_attacks & cgs.osp.stats_mask);
+// 				}
+// 				strcat(&strings[row][0], va("^3%3.1f ^7%4d/%-4d ", tmpf, w_hits & cgs.osp.stats_mask, w_attacks & cgs.osp.stats_mask));
+// 				flag = qtrue;
+// 			}
+// 			else
+// 			{
+// 				strcat(&strings[row][0], "                ");
+// 				if (w_kills || w_deaths)
+// 				{
+// 					flag = qtrue;
+// 				}
+// 			}
 
-			strcpy(&strings[row][0], va("%-12s: ", weaponNames[i]));
-			if ((w_attacks & cgs.osp.stats_mask) || (w_hits & cgs.osp.stats_mask))
-			{
-				if ((w_attacks & cgs.osp.stats_mask) == 0)
-				{
-					tmpf = 0;
-				}
-				else
-				{
-					tmpf = 100.0 * (float)(w_hits & cgs.osp.stats_mask) / (float)(w_attacks & cgs.osp.stats_mask);
-				}
-				strcat(&strings[row][0], va("^3%3.1f ^7%4d/%-4d ", tmpf, w_hits & cgs.osp.stats_mask, w_attacks & cgs.osp.stats_mask));
-				flag = qtrue;
-			}
-			else
-			{
-				strcat(&strings[row][0], "                ");
-				if (w_kills || w_deaths)
-				{
-					flag = qtrue;
-				}
-			}
+// 			if (i > 2)
+// 			{
+// 				strcat(&strings[row][0], va("^2%4d ^1%4d ^3%4d ^1%4d", w_kills, w_deaths, w_attacks >> cgs.osp.stats_shift, w_hits >> cgs.osp.stats_shift));
+// 			}
+// 			else
+// 			{
+// 				strcat(&strings[row][0], va("^2%4d ^1%4d", w_kills, w_deaths));
+// 			}
+// 			++row;
+// 		}
+// 	}
+// 	while (++i < 10);
 
-			if (i > 2)
-			{
-				strcat(&strings[row][0], va("^2%4d ^1%4d ^3%4d ^1%4d", w_kills, w_deaths, w_attacks >> cgs.osp.stats_shift, w_hits >> cgs.osp.stats_shift));
-			}
-			else
-			{
-				strcat(&strings[row][0], va("^2%4d ^1%4d", w_kills, w_deaths));
-			}
-			++row;
-		}
-	}
-	while (++i < 10);
+// 	if (row == 5)
+// 	{
+// 		strcpy(&strings[5][0], "^3No additional weapon info available.");
+// 		strcpy(&strings[6][0], " ");
+// 		row += 2;
+// 	}
+// 	else if (CG_OSPIsStatsHidden(qtrue, qtrue))
+// 	{
+// 		strcpy(&strings[row++][0], " ");
+// 		strcpy(&strings[row++][0], "^3Damage Given: ^7XX     ^2Armor : ^7XX");
+// 		strcpy(&strings[row++][0], "^3Damage Recvd: ^7XX     ^2Health: ^7XX");
+// 		strcpy(&strings[row++][0], "^3Damage Ratio: ^7XXX");
+// 	}
+// 	else
+// 	{
+// 		char str1[128] = {0};
+// 		char str2[128] = {0};
+// 		if (statsInfo[OSP_STATS_MH])
+// 		{
+// 			strcpy(str1, va("^2(^7%d ^5MH^2)", statsInfo[OSP_STATS_MH]));
+// 		}
+// 		if (statsInfo[OSP_STATS_GA])
+// 		{
+// 			strcpy(str2, va("^2(^7%d ^2GA%s", statsInfo[OSP_STATS_GA],
+// 			                !statsInfo[OSP_STATS_RA] && !statsInfo[OSP_STATS_YA] ? "^2)" : "^7"
+// 			               ));
+// 		}
+// 		if (statsInfo[OSP_STATS_YA])
+// 		{
+// 			strcat(str2, va("%s%d ^3YA%s",
+// 			                statsInfo[OSP_STATS_GA] ? " " : "^2(^7",
+// 			                statsInfo[20],
+// 			                statsInfo[OSP_STATS_RA] ? "^7" : "^2)"));
+// 		}
+// 		if (statsInfo[OSP_STATS_RA])
+// 		{
+// 			strcat(str2, va("%s%d ^1RA^2)",
+// 			                !statsInfo[OSP_STATS_GA] && !statsInfo[OSP_STATS_YA] ? "^2(" : " ",
+// 			                statsInfo[OSP_STATS_RA]));
+// 		}
 
-	if (row == 5)
-	{
-		strcpy(&strings[5][0], "^3No additional weapon info available.");
-		strcpy(&strings[6][0], " ");
-		row += 2;
-	}
-	else if (CG_OSPIsStatsHidden(qtrue, qtrue))
-	{
-		strcpy(&strings[row++][0], " ");
-		strcpy(&strings[row++][0], "^3Damage Given: ^7XX     ^2Armor : ^7XX");
-		strcpy(&strings[row++][0], "^3Damage Recvd: ^7XX     ^2Health: ^7XX");
-		strcpy(&strings[row++][0], "^3Damage Ratio: ^7XXX");
-	}
-	else
-	{
-		char str1[128] = {0};
-		char str2[128] = {0};
-		if (statsInfo[OSP_STATS_MH])
-		{
-			strcpy(str1, va("^2(^7%d ^5MH^2)", statsInfo[OSP_STATS_MH]));
-		}
-		if (statsInfo[OSP_STATS_GA])
-		{
-			strcpy(str2, va("^2(^7%d ^2GA%s", statsInfo[OSP_STATS_GA],
-			                !statsInfo[OSP_STATS_RA] && !statsInfo[OSP_STATS_YA] ? "^2)" : "^7"
-			               ));
-		}
-		if (statsInfo[OSP_STATS_YA])
-		{
-			strcat(str2, va("%s%d ^3YA%s",
-			                statsInfo[OSP_STATS_GA] ? " " : "^2(^7",
-			                statsInfo[20],
-			                statsInfo[OSP_STATS_RA] ? "^7" : "^2)"));
-		}
-		if (statsInfo[OSP_STATS_RA])
-		{
-			strcat(str2, va("%s%d ^1RA^2)",
-			                !statsInfo[OSP_STATS_GA] && !statsInfo[OSP_STATS_YA] ? "^2(" : " ",
-			                statsInfo[OSP_STATS_RA]));
-		}
+// 		strcpy(&strings[row++][0], " ");
+// 		if (flag)
+// 		{
+// 			strcpy(&strings[row++][0], va("^3Damage Given: ^7%-8d ^2Armor : ^7%d %s", statsInfo[OSP_STATS_DMG_GIVEN], statsInfo[OSP_STATS_WINS] >> cgs.osp.stats_shift, str2));
+// 			strcpy(&strings[row++][0], va("^3Damage Recvd: ^7%-8d ^2Health: ^7%d %s", statsInfo[OSP_STATS_DMG_RCVD], statsInfo[OSP_STATS_LOSSES] >> cgs.osp.stats_shift, str1));
 
-		strcpy(&strings[row++][0], " ");
-		if (flag)
-		{
-			strcpy(&strings[row++][0], va("^3Damage Given: ^7%-8d ^2Armor : ^7%d %s", statsInfo[OSP_STATS_DMG_GIVEN], statsInfo[OSP_STATS_WINS] >> cgs.osp.stats_shift, str2));
-			strcpy(&strings[row++][0], va("^3Damage Recvd: ^7%-8d ^2Health: ^7%d %s", statsInfo[OSP_STATS_DMG_RCVD], statsInfo[OSP_STATS_LOSSES] >> cgs.osp.stats_shift, str1));
+// 			if (cgs.gametype == GT_TEAM)
+// 			{
+// 				strcpy(&strings[row++][0], va("^1Team Damage : ^7%d", statsInfo[OSP_STATS_DMG_TEAM]));
+// 			}
+// 			strcpy(&strings[row++][0], va("^3Damage Ratio: ^7%.2f", damageRatio));
+// 		}
+// 		else
+// 		{
 
-			if (cgs.gametype == GT_TEAM)
-			{
-				strcpy(&strings[row++][0], va("^1Team Damage : ^7%d", statsInfo[OSP_STATS_DMG_TEAM]));
-			}
-			strcpy(&strings[row++][0], va("^3Damage Ratio: ^7%.2f", damageRatio));
-		}
-		else
-		{
+// 			strcpy(&strings[row++][0], va("^2Armor Taken : ^7%d %s", statsInfo[OSP_STATS_WINS] >> cgs.osp.stats_shift, str2));
+// 			strcpy(&strings[row++][0], va("^2Health Taken: ^7%d %s", statsInfo[OSP_STATS_LOSSES] >> cgs.osp.stats_shift, str1));
+// 		}
 
-			strcpy(&strings[row++][0], va("^2Armor Taken : ^7%d %s", statsInfo[OSP_STATS_WINS] >> cgs.osp.stats_shift, str2));
-			strcpy(&strings[row++][0], va("^2Health Taken: ^7%d %s", statsInfo[OSP_STATS_LOSSES] >> cgs.osp.stats_shift, str1));
-		}
+// 	}
 
-	}
+// 	{
+// 		float scrollTime;
+// 		float wpos;
 
-	{
-		float scrollTime;
-		float wpos;
+// 		scrollTime = cg_statScrollTime.value;
 
-		scrollTime = cg_statScrollTime.value;
+// 		if (cg.intermissionStarted)
+// 		{
+// 			wpos = 435.0f;
+// 		}
+// 		else
+// 		{
+// 			wpos = 420.0f;
+// 		}
 
-		if (cg.intermissionStarted)
-		{
-			wpos = 435.0f;
-		}
-		else
-		{
-			wpos = 420.0f;
-		}
-
-		wstatsWndId = 1 + CG_OSPDrawLeftSlidingWindow(
-		                  scrollTime,
-		                  scrollTime,
-		                  cg.demoPlayback ? 4.0f : 9999.0f,
-		                  0,
-		                  row,
-		                  128,
-		                  10,
-		                  10,
-		                  &strings[0][0],
-		                  wpos,
-		                  NULL,
-		                  statsInfo[OSP_STATS_TEAM] == TEAM_RED ? scoreboard_rtColor : (statsInfo[OSP_STATS_TEAM] == TEAM_BLUE ? scoreboard_btColor : NULL));
-	}
-}
+// 		wstatsWndId = 1 + CG_OSPDrawLeftSlidingWindow(
+// 		                  scrollTime,
+// 		                  scrollTime,
+// 		                  cg.demoPlayback ? 4.0f : 9999.0f,
+// 		                  0,
+// 		                  row,
+// 		                  128,
+// 		                  10,
+// 		                  10,
+// 		                  &strings[0][0],
+// 		                  wpos,
+// 		                  NULL,
+// 		                  statsInfo[OSP_STATS_TEAM] == TEAM_RED ? scoreboard_rtColor : (statsInfo[OSP_STATS_TEAM] == TEAM_BLUE ? scoreboard_btColor : NULL));
+// 	}
+// }
 
 void CG_OSPDrawClientScore(int x, int y, const score_t* score, const float* color, float fade)
 {
