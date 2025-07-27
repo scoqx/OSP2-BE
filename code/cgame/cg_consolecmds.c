@@ -885,55 +885,6 @@ void CG_DPI_f(void)
 	CG_Printf("^1cm/360:       ^2%.2f\n", local_360);
 }
 
-void CG_FillNewStatsInfo(void)
-{
-	newStatsInfo_t* info = &cgs.be.newStats;
-
-	int i;
-
-	info->kdratio       = 2.5f;
-	info->efficiency    = 71.4f;
-	info->dmgGiven      = 8432.0f;
-	info->dmgReceived   = 4210.0f;
-	info->teamDamage    = 320.0f;
-
-	info->score         = 132;
-	info->kills         = 50;
-	info->deaths        = 20;
-	info->suicides      = 3;
-	info->teamKills     = 2;
-
-	info->wins          = 5;
-	info->losses        = 2;
-
-	info->caps          = 3;
-	info->assists       = 4;
-	info->defences      = 6;
-	info->returns       = 5;
-
-	info->flagTime      = 194;
-
-	info->armor         = 87;
-	info->health        = 124;
-
-	info->megahealth    = 3;
-	info->ra            = 5;
-	info->ya            = 4;
-	info->ga            = 1;
-
-	for (i = 0; i < WP_NUM_WEAPONS; i++)
-	{
-		info->stats[i].shots = 3210 + i * 10;
-		info->stats[i].hits = 1234 + i * 5;
-		info->stats[i].kills = 10 + i;
-		info->stats[i].deaths = 5;
-
-		info->stats[i].pickUps = 5 + i;
-		info->stats[i].drops = 8 + i;
-	}
-}
-
-
 void CG_Stub_f(void) { }
 
 typedef struct
@@ -1034,7 +985,6 @@ static consoleCommand_t commands[] =
 	{ "showfont", CG_ShowFont_f },
 	{ "dpi", CG_DPI_f },
 	{ "belist", CG_PrintNewCommandsBE_f },
-	{ "fill", CG_FillNewStatsInfo },
 };
 
 /*
