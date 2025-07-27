@@ -379,6 +379,9 @@ SHUD
 * fix powerup timer: starts from 30, last displayed second is 1 (previously 29 to 0)
 
 27.07.2025 be v0.91
+
+cg_friendsWallhack can be disabled on server. Set configstring 888 to 1.
+
 +wstats reworked
 
 description later

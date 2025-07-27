@@ -252,7 +252,11 @@ void CG_OSPConfigXHitBoxSet(int value)
 	cgs.osp.serverConfigXHitBox = value;
 }
 
-
+// Disable be features
+void CG_OSPConfigDisableBEFeatures(int value)
+{
+	cgs.be.disableFeatures = value;
+}
 /*
  * Unknown cs 0x368
  */

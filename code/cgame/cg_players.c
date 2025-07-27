@@ -2109,7 +2109,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 		return;
 	}
 
-	if (!cg_friendsWallhack.integer && !CG_FriendVisible(cent))
+	if ((cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) || !cg_friendsWallhack.integer && !CG_FriendVisible(cent))
 	{
 		return;
 	}
@@ -2217,7 +2217,7 @@ static void CG_PlayerSprites(centity_t* cent)
 			if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
 			{
 				qhandle_t shader;
-				if (cg_friendsWallhack.integer)
+				if (!(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) && cg_friendsWallhack.integer)
 					shader = cgs.media.frozenFoeTagShaderWallhack;
 				else
 					shader = cgs.media.frozenFoeTagShader;
@@ -2236,7 +2236,7 @@ static void CG_PlayerSprites(centity_t* cent)
 				{
 					VectorCopy(colorRed, color);
 				}
-				if (cg_friendsWallhack.integer)
+				if (!(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) && cg_friendsWallhack.integer)
 					shader = cgs.media.friendShaderWallhack;
 				else
 					shader = cgs.media.friendShader;

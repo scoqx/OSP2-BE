@@ -1148,6 +1148,7 @@ typedef struct
 
 typedef struct cgs_be_s
 {
+	int disableFeatures;
 	qboolean marked[MAX_CLIENTS];
 	vec4_t markedColor;
 	qboolean markedTeam[MAX_CLIENTS];
@@ -1173,6 +1174,7 @@ typedef struct cgs_be_s
 	globalBeStatsSettings_t settings;
 } cgs_be_t;
 
+#define  BE_SERVER_DISABLE_WH  1
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -2499,7 +2501,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.91" // BE
+#define OSP_VERSION "be-0.91n" // BE
 
 
 
@@ -2572,6 +2574,7 @@ void CG_OSPConfigCustomClient2Set(int value);
 void CG_OSPConfigModeSet(int value);
 void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigXHitBoxSet(int value);
+void CG_OSPConfigDisableBEFeatures(int value);
 
 qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsFollowing(void);
@@ -2767,6 +2770,7 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_friendsWallhack(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }
