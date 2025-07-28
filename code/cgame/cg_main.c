@@ -675,7 +675,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
 	{ &cg_spectGlow, "cg_spectGlow", "0", CVAR_ARCHIVE },
 	{ &cg_spectOrigModel, "cg_spectOrigModel", "0", CVAR_ARCHIVE },
-	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitSounds},
+	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, /* CG_LocalEventCvarChanged_cg_hitSounds */},
 	{ &cg_playersXID, "cg_playersXID", "0", CVAR_ARCHIVE},
 
 	{ &cg_playerModelColors, "cg_playerModelColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerModelColors},
@@ -799,7 +799,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_friendHudMarkerSize, "cg_friendHudMarkerSize", "1.75", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendHudMarkerMaxScale, "cg_friendHudMarkerMaxScale", "0.5", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendHudMarkerMinScale, "cg_friendHudMarkerMinScale", "0.0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_friendsWallhack },
+	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE | CVAR_NEW, /* CG_LocalEventCvarChanged_cg_friendsWallhack */ },
 	{ &cg_drawHudMarkers, "cg_drawHudMarkers", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE | CVAR_NEW },

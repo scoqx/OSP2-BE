@@ -607,8 +607,9 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		// TODO we need some solution when we take quad cuz sometimes with LG dmg + delayedDMG > 25
 		//damage = ops->powerups[PW_QUAD] ? 26 : damage; // for a homogeneous sound with quad
 
-		if ((OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED()
-		        && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
+		// if ((OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED()
+		//         && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
+		if (cg_hitSounds.integer)
 		{
 			int index;
 			if (damage > 75) index = 3;
@@ -627,73 +628,6 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		}
 	}
 }
-
-// void CG_HitSound(playerState_t* ps, playerState_t* ops)
-// {
-//  static int delayedDmg = 0;
-//  static int stackedDmg = 0;
-
-//  int deltaTime = cg.time - cgs.osp.lastHitTime;
-//  int hits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
-//  int lgcd = ops->powerups[PW_HASTE] ? 25 : 50; // LG cooldown in ms
-//  int damage = cgs.osp.lastHitDamage;
-
-//  if (!hits && !delayedDmg) {
-//      return;
-//  }
-
-//  if (hits < 0) {
-//      // Friendly fire
-//      cgs.osp.lastHitTime = cg.time;
-//      CG_PlayHitSound(cgs.media.hitTeamSound, ps, ops);
-//      return;
-//  }
-
-//  if (cg_lightningHitsoundRateFix.integer && ops->weapon == WP_LIGHTNING && deltaTime < lgcd) {
-//      // Too soon to play LG hit sound, delay damage
-//      delayedDmg += damage;
-//      return;
-//  }
-
-//  // Handle stacked hitsounds if enabled
-//  if (cg_stackHitSounds.integer && deltaTime < cg_stackHitSoundsTimeout.integer) {
-//      stackedDmg += damage;
-//      damage = stackedDmg + delayedDmg;
-//  } else {
-//      stackedDmg = 0;
-//      damage += delayedDmg;
-//  }
-//  delayedDmg = 0;
-
-//  // Update last hit time
-//  cgs.osp.lastHitTime = cg.time;
-
-//  // Play appropriate sound based on damage
-//  if ((OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED() && cg_hitSounds.integer) ||
-//      cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE ||
-//      cgs.osp.server_mode == OSP_SERVER_MODE_CQ3) {
-
-//      int index;
-//      if (damage > 75) {
-//          index = 3;
-//      } else if (damage > 50) {
-//          index = 2;
-//      } else if (damage > 25) {
-//          index = 1;
-//      } else {
-//          index = 0;
-//      }
-
-//      // Reverse order if configured
-//      if (cg_hitSounds.integer > 1) {
-//          index = 3 - index;
-//      }
-
-//      CG_PlayHitSound(cgs.media.hitSounds[index], ps, ops);
-//  } else {
-//      CG_PlayHitSound(cgs.media.hitSound, ps, ops);
-//  }
-// }
 
 /*
 ==================

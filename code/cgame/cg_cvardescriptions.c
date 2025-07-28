@@ -350,6 +350,14 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color>^7 separated by space. For example \"^2Red Green^7\" or \"^20099FF 99FF00^7\" or \"^24 Red^7\"." },
 	{ "cg_scoreboardSpecColor", "Color of the spectator scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color>^7." },
 	{ "cg_scoreboardDrawPowerUps", "Draw colored frame on scoreboard for players who have active powerups. Set ^20^7 to disable\n  ^21^7 - full frame\n  ^2^7 - left border only" },
+	{ "cg_bestats_style", "Style of the battle statistics display.\n  ^21^7 - default\n  ^22^7 - minimized" },
+	{ "cg_bestats_textSize", "Size of the battle statistics text. First number is character width, second is height.\n  ^2W H" },
+	{ "cg_bestats_font", "Font selection used for battle statistics\n  ^20^7 - ^210^7" },
+	{ "cg_bestats_pos", "Position of the battle statistics window on screen\n  ^2X Y'." },
+	{ "cg_bestats_bgColor", "Background color of the battle statistics window. Empty value uses the team color\n  ^2<color>^7" },
+	{ "cg_bestats_bgOpaque", "Background opacity of the battle statistics window\n  ^20.0^7-^21.0^7" },
+	{ "cg_bestats_spacingAdjust", "Line spacing adjustment in the battle statistics window." },
+	{ "cg_bestats_widthCutoff", "Width reduction (cutoff) of the battle statistics window." },
 };
 
 
