@@ -10,6 +10,11 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v0.91x
+```
++ hitsound unlocked
++ friends wallhack unlocked
+```
 ## v0.91
 ```
 cg_friendsWallhack can be disabled on server. Set configstring 888 to 1.
