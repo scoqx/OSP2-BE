@@ -393,3 +393,8 @@ description later
 + cg_bestats_bgOpaque
 + cg_bestats_spacingAdjust
 + cg_bestats_widthCutoff
+
+28.07.2025 be v0.91x
+
+* hitsounds unlocked
+* friends wallhack unlocked
