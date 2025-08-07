@@ -398,3 +398,8 @@ description later
 
 * hitsounds unlocked
 * friends wallhack unlocked
+
+07.08.2025 be v0.92
+
+* altGrenades fix
+* scoreboard/wstats fix
