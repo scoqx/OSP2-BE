@@ -23,7 +23,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_scoreboard -- draw the scoreboard on top of the game screen
 #include "cg_local.h"
 
-typedef enum {
+typedef enum
+{
 	K_TAB = 9,
 	K_ENTER = 13,
 	K_ESCAPE = 27,
@@ -145,10 +146,11 @@ typedef enum {
 	K_AUX15,
 	K_AUX16,
 
-	K_LAST_KEY		// this had better be <256!
+	K_LAST_KEY      // this had better be <256!
 } keyNum_t;
 
-typedef struct {
+typedef struct
+{
 	int key;
 	float x, y;
 	float w, h;
@@ -156,19 +158,20 @@ typedef struct {
 } KeyRect_t;
 
 
-static KeyRect_t keyboardLayout[] = {
-    { 0,      10,  10, 20, 20, ""    },  // пустое место под тильду
-    { '1',    32,  10, 20, 20, "1" },
-    { '2',    54,  10, 20, 20, "2" },
-    { '3',    76,  10, 20, 20, "3" },
-    { '4',    98,  10, 20, 20, "4" },
-    { '5',   120,  10, 20, 20, "5" },
-    { '6',   142,  10, 20, 20, "6" },
-    { '7',   164,  10, 20, 20, "7" },
-    { '8',   186,  10, 20, 20, "8" },
-    { '9',   208,  10, 20, 20, "9" },
-    { '0',   230,  10, 20, 20, "0" },
-    { K_BACKSPACE, 252, 10, 75, 20, "BKSP" },
+static KeyRect_t keyboardLayout[] =
+{
+	{ 0,      10,  10, 20, 20, ""    },  // пустое место под тильду
+	{ '1',    32,  10, 20, 20, "1" },
+	{ '2',    54,  10, 20, 20, "2" },
+	{ '3',    76,  10, 20, 20, "3" },
+	{ '4',    98,  10, 20, 20, "4" },
+	{ '5',   120,  10, 20, 20, "5" },
+	{ '6',   142,  10, 20, 20, "6" },
+	{ '7',   164,  10, 20, 20, "7" },
+	{ '8',   186,  10, 20, 20, "8" },
+	{ '9',   208,  10, 20, 20, "9" },
+	{ '0',   230,  10, 20, 20, "0" },
+	{ K_BACKSPACE, 252, 10, 75, 20, "BKSP" },
 
 	// Вторая строка
 	{ K_TAB,  10,  32, 30, 20, "TAB" },
@@ -262,9 +265,9 @@ static KeyRect_t keyboardLayout[] = {
 	{ K_KP_PGUP,     464, 32, 20, 20, "9"    },
 	{ K_KP_PLUS,     486, 32, 20, 42, "+"    },
 
-	{ K_KP_LEFTARROW,420, 54, 20, 20, "4"    },
+	{ K_KP_LEFTARROW, 420, 54, 20, 20, "4"    },
 	{ K_KP_5,        442, 54, 20, 20, "5"    },
-	{ K_KP_RIGHTARROW,464,54, 20, 20, "6"    },
+	{ K_KP_RIGHTARROW, 464, 54, 20, 20, "6"    },
 
 	{ K_KP_END,        420, 76, 20, 20, "1"  },
 	{ K_KP_DOWNARROW,  442, 76, 20, 20, "2"  },
@@ -282,11 +285,13 @@ static vec4_t colorNotPressed = {0.1f, 0.1f, 0.1f, 1.0f};
 static vec4_t colorText = {1.0f, 1.0f, 1.0f, 1.0f};
 static vec4_t colorShadow = {0.0f, 0.0f, 0.0f, 0.5f};
 
-void CG_DrawKeyboard(float startX, float startY) {
+void CG_DrawKeyboard(float startX, float startY)
+{
 	int i, keyCode;
 	float x, y, textX, textY;
 	qboolean isDown;
-	for (i = 0; i < NUM_KEYS; i++) {
+	for (i = 0; i < NUM_KEYS; i++)
+	{
 		KeyRect_t* key = &keyboardLayout[i];
 
 		x = startX + key->x;
@@ -294,9 +299,12 @@ void CG_DrawKeyboard(float startX, float startY) {
 
 		keyCode = key->key;
 
-		if (keyCode >= 'A' && keyCode <= 'Z') {
+		if (keyCode >= 'A' && keyCode <= 'Z')
+		{
 			isDown = trap_Key_IsDown(keyCode) || trap_Key_IsDown(keyCode + ('a' - 'A'));
-		} else {
+		}
+		else
+		{
 			isDown = trap_Key_IsDown(keyCode);
 		}
 
@@ -306,16 +314,16 @@ void CG_DrawKeyboard(float startX, float startY) {
 		textY = y + key->h / 2 - 6;
 
 		CG_OSPDrawStringNew(
-			textX, textY,
-			key->label,
-			colorText,
-			colorShadow,
-			8.0f, 12.0f,
-			0,
-			DS_SHADOW | DS_PROPORTIONAL,
-			NULL,
-			NULL,
-			NULL
+		    textX, textY,
+		    key->label,
+		    colorText,
+		    colorShadow,
+		    8.0f, 12.0f,
+		    0,
+		    DS_SHADOW | DS_PROPORTIONAL,
+		    NULL,
+		    NULL,
+		    NULL
 		);
 	}
 }

@@ -2204,7 +2204,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_LoadingString("sounds");
 	CG_RegisterSounds();
 
-	for (i = 1; i < WP_NUM_WEAPONS; i++) {
+	for (i = 1; i < WP_NUM_WEAPONS; i++)
+	{
 		CG_RegisterWeapon(i);
 	}
 

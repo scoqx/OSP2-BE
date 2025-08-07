@@ -581,13 +581,13 @@ typedef struct
 
 	// scoreboard
 	int         scoresRequestTime;
-	int			statsRequestTime;
+	int         statsRequestTime;
 	int         numScores;
 	int         selectedScore;
 	int         teamScores[2];
 	score_t     scores[MAX_CLIENTS];
 	qboolean    showScores;
-	qboolean	showAccuracy;
+	qboolean    showAccuracy;
 	qboolean    scoreBoardShowing;
 	int         scoreFadeTime;
 	char        killerName[MAX_NAME_LENGTH];
@@ -1953,20 +1953,20 @@ void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t 
 // todel
 // typedef struct
 // {
-// 	int charHeight;
-// 	int charWidth;
-// 	int maxStringLen;
-// 	int hideBeforeRealtime;
-// 	int numberOfStrings;
-// 	int hideBeforeCGTime;
-// 	int timeAppearance;
-// 	int timeShow;
-// 	int timeHiding;
-// 	int showFromCGTime;
-// 	int windowPosX;
-// 	char string[24][128];
-// 	vec4_t borderColor;
-// 	vec4_t bodyColor;
+//  int charHeight;
+//  int charWidth;
+//  int maxStringLen;
+//  int hideBeforeRealtime;
+//  int numberOfStrings;
+//  int hideBeforeCGTime;
+//  int timeAppearance;
+//  int timeShow;
+//  int timeHiding;
+//  int showFromCGTime;
+//  int windowPosX;
+//  char string[24][128];
+//  vec4_t borderColor;
+//  vec4_t bodyColor;
 // } OSP_SlidingPrintContext_t;
 extern  int sortedTeamPlayers[TEAM_MAXOVERLAY];
 extern  int numSortedTeamPlayers;

@@ -1056,16 +1056,16 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	}
 	// todel
 	// {
-	// 	int i;
+	//  int i;
 
-	// 	for (i = 0; i < 16; ++i)
-	// 	{
-	// 		if ((ospPrintContext[i].showFromCGTime <= cg.time) && (ospPrintContext[i].hideBeforeCGTime > cg.time))
-	// 		{
-	// 			CG_OSPDrawLeftSlidingWindowsRoutine(&ospPrintContext[i]);
-	// 		}
+	//  for (i = 0; i < 16; ++i)
+	//  {
+	//      if ((ospPrintContext[i].showFromCGTime <= cg.time) && (ospPrintContext[i].hideBeforeCGTime > cg.time))
+	//      {
+	//          CG_OSPDrawLeftSlidingWindowsRoutine(&ospPrintContext[i]);
+	//      }
 
-	// 	}
+	//  }
 	// }
 	if (cgs.osp.isOSPv1 && cgs.osp.nextCvarsUpdateTime && cgs.osp.nextCvarsUpdateTime < cg.time)
 	{
