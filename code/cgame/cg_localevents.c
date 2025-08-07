@@ -220,10 +220,10 @@ void CG_LocalEventCvarChanged_cg_shadows(cvarTable_t* cvart)
 {
 	CG_OSPCvarsRestrictValues();
 }
-void CG_LocalEventCvarChanged_r_fullbright(cvarTable_t* cvart)
-{
-	CG_OSPCvarsRestrictValues();
-}
+// void CG_LocalEventCvarChanged_r_fullbright(cvarTable_t* cvart)
+// {
+// 	CG_OSPCvarsRestrictValues();
+// }
 
 
 void CG_LocalEventCvarChanged_cg_swapSkins(cvarTable_t* cvart)
@@ -851,7 +851,7 @@ void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
 	}
 }
 
-void CG_LocalEventCvarChanged_cg_friendsWallhack(cvarTable_t* cvart)
+/* void CG_LocalEventCvarChanged_cg_friendsWallhack(cvarTable_t* cvart)
 {
 	if ((cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) && cg_friendsWallhack.integer)
 	{
@@ -861,4 +861,4 @@ void CG_LocalEventCvarChanged_cg_friendsWallhack(cvarTable_t* cvart)
 			trap_Cvar_Set("cg_friendsWallhack", 0);
 		}
 	}
-}
+} */

@@ -548,7 +548,7 @@ grenadeCPMANew
 	nopicmip
     cull none
     {
-        map $whiteimage
+        map models/ammo/grenadecpmanew_inv.tga
         rgbGen entity
         alphaGen entity
         blendFunc GL_ONE GL_ZERO

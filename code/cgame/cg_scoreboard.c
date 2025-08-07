@@ -808,6 +808,11 @@ void CG_DrawOldTourneyScoreboard(void)
 		cg.scoresRequestTime = cg.time;
 		trap_SendClientCommand("score");
 	}
+	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2000 < cg.time)
+	{
+		cg.statsRequestTime = cg.time;
+		trap_SendClientCommand("getstatsinfo");
+	}
 
 	color[0] = 1;
 	color[1] = 1;
@@ -2029,13 +2034,6 @@ qboolean CG_BEDrawTeamScoretable(void)
 		return qfalse;
 	}
 
-	if (cg.scoresRequestTime + 2000 < cg.time) // in some situations the score appears without pressing +scores
-	{
-		cg.scoresRequestTime = cg.time;
-		trap_SendClientCommand("score");
-		cg.realNumClients = CG_CountRealClients();
-	}
-
 	if (!cg.showScores && cg.predictedPlayerState.pm_type != PM_DEAD && cg.predictedPlayerState.pm_type != PM_INTERMISSION)
 	{
 		color = (vec4_t*)CG_FadeColor(cg.scoreFadeTime, 0xc8);
@@ -2200,6 +2198,18 @@ qboolean CG_BEDrawTeamScoretable(void)
 	if (cg_drawAccuracy.integer)
 	{
 		CG_DrawWeaponStatsWrapper();
+	}
+
+	if (!cg.showScores && cg.scoresRequestTime + 2000 < cg.time) // in some situations the score appears without pressing +scores
+	{
+		cg.scoresRequestTime = cg.time;
+		trap_SendClientCommand("score");
+		cg.realNumClients = CG_CountRealClients();
+	}
+	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2000 < cg.time)
+	{
+		cg.statsRequestTime = cg.time;
+		trap_SendClientCommand("getstatsinfo");
 	}
 
 	return qtrue;

@@ -167,12 +167,19 @@ static void CG_ScoresDown_f(void)
 		cg.scoresRequestTime = cg.time + 2000;
 		cg.realNumClients = CG_CountRealClients();
 		trap_SendClientCommand("score");
+		if (cg_drawAccuracy.integer)
+		if (cg.statsRequestTime < cg.time)
+			{
+				cg.statsRequestTime = cg.time + 2000;
+				trap_SendClientCommand("getstatsinfo");
+			}
 		if (!cg.showScores)
 		{
 			cg.numScores = 0;
 		}
 	}
 	cg.showScores = qtrue;
+	cg.showAccuracy = qtrue;
 }
 
 static void CG_ScoresUp_f(void)
@@ -180,6 +187,7 @@ static void CG_ScoresUp_f(void)
 	if (cg.showScores)
 	{
 		cg.showScores = qfalse;
+		cg.showAccuracy = qfalse;
 		cg.scoreFadeTime = cg.time;
 	}
 }
@@ -392,6 +400,9 @@ void CG_OSPClientVersion_f(void)
 }
 
 #define CG_YES_NO_STR(VAL) ((VAL) ? "^2Yes" : "^1No")
+#define CG_LOL(VAL) ((VAL) ? "^2Yes" : "^1No, ^2but who cares")
+#define CG_LOL_R(VAL) ((VAL) ? "^1No, ^2but who cares" : "^2Yes")
+
 void CG_OSPClientConfig_f(void)
 {
 	const char* physics = "VQ3";
@@ -411,13 +422,16 @@ void CG_OSPClientConfig_f(void)
 	CG_Printf("    ^3Alternative weapons:         %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG));
 	CG_Printf("    ^3Timer(deprecated):           %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_TIMER_FLAG));
 	CG_Printf("    ^3FPS restriction(deprecated): %s\n", CG_YES_NO_STR((cgs.osp.custom_client & OSP_CUSTOM_CLIENT_MAXFPS_FLAG) == 0));
-	CG_Printf("    ^3Damage info:                 %s\n", CG_YES_NO_STR(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO));
+	// CG_Printf("    ^3Damage info:                 %s\n", CG_YES_NO_STR(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO));
+	CG_Printf("    ^3Damage info:                 %s\n", CG_LOL(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO));
 	CG_Printf("    ^3Pmove allowed:               %s\n", CG_YES_NO_STR(cgs.osp.allow_pmove));
 	CG_Printf("    ^3Timenudge minimum:           ^3%s\n", cgs.osp.serverConfigMinimumTimenudge ? va("%i", cgs.osp.serverConfigMinimumTimenudge) : "-");
 	CG_Printf("    ^3Timenudge maximum:           ^3%s\n", cgs.osp.serverConfigMaximumTimenudge ? va("%i", cgs.osp.serverConfigMaximumTimenudge) : "-");
 	CG_Printf("    ^3Maxpackets minimum:          ^3%s\n", cgs.osp.serverConfigMinimumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3Maxpackets maximum:          ^3%s\n", cgs.osp.serverConfigMaximumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3HitBox (XQ3E):               %s\n", CG_YES_NO_STR(cgs.osp.serverConfigXHitBox));
+	CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.be.disableFeatures));
+
 }
 // todel
 // void CG_OSPCredits_f(void)
@@ -496,7 +510,13 @@ void CG_OSPMyName_f(void)
 // }
 void CG_OSPWStatsDown_f(void)
 {
+	if (cg.statsRequestTime + 1000 < cg.time)
+	{
+		cg.statsRequestTime = cg.time;
+		trap_SendClientCommand("getstatsinfo");
+	}
 	cgs.be.newStats.drawWindow = qtrue;
+
 }
 void CG_OSPWStatsUp_f(void)
 {

@@ -463,7 +463,7 @@ vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
 {
-	{ &osp_client, "osp_client", "1008_OSP2_"OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
+	{ &osp_client, "osp_client", "1008_OSP2", CVAR_USERINFO | CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
@@ -655,7 +655,7 @@ static cvarTable_t cvarTable[] =
 	{ &cl_timenudge, "cl_timenudge", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cl_timenudge},
 	{ &snaps, "snaps", "40", CVAR_ARCHIVE, CG_LocalEventCvarChanged_snaps},
 	{ &r_shownormals, "r_shownormals", "0", CVAR_LATCH | CVAR_CHEAT, CG_LocalEventCvarChanged_r_shownormals},
-	{ &r_fullbright, "r_fullbright", "0", CVAR_LATCH, CG_LocalEventCvarChanged_r_fullbright},
+	{ &r_fullbright, "r_fullbright", "0", CVAR_LATCH, /* CG_LocalEventCvarChanged_r_fullbright */},
 	{ &r_lodCurveError, "r_lodCurveError", "250", CVAR_LATCH, CG_LocalEventCvarChanged_r_lodCurveError},
 	{ &r_showtris, "r_showtris", "0", 0, CG_LocalEventCvarChanged_r_showtris},
 	{ &r_subdivisions, "r_subdivisions", "4", CVAR_LATCH, CG_LocalEventCvarChanged_r_subdivisions},
@@ -675,7 +675,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
 	{ &cg_spectGlow, "cg_spectGlow", "0", CVAR_ARCHIVE },
 	{ &cg_spectOrigModel, "cg_spectOrigModel", "0", CVAR_ARCHIVE },
-	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitSounds},
+	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, /* CG_LocalEventCvarChanged_cg_hitSounds */},
 	{ &cg_playersXID, "cg_playersXID", "0", CVAR_ARCHIVE},
 
 	{ &cg_playerModelColors, "cg_playerModelColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerModelColors},
@@ -799,7 +799,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_friendHudMarkerSize, "cg_friendHudMarkerSize", "1.75", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendHudMarkerMaxScale, "cg_friendHudMarkerMaxScale", "0.5", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendHudMarkerMinScale, "cg_friendHudMarkerMinScale", "0.0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_friendsWallhack },
+	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE | CVAR_NEW, /* CG_LocalEventCvarChanged_cg_friendsWallhack */ },
 	{ &cg_drawHudMarkers, "cg_drawHudMarkers", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE | CVAR_NEW },
@@ -1905,45 +1905,8 @@ void CG_CheckFogBypass(void)
 	cg.crosshairIgnoreFog = 0;
 }
 
-/*
-=================
-CG_Init
-
-Called after every level change or subsystem restart
-Will perform callbacks to make the loading info screen update.
-=================
-*/
-int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
+void CG_InitCvars(void)
 {
-	const char*  s;
-
-	// clear everything
-	memset(&cgs, 0, sizeof(cgs));
-	memset(&cg, 0, sizeof(cg));
-	memset(cg_entities, 0, sizeof(cg_entities));
-	memset(cg_weapons, 0, sizeof(cg_weapons));
-	memset(cg_items, 0, sizeof(cg_items));
-
-	Com_InitZoneMemory();
-
-	cg.clientNum = clientNum;
-
-	cgs.processedSnapshotNum = serverMessageNum;
-	cgs.serverCommandSequence = serverCommandSequence;
-
-	// load a few needed things before we do any screen updates
-	cgs.media.charsetShader1        = trap_R_RegisterShader("gfx/2d/bigchars1");
-	cgs.media.charsetShader       = trap_R_RegisterShader("gfx/2d/bigchars");
-	cgs.media.whiteShader           = trap_R_RegisterShader("white");
-
-	cgs.media.charsetProp           = trap_R_RegisterShaderNoMip("menu/art/font1_prop.tga");
-	cgs.media.charsetPropGlow     = trap_R_RegisterShaderNoMip("menu/art/font1_prop_glo.tga");
-	cgs.media.charsetPropB        = trap_R_RegisterShaderNoMip("menu/art/font2_prop.tga");
-
-	CG_RegisterCvars();
-	CG_RegisterCvarDescriptions();
-
-	//init variables
 	CG_CvarTouch("ch_crosshairColor");
 	CG_CvarTouch("ch_crosshairActionColor");
 	CG_CvarTouch("ch_crosshairActionColorLow");
@@ -2017,6 +1980,49 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_CvarTouch("cg_bestats_pos");
 	CG_CvarTouch("cg_bestats_font");
 	CG_CvarTouch("cg_bestats_bgColor");
+}
+
+
+/*
+=================
+CG_Init
+
+Called after every level change or subsystem restart
+Will perform callbacks to make the loading info screen update.
+=================
+*/
+int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
+{
+	const char*  s;
+	int i;
+	// clear everything
+	memset(&cgs, 0, sizeof(cgs));
+	memset(&cg, 0, sizeof(cg));
+	memset(cg_entities, 0, sizeof(cg_entities));
+	memset(cg_weapons, 0, sizeof(cg_weapons));
+	memset(cg_items, 0, sizeof(cg_items));
+
+	Com_InitZoneMemory();
+
+	cg.clientNum = clientNum;
+
+	cgs.processedSnapshotNum = serverMessageNum;
+	cgs.serverCommandSequence = serverCommandSequence;
+
+	// load a few needed things before we do any screen updates
+	cgs.media.charsetShader1        = trap_R_RegisterShader("gfx/2d/bigchars1");
+	cgs.media.charsetShader       = trap_R_RegisterShader("gfx/2d/bigchars");
+	cgs.media.whiteShader           = trap_R_RegisterShader("white");
+
+	cgs.media.charsetProp           = trap_R_RegisterShaderNoMip("menu/art/font1_prop.tga");
+	cgs.media.charsetPropGlow     = trap_R_RegisterShaderNoMip("menu/art/font1_prop_glo.tga");
+	cgs.media.charsetPropB        = trap_R_RegisterShaderNoMip("menu/art/font2_prop.tga");
+
+	CG_RegisterCvars();
+	CG_RegisterCvarDescriptions();
+
+	//init variables
+	CG_InitCvars();
 
 	CG_InitConsoleCommands();
 
@@ -2197,6 +2203,10 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_LoadingString("sounds");
 	CG_RegisterSounds();
+
+	for (i = 1; i < WP_NUM_WEAPONS; i++) {
+		CG_RegisterWeapon(i);
+	}
 
 	CG_LoadingString("graphics");
 	CG_RegisterGraphics();

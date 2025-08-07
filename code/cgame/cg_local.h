@@ -581,11 +581,13 @@ typedef struct
 
 	// scoreboard
 	int         scoresRequestTime;
+	int			statsRequestTime;
 	int         numScores;
 	int         selectedScore;
 	int         teamScores[2];
 	score_t     scores[MAX_CLIENTS];
 	qboolean    showScores;
+	qboolean	showAccuracy;
 	qboolean    scoreBoardShowing;
 	int         scoreFadeTime;
 	char        killerName[MAX_NAME_LENGTH];
@@ -2500,7 +2502,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.91n" // BE
+#define OSP_VERSION "be-0.92" // BE
 
 
 
@@ -2674,7 +2676,7 @@ void CG_LocalEventCvarChanged_cg_trueLightning(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_r_shownormals(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_r_showtris(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_shadows(cvarTable_t* cvart);
-void CG_LocalEventCvarChanged_r_fullbright(cvarTable_t* cvart);
+// void CG_LocalEventCvarChanged_r_fullbright(cvarTable_t* cvart);
 
 void CG_LocalEventCvarChanged_cg_swapSkins(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyColors(cvarTable_t* cvart);
@@ -2767,7 +2769,7 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
-void CG_LocalEventCvarChanged_cg_friendsWallhack(cvarTable_t* cvart);
+// void CG_LocalEventCvarChanged_cg_friendsWallhack(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

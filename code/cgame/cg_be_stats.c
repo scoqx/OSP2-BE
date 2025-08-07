@@ -1064,7 +1064,14 @@ void CG_BEStatsShowStatsInfo(void)
 	// Init
 	CG_BEStatsInit();
 	// Request Stats
-	CG_MaybeRequestStatsInfo();
+	if (!cgs.be.newStats.drawWindow)
+	{
+		if (cg.statsRequestTime + 1000 < cg.time)
+		{
+			cg.statsRequestTime = cg.time;
+			trap_SendClientCommand("getstatsinfo");
+		}
+	}
 	// General
 	CG_BEStatsBuildGeneral(tokens, row, &rowsAdded, NULL);
 	row += rowsAdded;

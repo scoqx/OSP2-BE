@@ -605,13 +605,15 @@ static void CG_Missile(centity_t* cent)
 			{
 				const clientInfo_t* ci = &cgs.clientinfo[owner];
 
-				if (CG_IsEnemy(ci))
-				{
-					ent.shaderRGBA[0] = cgs.be.enemyGrenadesColor[0] * 255;
-					ent.shaderRGBA[1] = cgs.be.enemyGrenadesColor[1] * 255;
-					ent.shaderRGBA[2] = cgs.be.enemyGrenadesColor[2] * 255;
+				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IsEnemy(ci); // На OSP CA нет данных otherEntityNum
 
-					if (cg_drawBrightWeapons.integer & 4 && cgs.media.firstPersonGun)
+				if (isAlly)
+				{
+					ent.shaderRGBA[0] = cgs.be.altGrenadesColor[0] * 255;
+					ent.shaderRGBA[1] = cgs.be.altGrenadesColor[1] * 255;
+					ent.shaderRGBA[2] = cgs.be.altGrenadesColor[2] * 255;
+
+					if ((cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && cgs.media.firstPersonGun)
 					{
 						ent.customShader = cgs.media.firstPersonGun;
 					}
@@ -622,11 +624,11 @@ static void CG_Missile(centity_t* cent)
 				}
 				else
 				{
-					ent.shaderRGBA[0] = cgs.be.altGrenadesColor[0] * 255;
-					ent.shaderRGBA[1] = cgs.be.altGrenadesColor[1] * 255;
-					ent.shaderRGBA[2] = cgs.be.altGrenadesColor[2] * 255;
+					ent.shaderRGBA[0] = cgs.be.enemyGrenadesColor[0] * 255;
+					ent.shaderRGBA[1] = cgs.be.enemyGrenadesColor[1] * 255;
+					ent.shaderRGBA[2] = cgs.be.enemyGrenadesColor[2] * 255;
 
-					if ((cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && cgs.media.firstPersonGun)
+					if (cg_drawBrightWeapons.integer & 4 && cgs.media.firstPersonGun)
 					{
 						ent.customShader = cgs.media.firstPersonGun;
 					}
@@ -653,6 +655,7 @@ static void CG_Missile(centity_t* cent)
 
 		ent.hModel = cgs.media.grenadeCPMAModel;
 	}
+
 
 
 

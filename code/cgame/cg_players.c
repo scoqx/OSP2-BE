@@ -2098,7 +2098,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 	float size;
 	vec4_t color;
 	clientInfo_t* cl;
-	qboolean wallhackEnabled = (cg_friendsWallhack.integer != 0) && !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH);
+	qboolean wallhackEnabled = (cg_friendsWallhack.integer != 0)/*  && !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) */;
 
 	team = cgs.clientinfo[cent->currentState.clientNum].team;
 	if (cgs.gametype < GT_TEAM
@@ -2220,7 +2220,7 @@ static void CG_PlayerSprites(centity_t* cent)
 			if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
 			{
 				qhandle_t shader;
-				if (!(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) && cg_friendsWallhack.integer)
+				if (/* !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) &&  */cg_friendsWallhack.integer)
 					shader = cgs.media.frozenFoeTagShaderWallhack;
 				else
 					shader = cgs.media.frozenFoeTagShader;
@@ -2239,7 +2239,7 @@ static void CG_PlayerSprites(centity_t* cent)
 				{
 					VectorCopy(colorRed, color);
 				}
-				if (!(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) && cg_friendsWallhack.integer)
+				if (/* !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) &&  */cg_friendsWallhack.integer)
 					shader = cgs.media.friendShaderWallhack;
 				else
 					shader = cgs.media.friendShader;

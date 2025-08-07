@@ -2754,7 +2754,7 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float tex
 	int font = cg_accuracyFont.integer;
 	qhandle_t icon;
 
-	CG_MaybeRequestStatsInfo();
+	// CG_MaybeRequestStatsInfo();
 
 	for (wp = WP_MACHINEGUN; wp <= WP_PLASMAGUN; wp++)
 		if (ws->stats[wp].shots > 0) visibleCount++;
