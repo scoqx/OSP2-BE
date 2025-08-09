@@ -2536,10 +2536,13 @@ void CG_DrawPlayerIndicator(int clientNum)
 	const float liftMin = 58.0f;
 	const float liftMax = 128.0f;
 	const float smoothFactor = 0.2f;
+	float fade = 1.0f;
+	float fadeStrength = cg_teamIndicatorFade.value; // 0.0 = no fade, 1.0 = full fade
+	float fadeRadius = cg_teamIndicatorFadeRadius.value;
+
 	int scanRange = MAX_CLIENTS;
 
-	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
-	{
+	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN)) {
 		scanRange = MAX_GENTITIES;
 	}
 
@@ -2554,21 +2557,18 @@ void CG_DrawPlayerIndicator(int clientNum)
 	if (!cent->currentValid || cent->currentState.eType != ET_PLAYER)
 		return;
 
-	if (clientNum >= MAX_CLIENTS && CG_IsFrozenEntity(cent))
-	{
+	if (clientNum >= MAX_CLIENTS && CG_IsFrozenEntity(cent)) {
 		actualClientNum = cent->currentState.otherEntityNum;
 		if (actualClientNum < 0 || actualClientNum >= MAX_CLIENTS)
 			return;
 
 		ci = &cgs.clientinfo[actualClientNum];
-		if (!ci->infoValid || !ci->isFrozenEnt && ci->frozenEntity != clientNum)
+		if (!ci->infoValid || (!ci->isFrozenEnt && ci->frozenEntity != clientNum))
 			return;
 
 		cent = &cg_entities[ci->frozenEntity];
 		clientNum = actualClientNum;
-	}
-	else
-	{
+	} else {
 		if (clientNum >= MAX_CLIENTS)
 			return;
 
@@ -2577,9 +2577,9 @@ void CG_DrawPlayerIndicator(int clientNum)
 			return;
 
 		if (ci->isFrozenEnt &&
-		        ci->frozenEntity >= 0 &&
-		        ci->frozenEntity < MAX_GENTITIES &&
-		        cg_entities[ci->frozenEntity].currentValid)
+		    ci->frozenEntity >= 0 &&
+		    ci->frozenEntity < MAX_GENTITIES &&
+		    cg_entities[ci->frozenEntity].currentValid)
 		{
 			cent = &cg_entities[ci->frozenEntity];
 		}
@@ -2609,22 +2609,35 @@ void CG_DrawPlayerIndicator(int clientNum)
 	CG_FontSelect(font);
 	Vector4Copy(cgs.be.playerIndicatorBgColor, bgColor);
 	Vector4Copy(cgs.be.playerIndicatorColor, nameColor);
-	bgColor[3] = cg_teamIndicatorBgOpaque.value;
-	nameColor[3] = cg_teamIndicatorOpaque.value;
 
-	if ((cg_teamIndicator.integer & (PI_NAME_CLEAN | PI_NAME)) != 0)
-	{
-		vec4_t border;
-		vec4_t borderColor;
+	if (fadeStrength > 0.0f) {
+		float crosshairX = SCREEN_WIDTH * 0.5f;
+		float crosshairY = SCREEN_HEIGHT * 0.5f;
+		float dx = headX - crosshairX;
+		float dy = headY - crosshairY;
+		float distToCrosshair = SQRTFAST(dx * dx + dy * dy);
 
-		border[0] = border[1] = border[2] = border[3] = 0.0f;
-		borderColor[0] = borderColor[1] = borderColor[2] = borderColor[3] = 0.0f;
+		if (distToCrosshair < fadeRadius) {
+			float coreFade = distToCrosshair / fadeRadius;
+			if (coreFade < 0.0f)
+				coreFade = 0.0f;
+			fade = 1.0f - ((1.0f - coreFade) * fadeStrength);
+		}
+	}
 
-		if (ci->isFrozenEnt)
-		{
+	bgColor[3] = cg_teamIndicatorBgOpaque.value * fade;
+	nameColor[3] = cg_teamIndicatorOpaque.value * fade;
+	
+	if ((cg_teamIndicator.integer & (PI_NAME_CLEAN | PI_NAME)) != 0) {
+		vec4_t border = { 0, 0, 0, 0 };
+		vec4_t borderColor = { 0, 0, 0, 0 };
+		vec4_t shadowColorWithAlpha = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+		shadowColorWithAlpha[3] =  nameColor[3];
+		if (ci->isFrozenEnt) {
 			border[3] = 1.0f;
 			Vector4Copy(colorCyan, borderColor);
-			borderColor[3] = cg_teamIndicatorOpaque.value;
+			borderColor[3] = nameColor[3];
 		}
 
 		if (cg_teamIndicator.integer & PI_NAME_CLEAN)
@@ -2636,7 +2649,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 		    headX, headY,
 		    tmpName,
 		    nameColor,
-		    colorBlack,
+		    shadowColorWithAlpha,
 		    w, h,
 		    cg_teamIndicatorMaxLength.integer,
 		    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER | DS_MAX_WIDTH_IS_CHARS,
@@ -2646,26 +2659,21 @@ void CG_DrawPlayerIndicator(int clientNum)
 		);
 	}
 
-	if (cg_teamIndicator.integer & PI_STATS && !(cgs.gametype == GT_CA))
-	{
-		int health;
-		int armor;
-		float h2, w2;
-		char statsText[16];
-		vec4_t statsColor;
+	if ((cg_teamIndicator.integer & PI_STATS) && cgs.gametype != GT_CA) {
+		int health = ci->health;
+		int armor = ci->armor;
 
-		health = ci->health;
-		armor = ci->armor;
+		if (health > 0) {
+			char statsText[16];
+			vec4_t statsColor;
+			float w2;
+			float h2 = h - 2.0f;
+			if (h2 < 4.0f) h2 = 4.0f;
+			w2 = h2 * 0.8f;
 
-		if (health > 0)
-		{
 			Com_sprintf(statsText, sizeof(statsText), "[%d/%d]", health, armor);
 			CG_GetColorForHealth(health, armor, statsColor, NULL);
 			statsColor[3] = nameColor[3];
-
-			h2 = h - 2.0f;
-			if (h2 < 4.0f) h2 = 4.0f;
-			w2 = h2 * 0.8f;
 
 			CG_OSPDrawStringNew(
 			    headX, headY + h,
@@ -2682,24 +2690,16 @@ void CG_DrawPlayerIndicator(int clientNum)
 		}
 	}
 
-	if (cg_teamIndicator.integer & PI_ICON)
-	{
-		float iconSize;
-		float iconX, iconY;
-		vec4_t color;
-
-		iconSize = h * 1.1f;
-		iconX = headX - (iconSize / 2.0f);
-		iconY = headY + (iconSize + (iconSize / 10.0f));
-		color[0] = color[1] = color[2] = 1.0f;
-		color[3] = cg_teamIndicatorOpaque.value;
-
-		if (cent->currentState.eFlags & EF_DEAD)
-		{
+	if (cg_teamIndicator.integer & PI_ICON) {
+		float iconSize = h * 1.1f;
+		float iconX = headX - (iconSize / 2.0f);
+		float iconY = headY + (iconSize + (iconSize / 10.0f));
+		vec4_t color = { 1.0f, 1.0f, 1.0f, 1.0f };
+		color[3] = nameColor[3];
+		if (cent->currentState.eFlags & EF_DEAD) {
 			CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.obituariesSkull);
 		}
-		else if (ci->isFrozenEnt && (cg_teamIndicator.integer & PI_FROZEN))
-		{
+		else if (ci->isFrozenEnt && (cg_teamIndicator.integer & PI_FROZEN)) {
 			trap_R_SetColor(color);
 			CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.frozenFoeTagShader);
 			trap_R_SetColor(NULL);
@@ -2707,27 +2707,33 @@ void CG_DrawPlayerIndicator(int clientNum)
 	}
 }
 
+
 void CG_DrawPlayerIndicatorOnScreen(void)
 {
-	int i, range;
-	int scanRange = MAX_CLIENTS;
+    int i, range;
+    int scanRange = MAX_CLIENTS;
+    int useWallhack;
 
-	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
-	{
-		scanRange = MAX_GENTITIES;
-	}
+    if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
+    {
+        scanRange = MAX_GENTITIES;
+    }
 
-	for (i = 0; i < scanRange; i++)
-	{
-		if (i == cg.snap->ps.clientNum)
-			continue;
+    useWallhack = (cg_friendsWallhack.integer & 2) ? 1 : 0;
 
-		if (!CG_IsPlayerValidAndVisible(i))
-			continue;
+    for (i = 0; i < scanRange; i++)
+    {
+        if (i == cg.snap->ps.clientNum)
+            continue;
 
-		CG_DrawPlayerIndicator(i);
-	}
+        if (!CG_IsPlayerValidAndVisible(i, useWallhack))
+            continue;
+
+        CG_DrawPlayerIndicator(i);
+    }
 }
+
+
 
 typedef enum
 {
@@ -2753,8 +2759,6 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float tex
 	float textX, textY;
 	int font = cg_accuracyFont.integer;
 	qhandle_t icon;
-
-	// CG_MaybeRequestStatsInfo();
 
 	for (wp = WP_MACHINEGUN; wp <= WP_PLASMAGUN; wp++)
 		if (ws->stats[wp].shots > 0) visibleCount++;

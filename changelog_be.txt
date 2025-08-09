@@ -403,3 +403,11 @@ description later
 
 * altGrenades fix
 * scoreboard/wstats fix
+
+09.08.2025 be v0.92a
+
++ cg_teamIndicatorFade
++ cg_teamIndicatorFadeRadius
+* cg_scoreboardBE bitmask (+ '4')
+* cg_friendsWallhack bitmask (+ '2')
+* various fixes

@@ -438,8 +438,11 @@ static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCo
 		CG_BEStatsSetTokenLabel(tokens, 0, col, "Sui", beStatsSettings.colorR);
 		CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->suicides, beStatsSettings.defaultColor);
 		// Team Kills
-		CG_BEStatsSetTokenLabel(tokens, 0, col, "TmKills", beStatsSettings.defaultColor);
-		CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->teamKills, beStatsSettings.defaultColor);
+		CG_BEStatsSetTokenLabel(tokens, 0, col, "TmKlls", beStatsSettings.defaultColor);
+		CG_BEStatsSetTokenValueInt(tokens, 1, col, "%d", s->teamKills, beStatsSettings.defaultColor);
+		CG_BEStatsSetTokenOffset(tokens, 0, col, -1);
+		CG_BEStatsSetTokenOffset(tokens, 1, col, -1);
+		col++;
 		// KD
 		CG_BEStatsSetTokenLabel(tokens, 0, col, "K/D", beStatsSettings.colorY);
 		CG_BEStatsSetTokenValueFloat(tokens, 1, col++, "%.1f", s->kdratio, beStatsSettings.defaultColor);

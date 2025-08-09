@@ -1221,22 +1221,6 @@ void CG_BEParseStatsInfo(void)
 	cgs.be.newStats.customStatsCalled = qfalse;
 }
 
-
-
-void CG_BERequestStatsInfo(void)
-{
-	trap_SendClientCommand("getstatsinfo");
-}
-
-void CG_MaybeRequestStatsInfo(void)
-{
-	// Oncer per 3 seconds
-	if (CG_BE_Timer(3000))
-	{
-		CG_BERequestStatsInfo();
-	}
-}
-
 /*
 =================
 CG_ServerCommand

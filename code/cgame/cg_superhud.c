@@ -316,11 +316,6 @@ void CG_SHUDRoutine(void)
 	{
 		CG_OSPDrawCenterString();
 	}
-	if (cgs.be.newStats.drawWindow)
-	{
-		CG_BEStatsShowStatsInfo();
-	}
-
 	while (last)
 	{
 		// check visibility
@@ -344,6 +339,11 @@ void CG_SHUDRoutine(void)
 		}
 		last = last->next;
 	}
+	if (cgs.be.newStats.drawWindow)
+	{
+		CG_BEStatsShowStatsInfo();
+	}
+
 }
 
 void CG_SHUDEventFrag(const char* message)

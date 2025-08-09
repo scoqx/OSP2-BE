@@ -307,7 +307,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamIndicatorOffset", "Vertical offset of the indicator\n  ^2-12^7 - ^232^7" },
 	{ "cg_teamIndicatorMaxLength", "Maximum allowed length of the player name in the indicator" },
 	{ "cg_teamIndicatorFont", "Font selection for team indicator\n  ^20^7 - ^210^7" },
-	{ "cg_scoreboardBE", "Enable alternative OSP scoreboard. Set 20^7 to use default scoreboard.\n  ^21^7 - enabled\n  ^22^7 - enabled, monospace font\n  ^23^7 - enabled, proportional + old style team scores" },
+	{ "cg_scoreboardBE", "Enable alternative OSP scoreboard. Set 20^7 to use default scoreboard.\n ^21^7 - proportional font\n  ^22^7 - old style team scores\n  ^24^7 - white colored titles" },
 	{ "cg_scoreboardFont", "Font selection for alternative scoreboard\n  ^20^7 - ^210^7" },
 	{ "cg_centerMessagesFont", "Font selection for center messages\n  ^20^7 - ^210^7" },
 	{ "cg_drawCrosshairNames", "Display names when crosshair is on target\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - only allies\n  ^23^7 - only enemies" },
@@ -344,7 +344,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_friendHudMarkerSize", "Base size of the teammate HUD marker." },
 	{ "cg_friendHudMarkerMaxScale", "Maximum additional scale factor based on distance (applied to base size)." },
 	{ "cg_friendHudMarkerMinScale", "Minimum scale factor based on distance." },
-	{ "cg_friendsWallhack", "Show teammate markers through walls\n  ^20^7 - disabled\n  ^21^7 - enabled." },
+	{ "cg_friendsWallhack", "Show teammate markers through walls. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - foe\n  ^22^7 - team indicator" },
 	{ "cg_drawHudMarkers", "Whether to display teammate markers on the HUD." },
 	{ "cg_scoreboardRtColors", "Color of the red team scoreboard. ^3cg_scoreboardBE^7 must be enabled \n  ^2<color> <color>^7 separated by space. For example \"^2Red Green^7\" or \"^20099FF 99FF00^7\" or \"^24 Red^7\"." },
 	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color>^7 separated by space. For example \"^2Red Green^7\" or \"^20099FF 99FF00^7\" or \"^24 Red^7\"." },
@@ -358,6 +358,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_bestats_bgOpaque", "Background opacity of the battle statistics window\n  ^20.0^7-^21.0^7" },
 	{ "cg_bestats_spacingAdjust", "Line spacing adjustment in the battle statistics window." },
 	{ "cg_bestats_widthCutoff", "Width reduction (cutoff) of the battle statistics window." },
+	{ "cg_teamIndicatorFade", " Ally indicator transparency level when aiming at a teammate. Set ^20^7 to disable." },
+	{ "cg_teamIndicatorFadeRadius", "Radius at which the ally indicator starts fading." },
 };
 
 

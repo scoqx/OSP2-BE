@@ -325,7 +325,7 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 	float bWidth = 14;
 	float bHeight = 16;
 	int font = cg_scoreboardFont.integer;
-	int proportional = ((cg_scoreboardBE.integer == 1) || (cg_scoreboardBE.integer == 3)) ? DS_PROPORTIONAL : 0;
+	int proportional = (cg_scoreboardBE.integer & 1) ? DS_PROPORTIONAL : 0;
 
 	if (score->client < 0 || score->client >= cgs.maxclients)
 	{
@@ -808,7 +808,7 @@ void CG_DrawOldTourneyScoreboard(void)
 		cg.scoresRequestTime = cg.time;
 		trap_SendClientCommand("score");
 	}
-	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2000 < cg.time)
+	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;
 		trap_SendClientCommand("getstatsinfo");
@@ -1437,7 +1437,7 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 		CG_OSPDrawPowerupFrame(x, y, ci);
 	}
 
-	if (cg_scoreboardBE.integer == 1 || cg_scoreboardBE.integer == 3)
+	if (cg_scoreboardBE.integer & 1)
 	{
 		proportional = DS_PROPORTIONAL;
 	}
@@ -1916,61 +1916,90 @@ static void CG_OSPDrawTeamSummary(
     int sumPing,
     const vec4_t titleColor)
 {
-	const char* label1 = NULL, *label2 = NULL, *label3 = NULL;
-	char val1[128], val2[128], val3[128];
-	int count = 0;
+    const char* labels[3];
+    char values[3][128];
+    float posX[3];
+    int i, count = 0;
+	vec4_t headerColor;
+	vec4_t curColor;
+    /* proportional по битам */
+    int proportional = (cg_scoreboardBE.integer & 2) ? 0 :
+                       (cg_scoreboardBE.integer & 1) ? DS_PROPORTIONAL : 0;
 
-	if (cgs.gametype >= GT_CTF)
-	{
-		label1 = "Points";
-		label2 = "Players";
-		label3 = "AvgPing";
-		Com_sprintf(val1, sizeof(val1), "^3%i^7", sumScores);
-		Com_sprintf(val2, sizeof(val2), "%i", drewPlayers);
-		Com_sprintf(val3, sizeof(val3), "%i", sumPing / drewPlayers);
-		count = 3;
-	}
-	else if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze())
-	{
-		label1 = "Players";
-		label2 = "AvgPing";
-		Com_sprintf(val1, sizeof(val1), "%i", drewPlayers);
-		Com_sprintf(val2, sizeof(val2), "%i", sumPing / drewPlayers);
-		count = 2;
-	}
-	else if (CG_OSPIsGameTypeFreeze())
-	{
-		label1 = "Scores";
-		label2 = "Thaws";
-		label3 = "Players";
-		Com_sprintf(val1, sizeof(val1), "%i", sumScores);
-		Com_sprintf(val2, sizeof(val2), "%i", sumThaws);
-		Com_sprintf(val3, sizeof(val3), "%i", drewPlayers);
-		count = 3;
+
+	if (cg_scoreboardBE.integer & 4) {
+		Vector4Copy(colorWhite, headerColor);
+	} else {
+		Vector4Copy(titleColor, headerColor);
 	}
 
-	if (count >= 1)
-	{
-		CG_OSPDrawStringNew(baseX + titlePos1X, row1Y, label1, titleColor, colorBlack,
-		                    mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
-		CG_OSPDrawStringNew(baseX + titlePos1X, row2Y, val1, colorWhite, colorBlack,
-		                    bWidth2, bHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
-	}
-	if (count >= 2)
-	{
-		CG_OSPDrawStringNew(baseX + titlePos2X, row1Y, label2, colorWhite, colorBlack,
-		                    mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
-		CG_OSPDrawStringNew(baseX + titlePos2X, row2Y, val2, colorWhite, colorBlack,
-		                    bWidth2, bHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
-	}
-	if (count == 3)
-	{
-		CG_OSPDrawStringNew(baseX + titlePos3X, row1Y, label3, colorWhite, colorBlack,
-		                    mWidth2, mHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
-		CG_OSPDrawStringNew(baseX + titlePos3X, row2Y, val3, colorWhite, colorBlack,
-		                    bWidth2, bHeight2, SCREEN_WIDTH, DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+
+    /* Заполняем колонки в зависимости от режима */
+    if (cgs.gametype >= GT_CTF) {
+        labels[count] = "Points";
+        Com_sprintf(values[count], sizeof(values[count]), "^3%i^7", sumScores);
+        posX[count] = titlePos1X;
+        count++;
+
+        labels[count] = "Players";
+        Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
+        posX[count] = titlePos2X;
+        count++;
+
+        labels[count] = "AvgPing";
+        Com_sprintf(values[count], sizeof(values[count]), "%i", sumPing / drewPlayers);
+        posX[count] = titlePos3X;
+        count++;
+    }
+    else if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) {
+        labels[count] = "Players";
+        Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
+        posX[count] = titlePos2X;
+        count++;
+
+        labels[count] = "AvgPing";
+        Com_sprintf(values[count], sizeof(values[count]), "%i", sumPing / drewPlayers);
+        posX[count] = titlePos3X;
+        count++;
+    }
+    else if (CG_OSPIsGameTypeFreeze()) {
+        labels[count] = "Scores";
+        Com_sprintf(values[count], sizeof(values[count]), "%i", sumScores);
+        posX[count] = titlePos1X;
+        count++;
+
+        labels[count] = "Thaws";
+        Com_sprintf(values[count], sizeof(values[count]), "%i", sumThaws);
+        posX[count] = titlePos2X;
+        count++;
+
+        labels[count] = "Players";
+        Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
+        posX[count] = titlePos3X;
+        count++;
+    }
+
+    for (i = 0; i < count; i++) {
+
+    if (cg_scoreboardBE.integer & 4) {
+        Vector4Copy(colorWhite, curColor); // все белые
+    } else {
+        if (i == 0)
+            Vector4Copy(titleColor, curColor); // первый - цвет команды
+        else
+            Vector4Copy(colorWhite, curColor); // остальные - белые
+    }
+
+    CG_OSPDrawStringNew(baseX + posX[i], row1Y, labels[i], curColor, colorBlack,
+                        mWidth2, mHeight2, SCREEN_WIDTH,
+                        DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+
+    CG_OSPDrawStringNew(baseX + posX[i], row2Y, values[i], colorWhite, colorBlack,
+                        bWidth2, bHeight2, SCREEN_WIDTH,
+                        DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 	}
 }
+
 
 void CG_OSPDrawScoreHeader(float baseX, float y, vec4_t colorBody, vec4_t colorBlack, int mWidth, int mHeight, int screenWidth, int proportional)
 {
@@ -1982,7 +2011,7 @@ void CG_OSPDrawScoreHeader(float baseX, float y, vec4_t colorBody, vec4_t colorB
 	const char* label4 = "Min";
 	const char* label5 = "Name";
 
-	CG_OSPDrawStringNew(baseX + pos1X, y, label1, colorBody, colorBlack, mWidth, mHeight, screenWidth,
+	CG_OSPDrawStringNew(baseX + pos1X, y, label1, (cg_scoreboardBE.integer & 4) ? colorWhite : colorBody, colorBlack, mWidth, mHeight, screenWidth,
 	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
 	CG_OSPDrawStringNew(baseX + pos2X, y, label2, colorWhite, colorBlack, mWidth, mHeight, screenWidth,
 	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
@@ -2051,7 +2080,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 
 	y = 40;
 
-	if (cg_scoreboardBE.integer == 1 || cg_scoreboardBE.integer == 3)
+	if (cg_scoreboardBE.integer & 1)
 	{
 		proportional = DS_PROPORTIONAL;
 	}
@@ -2085,7 +2114,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 	CG_FillRect(328.0f, (float)y, 304.0f, 48.0f, colorRect);
 
 	// main team scores
-	if (cg_scoreboardBE.integer == 3)
+	if (cg_scoreboardBE.integer & 2)
 	{
 		CG_OSPDrawField(8, y, cg.teamScores[0]);
 		trap_R_SetColor(NULL);
@@ -2189,7 +2218,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 			{
 				Vector4Copy(scoreboard_specColor, bgColor);
 			}
-			bgColor[3] = 0.2f;
+			bgColor[3] = 0.15f;
 
 			CG_FillRect(8.0f, (float)(y - 34), 624.0f, (float)(9 * drewSpect + 29), bgColor);
 		}
@@ -2206,7 +2235,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		trap_SendClientCommand("score");
 		cg.realNumClients = CG_CountRealClients();
 	}
-	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2000 < cg.time)
+	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;
 		trap_SendClientCommand("getstatsinfo");

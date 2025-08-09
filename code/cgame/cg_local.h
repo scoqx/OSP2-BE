@@ -1758,6 +1758,8 @@ extern vmCvar_t         cg_bestats_bgColor;
 extern vmCvar_t         cg_bestats_bgOpaque;
 extern vmCvar_t         cg_bestats_spacingAdjust;
 extern vmCvar_t         cg_bestats_widthCutoff;
+extern vmCvar_t         cg_teamIndicatorFade;
+extern vmCvar_t         cg_teamIndicatorFadeRadius;
 extern vmCvar_t         be_run;
 
 
@@ -2245,15 +2247,13 @@ void CG_ShaderStateChanged(void);
 void CG_RemoveChatEscapeChar(char* text);
 void CG_RemoveChatEscapeCharAll(char* text);
 void CG_StringMakeEscapeCharRAW(const char* in, char* out, int max);
-
-void CG_MaybeRequestStatsInfo(void);
 //
 // cg_playerstate.c
 //
 void CG_Respawn(void);
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
-qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum);
+qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack);
 
 
 //
@@ -2502,7 +2502,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.92" // BE
+#define OSP_VERSION "be-0.92a" // BE
 
 
 
@@ -2769,7 +2769,6 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
-// void CG_LocalEventCvarChanged_cg_friendsWallhack(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }
