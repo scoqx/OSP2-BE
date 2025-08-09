@@ -1916,87 +1916,95 @@ static void CG_OSPDrawTeamSummary(
     int sumPing,
     const vec4_t titleColor)
 {
-    const char* labels[3];
-    char values[3][128];
-    float posX[3];
-    int i, count = 0;
+	const char* labels[3];
+	char values[3][128];
+	float posX[3];
+	int i, count = 0;
 	vec4_t headerColor;
 	vec4_t curColor;
-    /* proportional по битам */
-    int proportional = (cg_scoreboardBE.integer & 2) ? 0 :
-                       (cg_scoreboardBE.integer & 1) ? DS_PROPORTIONAL : 0;
+	int proportional = (cg_scoreboardBE.integer & 2) ? 0 :
+	                   (cg_scoreboardBE.integer & 1) ? DS_PROPORTIONAL : 0;
 
 
-	if (cg_scoreboardBE.integer & 4) {
+	if (cg_scoreboardBE.integer & 4)
+	{
 		Vector4Copy(colorWhite, headerColor);
-	} else {
+	}
+	else
+	{
 		Vector4Copy(titleColor, headerColor);
 	}
 
 
-    /* Заполняем колонки в зависимости от режима */
-    if (cgs.gametype >= GT_CTF) {
-        labels[count] = "Points";
-        Com_sprintf(values[count], sizeof(values[count]), "^3%i^7", sumScores);
-        posX[count] = titlePos1X;
-        count++;
+	if (cgs.gametype >= GT_CTF)
+	{
+		labels[count] = "Points";
+		Com_sprintf(values[count], sizeof(values[count]), "^3%i^7", sumScores);
+		posX[count] = titlePos1X;
+		count++;
 
-        labels[count] = "Players";
-        Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
-        posX[count] = titlePos2X;
-        count++;
+		labels[count] = "Players";
+		Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
+		posX[count] = titlePos2X;
+		count++;
 
-        labels[count] = "AvgPing";
-        Com_sprintf(values[count], sizeof(values[count]), "%i", sumPing / drewPlayers);
-        posX[count] = titlePos3X;
-        count++;
-    }
-    else if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) {
-        labels[count] = "Players";
-        Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
-        posX[count] = titlePos2X;
-        count++;
+		labels[count] = "AvgPing";
+		Com_sprintf(values[count], sizeof(values[count]), "%i", sumPing / drewPlayers);
+		posX[count] = titlePos3X;
+		count++;
+	}
+	else if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze())
+	{
+		labels[count] = "Players";
+		Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
+		posX[count] = titlePos2X;
+		count++;
 
-        labels[count] = "AvgPing";
-        Com_sprintf(values[count], sizeof(values[count]), "%i", sumPing / drewPlayers);
-        posX[count] = titlePos3X;
-        count++;
-    }
-    else if (CG_OSPIsGameTypeFreeze()) {
-        labels[count] = "Scores";
-        Com_sprintf(values[count], sizeof(values[count]), "%i", sumScores);
-        posX[count] = titlePos1X;
-        count++;
+		labels[count] = "AvgPing";
+		Com_sprintf(values[count], sizeof(values[count]), "%i", sumPing / drewPlayers);
+		posX[count] = titlePos3X;
+		count++;
+	}
+	else if (CG_OSPIsGameTypeFreeze())
+	{
+		labels[count] = "Scores";
+		Com_sprintf(values[count], sizeof(values[count]), "%i", sumScores);
+		posX[count] = titlePos1X;
+		count++;
 
-        labels[count] = "Thaws";
-        Com_sprintf(values[count], sizeof(values[count]), "%i", sumThaws);
-        posX[count] = titlePos2X;
-        count++;
+		labels[count] = "Thaws";
+		Com_sprintf(values[count], sizeof(values[count]), "%i", sumThaws);
+		posX[count] = titlePos2X;
+		count++;
 
-        labels[count] = "Players";
-        Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
-        posX[count] = titlePos3X;
-        count++;
-    }
+		labels[count] = "Players";
+		Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
+		posX[count] = titlePos3X;
+		count++;
+	}
 
-    for (i = 0; i < count; i++) {
+	for (i = 0; i < count; i++)
+	{
 
-    if (cg_scoreboardBE.integer & 4) {
-        Vector4Copy(colorWhite, curColor); // все белые
-    } else {
-        if (i == 0)
-            Vector4Copy(titleColor, curColor); // первый - цвет команды
-        else
-            Vector4Copy(colorWhite, curColor); // остальные - белые
-    }
+		if (cg_scoreboardBE.integer & 4)
+		{
+			Vector4Copy(colorWhite, curColor);
+		}
+		else
+		{
+			if (i == 0)
+				Vector4Copy(titleColor, curColor);
+			else
+				Vector4Copy(colorWhite, curColor);
+		}
 
-    CG_OSPDrawStringNew(baseX + posX[i], row1Y, labels[i], curColor, colorBlack,
-                        mWidth2, mHeight2, SCREEN_WIDTH,
-                        DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(baseX + posX[i], row1Y, labels[i], curColor, colorBlack,
+		                    mWidth2, mHeight2, SCREEN_WIDTH,
+		                    DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 
-    CG_OSPDrawStringNew(baseX + posX[i], row2Y, values[i], colorWhite, colorBlack,
-                        bWidth2, bHeight2, SCREEN_WIDTH,
-                        DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(baseX + posX[i], row2Y, values[i], colorWhite, colorBlack,
+		                    bWidth2, bHeight2, SCREEN_WIDTH,
+		                    DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
 	}
 }
 

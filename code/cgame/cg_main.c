@@ -459,8 +459,8 @@ vmCvar_t        cg_bestats_bgColor;
 vmCvar_t        cg_bestats_bgOpaque;
 vmCvar_t        cg_bestats_spacingAdjust;
 vmCvar_t        cg_bestats_widthCutoff;
-vmCvar_t		cg_teamIndicatorFade;
-vmCvar_t		cg_teamIndicatorFadeRadius;
+vmCvar_t        cg_teamIndicatorFade;
+vmCvar_t        cg_teamIndicatorFadeRadius;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =

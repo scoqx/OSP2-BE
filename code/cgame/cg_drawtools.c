@@ -3265,7 +3265,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 				}
 				shadowCol[3] = color[3];
 				break;
-				
+
 			case OSP_TEXT_CMD_SHADOW_COLOR:
 				VectorCopy(curr->value.color, shadowCol);
 				shadowCol[3] = shadowFade;
