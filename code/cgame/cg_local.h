@@ -2053,7 +2053,8 @@ enum
 	PI_NAME_CLEAN  = 2,
 	PI_STATS       = 4,
 	PI_FROZEN      = 8,
-	PI_ICON      = 16
+	PI_ICON      = 16,
+	PI_SPECTATOR = 32
 };
 
 //
@@ -2219,10 +2220,16 @@ extern vec4_t scoreboard_btColor;
 extern qboolean isCustomScoreboardColorIsSet_rt;
 extern qboolean isCustomScoreboardColorIsSet_bt;
 extern qboolean isCustomScoreboardColorIsSet_spec;
+extern qboolean isCustomScoreboardColorIsSet_rt_title;
+extern qboolean isCustomScoreboardColorIsSet_bt_title;
+extern qboolean isCustomScoreboardColorIsSet_spec_title;
 extern vec4_t scoreboard_rtColorBody;
 extern vec4_t scoreboard_btColorBody;
+extern vec4_t scoreboard_rtColorHeader;
+extern vec4_t scoreboard_btColorHeader;
 extern vec4_t scoreboard_rtColorTitle;
 extern vec4_t scoreboard_btColorTitle;
+extern vec4_t scoreboard_specColorTitle;
 extern vec4_t scoreboard_specColor;
 
 //
@@ -2502,7 +2509,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.92a" // BE
+#define OSP_VERSION "be-0.92b-test" // BE
 
 
 

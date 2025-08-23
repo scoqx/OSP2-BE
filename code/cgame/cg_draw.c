@@ -2539,7 +2539,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 	float fade = 1.0f;
 	float fadeStrength = cg_teamIndicatorFade.value; // 0.0 = no fade, 1.0 = full fade
 	float fadeRadius = cg_teamIndicatorFadeRadius.value;
-
+	qboolean isSpec = CG_IsLocalClientSpectator();
 	int scanRange = MAX_CLIENTS;
 
 	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
@@ -2652,6 +2652,26 @@ void CG_DrawPlayerIndicator(int clientNum)
 			Q_strncpyz(tmpName, ci->name_clean, sizeof(tmpName));
 		else if (cg_teamIndicator.integer & PI_NAME)
 			Q_strncpyz(tmpName, ci->name, sizeof(tmpName));
+
+        if (cg_teamIndicator.integer & PI_SPECTATOR && isSpec)
+		{
+			vec4_t teamColor;
+			float rectW = w * 2;
+			float rectH = h * 0.2f;
+			float rectX = headX - (rectW / 2.0f);
+			float rectY = headY + h;
+
+			if (ci->team == TEAM_RED)
+				Vector4Copy(cgs.be.redTeamColor, teamColor);
+			else if (ci->team == TEAM_BLUE)
+				Vector4Copy(cgs.be.blueTeamColor, teamColor);
+			else
+				Vector4Set(teamColor, 0.5f, 0.5f, 0.5f, nameColor[3]);
+
+			teamColor[3] = nameColor[3];
+
+			CG_FillRect(rectX, rectY, rectW, rectH, teamColor);
+		}
 
 		CG_OSPDrawStringNew(
 		    headX, headY,

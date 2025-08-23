@@ -2078,11 +2078,23 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack)
 	if (ci->team == TEAM_SPECTATOR)
 		return qfalse;
 
-	if (!CG_IsLocalClientSpectator())
-	{
-		if (CG_IsEnemy(ci))
-			return qfalse;
-	}
+	 if (CG_IsLocalClientSpectator())
+    {
+        if (cg_teamIndicator.integer & PI_SPECTATOR)
+        {
+            ;
+        }
+        else
+        {
+            if (CG_IsEnemy(ci))
+                return qfalse;
+        }
+    }
+    else
+    {
+        if (CG_IsEnemy(ci))
+            return qfalse;
+    }
 
 	if (!wallhack)
 	{
@@ -2132,14 +2144,13 @@ static void CG_FriendHudMarker(centity_t* cent)
 	size = MAX(cg_friendHudMarkerMinScale.value, size);
 
 	cl = &cgs.clientinfo[cent->currentState.clientNum];
-	if (cl->health > 0)
+	if (!(cg_healthColorLevels.integer & 2) && cl->health > 0)
 	{
 		CG_GetColorForHealth(cl->health, cl->armor, color, NULL);
 	}
 	else
 	{
 		Vector4Copy(colorWhite, color);
-		color[3] = 1.0f;
 	}
 
 	CG_HudBorderMarker(
@@ -2234,13 +2245,13 @@ static void CG_PlayerSprites(centity_t* cent)
 				vec4_t color;
 				qhandle_t shader;
 				// Black color for low hp is transparent, skip it
-				if (cl->health > 0)
+				if (!(cg_healthColorLevels.integer & 2) && cl->health > 0)
 				{
 					CG_GetColorForHealth(cl->health, cl->armor, color, NULL);
 				}
 				else
 				{
-					VectorCopy(colorRed, color);
+					VectorCopy(colorWhite, color);
 				}
 				if (/* !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) &&  */cg_friendsWallhack.integer & 1)
 					shader = cgs.media.friendShaderWallhack;

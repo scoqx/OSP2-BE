@@ -737,6 +737,7 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 	char buffer[MAX_CVAR_VALUE_STRING];
 	char* token1;
 	char* token2;
+	char* token3;
 
 	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
 	{
@@ -754,20 +755,74 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 
 	token1 = Q_strtok(buffer, " \t");
 	token2 = Q_strtok(NULL, " \t");
+	token3 = Q_strtok(NULL, " \t");
 
 	if (!token1 || !token2)
 	{
-		CG_Printf("^1Invalid value: expected two color values (e.g. \"red blue\")\n");
+		CG_Printf("^1Invalid value: expected at least two color values (e.g. \"red blue\")\n");
 		isCustomScoreboardColorIsSet_rt = qfalse;
+		isCustomScoreboardColorIsSet_rt_title = qfalse;
 		return;
 	}
 
-	CG_ParseColorStr(token1, scoreboard_rtColorTitle);
+	CG_ParseColorStr(token1, scoreboard_rtColorHeader);
 	CG_ParseColorStr(token2, scoreboard_rtColorBody);
 	isCustomScoreboardColorIsSet_rt = qtrue;
+
+	if (token3) {
+		CG_ParseColorStr(token3, scoreboard_rtColorTitle);
+		isCustomScoreboardColorIsSet_rt_title = qtrue;
+	} else {
+		isCustomScoreboardColorIsSet_rt_title = qfalse;
+	}
 }
 
 void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
+{
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char* token1;
+	char* token2;
+	char* token3;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
+	{
+		CG_Printf("^1Invalid cvar or string pointer\n");
+		return;
+	}
+
+	if (cvart->vmCvar->string[0] == '\0')
+	{
+		isCustomScoreboardColorIsSet_bt = qfalse;
+		return;
+	}
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+	token3 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2)
+	{
+		CG_Printf("^1Invalid value: expected at least two color values (e.g. \"1 3\" or \"990033 green\")\n");
+		isCustomScoreboardColorIsSet_bt = qfalse;
+		isCustomScoreboardColorIsSet_bt_title = qfalse;
+		return;
+	}
+
+	CG_ParseColorStr(token1, scoreboard_btColorHeader);
+	CG_ParseColorStr(token2, scoreboard_btColorBody);
+	isCustomScoreboardColorIsSet_bt = qtrue;
+
+	if (token3) {
+		CG_ParseColorStr(token3, scoreboard_btColorTitle);
+		isCustomScoreboardColorIsSet_bt_title = qtrue;
+	} else {
+		isCustomScoreboardColorIsSet_bt_title = qfalse;
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
 {
 	char buffer[MAX_CVAR_VALUE_STRING];
 	char* token1;
@@ -776,50 +831,41 @@ void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
 	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
 	{
 		CG_Printf("^1Invalid cvar or string pointer\n");
+		isCustomScoreboardColorIsSet_spec = qfalse;
+		isCustomScoreboardColorIsSet_spec_title = qfalse;
 		return;
 	}
 
 	if (cvart->vmCvar->string[0] == '\0')
 	{
-		isCustomScoreboardColorIsSet_bt = qfalse;
+		isCustomScoreboardColorIsSet_spec = qfalse;
+		isCustomScoreboardColorIsSet_spec_title = qfalse;
 		return;
 	}
 
 	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
-
 	token1 = Q_strtok(buffer, " \t");
 	token2 = Q_strtok(NULL, " \t");
 
-	if (!token1 || !token2)
-	{
-		CG_Printf("^1Invalid value: expected two color values (e.g. \"1 3\" or \"990033 green\")\n");
-		isCustomScoreboardColorIsSet_bt = qfalse;
-		return;
-	}
-
-	CG_ParseColorStr(token1, scoreboard_btColorTitle);
-	CG_ParseColorStr(token2, scoreboard_btColorBody);
-	isCustomScoreboardColorIsSet_bt = qtrue;
-}
-
-void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
-{
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
-	{
-		CG_Printf("^1Invalid cvar or string pointer\n");
-		isCustomScoreboardColorIsSet_spec = qfalse;
-		return;
-	}
-
-	if (cvart->vmCvar->string[0] == '\0')
+	if (!token1)
 	{
 		isCustomScoreboardColorIsSet_spec = qfalse;
+		isCustomScoreboardColorIsSet_spec_title = qfalse;
 		return;
 	}
 
-	CG_LocalEventCvarParseColor(cvart, scoreboard_specColor);
+	CG_ParseColorStr(token1, scoreboard_specColor);
 	isCustomScoreboardColorIsSet_spec = qtrue;
+
+	if (token2) {
+		CG_ParseColorStr(token2, scoreboard_specColorTitle);
+		isCustomScoreboardColorIsSet_spec_title = qtrue;
+	} else {
+		isCustomScoreboardColorIsSet_spec_title = qfalse;
+	}
 }
+
+
 
 void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
 {

@@ -29,11 +29,17 @@ vec4_t scoreboard_btColor = {0, 0, 1, 1};
 qboolean isCustomScoreboardColorIsSet_rt;
 qboolean isCustomScoreboardColorIsSet_bt;
 qboolean isCustomScoreboardColorIsSet_spec;
+qboolean isCustomScoreboardColorIsSet_rt_title;
+qboolean isCustomScoreboardColorIsSet_bt_title;
+qboolean isCustomScoreboardColorIsSet_spec_title;
 vec4_t scoreboard_rtColorBody = {1, 0, 0, 1};
 vec4_t scoreboard_btColorBody = {0, 0, 1, 1};
+vec4_t scoreboard_rtColorHeader = {1, 0, 0, 1};
+vec4_t scoreboard_btColorHeader = {0, 0, 1, 1};
 vec4_t scoreboard_rtColorTitle = {1, 0, 0, 1};
 vec4_t scoreboard_btColorTitle = {0, 0, 1, 1};
-vec4_t scoreboard_specColor = {0, 0, 1, 1};
+vec4_t scoreboard_specColorTitle = {0.66, 0.66, 0.66, 1};
+vec4_t scoreboard_specColor = {0.66, 0.66, 0.66, 1};
 
 #define SCOREBOARD_X        (0)
 
@@ -1854,10 +1860,20 @@ qboolean CG_OSPDrawScoretable(void)
 
 		if (drewSpect)
 		{
-			CG_OSPDrawString(SCREEN_WIDTH / 2.0f, y - 32, "Spectator", colorWhite, 8, 12, SCREEN_WIDTH, DS_HCENTER | DS_SHADOW, NULL);
-			bgColor[0] = bgColor[1] = bgColor[2] = 0.5f;
-			bgColor[3] = 0.2f;
-			CG_FillRect(8.0f, (float)y - 0x22, 624.0f, (float)(9 * drewSpect + 9 + 20), bgColor);
+			CG_OSPDrawString(SCREEN_WIDTH / 2.0f, y - 32, "Spectator", colorWhite,
+			                 8, 12, SCREEN_WIDTH, DS_HCENTER | DS_SHADOW, NULL);
+
+			if (!isCustomScoreboardColorIsSet_spec)
+			{
+				bgColor[0] = bgColor[1] = bgColor[2] = 0.5f;
+			}
+			else
+			{
+				Vector4Copy(scoreboard_specColor, bgColor);
+			}
+			bgColor[3] = 0.15f;
+
+			CG_FillRect(8.0f, (float)(y - 34), 624.0f, (float)(9 * drewSpect + 29), bgColor);
 		}
 	}
 
@@ -1866,27 +1882,27 @@ qboolean CG_OSPDrawScoretable(void)
 	return qtrue;
 }
 
-void SetScoreboardColors(vec4_t* rtColorTitle, vec4_t* rtColorBody, vec4_t* btColorTitle, vec4_t* btColorBody)
+void SetScoreboardColors(vec4_t* rtColorHeader, vec4_t* rtColorBody, vec4_t* btColorHeader, vec4_t* btColorBody)
 {
 	if (!isCustomScoreboardColorIsSet_rt)
 	{
-		Vector4Copy(scoreboard_rtColor, *rtColorTitle);
+		Vector4Copy(scoreboard_rtColor, *rtColorHeader);
 		Vector4Copy(scoreboard_rtColor, *rtColorBody);
 	}
 	else
 	{
-		Vector4Copy(scoreboard_rtColorTitle, *rtColorTitle);
+		Vector4Copy(scoreboard_rtColorHeader, *rtColorHeader);
 		Vector4Copy(scoreboard_rtColorBody, *rtColorBody);
 	}
 
 	if (!isCustomScoreboardColorIsSet_bt)
 	{
-		Vector4Copy(scoreboard_btColor, *btColorTitle);
+		Vector4Copy(scoreboard_btColor, *btColorHeader);
 		Vector4Copy(scoreboard_btColor, *btColorBody);
 	}
 	else
 	{
-		Vector4Copy(scoreboard_btColorTitle, *btColorTitle);
+		Vector4Copy(scoreboard_btColorHeader, *btColorHeader);
 		Vector4Copy(scoreboard_btColorBody, *btColorBody);
 	}
 }
@@ -1922,8 +1938,7 @@ static void CG_OSPDrawTeamSummary(
 	int i, count = 0;
 	vec4_t headerColor;
 	vec4_t curColor;
-	int proportional = (cg_scoreboardBE.integer & 2) ? 0 :
-	                   (cg_scoreboardBE.integer & 1) ? DS_PROPORTIONAL : 0;
+	int proportional = (cg_scoreboardBE.integer & 1) ? DS_PROPORTIONAL : 0;
 
 
 	if (cg_scoreboardBE.integer & 4)
@@ -1992,10 +2007,15 @@ static void CG_OSPDrawTeamSummary(
 		}
 		else
 		{
-			if (i == 0)
+			if (cg_scoreboardBE.integer & 8)
 				Vector4Copy(titleColor, curColor);
 			else
-				Vector4Copy(colorWhite, curColor);
+			{
+				if (i == 0)
+					Vector4Copy(titleColor, curColor);
+				else
+					Vector4Copy(colorWhite, curColor);
+			}
 		}
 
 		CG_OSPDrawStringNew(baseX + posX[i], row1Y, labels[i], curColor, colorBlack,
@@ -2019,15 +2039,37 @@ void CG_OSPDrawScoreHeader(float baseX, float y, vec4_t colorBody, vec4_t colorB
 	const char* label4 = "Min";
 	const char* label5 = "Name";
 
-	CG_OSPDrawStringNew(baseX + pos1X, y, label1, (cg_scoreboardBE.integer & 4) ? colorWhite : colorBody, colorBlack, mWidth, mHeight, screenWidth,
+	vec4_t headerColor1, headerColor2, headerColor3, headerColor4, headerColor5;
+
+	if (cg_scoreboardBE.integer & 8) {
+		Vector4Copy(colorBody, headerColor1);
+		Vector4Copy(colorBody, headerColor2);
+		Vector4Copy(colorBody, headerColor3);
+		Vector4Copy(colorBody, headerColor4);
+		Vector4Copy(colorBody, headerColor5);
+	} else if (cg_scoreboardBE.integer & 4) {
+		Vector4Copy(colorWhite, headerColor1);
+		Vector4Copy(colorWhite, headerColor2);
+		Vector4Copy(colorWhite, headerColor3);
+		Vector4Copy(colorWhite, headerColor4);
+		Vector4Copy(colorWhite, headerColor5);
+	} else {
+		Vector4Copy(colorBody, headerColor1);
+		Vector4Copy(colorWhite, headerColor2);
+		Vector4Copy(colorWhite, headerColor3);
+		Vector4Copy(colorWhite, headerColor4);
+		Vector4Copy(colorWhite, headerColor5);
+	}
+
+	CG_OSPDrawStringNew(baseX + pos1X, y, label1, headerColor1, colorBlack, mWidth, mHeight, screenWidth,
 	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
-	CG_OSPDrawStringNew(baseX + pos2X, y, label2, colorWhite, colorBlack, mWidth, mHeight, screenWidth,
+	CG_OSPDrawStringNew(baseX + pos2X, y, label2, headerColor2, colorBlack, mWidth, mHeight, screenWidth,
 	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
-	CG_OSPDrawStringNew(baseX + pos3X, y, label3, colorWhite, colorBlack, mWidth, mHeight, screenWidth,
+	CG_OSPDrawStringNew(baseX + pos3X, y, label3, headerColor3, colorBlack, mWidth, mHeight, screenWidth,
 	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
-	CG_OSPDrawStringNew(baseX + pos4X, y, label4, colorWhite, colorBlack, mWidth, mHeight, screenWidth,
+	CG_OSPDrawStringNew(baseX + pos4X, y, label4, headerColor4, colorBlack, mWidth, mHeight, screenWidth,
 	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
-	CG_OSPDrawStringNew(baseX + pos5X, y, label5, colorWhite, colorBlack, mWidth, mHeight, screenWidth,
+	CG_OSPDrawStringNew(baseX + pos5X, y, label5, headerColor5, colorBlack, mWidth, mHeight, screenWidth,
 	                    DS_HLEFT | proportional | DS_SHADOW, NULL, NULL, NULL);
 }
 
@@ -2036,8 +2078,8 @@ qboolean CG_BEDrawTeamScoretable(void)
 {
 	vec4_t* color;
 	vec4_t colorRect;
-	vec4_t rtColorTitle, rtColorBody;
-	vec4_t btColorTitle, btColorBody;
+	vec4_t rtColorHeader, rtColorBody;
+	vec4_t btColorHeader, btColorBody;
 	int drewRed;
 	int drewBlue;
 	int drewSpect;
@@ -2108,16 +2150,16 @@ qboolean CG_BEDrawTeamScoretable(void)
 		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f, y, va("Fragged by %s", cg.killerName), *color, colorBlack, mWidth, bHeight, SCREEN_WIDTH, DS_HCENTER | proportional | DS_SHADOW, NULL, NULL, NULL);
 	}
 
-	SetScoreboardColors(&rtColorTitle, &rtColorBody, &btColorTitle, &btColorBody);
+	SetScoreboardColors(&rtColorHeader, &rtColorBody, &btColorHeader, &btColorBody);
 
 	// Header background
 	y = 64;
 
-	CG_OSPAdjustTeamColor(rtColorTitle, colorRect);
+	CG_OSPAdjustTeamColor(rtColorHeader, colorRect);
 	colorRect[3] *= 1.5;
 	CG_FillRect(8.0f, (float)y, 304.0f, 48.0f, colorRect);
 
-	CG_OSPAdjustTeamColor(btColorTitle, colorRect);
+	CG_OSPAdjustTeamColor(btColorHeader, colorRect);
 	colorRect[3] *= 1.5;
 	CG_FillRect(328.0f, (float)y, 304.0f, 48.0f, colorRect);
 
@@ -2137,8 +2179,8 @@ qboolean CG_BEDrawTeamScoretable(void)
 
 	y = 116;
 	// Header text
-	CG_OSPDrawScoreHeader(leftX, y, rtColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional);
-	CG_OSPDrawScoreHeader(rightX, y, btColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional);
+	CG_OSPDrawScoreHeader(leftX, y, isCustomScoreboardColorIsSet_rt_title ? scoreboard_rtColorTitle : rtColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional);
+	CG_OSPDrawScoreHeader(rightX, y, isCustomScoreboardColorIsSet_bt_title ? scoreboard_btColorTitle : btColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional);
 
 	y = 140;
 	// Team score lines
@@ -2150,7 +2192,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		float baseX = (cgs.gametype >= GT_CTF) ? (leftX + 76) :
 		              (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) ? (leftX + 64) :
 		              (CG_OSPIsGameTypeFreeze()) ? (leftX + 40) : leftX;
-		CG_OSPDrawTeamSummary(baseX, drewRed, sumScoresRed, sumThawsRed, sumPingRed, rtColorTitle);
+		CG_OSPDrawTeamSummary(baseX, drewRed, sumScoresRed, sumThawsRed, sumPingRed, isCustomScoreboardColorIsSet_rt_title ? scoreboard_rtColorTitle : rtColorHeader);
 	}
 
 	if (drewBlue)
@@ -2158,7 +2200,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		float baseX = (cgs.gametype >= GT_CTF) ? (rightX + 76) :
 		              (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) ? (rightX + 64) :
 		              (CG_OSPIsGameTypeFreeze()) ? (rightX + 40) : rightX;
-		CG_OSPDrawTeamSummary(baseX, drewBlue, sumScoresBlue, sumThawsBlue, sumPingBlue, btColorTitle);
+		CG_OSPDrawTeamSummary(baseX, drewBlue, sumScoresBlue, sumThawsBlue, sumPingBlue, isCustomScoreboardColorIsSet_bt_title ? scoreboard_btColorTitle : btColorHeader);
 	}
 
 	{
@@ -2178,7 +2220,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		if (drewRed)
 		{
 			label1 = "Red";
-			CG_OSPDrawStringNew(leftX + 20, y - 14, label1, rtColorTitle, colorBlack,
+			CG_OSPDrawStringNew(leftX + 20, y - 14, label1, rtColorHeader, colorBlack,
 			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(leftX + 60, y - 14, label2, colorWhite, colorBlack,
 			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
@@ -2189,7 +2231,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		if (drewBlue)
 		{
 			label1 = "Blue";
-			CG_OSPDrawStringNew(rightX + 20, y - 14, label1, btColorTitle, colorBlack,
+			CG_OSPDrawStringNew(rightX + 20, y - 14, label1, btColorHeader, colorBlack,
 			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(rightX + 60, y - 14, label2, colorWhite, colorBlack,
 			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
@@ -2215,7 +2257,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 
 		if (drewSpect)
 		{
-			CG_OSPDrawString(SCREEN_WIDTH / 2.0f, y - 32, "Spectator", colorWhite,
+			CG_OSPDrawString(SCREEN_WIDTH / 2.0f, y - 32, "Spectator", isCustomScoreboardColorIsSet_spec_title ? scoreboard_specColorTitle : colorWhite,
 			                 8, 12, SCREEN_WIDTH, DS_HCENTER | DS_SHADOW | proportional, NULL);
 
 			if (!isCustomScoreboardColorIsSet_spec)
