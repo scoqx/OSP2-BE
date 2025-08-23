@@ -311,7 +311,6 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
 
 	ex->refEntity.hModel = hModel;
 	ex->refEntity.customShader = shader;
-	ex->refEntity.reType = RT_SPRITE;
 
 	// set origin
 	VectorCopy(newOrigin, ex->refEntity.origin);
