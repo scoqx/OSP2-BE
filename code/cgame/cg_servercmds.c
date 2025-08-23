@@ -1220,175 +1220,90 @@ void CG_BEParseStatsInfo(void)
 
 	cgs.be.newStats.customStatsCalled = qfalse;
 
-	// Print weapon stats with color
-	CG_Printf("CLIENT: Weapon stats:\n");
-	for (weaponIndex = 0; weaponIndex < WP_NUM_WEAPONS; weaponIndex++) {
-		if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << weaponIndex)) {
-			CG_Printf("%s: ", weaponNames[weaponIndex]);
-			// Hits
-			if (ws->stats[weaponIndex].hits == 0)
-				CG_Printf("^1hits: 0^7 ");
-			else
-				CG_Printf("^2hits: %d^7 ", ws->stats[weaponIndex].hits);
-			// Shots
-			if (ws->stats[weaponIndex].shots == 0)
-				CG_Printf("^1shots: 0^7 ");
-			else
-				CG_Printf("^2shots: %d^7 ", ws->stats[weaponIndex].shots);
-			// Kills
-			if (ws->stats[weaponIndex].kills == 0)
-				CG_Printf("^1kills: 0^7 ");
-			else
-				CG_Printf("^2kills: %d^7 ", ws->stats[weaponIndex].kills);
-			// Deaths
-			if (ws->stats[weaponIndex].deaths == 0)
-				CG_Printf("^1deaths: 0^7 ");
-			else
-				CG_Printf("^2deaths: %d^7 ", ws->stats[weaponIndex].deaths);
-			// PickUps
-			if (ws->stats[weaponIndex].pickUps == 0)
-				CG_Printf("^1pickUps: 0^7 ");
-			else
-				CG_Printf("^2pickUps: %d^7 ", ws->stats[weaponIndex].pickUps);
-			// Drops
-			if (ws->stats[weaponIndex].drops == 0)
-				CG_Printf("^1drops: 0^7 ");
-			else
-				CG_Printf("^2drops: %d^7 ", ws->stats[weaponIndex].drops);
-			// Accuracy
-			if (ws->stats[weaponIndex].shots == 0)
-				CG_Printf("^1accuracy: 0.0%%^7 ");
-			else
-				CG_Printf("^2accuracy: %.1f%%^7 ", ws->stats[weaponIndex].accuracy);
-			CG_Printf("\n");
-		}
-	}
+	// // Print weapon stats with color
+	// CG_Printf("CLIENT: Weapon stats:\n");
+	// for (weaponIndex = 0; weaponIndex < WP_NUM_WEAPONS; weaponIndex++) {
+	// 	if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << weaponIndex)) {
+	// 		CG_Printf("%s: ", weaponNames[weaponIndex]);
+	// 		// Hits
+	// 		if (ws->stats[weaponIndex].hits == 0)
+	// 			CG_Printf("^1hits: 0^7 ");
+	// 		else
+	// 			CG_Printf("^2hits: %d^7 ", ws->stats[weaponIndex].hits);
+	// 		// Shots
+	// 		if (ws->stats[weaponIndex].shots == 0)
+	// 			CG_Printf("^1shots: 0^7 ");
+	// 		else
+	// 			CG_Printf("^2shots: %d^7 ", ws->stats[weaponIndex].shots);
+	// 		// Kills
+	// 		if (ws->stats[weaponIndex].kills == 0)
+	// 			CG_Printf("^1kills: 0^7 ");
+	// 		else
+	// 			CG_Printf("^2kills: %d^7 ", ws->stats[weaponIndex].kills);
+	// 		// Deaths
+	// 		if (ws->stats[weaponIndex].deaths == 0)
+	// 			CG_Printf("^1deaths: 0^7 ");
+	// 		else
+	// 			CG_Printf("^2deaths: %d^7 ", ws->stats[weaponIndex].deaths);
+	// 		// PickUps
+	// 		if (ws->stats[weaponIndex].pickUps == 0)
+	// 			CG_Printf("^1pickUps: 0^7 ");
+	// 		else
+	// 			CG_Printf("^2pickUps: %d^7 ", ws->stats[weaponIndex].pickUps);
+	// 		// Drops
+	// 		if (ws->stats[weaponIndex].drops == 0)
+	// 			CG_Printf("^1drops: 0^7 ");
+	// 		else
+	// 			CG_Printf("^2drops: %d^7 ", ws->stats[weaponIndex].drops);
+	// 		// Accuracy
+	// 		if (ws->stats[weaponIndex].shots == 0)
+	// 			CG_Printf("^1accuracy: 0.0%%^7 ");
+	// 		else
+	// 			CG_Printf("^2accuracy: %.1f%%^7 ", ws->stats[weaponIndex].accuracy);
+	// 		CG_Printf("\n");
+	// 	}
+	// }
 
-	// Print general stats with color
-	CG_Printf("CLIENT: General stats:\n");
-	#define PRINT_STAT_COLOR(name, value) \
-		if ((value) == 0) CG_Printf("^1%s: 0^7\n", name); \
-		else CG_Printf("^2%s: %d^7\n", name, value);
+	// // Print general stats with color
+	// CG_Printf("CLIENT: General stats:\n");
+	// #define PRINT_STAT_COLOR(name, value) \
+	// 	if ((value) == 0) CG_Printf("^1%s: 0^7\n", name); \
+	// 	else CG_Printf("^2%s: %d^7\n", name, value);
 
-	PRINT_STAT_COLOR("megahealth", ws->megahealth);
-	PRINT_STAT_COLOR("ga", ws->ga);
-	PRINT_STAT_COLOR("ya", ws->ya);
-	PRINT_STAT_COLOR("ra", ws->ra);
-	PRINT_STAT_COLOR("armor", ws->armor);
-	PRINT_STAT_COLOR("health", ws->health);
-	PRINT_STAT_COLOR("score", ws->score);
-	PRINT_STAT_COLOR("kills", ws->kills);
-	PRINT_STAT_COLOR("deaths", ws->deaths);
-	PRINT_STAT_COLOR("suicides", ws->suicides);
-	PRINT_STAT_COLOR("teamKills", ws->teamKills);
-	PRINT_STAT_COLOR("teamDamage", ws->teamDamage);
-	PRINT_STAT_COLOR("wins", ws->wins);
-	PRINT_STAT_COLOR("losses", ws->losses);
-	PRINT_STAT_COLOR("caps", ws->caps);
-	PRINT_STAT_COLOR("assists", ws->assists);
-	PRINT_STAT_COLOR("defences", ws->defences);
-	PRINT_STAT_COLOR("returns", ws->returns);
-	PRINT_STAT_COLOR("flagTime", ws->flagTime);
+	// PRINT_STAT_COLOR("megahealth", ws->megahealth);
+	// PRINT_STAT_COLOR("ga", ws->ga);
+	// PRINT_STAT_COLOR("ya", ws->ya);
+	// PRINT_STAT_COLOR("ra", ws->ra);
+	// PRINT_STAT_COLOR("armor", ws->armor);
+	// PRINT_STAT_COLOR("health", ws->health);
+	// PRINT_STAT_COLOR("score", ws->score);
+	// PRINT_STAT_COLOR("kills", ws->kills);
+	// PRINT_STAT_COLOR("deaths", ws->deaths);
+	// PRINT_STAT_COLOR("suicides", ws->suicides);
+	// PRINT_STAT_COLOR("teamKills", ws->teamKills);
+	// PRINT_STAT_COLOR("teamDamage", ws->teamDamage);
+	// PRINT_STAT_COLOR("wins", ws->wins);
+	// PRINT_STAT_COLOR("losses", ws->losses);
+	// PRINT_STAT_COLOR("caps", ws->caps);
+	// PRINT_STAT_COLOR("assists", ws->assists);
+	// PRINT_STAT_COLOR("defences", ws->defences);
+	// PRINT_STAT_COLOR("returns", ws->returns);
+	// PRINT_STAT_COLOR("flagTime", ws->flagTime);
 
-	// Print float stats with color
-	if (ws->kdratio == 0.0f)
-		CG_Printf("^1kdratio: 0.0^7\n");
-	else
-		CG_Printf("^2kdratio: %.2f^7\n", ws->kdratio);
-	if (ws->efficiency == 0.0f)
-		CG_Printf("^1efficiency: 0.0^7\n");
-	else
-		CG_Printf("^2efficiency: %.2f^7\n", ws->efficiency);
-	if (ws->damageRatio == 0.0f)
-		CG_Printf("^1damageRatio: 0.0^7\n");
-	else
-		CG_Printf("^2damageRatio: %.2f^7\n", ws->damageRatio);
-	#undef PRINT_STAT_COLOR
-
-	// Print weapon stats with color
-	CG_Printf("CLIENT: Weapon stats:\n");
-	for (weaponIndex = 0; weaponIndex < WP_NUM_WEAPONS; weaponIndex++) {
-		if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << weaponIndex)) {
-			CG_Printf("%s: ", weaponNames[weaponIndex]);
-			// Hits
-			if (ws->stats[weaponIndex].hits == 0)
-				CG_Printf("^1hits: 0^7 ");
-			else
-				CG_Printf("^2hits: %d^7 ", ws->stats[weaponIndex].hits);
-			// Shots
-			if (ws->stats[weaponIndex].shots == 0)
-				CG_Printf("^1shots: 0^7 ");
-			else
-				CG_Printf("^2shots: %d^7 ", ws->stats[weaponIndex].shots);
-			// Kills
-			if (ws->stats[weaponIndex].kills == 0)
-				CG_Printf("^1kills: 0^7 ");
-			else
-				CG_Printf("^2kills: %d^7 ", ws->stats[weaponIndex].kills);
-			// Deaths
-			if (ws->stats[weaponIndex].deaths == 0)
-				CG_Printf("^1deaths: 0^7 ");
-			else
-				CG_Printf("^2deaths: %d^7 ", ws->stats[weaponIndex].deaths);
-			// PickUps
-			if (ws->stats[weaponIndex].pickUps == 0)
-				CG_Printf("^1pickUps: 0^7 ");
-			else
-				CG_Printf("^2pickUps: %d^7 ", ws->stats[weaponIndex].pickUps);
-			// Drops
-			if (ws->stats[weaponIndex].drops == 0)
-				CG_Printf("^1drops: 0^7 ");
-			else
-				CG_Printf("^2drops: %d^7 ", ws->stats[weaponIndex].drops);
-			// Accuracy
-			if (ws->stats[weaponIndex].shots == 0)
-				CG_Printf("^1accuracy: 0.0%%^7 ");
-			else
-				CG_Printf("^2accuracy: %.1f%%^7 ", ws->stats[weaponIndex].accuracy);
-			CG_Printf("\n");
-		}
-	}
-
-	// Print general stats with color
-	CG_Printf("CLIENT: General stats:\n");
-	#define PRINT_STAT_COLOR(name, value) \
-		if ((value) == 0) CG_Printf("^1%s: 0^7\n", name); \
-		else CG_Printf("^2%s: %d^7\n", name, value);
-
-	PRINT_STAT_COLOR("megahealth", ws->megahealth);
-	PRINT_STAT_COLOR("ga", ws->ga);
-	PRINT_STAT_COLOR("ya", ws->ya);
-	PRINT_STAT_COLOR("ra", ws->ra);
-	PRINT_STAT_COLOR("armor", ws->armor);
-	PRINT_STAT_COLOR("health", ws->health);
-	PRINT_STAT_COLOR("score", ws->score);
-	PRINT_STAT_COLOR("kills", ws->kills);
-	PRINT_STAT_COLOR("deaths", ws->deaths);
-	PRINT_STAT_COLOR("suicides", ws->suicides);
-	PRINT_STAT_COLOR("teamKills", ws->teamKills);
-	PRINT_STAT_COLOR("teamDamage", ws->teamDamage);
-	PRINT_STAT_COLOR("wins", ws->wins);
-	PRINT_STAT_COLOR("losses", ws->losses);
-	PRINT_STAT_COLOR("caps", ws->caps);
-	PRINT_STAT_COLOR("assists", ws->assists);
-	PRINT_STAT_COLOR("defences", ws->defences);
-	PRINT_STAT_COLOR("returns", ws->returns);
-	PRINT_STAT_COLOR("flagTime", ws->flagTime);
-
-	// Print float stats with color
-	if (ws->kdratio == 0.0f)
-		CG_Printf("^1kdratio: 0.0^7\n");
-	else
-		CG_Printf("^2kdratio: %.2f^7\n", ws->kdratio);
-	if (ws->efficiency == 0.0f)
-		CG_Printf("^1efficiency: 0.0^7\n");
-	else
-		CG_Printf("^2efficiency: %.2f^7\n", ws->efficiency);
-	if (ws->damageRatio == 0.0f)
-		CG_Printf("^1damageRatio: 0.0^7\n");
-	else
-		CG_Printf("^2damageRatio: %.2f^7\n", ws->damageRatio);
-	#undef PRINT_STAT_COLOR
+	// // Print float stats with color
+	// if (ws->kdratio == 0.0f)
+	// 	CG_Printf("^1kdratio: 0.0^7\n");
+	// else
+	// 	CG_Printf("^2kdratio: %.2f^7\n", ws->kdratio);
+	// if (ws->efficiency == 0.0f)
+	// 	CG_Printf("^1efficiency: 0.0^7\n");
+	// else
+	// 	CG_Printf("^2efficiency: %.2f^7\n", ws->efficiency);
+	// if (ws->damageRatio == 0.0f)
+	// 	CG_Printf("^1damageRatio: 0.0^7\n");
+	// else
+	// 	CG_Printf("^2damageRatio: %.2f^7\n", ws->damageRatio);
+	// #undef PRINT_STAT_COLOR
 }
 
 /*
