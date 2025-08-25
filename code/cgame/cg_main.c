@@ -388,7 +388,6 @@ vmCvar_t        cg_teamOutlineSize;
 vmCvar_t        cg_underwaterFovWarp;
 vmCvar_t        cg_altBlood;
 vmCvar_t        cg_altBloodColor;
-vmCvar_t        cg_noSlidingWindow;
 vmCvar_t        cg_shotGunTracer;
 vmCvar_t        cg_railRingsRadius;
 vmCvar_t        cg_railRingsRotation;
@@ -461,6 +460,7 @@ vmCvar_t        cg_bestats_spacingAdjust;
 vmCvar_t        cg_bestats_widthCutoff;
 vmCvar_t        cg_teamIndicatorFade;
 vmCvar_t        cg_teamIndicatorFadeRadius;
+vmCvar_t		cg_be;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -557,7 +557,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_oldRail, "cg_oldRail", "1", CVAR_ARCHIVE },
 	{ &cg_oldRocket, "cg_oldRocket", "1", CVAR_ARCHIVE },
 	{ &cg_oldPlasma, "cg_oldPlasma", "1", CVAR_ARCHIVE },
-	{ &cg_altGrenades, "cg_altGrenades", "0", CVAR_ARCHIVE},
+	{ &cg_altGrenades, "cg_altGrenades", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged},
 	{ &cg_altLightning, "cg_altLightning", "0", CVAR_ARCHIVE},
 	{ &cg_ammoCheck, "cg_ammoCheck", "0", CVAR_ARCHIVE },
 	{ &cg_autoAction, "cg_autoAction", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_autoAction},
@@ -746,18 +746,17 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawHitBox },
 	{ &cg_hitBoxColor, "cg_hitBoxColor", "004444", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
 	{ &cg_drawGunForceAspect, "cg_drawGunForceAspect", "0", CVAR_ARCHIVE },
-	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE  },
+	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE },
 	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "Magenta", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
 	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE },
 	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE },
 	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
 	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
-	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE },
+	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE },
 	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE },
-	{ &cg_noSlidingWindow, "cg_noSlidingWindow", "0", CVAR_ARCHIVE },
 	{ &cg_shotGunTracer, "cg_shotGunTracer", "1", CVAR_ARCHIVE },
 	{ &cg_railRingsRadius, "cg_railRingsRadius", "4.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsRadius },
 	{ &cg_railRingsRotation, "cg_railRingsRotation", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_railRingsRotation },
@@ -770,7 +769,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
 	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE },
 	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE },
-	{ &cg_teamIndicator, "cg_teamIndicator", "14", CVAR_ARCHIVE },
+	{ &cg_teamIndicator, "cg_teamIndicator", "14", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teamIndicatorAdjust, "cg_teamIndicatorAdjust", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorAdjust },
 	{ &cg_teamIndicatorColor, "cg_teamIndicatorColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorColor },
 	{ &cg_teamIndicatorOpaque, "cg_teamIndicatorOpaque", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorOpaque },
@@ -801,7 +800,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_friendHudMarkerSize, "cg_friendHudMarkerSize", "1.75", CVAR_ARCHIVE },
 	{ &cg_friendHudMarkerMaxScale, "cg_friendHudMarkerMaxScale", "0.5", CVAR_ARCHIVE },
 	{ &cg_friendHudMarkerMinScale, "cg_friendHudMarkerMinScale", "0.0", CVAR_ARCHIVE },
-	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE | CVAR_UPDATED, },
+	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE | CVAR_UPDATED, CG_LocalEventBeFeaturesChanged },
 	{ &cg_drawHudMarkers, "cg_drawHudMarkers", "1", CVAR_ARCHIVE },
 	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE },
 	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE },
@@ -818,9 +817,9 @@ static cvarTable_t cvarTable[] =
 	{ &cg_mySound, "cg_mySound", "", CVAR_ARCHIVE | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
 	{ &cg_teamSound, "cg_teamSound", "", CVAR_ARCHIVE | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
 	{ &cg_enemySound, "cg_enemySound", "", CVAR_ARCHIVE | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
-	{ &cg_scoreboardRtColors, "cg_scoreboardRtColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardRtColors },
-	{ &cg_scoreboardBtColors, "cg_scoreboardBtColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardBtColors },
-	{ &cg_scoreboardSpecColor, "cg_scoreboardSpecColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardSpecColor },
+	{ &cg_scoreboardRtColors, "cg_scoreboardRtColors", "1 1 1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardRtColors },
+	{ &cg_scoreboardBtColors, "cg_scoreboardBtColors", "Blue Blue Blue", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardBtColors },
+	{ &cg_scoreboardSpecColor, "cg_scoreboardSpecColor", "Black White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardSpecColor },
 	{ &cg_scoreboardDrawPowerUps, "cg_scoreboardDrawPowerUps", "1", CVAR_ARCHIVE },
 	{ &cg_bestats_style, "cg_bestats_style", "1", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_bestats_textSize, "cg_bestats_textSize", "6 8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_textSize },
@@ -832,6 +831,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "0.75", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "128", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_be, "cg_be", "", CVAR_USERINFO | CVAR_ROM },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -2028,6 +2028,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	//init variables
 	CG_InitCvars();
 
+	// set cg_be
+	CG_UpdateBeFeatures();
+
 	CG_InitConsoleCommands();
 
 	if (cg_clientLog.integer)
@@ -2208,10 +2211,11 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_LoadingString("sounds");
 	CG_RegisterSounds();
 
-	for (i = 1; i < WP_NUM_WEAPONS; i++)
-	{
-		CG_RegisterWeapon(i);
-	}
+	// cause smoke bug
+	// for (i = 1; i < WP_NUM_WEAPONS; i++)
+	// {
+	// 	CG_RegisterWeapon(i);
+	// }
 
 	CG_LoadingString("graphics");
 	CG_RegisterGraphics();

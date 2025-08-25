@@ -26,8 +26,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "cg_superhud.h"
 
-int drawTeamOverlayModificationCount = -1;
-
 int sortedTeamPlayers[TEAM_MAXOVERLAY];
 int numSortedTeamPlayers;
 
@@ -37,10 +35,7 @@ char teamChat2[256];
 
 int frameTime = 0;
 
-int wstatsWndId;
-qboolean wstatsEnabled;
 int statsInfo[24];
-// OSP_SlidingPrintContext_t ospPrintContext[16]; todel
 
 const char* monthName[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 const char* dayOfWeekName[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
@@ -2284,7 +2279,7 @@ void CG_DrawWarmup(void)
 Damage frame
 ===
 */
-void CG_DrawDamageFrame()
+static void CG_DrawDamageFrame()
 {
 	float x = 0.0f;
 	float y = 0.0f;
@@ -2296,7 +2291,7 @@ void CG_DrawDamageFrame()
 	int i;
 	vec4_t red;
 
-	if (cg_damageDrawFrame.integer == 0)
+	if ((cg_damageDrawFrame.integer & 3) == 0)
 		return;
 
 	if (!cg.damageValue || cg.time - cg.damageTime <= 0 || cg.time - cg.damageTime >= DAMAGE_TIME)
@@ -2306,15 +2301,28 @@ void CG_DrawDamageFrame()
 
 	Vector4Set(red, 1.0f, 0.0f, 0.0f, cg_damageFrameOpaque.value);
 
-	if (cg_damageDrawFrame.integer == 2)
-	{
-		Vector4Set(borderSizeOriginal, size, size, size, size);
-		CG_OSPDrawFrame(x, y, w, h, borderSizeOriginal, red, qtrue);
-	}
-	else
-	{
-		CG_OSPDrawBlurFrame(x, y, w, h, size, red);
-	}
+	if ((cg_damageDrawFrame.integer & 3) == 3) { // if both flags set use default
+        CG_OSPDrawBlurFrame(x, y, w, h, size, red);
+    } else if (cg_damageDrawFrame.integer & 2) {
+        Vector4Set(borderSizeOriginal, size, size, size, size);
+        CG_OSPDrawFrame(x, y, w, h, borderSizeOriginal, red, qtrue);
+    } else if (cg_damageDrawFrame.integer & 1) {
+        CG_OSPDrawBlurFrame(x, y, w, h, size, red);
+    }
+}
+
+static void CG_DrawHealthLowOverlay(void)
+{
+    vec4_t color;
+    float x = 0, y = 0, w = 640, h = 480;
+    float pulse;
+
+    Vector4Copy(colorRed, color);
+    pulse = sin((float)cg.time * 2.0f * M_PI / 2000.0f) * 0.4f + 0.6f;
+    color[3] = pulse;
+
+    CG_AdjustFrom640(&x, &y, &w, &h);
+    CG_OSPDrawBlurFrame(x, y, w, h, 128, color);
 }
 
 void CG_DrawWarmupShud(void)
@@ -2653,26 +2661,6 @@ void CG_DrawPlayerIndicator(int clientNum)
 		else if (cg_teamIndicator.integer & PI_NAME)
 			Q_strncpyz(tmpName, ci->name, sizeof(tmpName));
 
-        if (cg_teamIndicator.integer & PI_SPECTATOR && isSpec)
-		{
-			vec4_t teamColor;
-			float rectW = w * 2;
-			float rectH = h * 0.2f;
-			float rectX = headX - (rectW / 2.0f);
-			float rectY = headY + h;
-
-			if (ci->team == TEAM_RED)
-				Vector4Copy(cgs.be.redTeamColor, teamColor);
-			else if (ci->team == TEAM_BLUE)
-				Vector4Copy(cgs.be.blueTeamColor, teamColor);
-			else
-				Vector4Set(teamColor, 0.5f, 0.5f, 0.5f, nameColor[3]);
-
-			teamColor[3] = nameColor[3];
-
-			CG_FillRect(rectX, rectY, rectW, rectH, teamColor);
-		}
-
 		CG_OSPDrawStringNew(
 		    headX, headY,
 		    tmpName,
@@ -2686,6 +2674,38 @@ void CG_DrawPlayerIndicator(int clientNum)
 		    borderColor
 		);
 	}
+	if (cg_teamIndicator.integer)
+		{
+			vec4_t teamColor;
+			float rectW = w * 2;
+			float rectH = h * 0.1f;
+			float rectX = headX - (rectW / 2.0f);
+			float rectY = headY - rectH;
+
+			rectY += h;
+			
+			if (isSpec && cg_teamIndicator.integer & PI_SPECTATOR)
+			{
+				if (ci->team == TEAM_RED)
+					Vector4Copy(cgs.be.redTeamColor, teamColor);
+				else if (ci->team == TEAM_BLUE)
+					Vector4Copy(cgs.be.blueTeamColor, teamColor);
+				else
+					Vector4Set(teamColor, 0.5f, 0.5f, 0.5f, nameColor[3]);
+			}
+			
+			else
+			{
+				if (!isSpec && ci->team == cg.snap->ps.persistant[PERS_TEAM] &&
+					cgs.be.markedTeam[clientNum])
+				{
+					Vector4Copy(cgs.be.markedTeamColor, teamColor);
+				}
+			}
+			teamColor[3] = nameColor[3];
+			if (isSpec && cg_teamIndicator.integer & PI_SPECTATOR || cgs.be.markedTeam[clientNum])
+			CG_FillRect(rectX, rectY, rectW, rectH, teamColor);
+		}
 
 	if ((cg_teamIndicator.integer & PI_STATS) && cgs.gametype != GT_CA)
 	{
@@ -2932,6 +2952,9 @@ void CG_DrawWeaponStatsWrapper(void)
 CG_Draw2D
 =================
 */
+
+static int colorChangeStartTime;
+
 static void CG_Draw2D(void)
 {
 	// if we are taking a levelshot for the menu, don't draw anything
@@ -2949,6 +2972,11 @@ static void CG_Draw2D(void)
 	{
 		CG_DrawDamageFrame();
 	}
+
+	 if (cg_damageDrawFrame.integer & 4 && cgs.be.isHealthLow)
+    {
+        CG_DrawHealthLowOverlay();
+    }
 
 	if (strlen(cgs.osp.testFont))
 	{
@@ -3104,190 +3132,6 @@ void CG_DrawActive(stereoFrame_t stereoView)
 	// draw status bar and other floating elements
 	CG_Draw2D();
 }
-
-
-// todel
-// int CG_OSPDrawLeftSlidingWindow(float timeAppearance, float timeShow, float timeHide, float time3Sec, int numberOfLines, int sizeOfLine, int w, int h, char* text, int windowPosX, float* borderColor, float* bodyColor)
-// {
-//  OSP_SlidingPrintContext_t* target;
-//  int minTime;
-//  int minTimeIndex;
-//  int i; //14
-//  char* str; //1c
-//  char normalized_str[128]; //20
-//  int str_size; //c4
-//  minTimeIndex = -1;
-//  minTime = 9999999;
-//  i = 0;
-//  if (cg_noSlidingWindow.integer == 2)
-//  {
-//      return -1;
-//  }
-//  /* find free window */
-//  do
-//  {
-//      if (!ospPrintContext[i].hideBeforeCGTime)
-//      {
-//          minTimeIndex = i;
-//          break;
-//      }
-//      else if (ospPrintContext[i].hideBeforeCGTime < minTime)
-//      {
-//          minTimeIndex = i;
-//          minTime = ospPrintContext[i].hideBeforeCGTime;
-//      }
-//  }
-//  while (++i < 16);
-
-//  if (minTimeIndex == -1)
-//  {
-//      minTimeIndex = 0;
-//  }
-
-//  target = &ospPrintContext[minTimeIndex];
-//  target->windowPosX = windowPosX;
-//  target->charWidth = w;
-//  target->charHeight = h;
-//  target->timeAppearance = 1000.0 * timeAppearance;
-//  target->timeShow = 1000.0 * timeShow;
-//  target->timeHiding = 1000.0 * timeHide;
-
-//  if (borderColor)
-//  {
-//      VectorCopy(borderColor, target->borderColor);
-//  }
-//  else
-//  {
-//      VectorClear(target->borderColor);
-//  }
-//  target->borderColor[3] = 1.0;
-
-//  if (bodyColor)
-//  {
-//      VectorCopy(bodyColor, target->bodyColor);
-//  }
-//  else
-//  {
-//      target->bodyColor[0] = 0.7f;
-//      target->bodyColor[1] = 1.0f;
-//      target->bodyColor[2] = 0.6f;
-//  }
-//  target->bodyColor[3] = 0.45f;
-
-//  target->maxStringLen = 0;
-//  target->numberOfStrings = 0;
-
-//  /* copy text and update max string size */
-//  for (i = 0, str = text ; i < numberOfLines && target->numberOfStrings < 24; ++i, ++target->numberOfStrings, str += sizeOfLine)
-//  {
-//      if (!str) break;
-//      Q_strncpyz(&target->string[i][0], str, 128);
-//      CG_OSPNormalizeText(&target->string[i][0], strlen(&target->string[i][0]), normalized_str);
-//      str_size = strlen(normalized_str);
-//      if (str_size > target->maxStringLen)
-//      {
-//          target->maxStringLen = str_size;
-//      }
-//  }
-
-//  target->hideBeforeRealtime = trap_Milliseconds() + target->timeHiding + 1000 * time3Sec;
-//  target->hideBeforeCGTime = cg.time + target->timeHiding + 1000 * time3Sec;
-//  target->showFromCGTime = cg.time + 1000 * time3Sec;
-//  return minTimeIndex;
-// }
-
-
-// void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context)
-// {
-//  int time_u1;
-//  float calc_pos_x;
-//  float calc_pos_y;
-//  int i;
-//  time_u1 = context->hideBeforeRealtime - trap_Milliseconds();
-//  if (cg_noSlidingWindow.integer == 2)
-//  {
-//      return;
-//  }
-//  if (time_u1 < context->timeHiding - context->timeShow)
-//  {
-//      if (time_u1 < context->timeAppearance)
-//      {
-//          //after
-//          calc_pos_x = ((float)context->charWidth * context->maxStringLen + 3.0f) * ((float)context->timeAppearance - time_u1) / (float)context->timeAppearance;
-//      }
-//      else
-//      {
-//          //static
-//          calc_pos_x = 0;
-//      }
-//  }
-//  else
-//  {
-//      //before
-//      calc_pos_x = ((float)context->charWidth * context->maxStringLen + 3.0f) * ((float)time_u1 - context->timeHiding + context->timeShow) / (float)context->timeShow;
-//  }
-
-//  calc_pos_x = 6.0f - calc_pos_x;
-//  calc_pos_y = context->windowPosX - (float)context->numberOfStrings * (context->charHeight + 1);
-// // borders
-//  CG_OSPSetColor(context->borderColor);
-
-// //void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader );
-//  CG_DrawPicOld(
-//      calc_pos_x,
-//      calc_pos_y - 2.0f,
-//      (float)(context->charWidth * context->maxStringLen + 3),
-//      1.0f,
-//      cgs.media.teamStatusBar);
-
-//  /* bottom */
-//  CG_DrawPicOld(
-//      calc_pos_x,
-//      calc_pos_y + ((float)context->charHeight + 1.0f) * (float)context->numberOfStrings + 1.0f,
-//      (float)(context->charWidth * context->maxStringLen + 3),
-//      1.0f,
-//      cgs.media.teamStatusBar);
-
-//  /* left */
-//  CG_DrawPicOld(
-//      calc_pos_x,
-//      calc_pos_y - 1.0f,
-//      1.0f,
-//      (float)((context->charHeight + 1) * context->numberOfStrings + 2),
-//      cgs.media.teamStatusBar);
-
-//  CG_DrawPicOld(
-//      context->charWidth * context->maxStringLen + calc_pos_x + 2,
-//      calc_pos_y - 1,
-//      1.0f,
-//      (context->charHeight + 1) * context->numberOfStrings + 2,
-//      cgs.media.teamStatusBar);
-
-//  //fill window color
-//  CG_OSPSetColor(context->bodyColor);
-//  CG_OSPDrawPic(
-//      calc_pos_x + 1.0f,
-//      calc_pos_y - 1.0f,
-//      (float)context->charWidth * context->maxStringLen + 1.0f,
-//      (float)((context->charHeight + 1) * context->numberOfStrings + 2),
-//      cgs.media.teamStatusBar);
-//  CG_OSPSetColor(NULL);
-
-//  for (i = 0; i < context->numberOfStrings; ++i)
-//  {
-//      CG_FontSelect(0);
-//      CG_OSPDrawString(calc_pos_x + 2,
-//                       calc_pos_y + i * (context->charHeight + 1),
-//                       &context->string[i][0],
-//                       colorWhite,
-//                       context->charWidth,
-//                       context->charHeight,
-//                       SCREEN_WIDTH,
-//                       DS_HLEFT,
-//                       NULL);
-//  }
-// }
-
 
 void CG_OSPSetColor(vec4_t color)
 {

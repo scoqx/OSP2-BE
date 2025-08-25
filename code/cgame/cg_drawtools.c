@@ -3458,7 +3458,7 @@ void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor)
 		}
 		else if (inColor[i] == 0.0f)
 		{
-			outColor[i] = 0.3f;
+			outColor[i] = 0.2f;
 		}
 		else
 		{

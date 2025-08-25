@@ -1151,8 +1151,6 @@ typedef struct
 typedef struct cgs_be_s
 {
 	int disableFeatures;
-	qboolean marked[MAX_CLIENTS];
-	vec4_t markedColor;
 	qboolean markedTeam[MAX_CLIENTS];
 	vec4_t markedTeamColor;
 	vec4_t hitBoxColor;
@@ -1690,7 +1688,6 @@ extern vmCvar_t         cg_teamOutlineSize;
 extern vmCvar_t         cg_underwaterFovWarp;
 extern vmCvar_t         cg_altBlood;
 extern vmCvar_t         cg_altBloodColor;
-extern vmCvar_t         cg_noSlidingWindow;
 extern vmCvar_t         cg_shotGunTracer;
 extern vmCvar_t         cg_railRingsRadius;
 extern vmCvar_t         cg_railRingsRotation;
@@ -1760,6 +1757,7 @@ extern vmCvar_t         cg_bestats_spacingAdjust;
 extern vmCvar_t         cg_bestats_widthCutoff;
 extern vmCvar_t         cg_teamIndicatorFade;
 extern vmCvar_t         cg_teamIndicatorFadeRadius;
+extern vmCvar_t			cg_be;
 extern vmCvar_t         be_run;
 
 
@@ -1949,30 +1947,8 @@ void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4
 void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
 void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t color); // inner
 
-//
-// cg_draw.c
-//
-// todel
-// typedef struct
-// {
-//  int charHeight;
-//  int charWidth;
-//  int maxStringLen;
-//  int hideBeforeRealtime;
-//  int numberOfStrings;
-//  int hideBeforeCGTime;
-//  int timeAppearance;
-//  int timeShow;
-//  int timeHiding;
-//  int showFromCGTime;
-//  int windowPosX;
-//  char string[24][128];
-//  vec4_t borderColor;
-//  vec4_t bodyColor;
-// } OSP_SlidingPrintContext_t;
 extern  int sortedTeamPlayers[TEAM_MAXOVERLAY];
 extern  int numSortedTeamPlayers;
-extern  int drawTeamOverlayModificationCount;
 extern  char systemChat[256];
 extern  char teamChat1[256];
 extern  char teamChat2[256];
@@ -2029,7 +2005,6 @@ void CG_OSPDrawCenterString(void);
 void CG_OSPSetColor(vec4_t color);
 void CG_OSPDrawPic(float x, float y, float w, float h, qhandle_t hShader);
 void CG_OSPDraw3DModel(float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t pos, vec3_t angles, vec3_t angles2);
-void CG_DrawDamageFrame();
 void CG_DrawWeaponStatsWrapper(void);
 
 #define LAG_SAMPLES     1024
@@ -2217,12 +2192,11 @@ qboolean CG_BEDrawTeamScoretable(void);
 
 extern vec4_t scoreboard_rtColor;
 extern vec4_t scoreboard_btColor;
-extern qboolean isCustomScoreboardColorIsSet_rt;
-extern qboolean isCustomScoreboardColorIsSet_bt;
-extern qboolean isCustomScoreboardColorIsSet_spec;
-extern qboolean isCustomScoreboardColorIsSet_rt_title;
-extern qboolean isCustomScoreboardColorIsSet_bt_title;
-extern qboolean isCustomScoreboardColorIsSet_spec_title;
+
+extern int customScoreboardColorIsSet_red;
+extern int customScoreboardColorIsSet_blue;
+extern int customScoreboardColorIsSet_spec;
+
 extern vec4_t scoreboard_rtColorBody;
 extern vec4_t scoreboard_btColorBody;
 extern vec4_t scoreboard_rtColorHeader;
@@ -2280,6 +2254,7 @@ const char* CG_GetCTFLocation(int loc);
 //cg_be_util.c
 //
 qboolean CG_BE_Timer(int msec);
+void CG_UpdateBeFeatures(void);
 
 //
 //cg_be_stats
@@ -2509,7 +2484,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.92b-test" // BE
+#define OSP_VERSION "be-0.93" // BE
 
 
 
@@ -2520,8 +2495,6 @@ qboolean CG_DrawIntermission(void);
 extern int modeShotgunPromode;
 extern int modeShotgunNumberOfPellets;
 extern float modeShotgunKoeff;
-extern int wstatsWndId;
-extern qboolean wstatsEnabled;
 extern const char* weaponNames[10];
 extern int global_viewlistFirstOption;
 extern int statsInfo[24];
@@ -2776,6 +2749,7 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
+void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }
