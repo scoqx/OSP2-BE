@@ -2126,7 +2126,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 		return;
 	}
 
-	if (!(cg_friendsWallhack.integer & 1) && !CG_FriendVisible(cent))
+	if (!BE_ENABLED && !(cg_friendsWallhack.integer & 1) && !CG_FriendVisible(cent))
 	{
 		return;
 	}
@@ -2326,16 +2326,19 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	{
 		shadowMarkShader = cgs.media.shadowMarkShader;
 	}
-	else if (alt < MAX_ALT_SHADERS)
+	else if (BE_ENABLED && alt < MAX_ALT_SHADERS)
 	{
 		shadowMarkShader = cgs.media.shadowMarkShaderNew[alt - 1];
 	}
 	else
 	{
+		if (BE_ENABLED)
 		shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
+		else
+		shadowMarkShader = cgs.media.shadowMarkShader;
 	}
 
-	if (cg_altShadow.integer)
+	if (BE_ENABLED && cg_altShadow.integer)
 	{
 		color[0] = cgs.be.altShadowColor[0];
 		color[1] = cgs.be.altShadowColor[1];
@@ -2968,7 +2971,7 @@ void CG_Player(centity_t* cent)
 	// add a water splash if partially in and out of water
 	CG_PlayerSplash(cent);
 
-	if (cg_drawHudMarkers.integer)
+	if (BE_ENABLED && cg_drawHudMarkers.integer)
 		CG_FriendHudMarker(cent);
 
 	if (cg_shadows.integer == 3 && shadow)
@@ -3066,7 +3069,7 @@ void CG_Player(centity_t* cent)
 
 	CG_AddRefEntityWithPowerups(&legs, &cent->currentState, ci->team);
 
-	if (cg_drawOutline.integer)
+	if (BE_ENABLED && cg_drawOutline.integer)
 		CG_AddOutline(&legs, cent);
 
 	//
@@ -3123,7 +3126,7 @@ void CG_Player(centity_t* cent)
 
 	CG_AddRefEntityWithPowerups(&torso, &cent->currentState, ci->team);
 
-	if (cg_drawOutline.integer)
+	if (BE_ENABLED && cg_drawOutline.integer)
 		CG_AddOutline(&torso, cent);
 
 	//
@@ -3184,7 +3187,7 @@ void CG_Player(centity_t* cent)
 	}
 	CG_AddRefEntityWithPowerups(&head, &cent->currentState, ci->team);
 
-	if (cg_drawOutline.integer)
+	if (BE_ENABLED && cg_drawOutline.integer)
 		CG_AddOutline(&head, cent);
 
 	CG_AddPlayerWeapon(&torso, NULL, cent, ci->team);

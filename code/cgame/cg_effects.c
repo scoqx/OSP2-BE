@@ -350,7 +350,7 @@ void CG_Bleed(vec3_t origin, int entityNum)
 	ex->refEntity.rotation = rand() % 360;
 	ex->refEntity.radius = 24;
 
-	if (alt)
+	if (BE_ENABLED && alt)
 	{
 		if (alt < MAX_ALT_SHADERS)
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[alt - 1];

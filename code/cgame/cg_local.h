@@ -37,6 +37,8 @@ extern "C" {
 #define NYAN_VEC4(VALUE) CG_Printf( "%s:%d: %s = %f,%f,%f,%f\n", __FILE__, __LINE__, #VALUE, VALUE[0], VALUE[1], VALUE[2], VALUE[3])
 #define NYAN_MSG(VALUE)   CG_Printf( "%s:%d: %s\n", __FILE__, __LINE__, VALUE)
 
+#define BE_ENABLED (be_enabled.integer)
+
 // The entire cgame module is unloaded and reloaded on each level change,
 // so there is NO persistant data between levels on the client side.
 // If you absolutely need something stored, it can either be kept
@@ -1757,7 +1759,8 @@ extern vmCvar_t         cg_bestats_spacingAdjust;
 extern vmCvar_t         cg_bestats_widthCutoff;
 extern vmCvar_t         cg_teamIndicatorFade;
 extern vmCvar_t         cg_teamIndicatorFadeRadius;
-extern vmCvar_t			cg_be;
+extern vmCvar_t			be_features;
+extern vmCvar_t			be_enabled;
 extern vmCvar_t         be_run;
 
 
@@ -2484,7 +2487,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.93" // BE
+#define OSP_VERSION "be-0.93a" // BE
 
 
 

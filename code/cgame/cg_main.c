@@ -460,7 +460,8 @@ vmCvar_t        cg_bestats_spacingAdjust;
 vmCvar_t        cg_bestats_widthCutoff;
 vmCvar_t        cg_teamIndicatorFade;
 vmCvar_t        cg_teamIndicatorFadeRadius;
-vmCvar_t		cg_be;
+vmCvar_t		be_features;
+vmCvar_t		be_enabled;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -831,7 +832,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "0.75", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "128", CVAR_ARCHIVE | CVAR_NEW, },
-	{ &cg_be, "cg_be", "", CVAR_USERINFO | CVAR_ROM },
+	{ &be_features, "be_features", "", CVAR_USERINFO | CVAR_ROM },
+	{ &be_enabled, "be_enabled", "1", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -2028,7 +2030,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	//init variables
 	CG_InitCvars();
 
-	// set cg_be
+	// set be_features
 	CG_UpdateBeFeatures();
 
 	CG_InitConsoleCommands();

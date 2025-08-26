@@ -32,34 +32,43 @@ void CG_UpdateBeFeatures(void)
 	int beFlags = 0;
 	clientInfo_t *ci = &cgs.clientinfo[cg.clientNum];
 
-	if (cg_teamIndicator.integer)
+	if (!BE_ENABLED)
 	{
-		beFlags |= CG_BE_TEAM_INDICATOR;
+		beFlags = 0;
 		changed = qtrue;
 	}
-	if (cg_drawOutline.integer)
+	else
 	{
-		beFlags |= CG_BE_OUTLINE;
-		changed = qtrue;
-	}
-	if (cg_friendsWallhack.integer)
-	{
-		beFlags |= CG_BE_WH;
-		changed = qtrue;
-	}
-	if (cg_altBlood.integer)
-	{
-		beFlags |= CG_BE_ALT_BLOOD;
-		changed = qtrue;
+		if (cg_teamIndicator.integer)
+		{
+			beFlags |= CG_BE_TEAM_INDICATOR;
+			changed = qtrue;
+		}
+		if (cg_drawOutline.integer)
+		{
+			beFlags |= CG_BE_OUTLINE;
+			changed = qtrue;
+		}
+		if (cg_friendsWallhack.integer)
+		{
+			beFlags |= CG_BE_WH;
+			changed = qtrue;
+		}
+		if (cg_altBlood.integer)
+		{
+			beFlags |= CG_BE_ALT_BLOOD;
+			changed = qtrue;
+		}
+
+		if (cg_altGrenades.integer == 2)
+		{
+			beFlags |= CG_BE_ALT_GRENADES;
+			changed = qtrue;
+		}
 	}
 
-	if (cg_altGrenades.integer == 2)
-	{
-		beFlags |= CG_BE_ALT_GRENADES;
-		changed = qtrue;
-	}
 	if (changed)
 	{
-		trap_Cvar_Set("cg_be", va("%d", beFlags));
+		trap_Cvar_Set("be_features", va("%d", beFlags));
 	}
 }

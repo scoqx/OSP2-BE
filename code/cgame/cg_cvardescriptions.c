@@ -262,7 +262,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_lightningHitsoundRateFix", "Fixes lightning gun hitsound for non-divisible ^4sv_fps^7 settings. Set ^20^7 to disable." },
 	{ "cg_stackHitSounds", "Damage stacking for ^3cg_hitsounds^7. Set ^20^7 to disable." },
 	{ "cg_stackHitSoundsTimeout", "Clear damage count timeout for ^3cg_stackHitSounds^7 - \"milliseconds\"." },
-	{ "cg_drawCenterMessages", "Displays messages in the center of the screen (Welcome message, frag, etc.). Set ^0^7 to hide." },
+	{ "cg_drawCenterMessages", "Displays messages in the center of the screen (Welcome message, frag, etc.). Set ^0^7 to hide\n  ^21^7 - draw\n  ^22^7 - draw, with shadow" },
 	{ "cg_predictStepOffset", "Smoother step-up movement. Set ^20^7 to disable smoothness. Also fix climbing aim issue." },
 	{ "cg_enemyLightningColor", "Lightning gun beam color for enemies\n  ^20^7 - default beam\n \"^2color^7\" - digit or hex" },
 	{ "cg_uniqueColorTable", "Unique color table for ^3enemy unique color(s)^7\n  ^21^7 - default\n  ^22^7 - bright" },
@@ -359,6 +359,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_bestats_widthCutoff", "Width reduction (cutoff) of the battle statistics window." },
 	{ "cg_teamIndicatorFade", " Ally indicator transparency level when aiming at a teammate. Set ^20^7 to disable." },
 	{ "cg_teamIndicatorFadeRadius", "Radius at which the ally indicator starts fading." },
+	{ "be_enabled", "Enable BE features. Set ^30^7 to disable." },
 };
 
 

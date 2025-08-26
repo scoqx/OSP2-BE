@@ -2990,7 +2990,7 @@ static void CG_Draw2D(void)
 		return;
 	}
 
-	if (cg_teamIndicator.integer)
+	if (BE_ENABLED && cg_teamIndicator.integer)
 	{
 		CG_DrawPlayerIndicatorOnScreen();
 	}
@@ -3239,7 +3239,7 @@ void CG_OSPDrawCenterString(void)
 		int i;
 		int space;
 		char buf[48];
-
+		int flags = (cg_drawCenterMessages.integer & 2) ? DS_SHADOW : 0;
 		space = 0;
 		i = 0;
 		do
@@ -3267,16 +3267,18 @@ void CG_OSPDrawCenterString(void)
 			buf[i] = 0;
 			to_print += i + 1;
 		}
+
 		CG_FontSelect(font);
-		CG_OSPDrawString(SCREEN_WIDTH / 2.0f,
+		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f,
 		                 y,
 		                 buf,
 		                 fadeColor,
+						 colorBlack,
 		                 cg.centerPrintCharWidth,
 		                 1.5f * (float)cg.centerPrintCharWidth,
 		                 SCREEN_WIDTH,
-		                 DS_HCENTER | DS_PROPORTIONAL,
-		                 NULL);
+		                 DS_HCENTER | DS_PROPORTIONAL | flags,
+		                 NULL, NULL, NULL);
 
 		y += 1.5f * (float)cg.centerPrintCharWidth;
 	}
