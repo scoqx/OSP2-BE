@@ -448,13 +448,17 @@ void CG_OSPDrawNewCredits_f(void)
 void CG_OSPMoTD_f(void)
 {
 	int i;
-	if (cgs.osp.numberOfStringsMotd > 0) {
+	if (cgs.osp.numberOfStringsMotd > 0)
+	{
 		CG_Printf("\n^5Message of the Day:\n");
-		for (i = 0; i < cgs.osp.numberOfStringsMotd; ++i) {
+		for (i = 0; i < cgs.osp.numberOfStringsMotd; ++i)
+		{
 			CG_Printf("^7%s\n", cgs.osp.motd[i]);
 		}
 		CG_Printf("\n");
-	} else {
+	}
+	else
+	{
 		CG_Printf("\n^3No MOTD set.\n\n");
 	}
 }

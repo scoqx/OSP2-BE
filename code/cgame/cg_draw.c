@@ -2301,28 +2301,33 @@ static void CG_DrawDamageFrame()
 
 	Vector4Set(red, 1.0f, 0.0f, 0.0f, cg_damageFrameOpaque.value);
 
-	if ((cg_damageDrawFrame.integer & 3) == 3) { // if both flags set use default
-        CG_OSPDrawBlurFrame(x, y, w, h, size, red);
-    } else if (cg_damageDrawFrame.integer & 2) {
-        Vector4Set(borderSizeOriginal, size, size, size, size);
-        CG_OSPDrawFrame(x, y, w, h, borderSizeOriginal, red, qtrue);
-    } else if (cg_damageDrawFrame.integer & 1) {
-        CG_OSPDrawBlurFrame(x, y, w, h, size, red);
-    }
+	if ((cg_damageDrawFrame.integer & 3) == 3)   // if both flags set use default
+	{
+		CG_OSPDrawBlurFrame(x, y, w, h, size, red);
+	}
+	else if (cg_damageDrawFrame.integer & 2)
+	{
+		Vector4Set(borderSizeOriginal, size, size, size, size);
+		CG_OSPDrawFrame(x, y, w, h, borderSizeOriginal, red, qtrue);
+	}
+	else if (cg_damageDrawFrame.integer & 1)
+	{
+		CG_OSPDrawBlurFrame(x, y, w, h, size, red);
+	}
 }
 
 static void CG_DrawHealthLowOverlay(void)
 {
-    vec4_t color;
-    float x = 0, y = 0, w = 640, h = 480;
-    float pulse;
+	vec4_t color;
+	float x = 0, y = 0, w = 640, h = 480;
+	float pulse;
 
-    Vector4Copy(colorRed, color);
-    pulse = sin((float)cg.time * 2.0f * M_PI / 2000.0f) * 0.4f + 0.6f;
-    color[3] = pulse;
+	Vector4Copy(colorRed, color);
+	pulse = sin((float)cg.time * 2.0f * M_PI / 2000.0f) * 0.4f + 0.6f;
+	color[3] = pulse;
 
-    CG_AdjustFrom640(&x, &y, &w, &h);
-    CG_OSPDrawBlurFrame(x, y, w, h, 128, color);
+	CG_AdjustFrom640(&x, &y, &w, &h);
+	CG_OSPDrawBlurFrame(x, y, w, h, 128, color);
 }
 
 void CG_DrawWarmupShud(void)
@@ -2675,37 +2680,37 @@ void CG_DrawPlayerIndicator(int clientNum)
 		);
 	}
 	if (cg_teamIndicator.integer)
-		{
-			vec4_t teamColor;
-			float rectW = w * 2;
-			float rectH = h * 0.1f;
-			float rectX = headX - (rectW / 2.0f);
-			float rectY = headY - rectH;
+	{
+		vec4_t teamColor;
+		float rectW = w * 2;
+		float rectH = h * 0.1f;
+		float rectX = headX - (rectW / 2.0f);
+		float rectY = headY - rectH;
 
-			rectY += h;
-			
-			if (isSpec && cg_teamIndicator.integer & PI_SPECTATOR)
-			{
-				if (ci->team == TEAM_RED)
-					Vector4Copy(cgs.be.redTeamColor, teamColor);
-				else if (ci->team == TEAM_BLUE)
-					Vector4Copy(cgs.be.blueTeamColor, teamColor);
-				else
-					Vector4Set(teamColor, 0.5f, 0.5f, 0.5f, nameColor[3]);
-			}
-			
+		rectY += h;
+
+		if (isSpec && cg_teamIndicator.integer & PI_SPECTATOR)
+		{
+			if (ci->team == TEAM_RED)
+				Vector4Copy(cgs.be.redTeamColor, teamColor);
+			else if (ci->team == TEAM_BLUE)
+				Vector4Copy(cgs.be.blueTeamColor, teamColor);
 			else
-			{
-				if (!isSpec && ci->team == cg.snap->ps.persistant[PERS_TEAM] &&
-					cgs.be.markedTeam[clientNum])
-				{
-					Vector4Copy(cgs.be.markedTeamColor, teamColor);
-				}
-			}
-			teamColor[3] = nameColor[3];
-			if (isSpec && cg_teamIndicator.integer & PI_SPECTATOR || cgs.be.markedTeam[clientNum])
-			CG_FillRect(rectX, rectY, rectW, rectH, teamColor);
+				Vector4Set(teamColor, 0.5f, 0.5f, 0.5f, nameColor[3]);
 		}
+
+		else
+		{
+			if (!isSpec && ci->team == cg.snap->ps.persistant[PERS_TEAM] &&
+			        cgs.be.markedTeam[clientNum])
+			{
+				Vector4Copy(cgs.be.markedTeamColor, teamColor);
+			}
+		}
+		teamColor[3] = nameColor[3];
+		if (isSpec && cg_teamIndicator.integer & PI_SPECTATOR || cgs.be.markedTeam[clientNum])
+			CG_FillRect(rectX, rectY, rectW, rectH, teamColor);
+	}
 
 	if ((cg_teamIndicator.integer & PI_STATS) && cgs.gametype != GT_CA)
 	{
@@ -2973,10 +2978,10 @@ static void CG_Draw2D(void)
 		CG_DrawDamageFrame();
 	}
 
-	 if (cg_damageDrawFrame.integer & 4 && cgs.be.isHealthLow)
-    {
-        CG_DrawHealthLowOverlay();
-    }
+	if (cg_damageDrawFrame.integer & 4 && cgs.be.isHealthLow)
+	{
+		CG_DrawHealthLowOverlay();
+	}
 
 	if (strlen(cgs.osp.testFont))
 	{
@@ -3270,15 +3275,15 @@ void CG_OSPDrawCenterString(void)
 
 		CG_FontSelect(font);
 		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f,
-		                 y,
-		                 buf,
-		                 fadeColor,
-						 colorBlack,
-		                 cg.centerPrintCharWidth,
-		                 1.5f * (float)cg.centerPrintCharWidth,
-		                 SCREEN_WIDTH,
-		                 DS_HCENTER | DS_PROPORTIONAL | flags,
-		                 NULL, NULL, NULL);
+		                    y,
+		                    buf,
+		                    fadeColor,
+		                    colorBlack,
+		                    cg.centerPrintCharWidth,
+		                    1.5f * (float)cg.centerPrintCharWidth,
+		                    SCREEN_WIDTH,
+		                    DS_HCENTER | DS_PROPORTIONAL | flags,
+		                    NULL, NULL, NULL);
 
 		y += 1.5f * (float)cg.centerPrintCharWidth;
 	}

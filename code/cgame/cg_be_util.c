@@ -1,10 +1,10 @@
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
 
-#define CG_BE_TEAM_INDICATOR	(1 << 0) // 1
-#define CG_BE_OUTLINE			(1 << 1) // 2
-#define CG_BE_WH				(1 << 2) // 4
-#define CG_BE_ALT_BLOOD			(1 << 3) // 8
+#define CG_BE_TEAM_INDICATOR    (1 << 0) // 1
+#define CG_BE_OUTLINE           (1 << 1) // 2
+#define CG_BE_WH                (1 << 2) // 4
+#define CG_BE_ALT_BLOOD         (1 << 3) // 8
 #define CG_BE_ALT_GRENADES      (1 << 4) // 16
 
 qboolean CG_BE_Timer(int msec)
@@ -30,7 +30,7 @@ void CG_UpdateBeFeatures(void)
 {
 	qboolean changed = qfalse;
 	int beFlags = 0;
-	clientInfo_t *ci = &cgs.clientinfo[cg.clientNum];
+	clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
 
 	if (!BE_ENABLED)
 	{

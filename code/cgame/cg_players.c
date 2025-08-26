@@ -2078,23 +2078,23 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack)
 	if (ci->team == TEAM_SPECTATOR)
 		return qfalse;
 
-	 if (CG_IsLocalClientSpectator())
-    {
-        if (cg_teamIndicator.integer & PI_SPECTATOR)
-        {
-            ;
-        }
-        else
-        {
-            if (CG_IsEnemy(ci))
-                return qfalse;
-        }
-    }
-    else
-    {
-        if (CG_IsEnemy(ci))
-            return qfalse;
-    }
+	if (CG_IsLocalClientSpectator())
+	{
+		if (cg_teamIndicator.integer & PI_SPECTATOR)
+		{
+			;
+		}
+		else
+		{
+			if (CG_IsEnemy(ci))
+				return qfalse;
+		}
+	}
+	else
+	{
+		if (CG_IsEnemy(ci))
+			return qfalse;
+	}
 
 	if (!wallhack)
 	{
@@ -2333,9 +2333,9 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	else
 	{
 		if (BE_ENABLED)
-		shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
+			shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
 		else
-		shadowMarkShader = cgs.media.shadowMarkShader;
+			shadowMarkShader = cgs.media.shadowMarkShader;
 	}
 
 	if (BE_ENABLED && cg_altShadow.integer)

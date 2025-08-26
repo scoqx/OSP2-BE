@@ -1759,8 +1759,8 @@ extern vmCvar_t         cg_bestats_spacingAdjust;
 extern vmCvar_t         cg_bestats_widthCutoff;
 extern vmCvar_t         cg_teamIndicatorFade;
 extern vmCvar_t         cg_teamIndicatorFadeRadius;
-extern vmCvar_t			be_features;
-extern vmCvar_t			be_enabled;
+extern vmCvar_t         be_features;
+extern vmCvar_t         be_enabled;
 extern vmCvar_t         be_run;
 
 

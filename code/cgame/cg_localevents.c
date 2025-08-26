@@ -745,7 +745,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 		return;
 	}
 
-	if (cvart->vmCvar->string[0] == '\0') {
+	if (cvart->vmCvar->string[0] == '\0')
+	{
 		customScoreboardColorIsSet_red = 0;
 		return;
 	}
@@ -756,7 +757,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 	token2 = Q_strtok(NULL, " \t");
 	token3 = Q_strtok(NULL, " \t");
 
-	if (!token1 || !token2) {
+	if (!token1 || !token2)
+	{
 		CG_Printf("^1Invalid value: expected at least two color values (e.g. \"red blue\")\n");
 		customScoreboardColorIsSet_red = 0;
 		return;
@@ -765,7 +767,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 	CG_ParseColorStr(token1, scoreboard_rtColorHeader);
 	CG_ParseColorStr(token2, scoreboard_rtColorBody);
 	customScoreboardColorIsSet_red = 1;
-	if (token3) {
+	if (token3)
+	{
 		CG_ParseColorStr(token3, scoreboard_rtColorTitle);
 		customScoreboardColorIsSet_red |= 2;
 	}
@@ -785,7 +788,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
 		return;
 	}
 
-	if (cvart->vmCvar->string[0] == '\0') {
+	if (cvart->vmCvar->string[0] == '\0')
+	{
 		customScoreboardColorIsSet_blue = 0;
 		return;
 	}
@@ -806,7 +810,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
 	CG_ParseColorStr(token1, scoreboard_btColorHeader);
 	CG_ParseColorStr(token2, scoreboard_btColorBody);
 	customScoreboardColorIsSet_blue = 1;
-	if (token3) {
+	if (token3)
+	{
 		CG_ParseColorStr(token3, scoreboard_btColorTitle);
 		customScoreboardColorIsSet_blue |= 2;
 	}
@@ -826,7 +831,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
 		return;
 	}
 
-	if (cvart->vmCvar->string[0] == '\0') {
+	if (cvart->vmCvar->string[0] == '\0')
+	{
 		customScoreboardColorIsSet_spec = 0;
 		return;
 	}
@@ -835,14 +841,16 @@ void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
 	token1 = Q_strtok(buffer, " \t");
 	token2 = Q_strtok(NULL, " \t");
 
-	if (!token1) {
+	if (!token1)
+	{
 		customScoreboardColorIsSet_spec = 0;
 		return;
 	}
 
 	CG_ParseColorStr(token1, scoreboard_specColor);
 	customScoreboardColorIsSet_spec = 1;
-	if (token2) {
+	if (token2)
+	{
 		CG_ParseColorStr(token2, scoreboard_specColorTitle);
 		customScoreboardColorIsSet_spec |= 2;
 	}

@@ -460,8 +460,8 @@ vmCvar_t        cg_bestats_spacingAdjust;
 vmCvar_t        cg_bestats_widthCutoff;
 vmCvar_t        cg_teamIndicatorFade;
 vmCvar_t        cg_teamIndicatorFadeRadius;
-vmCvar_t		be_features;
-vmCvar_t		be_enabled;
+vmCvar_t        be_features;
+vmCvar_t        be_enabled;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -2216,7 +2216,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	// cause smoke bug
 	// for (i = 1; i < WP_NUM_WEAPONS; i++)
 	// {
-	// 	CG_RegisterWeapon(i);
+	//  CG_RegisterWeapon(i);
 	// }
 
 	CG_LoadingString("graphics");
