@@ -411,3 +411,21 @@ description later
 * cg_scoreboardBE bitmask (+ '4')
 * cg_friendsWallhack bitmask (+ '2')
 * various fixes
+
+26.08.2025 v0.93
+
+* cg_scoreboardRtColors/cg_scoreboardBtColors
+  + 3rd argument (optional) change titles color
+* cg_scoreboardSpecColor
+  + 2nd argument (optional) change title color
+* cg_damageDrawFrame
+  + Bitmask 4, draw pulse frame at low health
+
++ cg_drawCenterMessages 2 - print text with shadow
+
++ be_features - read only
++ be_enable
+
+- cg_noSlidingWindow
+
+* various fixes
