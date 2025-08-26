@@ -1559,8 +1559,30 @@ void CG_ServerCommand(void)
 //xstats1
 	if (Q_stricmp(cmd, "xstats1") == 0)
 	{
-		CG_OSPPrintXStats();
-		return;
+		if (cgs.be.statsAllRequested)
+		{
+			int client_id;
+			char argsBuf[2048];
+			trap_Args(argsBuf, sizeof(argsBuf));
+			CG_StoreXStats1(argsBuf);
+
+			client_id = atoi(CG_Argv(1));
+			CG_Printf("xstats1 block stored for client %d, total blocks: %d\n", client_id, CG_GetXStats1Count());
+
+			// Разбираем только когда накоплено всё, что ожидалось
+			if (CG_GetXStats1Count() >= statsAllExpectedCount && statsAllExpectedCount > 0) {
+				CG_ParseAllXStats1BlocksByClient();
+				CG_Printf("All xstats1 blocks parsed\n");
+				cgs.be.statsAllRequested = qfalse;
+				statsAllExpectedCount = 0;
+			}
+			return;
+		}
+		else
+		{
+			CG_OSPPrintXStats();
+			return;
+		}
 	}
 //astats
 	if (Q_stricmp(cmd, "astats") == 0)

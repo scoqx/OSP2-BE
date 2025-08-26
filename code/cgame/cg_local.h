@@ -1162,6 +1162,8 @@ typedef struct cgs_be_s
 	vec4_t enemyGrenadesColor;
 	qboolean showCredits;
 	qboolean isHealthLow;
+	qboolean statsAllRequested;
+	int lastStatsAllClient;
 	vec4_t healthColor;
 	vec4_t healthLowColor;
 	vec4_t healthMidColor;
@@ -1171,6 +1173,7 @@ typedef struct cgs_be_s
 	vec4_t playerIndicatorBgColor;
 	customWeaponStats_t weaponStats[WP_NUM_WEAPONS];
 	newStatsInfo_t newStats;
+	newStatsInfo_t statsAll[MAX_CLIENTS];
 	globalBeStatsSettings_t settings;
 } cgs_be_t;
 

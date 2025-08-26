@@ -862,6 +862,35 @@ void CG_DPI_f(void)
 	CG_Printf("^1cm/360:       ^2%.2f\n", local_360);
 }
 
+void cg_sa_f(void)
+{
+	trap_SendClientCommand("statsall");
+	cgs.be.statsAllRequested = qtrue;
+}
+
+void cg_printsa_f(void)
+{
+	int i = 0;
+	newStatsInfo_t *ws = &cgs.be.statsAll[i];
+	CG_Printf("^5StatsAll:\n");
+	for (i = 0; i < MAX_CLIENTS; ++i) {
+		if (!cgs.clientinfo[i].infoValid)
+			continue;
+		
+		CG_Printf("^7[%2d] ^3%-16s ^7K/D:^2%3d^7/^1%3d ^7Eff:^2%5.1f%% ^7Dmg:^2%5d^7/^1%5d ^7Ratio:^2%.2f\n",
+			i,
+			cgs.clientinfo[i].name,
+			ws->kills,
+			ws->deaths,
+			ws->efficiency,
+			ws->dmgGiven,
+			ws->dmgReceived,
+			ws->damageRatio
+		);
+	}
+}
+
+
 void CG_Stub_f(void) { }
 
 typedef struct
@@ -962,6 +991,8 @@ static consoleCommand_t commands[] =
 	{ "showfont", CG_ShowFont_f },
 	{ "dpi", CG_DPI_f },
 	{ "belist", CG_PrintNewCommandsBE_f },
+	{ "sa", cg_sa_f },
+	{ "salist", cg_printsa_f },
 };
 
 /*
