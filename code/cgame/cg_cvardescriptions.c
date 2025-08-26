@@ -274,7 +274,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_drawHitBox", "Draw hitboxes. Server permission required\n  ^20^7 - disabled\n  ^21^7 - bounding edges\n  ^22^7 -solid color++\n  ^23^7 - solid color" },
 	{ "cg_hitBoxColor", "Set color for ^3cg_drawHitBox ^2\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_drawGunForceAspect", "Fix weapon stretching when using 4:3 aspect ratio on widescreen. Set ^20^7 to disable." },
-	{ "cg_drawOutline", "Set player outline rendering mode. Use ^3cg_enemyOutline*^7 and ^3cg_teamOutline*^7 to configurate colors and style.\n  ^20^7 - disabled\n  ^21^7 - enemies only\n  ^22^7 - teammates only\n  ^23^7 - all players" },
+	{ "cg_drawOutline", "Set player outline rendering mode. Use ^3cg_enemyOutline*^7 and ^3cg_teamOutline*^7 to change colors and style.\n  ^20^7 - disabled\n  ^21^7 - enemies only\n  ^22^7 - teammates only\n  ^23^7 - all players" },
 	{ "cg_enemyOutlineSize", "Set ^3cg_drawOutline^7 thickness for enemies\n  ^20^7 - disabled\n  ^21^7 - thin\n  ^22^7 - medium\n  ^23^7 - thick" },
 	{ "cg_enemyOutlineColor", "Set enemy ^3cg_drawOutline^7 color.\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_enemyOutlineColorUnique", "Assigns a unique ^3cg_drawOutline^7 color for enemy model parts. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - head\n  ^22^7 - torso\n  ^24^7 - legs\n  ^27^7 - full model" },
