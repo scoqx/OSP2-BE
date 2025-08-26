@@ -412,7 +412,7 @@ description later
 * cg_friendsWallhack bitmask (+ '2')
 * various fixes
 
-26.08.2025 v0.93
+26.08.2025 be v0.93
 
 * cg_scoreboardRtColors/cg_scoreboardBtColors
   + 3rd argument (optional) change titles color
