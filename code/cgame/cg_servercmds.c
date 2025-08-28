@@ -340,7 +340,6 @@ static void CG_ConfigStringModified(void)
 	}
 	else if (num == CS_VOTE_YES)
 	{
-		// CG_OSPWStatsUp_f(); // lol?                                                                                     /* Address : 0xf046 Type : Interium */
 		cgs.voteYes = atoi(str);
 		cgs.voteModified = qtrue;
 	}
@@ -355,7 +354,6 @@ static void CG_ConfigStringModified(void)
 	}
 	else if (num == CS_INTERMISSION)
 	{
-		// CG_OSPWStatsUp_f();
 		cg.intermissionStarted = atoi(str);
 		if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_SPECTATOR &&
 		        CG_OSPIsGameTypeCA(cgs.gametype) &&
@@ -364,7 +362,6 @@ static void CG_ConfigStringModified(void)
 			return;
 		}
 		CG_OSPWStatsDown_f();
-		// CG_OSPWStatsDown_f();
 	}
 	else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 	{

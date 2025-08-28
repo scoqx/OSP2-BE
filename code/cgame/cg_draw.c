@@ -2995,10 +2995,10 @@ static void CG_Draw2D(void)
 		return;
 	}
 
-	if (BE_ENABLED && cg_teamIndicator.integer)
-	{
-		CG_DrawPlayerIndicatorOnScreen();
-	}
+	// if (BE_ENABLED && cg_teamIndicator.integer)
+	// {
+	// 	CG_DrawPlayerIndicatorOnScreen();
+	// }
 
 	if (cg_shud.integer)
 	{
@@ -3134,6 +3134,11 @@ void CG_DrawActive(stereoFrame_t stereoView)
 		VectorCopy(baseOrg, cg.refdef.vieworg);
 	}
 
+	if (BE_ENABLED && cg_teamIndicator.integer)
+	{
+		CG_DrawPlayerIndicatorOnScreen();
+	}
+	
 	// draw status bar and other floating elements
 	CG_Draw2D();
 }

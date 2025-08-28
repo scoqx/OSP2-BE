@@ -996,7 +996,10 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_AddParticles();
 		CG_AddLocalEntities();
 	}
-	CG_AddViewWeapon(&cg.predictedPlayerState);
+	if (cg_drawGun.integer)
+	{
+		CG_AddViewWeapon(&cg.predictedPlayerState);
+	}
 
 	// add buffered sounds
 	CG_PlayBufferedSounds();
@@ -1054,19 +1057,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	{
 		CG_Printf("cg.clientFrame:%i\n", cg.clientFrame);
 	}
-	// todel
-	// {
-	//  int i;
 
-	//  for (i = 0; i < 16; ++i)
-	//  {
-	//      if ((ospPrintContext[i].showFromCGTime <= cg.time) && (ospPrintContext[i].hideBeforeCGTime > cg.time))
-	//      {
-	//          CG_OSPDrawLeftSlidingWindowsRoutine(&ospPrintContext[i]);
-	//      }
-
-	//  }
-	// }
 	if (cgs.osp.isOSPv1 && cgs.osp.nextCvarsUpdateTime && cgs.osp.nextCvarsUpdateTime < cg.time)
 	{
 		CG_OSPUpdateUserInfo(qfalse);

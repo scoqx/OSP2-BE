@@ -832,7 +832,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "0.75", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "128", CVAR_ARCHIVE | CVAR_NEW, },
-	{ &be_features, "be_features", "", CVAR_USERINFO | CVAR_ROM },
+	{ &be_features, "be_features", "", CVAR_ROM },
 	{ &be_enabled, "be_enabled", "1", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
@@ -1881,6 +1881,9 @@ void CG_CheckFogBypass(void)
 	                                "asylum.bsp",
 	                                "rjldm3.bsp",
 	                                "gen_q1dm1.bsp",
+									"13death_xt_b1",
+									"13excave",
+									"q3dm4"
 	                                NULL
 	                              };
 
