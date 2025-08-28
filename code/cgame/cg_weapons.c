@@ -1371,7 +1371,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		shaft_type = LIGHTNING_DEFAULT_SHADER;
 	}
 
-	if (!isOurClient && cg_enemyLightningColor.integer > 0 && CG_IsEnemy(target))
+	if (BE_ENABLED && (!isOurClient && cg_enemyLightningColor.integer > 0 && CG_IsEnemy(target)))
 	{
 		beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
 		beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;

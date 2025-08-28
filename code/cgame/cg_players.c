@@ -2234,7 +2234,7 @@ static void CG_PlayerSprites(centity_t* cent)
 			if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
 			{
 				qhandle_t shader;
-				if (/* !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) &&  */cg_friendsWallhack.integer & 1)
+				if (/* !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) &&  */BE_ENABLED && cg_friendsWallhack.integer & 1)
 					shader = cgs.media.frozenFoeTagShaderWallhack;
 				else
 					shader = cgs.media.frozenFoeTagShader;
@@ -2253,7 +2253,7 @@ static void CG_PlayerSprites(centity_t* cent)
 				{
 					VectorCopy(colorWhite, color);
 				}
-				if (/* !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) &&  */cg_friendsWallhack.integer & 1)
+				if (/* !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) &&  */BE_ENABLED && cg_friendsWallhack.integer & 1)
 					shader = cgs.media.friendShaderWallhack;
 				else
 					shader = cgs.media.friendShader;
