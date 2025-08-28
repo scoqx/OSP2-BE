@@ -160,7 +160,7 @@ static void CG_Viewpos_f(void)
 }
 
 
-static void CG_ScoresDown_f(void)
+void CG_ScoresDown_f(void)
 {
 	if (!cg.demoPlayback && cg.scoresRequestTime < cg.time)
 	{

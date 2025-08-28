@@ -1883,7 +1883,7 @@ void CG_CheckFogBypass(void)
 	                                "gen_q1dm1.bsp",
 									"13death_xt_b1",
 									"13excave",
-									"q3dm4"
+									"q3dm4",
 	                                NULL
 	                              };
 
