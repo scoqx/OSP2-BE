@@ -466,7 +466,7 @@ vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
 {
-	{ &osp_client, "osp_client", "1008_OSP2", CVAR_USERINFO | CVAR_ROM },
+	{ &osp_client, "osp_client", "1008_OSP2"OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
@@ -1991,7 +1991,6 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_bestats_bgColor");
 }
 
-
 /*
 =================
 CG_Init
@@ -2143,8 +2142,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_OSPConfigMaxTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MAX)));
 		CG_OSPConfigClanBaseTDMSet(atoi(CG_ConfigString(CS_OSP_CLAN_BASE_TEAM_DM)));
 		CG_OSPConfigFreezeModeSet(atoi(CG_ConfigString(CS_OSP_FREEZE_GAME_TYPE)));
-		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_BE_DISABLE_FEATURES)));
-		CG_OSPConfigXHitBoxSet(atoi(CG_ConfigString(X_HCK_PS_ENEMY_HITBOX)));
+		CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
+		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
+		CG_OSPConfigXHitBoxSet(atoi(CG_ConfigString(XQ3E_ALLOW_FEATURES)));
 
 		/****/
 		CG_OSPCvarsRestrictValues();
@@ -2322,7 +2322,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		trap_SendConsoleCommand(str);
 	}
 
-	if (cgs.be.friendServer)
+	if (cgs.be.supportedServer)
 	{
 		trap_SendConsoleCommand("sharecmds");
 	}

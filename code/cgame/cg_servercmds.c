@@ -445,11 +445,15 @@ static void CG_ConfigStringModified(void)
 	{
 		CG_ShaderStateChanged();
 	}
-	else if (num == CS_BE_DISABLE_FEATURES)
+	else if (num = CS_OSP2BE_SUPPORTED)
+	{
+		CG_OSPSupportedBEServer(atoi(str));
+	}
+	else if (num == CS_OSP2BE_DISABLED_FEATURES)
 	{
 		CG_OSPConfigDisableBEFeatures(atoi(str));
 	}
-	else if (num == X_HCK_PS_ENEMY_HITBOX)
+	else if (num == XQ3E_ALLOW_FEATURES)
 	{
 		CG_OSPConfigXHitBoxSet(atoi(str));
 	}

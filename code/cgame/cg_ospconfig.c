@@ -230,26 +230,33 @@ void CG_OSPConfigMaxTimenudgeSet(int value)
 void CG_OSPConfigXHitBoxSet(int value)
 {
 	const char* config;
-	const char* valueStr;
+	const char* hitboxStr;
 	const char* cheatsStr;
 
-	config = CG_ConfigString(X_HCK_PS_ENEMY_HITBOX);
-	valueStr = Info_ValueForKey(config, "x_hck_ps_enemy_hitbox");
+	config = CG_ConfigString(XQ3E_ALLOW_FEATURES);
+	hitboxStr = Info_ValueForKey(config, "x_hck_ps_enemy_hitbox");
 
-	if (valueStr && *valueStr)
-	{
-		value = atoi(valueStr);
-	}
-	else
-	{
-		value = 0;
-	}
+	if (hitboxStr && atoi(hitboxStr) == 1)
+    {
+        value = atoi(hitboxStr);
+    }
+    else
+    {
+        value = 0;
+    }
+
 	// ignore x_hck if cheats are enabled/server is local
 	if (cgs.cheatsEnabled || cgs.localServer)
 	{
 		value = 1;
 	}
 	cgs.osp.serverConfigXHitBox = value;
+}
+
+// Supported OSP2-BE server
+void CG_OSPSupportedBEServer(qboolean value)
+{
+	cgs.be.supportedServer = value;
 }
 
 // Disable be features

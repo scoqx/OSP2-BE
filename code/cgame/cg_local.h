@@ -1174,7 +1174,7 @@ typedef struct cgs_be_s
 	customWeaponStats_t weaponStats[WP_NUM_WEAPONS];
 	newStatsInfo_t newStats;
 	globalBeStatsSettings_t settings;
-	qboolean friendServer;
+	qboolean supportedServer;
 } cgs_be_t;
 
 #define  BE_SERVER_DISABLE_WH  1
@@ -2561,6 +2561,7 @@ void CG_OSPConfigModeSet(int value);
 void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigXHitBoxSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
+void CG_OSPSupportedBEServer(qboolean value);
 
 qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsFollowing(void);

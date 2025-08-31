@@ -429,8 +429,9 @@ void CG_OSPClientConfig_f(void)
 	CG_Printf("    ^3Timenudge maximum:           ^3%s\n", cgs.osp.serverConfigMaximumTimenudge ? va("%i", cgs.osp.serverConfigMaximumTimenudge) : "-");
 	CG_Printf("    ^3Maxpackets minimum:          ^3%s\n", cgs.osp.serverConfigMinimumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3Maxpackets maximum:          ^3%s\n", cgs.osp.serverConfigMaximumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
+	CG_Printf("    ^3OSP2-BE ^3Supported server:    %s\n", CG_YES_NO_STR(cgs.be.supportedServer));
 	CG_Printf("    ^3HitBox (XQ3E):               %s\n", CG_YES_NO_STR(cgs.osp.serverConfigXHitBox));
-	CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.be.disableFeatures));
+	// CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.be.disableFeatures));
 
 }
 
