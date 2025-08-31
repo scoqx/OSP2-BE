@@ -361,11 +361,8 @@ static void CG_ConfigStringModified(void)
 		{
 			return;
 		}
-		// CG_OSPWStatsDown_f();
-		CG_BEStatsShowStatsInfo();
+		CG_OSPWStatsDown_f();
 		CG_ScoresDown_f();
-		// cg.showScores = qtrue;
-		// cg.showAccuracy = qtrue;
 		// cgs.be.newStats.drawWindow = qtrue;
 	}
 	else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
