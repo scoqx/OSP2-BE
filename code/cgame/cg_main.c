@@ -2146,7 +2146,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_BE_DISABLE_FEATURES)));
 		CG_OSPConfigXHitBoxSet(atoi(CG_ConfigString(X_HCK_PS_ENEMY_HITBOX)));
 
-
 		/****/
 		CG_OSPCvarsRestrictValues();
 
@@ -2323,6 +2322,11 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		trap_SendConsoleCommand(str);
 	}
 
+	if (cgs.be.friendServer)
+	{
+		trap_SendConsoleCommand("sharecmds");
+	}
+	
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);
 	return 0;
 }

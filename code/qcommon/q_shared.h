@@ -642,6 +642,8 @@ extern  vec4_t      colorPink;
 #define S_COLOR_MAGENTA "^6"
 #define S_COLOR_WHITE   "^7"
 
+#define S_COLOR_STRIP	S_COLOR_WHITE
+
 extern const vec4_t   g_color_table[10];
 
 #define MAKERGB( v, r, g, b ) v[0]=r;v[1]=g;v[2]=b

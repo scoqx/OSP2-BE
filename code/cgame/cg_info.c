@@ -219,6 +219,13 @@ void CG_DrawInformation(void)
 		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
 		y += PROP_HEIGHT;
 
+		// check for q3unite at the start of hostname
+        if (Q_strncmp(buf, "q3unite", 7) == 0) {
+            cgs.be.friendServer = qtrue;
+        } else {
+             cgs.be.friendServer = qfalse;
+        }
+
 		// pure server
 		s = Info_ValueForKey(sysInfo, "sv_pure");
 		if (s[0] == '1')
@@ -227,7 +234,6 @@ void CG_DrawInformation(void)
 			                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
 			y += PROP_HEIGHT;
 		}
-
 
 		// server-specific message of the day
 		s = CG_ConfigString(CS_MOTD);

@@ -1066,7 +1066,7 @@ void CG_BEStatsShowStatsInfo(void)
 	memset(tokens, 0, sizeof(tokens));
 	// Init
 	CG_BEStatsInit();
-	// Request Stats
+	// Request Stats without pressing button
 	if (!cgs.be.newStats.drawWindow)
 	{
 		if (cg.statsRequestTime + 1000 < cg.time)

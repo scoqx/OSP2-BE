@@ -996,10 +996,8 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_AddParticles();
 		CG_AddLocalEntities();
 	}
-	if (cg_drawGun.integer)
-	{
-		CG_AddViewWeapon(&cg.predictedPlayerState);
-	}
+	
+	CG_AddViewWeapon(&cg.predictedPlayerState);
 
 	// add buffered sounds
 	CG_PlayBufferedSounds();

@@ -361,8 +361,12 @@ static void CG_ConfigStringModified(void)
 		{
 			return;
 		}
-		CG_OSPWStatsDown_f();
+		// CG_OSPWStatsDown_f();
+		CG_BEStatsShowStatsInfo();
 		CG_ScoresDown_f();
+		// cg.showScores = qtrue;
+		// cg.showAccuracy = qtrue;
+		// cgs.be.newStats.drawWindow = qtrue;
 	}
 	else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 	{
@@ -1304,6 +1308,36 @@ void CG_BEParseStatsInfo(void)
 	// #undef PRINT_STAT_COLOR
 }
 
+static void CG_HandleScmdsCommand(void) {
+    const char* part;
+    char buffer[2048];
+    char* token;
+
+    part = CG_Argv(1);
+
+    Q_strncpyz(buffer, part, sizeof(buffer));
+    token = Q_strtok(buffer, "/");
+    while (token != NULL) {
+        if (token[0] != '\0') {
+            int i;
+            qboolean valid = qtrue;
+            for (i = 0; token[i]; ++i) {
+                if (!((token[i] >= 'a' && token[i] <= 'z') ||
+                      (token[i] >= 'A' && token[i] <= 'Z') ||
+                      (token[i] >= '0' && token[i] <= '9') ||
+                      (token[i] == '_'))) {
+                    valid = qfalse;
+                    break;
+                }
+            }
+            if (valid) {
+                trap_AddCommand(token);
+            }
+        }
+        token = Q_strtok(NULL, "/");
+    }
+}
+
 /*
 =================
 CG_ServerCommand
@@ -1584,6 +1618,12 @@ void CG_ServerCommand(void)
 	if (Q_stricmp(cmd, "clientLevelShot") == 0)
 	{
 		cg.levelShot = qtrue;
+		return;
+	}
+// Server sharing console comands
+	if (Q_stricmp(cmd, "scmds") == 0)
+	{
+		CG_HandleScmdsCommand();
 		return;
 	}
 //UKNOWN COMMAND

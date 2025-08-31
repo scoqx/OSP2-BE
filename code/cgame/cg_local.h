@@ -1174,6 +1174,7 @@ typedef struct cgs_be_s
 	customWeaponStats_t weaponStats[WP_NUM_WEAPONS];
 	newStatsInfo_t newStats;
 	globalBeStatsSettings_t settings;
+	qboolean friendServer;
 } cgs_be_t;
 
 #define  BE_SERVER_DISABLE_WH  1
@@ -2488,7 +2489,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.93c" // BE
+#define OSP_VERSION "be-0.94a" // BE
 
 
 
