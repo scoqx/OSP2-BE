@@ -260,7 +260,7 @@ void CG_OSPSupportedBEServer(qboolean value)
     // Also share BE version
     if (value)
     {
-    	trap_Cvar_Set("osp_client", OSP_CLIENT_VERSION "" OSP_VERSION);
+    	trap_Cvar_Set("osp_client", OSP_CLIENT_VERSION"_"OSP_VERSION);
     }
 
 }
