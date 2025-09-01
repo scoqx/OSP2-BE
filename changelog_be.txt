@@ -429,3 +429,7 @@ description later
 - cg_noSlidingWindow
 
 * various fixes
+
+01.09.2025 be v0.94c
+* Var fixes
++ cg_healthColorLevels 2 - disable coloring for team foe

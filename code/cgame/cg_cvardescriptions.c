@@ -230,7 +230,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_shudChatEnable", "SuperHUD chat message display mode: ^20^7 - off\n  ^21^7 - global messages enabled\n  ^22^7 - team messages enabled\n  ^23^7 - global and team messages enabled" },
 	{ "cg_healthMid", "Yellow color trigger level.\nRequires ^3cg_healthColorLevels^7 ^21^7" },
 	{ "cg_healthLow", "Red color trigger level.\nRequires ^3cg_healthColorLevels^7 ^21^7" },
-	{ "cg_healthColorLevels", "Activate custom health/armor color change levels. \nConfigure with ^3cg_healthLow^7 and ^3cg_healthMid^7.\n  0 - disabled\n  1 - enabled" },
+	{ "cg_healthColorLevels", "Activate custom health/armor color change levels. \nConfigure with ^3cg_healthLow^7 and ^3cg_healthMid^7.\n  0 - disabled\n  ^21^7 - enabled\n  ^22^7 - enabled, except team foe" },
 	{ "ch_crosshairDecor", "Select crosshair decoration. Set ^20^7 to disable.\n  ^21^7 - ^234^7 - select decor" },
 	{ "ch_crosshairDecorSize", "Set size of crosshair decoration." },
 	{ "ch_crosshairDecorColor", "Color for crosshair decoration\n \"^2color^7\" - color name, digit or hex" },
