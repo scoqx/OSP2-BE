@@ -117,14 +117,6 @@ void CG_OSPUpdateUserInfo(qboolean arg)
 	trap_SendClientCommand(va("%s %d %d %d %d %d %d %d\n", cmd, cl_maxpackets.integer, snaps.integer, cl_timenudge.integer, customLocationsEnabled, flags, cg_autoAction.integer, using_jpeg));
 }
 
-void CG_OSPAskForCommandList(void)
-{
-	if (cgs.be.supportedServer)
-	{
-		trap_SendConsoleCommand("sharecmds");
-	}
-}
-
 void CG_OSPCvarsRestrictValues(void)
 {
 	qboolean changed = qfalse;

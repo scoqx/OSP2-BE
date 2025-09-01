@@ -137,7 +137,6 @@ void CG_SetInitialSnapshot(snapshot_t* snap)
 	{
 		CG_OSPMoTD_f();
 	}
-	CG_OSPAskForCommandList();
 }
 
 
