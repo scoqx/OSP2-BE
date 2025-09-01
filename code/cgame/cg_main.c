@@ -466,7 +466,7 @@ vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
 {
-	{ &osp_client, "osp_client", "1008_OSP2"OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
+	{ &osp_client, "osp_client", OSP_CLIENT_VERSION, CVAR_USERINFO | CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
@@ -928,7 +928,8 @@ void CG_RegisterCvars(void)
 	cgs.cheatsEnabled = atoi(var) == 0 ? 0 : 1;
 
 	trap_Cvar_Set("ui_recordSPDemo", ch_recordMessage.integer > 0 ? "0" : "1");
-
+	// set client version to default 
+	trap_Cvar_Set("osp_client", OSP_CLIENT_VERSION);
 	//forceModelModificationCount = cg_forceModel.modificationCount;
 
 	trap_Cvar_Register(NULL, "model", DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
@@ -2322,10 +2323,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		trap_SendConsoleCommand(str);
 	}
 
-	if (cgs.be.supportedServer)
-	{
-		trap_SendConsoleCommand("sharecmds");
-	}
 	
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);
 	return 0;

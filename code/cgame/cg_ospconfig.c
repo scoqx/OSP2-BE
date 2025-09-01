@@ -117,6 +117,13 @@ void CG_OSPUpdateUserInfo(qboolean arg)
 	trap_SendClientCommand(va("%s %d %d %d %d %d %d %d\n", cmd, cl_maxpackets.integer, snaps.integer, cl_timenudge.integer, customLocationsEnabled, flags, cg_autoAction.integer, using_jpeg));
 }
 
+void CG_OSPAskForCommandList(void)
+{
+	if (cgs.be.supportedServer)
+	{
+		trap_SendConsoleCommand("sharecmds");
+	}
+}
 
 void CG_OSPCvarsRestrictValues(void)
 {
@@ -256,7 +263,14 @@ void CG_OSPConfigXHitBoxSet(int value)
 // Supported OSP2-BE server
 void CG_OSPSupportedBEServer(qboolean value)
 {
-	cgs.be.supportedServer = value;
+    cgs.be.supportedServer = value;
+
+    // Also share BE version
+    if (value)
+    {
+    	trap_Cvar_Set("osp_client", OSP_CLIENT_VERSION "" OSP_VERSION);
+    }
+
 }
 
 // Disable be features
