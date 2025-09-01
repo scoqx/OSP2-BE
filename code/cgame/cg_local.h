@@ -868,6 +868,18 @@ typedef struct
 	qhandle_t   redKamikazeShader;
 	qhandle_t   blueKamikazeShader;
 
+	// powerup icons
+	qhandle_t   quadDamageIcon;
+	qhandle_t   battleSuitIcon;
+	qhandle_t   hasteIcon;
+	qhandle_t   invisIcon;
+	qhandle_t   regenIcon;
+	qhandle_t   flightIcon;
+	qhandle_t   flagIcon_red;
+	qhandle_t   flagIcon_blue;
+	qhandle_t   teleporterIcon;
+	qhandle_t   medkitIcon;
+
 	// weapon effect models
 	qhandle_t   bulletFlashModel;
 	qhandle_t   ringFlashModel;
@@ -2489,7 +2501,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.94c" // BE
+#define OSP_VERSION "be-0.94d" // BE
 #define OSP_CLIENT_VERSION "1008_OSP2"
 
 

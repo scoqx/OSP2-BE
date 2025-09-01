@@ -2973,16 +2973,6 @@ static void CG_Draw2D(void)
 		return;
 	}
 
-	if (cg_damageDrawFrame.integer)
-	{
-		CG_DrawDamageFrame();
-	}
-
-	if (cg_damageDrawFrame.integer & 4 && cgs.be.isHealthLow)
-	{
-		CG_DrawHealthLowOverlay();
-	}
-
 	if (strlen(cgs.osp.testFont))
 	{
 		CG_DrawTestFont(cgs.osp.testFont);
@@ -3133,14 +3123,28 @@ void CG_DrawActive(stereoFrame_t stereoView)
 	{
 		VectorCopy(baseOrg, cg.refdef.vieworg);
 	}
-
+	
+	// Draw 2D before main 2D function
+	if (cg_draw2D.integer)
+	{
+		if (cg_damageDrawFrame.integer & 4 && cgs.be.isHealthLow)
+			{
+				CG_DrawHealthLowOverlay();
+			}
+		if (cg_damageDrawFrame.integer)
+			{
+				CG_DrawDamageFrame();
+			}
+	}
+	
 	if (BE_ENABLED && cg_teamIndicator.integer)
 	{
 		CG_DrawPlayerIndicatorOnScreen();
 	}
-	
+
 	// draw status bar and other floating elements
 	CG_Draw2D();
+
 }
 
 void CG_OSPSetColor(vec4_t color)

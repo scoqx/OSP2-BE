@@ -1528,6 +1528,16 @@ static void CG_RegisterGraphics(void)
 	cgs.media.freezeShader = trap_R_RegisterShader("freezeShader");
 	cgs.media.freezeMarkShader = trap_R_RegisterShader("freezeMarkShader");
 
+	// powerup icons
+	cgs.media.quadDamageIcon = trap_R_RegisterShaderNoMip("icons/quad");
+	cgs.media.battleSuitIcon = trap_R_RegisterShaderNoMip("icons/envirosuit");
+	cgs.media.hasteIcon = trap_R_RegisterShaderNoMip("icons/haste");
+	cgs.media.invisIcon = trap_R_RegisterShaderNoMip("icons/invis");
+	cgs.media.regenIcon = trap_R_RegisterShaderNoMip("icons/regen");
+	cgs.media.flightIcon = trap_R_RegisterShaderNoMip("icons/flight");
+	cgs.media.teleporterIcon = trap_R_RegisterShaderNoMip("icons/teleporter");
+	cgs.media.medkitIcon = trap_R_RegisterShaderNoMip("icons/medkit");
+
 	if (cgs.gametype == GT_CTF || cg_buildScript.integer)
 	{
 		cgs.media.redCubeModel = trap_R_RegisterModel("models/powerups/orb/r_orb.md3");

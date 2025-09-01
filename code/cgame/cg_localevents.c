@@ -772,7 +772,6 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 		CG_ParseColorStr(token3, scoreboard_rtColorTitle);
 		customScoreboardColorIsSet_red |= 2;
 	}
-	CG_Printf("^1Rt^7 color set to %i\n", customScoreboardColorIsSet_red);
 }
 
 void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
@@ -815,7 +814,6 @@ void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
 		CG_ParseColorStr(token3, scoreboard_btColorTitle);
 		customScoreboardColorIsSet_blue |= 2;
 	}
-	CG_Printf("^4Bt^7 color set to %i\n", customScoreboardColorIsSet_blue);
 }
 
 void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)

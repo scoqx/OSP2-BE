@@ -430,6 +430,12 @@ description later
 
 * various fixes
 
-01.09.2025 be v0.94c
-* Var fixes
+01.09.2025 be v0.94d
+* allstats better aligning
++ bestats gauntlet info
 + cg_healthColorLevels 2 - disable coloring for team foe
++ extended server support
++ pre-register Power-Up icons
+* hud flagstatus fix
++ SHUD config - kmodel.cfg (koreanmodel)
+* damage frame fix

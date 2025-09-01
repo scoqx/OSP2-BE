@@ -785,14 +785,13 @@ static void CG_OSPPrintXStats(void)
 	Q_strncpyz(&str[0], cgs.clientinfo[client_id].name, 32);
 
 	CG_Printf(va("\n^7Accuracy info for: ^3%s^7\n\n", str));
-	CG_Printf("Weapon        Accrcy Hits/Atts Kills Deaths Pickup Drops\n");
-	CG_Printf("--------------------------------------------------------\n");
+	CG_Printf("Weapon          Accrcy Hits/Atts Kills Deaths Pickup Drops\n");
+	CG_Printf("----------------------------------------------------------\n");
 	if (wstats_condition == 0)
 	{
 		CG_Printf("No weapon info available.\n");
 		return;
 	}
-	/* цикл по оружию */
 	for (i = 1; i < 10 ; ++i)
 	{
 		if ((wstats_condition & (1 << i)) != 0)
