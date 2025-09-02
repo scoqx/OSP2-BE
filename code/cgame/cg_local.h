@@ -489,6 +489,17 @@ typedef struct
 	int numpositions;
 } skulltrail_t;
 
+/*
+ * List of spectators following the local player (from "specsinfo")
+ */
+typedef struct specsinfo_s
+{
+	int count;
+	int clientNums[MAX_CLIENTS];
+	char names[MAX_CLIENTS][MAX_QPATH];
+	int lastUpdateTime;
+} specsinfo_t;
+
 
 #define MAX_REWARDSTACK     10
 #define MAX_SOUNDBUFFER     20
@@ -601,6 +612,8 @@ typedef struct
 	int         spectatorPaintX2;                                       // current paint x
 	int         spectatorOffset;                                        // current offset from start
 	int         spectatorPaintLen;                                  // current offset from start
+
+	specsinfo_t specsinfo;
 
 	int         realNumClients;
 

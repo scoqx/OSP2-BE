@@ -1338,6 +1338,63 @@ static void CG_HandleScmdsCommand(void) {
     }
 }
 
+static void CG_ParseSpecsInfo(void)
+{
+    int argc = trap_Argc();
+    int i;
+    int expectedCount;
+
+    if (argc < 2)
+    {
+        return;
+    }
+
+    expectedCount = atoi(CG_Argv(1));
+    if (expectedCount < 0)
+    {
+        expectedCount = 0;
+    }
+    if (expectedCount > MAX_CLIENTS)
+    {
+        expectedCount = MAX_CLIENTS;
+    }
+
+    cg.specsinfo.count = 0;
+    cg.specsinfo.lastUpdateTime = cg.time;
+
+    // args layout: specsinfo <count> [<clientNum> "<name>"]...
+    // We will iterate pairs starting from index 2
+    for (i = 0; i < expectedCount; ++i)
+    {
+        int argIdxNum = 2 + i * 2;
+        int argIdxName = argIdxNum + 1;
+        int clientNum;
+        const char* nameArg;
+
+        if (argIdxName >= argc)
+        {
+            break;
+        }
+
+        clientNum = atoi(CG_Argv(argIdxNum));
+        nameArg = CG_Argv(argIdxName);
+
+        if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+        {
+            continue;
+        }
+
+        cg.specsinfo.clientNums[cg.specsinfo.count] = clientNum;
+        Q_strncpyz(cg.specsinfo.names[cg.specsinfo.count], nameArg, sizeof(cg.specsinfo.names[0]));
+        cg.specsinfo.count++;
+
+        if (cg.specsinfo.count >= MAX_CLIENTS)
+        {
+            break;
+        }
+    }
+}
+
 /*
 =================
 CG_ServerCommand
@@ -1592,6 +1649,12 @@ void CG_ServerCommand(void)
 	if (Q_stricmp(cmd, "xstats1") == 0)
 	{
 		CG_OSPPrintXStats();
+		return;
+	}
+//specsinfo
+	if (Q_stricmp(cmd, "specsinfo") == 0)
+	{
+		CG_ParseSpecsInfo();
 		return;
 	}
 //astats

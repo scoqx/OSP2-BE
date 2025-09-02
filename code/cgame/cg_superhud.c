@@ -311,6 +311,19 @@ void CG_SHUDRoutine(void)
 	const qboolean is_spectator = CG_IsSpectatorOnScreen();
 	const qboolean is_scores = cg.showScores;
 
+	/* Periodically request spectators info */
+	{
+		static int lastGetSpecsTime = 0;
+		if (!cg.demoPlayback)
+		{
+			if (cg.time - lastGetSpecsTime >= 1000)
+			{
+				trap_SendClientCommand("getspecs");
+				lastGetSpecsTime = cg.time;
+			}
+		}
+	}
+
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
 	{
