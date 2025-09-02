@@ -301,7 +301,6 @@ static void CG_Obituary(entityState_t* ent)
 			message = "was in the wrong place";
 			break;
 		default:
-			message = "wasn't found soul";
 			break;
 	}
 
