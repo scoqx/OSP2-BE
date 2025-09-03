@@ -1364,7 +1364,7 @@ static void CG_ParseSpecsInfo(void)
     }
 
     // Print clients following me
-    CG_Printf("Following me: ");
+    // CG_Printf("Following me: ");
     for (clientId = 0; clientId < MAX_CLIENTS; ++clientId)
     {
         if (cgs.be.followingMe & (1 << clientId))
