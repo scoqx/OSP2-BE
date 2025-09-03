@@ -25,13 +25,13 @@ void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config)
     return element;
 }
 
-static qboolean CG_SHUD_SpectatorsBuildString(char* out, int outSize)
+static qboolean CG_SHUD_SpectatorsBuildString(char* out, int outSize, const superhudConfig_t* config)
 {
     int len = 0;
     int clientId;
     qboolean hasSpectators = qfalse;
 
-    if (element->config.style.isSet && element->config.style.value & 2)
+    if (config && config->style.isSet && (config->style.value & 2))
     {
         Q_strncpyz(out, "", outSize);
     }
@@ -84,7 +84,7 @@ void CG_SHUDElementSpectatorsRoutine(void* context)
         return;
     }
     
-    if (!CG_SHUD_SpectatorsBuildString(buffer, sizeof(buffer)))
+    if (!CG_SHUD_SpectatorsBuildString(buffer, sizeof(buffer), &element->config))
     {
         if (!SHUD_CHECK_SHOW_EMPTY(element))
         {
