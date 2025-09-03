@@ -125,7 +125,7 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 	playerState_t*   ps;
 	int     t;
 	gitem_t* item;
-	
+
 	ps = &cg.snap->ps;
 
 	if (ps->stats[STAT_HEALTH] <= 0)
@@ -193,35 +193,35 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 		{
 			switch (pw->element[i].powerup)
 			{
-			case PW_QUAD:
-				pw->element[i].powerup = cgs.media.quadDamageIcon;
-				break;
-			case PW_BATTLESUIT:
-				pw->element[i].powerup = cgs.media.battleSuitIcon;
-				break;
-			case PW_HASTE:
-				pw->element[i].powerup = cgs.media.hasteIcon;
-				break;
-			case PW_INVIS:
-				pw->element[i].powerup = cgs.media.invisIcon;
-				break;
-			case PW_REGEN:
-				pw->element[i].powerup = cgs.media.regenIcon;
-				break;
-			case PW_FLIGHT:
-				pw->element[i].powerup = cgs.media.flightIcon;
-				break;
-			case PW_REDFLAG:
-			case PW_BLUEFLAG:
-				item = BG_FindItemForPowerup(pw->element[i].powerup);
-				if (item)
-				{
-					pw->element[i].powerup = trap_R_RegisterShader(item->icon);
-				}
-				break;
-			default:
-				pw->element[i].powerup = 0;
-				break;
+				case PW_QUAD:
+					pw->element[i].powerup = cgs.media.quadDamageIcon;
+					break;
+				case PW_BATTLESUIT:
+					pw->element[i].powerup = cgs.media.battleSuitIcon;
+					break;
+				case PW_HASTE:
+					pw->element[i].powerup = cgs.media.hasteIcon;
+					break;
+				case PW_INVIS:
+					pw->element[i].powerup = cgs.media.invisIcon;
+					break;
+				case PW_REGEN:
+					pw->element[i].powerup = cgs.media.regenIcon;
+					break;
+				case PW_FLIGHT:
+					pw->element[i].powerup = cgs.media.flightIcon;
+					break;
+				case PW_REDFLAG:
+				case PW_BLUEFLAG:
+					item = BG_FindItemForPowerup(pw->element[i].powerup);
+					if (item)
+					{
+						pw->element[i].powerup = trap_R_RegisterShader(item->icon);
+					}
+					break;
+				default:
+					pw->element[i].powerup = 0;
+					break;
 			}
 			pw->element[i].time = (pw->element[i].time + 999) / 1000;
 		}

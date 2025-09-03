@@ -763,9 +763,12 @@ qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 			col++;
 
 			// Accuracy
-			if (i == WP_GAUNTLET) {
+			if (i == WP_GAUNTLET)
+			{
 				CG_BEStatsSetTokenLabel(tokens, row, col, "", beStatsSettings.defaultColor);
-			} else {
+			}
+			else
+			{
 				Com_sprintf(buf, sizeof(buf), "%.1f", ws->accuracy);
 				CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.colorY);
 			}
@@ -780,9 +783,12 @@ qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 			col++;
 
 			// Accuracy
-			if (i == WP_GAUNTLET) {
+			if (i == WP_GAUNTLET)
+			{
 				CG_BEStatsSetTokenLabel(tokens, row, col, "", beStatsSettings.defaultColor);
-			} else {
+			}
+			else
+			{
 				Com_sprintf(buf, sizeof(buf), "%.1f", ws->accuracy);
 				CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.colorY);
 			}

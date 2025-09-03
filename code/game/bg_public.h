@@ -115,8 +115,8 @@ extern "C" {
 #define CS_OSP_AUTH                               872
 #define CS_OSP_FREEZE_GAME_TYPE                   873
 #define CS_OSP_CUSTOM_CLIENT2                     874
-#define CS_OSP2BE_SUPPORTED						887
-#define CS_OSP2BE_DISABLED_FEATURES				888
+#define CS_OSP2BE_SUPPORTED                     887
+#define CS_OSP2BE_DISABLED_FEATURES             888
 #define CS_BE_DISABLE_FEATURES                    888
 #define XQ3E_ALLOW_FEATURES                     1000
 
@@ -651,11 +651,11 @@ typedef enum
 	MOD_GRAPPLE,
 	// MechFrenzy
 	MOD_LANDMINE,
-    MOD_LANDMINE_SPLASH,
-    MOD_TURRET,
-    MOD_TURRET_SPLASH,
-    MOD_TURRET_EXPLOSION,
-  	MOD_DISPENSER_EXPLOSION
+	MOD_LANDMINE_SPLASH,
+	MOD_TURRET,
+	MOD_TURRET_SPLASH,
+	MOD_TURRET_EXPLOSION,
+	MOD_DISPENSER_EXPLOSION
 } meansOfDeath_t;
 
 

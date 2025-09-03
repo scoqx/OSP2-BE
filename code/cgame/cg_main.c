@@ -928,7 +928,7 @@ void CG_RegisterCvars(void)
 	cgs.cheatsEnabled = atoi(var) == 0 ? 0 : 1;
 
 	trap_Cvar_Set("ui_recordSPDemo", ch_recordMessage.integer > 0 ? "0" : "1");
-	// set client version to default 
+	// set client version to default
 	trap_Cvar_Set("osp_client", OSP_CLIENT_VERSION);
 	//forceModelModificationCount = cg_forceModel.modificationCount;
 
@@ -1892,9 +1892,9 @@ void CG_CheckFogBypass(void)
 	                                "asylum.bsp",
 	                                "rjldm3.bsp",
 	                                "gen_q1dm1.bsp",
-									"13death_xt_b1",
-									"13excave",
-									"q3dm4",
+	                                "13death_xt_b1",
+	                                "13excave",
+	                                "q3dm4",
 	                                NULL
 	                              };
 
@@ -2333,7 +2333,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		trap_SendConsoleCommand(str);
 	}
 
-	
+
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);
 	return 0;
 }

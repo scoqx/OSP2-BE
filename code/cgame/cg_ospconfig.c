@@ -236,13 +236,13 @@ void CG_OSPConfigXHitBoxSet(int value)
 	hitboxStr = Info_ValueForKey(config, "x_hck_ps_enemy_hitbox");
 
 	if (hitboxStr && atoi(hitboxStr) == 1)
-    {
-        value = atoi(hitboxStr);
-    }
-    else
-    {
-        value = 0;
-    }
+	{
+		value = atoi(hitboxStr);
+	}
+	else
+	{
+		value = 0;
+	}
 
 	// ignore x_hck if cheats are enabled/server is local
 	if (cgs.cheatsEnabled || cgs.localServer)
@@ -255,19 +255,19 @@ void CG_OSPConfigXHitBoxSet(int value)
 // Supported OSP2-BE server
 void CG_OSPSupportedBEServer(qboolean value)
 {
-    cgs.be.supportedServer = value;
+	cgs.be.supportedServer = value;
 
-    // Also share BE version
-    if (value)
-    {
-    	trap_Cvar_Set("osp_client", OSP_CLIENT_VERSION"_"OSP_VERSION);
-    }
+	// Also share BE version
+	if (value)
+	{
+		trap_Cvar_Set("osp_client", OSP_CLIENT_VERSION"_"OSP_VERSION);
+	}
 
 }
 
 qboolean BE_SupportedServer(void)
 {
-    return cgs.be.supportedServer;
+	return cgs.be.supportedServer;
 }
 
 // Disable be features

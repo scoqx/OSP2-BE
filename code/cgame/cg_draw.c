@@ -2987,7 +2987,7 @@ static void CG_Draw2D(void)
 
 	// if (BE_ENABLED && cg_teamIndicator.integer)
 	// {
-	// 	CG_DrawPlayerIndicatorOnScreen();
+	//  CG_DrawPlayerIndicatorOnScreen();
 	// }
 
 	if (cg_shud.integer)
@@ -3123,20 +3123,20 @@ void CG_DrawActive(stereoFrame_t stereoView)
 	{
 		VectorCopy(baseOrg, cg.refdef.vieworg);
 	}
-	
+
 	// Draw 2D before main 2D function
 	if (cg_draw2D.integer)
 	{
 		if (cg_damageDrawFrame.integer & 4 && cgs.be.isHealthLow)
-			{
-				CG_DrawHealthLowOverlay();
-			}
+		{
+			CG_DrawHealthLowOverlay();
+		}
 		if (cg_damageDrawFrame.integer)
-			{
-				CG_DrawDamageFrame();
-			}
+		{
+			CG_DrawDamageFrame();
+		}
 	}
-	
+
 	if (BE_ENABLED && cg_teamIndicator.integer)
 	{
 		CG_DrawPlayerIndicatorOnScreen();

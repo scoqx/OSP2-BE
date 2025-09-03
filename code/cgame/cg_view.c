@@ -996,7 +996,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_AddParticles();
 		CG_AddLocalEntities();
 	}
-	
+
 	CG_AddViewWeapon(&cg.predictedPlayerState);
 
 	// add buffered sounds

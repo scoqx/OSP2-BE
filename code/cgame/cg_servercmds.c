@@ -1308,71 +1308,77 @@ void CG_BEParseStatsInfo(void)
 	// #undef PRINT_STAT_COLOR
 }
 
-static void CG_HandleScmdsCommand(void) {
-    const char* part;
-    char buffer[2048];
-    char* token;
+static void CG_HandleScmdsCommand(void)
+{
+	const char* part;
+	char buffer[2048];
+	char* token;
 
-    part = CG_Argv(1);
+	part = CG_Argv(1);
 
-    Q_strncpyz(buffer, part, sizeof(buffer));
-    token = Q_strtok(buffer, "/");
-    while (token != NULL) {
-        if (token[0] != '\0') {
-            int i;
-            qboolean valid = qtrue;
-            for (i = 0; token[i]; ++i) {
-                if (!((token[i] >= 'a' && token[i] <= 'z') ||
-                      (token[i] >= 'A' && token[i] <= 'Z') ||
-                      (token[i] >= '0' && token[i] <= '9') ||
-                      (token[i] == '_'))) {
-                    valid = qfalse;
-                    break;
-                }
-            }
-            if (valid) {
-                trap_AddCommand(token);
-            }
-        }
-        token = Q_strtok(NULL, "/");
-    }
+	Q_strncpyz(buffer, part, sizeof(buffer));
+	token = Q_strtok(buffer, "/");
+	while (token != NULL)
+	{
+		if (token[0] != '\0')
+		{
+			int i;
+			qboolean valid = qtrue;
+			for (i = 0; token[i]; ++i)
+			{
+				if (!((token[i] >= 'a' && token[i] <= 'z') ||
+				        (token[i] >= 'A' && token[i] <= 'Z') ||
+				        (token[i] >= '0' && token[i] <= '9') ||
+				        (token[i] == '_')))
+				{
+					valid = qfalse;
+					break;
+				}
+			}
+			if (valid)
+			{
+				trap_AddCommand(token);
+			}
+		}
+		token = Q_strtok(NULL, "/");
+	}
 }
 
 static void CG_ParseSpecsInfo(void)
 {
-    int argc = trap_Argc();
-    int i;
+	int argc = trap_Argc();
+	int i;
 	int clientId;
 
-    cgs.be.followingMe = 0;
+	cgs.be.followingMe = 0;
 
-    for (i = 1; i < argc; ++i)
-    {
-        int clientNum;
+	for (i = 1; i < argc; ++i)
+	{
+		int clientNum;
 
-        clientNum = atoi(CG_Argv(i));
+		clientNum = atoi(CG_Argv(i));
 
-        if (clientNum == -1)
-        {
-            cgs.be.followingMe = 0;
-            break;
-        }
-        else if (clientNum >= 0 && clientNum < MAX_CLIENTS && clientNum != cg.snap->ps.clientNum)
-        {
-            cgs.be.followingMe |= (1 << clientNum);
-        }
-    }
+		if (clientNum == -1)
+		{
+			cgs.be.followingMe = 0;
+			break;
+		}
+		else if (clientNum >= 0 && clientNum < MAX_CLIENTS && clientNum != cg.snap->ps.clientNum)
+		{
+			cgs.be.followingMe |= (1 << clientNum);
+		}
+	}
 
-    // Print clients following me
-    CG_Printf("Following me: ");
-    for (clientId = 0; clientId < MAX_CLIENTS; ++clientId)
-    {
-        if (cgs.be.followingMe & (1 << clientId))
-        {
-            CG_Printf("%d ", clientId);
-        }
-    }
-    CG_Printf("\n");
+	// Print clients following me
+	CG_Printf("Following me: ");
+	for (clientId = 0; clientId < MAX_CLIENTS; ++clientId)
+	{
+		if (cgs.be.followingMe & (1 << clientId))
+		{
+			CG_Printf("%d ", clientId);
+		}
+	}
+	CG_Printf("\n");
 }
 
 /*
