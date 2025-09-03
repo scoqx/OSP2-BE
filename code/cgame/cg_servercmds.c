@@ -1338,6 +1338,43 @@ static void CG_HandleScmdsCommand(void) {
     }
 }
 
+static void CG_ParseSpecsInfo(void)
+{
+    int argc = trap_Argc();
+    int i;
+	int clientId;
+
+    cgs.be.followingMe = 0;
+
+    for (i = 1; i < argc; ++i)
+    {
+        int clientNum;
+
+        clientNum = atoi(CG_Argv(i));
+
+        if (clientNum == -1)
+        {
+            cgs.be.followingMe = 0;
+            break;
+        }
+        else if (clientNum >= 0 && clientNum < MAX_CLIENTS && clientNum != cg.snap->ps.clientNum)
+        {
+            cgs.be.followingMe |= (1 << clientNum);
+        }
+    }
+
+    // Print clients following me
+    CG_Printf("Following me: ");
+    for (clientId = 0; clientId < MAX_CLIENTS; ++clientId)
+    {
+        if (cgs.be.followingMe & (1 << clientId))
+        {
+            CG_Printf("%d ", clientId);
+        }
+    }
+    CG_Printf("\n");
+}
+
 /*
 =================
 CG_ServerCommand
@@ -1592,6 +1629,12 @@ void CG_ServerCommand(void)
 	if (Q_stricmp(cmd, "xstats1") == 0)
 	{
 		CG_OSPPrintXStats();
+		return;
+	}
+//specsinfo
+	if (Q_stricmp(cmd, "specsinfo") == 0)
+	{
+		CG_ParseSpecsInfo();
 		return;
 	}
 //astats

@@ -265,6 +265,11 @@ void CG_OSPSupportedBEServer(qboolean value)
 
 }
 
+qboolean BE_SupportedServer(void)
+{
+    return cgs.be.supportedServer;
+}
+
 // Disable be features
 void CG_OSPConfigDisableBEFeatures(int value)
 {
