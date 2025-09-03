@@ -1342,57 +1342,37 @@ static void CG_ParseSpecsInfo(void)
 {
     int argc = trap_Argc();
     int i;
-    int expectedCount;
+	int clientId;
 
-    if (argc < 2)
-    {
-        return;
-    }
+    cgs.be.followingMe = 0;
 
-    expectedCount = atoi(CG_Argv(1));
-    if (expectedCount < 0)
+    for (i = 1; i < argc; ++i)
     {
-        expectedCount = 0;
-    }
-    if (expectedCount > MAX_CLIENTS)
-    {
-        expectedCount = MAX_CLIENTS;
-    }
-
-    cg.specsinfo.count = 0;
-    cg.specsinfo.lastUpdateTime = cg.time;
-
-    // args layout: specsinfo <count> [<clientNum> "<name>"]...
-    // We will iterate pairs starting from index 2
-    for (i = 0; i < expectedCount; ++i)
-    {
-        int argIdxNum = 2 + i * 2;
-        int argIdxName = argIdxNum + 1;
         int clientNum;
-        const char* nameArg;
 
-        if (argIdxName >= argc)
+        clientNum = atoi(CG_Argv(i));
+
+        if (clientNum == -1)
         {
+            cgs.be.followingMe = 0;
             break;
         }
-
-        clientNum = atoi(CG_Argv(argIdxNum));
-        nameArg = CG_Argv(argIdxName);
-
-        if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+        else if (clientNum >= 0 && clientNum < MAX_CLIENTS && clientNum != cg.snap->ps.clientNum)
         {
-            continue;
-        }
-
-        cg.specsinfo.clientNums[cg.specsinfo.count] = clientNum;
-        Q_strncpyz(cg.specsinfo.names[cg.specsinfo.count], nameArg, sizeof(cg.specsinfo.names[0]));
-        cg.specsinfo.count++;
-
-        if (cg.specsinfo.count >= MAX_CLIENTS)
-        {
-            break;
+            cgs.be.followingMe |= (1 << clientNum);
         }
     }
+
+    // Print clients following me
+    CG_Printf("Following me: ");
+    for (clientId = 0; clientId < MAX_CLIENTS; ++clientId)
+    {
+        if (cgs.be.followingMe & (1 << clientId))
+        {
+            CG_Printf("%d ", clientId);
+        }
+    }
+    CG_Printf("\n");
 }
 
 /*

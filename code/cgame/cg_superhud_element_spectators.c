@@ -12,6 +12,11 @@ void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config)
 {
     shudElementSpectators_t* element;
 
+    if (!BE_SupportedServer)
+    {
+        return NULL;
+    }
+
     SHUD_ELEMENT_INIT(element, config);
 
     CG_SHUDTextMakeContext(&element->config, &element->ctx);
@@ -22,37 +27,50 @@ void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config)
 
 static qboolean CG_SHUD_SpectatorsBuildString(char* out, int outSize)
 {
-    int i;
     int len = 0;
-    const int count = cg.specsinfo.count;
+    int clientId;
+    qboolean hasSpectators = qfalse;
 
-    if (count <= 0)
+    if (element->config.style.isSet && element->config.style.value & 2)
+    {
+        Q_strncpyz(out, "", outSize);
+    }
+    else
+    {
+        Q_strncpyz(out, "Spectators:", outSize);
+    }
+    len = strlen(out);
+
+    for (clientId = 0; clientId < MAX_CLIENTS; ++clientId)
+    {
+        if (cgs.be.followingMe & (1 << clientId))
+        {
+            const char* name = cgs.clientinfo[clientId].name;
+            if (!name || !name[0])
+            {
+                continue;
+            }
+            if (hasSpectators)
+            {
+                Q_strncpyz(out + len, ", ", outSize - len);
+                len = strlen(out);
+                if (len >= outSize)
+                    break;
+            }
+            Q_strncpyz(out + len, name, outSize - len);
+            len = strlen(out);
+            if (len >= outSize)
+                break;
+            hasSpectators = qtrue;
+        }
+    }
+
+    if (!hasSpectators)
     {
         out[0] = '\0';
         return qfalse;
     }
 
-    Q_strncpyz(out, "Spectators: ", outSize);
-    len = strlen(out);
-    for (i = 0; i < count; ++i)
-    {
-        const char* name = cg.specsinfo.names[i];
-        if (!name || !name[0])
-        {
-            continue;
-        }
-        if (i > 0)
-        {
-            Q_strncpyz(out + len, ", ", outSize - len);
-            len = strlen(out);
-            if (len >= outSize)
-                break;
-        }
-        Q_strncpyz(out + len, name, outSize - len);
-        len = strlen(out);
-        if (len >= outSize)
-            break;
-    }
     return qtrue;
 }
 
@@ -61,17 +79,25 @@ void CG_SHUDElementSpectatorsRoutine(void* context)
     shudElementSpectators_t* element = (shudElementSpectators_t*)context;
     static char buffer[MAX_STRING_CHARS];
 
-    if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+    if (!BE_SupportedServer && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
     {
-        // In spectator mode ourselves: nothing to show for following list of us
         return;
     }
-
+    
     if (!CG_SHUD_SpectatorsBuildString(buffer, sizeof(buffer)))
     {
         if (!SHUD_CHECK_SHOW_EMPTY(element))
+        {
             return;
-        Q_strncpyz(buffer, "Spectators:", sizeof(buffer));
+        }
+        if (element->config.style.isSet && element->config.style.value & 2)
+        {
+            Q_strncpyz(buffer, "", sizeof(buffer));
+        }
+        else
+        {
+            Q_strncpyz(buffer, "Spectators:", sizeof(buffer));
+        }
     }
 
     element->ctx.text = buffer;

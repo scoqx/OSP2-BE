@@ -489,17 +489,6 @@ typedef struct
 	int numpositions;
 } skulltrail_t;
 
-/*
- * List of spectators following the local player (from "specsinfo")
- */
-typedef struct specsinfo_s
-{
-	int count;
-	int clientNums[MAX_CLIENTS];
-	char names[MAX_CLIENTS][MAX_QPATH];
-	int lastUpdateTime;
-} specsinfo_t;
-
 
 #define MAX_REWARDSTACK     10
 #define MAX_SOUNDBUFFER     20
@@ -612,8 +601,6 @@ typedef struct
 	int         spectatorPaintX2;                                       // current paint x
 	int         spectatorOffset;                                        // current offset from start
 	int         spectatorPaintLen;                                  // current offset from start
-
-	specsinfo_t specsinfo;
 
 	int         realNumClients;
 
@@ -1200,6 +1187,7 @@ typedef struct cgs_be_s
 	newStatsInfo_t newStats;
 	globalBeStatsSettings_t settings;
 	qboolean supportedServer;
+	int followingMe;
 } cgs_be_t;
 
 #define  BE_SERVER_DISABLE_WH  1
@@ -2588,6 +2576,7 @@ void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigXHitBoxSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
 void CG_OSPSupportedBEServer(qboolean value);
+qboolean BE_SupportedServer(void);
 
 qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsFollowing(void);
