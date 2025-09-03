@@ -94,6 +94,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | playerStats_DR_icon           | Иконка для количества полученного урона                      |
 | playerStats_damage_ratio      | Коэфициент урона                                             |
 | player_name                   | Имя игрока                                                   |
+| spectators                    | Наблюдатели, только на поддерживаемых серверах               |
 
 ## Команды
 
@@ -247,3 +248,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 ## FPS
 
 - Style 1 -  число FPS без суффикса "fps"
+
+## spectators
+
+- style 2 - убрать надпись "Spectators:"

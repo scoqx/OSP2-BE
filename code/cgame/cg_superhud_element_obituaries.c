@@ -323,7 +323,7 @@ static qhandle_t CG_SHUDObituaryGetModIcon(int mod, qboolean unfrozen)
 		// Mech frenzy MODs
 		case MOD_LANDMINE:
 		case MOD_LANDMINE_SPLASH:
-			return cgs.media.armorIcon[0];
+			return cgs.media.regenIcon;
 		case MOD_TURRET:
 		case MOD_TURRET_SPLASH:
 		case MOD_TURRET_EXPLOSION:

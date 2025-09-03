@@ -30,7 +30,8 @@ static qboolean CG_SHUD_SpectatorsBuildString(char* out, int outSize)
     int len = 0;
     int clientId;
     qboolean hasSpectators = qfalse;
-
+    shudElementSpectators_t* element;
+    
     if (element->config.style.isSet && element->config.style.value & 2)
     {
         Q_strncpyz(out, "", outSize);

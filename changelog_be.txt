@@ -439,3 +439,8 @@ description later
 * hud flagstatus fix
 + SHUD config - kmodel.cfg (koreanmodel)
 * damage frame fix
+
+03.09.2025 be v0.94e
+SHUD:
++ config - ChikiPiki.cfg (by Musin)
++ spectators element, works only at supported server`
