@@ -196,6 +196,12 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 - key3show - скрывать если не нажата кнопка +shudkey3
 - key4show - скрывать если не нажата кнопка +shudkey4
 - showempty - показывать пустые значения `для  элементов: weapon/player stats, tempAcc, Score_NME, StatusBar_ArmorCount`
+- gt_ffa - скрывать при режиме игры каждый сам за себя (Free for all)
+- gt_tourney -  скрывать при турнирном режиме игры (дуэли)
+- gt_tdm -  скрывать при командном режиме игры. Только team death match
+- gt_ctf - скрывать при режиме игры "Захват флага"
+- gt_freezetag - скрывать при режиме игры "Freezetag/Unfreeze"
+- gt_clanarena - скрывать при режиме игры "Clan Arena"
 
 Можно указывать несколько вариантов через пробел:
 

@@ -377,6 +377,7 @@ static qboolean CG_SHUDConfigCommandParseVisFlagsVariant(configFileInfo_t* finfo
 	{
 		*flags |= mask;
 		isFound = qtrue;
+		finfo->pos += strlen(token);
 	}
 
 	return isFound;
@@ -416,6 +417,12 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY2_SHOW_STR, SE_KEY2_SHOW, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY3_SHOW_STR, SE_KEY3_SHOW, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY4_SHOW_STR, SE_KEY4_SHOW, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_FFA_STR, SE_GT_FFA, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_TDM_STR, SE_GT_TDM, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_CTF_STR, SE_GT_CTF, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_TOURNEY_STR, SE_GT_TOURNEY, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_FREEZETAG_STR, SE_GT_FREEZETAG, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_CLANARENA_STR, SE_GT_CLANARENA, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHOW_EMPTY_STR, SE_SHOW_EMPTY, &flags)
 		   )
 		{
@@ -426,7 +433,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 		{
 			c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
 
-			skip = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+			skip = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 
 			if (skip)
 			{

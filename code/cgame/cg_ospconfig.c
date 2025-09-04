@@ -17,6 +17,11 @@ qboolean CG_OSPIsGameTypeFreeze()
 	return cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze;
 }
 
+qboolean CG_OSPIsGameTypeTDM()
+{
+	return cgs.gametype == GT_TEAM && !(cgs.osp.gameTypeFreeze);
+}
+
 
 
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup)
