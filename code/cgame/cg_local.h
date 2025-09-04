@@ -1777,6 +1777,10 @@ extern vmCvar_t         be_features;
 extern vmCvar_t         be_enabled;
 extern vmCvar_t         be_run;
 
+// UI scale factor
+extern vmCvar_t         ui_scale;
+extern vmCvar_t         ui_scaleMode;
+
 
 //
 // cg_main.c
@@ -1843,6 +1847,9 @@ void CG_AddBufferedSound(sfxHandle_t sfx);
 void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoPlayback);
 float CG_DrawLagometer(float pos);
 void CG_SetCvarDescription(const char* name, const char* description);
+
+// Recalculate screen scale using ui_scale
+void CG_UpdateUIScreenScale(void);
 
 
 //
@@ -2771,6 +2778,10 @@ void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
+
+// ui_scale on-change handler
+void CG_LocalEventCvarChanged_cg_ui_scale(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_ui_scaleMode(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

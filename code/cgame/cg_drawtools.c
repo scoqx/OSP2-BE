@@ -114,11 +114,46 @@ Adjusted for resolution and screen aspect ratio
 */
 void CG_AdjustFrom640(float* x, float* y, float* w, float* h)
 {
-	// scale for screen sizes
-	if (x) *x *= cgs.screenXScale_Old;
-	if (y) *y *= cgs.screenYScale_Old;
-	if (w) *w *= cgs.screenXScale_Old;
-	if (h) *h *= cgs.screenYScale_Old;
+	// Three modes:
+	// 0: centered full-scale (scale both pos and size, apply bias)
+	// 1: top-left full-scale (scale both pos and size, no bias)
+	// 2: DPI-like (scale size by ui_scale, positions by base only)
+	int mode = ui_scaleMode.integer;
+	float us = ui_scale.value;
+	float baseX;
+	float baseY;
+	float biasX;
+	float biasY;
+	if (us < 0.05f) us = 0.05f;
+	if (us > 4.0f)  us = 4.0f;
+
+	baseX = cgs.glconfig.vidWidth  * (1.0f / 640.0f);
+	baseY = cgs.glconfig.vidHeight * (1.0f / 480.0f);
+	biasX = 0.5f * (cgs.glconfig.vidWidth  - 640.0f * baseX * us);
+	biasY = 0.5f * (cgs.glconfig.vidHeight - 480.0f * baseY * us);
+
+	switch (mode)
+	{
+		default:
+		case 0: // centered full-scale
+			if (x) *x = (*x) * (baseX * us) + biasX;
+			if (y) *y = (*y) * (baseY * us) + biasY;
+			if (w) *w *= (baseX * us);
+			if (h) *h *= (baseY * us);
+			break;
+		case 1: // top-left full-scale
+			if (x) *x *= (baseX * us);
+			if (y) *y *= (baseY * us);
+			if (w) *w *= (baseX * us);
+			if (h) *h *= (baseY * us);
+			break;
+		case 2: // DPI-like
+			if (x) *x *= baseX;
+			if (y) *y *= baseY;
+			if (w) *w *= (baseX * us);
+			if (h) *h *= (baseY * us);
+			break;
+	}
 }
 void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean correctWide)
 {
@@ -129,14 +164,44 @@ void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean corre
 		*x += 0.5 * (cgs.glconfig.vidWidth - (cgs.glconfig.vidHeight * 640 / 480));
 	}
 #endif
-	// scale for screen sizes
-	if (x) *x *= cgs.screenXScale_Old;
-	if (y) *y *= cgs.screenYScale_Old;
-	if (h) *h *= cgs.screenYScale_Old;
+	// Mirror of modes for legacy function
+	int mode = ui_scaleMode.integer;
+	float us = ui_scale.value;
+	float baseX;
+	float baseY;
+	float biasX;
+	float biasY;
+	if (us < 0.05f) us = 0.05f;
+	if (us > 4.0f)  us = 4.0f;
+
+	baseX = cgs.glconfig.vidWidth  * (1.0f / 640.0f);
+	baseY = cgs.glconfig.vidHeight * (1.0f / 480.0f);
+	biasX = 0.5f * (cgs.glconfig.vidWidth  - 640.0f * baseX * us);
+	biasY = 0.5f * (cgs.glconfig.vidHeight - 480.0f * baseY * us);
+
+	switch (mode)
+	{
+		default:
+		case 0:
+			if (x) *x = (*x) * (baseX * us) + biasX;
+			if (y) *y = (*y) * (baseY * us) + biasY;
+			if (h) *h *= (baseY * us);
+			break;
+		case 1:
+			if (x) *x *= (baseX * us);
+			if (y) *y *= (baseY * us);
+			if (h) *h *= (baseY * us);
+			break;
+		case 2:
+			if (x) *x *= baseX;
+			if (y) *y *= baseY;
+			if (h) *h *= (baseY * us);
+			break;
+	}
 
 	if (!correctWide)
 	{
-		if (w) *w *= cgs.screenXScale_Old;
+		if (w) *w *= ( (mode==2) ? (baseX * us) : (baseX * us) );
 	}
 	else
 	{
@@ -145,10 +210,10 @@ void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean corre
 		if (!koeffReady)
 		{
 			koeffReady = qtrue;
-			koeff = cgs.screenXScale_Old * (cgs.glconfig.vidHeight * 640.0) / (cgs.glconfig.vidWidth * 480.0);
+			koeff = baseX * (cgs.glconfig.vidHeight * 640.0f) / (cgs.glconfig.vidWidth * 480.0f);
 		}
 
-		if (w) *w *= koeff;
+		if (w) *w *= (koeff * us);
 	}
 }
 

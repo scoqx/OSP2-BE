@@ -888,3 +888,16 @@ void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart)
 {
 	CG_UpdateBeFeatures();
 }
+
+void CG_LocalEventCvarChanged_cg_ui_scale(cvarTable_t* cvart)
+{
+	// clamp and update screen scaling factors
+	cvart->vmCvar->value = Com_Clamp(0.05f, 4.0f, cvart->vmCvar->value);
+	CG_UpdateUIScreenScale();
+}
+
+void CG_LocalEventCvarChanged_ui_scaleMode(cvarTable_t* cvart)
+{
+	// clamp mode to known values
+	cvart->vmCvar->integer = Com_Clamp(0, 2, cvart->vmCvar->integer);
+}

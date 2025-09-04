@@ -463,6 +463,8 @@ vmCvar_t        cg_teamIndicatorFadeRadius;
 vmCvar_t        be_features;
 vmCvar_t        be_enabled;
 vmCvar_t        be_run;
+vmCvar_t        ui_scale;
+vmCvar_t        ui_scaleMode;
 
 static cvarTable_t cvarTable[] =
 {
@@ -835,6 +837,8 @@ static cvarTable_t cvarTable[] =
 	{ &be_features, "be_features", "", CVAR_ROM },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
+	{ &ui_scale, "ui_scale", "1.00", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_ui_scale },
+	{ &ui_scaleMode, "ui_scaleMode", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ui_scaleMode },
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -972,6 +976,37 @@ void CG_UpdateCvars(void)
 		cg.clientNum = cg.snap->ps.clientNum;
 		CG_UpdateAllClientsInfo();
 	}
+}
+
+void CG_UpdateUIScreenScale(void)
+{
+    float scale = ui_scale.value;
+    if (scale < 0.05f) scale = 0.05f;
+    if (scale > 4.0f) scale = 4.0f;
+
+    // base scales
+    cgs.screenXScale_Old = (cgs.glconfig.vidWidth / 640.0f) * scale;
+    cgs.screenYScale_Old = (cgs.glconfig.vidHeight / 480.0f) * scale;
+
+    // widescreen-corrected scales used by new text drawing paths
+    cgs.screenXBias = 0.0f;
+    cgs.screenYBias = 0.0f;
+
+    if (cgs.glconfig.vidWidth * 480 > cgs.glconfig.vidHeight * 640)
+    {
+        cgs.screenXScale = cgs.screenYScale = (cgs.glconfig.vidHeight * (1.0f / 480.0f)) * scale;
+        cgs.screenXBias = 0.5f * (cgs.glconfig.vidWidth - (cgs.glconfig.vidHeight * (640.0f / 480.0f)));
+    }
+    else
+    {
+        cgs.screenXScale = cgs.screenYScale = (cgs.glconfig.vidWidth * (1.0f / 640.0f)) * scale;
+        cgs.screenYBias = 0.5f * (cgs.glconfig.vidHeight - (cgs.glconfig.vidWidth * (480.0f / 640.0f)));
+    }
+
+    cgs.screenXmin = 0.0f - (cgs.screenXBias / cgs.screenXScale);
+    cgs.screenXmax = 640.0f + (cgs.screenXBias / cgs.screenXScale);
+    cgs.screenYmin = 0.0f - (cgs.screenYBias / cgs.screenYScale);
+    cgs.screenYmax = 480.0f + (cgs.screenYBias / cgs.screenYScale);
 }
 
 int CG_CrosshairPlayer(void)
@@ -2062,8 +2097,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	// get the rendering configuration from the client system
 	trap_GetGlconfig(&cgs.glconfig);
-	cgs.screenXScale_Old = cgs.glconfig.vidWidth / 640.0;
-	cgs.screenYScale_Old = cgs.glconfig.vidHeight / 480.0;
+	CG_UpdateUIScreenScale();
 
 	cgs.screenXBias = 0.0;
 	cgs.screenYBias = 0.0;
