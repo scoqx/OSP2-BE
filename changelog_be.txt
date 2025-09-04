@@ -446,6 +446,7 @@ SHUD:
 + spectators element, works only at supported server`
 
 04.09.2025 be v0.95
++ cg_drawHitbox 2 disabled for a while (need fix)
 * scoreboard visual fix
 SHUD: 
 + visflags, gt_ffa, gt_tourney, gt_tdm, gt_ctf, gt_unfreeze, gt_clanarena

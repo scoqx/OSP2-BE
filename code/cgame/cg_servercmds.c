@@ -445,13 +445,14 @@ static void CG_ConfigStringModified(void)
 	{
 		CG_ShaderStateChanged();
 	}
-	else if (num = CS_OSP2BE_SUPPORTED)
+	else if (num == CS_OSP2BE_SUPPORTED)
 	{
 		CG_OSPSupportedBEServer(atoi(str));
 	}
 	else if (num == CS_OSP2BE_DISABLED_FEATURES)
 	{
-		CG_OSPConfigDisableBEFeatures(atoi(str));
+		cgs.be.disableFeatures = atoi(str);
+		BE_PrintDisabledFeatures();
 	}
 	else if (num == XQ3E_ALLOW_FEATURES)
 	{

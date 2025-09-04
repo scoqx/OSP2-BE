@@ -12,7 +12,7 @@ void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config)
 {
 	shudElementSpectators_t* element;
 
-	if (!BE_SupportedServer)
+	if (!BE_isSupportedServer)
 	{
 		return NULL;
 	}
@@ -80,7 +80,7 @@ void CG_SHUDElementSpectatorsRoutine(void* context)
 	shudElementSpectators_t* element = (shudElementSpectators_t*)context;
 	static char buffer[MAX_STRING_CHARS];
 
-	if (!BE_SupportedServer && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	if (!BE_isSupportedServer && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
 	{
 		return;
 	}

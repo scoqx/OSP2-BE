@@ -37,7 +37,6 @@ extern "C" {
 #define NYAN_VEC4(VALUE) CG_Printf( "%s:%d: %s = %f,%f,%f,%f\n", __FILE__, __LINE__, #VALUE, VALUE[0], VALUE[1], VALUE[2], VALUE[3])
 #define NYAN_MSG(VALUE)   CG_Printf( "%s:%d: %s\n", __FILE__, __LINE__, VALUE)
 
-#define BE_ENABLED (be_enabled.integer)
 
 // The entire cgame module is unloaded and reloaded on each level change,
 // so there is NO persistant data between levels on the client side.
@@ -1190,7 +1189,20 @@ typedef struct cgs_be_s
 	int followingMe;
 } cgs_be_t;
 
-#define  BE_SERVER_DISABLE_WH  1
+#define BE_ENABLED 				be_enabled.integer
+#define CG_BE_FEATURE_ENABLED(feature) (BE_ENABLED && !(cgs.be.disableFeatures & (feature))) // not disabled lol
+
+#define CG_BE_TEAM_FOE_WH       (1 << 0) // 1
+#define CG_BE_MODELSOUND        (1 << 1) // 2
+#define CG_BE_ALT_GRENADES      (1 << 2) // 4
+#define CG_BE_ENEMYLIGHTNING	(1 << 3) // 8
+#define CG_BE_MARK_TEAMMATE		(1 << 4) // 16
+#define CG_BE_ALT_SHADOW        (1 << 5) // 32
+#define CG_BE_ALT_BLOOD         (1 << 6) // 64
+#define CG_BE_ALT_PLASMAGUN		(1 << 7) // 128
+#define CG_BE_OUTLINE           (1 << 8) // 256
+#define CG_BE_TEAM_INDICATOR    (1 << 9) // 512
+#define CG_BE_DAMAGEINFO		(1 << 10) // 1024
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -1386,6 +1398,7 @@ typedef struct
 	int acceptTask;
 	int acceptLeader;
 
+	qboolean		customModelSound;
 	sfxHandle_t     mySounds[MAX_CUSTOM_SOUNDS];
 	sfxHandle_t     teamSounds[MAX_CUSTOM_SOUNDS];
 	sfxHandle_t     enemySounds[MAX_CUSTOM_SOUNDS];
@@ -2502,8 +2515,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.94e" // BE
-#define OSP_CLIENT_VERSION "1008_OSP2"
+#define OSP_VERSION "be-0.95" // BE
 
 
 
@@ -2577,7 +2589,8 @@ void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigXHitBoxSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
 void CG_OSPSupportedBEServer(qboolean value);
-qboolean BE_SupportedServer(void);
+qboolean BE_isSupportedServer(void);
+void BE_PrintDisabledFeatures(void);
 
 qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsFollowing(void);

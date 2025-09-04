@@ -1371,7 +1371,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		shaft_type = LIGHTNING_DEFAULT_SHADER;
 	}
 
-	if (BE_ENABLED && (!isOurClient && cg_enemyLightningColor.integer > 0 && CG_IsEnemy(target)))
+	if (CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING) && (!isOurClient && cg_enemyLightningColor.integer > 0 && CG_IsEnemy(target)))
 	{
 		beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
 		beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
@@ -2603,7 +2603,7 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 					mark = cgs.media.energyMarkNoPicMipShader;
 				}
 			}
-			else if (cg_altPlasma.integer == 2)
+			else if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN) && cg_altPlasma.integer == 2)
 			{
 				if ((cg_nomip.integer & 2) == 0)
 				{

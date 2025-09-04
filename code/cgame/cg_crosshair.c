@@ -267,7 +267,7 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 
 static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 {
-	if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
+	if ((CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO)) && (CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO)) && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
 	{
 		CG_CrosshairPickDamageColor(
 		    cgs.osp.crosshair.decorColor,

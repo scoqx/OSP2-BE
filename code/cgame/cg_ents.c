@@ -558,7 +558,7 @@ static void CG_Missile(centity_t* cent)
 		ent.rotation = 0;
 		ent.customShader = cgs.media.plasmaBallShader;
 
-		if (cg_altPlasma.integer == 2)
+		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN)&& cg_altPlasma.integer == 2)
 		{
 			ent.customShader = cgs.media.plasmaOldBallShader;
 		}
@@ -597,7 +597,7 @@ static void CG_Missile(centity_t* cent)
 
 	if (cent->currentState.weapon == WP_GRENADE_LAUNCHER && cg_altGrenades.integer)
 	{
-		if (BE_ENABLED && cg_altGrenades.integer == 2)
+		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_GRENADES) && cg_altGrenades.integer == 2)
 		{
 			int owner = s1->otherEntityNum;
 

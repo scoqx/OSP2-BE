@@ -607,9 +607,9 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		// TODO we need some solution when we take quad cuz sometimes with LG dmg + delayedDMG > 25
 		//damage = ops->powerups[PW_QUAD] ? 26 : damage; // for a homogeneous sound with quad
 
-		// if ((OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED()
-		//         && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
-		if (cg_hitSounds.integer)
+		
+		if (((CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO))
+		        && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
 		{
 			int index;
 			if (damage > 75) index = 3;

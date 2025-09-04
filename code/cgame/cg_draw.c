@@ -2985,11 +2985,6 @@ static void CG_Draw2D(void)
 		return;
 	}
 
-	// if (BE_ENABLED && cg_teamIndicator.integer)
-	// {
-	//  CG_DrawPlayerIndicatorOnScreen();
-	// }
-
 	if (cg_shud.integer)
 	{
 		CG_SHUDRoutine();
@@ -3137,7 +3132,8 @@ void CG_DrawActive(stereoFrame_t stereoView)
 		}
 	}
 
-	if (BE_ENABLED && cg_teamIndicator.integer)
+	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) &&
+		 cg_teamIndicator.integer)
 	{
 		CG_DrawPlayerIndicatorOnScreen();
 	}

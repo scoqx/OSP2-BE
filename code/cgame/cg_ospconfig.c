@@ -261,16 +261,9 @@ void CG_OSPConfigXHitBoxSet(int value)
 void CG_OSPSupportedBEServer(qboolean value)
 {
 	cgs.be.supportedServer = value;
-
-	// Also share BE version
-	if (value)
-	{
-		trap_Cvar_Set("osp_client", OSP_CLIENT_VERSION"_"OSP_VERSION);
-	}
-
 }
 
-qboolean BE_SupportedServer(void)
+qboolean BE_isSupportedServer(void)
 {
 	return cgs.be.supportedServer;
 }
@@ -279,6 +272,7 @@ qboolean BE_SupportedServer(void)
 void CG_OSPConfigDisableBEFeatures(int value)
 {
 	cgs.be.disableFeatures = value;
+	BE_PrintDisabledFeatures();
 }
 /*
  * Unknown cs 0x368
