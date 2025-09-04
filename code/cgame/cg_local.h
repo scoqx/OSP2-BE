@@ -700,6 +700,11 @@ typedef struct
 	playerState_t savedPmoveStates[NUM_SAVED_STATES];
 	int         stateHead, stateTail;
 
+	/* HUD cinematic lag state */
+	float       hudLagX;
+	float       hudLagY;
+	float       hudPrevYaw;
+	float       hudPrevPitch;
 } cg_t;
 
 
@@ -1780,6 +1785,12 @@ extern vmCvar_t         be_run;
 // UI scale factor
 extern vmCvar_t         ui_scale;
 extern vmCvar_t         ui_scaleMode;
+extern vmCvar_t         ui_dmgPulse;
+extern vmCvar_t         ui_dmgPulseTimeMs;
+extern vmCvar_t         ui_hudLag;
+extern vmCvar_t         ui_hudLagSmooth;
+extern vmCvar_t         ui_hudLagAmount;
+extern vmCvar_t         ui_hudLagAffectCrosshair;
 
 
 //
@@ -2782,6 +2793,8 @@ void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
 // ui_scale on-change handler
 void CG_LocalEventCvarChanged_cg_ui_scale(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ui_scaleMode(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_ui_dmgPulse(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_ui_dmgPulseTimeMs(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

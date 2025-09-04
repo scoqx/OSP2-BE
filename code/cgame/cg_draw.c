@@ -3143,7 +3143,31 @@ void CG_DrawActive(stereoFrame_t stereoView)
 	}
 
 	// draw status bar and other floating elements
-	CG_Draw2D();
+	if (cg_draw2D.integer && ui_scaleMode.integer == 0 && ui_dmgPulse.value > 0.0f && ui_dmgPulseTimeMs.integer > 0 && cg.damageTime)
+	{
+		int dt = cg.time - cg.damageTime;
+		if (dt >= 0 && dt <= ui_dmgPulseTimeMs.integer)
+		{
+			float t = (float)dt / (float)ui_dmgPulseTimeMs.integer; // 0..1
+			float amp = ui_dmgPulse.value;
+			/* Temporarily bump ui_scale for duration (ease-out) */
+			float savedScale = ui_scale.value;
+			float newScale = savedScale + amp * (1.0f - t);
+			ui_scale.value = newScale;
+			CG_UpdateUIScreenScale();
+			CG_Draw2D();
+			ui_scale.value = savedScale;
+			CG_UpdateUIScreenScale();
+		}
+		else
+		{
+			CG_Draw2D();
+		}
+	}
+	else
+	{
+		CG_Draw2D();
+	}
 
 }
 

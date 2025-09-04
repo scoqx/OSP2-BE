@@ -901,3 +901,15 @@ void CG_LocalEventCvarChanged_ui_scaleMode(cvarTable_t* cvart)
 	// clamp mode to known values
 	cvart->vmCvar->integer = Com_Clamp(0, 2, cvart->vmCvar->integer);
 }
+
+void CG_LocalEventCvarChanged_ui_dmgPulse(cvarTable_t* cvart)
+{
+	// clamp pulse scale to reasonable range
+	cvart->vmCvar->value = Com_Clamp(0.0f, 1.0f, cvart->vmCvar->value);
+}
+
+void CG_LocalEventCvarChanged_ui_dmgPulseTimeMs(cvarTable_t* cvart)
+{
+	// clamp pulse time to [10..2000] ms
+	cvart->vmCvar->integer = Com_Clamp(10, 2000, cvart->vmCvar->integer);
+}

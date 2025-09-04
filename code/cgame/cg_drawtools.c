@@ -132,6 +132,27 @@ void CG_AdjustFrom640(float* x, float* y, float* w, float* h)
 	biasX = 0.5f * (cgs.glconfig.vidWidth  - 640.0f * baseX * us);
 	biasY = 0.5f * (cgs.glconfig.vidHeight - 480.0f * baseY * us);
 
+	/* Apply small cinematic HUD lag (positional offset) if enabled */
+	if (ui_hudLag.value > 0.0f)
+	{
+		/* compute yaw/pitch deltas since last frame */
+		float curYaw = cg.refdefViewAngles[YAW];
+		float curPitch = cg.refdefViewAngles[PITCH];
+		float dyaw = AngleSubtract(curYaw, cg.hudPrevYaw);
+		float dpitch = AngleSubtract(curPitch, cg.hudPrevPitch);
+		cg.hudPrevYaw = curYaw;
+		cg.hudPrevPitch = curPitch;
+
+		/* integrate with smoothing */
+		{
+			float smooth = ui_hudLagSmooth.value;
+			if (smooth < 0.0f) smooth = 0.0f;
+			if (smooth > 1.0f) smooth = 1.0f;
+			cg.hudLagX = cg.hudLagX * smooth + (-dyaw)   * (1.0f - smooth) * ui_hudLagAmount.value;
+			cg.hudLagY = cg.hudLagY * smooth + (dpitch) * (1.0f - smooth) * ui_hudLagAmount.value;
+		}
+	}
+
 	switch (mode)
 	{
 		default:
@@ -153,6 +174,13 @@ void CG_AdjustFrom640(float* x, float* y, float* w, float* h)
 			if (w) *w *= (baseX * us);
 			if (h) *h *= (baseY * us);
 			break;
+	}
+
+	/* Apply HUD lag offset after scaling (in screen coordinates) */
+	if (ui_hudLag.value > 0.0f)
+	{
+		if (x) *x += cg.hudLagX;
+		if (y) *y += cg.hudLagY;
 	}
 }
 void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean correctWide)
@@ -178,6 +206,8 @@ void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean corre
 	baseY = cgs.glconfig.vidHeight * (1.0f / 480.0f);
 	biasX = 0.5f * (cgs.glconfig.vidWidth  - 640.0f * baseX * us);
 	biasY = 0.5f * (cgs.glconfig.vidHeight - 480.0f * baseY * us);
+
+
 
 	switch (mode)
 	{
@@ -214,6 +244,13 @@ void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean corre
 		}
 
 		if (w) *w *= (koeff * us);
+	}
+
+	/* Apply HUD lag offset after scaling (in screen coordinates) */
+	if (ui_hudLag.value > 0.0f)
+	{
+		if (x) *x += cg.hudLagX;
+		if (y) *y += cg.hudLagY;
 	}
 }
 
@@ -1300,6 +1337,13 @@ void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, 
 
 	s = (const byte*)string;
 
+	/* apply hud-lag in virtual 640x480 space */
+	if (ui_hudLag.integer)
+	{
+		x += cg.hudLagX;
+		y += cg.hudLagY;
+	}
+
 	ax = x * cgs.screenXScale + cgs.screenXBias;
 	ay = y * cgs.screenYScale + cgs.screenYBias;
 
@@ -1969,12 +2013,23 @@ static void UI_DrawBannerString2(int x, int y, const char* str, vec4_t color)
 	float   fcol;
 	float   fwidth;
 	float   fheight;
+	int     lagX;
+	int     lagY;
 
 	// draw the colored text
 	trap_R_SetColor(color);
 
-	ax = x * cgs.screenXScale_Old + cgs.screenXBias_Old;
-	ay = y * cgs.screenXScale_Old;
+	/* apply hud-lag in virtual 640x480 space */
+	lagX = x;
+	lagY = y;
+	if (ui_hudLag.integer)
+	{
+		lagX += (int)cg.hudLagX;
+		lagY += (int)cg.hudLagY;
+	}
+
+	ax = lagX * cgs.screenXScale_Old + cgs.screenXBias_Old;
+	ay = lagY * cgs.screenXScale_Old;
 
 	s = str;
 	while (*s)
@@ -1982,7 +2037,7 @@ static void UI_DrawBannerString2(int x, int y, const char* str, vec4_t color)
 		ch = *s & 127;
 		if (ch == ' ')
 		{
-			ax += ((float)PROPB_SPACE_WIDTH + (float)PROPB_GAP_WIDTH) * cgs.screenXScale_Old;
+			aw = (float)PROPB_SPACE_WIDTH * cgs.screenXScale_Old;
 		}
 		else if (ch >= 'A' && ch <= 'Z')
 		{
@@ -2090,12 +2145,23 @@ static void UI_DrawProportionalString2(int x, int y, const char* str, vec4_t col
 	float   fcol;
 	float   fwidth;
 	float   fheight;
+	int     lagX;
+	int     lagY;
 
 	// draw the colored text
 	trap_R_SetColor(color);
 
-	ax = x * cgs.screenXScale_Old + cgs.screenXBias_Old;
-	ay = y * cgs.screenXScale_Old;
+	/* apply hud-lag in virtual 640x480 space */
+	lagX = x;
+	lagY = y;
+	if (ui_hudLag.integer)
+	{
+		lagX += (int)cg.hudLagX;
+		lagY += (int)cg.hudLagY;
+	}
+
+	ax = lagX * cgs.screenXScale_Old + cgs.screenXBias_Old;
+	ay = lagY * cgs.screenXScale_Old;
 
 	s = str;
 	while (*s)
@@ -2265,6 +2331,8 @@ int CG_OSPDrawStringOld(int x, int y, const char* str, int charWidth, int charHe
 	const char* str_ptr;
 	int next_x;
 	int printed;
+	float drawX;
+	float drawY;
 	const static vec4_t textColor = { 1.0, 1.0, 1.0, 1.0};
 
 	Vector4Copy(textColor, lTextColor);
@@ -2414,9 +2482,17 @@ int CG_OSPDrawStringOld(int x, int y, const char* str, int charWidth, int charHe
 				qhandle_t shader;
 
 				shader = ch_3waveFont.integer ? cgs.media.charsetShader1 : cgs.media.charsetShader;
+				/* Apply HUD lag offset after scaling (in screen coordinates) */
+				drawX = (float)next_x * cgs.screenXScale_Old;
+				drawY = (float)y * cgs.screenYScale_Old;
+				if (ui_hudLag.value > 0.0f)
+				{
+					drawX += cg.hudLagX;
+					drawY += cg.hudLagY;
+				}
 				trap_R_DrawStretchPic(
-				    (float)next_x * cgs.screenXScale_Old,
-				    (float)y * cgs.screenYScale_Old,
+				    drawX,
+				    drawY,
 				    char_w_f,
 				    char_h_f,
 				    s1,

@@ -465,6 +465,12 @@ vmCvar_t        be_enabled;
 vmCvar_t        be_run;
 vmCvar_t        ui_scale;
 vmCvar_t        ui_scaleMode;
+vmCvar_t        ui_dmgPulse;
+vmCvar_t        ui_dmgPulseTimeMs;
+vmCvar_t        ui_hudLag;
+vmCvar_t        ui_hudLagSmooth;
+vmCvar_t        ui_hudLagAmount;
+vmCvar_t        ui_hudLagAffectCrosshair;
 
 static cvarTable_t cvarTable[] =
 {
@@ -839,6 +845,12 @@ static cvarTable_t cvarTable[] =
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 	{ &ui_scale, "ui_scale", "1.00", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_ui_scale },
 	{ &ui_scaleMode, "ui_scaleMode", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ui_scaleMode },
+	{ &ui_dmgPulse, "ui_dmgPulse", "0.1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ui_dmgPulse },
+	{ &ui_dmgPulseTimeMs, "ui_dmgPulseTimeMs", "100", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ui_dmgPulseTimeMs },
+	{ &ui_hudLag, "ui_hudLag", "0", CVAR_ARCHIVE, NULL },
+	{ &ui_hudLagSmooth, "ui_hudLagSmooth", "0.15", CVAR_ARCHIVE, NULL },
+	{ &ui_hudLagAmount, "ui_hudLagAmount", "4.0", CVAR_ARCHIVE, NULL },
+	{ &ui_hudLagAffectCrosshair, "ui_hudLagAffectCrosshair", "0", CVAR_ARCHIVE, NULL },
 };
 
 #define CG_VARS_HASH_SIZE 512
