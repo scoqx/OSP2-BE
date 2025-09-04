@@ -1660,7 +1660,7 @@ static void CG_OSPDrawTeamSummary(
 	if (cgs.gametype >= GT_CTF)
 	{
 		labels[count] = "Points";
-		Com_sprintf(values[count], sizeof(values[count]), "^3%i^7", sumScores);
+		Com_sprintf(values[count], sizeof(values[count]), "%i^7", sumScores);
 		posX[count] = titlePos1X;
 		count++;
 
