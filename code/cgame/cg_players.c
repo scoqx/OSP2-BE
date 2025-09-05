@@ -829,7 +829,11 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	}
 
 	isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "pm") == 0)) ? qtrue : qfalse;
-	isFbSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
+	
+	if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
+	{
+		isFbSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
+	}
 
 	if (isOurClient)
 	{
@@ -3034,7 +3038,7 @@ void CG_Player(centity_t* cent)
 	legs.renderfx = renderfx;
 	VectorCopy(legs.origin, legs.oldorigin);    // don't positionally lerp at all
 
-	if (ci->isPmSkin || ci->isFbSkin)
+	if (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)))
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -3091,7 +3095,7 @@ void CG_Player(centity_t* cent)
 	torso.shadowPlane = shadowPlane;
 	torso.renderfx = renderfx;
 
-	if (ci->isPmSkin || ci->isFbSkin)
+	if (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)))
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -3148,7 +3152,7 @@ void CG_Player(centity_t* cent)
 	head.shadowPlane = shadowPlane;
 	head.renderfx = renderfx;
 
-	if (ci->isPmSkin || ci->isFbSkin)
+	if (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)))
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;

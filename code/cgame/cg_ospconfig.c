@@ -272,7 +272,7 @@ qboolean BE_isSupportedServer(void)
 void CG_OSPConfigDisableBEFeatures(int value)
 {
 	cgs.be.disableFeatures = value;
-	BE_PrintDisabledFeatures();
+	BE_PrintDisabledFeatures(qfalse);
 }
 /*
  * Unknown cs 0x368

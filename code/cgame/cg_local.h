@@ -1203,6 +1203,7 @@ typedef struct cgs_be_s
 #define CG_BE_OUTLINE           (1 << 8) // 256
 #define CG_BE_TEAM_INDICATOR    (1 << 9) // 512
 #define CG_BE_DAMAGEINFO		(1 << 10) // 1024
+#define CG_BE_FULLBRIGHT		(1 << 11) // 2048
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -2590,7 +2591,7 @@ void CG_OSPConfigXHitBoxSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
 void CG_OSPSupportedBEServer(qboolean value);
 qboolean BE_isSupportedServer(void);
-void BE_PrintDisabledFeatures(void);
+void BE_PrintDisabledFeatures(qboolean request);
 
 qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsFollowing(void);

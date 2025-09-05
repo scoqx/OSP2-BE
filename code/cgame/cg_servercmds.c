@@ -452,7 +452,7 @@ static void CG_ConfigStringModified(void)
 	else if (num == CS_OSP2BE_DISABLED_FEATURES)
 	{
 		cgs.be.disableFeatures = atoi(str);
-		BE_PrintDisabledFeatures();
+		BE_PrintDisabledFeatures(qfalse);
 	}
 	else if (num == XQ3E_ALLOW_FEATURES)
 	{

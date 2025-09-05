@@ -867,6 +867,10 @@ void CG_DPI_f(void)
 	CG_Printf("^1cm/360:       ^2%.2f\n", local_360);
 }
 
+void CG_BEdisabledFeatures_f()
+{
+	BE_PrintDisabledFeatures(qtrue);
+}
 void CG_Stub_f(void) { }
 
 typedef struct
@@ -967,6 +971,7 @@ static consoleCommand_t commands[] =
 	{ "showfont", CG_ShowFont_f },
 	{ "dpi", CG_DPI_f },
 	{ "belist", CG_PrintNewCommandsBE_f },
+	{ "allowedfeatures", CG_BEdisabledFeatures_f },
 };
 
 /*

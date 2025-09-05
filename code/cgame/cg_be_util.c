@@ -88,10 +88,21 @@ void CG_UpdateBeFeatures(void)
 	}
 }
 
-void BE_PrintDisabledFeatures(void)
+void BE_PrintDisabledFeatures(qboolean request)
 {
 	int value = cgs.be.disableFeatures;
-	if (value != 0)
+	if (value == 0)
+	{
+		if (request)
+		{
+		CG_Printf("   [^9OSP2-BE^7] All features enabled.\n");
+		}
+	}
+	else if (value == 4095) // all bits set
+	{
+		CG_Printf("   [^9OSP2-BE^7] All features disabled.\n");
+	}
+	else
 	{
 		char buffer[1024] = "   [^9OSP2-BE^7] Disabled features: ";
 		qboolean first = qtrue;
@@ -105,6 +116,7 @@ void BE_PrintDisabledFeatures(void)
 		if (value & CG_BE_OUTLINE) { Q_strcat(buffer, sizeof(buffer), first ? "Outline" : ", outline"); first = qfalse; }
 		if (value & CG_BE_TEAM_INDICATOR) { Q_strcat(buffer, sizeof(buffer), first ? "team indicator" : ", team indicator"); first = qfalse; }
 		if (value & CG_BE_DAMAGEINFO) { Q_strcat(buffer, sizeof(buffer), first ? "Damage count" : ", damage count"); first = qfalse; }
+		if (value & CG_BE_FULLBRIGHT) { Q_strcat(buffer, sizeof(buffer), first ? "Fullbright" : ", fullbright"); first = qfalse; }
 		CG_Printf("%s\n", buffer);
 	}
 }

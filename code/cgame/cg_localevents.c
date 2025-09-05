@@ -289,7 +289,7 @@ void CG_LocalEventCvarChanged_cg_hitSounds(cvarTable_t* cvart)
 	if (!(CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO)) && cg_hitSounds.integer)
 	{
 		CG_Printf("^3Damage info has been disabled on this server.\n");
-		trap_Cvar_Set("cg_hitSounds", "0");
+		// trap_Cvar_Set("cg_hitSounds", "0");
 	}
 }
 

@@ -1742,24 +1742,28 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	MatrixMultiply(lerped.axis, parent->axis, gun.axis);
 	gun.backlerp = parent->backlerp;
 
-	if ((cg_drawBrightWeapons.integer & 1) && (isOwnGun || isSpectatingFollow))
+	if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
 	{
-		CG_SetWeaponBrightColor(&gun, weaponNum);
-		usedBrightColor = qtrue;
+		if ((cg_drawBrightWeapons.integer & 1) && (isOwnGun || isSpectatingFollow))
+		{
+			CG_SetWeaponBrightColor(&gun, weaponNum);
+			usedBrightColor = qtrue;
+			gun.customShader = cgs.media.firstPersonGun;
+		}
+		else if ((cg_drawBrightWeapons.integer & 2) && isTeammate)
+		{
+			CG_SetWeaponBrightColor(&gun, weaponNum);
+			usedBrightColor = qtrue;
+			gun.customShader = cgs.media.firstPersonGun;
+		}
+		else if ((cg_drawBrightWeapons.integer & 4) && isEnemy)
+		{
+			CG_SetWeaponBrightColor(&gun, weaponNum);
+			usedBrightColor = qtrue;
 		gun.customShader = cgs.media.firstPersonGun;
+		}
 	}
-	else if ((cg_drawBrightWeapons.integer & 2) && isTeammate)
-	{
-		CG_SetWeaponBrightColor(&gun, weaponNum);
-		usedBrightColor = qtrue;
-		gun.customShader = cgs.media.firstPersonGun;
-	}
-	else if ((cg_drawBrightWeapons.integer & 4) && isEnemy)
-	{
-		CG_SetWeaponBrightColor(&gun, weaponNum);
-		usedBrightColor = qtrue;
-		gun.customShader = cgs.media.firstPersonGun;
-	}
+
 	if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
 	        (cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
 	{

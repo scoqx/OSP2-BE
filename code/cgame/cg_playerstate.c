@@ -591,7 +591,7 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 			return;
 		}
 
-		if (cg_stackHitSounds.integer && deltaTime < cg_stackHitSoundsTimeout.integer)
+		if ((CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO)) && (cg_stackHitSounds.integer && deltaTime < cg_stackHitSoundsTimeout.integer))
 		{
 			stackedDmg += damage;
 			damage = stackedDmg + delayedDmg;
