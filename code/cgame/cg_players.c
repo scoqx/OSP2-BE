@@ -829,10 +829,14 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	}
 
 	isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "pm") == 0)) ? qtrue : qfalse;
-	
 	if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
 	{
 		isFbSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
+	}
+	else
+	{
+		isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
+		nameSkin = "pm";
 	}
 
 	if (isOurClient)
