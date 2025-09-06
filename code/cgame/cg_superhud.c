@@ -310,6 +310,12 @@ void CG_SHUDRoutine(void)
 	const qboolean is_team_game = cgs.gametype >= GT_TEAM;
 	const qboolean is_spectator = CG_IsSpectatorOnScreen();
 	const qboolean is_scores = cg.showScores;
+	const qboolean is_gt_ffa = cgs.gametype == GT_FFA;
+	const qboolean is_gt_tourney = cgs.gametype == GT_TOURNAMENT;
+	const qboolean is_gt_tdm = CG_OSPIsGameTypeTDM();
+	const qboolean is_gt_ctf = cgs.gametype == GT_CTF;
+	const qboolean is_gt_ft = CG_OSPIsGameTypeFreeze();
+	const qboolean is_gt_ca = CG_OSPIsGameTypeCA(cgs.gametype);
 
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
@@ -330,7 +336,13 @@ void CG_SHUDRoutine(void)
 		       ((vflags & SE_KEY1_SHOW) && !cgs.osp.shud.key[0]) ||
 		       ((vflags & SE_KEY2_SHOW) && !cgs.osp.shud.key[1]) ||
 		       ((vflags & SE_KEY3_SHOW) && !cgs.osp.shud.key[2]) ||
-		       ((vflags & SE_KEY4_SHOW) && !cgs.osp.shud.key[3])
+		       ((vflags & SE_KEY4_SHOW) && !cgs.osp.shud.key[3]) ||
+		       ((vflags & SE_GT_FFA) && is_gt_ffa) ||
+		       ((vflags & SE_GT_TDM) && is_gt_tdm) ||
+		       ((vflags & SE_GT_CTF) && is_gt_ctf) ||
+		       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
+		       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
+		       ((vflags & SE_GT_CLANARENA) && is_gt_ca)
 		       ;
 
 		if (!skip && last->element.routine)

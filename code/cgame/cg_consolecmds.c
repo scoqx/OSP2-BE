@@ -160,7 +160,7 @@ static void CG_Viewpos_f(void)
 }
 
 
-static void CG_ScoresDown_f(void)
+void CG_ScoresDown_f(void)
 {
 	if (!cg.demoPlayback && cg.scoresRequestTime < cg.time)
 	{
@@ -429,8 +429,9 @@ void CG_OSPClientConfig_f(void)
 	CG_Printf("    ^3Timenudge maximum:           ^3%s\n", cgs.osp.serverConfigMaximumTimenudge ? va("%i", cgs.osp.serverConfigMaximumTimenudge) : "-");
 	CG_Printf("    ^3Maxpackets minimum:          ^3%s\n", cgs.osp.serverConfigMinimumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3Maxpackets maximum:          ^3%s\n", cgs.osp.serverConfigMaximumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
+	CG_Printf("    ^3OSP2-BE ^3Supported server:    %s\n", CG_YES_NO_STR(cgs.be.supportedServer));
 	CG_Printf("    ^3HitBox (XQ3E):               %s\n", CG_YES_NO_STR(cgs.osp.serverConfigXHitBox));
-	CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.be.disableFeatures));
+	// CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.be.disableFeatures));
 
 }
 
@@ -448,13 +449,17 @@ void CG_OSPDrawNewCredits_f(void)
 void CG_OSPMoTD_f(void)
 {
 	int i;
-	if (cgs.osp.numberOfStringsMotd > 0) {
+	if (cgs.osp.numberOfStringsMotd > 0)
+	{
 		CG_Printf("\n^5Message of the Day:\n");
-		for (i = 0; i < cgs.osp.numberOfStringsMotd; ++i) {
+		for (i = 0; i < cgs.osp.numberOfStringsMotd; ++i)
+		{
 			CG_Printf("^7%s\n", cgs.osp.motd[i]);
 		}
 		CG_Printf("\n");
-	} else {
+	}
+	else
+	{
 		CG_Printf("\n^3No MOTD set.\n\n");
 	}
 }
@@ -868,29 +873,33 @@ void cg_sa_f(void)
 	cgs.be.statsAllRequested = qtrue;
 }
 
-void cg_printsa_f(void)
-{
-	int i = 0;
-	newStatsInfo_t *ws = &cgs.be.statsAll[i];
-	CG_Printf("^5StatsAll:\n");
-	for (i = 0; i < MAX_CLIENTS; ++i) {
-		if (!cgs.clientinfo[i].infoValid)
-			continue;
+// void cg_printsa_f(void)
+// {
+// 	int i = 0;
+// 	newStatsInfo_t *ws = &cgs.be.statsAll[i];
+// 	CG_Printf("^5StatsAll:\n");
+// 	for (i = 0; i < MAX_CLIENTS; ++i) {
+// 		if (!cgs.clientinfo[i].infoValid)
+// 			continue;
 		
-		CG_Printf("^7[%2d] ^3%-16s ^7K/D:^2%3d^7/^1%3d ^7Eff:^2%5.1f%% ^7Dmg:^2%5d^7/^1%5d ^7Ratio:^2%.2f\n",
-			i,
-			cgs.clientinfo[i].name,
-			ws->kills,
-			ws->deaths,
-			ws->efficiency,
-			ws->dmgGiven,
-			ws->dmgReceived,
-			ws->damageRatio
-		);
-	}
+// 		CG_Printf("^7[%2d] ^3%-16s ^7K/D:^2%3d^7/^1%3d ^7Eff:^2%5.1f%% ^7Dmg:^2%5d^7/^1%5d ^7Ratio:^2%.2f\n",
+// 			i,
+// 			cgs.clientinfo[i].name,
+// 			ws->kills,
+// 			ws->deaths,
+// 			ws->efficiency,
+// 			ws->dmgGiven,
+// 			ws->dmgReceived,
+// 			ws->damageRatio
+// 		);
+// 	}
+// }
+
+
+void CG_BEdisabledFeatures_f()
+{
+	BE_PrintDisabledFeatures(qtrue);
 }
-
-
 void CG_Stub_f(void) { }
 
 typedef struct
@@ -992,7 +1001,8 @@ static consoleCommand_t commands[] =
 	{ "dpi", CG_DPI_f },
 	{ "belist", CG_PrintNewCommandsBE_f },
 	{ "sa", cg_sa_f },
-	{ "salist", cg_printsa_f },
+	// { "salist", cg_printsa_f },
+	{ "allowedfeatures", CG_BEdisabledFeatures_f },
 };
 
 /*

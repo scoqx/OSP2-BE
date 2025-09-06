@@ -37,6 +37,7 @@ extern "C" {
 #define NYAN_VEC4(VALUE) CG_Printf( "%s:%d: %s = %f,%f,%f,%f\n", __FILE__, __LINE__, #VALUE, VALUE[0], VALUE[1], VALUE[2], VALUE[3])
 #define NYAN_MSG(VALUE)   CG_Printf( "%s:%d: %s\n", __FILE__, __LINE__, VALUE)
 
+
 // The entire cgame module is unloaded and reloaded on each level change,
 // so there is NO persistant data between levels on the client side.
 // If you absolutely need something stored, it can either be kept
@@ -866,6 +867,18 @@ typedef struct
 	qhandle_t   redKamikazeShader;
 	qhandle_t   blueKamikazeShader;
 
+	// powerup icons
+	qhandle_t   quadDamageIcon;
+	qhandle_t   battleSuitIcon;
+	qhandle_t   hasteIcon;
+	qhandle_t   invisIcon;
+	qhandle_t   regenIcon;
+	qhandle_t   flightIcon;
+	qhandle_t   flagIcon_red;
+	qhandle_t   flagIcon_blue;
+	qhandle_t   teleporterIcon;
+	qhandle_t   medkitIcon;
+
 	// weapon effect models
 	qhandle_t   bulletFlashModel;
 	qhandle_t   ringFlashModel;
@@ -1175,9 +1188,25 @@ typedef struct cgs_be_s
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
 	globalBeStatsSettings_t settings;
+	qboolean supportedServer;
+	int followingMe;
 } cgs_be_t;
 
-#define  BE_SERVER_DISABLE_WH  1
+#define BE_ENABLED 				be_enabled.integer
+#define CG_BE_FEATURE_ENABLED(feature) (BE_ENABLED && !(cgs.be.disableFeatures & (feature))) // not disabled lol
+
+#define CG_BE_TEAM_FOE_WH       (1 << 0) // 1
+#define CG_BE_MODELSOUND        (1 << 1) // 2
+#define CG_BE_ALT_GRENADES      (1 << 2) // 4
+#define CG_BE_ENEMYLIGHTNING	(1 << 3) // 8
+#define CG_BE_MARK_TEAMMATE		(1 << 4) // 16
+#define CG_BE_ALT_SHADOW        (1 << 5) // 32
+#define CG_BE_ALT_BLOOD         (1 << 6) // 64
+#define CG_BE_ALT_PLASMAGUN		(1 << 7) // 128
+#define CG_BE_OUTLINE           (1 << 8) // 256
+#define CG_BE_TEAM_INDICATOR    (1 << 9) // 512
+#define CG_BE_DAMAGEINFO		(1 << 10) // 1024
+#define CG_BE_FULLBRIGHT		(1 << 11) // 2048
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -1373,6 +1402,7 @@ typedef struct
 	int acceptTask;
 	int acceptLeader;
 
+	qboolean		customModelSound;
 	sfxHandle_t     mySounds[MAX_CUSTOM_SOUNDS];
 	sfxHandle_t     teamSounds[MAX_CUSTOM_SOUNDS];
 	sfxHandle_t     enemySounds[MAX_CUSTOM_SOUNDS];
@@ -1760,7 +1790,8 @@ extern vmCvar_t         cg_bestats_spacingAdjust;
 extern vmCvar_t         cg_bestats_widthCutoff;
 extern vmCvar_t         cg_teamIndicatorFade;
 extern vmCvar_t         cg_teamIndicatorFadeRadius;
-extern vmCvar_t			cg_be;
+extern vmCvar_t         be_features;
+extern vmCvar_t         be_enabled;
 extern vmCvar_t         be_run;
 
 
@@ -2216,6 +2247,7 @@ qboolean CG_ConsoleCommand(void);
 void CG_InitConsoleCommands(void);
 void CG_OSPPrintTime_f(void);
 void CG_OSPMoTD_f(void);
+void CG_ScoresDown_f(void);
 void CG_OSPWStatsDown_f(void);
 void CG_OSPWStatsUp_f(void);
 
@@ -2487,7 +2519,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.93" // BE
+#define OSP_VERSION "be-0.95" // BE
 
 
 
@@ -2542,6 +2574,7 @@ extern int statsInfo[24];
 void CG_OSPCvarsRestrictValues(void);
 qboolean CG_OSPIsGameTypeCA(int gametype);
 qboolean CG_OSPIsGameTypeFreeze(void);
+qboolean CG_OSPIsGameTypeTDM(void);
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup);
 void CG_OSPUpdateUserInfo(qboolean arg);
 
@@ -2559,6 +2592,9 @@ void CG_OSPConfigModeSet(int value);
 void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigXHitBoxSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
+void CG_OSPSupportedBEServer(qboolean value);
+qboolean BE_isSupportedServer(void);
+void BE_PrintDisabledFeatures(qboolean request);
 
 qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsFollowing(void);

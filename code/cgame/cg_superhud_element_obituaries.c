@@ -320,7 +320,18 @@ static qhandle_t CG_SHUDObituaryGetModIcon(int mod, qboolean unfrozen)
 		case MOD_UNKNOWN:
 		case MOD_CRUSH:
 			return cgs.media.obituariesSkull;
+		// Mech frenzy MODs
+		case MOD_LANDMINE:
+		case MOD_LANDMINE_SPLASH:
+			return cgs.media.regenIcon;
+		case MOD_TURRET:
+		case MOD_TURRET_SPLASH:
+		case MOD_TURRET_EXPLOSION:
+			return cgs.media.quadDamageIcon;
+		case MOD_DISPENSER_EXPLOSION:
+			return cgs.media.battleSuitIcon;
 		default:
+			return cgs.media.botSkillShaders[4];
 			break;
 	}
 	return 0;// no shader

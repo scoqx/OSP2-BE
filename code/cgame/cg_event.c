@@ -449,6 +449,21 @@ static void CG_Obituary(entityState_t* ent)
 				message = "tried to invade";
 				message2 = "'s personal space";
 				break;
+			// Mech frenzy MODs
+			case MOD_LANDMINE:
+				message = "stepped on";
+				message2 = "'s mine";
+			case MOD_LANDMINE_SPLASH:
+				message = "was blown up by";
+				message2 = "'s mine";
+			case MOD_TURRET:
+			case MOD_TURRET_SPLASH:
+				message = "was perforated by";
+				message2 = "'s mech turret";
+			case MOD_TURRET_EXPLOSION:
+			case MOD_DISPENSER_EXPLOSION:
+				message = "was burned by";
+				message2 = "'s mech remains";
 			default:
 				message = "was killed by";
 				break;

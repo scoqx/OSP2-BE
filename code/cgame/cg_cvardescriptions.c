@@ -230,7 +230,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_shudChatEnable", "SuperHUD chat message display mode: ^20^7 - off\n  ^21^7 - global messages enabled\n  ^22^7 - team messages enabled\n  ^23^7 - global and team messages enabled" },
 	{ "cg_healthMid", "Yellow color trigger level.\nRequires ^3cg_healthColorLevels^7 ^21^7" },
 	{ "cg_healthLow", "Red color trigger level.\nRequires ^3cg_healthColorLevels^7 ^21^7" },
-	{ "cg_healthColorLevels", "Activate custom health/armor color change levels. \nConfigure with ^3cg_healthLow^7 and ^3cg_healthMid^7.\n  0 - disabled\n  1 - enabled" },
+	{ "cg_healthColorLevels", "Activate custom health/armor color change levels. \nConfigure with ^3cg_healthLow^7 and ^3cg_healthMid^7.\n  0 - disabled\n  ^21^7 - enabled\n  ^22^7 - enabled, except team foe" },
 	{ "ch_crosshairDecor", "Select crosshair decoration. Set ^20^7 to disable.\n  ^21^7 - ^234^7 - select decor" },
 	{ "ch_crosshairDecorSize", "Set size of crosshair decoration." },
 	{ "ch_crosshairDecorColor", "Color for crosshair decoration\n \"^2color^7\" - color name, digit or hex" },
@@ -262,7 +262,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_lightningHitsoundRateFix", "Fixes lightning gun hitsound for non-divisible ^4sv_fps^7 settings. Set ^20^7 to disable." },
 	{ "cg_stackHitSounds", "Damage stacking for ^3cg_hitsounds^7. Set ^20^7 to disable." },
 	{ "cg_stackHitSoundsTimeout", "Clear damage count timeout for ^3cg_stackHitSounds^7 - \"milliseconds\"." },
-	{ "cg_drawCenterMessages", "Displays messages in the center of the screen (Welcome message, frag, etc.). Set ^0^7 to hide." },
+	{ "cg_drawCenterMessages", "Displays messages in the center of the screen (Welcome message, frag, etc.). Set ^0^7 to hide\n  ^21^7 - draw\n  ^22^7 - draw, with shadow" },
 	{ "cg_predictStepOffset", "Smoother step-up movement. Set ^20^7 to disable smoothness. Also fix climbing aim issue." },
 	{ "cg_enemyLightningColor", "Lightning gun beam color for enemies\n  ^20^7 - default beam\n \"^2color^7\" - digit or hex" },
 	{ "cg_uniqueColorTable", "Unique color table for ^3enemy unique color(s)^7\n  ^21^7 - default\n  ^22^7 - bright" },
@@ -274,7 +274,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_drawHitBox", "Draw hitboxes. Server permission required\n  ^20^7 - disabled\n  ^21^7 - bounding edges\n  ^22^7 -solid color++\n  ^23^7 - solid color" },
 	{ "cg_hitBoxColor", "Set color for ^3cg_drawHitBox ^2\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_drawGunForceAspect", "Fix weapon stretching when using 4:3 aspect ratio on widescreen. Set ^20^7 to disable." },
-	{ "cg_drawOutline", "Set player outline rendering mode. Use ^3cg_enemyOutline*^7 and ^3cg_teamOutline*^7 to configurate colors and style.\n  ^20^7 - disabled\n  ^21^7 - enemies only\n  ^22^7 - teammates only\n  ^23^7 - all players" },
+	{ "cg_drawOutline", "Set player outline rendering mode. Use ^3cg_enemyOutline*^7 and ^3cg_teamOutline*^7 to change colors and style.\n  ^20^7 - disabled\n  ^21^7 - enemies only\n  ^22^7 - teammates only\n  ^23^7 - all players" },
 	{ "cg_enemyOutlineSize", "Set ^3cg_drawOutline^7 thickness for enemies\n  ^20^7 - disabled\n  ^21^7 - thin\n  ^22^7 - medium\n  ^23^7 - thick" },
 	{ "cg_enemyOutlineColor", "Set enemy ^3cg_drawOutline^7 color.\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_enemyOutlineColorUnique", "Assigns a unique ^3cg_drawOutline^7 color for enemy model parts. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - head\n  ^22^7 - torso\n  ^24^7 - legs\n  ^27^7 - full model" },
@@ -359,6 +359,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_bestats_widthCutoff", "Width reduction (cutoff) of the battle statistics window." },
 	{ "cg_teamIndicatorFade", " Ally indicator transparency level when aiming at a teammate. Set ^20^7 to disable." },
 	{ "cg_teamIndicatorFadeRadius", "Radius at which the ally indicator starts fading." },
+	{ "be_enabled", "Enable BE features. Set ^30^7 to disable." },
 };
 
 

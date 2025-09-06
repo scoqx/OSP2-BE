@@ -17,6 +17,11 @@ qboolean CG_OSPIsGameTypeFreeze()
 	return cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze;
 }
 
+qboolean CG_OSPIsGameTypeTDM()
+{
+	return cgs.gametype == GT_TEAM && !(cgs.osp.gameTypeFreeze);
+}
+
 
 
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup)
@@ -116,7 +121,6 @@ void CG_OSPUpdateUserInfo(qboolean arg)
 	using_jpeg = cg_useScreenShotJPEG.integer ? qtrue : qfalse;
 	trap_SendClientCommand(va("%s %d %d %d %d %d %d %d\n", cmd, cl_maxpackets.integer, snaps.integer, cl_timenudge.integer, customLocationsEnabled, flags, cg_autoAction.integer, using_jpeg));
 }
-
 
 void CG_OSPCvarsRestrictValues(void)
 {
@@ -230,20 +234,21 @@ void CG_OSPConfigMaxTimenudgeSet(int value)
 void CG_OSPConfigXHitBoxSet(int value)
 {
 	const char* config;
-	const char* valueStr;
+	const char* hitboxStr;
 	const char* cheatsStr;
 
-	config = CG_ConfigString(X_HCK_PS_ENEMY_HITBOX);
-	valueStr = Info_ValueForKey(config, "x_hck_ps_enemy_hitbox");
+	config = CG_ConfigString(XQ3E_ALLOW_FEATURES);
+	hitboxStr = Info_ValueForKey(config, "x_hck_ps_enemy_hitbox");
 
-	if (valueStr && *valueStr)
+	if (hitboxStr && atoi(hitboxStr) == 1)
 	{
-		value = atoi(valueStr);
+		value = atoi(hitboxStr);
 	}
 	else
 	{
 		value = 0;
 	}
+
 	// ignore x_hck if cheats are enabled/server is local
 	if (cgs.cheatsEnabled || cgs.localServer)
 	{
@@ -252,10 +257,22 @@ void CG_OSPConfigXHitBoxSet(int value)
 	cgs.osp.serverConfigXHitBox = value;
 }
 
+// Supported OSP2-BE server
+void CG_OSPSupportedBEServer(qboolean value)
+{
+	cgs.be.supportedServer = value;
+}
+
+qboolean BE_isSupportedServer(void)
+{
+	return cgs.be.supportedServer;
+}
+
 // Disable be features
 void CG_OSPConfigDisableBEFeatures(int value)
 {
 	cgs.be.disableFeatures = value;
+	BE_PrintDisabledFeatures(qfalse);
 }
 /*
  * Unknown cs 0x368

@@ -286,10 +286,10 @@ void CG_LocalEventCvarChanged_pmove_fixed(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_hitSounds(cvarTable_t* cvart)
 {
-	if (!(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO) && cg_hitSounds.integer)
+	if (!(CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO)) && cg_hitSounds.integer)
 	{
 		CG_Printf("^3Damage info has been disabled on this server.\n");
-		trap_Cvar_Set("cg_hitSounds", "0");
+		// trap_Cvar_Set("cg_hitSounds", "0");
 	}
 }
 
@@ -687,38 +687,46 @@ void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
 	int clientNum;
 	const char* str = cvart->vmCvar->string;
 
-	memset(cgs.be.markedTeam, qfalse, sizeof(cgs.be.markedTeam));
+	if (CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE) && cg_markTeam.integer != 1)
+		{
+		memset(cgs.be.markedTeam, qfalse, sizeof(cgs.be.markedTeam));
 
-	if (Q_stricmp(str, "-1") == 0)
-	{
-		return;
+		if (Q_stricmp(str, "-1") == 0)
+		{
+			return;
+		}
+
+		while (*str)
+		{
+			while (*str == ' ')
+			{
+				str++;
+			}
+
+			if (!*str)
+				break;
+
+			clientNum = atoi(str);
+
+			if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+			{
+				cgs.be.markedTeam[clientNum] = qtrue;
+			}
+			else
+			{
+				CG_Printf("cg_markTeam: invalid clientNum %d\n", clientNum);
+			}
+
+			while (*str && *str != ' ')
+			{
+				str++;
+			}
+		}
 	}
-
-	while (*str)
+	else
 	{
-		while (*str == ' ')
-		{
-			str++;
-		}
-
-		if (!*str)
-			break;
-
-		clientNum = atoi(str);
-
-		if (clientNum >= 0 && clientNum < MAX_CLIENTS)
-		{
-			cgs.be.markedTeam[clientNum] = qtrue;
-		}
-		else
-		{
-			CG_Printf("cg_markTeam: invalid clientNum %d\n", clientNum);
-		}
-
-		while (*str && *str != ' ')
-		{
-			str++;
-		}
+		trap_Cvar_Set("cg_markTeam", "-1");
+		CG_Printf("^2cg_markTeam^7 ^1disabled^7 on this server!\n");
 	}
 }
 
@@ -729,7 +737,14 @@ void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart)
 {
-	CG_LoadForcedSounds();
+	if (CG_BE_FEATURE_ENABLED(CG_BE_MODELSOUND))
+	{
+		CG_LoadForcedSounds();
+	}
+	else
+	{
+		CG_Printf("^7Cusom sound ^1disabled ^7on this server!");
+	}
 }
 
 void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
@@ -745,7 +760,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 		return;
 	}
 
-	if (cvart->vmCvar->string[0] == '\0') {
+	if (cvart->vmCvar->string[0] == '\0')
+	{
 		customScoreboardColorIsSet_red = 0;
 		return;
 	}
@@ -756,7 +772,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 	token2 = Q_strtok(NULL, " \t");
 	token3 = Q_strtok(NULL, " \t");
 
-	if (!token1 || !token2) {
+	if (!token1 || !token2)
+	{
 		CG_Printf("^1Invalid value: expected at least two color values (e.g. \"red blue\")\n");
 		customScoreboardColorIsSet_red = 0;
 		return;
@@ -765,11 +782,11 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 	CG_ParseColorStr(token1, scoreboard_rtColorHeader);
 	CG_ParseColorStr(token2, scoreboard_rtColorBody);
 	customScoreboardColorIsSet_red = 1;
-	if (token3) {
+	if (token3)
+	{
 		CG_ParseColorStr(token3, scoreboard_rtColorTitle);
 		customScoreboardColorIsSet_red |= 2;
 	}
-	CG_Printf("^1Rt^7 color set to %i\n", customScoreboardColorIsSet_red);
 }
 
 void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
@@ -785,7 +802,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
 		return;
 	}
 
-	if (cvart->vmCvar->string[0] == '\0') {
+	if (cvart->vmCvar->string[0] == '\0')
+	{
 		customScoreboardColorIsSet_blue = 0;
 		return;
 	}
@@ -806,11 +824,11 @@ void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
 	CG_ParseColorStr(token1, scoreboard_btColorHeader);
 	CG_ParseColorStr(token2, scoreboard_btColorBody);
 	customScoreboardColorIsSet_blue = 1;
-	if (token3) {
+	if (token3)
+	{
 		CG_ParseColorStr(token3, scoreboard_btColorTitle);
 		customScoreboardColorIsSet_blue |= 2;
 	}
-	CG_Printf("^4Bt^7 color set to %i\n", customScoreboardColorIsSet_blue);
 }
 
 void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
@@ -826,7 +844,8 @@ void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
 		return;
 	}
 
-	if (cvart->vmCvar->string[0] == '\0') {
+	if (cvart->vmCvar->string[0] == '\0')
+	{
 		customScoreboardColorIsSet_spec = 0;
 		return;
 	}
@@ -835,14 +854,16 @@ void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
 	token1 = Q_strtok(buffer, " \t");
 	token2 = Q_strtok(NULL, " \t");
 
-	if (!token1) {
+	if (!token1)
+	{
 		customScoreboardColorIsSet_spec = 0;
 		return;
 	}
 
 	CG_ParseColorStr(token1, scoreboard_specColor);
 	customScoreboardColorIsSet_spec = 1;
-	if (token2) {
+	if (token2)
+	{
 		CG_ParseColorStr(token2, scoreboard_specColorTitle);
 		customScoreboardColorIsSet_spec |= 2;
 	}

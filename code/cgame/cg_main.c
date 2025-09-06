@@ -460,12 +460,13 @@ vmCvar_t        cg_bestats_spacingAdjust;
 vmCvar_t        cg_bestats_widthCutoff;
 vmCvar_t        cg_teamIndicatorFade;
 vmCvar_t        cg_teamIndicatorFadeRadius;
-vmCvar_t		cg_be;
+vmCvar_t        be_features;
+vmCvar_t        be_enabled;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
 {
-	{ &osp_client, "osp_client", "1008_OSP2", CVAR_USERINFO | CVAR_ROM },
+	{ &osp_client, "osp_client", "1008_OSP2_"OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
@@ -677,7 +678,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
 	{ &cg_spectGlow, "cg_spectGlow", "0", CVAR_ARCHIVE },
 	{ &cg_spectOrigModel, "cg_spectOrigModel", "0", CVAR_ARCHIVE },
-	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, /* CG_LocalEventCvarChanged_cg_hitSounds */},
+	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitSounds },
 	{ &cg_playersXID, "cg_playersXID", "0", CVAR_ARCHIVE},
 
 	{ &cg_playerModelColors, "cg_playerModelColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerModelColors},
@@ -817,9 +818,9 @@ static cvarTable_t cvarTable[] =
 	{ &cg_mySound, "cg_mySound", "", CVAR_ARCHIVE | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
 	{ &cg_teamSound, "cg_teamSound", "", CVAR_ARCHIVE | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
 	{ &cg_enemySound, "cg_enemySound", "", CVAR_ARCHIVE | CVAR_LATCH, CG_LocalEventCvarChanged_cg_customSound },
-	{ &cg_scoreboardRtColors, "cg_scoreboardRtColors", "1 1 1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardRtColors },
-	{ &cg_scoreboardBtColors, "cg_scoreboardBtColors", "Blue Blue Blue", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardBtColors },
-	{ &cg_scoreboardSpecColor, "cg_scoreboardSpecColor", "Black White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardSpecColor },
+	{ &cg_scoreboardRtColors, "cg_scoreboardRtColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardRtColors },
+	{ &cg_scoreboardBtColors, "cg_scoreboardBtColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardBtColors },
+	{ &cg_scoreboardSpecColor, "cg_scoreboardSpecColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardSpecColor },
 	{ &cg_scoreboardDrawPowerUps, "cg_scoreboardDrawPowerUps", "1", CVAR_ARCHIVE },
 	{ &cg_bestats_style, "cg_bestats_style", "1", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_bestats_textSize, "cg_bestats_textSize", "6 8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_bestats_textSize },
@@ -831,7 +832,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "0.75", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "128", CVAR_ARCHIVE | CVAR_NEW, },
-	{ &cg_be, "cg_be", "", CVAR_USERINFO | CVAR_ROM },
+	{ &be_features, "be_features", "", CVAR_USERINFO | CVAR_ROM  },
+	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 };
 
@@ -926,7 +928,6 @@ void CG_RegisterCvars(void)
 	cgs.cheatsEnabled = atoi(var) == 0 ? 0 : 1;
 
 	trap_Cvar_Set("ui_recordSPDemo", ch_recordMessage.integer > 0 ? "0" : "1");
-
 	//forceModelModificationCount = cg_forceModel.modificationCount;
 
 	trap_Cvar_Register(NULL, "model", DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
@@ -1525,6 +1526,16 @@ static void CG_RegisterGraphics(void)
 	cgs.media.freezeShader = trap_R_RegisterShader("freezeShader");
 	cgs.media.freezeMarkShader = trap_R_RegisterShader("freezeMarkShader");
 
+	// powerup icons
+	cgs.media.quadDamageIcon = trap_R_RegisterShaderNoMip("icons/quad");
+	cgs.media.battleSuitIcon = trap_R_RegisterShaderNoMip("icons/envirosuit");
+	cgs.media.hasteIcon = trap_R_RegisterShaderNoMip("icons/haste");
+	cgs.media.invisIcon = trap_R_RegisterShaderNoMip("icons/invis");
+	cgs.media.regenIcon = trap_R_RegisterShaderNoMip("icons/regen");
+	cgs.media.flightIcon = trap_R_RegisterShaderNoMip("icons/flight");
+	cgs.media.teleporterIcon = trap_R_RegisterShaderNoMip("icons/teleporter");
+	cgs.media.medkitIcon = trap_R_RegisterShaderNoMip("icons/medkit");
+
 	if (cgs.gametype == GT_CTF || cg_buildScript.integer)
 	{
 		cgs.media.redCubeModel = trap_R_RegisterModel("models/powerups/orb/r_orb.md3");
@@ -1879,6 +1890,9 @@ void CG_CheckFogBypass(void)
 	                                "asylum.bsp",
 	                                "rjldm3.bsp",
 	                                "gen_q1dm1.bsp",
+	                                "13death_xt_b1",
+	                                "13excave",
+	                                "q3dm4",
 	                                NULL
 	                              };
 
@@ -1986,7 +2000,6 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_bestats_bgColor");
 }
 
-
 /*
 =================
 CG_Init
@@ -2028,7 +2041,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	//init variables
 	CG_InitCvars();
 
-	// set cg_be
+	// set be_features
 	CG_UpdateBeFeatures();
 
 	CG_InitConsoleCommands();
@@ -2138,9 +2151,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_OSPConfigMaxTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MAX)));
 		CG_OSPConfigClanBaseTDMSet(atoi(CG_ConfigString(CS_OSP_CLAN_BASE_TEAM_DM)));
 		CG_OSPConfigFreezeModeSet(atoi(CG_ConfigString(CS_OSP_FREEZE_GAME_TYPE)));
-		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_BE_DISABLE_FEATURES)));
-		CG_OSPConfigXHitBoxSet(atoi(CG_ConfigString(X_HCK_PS_ENEMY_HITBOX)));
-
+		CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
+		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
+		CG_OSPConfigXHitBoxSet(atoi(CG_ConfigString(XQ3E_ALLOW_FEATURES)));
 
 		/****/
 		CG_OSPCvarsRestrictValues();
@@ -2214,7 +2227,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	// cause smoke bug
 	// for (i = 1; i < WP_NUM_WEAPONS; i++)
 	// {
-	// 	CG_RegisterWeapon(i);
+	//  CG_RegisterWeapon(i);
 	// }
 
 	CG_LoadingString("graphics");
@@ -2245,7 +2258,11 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	trap_S_ClearLoopingSounds(qtrue);
 
-	CG_LoadForcedSounds();
+	if (CG_BE_FEATURE_ENABLED(CG_BE_MODELSOUND))
+	{
+		CG_LoadForcedSounds();
+	}
+
 	CG_CustomLocationsLoad();
 
 	cgs.osp.decals_number = 0;
@@ -2317,6 +2334,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		const char* str = va("vstr %s;", cg_execVstr.string);
 		trap_SendConsoleCommand(str);
 	}
+
 
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);
 	return 0;

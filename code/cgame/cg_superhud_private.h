@@ -278,29 +278,40 @@ typedef enum
 	SUPERHUD_CONFIG_LOST_ELEMENT_BODY,
 } superhudConfigParseStatus_t;
 
-#define SE_IM         0x00000001 // available in intermission view
+#define SE_IM         (1 << 0)  // 0x00000001
 #define SE_IM_STR "im"
-#define SE_TEAM_ONLY  0x00000002 // team only
+#define SE_TEAM_ONLY  (1 << 1)  // 0x00000002
 #define SE_TEAM_ONLY_STR "teamonly"
-#define SE_SPECT      0x00000004 // available in spectator and not folowing view
+#define SE_SPECT      (1 << 2)  // 0x00000004
 #define SE_SPECT_STR      "spectator"
-#define SE_DEAD       0x00000008 // available if dead or freeze
+#define SE_DEAD       (1 << 3)  // 0x00000008
 #define SE_DEAD_STR       "dead"
-#define SE_DEMO_HIDE  0x00000010 // hide when playing demo
+#define SE_DEMO_HIDE  (1 << 4)  // 0x00000010
 #define SE_DEMO_HIDE_STR  "demohide"
-#define SE_SCORES_HIDE  0x00000020 // hide when scores visible
+#define SE_SCORES_HIDE  (1 << 5)  // 0x00000020
 #define SE_SCORES_HIDE_STR  "scoreshide"
-
-#define SE_KEY1_SHOW  0x00000040 // show if key pressed
+#define SE_KEY1_SHOW  (1 << 6)  // 0x00000040
 #define SE_KEY1_SHOW_STR  "key1show"
-#define SE_KEY2_SHOW  0x00000080 // show if key pressed
+#define SE_KEY2_SHOW  (1 << 7)  // 0x00000080
 #define SE_KEY2_SHOW_STR  "key2show"
-#define SE_KEY3_SHOW  0x00000100 // show if key pressed
+#define SE_KEY3_SHOW  (1 << 8)  // 0x00000100
 #define SE_KEY3_SHOW_STR  "key3show"
-#define SE_KEY4_SHOW  0x00000200 // show if key pressed
+#define SE_KEY4_SHOW  (1 << 9)  // 0x00000200
 #define SE_KEY4_SHOW_STR  "key4show"
-#define SE_SHOW_EMPTY  0x00000400 // show if empty
+#define SE_SHOW_EMPTY  (1 << 10) // 0x00000400
 #define SE_SHOW_EMPTY_STR  "showempty"
+#define SE_GT_FFA 	(1 << 11) // 0x00000800
+#define SE_GT_FFA_STR "gt_ffa"
+#define SE_GT_TOURNEY   (1 << 12) // 0x00001000
+#define SE_GT_TOURNEY_STR "gt_tourney"
+#define SE_GT_TDM      (1 << 13) // 0x00002000
+#define SE_GT_TDM_STR  "gt_tdm"
+#define SE_GT_CTF       (1 << 14) // 0x00004000
+#define SE_GT_CTF_STR   "gt_ctf"
+#define SE_GT_FREEZETAG (1 << 15) // 0x00008000
+#define SE_GT_FREEZETAG_STR "gt_freezetag"
+#define SE_GT_CLANARENA (1 << 16) // 0x00010000
+#define SE_GT_CLANARENA_STR "gt_clanarena"
 
 #define SHUD_CHECK_SHOW_EMPTY(element) ( \
     ((element) != NULL) && \
@@ -490,6 +501,10 @@ void CG_SHUDElementChatDestroy(void* context);
 void* CG_SHUDElementSpecMessageCreate(const superhudConfig_t* config);
 void CG_SHUDElementSpecMessageRoutine(void* context);
 void CG_SHUDElementSpecMessageDestroy(void* context);
+
+void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config);
+void CG_SHUDElementSpectatorsRoutine(void* context);
+void CG_SHUDElementSpectatorsDestroy(void* context);
 
 void* CG_SHUDElementFollowMessageCreate(const superhudConfig_t* config);
 void CG_SHUDElementFollowMessageRoutine(void* context);

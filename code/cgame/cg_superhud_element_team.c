@@ -207,15 +207,16 @@ void CG_SHUDElementTeamRoutine(void* context)
 	element->ctxHealthArmor.text = va("%3i/%i", ci->health, ci->armor);
 
 	CG_FontSelect(element->ctxHealthArmor.fontIndex);
-	CG_OSPDrawString(element->ctxHealthArmor.coord.named.x,
-	                 element->ctxHealthArmor.coord.named.y,
-	                 element->ctxHealthArmor.text,
-	                 element->ctxHealthArmor.color,
-	                 element->ctxHealthArmor.coord.named.w,
-	                 element->ctxHealthArmor.coord.named.h,
-	                 SCREEN_WIDTH,
-	                 element->ctxHealthArmor.flags,
-	                 NULL);
+	CG_OSPDrawStringNew(element->ctxHealthArmor.coord.named.x,
+	                    element->ctxHealthArmor.coord.named.y,
+	                    element->ctxHealthArmor.text,
+	                    element->ctxHealthArmor.color,
+	                    element->ctxHealthArmor.shadowColor,
+	                    element->ctxHealthArmor.coord.named.w,
+	                    element->ctxHealthArmor.coord.named.h,
+	                    SCREEN_WIDTH,
+	                    element->ctxHealthArmor.flags,
+	                    NULL, NULL, NULL);
 
 	// draw weapon
 	element->ctxWeapon.image = cg_weapons[ci->curWeapon].ammoIcon ?  cg_weapons[ci->curWeapon].ammoIcon : cgs.media.deferShader;

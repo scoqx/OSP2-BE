@@ -228,7 +228,6 @@ void CG_DrawInformation(void)
 			y += PROP_HEIGHT;
 		}
 
-
 		// server-specific message of the day
 		s = CG_ConfigString(CS_MOTD);
 		if (s[0])

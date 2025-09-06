@@ -664,9 +664,16 @@ void CG_LoadForcedSounds(void)
 	char* s;
 	int i;
 
+	cgs.customModelSound = qfalse;
+
 	trap_Cvar_VariableStringBuffer("cg_mySound", mySoundModel, sizeof(mySoundModel));
 	trap_Cvar_VariableStringBuffer("cg_teamSound", teamSoundModel, sizeof(teamSoundModel));
 	trap_Cvar_VariableStringBuffer("cg_enemySound", enemySoundModel, sizeof(enemySoundModel));
+
+	if (mySoundModel[0] || teamSoundModel[0] || enemySoundModel[0])
+	{
+		cgs.customModelSound = qtrue;
+	}
 
 	for (i = 0 ; i < MAX_CUSTOM_SOUNDS ; i++)
 	{
@@ -822,7 +829,15 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	}
 
 	isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "pm") == 0)) ? qtrue : qfalse;
-	isFbSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
+	if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
+	{
+		isFbSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
+	}
+	else
+	{
+		isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
+		nameSkin = "pm";
+	}
 
 	if (isOurClient)
 	{
@@ -2078,23 +2093,23 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack)
 	if (ci->team == TEAM_SPECTATOR)
 		return qfalse;
 
-	 if (CG_IsLocalClientSpectator())
-    {
-        if (cg_teamIndicator.integer & PI_SPECTATOR)
-        {
-            ;
-        }
-        else
-        {
-            if (CG_IsEnemy(ci))
-                return qfalse;
-        }
-    }
-    else
-    {
-        if (CG_IsEnemy(ci))
-            return qfalse;
-    }
+	if (CG_IsLocalClientSpectator())
+	{
+		if (cg_teamIndicator.integer & PI_SPECTATOR)
+		{
+			;
+		}
+		else
+		{
+			if (CG_IsEnemy(ci))
+				return qfalse;
+		}
+	}
+	else
+	{
+		if (CG_IsEnemy(ci))
+			return qfalse;
+	}
 
 	if (!wallhack)
 	{
@@ -2126,10 +2141,11 @@ static void CG_FriendHudMarker(centity_t* cent)
 		return;
 	}
 
-	if (!(cg_friendsWallhack.integer & 1) && !CG_FriendVisible(cent))
+	if ((!(cg_friendsWallhack.integer & 1) || !CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH)) && !CG_FriendVisible(cent))
 	{
 		return;
 	}
+	
 
 	distance = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
 	if (cg_friendHudMarkerMaxDist.integer > 0 && distance > cg_friendHudMarkerMaxDist.value)
@@ -2234,7 +2250,7 @@ static void CG_PlayerSprites(centity_t* cent)
 			if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
 			{
 				qhandle_t shader;
-				if (/* !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) &&  */cg_friendsWallhack.integer & 1)
+				if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && cg_friendsWallhack.integer & 1)
 					shader = cgs.media.frozenFoeTagShaderWallhack;
 				else
 					shader = cgs.media.frozenFoeTagShader;
@@ -2253,7 +2269,7 @@ static void CG_PlayerSprites(centity_t* cent)
 				{
 					VectorCopy(colorWhite, color);
 				}
-				if (/* !(cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) &&  */cg_friendsWallhack.integer & 1)
+				if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && cg_friendsWallhack.integer & 1)
 					shader = cgs.media.friendShaderWallhack;
 				else
 					shader = cgs.media.friendShader;
@@ -2326,16 +2342,19 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	{
 		shadowMarkShader = cgs.media.shadowMarkShader;
 	}
-	else if (alt < MAX_ALT_SHADERS)
+	else if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW) && alt < MAX_ALT_SHADERS)
 	{
 		shadowMarkShader = cgs.media.shadowMarkShaderNew[alt - 1];
 	}
 	else
 	{
-		shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
+		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW))
+			shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
+		else
+			shadowMarkShader = cgs.media.shadowMarkShader;
 	}
 
-	if (cg_altShadow.integer)
+	if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW) && cg_altShadow.integer)
 	{
 		color[0] = cgs.be.altShadowColor[0];
 		color[1] = cgs.be.altShadowColor[1];
@@ -2731,11 +2750,11 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		hitboxShaderEdge = cgs.osp.hboxShader;
 		hitboxShaderSide = cgs.osp.hboxShader_nocull;
 	}
-	else if (cg_drawHitBox.integer == 2)
-	{
-		hitboxShaderEdge = cgs.media.hboxShaderNew_cullback;
-		hitboxShaderSide = cgs.media.hboxShaderNew_cullback;
-	}
+	// else if (cg_drawHitBox.integer == 2)
+	// {
+	// 	hitboxShaderEdge = cgs.media.hboxShaderNew_cullback;
+	// 	hitboxShaderSide = cgs.media.hboxShaderNew_cullback;
+	// }
 	else
 	{
 		hitboxShaderEdge = cgs.media.hboxShaderNew;
@@ -2876,7 +2895,8 @@ void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 		}
 		else
 		{
-			if (cgs.be.markedTeam[clientNum])
+			
+			if (CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE) && cgs.be.markedTeam[clientNum])
 			{
 				Vector4Copy(cgs.be.markedTeamColor, color);
 			}
@@ -3022,7 +3042,7 @@ void CG_Player(centity_t* cent)
 	legs.renderfx = renderfx;
 	VectorCopy(legs.origin, legs.oldorigin);    // don't positionally lerp at all
 
-	if (ci->isPmSkin || ci->isFbSkin)
+	if (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)))
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -3066,7 +3086,7 @@ void CG_Player(centity_t* cent)
 
 	CG_AddRefEntityWithPowerups(&legs, &cent->currentState, ci->team);
 
-	if (cg_drawOutline.integer)
+	if (CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer)
 		CG_AddOutline(&legs, cent);
 
 	//
@@ -3079,7 +3099,7 @@ void CG_Player(centity_t* cent)
 	torso.shadowPlane = shadowPlane;
 	torso.renderfx = renderfx;
 
-	if (ci->isPmSkin || ci->isFbSkin)
+	if (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)))
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -3123,7 +3143,7 @@ void CG_Player(centity_t* cent)
 
 	CG_AddRefEntityWithPowerups(&torso, &cent->currentState, ci->team);
 
-	if (cg_drawOutline.integer)
+	if (CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer)
 		CG_AddOutline(&torso, cent);
 
 	//
@@ -3136,7 +3156,7 @@ void CG_Player(centity_t* cent)
 	head.shadowPlane = shadowPlane;
 	head.renderfx = renderfx;
 
-	if (ci->isPmSkin || ci->isFbSkin)
+	if (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)))
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -3184,7 +3204,7 @@ void CG_Player(centity_t* cent)
 	}
 	CG_AddRefEntityWithPowerups(&head, &cent->currentState, ci->team);
 
-	if (cg_drawOutline.integer)
+	if (CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer)
 		CG_AddOutline(&head, cent);
 
 	CG_AddPlayerWeapon(&torso, NULL, cent, ci->team);

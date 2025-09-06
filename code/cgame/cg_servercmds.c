@@ -340,7 +340,6 @@ static void CG_ConfigStringModified(void)
 	}
 	else if (num == CS_VOTE_YES)
 	{
-		// CG_OSPWStatsUp_f(); // lol?                                                                                     /* Address : 0xf046 Type : Interium */
 		cgs.voteYes = atoi(str);
 		cgs.voteModified = qtrue;
 	}
@@ -355,7 +354,6 @@ static void CG_ConfigStringModified(void)
 	}
 	else if (num == CS_INTERMISSION)
 	{
-		// CG_OSPWStatsUp_f();
 		cg.intermissionStarted = atoi(str);
 		if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_SPECTATOR &&
 		        CG_OSPIsGameTypeCA(cgs.gametype) &&
@@ -364,7 +362,8 @@ static void CG_ConfigStringModified(void)
 			return;
 		}
 		CG_OSPWStatsDown_f();
-		// CG_OSPWStatsDown_f();
+		CG_ScoresDown_f();
+		// cgs.be.newStats.drawWindow = qtrue;
 	}
 	else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 	{
@@ -446,11 +445,16 @@ static void CG_ConfigStringModified(void)
 	{
 		CG_ShaderStateChanged();
 	}
-	else if (num == CS_BE_DISABLE_FEATURES)
+	else if (num == CS_OSP2BE_SUPPORTED)
 	{
-		CG_OSPConfigDisableBEFeatures(atoi(str));
+		CG_OSPSupportedBEServer(atoi(str));
 	}
-	else if (num == X_HCK_PS_ENEMY_HITBOX)
+	else if (num == CS_OSP2BE_DISABLED_FEATURES)
+	{
+		cgs.be.disableFeatures = atoi(str);
+		BE_PrintDisabledFeatures(qfalse);
+	}
+	else if (num == XQ3E_ALLOW_FEATURES)
 	{
 		CG_OSPConfigXHitBoxSet(atoi(str));
 	}
@@ -782,14 +786,13 @@ static void CG_OSPPrintXStats(void)
 	Q_strncpyz(&str[0], cgs.clientinfo[client_id].name, 32);
 
 	CG_Printf(va("\n^7Accuracy info for: ^3%s^7\n\n", str));
-	CG_Printf("Weapon        Accrcy Hits/Atts Kills Deaths Pickup Drops\n");
-	CG_Printf("--------------------------------------------------------\n");
+	CG_Printf("Weapon          Accrcy Hits/Atts Kills Deaths Pickup Drops\n");
+	CG_Printf("----------------------------------------------------------\n");
 	if (wstats_condition == 0)
 	{
 		CG_Printf("No weapon info available.\n");
 		return;
 	}
-	/* цикл по оружию */
 	for (i = 1; i < 10 ; ++i)
 	{
 		if ((wstats_condition & (1 << i)) != 0)
@@ -1223,52 +1226,52 @@ void CG_BEParseStatsInfo(void)
 	// // Print weapon stats with color
 	// CG_Printf("CLIENT: Weapon stats:\n");
 	// for (weaponIndex = 0; weaponIndex < WP_NUM_WEAPONS; weaponIndex++) {
-	// 	if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << weaponIndex)) {
-	// 		CG_Printf("%s: ", weaponNames[weaponIndex]);
-	// 		// Hits
-	// 		if (ws->stats[weaponIndex].hits == 0)
-	// 			CG_Printf("^1hits: 0^7 ");
-	// 		else
-	// 			CG_Printf("^2hits: %d^7 ", ws->stats[weaponIndex].hits);
-	// 		// Shots
-	// 		if (ws->stats[weaponIndex].shots == 0)
-	// 			CG_Printf("^1shots: 0^7 ");
-	// 		else
-	// 			CG_Printf("^2shots: %d^7 ", ws->stats[weaponIndex].shots);
-	// 		// Kills
-	// 		if (ws->stats[weaponIndex].kills == 0)
-	// 			CG_Printf("^1kills: 0^7 ");
-	// 		else
-	// 			CG_Printf("^2kills: %d^7 ", ws->stats[weaponIndex].kills);
-	// 		// Deaths
-	// 		if (ws->stats[weaponIndex].deaths == 0)
-	// 			CG_Printf("^1deaths: 0^7 ");
-	// 		else
-	// 			CG_Printf("^2deaths: %d^7 ", ws->stats[weaponIndex].deaths);
-	// 		// PickUps
-	// 		if (ws->stats[weaponIndex].pickUps == 0)
-	// 			CG_Printf("^1pickUps: 0^7 ");
-	// 		else
-	// 			CG_Printf("^2pickUps: %d^7 ", ws->stats[weaponIndex].pickUps);
-	// 		// Drops
-	// 		if (ws->stats[weaponIndex].drops == 0)
-	// 			CG_Printf("^1drops: 0^7 ");
-	// 		else
-	// 			CG_Printf("^2drops: %d^7 ", ws->stats[weaponIndex].drops);
-	// 		// Accuracy
-	// 		if (ws->stats[weaponIndex].shots == 0)
-	// 			CG_Printf("^1accuracy: 0.0%%^7 ");
-	// 		else
-	// 			CG_Printf("^2accuracy: %.1f%%^7 ", ws->stats[weaponIndex].accuracy);
-	// 		CG_Printf("\n");
-	// 	}
+	//  if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << weaponIndex)) {
+	//      CG_Printf("%s: ", weaponNames[weaponIndex]);
+	//      // Hits
+	//      if (ws->stats[weaponIndex].hits == 0)
+	//          CG_Printf("^1hits: 0^7 ");
+	//      else
+	//          CG_Printf("^2hits: %d^7 ", ws->stats[weaponIndex].hits);
+	//      // Shots
+	//      if (ws->stats[weaponIndex].shots == 0)
+	//          CG_Printf("^1shots: 0^7 ");
+	//      else
+	//          CG_Printf("^2shots: %d^7 ", ws->stats[weaponIndex].shots);
+	//      // Kills
+	//      if (ws->stats[weaponIndex].kills == 0)
+	//          CG_Printf("^1kills: 0^7 ");
+	//      else
+	//          CG_Printf("^2kills: %d^7 ", ws->stats[weaponIndex].kills);
+	//      // Deaths
+	//      if (ws->stats[weaponIndex].deaths == 0)
+	//          CG_Printf("^1deaths: 0^7 ");
+	//      else
+	//          CG_Printf("^2deaths: %d^7 ", ws->stats[weaponIndex].deaths);
+	//      // PickUps
+	//      if (ws->stats[weaponIndex].pickUps == 0)
+	//          CG_Printf("^1pickUps: 0^7 ");
+	//      else
+	//          CG_Printf("^2pickUps: %d^7 ", ws->stats[weaponIndex].pickUps);
+	//      // Drops
+	//      if (ws->stats[weaponIndex].drops == 0)
+	//          CG_Printf("^1drops: 0^7 ");
+	//      else
+	//          CG_Printf("^2drops: %d^7 ", ws->stats[weaponIndex].drops);
+	//      // Accuracy
+	//      if (ws->stats[weaponIndex].shots == 0)
+	//          CG_Printf("^1accuracy: 0.0%%^7 ");
+	//      else
+	//          CG_Printf("^2accuracy: %.1f%%^7 ", ws->stats[weaponIndex].accuracy);
+	//      CG_Printf("\n");
+	//  }
 	// }
 
 	// // Print general stats with color
 	// CG_Printf("CLIENT: General stats:\n");
 	// #define PRINT_STAT_COLOR(name, value) \
-	// 	if ((value) == 0) CG_Printf("^1%s: 0^7\n", name); \
-	// 	else CG_Printf("^2%s: %d^7\n", name, value);
+	//  if ((value) == 0) CG_Printf("^1%s: 0^7\n", name); \
+	//  else CG_Printf("^2%s: %d^7\n", name, value);
 
 	// PRINT_STAT_COLOR("megahealth", ws->megahealth);
 	// PRINT_STAT_COLOR("ga", ws->ga);
@@ -1292,18 +1295,80 @@ void CG_BEParseStatsInfo(void)
 
 	// // Print float stats with color
 	// if (ws->kdratio == 0.0f)
-	// 	CG_Printf("^1kdratio: 0.0^7\n");
+	//  CG_Printf("^1kdratio: 0.0^7\n");
 	// else
-	// 	CG_Printf("^2kdratio: %.2f^7\n", ws->kdratio);
+	//  CG_Printf("^2kdratio: %.2f^7\n", ws->kdratio);
 	// if (ws->efficiency == 0.0f)
-	// 	CG_Printf("^1efficiency: 0.0^7\n");
+	//  CG_Printf("^1efficiency: 0.0^7\n");
 	// else
-	// 	CG_Printf("^2efficiency: %.2f^7\n", ws->efficiency);
+	//  CG_Printf("^2efficiency: %.2f^7\n", ws->efficiency);
 	// if (ws->damageRatio == 0.0f)
-	// 	CG_Printf("^1damageRatio: 0.0^7\n");
+	//  CG_Printf("^1damageRatio: 0.0^7\n");
 	// else
-	// 	CG_Printf("^2damageRatio: %.2f^7\n", ws->damageRatio);
+	//  CG_Printf("^2damageRatio: %.2f^7\n", ws->damageRatio);
 	// #undef PRINT_STAT_COLOR
+}
+
+static void CG_HandleScmdsCommand(void)
+{
+	const char* part;
+	char buffer[2048];
+	char* token;
+
+	part = CG_Argv(1);
+
+	Q_strncpyz(buffer, part, sizeof(buffer));
+	token = Q_strtok(buffer, "/");
+	while (token != NULL)
+	{
+		if (token[0] != '\0')
+		{
+			int i;
+			qboolean valid = qtrue;
+			for (i = 0; token[i]; ++i)
+			{
+				if (!((token[i] >= 'a' && token[i] <= 'z') ||
+				        (token[i] >= 'A' && token[i] <= 'Z') ||
+				        (token[i] >= '0' && token[i] <= '9') ||
+				        (token[i] == '_')))
+				{
+					valid = qfalse;
+					break;
+				}
+			}
+			if (valid)
+			{
+				trap_AddCommand(token);
+			}
+		}
+		token = Q_strtok(NULL, "/");
+	}
+}
+
+static void CG_ParseSpecsInfo(void)
+{
+	int argc = trap_Argc();
+	int i;
+	int clientId;
+
+	cgs.be.followingMe = 0;
+
+	for (i = 1; i < argc; ++i)
+	{
+		int clientNum;
+
+		clientNum = atoi(CG_Argv(i));
+
+		if (clientNum == -1)
+		{
+			cgs.be.followingMe = 0;
+			break;
+		}
+		else if (clientNum >= 0 && clientNum < MAX_CLIENTS && clientNum != cg.snap->ps.clientNum)
+		{
+			cgs.be.followingMe |= (1 << clientNum);
+		}
+	}
 }
 
 /*
@@ -1584,6 +1649,12 @@ void CG_ServerCommand(void)
 			return;
 		}
 	}
+//specsinfo
+	if (Q_stricmp(cmd, "specsinfo") == 0)
+	{
+		CG_ParseSpecsInfo();
+		return;
+	}
 //astats
 	if (Q_stricmp(cmd, "astats") == 0)
 	{
@@ -1608,6 +1679,12 @@ void CG_ServerCommand(void)
 	if (Q_stricmp(cmd, "clientLevelShot") == 0)
 	{
 		cg.levelShot = qtrue;
+		return;
+	}
+// Server sharing console comands
+	if (Q_stricmp(cmd, "scmds") == 0)
+	{
+		CG_HandleScmdsCommand();
 		return;
 	}
 //UKNOWN COMMAND

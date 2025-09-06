@@ -12,7 +12,21 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 ## ✨ BE-Features
 ## v0.93
 ```
+* cg_scoreboardRtColors/cg_scoreboardBtColors
+  + 3rd argument (optional) change titles color
+* cg_scoreboardSpecColor
+  + 2nd argument (optional) change title color
+* cg_damageDrawFrame
+  + Bitmask 4, draw pulse frame at low health
+
++ cg_drawCenterMessages 2 - print text with shadow
+
++ be_features - read only
++ be_enable
+
 - cg_noSlidingWindow
+
+* various fixes
 ```
 
 ## v0.92

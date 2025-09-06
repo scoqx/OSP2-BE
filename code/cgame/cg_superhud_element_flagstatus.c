@@ -22,6 +22,7 @@ static void* CG_SHUDElementFlagStatusCreate(const superhudConfig_t* config, enum
 	SHUD_ELEMENT_INIT(element, config);
 
 	CG_SHUDDrawMakeContext(&element->config, &element->ctx);
+	Vector4Copy(colorWhite, element->ctx.color);
 
 	element->flagType = flagType;
 
@@ -87,7 +88,11 @@ void CG_SHUDElementFlagStatusRoutine(void* context)
 
 	if (item)
 	{
-		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx);
+		// element->ctx.color[0] = 1.0f;
+		// element->ctx.color[1] = 1.0f;
+		// element->ctx.color[2] = 1.0f;
+		// element->ctx.color[3] = 1.0f;
+		CG_SHUDDrawStretchPic(element->ctx.coord, element->ctx.coordPicture, element->ctx.color, element->ctx.image);
 	}
 }
 

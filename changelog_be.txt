@@ -411,3 +411,42 @@ description later
 * cg_scoreboardBE bitmask (+ '4')
 * cg_friendsWallhack bitmask (+ '2')
 * various fixes
+
+26.08.2025 be v0.93
+
+* cg_scoreboardRtColors/cg_scoreboardBtColors
+  + 3rd argument (optional) change titles color
+* cg_scoreboardSpecColor
+  + 2nd argument (optional) change title color
+* cg_damageDrawFrame
+  + Bitmask 4, draw pulse frame at low health
+
++ cg_drawCenterMessages 2 - print text with shadow
+
++ be_features - read only
++ be_enable
+
+- cg_noSlidingWindow
+
+* various fixes
+
+01.09.2025 be v0.94d
+* allstats better aligning
++ bestats gauntlet info
++ cg_healthColorLevels 2 - disable coloring for team foe
++ extended server support
++ pre-register Power-Up icons
+* hud flagstatus fix
++ SHUD config - kmodel.cfg (koreanmodel)
+* damage frame fix
+
+03.09.2025 be v0.94e
+SHUD:
++ config - ChikiPiki.cfg (by Musin)
++ spectators element, works only at supported server`
+
+04.09.2025 be v0.95
++ cg_drawHitbox 2 disabled for a while (need fix)
+* scoreboard visual fix
+SHUD: 
++ visflags, gt_ffa, gt_tourney, gt_tdm, gt_ctf, gt_unfreeze, gt_clanarena

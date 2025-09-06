@@ -1660,7 +1660,7 @@ static void CG_OSPDrawTeamSummary(
 	if (cgs.gametype >= GT_CTF)
 	{
 		labels[count] = "Points";
-		Com_sprintf(values[count], sizeof(values[count]), "^3%i^7", sumScores);
+		Com_sprintf(values[count], sizeof(values[count]), "%i^7", sumScores);
 		posX[count] = titlePos1X;
 		count++;
 
@@ -1747,19 +1747,24 @@ void CG_OSPDrawScoreHeader(float baseX, float y, vec4_t colorBody, vec4_t colorB
 
 	vec4_t headerColor1, headerColor2, headerColor3, headerColor4, headerColor5;
 
-	if (cg_scoreboardBE.integer & 8) {
+	if (cg_scoreboardBE.integer & 8)
+	{
 		Vector4Copy(colorBody, headerColor1);
 		Vector4Copy(colorBody, headerColor2);
 		Vector4Copy(colorBody, headerColor3);
 		Vector4Copy(colorBody, headerColor4);
 		Vector4Copy(colorBody, headerColor5);
-	} else if (cg_scoreboardBE.integer & 4) {
+	}
+	else if (cg_scoreboardBE.integer & 4)
+	{
 		Vector4Copy(colorWhite, headerColor1);
 		Vector4Copy(colorWhite, headerColor2);
 		Vector4Copy(colorWhite, headerColor3);
 		Vector4Copy(colorWhite, headerColor4);
 		Vector4Copy(colorWhite, headerColor5);
-	} else {
+	}
+	else
+	{
 		Vector4Copy(colorBody, headerColor1);
 		Vector4Copy(colorWhite, headerColor2);
 		Vector4Copy(colorWhite, headerColor3);
