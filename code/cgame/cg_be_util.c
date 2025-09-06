@@ -121,7 +121,6 @@ void BE_PrintDisabledFeatures(qboolean request)
 	}
 }
 
-// Refactored to accept argument getter
 void CG_BEParseXStatsToStatsAll(void) {
 	int i;
 	int index = 1;
@@ -137,8 +136,6 @@ void CG_BEParseXStatsToStatsAll(void) {
 
 	client_id = atoi(CG_Argv(index++));
 	wstats_condition = atoi(CG_Argv(index++));
-
-	CG_Printf("^3[XSTATS] ^7Client ^1%d^7: wstats_condition=%d\n", client_id, wstats_condition);
 
 	if (client_id < 0 || client_id >= MAX_CLIENTS)
 	{
@@ -158,9 +155,6 @@ void CG_BEParseXStatsToStatsAll(void) {
 
 			pickUps = atts_value >> cgs.osp.stats_shift;
 			drops   = hits_value >> cgs.osp.stats_shift;
-
-			CG_Printf("^3[XSTATS] ^7: ^5W%d^7: ^2hits=%d^7 ^3shots=%d^7 ^4kills=%d^7 ^1deaths=%d^7 ^6pickUps=%d^7 ^8drops=%d\n",
-				i, hits_value & cgs.osp.stats_mask, atts_value & cgs.osp.stats_mask, kills_value, deaths_value, pickUps, drops);
 
 			ws->stats[i].hits = hits_value & cgs.osp.stats_mask;
 			ws->stats[i].shots = atts_value & cgs.osp.stats_mask;
@@ -191,9 +185,6 @@ void CG_BEParseXStatsToStatsAll(void) {
 	red_armor     = atoi(CG_Argv(index++));
 	yellow_armor  = atoi(CG_Argv(index++));
 
-	CG_Printf("^3[XSTATS] ^7: ^2Armor=%d^7 ^3Health=%d^7 ^4DmgGiven=%d^7 ^1DmgRcvd=%d^7 ^5MH=%d^7 ^6GA=%d^7 ^8RA=%d^7 ^9YA=%d\n",
-		armor_taken, health_taken, damage_given, damage_rcvd, megahealth, green_armor, red_armor, yellow_armor);
-
 	ws->armor      = armor_taken;
 	ws->health     = health_taken;
 	ws->megahealth = megahealth;
@@ -222,9 +213,4 @@ void CG_BEParseXStatsToStatsAll(void) {
 	                 (100.0f * (float)totalKills / (totalKills + totalDeaths)) : 0.0f;
 	if (ws->efficiency < 0.0f)
 		ws->efficiency = 0.0f;
-
-	ws->customStatsCalled = qfalse;
-
-	CG_Printf("^3[XSTATS] ^7: ^2FINAL^7: ^4kills=%d^7 ^1deaths=%d^7 ^5kdr=%.2f^7 ^6eff=%.2f^7 ^3dmgGiven=%d^7 ^8dmgRcvd=%d^7 ^9ratio=%.2f\n",
-		ws->kills, ws->deaths, ws->kdratio, ws->efficiency, ws->dmgGiven, ws->dmgReceived, ws->damageRatio);
 }

@@ -1153,7 +1153,6 @@ typedef struct
 	int ya;
 	int ga;
 
-	qboolean customStatsCalled;
 	qboolean drawWindow;
 	int statsLastRequestTime;
 	weaponStats_t stats[WP_NUM_WEAPONS];
@@ -2219,7 +2218,6 @@ void CG_DrawInformation(void);
 //
 qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
-void CG_OSPShowStatsInfo(void);
 void CG_BEStatsShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
