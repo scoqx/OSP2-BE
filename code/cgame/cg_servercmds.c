@@ -28,6 +28,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/qcommon.h"
 #include "cg_superhud.h"
 
+static int xstats1_received_count = 0;
+static int last_xstats1_sequence = -1;
+
 
 /*
 =================
@@ -1625,22 +1628,11 @@ void CG_ServerCommand(void)
 	if (Q_stricmp(cmd, "xstats1") == 0)
 	{
 		if (cgs.be.statsAllRequested)
-		{
-			int client_id;
-			char argsBuf[2048];
-			trap_Args(argsBuf, sizeof(argsBuf));
-			CG_StoreXStats1(argsBuf);
-
-			client_id = atoi(CG_Argv(1));
-			CG_Printf("xstats1 block stored for client %d, total blocks: %d\n", client_id, CG_GetXStats1Count());
-
-			// Разбираем только когда накоплено всё, что ожидалось
-			if (CG_GetXStats1Count() >= statsAllExpectedCount && statsAllExpectedCount > 0) {
-				CG_ParseAllXStats1BlocksByClient();
-				CG_Printf("All xstats1 blocks parsed\n");
-				cgs.be.statsAllRequested = qfalse;
-				statsAllExpectedCount = 0;
-			}
+		{	
+			CG_BEParseXStatsToStatsAll();
+			xstats1_received_count++;
+			last_xstats1_sequence = cgs.serverCommandSequence;
+			// CG_Printf("[XSTATS] Received xstats1 at sequence %d, total count: %d\n", last_xstats1_sequence, xstats1_received_count);
 			return;
 		}
 		else
@@ -1708,5 +1700,11 @@ void CG_ExecuteNewServerCommands(int latestSequence)
 		{
 			CG_ServerCommand();
 		}
+	}
+	if (last_xstats1_sequence == latestSequence && cgs.be.statsAllRequested)
+	{
+		CG_Printf("[XSTATS] Last xstats1 in this queue at sequence %d\n", last_xstats1_sequence);
+		cgs.be.statsAllRequested = qfalse;
+		last_xstats1_sequence = -1;
 	}
 }

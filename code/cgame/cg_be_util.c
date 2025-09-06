@@ -3,12 +3,6 @@
 
 
 
-#define MAX_XSTATS1_BLOCKS 64
-#define MAX_XSTATS1_STRLEN 2048
-
-static int xstats1_count = 0;
-static char *xstats1_blocks[MAX_XSTATS1_BLOCKS];
-
 qboolean CG_BE_Timer(int msec)
 {
 	static int lastTime = 0;
@@ -127,38 +121,10 @@ void BE_PrintDisabledFeatures(qboolean request)
 	}
 }
 
-// Helper: split a string into arguments (space-separated)
-static int CG_ParseArgs(const char *str, char **argv, int max_args) {
-	int argc = 0;
-	const char *p = str;
-	while (*p && argc < max_args) {
-		// Skip spaces
-		while (*p == ' ') p++;
-		if (!*p) break;
-		argv[argc++] = (char *)p;
-		// Find end of arg
-		while (*p && *p != ' ') p++;
-		if (*p) {
-			*((char *)p) = '\0'; // Temporarily null-terminate
-			p++;
-		}
-	}
-	return argc;
-}
-
-// Argument getter type
-typedef const char* (*CG_ArgvGetter)(int idx, void *user);
-
-// Local argv getter for parsed xstats1 block
-static const char* CG_LocalArgv(int idx, void *user) {
-	char **argv = (char **)user;
-	return argv[idx];
-}
-
 // Refactored to accept argument getter
-void CG_BEParseXStatsToStatsAllEx(int *pIndex, CG_ArgvGetter argv_getter, void *user) {
+void CG_BEParseXStatsToStatsAll(void) {
 	int i;
-	int index = *pIndex;
+	int index = 1;
 	int wstats_condition;
 	int client_id;
 	int hits_value, atts_value, kills_value, deaths_value;
@@ -169,14 +135,13 @@ void CG_BEParseXStatsToStatsAllEx(int *pIndex, CG_ArgvGetter argv_getter, void *
 	int totalKills, totalDeaths;
 	newStatsInfo_t* ws;
 
-	client_id = atoi(argv_getter(index++, user));
-	wstats_condition = atoi(argv_getter(index++, user));
+	client_id = atoi(CG_Argv(index++));
+	wstats_condition = atoi(CG_Argv(index++));
 
-	CG_Printf("[XSTATS] client_id=%d wstats_condition=%d\n", client_id, wstats_condition);
+	CG_Printf("^3[XSTATS] ^7Client ^1%d^7: wstats_condition=%d\n", client_id, wstats_condition);
 
 	if (client_id < 0 || client_id >= MAX_CLIENTS)
 	{
-		*pIndex = index;
 		return;
 	}
 
@@ -186,15 +151,15 @@ void CG_BEParseXStatsToStatsAllEx(int *pIndex, CG_ArgvGetter argv_getter, void *
 	{
 		if ((wstats_condition & (1 << i)) != 0)
 		{
-			hits_value = atoi(argv_getter(index++, user));
-			atts_value = atoi(argv_getter(index++, user));
-			kills_value = atoi(argv_getter(index++, user));
-			deaths_value = atoi(argv_getter(index++, user));
+			hits_value = atoi(CG_Argv(index++));
+			atts_value = atoi(CG_Argv(index++));
+			kills_value = atoi(CG_Argv(index++));
+			deaths_value = atoi(CG_Argv(index++));
 
 			pickUps = atts_value >> cgs.osp.stats_shift;
 			drops   = hits_value >> cgs.osp.stats_shift;
 
-			CG_Printf("[XSTATS] W%d: hits=%d shots=%d kills=%d deaths=%d pickUps=%d drops=%d\n",
+			CG_Printf("^3[XSTATS] ^7: ^5W%d^7: ^2hits=%d^7 ^3shots=%d^7 ^4kills=%d^7 ^1deaths=%d^7 ^6pickUps=%d^7 ^8drops=%d\n",
 				i, hits_value & cgs.osp.stats_mask, atts_value & cgs.osp.stats_mask, kills_value, deaths_value, pickUps, drops);
 
 			ws->stats[i].hits = hits_value & cgs.osp.stats_mask;
@@ -217,16 +182,16 @@ void CG_BEParseXStatsToStatsAllEx(int *pIndex, CG_ArgvGetter argv_getter, void *
 		}
 	}
 
-	armor_taken   = atoi(argv_getter(index++, user));
-	health_taken  = atoi(argv_getter(index++, user));
-	damage_given  = atoi(argv_getter(index + 2, user));
-	damage_rcvd   = atoi(argv_getter(index + 3, user));
-	megahealth    = atoi(argv_getter(index + 4, user));
-	green_armor   = atoi(argv_getter(index + 5, user));
-	red_armor     = atoi(argv_getter(index + 6, user));
-	yellow_armor  = atoi(argv_getter(index + 7, user));
+	armor_taken   = atoi(CG_Argv(index++));
+	health_taken  = atoi(CG_Argv(index++));
+	damage_given  = atoi(CG_Argv(index++));
+	damage_rcvd   = atoi(CG_Argv(index++));
+	megahealth    = atoi(CG_Argv(index++));
+	green_armor   = atoi(CG_Argv(index++));
+	red_armor     = atoi(CG_Argv(index++));
+	yellow_armor  = atoi(CG_Argv(index++));
 
-	CG_Printf("[XSTATS] Armor=%d Health=%d DmgGiven=%d DmgRcvd=%d MH=%d GA=%d RA=%d YA=%d\n",
+	CG_Printf("^3[XSTATS] ^7: ^2Armor=%d^7 ^3Health=%d^7 ^4DmgGiven=%d^7 ^1DmgRcvd=%d^7 ^5MH=%d^7 ^6GA=%d^7 ^8RA=%d^7 ^9YA=%d\n",
 		armor_taken, health_taken, damage_given, damage_rcvd, megahealth, green_armor, red_armor, yellow_armor);
 
 	ws->armor      = armor_taken;
@@ -260,83 +225,6 @@ void CG_BEParseXStatsToStatsAllEx(int *pIndex, CG_ArgvGetter argv_getter, void *
 
 	ws->customStatsCalled = qfalse;
 
-	CG_Printf("[XSTATS] FINAL: client_id=%d kills=%d deaths=%d kdr=%.2f eff=%.2f dmgGiven=%d dmgRcvd=%d ratio=%.2f\n",
-		client_id, ws->kills, ws->deaths, ws->kdratio, ws->efficiency, ws->dmgGiven, ws->dmgReceived, ws->damageRatio);
-
-	index += 8;
-	*pIndex = index;
-}
-
-// Old wrapper for server command
-void CG_BEParseXStatsToStatsAll(int *pIndex)
-{
-	CG_BEParseXStatsToStatsAllEx(pIndex, (CG_ArgvGetter)CG_Argv, NULL);
-}
-
-// Wrapper for multiple xstats blocks (server command)
-qboolean CG_BEParseXStatsToStatsAll_Multi(int numBlocks)
-{
-	int i;
-	int index = 1;
-	for (i = 0; i < numBlocks; ++i)
-	{
-		CG_BEParseXStatsToStatsAll(&index);
-	}
-	return qtrue;
-}
-
-// Вызывается при получении xstats1
-void CG_StoreXStats1(const char *xstats1)
-{
-	if (xstats1_count < MAX_XSTATS1_BLOCKS) {
-		// Выделяем память через Z_Malloc
-		char *buf = Z_Malloc(MAX_XSTATS1_STRLEN);
-		OSP_MEMORY_CHECK(buf);
-		Q_strncpyz(buf, xstats1, MAX_XSTATS1_STRLEN);
-		xstats1_blocks[xstats1_count++] = buf;
-	}
-}
-
-// После накопления всех xstats1, вызывайте эту функцию
-void CG_ParseAllXStats1Blocks(void)
-{
-	int i;
-	for (i = 0; i < xstats1_count; ++i) {
-		int index = 1;
-		char *argv[64];
-		char *block = xstats1_blocks[i];
-		int argc = CG_ParseArgs(block, argv, 64);
-		CG_BEParseXStatsToStatsAllEx(&index, CG_LocalArgv, argv);
-		Z_Free(block);
-	}
-	xstats1_count = 0;
-}
-
-// Получить количество накопленных xstats1-блоков
-int CG_GetXStats1Count(void) {
-	return xstats1_count;
-}
-
-// Получить client_id из xstats1 блока (первый аргумент после команды)
-int CG_GetXStats1ClientId(const char *xstats1) {
-	// Пропустить команду, взять первый аргумент
-	const char *p = xstats1;
-	while (*p && *p != ' ') p++; // skip command
-	while (*p == ' ') p++;
-	return atoi(p);
-}
-
-// Разобрать все накопленные xstats1 по client_id
-void CG_ParseAllXStats1BlocksByClient(void)
-{
-	int i;
-	for (i = 0; i < xstats1_count; ++i) {
-		int index = 1;
-		char *argv[64];
-		char *block = xstats1_blocks[i];
-		int argc = CG_ParseArgs(block, argv, 64);
-		CG_BEParseXStatsToStatsAllEx(&index, CG_LocalArgv, argv);
-		Z_Free(block);
-	}
-	xstats1_count = 0;
+	CG_Printf("^3[XSTATS] ^7: ^2FINAL^7: ^4kills=%d^7 ^1deaths=%d^7 ^5kdr=%.2f^7 ^6eff=%.2f^7 ^3dmgGiven=%d^7 ^8dmgRcvd=%d^7 ^9ratio=%.2f\n",
+		ws->kills, ws->deaths, ws->kdratio, ws->efficiency, ws->dmgGiven, ws->dmgReceived, ws->damageRatio);
 }
