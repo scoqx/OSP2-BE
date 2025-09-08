@@ -371,6 +371,8 @@ vmCvar_t           cg_stackHitSoundsTimeout;
 vmCvar_t           cg_drawCenterMessages;
 vmCvar_t        cg_predictStepOffset;
 vmCvar_t        cg_enemyLightningColor;
+vmCvar_t        cg_playerLightningColor;
+vmCvar_t        cg_teamLightningColor;
 vmCvar_t        cg_uniqueColorTable;
 vmCvar_t        cg_noVoteBeep;
 vmCvar_t        cg_damageDrawFrame;
@@ -738,6 +740,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
 	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_playerLightningColor, "cg_playerLightningColor", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerLightningColor },
+	{ &cg_teamLightningColor, "cg_teamLightningColor", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamLightningColor },
 	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
 	{ &cg_noVoteBeep, "cg_noVoteBeep", "0", CVAR_ARCHIVE },
 	{ &cg_damageDrawFrame, "cg_damageDrawFrame", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageDrawFrame },

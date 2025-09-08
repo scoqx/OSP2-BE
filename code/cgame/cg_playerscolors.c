@@ -274,7 +274,7 @@ static void CG_RebuildOurPlayerColors(void)
 	                             &cg_playerModelColors,
 	                             &cg_playerRailColors,
 	                             &cg_playerFrozenColor,
-	                             NULL);
+	                             &cg_playerLightningColor);
 }
 
 void CG_RebuildPlayerColors(void)
@@ -291,7 +291,7 @@ void CG_RebuildPlayerColors(void)
 	                             &cg_teamModelColors,
 	                             &cg_teamRailColors,
 	                             &cg_teamFrozenColor,
-	                             NULL);
+	                             &cg_teamLightningColor);
 
 	/* Enemy colors */
 	/* Do not load default */

@@ -520,6 +520,18 @@ void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart)
 	CG_UpdateAllClientsInfo();
 }
 
+void CG_LocalEventCvarChanged_cg_playerLightningColor(cvarTable_t* cvart)
+{
+	CG_RebuildPlayerColors();
+	CG_UpdateAllClientsInfo();
+}
+
+void CG_LocalEventCvarChanged_cg_teamLightningColor(cvarTable_t* cvart)
+{
+	CG_RebuildPlayerColors();
+	CG_UpdateAllClientsInfo();
+}
+
 void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
 {
 	if (cgs.osp.serverConfigXHitBox != 1 && cg_drawHitBox.integer)

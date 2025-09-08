@@ -1379,6 +1379,22 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		beam.shaderRGBA[2] = cgs.osp.enemyColors.lightning[2] * 255;
 		beam.shaderRGBA[3] = 255;
 	}
+	else if (isOurClient && cg_playerLightningColor.integer > 0)
+	{
+		beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[shaft_type] : cgs.media.enemyLightningBolt[shaft_type];
+		beam.shaderRGBA[0] = cgs.osp.myColors.lightning[0] * 255;
+		beam.shaderRGBA[1] = cgs.osp.myColors.lightning[1] * 255;
+		beam.shaderRGBA[2] = cgs.osp.myColors.lightning[2] * 255;
+		beam.shaderRGBA[3] = 255;
+	}
+	else if (!isOurClient && cg_teamLightningColor.integer > 0 && !CG_IsEnemy(target))
+	{
+		beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[shaft_type] : cgs.media.enemyLightningBolt[shaft_type];
+		beam.shaderRGBA[0] = cgs.osp.teamColors.lightning[0] * 255;
+		beam.shaderRGBA[1] = cgs.osp.teamColors.lightning[1] * 255;
+		beam.shaderRGBA[2] = cgs.osp.teamColors.lightning[2] * 255;
+		beam.shaderRGBA[3] = 255;
+	}
 	else // everyone else
 	{
 		beam.customShader = cg_nomip.integer & 1 ? cgs.media.lightningBoltNoPicMip[shaft_type] : cgs.media.lightningBolt[shaft_type];

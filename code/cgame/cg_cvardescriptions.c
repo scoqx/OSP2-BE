@@ -265,6 +265,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_drawCenterMessages", "Displays messages in the center of the screen (Welcome message, frag, etc.). Set ^0^7 to hide\n  ^21^7 - draw\n  ^22^7 - draw, with shadow" },
 	{ "cg_predictStepOffset", "Smoother step-up movement. Set ^20^7 to disable smoothness. Also fix climbing aim issue." },
 	{ "cg_enemyLightningColor", "Lightning gun beam color for enemies\n  ^20^7 - default beam\n \"^2color^7\" - digit or hex" },
+	{ "cg_playerLightningColor", "Lightning gun beam color for you\n  ^20^7 - default beam\n \"^2color^7\" - digit or hex" },
+	{ "cg_teamLightningColor", "Lightning gun beam color for teammates\n  ^20^7 - default beam\n \"^2color^7\" - digit or hex" },
 	{ "cg_uniqueColorTable", "Unique color table for ^3enemy unique color(s)^7\n  ^21^7 - default\n  ^22^7 - bright" },
 	{ "cg_noVoteBeep", "Disables voting beep sound. Set ^20^7 to enable beep sound." },
 	{ "cg_damageDrawFrame", "Draws a frame when taking damage. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - gradient fade to center\n  ^22^7 - solid color\n  ^24^7 - draw frame when health is low" },
