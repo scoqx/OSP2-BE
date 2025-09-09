@@ -117,6 +117,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_oldPlasma", "Enable old plasma trail style\n  ^20^7 - new plasma trail\n  ^21^7 - old plasma trail" },
 	{ "cg_altGrenades", "Make grenades more brighter. Set ^20^7 to use default grenades." },
 	{ "cg_altLightning", "Choose alternate lightning gun beam. Using shaders ^9lightningBoltNew3^7..^9lightningBoltNew15 and ^9lightningBoltNewNoPicMip3^7..^9lightningBoltNewNoPicMip15^7\n  0 - default beam\n  1...15 - custom beams" },
+	{ "cg_teamAltLightning", "Override teammate lightning beam variant.\n  -1 - inherit cg_altLightning\n  0 - default\n  1...15 - custom" },
+	{ "cg_enemyAltLightning", "Override enemy lightning beam variant.\n  -1 - inherit cg_altLightning\n  0 - default\n  1...15 - custom" },
 	{ "cg_clientLog", "Enables client-side logging option. A non-zero value of 'X' (where 'X' is 1 or higher) enables logging all of messages issued during gameplay. All entries are appended to osp/client_logs/clientX.txt text file." },
 	{ "cg_crosshairPulse", "Crosshair pulse on item pickup. Set ^20^7 to disable." },
 	{ "cg_customLoc", "Use custom location names instead of default ones. Locs stored in osp/locs.\nSet ^20^7 to disable." },

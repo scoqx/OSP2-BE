@@ -465,6 +465,8 @@ vmCvar_t        cg_teamIndicatorFadeRadius;
 vmCvar_t        be_features;
 vmCvar_t        be_enabled;
 vmCvar_t        be_run;
+vmCvar_t           cg_teamAltLightning;
+vmCvar_t           cg_enemyAltLightning;
 
 static cvarTable_t cvarTable[] =
 {
@@ -562,6 +564,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_oldPlasma, "cg_oldPlasma", "1", CVAR_ARCHIVE },
 	{ &cg_altGrenades, "cg_altGrenades", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged},
 	{ &cg_altLightning, "cg_altLightning", "0", CVAR_ARCHIVE},
+    { &cg_teamAltLightning, "cg_teamAltLightning", "-1", CVAR_ARCHIVE},
+    { &cg_enemyAltLightning, "cg_enemyAltLightning", "-1", CVAR_ARCHIVE},
 	{ &cg_ammoCheck, "cg_ammoCheck", "0", CVAR_ARCHIVE },
 	{ &cg_autoAction, "cg_autoAction", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_autoAction},
 	{ &cg_clientLog, "cg_clientLog", "0", CVAR_ARCHIVE },

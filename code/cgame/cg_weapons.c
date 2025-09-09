@@ -1241,6 +1241,25 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	float tl;
 	qboolean isOurClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
 	qboolean isDelagEnabled =  cg_delag.integer & 1 || cg_delag.integer & 2;
+
+	// per-team alt lightning overrides (after declarations for C89)
+	if (!isOurClient)
+	{
+		if (CG_IsEnemy(target))
+		{
+			if (cg_enemyAltLightning.integer >= 0)
+			{
+				enemy_shaft_type = cg_enemyAltLightning.integer;
+			}
+		}
+		else
+		{
+			if (cg_teamAltLightning.integer >= 0)
+			{
+				shaft_type = cg_teamAltLightning.integer;
+			}
+		}
+	}
 	// clientInfo_t *ci = &cgs.clientinfo[cent->currentState.number];
 	if (cent->currentState.weapon != WP_LIGHTNING) return;
 
