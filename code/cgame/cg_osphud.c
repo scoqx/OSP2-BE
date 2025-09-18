@@ -2342,7 +2342,7 @@ float CG_OSPDrawPickupItem(float y)
 {
 	int h;
 	int w;
-	if (cg.snap->ps.stats[STAT_HEALTH])
+	if (cg.snap->ps.stats[STAT_HEALTH] <= 0)
 	{
 		return y;
 	}
