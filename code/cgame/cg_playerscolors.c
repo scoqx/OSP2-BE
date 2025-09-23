@@ -324,106 +324,131 @@ void CG_ModelUniqueColors(int clientNum, playerColors_t* colors)
 
 void CG_ClientInfoUpdateColors(clientInfo_t* ci, int clientNum)
 {
-	if (clientNum == cg.clientNum) /* our client */
-	{
-		CG_RebuildOurPlayerColors();
-		memcpy(&ci->colors, &cgs.osp.myColors, sizeof(ci->colors));
-	}
-	else if (cgs.gametype >= GT_TEAM) /* team game */
-	{
-		const clientInfo_t* ourClient = &cgs.clientinfo[cg.clientNum];
-		qboolean isEnemy = qfalse;
-		const float* teamColor = CG_TeamColor(ci->rt);
+    if (clientNum == cg.clientNum) /* our client */
+    {
+        CG_RebuildOurPlayerColors();
+        memcpy(&ci->colors, &cgs.osp.myColors, sizeof(ci->colors));
+    }
+    else if (cgs.gametype >= GT_TEAM) /* team game */
+    {
+        const clientInfo_t* ourClient = &cgs.clientinfo[cg.clientNum];
+        qboolean isEnemy = qfalse;
+        const float* teamColor = CG_TeamColor(ci->rt);
+        team_t ourPerspectiveTeam;
 
-		if (ourClient->rt == TEAM_SPECTATOR)
-		{
-			/* if spectator, blue allways enemy */
-			isEnemy = ci->rt == TEAM_BLUE;
-		}
-		else
-		{
-			isEnemy = ci->rt != ourClient->rt;
-		}
+        /* Determine which team perspective we're using (same logic as model selection) */
+        if (ourClient->rt == TEAM_SPECTATOR)
+        {
+            /* When spectating, use the team of the player we're following */
+            if (cg.snap->ps.pm_flags & PMF_FOLLOW && 
+                cg.snap->ps.clientNum >= 0 && 
+                cg.snap->ps.clientNum < MAX_CLIENTS)
+            {
+                ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
+            }
+            else
+            {
+                /* Free spectating - use neutral perspective, treat everyone as enemies */
+                ourPerspectiveTeam = TEAM_SPECTATOR;
+            }
+        }
+        else
+        {
+            /* Not spectating, use our actual team */
+            ourPerspectiveTeam = ourClient->rt;
+        }
 
-		if (cg_swapSkins.integer)
-		{
-			isEnemy = !isEnemy;
-		}
+        /* Determine if this player is an enemy based on our current perspective */
+        if (ourPerspectiveTeam == TEAM_SPECTATOR)
+        {
+            /* Free spectating - treat everyone as enemies */
+            isEnemy = qtrue;
+        }
+        else
+        {
+            /* Check if this player is on our perspective team */
+            isEnemy = (ourPerspectiveTeam != ci->rt);
+        }
 
-		if (isEnemy)
-		{
-			if (cgs.osp.enemyColorsOverride.isModelColorSet)
-			{
-				VectorCopy(cgs.osp.enemyColors.head, ci->colors.head);
-				VectorCopy(cgs.osp.enemyColors.torso, ci->colors.torso);
-				VectorCopy(cgs.osp.enemyColors.legs, ci->colors.legs);
-			}
-			else
-			{
-				VectorCopy(teamColor, ci->colors.head);
-				VectorCopy(teamColor, ci->colors.torso);
-				VectorCopy(teamColor, ci->colors.legs);
-			}
+        if (cg_swapSkins.integer)
+        {
+            isEnemy = !isEnemy;
+        }
 
-			CG_ModelUniqueColors(clientNum, &ci->colors);
+        if (isEnemy)
+        {
+            if (cgs.osp.enemyColorsOverride.isModelColorSet)
+            {
+                VectorCopy(cgs.osp.enemyColors.head, ci->colors.head);
+                VectorCopy(cgs.osp.enemyColors.torso, ci->colors.torso);
+                VectorCopy(cgs.osp.enemyColors.legs, ci->colors.legs);
+            }
+            else
+            {
+                VectorCopy(teamColor, ci->colors.head);
+                VectorCopy(teamColor, ci->colors.torso);
+                VectorCopy(teamColor, ci->colors.legs);
+            }
 
-			if (cgs.osp.enemyColorsOverride.isRailColorSet)
-			{
-				VectorCopy(cgs.osp.enemyColors.railCore, ci->colors.railCore);
-				VectorCopy(cgs.osp.enemyColors.railRings, ci->colors.railRings);
-			}
-			if (cgs.osp.enemyColorsOverride.isFrozenColorSet)
-			{
-				VectorCopy(cgs.osp.enemyColors.frozen, ci->colors.frozen);
-			}
-		}
-		else /* if teammate */
-		{
-			if (cgs.osp.teamColorsOverride.isModelColorSet)
-			{
-				VectorCopy(cgs.osp.teamColors.head, ci->colors.head);
-				VectorCopy(cgs.osp.teamColors.torso, ci->colors.torso);
-				VectorCopy(cgs.osp.teamColors.legs, ci->colors.legs);
-			}
-			else
-			{
-				VectorCopy(teamColor, ci->colors.head);
-				VectorCopy(teamColor, ci->colors.torso);
-				VectorCopy(teamColor, ci->colors.legs);
-			}
+            CG_ModelUniqueColors(clientNum, &ci->colors);
 
-			if (cgs.osp.teamColorsOverride.isRailColorSet)
-			{
-				VectorCopy(cgs.osp.teamColors.railCore, ci->colors.railCore);
-				VectorCopy(cgs.osp.teamColors.railRings, ci->colors.railRings);
-			}
-			if (cgs.osp.teamColorsOverride.isFrozenColorSet)
-			{
-				VectorCopy(cgs.osp.teamColors.frozen, ci->colors.frozen);
-			}
-		}
-	}
-	else /* enemy in FFA or 1vs1 game */
-	{
-		if (cgs.osp.enemyColorsOverride.isModelColorSet)
-		{
-			VectorCopy(cgs.osp.enemyColors.head, ci->colors.head);
-			VectorCopy(cgs.osp.enemyColors.torso, ci->colors.torso);
-			VectorCopy(cgs.osp.enemyColors.legs, ci->colors.legs);
-		}
+            if (cgs.osp.enemyColorsOverride.isRailColorSet)
+            {
+                VectorCopy(cgs.osp.enemyColors.railCore, ci->colors.railCore);
+                VectorCopy(cgs.osp.enemyColors.railRings, ci->colors.railRings);
+            }
+            if (cgs.osp.enemyColorsOverride.isFrozenColorSet)
+            {
+                VectorCopy(cgs.osp.enemyColors.frozen, ci->colors.frozen);
+            }
+        }
+        else /* if teammate */
+        {
+            if (cgs.osp.teamColorsOverride.isModelColorSet)
+            {
+                VectorCopy(cgs.osp.teamColors.head, ci->colors.head);
+                VectorCopy(cgs.osp.teamColors.torso, ci->colors.torso);
+                VectorCopy(cgs.osp.teamColors.legs, ci->colors.legs);
+            }
+            else
+            {
+                VectorCopy(teamColor, ci->colors.head);
+                VectorCopy(teamColor, ci->colors.torso);
+                VectorCopy(teamColor, ci->colors.legs);
+            }
 
-		CG_ModelUniqueColors(clientNum, &ci->colors);
+            if (cgs.osp.teamColorsOverride.isRailColorSet)
+            {
+                VectorCopy(cgs.osp.teamColors.railCore, ci->colors.railCore);
+                VectorCopy(cgs.osp.teamColors.railRings, ci->colors.railRings);
+            }
+            if (cgs.osp.teamColorsOverride.isFrozenColorSet)
+            {
+                VectorCopy(cgs.osp.teamColors.frozen, ci->colors.frozen);
+            }
+        }
+    }
+    else /* enemy in FFA or 1vs1 game */
+    {
+        if (cgs.osp.enemyColorsOverride.isModelColorSet)
+        {
+            VectorCopy(cgs.osp.enemyColors.head, ci->colors.head);
+            VectorCopy(cgs.osp.enemyColors.torso, ci->colors.torso);
+            VectorCopy(cgs.osp.enemyColors.legs, ci->colors.legs);
+        }
 
-		if (cgs.osp.enemyColorsOverride.isRailColorSet)
-		{
-			VectorCopy(cgs.osp.enemyColors.railCore, ci->colors.railCore);
-			VectorCopy(cgs.osp.enemyColors.railRings, ci->colors.railRings);
-		}
-		if (cgs.osp.enemyColorsOverride.isFrozenColorSet)
-		{
-			VectorCopy(cgs.osp.enemyColors.frozen, ci->colors.frozen);
-		}
-	}
+        CG_ModelUniqueColors(clientNum, &ci->colors);
+
+        if (cgs.osp.enemyColorsOverride.isRailColorSet)
+        {
+            VectorCopy(cgs.osp.enemyColors.railCore, ci->colors.railCore);
+            VectorCopy(cgs.osp.enemyColors.railRings, ci->colors.railRings);
+        }
+        if (cgs.osp.enemyColorsOverride.isFrozenColorSet)
+        {
+            VectorCopy(cgs.osp.enemyColors.frozen, ci->colors.frozen);
+        }
+    }
 }
 
 

@@ -44,51 +44,82 @@ qboolean CG_IsLocalClientSpectator(void)
 
 qboolean CG_IsEnemy(const clientInfo_t* target)
 {
-	const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
-	int myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
-	int myRealTeam  = local->team;
-	int enemyTeam = target->team;
+    const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
+    int myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
+    int myRealTeam = local->team;
+    int enemyTeam = target->team;
+    team_t ourPerspectiveTeam;
 
-	if (CG_OSPIsGameTypeCA(cgs.gametype))
-	{
-		myRealTeam = local->rt;
-		enemyTeam = target->rt;
-	}
+    if (CG_OSPIsGameTypeCA(cgs.gametype))
+    {
+        myRealTeam = local->rt;
+        enemyTeam = target->rt;
+    }
 
+    if (target == local)
+    {
+        return qfalse;
+    }
 
-	if (target == local)
-	{
-		return qfalse;
-	}
+    if (cgs.gametype <= GT_SINGLE_PLAYER)
+    {
+        return qtrue;
+    }
 
-	if (cgs.gametype <= GT_SINGLE_PLAYER)
-	{
-		return qtrue;
-	}
+    /* Handle spectator perspective logic */
+    if (myStateTeam == TEAM_SPECTATOR)
+    {
+        /* When spectating, determine perspective based on who we're following */
+        if (cg.snap->ps.pm_flags & PMF_FOLLOW && 
+            cg.snap->ps.clientNum >= 0 && 
+            cg.snap->ps.clientNum < MAX_CLIENTS)
+        {
+            /* Use the team of the player we're following as our perspective */
+            if (CG_OSPIsGameTypeCA(cgs.gametype))
+            {
+                ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
+            }
+            else
+            {
+                ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].team;
+            }
+            
+            /* Return true if target is on different team than our perspective */
+            if (CG_OSPIsGameTypeCA(cgs.gametype))
+            {
+                return (ourPerspectiveTeam != target->rt);
+            }
+            else
+            {
+                return (ourPerspectiveTeam != target->team);
+            }
+        }
+        else
+        {
+            /* Free spectating - use the old logic (treat blue as enemy) */
+            if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
+            {
+                return enemyTeam == TEAM_BLUE;
+            }
+            if (myRealTeam == TEAM_BLUE)
+            {
+                return enemyTeam == TEAM_RED;
+            }
+            return qfalse;
+        }
+    }
 
-	if (myStateTeam == TEAM_SPECTATOR)
-	{
-		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
-		{
-			return enemyTeam == TEAM_BLUE;
-		}
-		if (myRealTeam == TEAM_BLUE)
-		{
-			return enemyTeam == TEAM_RED;
-		}
-		return qfalse;
-	}
+    /* Normal team logic for non-spectators */
+    if (myStateTeam == TEAM_RED)
+    {
+        return enemyTeam == TEAM_BLUE;
+    }
+    if (myStateTeam == TEAM_BLUE)
+    {
+        return enemyTeam == TEAM_RED;
+    }
 
-	if (myStateTeam == TEAM_RED)
-	{
-		return enemyTeam == TEAM_BLUE;
-	}
-	if (myStateTeam == TEAM_BLUE)
-	{
-		return enemyTeam == TEAM_RED;
-	}
-
-	return qfalse;
+    return qfalse;
 }
 
 
@@ -862,118 +893,156 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 
 static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qboolean isTeamGame, const char* config, int clientNum)
 {
-	char modelName[MAX_QPATH];
-	char headModelName[MAX_QPATH];
-	const char* resultModelString = "keel/pm";
-	const char* resultHModelString = "keel/pm";
-	const char* cfgModelString = Info_ValueForKey(config, "model");
-	const char* cfgHModelString = Info_ValueForKey(config, "hmodel");
+    char modelName[MAX_QPATH];
+    char headModelName[MAX_QPATH];
+    const char* resultModelString = "keel/pm";
+    const char* resultHModelString = "keel/pm";
+    const char* cfgModelString;
+    const char* cfgHModelString;
 
-	// сначала решим какую строку модели использовать
-	if (isOurClient)
-	{
-		trap_Cvar_VariableStringBuffer("model", modelName, sizeof(modelName));
-		resultModelString = modelName;
-		trap_Cvar_VariableStringBuffer("headmodel", headModelName, sizeof(headModelName));
-		resultHModelString = headModelName;
-	}
-	else
-	{
-		const char* forceModelString = cg_forceModel.integer ? cfgModelString : NULL;
-		const char* forceHModelString = cg_forceModel.integer ? cfgHModelString : NULL;
-		const char* enemyModelString = NULL;
-		const qboolean useOriginal = cg_spectOrigModel.integer && CG_IsFollowing() && cg.snap->ps.clientNum == clientNum;
+    cfgModelString = Info_ValueForKey(config, "model");
+    cfgHModelString = Info_ValueForKey(config, "hmodel");
 
-		if (cg_enemyModel.string[0])
-		{
-			enemyModelString = cg_enemyModel.string;
-		}
+    /* сначала решим какую строку модели использовать */
+    if (isOurClient)
+    {
+        trap_Cvar_VariableStringBuffer("model", modelName, sizeof(modelName));
+        resultModelString = modelName;
+        trap_Cvar_VariableStringBuffer("headmodel", headModelName, sizeof(headModelName));
+        resultHModelString = headModelName;
+    }
+    else
+    {
+        const char* forceModelString;
+        const char* forceHModelString;
+        const char* enemyModelString = NULL;
+        const qboolean useOriginal = cg_spectOrigModel.integer && CG_IsFollowing() && cg.snap->ps.clientNum == clientNum;
+        
+        forceModelString = cg_forceModel.integer ? cfgModelString : NULL;
+        forceHModelString = cg_forceModel.integer ? cfgHModelString : NULL;
 
-		if (!isTeamGame)
-		{
-			// FFA or 1vs1
+        if (cg_enemyModel.string[0])
+        {
+            enemyModelString = cg_enemyModel.string;
+        }
 
-			if (useOriginal)
-			{
-				resultModelString = cfgModelString;
-				resultHModelString = cfgHModelString;
-			}
-			else if (enemyModelString)
-			{
-				resultModelString = enemyModelString;
-				resultHModelString = enemyModelString;
-			}
-			else if (forceModelString)
-			{
-				resultModelString = forceModelString;
-				resultHModelString = forceModelString;
-			}
-			else
-			{
-				resultModelString = cfgModelString;
-				resultHModelString = cfgHModelString;
-			}
-		}
-		else
-		{
-			const char* teamModelString = cg_teamModel.string[0] ? cg_teamModel.string : NULL;
-			// team games
-			qboolean isOurTeam = cgs.clientinfo[cg.clientNum].rt == ci->rt;
-			qboolean isRedTeamWhileSpec = cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED;
-			qboolean isTeamMate = isOurTeam || isRedTeamWhileSpec;
+        if (!isTeamGame)
+        {
+            /* FFA or 1vs1 */
+            if (useOriginal)
+            {
+                resultModelString = cfgModelString;
+                resultHModelString = cfgHModelString;
+            }
+            else if (enemyModelString)
+            {
+                resultModelString = enemyModelString;
+                resultHModelString = enemyModelString;
+            }
+            else if (forceModelString)
+            {
+                resultModelString = forceModelString;
+                resultHModelString = forceModelString;
+            }
+            else
+            {
+                resultModelString = cfgModelString;
+                resultHModelString = cfgHModelString;
+            }
+        }
+        else
+        {
+            const char* teamModelString;
+            team_t ourPerspectiveTeam;
+            qboolean isTeamMate;
+            
+            teamModelString = cg_teamModel.string[0] ? cg_teamModel.string : NULL;
+            /* team games */
+            
+            /* Determine which team perspective we're using when spectating */
+            if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+            {
+                /* When spectating, use the team of the player we're following */
+                if (cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+                {
+                    ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
+                }
+                else
+                {
+                    /* Free spectating - use a neutral perspective, treat all as enemies */
+                    ourPerspectiveTeam = TEAM_SPECTATOR;
+                }
+            }
+            else
+            {
+                /* Not spectating, use our actual team */
+                ourPerspectiveTeam = cgs.clientinfo[cg.clientNum].rt;
+            }
 
-			if (isTeamMate)
-			{
-				if (useOriginal)
-				{
-					resultModelString = cfgModelString;
-					resultHModelString = cfgHModelString;
-				}
-				else if (teamModelString)
-				{
-					resultModelString = teamModelString;
-					resultHModelString = teamModelString;
-				}
-				else if (forceModelString)
-				{
-					resultModelString = forceModelString;
-					resultHModelString = forceModelString;
-				}
-				else
-				{
-					resultModelString = cfgModelString;
-					resultHModelString = cfgHModelString;
-				}
-			}
-			else
-			{
-				if (useOriginal)
-				{
-					resultModelString = cfgModelString;
-					resultHModelString = cfgHModelString;
-				}
-				else if (enemyModelString)
-				{
-					resultModelString = enemyModelString;
-					resultHModelString = enemyModelString;
-				}
-				else if (forceModelString)
-				{
-					resultModelString = forceModelString;
-					resultHModelString = forceModelString;
-				}
-				else
-				{
-					resultModelString = cfgModelString;
-					resultHModelString = cfgHModelString;
-				}
-			}
-		}
-	}
-	CG_UpdateModelFromString(&ci->modelName[0], &ci->skinName[0], resultModelString, isOurClient, ci->rt);
-	CG_UpdateModelFromString(&ci->headModelName[0], &ci->headSkinName[0], resultHModelString, isOurClient, ci->rt);
-	ci->isPmSkin = (Q_stricmp(ci->skinName, "pm") == 0) ? qtrue : qfalse;
-	ci->isFbSkin = (Q_stricmp(ci->skinName, "fb") == 0) ? qtrue : qfalse;
+            /* Determine if this player is a teammate based on our current perspective */
+            if (ourPerspectiveTeam == TEAM_SPECTATOR)
+            {
+                /* Free spectating - treat everyone as enemies */
+                isTeamMate = qfalse;
+            }
+            else
+            {
+                /* Check if this player is on our perspective team */
+                isTeamMate = (ourPerspectiveTeam == ci->rt);
+            }
+
+            if (isTeamMate)
+            {
+                if (useOriginal)
+                {
+                    resultModelString = cfgModelString;
+                    resultHModelString = cfgHModelString;
+                }
+                else if (teamModelString)
+                {
+                    resultModelString = teamModelString;
+                    resultHModelString = teamModelString;
+                }
+                else if (forceModelString)
+                {
+                    resultModelString = forceModelString;
+                    resultHModelString = forceModelString;
+                }
+                else
+                {
+                    resultModelString = cfgModelString;
+                    resultHModelString = cfgHModelString;
+                }
+            }
+            else
+            {
+                if (useOriginal)
+                {
+                    resultModelString = cfgModelString;
+                    resultHModelString = cfgHModelString;
+                }
+                else if (enemyModelString)
+                {
+                    resultModelString = enemyModelString;
+                    resultHModelString = enemyModelString;
+                }
+                else if (forceModelString)
+                {
+                    resultModelString = forceModelString;
+                    resultHModelString = forceModelString;
+                }
+                else
+                {
+                    resultModelString = cfgModelString;
+                    resultHModelString = cfgHModelString;
+                }
+            }
+        }
+    }
+    CG_UpdateModelFromString(&ci->modelName[0], &ci->skinName[0], resultModelString, isOurClient, ci->rt);
+    CG_UpdateModelFromString(&ci->headModelName[0], &ci->headSkinName[0], resultHModelString, isOurClient, ci->rt);
+    ci->isPmSkin = (Q_stricmp(ci->skinName, "pm") == 0) ? qtrue : qfalse;
+    ci->isFbSkin = (Q_stricmp(ci->skinName, "fb") == 0) ? qtrue : qfalse;
 }
 
 /*
@@ -1044,180 +1113,204 @@ static void CG_PlayerXIDCalc(const char* cmd, clientInfo_t* ci)
 	ci->xidStr[4] = 0;
 }
 
+// Detect spectator target changes
+static void CG_CheckSpectatorTargetChange(void)
+{
+    static int lastSpectatorTarget = -1;
+    int currentSpectatorTarget = -1;
+    
+    // Only check if we're spectating
+    if (cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR) {
+        lastSpectatorTarget = -1;
+        return;
+    }
+    
+    // Get current spectator target
+    if (cg.snap->ps.pm_flags & PMF_FOLLOW && 
+        cg.snap->ps.clientNum >= 0 && 
+        cg.snap->ps.clientNum < MAX_CLIENTS) {
+        currentSpectatorTarget = cg.snap->ps.clientNum;
+    }
+    
+    // If target changed, update all client models
+    if (currentSpectatorTarget != lastSpectatorTarget) {
+        lastSpectatorTarget = currentSpectatorTarget;
+        if (cgs.gametype >= GT_TEAM) {
+            CG_UpdateOtherClientsInfo();
+        }
+    }
+}
+
 void CG_NewClientInfo(int clientNum)
 {
-	clientInfo_t* ci;
-	clientInfo_t newInfo;
-	const char*  configstring;
-	const char*  v;
-	const qboolean isOurClient = clientNum == cg.clientNum;
-	const qboolean isTeamGame = cgs.gametype >= GT_TEAM;
-	qboolean forceAddXid = qfalse;
+    clientInfo_t* ci;
+    clientInfo_t newInfo;
+    const char*  configstring;
+    const char*  v;
+    const qboolean isOurClient = clientNum == cg.clientNum;
+    const qboolean isTeamGame = cgs.gametype >= GT_TEAM;
+    qboolean forceAddXid = qfalse;
 
+    ci = &cgs.clientinfo[clientNum];
 
-	ci = &cgs.clientinfo[clientNum];
+    configstring = CG_ConfigString(clientNum + CS_PLAYERS);
+    if (!configstring[0])
+    {
+        memset(ci, 0, sizeof(*ci));
+        return;     /* player just left */
+    }
 
-	configstring = CG_ConfigString(clientNum + CS_PLAYERS);
-	if (!configstring[0])
-	{
-		memset(ci, 0, sizeof(*ci));
-		return;     // player just left
-	}
+    /* build into a temp buffer so the defer checks can use */
+    /* the old value */
+    memset(&newInfo, 0, sizeof(newInfo));
 
-	// build into a temp buffer so the defer checks can use
-	// the old value
-	memset(&newInfo, 0, sizeof(newInfo));
+    CG_PlayerColorsLoadDefault(&newInfo.colors);
 
-	CG_PlayerColorsLoadDefault(&newInfo.colors);
+    CG_PlayerXIDCalc(configstring, &newInfo);
 
-	CG_PlayerXIDCalc(configstring, &newInfo);
+    /* isolate the player's name */
+    v = Info_ValueForKey(configstring, "n");
+    Q_strncpyz(newInfo.name_original, v, sizeof(newInfo.name));
+    Q_strncpyz(newInfo.name_clean, v, sizeof(newInfo.name));
+    CG_RemoveChatEscapeCharAll(newInfo.name_clean);
+    newInfo.nameIsInvisible = CG_PlayerNameIsInvisible(&newInfo);
 
-	// isolate the player's name
-	v = Info_ValueForKey(configstring, "n");
-	Q_strncpyz(newInfo.name_original, v, sizeof(newInfo.name));
-	Q_strncpyz(newInfo.name_clean, v, sizeof(newInfo.name));
-	CG_RemoveChatEscapeCharAll(newInfo.name_clean);
-	newInfo.nameIsInvisible = CG_PlayerNameIsInvisible(&newInfo);
+    CG_StringMakeEscapeCharRAW(newInfo.name_original, newInfo.name_codes, sizeof(newInfo.name_codes));
 
-	CG_StringMakeEscapeCharRAW(newInfo.name_original, newInfo.name_codes, sizeof(newInfo.name_codes));
+    if (cg_playersXID.integer)
+    {
+        if (cg_playersXID.integer == 2)
+        {
+            int p;
+            qboolean is_exists = qfalse;
+            /* check, is player with this name is exitst */
+            for (p = 0; p < MAX_CLIENTS; ++p)
+            {
+                if (p == clientNum)
+                {
+                    continue;
+                }
+                /*ugly linear search */
+                if (cgs.clientinfo[p].infoValid && !cgs.clientinfo[p].nameIsInvisible && strcmp(newInfo.name_clean, cgs.clientinfo[p].name_clean) == 0)
+                {
+                    is_exists = qtrue;
+                    /* okay, it exits. check is another client have xid in the name and append it if not */
+                    if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
+                    {
+                        Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "^8%s^7:%s", cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
+                    }
+                    break;
+                }
+            }
 
-	if (cg_playersXID.integer)
-	{
-		if (cg_playersXID.integer == 2)
-		{
-			int p;
-			qboolean is_exists = qfalse;
-			// check, is player with this name is exitst
-			for (p = 0; p < MAX_CLIENTS; ++p)
-			{
-				if (p == clientNum)
-				{
-					continue;
-				}
-				//ugly linear search
-				if (cgs.clientinfo[p].infoValid && !cgs.clientinfo[p].nameIsInvisible && strcmp(newInfo.name_clean, cgs.clientinfo[p].name_clean) == 0)
-				{
-					is_exists = qtrue;
-					// okay, it exits. check is another client have xid in the name and append it if not
-					if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
-					{
-						Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "^8%s^7:%s", cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
-					}
-					break;
-				}
-			}
+            if (newInfo.nameIsInvisible)
+            {
+                Com_sprintf(newInfo.name, sizeof(newInfo.name), "^8%s^7:\'%s^7\'", newInfo.xidStr, newInfo.name_codes);
+            }
+            else if (is_exists || (strcmp(newInfo.name_original, "^1NONAME") == 0))
+            {
+                Com_sprintf(newInfo.name, sizeof(newInfo.name), "^8%s^7:%s", newInfo.xidStr, newInfo.name_original);
+            }
+            else
+            {
+                Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
+            }
+        }
+        else
+        {
+            Com_sprintf(newInfo.name, sizeof(newInfo.name), "^8%s^7:%s", newInfo.xidStr, newInfo.name_original);
+        }
+    }
+    else
+    {
+        Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
+    }
 
-			if (newInfo.nameIsInvisible)
-			{
-				Com_sprintf(newInfo.name, sizeof(newInfo.name), "^8%s^7:\'%s^7\'", newInfo.xidStr, newInfo.name_codes);
-			}
-			else if (is_exists || (strcmp(newInfo.name_original, "^1NONAME") == 0))
-			{
-				Com_sprintf(newInfo.name, sizeof(newInfo.name), "^8%s^7:%s", newInfo.xidStr, newInfo.name_original);
-			}
-			else
-			{
-				Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
-			}
-		}
-		else
-		{
-			Com_sprintf(newInfo.name, sizeof(newInfo.name), "^8%s^7:%s", newInfo.xidStr, newInfo.name_original);
-		}
-	}
-	else
-	{
-		Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
-	}
+    /* bot skill */
+    v = Info_ValueForKey(configstring, "skill");
+    newInfo.botSkill = atoi(v);
 
-	// bot skill
-	v = Info_ValueForKey(configstring, "skill");
-	newInfo.botSkill = atoi(v);
+    /* colors */
+    v = Info_ValueForKey(configstring, "c1");
+    CG_OSPColorsFromString(v, newInfo.colors.railCore, newInfo.colors.head, newInfo.colors.torso, newInfo.colors.legs);
 
-	// colors
-	v = Info_ValueForKey(configstring, "c1");
-	CG_OSPColorsFromString(v, newInfo.colors.railCore, newInfo.colors.head, newInfo.colors.torso, newInfo.colors.legs);
+    v = Info_ValueForKey(configstring, "c2");
+    CG_OSPColorFromChar(v[0], newInfo.colors.railRings);
 
-	v = Info_ValueForKey(configstring, "c2");
-	CG_OSPColorFromChar(v[0], newInfo.colors.railRings);
+    /* handicap */
+    v = Info_ValueForKey(configstring, "hc");
+    newInfo.handicap = atoi(v);
 
+    /* wins */
+    v = Info_ValueForKey(configstring, "w");
+    newInfo.wins = atoi(v);
 
-	// handicap
-	v = Info_ValueForKey(configstring, "hc");
-	newInfo.handicap = atoi(v);
+    /* losses */
+    v = Info_ValueForKey(configstring, "l");
+    newInfo.losses = atoi(v);
 
-	// wins
-	v = Info_ValueForKey(configstring, "w");
-	newInfo.wins = atoi(v);
+    /* team */
+    v = Info_ValueForKey(configstring, "t");
+    newInfo.team = atoi(v);
 
-	// losses
-	v = Info_ValueForKey(configstring, "l");
-	newInfo.losses = atoi(v);
+    /* rt */
+    v = Info_ValueForKey(configstring, "rt");
+    if (v && v[0])
+    {
+        newInfo.rt = atoi(v);
+        if (!newInfo.rt)
+        {
+            newInfo.rt = TEAM_SPECTATOR;
+        }
+    }
+    else
+    {
+        newInfo.rt = newInfo.team;
+    }
 
-	// team
-	v = Info_ValueForKey(configstring, "t");
-	newInfo.team = atoi(v);
+    /*st */
+    v = Info_ValueForKey(configstring, "st");
+    if (v && v[0])
+    {
+        int tmp = atoi(v);
 
-	// hmodel
-	// v = Info_ValueForKey(configstring, "hmodel");
-	// Q_strncpyz(newInfo.originalHeadModel, v, sizeof(newInfo.originalHeadModel));
+        if (tmp)
+        {
+            newInfo.team = (tmp & 7) + 5;
+        }
+        if (tmp & 8)
+        {
+            newInfo.st = tmp & 7;
+        }
+    }
 
+    CG_ClientInfoUpdateModel(&newInfo, isOurClient, isTeamGame, configstring, clientNum);
+    CG_ClientInfoUpdateColors(&newInfo, clientNum);
+    CG_ForceNewClientInfo(ci, &newInfo);
 
-	// rt
-	v = Info_ValueForKey(configstring, "rt");
-	if (v && v[0])
-	{
-		newInfo.rt = atoi(v);
-		if (!newInfo.rt)
-		{
-			newInfo.rt = TEAM_SPECTATOR;
-		}
-	}
-	else
-	{
-		newInfo.rt = newInfo.team;
-	}
+    /* If we changed team, update models & colors */
+    if (isOurClient)
+    {
+        static team_t ourTeam = -1;
+        static int ourClientNum = -1;
+        
+        const qboolean isTeamChanged = cgs.clientinfo[cg.clientNum].rt != ourTeam;
+        const qboolean isClientIdChanged = ourClientNum != cg.clientNum;
+        
+        numSortedTeamPlayers = 0; /*reset team overlay */
+        
+        if (isTeamGame && isTeamChanged)
+        {
+            ourTeam = cgs.clientinfo[cg.clientNum].rt;
+            CG_UpdateOtherClientsInfo();
+        }
 
-	//st
-	v = Info_ValueForKey(configstring, "st");
-	if (v && v[0])
-	{
-		int tmp = atoi(v);
-
-		if (tmp)
-		{
-			newInfo.team = (tmp & 7) + 5;
-		}
-		if (tmp & 8)
-		{
-			newInfo.st = tmp & 7;
-		}
-	}
-
-	CG_ClientInfoUpdateModel(&newInfo, isOurClient, isTeamGame, configstring, clientNum);
-	CG_ClientInfoUpdateColors(&newInfo, clientNum);
-	CG_ForceNewClientInfo(ci, &newInfo);
-
-	/* If we changed team, update models & colors */
-	if (isOurClient)
-	{
-		static team_t ourTeam = -1;
-		static int ourClientNum = -1;
-		const qboolean isTeamChanged = cgs.clientinfo[cg.clientNum].rt != ourTeam;
-		const qboolean isClientIdChanged = ourClientNum != cg.clientNum;
-		numSortedTeamPlayers = 0; //reset team overlay
-		if (isTeamGame && isTeamChanged)
-		{
-			ourTeam = cgs.clientinfo[cg.clientNum].rt;
-			CG_UpdateOtherClientsInfo();
-		}
-
-		if (isTeamGame && isClientIdChanged)
-		{
-			ourClientNum = cg.clientNum;
-			CG_UpdateOtherClientsInfo();
-		}
-	}
+        if (isTeamGame && isClientIdChanged)
+        {
+            ourClientNum = cg.clientNum;
+            CG_UpdateOtherClientsInfo();
+        }
+    }
 }
 
 void CG_UpdateOurClientInfo(void)
@@ -2773,112 +2866,103 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 
 void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 {
-	clientInfo_t* ci;
-	int clientNum, i;
-	qboolean isEnemy;
-	qboolean isSpectator = CG_IsLocalClientSpectator();
+    clientInfo_t* ci;
+    int clientNum, i;
+    qboolean isEnemy;
+    qboolean isSpectator = CG_IsLocalClientSpectator();
+    vec4_t color;
 
-	vec4_t color;
+    clientNum = cent->currentState.clientNum;
 
-	clientNum = cent->currentState.clientNum;
+    if (!cg_drawOutline.integer || clientNum < 0 || clientNum >= MAX_CLIENTS)
+    {
+        return;
+    }
 
-	if (!cg_drawOutline.integer || clientNum < 0 || clientNum >= MAX_CLIENTS)
-	{
-		return;
-	}
+    ci = &cgs.clientinfo[clientNum];
+    if (!ci->infoValid)
+    {
+        return;
+    }
 
-	ci = &cgs.clientinfo[clientNum];
-	if (!ci->infoValid)
-	{
-		return;
-	}
+    if ((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
+            (cent->currentState.eFlags & EF_DEAD) ||
+            (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) ||
+            (cent->currentState.powerups & (1 << PW_INVIS)))
+    {
+        return;
+    }
 
-	if ((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
-	        (cent->currentState.eFlags & EF_DEAD) ||
-	        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) ||
-	        (cent->currentState.powerups & (1 << PW_INVIS)))
-	{
-		return;
-	}
+    /* Use the updated CG_IsEnemy function that handles spectator perspective */
+    isEnemy = CG_IsEnemy(ci);
 
-	isEnemy = CG_IsEnemy(ci);
+    if (!((cg_drawOutline.integer == 1 && isEnemy) ||
+            (cg_drawOutline.integer == 2 && !isEnemy) ||
+            (cg_drawOutline.integer == 3)))
+    {
+        return;
+    }
+    if (isEnemy && !cg_enemyOutlineSize.integer)
+    {
+        return;
+    }
+    if (!isEnemy && !cg_teamOutlineSize.integer)
+    {
+        return;
+    }
 
-	if (!((cg_drawOutline.integer == 1 && isEnemy) ||
-	        (cg_drawOutline.integer == 2 && !isEnemy) ||
-	        (cg_drawOutline.integer == 3)))
-	{
-		return;
-	}
-	if (isEnemy && !cg_enemyOutlineSize.integer)
-	{
-		return;
-	}
-	if (!isEnemy && !cg_teamOutlineSize.integer)
-	{
-		return;
-	}
+    ent->customShader = isEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
 
-	ent->customShader = isEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
+    /* Remove the hardcoded spectator logic and use the isEnemy result instead */
+    if (isEnemy)
+    {
+        if (cg_enemyOutlineColorUnique.integer == 0)
+        {
+            Vector4Copy(cgs.be.enemyOutlineColor, color);
+        }
+        else
+        {
+            vec3_t uniqueColorVec;
+            vec4_t tmpColor;
 
-	if (isSpectator)
-	{
-		if (ci->team == TEAM_RED)
-			Vector4Copy(cgs.be.teamOutlineColor, color);
-		else
-			Vector4Copy(cgs.be.enemyOutlineColor, color);
-	}
-	else
-	{
-		if (isEnemy)
-		{
-			if (cg_enemyOutlineColorUnique.integer == 0)
-			{
-				Vector4Copy(cgs.be.enemyOutlineColor, color);
-			}
-			else
-			{
-				vec3_t uniqueColorVec;
-				vec4_t tmpColor;
+            VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
+            tmpColor[0] = uniqueColorVec[0];
+            tmpColor[1] = uniqueColorVec[1];
+            tmpColor[2] = uniqueColorVec[2];
+            tmpColor[3] = 1.0f;
 
-				VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
-				tmpColor[0] = uniqueColorVec[0];
-				tmpColor[1] = uniqueColorVec[1];
-				tmpColor[2] = uniqueColorVec[2];
-				tmpColor[3] = 1.0f;
+            for (i = 0; i < 3; i++)
+            {
+                if (cg_enemyOutlineColorUnique.integer & (1 << i))
+                {
+                    color[i] = tmpColor[i];
+                }
+                else
+                {
+                    color[i] = cgs.be.enemyOutlineColor[i];
+                }
+            }
+            color[3] = 1.0f;
+        }
+    }
+    else
+    {
+        if (cgs.be.markedTeam[clientNum])
+        {
+            Vector4Copy(cgs.be.markedTeamColor, color);
+        }
+        else
+        {
+            Vector4Copy(cgs.be.teamOutlineColor, color);
+        }
+    }
 
-				for (i = 0; i < 3; i++)
-				{
-					if (cg_enemyOutlineColorUnique.integer & (1 << i))
-					{
-						color[i] = tmpColor[i];
-					}
-					else
-					{
-						color[i] = cgs.be.enemyOutlineColor[i];
-					}
-				}
-				color[3] = 1.0f;
-			}
-		}
-		else
-		{
-			if (cgs.be.markedTeam[clientNum])
-			{
-				Vector4Copy(cgs.be.markedTeamColor, color);
-			}
-			else
-			{
-				Vector4Copy(cgs.be.teamOutlineColor, color);
-			}
-		}
-	}
+    for (i = 0; i < 4; i++)
+    {
+        ent->shaderRGBA[i] = (unsigned char)(color[i] * 255);
+    }
 
-	for (i = 0; i < 4; i++)
-	{
-		ent->shaderRGBA[i] = (unsigned char)(color[i] * 255);
-	}
-
-	trap_R_AddRefEntityToScene(ent);
+    trap_R_AddRefEntityToScene(ent);
 }
 
 
@@ -2899,6 +2983,13 @@ void CG_Player(centity_t* cent)
 	float           shadowPlane;
 	qboolean        paintItBlack;
 	float           paintBlackLevel;
+
+	/* Add spectator target change detection at the start */
+    static int lastFrameTime = 0;
+    if (cg.time != lastFrameTime) {
+        lastFrameTime = cg.time;
+        CG_CheckSpectatorTargetChange();
+    }
 
 	if (cg.clientNum == cent->currentState.clientNum && (global_viewlistFirstOption || cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 	{
