@@ -392,6 +392,9 @@ void CG_OSPClientVersion_f(void)
 }
 
 #define CG_YES_NO_STR(VAL) ((VAL) ? "^2Yes" : "^1No")
+#define CG_LOL(VAL) ((VAL) ? "^2Yes" : "^1No, ^2but who cares")
+#define CG_LOL_R(VAL) ((VAL) ? "^1No, ^2but who cares" : "^2Yes")
+
 void CG_OSPClientConfig_f(void)
 {
 	const char* physics = "VQ3";
@@ -411,42 +414,45 @@ void CG_OSPClientConfig_f(void)
 	CG_Printf("    ^3Alternative weapons:         %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG));
 	CG_Printf("    ^3Timer(deprecated):           %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_TIMER_FLAG));
 	CG_Printf("    ^3FPS restriction(deprecated): %s\n", CG_YES_NO_STR((cgs.osp.custom_client & OSP_CUSTOM_CLIENT_MAXFPS_FLAG) == 0));
-	CG_Printf("    ^3Damage info:                 %s\n", CG_YES_NO_STR(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO));
+	// CG_Printf("    ^3Damage info:                 %s\n", CG_YES_NO_STR(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO));
+	CG_Printf("    ^3Damage info:                 %s\n", CG_LOL(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO));
 	CG_Printf("    ^3Pmove allowed:               %s\n", CG_YES_NO_STR(cgs.osp.allow_pmove));
 	CG_Printf("    ^3Timenudge minimum:           ^3%s\n", cgs.osp.serverConfigMinimumTimenudge ? va("%i", cgs.osp.serverConfigMinimumTimenudge) : "-");
 	CG_Printf("    ^3Timenudge maximum:           ^3%s\n", cgs.osp.serverConfigMaximumTimenudge ? va("%i", cgs.osp.serverConfigMaximumTimenudge) : "-");
 	CG_Printf("    ^3Maxpackets minimum:          ^3%s\n", cgs.osp.serverConfigMinimumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3Maxpackets maximum:          ^3%s\n", cgs.osp.serverConfigMaximumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3HitBox (XQ3E):               %s\n", CG_YES_NO_STR(cgs.osp.serverConfigXHitBox));
+	CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.be.disableFeatures));
+
 }
+// todel
+// void CG_OSPCredits_f(void)
+// {
+// 	char string[1024];
 
-void CG_OSPCredits_f(void)
-{
-	char string[1024];
+// 	strcpy(&string[0],   "      ^0^BBLACK EDITION  ");
+// 	strcpy(&string[128], " ^3https://github.com/scoqx/OSP2-BE  ");
 
-	strcpy(&string[0],   "      ^0^BBLACK EDITION  ");
-	strcpy(&string[128], " ^3https://github.com/scoqx/OSP2-BE  ");
+// 	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 18, 18, string, 130.0f, colorBlack, colorWhite);
 
-	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 18, 18, string, 130.0f, colorBlack, colorWhite);
+// 	strcpy(&string[0],   "     ^BOSP2 Tourney DM/CA/CTF ");
+// 	strcpy(&string[128], " ^3https://github.com/snems/OSP2  ");
+// 	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 20, 20, string, 180.0f, colorYellow, colorLtGrey);
 
-	strcpy(&string[0],   "     ^BOSP2 Tourney DM/CA/CTF ");
-	strcpy(&string[128], " ^3https://github.com/snems/OSP2  ");
-	CG_OSPDrawLeftSlidingWindow(1.5f, 1.5f, 12.0f, 0, 2, 128, 20, 20, string, 180.0f, colorYellow, colorLtGrey);
+// 	strcpy(&string[0],   "    ^BBased on source codes:  ");
+// 	strcpy(&string[128], "    ^BOSP             https://www.orangesmoothie.org  ");
+// 	strcpy(&string[256], "    ^BCyrax           https://github.com/ec-/baseq3a  ");
+// 	strcpy(&string[384], "    ^Bx0ry            https://github.com/xq3e/engine  ");
+// 	strcpy(&string[512], "    ^BNeil Toronto    http://ra.is/unlagged  ");
+// 	strcpy(&string[640], "    ^BRatmod          https://github.com/rdntcntrl/ratoa_gamecode");
 
-	strcpy(&string[0],   "    ^BBased on source codes:  ");
-	strcpy(&string[128], "    ^BOSP             https://www.orangesmoothie.org  ");
-	strcpy(&string[256], "    ^BCyrax           https://github.com/ec-/baseq3a  ");
-	strcpy(&string[384], "    ^Bx0ry            https://github.com/xq3e/engine  ");
-	strcpy(&string[512], "    ^BNeil Toronto    http://ra.is/unlagged  ");
-	strcpy(&string[640], "    ^BRatmod          https://github.com/rdntcntrl/ratoa_gamecode");
+// 	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 6, 128, 10, 10, string, 260.0f, colorWhite, colorBlue);
 
-	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 6, 128, 10, 10, string, 260.0f, colorWhite, colorBlue);
-
-	strcpy(&string[0],   "    ^BSpecial thanks to:  ");
-	strcpy(&string[128], "    ^BQ3MSK.ru        http://q3msk.ru  ");
-	strcpy(&string[256], "    ^BMrX, Paragon, Zenx");
-	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 3, 128, 10, 10, string, 310.0f, colorWhite, colorRed);
-}
+// 	strcpy(&string[0],   "    ^BSpecial thanks to:  ");
+// 	strcpy(&string[128], "    ^BQ3MSK.ru        http://q3msk.ru  ");
+// 	strcpy(&string[256], "    ^BMrX, Paragon, Zenx");
+// 	CG_OSPDrawLeftSlidingWindow(0.7f, 0.9f, 12.0f, 0.4f, 3, 128, 10, 10, string, 310.0f, colorWhite, colorRed);
+// }
 void CG_OSPDrawNewCredits_f(void)
 {
 	if (!cgs.be.showCredits)
@@ -460,41 +466,48 @@ void CG_OSPDrawNewCredits_f(void)
 }
 void CG_OSPMoTD_f(void)
 {
-	if (cg_noSlidingWindow.integer)
-	{
-		return;
-	}
-	if (cgs.osp.numberOfStringsMotd > 0)
-	{
-		CG_OSPDrawLeftSlidingWindow(0.5, 1.2, 12.0, 1.0, cgs.osp.numberOfStringsMotd, 64, 10, 10, cgs.osp.motd[0], 400, NULL, NULL);
-	}
+	// need rework
+	// if (!cg_noSlidingWindow.integer && cgs.osp.numberOfStringsMotd > 0)
+	// {
+	// 	CG_OSPDrawLeftSlidingWindow(0.5, 1.2, 12.0, 1.0, cgs.osp.numberOfStringsMotd, 64, 10, 10, cgs.osp.motd[0], 400, NULL, NULL);
+	// }
 }
 void CG_OSPMyName_f(void)
 {
 	CG_Printf("Your name is: '%s^7'\n", cgs.clientinfo[ cg.clientNum ].name);
 }
+// todel
+// void CG_OSPWStatsDown_f(void)
+// {
+//  if (wstatsWndId == 0)
+//  {
+//      if (wstatsEnabled == qfalse)
+//      {
+//          trap_SendClientCommand("getstatsinfo");
+//          wstatsEnabled = qtrue;
+//      }
+//  }
+// }
+// void CG_OSPWStatsUp_f(void)
+// {
+//  if (wstatsWndId > 0)
+//  {
+//      OSP_SlidingPrintContext_t* window = &ospPrintContext[wstatsWndId - 1];
+//      window->hideBeforeRealtime = trap_Milliseconds() + window->timeAppearance;
+//      window->hideBeforeCGTime = cg.time + window->timeAppearance;
+//      window->timeHiding = window->hideBeforeRealtime;
+//  }
+//  wstatsWndId = 0;
+//  wstatsEnabled = 0;
+// }
 void CG_OSPWStatsDown_f(void)
 {
-	if (wstatsWndId == 0)
-	{
-		if (wstatsEnabled == qfalse)
-		{
-			trap_SendClientCommand("getstatsinfo");
-			wstatsEnabled = qtrue;
-		}
-	}
+	cgs.be.newStats.drawWindow = qtrue;
 }
 void CG_OSPWStatsUp_f(void)
 {
-	if (wstatsWndId > 0)
-	{
-		OSP_SlidingPrintContext_t* window = &ospPrintContext[wstatsWndId - 1];
-		window->hideBeforeRealtime = trap_Milliseconds() + window->timeAppearance;
-		window->hideBeforeCGTime = cg.time + window->timeAppearance;
-		window->timeHiding = window->hideBeforeRealtime;
-	}
-	wstatsWndId = 0;
-	wstatsEnabled = 0;
+	cgs.be.newStats.drawWindow = qfalse;
+	CG_BEStatsResetInit();
 }
 
 void CG_ShudChatDown_f(void)
@@ -916,6 +929,8 @@ static consoleCommand_t commands[] =
 	{ "-scores", CG_ScoresUp_f },
 	{ "+wstats", CG_OSPWStatsDown_f },
 	{ "-wstats", CG_OSPWStatsUp_f },
+	// { "+bstats", CG_BEStatsDown_f },
+	// { "-bstats", CG_BEStatsUp_f },
 	{ "+zoom", CG_ZoomDown_f },
 	{ "-zoom", CG_ZoomUp_f },
 	{ "+zoomtoggle", CG_ZoomToggle_f},
@@ -980,7 +995,6 @@ static consoleCommand_t commands[] =
 	{ "belist", CG_PrintNewCommandsBE_f },
 };
 
-
 /*
 =================
 CG_ConsoleCommand
@@ -991,12 +1005,10 @@ Cmd_Argc() / Cmd_Argv()
 */
 qboolean CG_ConsoleCommand(void)
 {
-	const char*  cmd;
-	int     i;
+	const char* cmd = CG_Argv(0);
+	int i;
 
-	cmd = CG_Argv(0);
-
-	for (i = 0 ; i < sizeof(commands) / sizeof(commands[0]) ; i++)
+	for (i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
 	{
 		if (!Q_stricmp(cmd, commands[i].cmd))
 		{
@@ -1007,6 +1019,7 @@ qboolean CG_ConsoleCommand(void)
 
 	return qfalse;
 }
+
 
 
 /*

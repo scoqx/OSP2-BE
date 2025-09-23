@@ -20,11 +20,15 @@ on:
       - 'build/*'
       - 'util/*'
 
+
 jobs:
   linux-qvm:
     runs-on: ubuntu-latest
 
     steps:
+
+
+
 
     - uses: actions/checkout@v4
       with:
@@ -47,6 +51,11 @@ jobs:
     needs: [linux-qvm]
     permissions: write-all
     runs-on: ubuntu-latest
+
+
+
+
+
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
@@ -60,6 +69,3 @@ jobs:
           title: Latest Build
           files: |
             qvm
-
-
-

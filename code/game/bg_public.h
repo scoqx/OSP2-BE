@@ -115,6 +115,7 @@ extern "C" {
 #define CS_OSP_AUTH                               872
 #define CS_OSP_FREEZE_GAME_TYPE                   873
 #define CS_OSP_CUSTOM_CLIENT2                     874
+#define CS_BE_DISABLE_FEATURES					  888
 #define X_HCK_PS_ENEMY_HITBOX                     1000
 
 #define CS_MAX                  (CS_OSP_CUSTOM_CLIENT2)

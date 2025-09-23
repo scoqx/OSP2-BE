@@ -65,7 +65,7 @@ void CG_SHUDElementNGRoutine(void* context)
 	{
 		if (element->config.bgcolor.isSet)
 		{
-			trap_R_SetColor(element->config.bgcolor.value);
+			trap_R_SetColor(element->config.bgcolor.value.rgba);
 			trap_R_DrawStretchPic(ax, ay, aw, ah, 0, 0, 1, 1, cgs.media.whiteShader);
 			trap_R_SetColor(NULL);
 		}

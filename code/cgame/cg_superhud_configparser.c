@@ -9,6 +9,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseAlighH(configFileInf
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseAlighV(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseAngles(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBgColor(configFileInfo_t* finfo, superhudConfig_t* config);
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBgColor2(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseDirection(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseDoublebar(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseFade(configFileInfo_t* finfo, superhudConfig_t* config);
@@ -34,6 +35,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseHlColor(configFileIn
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseHlSize(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorder(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorderColor(configFileInfo_t* finfo, superhudConfig_t* config);
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorderColor2(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseStyle(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseShadowColor(configFileInfo_t* finfo, superhudConfig_t* config);
 
@@ -43,6 +45,7 @@ static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 	{ "alignv", CG_SHUDConfigCommandParseAlighV },
 	{ "angles", CG_SHUDConfigCommandParseAngles },
 	{ "bgcolor", CG_SHUDConfigCommandParseBgColor },
+	{ "bgcolor2", CG_SHUDConfigCommandParseBgColor2 },
 	{ "hlcolor", CG_SHUDConfigCommandParseHlColor },
 	{ "color", CG_SHUDConfigCommandParseColor },
 	{ "color2", CG_SHUDConfigCommandParseColor2 },
@@ -71,6 +74,7 @@ static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 	{ "hlsize", CG_SHUDConfigCommandParseHlSize },
 	{ "border", CG_SHUDConfigCommandParseBorder },
 	{ "borderColor", CG_SHUDConfigCommandParseBorderColor },
+	{ "borderColor2", CG_SHUDConfigCommandParseBorderColor2 },
 	{ "style", CG_SHUDConfigCommandParseStyle },
 	{ NULL, NULL, NULL },
 };
@@ -813,17 +817,93 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseDoublebar(configFile
 /*
  * parse BGCOLOR r g b a
  */
+// static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBgColor(configFileInfo_t* finfo, superhudConfig_t* config)
+// {
+//  superhudConfigParseStatus_t status;
+
+//  config->bgcolor.isSet = qfalse;
+
+//  status = CG_SHUDParseVec4t(finfo, config->bgcolor.value.rgba);
+//  if (status != SUPERHUD_CONFIG_OK) return status;
+
+//  config->bgcolor.isSet = qtrue;
+
+//  return status;
+// }
+
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBgColor(configFileInfo_t* finfo, superhudConfig_t* config)
 {
+	char c;
 	superhudConfigParseStatus_t status;
 
 	config->bgcolor.isSet = qfalse;
 
-	status = CG_SHUDParseVec4t(finfo, config->bgcolor.value);
+	/* skip to value */
+	status = CG_SHUDConfigSkipSCN(finfo);
 	if (status != SUPERHUD_CONFIG_OK) return status;
 
-	config->bgcolor.isSet = qtrue;
+	c = tolower(CG_SHUD_CONFIG_INFO_GET_CHAR(finfo));
+	switch (c)
+	{
+		case 't':
+			config->bgcolor.value.type = SUPERHUD_COLOR_T;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'e':
+			config->bgcolor.value.type = SUPERHUD_COLOR_E;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'i':
+			config->bgcolor.value.type = SUPERHUD_COLOR_I;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		default:
+			config->bgcolor.value.type = SUPERHUD_COLOR_RGBA;
+			status = CG_SHUDParseVec4t(finfo, config->bgcolor.value.rgba);
+			break;
+	}
 
+	if (status == SUPERHUD_CONFIG_OK) config->bgcolor.isSet = qtrue;
+	return status;
+}
+
+/*
+ * parse color2 command: rgba/t/e/I
+ */
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBgColor2(configFileInfo_t* finfo, superhudConfig_t* config)
+{
+	char c;
+	superhudConfigParseStatus_t status;
+
+	config->bgcolor2.isSet = qfalse;
+
+	/* skip to value */
+	status = CG_SHUDConfigSkipSCN(finfo);
+
+	if (status != SUPERHUD_CONFIG_OK) return status;
+
+	c = tolower(CG_SHUD_CONFIG_INFO_GET_CHAR(finfo));
+	switch (c)
+	{
+		case 't':
+			config->bgcolor2.value.type = SUPERHUD_COLOR_T;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'e':
+			config->bgcolor2.value.type = SUPERHUD_COLOR_E;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'i':
+			config->bgcolor2.value.type = SUPERHUD_COLOR_I;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		default:
+			config->bgcolor2.value.type = SUPERHUD_COLOR_RGBA;
+			status = CG_SHUDParseVec4t(finfo, config->bgcolor2.value.rgba);
+			break;
+	}
+
+	if (status == SUPERHUD_CONFIG_OK) config->bgcolor2.isSet = qtrue;
 	return status;
 }
 
@@ -1078,15 +1158,75 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorder(configFileInf
 
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorderColor(configFileInfo_t* finfo, superhudConfig_t* config)
 {
+	char c;
 	superhudConfigParseStatus_t status;
 
 	config->borderColor.isSet = qfalse;
 
-	status = CG_SHUDParseVec4t(finfo, config->borderColor.value);
+	/* skip to value */
+	status = CG_SHUDConfigSkipSCN(finfo);
+
 	if (status != SUPERHUD_CONFIG_OK) return status;
 
-	config->borderColor.isSet = qtrue;
+	c = tolower(CG_SHUD_CONFIG_INFO_GET_CHAR(finfo));
+	switch (c)
+	{
+		case 't':
+			config->borderColor.value.type = SUPERHUD_COLOR_T;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'e':
+			config->borderColor.value.type = SUPERHUD_COLOR_E;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'i':
+			config->borderColor.value.type = SUPERHUD_COLOR_I;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		default:
+			config->borderColor.value.type = SUPERHUD_COLOR_RGBA;
+			status = CG_SHUDParseVec4t(finfo, config->borderColor.value.rgba);
+			break;
+	}
 
+	if (status == SUPERHUD_CONFIG_OK) config->borderColor.isSet = qtrue;
+	return status;
+}
+
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorderColor2(configFileInfo_t* finfo, superhudConfig_t* config)
+{
+	char c;
+	superhudConfigParseStatus_t status;
+
+	config->borderColor2.isSet = qfalse;
+
+	/* skip to value */
+	status = CG_SHUDConfigSkipSCN(finfo);
+
+	if (status != SUPERHUD_CONFIG_OK) return status;
+
+	c = tolower(CG_SHUD_CONFIG_INFO_GET_CHAR(finfo));
+	switch (c)
+	{
+		case 't':
+			config->borderColor2.value.type = SUPERHUD_COLOR_T;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'e':
+			config->borderColor2.value.type = SUPERHUD_COLOR_E;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'i':
+			config->borderColor2.value.type = SUPERHUD_COLOR_I;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		default:
+			config->borderColor2.value.type = SUPERHUD_COLOR_RGBA;
+			status = CG_SHUDParseVec4t(finfo, config->borderColor2.value.rgba);
+			break;
+	}
+
+	if (status == SUPERHUD_CONFIG_OK) config->borderColor2.isSet = qtrue;
 	return status;
 }
 

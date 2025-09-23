@@ -4,6 +4,7 @@
 #define CG_CROSSHAIR_DECOR_PULSE 1
 #define CG_CROSSHAIR_DECOR_SHOW  2
 #define CG_CROSSHAIR_DECOR_COLOR 4
+#define CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE 8
 
 static void CG_DrawCrosshairSpeed(void)
 {
@@ -199,6 +200,26 @@ static float CG_CrosshairDecorGetOpaque(void)
 	return value;
 }
 
+static void CG_CrosshairPickDamageColor(const vec4_t base_color, const vec4_t low, const vec4_t mid, const vec4_t high, const vec4_t veryHigh, int damage, float period, vec4_t result)
+{
+	int time = cg.time - cgs.osp.lastHitTime;
+	if (time > 0 && time < (int)period)
+	{
+		if (damage > 75)
+			VectorCopy(veryHigh, result);
+		else if (damage > 50)
+			VectorCopy(high, result);
+		else if (damage > 25)
+			VectorCopy(mid, result);
+		else
+			VectorCopy(low, result);
+	}
+	else
+	{
+		VectorCopy(base_color, result);
+	}
+}
+
 static void CG_CrosshairGetHitColor(const vec4_t base_color, const vec4_t hit_color, float period, vec4_t result)
 {
 	int time = (float)(cg.time - cgs.osp.lastHitTime);
@@ -218,6 +239,19 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 	{
 		CG_ColorForHealth(hcolor, NULL);
 	}
+	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
+	{
+		CG_CrosshairPickDamageColor(
+		    cgs.osp.crosshair.color,
+		    cgs.osp.crosshair.actionColorLow,
+		    cgs.osp.crosshair.actionColorMid,
+		    cgs.osp.crosshair.actionColorHigh,
+		    cgs.osp.crosshair.actionColor, // VeryHigh
+		    cgs.osp.lastHitDamage,
+		    ch_crosshairActionTime.integer,
+		    hcolor
+		);
+	}
 	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR)
 	{
 		CG_CrosshairGetHitColor(cgs.osp.crosshair.color, cgs.osp.crosshair.actionColor, ch_crosshairActionTime.integer, hcolor);
@@ -233,7 +267,20 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 
 static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 {
-	if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR)
+	if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
+	{
+		CG_CrosshairPickDamageColor(
+		    cgs.osp.crosshair.decorColor,
+		    cgs.osp.crosshair.decorActionColorLow,
+		    cgs.osp.crosshair.decorActionColorMid,
+		    cgs.osp.crosshair.decorActionColorHigh,
+		    cgs.osp.crosshair.decorActionColor, // VeryHigh
+		    cgs.osp.lastHitDamage,
+		    ch_crosshairDecorActionTime.integer,
+		    hcolor
+		);
+	}
+	else if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR)
 	{
 		CG_CrosshairGetHitColor(cgs.osp.crosshair.decorColor, cgs.osp.crosshair.decorActionColor, ch_crosshairDecorActionTime.integer, hcolor);
 	}
@@ -243,7 +290,6 @@ static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 	}
 
 	hcolor[3] = CG_CrosshairDecorGetOpaque();
-
 }
 
 void CG_DrawCrosshair(void)

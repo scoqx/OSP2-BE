@@ -40,7 +40,7 @@ int frameTime = 0;
 int wstatsWndId;
 qboolean wstatsEnabled;
 int statsInfo[24];
-OSP_SlidingPrintContext_t ospPrintContext[16];
+// OSP_SlidingPrintContext_t ospPrintContext[16]; todel
 
 const char* monthName[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 const char* dayOfWeekName[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
@@ -385,23 +385,20 @@ void CG_DrawTeamBackground(int x, int y, int w, int h, float alpha, int team)
 {
 	vec4_t      hcolor;
 
-	hcolor[3] = alpha;
+
 	if (team == TEAM_RED)
 	{
-		hcolor[0] = 1;
-		hcolor[1] = 0;
-		hcolor[2] = 0;
+		Vector4Copy(cgs.be.redTeamColor, hcolor);
 	}
 	else if (team == TEAM_BLUE)
 	{
-		hcolor[0] = 0;
-		hcolor[1] = 0;
-		hcolor[2] = 1;
+		Vector4Copy(cgs.be.blueTeamColor, hcolor);
 	}
 	else
 	{
 		return;
 	}
+	hcolor[3] = alpha;
 	trap_R_SetColor(hcolor);
 	CG_DrawPicOld(x, y, w, h, cgs.media.teamStatusBar);
 	trap_R_SetColor(NULL);
@@ -841,16 +838,16 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 
 	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED)
 	{
-		hcolor[0] = 1.0f;
-		hcolor[1] = 0.0f;
-		hcolor[2] = 0.0f;
+		hcolor[0] = cgs.be.redTeamColor[0];
+		hcolor[1] = cgs.be.redTeamColor[1];
+		hcolor[2] = cgs.be.redTeamColor[2];
 		hcolor[3] = 0.33f;
 	}
 	else     // if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE )
 	{
-		hcolor[0] = 0.0f;
-		hcolor[1] = 0.0f;
-		hcolor[2] = 1.0f;
+		hcolor[0] = cgs.be.blueTeamColor[0];
+		hcolor[1] = cgs.be.blueTeamColor[1];
+		hcolor[2] = cgs.be.blueTeamColor[2];
 		hcolor[3] = 0.33f;
 	}
 	trap_R_SetColor(hcolor);
@@ -1025,9 +1022,9 @@ static float CG_DrawScores(float y)
 	if (cgs.gametype >= GT_TEAM)
 	{
 		x = 640;
-		color[0] = 0.0f;
-		color[1] = 0.0f;
-		color[2] = 1.0f;
+		color[0] = cgs.be.redTeamColor[0];
+		color[1] = cgs.be.redTeamColor[1];
+		color[2] = cgs.be.redTeamColor[2];
 		color[3] = 0.33f;
 		s = va("%2i", s2);
 		w = CG_DrawStrlen(s) * BIGCHAR_WIDTH + 8;
@@ -1053,9 +1050,9 @@ static float CG_DrawScores(float y)
 				}
 			}
 		}
-		color[0] = 1.0f;
-		color[1] = 0.0f;
-		color[2] = 0.0f;
+		color[0] = cgs.be.blueTeamColor[0];
+		color[1] = cgs.be.blueTeamColor[1];
+		color[2] = cgs.be.blueTeamColor[2];
 		color[3] = 0.33f;
 		s = va("%2i", s1);
 		w = CG_DrawStrlen(s) * BIGCHAR_WIDTH + 8;
@@ -1412,16 +1409,16 @@ static void CG_DrawTeamInfo(void)
 
 		if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED)
 		{
-			hcolor[0] = 1.0f;
-			hcolor[1] = 0.0f;
-			hcolor[2] = 0.0f;
+			hcolor[0] = cgs.be.redTeamColor[0];
+			hcolor[1] = cgs.be.redTeamColor[1];
+			hcolor[2] = cgs.be.redTeamColor[2];
 			hcolor[3] = 0.33f;
 		}
 		else if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE)
 		{
-			hcolor[0] = 0.0f;
-			hcolor[1] = 0.0f;
-			hcolor[2] = 1.0f;
+			hcolor[0] = cgs.be.blueTeamColor[0];
+			hcolor[1] = cgs.be.blueTeamColor[1];
+			hcolor[2] = cgs.be.blueTeamColor[2];
 			hcolor[3] = 0.33f;
 		}
 		else
@@ -2417,14 +2414,14 @@ void CG_OSPDrawNewCredits(void)
 	char* credits[] =
 	{
 		"OSP2 BLACK EDITION",
-		"https://github.com/scoqx/OSP2-BE",
+		"by diwoc",
+		"https://scoqx.github.io/",
+		"",
 		"Based on OSP2 by Snems",
 		"https://github.com/snems/OSP2",
+		"",
 		"Special thanks to:",
-		"",
 		"Snems, kr3m, Mirage",
-		"",
-		"",
 		"",
 		"",
 		"Based on source codes:",
@@ -2475,7 +2472,7 @@ void CG_OSPDrawNewCredits(void)
 	firstLineHeight = charHeight * 2.0f;
 
 	// title
-	CG_FontSelect(0);
+	CG_FontSelect(2);
 
 	CG_OSPDrawStringNew(
 	    textX, textY,
@@ -2508,7 +2505,7 @@ void CG_OSPDrawNewCredits(void)
 		);
 	}
 	// border
-	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, 0);
+	CG_OSPDrawGradientFrame(x, y, w, h, borderSize, direction, speed, gradientScale, 2);
 }
 
 /*
@@ -2516,8 +2513,6 @@ void CG_OSPDrawNewCredits(void)
 Team Indicator
 ===
 */
-playerIndicator_t playerIndicator;
-
 float lastLift[MAX_CLIENTS];
 
 void CG_DrawPlayerIndicator(int clientNum)
@@ -2552,8 +2547,6 @@ void CG_DrawPlayerIndicator(int clientNum)
 		return;
 
 	cent = &cg_entities[clientNum];
-
-	// actualClientNum = -1;
 
 	liftMinAdj = liftMin + cg_teamIndicatorOffset.value;
 	liftMaxAdj = liftMax + cg_teamIndicatorOffset.value;
@@ -2614,8 +2607,8 @@ void CG_DrawPlayerIndicator(int clientNum)
 		return;
 
 	CG_FontSelect(font);
-	Vector4Copy(playerIndicator.bgColor, bgColor);
-	Vector4Copy(playerIndicator.color, nameColor);
+	Vector4Copy(cgs.be.playerIndicatorBgColor, bgColor);
+	Vector4Copy(cgs.be.playerIndicatorColor, nameColor);
 	bgColor[3] = cg_teamIndicatorBgOpaque.value;
 	nameColor[3] = cg_teamIndicatorOpaque.value;
 
@@ -2643,7 +2636,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 		    headX, headY,
 		    tmpName,
 		    nameColor,
-		    NULL,
+		    colorBlack,
 		    w, h,
 		    cg_teamIndicatorMaxLength.integer,
 		    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER | DS_MAX_WIDTH_IS_CHARS,
@@ -2714,90 +2707,6 @@ void CG_DrawPlayerIndicator(int clientNum)
 	}
 }
 
-
-qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum)
-{
-	centity_t* cent;
-	clientInfo_t* ci;
-	clientInfo_t* player = &cgs.clientinfo[cg.clientNum];
-
-	trace_t tr;
-	vec3_t traceStart, traceEnd;
-
-	int clientNum;
-	int freezeLimit = MAX_CLIENTS;
-
-	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
-	{
-		freezeLimit = MAX_GENTITIES;
-	}
-
-	if (clientOrEntityNum < 0 || clientOrEntityNum >= freezeLimit)
-		return qfalse;
-
-	cent = &cg_entities[clientOrEntityNum];
-
-	if (!cent->currentValid || cent->currentState.eType != ET_PLAYER)
-		return qfalse;
-
-	clientNum = clientOrEntityNum;
-
-	if (clientOrEntityNum >= MAX_CLIENTS && CG_IsFrozenEntity(cent))
-	{
-		clientNum = cent->currentState.otherEntityNum;
-
-		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-			return qfalse;
-
-		ci = &cgs.clientinfo[clientNum];
-		if (!ci->infoValid)
-			return qfalse;
-
-		if (clientOrEntityNum < 0 || clientOrEntityNum >= MAX_GENTITIES)
-			return qfalse;
-
-		if (!cg_entities[clientOrEntityNum].currentValid)
-			return qfalse;
-
-		ci->isFrozenEnt = qtrue;
-		ci->frozenEntity = clientOrEntityNum;
-
-		cent = &cg_entities[clientOrEntityNum];
-	}
-	else
-	{
-		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-			return qfalse;
-
-		ci = &cgs.clientinfo[clientNum];
-		if (!ci->infoValid)
-			return qfalse;
-
-		ci->isFrozenEnt = qfalse;
-		ci->frozenEntity = 0;
-	}
-
-	if (ci->team == TEAM_SPECTATOR)
-		return qfalse;
-
-	if (!CG_IsLocalClientSpectator())
-	{
-		if (CG_IsEnemy(ci))
-			return qfalse;
-	}
-
-	VectorCopy(cg.refdef.vieworg, traceStart);
-	VectorCopy(cent->lerpOrigin, traceEnd);
-	traceEnd[2] += 24.0f;
-
-	CG_Trace(&tr, traceStart, NULL, NULL, traceEnd, cg.snap->ps.clientNum, CONTENTS_SOLID);
-	if (tr.fraction < 1.0f)
-		return qfalse;
-
-	return qtrue;
-}
-
-
 void CG_DrawPlayerIndicatorOnScreen(void)
 {
 	int i, range;
@@ -2820,6 +2729,166 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 	}
 }
 
+typedef enum
+{
+	STATS_POS_TOP,
+	STATS_POS_BOTTOM,
+	STATS_POS_LEFT,
+	STATS_POS_RIGHT
+} shudWeaponStatsPos_t;
+
+void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float textSize)
+{
+	float iconX = 0.0f, iconY = 0.0f;
+	const float blockSpacing = 4.0f, textOffset = 2.0f;
+	int wp, visibleCount = 0;
+	char accStr[16];
+	int textFlags;
+	newStatsInfo_t* ws = &cgs.be.newStats;
+	float charWidth = textSize * 0.75f;
+	int maxCharCount = 4;
+	float approxTextWidth = charWidth * maxCharCount;
+	int shots;
+	qboolean horizontal, iconBeforeText;
+	float textX, textY;
+	int font = cg_accuracyFont.integer;
+	qhandle_t icon;
+
+	CG_MaybeRequestStatsInfo();
+
+	for (wp = WP_MACHINEGUN; wp <= WP_PLASMAGUN; wp++)
+		if (ws->stats[wp].shots > 0) visibleCount++;
+	if (visibleCount == 0) return;
+
+	switch (position)
+	{
+		case STATS_POS_TOP:
+			iconY = 0.0f;
+			iconX = (SCREEN_WIDTH - visibleCount * (iconSize + textOffset + approxTextWidth + blockSpacing) + blockSpacing) * 0.5f;
+			break;
+		case STATS_POS_BOTTOM:
+			iconY = SCREEN_HEIGHT - iconSize;
+			iconX = (SCREEN_WIDTH - visibleCount * (iconSize + textOffset + approxTextWidth + blockSpacing) + blockSpacing) * 0.5f;
+			break;
+		case STATS_POS_LEFT:
+			iconX = 0.0f;
+			iconY = (SCREEN_HEIGHT - visibleCount * (iconSize + blockSpacing) + blockSpacing) * 0.5f;
+			break;
+		case STATS_POS_RIGHT:
+			iconX = SCREEN_WIDTH - iconSize;
+			iconY = (SCREEN_HEIGHT - visibleCount * (iconSize + blockSpacing) + blockSpacing) * 0.5f;
+			break;
+	}
+
+	horizontal = (position == STATS_POS_TOP || position == STATS_POS_BOTTOM) ? qtrue : qfalse;
+	iconBeforeText = (position != STATS_POS_RIGHT) ? qtrue : qfalse;
+
+	{
+		float bgX = iconX;
+		float bgY = iconY;
+		float bgW, bgH;
+		vec4_t bgColor = { 0, 0, 0, 0.25f };
+
+		if (horizontal)
+		{
+			bgW = visibleCount * (iconSize + textOffset + approxTextWidth + blockSpacing) - blockSpacing;
+			bgH = iconSize;
+		}
+		else
+		{
+			bgW = iconSize + textOffset + approxTextWidth;
+			bgH = visibleCount * (iconSize + blockSpacing) - blockSpacing;
+			if (position == STATS_POS_RIGHT)
+			{
+				bgX -= approxTextWidth;
+			}
+		}
+
+		trap_R_SetColor(bgColor);
+		CG_FillRect(bgX, bgY, bgW, bgH, bgColor);
+		trap_R_SetColor(NULL);
+	}
+
+	for (wp = WP_MACHINEGUN; wp <= WP_PLASMAGUN; wp++)
+	{
+		shots = ws->stats[wp].shots;
+		if (shots <= 0)
+			continue;
+
+		icon = cg_weapons[wp].weaponIcon;
+		Com_sprintf(accStr, sizeof(accStr), "%.0f%%", ws->stats[wp].accuracy);
+		textFlags = DS_SHADOW | DS_PROPORTIONAL;
+		textFlags |= iconBeforeText ? DS_HLEFT : DS_HRIGHT;
+
+		textX = iconBeforeText ? iconX + iconSize + textOffset : iconX - textOffset;
+		textY = iconY + (iconSize - textSize) * 0.5f;
+
+		if (iconBeforeText)
+		{
+			if (icon)
+			{
+				trap_R_SetColor(colorWhite);
+				CG_DrawPic(iconX, iconY, iconSize, iconSize, icon);
+				trap_R_SetColor(NULL);
+			}
+		}
+		CG_FontSelect(font);
+		CG_OSPDrawStringNew(textX, textY, accStr, colorWhite, colorBlack, charWidth, textSize,
+		                    SCREEN_WIDTH, textFlags, NULL, NULL, NULL);
+
+		if (!iconBeforeText)
+		{
+			if (icon)
+			{
+				trap_R_SetColor(colorWhite);
+				CG_DrawPic(iconX, iconY, iconSize, iconSize, icon);
+				trap_R_SetColor(NULL);
+			}
+		}
+
+		if (horizontal)
+			iconX += iconSize + textOffset + approxTextWidth + blockSpacing;
+		else
+			iconY += iconSize + blockSpacing;
+	}
+}
+
+
+void CG_DrawWeaponStatsWrapper(void)
+{
+
+	shudWeaponStatsPos_t position;
+	float iconSize;
+	float textSize;
+
+	if (!cg_drawAccuracy.integer)
+		return;
+
+	iconSize = cg_accuracyIconSize.value;
+	textSize = cg_accuracyFontSize.value;
+
+
+	switch (cg_drawAccuracy.integer)
+	{
+		case 1:
+			position = STATS_POS_LEFT;
+			break;
+		case 2:
+			position = STATS_POS_TOP;
+			break;
+		case 3:
+			position = STATS_POS_RIGHT;
+			break;
+		case 4:
+			position = STATS_POS_BOTTOM;
+			break;
+		default:
+			return;
+	}
+
+	CG_DrawWeaponStats(position, iconSize, textSize);
+}
+
 
 /*
 =================
@@ -2834,9 +2903,14 @@ static void CG_Draw2D(void)
 		return;
 	}
 
-	if (cg_draw2D.integer == 0)
+	if (!cg_draw2D.integer)
 	{
 		return;
+	}
+
+	if (cg_damageDrawFrame.integer)
+	{
+		CG_DrawDamageFrame();
 	}
 
 	if (strlen(cgs.osp.testFont))
@@ -2844,15 +2918,18 @@ static void CG_Draw2D(void)
 		CG_DrawTestFont(cgs.osp.testFont);
 		return;
 	}
+
 	if (cgs.be.showCredits)
 	{
 		CG_OSPDrawNewCredits();
 		return;
 	}
+
 	if (cg_teamIndicator.integer)
 	{
 		CG_DrawPlayerIndicatorOnScreen();
 	}
+
 	if (cg_shud.integer)
 	{
 		CG_SHUDRoutine();
@@ -2862,7 +2939,6 @@ static void CG_Draw2D(void)
 
 	if (cg_enableOSPHUD.integer)
 	{
-		CG_DrawDamageFrame();
 		CG_OSPHUDRoutine();
 		return;
 	}
@@ -2993,187 +3069,187 @@ void CG_DrawActive(stereoFrame_t stereoView)
 }
 
 
+// todel
+// int CG_OSPDrawLeftSlidingWindow(float timeAppearance, float timeShow, float timeHide, float time3Sec, int numberOfLines, int sizeOfLine, int w, int h, char* text, int windowPosX, float* borderColor, float* bodyColor)
+// {
+// 	OSP_SlidingPrintContext_t* target;
+// 	int minTime;
+// 	int minTimeIndex;
+// 	int i; //14
+// 	char* str; //1c
+// 	char normalized_str[128]; //20
+// 	int str_size; //c4
+// 	minTimeIndex = -1;
+// 	minTime = 9999999;
+// 	i = 0;
+// 	if (cg_noSlidingWindow.integer == 2)
+// 	{
+// 		return -1;
+// 	}
+// 	/* find free window */
+// 	do
+// 	{
+// 		if (!ospPrintContext[i].hideBeforeCGTime)
+// 		{
+// 			minTimeIndex = i;
+// 			break;
+// 		}
+// 		else if (ospPrintContext[i].hideBeforeCGTime < minTime)
+// 		{
+// 			minTimeIndex = i;
+// 			minTime = ospPrintContext[i].hideBeforeCGTime;
+// 		}
+// 	}
+// 	while (++i < 16);
 
-int CG_OSPDrawLeftSlidingWindow(float timeAppearance, float timeShow, float timeHide, float time3Sec, int numberOfLines, int sizeOfLine, int w, int h, char* text, int windowPosX, float* borderColor, float* bodyColor)
-{
-	OSP_SlidingPrintContext_t* target;
-	int minTime;
-	int minTimeIndex;
-	int i; //14
-	char* str; //1c
-	char normalized_str[128]; //20
-	int str_size; //c4
-	minTimeIndex = -1;
-	minTime = 9999999;
-	i = 0;
-	if (cg_noSlidingWindow.integer == 2)
-	{
-		return -1;
-	}
-	/* find free window */
-	do
-	{
-		if (!ospPrintContext[i].hideBeforeCGTime)
-		{
-			minTimeIndex = i;
-			break;
-		}
-		else if (ospPrintContext[i].hideBeforeCGTime < minTime)
-		{
-			minTimeIndex = i;
-			minTime = ospPrintContext[i].hideBeforeCGTime;
-		}
-	}
-	while (++i < 16);
+// 	if (minTimeIndex == -1)
+// 	{
+// 		minTimeIndex = 0;
+// 	}
 
-	if (minTimeIndex == -1)
-	{
-		minTimeIndex = 0;
-	}
+// 	target = &ospPrintContext[minTimeIndex];
+// 	target->windowPosX = windowPosX;
+// 	target->charWidth = w;
+// 	target->charHeight = h;
+// 	target->timeAppearance = 1000.0 * timeAppearance;
+// 	target->timeShow = 1000.0 * timeShow;
+// 	target->timeHiding = 1000.0 * timeHide;
 
-	target = &ospPrintContext[minTimeIndex];
-	target->windowPosX = windowPosX;
-	target->charWidth = w;
-	target->charHeight = h;
-	target->timeAppearance = 1000.0 * timeAppearance;
-	target->timeShow = 1000.0 * timeShow;
-	target->timeHiding = 1000.0 * timeHide;
+// 	if (borderColor)
+// 	{
+// 		VectorCopy(borderColor, target->borderColor);
+// 	}
+// 	else
+// 	{
+// 		VectorClear(target->borderColor);
+// 	}
+// 	target->borderColor[3] = 1.0;
 
-	if (borderColor)
-	{
-		VectorCopy(borderColor, target->borderColor);
-	}
-	else
-	{
-		VectorClear(target->borderColor);
-	}
-	target->borderColor[3] = 1.0;
+// 	if (bodyColor)
+// 	{
+// 		VectorCopy(bodyColor, target->bodyColor);
+// 	}
+// 	else
+// 	{
+// 		target->bodyColor[0] = 0.7f;
+// 		target->bodyColor[1] = 1.0f;
+// 		target->bodyColor[2] = 0.6f;
+// 	}
+// 	target->bodyColor[3] = 0.45f;
 
-	if (bodyColor)
-	{
-		VectorCopy(bodyColor, target->bodyColor);
-	}
-	else
-	{
-		target->bodyColor[0] = 0.7f;
-		target->bodyColor[1] = 1.0f;
-		target->bodyColor[2] = 0.6f;
-	}
-	target->bodyColor[3] = 0.45f;
+// 	target->maxStringLen = 0;
+// 	target->numberOfStrings = 0;
 
-	target->maxStringLen = 0;
-	target->numberOfStrings = 0;
+// 	/* copy text and update max string size */
+// 	for (i = 0, str = text ; i < numberOfLines && target->numberOfStrings < 24; ++i, ++target->numberOfStrings, str += sizeOfLine)
+// 	{
+// 		if (!str) break;
+// 		Q_strncpyz(&target->string[i][0], str, 128);
+// 		CG_OSPNormalizeText(&target->string[i][0], strlen(&target->string[i][0]), normalized_str);
+// 		str_size = strlen(normalized_str);
+// 		if (str_size > target->maxStringLen)
+// 		{
+// 			target->maxStringLen = str_size;
+// 		}
+// 	}
 
-	/* copy text and update max string size */
-	for (i = 0, str = text ; i < numberOfLines && target->numberOfStrings < 24; ++i, ++target->numberOfStrings, str += sizeOfLine)
-	{
-		if (!str) break;
-		Q_strncpyz(&target->string[i][0], str, 128);
-		CG_OSPNormalizeText(&target->string[i][0], strlen(&target->string[i][0]), normalized_str);
-		str_size = strlen(normalized_str);
-		if (str_size > target->maxStringLen)
-		{
-			target->maxStringLen = str_size;
-		}
-	}
-
-	target->hideBeforeRealtime = trap_Milliseconds() + target->timeHiding + 1000 * time3Sec;
-	target->hideBeforeCGTime = cg.time + target->timeHiding + 1000 * time3Sec;
-	target->showFromCGTime = cg.time + 1000 * time3Sec;
-	return minTimeIndex;
-}
+// 	target->hideBeforeRealtime = trap_Milliseconds() + target->timeHiding + 1000 * time3Sec;
+// 	target->hideBeforeCGTime = cg.time + target->timeHiding + 1000 * time3Sec;
+// 	target->showFromCGTime = cg.time + 1000 * time3Sec;
+// 	return minTimeIndex;
+// }
 
 
-void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context)
-{
-	int time_u1;
-	float calc_pos_x;
-	float calc_pos_y;
-	int i;
-	time_u1 = context->hideBeforeRealtime - trap_Milliseconds();
-	if (cg_noSlidingWindow.integer == 2)
-	{
-		return;
-	}
-	if (time_u1 < context->timeHiding - context->timeShow)
-	{
-		if (time_u1 < context->timeAppearance)
-		{
-			//after
-			calc_pos_x = ((float)context->charWidth * context->maxStringLen + 3.0f) * ((float)context->timeAppearance - time_u1) / (float)context->timeAppearance;
-		}
-		else
-		{
-			//static
-			calc_pos_x = 0;
-		}
-	}
-	else
-	{
-		//before
-		calc_pos_x = ((float)context->charWidth * context->maxStringLen + 3.0f) * ((float)time_u1 - context->timeHiding + context->timeShow) / (float)context->timeShow;
-	}
+// void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context)
+// {
+// 	int time_u1;
+// 	float calc_pos_x;
+// 	float calc_pos_y;
+// 	int i;
+// 	time_u1 = context->hideBeforeRealtime - trap_Milliseconds();
+// 	if (cg_noSlidingWindow.integer == 2)
+// 	{
+// 		return;
+// 	}
+// 	if (time_u1 < context->timeHiding - context->timeShow)
+// 	{
+// 		if (time_u1 < context->timeAppearance)
+// 		{
+// 			//after
+// 			calc_pos_x = ((float)context->charWidth * context->maxStringLen + 3.0f) * ((float)context->timeAppearance - time_u1) / (float)context->timeAppearance;
+// 		}
+// 		else
+// 		{
+// 			//static
+// 			calc_pos_x = 0;
+// 		}
+// 	}
+// 	else
+// 	{
+// 		//before
+// 		calc_pos_x = ((float)context->charWidth * context->maxStringLen + 3.0f) * ((float)time_u1 - context->timeHiding + context->timeShow) / (float)context->timeShow;
+// 	}
 
-	calc_pos_x = 6.0f - calc_pos_x;
-	calc_pos_y = context->windowPosX - (float)context->numberOfStrings * (context->charHeight + 1);
-// borders
-	CG_OSPSetColor(context->borderColor);
+// 	calc_pos_x = 6.0f - calc_pos_x;
+// 	calc_pos_y = context->windowPosX - (float)context->numberOfStrings * (context->charHeight + 1);
+// // borders
+// 	CG_OSPSetColor(context->borderColor);
 
-//void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader );
-	CG_DrawPicOld(
-	    calc_pos_x,
-	    calc_pos_y - 2.0f,
-	    (float)(context->charWidth * context->maxStringLen + 3),
-	    1.0f,
-	    cgs.media.teamStatusBar);
+// //void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader );
+// 	CG_DrawPicOld(
+// 	    calc_pos_x,
+// 	    calc_pos_y - 2.0f,
+// 	    (float)(context->charWidth * context->maxStringLen + 3),
+// 	    1.0f,
+// 	    cgs.media.teamStatusBar);
 
-	/* bottom */
-	CG_DrawPicOld(
-	    calc_pos_x,
-	    calc_pos_y + ((float)context->charHeight + 1.0f) * (float)context->numberOfStrings + 1.0f,
-	    (float)(context->charWidth * context->maxStringLen + 3),
-	    1.0f,
-	    cgs.media.teamStatusBar);
+// 	/* bottom */
+// 	CG_DrawPicOld(
+// 	    calc_pos_x,
+// 	    calc_pos_y + ((float)context->charHeight + 1.0f) * (float)context->numberOfStrings + 1.0f,
+// 	    (float)(context->charWidth * context->maxStringLen + 3),
+// 	    1.0f,
+// 	    cgs.media.teamStatusBar);
 
-	/* left */
-	CG_DrawPicOld(
-	    calc_pos_x,
-	    calc_pos_y - 1.0f,
-	    1.0f,
-	    (float)((context->charHeight + 1) * context->numberOfStrings + 2),
-	    cgs.media.teamStatusBar);
+// 	/* left */
+// 	CG_DrawPicOld(
+// 	    calc_pos_x,
+// 	    calc_pos_y - 1.0f,
+// 	    1.0f,
+// 	    (float)((context->charHeight + 1) * context->numberOfStrings + 2),
+// 	    cgs.media.teamStatusBar);
 
-	CG_DrawPicOld(
-	    context->charWidth * context->maxStringLen + calc_pos_x + 2,
-	    calc_pos_y - 1,
-	    1.0f,
-	    (context->charHeight + 1) * context->numberOfStrings + 2,
-	    cgs.media.teamStatusBar);
+// 	CG_DrawPicOld(
+// 	    context->charWidth * context->maxStringLen + calc_pos_x + 2,
+// 	    calc_pos_y - 1,
+// 	    1.0f,
+// 	    (context->charHeight + 1) * context->numberOfStrings + 2,
+// 	    cgs.media.teamStatusBar);
 
-	//fill window color
-	CG_OSPSetColor(context->bodyColor);
-	CG_OSPDrawPic(
-	    calc_pos_x + 1.0f,
-	    calc_pos_y - 1.0f,
-	    (float)context->charWidth * context->maxStringLen + 1.0f,
-	    (float)((context->charHeight + 1) * context->numberOfStrings + 2),
-	    cgs.media.teamStatusBar);
-	CG_OSPSetColor(NULL);
+// 	//fill window color
+// 	CG_OSPSetColor(context->bodyColor);
+// 	CG_OSPDrawPic(
+// 	    calc_pos_x + 1.0f,
+// 	    calc_pos_y - 1.0f,
+// 	    (float)context->charWidth * context->maxStringLen + 1.0f,
+// 	    (float)((context->charHeight + 1) * context->numberOfStrings + 2),
+// 	    cgs.media.teamStatusBar);
+// 	CG_OSPSetColor(NULL);
 
-	for (i = 0; i < context->numberOfStrings; ++i)
-	{
-		CG_FontSelect(0);
-		CG_OSPDrawString(calc_pos_x + 2,
-		                 calc_pos_y + i * (context->charHeight + 1),
-		                 &context->string[i][0],
-		                 colorWhite,
-		                 context->charWidth,
-		                 context->charHeight,
-		                 SCREEN_WIDTH,
-		                 DS_HLEFT,
-		                 NULL);
-	}
-}
+// 	for (i = 0; i < context->numberOfStrings; ++i)
+// 	{
+// 		CG_FontSelect(0);
+// 		CG_OSPDrawString(calc_pos_x + 2,
+// 		                 calc_pos_y + i * (context->charHeight + 1),
+// 		                 &context->string[i][0],
+// 		                 colorWhite,
+// 		                 context->charWidth,
+// 		                 context->charHeight,
+// 		                 SCREEN_WIDTH,
+// 		                 DS_HLEFT,
+// 		                 NULL);
+// 	}
+// }
 
 
 void CG_OSPSetColor(vec4_t color)

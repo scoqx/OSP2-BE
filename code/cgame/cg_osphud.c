@@ -1754,16 +1754,12 @@ static float CG_OSPDrawTeamInfo(float y)
 		{
 			if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED)
 			{
-				hcolor[0] = 1.0f;
-				hcolor[1] = 0.0f;
-				hcolor[2] = 0.0f;
+				Vector4Copy(cgs.be.redTeamColor, hcolor);
 				hcolor[3] = 0.33f;
 			}
 			else if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE)
 			{
-				hcolor[0] = 0.0f;
-				hcolor[1] = 0.0f;
-				hcolor[2] = 1.0f;
+				Vector4Copy(cgs.be.blueTeamColor, hcolor);
 				hcolor[3] = 0.33f;
 			}
 			else
@@ -2068,13 +2064,13 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 
 	if (persistantTeam == TEAM_RED)
 	{
-		colorTeamOverlay[0] = 1.0f;
-		colorTeamOverlay[2] = 0.0f;
+		Vector4Copy(cgs.be.redTeamColor, colorTeamOverlay);
+		colorTeamOverlay[3] = 0.33f;
 	}
 	else
 	{
-		colorTeamOverlay[0] = 0.0f;
-		colorTeamOverlay[2] = 1.0f;
+		Vector4Copy(cgs.be.blueTeamColor, colorTeamOverlay);
+		colorTeamOverlay[3] = 0.33f;
 	}
 
 	CG_OSPSetColor(colorTeamOverlay);
@@ -2395,12 +2391,23 @@ static float CG_OSPHUDDrawScores(float y)
 	//
 	int score;
 
-	vec4_t colorScores[3] =
-	{
-		{0.0f, 0.0f, 1.0f, 0.33}, //3aa0
-		{1.0f, 0.0f, 0.0f, 0.33}, //3ab0
-		{1.0f, 1.0f, 1.0f, 0.33}, //3ac0
-	};
+	vec4_t colorScores[3];
+
+	colorScores[1][0] = cgs.be.redTeamColor[0];
+	colorScores[1][1] = cgs.be.redTeamColor[1];
+	colorScores[1][2] = cgs.be.redTeamColor[2];
+	colorScores[1][3] = 0.33f;
+
+	colorScores[0][0] = cgs.be.blueTeamColor[0];
+	colorScores[0][1] = cgs.be.blueTeamColor[1];
+	colorScores[0][2] = cgs.be.blueTeamColor[2];
+	colorScores[0][3] = 0.33f;
+
+	colorScores[2][0] = 1.0f;
+	colorScores[2][1] = 1.0f;
+	colorScores[2][2] = 1.0f;
+	colorScores[2][3] = 0.33f;
+
 
 	CG_OSPGetClientFontSize(&cf_Scores, &fontScoresW, &fontScoresH);
 
@@ -2734,9 +2741,9 @@ static float CG_OSPHUDDrawScores(float y)
 			w = len * fontScoresW + 8;
 			x -= w;
 
-			color[0] = 1.0f;
-			color[1] = 0.0f;
-			color[2] = 0.0f;
+			color[0] = cgs.be.redTeamColor[0];
+			color[1] = cgs.be.redTeamColor[1];
+			color[2] = cgs.be.redTeamColor[2];
 			color[3] = 0.33f;
 
 			CG_OSPDrawPoly(x, y - 4.0f, w, fontScoresH + 8, color);
@@ -2755,9 +2762,9 @@ static float CG_OSPHUDDrawScores(float y)
 			w = CG_DrawStrlen(s) * fontScoresW + 8;
 			x -= w;
 
-			color[0] = 0.0f;
-			color[1] = 0.0f;
-			color[2] = 1.0f;
+			color[0] = cgs.be.blueTeamColor[0];
+			color[1] = cgs.be.blueTeamColor[1];
+			color[2] = cgs.be.blueTeamColor[2];
 			color[3] = 0.33f;
 
 			CG_OSPDrawPoly(x, y - 4.0f, w, fontScoresH + 8, color);
@@ -4188,6 +4195,10 @@ void CG_OSPHUDRoutine(void)
 		if (CG_DrawIntermission() == 0)
 		{
 			CG_OSPDrawCenterString();
+		}
+		if (cgs.be.newStats.drawWindow)
+		{
+			CG_BEStatsShowStatsInfo();
 		}
 	}
 }

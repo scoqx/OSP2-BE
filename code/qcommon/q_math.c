@@ -39,6 +39,9 @@ vec4_t      colorWhite  = {1, 1, 1, 1};
 vec4_t      colorLtGrey = {0.75, 0.75, 0.75, 1};
 vec4_t      colorMdGrey = {0.5, 0.5, 0.5, 1};
 vec4_t      colorDkGrey = {0.25, 0.25, 0.25, 1};
+vec4_t      colorOrange = {1, 0.5, 0, 1};
+vec4_t      colorPink   = {1, 0.75, 0.8, 1};
+
 
 const vec4_t g_color_table[ 10 ] =
 {

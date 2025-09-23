@@ -8,7 +8,7 @@ struct crosshairColors_s
 	float* color;
 };
 
-const struct crosshairColors_s crosshairColors[11] =
+const struct crosshairColors_s crosshairColors[13] =
 {
 	{"black",   colorBlack},
 	{"red",     colorRed},
@@ -19,6 +19,8 @@ const struct crosshairColors_s crosshairColors[11] =
 	{"magenta", colorMagenta},
 	{"white",   colorWhite},
 	{"grey",    colorDkGrey},
+	{"orange",  colorOrange},
+	{"pink",    colorPink},
 	{NULL,      NULL},
 };
 

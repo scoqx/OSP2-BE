@@ -4,6 +4,79 @@
 int global_handicap; // unused?
 //	void         (*onChanged)(cvarTable_t *cvart);
 
+
+void CG_ParseCvarTwoStrings(const cvarTable_t* cvart, char* out1, char* out2, int outSize)
+{
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char* token1, *token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (cvart->vmCvar->string[0] == '\0') return;
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2) return;
+
+	Q_strncpyz(out1, token1, outSize);
+	Q_strncpyz(out2, token2, outSize);
+}
+
+void CG_ParseCvarTwoInts(const cvarTable_t* cvart, int* out1, int* out2)
+{
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char* token1, *token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (cvart->vmCvar->string[0] == '\0') return;
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2) return;
+
+	*out1 = atoi(token1);
+	*out2 = atoi(token2);
+}
+
+void CG_ParseCvarTwoFloats(const cvarTable_t* cvart, float* out1, float* out2)
+{
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char* token1, *token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (cvart->vmCvar->string[0] == '\0') return;
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2) return;
+
+	*out1 = (float)atof(token1);
+	*out2 = (float)atof(token2);
+}
+
+void CG_ParseCvarTwoColors(const cvarTable_t* cvart, vec4_t out1, vec4_t out2)
+{
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char* token1, *token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (cvart->vmCvar->string[0] == '\0') return;
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2) return;
+
+	CG_ParseColorStr(token1, out1);
+	CG_ParseColorStr(token2, out2);
+}
+
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
 {
 	if ((cg_drawTeamOverlay.integer > 0) ||
@@ -312,7 +385,22 @@ void CG_LocalEventCvarChanged_ch_crosshairColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_ch_crosshairActionColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColor);
+	if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColor") == 0)
+	{
+		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColor);
+	}
+	if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColorLow") == 0)
+	{
+		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColorLow);
+	}
+	if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColorMid") == 0)
+	{
+		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColorMid);
+	}
+	if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColorHigh") == 0)
+	{
+		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColorHigh);
+	}
 }
 
 void CG_LocalEventCvarChanged_ch_crosshairDecorColor(cvarTable_t* cvart)
@@ -322,8 +410,24 @@ void CG_LocalEventCvarChanged_ch_crosshairDecorColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_ch_crosshairDecorActionColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColor);
+	if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColor") == 0)
+	{
+		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColor);
+	}
+	if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColorLow") == 0)
+	{
+		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColorLow);
+	}
+	if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColorMid") == 0)
+	{
+		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColorMid);
+	}
+	if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColorHigh") == 0)
+	{
+		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColorHigh);
+	}
 }
+
 
 void CG_LocalEventCvarChanged_ch_crosshairDecorOpaque(cvarTable_t* cvart)
 {
@@ -418,8 +522,6 @@ void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
 {
-
-
 	if (cgs.osp.serverConfigXHitBox != 1 && cg_drawHitBox.integer)
 	{
 		if (!cg.demoPlayback)
@@ -498,7 +600,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, playerIndicator.color);
+	CG_LocalEventCvarParseColor(cvart, cgs.be.playerIndicatorColor);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart)
 {
@@ -506,7 +608,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, playerIndicator.bgColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.be.playerIndicatorBgColor);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque(cvarTable_t* cvart)
 {
@@ -541,4 +643,222 @@ void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
 		trap_Cvar_Set("cg_centerMessagesFont", 0);
 	}
 }
+void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.altGrenadesColor);
+}
+void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.enemyGrenadesColor);
+}
+void CG_LocalEventCvarChanged_cg_healthColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.healthColor);
+}
+void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.healthLowColor);
+}
+void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.healthMidColor);
+}
+void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.redTeamColor);
+	CG_LocalEventCvarParseColor(cvart, scoreboard_rtColor);
 
+}
+void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.blueTeamColor);
+	CG_LocalEventCvarParseColor(cvart, scoreboard_btColor);
+}
+void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
+{
+	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	{
+		trap_Cvar_Set("cg_accuracyFont", 0);
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
+{
+	int clientNum;
+	const char* str = cvart->vmCvar->string;
+
+	memset(cgs.be.markedTeam, qfalse, sizeof(cgs.be.markedTeam));
+
+	if (Q_stricmp(str, "-1") == 0)
+	{
+		return;
+	}
+
+	while (*str)
+	{
+		while (*str == ' ')
+		{
+			str++;
+		}
+
+		if (!*str)
+			break;
+
+		clientNum = atoi(str);
+
+		if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+		{
+			cgs.be.markedTeam[clientNum] = qtrue;
+		}
+		else
+		{
+			CG_Printf("cg_markTeam: invalid clientNum %d\n", clientNum);
+		}
+
+		while (*str && *str != ' ')
+		{
+			str++;
+		}
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.be.markedTeamColor);
+}
+
+void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart)
+{
+	CG_LoadForcedSounds();
+}
+
+void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
+{
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char* token1;
+	char* token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
+	{
+		CG_Printf("^1Invalid cvar or string pointer\n");
+		return;
+	}
+
+	if (cvart->vmCvar->string[0] == '\0')
+	{
+		isCustomScoreboardColorIsSet_rt = qfalse;
+		return;
+	}
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2)
+	{
+		CG_Printf("^1Invalid value: expected two color values (e.g. \"red blue\")\n");
+		isCustomScoreboardColorIsSet_rt = qfalse;
+		return;
+	}
+
+	CG_ParseColorStr(token1, scoreboard_rtColorTitle);
+	CG_ParseColorStr(token2, scoreboard_rtColorBody);
+	isCustomScoreboardColorIsSet_rt = qtrue;
+}
+
+void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
+{
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char* token1;
+	char* token2;
+
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
+	{
+		CG_Printf("^1Invalid cvar or string pointer\n");
+		return;
+	}
+
+	if (cvart->vmCvar->string[0] == '\0')
+	{
+		isCustomScoreboardColorIsSet_bt = qfalse;
+		return;
+	}
+
+	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
+
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
+
+	if (!token1 || !token2)
+	{
+		CG_Printf("^1Invalid value: expected two color values (e.g. \"1 3\" or \"990033 green\")\n");
+		isCustomScoreboardColorIsSet_bt = qfalse;
+		return;
+	}
+
+	CG_ParseColorStr(token1, scoreboard_btColorTitle);
+	CG_ParseColorStr(token2, scoreboard_btColorBody);
+	isCustomScoreboardColorIsSet_bt = qtrue;
+}
+
+void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
+{
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
+	{
+		CG_Printf("^1Invalid cvar or string pointer\n");
+		isCustomScoreboardColorIsSet_spec = qfalse;
+		return;
+	}
+
+	if (cvart->vmCvar->string[0] == '\0')
+	{
+		isCustomScoreboardColorIsSet_spec = qfalse;
+		return;
+	}
+
+	CG_LocalEventCvarParseColor(cvart, scoreboard_specColor);
+	isCustomScoreboardColorIsSet_spec = qtrue;
+}
+
+void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
+{
+	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	{
+		trap_Cvar_Set("cg_bestats_font", 0);
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart)
+{
+	CG_ParseCvarTwoFloats(cvart, &cgs.be.settings.x, &cgs.be.settings.y);
+}
+
+void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart)
+{
+	CG_ParseCvarTwoFloats(cvart, &cgs.be.settings.textSize[0], &cgs.be.settings.textSize[1]);
+}
+void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cgs.be.settings.bgColorIsSet = qfalse;
+	}
+	else
+	{
+		CG_LocalEventCvarParseColor(cvart, cgs.be.settings.bgColor);
+		cgs.be.settings.bgColorIsSet = qtrue;
+	}
+}
+
+/* void CG_LocalEventCvarChanged_cg_friendsWallhack(cvarTable_t* cvart)
+{
+	if ((cgs.be.disableFeatures & BE_SERVER_DISABLE_WH) && cg_friendsWallhack.integer)
+	{
+		if (!cg.demoPlayback)
+		{
+			CG_Printf("^3Friend wallhack is disabled on this server.\n");
+			trap_Cvar_Set("cg_friendsWallhack", 0);
+		}
+	}
+} */

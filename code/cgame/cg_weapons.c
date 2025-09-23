@@ -253,23 +253,23 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	{
 		if (ci->team == TEAM_RED)
 		{
-			re->shaderRGBA[0] = 255;
-			re->shaderRGBA[1] = 0;
-			re->shaderRGBA[2] = 0;
+			re->shaderRGBA[0] = cgs.be.redTeamColor[0] * 255;
+			re->shaderRGBA[1] = cgs.be.redTeamColor[1] * 255;
+			re->shaderRGBA[2] = cgs.be.redTeamColor[2] * 255;
 
-			le->color[0] = 0.75;
-			le->color[1] = 0;
-			le->color[2] = 0;
+			le->color[0] = cgs.be.redTeamColor[0] * 0.75;
+			le->color[1] = cgs.be.redTeamColor[1] * 0.75;
+			le->color[2] = cgs.be.redTeamColor[2] * 0.75;
 		}
 		else if (ci->team == TEAM_BLUE)
 		{
-			re->shaderRGBA[0] = 0;
-			re->shaderRGBA[1] = 0;
-			re->shaderRGBA[2] = 255;
+			re->shaderRGBA[0] = cgs.be.blueTeamColor[0] * 255;
+			re->shaderRGBA[1] = cgs.be.blueTeamColor[1] * 255;
+			re->shaderRGBA[2] = cgs.be.blueTeamColor[2] * 255;
 
-			le->color[0] = 0;
-			le->color[1] = 0;
-			le->color[2] = 0.75;
+			le->color[0] = cgs.be.blueTeamColor[0] * 0.75;
+			le->color[1] = cgs.be.blueTeamColor[1] * 0.75;
+			le->color[2] = cgs.be.blueTeamColor[2] * 0.75;
 		}
 	}
 	else
@@ -1496,7 +1496,10 @@ static void CG_AddWeaponWithPowerups(refEntity_t* gun, int powerups)
 
 		if (powerups & (1 << PW_BATTLESUIT))
 		{
-			gun->customShader = cgs.media.battleWeaponShader;
+			if (!cg_altBattleSuit.integer)
+				gun->customShader = cgs.media.battleWeaponShader;
+			else
+				gun->customShader = cgs.media.battleWeaponShaderNew;
 			trap_R_AddRefEntityToScene(gun);
 		}
 		if (powerups & (1 << PW_QUAD))
@@ -1666,7 +1669,8 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		cent->pe.lightningFiring = qfalse;
 		if ((cent->currentState.eFlags & EF_FIRING) && weapon->firingSound)
 		{
-			if (cg.snap->ps.weaponstate == WEAPON_READY || cg.snap->ps.weaponstate == WEAPON_FIRING)
+			// lightning gun and guantlet make a different sound when fire is held down
+			if (cent->currentState.number != cg.clientNum || cg.snap->ps.weaponstate == WEAPON_READY || cg.snap->ps.weaponstate == WEAPON_FIRING)
 			{
 				trap_S_AddLoopingSound(cent->currentState.number, cent->lerpOrigin, vec3_origin, weapon->firingSound);
 				cent->pe.lightningFiring = qtrue;
@@ -1757,7 +1761,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		gun.customShader = cgs.media.firstPersonGun;
 	}
 	if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
-	        (cg_drawGun.integer == 3))
+	        (cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
 	{
 		if (!usedBrightColor)
 		{
@@ -1779,14 +1783,14 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		VectorCopy(parent->lightingOrigin, barrel.lightingOrigin);
 		barrel.shadowPlane = parent->shadowPlane;
 		barrel.renderfx = parent->renderfx;
-		
+
 		barrel.hModel = weapon->barrelModel;
 		angles[YAW]   = 0;
 		angles[PITCH] = 0;
 		if ((cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION) && (barrel.renderfx & RF_FIRST_PERSON))
-		angles[ROLL] = 0;
+			angles[ROLL] = 0;
 		else
-		angles[ROLL]  = CG_MachinegunSpinAngle(cent);
+			angles[ROLL]  = CG_MachinegunSpinAngle(cent);
 		AnglesToAxis(angles, barrel.axis);
 
 		CG_PositionRotatedEntityOnTag(&barrel, &gun, weapon->weaponModel, "tag_barrel");
@@ -1798,7 +1802,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			barrel.customShader = cgs.media.firstPersonGun;
 		}
 		else if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
-		         (cg_drawGun.integer == 3))
+		         (cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
 		{
 			CG_UpdateGunShaderRGBA(&barrel);
 			barrel.customShader = cgs.media.firstPersonGun;

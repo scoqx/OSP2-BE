@@ -57,11 +57,15 @@ void CG_SHUDElementFPSRoutine(void* context)
 		++fps_val_int;
 	}
 
-	element->ctx.text = va("%ifps", fps_val_int);
+	if (element->config.style.isSet && element->config.style.value == 1)
+	{
+		element->ctx.text = va("%i", fps_val_int);
+	}
+	else
+	{
+		element->ctx.text = va("%ifps", fps_val_int);
+	}
 
-	// CG_SHUDFill(&element->config);
-
-	// CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

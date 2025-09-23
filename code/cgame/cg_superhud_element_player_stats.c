@@ -109,9 +109,8 @@ static void CG_SHUDStyleDamageRatioColor(vec4_t color, const superhudConfig_t* c
 void CG_SHUDElementPlayerStatsRoutine(void* context)
 {
 	shudElementPlayerStats_t* element = (shudElementPlayerStats_t*)context;
-	customStats_t* ws = &CG_SHUDGetContext()->customStats;
-
-	float damageRatio = ws->damageKoeff;
+	newStatsInfo_t* ws = &cgs.be.newStats;
+	float damageRatio = ws->damageRatio;
 	int dmgGiven = statsInfo[OSP_STATS_DMG_GIVEN];
 	int dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
 
@@ -138,7 +137,7 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 	        (cg.time - lastUpdateTime >= updateInterval))   // 2 sec interval
 	{
 		lastUpdateTime = cg.time;
-		CG_SHUDRequestStatsInfo();
+		CG_MaybeRequestStatsInfo();
 		lastClientNum = currentClientNum;
 	}
 

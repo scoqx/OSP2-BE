@@ -201,7 +201,8 @@ static void CG_ParseWarmup(void)
 
 	if (warmup == 0 && cg.warmup)
 	{
-
+		// Очистка новой статистики
+		memset(&cgs.be.newStats, 0, sizeof(cgs.be.newStats));
 	}
 	else if (warmup > 0 && cg.warmup <= 0)
 	{
@@ -339,7 +340,7 @@ static void CG_ConfigStringModified(void)
 	}
 	else if (num == CS_VOTE_YES)
 	{
-		CG_OSPWStatsUp_f();                                                                                     /* Address : 0xf046 Type : Interium */
+		// CG_OSPWStatsUp_f(); // lol?                                                                                     /* Address : 0xf046 Type : Interium */
 		cgs.voteYes = atoi(str);
 		cgs.voteModified = qtrue;
 	}
@@ -354,7 +355,7 @@ static void CG_ConfigStringModified(void)
 	}
 	else if (num == CS_INTERMISSION)
 	{
-		CG_OSPWStatsUp_f();
+		// CG_OSPWStatsUp_f();
 		cg.intermissionStarted = atoi(str);
 		if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_SPECTATOR &&
 		        CG_OSPIsGameTypeCA(cgs.gametype) &&
@@ -363,6 +364,7 @@ static void CG_ConfigStringModified(void)
 			return;
 		}
 		CG_OSPWStatsDown_f();
+		// CG_OSPWStatsDown_f();
 	}
 	else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 	{
@@ -443,6 +445,10 @@ static void CG_ConfigStringModified(void)
 	else if (num == CS_SHADERSTATE)
 	{
 		CG_ShaderStateChanged();
+	}
+	else if (num == CS_BE_DISABLE_FEATURES)
+	{
+		CG_OSPConfigDisableBEFeatures(atoi(str));
 	}
 	else if (num == X_HCK_PS_ENEMY_HITBOX)
 	{
@@ -917,6 +923,17 @@ static void CG_OSPPrintXStats(void)
 		{
 			CG_Printf("\n^3Damage Given: ^7%-6d ^2Armor Taken : ^7%d %s\n", damage_given, armor_taken, tmp_str);
 			CG_Printf("^3Damage Recvd: ^7%-6d ^2Health Taken: ^7%d %s\n", damage_rcvd, health_taken, tmp_str2);
+
+			if (damage_given != 0)
+			{
+				float damage_ratio;
+				if (damage_rcvd == 0)
+					damage_ratio = (float)damage_given;
+				else
+					damage_ratio = (float)damage_given / damage_rcvd;
+
+				CG_Printf("^3Damage Ratio: ^7%.2f\n", damage_ratio);
+			}
 		}
 		else
 		{
@@ -1069,6 +1086,157 @@ static void CG_InjectCustomLoc(char* str, int size)
 	}
 }
 
+void CG_BEParseStatsInfo(void)
+{
+	static int lastStatsInfo[MAX_QPATH] = { 0 };
+	char args[1024];
+	int i, weaponIndex, arg_cnt;
+	int hits, shots, kills, deaths;
+	int pickUps, drops;
+	int killsTotal;
+	int deathsTotal;
+	int suicides;
+	int dmgGiven;
+	int dmgReceived;
+	int wins;
+	int losses;
+	qboolean changed = qfalse;
+
+	newStatsInfo_t* ws = &cgs.be.newStats;
+
+	int totalArgs = trap_Argc();
+
+	for (i = 0; i < totalArgs - 1 && i < MAX_QPATH; i++)
+	{
+		trap_Argv(i + 1, args, sizeof(args));
+		statsInfo[i] = atoi(args);
+
+		if (statsInfo[i] != lastStatsInfo[i])
+			changed = qtrue;
+	}
+
+	if (!changed)
+		return;
+
+	memcpy(lastStatsInfo, statsInfo, sizeof(int) * MAX_QPATH);
+
+	if (cgs.osp.gameTypeFreeze)
+	{
+		statsInfo[OSP_STATS_LOSSES] &= cgs.osp.stats_mask;
+	}
+
+	if (statsInfo[OSP_STATS_WEAPON_MASK] == 0)
+	{
+		return;
+	}
+
+	arg_cnt = 23;
+
+	for (weaponIndex = 0; weaponIndex < WP_NUM_WEAPONS; weaponIndex++)
+	{
+		if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << weaponIndex))
+		{
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			hits = atoi(args);
+
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			shots = atoi(args);
+
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			kills = atoi(args);
+
+			trap_Argv(arg_cnt++, args, sizeof(args));
+			deaths = atoi(args);
+
+			pickUps = shots / 65536;
+			drops = hits / 65536;
+
+			shots = shots % 65536;
+			hits = hits % 65536;
+
+			ws->stats[weaponIndex].hits = hits;
+			ws->stats[weaponIndex].shots = shots;
+			ws->stats[weaponIndex].kills = kills;
+			ws->stats[weaponIndex].deaths = deaths;
+			ws->stats[weaponIndex].pickUps = pickUps;
+			ws->stats[weaponIndex].drops = drops;
+			ws->stats[weaponIndex].accuracy = (shots > 0) ? ((float)hits / shots) * 100.0f : 0.0f;
+		}
+	}
+
+	// General
+	killsTotal = statsInfo[OSP_STATS_KILLS];
+	deathsTotal = statsInfo[OSP_STATS_DEATHS];
+	suicides = statsInfo[OSP_STATS_SUCIDES];
+	dmgGiven = statsInfo[OSP_STATS_DMG_GIVEN];
+	dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
+	wins = statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask;
+	losses = statsInfo[OSP_STATS_LOSSES] & cgs.osp.stats_mask;
+
+	// MH / Armor pickups
+	ws->megahealth = statsInfo[OSP_STATS_MH];
+	ws->ga         = statsInfo[OSP_STATS_GA];
+	ws->ya         = statsInfo[OSP_STATS_YA];
+	ws->ra         = statsInfo[OSP_STATS_RA];
+
+	ws->armor  = statsInfo[OSP_STATS_WINS] >> cgs.osp.stats_shift;
+	ws->health = statsInfo[OSP_STATS_LOSSES] >> cgs.osp.stats_shift;
+
+	// K/D ratio
+	ws->kdratio = (killsTotal > 0 && (deathsTotal + suicides) == 0) ?
+	              (float)killsTotal :
+	              ((deathsTotal + suicides) > 0) ?
+	              (float)killsTotal / (deathsTotal + suicides) : 0.0f;
+
+	// Efficiency: kills / (kills + deaths)
+	ws->dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
+	ws->dmgGiven    = statsInfo[OSP_STATS_DMG_GIVEN];
+
+	ws->efficiency = (killsTotal + deathsTotal > 0) ?
+	                 (100.0f * (float)killsTotal / (killsTotal + deathsTotal)) : 0.0f;
+	if (ws->efficiency < 0.0f)
+		ws->efficiency = 0.0f;
+
+	// Damage ratio
+	ws->damageRatio = (dmgGiven > 0 || dmgReceived > 0) ?
+	                  (float)dmgGiven / (dmgReceived > 0 ? dmgReceived : 1) : 0.0f;
+
+	// General data
+	ws->score     = statsInfo[OSP_STATS_SCORE];
+	ws->kills     = killsTotal;
+	ws->deaths    = deathsTotal;
+	ws->suicides  = suicides;
+	ws->teamKills = statsInfo[OSP_STATS_TEAM_KILLS];
+	ws->teamDamage = statsInfo[OSP_STATS_DMG_TEAM];
+	ws->wins      = wins;
+	ws->losses    = losses;
+
+	// CTF / Objective data
+	ws->caps     = statsInfo[OSP_STATS_CAPS];
+	ws->assists  = statsInfo[OSP_STATS_ASSIST];
+	ws->defences = statsInfo[OSP_STATS_DEFENCES];
+	ws->returns  = statsInfo[OSP_STATS_RETURNS];
+	ws->flagTime = statsInfo[OSP_STATS_TIME];
+
+	cgs.be.newStats.customStatsCalled = qfalse;
+}
+
+
+
+void CG_BERequestStatsInfo(void)
+{
+	trap_SendClientCommand("getstatsinfo");
+}
+
+void CG_MaybeRequestStatsInfo(void)
+{
+	// Oncer per 3 seconds
+	if (CG_BE_Timer(3000))
+	{
+		CG_BERequestStatsInfo();
+	}
+}
+
 /*
 =================
 CG_ServerCommand
@@ -1110,11 +1278,35 @@ void CG_ServerCommand(void)
 		CG_ConfigStringModified();
 		return;
 	}
-//print
+// print
 	if (strcmp(cmd, "print") == 0)
 	{
-		Q_strncpyz(text, CG_Argv(1), 1024);
+		Q_strncpyz(text, CG_Argv(1), sizeof(text));
 		CG_RemoveChatEscapeChar(text);
+
+		// фильтрация говна сервера к3мск по маске "had <число> health and <число> armor left"
+		if (cg_ignoreServerMessages.integer & 1)
+		{
+			// Проверка фильтра "had <число> health and <число> armor left"
+			const char* had_pos = strstr(text, " had ");
+			if (had_pos)
+			{
+				size_t nick_len = had_pos - text;
+				if (nick_len > 0)
+				{
+					return;
+				}
+			}
+		}
+
+		if (cg_ignoreServerMessages.integer & 2)
+		{
+			// Проверяем, есть ли в тексте "chat fragged"
+			if (strstr(text, "chat fragged") != NULL)
+			{
+				return;
+			}
+		}
 		CG_Printf("%s", text);
 		return;
 	}
@@ -1132,6 +1324,12 @@ void CG_ServerCommand(void)
 		{
 			return;
 		}
+
+		if ((ma != MESSAGE_ALLOWED_PLAYER) && (ma != MESSAGE_NOTALLOWED) && (cg_ignoreServerMessages.integer & 4))
+		{
+			return;
+		}
+
 
 		isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_COMMMON_ENABLED;
 		isShudChatEnabled = cg_shudChatEnable.integer & CG_CHAT_COMMMON_ENABLED && ma == MESSAGE_ALLOWED_PLAYER;
@@ -1171,6 +1369,12 @@ void CG_ServerCommand(void)
 		{
 			return;
 		}
+
+		if ((ma != MESSAGE_ALLOWED_PLAYER) && (ma != MESSAGE_NOTALLOWED) && (cg_ignoreServerMessages.integer & 4))
+		{
+			return;
+		}
+
 
 		isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_TEAM_ENABLED;
 		isShudChatEnabled = cg_shudChatEnable.integer & CG_CHAT_TEAM_ENABLED && ma == MESSAGE_ALLOWED_PLAYER;
@@ -1237,17 +1441,19 @@ void CG_ServerCommand(void)
 	}
 	//statsinfo
 	if (Q_stricmp(cmd, "statsinfo") == 0)
-		if (cgs.shudWstatsCalled)
-		{
-			CG_SHUDParseStatsInfo();
-			cgs.shudWstatsCalled = qfalse;
-			return;
-		}
-		else
-		{
-			CG_OSPShowStatsInfo();
-			return;
-		}
+		// if (cgs.be.newStats.customStatsCalled)
+	{
+		CG_BEParseStatsInfo();
+		cgs.be.newStats.customStatsCalled = qfalse;
+		return;
+	}
+
+	// else
+	// {
+	//  CG_OSPShowStatsInfo();
+	//  return;
+	// }
+
 //viewlist
 	if (Q_stricmp(cmd, "viewlist") == 0)
 	{

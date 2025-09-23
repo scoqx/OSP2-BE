@@ -14,6 +14,148 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
 ## ✨ BE-Features
+## v0.91x
+```
++ hitsound unlocked
++ friends wallhack unlocked
+```
+## v0.91
+```
+cg_friendsWallhack can be disabled on server. Set configstring 888 to 1.
+
++wstats reworked
+
+description later
++ cg_bestats_style
++ cg_bestats_textSize
++ cg_bestats_font
++ cg_bestats_pos
++ cg_bestats_bgColor
++ cg_bestats_bgOpaque
++ cg_bestats_spacingAdjust
++ cg_bestats_widthCutoff
+```
+### v0.9e
+```
+Only for cg_scoreboardBE
++ cg_scoreboardDrawPowerUps
+SHUD
++ FPS style 1
++ Localtime style 1
+* fix powerup timer: starts from 30, last displayed second is 1 (previously 29 to 0)
+```
+## v0.9b
+```
+Only for cg_scoreboardBE
++ cg_scoreboardRtColors
++ cg_scoreboardBtColors
++ cg_scoreboardSpecColor
+```
+## v0.9
+```
++ cg_friendHudMarkerMaxDist
++ cg_friendHudMarkerSize
++ cg_friendHudMarkerMaxScale
++ cg_friendHudMarkerMinScale
++ cg_friendsWallhack
++ cg_drawHudMarkers
++ cg_markTeam
++ cg_markTeamColor
++ cg_mySound
++ cg_teamSound
++ cg_enemySound
+```
+## v0.089
+```
++ ch_crosshairAction bitmask 8 - hitcolor by damage
++ ch_crosshairDecorAction bitmask 8 - hitcolor by damage
+ Set colors:
++ ch_crosshairActionColorLow
++ ch_crosshairActionColorMid
++ ch_crosshairActionColorHigh
++ ch_crosshairDecorActionColorLow
++ ch_crosshairDecorActionColorMid
++ ch_crosshairDecorActionColorHigh
+
++ color names: orange, pink
+
+SHUD:
+  + hud config - lwp9k 
+```
+## v0.088
+```
++ cg_drawAccuracy
++ cg_accuracyFontSize
++ cg_accuracyIconSize
++ cg_accuracyFont
+```
+## v0.087a
+```
+* FIX Scoreboard with
+  * cg_redTeamColor cg_blueTeamColor
+```
+## v0.087
+```
++ cg_redTeamColor
++ cg_blueTeamColor
+```
+
+## v0.086a
+```
+SHUD:
+  * Updated m1r, m1rqlstyle, AGENT hud configs
+  * Obituaries style 2 - colored nicknames in team modes
+  * bgcolor, bordercolor team colors support 'E' and 'T'
+  + bgcolor2, bordercolor2 - set alpha when 'E' or 'T' setted (like color2)
+  + docs/superhud inside the mod.pk3
+```
+## v0.085b
+```
++ cg_healthColor
++ cg_healthLowColor
++ cg_healthMidColor
+* r_fullbright 1 unlocked
+
+* SHUD:
+  * Predecorate/Postdecorate - added feature to use { text "string"; } to pring text on the HUD
+  + player_name - new element
+```
+## v0.084e
+```
++ cg_drawAmmoWarning 1 - new counting system + ammo low sound
+  * 2 - default old
+```
+## v0.084d
+```
++ cg_ignoreServerMessages - Hides the message from server. Bitmask
+  * 1 - killer HP/AP (Q3MSK, FFA server)
+  * 2 - chat fragged (not only q3msk)
+  * 4 - server's chat messages
+```
+## v0.084c
+```
++ cg_gibs 2 (more blood)
+* various fixes
+```
+## v0.084
+```
++ cg_itemFx - bitmask
+ * 1 - bounce
+ * 2 - rotating
+ * 4 - scale
++ cg_bubbleTrail
+* cg_altBattleSuit shader changed
+* enemy cg_altLightning 3 changed
+* changed some default values for cvars
+- cg_itemsRespawnAnimation
+```
+## v0.083
+```
++ cg_altGrenades 2
++ cg_altGrenadesColor (cg_altGrenades 2 only)
++ cg_enemyGrenadesColor (cg_altGrenades 2 only)
++ cg_altBattleSuit
+```
 ## v0.081
 ```
 + cg_scoreboardBE 3 - old style team scores
@@ -106,7 +248,6 @@ Cvars:
   * 2 - disable icon, 4 - disable float sprite, 8 - disable sound
 + cg_gunPos
 + cg_hitBoxColor <color>
-+ cg_itemsRespawnAnimation
 + cg_enemyLightningColor
 + cg_uniqueColorTable
 + cg_noSlidingWindow

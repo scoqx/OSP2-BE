@@ -53,7 +53,28 @@ void CG_SHUDElementLocalTimeRoutine(void* context)
 		trap_RealTime(&qtime);
 		if (element->type == SHUD_ELEMENT_LOCAL_TIME)
 		{
-			Com_sprintf(element->s, MAX_QPATH, "%02d:%02d", qtime.tm_hour, qtime.tm_min);
+			if (element->config.style.isSet && element->config.style.value == 1)
+			{
+				int hour = qtime.tm_hour;
+				const char* ampm = "AM";
+
+				if (hour == 0)
+					hour = 12;
+				else if (hour == 12)
+					ampm = "PM";
+				else if (hour > 12)
+				{
+					hour -= 12;
+					ampm = "PM";
+				}
+
+				Com_sprintf(element->s, MAX_QPATH, "%02d:%02d %s", hour, qtime.tm_min, ampm);
+			}
+			else
+			{
+				// 24-часовой формат (по умолчанию)
+				Com_sprintf(element->s, MAX_QPATH, "%02d:%02d", qtime.tm_hour, qtime.tm_min);
+			}
 		}
 		else if (element->type == SHUD_ELEMENT_LOCAL_DATE)
 		{

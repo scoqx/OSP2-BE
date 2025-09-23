@@ -68,7 +68,7 @@ extern "C" {
 #define MAX_STEP_CHANGE     32
 
 #define MAX_VERTS_ON_POLY   10
-#define MAX_MARK_POLYS      256
+#define MAX_MARK_POLYS      10240
 
 #define STAT_MINUS          10  // num frame for '-' stats digit
 
@@ -103,6 +103,9 @@ extern "C" {
 #define DRAW_REWARDS_NOICON (1 << 1)
 #define DRAW_REWARDS_NOSPRITE (1 << 2)
 #define DRAW_REWARDS_NOSOUND (1 << 3)
+
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
 
 typedef enum
 {
@@ -787,7 +790,9 @@ typedef struct
 	qhandle_t   enemyLightningBoltNoPicMip[MAX_ALT_SHADERS];
 
 	qhandle_t   friendShader;
+	qhandle_t   friendShaderWallhack;
 	qhandle_t   frozenFoeTagShader;
+	qhandle_t   frozenFoeTagShaderWallhack;
 	qhandle_t   frozenShader;
 
 	qhandle_t   balloonShader;
@@ -817,6 +822,7 @@ typedef struct
 	qhandle_t   plasmaNewBallShader;
 	qhandle_t   plasmaNewBallNoPicMipShader;
 	qhandle_t   grenadeCPMANoPicMipShader;
+	qhandle_t   grenadeCPMANoPicMipShaderNew;
 	qhandle_t   grenadeCPMAModel;
 	qhandle_t   waterBubbleShader;
 	qhandle_t   bloodTrailShader;
@@ -851,7 +857,9 @@ typedef struct
 	qhandle_t   invisShader;
 	qhandle_t   regenShader;
 	qhandle_t   battleSuitShader;
+	qhandle_t   battleSuitShaderNew;
 	qhandle_t   battleWeaponShader;
+	qhandle_t   battleWeaponShaderNew;
 	qhandle_t   hastePuffShader;
 	qhandle_t   redKamikazeShader;
 	qhandle_t   blueKamikazeShader;
@@ -946,6 +954,7 @@ typedef struct
 	sfxHandle_t teleInSound;
 	sfxHandle_t teleOutSound;
 	sfxHandle_t noAmmoSound;
+	sfxHandle_t lowAmmoSound;
 	sfxHandle_t respawnSound;
 	sfxHandle_t talkSound;
 	sfxHandle_t landSound;
@@ -1080,19 +1089,92 @@ typedef struct weaponStats_s
 	int hitsCurrent;
 	int damageFixed;
 	qboolean onTrack;
+} customWeaponStats_t;
+
+
+typedef struct
+{
+	int hits;
+	int shots;
+	int kills;
+	int deaths;
+	int pickUps;
+	int drops;
+	float accuracy;
 } weaponStats_t;
+
+typedef struct
+{
+	float x, y;
+	vec2_t textSize;
+	vec4_t bgColor;
+	qboolean bgColorIsSet;
+	float bgOpaque;
+} globalBeStatsSettings_t;
+
+typedef struct
+{
+	float kdratio;
+	float efficiency;
+	float dmgGiven;
+	float dmgReceived;
+	float teamDamage;
+	float damageRatio;
+	float lastAccuracy;
+
+	int score;
+	int kills, deaths, suicides, teamKills;
+	int wins, losses;
+	int caps, assists, defences, returns;
+	int flagTime;
+
+	int lastTrackedWeapon;
+
+	int armor;
+	int health;
+
+	int megahealth;
+	int ra;
+	int ya;
+	int ga;
+
+	qboolean customStatsCalled;
+	qboolean drawWindow;
+	int statsLastRequestTime;
+	weaponStats_t stats[WP_NUM_WEAPONS];
+} newStatsInfo_t;
+
+
 
 typedef struct cgs_be_s
 {
+	int disableFeatures;
+	qboolean marked[MAX_CLIENTS];
+	vec4_t markedColor;
+	qboolean markedTeam[MAX_CLIENTS];
+	vec4_t markedTeamColor;
 	vec4_t hitBoxColor;
 	vec4_t enemyOutlineColor;
 	vec4_t teamOutlineColor;
 	vec4_t altBloodColor;
 	vec4_t altShadowColor;
+	vec4_t altGrenadesColor;
+	vec4_t enemyGrenadesColor;
 	qboolean showCredits;
 	qboolean isHealthLow;
-	weaponStats_t weaponStats[WP_NUM_WEAPONS];
+	vec4_t healthColor;
+	vec4_t healthLowColor;
+	vec4_t healthMidColor;
+	vec4_t redTeamColor;
+	vec4_t blueTeamColor;
+	vec4_t playerIndicatorColor;
+	vec4_t playerIndicatorBgColor;
+	customWeaponStats_t weaponStats[WP_NUM_WEAPONS];
+	newStatsInfo_t newStats;
+	globalBeStatsSettings_t settings;
 } cgs_be_t;
+
+#define  BE_SERVER_DISABLE_WH  1
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -1102,6 +1184,8 @@ typedef struct cgs_be_s
 
 #define  CS_OSP_CUSTOM_CLIENT_DEFAULT 47
 #define  CS_OSP_CUSTOM_CLIENT2_DEFAULT 0
+
+
 
 typedef struct cgs_osp_s
 {
@@ -1161,12 +1245,23 @@ typedef struct cgs_osp_s
 	playerColors_t enemyColors;
 	playerColorsOverride_t enemyColorsOverride;
 	int lastHitTime;
+	int lastHitDamage;
 	struct
 	{
 		vec4_t color;
 		vec4_t actionColor;
+
+		vec4_t actionColorLow;
+		vec4_t actionColorMid;
+		vec4_t actionColorHigh;
+
 		vec4_t decorColor;
 		vec4_t decorActionColor;
+
+		vec4_t decorActionColorLow;
+		vec4_t decorActionColorMid;
+		vec4_t decorActionColorHigh;
+
 		int distance;
 	} crosshair;
 	struct
@@ -1205,6 +1300,7 @@ typedef struct
 	int             processedSnapshotNum;// the number of snapshots cgame has requested
 
 	qboolean        localServer;        // detected on startup by checking sv_running
+	qboolean        cheatsEnabled;      // detected on startup by checking sv_cheats
 
 	// parsed from serverinfo
 	gametype_t      gametype;
@@ -1274,10 +1370,14 @@ typedef struct
 	int acceptTask;
 	int acceptLeader;
 
+	sfxHandle_t     mySounds[MAX_CUSTOM_SOUNDS];
+	sfxHandle_t     teamSounds[MAX_CUSTOM_SOUNDS];
+	sfxHandle_t     enemySounds[MAX_CUSTOM_SOUNDS];
+
 	// media
 	cgMedia_t       media;
 	cgs_osp_t osp;
-	cgs_be_t be;
+	cgs_be_t  be;
 } cgs_t;
 
 //==============================================================================
@@ -1570,7 +1670,6 @@ extern vmCvar_t           cg_stackHitSounds;
 extern vmCvar_t           cg_stackHitSoundsTimeout;
 extern vmCvar_t           cg_drawCenterMessages;
 extern vmCvar_t           cg_predictStepOffset;
-extern vmCvar_t           cg_itemsRespawnAnimation;
 extern vmCvar_t         cg_enemyLightningColor;
 extern vmCvar_t         cg_uniqueColorTable;
 extern vmCvar_t             cg_noVoteBeep;
@@ -1600,19 +1699,63 @@ extern vmCvar_t         cg_gunPos;
 extern vmCvar_t         cg_altShadow;
 extern vmCvar_t         cg_altShadowColor;
 extern vmCvar_t         cg_scoreboardShowId;
-extern vmCvar_t     cg_teamIndicator;
-extern vmCvar_t     cg_teamIndicatorColor;
-extern vmCvar_t     cg_teamIndicatorOpaque;
-extern vmCvar_t     cg_teamIndicatorBgColor;
-extern vmCvar_t     cg_teamIndicatorBgOpaque;
-extern vmCvar_t     cg_teamIndicatorOffset;
-extern vmCvar_t     cg_teamIndicatorMaxLength;
-extern vmCvar_t     cg_teamIndicatorAdjust;
-extern vmCvar_t     cg_teamIndicatorFont;
-extern vmCvar_t     cg_scoreboardBE;
-extern vmCvar_t     cg_scoreboardFont;
-extern vmCvar_t     cg_centerMessagesFont;
-extern vmCvar_t     cg_railCustomChamber;
+extern vmCvar_t         cg_teamIndicator;
+extern vmCvar_t         cg_teamIndicatorColor;
+extern vmCvar_t         cg_teamIndicatorOpaque;
+extern vmCvar_t         cg_teamIndicatorBgColor;
+extern vmCvar_t         cg_teamIndicatorBgOpaque;
+extern vmCvar_t         cg_teamIndicatorOffset;
+extern vmCvar_t         cg_teamIndicatorMaxLength;
+extern vmCvar_t         cg_teamIndicatorAdjust;
+extern vmCvar_t         cg_teamIndicatorFont;
+extern vmCvar_t         cg_scoreboardBE;
+extern vmCvar_t         cg_scoreboardFont;
+extern vmCvar_t         cg_centerMessagesFont;
+extern vmCvar_t         cg_railCustomChamber;
+extern vmCvar_t         cg_altGrenadesColor;
+extern vmCvar_t         cg_enemyGrenadesColor;
+extern vmCvar_t         cg_altBattleSuit;
+extern vmCvar_t         cg_itemFx;
+extern vmCvar_t         cg_bubbleTrail;
+extern vmCvar_t         cg_ignoreServerMessages;
+extern vmCvar_t         cg_healthColor;
+extern vmCvar_t         cg_healthLowColor;
+extern vmCvar_t         cg_healthMidColor;
+extern vmCvar_t        cg_redTeamColor;
+extern vmCvar_t        cg_blueTeamColor;
+extern vmCvar_t        cg_friendHudMarkerMaxDist;
+extern vmCvar_t        cg_friendHudMarkerSize;
+extern vmCvar_t        cg_friendHudMarkerMaxScale;
+extern vmCvar_t        cg_friendHudMarkerMinScale;
+extern vmCvar_t        cg_drawHudMarkers;
+extern vmCvar_t        cg_friendsWallhack;
+extern vmCvar_t        cg_drawAccuracy;
+extern vmCvar_t        cg_accuracyFontSize;
+extern vmCvar_t        cg_accuracyIconSize;
+extern vmCvar_t         cg_accuracyFont;
+extern vmCvar_t        ch_crosshairActionColorLow;
+extern vmCvar_t        ch_crosshairActionColorMid;
+extern vmCvar_t        ch_crosshairActionColorHigh;
+extern vmCvar_t        ch_crosshairDecorActionColorLow;
+extern vmCvar_t        ch_crosshairDecorActionColorMid;
+extern vmCvar_t        ch_crosshairDecorActionColorHigh;
+extern vmCvar_t     cg_markTeam;
+extern vmCvar_t     cg_markTeamColor;
+extern vmCvar_t     cg_mySound;
+extern vmCvar_t     cg_teamSound;
+extern vmCvar_t     cg_enemySound;
+extern vmCvar_t     cg_scoreboardRtColors;
+extern vmCvar_t     cg_scoreboardBtColors;
+extern vmCvar_t     cg_scoreboardSpecColor;
+extern vmCvar_t     cg_scoreboardDrawPowerUps;
+extern vmCvar_t        cg_bestats_style;
+extern vmCvar_t        cg_bestats_textSize;
+extern vmCvar_t        cg_bestats_font;
+extern vmCvar_t        cg_bestats_pos;
+extern vmCvar_t         cg_bestats_bgColor;
+extern vmCvar_t         cg_bestats_bgOpaque;
+extern vmCvar_t         cg_bestats_spacingAdjust;
+extern vmCvar_t         cg_bestats_widthCutoff;
 extern vmCvar_t         be_run;
 
 
@@ -1707,6 +1850,7 @@ void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean corre
 void CG_FillRect(float x, float y, float width, float height, const float* color);
 void CG_DrawPicOld(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader);
+void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader);
 
 float CG_OSPDrawStringLength(const char* string, float ax, float aw, int proportional);
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth);
@@ -1720,6 +1864,10 @@ qboolean CG_FontAvailable(int index);
 int CG_FontIndexFromName(const char* name);
 
 qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y);
+void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor);
+void CG_OSPAdjustTeamColorBEStats(const vec4_t inColor, vec4_t outColor);
+
+
 
 #define OSP_TEXT_CMD_MAX 2048
 
@@ -1748,6 +1896,8 @@ void CG_CompiledTextDestroy(text_command_t* root);
 void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale, int colored);
 void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight, int direction, float speed, float gradientScale, int colored);
 
+extern vec4_t defaultBorderSize;
+extern vec4_t thicBorderSize;
 // flags for CG_DrawString
 enum
 {
@@ -1792,28 +1942,30 @@ int CG_OSPDrawStringOld(int x, int y, const char* str, int charWidth, int charHe
 qboolean CG_Hex16GetColor(const char* str, float* color);
 
 void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
+void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
 void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t color); // inner
 
 //
 // cg_draw.c
 //
-typedef struct
-{
-	int charHeight;
-	int charWidth;
-	int maxStringLen;
-	int hideBeforeRealtime;
-	int numberOfStrings;
-	int hideBeforeCGTime;
-	int timeAppearance;
-	int timeShow;
-	int timeHiding;
-	int showFromCGTime;
-	int windowPosX;
-	char string[24][128];
-	vec4_t borderColor;
-	vec4_t bodyColor;
-} OSP_SlidingPrintContext_t;
+// todel
+// typedef struct
+// {
+// 	int charHeight;
+// 	int charWidth;
+// 	int maxStringLen;
+// 	int hideBeforeRealtime;
+// 	int numberOfStrings;
+// 	int hideBeforeCGTime;
+// 	int timeAppearance;
+// 	int timeShow;
+// 	int timeHiding;
+// 	int showFromCGTime;
+// 	int windowPosX;
+// 	char string[24][128];
+// 	vec4_t borderColor;
+// 	vec4_t bodyColor;
+// } OSP_SlidingPrintContext_t;
 extern  int sortedTeamPlayers[TEAM_MAXOVERLAY];
 extern  int numSortedTeamPlayers;
 extern  int drawTeamOverlayModificationCount;
@@ -1821,7 +1973,7 @@ extern  char systemChat[256];
 extern  char teamChat1[256];
 extern  char teamChat2[256];
 extern  int frameTime;
-extern OSP_SlidingPrintContext_t ospPrintContext[16];
+// extern OSP_SlidingPrintContext_t ospPrintContext[16]; // todel
 extern const char* monthName[12];
 extern const char* dayOfWeekName[7];
 
@@ -1866,14 +2018,15 @@ void CG_DrawAmmoWarning(void);
 void CG_DrawReward(void);
 void CG_DrawWarmup(void);
 void CG_ScanForCrosshairEntity(void);
-void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context);
-int CG_OSPDrawLeftSlidingWindow(float arg0, float arg1, float arg2, float time3Sec, int numberOfLines, int sizeOfLine, int w, int h, char* text, int windowPosX, float* borderColor, float* bodyColor);
+// void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context);
+// int CG_OSPDrawLeftSlidingWindow(float arg0, float arg1, float arg2, float time3Sec, int numberOfLines, int sizeOfLine, int w, int h, char* text, int windowPosX, float* borderColor, float* bodyColor);
 void CG_OSPDrawIntermission(void);
 void CG_OSPDrawCenterString(void);
 void CG_OSPSetColor(vec4_t color);
 void CG_OSPDrawPic(float x, float y, float w, float h, qhandle_t hShader);
 void CG_OSPDraw3DModel(float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t pos, vec3_t angles, vec3_t angles2);
 void CG_DrawDamageFrame();
+void CG_DrawWeaponStatsWrapper(void);
 
 #define LAG_SAMPLES     1024
 #define MAX_LAGOMETER_PING  900
@@ -1890,16 +2043,6 @@ typedef struct
 
 extern lagometer_t     lagometer;
 
-// team indicator
-typedef struct
-{
-	vec4_t color;
-	vec4_t bgColor;
-
-} playerIndicator_t;
-
-extern playerIndicator_t playerIndicator;
-
 enum
 {
 	PI_NAME        = 1,
@@ -1909,7 +2052,6 @@ enum
 	PI_ICON      = 16
 };
 
-
 //
 // cg_player.c
 //
@@ -1918,6 +2060,7 @@ void CG_ResetPlayerEntity(centity_t* cent);
 void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int team);
 void CG_NewClientInfo(int clientNum);
 sfxHandle_t CG_CustomSound(int clientNum, const char* soundName);
+void CG_LoadForcedSounds(void);
 void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
 
@@ -2040,6 +2183,9 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
                                 qhandle_t hModel, qhandle_t shader, int msec,
                                 qboolean isSprite);
 
+void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle);
+
+
 //
 // cg_snapshot.c
 //
@@ -2060,8 +2206,20 @@ void CG_DrawInformation(void);
 qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
 void CG_OSPShowStatsInfo(void);
+void CG_BEStatsShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
+
+extern vec4_t scoreboard_rtColor;
+extern vec4_t scoreboard_btColor;
+extern qboolean isCustomScoreboardColorIsSet_rt;
+extern qboolean isCustomScoreboardColorIsSet_bt;
+extern qboolean isCustomScoreboardColorIsSet_spec;
+extern vec4_t scoreboard_rtColorBody;
+extern vec4_t scoreboard_btColorBody;
+extern vec4_t scoreboard_rtColorTitle;
+extern vec4_t scoreboard_btColorTitle;
+extern vec4_t scoreboard_specColor;
 
 //
 // cg_consolecmds.c
@@ -2086,12 +2244,15 @@ void CG_RemoveChatEscapeChar(char* text);
 void CG_RemoveChatEscapeCharAll(char* text);
 void CG_StringMakeEscapeCharRAW(const char* in, char* out, int max);
 
+void CG_MaybeRequestStatsInfo(void);
 //
 // cg_playerstate.c
 //
 void CG_Respawn(void);
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
+qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum);
+
 
 //
 // cg_customloc.c
@@ -2104,6 +2265,17 @@ qboolean CG_CustomLocationsTeamChatCode(const char* str, vec3_t cloc, char** clo
 void CG_CustomLocationsAddEntry(vec3_t pos, const char* str);
 void CG_InitCTFLocations(void);
 const char* CG_GetCTFLocation(int loc);
+
+
+//
+//cg_be_util.c
+//
+qboolean CG_BE_Timer(int msec);
+
+//
+//cg_be_stats
+//
+void CG_BEStatsResetInit(void);
 
 //
 //cg_cvardescriptions.c
@@ -2118,6 +2290,16 @@ void CG_RegisterCvarDescriptions(void);
 
 // print message on the local console
 void        trap_Print(const char* fmt);
+
+#ifndef Q3_VM
+
+// Special functions to call from native VM. Fixes segmentation fault in Q3E.
+
+// Use them as wrappers, pass acquired function address to `cmd` to make actual call.
+int     trap_CG_GetValue_Q3E(int cmd, char* value, int valueSize, const char* key);
+int     trap_CG_SetDescription_Q3E(int cmd, const char* name, const char* description);
+
+#endif
 
 // abort the game
 void        trap_Error(const char* fmt);
@@ -2318,7 +2500,8 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.082" // BE
+#define OSP_VERSION "be-0.91x" // BE
+
 
 
 
@@ -2390,6 +2573,7 @@ void CG_OSPConfigCustomClient2Set(int value);
 void CG_OSPConfigModeSet(int value);
 void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigXHitBoxSet(int value);
+void CG_OSPConfigDisableBEFeatures(int value);
 
 qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsFollowing(void);
@@ -2565,7 +2749,25 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart);
-
+void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_healthColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
+// void CG_LocalEventCvarChanged_cg_friendsWallhack(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

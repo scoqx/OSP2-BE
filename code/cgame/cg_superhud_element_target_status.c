@@ -47,15 +47,26 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 	{
 		if (ci->team != TEAM_FREE && ci->team == cg.snap->ps.persistant[PERS_TEAM] && ch_TeamCrosshairHealth.integer != 0 && !(cg.snap->ps.pm_flags & PMF_FOLLOW))
 		{
-			char color;
-			CG_GetColorForHealth(ci->health, ci->armor, NULL, &color);
-			Com_sprintf(s, 1024, "^5[^%c%i/%i^5]", color, ci->health, ci->armor);
+			vec4_t hcolor;
+			char s[1024];
+
+			CG_GetColorForHealth(ci->health, ci->armor, hcolor, NULL);
+
+			Com_sprintf(s, sizeof(s), "[%i/%i]", ci->health, ci->armor);
 
 			element->ctx.text = s;
-			CG_SHUDTextPrint(&element->config, &element->ctx);
+
+			VectorCopy(hcolor, element->ctx.color);
+			if (element->config.color.isSet)
+			{
+				element->ctx.color[3] = element->config.color.value.rgba[3];
+			}
+			CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);
+
 			element->ctx.text = NULL;
 		}
 	}
+
 }
 
 void CG_SHUDElementTargetStatusDestroy(void* context)

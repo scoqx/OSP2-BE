@@ -59,6 +59,12 @@ extern "C" {
 #pragma warning(disable : 4220)     // varargs matches remaining parameters
 #endif
 
+#if ((__GNUC__ >= 3) && (!__EMX__) && (!sun))
+#define Q_EXPORT __attribute__((visibility("default")))
+#else
+#define Q_EXPORT
+#endif
+
 /**********************************************************************
   VM Considerations
 
@@ -610,6 +616,9 @@ extern  vec4_t      colorWhite;
 extern  vec4_t      colorLtGrey;
 extern  vec4_t      colorMdGrey;
 extern  vec4_t      colorDkGrey;
+extern  vec4_t      colorOrange;
+extern  vec4_t      colorPink;
+
 
 #define Q_COLOR_ESCAPE  '^'
 #define Q_IsColorString(p)  ( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE )
@@ -970,6 +979,7 @@ int Q_PrintStrlen(const char* string);
 // removes color sequences from string
 char* Q_CleanStr(char* string);
 
+char *Q_strtok(char *s, const char *delim);
 //=============================================
 
 // 64-bit integers for global rankings interface

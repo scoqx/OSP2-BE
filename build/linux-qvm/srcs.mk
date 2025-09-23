@@ -42,13 +42,13 @@ CG_SRC = \
  cg_superhud_element_team \
  cg_superhud_element_weaponlist \
  cg_superhud_element_obituaries \
- cg_superhud_element_warmupinfo cg_superhud_element_gametype cg_superhud_element_location\
+ cg_superhud_element_warmupinfo cg_superhud_element_gametype cg_superhud_element_location \
  cg_superhud_element_tempAcc \
- cg_superhud_element_weapon_stats \
- cg_superhud_element_player_stats \
+ cg_superhud_element_weapon_stats cg_superhud_element_player_stats cg_superhud_element_player_name \
  cg_superhud_element_grid \
  l_crc \
- cg_chatfilter cg_crosshair\
+ cg_chatfilter cg_crosshair \
+ cg_be_util cg_be_stats \
 
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \

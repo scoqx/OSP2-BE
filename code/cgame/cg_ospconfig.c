@@ -131,11 +131,12 @@ void CG_OSPCvarsRestrictValues(void)
 		return;
 	}
 
-	if (r_fullbright.integer)
-	{
-		trap_Cvar_Set("r_fullbright", "0");
-		changed = qtrue;
-	}
+	// why blocked?
+	// if (r_fullbright.integer)
+	// {
+	//  trap_Cvar_Set("r_fullbright", "0");
+	//  changed = qtrue;
+	// }
 
 	if (r_lodCurveError.integer != 250)
 	{
@@ -243,16 +244,19 @@ void CG_OSPConfigXHitBoxSet(int value)
 	{
 		value = 0;
 	}
-	// ignore x_hck if cheats are enabled
-	cheatsStr = Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "sv_cheats");
-	if (cheatsStr[0] == '1')
+	// ignore x_hck if cheats are enabled/server is local
+	if (cgs.cheatsEnabled || cgs.localServer)
 	{
 		value = 1;
 	}
 	cgs.osp.serverConfigXHitBox = value;
 }
 
-
+// Disable be features
+void CG_OSPConfigDisableBEFeatures(int value)
+{
+	cgs.be.disableFeatures = value;
+}
 /*
  * Unknown cs 0x368
  */

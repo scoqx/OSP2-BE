@@ -312,10 +312,13 @@ void CG_SHUDRoutine(void)
 	const qboolean is_scores = cg.showScores;
 
 	CG_DrawCrosshair();
-	CG_DrawDamageFrame();
 	if (CG_DrawIntermission() == 0)
 	{
 		CG_OSPDrawCenterString();
+	}
+	if (cgs.be.newStats.drawWindow)
+	{
+		CG_BEStatsShowStatsInfo();
 	}
 
 	while (last)
