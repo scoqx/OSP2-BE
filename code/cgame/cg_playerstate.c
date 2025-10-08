@@ -66,6 +66,7 @@ void CG_CheckAmmo(void)
 
 	static int prevWeaponState = WEAPON_READY;
 	static int prevAmmo = 0;
+static int prevTotal = 0;
 
 	if (cg.snap->ps.weapon == WP_NONE || !cg_drawAmmoWarning.integer)
 	{
@@ -93,10 +94,12 @@ void CG_CheckAmmo(void)
 
 	if (cg_drawAmmoWarning.integer == 1)
 	{
-		threshold = lowAmmoThresholds[weapon];
-		currentWarning = 0;
-
-		if (ammo == 0)
+	threshold = lowAmmoThresholds[weapon];
+	if (ammo > prevAmmo) {
+		cg.lowAmmoWarning = 0;
+		lowAmmoWarningPrev[weapon] = 0;
+	}
+	currentWarning = 0;		if (ammo == 0)
 			currentWarning = 2;
 		else if (threshold > 0 && ammo <= threshold)
 			currentWarning = 1;
@@ -151,6 +154,7 @@ void CG_CheckAmmo(void)
 			}
 		}
 
+		if (total > prevTotal) cg.lowAmmoWarning = 0;
 		previous = cg.lowAmmoWarning;
 
 		if (total == 0)
@@ -167,6 +171,7 @@ void CG_CheckAmmo(void)
 			trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
 		}
 
+		prevTotal = total;
 		return;
 	}
 
@@ -523,9 +528,11 @@ void CG_HitDamage(playerState_t* ps, playerState_t* ops)
 {
 	int atta, hits, damage;
 
-	// vrode pohuy
-	// if (!(OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED()) || !(cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE) || !(cgs.osp.server_mode == OSP_SERVER_MODE_CQ3))
-	// return;
+	// // Early return if damage info is not allowed and not in promode/cq3
+	// if (!(BE_IsDamageInfoAllowed()) && !(cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE) && !(cgs.osp.server_mode == OSP_SERVER_MODE_CQ3))
+	// {
+	// 	return;
+	// }
 
 	hits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
 	if (hits < 0)
@@ -591,7 +598,7 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 			return;
 		}
 
-		if ((CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO)) && (cg_stackHitSounds.integer && deltaTime < cg_stackHitSoundsTimeout.integer))
+		if ((BE_IsDamageInfoAllowed()) && (cg_stackHitSounds.integer && deltaTime < cg_stackHitSoundsTimeout.integer))
 		{
 			stackedDmg += damage;
 			damage = stackedDmg + delayedDmg;
@@ -608,7 +615,7 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		//damage = ops->powerups[PW_QUAD] ? 26 : damage; // for a homogeneous sound with quad
 
 		
-		if (((CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO))
+		if (((BE_IsDamageInfoAllowed())
 		        && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
 		{
 			int index;

@@ -1,0 +1,114 @@
+---
+description: C89 coding standards and rules
+globs: ["**/*.c", "**/*.h"]
+alwaysApply: true
+---
+
+# C89 Coding Standards
+
+This project follows strict C89 (ANSI C) standards. All code must be compatible with C89 compilers.
+
+## Key C89 Requirements
+
+### 1. Variable Declarations
+- **ALL variables MUST be declared at the beginning of each block (function, compound statement)**
+- Variables cannot be declared anywhere in the code like in C99+
+- Example:
+```c
+void function() {
+    int i;           // ✓ Correct - at beginning
+    int j;           // ✓ Correct - at beginning
+    char buffer[100]; // ✓ Correct - at beginning
+    qboolean lol;
+
+    for (i = 0; i < 10; i++) {
+        int temp;    // ✓ Correct - at beginning of block
+        // ... code ...
+    }
+    if (lol){
+        int x; // ✓ Correct - at beginning of block
+        // ... code ...
+    }
+    // int x = 5;    // ✗ WRONG - not at beginning
+}
+```
+
+### 2. Function Declarations
+- All functions must be declared before use
+- Use function prototypes in header files
+- Example:
+```c
+// In header file
+int calculate_sum(int a, int b);
+
+// In source file
+int calculate_sum(int a, int b) {
+    int result;  // ✓ Declared at beginning
+    result = a + b;
+    return result;
+}
+```
+
+### 3. Comments (Both working)
+- Use `/* */` style comments
+- `//` single-line comments are allowed in C89
+- Example:
+```c
+/* This is correct C89 comment */
+/* Multi-line
+   comment is also correct */
+
+// This is correct also
+```
+
+### 4. Mixed Declarations and Code
+- **FORBIDDEN**: Mixing variable declarations with executable statements
+- All declarations must come before any executable code in each block
+
+### 5. Loop Variable Declarations
+- Loop variables must be declared at the beginning of the function, not in the for statement
+- Example:
+```c
+void example() {
+    int i;  // ✓ Declare loop variable here
+    
+    for (i = 0; i < 10; i++) {
+        // ... code ...
+    }
+    
+    // for (int i = 0; i < 10; i++)  // ✗ WRONG - C99+ syntax
+}
+```
+
+### 6. Block Scope
+- Variables declared in compound statements (blocks) are only visible within that block
+- Example:
+```c
+void function() {
+    int outer_var;  // ✓ Visible in entire function
+    
+    {
+        int inner_var;  // ✓ Only visible in this block
+        // outer_var is also visible here
+    }
+    
+    // inner_var is NOT visible here
+}
+```
+
+## Code Style Guidelines
+
+1. **Indentation**: Use 4 spaces for indentation
+2. **Braces**: Use K&R style braces
+3. **Naming**: Use descriptive names, avoid abbreviations
+4. **Constants**: Use `#define` for constants, not `const` (C89 doesn't guarantee const optimization)
+
+## Common Mistakes to Avoid
+
+- Declaring variables in the middle of functions
+- Declaring loop variables in for statements
+- Using C99+ features like mixed declarations
+
+## Enforcement
+
+All code must compile with C89-compliant compilers. Code that violates these rules will be rejected.

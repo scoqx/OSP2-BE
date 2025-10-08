@@ -586,3 +586,84 @@ powerups/battleWeaponNew
 		blendfunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
 	}
 }
+
+icons/score
+{
+    {
+        map icons/score.tga
+        blendfunc blend
+        rgbgen vertex   
+    }
+}
+
+icons/star
+{
+	{
+		map icons/star.tga
+		blendfunc blend
+		rgbgen vertex   
+	}
+}
+
+icons/eye
+{
+	{
+		map icons/eye.tga
+		blendfunc blend
+		rgbgen vertex   
+	}
+}
+
+icons/signal
+{
+	{
+		map icons/signal.tga
+		blendfunc blend
+		rgbgen vertex   
+	}
+}
+
+icons/noSignal
+{
+	{
+		map icons/noSignal.tga
+		blendfunc blend
+		rgbgen vertex   
+	}
+}
+
+icons/exclamation
+{
+	{
+		map icons/exclamation.tga
+		blendfunc blend
+		rgbgen vertex   
+	}
+}
+
+icons/clock
+{
+	{
+		map icons/clock.tga
+		blendfunc blend
+		rgbgen vertex   
+	}
+}
+
+icons/leaderboard
+{
+	{
+		map icons/leaderboard.tga
+		blendfunc blend
+		rgbgen vertex   
+	}
+}
+
+icons/ready
+{
+	{
+		map icons/ready.tga
+		blendfunc blend
+		rgbgen vertex   
+	}
+}

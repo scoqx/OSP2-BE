@@ -110,8 +110,8 @@ static void Zone_Stats( const char *name, const memzone_t *z, qboolean printDeta
 	for ( block = zone->blocklist.next ; ; ) {
 		if ( printDetails ) {
 			int tag = block->tag;
-			Com_Printf( "block:%p  size:%8i  tag: %s\n", (void *)block, block->size,
-				(unsigned)tag < TAG_COUNT ? tagName[ tag ] : va( "%i", tag ) );
+			// Com_Printf( "block:%p  size:%8i  tag: %s\n", (void *)block, block->size,
+			// 	(unsigned)tag < TAG_COUNT ? tagName[ tag ] : va( "%i", tag ) );
 		}
 		if ( block->tag != TAG_FREE ) {
 			st.zoneBytes += block->size;

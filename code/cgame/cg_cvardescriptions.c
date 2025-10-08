@@ -215,6 +215,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_spectOrigModel", "Use the original player model in spectator mode. Set ^20^7 to use forced model" },
 	{ "cg_hitSounds", "Varying pitch of the hitsound based on damage\n ^2-1^7 - sound off\n  ^20^7 - pitch doesn't change\n  ^21^7 - the higher the damage, the lower the pitch\n  ^22^7 - the higher the damage, the higher the pitch" },
 	{ "cg_playersXID", "Add XID based on player's configuration to their nickname. Requires ^3vid_restart^7\n  ^20^7 - off\n  ^21^7 - always add\n  ^22^7 - add only for duplicate or empty nicknames." },
+	{ "cg_playersID", "Add client number in square brackets to player's nickname. Requires ^3vid_restart^7\n  ^20^7 - off\n  ^21^7 - always add [clientNum] before name\n  ^22^7 - add only for duplicate or empty nicknames" },
 	{ "cg_playerModelColors", "Set your player model(/pm) colors. Set 3 Colors in a row. Order: Head Body Legs.\nExample: \"^2444^7\", \"^2qqq^7\", or use ^2hex^7." },
 	{ "cg_playerRailColors", "Set your rail colors. Write 2 colors in a row. Order: Core Rings.\nExample: \"^266^7\", \"^2990099999999^7\"" },
 	{ "cg_playerFrozenColor", "Set your frozen color.\n  \"^2color^7\" - color name, digit or hex" },
@@ -297,7 +298,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_altShadowColor", "Color of the ^3cg_altShadow^7.\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_scoreboardShowId", "Display player IDs on the scoreboard. Set ^20^7 to hide." },
 	{ "cg_drawFriend", "Show marker above teammate:\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - frozenFoe only" },
-	{ "cg_teamIndicator", "Draw player indicator over ally. Set ^20^7 to disable.\nBitmask:\n  ^21^7 - name\n  ^22^7 - name without effects, set color using ^3cg_teamIndicatorColor^7\n  ^24^7 - health and armor\n  ^28^7 - frozen player info\n  ^216^7 - status icon\n  ^232^7 - spectator mode" },
+	{ "cg_teamIndicator", "Draw player indicator over ally. Set ^20^7 to disable.\nBitmask:\n  ^21^7 - name\n  ^22^7 - name without effects, set color using ^3cg_teamIndicatorColor^7\n  ^24^7 - HP and AP\n  ^28^7 - frozen info\n  ^216^7 - status icon\n  ^232^7 - spectator mode" },
 	{ "cg_teamIndicatorAdjust", "Font scaling for the indicator\n  ^20.5^7 - ^22^7" },
 	{ "cg_teamIndicatorColor", "Indicator text color. For ^3cg_teamIndicator ^22^7\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_teamIndicatorOpaque", "Text opacity\n  ^20^7 - ^21^7" },
@@ -308,6 +309,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamIndicatorFont", "Font selection for team indicator\n  ^20^7 - ^210^7" },
 	{ "cg_scoreboardBE", "Enable alternative OSP scoreboard. Set 20^7 to use default scoreboard.\n ^21^7 - proportional font\n  ^22^7 - old style team scores\n  ^24^7 - white colored titles\n  ^28^7 - team colored titles" },
 	{ "cg_scoreboardFont", "Font selection for alternative scoreboard\n  ^20^7 - ^210^7" },
+	{ "cg_scoreboardScale", "Scale factor for the scoreboard size. ^21.0^7 - default size, higher values make it larger." },
 	{ "cg_centerMessagesFont", "Font selection for center messages\n  ^20^7 - ^210^7" },
 	{ "cg_drawCrosshairNames", "Display names when crosshair is on target\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - only allies\n  ^23^7 - only enemies" },
 	{ "cg_railCustomChamber", "Colorize rail chamber using custom colors. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - reloading using core color\n  ^22^7 - ready to fire using rings color" },
@@ -360,6 +362,10 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamIndicatorFade", " Ally indicator transparency level when aiming at a teammate. Set ^20^7 to disable." },
 	{ "cg_teamIndicatorFadeRadius", "Radius at which the ally indicator starts fading." },
 	{ "be_enabled", "Enable BE features. Set ^30^7 to disable." },
+	{ "cg_chud", "Enable CherryHUD system. Set ^20^7 to disable CherryHUD." },
+	{ "chud_file", "CherryHUD configuration file name. File must be in the 'chud' directory.\n  \"^2filename^7\"" },
+	{ "cg_clearOnLevelLoad", "Clear console when loading a new level. Set ^20^7 to disable." },
+	{ "cg_playersID", "Add client number to player's nickname. Requires ^3vid_restart^7\n  ^20^7 - off\n  ^21^7 - always add [clientNum] before name\n  ^22^7 - add only for duplicate or empty nicknames" },
 };
 
 

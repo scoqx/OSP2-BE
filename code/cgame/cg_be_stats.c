@@ -268,7 +268,6 @@ qhandle_t CG_BEStatsResolveMediaHandle(const char* mediaPath)
 
 		if (strcmp(fieldName, "whiteShader") == 0) return cgs.media.whiteShader;
 
-		Com_Printf("^1Unknown cgs.media field: %s\n", fieldName);
 		return 0;
 	}
 
@@ -286,13 +285,11 @@ qhandle_t CG_BEStatsResolveMediaHandle(const char* mediaPath)
 
 		if (*p != ']' || Q_strncmp(p + 1, ".weaponIcon", 11) != 0)
 		{
-			Com_Printf("^1Invalid cg_weapons field: %s\n", mediaPath);
 			return 0;
 		}
 
 		if (index < 0 || index >= WP_NUM_WEAPONS)
 		{
-			Com_Printf("^1cg_weapons index out of range: %d\n", index);
 			return 0;
 		}
 

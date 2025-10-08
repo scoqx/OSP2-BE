@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 #include "cg_superhud.h"
+#include "cg_cherryhud.h"
 
 int sortedTeamPlayers[TEAM_MAXOVERLAY];
 int numSortedTeamPlayers;
@@ -1964,6 +1965,7 @@ CG_DrawIntermission
 */
 qboolean CG_DrawIntermission(void)
 {
+	
 	if (cg_q3compScoreboard.integer)
 	{
 		if (cgs.gametype >= GT_TEAM)
@@ -2978,23 +2980,29 @@ static void CG_Draw2D(void)
 		CG_DrawTestFont(cgs.osp.testFont);
 		return;
 	}
-
 	if (cgs.be.showCredits)
 	{
 		CG_OSPDrawNewCredits();
 		return;
 	}
-
 	if (cg_shud.integer)
 	{
 		CG_SHUDRoutine();
 		CG_DrawWarmupShud();
+		if (cg_chud.integer)
+		{
+			CG_CHUDRoutine();
+		}
 		return;
 	}
 
 	if (cg_enableOSPHUD.integer)
 	{
 		CG_OSPHUDRoutine();
+		if (cg_chud.integer)
+		{
+			CG_CHUDRoutine();
+		}
 		return;
 	}
 

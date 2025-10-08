@@ -31,11 +31,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 extern "C" {
 #endif
 
-#define NYAN_POINT()      CG_Printf( "%s:%d: DEBUG point reached\n", __FILE__, __LINE__)
-#define NYAN_INT(VALUE)   CG_Printf( "%s:%d: %s = %i\n", __FILE__, __LINE__, #VALUE, (int)VALUE)
-#define NYAN_FLOAT(VALUE) CG_Printf( "%s:%d: %s = %f\n", __FILE__, __LINE__, #VALUE, (float)VALUE)
-#define NYAN_VEC4(VALUE) CG_Printf( "%s:%d: %s = %f,%f,%f,%f\n", __FILE__, __LINE__, #VALUE, VALUE[0], VALUE[1], VALUE[2], VALUE[3])
-#define NYAN_MSG(VALUE)   CG_Printf( "%s:%d: %s\n", __FILE__, __LINE__, VALUE)
 
 
 // The entire cgame module is unloaded and reloaded on each level change,
@@ -384,7 +379,7 @@ typedef struct
 	char            modelName[MAX_QPATH];
 	char            skinName[MAX_QPATH];
 	qboolean        isPmSkin;
-	qboolean    isFbSkin;
+	qboolean        isFbSkin;
 	char            headModelName[MAX_QPATH];
 	char            headSkinName[MAX_QPATH];
 	char            redTeam[MAX_TEAMNAME];
@@ -583,6 +578,7 @@ typedef struct
 	// scoreboard
 	int         scoresRequestTime;
 	int         statsRequestTime;
+	int		 	statsAllRequestTime;
 	int         numScores;
 	int         selectedScore;
 	int         teamScores[2];
@@ -835,7 +831,7 @@ typedef struct
 	qhandle_t   shadowMarkShader;
 	qhandle_t   shadowMarkShaderNew[MAX_ALT_SHADERS];
 
-	qhandle_t   botSkillShaders[5];
+	qhandle_t   botSkillShaders[6];
 
 	// wall mark shaders
 	qhandle_t   wakeMarkShader;
@@ -919,6 +915,20 @@ typedef struct
 	qhandle_t   scoreboardPing;
 	qhandle_t   scoreboardScore;
 	qhandle_t   scoreboardTime;
+
+	// BE scoreboard
+	qhandle_t   scoreboardBEScore;
+	qhandle_t   scoreboardBEStar;
+	qhandle_t   scoreboardBEEye;
+	qhandle_t   scoreboardBESignal;
+	qhandle_t   scoreboardBENoSignal;
+	qhandle_t   scoreboardBEExclamation;
+	qhandle_t   scoreboardBEClock;
+	qhandle_t   scoreboardBELeaderboard;
+	qhandle_t   scoreboardBEReady;
+
+
+
 
 	// medals shown during gameplay
 	qhandle_t   medalImpressive;
@@ -1127,18 +1137,38 @@ typedef struct
 	float bgOpaque;
 } globalBeStatsSettings_t;
 
+typedef struct 
+{
+	// == text colors ==
+	vec4_t title;
+	// == bg colors ==
+	vec4_t headerBg;
+	vec4_t bodyBg;
+} scoreboardColors_t;
+
 typedef struct
 {
+	vec2_t textSize;
+	// == colors ==
+	scoreboardColors_t ffaColors;
+	scoreboardColors_t redColors;
+	scoreboardColors_t blueColors;
+	scoreboardColors_t specColors;
+} globalBeScoreBoardSettings_t;
+
+typedef struct
+{
+	qboolean infoValid;
 	float kdratio;
 	float efficiency;
-	float dmgGiven;
-	float dmgReceived;
+	int dmgGiven;
+	int dmgReceived;
 	float teamDamage;
 	float damageRatio;
 	float lastAccuracy;
 
-	int score;
-	int kills, deaths, suicides, teamKills;
+	int score, suicides, teamKills; // statsinfo only
+	int kills, deaths;
 	int wins, losses;
 	int caps, assists, defences, returns;
 	int flagTime;
@@ -1187,8 +1217,10 @@ typedef struct cgs_be_s
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
 	globalBeStatsSettings_t settings;
+	globalBeScoreBoardSettings_t sbSettings;
 	qboolean supportedServer;
 	int followingMe;
+	qboolean showScores;
 } cgs_be_t;
 
 #define BE_ENABLED 				be_enabled.integer
@@ -1300,6 +1332,11 @@ typedef struct cgs_osp_s
 		qboolean forceChat;
 		qboolean key[4];
 	} shud;
+	struct
+	{
+		qboolean key[4];
+		qboolean scoreboard;
+	} chud;
 } cgs_osp_t;
 
 
@@ -1658,6 +1695,7 @@ extern vmCvar_t           cg_spectGlow;
 extern vmCvar_t           cg_spectOrigModel;
 extern vmCvar_t           cg_hitSounds;
 extern vmCvar_t           cg_playersXID;
+extern vmCvar_t           cg_playersID;
 
 extern vmCvar_t           cg_chatEnable;
 extern vmCvar_t           cg_shudChatEnable;
@@ -1791,6 +1829,13 @@ extern vmCvar_t         cg_teamIndicatorFade;
 extern vmCvar_t         cg_teamIndicatorFadeRadius;
 extern vmCvar_t         be_features;
 extern vmCvar_t         be_enabled;
+extern vmCvar_t         chud_file;
+extern vmCvar_t         cg_chud;
+extern vmCvar_t         cg_scoreboardTextSize;
+extern vmCvar_t         cg_scoreboardScale;
+extern vmCvar_t		 	cg_scoreboardWidth;
+extern vmCvar_t         cg_scoreboardColors;
+extern vmCvar_t         cg_clearOnLevelLoad;
 extern vmCvar_t         be_run;
 
 
@@ -1825,6 +1870,10 @@ void CG_UpdateCvars(void);
 
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);
+int CG_CountRealClients(void);
+void CG_CHUDLoadConfig(void);
+void CG_BEParseXStatsToStatsAll(void);
+void CG_SHUDEventTempAccuracy(int weapon, float accuracy);
 void CG_LoadMenus(const char* menuFile);
 void CG_KeyEvent(int key, qboolean down);
 void CG_MouseEvent(int x, int y);
@@ -1842,6 +1891,7 @@ void CG_CvarResetToDefault(const char* name);
 qhandle_t CG_GetFragSound(void);
 
 void CG_PrintNewCommandsBE_f(void);
+void CG_CHUDMemoryDebug_f(void);
 //
 // cg_view.c
 //
@@ -2222,21 +2272,27 @@ void CG_BEStatsShowStatsInfo(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
 
+
+extern int customScoreboardColorIsSet;
+extern vec4_t scoreboard_colorBody;
+extern vec4_t scoreboard_colorHeader;
+
 extern vec4_t scoreboard_rtColor;
-extern vec4_t scoreboard_btColor;
-
 extern int customScoreboardColorIsSet_red;
-extern int customScoreboardColorIsSet_blue;
-extern int customScoreboardColorIsSet_spec;
-
 extern vec4_t scoreboard_rtColorBody;
-extern vec4_t scoreboard_btColorBody;
 extern vec4_t scoreboard_rtColorHeader;
-extern vec4_t scoreboard_btColorHeader;
 extern vec4_t scoreboard_rtColorTitle;
+
+extern vec4_t scoreboard_btColor;
+extern int customScoreboardColorIsSet_blue;
+extern vec4_t scoreboard_btColorBody;
+extern vec4_t scoreboard_btColorHeader;
 extern vec4_t scoreboard_btColorTitle;
+
+extern int customScoreboardColorIsSet_spec;
 extern vec4_t scoreboard_specColorTitle;
 extern vec4_t scoreboard_specColor;
+
 
 //
 // cg_consolecmds.c
@@ -2286,8 +2342,9 @@ const char* CG_GetCTFLocation(int loc);
 //
 //cg_be_util.c
 //
-qboolean CG_BE_Timer(int msec);
 void CG_UpdateBeFeatures(void);
+void cg_printsa_f(void);
+void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2);
 
 //
 //cg_be_stats
@@ -2517,7 +2574,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-0.95" // BE
+#define OSP_VERSION "be-1.00-beta" // BE
 
 
 
@@ -2569,6 +2626,9 @@ extern int statsInfo[24];
 #define OSP_CUSTOM_CLIENT_2_IS_OPTION_ENABLED(BIT) (cgs.osp.custom_client_2 & BIT)
 #define OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED() OSP_CUSTOM_CLIENT_2_IS_OPTION_ENABLED(OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO)
 
+// Damage info permission check - allows if either BE_FEATURE_ENABLED or OSP_CUSTOM_CLIENT_2 allows it
+qboolean BE_IsDamageInfoAllowed(void);
+
 void CG_OSPCvarsRestrictValues(void);
 qboolean CG_OSPIsGameTypeCA(int gametype);
 qboolean CG_OSPIsGameTypeFreeze(void);
@@ -2592,7 +2652,7 @@ void CG_OSPConfigXHitBoxSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
 void CG_OSPSupportedBEServer(qboolean value);
 qboolean BE_isSupportedServer(void);
-void BE_PrintDisabledFeatures(qboolean request);
+void CG_PrintDisabledFeatures(qboolean request);
 
 qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsFollowing(void);
@@ -2787,6 +2847,8 @@ void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_chud_file(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

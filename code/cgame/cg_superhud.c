@@ -309,7 +309,7 @@ void CG_SHUDRoutine(void)
 	const qboolean is_intermission = cg.predictedPlayerState.pm_type == PM_INTERMISSION;
 	const qboolean is_team_game = cgs.gametype >= GT_TEAM;
 	const qboolean is_spectator = CG_IsSpectatorOnScreen();
-	const qboolean is_scores = cg.showScores;
+	const qboolean is_scores = cg.showScores || cgs.osp.chud.scoreboard ? qtrue : qfalse;
 	const qboolean is_gt_ffa = cgs.gametype == GT_FFA;
 	const qboolean is_gt_tourney = cgs.gametype == GT_TOURNAMENT;
 	const qboolean is_gt_tdm = CG_OSPIsGameTypeTDM();

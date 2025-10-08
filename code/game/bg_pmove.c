@@ -1630,6 +1630,12 @@ static void PM_Footsteps(void)
 		if (pm->waterlevel > 1)
 		{
 			PM_ContinueLegsAnim(LEGS_SWIM);
+		}		
+		// if crouching in air, use crouch animation
+		// Works only on the LOCAL client model. For other clients in cg_players.c
+		if (pm->ps->pm_flags & PMF_DUCKED)
+		{
+			PM_ContinueLegsAnim(LEGS_IDLECR);
 		}
 		return;
 	}

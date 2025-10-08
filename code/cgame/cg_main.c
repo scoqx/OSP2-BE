@@ -300,6 +300,7 @@ vmCvar_t           cg_hitSounds;
 
 vmCvar_t           ch_file;
 vmCvar_t           cg_playersXID;
+vmCvar_t           cg_playersID;
 
 vmCvar_t           cg_chatEnable;
 vmCvar_t           cg_shudChatEnable;
@@ -462,6 +463,13 @@ vmCvar_t        cg_teamIndicatorFade;
 vmCvar_t        cg_teamIndicatorFadeRadius;
 vmCvar_t        be_features;
 vmCvar_t        be_enabled;
+vmCvar_t        chud_file;
+vmCvar_t        cg_chud;
+vmCvar_t		cg_scoreboardTextSize;
+vmCvar_t        cg_scoreboardScale;
+vmCvar_t        cg_scoreboardWidth;
+vmCvar_t        cg_scoreboardColors;
+vmCvar_t        cg_clearOnLevelLoad;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -680,6 +688,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_spectOrigModel, "cg_spectOrigModel", "0", CVAR_ARCHIVE },
 	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitSounds },
 	{ &cg_playersXID, "cg_playersXID", "0", CVAR_ARCHIVE},
+	{ &cg_playersID, "cg_playersID", "0", CVAR_ARCHIVE},
 
 	{ &cg_playerModelColors, "cg_playerModelColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerModelColors},
 	{ &cg_playerRailColors,  "cg_playerRailColors", "",  CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerRailColors},
@@ -834,8 +843,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "128", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &be_features, "be_features", "", CVAR_USERINFO | CVAR_ROM  },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
-	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
-};
+	{ &chud_file, "chud_file", "default.cfg", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_chud_file },
+	{ &cg_chud, "cg_chud", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chud },
+	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &be_run, "be_run", "1", CVAR_ARCHIVE },
+	};
 
 #define CG_VARS_HASH_SIZE 512
 
@@ -1382,6 +1394,8 @@ static void CG_RegisterGraphics(void)
 	cgs.media.botSkillShaders[2] = trap_R_RegisterShader("menu/art/skill3.tga");
 	cgs.media.botSkillShaders[3] = trap_R_RegisterShader("menu/art/skill4.tga");
 	cgs.media.botSkillShaders[4] = trap_R_RegisterShader("menu/art/skill5.tga");
+	cgs.media.botSkillShaders[5] = trap_R_RegisterShader("menu/art/skill6.tga");
+
 
 	cgs.media.viewBloodShader = trap_R_RegisterShader("viewBloodBlend");
 	cgs.media.damageIndicatorCenter = trap_R_RegisterShaderNoMip("damageIndicator2");
@@ -1675,6 +1689,20 @@ static void CG_RegisterGraphics(void)
 	    (cg_teamOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
 	    (cg_teamOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
 	    trap_R_RegisterShader("outlineMedium");
+
+	// BE New Scoreboard
+	cgs.media.scoreboardBEScore = trap_R_RegisterShaderNoMip("icons/score");
+	cgs.media.scoreboardBEStar = trap_R_RegisterShaderNoMip("icons/star");
+	cgs.media.scoreboardBEEye = trap_R_RegisterShaderNoMip("icons/eye");
+	cgs.media.scoreboardBEExclamation = trap_R_RegisterShaderNoMip("icons/exclamation");
+	cgs.media.scoreboardBESignal = trap_R_RegisterShaderNoMip("icons/signal");
+	cgs.media.scoreboardBENoSignal = trap_R_RegisterShaderNoMip("icons/noSignal");
+	cgs.media.scoreboardBEClock = trap_R_RegisterShaderNoMip("icons/clock");
+	cgs.media.scoreboardBELeaderboard = trap_R_RegisterShaderNoMip("icons/leaderboard");
+	cgs.media.scoreboardBEReady = trap_R_RegisterShaderNoMip("icons/ready");
+
+
+
 
 	memset(cg_items, 0, sizeof(cg_items));
 	memset(cg_weapons, 0, sizeof(cg_weapons));
@@ -1998,6 +2026,11 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_bestats_pos");
 	CG_CvarTouch("cg_bestats_font");
 	CG_CvarTouch("cg_bestats_bgColor");
+
+	if (cg_chud.integer)
+	{
+		CG_CvarTouch("chud_file");
+	}
 }
 
 /*
@@ -2045,7 +2078,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_UpdateBeFeatures();
 
 	CG_InitConsoleCommands();
-
+	
 	if (cg_clientLog.integer)
 	{
 		char* tmp = va("client_logs/client%d.txt", cg_clientLog.integer);
@@ -2335,8 +2368,12 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		trap_SendConsoleCommand(str);
 	}
 
-
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);
+	
+	if (cg_clearOnLevelLoad.integer)
+	{
+		trap_SendConsoleCommand("clear");
+	}
 	return 0;
 }
 

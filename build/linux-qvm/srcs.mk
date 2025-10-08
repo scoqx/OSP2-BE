@@ -50,6 +50,10 @@ CG_SRC = \
  l_crc \
  cg_chatfilter cg_crosshair \
  cg_be_util cg_be_stats \
+ cg_cherryhud cg_cherryhud_elements cg_cherryhud_private cg_cherryhud_util \
+ cg_cherryhud_element_decor \
+ cg_cherryhud_lexer cg_cherryhud_lexer_parser cg_cherryhud_lexer_commands \
+ cg_cherryhud_layout cg_cherryhud_tablebuilder \
 
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \

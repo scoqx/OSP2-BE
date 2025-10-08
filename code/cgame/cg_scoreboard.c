@@ -754,7 +754,7 @@ qboolean CG_DrawOldScoreboard(void)
 		{
 			if (cg.scores[i].client == cg.snap->ps.clientNum)
 			{
-				CG_DrawClientScore(y, &cg.scores[i], fadeColor, fade, lineHeight == SB_NORMAL_HEIGHT);
+				CG_DrawClientScoreNew(y, &cg.scores[i], fadeColor, fade, lineHeight == SB_NORMAL_HEIGHT);
 				break;
 			}
 		}

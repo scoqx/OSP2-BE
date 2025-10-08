@@ -231,13 +231,13 @@ void CG_DynamicMemReport(void)
 	memset(&stats, 0, sizeof(stats));
 	Z_Stats(&stats);
 
-	Com_Printf("zoneSegments   = %d \n", stats.zoneSegments);
-	Com_Printf("zoneBlocks     = %d \n", stats.zoneBlocks);
-	Com_Printf("zoneBytes      = %d \n", stats.zoneBytes);
-	Com_Printf("freeBytes      = %d \n", stats.freeBytes);
-	Com_Printf("freeBlocks     = %d \n", stats.freeBlocks);
-	Com_Printf("freeSmallest   = %d \n", stats.freeSmallest);
-	Com_Printf("freeLargest    = %d \n", stats.freeLargest);
+	// Com_Printf("zoneSegments   = %d \n", stats.zoneSegments);
+	// Com_Printf("zoneBlocks     = %d \n", stats.zoneBlocks);
+	// Com_Printf("zoneBytes      = %d \n", stats.zoneBytes);
+	// Com_Printf("freeBytes      = %d \n", stats.freeBytes);
+	// Com_Printf("freeBlocks     = %d \n", stats.freeBlocks);
+	// Com_Printf("freeSmallest   = %d \n", stats.freeSmallest);
+	// Com_Printf("freeLargest    = %d \n", stats.freeLargest);
 }
 /*
    *  Copy line to out with max size outSize
@@ -378,6 +378,7 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 	{
 		//color code 0-9
 		VectorCopy(g_color_table[in[0] & 0x0f], out);
+		out[3] = 1.0f;
 		return qtrue;
 	}
 

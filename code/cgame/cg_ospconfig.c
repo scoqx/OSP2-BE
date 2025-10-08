@@ -14,15 +14,13 @@ qboolean CG_OSPIsGameTypeCA(int gametype)
 
 qboolean CG_OSPIsGameTypeFreeze()
 {
-	return cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze;
+	return (cgs.gametype == GT_TEAM || cgs.gametype == GT_CTF) && cgs.osp.gameTypeFreeze;
 }
 
 qboolean CG_OSPIsGameTypeTDM()
 {
 	return cgs.gametype == GT_TEAM && !(cgs.osp.gameTypeFreeze);
 }
-
-
 
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup)
 {
@@ -136,11 +134,11 @@ void CG_OSPCvarsRestrictValues(void)
 	}
 
 	// why blocked?
-	if (r_fullbright.integer)
-	{
-		trap_Cvar_Set("r_fullbright", "0");
-		changed = qtrue;
-	}
+	// if (r_fullbright.integer)
+	// {
+	// 	trap_Cvar_Set("r_fullbright", "0");
+	// 	changed = qtrue;
+	// }
 
 	if (r_lodCurveError.integer != 250)
 	{
@@ -272,7 +270,7 @@ qboolean BE_isSupportedServer(void)
 void CG_OSPConfigDisableBEFeatures(int value)
 {
 	cgs.be.disableFeatures = value;
-	BE_PrintDisabledFeatures(qfalse);
+	CG_PrintDisabledFeatures(qfalse);
 }
 /*
  * Unknown cs 0x368

@@ -167,17 +167,17 @@ void CG_ScoresDown_f(void)
 		cg.scoresRequestTime = cg.time + 2000;
 		cg.realNumClients = CG_CountRealClients();
 		trap_SendClientCommand("score");
-		if (cg_drawAccuracy.integer)
-			if (cg.statsRequestTime < cg.time)
-			{
-				cg.statsRequestTime = cg.time + 2000;
-				trap_SendClientCommand("getstatsinfo");
-			}
 		if (!cg.showScores)
 		{
 			cg.numScores = 0;
 		}
 	}
+	if (cg_drawAccuracy.integer)
+		if (!cg.demoPlayback && cg.statsRequestTime < cg.time)
+		{
+		 	cg.statsRequestTime = cg.time + 2250;
+			trap_SendClientCommand("getstatsinfo");
+		}
 	cg.showScores = qtrue;
 	cg.showAccuracy = qtrue;
 }
@@ -191,6 +191,7 @@ static void CG_ScoresUp_f(void)
 		cg.scoreFadeTime = cg.time;
 	}
 }
+
 
 
 static void CG_TellTarget_f(void)
@@ -534,6 +535,77 @@ void CG_ShudKey4Up_f(void)
 	cgs.osp.shud.key[3] = qfalse;
 }
 
+void CG_ChudKey1Down_f(void)
+{
+	cgs.osp.chud.key[0] = qtrue;
+}
+
+void CG_ChudKey1Up_f(void)
+{
+	cgs.osp.chud.key[0] = qfalse;
+}
+
+void CG_ChudKey2Down_f(void)
+{
+	cgs.osp.chud.key[1] = qtrue;
+}
+
+void CG_ChudKey2Up_f(void)
+{
+	cgs.osp.chud.key[1] = qfalse;
+}
+
+void CG_ChudKey3Down_f(void)
+{
+	cgs.osp.chud.key[2] = qtrue;
+}
+
+void CG_ChudKey3Up_f(void)
+{
+	cgs.osp.chud.key[2] = qfalse;
+}
+
+void CG_ChudKey4Down_f(void)
+{
+	cgs.osp.chud.key[3] = qtrue;
+}
+
+void CG_ChudKey4Up_f(void)
+{
+	cgs.osp.chud.key[3] = qfalse;
+}
+
+void CG_ChudScoreboardUp_f(void)
+{
+	cgs.osp.chud.scoreboard = qtrue;
+	
+	// Send commands to server to get scoreboard data (copied from bescores)
+	if (!cg.demoPlayback && cg.scoresRequestTime < cg.time)
+	{
+		cg.scoresRequestTime = cg.time + 2000;
+		cg.realNumClients = CG_CountRealClients();
+		trap_SendClientCommand("score");
+	}
+	if (!cg.demoPlayback && cg.statsAllRequestTime < cg.time)
+	{
+		cg.statsAllRequestTime = cg.time + 2100;
+		trap_SendClientCommand("statsall");
+		cgs.be.statsAllRequested = qtrue;
+	}
+}
+
+void CG_ChudScoreboardDown_f(void)
+{
+	if (cgs.osp.chud.scoreboard)
+	{
+		cgs.osp.chud.scoreboard = qfalse;
+	}
+	if ((cg.statsAllRequestTime + 500 < cg.time) && cgs.be.statsAllRequested)
+	{
+		cgs.be.statsAllRequested = qfalse;
+	}
+}
+
 void CG_OSPPrintTime_f(void)
 {
 	qtime_t qtime;
@@ -747,6 +819,11 @@ void CG_ReloadHud_f(void)
 	CG_SHUDLoadConfig();
 }
 
+void CG_ReloadCHUD_f(void)
+{
+	CG_CHUDLoadConfig();
+}
+
 void CG_PrintPlayerIDs_f(void)
 {
 	int p;
@@ -873,32 +950,9 @@ void cg_sa_f(void)
 	cgs.be.statsAllRequested = qtrue;
 }
 
-// void cg_printsa_f(void)
-// {
-// 	int i = 0;
-// 	newStatsInfo_t *ws = &cgs.be.statsAll[i];
-// 	CG_Printf("^5StatsAll:\n");
-// 	for (i = 0; i < MAX_CLIENTS; ++i) {
-// 		if (!cgs.clientinfo[i].infoValid)
-// 			continue;
-		
-// 		CG_Printf("^7[%2d] ^3%-16s ^7K/D:^2%3d^7/^1%3d ^7Eff:^2%5.1f%% ^7Dmg:^2%5d^7/^1%5d ^7Ratio:^2%.2f\n",
-// 			i,
-// 			cgs.clientinfo[i].name,
-// 			ws->kills,
-// 			ws->deaths,
-// 			ws->efficiency,
-// 			ws->dmgGiven,
-// 			ws->dmgReceived,
-// 			ws->damageRatio
-// 		);
-// 	}
-// }
-
-
 void CG_BEdisabledFeatures_f()
 {
-	BE_PrintDisabledFeatures(qtrue);
+	CG_PrintDisabledFeatures(qtrue);
 }
 void CG_Stub_f(void) { }
 
@@ -978,6 +1032,16 @@ static consoleCommand_t commands[] =
 	{ "-shudkey3", CG_ShudKey3Up_f },
 	{ "+shudkey4", CG_ShudKey4Down_f },
 	{ "-shudkey4", CG_ShudKey4Up_f },
+	{ "+chudkey1", CG_ChudKey1Down_f },
+	{ "-chudkey1", CG_ChudKey1Up_f },
+	{ "+chudkey2", CG_ChudKey2Down_f },
+	{ "-chudkey2", CG_ChudKey2Up_f },
+	{ "+chudkey3", CG_ChudKey3Down_f },
+	{ "-chudkey3", CG_ChudKey3Up_f },
+	{ "+chudkey4", CG_ChudKey4Down_f },
+	{ "-chudkey4", CG_ChudKey4Up_f },
+	{ "+chudscoreboard", CG_ChudScoreboardUp_f },
+	{ "-chudscoreboard", CG_ChudScoreboardDown_f },
 	{ "cg_dynamicmem", CG_OSPDynamicMem_f },
 	{ "addpos", CG_OSPAddPos_f },
 	{ "decaladd", CG_OSPDecalAdd_f },
@@ -994,6 +1058,7 @@ static consoleCommand_t commands[] =
 	{ "decalrotclock", CG_OSPDecalRotClock_f },
 	{ "decalrotcounter", CG_OSPDecalRotCounter_f },
 	{ "reloadHUD", CG_ReloadHud_f },
+	{ "reloadCHUD", CG_ReloadCHUD_f },
 	{ "playersid", CG_PrintPlayerIDs_f },
 	{ "mute", CG_Mute_f },
 	{ "unmute", CG_UnMute_f },
@@ -1001,7 +1066,7 @@ static consoleCommand_t commands[] =
 	{ "dpi", CG_DPI_f },
 	{ "belist", CG_PrintNewCommandsBE_f },
 	{ "sa", cg_sa_f },
-	// { "salist", cg_printsa_f },
+	{ "salist", cg_printsa_f },
 	{ "allowedfeatures", CG_BEdisabledFeatures_f },
 };
 

@@ -450,3 +450,23 @@ SHUD:
 * scoreboard visual fix
 SHUD: 
 + visflags, gt_ffa, gt_tourney, gt_tdm, gt_ctf, gt_unfreeze, gt_clanarena
+
+
+08.10.2025 be 1.00-beta
++ cg_chud
++ chud_file
++ cg_clearOnLevelLoad
++ cg_playersID 1/2
++ Introducing CherryHUD: table system to show scoreboard, stats etc.
+  * beta, only nonTeam gametypes for a while
+  * 2 configs available: default and d2
+* cg_teamSound doesnt affect on local player model anymore
+* cg_drawAmmoWarning fix
+* cg_scoreboardBE visual fix
+* be_enabled fix (fullbright, damage info)
+* cg_friendsWallhack fix (not disabling drawHudElements now)
+* r_fullbright unlocked again
+* fix color by digit (0-9)
+* add crouch animation to player model in air
+SHUD:
+ + update configs (m1r, m1rqlstyle, AGENT)

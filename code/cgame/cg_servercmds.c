@@ -455,7 +455,7 @@ static void CG_ConfigStringModified(void)
 	else if (num == CS_OSP2BE_DISABLED_FEATURES)
 	{
 		cgs.be.disableFeatures = atoi(str);
-		BE_PrintDisabledFeatures(qfalse);
+		CG_PrintDisabledFeatures(qfalse);
 	}
 	else if (num == XQ3E_ALLOW_FEATURES)
 	{
@@ -1168,6 +1168,17 @@ void CG_BEParseStatsInfo(void)
 			ws->stats[weaponIndex].drops = drops;
 			ws->stats[weaponIndex].accuracy = (shots > 0) ? ((float)hits / shots) * 100.0f : 0.0f;
 		}
+		else
+		{
+			// Clear weapon stats that are not in the mask
+			ws->stats[weaponIndex].hits = 0;
+			ws->stats[weaponIndex].shots = 0;
+			ws->stats[weaponIndex].kills = 0;
+			ws->stats[weaponIndex].deaths = 0;
+			ws->stats[weaponIndex].pickUps = 0;
+			ws->stats[weaponIndex].drops = 0;
+			ws->stats[weaponIndex].accuracy = 0.0f;
+		}
 	}
 
 	// General
@@ -1606,7 +1617,6 @@ void CG_ExecuteNewServerCommands(int latestSequence)
 	}
 	if (last_xstats1_sequence == latestSequence && cgs.be.statsAllRequested)
 	{
-		CG_Printf("[XSTATS] Last xstats1 in this queue at sequence %d\n", last_xstats1_sequence);
 		cgs.be.statsAllRequested = qfalse;
 		last_xstats1_sequence = -1;
 	}

@@ -186,7 +186,7 @@ sfxHandle_t CG_CustomSound(int clientNum, const char* soundName)
 			{
 				return cgs.mySounds[i];
 			}
-			else if ((myteam != TEAM_FREE && ci->team == myteam) && cgs.teamSounds[i])
+			else if ((myteam != TEAM_FREE && ci->team == myteam && ci != myself) && cgs.teamSounds[i])
 			{
 				return cgs.teamSounds[i];
 			}
@@ -829,13 +829,17 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	}
 
 	isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "pm") == 0)) ? qtrue : qfalse;
+	
 	if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
 	{
 		isFbSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
 	}
 	else
 	{
-		isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
+		if (nameSkin && (Q_stricmp(nameSkin, "fb") == 0))
+		{
+			isPmSkin = qtrue;
+		}
 		nameSkin = "pm";
 	}
 
@@ -1096,7 +1100,145 @@ void CG_NewClientInfo(int clientNum)
 
 	CG_StringMakeEscapeCharRAW(newInfo.name_original, newInfo.name_codes, sizeof(newInfo.name_codes));
 
-	if (cg_playersXID.integer)
+	// Build the final name with ID prefix if enabled
+	if (cg_playersID.integer == 1)
+	{
+		// Add client number in square brackets at the beginning
+		if (cg_playersXID.integer)
+		{
+			if (cg_playersXID.integer == 2)
+			{
+				int p;
+				qboolean is_exists = qfalse;
+				// check, is player with this name is exitst
+				for (p = 0; p < MAX_CLIENTS; ++p)
+				{
+					if (p == clientNum)
+					{
+						continue;
+					}
+					//ugly linear search
+					if (cgs.clientinfo[p].infoValid && !cgs.clientinfo[p].nameIsInvisible && strcmp(newInfo.name_clean, cgs.clientinfo[p].name_clean) == 0)
+					{
+						is_exists = qtrue;
+						// okay, it exits. check is another client have xid in the name and append it if not
+						if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
+						{
+							Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]^8%s^7:%s", clientNum, cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
+						}
+						break;
+					}
+				}
+
+				if (newInfo.nameIsInvisible)
+				{
+					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:\'%s^7\'", clientNum, newInfo.xidStr, newInfo.name_codes);
+				}
+				else if (is_exists || (strcmp(newInfo.name_original, "^1NONAME") == 0))
+				{
+					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:%s", clientNum, newInfo.xidStr, newInfo.name_original);
+				}
+				else
+				{
+					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]%s", clientNum, newInfo.name_original);
+				}
+			}
+			else
+			{
+				Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:%s", clientNum, newInfo.xidStr, newInfo.name_original);
+			}
+		}
+		else
+		{
+			Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]%s", clientNum, newInfo.name_original);
+		}
+	}
+	else if (cg_playersID.integer == 2)
+	{
+		// Add client number in square brackets only in special cases
+		if (cg_playersXID.integer)
+		{
+			if (cg_playersXID.integer == 2)
+			{
+				int p;
+				qboolean is_exists = qfalse;
+				// check, is player with this name is exitst
+				for (p = 0; p < MAX_CLIENTS; ++p)
+				{
+					if (p == clientNum)
+					{
+						continue;
+					}
+					//ugly linear search
+					if (cgs.clientinfo[p].infoValid && !cgs.clientinfo[p].nameIsInvisible && strcmp(newInfo.name_clean, cgs.clientinfo[p].name_clean) == 0)
+					{
+						is_exists = qtrue;
+						// okay, it exits. check is another client have xid in the name and append it if not
+						if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
+						{
+							Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]^8%s^7:%s", clientNum, cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
+						}
+						break;
+					}
+				}
+
+				if (newInfo.nameIsInvisible)
+				{
+					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:\'%s^7\'", clientNum, newInfo.xidStr, newInfo.name_codes);
+				}
+				else if (is_exists || (strcmp(newInfo.name_original, "^1NONAME") == 0))
+				{
+					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:%s", clientNum, newInfo.xidStr, newInfo.name_original);
+				}
+				else
+				{
+					Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
+				}
+			}
+			else
+			{
+				Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:%s", clientNum, newInfo.xidStr, newInfo.name_original);
+			}
+		}
+		else
+		{
+			int p;
+			qboolean is_exists = qfalse;
+			// check, is player with this name is exitst
+			for (p = 0; p < MAX_CLIENTS; ++p)
+			{
+				if (p == clientNum)
+				{
+					continue;
+				}
+				//ugly linear search
+				if (cgs.clientinfo[p].infoValid && !cgs.clientinfo[p].nameIsInvisible && strcmp(newInfo.name_clean, cgs.clientinfo[p].name_clean) == 0)
+				{
+					is_exists = qtrue;
+					// okay, it exits. check is another client have id in the name and append it if not
+					if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
+					{
+						Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]%s", p, cgs.clientinfo[p].name_original);
+					}
+					break;
+				}
+			}
+
+			if (newInfo.nameIsInvisible)
+			{
+				Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]\'%s\'", clientNum, newInfo.name_codes);
+			}
+			else if (is_exists || (strcmp(newInfo.name_original, "^1NONAME") == 0))
+			{
+				Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]%s", clientNum, newInfo.name_original);
+			}
+			else
+			{
+				Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
+			}
+		}
+	}
+	else if (cg_playersXID.integer)
 	{
 		if (cg_playersXID.integer == 2)
 		{
@@ -1485,7 +1627,31 @@ static void CG_PlayerAnimation(centity_t* cent, int* legsOld, int* legs, float* 
 	}
 	else
 	{
-		CG_RunLerpFrame(ci, &cent->pe.legs, cent->currentState.legsAnim, speedScale);
+		int animToUse;
+		int zu;
+		
+		// Check if other player is ducking in air using same logic as CG_AddHitBox
+		if (cent->currentState.number != cg.predictedPlayerState.clientNum)
+		{
+			// Decode bounding box from solid field
+			zu = ((cent->currentState.solid >> 16) & 255) - 32;
+			
+			// If player is in air and ducking (height reduced)
+			if (cent->currentState.groundEntityNum == ENTITYNUM_NONE && zu < 32)
+			{
+				animToUse = LEGS_IDLECR;  // Force crouch animation
+			}
+			else
+			{
+				animToUse = cent->currentState.legsAnim;
+			}
+		}
+		else
+		{
+			animToUse = cent->currentState.legsAnim;
+		}
+		
+		CG_RunLerpFrame(ci, &cent->pe.legs, animToUse, speedScale);
 	}
 
 	*legsOld = cent->pe.legs.oldFrame;
@@ -2141,7 +2307,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 		return;
 	}
 
-	if ((!(cg_friendsWallhack.integer & 1) || !CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH)) && !CG_FriendVisible(cent))
+	if (!(cg_friendsWallhack.integer & 1) && !CG_FriendVisible(cent) || !CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && !CG_FriendVisible(cent))
 	{
 		return;
 	}

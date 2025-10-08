@@ -24,14 +24,29 @@ qboolean CG_BE_Timer(int msec)
 
 void CG_UpdateBeFeatures(void)
 {
+
 	qboolean changed = qfalse;
+	int i = 0;
 	int beFlags = 0;
 	clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
+	clientInfo_t* otherCi = &cgs.clientinfo[i];
+
+	qboolean isFbSkin = qfalse;
+
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		if (i == cg.clientNum) continue; // Skip self
+			if (otherCi->infoValid && Q_stricmp(otherCi->skinName, "fb") == 0) {
+				isFbSkin = qtrue;
+				break;
+		}
+	}
 
 	if (!BE_ENABLED)
 	{
 		beFlags = 0;
 		changed = qtrue;
+		CG_RebuildPlayerColors();
+		CG_UpdateAllClientsInfo();
 	}
 	else
 	{
@@ -80,6 +95,11 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_ENEMYLIGHTNING;
 			changed = qtrue;
 		}
+		if (isFbSkin || cg_drawBrightWeapons.integer)
+		{
+			beFlags |= CG_BE_FULLBRIGHT;
+			changed = qtrue;
+		}
 	}
 
 	if (changed)
@@ -88,7 +108,7 @@ void CG_UpdateBeFeatures(void)
 	}
 }
 
-void BE_PrintDisabledFeatures(qboolean request)
+void CG_PrintDisabledFeatures(qboolean request)
 {
 	int value = cgs.be.disableFeatures;
 	if (value == 0)
@@ -124,7 +144,7 @@ void BE_PrintDisabledFeatures(qboolean request)
 void CG_BEParseXStatsToStatsAll(void) {
 	int i;
 	int index = 1;
-	int wstats_condition;
+	int xstats_condition;
 	int client_id;
 	int hits_value, atts_value, kills_value, deaths_value;
 	int pickUps, drops;
@@ -135,7 +155,7 @@ void CG_BEParseXStatsToStatsAll(void) {
 	newStatsInfo_t* ws;
 
 	client_id = atoi(CG_Argv(index++));
-	wstats_condition = atoi(CG_Argv(index++));
+	xstats_condition = atoi(CG_Argv(index++));
 
 	if (client_id < 0 || client_id >= MAX_CLIENTS)
 	{
@@ -146,7 +166,7 @@ void CG_BEParseXStatsToStatsAll(void) {
 
 	for (i = 1; i < WP_NUM_WEAPONS; ++i)
 	{
-		if ((wstats_condition & (1 << i)) != 0)
+		if ((xstats_condition & (1 << i)) != 0)
 		{
 			hits_value = atoi(CG_Argv(index++));
 			atts_value = atoi(CG_Argv(index++));
@@ -213,4 +233,54 @@ void CG_BEParseXStatsToStatsAll(void) {
 	                 (100.0f * (float)totalKills / (totalKills + totalDeaths)) : 0.0f;
 	if (ws->efficiency < 0.0f)
 		ws->efficiency = 0.0f;
+
+	ws->infoValid = qtrue;
+}
+
+void cg_printsa_f(void)
+{
+    int i;
+    newStatsInfo_t *ws;
+
+    CG_Printf("^5StatsAll:\n");
+    for (i = 0; i < MAX_CLIENTS; ++i) {
+        ws = &cgs.be.statsAll[i];
+        if (!ws->infoValid)
+            continue;
+
+        CG_Printf("^7[%2d] ^3%-16s ^7K/D:^2%3d^7/^1%3d ^7Eff:^2%5.1f%% ^7Dmg:^2%i^7/^1%i ^7Ratio:^2%.2f\n",
+            i,
+            cgs.clientinfo[i].name,
+            ws->kills,
+            ws->deaths,
+            ws->efficiency,
+            ws->dmgGiven,
+            ws->dmgReceived,
+            ws->damageRatio
+		);
+    }
+}
+
+void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
+{
+    char buffer[MAX_CVAR_VALUE_STRING];
+    char* token1, *token2;
+
+    if (!cvar || !cvar->string) return;
+    if (cvar->string[0] == '\0') return;
+
+    Q_strncpyz(buffer, cvar->string, sizeof(buffer));
+    token1 = Q_strtok(buffer, " \t");
+    token2 = Q_strtok(NULL, " \t");
+
+    if (!token1 || !token2) return;
+
+    CG_ParseColorStr(token1, out1);
+    CG_ParseColorStr(token2, out2);
+}
+
+qboolean BE_IsDamageInfoAllowed(void)
+{
+	// Allow damage info if either BE_FEATURE_ENABLED or OSP_CUSTOM_CLIENT_2 allows it
+	return (CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO) || OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED());
 }

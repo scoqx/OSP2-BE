@@ -288,7 +288,6 @@ void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSi
 	}
 	trap_R_SetColor(NULL);
 }
-
 /*
 ================
 CG_OSPDrawBlurFrame
@@ -3128,6 +3127,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	proportional = (flags & DS_PROPORTIONAL) ? 1 : 0;
 	hasBorder = (border != NULL) ? 1 : 0;
 	expectedLenght = 0.0f;
+	
 
 	if (flags & DS_MAX_WIDTH_IS_CHARS)
 	{

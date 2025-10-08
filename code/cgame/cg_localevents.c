@@ -59,7 +59,7 @@ void CG_ParseCvarTwoFloats(const cvarTable_t* cvart, float* out1, float* out2)
 	*out2 = (float)atof(token2);
 }
 
-void CG_ParseCvarTwoColors(const cvarTable_t* cvart, vec4_t out1, vec4_t out2)
+static void CG_ParseCvarTwoColors(const cvarTable_t* cvart, vec4_t out1, vec4_t out2)
 {
 	char buffer[MAX_CVAR_VALUE_STRING];
 	char* token1, *token2;
@@ -286,7 +286,7 @@ void CG_LocalEventCvarChanged_pmove_fixed(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_hitSounds(cvarTable_t* cvart)
 {
-	if (!(CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO)) && cg_hitSounds.integer)
+	if (!(BE_IsDamageInfoAllowed()) && cg_hitSounds.integer)
 	{
 		CG_Printf("^3Damage info has been disabled on this server.\n");
 		// trap_Cvar_Set("cg_hitSounds", "0");
@@ -628,6 +628,7 @@ void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_scoreboardFont", 0);
 	}
+	// CG_ScoreboardContext_Init();
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart)
 {
@@ -869,6 +870,7 @@ void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
 	}
 }
 
+
 void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
 {
 	if (!CG_FontAvailable(cvart->vmCvar->integer))
@@ -902,4 +904,24 @@ void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart)
 {
 	CG_UpdateBeFeatures();
+}
+
+void CG_LocalEventCvarChanged_cg_scoreboardTextSize(cvarTable_t* cvart)
+{
+	CG_ParseCvarTwoFloats(cvart, &cgs.be.sbSettings.textSize[0], &cgs.be.sbSettings.textSize[1]);
+	// CG_ScoreboardContext_Init();
+}
+void CG_LocalEventCvarChanged_cg_scoreboardScale(cvarTable_t* cvart)
+{
+	// CG_ScoreboardContext_Init();
+}
+void CG_LocalEventCvarChanged_chud_file(cvarTable_t* cvart)
+{
+	// Initialize CherryHUD parser first
+	CG_CHUDLoadConfig();
+}
+void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart)
+{
+	// Initialize CherryHUD parser first
+	CG_CHUDLoadConfig();
 }

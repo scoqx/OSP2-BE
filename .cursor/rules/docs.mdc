@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+1. Never create doc files
+2. Never create test configs
+3. Work only with code
