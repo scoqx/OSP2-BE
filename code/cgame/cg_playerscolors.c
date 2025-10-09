@@ -335,14 +335,49 @@ void CG_ClientInfoUpdateColors(clientInfo_t* ci, int clientNum)
 		qboolean isEnemy = qfalse;
 		const float* teamColor = CG_TeamColor(ci->rt);
 
-		if (ourClient->rt == TEAM_SPECTATOR)
+		if (cg_spectPOV.integer)
 		{
-			/* if spectator, blue allways enemy */
-			isEnemy = ci->rt == TEAM_BLUE;
+			team_t ourPerspectiveTeam;
+
+			if (ourClient->rt == TEAM_SPECTATOR)
+			{
+				if (cg.snap->ps.pm_flags & PMF_FOLLOW && 
+				    cg.snap->ps.clientNum >= 0 && 
+				    cg.snap->ps.clientNum < MAX_CLIENTS)
+				{
+					ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
+				}
+				else
+				{
+					ourPerspectiveTeam = TEAM_SPECTATOR;
+				}
+			}
+			else
+			{
+				ourPerspectiveTeam = ourClient->rt;
+			}
+
+			if (ourPerspectiveTeam == TEAM_SPECTATOR)
+			{
+				/* Not following anyone - use default: blue is enemy */
+				isEnemy = (ci->rt == TEAM_BLUE);
+			}
+			else
+			{
+				isEnemy = (ourPerspectiveTeam != ci->rt);
+			}
 		}
 		else
 		{
-			isEnemy = ci->rt != ourClient->rt;
+			if (ourClient->rt == TEAM_SPECTATOR)
+			{
+				/* if spectator, blue allways enemy */
+				isEnemy = ci->rt == TEAM_BLUE;
+			}
+			else
+			{
+				isEnemy = ci->rt != ourClient->rt;
+			}
 		}
 
 		if (cg_swapSkins.integer)

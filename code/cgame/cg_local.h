@@ -37,6 +37,7 @@ extern "C" {
 // so there is NO persistant data between levels on the client side.
 // If you absolutely need something stored, it can either be kept
 // by the server in the server stored userinfos, or stashed in a cvar.
+#define BERUN (be_run.integer & 1)
 
 #define POWERUP_BLINKS      5
 
@@ -1836,6 +1837,7 @@ extern vmCvar_t         cg_scoreboardScale;
 extern vmCvar_t		 	cg_scoreboardWidth;
 extern vmCvar_t         cg_scoreboardColors;
 extern vmCvar_t         cg_clearOnLevelLoad;
+extern vmCvar_t         cg_spectPOV;
 extern vmCvar_t         be_run;
 
 
@@ -2574,7 +2576,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00-beta" // BE
+#define OSP_VERSION "be-1.00-beta-1" // BE
 
 
 

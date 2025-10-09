@@ -470,3 +470,7 @@ SHUD:
 * add crouch animation to player model in air
 SHUD:
  + update configs (m1r, m1rqlstyle, AGENT)
+
+
+09.10.2025 be 1.00-beta-1
++ cg_spectPOV (teamModes)

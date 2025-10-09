@@ -470,6 +470,7 @@ vmCvar_t        cg_scoreboardScale;
 vmCvar_t        cg_scoreboardWidth;
 vmCvar_t        cg_scoreboardColors;
 vmCvar_t        cg_clearOnLevelLoad;
+vmCvar_t        cg_spectPOV;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -846,7 +847,8 @@ static cvarTable_t cvarTable[] =
 	{ &chud_file, "chud_file", "default.cfg", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_chud_file },
 	{ &cg_chud, "cg_chud", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chud },
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE | CVAR_NEW, },
-	{ &be_run, "be_run", "1", CVAR_ARCHIVE },
+	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE | CVAR_NEW, },
+	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 	};
 
 #define CG_VARS_HASH_SIZE 512

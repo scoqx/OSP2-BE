@@ -48,6 +48,7 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 	int myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
 	int myRealTeam  = local->team;
 	int enemyTeam = target->team;
+	team_t ourPerspectiveTeam;
 
 	if (CG_OSPIsGameTypeCA(cgs.gametype))
 	{
@@ -68,15 +69,48 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 
 	if (myStateTeam == TEAM_SPECTATOR)
 	{
-		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
+		/* BE: Enhanced spectator perspective logic - exact copy from OSP2-BE */
+		if (cg_spectPOV.integer && cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
 		{
-			return enemyTeam == TEAM_BLUE;
+			qboolean result;
+			team_t targetTeam;
+			
+			if (CG_OSPIsGameTypeCA(cgs.gametype))
+			{
+				ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
+				targetTeam = target->rt;
+			}
+			else
+			{
+				ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].team;
+				targetTeam = target->team;
+			}
+
+			result = (ourPerspectiveTeam != targetTeam);
+			
+			/* Debug output */
+			if (cg_debugAnim.integer)
+			{
+				CG_Printf("[CG_IsEnemy] Following %d (team %d) | Target: %s (team %d) | isEnemy=%d\n",
+				    cg.snap->ps.clientNum, ourPerspectiveTeam, 
+				    target->name, targetTeam, result);
+			}
+			
+			return result;
 		}
-		if (myRealTeam == TEAM_BLUE)
+		else
 		{
-			return enemyTeam == TEAM_RED;
+			/* Original PBE logic */
+			if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
+			{
+				return enemyTeam == TEAM_BLUE;
+			}
+			if (myRealTeam == TEAM_BLUE)
+			{
+				return enemyTeam == TEAM_RED;
+			}
+			return qfalse;
 		}
-		return qfalse;
 	}
 
 	if (myStateTeam == TEAM_RED)
@@ -936,10 +970,46 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 		else
 		{
 			const char* teamModelString = cg_teamModel.string[0] ? cg_teamModel.string : NULL;
-			// team games
-			qboolean isOurTeam = cgs.clientinfo[cg.clientNum].rt == ci->rt;
-			qboolean isRedTeamWhileSpec = cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED;
-			qboolean isTeamMate = isOurTeam || isRedTeamWhileSpec;
+			qboolean isTeamMate;
+			
+			/* BE: Enhanced spectator perspective logic */
+			if (cg_spectPOV.integer)
+			{
+				team_t ourPerspectiveTeam;
+				
+				if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+				{
+					if (cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+					{
+						ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
+					}
+					else
+					{
+						ourPerspectiveTeam = TEAM_SPECTATOR;
+					}
+				}
+				else
+				{
+					ourPerspectiveTeam = cgs.clientinfo[cg.clientNum].rt;
+				}
+				
+				if (ourPerspectiveTeam == TEAM_SPECTATOR)
+				{
+					/* Not following anyone - use default: red is teammate */
+					isTeamMate = (ci->rt == TEAM_RED);
+				}
+				else
+				{
+					isTeamMate = (ourPerspectiveTeam == ci->rt);
+				}
+			}
+			else
+			{
+				/* Original PBE logic */
+				qboolean isOurTeam = cgs.clientinfo[cg.clientNum].rt == ci->rt;
+				qboolean isRedTeamWhileSpec = cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED;
+				isTeamMate = isOurTeam || isRedTeamWhileSpec;
+			}
 
 			if (isTeamMate)
 			{
@@ -1061,6 +1131,38 @@ static void CG_PlayerXIDCalc(const char* cmd, clientInfo_t* ci)
 	ci->xidStr[2] = NUM_TO_HEX_CHAR((ci->xid >> 4) & 0x0f);
 	ci->xidStr[3] = NUM_TO_HEX_CHAR(ci->xid & 0x0f);
 	ci->xidStr[4] = 0;
+}
+
+/* BE: Detect spectator target changes */
+static void CG_CheckSpectatorTargetChange(void)
+{
+	static int lastSpectatorTarget = -1;
+	int currentSpectatorTarget = -1;
+	
+	/* Only check if we're spectating */
+	if (cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
+	{
+		lastSpectatorTarget = -1;
+		return;
+	}
+	
+	/* Get current spectator target */
+	if (cg.snap->ps.pm_flags & PMF_FOLLOW && 
+	    cg.snap->ps.clientNum >= 0 && 
+	    cg.snap->ps.clientNum < MAX_CLIENTS)
+	{
+		currentSpectatorTarget = cg.snap->ps.clientNum;
+	}
+	
+	/* If target changed, update all client models */
+	if (currentSpectatorTarget != lastSpectatorTarget)
+	{
+		lastSpectatorTarget = currentSpectatorTarget;
+		if (cgs.gametype >= GT_TEAM)
+		{
+			CG_UpdateOtherClientsInfo();
+		}
+	}
 }
 
 void CG_NewClientInfo(int clientNum)
@@ -3019,57 +3121,53 @@ void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 
 	ent->customShader = isEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
 
-	if (isSpectator)
+	if (isSpectator && !cg_spectPOV.integer)
 	{
 		if (ci->team == TEAM_RED)
 			Vector4Copy(cgs.be.teamOutlineColor, color);
 		else
 			Vector4Copy(cgs.be.enemyOutlineColor, color);
 	}
-	else
+	else if (isEnemy)
 	{
-		if (isEnemy)
+		if (cg_enemyOutlineColorUnique.integer == 0)
 		{
-			if (cg_enemyOutlineColorUnique.integer == 0)
-			{
-				Vector4Copy(cgs.be.enemyOutlineColor, color);
-			}
-			else
-			{
-				vec3_t uniqueColorVec;
-				vec4_t tmpColor;
-
-				VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
-				tmpColor[0] = uniqueColorVec[0];
-				tmpColor[1] = uniqueColorVec[1];
-				tmpColor[2] = uniqueColorVec[2];
-				tmpColor[3] = 1.0f;
-
-				for (i = 0; i < 3; i++)
-				{
-					if (cg_enemyOutlineColorUnique.integer & (1 << i))
-					{
-						color[i] = tmpColor[i];
-					}
-					else
-					{
-						color[i] = cgs.be.enemyOutlineColor[i];
-					}
-				}
-				color[3] = 1.0f;
-			}
+			Vector4Copy(cgs.be.enemyOutlineColor, color);
 		}
 		else
 		{
-			
-			if (CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE) && cgs.be.markedTeam[clientNum])
+			vec3_t uniqueColorVec;
+			vec4_t tmpColor;
+
+			VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
+			tmpColor[0] = uniqueColorVec[0];
+			tmpColor[1] = uniqueColorVec[1];
+			tmpColor[2] = uniqueColorVec[2];
+			tmpColor[3] = 1.0f;
+
+			for (i = 0; i < 3; i++)
 			{
-				Vector4Copy(cgs.be.markedTeamColor, color);
+				if (cg_enemyOutlineColorUnique.integer & (1 << i))
+				{
+					color[i] = tmpColor[i];
+				}
+				else
+				{
+					color[i] = cgs.be.enemyOutlineColor[i];
+				}
 			}
-			else
-			{
-				Vector4Copy(cgs.be.teamOutlineColor, color);
-			}
+			color[3] = 1.0f;
+		}
+	}
+	else
+	{
+		if (CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE) && cgs.be.markedTeam[clientNum])
+		{
+			Vector4Copy(cgs.be.markedTeamColor, color);
+		}
+		else
+		{
+			Vector4Copy(cgs.be.teamOutlineColor, color);
 		}
 	}
 
@@ -3099,6 +3197,16 @@ void CG_Player(centity_t* cent)
 	float           shadowPlane;
 	qboolean        paintItBlack;
 	float           paintBlackLevel;
+
+	if (cg_spectPOV.integer)
+	{
+		static int lastFrameTime = 0;
+		if (cg.time != lastFrameTime)
+		{
+			lastFrameTime = cg.time;
+			CG_CheckSpectatorTargetChange();
+		}
+	}
 
 	if (cg.clientNum == cent->currentState.clientNum && (global_viewlistFirstOption || cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 	{
