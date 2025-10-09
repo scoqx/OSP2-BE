@@ -827,13 +827,13 @@ void CG_ReloadCHUD_f(void)
 void CG_PrintPlayerIDs_f(void)
 {
 	int p;
-	CG_Printf("^7| ^1%4s ^7| ^5%32s | ^5%s\n", "XID", "Player name", "Player name raw");
+	CG_Printf("^7| ^3%2s ^7| ^1%4s ^7| ^5%32s | ^5%s\n", "ID", "XID", "Player name", "Player name raw");
 	CG_Printf("^7------------------------------------------------------------------------------\n");
 	for (p = 0; p < MAX_CLIENTS; ++p)
 	{
 		if (cgs.clientinfo[p].infoValid)
 		{
-			CG_Printf("^7| ^1%4s ^7| %32s | %s\n", cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_clean, cgs.clientinfo[p].name_codes);
+			CG_Printf("^7| ^3%2d ^7| ^1%4s ^7| %32s | %s\n", p, cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_clean, cgs.clientinfo[p].name_codes);
 		}
 	}
 }

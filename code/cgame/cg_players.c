@@ -945,8 +945,27 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 		if (!isTeamGame)
 		{
 			// FFA or 1vs1
+			qboolean isFollowedPlayer = qfalse;
 
-			if (useOriginal)
+			/* BE: Enhanced spectator perspective logic for non-team games */
+			if (cg_spectPOV.integer && cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR &&
+			    cg.snap->ps.pm_flags & PMF_FOLLOW &&
+			    cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS &&
+			    cg.snap->ps.clientNum == clientNum)
+			{
+				isFollowedPlayer = qtrue;
+			}
+
+			if (isFollowedPlayer)
+			{
+				/* Use our own model for the followed player */
+				trap_Cvar_VariableStringBuffer("model", modelName, sizeof(modelName));
+				trap_Cvar_VariableStringBuffer("headmodel", headModelName, sizeof(headModelName));
+
+				resultModelString = modelName;
+				resultHModelString = headModelName;
+			}
+			else if (useOriginal)
 			{
 				resultModelString = cfgModelString;
 				resultHModelString = cfgHModelString;
@@ -1158,7 +1177,7 @@ static void CG_CheckSpectatorTargetChange(void)
 	if (currentSpectatorTarget != lastSpectatorTarget)
 	{
 		lastSpectatorTarget = currentSpectatorTarget;
-		if (cgs.gametype >= GT_TEAM)
+		if (cgs.gametype >= GT_TEAM || cg_spectPOV.integer)
 		{
 			CG_UpdateOtherClientsInfo();
 		}

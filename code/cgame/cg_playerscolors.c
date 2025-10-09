@@ -438,25 +438,69 @@ void CG_ClientInfoUpdateColors(clientInfo_t* ci, int clientNum)
 			}
 		}
 	}
-	else /* enemy in FFA or 1vs1 game */
+	else /* non-team game (FFA, 1vs1) */
 	{
-		if (cgs.osp.enemyColorsOverride.isModelColorSet)
+		qboolean isFollowedPlayer = qfalse;
+
+		/* BE: Enhanced spectator perspective logic for non-team games */
+		if (cg_spectPOV.integer && cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR &&
+		    cg.snap->ps.pm_flags & PMF_FOLLOW &&
+		    cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS &&
+		    cg.snap->ps.clientNum == clientNum)
 		{
-			VectorCopy(cgs.osp.enemyColors.head, ci->colors.head);
-			VectorCopy(cgs.osp.enemyColors.torso, ci->colors.torso);
-			VectorCopy(cgs.osp.enemyColors.legs, ci->colors.legs);
+			isFollowedPlayer = qtrue;
 		}
 
-		CG_ModelUniqueColors(clientNum, &ci->colors);
+		if (isFollowedPlayer)
+		{
+			/* Use team colors for followed player */
+			if (cgs.osp.teamColorsOverride.isModelColorSet)
+			{
+				VectorCopy(cgs.osp.teamColors.head, ci->colors.head);
+				VectorCopy(cgs.osp.teamColors.torso, ci->colors.torso);
+				VectorCopy(cgs.osp.teamColors.legs, ci->colors.legs);
+			}
+			else
+			{
+				/* Use our own colors for followed player */
+				VectorCopy(cgs.osp.myColors.head, ci->colors.head);
+				VectorCopy(cgs.osp.myColors.torso, ci->colors.torso);
+				VectorCopy(cgs.osp.myColors.legs, ci->colors.legs);
+			}
 
-		if (cgs.osp.enemyColorsOverride.isRailColorSet)
-		{
-			VectorCopy(cgs.osp.enemyColors.railCore, ci->colors.railCore);
-			VectorCopy(cgs.osp.enemyColors.railRings, ci->colors.railRings);
+			if (cgs.osp.teamColorsOverride.isRailColorSet)
+			{
+				VectorCopy(cgs.osp.teamColors.railCore, ci->colors.railCore);
+				VectorCopy(cgs.osp.teamColors.railRings, ci->colors.railRings);
+			}
+			else
+			{
+				/* Use our own rail colors for followed player */
+				VectorCopy(cgs.osp.myColors.railCore, ci->colors.railCore);
+				VectorCopy(cgs.osp.myColors.railRings, ci->colors.railRings);
+			}
+			/* Note: frozen color not used in non-team games */
 		}
-		if (cgs.osp.enemyColorsOverride.isFrozenColorSet)
+		else /* enemy in FFA or 1vs1 game */
 		{
-			VectorCopy(cgs.osp.enemyColors.frozen, ci->colors.frozen);
+			if (cgs.osp.enemyColorsOverride.isModelColorSet)
+			{
+				VectorCopy(cgs.osp.enemyColors.head, ci->colors.head);
+				VectorCopy(cgs.osp.enemyColors.torso, ci->colors.torso);
+				VectorCopy(cgs.osp.enemyColors.legs, ci->colors.legs);
+			}
+
+			CG_ModelUniqueColors(clientNum, &ci->colors);
+
+			if (cgs.osp.enemyColorsOverride.isRailColorSet)
+			{
+				VectorCopy(cgs.osp.enemyColors.railCore, ci->colors.railCore);
+				VectorCopy(cgs.osp.enemyColors.railRings, ci->colors.railRings);
+			}
+			if (cgs.osp.enemyColorsOverride.isFrozenColorSet)
+			{
+				VectorCopy(cgs.osp.enemyColors.frozen, ci->colors.frozen);
+			}
 		}
 	}
 }

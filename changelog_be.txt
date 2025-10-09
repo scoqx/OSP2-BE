@@ -473,4 +473,4 @@ SHUD:
 
 
 09.10.2025 be 1.00-beta-1
-+ cg_spectPOV (teamModes)
++ cg_spectPOV
