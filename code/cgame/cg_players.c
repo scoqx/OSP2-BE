@@ -690,6 +690,99 @@ static qboolean CG_RegisterClientModelname(clientInfo_t* ci, const char* modelNa
 	return qtrue;
 }
 
+/*
+==========================
+CG_RegisterOriginalHeadModel
+==========================
+*/
+static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
+{
+	char filename[MAX_QPATH];
+	char* skinPtr;
+	char headModelName[MAX_QPATH];
+	char headSkinName[MAX_QPATH];
+	
+	ci->originalHeadModelHandle = 0;
+	ci->originalHeadSkinHandle = 0;
+	ci->originalModelIcon = 0;
+	
+	if (ci->originalHeadModel[0] == '\0')
+	{
+		return;
+	}
+	
+	/* Parse model/skin from hmodel string */
+	Q_strncpyz(headModelName, ci->originalHeadModel, sizeof(headModelName));
+	skinPtr = strchr(headModelName, '/');
+	if (skinPtr)
+	{
+		*skinPtr = '\0';  /* Terminate model name */
+		Q_strncpyz(headSkinName, skinPtr + 1, sizeof(headSkinName));
+	}
+	else
+	{
+		/* No skin specified, use default */
+		Q_strncpyz(headSkinName, "default", sizeof(headSkinName));
+	}
+	
+	/* Register head model */
+	if (headModelName[0] == '*')
+	{
+		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/%s.md3", &headModelName[1], &headModelName[1]);
+	}
+	else
+	{
+		Com_sprintf(filename, sizeof(filename), "models/players/%s/head.md3", headModelName);
+	}
+	
+	ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
+	
+	/* if the head model could not be found and we didn't load from the heads folder try to load from there */
+	if (!ci->originalHeadModelHandle && headModelName[0] != '*')
+	{
+		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/%s.md3", headModelName, headModelName);
+		ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
+	}
+	
+	/* Register head skin */
+	if (headModelName[0] == '*')
+	{
+		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/head_%s.skin", &headModelName[1], headSkinName);
+	}
+	else
+	{
+		Com_sprintf(filename, sizeof(filename), "models/players/%s/head_%s.skin", headModelName, headSkinName);
+	}
+	
+	ci->originalHeadSkinHandle = trap_R_RegisterSkin(filename);
+	
+	/* if the head skin could not be found and we didn't load from the heads folder try to load from there */
+	if (!ci->originalHeadSkinHandle && headModelName[0] != '*')
+	{
+		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/head_%s.skin", headModelName, headSkinName);
+		ci->originalHeadSkinHandle = trap_R_RegisterSkin(filename);
+	}
+	
+	/* Register head icon */
+	if (headModelName[0] == '*')
+	{
+		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/icon_%s.tga", &headModelName[1], headSkinName);
+	}
+	else
+	{
+		Com_sprintf(filename, sizeof(filename), "models/players/%s/icon_%s.tga", headModelName, headSkinName);
+	}
+	
+	ci->originalModelIcon = trap_R_RegisterShaderNoMip(filename);
+	
+	/* if the head icon could not be found and we didn't load from the heads folder try to load from there */
+	if (!ci->originalModelIcon && headModelName[0] != '*')
+	{
+		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/icon_%s.tga", headModelName, headSkinName);
+		ci->originalModelIcon = trap_R_RegisterShaderNoMip(filename);
+	}
+}
+
 void CG_LoadForcedSounds(void)
 {
 	char mySoundModel[MAX_QPATH];
@@ -796,6 +889,9 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 			ci->newAnims = qtrue;
 		}
 	}
+
+	/* register original head model for BERUN */
+	CG_RegisterOriginalHeadModel(ci);
 
 	// sounds
 	dir = ci->modelName;
@@ -1437,9 +1533,8 @@ void CG_NewClientInfo(int clientNum)
 	newInfo.team = atoi(v);
 
 	// hmodel
-	// v = Info_ValueForKey(configstring, "hmodel");
-	// Q_strncpyz(newInfo.originalHeadModel, v, sizeof(newInfo.originalHeadModel));
-
+	v = Info_ValueForKey(configstring, "hmodel");
+	Q_strncpyz(newInfo.originalHeadModel, v, sizeof(newInfo.originalHeadModel));
 
 	// rt
 	v = Info_ValueForKey(configstring, "rt");

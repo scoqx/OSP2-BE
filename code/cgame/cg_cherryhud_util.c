@@ -1471,6 +1471,57 @@ void CG_CHUDFormatNumber(float value, const char* format, char* output, int maxl
 }
 
 // Centralized visibility checking function (similar to SuperHUD)
+// Common validation utilities
+qboolean CG_CHUDValidateElementAndConfig(void* element, const cherryhudConfig_t* config) {
+    return (element != NULL && config != NULL);
+}
+
+qboolean CG_CHUDValidateClientNumber(int clientNum) {
+    return (clientNum >= 0 && clientNum < MAX_CLIENTS);
+}
+
+qboolean CG_CHUDValidateBounds(cherryhudLayoutBounds_t* bounds) {
+    return (bounds != NULL && bounds->isValid);
+}
+
+// Common rendering utilities
+void CG_CHUDRenderElementWithValidation(void* element, const cherryhudConfig_t* config, 
+                                       cherryhudLayoutBounds_t* bounds, int clientNum) {
+    // Validate inputs
+    if (!CG_CHUDValidateElementAndConfig(element, config) || 
+        !CG_CHUDValidateBounds(bounds) || 
+        !CG_CHUDValidateClientNumber(clientNum)) {
+        return;
+    }
+    
+    // Check visibility
+    if (!CG_CHUDCheckElementVisibility(config, clientNum, (cherryhudElement_t*)element)) {
+        return;
+    }
+    
+    // Check hide flags
+    if (CG_CHUDCheckElementHideFlags(config, clientNum, (cherryhudElement_t*)element)) {
+        return;
+    }
+}
+
+void CG_CHUDRenderElementBackgroundAndBorder(const cherryhudConfig_t* config, cherryhudLayoutBounds_t* bounds) {
+    if (!config || !bounds) return;
+    
+    // Render background
+    if (config->background.color.isSet) {
+        CG_CHUDRenderContainerBackgroundFromBounds(config, bounds);
+    }
+    
+    // Render border
+    if (config->border.isSet) {
+        vec4_t borderColor;
+        CG_CHUDConfigPickBorderColor(config, borderColor, qfalse);
+        CG_CHUDDrawBorderCentralized(bounds->x, bounds->y, bounds->width, bounds->height,
+                                     config->border.sideSizes, borderColor);
+    }
+}
+
 qboolean CG_CHUDCheckElementVisibility(const cherryhudConfig_t* config, int clientNum, cherryhudElement_t* element)
 {
     int vflags;

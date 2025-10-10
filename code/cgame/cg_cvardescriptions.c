@@ -367,6 +367,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_clearOnLevelLoad", "Clear console when loading a new level. Set ^20^7 to disable." },
 	{ "cg_playersID", "Add client number to player's nickname. Requires ^3vid_restart^7\n  ^20^7 - off\n  ^21^7 - always add [clientNum] before name\n  ^22^7 - add only for duplicate or empty nicknames" },
 	{ "cg_spectPOV", "Use team perspective when spectating. Set ^20^7 to disable." },
+	{ "cg_drawRealHeads", "Use original player head models (icon) . Set ^20^7 to disable." },
 };
 
 

@@ -1054,6 +1054,15 @@ int CG_CHUDTableGetNumRows(cherryhudTable_t* table);
 void CG_CHUDTableSetProperties(cherryhudTable_t* table, float baseX, float baseY, float rowHeight, float rowSpacing);
 void CG_CHUDTableUpdatePosition(cherryhudTable_t* table, const cherryhudConfig_t* containerConfig);
 
+// Table building helper functions
+void CG_CHUDTableCollectPlayerData(cherryhudPlayerData_t* players, int* numPlayers, const char* tableType);
+qboolean CG_CHUDTableNeedsRebuild(cherryhudTable_t* table);
+void CG_CHUDTableUpdateProperties(cherryhudTable_t* table);
+qboolean CG_CHUDTableDataChanged(cherryhudTableManager_t* manager, cherryhudTable_t* table, int playerHash, int requiredRows);
+void CG_CHUDTableManageRows(cherryhudTable_t* table, int requiredRows);
+void CG_CHUDTableUpdateAllRows(cherryhudTable_t* table, const cherryhudPlayerData_t* players, int numPlayers);
+void CG_CHUDTableFinalize(cherryhudTable_t* table);
+
 // Table context management functions
 void CG_CHUDTableContextInit(cherryhudTableContext_t* context);
 void CG_CHUDTableContextUpdateFromConfig(cherryhudTableContext_t* context, const cherryhudConfig_t* config);
@@ -1406,6 +1415,16 @@ void* CG_CHUDCreateElementBase(const cherryhudConfig_t* config, int elementSize)
 void CG_CHUDDestroyElementBase(void* context);
 qboolean CG_CHUDValidateElementContext(void* context, const cherryhudConfig_t* config);
 qboolean CG_CHUDValidateElementBounds(cherryhudLayoutBounds_t* bounds);
+
+// Common validation utilities
+qboolean CG_CHUDValidateElementAndConfig(void* element, const cherryhudConfig_t* config);
+qboolean CG_CHUDValidateClientNumber(int clientNum);
+qboolean CG_CHUDValidateBounds(cherryhudLayoutBounds_t* bounds);
+
+// Common rendering utilities
+void CG_CHUDRenderElementWithValidation(void* element, const cherryhudConfig_t* config, 
+                                       cherryhudLayoutBounds_t* bounds, int clientNum);
+void CG_CHUDRenderElementBackgroundAndBorder(const cherryhudConfig_t* config, cherryhudLayoutBounds_t* bounds);
 void CG_CHUDSetElementPositionFromBounds(cherryhudTextContext_t* textCtx, cherryhudLayoutBounds_t* bounds);
 void CG_CHUDRenderContainerBackgroundFromBounds(const cherryhudConfig_t* config, cherryhudLayoutBounds_t* bounds);
 void CG_CHUDRenderContainerBackgroundFromBoundsWithHeight(const cherryhudConfig_t* config, cherryhudLayoutBounds_t* bounds, float currentHeight);

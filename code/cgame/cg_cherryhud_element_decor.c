@@ -34,6 +34,25 @@ typedef struct
 #define CHUD_DECOR_USE_AUTO_TEXT       (1 << 10)
 #define CHUD_DECOR_USE_DYNAMIC_IMAGE   (1 << 11)
 
+// Player type handler structure
+typedef struct {
+    const char* typeName;
+    void (*handler)(cherryhudDecorElement_t* element);
+    qboolean hasAutoIcon;  // Whether this type has an automatic icon
+} cherryhudPlayerTypeHandler_t;
+
+// Game type handler structure
+typedef struct {
+    const char* typeName;
+    void (*handler)(cherryhudDecorElement_t* element);
+} cherryhudGameTypeHandler_t;
+
+// Weapon stat handler structure
+typedef struct {
+    const char* statName;
+    void (*handler)(cherryhudDecorElement_t* element);
+} cherryhudWeaponStatHandler_t;
+
 // Forward declarations for type handlers
 static void CG_CHUDDecorGetPlayerName(cherryhudDecorElement_t* element);
 static void CG_CHUDDecorGetPlayerScore(cherryhudDecorElement_t* element);
@@ -48,6 +67,7 @@ static void CG_CHUDDecorGetPlayerTime(cherryhudDecorElement_t* element);
 static void CG_CHUDDecorGetPlayerThaws(cherryhudDecorElement_t* element);
 static void CG_CHUDDecorGetPlayerXid(cherryhudDecorElement_t* element);
 static void CG_CHUDDecorGetPlayerSkill(cherryhudDecorElement_t* element);
+static void CG_CHUDDecorGetPlayerHead(cherryhudDecorElement_t* element);
 
 static void CG_CHUDDecorGetGameServerName(cherryhudDecorElement_t* element);
 static void CG_CHUDDecorGetGameMapName(cherryhudDecorElement_t* element);
@@ -70,6 +90,100 @@ static void CG_CHUDDecorProcessGameType(cherryhudDecorElement_t* element);
 static void CG_CHUDDecorProcessWeaponType(cherryhudDecorElement_t* element);
 static void CG_CHUDDecorInitializeContent(cherryhudDecorElement_t* element);
 static void CG_CHUDDecorApplyFormatting(cherryhudDecorElement_t* element, float value);
+
+// Player type handler table
+// Each entry defines: type name, handler function, and whether it has an automatic icon
+// hasAutoIcon = qtrue: The type can display both text and icon (e.g., player.ping shows "50ms" + signal icon)
+// hasAutoIcon = qfalse: The type shows only text or handles its own icon (e.g., player.skill shows only skill icon)
+static const cherryhudPlayerTypeHandler_t playerTypeHandlers[] = {
+    {"name", CG_CHUDDecorGetPlayerName, qfalse},           // Text only
+    {"score", CG_CHUDDecorGetPlayerScore, qtrue},          // Text + icon
+    {"ping", CG_CHUDDecorGetPlayerPing, qtrue},            // Text + icon
+    {"deaths", CG_CHUDDecorGetPlayerDeaths, qtrue},        // Text + icon
+    {"kd", CG_CHUDDecorGetPlayerKD, qtrue},                // Text + icon
+    {"damageGiven", CG_CHUDDecorGetPlayerDamageGiven, qtrue}, // Text + icon
+    {"damageReceived", CG_CHUDDecorGetPlayerDamageReceived, qtrue}, // Text + icon
+    {"damageTaken", CG_CHUDDecorGetPlayerDamageReceived, qtrue}, // Alias for damageReceived
+    {"damageRatio", CG_CHUDDecorGetPlayerDamageRatio, qfalse}, // Text only
+    {"id", CG_CHUDDecorGetPlayerId, qtrue},                // Text + icon
+    {"time", CG_CHUDDecorGetPlayerTime, qtrue},            // Text + icon
+    {"thaws", CG_CHUDDecorGetPlayerThaws, qtrue},          // Text + icon
+    {"xid", CG_CHUDDecorGetPlayerXid, qfalse},             // Text only
+    {"skill", CG_CHUDDecorGetPlayerSkill, qfalse},         // Icon only (handled in handler)
+    {"head", CG_CHUDDecorGetPlayerHead, qfalse}            // Special case (3D head)
+};
+
+#define PLAYER_TYPE_HANDLER_COUNT (sizeof(playerTypeHandlers) / sizeof(playerTypeHandlers[0]))
+
+// Game type handler table
+static const cherryhudGameTypeHandler_t gameTypeHandlers[] = {
+    {"serverName", CG_CHUDDecorGetGameServerName},
+    {"map", CG_CHUDDecorGetGameMapName},
+    {"gameType", CG_CHUDDecorGetGameType},
+    {"gametype", CG_CHUDDecorGetGameType}, // Alias
+    {"timelimit", CG_CHUDDecorGetGameTimeLimit},
+    {"timeLimit", CG_CHUDDecorGetGameTimeLimit}, // Alias
+    {"fraglimit", CG_CHUDDecorGetGameFragLimit},
+    {"fragLimit", CG_CHUDDecorGetGameFragLimit}, // Alias
+    {"capturelimit", CG_CHUDDecorGetGameCaptureLimit},
+    {"captureLimit", CG_CHUDDecorGetGameCaptureLimit} // Alias
+};
+
+#define GAME_TYPE_HANDLER_COUNT (sizeof(gameTypeHandlers) / sizeof(gameTypeHandlers[0]))
+
+// Weapon stat handler table
+static const cherryhudWeaponStatHandler_t weaponStatHandlers[] = {
+    {"kills", CG_CHUDDecorGetWeaponKills},
+    {"accuracy", CG_CHUDDecorGetWeaponAccuracy},
+    {"shots", CG_CHUDDecorGetWeaponShots},
+    {"icon", CG_CHUDDecorGetWeaponIcon}
+};
+
+#define WEAPON_STAT_HANDLER_COUNT (sizeof(weaponStatHandlers) / sizeof(weaponStatHandlers[0]))
+
+// Helper function to find player type handler
+static void (*CG_CHUDDecorFindPlayerTypeHandler(const char* typeName))(cherryhudDecorElement_t*) {
+    int i;
+    for (i = 0; i < PLAYER_TYPE_HANDLER_COUNT; i++) {
+        if (Q_stricmp(playerTypeHandlers[i].typeName, typeName) == 0) {
+            return playerTypeHandlers[i].handler;
+        }
+    }
+    return NULL;
+}
+
+// Helper function to check if player type has auto icon
+static qboolean CG_CHUDDecorPlayerTypeHasAutoIcon(const char* typeName) {
+    int i;
+    for (i = 0; i < PLAYER_TYPE_HANDLER_COUNT; i++) {
+        if (Q_stricmp(playerTypeHandlers[i].typeName, typeName) == 0) {
+            return playerTypeHandlers[i].hasAutoIcon;
+        }
+    }
+    return qfalse;
+}
+
+// Helper function to find game type handler
+static void (*CG_CHUDDecorFindGameTypeHandler(const char* typeName))(cherryhudDecorElement_t*) {
+    int i;
+    for (i = 0; i < GAME_TYPE_HANDLER_COUNT; i++) {
+        if (Q_stricmp(gameTypeHandlers[i].typeName, typeName) == 0) {
+            return gameTypeHandlers[i].handler;
+        }
+    }
+    return NULL;
+}
+
+// Helper function to find weapon stat handler
+static void (*CG_CHUDDecorFindWeaponStatHandler(const char* statName))(cherryhudDecorElement_t*) {
+    int i;
+    for (i = 0; i < WEAPON_STAT_HANDLER_COUNT; i++) {
+        if (Q_stricmp(weaponStatHandlers[i].statName, statName) == 0) {
+            return weaponStatHandlers[i].handler;
+        }
+    }
+    return NULL;
+}
 
 void* CG_CHUDElementDecorCreate(const cherryhudConfig_t* config, const char* containerType)
 {
@@ -181,12 +295,12 @@ void CG_CHUDElementDecorRoutine(void* context)
 	element = (cherryhudDecorElement_t*)context;
 	config = &element->config;
 	
-	if (!CG_CHUDValidateElementContext(element, config)) {
+	if (!CG_CHUDValidateElementAndConfig(element, config)) {
 		return;
 	}
 	
 	bounds = CG_CHUDLayoutGetBoundsByContext(context);
-	if (!CG_CHUDValidateElementBounds(bounds)) {
+	if (!CG_CHUDValidateBounds(bounds)) {
 		return;
 	}
 
@@ -198,15 +312,8 @@ void CG_CHUDElementDecorRoutine(void* context)
 	clientNum = bounds->clientNum;
 	element->clientNum = clientNum;
 	
-	// Check element visibility using centralized functions
-	if (!CG_CHUDCheckElementVisibility(config, clientNum, (cherryhudElement_t*)element)) {
-		return; // Don't render this element based on visflags
-	}
-	
-	// Check element hideflags using centralized function
-	if (CG_CHUDCheckElementHideFlags(config, clientNum, (cherryhudElement_t*)element)) {
-		return; // Hide this element based on hideflags
-	}
+	// Use common validation and visibility checking
+	CG_CHUDRenderElementWithValidation(element, config, bounds, clientNum);
 	
 	// Update dynamic content
 	if (element->flags & CHUD_DECOR_USE_AUTO_TEXT) {
@@ -218,10 +325,8 @@ void CG_CHUDElementDecorRoutine(void* context)
 		CG_CHUDDecorProcessType(element);
 	}
 	
-	// Draw element background first (if configured) - use bounds position
-	if (config->background.color.isSet) {
-		CG_CHUDRenderContainerBackgroundFromBounds(config, bounds);
-	}
+	// Draw element background and border using common utility
+	CG_CHUDRenderElementBackgroundAndBorder(config, bounds);
 	
 	// Special handling for player.head - render 3D head
 	if (Q_stricmp(element->infoType, "player.head") == 0) {
@@ -299,36 +404,26 @@ static void CG_CHUDDecorProcessType(cherryhudDecorElement_t* element)
 static void CG_CHUDDecorProcessPlayerType(cherryhudDecorElement_t* element)
 {
 	char* subType = element->infoType + 7; // Skip "player."
+	void (*handler)(cherryhudDecorElement_t*);
+	qhandle_t autoIcon;
 	
-	if (Q_stricmp(subType, "name") == 0) {
-		CG_CHUDDecorGetPlayerName(element);
-	} else if (Q_stricmp(subType, "score") == 0) {
-		CG_CHUDDecorGetPlayerScore(element);
-	} else if (Q_stricmp(subType, "ping") == 0) {
-		CG_CHUDDecorGetPlayerPing(element);
-	} else if (Q_stricmp(subType, "deaths") == 0) {
-		CG_CHUDDecorGetPlayerDeaths(element);
-	} else if (Q_stricmp(subType, "kd") == 0) {
-		CG_CHUDDecorGetPlayerKD(element);
-	} else if (Q_stricmp(subType, "damageGiven") == 0) {
-		CG_CHUDDecorGetPlayerDamageGiven(element);
-	} else if ((Q_stricmp(subType, "damageReceived") == 0) || (Q_stricmp(subType, "damageTaken") == 0)) {
-		CG_CHUDDecorGetPlayerDamageReceived(element);
-	} else if (Q_stricmp(subType, "damageRatio") == 0) {
-		CG_CHUDDecorGetPlayerDamageRatio(element);
-	} else if (Q_stricmp(subType, "id") == 0) {
-		CG_CHUDDecorGetPlayerId(element);
-	} else if (Q_stricmp(subType, "time") == 0) {
-		CG_CHUDDecorGetPlayerTime(element);
-	} else if (Q_stricmp(subType, "thaws") == 0) {
-		CG_CHUDDecorGetPlayerThaws(element);
-	} else if (Q_stricmp(subType, "xid") == 0) {
-		CG_CHUDDecorGetPlayerXid(element);
-	} else if (Q_stricmp(subType, "skill") == 0) {
-		CG_CHUDDecorGetPlayerSkill(element);
-	} else if (Q_stricmp(subType, "head") == 0) {
-		// For player.head, we don't need to set text content - it's handled in rendering
-		element->textCtx.text = "";
+	// Find handler using lookup table
+	handler = CG_CHUDDecorFindPlayerTypeHandler(subType);
+	if (handler) {
+		// Call the handler to set text content
+		handler(element);
+		
+		// Check if this type has an automatic icon and set it if needed
+		if (CG_CHUDDecorPlayerTypeHasAutoIcon(subType)) {
+			autoIcon = CG_CHUDDecorGetAutoImage(element);
+			if (autoIcon) {
+				// Initialize draw context if not already done
+				if (!element->drawCtx.pos[0] && !element->drawCtx.pos[1]) {
+					CG_CHUDDrawMakeContext(&element->config, &element->drawCtx);
+				}
+				element->drawCtx.image = autoIcon;
+			}
+		}
 	} else {
 		CG_CHUDDecorGetUnknownType(element);
 	}
@@ -338,19 +433,12 @@ static void CG_CHUDDecorProcessPlayerType(cherryhudDecorElement_t* element)
 static void CG_CHUDDecorProcessGameType(cherryhudDecorElement_t* element)
 {
 	char* subType = element->infoType + 5; // Skip "game."
+	void (*handler)(cherryhudDecorElement_t*);
 	
-	if (Q_stricmp(subType, "serverName") == 0) {
-		CG_CHUDDecorGetGameServerName(element);
-	} else if (Q_stricmp(subType, "map") == 0) {
-		CG_CHUDDecorGetGameMapName(element);
-	} else if (Q_stricmp(subType, "gameType") == 0 || Q_stricmp(subType, "gametype") == 0) {
-		CG_CHUDDecorGetGameType(element);
-	} else if (Q_stricmp(subType, "timelimit") == 0 || Q_stricmp(subType, "timeLimit") == 0) {
-		CG_CHUDDecorGetGameTimeLimit(element);
-	} else if (Q_stricmp(subType, "fraglimit") == 0 || Q_stricmp(subType, "fragLimit") == 0) {
-		CG_CHUDDecorGetGameFragLimit(element);
-	} else if (Q_stricmp(subType, "capturelimit") == 0 || Q_stricmp(subType, "captureLimit") == 0) {
-		CG_CHUDDecorGetGameCaptureLimit(element);
+	// Find handler using lookup table
+	handler = CG_CHUDDecorFindGameTypeHandler(subType);
+	if (handler) {
+		handler(element);
 	} else {
 		CG_CHUDDecorGetUnknownType(element);
 	}
@@ -363,6 +451,7 @@ static void CG_CHUDDecorProcessWeaponType(cherryhudDecorElement_t* element)
 	char* subType;
 	char* dotPos;
 	char* weaponStat;
+	void (*handler)(cherryhudDecorElement_t*);
 
 	/* Copy infoType to buffer to avoid modifying the original */
 	Q_strncpyz(buffer, element->infoType, sizeof(buffer));
@@ -375,40 +464,54 @@ static void CG_CHUDDecorProcessWeaponType(cherryhudDecorElement_t* element)
 	}
 	
 	*dotPos = '\0'; /* Null terminate weapon name in buffer */
-
 	weaponStat = dotPos + 1; /* Get the stat part */
 	
-	if (Q_stricmp(weaponStat, "kills") == 0) {
-		CG_CHUDDecorGetWeaponKills(element);
-	} else if (Q_stricmp(weaponStat, "accuracy") == 0) {
-		CG_CHUDDecorGetWeaponAccuracy(element);
-	} else if (Q_stricmp(weaponStat, "shots") == 0) {
-		CG_CHUDDecorGetWeaponShots(element);
-	} else if (Q_stricmp(weaponStat, "icon") == 0) {
-		CG_CHUDDecorGetWeaponIcon(element);
+	// Find handler using lookup table
+	handler = CG_CHUDDecorFindWeaponStatHandler(weaponStat);
+	if (handler) {
+		handler(element);
 	} else {
 		CG_CHUDDecorGetUnknownType(element);
 	}
 }
 
-// Player type handlers
-static void CG_CHUDDecorGetPlayerName(cherryhudDecorElement_t* element) {
-	clientInfo_t* ci = &cgs.clientinfo[element->clientNum];
-	Q_strncpyz(element->displayText, ci->name, sizeof(element->displayText));
+// Common utility functions to reduce duplication
+static score_t* CG_CHUDDecorFindPlayerScore(int clientNum) {
+	int i;
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		if (cg.scores[i].client == clientNum) {
+			return &cg.scores[i];
+		}
+	}
+	return NULL;
+}
+
+static void CG_CHUDDecorSetTextFromString(cherryhudDecorElement_t* element, const char* text) {
+	Q_strncpyz(element->displayText, text, sizeof(element->displayText));
 	element->textCtx.text = element->displayText;
 }
 
-static void CG_CHUDDecorGetPlayerScore(cherryhudDecorElement_t* element) {
-	score_t* score = NULL;
-	int i;
-	int playerScore = 0;
+static void CG_CHUDDecorSetTextFromClientInfo(cherryhudDecorElement_t* element, const char* field) {
+	clientInfo_t* ci = &cgs.clientinfo[element->clientNum];
+	const char* value = NULL;
 	
-	for (i = 0; i < MAX_CLIENTS; i++) {
-		if (cg.scores[i].client == element->clientNum) {
-			score = &cg.scores[i];
-			break;
-		}
+	if (Q_stricmp(field, "name") == 0) {
+		value = ci->name;
+	} else if (Q_stricmp(field, "xid") == 0) {
+		value = (const char*)ci->xidStr;
 	}
+	
+	CG_CHUDDecorSetTextFromString(element, value ? value : "Unknown");
+}
+
+// Player type handlers
+static void CG_CHUDDecorGetPlayerName(cherryhudDecorElement_t* element) {
+	CG_CHUDDecorSetTextFromClientInfo(element, "name");
+}
+
+static void CG_CHUDDecorGetPlayerScore(cherryhudDecorElement_t* element) {
+	score_t* score = CG_CHUDDecorFindPlayerScore(element->clientNum);
+	int playerScore = 0;
 	
 	if (score) {
 		playerScore = score->score;
@@ -419,16 +522,8 @@ static void CG_CHUDDecorGetPlayerScore(cherryhudDecorElement_t* element) {
 }
 
 static void CG_CHUDDecorGetPlayerPing(cherryhudDecorElement_t* element) {
-	score_t* score = NULL;
-	int i;
+	score_t* score = CG_CHUDDecorFindPlayerScore(element->clientNum);
 	int ping = 0;
-	
-	for (i = 0; i < MAX_CLIENTS; i++) {
-		if (cg.scores[i].client == element->clientNum) {
-			score = &cg.scores[i];
-			break;
-		}
-	}
 	
 	if (score && score->ping != -1) {
 		ping = score->ping;
@@ -436,76 +531,67 @@ static void CG_CHUDDecorGetPlayerPing(cherryhudDecorElement_t* element) {
 	CG_CHUDDecorApplyFormatting(element, (float)ping);
 }
 
+// Helper function for simple stats formatting
+static void CG_CHUDDecorGetPlayerStat(cherryhudDecorElement_t* element, float value) {
+	CG_CHUDDecorApplyFormatting(element, value);
+}
+
+// Helper function for score-based stats
+static void CG_CHUDDecorGetPlayerScoreStat(cherryhudDecorElement_t* element, const char* field) {
+	score_t* score = CG_CHUDDecorFindPlayerScore(element->clientNum);
+	int value = 0;
+	
+	if (score) {
+		if (Q_stricmp(field, "time") == 0) {
+			value = score->time;
+		} else if (Q_stricmp(field, "thaws") == 0) {
+			value = score->scoreFlags;
+		}
+	}
+	
+	CG_CHUDDecorApplyFormatting(element, (float)value);
+}
+
 static void CG_CHUDDecorGetPlayerDeaths(cherryhudDecorElement_t* element) {
-	CG_CHUDDecorApplyFormatting(element, (float)cgs.be.statsAll[element->clientNum].deaths);
+	CG_CHUDDecorGetPlayerStat(element, (float)cgs.be.statsAll[element->clientNum].deaths);
 }
 
 static void CG_CHUDDecorGetPlayerKD(cherryhudDecorElement_t* element) {
-	CG_CHUDDecorApplyFormatting(element, cgs.be.statsAll[element->clientNum].kdratio);
+	CG_CHUDDecorGetPlayerStat(element, cgs.be.statsAll[element->clientNum].kdratio);
 }
 
 static void CG_CHUDDecorGetPlayerDamageGiven(cherryhudDecorElement_t* element) {
-	CG_CHUDDecorApplyFormatting(element, (float)cgs.be.statsAll[element->clientNum].dmgGiven);
+	CG_CHUDDecorGetPlayerStat(element, (float)cgs.be.statsAll[element->clientNum].dmgGiven);
 }
 
 static void CG_CHUDDecorGetPlayerDamageReceived(cherryhudDecorElement_t* element) {
-	CG_CHUDDecorApplyFormatting(element, (float)cgs.be.statsAll[element->clientNum].dmgReceived);
+	CG_CHUDDecorGetPlayerStat(element, (float)cgs.be.statsAll[element->clientNum].dmgReceived);
 }
 
 static void CG_CHUDDecorGetPlayerDamageRatio(cherryhudDecorElement_t* element) {
-	CG_CHUDDecorApplyFormatting(element, cgs.be.statsAll[element->clientNum].damageRatio);
+	CG_CHUDDecorGetPlayerStat(element, cgs.be.statsAll[element->clientNum].damageRatio);
 }
 
 static void CG_CHUDDecorGetPlayerId(cherryhudDecorElement_t* element) {
-	CG_CHUDDecorApplyFormatting(element, (float)element->clientNum);
+	CG_CHUDDecorGetPlayerStat(element, (float)element->clientNum);
 }
 
 static void CG_CHUDDecorGetPlayerTime(cherryhudDecorElement_t* element) {
-	score_t* score = NULL;
-	int i;
-	int playerTime = 0;
-	
-	for (i = 0; i < MAX_CLIENTS; i++) {
-		if (cg.scores[i].client == element->clientNum) {
-			score = &cg.scores[i];
-			break;
-		}
-	}
-	
-	if (score) {
-		playerTime = score->time;
-	}
-	CG_CHUDDecorApplyFormatting(element, (float)playerTime);
+	CG_CHUDDecorGetPlayerScoreStat(element, "time");
 }
 
 static void CG_CHUDDecorGetPlayerThaws(cherryhudDecorElement_t* element) {
-	score_t* score = NULL;
-	int i;
-	int thaws = 0;
-	
 	// Only show thaws in freeze mode
 	if (!CG_OSPIsGameTypeFreeze()) {
-		CG_CHUDDecorApplyFormatting(element, 0.0f);
+		CG_CHUDDecorGetPlayerStat(element, 0.0f);
 		return;
 	}
 	
-	for (i = 0; i < MAX_CLIENTS; i++) {
-		if (cg.scores[i].client == element->clientNum) {
-			score = &cg.scores[i];
-			break;
-		}
-	}
-	
-	if (score) {
-		thaws = score->scoreFlags;
-	}
-	CG_CHUDDecorApplyFormatting(element, (float)thaws);
+	CG_CHUDDecorGetPlayerScoreStat(element, "thaws");
 }
 
 static void CG_CHUDDecorGetPlayerXid(cherryhudDecorElement_t* element) {
-	clientInfo_t* ci = &cgs.clientinfo[element->clientNum];
-	Q_strncpyz(element->displayText, (const char*)ci->xidStr, sizeof(element->displayText));
-	element->textCtx.text = element->displayText;
+	CG_CHUDDecorSetTextFromClientInfo(element, "xid");
 }
 
 static void CG_CHUDDecorGetPlayerSkill(cherryhudDecorElement_t* element) {
@@ -551,25 +637,25 @@ static void CG_CHUDDecorGetPlayerSkill(cherryhudDecorElement_t* element) {
 	element->textCtx.text = NULL;
 }
 
+static void CG_CHUDDecorGetPlayerHead(cherryhudDecorElement_t* element) {
+	// For player.head, we don't need to set text content - it's handled in rendering
+	element->textCtx.text = "";
+}
+
+// Helper function for server info fields
+static void CG_CHUDDecorGetServerInfoField(cherryhudDecorElement_t* element, const char* key, const char* defaultValue) {
+	const char* info = CG_ConfigString(CS_SERVERINFO);
+	char* value = Info_ValueForKey(info, key);
+	CG_CHUDDecorSetTextFromString(element, value ? value : defaultValue);
+}
+
 // Game type handlers
 static void CG_CHUDDecorGetGameServerName(cherryhudDecorElement_t* element) {
-	const char* info;
-	char* hostname;
-	
-	info = CG_ConfigString(CS_SERVERINFO);
-	hostname = Info_ValueForKey(info, "sv_hostname");
-	Q_strncpyz(element->displayText, hostname ? hostname : "Unknown Server", sizeof(element->displayText));
-	element->textCtx.text = element->displayText;
+	CG_CHUDDecorGetServerInfoField(element, "sv_hostname", "Unknown Server");
 }
 
 static void CG_CHUDDecorGetGameMapName(cherryhudDecorElement_t* element) {
-	const char* info;
-	char* mapname;
-	
-	info = CG_ConfigString(CS_SERVERINFO);
-	mapname = Info_ValueForKey(info, "mapname");
-	Q_strncpyz(element->displayText, mapname ? mapname : "Unknown Map", sizeof(element->displayText));
-	element->textCtx.text = element->displayText;
+	CG_CHUDDecorGetServerInfoField(element, "mapname", "Unknown Map");
 }
 
 static void CG_CHUDDecorGetGameType(cherryhudDecorElement_t* element) {
@@ -631,20 +717,33 @@ static void CG_CHUDDecorGetGameCaptureLimit(cherryhudDecorElement_t* element) {
 	CG_CHUDDecorApplyFormatting(element, (float)limit);
 }
 
+// Helper function for weapon stats
+static void CG_CHUDDecorGetWeaponStat(cherryhudDecorElement_t* element, const char* statType) {
+	newStatsInfo_t* stats = &cgs.be.statsAll[element->clientNum];
+	float value = 0.0f;
+	
+	if (Q_stricmp(statType, "kills") == 0) {
+		value = (float)stats->stats[element->weaponType].kills;
+	} else if (Q_stricmp(statType, "accuracy") == 0) {
+		value = stats->stats[element->weaponType].accuracy;
+	} else if (Q_stricmp(statType, "shots") == 0) {
+		value = (float)stats->stats[element->weaponType].shots;
+	}
+	
+	CG_CHUDDecorApplyFormatting(element, value);
+}
+
 // Weapon type handlers
 static void CG_CHUDDecorGetWeaponKills(cherryhudDecorElement_t* element) {
-	int kills = cgs.be.statsAll[element->clientNum].stats[element->weaponType].kills;
-	CG_CHUDDecorApplyFormatting(element, (float)kills);
+	CG_CHUDDecorGetWeaponStat(element, "kills");
 }
 
 static void CG_CHUDDecorGetWeaponAccuracy(cherryhudDecorElement_t* element) {
-	float accuracy = cgs.be.statsAll[element->clientNum].stats[element->weaponType].accuracy;
-	CG_CHUDDecorApplyFormatting(element, accuracy);
+	CG_CHUDDecorGetWeaponStat(element, "accuracy");
 }
 
 static void CG_CHUDDecorGetWeaponShots(cherryhudDecorElement_t* element) {
-	int shots = cgs.be.statsAll[element->clientNum].stats[element->weaponType].shots;
-	CG_CHUDDecorApplyFormatting(element, (float)shots);
+	CG_CHUDDecorGetWeaponStat(element, "shots");
 }
 
 static void CG_CHUDDecorGetWeaponIcon(cherryhudDecorElement_t* element) {

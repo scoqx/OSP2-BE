@@ -288,7 +288,7 @@ void CG_CHUDTableDestroy(cherryhudTable_t* table) {
 // PLAYER DATA COLLECTION AND SORTING
 // ============================================================================
 
-static void CG_CHUDTableCollectPlayerData(cherryhudPlayerData_t* players, int* numPlayers, const char* tableType) {
+void CG_CHUDTableCollectPlayerData(cherryhudPlayerData_t* players, int* numPlayers, const char* tableType) {
     int i, k;
     clientInfo_t* ci;
     cherryhudPlayerData_t* player;
@@ -1129,7 +1129,7 @@ qboolean CG_CHUDTableContextNeedsRecalc(cherryhudTableContext_t* context) {
 // ============================================================================
 
 // Check if table needs rebuilding based on timing and changes
-static qboolean CG_CHUDTableNeedsRebuild(cherryhudTable_t* table) {
+qboolean CG_CHUDTableNeedsRebuild(cherryhudTable_t* table) {
     int currentTime;
     
     if (!table) return qfalse;
@@ -1146,7 +1146,7 @@ static qboolean CG_CHUDTableNeedsRebuild(cherryhudTable_t* table) {
 }
 
 // Update table properties from templates
-static void CG_CHUDTableUpdateProperties(cherryhudTable_t* table) {
+void CG_CHUDTableUpdateProperties(cherryhudTable_t* table) {
     const cherryhudConfig_t* playerRowTemplate;
     vec4_t activeSize;
     float currentHeight;
@@ -1197,7 +1197,7 @@ static void CG_CHUDTablePrepareData(cherryhudTable_t* table, cherryhudPlayerData
 }
 
 // Check if table data has changed significantly
-static qboolean CG_CHUDTableDataChanged(cherryhudTableManager_t* manager, cherryhudTable_t* table, int playerHash, int requiredRows) {
+qboolean CG_CHUDTableDataChanged(cherryhudTableManager_t* manager, cherryhudTable_t* table, int playerHash, int requiredRows) {
     if (!manager) return qtrue;
     
     // Skip rebuild if nothing changed, not dirty, and row count matches
@@ -1211,7 +1211,7 @@ static qboolean CG_CHUDTableDataChanged(cherryhudTableManager_t* manager, cherry
 }
 
 // Manage table row memory allocation
-static void CG_CHUDTableManageRows(cherryhudTable_t* table, int requiredRows) {
+void CG_CHUDTableManageRows(cherryhudTable_t* table, int requiredRows) {
     cherryhudTableRow_t* newRows;
     int i;
     
@@ -1248,7 +1248,7 @@ static void CG_CHUDTableManageRows(cherryhudTable_t* table, int requiredRows) {
 }
 
 // Update all table rows with new data
-static void CG_CHUDTableUpdateAllRows(cherryhudTable_t* table, cherryhudPlayerData_t* players, int numPlayers) {
+void CG_CHUDTableUpdateAllRows(cherryhudTable_t* table, const cherryhudPlayerData_t* players, int numPlayers) {
     int i;
     
     if (!table || !players) return;
@@ -1262,7 +1262,7 @@ static void CG_CHUDTableUpdateAllRows(cherryhudTable_t* table, cherryhudPlayerDa
 }
 
 // Finalize table after building (height calculation, layout)
-static void CG_CHUDTableFinalize(cherryhudTable_t* table) {
+void CG_CHUDTableFinalize(cherryhudTable_t* table) {
     float dynamicHeight;
     
     if (!table) return;
@@ -1279,6 +1279,70 @@ static void CG_CHUDTableFinalize(cherryhudTable_t* table) {
 }
 
 // Main table build function - now much cleaner!
+// Helper function to create and validate services
+static qboolean CG_CHUDTableBuildCreateServices(cherryhudDataService_t** dataService, 
+                                               cherryhudMemoryService_t** memoryService, 
+                                               cherryhudValidationService_t** validationService) {
+    *dataService = CG_CHUDDataServiceCreate();
+    *memoryService = CG_CHUDMemoryServiceCreate();
+    *validationService = CG_CHUDValidationServiceCreate();
+    
+    if (!*dataService || !*memoryService || !*validationService) {
+        // Cleanup on error
+        if (*dataService) CG_CHUDDataServiceDestroy(*dataService);
+        if (*memoryService) CG_CHUDMemoryServiceDestroy(*memoryService);
+        if (*validationService) CG_CHUDValidationServiceDestroy(*validationService);
+        return qfalse;
+    }
+    return qtrue;
+}
+
+// Helper function to cleanup services
+static void CG_CHUDTableBuildCleanupServices(cherryhudDataService_t* dataService, 
+                                            cherryhudMemoryService_t* memoryService, 
+                                            cherryhudValidationService_t* validationService) {
+    if (dataService) CG_CHUDDataServiceDestroy(dataService);
+    if (memoryService) CG_CHUDMemoryServiceDestroy(memoryService);
+    if (validationService) CG_CHUDValidationServiceDestroy(validationService);
+}
+
+// Helper function to prepare table data
+static qboolean CG_CHUDTableBuildPrepareData(cherryhudTable_t* table, 
+                                            cherryhudDataService_t* dataService,
+                                            cherryhudPlayerData_t* players, 
+                                            int* numPlayers, 
+                                            int* playerHash, 
+                                            int* requiredRows) {
+    // Collect and prepare player data
+    dataService->collectData(players, numPlayers, table->tableType);
+    *playerHash = dataService->calculateHash(players, *numPlayers);
+    
+    // Calculate required rows
+    *requiredRows = *numPlayers;  // Currently just players/spectators; expand if there are other rows
+    
+    return qtrue;
+}
+
+// Helper function to rebuild table if needed
+static void CG_CHUDTableBuildRebuildTable(cherryhudTable_t* table, 
+                                         cherryhudDataService_t* dataService,
+                                         cherryhudMemoryService_t* memoryService,
+                                         cherryhudPlayerData_t* players, 
+                                         int numPlayers, 
+                                         int requiredRows) {
+    // Sort players
+    dataService->sortData(players, numPlayers);
+    
+    // Manage row memory allocation
+    memoryService->manageMemory(table, requiredRows);
+    
+    // Update all rows with new data
+    memoryService->updateRows(table, players, numPlayers);
+    
+    // Finalize table (height, layout)
+    memoryService->finalizeTable(table);
+}
+
 void CG_CHUDTableBuild(cherryhudTableManager_t* manager, cherryhudTable_t* table) {
     cherryhudPlayerData_t players[MAX_CLIENTS];
     int numPlayers;
@@ -1292,56 +1356,37 @@ void CG_CHUDTableBuild(cherryhudTableManager_t* manager, cherryhudTable_t* table
     
     if (!table || !manager) return;
     
-    // Create services
-    dataService = CG_CHUDDataServiceCreate();
-    memoryService = CG_CHUDMemoryServiceCreate();
-    validationService = CG_CHUDValidationServiceCreate();
-    
-    if (!dataService || !memoryService || !validationService) {
-        // Cleanup on error
-        if (dataService) CG_CHUDDataServiceDestroy(dataService);
-        if (memoryService) CG_CHUDMemoryServiceDestroy(memoryService);
-        if (validationService) CG_CHUDValidationServiceDestroy(validationService);
+    // Create and validate services
+    if (!CG_CHUDTableBuildCreateServices(&dataService, &memoryService, &validationService)) {
         return;
     }
     
     // Step 1: Check if rebuild is needed
     if (!validationService->needsRebuild(table)) {
-        goto cleanup;
+        CG_CHUDTableBuildCleanupServices(dataService, memoryService, validationService);
+        return;
     }
     
     // Step 2: Update table properties from templates
     validationService->updateProperties(table);
     
-    // Step 3: Collect and prepare player data
-    dataService->collectData(players, &numPlayers, table->tableType);
-    playerHash = dataService->calculateHash(players, numPlayers);
-    
-    // Calculate required rows
-    requiredRows = numPlayers;  // Currently just players/spectators; expand if there are other rows
+    // Step 3: Prepare data
+    if (!CG_CHUDTableBuildPrepareData(table, dataService, players, &numPlayers, &playerHash, &requiredRows)) {
+        CG_CHUDTableBuildCleanupServices(dataService, memoryService, validationService);
+        return;
+    }
     
     // Step 4: Check if data has changed
     if (!validationService->dataChanged(manager, table, playerHash, requiredRows)) {
-        goto cleanup;
+        CG_CHUDTableBuildCleanupServices(dataService, memoryService, validationService);
+        return;
     }
     
-    // Step 5: Sort players
-    dataService->sortData(players, numPlayers);
+    // Step 5: Rebuild table
+    CG_CHUDTableBuildRebuildTable(table, dataService, memoryService, players, numPlayers, requiredRows);
     
-    // Step 6: Manage row memory allocation
-    memoryService->manageMemory(table, requiredRows);
-    
-    // Step 7: Update all rows with new data
-    memoryService->updateRows(table, players, numPlayers);
-    
-    // Step 8: Finalize table (height, layout)
-    memoryService->finalizeTable(table);
-    
-cleanup:
     // Cleanup services
-    CG_CHUDDataServiceDestroy(dataService);
-    CG_CHUDMemoryServiceDestroy(memoryService);
-    CG_CHUDValidationServiceDestroy(validationService);
+    CG_CHUDTableBuildCleanupServices(dataService, memoryService, validationService);
 }
 
 static void CG_CHUDTableUpdateRow(cherryhudTable_t* table, int index, const cherryhudPlayerData_t* playerData) {
@@ -1809,61 +1854,85 @@ static float CG_CHUDRenderSpectatorsBlock(const cherryhudScoreboardBlock_t* bloc
 }
 
 // Render scoreboard with all blocks in order
-void CG_CHUDRenderScoreboard(void) {
-    const cherryhudConfig_t* scoreboardConfig;
-    cherryhudConfig_t config;
-    cherryhudTable_t* globalTable;
-    float dynamicHeight;
-    
-    // Get scoreboard config
-    scoreboardConfig = CG_CHUDGetScoreboardConfig();
-    if (!scoreboardConfig) {
-        // Com_Printf("DEBUG: CG_CHUDRenderScoreboard: scoreboardConfig is NULL, scoreboardLoaded = %s\n", 
-        //            CG_CHUDIsScoreboardConfigLoaded() ? "true" : "false");
-        return;
+// Helper function to validate scoreboard config and visibility
+static qboolean CG_CHUDRenderScoreboardValidateConfig(const cherryhudConfig_t** scoreboardConfig) {
+    *scoreboardConfig = CG_CHUDGetScoreboardConfig();
+    if (!*scoreboardConfig) {
+        return qfalse;
     }
-    // Com_Printf("DEBUG: CG_CHUDRenderScoreboard: scoreboardConfig found\n");
     
     // Check scoreboard container visibility using visflags
-    if (!CG_CHUDCheckElementVisibility(scoreboardConfig, cg.clientNum, NULL)) {
-        return; // Don't render scoreboard based on visflags
+    if (!CG_CHUDCheckElementVisibility(*scoreboardConfig, cg.clientNum, NULL)) {
+        return qfalse; // Don't render scoreboard based on visflags
     }
     
     // Check scoreboard container hideflags
-    if (CG_CHUDCheckElementHideFlags(scoreboardConfig, cg.clientNum, NULL)) {
-        return; // Hide scoreboard based on hideflags
+    if (CG_CHUDCheckElementHideFlags(*scoreboardConfig, cg.clientNum, NULL)) {
+        return qfalse; // Hide scoreboard based on hideflags
     }
     
-    // Send commands to server to get scoreboard data
-    if (!cgs.osp.chud.scoreboard) {
-        if (!cg.demoPlayback && cg.scoresRequestTime < cg.time)
-        {
-            cg.scoresRequestTime = cg.time + 2000;
-            cg.realNumClients = CG_CountRealClients();
-            trap_SendClientCommand("score");
-        }
-        if (!cg.demoPlayback && cg.statsAllRequestTime < cg.time)
-        {
-            cg.statsAllRequestTime = cg.time + 2100;
-            trap_SendClientCommand("statsall");
-            cgs.be.statsAllRequested = qtrue;
-        }
-    }
+    return qtrue;
+}
 
+// Helper function to request scoreboard data from server
+static void CG_CHUDRenderScoreboardRequestData(void) {
+    if (cgs.osp.chud.scoreboard) {
+        return; // Already have data
+    }
+    
+    if (!cg.demoPlayback && cg.scoresRequestTime < cg.time) {
+        cg.scoresRequestTime = cg.time + 2000;
+        cg.realNumClients = CG_CountRealClients();
+        trap_SendClientCommand("score");
+    }
+    
+    if (!cg.demoPlayback && cg.statsAllRequestTime < cg.time) {
+        cg.statsAllRequestTime = cg.time + 2100;
+        trap_SendClientCommand("statsall");
+        cgs.be.statsAllRequested = qtrue;
+    }
+}
+
+// Helper function to prepare scoreboard config
+static qboolean CG_CHUDRenderScoreboardPrepareConfig(const cherryhudConfig_t* scoreboardConfig, 
+                                                    cherryhudConfig_t* config) {
+    cherryhudTable_t* globalTable;
+    float dynamicHeight;
+    
     // Get global table to use its baseX/baseY
     globalTable = CG_CHUDGetGlobalTable();
     if (!globalTable) {
-        return;
+        return qfalse;
     }
     
     // Copy scoreboard config and apply defaults
-    memcpy(&config, scoreboardConfig, sizeof(cherryhudConfig_t));
-    CG_CHUDConfigDefaultsCheck(&config);
+    memcpy(config, scoreboardConfig, sizeof(cherryhudConfig_t));
+    CG_CHUDConfigDefaultsCheck(config);
     
     // Calculate dynamic scoreboard height
     dynamicHeight = CG_CHUDScoreboardCalculateHeight();
-    config.size.value[1] = dynamicHeight;
-    config.size.isSet = qtrue;
+    config->size.value[1] = dynamicHeight;
+    config->size.isSet = qtrue;
+    
+    return qtrue;
+}
+
+void CG_CHUDRenderScoreboard(void) {
+    const cherryhudConfig_t* scoreboardConfig;
+    cherryhudConfig_t config;
+    
+    // Validate config and visibility
+    if (!CG_CHUDRenderScoreboardValidateConfig(&scoreboardConfig)) {
+        return;
+    }
+    
+    // Request data from server if needed
+    CG_CHUDRenderScoreboardRequestData();
+    
+    // Prepare config
+    if (!CG_CHUDRenderScoreboardPrepareConfig(scoreboardConfig, &config)) {
+        return;
+    }
     
     // Render elements in correct order based on config parsing order
     // (background and border will be rendered inside with proper alignment)

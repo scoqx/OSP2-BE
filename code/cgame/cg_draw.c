@@ -183,12 +183,24 @@ void CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headA
 	float           len;
 	vec3_t          origin;
 	vec3_t          mins, maxs;
+	vec3_t          headColor;
+	qhandle_t       headSkin;
 
 	ci = &cgs.clientinfo[ clientNum ];
 
 	if (cg_draw3dIcons.integer)
 	{
-		cm = ci->headModel;
+		/* Use original head model and skin when cg_drawRealHeads is active */
+		if (cg_drawRealHeads.integer && ci->originalHeadModelHandle)
+		{
+			cm = ci->originalHeadModelHandle;
+			headSkin = ci->originalHeadSkinHandle;
+		}
+		else
+		{
+			cm = ci->headModel;
+			headSkin = ci->headSkin;
+		}
 
 		if (cm)
 		{
@@ -204,14 +216,44 @@ void CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headA
 			origin[0] = len / 0.268;    // len / tan( fov/2 )
 
 			VectorAdd(origin, ci->headOffset, origin);
+			
+			// Determine color based on player relationship
+			if (clientNum == cg.clientNum)
+			{
+				// Local player - use my colors
+				VectorCopy(cgs.osp.myColors.head, headColor);
+			}
+			else if (CG_IsEnemy(ci))
+			{
+				// Enemy player - use enemy colors
+				VectorCopy(cgs.osp.enemyColors.head, headColor);
+			}
+			else
+			{
+				// Teammate - use team colors
+				VectorCopy(cgs.osp.teamColors.head, headColor);
+			}
+			
 			// allow per-model tweaking
-			CG_Draw3DModel(x, y, w, h, ci->headModel, ci->headSkin, origin, headAngles);
+			CG_OSPDraw3DModel(x, y, w, h, cm, headSkin, origin, headAngles, headColor);
 
 		}
 	}
 	else if (cg_drawIcons.integer)
 	{
-		CG_DrawPicOld(x, y, w, h, ci->modelIcon);
+		qhandle_t iconToUse;
+		
+		/* Use original icon when cg_drawRealHeads is active */
+		if (cg_drawRealHeads.integer && ci->originalModelIcon)
+		{
+			iconToUse = ci->originalModelIcon;
+		}
+		else
+		{
+			iconToUse = ci->modelIcon;
+		}
+		
+		CG_DrawPicOld(x, y, w, h, iconToUse);
 	}
 
 }

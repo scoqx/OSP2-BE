@@ -80,8 +80,11 @@ static qboolean CG_SHUDScoresGetOWN(int* scores)
 	switch (team)
 	{
 		case TEAM_FREE:
-			*scores = cg.snap->ps.persistant[PERS_SCORE];
+		{
+			int playerScore = cg.snap->ps.persistant[PERS_SCORE];
+			*scores = cgs.scores1;
 			return *scores != SCORE_NOT_PRESENT;
+		}
 		case TEAM_RED:
 			*scores = cgs.scores1;
 			return *scores != SCORE_NOT_PRESENT;
@@ -106,12 +109,17 @@ static qboolean CG_SHUDScoresGetNME(int* scores)
 	switch (team)
 	{
 		case TEAM_FREE:
-			*scores = cgs.scores1;
-			if (*scores == cgs.clientinfo[cg.snap->ps.clientNum].score)
+		{
+			int playerScore = cg.snap->ps.persistant[PERS_SCORE];
+			
+			if (cgs.scores1 != playerScore)
 			{
-				*scores = cgs.scores2;
+				cgs.scores2 = playerScore;
 			}
+			
+			*scores = cgs.scores2;
 			return *scores != SCORE_NOT_PRESENT;
+		}
 		case TEAM_RED:
 			*scores = cgs.scores2;
 			return *scores != SCORE_NOT_PRESENT;
@@ -129,12 +137,36 @@ static qboolean CG_SHUDScoresGetNME(int* scores)
 	return qfalse;
 }
 
+static qboolean CG_SHUDScoresShouldUseColor2(shudElementScoreType_t type)
+{
+	team_t team = CG_SHUDGetOurActiveTeam();
+	int playerScore;
+	
+	if (team != TEAM_FREE)
+		return qfalse;
+		
+	playerScore = cg.snap->ps.persistant[PERS_SCORE];
+	
+	switch (type)
+	{
+		case SHUD_ELEMENT_SCORE_OWN:
+			return (playerScore == cgs.scores1);
+			
+		case SHUD_ELEMENT_SCORE_NME:
+			return (cgs.scores1 != playerScore);
+		
+		default:
+			return qfalse;
+	}
+}
+
 void CG_SHUDElementScoreRoutine(void* context)
 {
 	shudElementScore* element = (shudElementScore*)context;
 	int scores;
 	qboolean result = qfalse;
-
+	int playerScore;
+	qboolean shouldUseColor2;
 	switch (element->type)
 	{
 		case SHUD_ELEMENT_SCORE_OWN:
@@ -161,7 +193,16 @@ void CG_SHUDElementScoreRoutine(void* context)
 		return;
 
 	element->ctx.text = va(element->config.text.value, scores);
-	CG_SHUDTextPrint(&element->config, &element->ctx);
+	
+	if (element->config.color2.isSet && CG_SHUDScoresShouldUseColor2(element->type))
+	{
+		Vector4Copy(element->config.color2.value.rgba, element->ctx.color);
+		CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);
+	}
+	else
+	{
+		CG_SHUDTextPrint(&element->config, &element->ctx);
+	}
 }
 
 

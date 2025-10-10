@@ -474,3 +474,6 @@ SHUD:
 
 09.10.2025 be 1.00-beta-1
 + cg_spectPOV
++ cg_drawRealHeads
+SHUD:
+* SCORE_OWN/NME fixed for nonTeam gametypes

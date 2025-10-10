@@ -258,3 +258,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 ## spectators
 
 - style 2 - убрать надпись "Spectators:"
+
+## Score_NME/ Score_OWN
+
+- color2 - выделять свои очки в режиме каждый сам за себя (FFA, Tourney, SinglePlayer)

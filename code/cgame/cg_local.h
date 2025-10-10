@@ -385,6 +385,7 @@ typedef struct
 	char            headSkinName[MAX_QPATH];
 	char            redTeam[MAX_TEAMNAME];
 	char            blueTeam[MAX_TEAMNAME];
+	char			originalHeadModel[MAX_QPATH];
 
 	qboolean        newAnims;       // true if using the new mission pack animations
 	qboolean        fixedlegs;      // true if legs yaw is always the same as torso yaw
@@ -402,6 +403,9 @@ typedef struct
 
 	qhandle_t       headModel;
 	qhandle_t       headSkin;
+	qhandle_t       originalHeadModelHandle;
+	qhandle_t       originalHeadSkinHandle;
+	qhandle_t       originalModelIcon;
 
 	qhandle_t       modelIcon;
 
@@ -1838,6 +1842,7 @@ extern vmCvar_t		 	cg_scoreboardWidth;
 extern vmCvar_t         cg_scoreboardColors;
 extern vmCvar_t         cg_clearOnLevelLoad;
 extern vmCvar_t         cg_spectPOV;
+extern vmCvar_t         cg_drawRealHeads;
 extern vmCvar_t         be_run;
 
 
@@ -2576,7 +2581,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00-beta-1" // BE
+#define OSP_VERSION "be-1.00-beta-2" // BE
 
 
 
