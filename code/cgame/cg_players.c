@@ -1297,6 +1297,16 @@ void CG_NewClientInfo(int clientNum)
 	if (!configstring[0])
 	{
 		memset(ci, 0, sizeof(*ci));
+		if (!cg.demoPlayback)
+		{
+			if (cg.scoresRequestTime + 2000 < cg.time)
+			{
+				cg.scoresRequestTime = cg.time;
+				trap_SendClientCommand("score");
+			}
+			cg.realNumClients = CG_CountRealClients();
+			
+		}
 		return;     // player just left
 	}
 
@@ -1590,6 +1600,12 @@ void CG_NewClientInfo(int clientNum)
 			ourClientNum = cg.clientNum;
 			CG_UpdateOtherClientsInfo();
 		}
+	}
+	
+	// Update real client count when client info changes (not in demo mode)
+	if (!cg.demoPlayback)
+	{
+		cg.realNumClients = CG_CountRealClients();
 	}
 }
 

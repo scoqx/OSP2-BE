@@ -2007,18 +2007,39 @@ CG_DrawIntermission
 */
 qboolean CG_DrawIntermission(void)
 {
+	qboolean result;
 	
 	if (cg_q3compScoreboard.integer)
 	{
 		if (cgs.gametype >= GT_TEAM)
 		{
 			if (!cg_scoreboardBE.integer)
-				return CG_OSPDrawScoretable();
+				result = CG_OSPDrawScoretable();
 			else
-				return CG_BEDrawTeamScoretable();
+				result = CG_BEDrawTeamScoretable();
+		}
+		else
+		{
+			result = CG_DrawOldScoreboard();
 		}
 	}
-	return CG_DrawOldScoreboard();
+	else
+	{
+		result = CG_DrawOldScoreboard();
+	}
+	
+	// Request scores every 2 seconds only when table is actually being drawn
+	if (result && cg.scoresRequestTime + 2000 < cg.time)
+	{
+		cg.scoresRequestTime = cg.time;
+		if (!cg.demoPlayback)
+		{
+			trap_SendClientCommand("score");
+			cg.realNumClients = CG_CountRealClients();
+		}
+	}
+	
+	return result;
 }
 
 void CG_OSPDrawIntermission()
@@ -2478,8 +2499,8 @@ void CG_OSPDrawNewCredits(void)
 		"https://github.com/snems/OSP2",
 		"",
 		"Special thanks to:",
-		"Snems, kr3m, Mirage",
-		"",
+		"Snems, Kr3m, Mirage, Mus1n",
+		"MrX, Paragon, Zenx",
 		"",
 		"Based on source codes:",
 		"OSP   ^Bhttps://www.orangesmoothie.org",

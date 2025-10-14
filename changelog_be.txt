@@ -452,17 +452,19 @@ SHUD:
 + visflags, gt_ffa, gt_tourney, gt_tdm, gt_ctf, gt_unfreeze, gt_clanarena
 
 
-08.10.2025 be 1.00-beta
+14.10.2025 be 1.00-beta-3
 + cg_chud
 + chud_file
 + cg_clearOnLevelLoad
 + cg_playersID 1/2
++ cg_spectPOV
++ cg_drawRealHeads
 + Introducing CherryHUD: table system to show scoreboard, stats etc.
   * beta, only nonTeam gametypes for a while
   * 2 configs available: default and d2
 * cg_teamSound doesnt affect on local player model anymore
 * cg_drawAmmoWarning fix
-* cg_scoreboardBE visual fix
+* cg_scoreboardBE fix
 * be_enabled fix (fullbright, damage info)
 * cg_friendsWallhack fix (not disabling drawHudElements now)
 * r_fullbright unlocked again
@@ -470,10 +472,5 @@ SHUD:
 * add crouch animation to player model in air
 SHUD:
  + update configs (m1r, m1rqlstyle, AGENT)
-
-
-09.10.2025 be 1.00-beta-1
-+ cg_spectPOV
-+ cg_drawRealHeads
-SHUD:
-* SCORE_OWN/NME fixed for nonTeam gametypes
+ * SCORE_OWN/NME fixed for nonTeam gametypes
+ * tempAcc osp fix

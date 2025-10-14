@@ -294,8 +294,10 @@ void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
 void CG_UpdateWeaponTracking(int weapon)
 {
 	static int lastHitCount = 0;
-	int currentAmmo, currentHits;
-
+	static int lastHitsValue = 0;
+	int currentAmmo, currentHits, hitsDelta;
+	const int atta;
+	int currentDamage, actualHits;
 	customWeaponStats_t* ws = &cgs.be.weaponStats[weapon];
 	playerState_t* ps = &cg.snap->ps;
 
@@ -308,6 +310,7 @@ void CG_UpdateWeaponTracking(int weapon)
 		ws->shotsStart = 0;
 		ws->lastAmmo = 0;
 		lastHitCount = 0;
+		lastHitsValue = 0;
 		return;
 	}
 
@@ -320,12 +323,28 @@ void CG_UpdateWeaponTracking(int weapon)
 		ws->shotsStart = 0;
 		ws->lastAmmo = 0;
 		lastHitCount = 0;
+		lastHitsValue = 0;
 		return;
 	}
 
-	// Получаем текущее количество патронов и количество попаданий
+	// Получаем текущее количество патронов и вычисляем разность попаданий
 	currentAmmo = ps->ammo[weapon];
-	currentHits = ps->persistant[PERS_HITS];
+	hitsDelta = ps->persistant[PERS_HITS] - lastHitsValue;
+	
+	// Проверяем режим OSP для определения метода подсчета попаданий и урона
+	if (atta == 0) // OSP режим - в PERS_HITS хранится урон, количество попаданий = 1
+	{
+		actualHits = (hitsDelta > 0) ? 1 : 0; // В OSP режиме каждое изменение = 1 попадание
+		currentDamage = hitsDelta; // Урон равен разности
+	}
+	else // Другие режимы - в PERS_HITS хранится количество попаданий
+	{
+		actualHits = hitsDelta; // Количество попаданий равно разности
+		currentDamage = atta & 0x00FF; // Урон извлекается из PERS_ATTACKEE_ARMOR
+	}
+	
+	// Обновляем значение для следующего вызова
+	lastHitsValue = ps->persistant[PERS_HITS];
 
 	// Если оружие уже "на треке", обновляем данные
 	if (ws->onTrack)
@@ -336,14 +355,16 @@ void CG_UpdateWeaponTracking(int weapon)
 			ws->lastAttackTime = cg.time;
 		}
 
-		ws->hitsCurrent = currentHits;
+		ws->hitsCurrent += actualHits; // Добавляем новые попадания
+		ws->damageFixed += currentDamage; // Добавляем новый урон
 		ws->lastAmmo = currentAmmo;
 		return;
 	}
 
 	// Начало нового "трека" (первая атака)
-	ws->hitsStart = currentHits;
-	ws->hitsCurrent = currentHits;
+	ws->hitsStart = actualHits;
+	ws->hitsCurrent = actualHits;
+	ws->damageFixed = currentDamage;
 	ws->shotsStart = currentAmmo;
 	ws->lastAmmo = currentAmmo;
 	ws->lastAttackTime = cg.time;
@@ -352,7 +373,7 @@ void CG_UpdateWeaponTracking(int weapon)
 	// Инициализация для Lightning
 	if (ps->weapon == weapon)
 	{
-		lastHitCount = currentHits;
+		lastHitCount = actualHits;
 	}
 }
 

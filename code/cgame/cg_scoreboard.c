@@ -811,7 +811,11 @@ void CG_DrawOldTourneyScoreboard(void)
 	if (cg.scoresRequestTime + 2000 < cg.time)
 	{
 		cg.scoresRequestTime = cg.time;
-		trap_SendClientCommand("score");
+		if (!cg.demoPlayback)
+		{
+			trap_SendClientCommand("score");
+			cg.realNumClients = CG_CountRealClients();
+		}
 	}
 	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
 	{
@@ -1252,6 +1256,7 @@ void CG_OSPDrawClientScoreNew(int x, int y, const score_t* score, const float* c
 int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScores)
 {
 	int i;
+	int maxClients;
 	qboolean isCAGame;
 	int scoresPrinted = 0;
 	clientInfo_t* ci;
@@ -1259,13 +1264,21 @@ int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScores)
 	vec4_t color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	const vec4_t readyColor = { 0.5f, 0.5f, 0.5f, 0.5f };
 	color[3] = fade;
-
 	isCAGame = CG_OSPIsGameTypeCA(cgs.gametype);
 
-	for (i = 0, scoresPrinted = 0; i < cg.realNumClients && scoresPrinted < maxScores; ++i)
+	// In demo mode, use the actual number of scores available
+	maxClients = cg.demoPlayback ? cg.numScores : cg.realNumClients;
+	for (i = 0, scoresPrinted = 0; i < maxClients && scoresPrinted < maxScores; ++i)
 	{
 		score = &cg.scores[i];
 		ci = &cgs.clientinfo[score->client];
+		
+		// In demo mode, if clientinfo is not valid, skip this entry
+		if (cg.demoPlayback && !ci->infoValid)
+		{
+			continue;
+		}
+		
 		if (ci->team != team && ci->rt != team)
 		{
 			continue;
@@ -1990,12 +2003,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		CG_DrawWeaponStatsWrapper();
 	}
 
-	if (!cg.showScores && cg.scoresRequestTime + 2000 < cg.time) // in some situations the score appears without pressing +scores
-	{
-		cg.scoresRequestTime = cg.time;
-		trap_SendClientCommand("score");
-		cg.realNumClients = CG_CountRealClients();
-	}
+	
 	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;

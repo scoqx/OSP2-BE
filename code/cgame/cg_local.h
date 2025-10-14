@@ -1986,7 +1986,6 @@ typedef struct
 text_command_t* CG_CompileText(const char* text);
 void CG_CompiledTextDestroy(text_command_t* root);
 void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale, int colored);
-void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeight, int direction, float speed, float gradientScale, int colored);
 
 extern vec4_t defaultBorderSize;
 extern vec4_t thicBorderSize;
@@ -2581,7 +2580,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00-beta-2" // BE
+#define OSP_VERSION "be-1.00-beta-3" // BE
 
 
 
