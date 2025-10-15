@@ -474,3 +474,6 @@ SHUD:
  + update configs (m1r, m1rqlstyle, AGENT)
  * SCORE_OWN/NME fixed for nonTeam gametypes
  * tempAcc osp fix
+
+15.10.2025
++ tools / Updater OSP2-BE for Windows and Linux
