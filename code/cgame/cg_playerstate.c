@@ -66,7 +66,7 @@ void CG_CheckAmmo(void)
 
 	static int prevWeaponState = WEAPON_READY;
 	static int prevAmmo = 0;
-static int prevTotal = 0;
+	static int prevTotal = 0;
 
 	if (cg.snap->ps.weapon == WP_NONE || !cg_drawAmmoWarning.integer)
 	{
