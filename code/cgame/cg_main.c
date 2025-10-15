@@ -2031,10 +2031,6 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_bestats_font");
 	CG_CvarTouch("cg_bestats_bgColor");
 
-	if (cg_chud.integer)
-	{
-		CG_CvarTouch("chud_file");
-	}
 }
 
 /*
@@ -2261,7 +2257,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_LoadingString("sounds");
 	CG_RegisterSounds();
 
-	// cause smoke bug
+	// // cause smoke bug
 	// for (i = 1; i < WP_NUM_WEAPONS; i++)
 	// {
 	//  CG_RegisterWeapon(i);
@@ -2372,6 +2368,11 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		trap_SendConsoleCommand(str);
 	}
 
+	if (cg_chud.integer)
+	{
+		CG_CvarTouch("chud_file");
+	}
+	
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);
 	
 	if (cg_clearOnLevelLoad.integer)

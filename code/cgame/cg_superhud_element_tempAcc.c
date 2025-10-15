@@ -86,11 +86,6 @@ void CG_SHUDElementTempAccRoutine(void* context)
 	vec4_t color;
 	char accuracyStr[8];
 
-	if (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE)
-	{
-		return;
-	}
-
 	CG_GetWeaponTempAccuracy(WP_LIGHTNING);
 
 	if (entry->tempAccuracy <= 0.0f &&
