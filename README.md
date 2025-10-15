@@ -1,5 +1,7 @@
 # OSP2-BE: Extended OSP2 version
 
+## scoqx.github.io
+
 ## 🔧 Contributions
 
 OSP2-BE incorporates code from several notable Quake mods and projects:
@@ -9,27 +11,37 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Unlagged Mod by Nail Toronto**
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 
+
+
 ## ✨ BE-Features
-## v0.93
+## v1.0-beta-5
 ```
-* cg_scoreboardRtColors/cg_scoreboardBtColors
-  + 3rd argument (optional) change titles color
-* cg_scoreboardSpecColor
-  + 2nd argument (optional) change title color
-* cg_damageDrawFrame
-  + Bitmask 4, draw pulse frame at low health
-
-+ cg_drawCenterMessages 2 - print text with shadow
-
-+ be_features - read only
-+ be_enable
-
-- cg_noSlidingWindow
-
-* various fixes
++ cg_chud
++ chud_file
++ cg_clearOnLevelLoad
++ cg_playersID 1/2
++ cg_spectPOV
++ cg_drawRealHeads
++ Introducing CherryHUD: table system to show scoreboard, stats etc.
+  * beta, only nonTeam gametypes for a while
+  * 2 configs available: default and d2
+* cg_teamSound doesnt affect on local player model anymore
+* cg_drawAmmoWarning fix
+* cg_scoreboardBE fix
+* be_enabled fix (fullbright, damage info)
+* cg_friendsWallhack fix (not disabling drawHudElements now)
+* r_fullbright unlocked again
+* fix color by digit (0-9)
+* add crouch animation to player model in air
+SHUD:
+ + update configs (m1r, m1rqlstyle, AGENT)
+ * SCORE_OWN/NME fixed for nonTeam gametypes
+ * tempAcc osp fix
++ tools / Updater OSP2-BE for Windows and Linux
+* CHUD fixes
+* hitbox 3 disabled
 ```
-
-## v0.92
+<!-- ## v0.92
 ```
 * altGrenades fix
 * scoreboard/wstats fix
@@ -248,7 +260,7 @@ SHUD:
   * StatusBar_ArmorCount 
     + visflags: showempty
     + color works for '0'
-```
+``` -->
 ## Extended features
 ```
 Cvars:

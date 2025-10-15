@@ -475,5 +475,7 @@ SHUD:
  * SCORE_OWN/NME fixed for nonTeam gametypes
  * tempAcc osp fix
 
-15.10.2025
+15.10.2025 be v1.00-beta-5
 + tools / Updater OSP2-BE for Windows and Linux
+* CHUD fixes
+* hitbox 3 disabled
