@@ -204,13 +204,57 @@ void CG_SHUDElementObituariesRoutine(void* context)
 
 		if ((entry->attackerTeam == TEAM_RED || entry->attackerTeam == TEAM_BLUE) && element->config.style.isSet)
 		{
-			if (element->config.style.value == 1)
+			qboolean shouldColorAttacker;
+			qboolean isAttackerTeammate;
+			qboolean isLocalPlayerSpectator;
+			
+			/* Check if local player is spectator */
+			isLocalPlayerSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
+			
+			/* Check if attacker is teammate by comparing teams */
+			if (entry->attacker >= 0 && entry->attacker < MAX_CLIENTS)
 			{
-				Vector4Copy(entry->runtime.attackerColor, element->ctxAttacker.background);
+				isAttackerTeammate = (entry->attackerTeam == cgs.clientinfo[cg.clientNum].team);
 			}
-			else if (element->config.style.value == 2)
+			else
 			{
-				Vector4Copy(entry->runtime.attackerColor, element->ctxAttacker.color);
+				isAttackerTeammate = qfalse;
+			}
+			
+			/* Determine if we should color attacker based on bitmask */
+			shouldColorAttacker = qfalse;
+			if (isLocalPlayerSpectator)
+			{
+				/* If local player is spectator, color both regardless of flags */
+				shouldColorAttacker = qtrue;
+			}
+			else if (element->config.style.value & 4) /* bit 4: only teammates */
+			{
+				shouldColorAttacker = isAttackerTeammate;
+			}
+			else if (element->config.style.value & 8) /* bit 8: only enemies */
+			{
+				shouldColorAttacker = !isAttackerTeammate;
+			}
+			else /* neither bit set: color both */
+			{
+				shouldColorAttacker = qtrue;
+			}
+			
+			if (shouldColorAttacker)
+			{
+				if (element->config.style.value & 1)
+				{
+					Vector4Copy(entry->runtime.attackerColor, element->ctxAttacker.background);
+				}
+				else if (element->config.style.value & 2)
+				{
+					Vector4Copy(entry->runtime.attackerColor, element->ctxAttacker.color);
+				}
+			}
+			else
+			{
+				element->ctxAttacker.background[3] = 0;
 			}
 		}
 		else
@@ -233,13 +277,57 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	element->ctxTarget.coord.named.x = currentX;
 	if ((entry->targetTeam == TEAM_RED || entry->targetTeam == TEAM_BLUE) && element->config.style.isSet)
 	{
-		if (element->config.style.value == 1)
+		qboolean shouldColorTarget;
+		qboolean isTargetTeammate;
+		qboolean isLocalPlayerSpectator;
+		
+		/* Check if local player is spectator */
+		isLocalPlayerSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
+		
+		/* Check if target is teammate by comparing teams */
+		if (entry->target >= 0 && entry->target < MAX_CLIENTS)
 		{
-			Vector4Copy(entry->runtime.targetColor, element->ctxTarget.background);
+			isTargetTeammate = (entry->targetTeam == cgs.clientinfo[cg.clientNum].team);
 		}
-		else if (element->config.style.value == 2)
+		else
 		{
-			Vector4Copy(entry->runtime.targetColor, element->ctxTarget.color);
+			isTargetTeammate = qfalse;
+		}
+		
+		/* Determine if we should color target based on bitmask */
+		shouldColorTarget = qfalse;
+		if (isLocalPlayerSpectator)
+		{
+			/* If local player is spectator, color both regardless of flags */
+			shouldColorTarget = qtrue;
+		}
+		else if (element->config.style.value & 4) /* bit 4: only teammates */
+		{
+			shouldColorTarget = isTargetTeammate;
+		}
+		else if (element->config.style.value & 8) /* bit 8: only enemies */
+		{
+			shouldColorTarget = !isTargetTeammate;
+		}
+		else /* neither bit set: color both */
+		{
+			shouldColorTarget = qtrue;
+		}
+		
+		if (shouldColorTarget)
+		{
+			if (element->config.style.value & 1)
+			{
+				Vector4Copy(entry->runtime.targetColor, element->ctxTarget.background);
+			}
+			else if (element->config.style.value & 2)
+			{
+				Vector4Copy(entry->runtime.targetColor, element->ctxTarget.color);
+			}
+		}
+		else
+		{
+			element->ctxTarget.background[3] = 0;
 		}
 	}
 	else

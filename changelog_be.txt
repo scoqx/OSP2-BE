@@ -452,7 +452,7 @@ SHUD:
 + visflags, gt_ffa, gt_tourney, gt_tdm, gt_ctf, gt_unfreeze, gt_clanarena
 
 
-14.10.2025 be v1.00-beta-3
+14.10.2025 be v1.00-beta-4
 + cg_chud
 + chud_file
 + cg_clearOnLevelLoad

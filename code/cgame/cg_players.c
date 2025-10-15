@@ -1351,7 +1351,7 @@ void CG_NewClientInfo(int clientNum)
 						// okay, it exits. check is another client have xid in the name and append it if not
 						if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
 						{
-							Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]^8%s^7:%s", clientNum, cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
+							Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]^8%s^7:%s", p, cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
 						}
 						break;
 					}
@@ -1403,7 +1403,7 @@ void CG_NewClientInfo(int clientNum)
 						// okay, it exits. check is another client have xid in the name and append it if not
 						if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
 						{
-							Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]^8%s^7:%s", clientNum, cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
+							Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]^8%s^7:%s", p, cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
 						}
 						break;
 					}

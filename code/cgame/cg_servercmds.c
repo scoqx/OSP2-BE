@@ -605,6 +605,12 @@ static void CG_MapRestart(void)
 
 	cg.mapRestart = qtrue;
 
+	if (cg.showScores)
+	{
+		cg.showScores = qfalse;
+		cg.showAccuracy = qfalse;
+	}
+	
 	cg.scoreFadeTime = 0;
 
 	CG_OSPWStatsUp_f();                                                             /* Address : 0xf5df Type : Interium */
@@ -621,6 +627,7 @@ static void CG_MapRestart(void)
 		trap_S_StartLocalSound(cgs.media.countFightSound, CHAN_ANNOUNCER);
 		if (!cg_shud.integer) CG_CenterPrint("^1FIGHT!", 20, GIANTCHAR_WIDTH * 2);
 	}
+
 	trap_Cvar_Set("cg_thirdPerson", "0");
 }
 
