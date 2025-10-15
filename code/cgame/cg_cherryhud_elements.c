@@ -423,7 +423,7 @@ cherryhudElement_t* CG_CHUDCreateElementFromConfig(const cherryhudConfig_t* conf
     if (g_elementCount == 0) {
     }
     
-    // CRITICAL: Count elements for debugging (no limit)
+    // Count elements
     g_elementCount++;
     
     memset(&elementConfig, 0, sizeof(cherryhudConfig_t));

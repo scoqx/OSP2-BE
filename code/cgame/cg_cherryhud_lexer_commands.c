@@ -135,13 +135,12 @@ static struct {
 
 cherryhudConfigParseStatus_t (*CG_CHUDLexerFindCommand(const char* name))(cherryhud_parser_t* parser, cherryhudConfig_t* config) {
     int i;
-    
+        
     for (i = 0; lexerCommandTable[i].name; i++) {
         if (Q_stricmp(lexerCommandTable[i].name, name) == 0) {
             return lexerCommandTable[i].parse;
         }
     }
-    
     return NULL;
 }
 

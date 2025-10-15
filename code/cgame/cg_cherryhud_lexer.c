@@ -242,7 +242,7 @@ static void CG_CHUDLexerAddToken(cherryhud_lexer_t* lexer, cherryhud_token_t* to
     }
     lexer->token_count++;
     
-    // Free the temporary token structure and its value
+    // Free the token structure and its value
     if (token->value) {
         Z_Free(token->value);
     }

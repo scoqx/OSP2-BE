@@ -1675,8 +1675,6 @@ qboolean CG_CHUDCheckElementHideFlags(const cherryhudConfig_t* config, int clien
         return qfalse;
     }
     
-    // Temporary debug to understand what's happening
-    
     // Determine game state (same as visflags)
     is_intermission = (cg.intermissionStarted != 0);
     is_team_game = (cgs.gametype >= GT_TEAM);

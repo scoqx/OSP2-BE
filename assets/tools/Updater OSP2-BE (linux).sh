@@ -1,15 +1,17 @@
 #!/bin/sh
 
 HELPMSG="osp2-be updater
-  --help, -h      this menu
-  --silent, -s    launch the game without printing to the ingame console"
+  --help, -h        show this menu
+  --silent, -s      skip printing changelog
+  --launch, -l      launch the game after updating
+  --update-only     only update files, do not launch the game"
 
-if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
-  echo $HELPMSG
-  exit 1
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+  echo "$HELPMSG"
+  exit 0
 fi
 
-# game launch arguments. change them to your liking.
+# === SETTINGS ===
 ARGS="+set sv_pure 0
       +set fs_game osp
       +set ui_cdkeychecked 1
@@ -22,46 +24,61 @@ url="https://scoqx.github.io/assets/zz-osp-pak8be.pk3"
 url_version="https://scoqx.github.io/version.json?v="
 url_changelog="https://scoqx.github.io/assets/changelog_be.txt"
 
-SCRPATH=$(dirname "$(realpath $0)")
+# === PATHS ===
+SCRPATH="$(cd -- "$(dirname -- "$0")" && pwd -P)"
+osp_dir="$SCRPATH/osp"
+osp_path="$osp_dir/zz-osp-pak8be.pk3"
+version_path="$SCRPATH/.ospver"
+game_bin="$SCRPATH/quake3e-vulkan.x64"
 
-if [ ! -d "$SCRPATH/osp" ]; then
+# === CHECK FOLDER ===
+if [ ! -d "$osp_dir" ]; then
   echo "osp folder not found, creating one..."
-  mkdir "$SCRPATH/osp"
+  mkdir -p "$osp_dir"
 fi
 
-osp_path="$SCRPATH/osp/zz-osp-pak8be.pk3"
-version_path="$SCRPATH/.ospver"
-
-version_cmd="$CURL -s $url_version"
-changelog_cmd="$CURL -s $url_changelog"
-osp_cmd="$CURL -# -o $osp_path $url"
-
+# === CHECK VERSION ===
 echo -n "last version: "
 
-version=$($version_cmd | jq -r '.version')
+version="$($CURL -s "$url_version" | jq -r '.version')"
 echo -e "\033[1m$version\033[0m"
 
-if [ "$version" == "$(cat "$version_path")" ] && [ -e "$osp_path" ]; then
+if [ -f "$version_path" ]; then
+  current_version="$(cat "$version_path" | tr -d '\r\n')"
+else
+  current_version=""
+fi
+
+if [ "$version" = "$current_version" ] && [ -e "$osp_path" ]; then
   echo "you're on the latest version"
 else
   echo "a new version found, downloading..."
-  $osp_cmd
+  $CURL -# -o "$osp_path" "$url"
 
-  echo "$version" >> "$SCRPATH/.ospver"
+  echo "$version" > "$version_path"
 
   if [ "$1" != "--silent" ] && [ "$1" != "-s" ]; then
-    version=$(echo "$version" | sed -r 's/-/ v/g')
-    changelog=$(echo "$($changelog_cmd)" | awk "/$version/,0" | sed -e 's/^/+echo "/g' | sed 's/$/"/g')
+    version_fmt=$(echo "$version" | sed -r 's/-/ v/g')
+    changelog="$($CURL -s "$url_changelog" | awk "/$version_fmt/,0")"
 
-    ARGS="${ARGS}
-      +echo ^z------------------
-      +echo ^z- ^2osp2-be update^z -
-      +echo ^z------------------
-      $changelog
-      +toggleconsole"
+    echo
+    echo "===== OSP2-BE UPDATE ====="
+    echo "$changelog"
+    echo "=========================="
+    echo
   fi
 fi
 
-echo -e "\033[1m-- launching the game --\033[0m"
-# $SCRPATH/XQ3E_Vulkan.x64 $ARGS
-$SCRPATH/quake3e-vulkan.x64 $ARGS
+echo -e "\033[1m-- update complete --\033[0m"
+
+# === LAUNCH GAME (optional) ===
+if [ "$1" = "--launch" ] || [ "$1" = "-l" ]; then
+  if [ -x "$game_bin" ]; then
+    echo -e "\033[1m-- launching the game --\033[0m"
+    "$game_bin" $ARGS
+  else
+    echo "Error: game binary not found or not executable: $game_bin"
+  fi
+else
+  echo "Game not launched (use --launch or -l to start it)."
+fi

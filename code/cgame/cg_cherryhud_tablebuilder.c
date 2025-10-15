@@ -416,6 +416,7 @@ static void CG_CHUDTableCreateRow(cherryhudTable_t* table, int index, const cher
     
     // Set row properties
     row->rowIndex = index;
+    // Initialize yPosition - will be recalculated in CG_CHUDTableUpdatePosition if needed
     row->yPosition = table->context.baseY + (index * (table->context.rowHeight + table->context.rowSpacing));
     
     // Initialize elements list
@@ -1035,7 +1036,7 @@ void CG_CHUDTableContextInit(cherryhudTableContext_t* context) {
     context->width = 640.0f;
     context->height = 200.0f;
     context->rowHeight = 20.0f;
-    context->rowSpacing = 2.0f;
+    context->rowSpacing = 0.0f;
     context->lastBuildTime = 0;
     context->needsRecalc = qtrue;
     context->isDirty = qtrue;
@@ -1148,31 +1149,85 @@ qboolean CG_CHUDTableNeedsRebuild(cherryhudTable_t* table) {
 // Update table properties from templates
 void CG_CHUDTableUpdateProperties(cherryhudTable_t* table) {
     const cherryhudConfig_t* playerRowTemplate;
+    const cherryhudConfig_t* spectatorRowTemplate;
     vec4_t activeSize;
     float currentHeight;
-    
+    qboolean rowSpacingChanged = qfalse;
+    qboolean rowHeightChanged = qfalse;
+    int i;
+    cherryhudTableRow_t* row;
+    const cherryhudConfig_t* activeTemplate = NULL;
     if (!table) return;
     
-    // Update table rowSpacing and rowHeight from playerRow template if not set from container
+    // Get appropriate template based on table type
     playerRowTemplate = CG_CHUDGetPlayerRowTemplate();
-    if (playerRowTemplate) {
-        if (playerRowTemplate->rowSpacing.isSet) {
-            table->context.rowSpacing = playerRowTemplate->rowSpacing.value;
+    spectatorRowTemplate = CG_CHUDGetSpectatorRowTemplate();
+    
+    // Choose the right template based on table type
+    if (Q_stricmp(table->tableType, "spectators") == 0) {
+        // For spectators, use spectatorRowTemplate if it exists, otherwise fallback to playerRowTemplate
+        if (spectatorRowTemplate) {
+            activeTemplate = spectatorRowTemplate;
+        } else if (playerRowTemplate) {
+            activeTemplate = playerRowTemplate;
+        }
+    } else if (playerRowTemplate) {
+        // For players, use playerRowTemplate
+        activeTemplate = playerRowTemplate;
+    }
+    
+    if (activeTemplate) {
+        float newRowHeight;
+        // rowSpacing is now managed only by templates (playerRow, spectatorRow)
+        if (activeTemplate->rowSpacing.isSet) {
+            if (table->context.rowSpacing != activeTemplate->rowSpacing.value) {
+                rowSpacingChanged = qtrue;
+            }
+            table->context.rowSpacing = activeTemplate->rowSpacing.value;
         }
         
         // Check if we need to use active size (for compact/double modes)
         // We need to get the current height to determine if compact mode is active
         currentHeight = table->context.height;
-        CG_CHUDGetActiveSizeFromContainer(playerRowTemplate, table->tableType, currentHeight, activeSize);
+        CG_CHUDGetActiveSizeFromContainer(activeTemplate, table->tableType, currentHeight, activeSize);
         
-        
+        newRowHeight = table->context.rowHeight;
         if (activeSize[1] != 0.0f) {
             // Use active size (compact.size or double.size)
-            table->context.rowHeight = activeSize[1];
-        } else if (playerRowTemplate->size.isSet) {
+            newRowHeight = activeSize[1];
+        } else if (activeTemplate->size.isSet) {
             // Use base size
-            table->context.rowHeight = playerRowTemplate->size.value[1];
+            newRowHeight = activeTemplate->size.value[1];
         }
+        
+        if (table->context.rowHeight != newRowHeight) {
+            rowHeightChanged = qtrue;
+        }
+        table->context.rowHeight = newRowHeight;
+    }
+    
+    // If rowSpacing or rowHeight changed, recalculate all row positions
+    if ((rowSpacingChanged || rowHeightChanged) && table->rows && table->numRows > 0) {
+        for (i = 0; i < table->numRows; i++) {
+            row = &table->rows[i];
+            if (row) {
+                // Recalculate row position
+                row->yPosition = table->context.baseY + (i * (table->context.rowHeight + table->context.rowSpacing));
+                
+                // Force layout recalculation for all elements in this row
+                if (row->elements) {
+                    cherryhudElement_t* element = row->elements;
+                    while (element) {
+                        // Remove from layout cache to force recalculation
+                        CG_CHUDLayoutRemoveElement((void*)element);
+                        element = element->next;
+                    }
+                }
+            }
+        }
+        
+        // Force layout system recalculation for this table
+        CG_CHUDLayoutForceRecalcForTable(table);
     }
 }
 
@@ -1439,7 +1494,7 @@ static void CG_CHUDTableUpdateRow(cherryhudTable_t* table, int index, const cher
         // Update in-place: Copy new data and update elements
         memcpy(&row->playerData, playerData, sizeof(cherryhudPlayerData_t));
         
-        // Update yPosition (in case spacing changed)
+        // Update yPosition (in case spacing changed) - use same calculation as CG_CHUDTableUpdatePosition
         newYPosition = table->context.baseY + (index * (table->context.rowHeight + table->context.rowSpacing));
         if (row->yPosition != newYPosition) {
             row->yPosition = newYPosition;
@@ -1677,8 +1732,7 @@ static float CG_CHUDRenderPlayersBlock(const cherryhudScoreboardBlock_t* block, 
         adjustedConfig.pos.value[0] = CG_CHUDApplyAlignH(adjustedConfig.pos.value[0], tableWidth, adjustedConfig.alignH.value);
     }
     
-    // Update table position
-    CG_CHUDTableUpdatePosition(playersTable, &adjustedConfig);
+    // Note: table position will be updated after building and height calculation
     
     // Render container background if configured
     if (CG_CHUDFill(&adjustedConfig)) {
@@ -1721,6 +1775,7 @@ static float CG_CHUDRenderPlayersBlock(const cherryhudScoreboardBlock_t* block, 
     CG_CHUDTableRender(playersTable);
     
     // Calculate spacing for next block
+    // block->config.rowSpacing is for spacing AFTER this block (between blocks)
     blockSpacing = block->config.rowSpacing.isSet ? block->config.rowSpacing.value : 0.0f;
     
     return currentY + playersHeight + blockSpacing;
@@ -1775,8 +1830,7 @@ static float CG_CHUDRenderSpectatorsBlock(const cherryhudScoreboardBlock_t* bloc
         adjustedConfig.pos.value[0] = CG_CHUDApplyAlignH(adjustedConfig.pos.value[0], tableWidth, adjustedConfig.alignH.value);
     }
     
-    // Update table position
-    CG_CHUDTableUpdatePosition(spectatorsTable, &adjustedConfig);
+    // Note: table position will be updated after building and height calculation
     
     // Render container background if configured
     if (CG_CHUDFill(&adjustedConfig)) {
@@ -1799,20 +1853,16 @@ static float CG_CHUDRenderSpectatorsBlock(const cherryhudScoreboardBlock_t* bloc
         
         if (activeSize[1] != 0.0f) {
             rowHeight = activeSize[1];
-            // Com_Printf("// CHUD DEBUG: ScoreboardRenderSpectators - Using active spectatorRow size: %.1f\n", activeSize[1]);
         } else if (spectatorRowTemplate->size.isSet) {
             rowHeight = spectatorRowTemplate->size.value[1];
-            // Com_Printf("// CHUD DEBUG: ScoreboardRenderSpectators - Using base spectatorRow size: %.1f\n", spectatorRowTemplate->size.value[1]);
         } else if (playerRowTemplate) {
             vec4_t playerActiveSize;
             CG_CHUDGetActiveSizeFromContainer(playerRowTemplate, CG_CHUDGetContainerName(CHERRYHUD_BLOCK_TYPE_SPECTATORS_ROWS), currentHeight, playerActiveSize);
             
             if (playerActiveSize[1] != 0.0f) {
                 rowHeight = playerActiveSize[1];
-                // Com_Printf("// CHUD DEBUG: ScoreboardRenderSpectators - Using active playerRow fallback size: %.1f\n", playerActiveSize[1]);
             } else if (playerRowTemplate->size.isSet) {
                 rowHeight = playerRowTemplate->size.value[1];
-                // Com_Printf("// CHUD DEBUG: ScoreboardRenderSpectators - Using base playerRow fallback size: %.1f\n", playerRowTemplate->size.value[1]);
             } else {
                 rowHeight = g_playerRowHeight;
             }
@@ -1825,10 +1875,8 @@ static float CG_CHUDRenderSpectatorsBlock(const cherryhudScoreboardBlock_t* bloc
         
         if (activeSize[1] != 0.0f) {
             rowHeight = activeSize[1];
-            // Com_Printf("// CHUD DEBUG: ScoreboardRenderSpectators - Using active playerRow fallback size: %.1f\n", activeSize[1]);
         } else if (playerRowTemplate->size.isSet) {
             rowHeight = playerRowTemplate->size.value[1];
-            // Com_Printf("// CHUD DEBUG: ScoreboardRenderSpectators - Using base playerRow fallback size: %.1f\n", playerRowTemplate->size.value[1]);
         } else {
             rowHeight = g_playerRowHeight;
         }
@@ -1848,6 +1896,7 @@ static float CG_CHUDRenderSpectatorsBlock(const cherryhudScoreboardBlock_t* bloc
     CG_CHUDTableRender(spectatorsTable);
     
     // Calculate spacing for next block
+    // block->config.rowSpacing is for spacing AFTER this block (between blocks)
     blockSpacing = block->config.rowSpacing.isSet ? block->config.rowSpacing.value : 0.0f;
     
     return currentY + spectatorsHeight + blockSpacing;
@@ -1963,8 +2012,6 @@ void CG_CHUDRenderScoreboardElementsInOrder(const cherryhudConfig_t* scoreboardC
     
     // Calculate dynamic scoreboard height
     dynamicHeight = CG_CHUDScoreboardCalculateHeight();
-    
-    // Debug: Print coordinates
     
 
     // Render scoreboard background and border with aligned position directly
@@ -2390,6 +2437,7 @@ void CG_CHUDTableUpdatePosition(cherryhudTable_t* table, const cherryhudConfig_t
     cherryhudTableRow_t* row;
     qboolean positionChanged;
     qboolean sizeChanged;
+    qboolean rowSpacingChanged;
     vec4_t activePos;
     vec4_t activeSize;
     float currentHeight;
@@ -2398,6 +2446,7 @@ void CG_CHUDTableUpdatePosition(cherryhudTable_t* table, const cherryhudConfig_t
     
     positionChanged = qfalse;
     sizeChanged = qfalse;
+    rowSpacingChanged = qfalse;
     
     // Calculate current height for extendedType mode detection
     currentHeight = table->context.height > 0.0f ? table->context.height : 200.0f;
@@ -2444,13 +2493,29 @@ void CG_CHUDTableUpdatePosition(cherryhudTable_t* table, const cherryhudConfig_t
         }
     }
     
-    // Update row spacing in context
-    if (containerConfig->rowSpacing.isSet) {
-        table->context.rowSpacing = containerConfig->rowSpacing.value;
-    }
+    // Note: rowSpacing is now managed only by templates (playerRow, spectatorRow)
+    // containerConfig->rowSpacing is used only for spacing AFTER the block (between blocks)
+    // if (containerConfig->rowSpacing.isSet) {
+    //     if (Q_stricmp(table->tableType, "spectators") == 0) {
+    //         // For spectators, only update if spectatorRowTemplate doesn't override it
+    //         const cherryhudConfig_t* spectatorRowTemplate = CG_CHUDGetSpectatorRowTemplate();
+    //         if (!spectatorRowTemplate || !spectatorRowTemplate->rowSpacing.isSet) {
+    //             if (table->context.rowSpacing != containerConfig->rowSpacing.value) {
+    //                 rowSpacingChanged = qtrue;
+    //             }
+    //             table->context.rowSpacing = containerConfig->rowSpacing.value;
+    //         }
+    //     } else {
+    //         // For players, always update from containerConfig
+    //         if (table->context.rowSpacing != containerConfig->rowSpacing.value) {
+    //             rowSpacingChanged = qtrue;
+    //         }
+    //         table->context.rowSpacing = containerConfig->rowSpacing.value;
+    //     }
+    // }
     
-    // If position or size changed, recalculate all row positions
-    if ((positionChanged || sizeChanged) && table->rows && table->numRows > 0) {
+    // If position, size, or rowSpacing changed, recalculate all row positions
+    if ((positionChanged || sizeChanged || rowSpacingChanged) && table->rows && table->numRows > 0) {
         for (i = 0; i < table->numRows; i++) {
             row = &table->rows[i];
             if (row) {

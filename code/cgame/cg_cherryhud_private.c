@@ -7,8 +7,6 @@ static cherryhudGlobalContext_t cherryhudGlobalContext;
 static cherryhudConfig_t g_prefixedConfigs[MAX_PREFIXED_CONFIGS];
 static int g_prefixedConfigCount;
 
-// Debug flag
-static qboolean g_debugModeStatus = qfalse;
 
 // Global element index counters
 static int g_playerRowElementIndex = 0;
@@ -693,6 +691,7 @@ float CG_CHUDGetBaseHeightForMode(const char* containerType) {
 // New function to get active mode from container for child elements
 const char* CG_CHUDGetContainerActiveMode(const char* containerType, float currentHeight) {
     const cherryhudScoreboardOrder_t* scoreboardOrder;
+    const cherryhudConfig_t* scoreboardConfig;
     float baseHeight;
     int i;
     
@@ -707,6 +706,19 @@ const char* CG_CHUDGetContainerActiveMode(const char* containerType, float curre
     
     // Calculate base height (without mode) for mode determination
     baseHeight = CG_CHUDGetBaseHeightForMode(containerType);
+    
+    // First, check if scoreboard has extendedtype that should be inherited
+    scoreboardConfig = CG_CHUDGetScoreboardConfig();
+    if (scoreboardConfig && scoreboardConfig->extendedType.isSet) {
+        // Check if current height meets the threshold for the configured mode
+        if (scoreboardConfig->size.isSet && baseHeight >= scoreboardConfig->size.value[1]) {
+            if (scoreboardConfig->extendedType.value == CHERRYHUD_EXTENDED_DOUBLE) {
+                return "double";
+            } else if (scoreboardConfig->extendedType.value == CHERRYHUD_EXTENDED_COMPACT) {
+                return "compact";
+            }
+        }
+    }
     
     // Find the container config
     for (i = 0; i < scoreboardOrder->count; i++) {
@@ -1330,16 +1342,12 @@ void CG_CHUDCreateTitleBlock(const cherryhudConfig_t* config) {
     block = &titleBlocks[titleBlockCount];
     memset(block, 0, sizeof(cherryhudTitleBlock_t));
     
-    // DEBUG: Title block creation
-    
     // Copy config first
     memcpy(&block->config, config, sizeof(cherryhudConfig_t));
     
 
     // Apply defaults for properties that are still not set FIRST
     CG_CHUDConfigDefaultsCheck(&block->config);
-    
-    // DEBUG: After defaults
 
     // Apply inheritance from scoreboard config AFTER applying defaults
     // This ensures that title blocks can inherit size and other properties from scoreboard
@@ -1505,25 +1513,19 @@ qboolean CG_CHUDContainerHasContent(const char* containerType) {
     playersContainerName = CG_CHUDGetContainerName(CHERRYHUD_BLOCK_TYPE_PLAYERS_ROWS);
     spectatorsContainerName = CG_CHUDGetContainerName(CHERRYHUD_BLOCK_TYPE_SPECTATORS_ROWS);
     
-    // Com_Printf("DEBUG: CG_CHUDContainerHasContent('%s') - players='%s', spectators='%s'\n", 
-    //            containerType, playersContainerName, spectatorsContainerName);
-    
     // Use old table management functions
     if (Q_stricmp(containerType, playersContainerName) == 0) {
         // Check players count using old API
         playerCount = CG_CHUDGetPlayerCount();
-        // Com_Printf("DEBUG: Players container has %d players\n", playerCount);
         return (playerCount > 0);
     } else if (Q_stricmp(containerType, spectatorsContainerName) == 0) {
         // Check spectators count using old API
         spectatorCount = CG_CHUDGetSpectatorCount();
-        // Com_Printf("DEBUG: Spectators container has %d spectators\n", spectatorCount);
         return (spectatorCount > 0);
     }
     
     // Generic fallback - check count for any container type
     playerCount = CG_CHUDGetPlayerCount();
-    // Com_Printf("DEBUG: Generic fallback - %d players\n", playerCount);
     return (playerCount > 0);
 }
 
@@ -1579,8 +1581,6 @@ void CG_CHUDAddTitleBlockElement(int blockIndex, const cherryhudConfig_t* config
     
     // Copy config and set default positioning for title elements
     memcpy(&elementConfig, config, sizeof(cherryhudConfig_t));
-    
-    // DEBUG: Title element creation
     
     // Set default positioning for title elements if not set
     if (!elementConfig.pos.isSet) {
@@ -1907,16 +1907,12 @@ void CG_CHUDHandleSpectatorsRows(const char* elementName, cherryhudConfig_t* con
 }
 
 void CG_CHUDHandleScoreboardConfig(const char* elementName, cherryhudConfig_t* config) {
-    // Com_Printf("DEBUG: CG_CHUDHandleScoreboardConfig called\n");
-    
     CG_CHUDSetScoreboardConfig(config);
     CG_CHUDSetConfigByType("scoreboard", config);
     g_scoreboardBlockDepth++;
-    // Com_Printf("DEBUG: scoreboardLoaded = %s\n", CG_CHUDIsScoreboardConfigLoaded() ? "true" : "false");
 }
 
 void CG_CHUDHandleTableConfig(const char* elementName, cherryhudConfig_t* config) {
-    // Com_Printf("DEBUG: CG_CHUDHandleTableConfig called for %s\n", elementName);
     // For !table, we need to extract the table name from elementName
     // elementName will be like "!table" or "!table.mytable"
     char tableName[MAX_QPATH];
@@ -1939,7 +1935,6 @@ void CG_CHUDHandleTableConfig(const char* elementName, cherryhudConfig_t* config
     CG_CHUDTableInitByType(tableName);
     
     g_scoreboardBlockDepth++;
-    // Com_Printf("DEBUG: table %s config loaded\n", tableName);
 }
 
 void CG_CHUDHandleDefaultConfig(const char* elementName, cherryhudConfig_t* config) {
@@ -1995,7 +1990,6 @@ void CG_CHUDHandleCustomConfig(const char* elementName, cherryhudConfig_t* confi
 void CG_CHUDRegisterElementHandlers(void) {
     int i;
     
-    // Com_Printf("DEBUG: CG_CHUDRegisterElementHandlers called\n");
     g_elementHandlerCount = 0;
     
     // Register handlers from unified element types
@@ -2021,15 +2015,8 @@ void CG_CHUDRegisterElementHandlers(void) {
             
             g_elementHandlers[g_elementHandlerCount].handler = g_unifiedElementTypes[i].handler;
             g_elementHandlerCount++;
-            
-            // Debug: Print registered handlers
-            // if (Q_stricmp(g_unifiedElementTypes[i].name, "!scoreboard") == 0) {
-            //     Com_Printf("DEBUG: Registered !scoreboard handler with type %d\n", g_elementHandlers[g_elementHandlerCount-1].type);
-            // }
         }
     }
-    
-    // Com_Printf("DEBUG: Registered %d element handlers\n", g_elementHandlerCount);
 }
 
 cherryhudElementHandler_t* CG_CHUDFindElementHandler(const char* elementName) {
@@ -2037,17 +2024,9 @@ cherryhudElementHandler_t* CG_CHUDFindElementHandler(const char* elementName) {
     
     if (!elementName) return NULL;
     
-    // Debug: Print when looking for !scoreboard
-    // if (Q_stricmp(elementName, "!scoreboard") == 0) {
-    //     Com_Printf("DEBUG: Looking for !scoreboard handler, g_elementHandlerCount = %d\n", g_elementHandlerCount);
-    // }
-    
     // First, check registered handlers (including !scoreboard, !default, etc.)
     for (i = 0; i < g_elementHandlerCount; i++) {
         if (Q_stricmp(g_elementHandlers[i].name, elementName) == 0) {
-            // if (Q_stricmp(elementName, "!scoreboard") == 0) {
-            //     Com_Printf("DEBUG: Found !scoreboard handler at index %d with type %d\n", i, g_elementHandlers[i].type);
-            // }
             return &g_elementHandlers[i];
         }
     }
@@ -2056,9 +2035,6 @@ cherryhudElementHandler_t* CG_CHUDFindElementHandler(const char* elementName) {
     // This excludes !scoreboard and !default which are already registered
     if (elementName[0] == '!') {
         static cherryhudElementHandler_t customHandler;
-        // if (Q_stricmp(elementName, "!scoreboard") == 0) {
-        //     Com_Printf("DEBUG: !scoreboard not found in registered handlers, creating custom handler\n");
-        // }
         // Create a temporary handler for custom config types
         
         customHandler.name = elementName;
@@ -2075,21 +2051,9 @@ void CG_CHUDHandleElement(const char* elementName, cherryhudConfig_t* config) {
     
     if (!elementName || !config) return;
     
-    // Debug: Print when handling !scoreboard
-    // if (Q_stricmp(elementName, "!scoreboard") == 0) {
-    //     Com_Printf("DEBUG: CG_CHUDHandleElement called for !scoreboard\n");
-    // }
-    
     handler = CG_CHUDFindElementHandler(elementName);
     if (handler && handler->handler) {
-        // if (Q_stricmp(elementName, "!scoreboard") == 0) {
-        //     Com_Printf("DEBUG: Calling handler for !scoreboard\n");
-        // }
         handler->handler(elementName, config);
-    } else {
-        // if (Q_stricmp(elementName, "!scoreboard") == 0) {
-        //     Com_Printf("DEBUG: No handler found for !scoreboard\n");
-        // }
     }
 }
 
