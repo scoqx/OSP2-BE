@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "d2utmp2xasrx": "c",
-        "cg_local.h": "c",
-        "cg_cherryhud.h": "c",
-        "cg_superhud_private.h": "c"
-    },
-    "cmake.sourceDirectory": "C:/git/OSP2-PBE/build/tests"
-}
