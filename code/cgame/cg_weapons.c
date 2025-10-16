@@ -1240,8 +1240,8 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	vec3_t angle;
 	float tl;
 	qboolean isOurClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
-	qboolean isDelagEnabled =  cg_delag.integer & 1 || cg_delag.integer & 2;
-	// clientInfo_t *ci = &cgs.clientinfo[cent->currentState.number];
+	qboolean isDelagEnabled =  (cg_delag.integer & 1 || cg_delag.integer & 2) && !cg.demoPlayback;
+
 	if (cent->currentState.weapon != WP_LIGHTNING) return;
 
 	if (isOurClient)
