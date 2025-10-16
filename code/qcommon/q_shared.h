@@ -1064,6 +1064,7 @@ default values.
 #define CVAR_NORESTART      1024    // do not clear when a cvar_restart is issued
 #define CVAR_NEW            2048    // mark as new
 #define CVAR_UPDATED		4096	// mark as updated
+#define CVAR_NOTABCOMPLETE  0x20000 // no tab completion in console
 
 // nothing outside the Cvar_*() functions should modify these fields!
 typedef struct cvar_s
