@@ -610,7 +610,7 @@ static void CG_MapRestart(void)
 		cg.showScores = qfalse;
 		cg.showAccuracy = qfalse;
 	}
-	
+
 	cg.scoreFadeTime = 0;
 
 	CG_OSPWStatsUp_f();                                                             /* Address : 0xf5df Type : Interium */
@@ -1550,7 +1550,7 @@ void CG_ServerCommand(void)
 	if (Q_stricmp(cmd, "xstats1") == 0)
 	{
 		if (cgs.be.statsAllRequested)
-		{	
+		{
 			CG_BEParseXStatsToStatsAll();
 			xstats1_received_count++;
 			last_xstats1_sequence = cgs.serverCommandSequence;

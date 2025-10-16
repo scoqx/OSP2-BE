@@ -94,12 +94,14 @@ void CG_CheckAmmo(void)
 
 	if (cg_drawAmmoWarning.integer == 1)
 	{
-	threshold = lowAmmoThresholds[weapon];
-	if (ammo > prevAmmo) {
-		cg.lowAmmoWarning = 0;
-		lowAmmoWarningPrev[weapon] = 0;
-	}
-	currentWarning = 0;		if (ammo == 0)
+		threshold = lowAmmoThresholds[weapon];
+		if (ammo > prevAmmo)
+		{
+			cg.lowAmmoWarning = 0;
+			lowAmmoWarningPrev[weapon] = 0;
+		}
+		currentWarning = 0;
+		if (ammo == 0)
 			currentWarning = 2;
 		else if (threshold > 0 && ammo <= threshold)
 			currentWarning = 1;
@@ -330,7 +332,7 @@ void CG_UpdateWeaponTracking(int weapon)
 	// Получаем текущее количество патронов и вычисляем разность попаданий
 	currentAmmo = ps->ammo[weapon];
 	hitsDelta = ps->persistant[PERS_HITS] - lastHitsValue;
-	
+
 	// Проверяем режим OSP для определения метода подсчета попаданий и урона
 	if (atta == 0) // OSP режим - в PERS_HITS хранится урон, количество попаданий = 1
 	{
@@ -342,7 +344,7 @@ void CG_UpdateWeaponTracking(int weapon)
 		actualHits = hitsDelta; // Количество попаданий равно разности
 		currentDamage = atta & 0x00FF; // Урон извлекается из PERS_ATTACKEE_ARMOR
 	}
-	
+
 	// Обновляем значение для следующего вызова
 	lastHitsValue = ps->persistant[PERS_HITS];
 
@@ -552,7 +554,7 @@ void CG_HitDamage(playerState_t* ps, playerState_t* ops)
 	// // Early return if damage info is not allowed and not in promode/cq3
 	// if (!(BE_IsDamageInfoAllowed()) && !(cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE) && !(cgs.osp.server_mode == OSP_SERVER_MODE_CQ3))
 	// {
-	// 	return;
+	//  return;
 	// }
 
 	hits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
@@ -635,7 +637,7 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		// TODO we need some solution when we take quad cuz sometimes with LG dmg + delayedDMG > 25
 		//damage = ops->powerups[PW_QUAD] ? 26 : damage; // for a homogeneous sound with quad
 
-		
+
 		if (((BE_IsDamageInfoAllowed())
 		        && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
 		{

@@ -175,7 +175,7 @@ void CG_ScoresDown_f(void)
 	if (cg_drawAccuracy.integer)
 		if (!cg.demoPlayback && cg.statsRequestTime < cg.time)
 		{
-		 	cg.statsRequestTime = cg.time + 2250;
+			cg.statsRequestTime = cg.time + 2250;
 			trap_SendClientCommand("getstatsinfo");
 		}
 	cg.showScores = qtrue;
@@ -578,7 +578,7 @@ void CG_ChudKey4Up_f(void)
 void CG_ChudScoreboardUp_f(void)
 {
 	cgs.osp.chud.scoreboard = qtrue;
-	
+
 	// Send commands to server to get scoreboard data (copied from bescores)
 	if (!cg.demoPlayback && cg.scoresRequestTime < cg.time)
 	{

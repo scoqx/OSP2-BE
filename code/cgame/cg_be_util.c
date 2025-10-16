@@ -33,11 +33,13 @@ void CG_UpdateBeFeatures(void)
 
 	qboolean isFbSkin = qfalse;
 
-	for (i = 0; i < MAX_CLIENTS; i++) {
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
 		if (i == cg.clientNum) continue; // Skip self
-			if (otherCi->infoValid && Q_stricmp(otherCi->skinName, "fb") == 0) {
-				isFbSkin = qtrue;
-				break;
+		if (otherCi->infoValid && Q_stricmp(otherCi->skinName, "fb") == 0)
+		{
+			isFbSkin = qtrue;
+			break;
 		}
 	}
 
@@ -115,7 +117,7 @@ void CG_PrintDisabledFeatures(qboolean request)
 	{
 		if (request)
 		{
-		CG_Printf("   [^9OSP2-BE^7] All features enabled.\n");
+			CG_Printf("   [^9OSP2-BE^7] All features enabled.\n");
 		}
 	}
 	else if (value == 4095) // all bits set
@@ -126,22 +128,67 @@ void CG_PrintDisabledFeatures(qboolean request)
 	{
 		char buffer[1024] = "   [^9OSP2-BE^7] Disabled features: ";
 		qboolean first = qtrue;
-		if (value & CG_BE_TEAM_FOE_WH) { Q_strcat(buffer, sizeof(buffer), first ? "Team wh" : ", team wh"); first = qfalse; }
-		if (value & CG_BE_MODELSOUND) { Q_strcat(buffer, sizeof(buffer), first ? "Model sound" : ", model sound"); first = qfalse; }
-		if (value & CG_BE_ALT_GRENADES) { Q_strcat(buffer, sizeof(buffer), first ? "Alt grenades" : ", alt grenades"); first = qfalse; }
-		if (value & CG_BE_ENEMYLIGHTNING) { Q_strcat(buffer, sizeof(buffer), first ? "Enemy lightning" : ", enemy lightning"); first = qfalse; }
-		if (value & CG_BE_MARK_TEAMMATE) { Q_strcat(buffer, sizeof(buffer), first ? "Mark teammate" : ", mark teammate"); first = qfalse; }
-		if (value & CG_BE_ALT_SHADOW) { Q_strcat(buffer, sizeof(buffer), first ? "Alt shadow" : ", alt shadow"); first = qfalse; }
-		if (value & CG_BE_ALT_BLOOD) { Q_strcat(buffer, sizeof(buffer), first ? "Alt blood" : ", alt blood"); first = qfalse; }
-		if (value & CG_BE_OUTLINE) { Q_strcat(buffer, sizeof(buffer), first ? "Outline" : ", outline"); first = qfalse; }
-		if (value & CG_BE_TEAM_INDICATOR) { Q_strcat(buffer, sizeof(buffer), first ? "team indicator" : ", team indicator"); first = qfalse; }
-		if (value & CG_BE_DAMAGEINFO) { Q_strcat(buffer, sizeof(buffer), first ? "Damage count" : ", damage count"); first = qfalse; }
-		if (value & CG_BE_FULLBRIGHT) { Q_strcat(buffer, sizeof(buffer), first ? "Fullbright" : ", fullbright"); first = qfalse; }
+		if (value & CG_BE_TEAM_FOE_WH)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Team wh" : ", team wh");
+			first = qfalse;
+		}
+		if (value & CG_BE_MODELSOUND)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Model sound" : ", model sound");
+			first = qfalse;
+		}
+		if (value & CG_BE_ALT_GRENADES)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Alt grenades" : ", alt grenades");
+			first = qfalse;
+		}
+		if (value & CG_BE_ENEMYLIGHTNING)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Enemy lightning" : ", enemy lightning");
+			first = qfalse;
+		}
+		if (value & CG_BE_MARK_TEAMMATE)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Mark teammate" : ", mark teammate");
+			first = qfalse;
+		}
+		if (value & CG_BE_ALT_SHADOW)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Alt shadow" : ", alt shadow");
+			first = qfalse;
+		}
+		if (value & CG_BE_ALT_BLOOD)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Alt blood" : ", alt blood");
+			first = qfalse;
+		}
+		if (value & CG_BE_OUTLINE)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Outline" : ", outline");
+			first = qfalse;
+		}
+		if (value & CG_BE_TEAM_INDICATOR)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "team indicator" : ", team indicator");
+			first = qfalse;
+		}
+		if (value & CG_BE_DAMAGEINFO)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Damage count" : ", damage count");
+			first = qfalse;
+		}
+		if (value & CG_BE_FULLBRIGHT)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Fullbright" : ", fullbright");
+			first = qfalse;
+		}
 		CG_Printf("%s\n", buffer);
 	}
 }
 
-void CG_BEParseXStatsToStatsAll(void) {
+void CG_BEParseXStatsToStatsAll(void)
+{
 	int i;
 	int index = 1;
 	int xstats_condition;
@@ -212,7 +259,7 @@ void CG_BEParseXStatsToStatsAll(void) {
 	ws->ra         = red_armor;
 	ws->ya         = yellow_armor;
 	ws->dmgGiven   = damage_given;
-	ws->dmgReceived= damage_rcvd;
+	ws->dmgReceived = damage_rcvd;
 
 	ws->damageRatio = (damage_given > 0 || damage_rcvd > 0) ?
 	                  (float)damage_given / (damage_rcvd > 0 ? damage_rcvd : 1) : 0.0f;
@@ -239,44 +286,45 @@ void CG_BEParseXStatsToStatsAll(void) {
 
 void cg_printsa_f(void)
 {
-    int i;
-    newStatsInfo_t *ws;
+	int i;
+	newStatsInfo_t* ws;
 
-    CG_Printf("^5StatsAll:\n");
-    for (i = 0; i < MAX_CLIENTS; ++i) {
-        ws = &cgs.be.statsAll[i];
-        if (!ws->infoValid)
-            continue;
+	CG_Printf("^5StatsAll:\n");
+	for (i = 0; i < MAX_CLIENTS; ++i)
+	{
+		ws = &cgs.be.statsAll[i];
+		if (!ws->infoValid)
+			continue;
 
-        CG_Printf("^7[%2d] ^3%-16s ^7K/D:^2%3d^7/^1%3d ^7Eff:^2%5.1f%% ^7Dmg:^2%i^7/^1%i ^7Ratio:^2%.2f\n",
-            i,
-            cgs.clientinfo[i].name,
-            ws->kills,
-            ws->deaths,
-            ws->efficiency,
-            ws->dmgGiven,
-            ws->dmgReceived,
-            ws->damageRatio
-		);
-    }
+		CG_Printf("^7[%2d] ^3%-16s ^7K/D:^2%3d^7/^1%3d ^7Eff:^2%5.1f%% ^7Dmg:^2%i^7/^1%i ^7Ratio:^2%.2f\n",
+		          i,
+		          cgs.clientinfo[i].name,
+		          ws->kills,
+		          ws->deaths,
+		          ws->efficiency,
+		          ws->dmgGiven,
+		          ws->dmgReceived,
+		          ws->damageRatio
+		         );
+	}
 }
 
 void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
 {
-    char buffer[MAX_CVAR_VALUE_STRING];
-    char* token1, *token2;
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char* token1, *token2;
 
-    if (!cvar || !cvar->string) return;
-    if (cvar->string[0] == '\0') return;
+	if (!cvar || !cvar->string) return;
+	if (cvar->string[0] == '\0') return;
 
-    Q_strncpyz(buffer, cvar->string, sizeof(buffer));
-    token1 = Q_strtok(buffer, " \t");
-    token2 = Q_strtok(NULL, " \t");
+	Q_strncpyz(buffer, cvar->string, sizeof(buffer));
+	token1 = Q_strtok(buffer, " \t");
+	token2 = Q_strtok(NULL, " \t");
 
-    if (!token1 || !token2) return;
+	if (!token1 || !token2) return;
 
-    CG_ParseColorStr(token1, out1);
-    CG_ParseColorStr(token2, out2);
+	CG_ParseColorStr(token1, out1);
+	CG_ParseColorStr(token2, out2);
 }
 
 qboolean BE_IsDamageInfoAllowed(void)

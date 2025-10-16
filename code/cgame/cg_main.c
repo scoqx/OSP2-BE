@@ -465,7 +465,7 @@ vmCvar_t        be_features;
 vmCvar_t        be_enabled;
 vmCvar_t        chud_file;
 vmCvar_t        cg_chud;
-vmCvar_t		cg_scoreboardTextSize;
+vmCvar_t        cg_scoreboardTextSize;
 vmCvar_t        cg_scoreboardScale;
 vmCvar_t        cg_scoreboardWidth;
 vmCvar_t        cg_scoreboardColors;
@@ -835,14 +835,14 @@ static cvarTable_t cvarTable[] =
 	{ &cg_scoreboardDrawPowerUps, "cg_scoreboardDrawPowerUps", "1", CVAR_ARCHIVE },
 	{ &cg_bestats_style, "cg_bestats_style", "1", CVAR_ARCHIVE, },
 	{ &cg_bestats_textSize, "cg_bestats_textSize", "6 8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_textSize },
-	{ &cg_bestats_font, "cg_bestats_font", "2", CVAR_ARCHIVE , CG_LocalEventCvarChanged_cg_bestats_font },
-	{ &cg_bestats_pos, "cg_bestats_pos", "4 320", CVAR_ARCHIVE , CG_LocalEventCvarChanged_cg_bestats_pos },
-	{ &cg_bestats_bgColor, "cg_bestats_bgColor", "", CVAR_ARCHIVE , CG_LocalEventCvarChanged_cg_bestats_bgColor },
-	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.7", CVAR_ARCHIVE , },
-	{ &cg_bestats_spacingAdjust, "cg_bestats_spacingAdjust", "1", CVAR_ARCHIVE , },
-	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE , },
-	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "0.75", CVAR_ARCHIVE , },
-	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "128", CVAR_ARCHIVE , },
+	{ &cg_bestats_font, "cg_bestats_font", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_font },
+	{ &cg_bestats_pos, "cg_bestats_pos", "4 320", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_pos },
+	{ &cg_bestats_bgColor, "cg_bestats_bgColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_bgColor },
+	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.7", CVAR_ARCHIVE, },
+	{ &cg_bestats_spacingAdjust, "cg_bestats_spacingAdjust", "1", CVAR_ARCHIVE, },
+	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE, },
+	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "0.75", CVAR_ARCHIVE, },
+	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "128", CVAR_ARCHIVE, },
 	{ &be_features, "be_features", "", CVAR_USERINFO | CVAR_ROM  },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	{ &chud_file, "chud_file", "default.cfg", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_chud_file },
@@ -851,7 +851,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_drawRealHeads, "cg_drawRealHeads", "0", CVAR_ARCHIVE | CVAR_NEW, },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
-	};
+};
 
 #define CG_VARS_HASH_SIZE 512
 
@@ -2078,7 +2078,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_UpdateBeFeatures();
 
 	CG_InitConsoleCommands();
-	
+
 	if (cg_clientLog.integer)
 	{
 		char* tmp = va("client_logs/client%d.txt", cg_clientLog.integer);
@@ -2372,9 +2372,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	{
 		CG_CvarTouch("chud_file");
 	}
-	
+
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);
-	
+
 	if (cg_clearOnLevelLoad.integer)
 	{
 		trap_SendConsoleCommand("clear");

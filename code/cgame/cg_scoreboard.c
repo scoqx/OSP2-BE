@@ -1272,13 +1272,13 @@ int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScores)
 	{
 		score = &cg.scores[i];
 		ci = &cgs.clientinfo[score->client];
-		
+
 		// In demo mode, if clientinfo is not valid, skip this entry
 		if (cg.demoPlayback && !ci->infoValid)
 		{
 			continue;
 		}
-		
+
 		if (ci->team != team && ci->rt != team)
 		{
 			continue;
@@ -2003,7 +2003,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		CG_DrawWeaponStatsWrapper();
 	}
 
-	
+
 	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;

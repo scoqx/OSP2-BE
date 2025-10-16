@@ -558,7 +558,7 @@ static void CG_Missile(centity_t* cent)
 		ent.rotation = 0;
 		ent.customShader = cgs.media.plasmaBallShader;
 
-		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN)&& cg_altPlasma.integer == 2)
+		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN) && cg_altPlasma.integer == 2)
 		{
 			ent.customShader = cgs.media.plasmaOldBallShader;
 		}

@@ -385,7 +385,7 @@ typedef struct
 	char            headSkinName[MAX_QPATH];
 	char            redTeam[MAX_TEAMNAME];
 	char            blueTeam[MAX_TEAMNAME];
-	char			originalHeadModel[MAX_QPATH];
+	char            originalHeadModel[MAX_QPATH];
 
 	qboolean        newAnims;       // true if using the new mission pack animations
 	qboolean        fixedlegs;      // true if legs yaw is always the same as torso yaw
@@ -583,7 +583,7 @@ typedef struct
 	// scoreboard
 	int         scoresRequestTime;
 	int         statsRequestTime;
-	int		 	statsAllRequestTime;
+	int         statsAllRequestTime;
 	int         numScores;
 	int         selectedScore;
 	int         teamScores[2];
@@ -1142,7 +1142,7 @@ typedef struct
 	float bgOpaque;
 } globalBeStatsSettings_t;
 
-typedef struct 
+typedef struct
 {
 	// == text colors ==
 	vec4_t title;
@@ -1228,21 +1228,21 @@ typedef struct cgs_be_s
 	qboolean showScores;
 } cgs_be_t;
 
-#define BE_ENABLED 				be_enabled.integer
+#define BE_ENABLED              be_enabled.integer
 #define CG_BE_FEATURE_ENABLED(feature) (BE_ENABLED && !(cgs.be.disableFeatures & (feature))) // not disabled lol
 
 #define CG_BE_TEAM_FOE_WH       (1 << 0) // 1
 #define CG_BE_MODELSOUND        (1 << 1) // 2
 #define CG_BE_ALT_GRENADES      (1 << 2) // 4
-#define CG_BE_ENEMYLIGHTNING	(1 << 3) // 8
-#define CG_BE_MARK_TEAMMATE		(1 << 4) // 16
+#define CG_BE_ENEMYLIGHTNING    (1 << 3) // 8
+#define CG_BE_MARK_TEAMMATE     (1 << 4) // 16
 #define CG_BE_ALT_SHADOW        (1 << 5) // 32
 #define CG_BE_ALT_BLOOD         (1 << 6) // 64
-#define CG_BE_ALT_PLASMAGUN		(1 << 7) // 128
+#define CG_BE_ALT_PLASMAGUN     (1 << 7) // 128
 #define CG_BE_OUTLINE           (1 << 8) // 256
 #define CG_BE_TEAM_INDICATOR    (1 << 9) // 512
-#define CG_BE_DAMAGEINFO		(1 << 10) // 1024
-#define CG_BE_FULLBRIGHT		(1 << 11) // 2048
+#define CG_BE_DAMAGEINFO        (1 << 10) // 1024
+#define CG_BE_FULLBRIGHT        (1 << 11) // 2048
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -1443,7 +1443,7 @@ typedef struct
 	int acceptTask;
 	int acceptLeader;
 
-	qboolean		customModelSound;
+	qboolean        customModelSound;
 	sfxHandle_t     mySounds[MAX_CUSTOM_SOUNDS];
 	sfxHandle_t     teamSounds[MAX_CUSTOM_SOUNDS];
 	sfxHandle_t     enemySounds[MAX_CUSTOM_SOUNDS];
@@ -1838,7 +1838,7 @@ extern vmCvar_t         chud_file;
 extern vmCvar_t         cg_chud;
 extern vmCvar_t         cg_scoreboardTextSize;
 extern vmCvar_t         cg_scoreboardScale;
-extern vmCvar_t		 	cg_scoreboardWidth;
+extern vmCvar_t         cg_scoreboardWidth;
 extern vmCvar_t         cg_scoreboardColors;
 extern vmCvar_t         cg_clearOnLevelLoad;
 extern vmCvar_t         cg_spectPOV;

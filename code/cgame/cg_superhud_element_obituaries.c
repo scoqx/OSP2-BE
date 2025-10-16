@@ -207,10 +207,10 @@ void CG_SHUDElementObituariesRoutine(void* context)
 			qboolean shouldColorAttacker;
 			qboolean isAttackerTeammate;
 			qboolean isLocalPlayerSpectator;
-			
+
 			/* Check if local player is spectator */
 			isLocalPlayerSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
-			
+
 			/* Check if attacker is teammate by comparing teams */
 			if (entry->attacker >= 0 && entry->attacker < MAX_CLIENTS)
 			{
@@ -220,7 +220,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 			{
 				isAttackerTeammate = qfalse;
 			}
-			
+
 			/* Determine if we should color attacker based on bitmask */
 			shouldColorAttacker = qfalse;
 			if (isLocalPlayerSpectator)
@@ -240,7 +240,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 			{
 				shouldColorAttacker = qtrue;
 			}
-			
+
 			if (shouldColorAttacker)
 			{
 				if (element->config.style.value & 1)
@@ -280,10 +280,10 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		qboolean shouldColorTarget;
 		qboolean isTargetTeammate;
 		qboolean isLocalPlayerSpectator;
-		
+
 		/* Check if local player is spectator */
 		isLocalPlayerSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
-		
+
 		/* Check if target is teammate by comparing teams */
 		if (entry->target >= 0 && entry->target < MAX_CLIENTS)
 		{
@@ -293,7 +293,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		{
 			isTargetTeammate = qfalse;
 		}
-		
+
 		/* Determine if we should color target based on bitmask */
 		shouldColorTarget = qfalse;
 		if (isLocalPlayerSpectator)
@@ -313,7 +313,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		{
 			shouldColorTarget = qtrue;
 		}
-		
+
 		if (shouldColorTarget)
 		{
 			if (element->config.style.value & 1)

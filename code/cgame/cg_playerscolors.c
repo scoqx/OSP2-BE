@@ -341,9 +341,9 @@ void CG_ClientInfoUpdateColors(clientInfo_t* ci, int clientNum)
 
 			if (ourClient->rt == TEAM_SPECTATOR)
 			{
-				if (cg.snap->ps.pm_flags & PMF_FOLLOW && 
-				    cg.snap->ps.clientNum >= 0 && 
-				    cg.snap->ps.clientNum < MAX_CLIENTS)
+				if (cg.snap->ps.pm_flags & PMF_FOLLOW &&
+				        cg.snap->ps.clientNum >= 0 &&
+				        cg.snap->ps.clientNum < MAX_CLIENTS)
 				{
 					ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
 				}
@@ -444,9 +444,9 @@ void CG_ClientInfoUpdateColors(clientInfo_t* ci, int clientNum)
 
 		/* BE: Enhanced spectator perspective logic for non-team games */
 		if (cg_spectPOV.integer && cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR &&
-		    cg.snap->ps.pm_flags & PMF_FOLLOW &&
-		    cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS &&
-		    cg.snap->ps.clientNum == clientNum)
+		        cg.snap->ps.pm_flags & PMF_FOLLOW &&
+		        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS &&
+		        cg.snap->ps.clientNum == clientNum)
 		{
 			isFollowedPlayer = qtrue;
 		}

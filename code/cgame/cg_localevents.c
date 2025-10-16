@@ -689,7 +689,7 @@ void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
 	const char* str = cvart->vmCvar->string;
 
 	if (CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE) && cg_markTeam.integer != 1)
-		{
+	{
 		memset(cgs.be.markedTeam, qfalse, sizeof(cgs.be.markedTeam));
 
 		if (Q_stricmp(str, "-1") == 0)

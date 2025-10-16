@@ -1760,7 +1760,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		{
 			CG_SetWeaponBrightColor(&gun, weaponNum);
 			usedBrightColor = qtrue;
-		gun.customShader = cgs.media.firstPersonGun;
+			gun.customShader = cgs.media.firstPersonGun;
 		}
 	}
 

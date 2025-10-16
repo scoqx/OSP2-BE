@@ -20,7 +20,7 @@ extern "C" {
 #define CHERRYHUD_CONTEXT_MAIN_CONTAINER 4
 // Bonus flags for elements
 #define CHERRYHUD_FLAG_TEMPLATE         4
-#define CHERRYHUD_FLAG_AUTO_DETECT      8 
+#define CHERRYHUD_FLAG_AUTO_DETECT      8
 
 
 #define MAX_PREFIXED_MODES 4
@@ -51,37 +51,37 @@ typedef enum
 
 typedef struct
 {
-    cherryhudColorType_t type;
-    vec4_t rgba;
+	cherryhudColorType_t type;
+	vec4_t rgba;
 	qboolean isSet;
 } cherryhudColor_t;
 
 typedef enum
 {
-    CHERRYHUD_BACKGROUND_DEFAULT,
-    CHERRYHUD_BACKGROUND_FADING,
-    CHERRYHUD_BACKGROUND_BLINKING
+	CHERRYHUD_BACKGROUND_DEFAULT,
+	CHERRYHUD_BACKGROUND_FADING,
+	CHERRYHUD_BACKGROUND_BLINKING
 } cherryhudBackgroundType_t;
 
-typedef struct 
+typedef struct
 {
-    cherryhudBackgroundType_t type;
-    cherryhudColor_t color;
+	cherryhudBackgroundType_t type;
+	cherryhudColor_t color;
 } cherryhudBackground_t;
 
 typedef enum
 {
-    CHERRYHUD_BORDER_DEFAULT,
-    CHERRYHUD_BORDER_FADING,
-    CHERRYHUD_BORDER_BLINKING
+	CHERRYHUD_BORDER_DEFAULT,
+	CHERRYHUD_BORDER_FADING,
+	CHERRYHUD_BORDER_BLINKING
 } cherryhudBorderType_t;
 
-typedef struct 
+typedef struct
 {
-    cherryhudBorderType_t type;
-    vec4_t sideSizes;
-    cherryhudColor_t color;
-    cherryhudColor_t color2;
+	cherryhudBorderType_t type;
+	vec4_t sideSizes;
+	cherryhudColor_t color;
+	cherryhudColor_t color2;
 } cherryhudBorder_t;
 
 typedef enum
@@ -159,7 +159,7 @@ typedef struct
 	struct
 	{
 		cherryhudBackgroundType_t type;
-    	cherryhudColor_t color;
+		cherryhudColor_t color;
 		cherryhudColor_t color2;
 		qboolean isSet;
 	} background;
@@ -436,11 +436,12 @@ typedef struct
 		float value;
 		qboolean isSet;
 	} maxValue;
-	
+
 	// Prefixed mode configurations (compact.*, double.*, etc.)
 	struct
 	{
-		struct {
+		struct
+		{
 			char prefix[MAX_QPATH];           // "compact", "double", etc.
 			int configIndex;                  // Index into global prefixed configs array
 			qboolean loaded;                  // Are there variables with this prefix
@@ -495,7 +496,7 @@ typedef struct configFileInfo_s
 #define SE_CHUDSCOREBOARD_SHOW_STR  "chudscoreboard"
 #define SE_SHOW_EMPTY  (1 << 23) // 0x00800000
 #define SE_SHOW_EMPTY_STR  "showempty"
-#define SE_GT_FFA 	(1 << 11) // 0x00000800
+#define SE_GT_FFA   (1 << 11) // 0x00000800
 #define SE_GT_FFA_STR "gt_ffa"
 #define SE_GT_TOURNEY   (1 << 12) // 0x00001000
 #define SE_GT_TOURNEY_STR "gt_tourney"
@@ -559,7 +560,7 @@ typedef struct cherryhudElement_s
 	cherryHUDConfigElement_t element;
 	cherryhudConfig_t config;
 	struct cherryhudElement_s* next;
-	
+
 	// Информация о контейнере
 	const char* containerType;         // "!scoreboard", "playersRows", "spectatorsRows"
 }
@@ -646,9 +647,9 @@ void CG_CHUDBarMakeContext(const cherryhudConfig_t* in, cherryhudBarContext_t* o
 void CG_CHUDTextMakeContext(const cherryhudConfig_t* in, cherryhudTextContext_t* out);
 void CG_CHUDTextMakeAdjustCoords(const cherryhudConfig_t* in, float* out_x, float* out_y);
 void CG_CHUDDrawMakeAdjustCoords(const cherryhudConfig_t* in, float* out_x, float* out_y);
-void CG_CHUDDrawStretchPic(float x, float y, float w, float h, 
-                          float picX, float picY, float picW, float picH, 
-                          const float* color, qhandle_t shader);
+void CG_CHUDDrawStretchPic(float x, float y, float w, float h,
+                           float picX, float picY, float picW, float picH,
+                           const float* color, qhandle_t shader);
 void CG_CHUDDrawMakeContext(const cherryhudConfig_t* cfg, cherryhudDrawContext_t* out);
 
 void CG_CHUDTextPrintNew(const cherryhudConfig_t* cfg, cherryhudTextContext_t* pos, qboolean colorOverride);
@@ -772,7 +773,7 @@ typedef struct
 		cherryhudTempAccEntry_t weapon[WP_NUM_WEAPONS];
 	} tempAcc;
 	customStats_t customStats;
-	
+
 	// Configuration data
 	struct
 	{
@@ -784,10 +785,11 @@ typedef struct
 		qboolean defaultLoaded;
 		qboolean compactLoaded;
 		qboolean doubleLoaded;
-		
+
 		// Dynamic config storage by type
-		#define MAX_CONFIG_TYPES 16
-		struct {
+#define MAX_CONFIG_TYPES 16
+		struct
+		{
 			char type[MAX_QPATH];
 			cherryhudConfig_t config;
 			qboolean loaded;
@@ -823,12 +825,13 @@ int CG_CHUDGetTitleRowElementCount(void);
 #define MAX_TITLE_ELEMENTS 512
 #define MAX_TITLE_BLOCKS 16
 
-typedef struct {
-    cherryhudConfig_t config;
-    cherryhudElement_t* elements[MAX_TITLE_ELEMENTS];
-    int elementCount;
-    char containerType[MAX_QPATH];  // Associated container type (playersRows, spectatorsRows, etc.)
-    qboolean isContainerTitle;      // Whether this title is associated with a container
+typedef struct
+{
+	cherryhudConfig_t config;
+	cherryhudElement_t* elements[MAX_TITLE_ELEMENTS];
+	int elementCount;
+	char containerType[MAX_QPATH];  // Associated container type (playersRows, spectatorsRows, etc.)
+	qboolean isContainerTitle;      // Whether this title is associated with a container
 } cherryhudTitleBlock_t;
 
 void CG_CHUDCreateTitleBlock(const cherryhudConfig_t* config);
@@ -880,126 +883,140 @@ void CG_CHUDLoadDefaultTemplates(void);
 
 
 
-typedef struct cherryhudBlock_s {
-    char type[MAX_QPATH];  // e.g., "row", "playersRows"
-    cherryhudConfig_t config;
-    struct cherryhudElement_s *elements;  // list of elements in this block
-    struct cherryhudBlock_s *subblocks;   // list of sub-blocks
-    struct cherryhudBlock_s *next;        // for linking blocks
-    struct cherryhudBlock_s *parent;      // parent block for nesting
+typedef struct cherryhudBlock_s
+{
+	char type[MAX_QPATH];  // e.g., "row", "playersRows"
+	cherryhudConfig_t config;
+	struct cherryhudElement_s* elements;  // list of elements in this block
+	struct cherryhudBlock_s* subblocks;   // list of sub-blocks
+	struct cherryhudBlock_s* next;        // for linking blocks
+	struct cherryhudBlock_s* parent;      // parent block for nesting
 } cherryhudBlock_t;
 
 
-typedef enum {
-    CHERRYHUD_ROW_TYPE_TITLE,
-    CHERRYHUD_ROW_TYPE_SELF,
-    CHERRYHUD_ROW_TYPE_PLAYER,
-    CHERRYHUD_ROW_TYPE_CLIENT,
-    CHERRYHUD_ROW_TYPE_SPECTATOR
+typedef enum
+{
+	CHERRYHUD_ROW_TYPE_TITLE,
+	CHERRYHUD_ROW_TYPE_SELF,
+	CHERRYHUD_ROW_TYPE_PLAYER,
+	CHERRYHUD_ROW_TYPE_CLIENT,
+	CHERRYHUD_ROW_TYPE_SPECTATOR
 } cherryhudRowType_t;
 
-typedef struct {
-    int clientNum;
-    int score;
-    int ping;
-    int team;
-    qboolean connected;
-    qboolean isSpectator;
-    clientInfo_t* clientInfo;
-    score_t* scoreData;
+typedef struct
+{
+	int clientNum;
+	int score;
+	int ping;
+	int team;
+	qboolean connected;
+	qboolean isSpectator;
+	clientInfo_t* clientInfo;
+	score_t* scoreData;
 } cherryhudPlayerData_t;
 
 // Table row structure
-typedef struct {
-    cherryhudRowType_t type;
-    cherryhudPlayerData_t playerData;
-    float yPosition;
-    int rowIndex;
-    cherryhudElement_t* elements; // List of elements in this row
+typedef struct
+{
+	cherryhudRowType_t type;
+	cherryhudPlayerData_t playerData;
+	float yPosition;
+	int rowIndex;
+	cherryhudElement_t* elements; // List of elements in this row
 } cherryhudTableRow_t;
 
 
 // Runtime context for table (separate from config)
-typedef struct {
-    float baseX, baseY;           // Current position
-    float width, height;          // Current size
-    float rowHeight;              // Current row height
-    float rowSpacing;             // Current row spacing
-    int lastBuildTime;            // Last time this table was built (for throttling)
-    qboolean needsRecalc;         // Whether table needs recalculation
-    qboolean isDirty;             // Whether table data has changed
+typedef struct
+{
+	float baseX, baseY;           // Current position
+	float width, height;          // Current size
+	float rowHeight;              // Current row height
+	float rowSpacing;             // Current row spacing
+	int lastBuildTime;            // Last time this table was built (for throttling)
+	qboolean needsRecalc;         // Whether table needs recalculation
+	qboolean isDirty;             // Whether table data has changed
 } cherryhudTableContext_t;
 
 // Scoreboard order structures (needed for TableManager)
-typedef enum {
-    CHERRYHUD_BLOCK_TYPE_TITLE,
-    CHERRYHUD_BLOCK_TYPE_PLAYERS_ROWS,
-    CHERRYHUD_BLOCK_TYPE_SPECTATORS_ROWS
+typedef enum
+{
+	CHERRYHUD_BLOCK_TYPE_TITLE,
+	CHERRYHUD_BLOCK_TYPE_PLAYERS_ROWS,
+	CHERRYHUD_BLOCK_TYPE_SPECTATORS_ROWS
 } cherryhudBlockType_t;
 
-typedef struct {
-    cherryhudBlockType_t type;
-    cherryhudConfig_t config;
-    int order; // Order in which block was parsed
-    int titleBlockIndex; // Index of title block (only for title blocks)
+typedef struct
+{
+	cherryhudBlockType_t type;
+	cherryhudConfig_t config;
+	int order; // Order in which block was parsed
+	int titleBlockIndex; // Index of title block (only for title blocks)
 } cherryhudScoreboardBlock_t;
 
 #define MAX_SCOREBOARD_BLOCKS 10
-typedef struct {
-    cherryhudScoreboardBlock_t blocks[MAX_SCOREBOARD_BLOCKS];
-    int count;
+typedef struct
+{
+	cherryhudScoreboardBlock_t blocks[MAX_SCOREBOARD_BLOCKS];
+	int count;
 } cherryhudScoreboardOrder_t;
 
 // Table structure (needed for tableTypeEntry_t)
-typedef struct {
-    cherryhudTableRow_t* rows;
-    int numRows;
-    int maxRows;
-    int playerRowsStart;  // Index where player rows start (after title + self)
-    qboolean isDouble;
-    char tableType[MAX_QPATH];  // "players", "spectators", or "mixed"
-    cherryhudConfig_t config;   // Configuration (read-only after creation)
-    cherryhudTableContext_t context; // Runtime context (managed by tableBuilder)
+typedef struct
+{
+	cherryhudTableRow_t* rows;
+	int numRows;
+	int maxRows;
+	int playerRowsStart;  // Index where player rows start (after title + self)
+	qboolean isDouble;
+	char tableType[MAX_QPATH];  // "players", "spectators", or "mixed"
+	cherryhudConfig_t config;   // Configuration (read-only after creation)
+	cherryhudTableContext_t context; // Runtime context (managed by tableBuilder)
 } cherryhudTable_t;
 
 // Table type management
 #define MAX_TABLE_TYPES 16
-typedef struct {
-    char type[MAX_QPATH];
-    cherryhudTable_t* table;
-    qboolean initialized;
+typedef struct
+{
+	char type[MAX_QPATH];
+	cherryhudTable_t* table;
+	qboolean initialized;
 } tableTypeEntry_t;
 
 // Table Manager - replaces global state
-typedef struct {
-    cherryhudTable_t* globalTable;
-    cherryhudTable_t* playersTable;
-    cherryhudTable_t* spectatorsTable;
-    qboolean tableDirty;          // Flag to track if rebuild is needed
-    int lastPlayerHash;           // Simple hash of player data for change detection
-    cherryhudScoreboardOrder_t* scoreboardOrder;
-    tableTypeEntry_t tablesByType[MAX_TABLE_TYPES];
-    int tableTypeCount;
-    int blockOrderCounter;
+typedef struct
+{
+	cherryhudTable_t* globalTable;
+	cherryhudTable_t* playersTable;
+	cherryhudTable_t* spectatorsTable;
+	qboolean tableDirty;          // Flag to track if rebuild is needed
+	int lastPlayerHash;           // Simple hash of player data for change detection
+	cherryhudScoreboardOrder_t* scoreboardOrder;
+	tableTypeEntry_t tablesByType[MAX_TABLE_TYPES];
+	int tableTypeCount;
+	int blockOrderCounter;
 } cherryhudTableManager_t;
 
 // Service interfaces for separation of concerns
-typedef struct {
-    void (*collectData)(cherryhudPlayerData_t* players, int* numPlayers, const char* tableType);
-    void (*sortData)(cherryhudPlayerData_t* players, int numPlayers);
-    int (*calculateHash)(const cherryhudPlayerData_t* players, int numPlayers);
+typedef struct
+{
+	void (*collectData)(cherryhudPlayerData_t* players, int* numPlayers, const char* tableType);
+	void (*sortData)(cherryhudPlayerData_t* players, int numPlayers);
+	int (*calculateHash)(const cherryhudPlayerData_t* players, int numPlayers);
 } cherryhudDataService_t;
 
-typedef struct {
-    void (*manageMemory)(cherryhudTable_t* table, int requiredRows);
-    void (*updateRows)(cherryhudTable_t* table, const cherryhudPlayerData_t* players, int numPlayers);
-    void (*finalizeTable)(cherryhudTable_t* table);
+typedef struct
+{
+	void (*manageMemory)(cherryhudTable_t* table, int requiredRows);
+	void (*updateRows)(cherryhudTable_t* table, const cherryhudPlayerData_t* players, int numPlayers);
+	void (*finalizeTable)(cherryhudTable_t* table);
 } cherryhudMemoryService_t;
 
-typedef struct {
-    void (*updateProperties)(cherryhudTable_t* table);
-    qboolean (*needsRebuild)(cherryhudTable_t* table);
-    qboolean (*dataChanged)(cherryhudTableManager_t* manager, cherryhudTable_t* table, int playerHash, int requiredRows);
+typedef struct
+{
+	void (*updateProperties)(cherryhudTable_t* table);
+	qboolean(*needsRebuild)(cherryhudTable_t* table);
+	qboolean(*dataChanged)(cherryhudTableManager_t* manager, cherryhudTable_t* table, int playerHash, int requiredRows);
 } cherryhudValidationService_t;
 
 
@@ -1083,17 +1100,19 @@ void CG_CHUDRenderScoreboardElementsInOrder(const cherryhudConfig_t* scoreboardC
 // Scoreboard block order management
 
 // Configuration storage for deferred element creation
-typedef struct {
-    char elementName[MAX_QPATH];  // Name of the element (playerInfo, serverInfo, etc.)
-    cherryhudConfig_t config;     // Element configuration
-    int context;                  // Context: 0=default, 1=playerRow, 2=spectatorRow, 3=title
-    int order;                    // Order in which element was parsed
+typedef struct
+{
+	char elementName[MAX_QPATH];  // Name of the element (playerInfo, serverInfo, etc.)
+	cherryhudConfig_t config;     // Element configuration
+	int context;                  // Context: 0=default, 1=playerRow, 2=spectatorRow, 3=title
+	int order;                    // Order in which element was parsed
 } cherryhudElementConfig_t;
 
-typedef struct {
-    cherryhudElementConfig_t elements[MAX_TITLE_ELEMENTS * 4]; // Store elements for all contexts// Lol X4
-    int elementCount;
-    qboolean isParsed;  // Whether parsing is complete
+typedef struct
+{
+	cherryhudElementConfig_t elements[MAX_TITLE_ELEMENTS * 4]; // Store elements for all contexts// Lol X4
+	int elementCount;
+	qboolean isParsed;  // Whether parsing is complete
 } cherryhudConfigStorage_t;
 
 
@@ -1128,22 +1147,24 @@ void CG_CHUDConfigStorageProcessElements(void);
 cherryhudConfigStorage_t* CG_CHUDGetConfigStorage(void);
 
 // Unified element type system
-typedef enum {
-    CHERRYHUD_TYPE_ELEMENT,      // Regular elements (playerInfo, serverInfo, print, text, etc.)
-    CHERRYHUD_TYPE_BLOCK,        // Block/container types (playerRow, spectatorRow, title, etc.)
-    CHERRYHUD_TYPE_CONTAINER,    // Container types (!scoreboard, playersRows, spectatorsRows)
-    CHERRYHUD_TYPE_CONFIG       // Config types (!default)
+typedef enum
+{
+	CHERRYHUD_TYPE_ELEMENT,      // Regular elements (playerInfo, serverInfo, print, text, etc.)
+	CHERRYHUD_TYPE_BLOCK,        // Block/container types (playerRow, spectatorRow, title, etc.)
+	CHERRYHUD_TYPE_CONTAINER,    // Container types (!scoreboard, playersRows, spectatorsRows)
+	CHERRYHUD_TYPE_CONFIG       // Config types (!default)
 } cherryhudElementTypeCategory_t;
 
-typedef struct {
-    const char* name;                                    // Element name
-    cherryhudElementTypeCategory_t category;            // Type category
-    qboolean isHandler;                                  // Has handler function
-    void (*handler)(const char* elementName, cherryhudConfig_t* config); // Handler function
-    void* (*create)(const cherryhudConfig_t* config, const char* containerType);    // Element create function
-    void (*routine)(void* context);                      // Element routine function (render)
-    void (*destroy)(void* context);                      // Element destroy function
-    int bonusFlag;                                       // Bonus flag for additional info
+typedef struct
+{
+	const char* name;                                    // Element name
+	cherryhudElementTypeCategory_t category;            // Type category
+	qboolean isHandler;                                  // Has handler function
+	void (*handler)(const char* elementName, cherryhudConfig_t* config); // Handler function
+	void* (*create)(const cherryhudConfig_t* config, const char* containerType);    // Element create function
+	void (*routine)(void* context);                      // Element routine function (render)
+	void (*destroy)(void* context);                      // Element destroy function
+	int bonusFlag;                                       // Bonus flag for additional info
 } cherryhudElementTypeInfo_t;
 
 // Element type management
@@ -1160,16 +1181,18 @@ qboolean CG_CHUDIsTemplateBlock(int bonusFlag);
 const char* CG_CHUDGetContainerName(cherryhudBlockType_t type);
 
 // Element handler system
-typedef enum {
-    CHERRYHUD_HANDLER_ELEMENT,
-    CHERRYHUD_HANDLER_CONTAINER,
-    CHERRYHUD_HANDLER_CONFIG
+typedef enum
+{
+	CHERRYHUD_HANDLER_ELEMENT,
+	CHERRYHUD_HANDLER_CONTAINER,
+	CHERRYHUD_HANDLER_CONFIG
 } cherryhudHandlerType_t;
 
-typedef struct {
-    const char* name;
-    cherryhudHandlerType_t type;
-    void (*handler)(const char* elementName, cherryhudConfig_t* config);
+typedef struct
+{
+	const char* name;
+	cherryhudHandlerType_t type;
+	void (*handler)(const char* elementName, cherryhudConfig_t* config);
 } cherryhudElementHandler_t;
 
 void CG_CHUDRegisterElementHandlers(void);
@@ -1220,39 +1243,42 @@ void CG_CHUDElementDecorSetClientNum(void* context, int clientNum);
 //
 // cg_cherryhud_lexer
 //
-typedef enum {
-    TOKEN_EOF = 0,
-    TOKEN_BLOCK_START,      // {
-    TOKEN_BLOCK_END,        // }
-    TOKEN_ELEMENT,          // playerInfo, print, etc.
-    TOKEN_COMMAND,          // pos, size, color, etc.
-    TOKEN_STRING,           // "text" or text
-    TOKEN_NUMBER,           // 123.45
-    TOKEN_COMMA,            // ,
-    TOKEN_SEMICOLON,        // ;
-    TOKEN_COMMENT,          // # comment
-    TOKEN_NEWLINE,          // \n
-    TOKEN_WHITESPACE,       // spaces, tabs
-    TOKEN_ERROR             // Invalid token
+typedef enum
+{
+	TOKEN_EOF = 0,
+	TOKEN_BLOCK_START,      // {
+	TOKEN_BLOCK_END,        // }
+	TOKEN_ELEMENT,          // playerInfo, print, etc.
+	TOKEN_COMMAND,          // pos, size, color, etc.
+	TOKEN_STRING,           // "text" or text
+	TOKEN_NUMBER,           // 123.45
+	TOKEN_COMMA,            // ,
+	TOKEN_SEMICOLON,        // ;
+	TOKEN_COMMENT,          // # comment
+	TOKEN_NEWLINE,          // \n
+	TOKEN_WHITESPACE,       // spaces, tabs
+	TOKEN_ERROR             // Invalid token
 } cherryhud_token_type_t;
 
-typedef struct cherryhud_token_s {
-    cherryhud_token_type_t type;
-    char* value;
-    int line;
-    int column;
-    int length;
+typedef struct cherryhud_token_s
+{
+	cherryhud_token_type_t type;
+	char* value;
+	int line;
+	int column;
+	int length;
 } cherryhud_token_t;
 
-typedef struct cherryhud_lexer_s {
-    const char* input;
-    int input_length;
-    int position;
-    int line;
-    int column;
-    cherryhud_token_t* tokens;
-    int token_count;
-    int token_capacity;
+typedef struct cherryhud_lexer_s
+{
+	const char* input;
+	int input_length;
+	int position;
+	int line;
+	int column;
+	cherryhud_token_t* tokens;
+	int token_count;
+	int token_capacity;
 } cherryhud_lexer_t;
 
 cherryhud_lexer_t* CG_CHUDLexerCreate(const char* input);
@@ -1265,12 +1291,13 @@ int CG_CHUDLexerGetTokenCount(cherryhud_lexer_t* lexer);
 //
 // cg_cherryhud_lexer_parser
 //
-typedef struct cherryhud_parser_s {
-    cherryhud_lexer_t* lexer;
-    int current_token;
-    int token_count;
-    cherryhud_token_t* cached_token;
-    int cached_token_index;
+typedef struct cherryhud_parser_s
+{
+	cherryhud_lexer_t* lexer;
+	int current_token;
+	int token_count;
+	cherryhud_token_t* cached_token;
+	int cached_token_index;
 } cherryhud_parser_t;
 
 cherryhud_parser_t* CG_CHUDLexerParserCreate(const char* input);
@@ -1302,81 +1329,88 @@ cherryhudConfigParseStatus_t (*CG_CHUDLexerFindCommand(const char* name))(cherry
 //
 // cg_cherryhud_layout
 //
-typedef enum {
-    CHERRYHUD_LAYOUT_MODE_ABSOLUTE,    // Absolute positioning
-    CHERRYHUD_LAYOUT_MODE_RELATIVE,    // Relative to parent
-    CHERRYHUD_LAYOUT_MODE_FLOW,        // Flow layout (horizontal/vertical)
-    CHERRYHUD_LAYOUT_MODE_GRID,        // Grid layout
-    CHERRYHUD_LAYOUT_MODE_TABLE        // Table layout (for scoreboard)
+typedef enum
+{
+	CHERRYHUD_LAYOUT_MODE_ABSOLUTE,    // Absolute positioning
+	CHERRYHUD_LAYOUT_MODE_RELATIVE,    // Relative to parent
+	CHERRYHUD_LAYOUT_MODE_FLOW,        // Flow layout (horizontal/vertical)
+	CHERRYHUD_LAYOUT_MODE_GRID,        // Grid layout
+	CHERRYHUD_LAYOUT_MODE_TABLE        // Table layout (for scoreboard)
 } cherryhudLayoutMode_t;
 
 // Layout direction for flow mode
-typedef enum {
-    CHERRYHUD_LAYOUT_DIR_HORIZONTAL,
-    CHERRYHUD_LAYOUT_DIR_VERTICAL
+typedef enum
+{
+	CHERRYHUD_LAYOUT_DIR_HORIZONTAL,
+	CHERRYHUD_LAYOUT_DIR_VERTICAL
 } cherryhudLayoutDirection_t;
 
 // Layout constraints
-typedef struct {
-    float minWidth;
-    float maxWidth;
-    float minHeight;
-    float maxHeight;
-    qboolean isSet;
+typedef struct
+{
+	float minWidth;
+	float maxWidth;
+	float minHeight;
+	float maxHeight;
+	qboolean isSet;
 } cherryhudLayoutConstraints_t;
 
 // Layout properties for each element
-typedef struct {
-    cherryhudLayoutMode_t mode;
-    cherryhudLayoutDirection_t direction;
-    cherryhudLayoutConstraints_t constraints;
-    
-    // Flow layout properties
-    float spacing;          // Space between elements in flow mode
-    float padding;          // Padding around elements
-    
-    // Grid layout properties
-    int gridColumns;        // Number of columns in grid
-    int gridRows;           // Number of rows in grid
-    float gridSpacingX;     // Horizontal spacing in grid
-    float gridSpacingY;     // Vertical spacing in grid
-    
-    // Table layout properties
-    int tableColumn;        // Column index in table
-    int tableRow;           // Row index in table
-    float tableCellWidth;   // Width of table cell
-    float tableCellHeight;  // Height of table cell
-    
-    qboolean isSet;
+typedef struct
+{
+	cherryhudLayoutMode_t mode;
+	cherryhudLayoutDirection_t direction;
+	cherryhudLayoutConstraints_t constraints;
+
+	// Flow layout properties
+	float spacing;          // Space between elements in flow mode
+	float padding;          // Padding around elements
+
+	// Grid layout properties
+	int gridColumns;        // Number of columns in grid
+	int gridRows;           // Number of rows in grid
+	float gridSpacingX;     // Horizontal spacing in grid
+	float gridSpacingY;     // Vertical spacing in grid
+
+	// Table layout properties
+	int tableColumn;        // Column index in table
+	int tableRow;           // Row index in table
+	float tableCellWidth;   // Width of table cell
+	float tableCellHeight;  // Height of table cell
+
+	qboolean isSet;
 } cherryhudLayoutProperties_t;
 
 // Calculated layout bounds
-typedef struct {
-    float x, y, width, height;  // Final calculated bounds
-    float contentX, contentY;   // Content area (excluding padding)
-    float contentWidth, contentHeight;
-    qboolean isValid;           // Whether layout is valid
-    int lastUpdateTime;         // When this layout was last calculated
-    int clientNum;              // Client number for playerInfo elements
+typedef struct
+{
+	float x, y, width, height;  // Final calculated bounds
+	float contentX, contentY;   // Content area (excluding padding)
+	float contentWidth, contentHeight;
+	qboolean isValid;           // Whether layout is valid
+	int lastUpdateTime;         // When this layout was last calculated
+	int clientNum;              // Client number for playerInfo elements
 } cherryhudLayoutBounds_t;
 
 // Layout context for calculations
-typedef struct {
-    float parentX, parentY;     // Parent position
-    float parentWidth, parentHeight; // Parent size
-    float availableWidth, availableHeight; // Available space
-    int currentTime;            // Current time for caching
-    qboolean forceRecalc;       // Force recalculation
-    int clientNum;              // Client number for playerInfo elements
+typedef struct
+{
+	float parentX, parentY;     // Parent position
+	float parentWidth, parentHeight; // Parent size
+	float availableWidth, availableHeight; // Available space
+	int currentTime;            // Current time for caching
+	qboolean forceRecalc;       // Force recalculation
+	int clientNum;              // Client number for playerInfo elements
 } cherryhudLayoutContext_t;
 
 // Layout manager state
-typedef struct {
-    cherryhudLayoutBounds_t* bounds;  // Cached bounds for all elements
-    int boundsCount;
-    int boundsCapacity;
-    int lastLayoutTime;        // When layout was last calculated
-    qboolean needsRecalc;      // Whether layout needs recalculation
+typedef struct
+{
+	cherryhudLayoutBounds_t* bounds;  // Cached bounds for all elements
+	int boundsCount;
+	int boundsCapacity;
+	int lastLayoutTime;        // When layout was last calculated
+	qboolean needsRecalc;      // Whether layout needs recalculation
 } cherryhudLayoutManager_t;
 
 // Layout calculation functions
@@ -1422,8 +1456,8 @@ qboolean CG_CHUDValidateClientNumber(int clientNum);
 qboolean CG_CHUDValidateBounds(cherryhudLayoutBounds_t* bounds);
 
 // Common rendering utilities
-void CG_CHUDRenderElementWithValidation(void* element, const cherryhudConfig_t* config, 
-                                       cherryhudLayoutBounds_t* bounds, int clientNum);
+void CG_CHUDRenderElementWithValidation(void* element, const cherryhudConfig_t* config,
+                                        cherryhudLayoutBounds_t* bounds, int clientNum);
 void CG_CHUDRenderElementBackgroundAndBorder(const cherryhudConfig_t* config, cherryhudLayoutBounds_t* bounds);
 void CG_CHUDSetElementPositionFromBounds(cherryhudTextContext_t* textCtx, cherryhudLayoutBounds_t* bounds);
 void CG_CHUDRenderContainerBackgroundFromBounds(const cherryhudConfig_t* config, cherryhudLayoutBounds_t* bounds);
@@ -1432,9 +1466,10 @@ qboolean CG_CHUDValidateClientNum(int clientNum);
 void CG_CHUDRenderElementText(const cherryhudConfig_t* config, cherryhudTextContext_t* textCtx, const char* displayText);
 
 // Generic type handler lookup structure
-typedef struct {
-    const char* typeName;
-    void (*handler)(void* element);
+typedef struct
+{
+	const char* typeName;
+	void (*handler)(void* element);
 } cherryhudTypeHandler_t;
 
 // ============================================================================
@@ -1448,28 +1483,28 @@ float CG_CHUDApplyAlignH(float x, float width, cherryhudAlignH_t alignH);
 float CG_CHUDApplyAlignV(float y, float height, cherryhudAlignV_t alignV);
 
 // Apply both horizontal and vertical alignment to position
-void CG_CHUDApplyAlignment(float* x, float* y, float width, float height, 
-                          cherryhudAlignH_t alignH, cherryhudAlignV_t alignV);
+void CG_CHUDApplyAlignment(float* x, float* y, float width, float height,
+                           cherryhudAlignH_t alignH, cherryhudAlignV_t alignV);
 
 // Get alignment values from config with defaults
-void CG_CHUDGetAlignmentFromConfig(const cherryhudConfig_t* config, 
-                                  cherryhudAlignH_t* alignH, cherryhudAlignV_t* alignV);
+void CG_CHUDGetAlignmentFromConfig(const cherryhudConfig_t* config,
+                                   cherryhudAlignH_t* alignH, cherryhudAlignV_t* alignV);
 
 // Get textExt alignment values from config with defaults
-void CG_CHUDGetTextExtAlignmentFromConfig(const cherryhudConfig_t* config, 
-                                         cherryhudAlignH_t* alignH, cherryhudAlignV_t* alignV);
+void CG_CHUDGetTextExtAlignmentFromConfig(const cherryhudConfig_t* config,
+        cherryhudAlignH_t* alignH, cherryhudAlignV_t* alignV);
 
 // Apply alignment to text context
-void CG_CHUDApplyAlignmentToTextContext(cherryhudTextContext_t* textCtx, 
-                                       cherryhudAlignH_t alignH, cherryhudAlignV_t alignV);
+void CG_CHUDApplyAlignmentToTextContext(cherryhudTextContext_t* textCtx,
+                                        cherryhudAlignH_t alignH, cherryhudAlignV_t alignV);
 
 // Apply alignment to draw context
-void CG_CHUDApplyAlignmentToDrawContext(cherryhudDrawContext_t* drawCtx, 
-                                       cherryhudAlignH_t alignH, cherryhudAlignV_t alignV);
+void CG_CHUDApplyAlignmentToDrawContext(cherryhudDrawContext_t* drawCtx,
+                                        cherryhudAlignH_t alignH, cherryhudAlignV_t alignV);
 
 // Apply alignment to layout bounds
-void CG_CHUDApplyAlignmentToBounds(cherryhudLayoutBounds_t* bounds, 
-                                  cherryhudAlignH_t alignH, cherryhudAlignV_t alignV);
+void CG_CHUDApplyAlignmentToBounds(cherryhudLayoutBounds_t* bounds,
+                                   cherryhudAlignH_t alignH, cherryhudAlignV_t alignV);
 
 // Apply alignment from config to layout bounds
 void CG_CHUDApplyConfigAlignmentToBounds(const cherryhudConfig_t* config, cherryhudLayoutBounds_t* bounds);

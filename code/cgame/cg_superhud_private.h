@@ -300,7 +300,7 @@ typedef enum
 #define SE_KEY4_SHOW_STR  "key4show"
 #define SE_SHOW_EMPTY  (1 << 10) // 0x00000400
 #define SE_SHOW_EMPTY_STR  "showempty"
-#define SE_GT_FFA 	(1 << 11) // 0x00000800
+#define SE_GT_FFA   (1 << 11) // 0x00000800
 #define SE_GT_FFA_STR "gt_ffa"
 #define SE_GT_TOURNEY   (1 << 12) // 0x00001000
 #define SE_GT_TOURNEY_STR "gt_tourney"
