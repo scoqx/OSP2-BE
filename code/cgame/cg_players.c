@@ -1592,6 +1592,7 @@ void CG_NewClientInfo(int clientNum)
 		if (isTeamGame && isTeamChanged)
 		{
 			ourTeam = cgs.clientinfo[cg.clientNum].rt;
+			CG_UpdateMyTeamColors();
 			CG_UpdateOtherClientsInfo();
 		}
 

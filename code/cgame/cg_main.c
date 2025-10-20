@@ -489,6 +489,7 @@ vmCvar_t        cg_scoreboardColors;
 vmCvar_t        cg_clearOnLevelLoad;
 vmCvar_t        cg_spectPOV;
 vmCvar_t        cg_drawRealHeads;
+vmCvar_t        cg_myTeam;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -867,6 +868,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_drawRealHeads, "cg_drawRealHeads", "0", CVAR_ARCHIVE | CVAR_NEW, },
+	{ &cg_myTeam, "cg_myTeam", "red", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_myTeam },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
   
   { &cg_shud_chatindex, "cg_shud_chatindex", "0",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
@@ -886,6 +888,7 @@ static cvarTable_t cvarTable[] =
   { &cg_shud_chatmsg13, "cg_shud_chatmsg13", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
   { &cg_shud_chatmsg14, "cg_shud_chatmsg14", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
   { &cg_shud_chatmsg15, "cg_shud_chatmsg15", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -2051,6 +2054,7 @@ void CG_InitCvars(void)
 
 	CG_CvarTouch("cg_redTeamColor");
 	CG_CvarTouch("cg_blueTeamColor");
+	CG_CvarTouch("cg_myTeam");
 
 	CG_CvarTouch("cg_markTeam");
 	CG_CvarTouch("cg_markTeamColor");
@@ -2069,6 +2073,61 @@ void CG_InitCvars(void)
 }
 
 /*
+=================
+CG_ParseCompilationInfo
+
+Parse compilation info from 'cversion' file and set compilation_build cvar
+Format: Compilation "NAME" Version "VERSION"
+=================
+*/
+void CG_ParseCompilationInfo(void)
+{
+	fileHandle_t fileHandle;
+	int fileSize;
+	char* fileContent;
+	char buildString[MAX_QPATH * 2 + 2];
+	char name[MAX_QPATH];
+	char version[MAX_QPATH];
+	vmCvar_t compilation_build;
+	int parseResult;
+	
+	// Открываем файл 'cversion'
+	fileSize = trap_FS_FOpenFile("cversion", &fileHandle, FS_READ);
+	if (fileSize <= 0 || !fileHandle)
+	{
+		return; // Файл не найден
+	}
+	
+	// Читаем содержимое файла
+	fileContent = Z_Malloc(fileSize + 1);
+	OSP_MEMORY_CHECK(fileContent);
+	trap_FS_Read(fileContent, fileSize, fileHandle);
+	trap_FS_FCloseFile(fileHandle);
+	fileContent[fileSize] = 0;
+	
+	// Убираем символы новой строки и пробелы в конце
+	while (fileSize > 0 && (fileContent[fileSize - 1] == '\n' || fileContent[fileSize - 1] == '\r' || fileContent[fileSize - 1] == ' '))
+	{
+		fileContent[fileSize - 1] = 0;
+		fileSize--;
+	}
+	
+	// Парсим содержимое файла
+	parseResult = Q_sscanf(fileContent, "Compilation \"%s\" Version \"%s\"", name, version);
+	
+	if (parseResult == 2)
+	{
+		// Формируем строку NAME:VERSION
+		Com_sprintf(buildString, sizeof(buildString), "%s: %s", name, version);
+		
+		// Регистрируем cvar
+		trap_Cvar_Register(&compilation_build, "compilation_build", buildString, CVAR_USERINFO | CVAR_ROM);
+	}
+	
+	Z_Free(fileContent);
+}
+
+/*t
 =================
 CG_Init
 
@@ -2105,6 +2164,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_RegisterCvars();
 	CG_RegisterCvarDescriptions();
+
+	// Parse compilation info from 'cversion' file
+	CG_ParseCompilationInfo();
 
 	//init variables
 	CG_InitCvars();
@@ -2280,6 +2342,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 
 		CG_RebuildPlayerColors();
+		CG_UpdateMyTeamColors();
 	}
 
 	// load the new map

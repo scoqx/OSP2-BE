@@ -666,15 +666,130 @@ void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 {
+	static vec4_t originalRedTeamColor = {0, 0, 0, 0};
+	static vec4_t originalScoreboardRtColor = {0, 0, 0, 0};
+
 	CG_LocalEventCvarParseColor(cvart, cgs.be.redTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_rtColor);
-
+	
+	Vector4Copy(cgs.be.redTeamColor, originalRedTeamColor);
+	Vector4Copy(scoreboard_rtColor, originalScoreboardRtColor);
+	
+	CG_UpdateMyTeamColors();
 }
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 {
+	static vec4_t originalBlueTeamColor = {0, 0, 0, 0};
+	static vec4_t originalScoreboardBtColor = {0, 0, 0, 0};
+
 	CG_LocalEventCvarParseColor(cvart, cgs.be.blueTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_btColor);
+	
+	Vector4Copy(cgs.be.blueTeamColor, originalBlueTeamColor);
+	Vector4Copy(scoreboard_btColor, originalScoreboardBtColor);
+	
+	CG_UpdateMyTeamColors();
 }
+
+void CG_UpdateMyTeamColors(void)
+{
+	static vec4_t originalRedTeamColor = {0, 0, 0, 0};
+	static vec4_t originalBlueTeamColor = {0, 0, 0, 0};
+	static vec4_t originalScoreboardRtColor = {0, 0, 0, 0};
+	static vec4_t originalScoreboardBtColor = {0, 0, 0, 0};
+	static qboolean colorsInitialized = qfalse;
+	static qboolean colorsSwapped = qfalse;
+	
+	vec4_t tempColor;
+	team_t currentTeam;
+	
+	// Проверяем, инициализированы ли цвета (не равны нулю)
+	qboolean colorsLoaded = (cgs.be.redTeamColor[0] != 0 || cgs.be.redTeamColor[1] != 0 || cgs.be.redTeamColor[2] != 0) &&
+	                       (cgs.be.blueTeamColor[0] != 0 || cgs.be.blueTeamColor[1] != 0 || cgs.be.blueTeamColor[2] != 0);
+	
+	// Сохраняем оригинальные цвета только когда они загружены
+	if (!colorsInitialized && colorsLoaded)
+	{
+		Vector4Copy(cgs.be.redTeamColor, originalRedTeamColor);
+		Vector4Copy(cgs.be.blueTeamColor, originalBlueTeamColor);
+		Vector4Copy(scoreboard_rtColor, originalScoreboardRtColor);
+		Vector4Copy(scoreboard_btColor, originalScoreboardBtColor);
+		colorsInitialized = qtrue;
+	}
+	
+	// Если цвета еще не инициализированы, ничего не делаем
+	if (!colorsInitialized)
+	{
+		return;
+	}
+	
+	// Восстанавливаем оригинальные цвета только если они были изменены
+	if (colorsSwapped)
+	{
+		Vector4Copy(originalRedTeamColor, cgs.be.redTeamColor);
+		Vector4Copy(originalBlueTeamColor, cgs.be.blueTeamColor);
+		Vector4Copy(originalScoreboardRtColor, scoreboard_rtColor);
+		Vector4Copy(originalScoreboardBtColor, scoreboard_btColor);
+		colorsSwapped = qfalse;
+	}
+	
+	// Определяем текущую команду игрока
+	if (cg.snap && cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR)
+	{
+		currentTeam = cg.snap->ps.persistant[PERS_TEAM];
+	}
+	else
+	{
+		// Если в спеке, используем команду из clientinfo
+		currentTeam = cgs.clientinfo[cg.clientNum].team;
+	}
+	
+	// Проверяем, хочет ли игрок красные цвета для своей команды
+	if (cg_myTeam.integer == 1 || Q_stricmp(cg_myTeam.string, "red") == 0)
+	{
+		// Игрок хочет красные цвета для своей команды
+		if (currentTeam == TEAM_BLUE)
+		{
+			// Игрок за синих, но хочет красные цвета - меняем местами
+			Vector4Copy(cgs.be.redTeamColor, tempColor);
+			Vector4Copy(cgs.be.blueTeamColor, cgs.be.redTeamColor);
+			Vector4Copy(tempColor, cgs.be.blueTeamColor);
+			
+			// Также меняем цвета scoreboard
+			Vector4Copy(scoreboard_rtColor, tempColor);
+			Vector4Copy(scoreboard_btColor, scoreboard_rtColor);
+			Vector4Copy(tempColor, scoreboard_btColor);
+			
+			colorsSwapped = qtrue;
+		}
+		// Если игрок за красных, ничего не меняем
+	}
+	else if (cg_myTeam.integer == 2 || Q_stricmp(cg_myTeam.string, "blue") == 0)
+	{
+		// Игрок хочет синие цвета для своей команды
+		if (currentTeam == TEAM_RED)
+		{
+			// Игрок за красных, но хочет синие цвета - меняем местами
+			Vector4Copy(cgs.be.redTeamColor, tempColor);
+			Vector4Copy(cgs.be.blueTeamColor, cgs.be.redTeamColor);
+			Vector4Copy(tempColor, cgs.be.blueTeamColor);
+			
+			// Также меняем цвета scoreboard
+			Vector4Copy(scoreboard_rtColor, tempColor);
+			Vector4Copy(scoreboard_btColor, scoreboard_rtColor);
+			Vector4Copy(tempColor, scoreboard_btColor);
+			
+			colorsSwapped = qtrue;
+		}
+		// Если игрок за синих, ничего не меняем
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart)
+{
+	CG_UpdateMyTeamColors();
+}
+
 void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
 {
 	if (!CG_FontAvailable(cvart->vmCvar->integer))

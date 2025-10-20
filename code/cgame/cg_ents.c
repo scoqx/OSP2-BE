@@ -597,7 +597,7 @@ static void CG_Missile(centity_t* cent)
 
 	if (cent->currentState.weapon == WP_GRENADE_LAUNCHER && cg_altGrenades.integer)
 	{
-		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_GRENADES) && cg_altGrenades.integer == 2)
+		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_GRENADES) && (cg_altGrenades.integer == 2 || cg_altGrenades.integer == 3))
 		{
 			int owner = s1->otherEntityNum;
 
@@ -613,7 +613,7 @@ static void CG_Missile(centity_t* cent)
 					ent.shaderRGBA[1] = cgs.be.altGrenadesColor[1] * 255;
 					ent.shaderRGBA[2] = cgs.be.altGrenadesColor[2] * 255;
 
-					if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && cgs.media.firstPersonGun)
+					if (cg_altGrenades.integer == 2 && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && cgs.media.firstPersonGun)
 					{
 						ent.customShader = cgs.media.firstPersonGun;
 					}
@@ -628,7 +628,7 @@ static void CG_Missile(centity_t* cent)
 					ent.shaderRGBA[1] = cgs.be.enemyGrenadesColor[1] * 255;
 					ent.shaderRGBA[2] = cgs.be.enemyGrenadesColor[2] * 255;
 
-					if (cg_drawBrightWeapons.integer & 4 && cgs.media.firstPersonGun)
+					if (cg_altGrenades.integer == 2 && cg_drawBrightWeapons.integer & 4 && cgs.media.firstPersonGun)
 					{
 						ent.customShader = cgs.media.firstPersonGun;
 					}

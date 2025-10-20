@@ -57,7 +57,7 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_TEAM_FOE_WH;
 			changed = qtrue;
 		}
-		if (cg_altGrenades.integer == 2)
+		if (cg_altGrenades.integer == 2 || cg_altGrenades.integer == 3)
 		{
 			beFlags |= CG_BE_ALT_GRENADES;
 			changed = qtrue;

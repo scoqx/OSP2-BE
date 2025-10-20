@@ -1843,7 +1843,6 @@ extern vmCvar_t         cg_scoreboardColors;
 extern vmCvar_t         cg_clearOnLevelLoad;
 extern vmCvar_t         cg_spectPOV;
 extern vmCvar_t         cg_drawRealHeads;
-extern vmCvar_t         be_run;
 
 extern vmCvar_t           cg_shud_chatindex;
 extern vmCvar_t           cg_shud_chatmsg0;
@@ -1863,6 +1862,8 @@ extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
 
+extern vmCvar_t         be_run;
+extern vmCvar_t        cg_myTeam;
 //
 // cg_main.c
 //
@@ -2597,7 +2598,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00-beta-6" // BE
+#define OSP_VERSION "be-1.00-beta-7" // BE
 
 
 
@@ -2757,6 +2758,8 @@ void CG_ChatfilterDump(void);
 //
 // cg_localevents.c
 //
+void CG_UpdateMyTeamColors(void);
+
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cl_maxpackets(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cl_timenudge(cvarTable_t* cvart);
@@ -2858,6 +2861,7 @@ void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);
@@ -2872,7 +2876,6 @@ void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_chud_file(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart);
-
 #ifdef __cplusplus
 }
 #endif
