@@ -666,27 +666,15 @@ void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 {
-	static vec4_t originalRedTeamColor = {0, 0, 0, 0};
-	static vec4_t originalScoreboardRtColor = {0, 0, 0, 0};
-
 	CG_LocalEventCvarParseColor(cvart, cgs.be.redTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_rtColor);
-	
-	Vector4Copy(cgs.be.redTeamColor, originalRedTeamColor);
-	Vector4Copy(scoreboard_rtColor, originalScoreboardRtColor);
 	
 	CG_UpdateMyTeamColors();
 }
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 {
-	static vec4_t originalBlueTeamColor = {0, 0, 0, 0};
-	static vec4_t originalScoreboardBtColor = {0, 0, 0, 0};
-
 	CG_LocalEventCvarParseColor(cvart, cgs.be.blueTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_btColor);
-	
-	Vector4Copy(cgs.be.blueTeamColor, originalBlueTeamColor);
-	Vector4Copy(scoreboard_btColor, originalScoreboardBtColor);
 	
 	CG_UpdateMyTeamColors();
 }
@@ -707,8 +695,8 @@ void CG_UpdateMyTeamColors(void)
 	qboolean colorsLoaded = (cgs.be.redTeamColor[0] != 0 || cgs.be.redTeamColor[1] != 0 || cgs.be.redTeamColor[2] != 0) &&
 	                       (cgs.be.blueTeamColor[0] != 0 || cgs.be.blueTeamColor[1] != 0 || cgs.be.blueTeamColor[2] != 0);
 	
-	// Сохраняем оригинальные цвета только когда они загружены
-	if (!colorsInitialized && colorsLoaded)
+	// Сохраняем оригинальные цвета когда они загружены и не были свапнуты
+	if (colorsLoaded && !colorsSwapped)
 	{
 		Vector4Copy(cgs.be.redTeamColor, originalRedTeamColor);
 		Vector4Copy(cgs.be.blueTeamColor, originalBlueTeamColor);
