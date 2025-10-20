@@ -479,3 +479,7 @@ SHUD:
 + tools / Updater OSP2-BE for Windows and Linux
 * CHUD fixes
 * hitbox 3 disabled
+
+20.10.2025 be v1.00-beta-7
+cg_myTeam
+* cg_altGrenades 3 - ignore cg_drawBrightWeapons
