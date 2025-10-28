@@ -199,7 +199,7 @@ damageIndicator2
 
 //first person  Gun (cg_drawgun 3 shader)
 
-firstPersonGun 
+firstPersonGun
 {
 	sort nearest
     {
@@ -350,7 +350,6 @@ hboxNew
 
 hboxNew_nocull
 {
-	polygonOffset
 	nopicmip
 	cull none
 	{
@@ -362,7 +361,6 @@ hboxNew_nocull
 
 hboxNew_cullback
 {
-	polygonOffset
 	nopicmip
 	cull back
 	{
@@ -381,7 +379,7 @@ outlineWide
 	{
 		map *white
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-		rgbGen entity	
+		rgbGen entity
 	}
 }
 
@@ -394,9 +392,9 @@ outlineMedium
 	{
 		map *white
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-		rgbGen entity	
+		rgbGen entity
 	}
-}   
+}
 
 outlineThin
 {
@@ -407,7 +405,7 @@ outlineThin
 	{
 		map *white
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-		rgbGen entity	
+		rgbGen entity
 	}
 }
 
@@ -489,7 +487,7 @@ markShadowNew
 		map gfx/damage/altShadow.tga
 		blendfunc add
 		rgbGen vertex
-	}	
+	}
 }
 
 markShadowNew2
@@ -502,7 +500,7 @@ markShadowNew2
 		blendfunc add
 		rgbGen vertex
 		tcmod rotate 50
-	}	
+	}
 }
 
 markShadowNew3
@@ -514,11 +512,11 @@ markShadowNew3
 		map gfx/damage/shadow_fx02.tga
 		blendfunc add
 		rgbGen vertex
-	}	
+	}
 }
 
 // temporal accuracy
-tempAcc_LG_Icon 
+tempAcc_LG_Icon
 {
     {
         map icons/interim.tga
@@ -592,7 +590,7 @@ icons/score
     {
         map icons/score.tga
         blendfunc blend
-        rgbgen vertex   
+        rgbgen vertex
     }
 }
 
@@ -601,7 +599,7 @@ icons/star
 	{
 		map icons/star.tga
 		blendfunc blend
-		rgbgen vertex   
+		rgbgen vertex
 	}
 }
 
@@ -610,7 +608,7 @@ icons/eye
 	{
 		map icons/eye.tga
 		blendfunc blend
-		rgbgen vertex   
+		rgbgen vertex
 	}
 }
 
@@ -619,7 +617,7 @@ icons/signal
 	{
 		map icons/signal.tga
 		blendfunc blend
-		rgbgen vertex   
+		rgbgen vertex
 	}
 }
 
@@ -628,7 +626,7 @@ icons/noSignal
 	{
 		map icons/noSignal.tga
 		blendfunc blend
-		rgbgen vertex   
+		rgbgen vertex
 	}
 }
 
@@ -637,7 +635,7 @@ icons/exclamation
 	{
 		map icons/exclamation.tga
 		blendfunc blend
-		rgbgen vertex   
+		rgbgen vertex
 	}
 }
 
@@ -646,7 +644,7 @@ icons/clock
 	{
 		map icons/clock.tga
 		blendfunc blend
-		rgbgen vertex   
+		rgbgen vertex
 	}
 }
 
@@ -655,7 +653,7 @@ icons/leaderboard
 	{
 		map icons/leaderboard.tga
 		blendfunc blend
-		rgbgen vertex   
+		rgbgen vertex
 	}
 }
 
@@ -664,6 +662,6 @@ icons/ready
 	{
 		map icons/ready.tga
 		blendfunc blend
-		rgbgen vertex   
+		rgbgen vertex
 	}
 }
