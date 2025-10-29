@@ -3154,21 +3154,21 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		corners[i + 4][2] -= extz;
 	}
 
-	// if (cg_drawHitBox.integer)
-	// {
+	if (cg_drawHitBox.integer)
+	{
 		hitboxShaderEdge = cgs.osp.hboxShader;
 		hitboxShaderSide = cgs.osp.hboxShader_nocull;
-	// }
-	// else if (cg_drawHitBox.integer == 2)
-	// {
-	// 	hitboxShaderEdge = cgs.media.hboxShaderNew_cullback;
-	// 	hitboxShaderSide = cgs.media.hboxShaderNew_cullback;
-	// }
-	// else
-	// {
-	// 	hitboxShaderEdge = cgs.media.hboxShaderNew;
-	// 	hitboxShaderSide = cgs.media.hboxShaderNew_nocull;
-	// }
+	}
+	else if (cg_drawHitBox.integer == 2)
+	{
+		hitboxShaderEdge = cgs.media.hboxShaderNew_cullback;
+		hitboxShaderSide = cgs.media.hboxShaderNew_cullback;
+	}
+	else
+	{
+		hitboxShaderEdge = cgs.media.hboxShaderNew;
+		hitboxShaderSide = cgs.media.hboxShaderNew_nocull;
+	}
 
 	// top
 	VectorCopy(corners[0], verts[0].xyz);
