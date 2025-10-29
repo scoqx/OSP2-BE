@@ -3154,7 +3154,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		corners[i + 4][2] -= extz;
 	}
 
-	if (cg_drawHitBox.integer)
+	if (cg_drawHitBox.integer == 1)
 	{
 		hitboxShaderEdge = cgs.osp.hboxShader;
 		hitboxShaderSide = cgs.osp.hboxShader_nocull;
