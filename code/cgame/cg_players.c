@@ -3026,9 +3026,6 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	vec3_t corners[8];
 	qhandle_t hitboxShaderEdge, hitboxShaderSide;
 
-	// (KONSTALKER) hitbox offset for not render through map
-  const float hbox_offset = 1.0f;
-
 	if (!cg_drawHitBox.integer)
 	{
 		return;
@@ -3087,14 +3084,6 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		mins[2] = -zd;
 		maxs[2] = zu;
 	}
-
-	// (KONSTALKER) add visual offset to hitboxes
-  mins[0] += hbox_offset;
-  mins[1] += hbox_offset;
-  mins[2] += hbox_offset;
-  maxs[0] -= hbox_offset;
-  maxs[1] -= hbox_offset;
-  maxs[2] -= hbox_offset;
 
 	// get the extents (size)
 	extx = maxs[0] - mins[0];
