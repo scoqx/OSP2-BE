@@ -3026,6 +3026,9 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	vec3_t corners[8];
 	qhandle_t hitboxShaderEdge, hitboxShaderSide;
 
+  // (KONSTALKER) hitbox offset for not render through map
+  const float hbox_offset = 1.0f;
+
 	if (!cg_drawHitBox.integer)
 	{
 		return;
@@ -3085,6 +3088,14 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		maxs[2] = zu;
 	}
 
+  // (KONSTALKER) add visual offset to hitboxes
+  mins[0] += hbox_offset;
+  mins[1] += hbox_offset;
+  mins[2] += hbox_offset;
+  maxs[0] -= hbox_offset;
+  maxs[1] -= hbox_offset;
+  maxs[2] -= hbox_offset;
+
 	// get the extents (size)
 	extx = maxs[0] - mins[0];
 	exty = maxs[1] - mins[1];
@@ -3143,21 +3154,21 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		corners[i + 4][2] -= extz;
 	}
 
-	// if (cg_drawHitBox.integer)
-	// {
+	if (cg_drawHitBox.integer)
+	{
 		hitboxShaderEdge = cgs.osp.hboxShader;
 		hitboxShaderSide = cgs.osp.hboxShader_nocull;
-	// }
-	// else if (cg_drawHitBox.integer == 2)
-	// {
-	// 	hitboxShaderEdge = cgs.media.hboxShaderNew_cullback;
-	// 	hitboxShaderSide = cgs.media.hboxShaderNew_cullback;
-	// }
-	// else
-	// {
-	// 	hitboxShaderEdge = cgs.media.hboxShaderNew;
-	// 	hitboxShaderSide = cgs.media.hboxShaderNew_nocull;
-	// }
+	}
+	else if (cg_drawHitBox.integer == 2)
+	{
+		hitboxShaderEdge = cgs.media.hboxShaderNew_cullback;
+		hitboxShaderSide = cgs.media.hboxShaderNew_cullback;
+	}
+	else
+	{
+		hitboxShaderEdge = cgs.media.hboxShaderNew;
+		hitboxShaderSide = cgs.media.hboxShaderNew_nocull;
+	}
 
 	// top
 	VectorCopy(corners[0], verts[0].xyz);
