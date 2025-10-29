@@ -74,7 +74,7 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 		{
 			qboolean result;
 			team_t targetTeam;
-			
+
 			if (CG_OSPIsGameTypeCA(cgs.gametype))
 			{
 				ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
@@ -87,15 +87,15 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 			}
 
 			result = (ourPerspectiveTeam != targetTeam);
-			
+
 			/* Debug output */
 			if (cg_debugAnim.integer)
 			{
 				CG_Printf("[CG_IsEnemy] Following %d (team %d) | Target: %s (team %d) | isEnemy=%d\n",
-				    cg.snap->ps.clientNum, ourPerspectiveTeam, 
+				    cg.snap->ps.clientNum, ourPerspectiveTeam,
 				    target->name, targetTeam, result);
 			}
-			
+
 			return result;
 		}
 		else
@@ -701,16 +701,16 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	char* skinPtr;
 	char headModelName[MAX_QPATH];
 	char headSkinName[MAX_QPATH];
-	
+
 	ci->originalHeadModelHandle = 0;
 	ci->originalHeadSkinHandle = 0;
 	ci->originalModelIcon = 0;
-	
+
 	if (ci->originalHeadModel[0] == '\0')
 	{
 		return;
 	}
-	
+
 	/* Parse model/skin from hmodel string */
 	Q_strncpyz(headModelName, ci->originalHeadModel, sizeof(headModelName));
 	skinPtr = strchr(headModelName, '/');
@@ -724,7 +724,7 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 		/* No skin specified, use default */
 		Q_strncpyz(headSkinName, "default", sizeof(headSkinName));
 	}
-	
+
 	/* Register head model */
 	if (headModelName[0] == '*')
 	{
@@ -734,16 +734,16 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	{
 		Com_sprintf(filename, sizeof(filename), "models/players/%s/head.md3", headModelName);
 	}
-	
+
 	ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
-	
+
 	/* if the head model could not be found and we didn't load from the heads folder try to load from there */
 	if (!ci->originalHeadModelHandle && headModelName[0] != '*')
 	{
 		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/%s.md3", headModelName, headModelName);
 		ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
 	}
-	
+
 	/* Register head skin */
 	if (headModelName[0] == '*')
 	{
@@ -753,16 +753,16 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	{
 		Com_sprintf(filename, sizeof(filename), "models/players/%s/head_%s.skin", headModelName, headSkinName);
 	}
-	
+
 	ci->originalHeadSkinHandle = trap_R_RegisterSkin(filename);
-	
+
 	/* if the head skin could not be found and we didn't load from the heads folder try to load from there */
 	if (!ci->originalHeadSkinHandle && headModelName[0] != '*')
 	{
 		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/head_%s.skin", headModelName, headSkinName);
 		ci->originalHeadSkinHandle = trap_R_RegisterSkin(filename);
 	}
-	
+
 	/* Register head icon */
 	if (headModelName[0] == '*')
 	{
@@ -772,9 +772,9 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	{
 		Com_sprintf(filename, sizeof(filename), "models/players/%s/icon_%s.tga", headModelName, headSkinName);
 	}
-	
+
 	ci->originalModelIcon = trap_R_RegisterShaderNoMip(filename);
-	
+
 	/* if the head icon could not be found and we didn't load from the heads folder try to load from there */
 	if (!ci->originalModelIcon && headModelName[0] != '*')
 	{
@@ -959,7 +959,7 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	}
 
 	isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "pm") == 0)) ? qtrue : qfalse;
-	
+
 	if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
 	{
 		isFbSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
@@ -1086,12 +1086,12 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 		{
 			const char* teamModelString = cg_teamModel.string[0] ? cg_teamModel.string : NULL;
 			qboolean isTeamMate;
-			
+
 			/* BE: Enhanced spectator perspective logic */
 			if (cg_spectPOV.integer)
 			{
 				team_t ourPerspectiveTeam;
-				
+
 				if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
 				{
 					if (cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
@@ -1107,7 +1107,7 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 				{
 					ourPerspectiveTeam = cgs.clientinfo[cg.clientNum].rt;
 				}
-				
+
 				if (ourPerspectiveTeam == TEAM_SPECTATOR)
 				{
 					/* Not following anyone - use default: red is teammate */
@@ -1253,22 +1253,22 @@ static void CG_CheckSpectatorTargetChange(void)
 {
 	static int lastSpectatorTarget = -1;
 	int currentSpectatorTarget = -1;
-	
+
 	/* Only check if we're spectating */
 	if (cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
 	{
 		lastSpectatorTarget = -1;
 		return;
 	}
-	
+
 	/* Get current spectator target */
-	if (cg.snap->ps.pm_flags & PMF_FOLLOW && 
-	    cg.snap->ps.clientNum >= 0 && 
+	if (cg.snap->ps.pm_flags & PMF_FOLLOW &&
+	    cg.snap->ps.clientNum >= 0 &&
 	    cg.snap->ps.clientNum < MAX_CLIENTS)
 	{
 		currentSpectatorTarget = cg.snap->ps.clientNum;
 	}
-	
+
 	/* If target changed, update all client models */
 	if (currentSpectatorTarget != lastSpectatorTarget)
 	{
@@ -1305,7 +1305,7 @@ void CG_NewClientInfo(int clientNum)
 				trap_SendClientCommand("score");
 			}
 			cg.realNumClients = CG_CountRealClients();
-			
+
 		}
 		return;     // player just left
 	}
@@ -1601,7 +1601,7 @@ void CG_NewClientInfo(int clientNum)
 			CG_UpdateOtherClientsInfo();
 		}
 	}
-	
+
 	// Update real client count when client info changes (not in demo mode)
 	if (!cg.demoPlayback)
 	{
@@ -1861,13 +1861,13 @@ static void CG_PlayerAnimation(centity_t* cent, int* legsOld, int* legs, float* 
 	{
 		int animToUse;
 		int zu;
-		
+
 		// Check if other player is ducking in air using same logic as CG_AddHitBox
 		if (cent->currentState.number != cg.predictedPlayerState.clientNum)
 		{
 			// Decode bounding box from solid field
 			zu = ((cent->currentState.solid >> 16) & 255) - 32;
-			
+
 			// If player is in air and ducking (height reduced)
 			if (cent->currentState.groundEntityNum == ENTITYNUM_NONE && zu < 32)
 			{
@@ -1882,7 +1882,7 @@ static void CG_PlayerAnimation(centity_t* cent, int* legsOld, int* legs, float* 
 		{
 			animToUse = cent->currentState.legsAnim;
 		}
-		
+
 		CG_RunLerpFrame(ci, &cent->pe.legs, animToUse, speedScale);
 	}
 
@@ -2543,7 +2543,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 	{
 		return;
 	}
-	
+
 
 	distance = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
 	if (cg_friendHudMarkerMaxDist.integer > 0 && distance > cg_friendHudMarkerMaxDist.value)
