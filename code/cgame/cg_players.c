@@ -3658,8 +3658,3 @@ void CG_ResetPlayerEntity(centity_t* cent)
 		CG_Printf("%i ResetPlayerEntity yaw=%i\n", cent->currentState.number, cent->pe.torso.yawAngle);
 	}
 }
-
-
-
-
-
