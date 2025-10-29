@@ -1,6 +1,6 @@
 # OSP2-BE: Extended OSP2 version
 
-## Check website - [scoqx.github.io](https://scoqx.github.io)
+## [scoqx.github.io]
 
 ## 🔧 Contributions
 
@@ -366,5 +366,4 @@ To install OSP2-BE:
 
 1. **Install Quake 3** and the **OSP mod v1.03**.
 2. Copy the mod files (pack or library) into the `osp` folder within your Quake 3 directory.
-
 
