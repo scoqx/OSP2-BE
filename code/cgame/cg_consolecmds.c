@@ -610,7 +610,7 @@ void CG_OSPPrintTime_f(void)
 {
 	qtime_t qtime;
 	trap_RealTime(&qtime);
-	CG_Printf("\nCurrent time: ^3%02d:%02d:%02d (%02d %s %d)\n\n", qtime.tm_hour, qtime.tm_min, qtime.tm_sec, qtime.tm_mday, monthName[qtime.tm_mon], qtime.tm_year + 1900);
+	CG_Printf("\n^9Current time: ^7%02d:%02d:%02d (%02d %s %d)\n\n", qtime.tm_hour, qtime.tm_min, qtime.tm_sec, qtime.tm_mday, monthName[qtime.tm_mon], qtime.tm_year + 1900);
 }
 
 

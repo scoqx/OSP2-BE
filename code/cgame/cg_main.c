@@ -2237,7 +2237,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_ParseServerinfo();
 
-	CG_Printf("\n>>> ^3Loaded OSP2 Client Version: ^5%s\n\n", OSP_VERSION);
+	CG_Printf("\n^7Loaded [^9OSP2-BE^7] client version: ^9%s\n", OSP_VERSION);
 
 	CG_OSPPrintTime_f();
 

@@ -350,7 +350,6 @@ hboxNew
 
 hboxNew_nocull
 {
-	polygonOffset
 	nopicmip
 	cull none
 	{
@@ -362,7 +361,6 @@ hboxNew_nocull
 
 hboxNew_cullback
 {
-	polygonOffset
 	nopicmip
 	cull back
 	{

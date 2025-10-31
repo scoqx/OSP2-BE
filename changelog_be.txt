@@ -481,5 +481,12 @@ SHUD:
 * hitbox 3 disabled
 
 20.10.2025 be v1.00-beta-7
-cg_myTeam
++ cg_myTeam
 * cg_altGrenades 3 - ignore cg_drawBrightWeapons
+
+31.10.2025 be v1.00-beta-8
+* cg_drawHitbox 2/3 fix (KONSTALKER)
+
+SHUD:
+* Update fonts: Elite
+* update configs (m1r, m1rqlstyle, AGENT, ChikiPiki, California)
