@@ -72,6 +72,10 @@ double atof(const char* string);
 int atoi(const char* string);
 
 int vsprintf(char* buffer, const char* fmt, va_list argptr);
+int Q_vsprintf(char* buffer, const char* fmt, va_list argptr);
+char* BG_StripColor(char* string);
+char* Q_stristr(const char* str1, const char* str2);
+int BG_sprintf(char* buf, const char* format, ...);
 
 // Memory functions
 void* memmove(void* dest, const void* src, size_t count);

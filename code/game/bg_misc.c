@@ -28,12 +28,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/q_shared.h"
 #include "bg_public.h"
 
+#ifdef Q3UI
+int modePickupDistance = 36;    // default VQ3 value
+int modeMaxAmmoShotgun = 200;
+int modeMaxAmmoGrenade = 200;
+int modeMaxAmmoRocket = 200;
+int modeMaxAmmoRail = 200;
+int pm_armorPromode = 0;
+#else
 extern int modePickupDistance;    //20e8
 extern int modeMaxAmmoShotgun;    //34a0
 extern int modeMaxAmmoGrenade;    //34a8
 extern int modeMaxAmmoRocket;     //34b0
 extern int modeMaxAmmoRail;       //34c0
 extern int pm_armorPromode;    //34e4
+#endif
 
 /*QUAKED item_***** ( 0 0 0 ) (-16 -16 -16) (16 16 16) suspended
 DO NOT USE THIS CLASS, IT JUST HOLDS GENERAL INFORMATION.

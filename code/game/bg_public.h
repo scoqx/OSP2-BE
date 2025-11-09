@@ -363,8 +363,15 @@ typedef enum
 	WP_PLASMAGUN,
 	WP_BFG,
 	WP_GRAPPLING_HOOK,
+#ifdef MISSIONPACK
+	WP_NAILGUN,
+	WP_PROX_LAUNCHER,
+	WP_CHAINGUN,
+#endif
 
-	WP_NUM_WEAPONS
+	WP_NUM_WEAPONS,
+	WP_PENDING = WP_NUM_WEAPONS,
+	WP_MAX_WEAPONS = 16
 } weapon_t;
 
 
@@ -747,6 +754,12 @@ typedef enum
 	// by setting eType to ET_EVENTS + eventNum
 	// this avoids having to set eFlags and eventNum
 } entityType_t;
+
+/* calculated by modulus.c for appropriate dividers */
+#define TMOD_004  4272943
+#define TMOD_075  2292106
+#define TMOD_1000 5730265
+#define TMOD_2000 5730265
 
 
 

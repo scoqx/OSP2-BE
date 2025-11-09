@@ -203,6 +203,8 @@ endif
 TARGETS += \
   $(B)/$(MOD)/cgame$(SHLIBNAME) 
 
+BUILD_UI ?= 0
+
 ifeq ("$(CC)", $(findstring "$(CC)", "clang" "clang++"))
   BASE_CFLAGS += -Qunused-arguments
 endif
@@ -323,7 +325,6 @@ makedirs:
 	@if [ ! -d $(B)/$(MOD)/cgame ];then $(MKDIR) $(B)/$(MOD)/cgame;fi
 	@if [ ! -d $(B)/$(MOD)/qcommon ];then $(MKDIR) $(B)/$(MOD)/qcommon;fi
 	@if [ ! -d $(B)/$(MOD)/game ];then $(MKDIR) $(B)/$(MOD)/game;fi
-	@if [ ! -d $(B)/$(MOD)/ui ];then $(MKDIR) $(B)/$(MOD)/ui;fi
 	@if [ ! -d $(B)/$(MOD)/vm ];then $(MKDIR) $(B)/$(MOD)/vm;fi
 
 #############################################################################
@@ -474,6 +475,7 @@ $(B)/$(MOD)/qagame$(SHLIBNAME): $(QAOBJ)
 ## BASEQ3 UI
 #############################################################################
 
+ifeq ($(BUILD_UI),1)
 UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_main.o \
   $(B)/$(MOD)/ui/bg_misc.o \
@@ -494,6 +496,7 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_menu.o \
   $(B)/$(MOD)/ui/ui_mfield.o \
   $(B)/$(MOD)/ui/ui_mods.o \
+  $(B)/$(MOD)/ui/ui_osp2be.o \
   $(B)/$(MOD)/ui/ui_network.o \
   $(B)/$(MOD)/ui/ui_options.o \
   $(B)/$(MOD)/ui/ui_playermodel.o \
@@ -525,6 +528,9 @@ UIOBJ = $(UIOBJ_) $(B)/$(MOD)/ui/ui_syscalls.o
 $(B)/$(MOD)/ui$(SHLIBNAME): $(UIOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(UIOBJ)
+else
+UIOBJ :=
+endif
 
 #############################################################################
 ## GAME MODULE RULES
@@ -542,11 +548,13 @@ $(B)/$(MOD)/cgame/%.o: $(CGDIR)/%.c
 $(B)/$(MOD)/game/%.o: $(QADIR)/%.c
 	$(DO_GAME_CC)
 
+ifeq ($(BUILD_UI),1)
 $(B)/$(MOD)/ui/bg_%.o: $(QADIR)/bg_%.c
 	$(DO_UI_CC)
 
 $(B)/$(MOD)/ui/%.o: $(UIDIR)/%.c
 	$(DO_UI_CC)
+endif
 
 $(B)/$(MOD)/qcommon/%.o: $(COMDIR)/%.c
 	$(DO_GAME_CC)

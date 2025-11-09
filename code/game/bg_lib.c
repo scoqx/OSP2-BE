@@ -1187,6 +1187,92 @@ void AddString(char** buf_p, char* string, int width, int prec)
 	*buf_p = buf;
 }
 
+
+char *BG_StripColor( char *string )
+{
+	char *s;
+	char *d;
+	int c;
+
+	s = string;
+	d = string;
+	while ( ( c = *s ) != 0 )
+	{
+		if ( Q_IsColorString( s ) )
+		{
+			s++;
+		}
+		else
+		{
+			*d = c;
+			d++;
+		}
+		s++;
+	}
+
+	*d = '\0';
+
+	return string;
+}
+
+
+char *Q_stristr( const char *str1, const char *str2 )
+{
+	char *cp;
+	char *s1;
+	char *s2;
+	int c1;
+	int c2;
+
+	if ( !*str2 )
+	{
+		return (char *)str1;
+	}
+
+	cp = (char *)str1;
+
+	while ( *cp )
+	{
+		s1 = cp;
+		s2 = (char *)str2;
+
+		while ( *s1 && *s2 )
+		{
+			c1 = tolower( (unsigned char)*s1 );
+			c2 = tolower( (unsigned char)*s2 );
+			if ( c1 != c2 )
+			{
+				break;
+			}
+
+			s1++;
+			s2++;
+		}
+
+		if ( *s2 == '\0' )
+		{
+			return cp;
+		}
+
+		cp++;
+	}
+
+	return NULL;
+}
+
+int BG_sprintf( char *buf, const char *format, ... )
+{
+	va_list argptr;
+	int retval;
+
+	va_start( argptr, format );
+	retval = vsprintf( buf, format, argptr );
+	va_end( argptr );
+
+	return retval;
+}
+
+
 /*
 vsprintf
 
@@ -1239,6 +1325,14 @@ reswitch:
 				flags |= LADJUST;
 				goto rflag;
 			case '.':
+				if ( *fmt == '*' )
+				{
+					n = *arg;
+					arg++;
+					fmt++;
+					prec = n < 0 ? -1 : n;
+					goto rflag;
+				}
 				n = 0;
 				while (is_digit((ch = *fmt++)))
 				{
@@ -1267,6 +1361,10 @@ reswitch:
 				while (is_digit(ch));
 				width = n;
 				goto reswitch;
+			case '*':
+				width = *arg;
+				arg++;
+				goto rflag;
 			case 'c':
 				*buf_p++ = (char) * arg;
 				arg++;
@@ -1301,6 +1399,11 @@ reswitch:
 done:
 	*buf_p = 0;
 	return buf_p - buffer;
+}
+
+int Q_vsprintf(char* buffer, const char* fmt, va_list argptr)
+{
+	return vsprintf(buffer, fmt, argptr);
 }
 
 
