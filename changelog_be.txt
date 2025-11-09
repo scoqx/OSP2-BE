@@ -490,3 +490,6 @@ SHUD:
 SHUD:
 * Update fonts: Elite
 * update configs (m1r, m1rqlstyle, AGENT, ChikiPiki, California)
+
+09.11.2025 be v1.00-beta-9
+* cg_spectPOV fix

@@ -1586,6 +1586,9 @@ void CG_NewClientInfo(int clientNum)
 	{
 		static team_t ourTeam = -1;
 		static int ourClientNum = -1;
+		static qboolean wasSpectator = qtrue;
+		qboolean isSpectator;
+		qboolean spectatorStateChanged;
 		const qboolean isTeamChanged = cgs.clientinfo[cg.clientNum].rt != ourTeam;
 		const qboolean isClientIdChanged = ourClientNum != cg.clientNum;
 		numSortedTeamPlayers = 0; //reset team overlay
@@ -1599,6 +1602,14 @@ void CG_NewClientInfo(int clientNum)
 		if (isTeamGame && isClientIdChanged)
 		{
 			ourClientNum = cg.clientNum;
+			CG_UpdateOtherClientsInfo();
+		}
+
+		isSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR || cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
+		spectatorStateChanged = (wasSpectator != isSpectator);
+		if (spectatorStateChanged)
+		{
+			wasSpectator = isSpectator;
 			CG_UpdateOtherClientsInfo();
 		}
 	}
