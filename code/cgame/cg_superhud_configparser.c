@@ -1494,14 +1494,16 @@ qboolean CG_SHUDFileInfoInit(configFileInfo_t* info, const char* fileContent)
 
 		if (!info->root)
 		{
-			info->root = Z_Malloc(sizeof(*info->root));
+			info->root = (configFileLine_t*)Z_Malloc(sizeof(*info->root));
 			OSP_MEMORY_CHECK(info->root);
+			memset(info->root, 0, sizeof(*info->root));
 			info->last_line = info->root;
 		}
 		else
 		{
-			info->last_line->next = Z_Malloc(sizeof(*info->root));
+			info->last_line->next = (configFileLine_t*)Z_Malloc(sizeof(*info->root));
 			OSP_MEMORY_CHECK(info->last_line->next);
+			memset(info->last_line->next, 0, sizeof(*info->root));
 			info->last_line = info->last_line->next;
 		}
 
@@ -1519,7 +1521,10 @@ qboolean CG_SHUDFileInfoInit(configFileInfo_t* info, const char* fileContent)
 
 		startline = endline + 1;
 	}
-	info->last_line = info->root;
+	if (info->root)
+	{
+		info->last_line = info->root;
+	}
 
 	return line_number > 0;
 }

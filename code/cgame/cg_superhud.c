@@ -77,6 +77,7 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 	if (!filePrepared)
 	{
 		CG_Printf("^1SuperHUD: config file: could not prepare %s for parsing.\n", superhudFilename);
+		CG_SHUDFileInfoTeardown(&finfo);
 		return qfalse;
 	}
 

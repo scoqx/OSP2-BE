@@ -1172,6 +1172,30 @@ static const char* replacementNames[] = {
 
 #define REPLACEMENT_NAMES_COUNT (sizeof(replacementNames) / sizeof(replacementNames[0]))
 
+/*
+ * Extract first color code from name (format: ^digit where digit is 0-9)
+ * Returns -1 if no color code found, otherwise returns the digit (0-9)
+ */
+static int CG_ExtractFirstColorCode(const char* name)
+{
+	int i;
+	
+	if (!name || !name[0])
+	{
+		return -1;
+	}
+	
+	for (i = 0; name[i]; i++)
+	{
+		if (name[i] == '^' && name[i + 1] >= '0' && name[i + 1] <= '9')
+		{
+			return name[i + 1] - '0';
+		}
+	}
+	
+	return -1;
+}
+
 static void CG_GenerateReplacementName(unsigned short xid, const char* originalName, int clientNum, char* outName, int outSize)
 {
 	unsigned short hash;
@@ -1179,6 +1203,7 @@ static void CG_GenerateReplacementName(unsigned short xid, const char* originalN
 	char clientNumStr[16];
 	int nameIndex;
 	int colorIndex;
+	int originalColorCode;
 	const char* selectedName;
 	
 	/* Initialize hash */
@@ -1201,6 +1226,14 @@ static void CG_GenerateReplacementName(unsigned short xid, const char* originalN
 	/* Select replacement name based on hash */
 	nameIndex = hash % REPLACEMENT_NAMES_COUNT;
 	colorIndex = (hash >> 8) % 10; /* 0-9 for ^0-^9 */
+	
+	/* Try to extract color code from original name */
+	originalColorCode = CG_ExtractFirstColorCode(originalName);
+	if (originalColorCode >= 0)
+	{
+		/* Use color from original name if found */
+		colorIndex = originalColorCode;
+	}
 	
 	selectedName = replacementNames[nameIndex];
 	Com_sprintf(outName, outSize, "^%d%s^0*", colorIndex, selectedName);
@@ -1436,7 +1469,14 @@ static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exis
 	
 	if (useReplacement)
 	{
-		CG_GenerateReplacementName(ci->xid, ci->name_original, clientNum, replacementName, sizeof(replacementName));
+		/* Extract color from ci->name if it exists and contains color code (already processed name) */
+		/* Otherwise use name_original */
+		const char* nameForColor = ci->name_original;
+		if (ci->name[0] && CG_ExtractFirstColorCode(ci->name) >= 0)
+		{
+			nameForColor = ci->name;
+		}
+		CG_GenerateReplacementName(ci->xid, nameForColor, clientNum, replacementName, sizeof(replacementName));
 		Q_strncpyz(ci->name_clean, replacementName, sizeof(ci->name_clean));
 		CG_RemoveChatEscapeCharAll(ci->name_clean);
 		displayName = replacementName;

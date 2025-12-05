@@ -201,7 +201,7 @@ static sfxHandle_t SuperHUDConfig_Key( int key ) {
 			menuX = ( 640 - SUPERHUD_CONFIG_MENU_WIDTH ) / 2;
 			menuY = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2;
 			menuWidth = SUPERHUD_CONFIG_MENU_WIDTH;
-			maxVisibleY = menuY + SUPERHUD_CONFIG_MENU_HEIGHT - 30;
+			maxVisibleY = menuY + SUPERHUD_CONFIG_MENU_HEIGHT - 50;
 			
 			itemX = menuX + 10;
 			itemY = l->generic.y;

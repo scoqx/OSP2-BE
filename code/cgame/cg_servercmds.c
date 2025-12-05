@@ -1309,6 +1309,111 @@ static void CG_ParseSpecsInfo(void)
 
 /*
 =================
+CG_WrapPlayerNameInParentheses
+
+Wrap player name in parentheses for team chat.
+=================
+*/
+static void CG_WrapPlayerNameInParentheses(char* text, int textSize)
+{
+	const char* colonPos;
+	char newText[1024];
+	int nameLen;
+	int restLen;
+	const char* restOfMessage;
+	const char* nameStart;
+	int prefixLen;
+	const char* nameStartInText;
+	int i;
+	
+	/* Find colon position */
+	colonPos = strchr(text, ':');
+	if (!colonPos)
+	{
+		return;
+	}
+	
+	/* Check if there's a prefix like "(team) " at the start */
+	nameStartInText = NULL;
+	if (text[0] == '(')
+	{
+		/* Find the closing parenthesis and space after it */
+		nameStartInText = strchr(text, ')');
+		if (nameStartInText && nameStartInText[1] == ' ')
+		{
+			prefixLen = nameStartInText - text + 2; /* Include ") " */
+			nameStart = text + prefixLen;
+		}
+		else
+		{
+			prefixLen = 0;
+			nameStart = text;
+		}
+	}
+	else
+	{
+		prefixLen = 0;
+		nameStart = text;
+	}
+	
+	/* Check if name is already wrapped in parentheses */
+	if (nameStart[0] == '(')
+	{
+		/* Already wrapped, don't wrap again */
+		return;
+	}
+	
+	nameLen = colonPos - nameStart;
+	restOfMessage = colonPos; /* Include colon and rest of message */
+	restLen = strlen(restOfMessage);
+	
+	/* Build new message: prefix + ( + name + ) + colon + rest of message */
+	/* Use memcpy instead of sprintf to avoid issues with special characters in name */
+	if (prefixLen > 0)
+	{
+		/* Copy prefix to newText */
+		memcpy(newText, text, prefixLen);
+		i = prefixLen;
+		
+		/* Add opening parenthesis */
+		newText[i++] = '(';
+		
+		/* Copy name (everything before colon) */
+		memcpy(newText + i, nameStart, nameLen);
+		i += nameLen;
+		
+		/* Add closing parenthesis after name */
+		newText[i++] = ')';
+		
+		/* Copy rest of message (colon and message text) */
+		memcpy(newText + i, restOfMessage, restLen + 1); /* +1 for null terminator */
+		
+		Q_strncpyz(text, newText, textSize);
+	}
+	else
+	{
+		/* No prefix, just wrap name */
+		i = 0;
+		
+		/* Add opening parenthesis */
+		newText[i++] = '(';
+		
+		/* Copy name (everything before colon) */
+		memcpy(newText + i, nameStart, nameLen);
+		i += nameLen;
+		
+		/* Add closing parenthesis after name */
+		newText[i++] = ')';
+		
+		/* Copy rest of message (colon and message text) */
+		memcpy(newText + i, restOfMessage, restLen + 1); /* +1 for null terminator */
+		
+		Q_strncpyz(text, newText, textSize);
+	}
+}
+
+/*
+=================
 CG_ReplacePlayerNameInChat
 
 Replace player name in chat message with replacement name if cg_giveName is enabled.
@@ -1723,6 +1828,10 @@ void CG_ServerCommand(void)
 		}
 
 		CG_RemoveChatEscapeChar(text);
+		
+		/* Wrap player name in parentheses for team chat (after removing escape chars) */
+		CG_WrapPlayerNameInParentheses(text, 1024);
+		
 		CG_InjectCustomLoc(text, 1024);
 
 		if (isVanilaChatEnabled)
