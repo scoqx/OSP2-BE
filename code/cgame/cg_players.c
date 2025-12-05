@@ -1158,7 +1158,7 @@ static const char* replacementNames[] = {
 	"Darth Sumrak", "Amongus", "JustNamed", "Tiger", "Eagle", "Hawkeye", "Falcon Punch", "Shark",
 	"Fox", "Lynx-Lynx", "Panther", "Jaguar^0V12", "Coyote", "Grand_Hyena", "Asteri^0xXx", "Wolverine",
 	"Raven", "Owl", "Crow", "Vulture", "Condor", "Albatross", "PopCitizen_AUX07", "Heron",
-	"Potato", "T0mat0^1Ju1c3", "PickleRobot", "Noodle", "Waffle", "Pancake", "Donut", "Cookie",
+	"Potato", "T0mat0^1Ju1c3", "PickleRobot", "Noodle", "Waffle", "Pancake", "Donut", "HelloRazer",
 	"Chicken", "Duck", "Gosuvity", "Sakla_Norez", "Sloth", "KeeKee", "Panda", "Raccoon",
 	"Toaster", "KNWR(5)", "Blender", "senoB-suonimuL", "Vacuum", "Dishwasher", "WashingMachine", "Kettle",
 	"Fiend", "Hellhound", "PFE-12", "Scrag", "Spawn", "Revenant", "Archvile", "Titan",
