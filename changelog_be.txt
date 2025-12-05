@@ -496,7 +496,7 @@ SHUD:
 
 05.12.2025 be v1.00-beta-10
 * UI update:
-  * SuperHUD selection ingame menu 
+  * SuperHUD selection ingame menu, Widescreen background image
   * Unlock cinematics, move credits and cinematics to setup, fix color codes, quit without credits, various fixes
   * Demo save position on list, setup->player->name show colors, ignore CD-Key on startup (set key in settings)
 * SuperHUD:
