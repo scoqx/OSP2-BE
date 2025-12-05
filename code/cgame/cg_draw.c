@@ -190,8 +190,7 @@ void CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headA
 
 	if (cg_draw3dIcons.integer)
 	{
-		/* Use original head model and skin when cg_drawRealHeads is active */
-		if (cg_drawRealHeads.integer && ci->originalHeadModelHandle)
+		if (cg_drawRealHeads.integer)
 		{
 			cm = ci->originalHeadModelHandle;
 			headSkin = ci->originalHeadSkinHandle;
@@ -243,8 +242,7 @@ void CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headA
 	{
 		qhandle_t iconToUse;
 
-		/* Use original icon when cg_drawRealHeads is active */
-		if (cg_drawRealHeads.integer && ci->originalModelIcon)
+		if (cg_drawRealHeads.integer)
 		{
 			iconToUse = ci->originalModelIcon;
 		}
@@ -253,7 +251,10 @@ void CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headA
 			iconToUse = ci->modelIcon;
 		}
 
-		CG_DrawPicOld(x, y, w, h, iconToUse);
+		if (iconToUse)
+		{
+			CG_DrawPicOld(x, y, w, h, iconToUse);
+		}
 	}
 
 }
@@ -659,8 +660,15 @@ float CG_DrawAttacker(float y)
 	angles[ROLL] = 0;
 	CG_DrawHead(640 - size, y, size, size, clientNum, angles);
 
-	info = CG_ConfigString(CS_PLAYERS + clientNum);
-	name = Info_ValueForKey(info, "n");
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS && cgs.clientinfo[clientNum].infoValid)
+	{
+		name = cgs.clientinfo[clientNum].name;
+	}
+	else
+	{
+		info = CG_ConfigString(CS_PLAYERS + clientNum);
+		name = Info_ValueForKey(info, "n");
+	}
 	y += size;
 	CG_DrawBigString(SCREEN_WIDTH - 1, y, name, 0.5f, DS_HRIGHT | DS_SHADOW, 0);
 
@@ -2607,7 +2615,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 	float dist, lift, rawLift, t;
 	vec4_t nameColor = { 1, 1, 1, 1 };
 	vec4_t bgColor = { 0.0f, 0.0f, 0.0f, 0.5f };
-	int font = cg_teamIndicatorFont.integer;
+	int font = CG_FontIndexFromCvar(&cg_teamIndicatorFont);
 	float liftMinAdj, liftMaxAdj;
 	const float distMin = 0.0f;
 	const float distMax = 2500.0f;
@@ -2880,7 +2888,7 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float tex
 	int shots;
 	qboolean horizontal, iconBeforeText;
 	float textX, textY;
-	int font = cg_accuracyFont.integer;
+	int font = CG_FontIndexFromCvar(&cg_accuracyFont);
 	qhandle_t icon;
 
 	for (wp = WP_MACHINEGUN; wp <= WP_PLASMAGUN; wp++)
@@ -3301,7 +3309,7 @@ void CG_OSPDrawCenterString(void)
 	float* fadeColor;
 	char* to_print;
 	int y;
-	int font = cg_centerMessagesFont.integer;
+	int font = CG_FontIndexFromCvar(&cg_centerMessagesFont);
 	if (!cg_drawCenterMessages.integer)
 	{
 		return;

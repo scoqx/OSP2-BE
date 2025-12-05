@@ -45,7 +45,7 @@ void MField_Draw( mfield_t *edit, int x, int y, int style, vec4_t color ) {
 	memcpy( str, edit->buffer + prestep, drawLen );
 	str[ drawLen ] = 0;
 
-	UI_DrawString( x, y, str, style, color );
+	UI_DrawStringRaw( x, y, str, style, color );
 
 	// draw the cursor
 	if (!(style & UI_PULSE)) {
@@ -382,6 +382,10 @@ sfxHandle_t MenuField_Key( menufield_s* m, int* key )
 
 	switch ( keycode )
 	{
+		case K_MOUSE1:
+			/* Let default menu handling activate the field */
+			break;
+
 		case K_KP_ENTER:
 		case K_ENTER:
 		case K_JOY1:

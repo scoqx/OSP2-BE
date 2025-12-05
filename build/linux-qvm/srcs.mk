@@ -57,12 +57,15 @@ CG_SRC = \
 
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \
- ui_gameinfo ui_atoms ui_cinematics ui_connect ui_controls2 ui_demo2 \
- ui_mfield ui_credits ui_menu ui_ingame ui_confirm ui_setup ui_options \
- ui_display ui_sound ui_network ui_playermodel ui_players ui_playersettings \
- ui_preferences ui_qmenu ui_serverinfo ui_servers2 ui_sparena ui_osp2be \
- ui_specifyserver ui_sppostgame ui_splevel ui_spskill ui_startserver ui_team \
- ui_video ui_addbots ui_removebots ui_teamorders ui_loadconfig ui_saveconfig \
- ui_cdkey ui_mods \
+ui_gameinfo ui_atoms ui_cinematics ui_connect ui_controls2 ui_demo2 \
+ui_mfield ui_credits ui_menu ui_ingame ui_confirm ui_setup ui_options \
+ui_display ui_sound ui_network ui_playermodel ui_players ui_playersettings \
+ui_preferences ui_qmenu ui_serverinfo ui_servers2 ui_sparena ui_osp2be ui_colorpicker \
+ui_osp2be_general ui_osp2be_player ui_osp2be_weapon ui_osp2be_railgun ui_osp2be_explosives ui_osp2be_teams ui_osp2be_superhud ui_osp2be_constants \
+ui_osp2be_preview ui_osp2be_draw ui_osp2be_controls ui_osp2be_utils \
+ui_superhudconfig ui_ospdrawtools ui_advanced \
+ui_specifyserver ui_sppostgame ui_splevel ui_spskill ui_startserver ui_team \
+ui_video ui_addbots ui_removebots ui_teamorders ui_loadconfig ui_saveconfig \
+ui_cdkey ui_mods \
  bg_misc bg_lib \
  q_math q_shared \

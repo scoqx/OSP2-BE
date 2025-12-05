@@ -157,7 +157,15 @@ void CG_OSPObituaryFreeze(entityState_t* es, char* targetName)
 	cs = CG_ConfigString(actorId + CS_PLAYERS);
 	if (!cs) return;
 
-	Q_strncpyz(&actorName[0], Info_ValueForKey(cs, "n"), 64);
+	/* Use processed name from clientInfo if available, otherwise fallback to config string */
+	if (actorId >= 0 && actorId < MAX_CLIENTS && cgs.clientinfo[actorId].infoValid)
+	{
+		Q_strncpyz(&actorName[0], cgs.clientinfo[actorId].name, 64);
+	}
+	else
+	{
+		Q_strncpyz(&actorName[0], Info_ValueForKey(cs, "n"), 64);
+	}
 	if (rand() & 1)
 	{
 		actionStr = "thawed";
@@ -259,8 +267,17 @@ static void CG_Obituary(entityState_t* ent)
 	{
 		return;
 	}
-	Q_strncpyz(targetName, Info_ValueForKey(targetInfo, "n"), sizeof(targetName) - 2);
-
+	
+	/* Use processed name from clientInfo if available, otherwise fallback to config string */
+	if (target >= 0 && target < MAX_CLIENTS && cgs.clientinfo[target].infoValid)
+	{
+		Q_strncpyz(targetName, cgs.clientinfo[target].name, sizeof(targetName) - 2);
+	}
+	else
+	{
+		Q_strncpyz(targetName, Info_ValueForKey(targetInfo, "n"), sizeof(targetName) - 2);
+	}
+	
 	strcat(targetName, S_COLOR_WHITE);
 	CG_RemoveChatEscapeChar(&targetName[0]);
 
@@ -372,7 +389,14 @@ static void CG_Obituary(entityState_t* ent)
 	{
 		if (ch_fragMessage.integer)
 		{
-			Q_strncpyz(&targetName[0], Info_ValueForKey(targetInfo, "n"), sizeof(targetName) - 2);
+			if (target >= 0 && target < MAX_CLIENTS && cgs.clientinfo[target].infoValid)
+			{
+				Q_strncpyz(&targetName[0], cgs.clientinfo[target].name, sizeof(targetName) - 2);
+			}
+			else
+			{
+				Q_strncpyz(&targetName[0], Info_ValueForKey(targetInfo, "n"), sizeof(targetName) - 2);
+			}
 			strcat(&targetName[0], "^7");
 			CG_ObituaryFragmessage(va("You fragged %s", targetName));
 
@@ -386,7 +410,14 @@ static void CG_Obituary(entityState_t* ent)
 	}
 	else
 	{
-		Q_strncpyz(attackerName, Info_ValueForKey(attackerInfo, "n"), sizeof(attackerName) - 2);
+		if (attacker >= 0 && attacker < MAX_CLIENTS && cgs.clientinfo[attacker].infoValid)
+		{
+			Q_strncpyz(attackerName, cgs.clientinfo[attacker].name, sizeof(attackerName) - 2);
+		}
+		else
+		{
+			Q_strncpyz(attackerName, Info_ValueForKey(attackerInfo, "n"), sizeof(attackerName) - 2);
+		}
 		strcat(attackerName, S_COLOR_WHITE);
 		// check for kill messages about the current clientNum
 		if (target == cg.snap->ps.clientNum)

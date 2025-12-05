@@ -26,6 +26,7 @@ INGAME MENU
 #define ID_QUIT					17
 #define ID_RESUME				18
 #define ID_TEAMORDERS			19
+#define ID_SUPERHUD				20
 
 
 typedef struct {
@@ -42,6 +43,7 @@ typedef struct {
 	menutext_s		teamorders;
 	menutext_s		quit;
 	menutext_s		resume;
+	menutext_s		superhud;
 } ingamemenu_t;
 
 static ingamemenu_t	s_ingame;
@@ -72,7 +74,7 @@ static void InGame_QuitAction( qboolean result ) {
 		return;
 	}
 	UI_PopMenu();
-	UI_CreditMenu();
+	trap_Cmd_ExecuteText( EXEC_APPEND, "quit\n" );
 }
 
 
@@ -93,6 +95,10 @@ void InGame_Event( void *ptr, int notification ) {
 
 	case ID_SETUP:
 		UI_SetupMenu();
+		break;
+
+	case ID_SUPERHUD:
+		UI_SuperHUDConfigMenu();
 		break;
 
 	case ID_LEAVEARENA:
@@ -238,6 +244,17 @@ void InGame_MenuInit( void ) {
 	s_ingame.setup.style				= UI_CENTER|UI_SMALLFONT;
 
 	y += INGAME_MENU_VERTICAL_SPACING;
+	s_ingame.superhud.generic.type		= MTYPE_PTEXT;
+	s_ingame.superhud.generic.flags		= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
+	s_ingame.superhud.generic.x			= 320;
+	s_ingame.superhud.generic.y			= y;
+	s_ingame.superhud.generic.id		= ID_SUPERHUD;
+	s_ingame.superhud.generic.callback	= InGame_Event;
+	s_ingame.superhud.string				= "SUPERHUD";
+	s_ingame.superhud.color				= color_red;
+	s_ingame.superhud.style				= UI_CENTER|UI_SMALLFONT;
+
+	y += INGAME_MENU_VERTICAL_SPACING;
 	s_ingame.server.generic.type		= MTYPE_PTEXT;
 	s_ingame.server.generic.flags		= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
 	s_ingame.server.generic.x			= 320;
@@ -301,6 +318,7 @@ void InGame_MenuInit( void ) {
 	Menu_AddItem( &s_ingame.menu, &s_ingame.removebots );
 	Menu_AddItem( &s_ingame.menu, &s_ingame.teamorders );
 	Menu_AddItem( &s_ingame.menu, &s_ingame.setup );
+	Menu_AddItem( &s_ingame.menu, &s_ingame.superhud );
 	Menu_AddItem( &s_ingame.menu, &s_ingame.server );
 	Menu_AddItem( &s_ingame.menu, &s_ingame.restart );
 	Menu_AddItem( &s_ingame.menu, &s_ingame.resume );

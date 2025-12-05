@@ -398,7 +398,7 @@ void CG_SHUDTextMakeContext(const superhudConfig_t* in, superhudTextContext_t* o
 		Vector4Copy(config.shadowColor.value, out->shadowColor);
 	}
 
-	out->fontIndex = CG_FontIndexFromName(config.font.isSet ? config.font.value : "sansman");
+	out->fontIndex = CG_FontIndexFromString(config.font.isSet ? config.font.value : "sansman");
 	out->width = SCREEN_WIDTH;
 
 

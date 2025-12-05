@@ -1010,6 +1010,7 @@ char* Q_CleanStr(char* string)
 	char*   d;
 	char*   s;
 	int     c;
+	char    controlChar;
 
 	s = string;
 	d = string;
@@ -1017,13 +1018,44 @@ char* Q_CleanStr(char* string)
 	{
 		if (Q_IsColorString(s))
 		{
-			s++;
+			controlChar = s[1];
+			if (controlChar == 'X' || controlChar == 'x')
+			{
+				/* Check for ^Xrrggbb or ^xrrggbb format */
+				if (s[2] != '\0' && s[3] != '\0' && s[4] != '\0' &&
+				    s[5] != '\0' && s[6] != '\0' && s[7] != '\0')
+				{
+					/* Check if all 6 characters are hex */
+					if (((s[2] >= '0' && s[2] <= '9') || (s[2] >= 'a' && s[2] <= 'f') || (s[2] >= 'A' && s[2] <= 'F')) &&
+					    ((s[3] >= '0' && s[3] <= '9') || (s[3] >= 'a' && s[3] <= 'f') || (s[3] >= 'A' && s[3] <= 'F')) &&
+					    ((s[4] >= '0' && s[4] <= '9') || (s[4] >= 'a' && s[4] <= 'f') || (s[4] >= 'A' && s[4] <= 'F')) &&
+					    ((s[5] >= '0' && s[5] <= '9') || (s[5] >= 'a' && s[5] <= 'f') || (s[5] >= 'A' && s[5] <= 'F')) &&
+					    ((s[6] >= '0' && s[6] <= '9') || (s[6] >= 'a' && s[6] <= 'f') || (s[6] >= 'A' && s[6] <= 'F')) &&
+					    ((s[7] >= '0' && s[7] <= '9') || (s[7] >= 'a' && s[7] <= 'f') || (s[7] >= 'A' && s[7] <= 'F')))
+					{
+						/* Valid ^Xrrggbb format, skip all 8 characters */
+						s += 8;
+						continue;
+					}
+				}
+				/* Invalid format, skip ^ only */
+				s++;
+			}
+			else
+			{
+				/* Other color codes, skip ^ and control char */
+				s += 2;
+			}
 		}
 		else if (c >= 0x20 && c <= 0x7E)
 		{
 			*d++ = c;
+			s++;
 		}
-		s++;
+		else
+		{
+			s++;
+		}
 	}
 	*d = '\0';
 

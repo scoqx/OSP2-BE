@@ -12,7 +12,6 @@ DEMOS MENU
 #include "ui_local.h"
 #include "../game/q_shared.h"
 
-
 #define ART_BACK0			"menu/art/back_0"
 #define ART_BACK1			"menu/art/back_1"	
 #define ART_GO0				"menu/art/play_0"
@@ -34,6 +33,7 @@ DEMOS MENU
 #define ID_TIMEDEMO			15
 #define ID_SORT				16
 #define ID_FILTER			17
+#define ID_RESETPOS			18
 
 
 #define ARROWS_WIDTH		48
@@ -54,6 +54,7 @@ typedef struct {
 	menubitmap_s	down;
 	menubitmap_s	back;
 	menubitmap_s	go;
+	menutext_s		resetpos;
 	menuradiobutton_s	timedemo;
 
 	menufield_s		filter;
@@ -89,6 +90,26 @@ static const char* sorttype[] = {
 };
 
 static void UI_DemosFillList( void );
+
+static void Demos_DrawResetPos( void *self ) {
+	menutext_s		*t;
+	float			*color;
+	int				style;
+	qboolean		focus;
+
+	t = (menutext_s*)self;
+	focus = (t->generic.parent->cursor == t->generic.menuPosition);
+	style = UI_CENTER|UI_SMALLFONT;
+	
+	if ( focus ) {
+		style |= 0;
+		color = text_color_highlight;
+	} else {
+		color = text_color_normal;
+	}
+
+	UI_DrawString( t->generic.x, t->generic.y, t->string, style, color );
+}
 
 /*
 =================
@@ -306,8 +327,11 @@ static void UI_DemoClick( void ) {
 		s = strchr( dir, '/' );
 		if ( s ) {
 			r = va( "demo \"%s/%s\"\n", s + 1, d->file_name );
-		} else
+			trap_Cvar_Set( "ui_lastDemo", va( "%s/%s", s + 1, d->file_name ) );
+		} else {
 			r = va( "demo \"%s\"\n", d->file_name );
+			trap_Cvar_Set( "ui_lastDemo", d->file_name );
+		}
 		trap_Cmd_ExecuteText( EXEC_APPEND, r );
 	}
 }
@@ -350,6 +374,12 @@ static void Demos_MenuEvent( void *ptr, int event ) {
 	case ID_SORT:
 		trap_Cvar_Set( "ui_demoSort", va( "%i", s_demos.sort.curvalue ) );
 		UI_DemosFillList();
+		break;
+
+	case ID_RESETPOS:
+		trap_Cvar_Set( "ui_lastDemo", "" );
+		s_demos.list.curvalue = 0;
+		s_demos.list.top = 0;
 		break;
 	}
 }
@@ -520,6 +550,67 @@ static void UI_demosort( demo_entry_t **a, int n, int mode )
 }
 
 
+static void UI_DemosRestoreLastDemo( void ) {
+	char	lastDemo[256];
+	char	*dirPart;
+	char	*filePart;
+	char	*slash;
+	char	*s;
+	char	currentDir[256];
+	int		i;
+	demo_entry_t *d;
+
+	if ( !s_demos.list.numitems )
+		return;
+
+	trap_Cvar_VariableStringBuffer( "ui_lastDemo", lastDemo, sizeof( lastDemo ) );
+	if ( !lastDemo[0] )
+		return;
+
+	slash = strchr( lastDemo, '/' );
+	if ( slash ) {
+		dirPart = lastDemo;
+		filePart = slash + 1;
+		*slash = '\0';
+	} else {
+		dirPart = "";
+		filePart = lastDemo;
+	}
+
+	s = strchr( dir, '/' );
+	if ( s ) {
+		Q_strncpyz( currentDir, s + 1, sizeof( currentDir ) );
+	} else {
+		currentDir[0] = '\0';
+	}
+
+	if ( Q_stricmp( currentDir, dirPart ) != 0 ) {
+		if ( slash )
+			*slash = '/';
+		return;
+	}
+
+	for ( i = 0; i < s_demos.list.numitems; i++ ) {
+		d = dptr[i];
+		if ( !d || d->file_type != 0 )
+			continue;
+		if ( !Q_stricmp( d->file_name, filePart ) ) {
+			s_demos.list.curvalue = i;
+			if ( i >= s_demos.list.height ) {
+				s_demos.list.top = i - s_demos.list.height + 1;
+			} else {
+				s_demos.list.top = 0;
+			}
+			if ( slash )
+				*slash = '/';
+			return;
+		}
+	}
+
+	if ( slash )
+		*slash = '/';
+}
+
 static void UI_DemosFillList( void ) {
 
 	int		i, diff, sort, len;
@@ -684,6 +775,21 @@ static void Demos_MenuInit( void ) {
 	s_demos.go.height				= 64;
 	s_demos.go.focuspic				= ART_GO1;
 
+	s_demos.resetpos.generic.type		= MTYPE_PTEXT;
+	s_demos.resetpos.generic.flags		= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
+	s_demos.resetpos.generic.ownerdraw	= Demos_DrawResetPos;
+	s_demos.resetpos.generic.callback	= Demos_MenuEvent;
+	s_demos.resetpos.generic.id			= ID_RESETPOS;
+	s_demos.resetpos.generic.x			= 320;
+	s_demos.resetpos.generic.y			= 480-62;
+	s_demos.resetpos.generic.left		= 0;
+	s_demos.resetpos.generic.top			= 480-62-8;
+	s_demos.resetpos.generic.right		= 640;
+	s_demos.resetpos.generic.bottom		= 480-62+8;
+	s_demos.resetpos.string				= "Reset position";
+	s_demos.resetpos.color				= text_color_normal;
+	s_demos.resetpos.style				= UI_CENTER|UI_SMALLFONT;
+
 	s_demos.timedemo.generic.type		= MTYPE_RADIOBUTTON;
 	s_demos.timedemo.generic.name		= "Time Demo:";
 	s_demos.timedemo.generic.flags		= QMF_PULSEIFFOCUS|QMF_SMALLFONT;
@@ -735,7 +841,7 @@ static void Demos_MenuInit( void ) {
 	s_demos.list.width				= UI_DEMO_LENGTH;
 	s_demos.list.height				= UI_MAX_ITEMS;
 	s_demos.list.columns			= 1;
-	s_demos.list.scroll				= s_demos.list.height - 1;
+	s_demos.list.scroll				= 4;
 	s_demos.list.generic.dblclick	= UI_DemosDblclick;
 
 	s_demos.list.itemnames			= (const char **)s_demos.itemname;
@@ -761,9 +867,18 @@ static void Demos_MenuInit( void ) {
 	Menu_AddItem( &s_demos.menu, &s_demos.down );
 	Menu_AddItem( &s_demos.menu, &s_demos.back );
 	Menu_AddItem( &s_demos.menu, &s_demos.go );
+	Menu_AddItem( &s_demos.menu, &s_demos.resetpos );
 	Menu_AddItem( &s_demos.menu, &s_demos.timedemo );
 	Menu_AddItem( &s_demos.menu, &s_demos.sort );
 	Menu_AddItem( &s_demos.menu, &s_demos.filter );
+
+	if ( s_demos.numDemos && dirlevel == 0 ) {
+		UI_DemosRestoreLastDemo();
+		if ( dirlevel < ARRAY_LEN( listpos ) ) {
+			listpos[dirlevel][0] = s_demos.list.curvalue;
+			listpos[dirlevel][1] = s_demos.list.top;
+		}
+	}
 }
 
 /*

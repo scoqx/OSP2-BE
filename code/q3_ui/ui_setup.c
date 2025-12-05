@@ -23,11 +23,16 @@ SETUP MENU
 #define ID_CUSTOMIZECONTROLS	11
 #define ID_SYSTEMCONFIG			12
 #define ID_GAME					13
-#define ID_CDKEY				14
-#define ID_LOAD					15
-#define ID_SAVE					16
-#define ID_DEFAULTS				17
-#define ID_BACK					18
+#define ID_OTHER				14
+#define ID_ADVANCED				15
+#define ID_LOAD					17
+#define ID_SAVE					18
+#define ID_DEFAULTS				19
+#define ID_BACK					20
+
+#define ID_OTHER_CDKEY			30
+#define ID_OTHER_CREDITS		32
+#define ID_OTHER_BACK			33
 
 
 typedef struct {
@@ -40,7 +45,8 @@ typedef struct {
 	menutext_s		setupcontrols;
 	menutext_s		setupsystem;
 	menutext_s		game;
-	menutext_s		cdkey;
+	menutext_s		other;
+	menutext_s		advanced;
 //	menutext_s		load;
 //	menutext_s		save;
 	menutext_s		defaults;
@@ -48,6 +54,18 @@ typedef struct {
 } setupMenuInfo_t;
 
 static setupMenuInfo_t	setupMenuInfo;
+
+typedef struct {
+	menuframework_s	menu;
+	menutext_s		banner;
+	menubitmap_s	framel;
+	menubitmap_s	framer;
+	menutext_s		cdkey;
+	menutext_s		credits;
+	menubitmap_s	back;
+} otherMenuInfo_t;
+
+static otherMenuInfo_t	otherMenuInfo;
 
 
 /*
@@ -103,9 +121,13 @@ static void UI_SetupMenu_Event( void *ptr, int event ) {
 		UI_PreferencesMenu();
 		break;
 
-	case ID_CDKEY:
-		UI_CDKeyMenu();
+	case ID_OTHER:
+		UI_OtherMenu();
 		break;
+
+//	case ID_ADVANCED:
+//		UI_AdvancedMenu();
+//		break;
 
 //	case ID_LOAD:
 //		UI_LoadConfigMenu();
@@ -163,7 +185,20 @@ static void UI_SetupMenu_Init( void ) {
 	setupMenuInfo.framer.width  					= 256;
 	setupMenuInfo.framer.height  					= 334;
 
-	y = 134;
+	/* Calculate menu height and center it vertically */
+	{
+		int menuItemCount;
+		int totalMenuHeight;
+		int screenCenterY;
+
+		menuItemCount = 5; /* PLAYER, CONTROLS, SYSTEM, GAME OPTIONS, OTHER */
+		if( !trap_Cvar_VariableValue( "cl_paused" ) ) {
+			menuItemCount++; /* DEFAULTS */
+		}
+		totalMenuHeight = menuItemCount * SETUP_MENU_VERTICAL_SPACING;
+		screenCenterY = 240; /* Center of 480px screen */
+		y = screenCenterY - (totalMenuHeight / 2);
+	}
 	setupMenuInfo.setupplayer.generic.type			= MTYPE_PTEXT;
 	setupMenuInfo.setupplayer.generic.flags			= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
 	setupMenuInfo.setupplayer.generic.x				= 320;
@@ -208,15 +243,26 @@ static void UI_SetupMenu_Init( void ) {
 	setupMenuInfo.game.style						= UI_CENTER;
 
 	y += SETUP_MENU_VERTICAL_SPACING;
-	setupMenuInfo.cdkey.generic.type				= MTYPE_PTEXT;
-	setupMenuInfo.cdkey.generic.flags				= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
-	setupMenuInfo.cdkey.generic.x					= 320;
-	setupMenuInfo.cdkey.generic.y					= y;
-	setupMenuInfo.cdkey.generic.id					= ID_CDKEY;
-	setupMenuInfo.cdkey.generic.callback			= UI_SetupMenu_Event; 
-	setupMenuInfo.cdkey.string						= "CD Key";
-	setupMenuInfo.cdkey.color						= color_red;
-	setupMenuInfo.cdkey.style						= UI_CENTER;
+	setupMenuInfo.other.generic.type				= MTYPE_PTEXT;
+	setupMenuInfo.other.generic.flags				= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
+	setupMenuInfo.other.generic.x					= 320;
+	setupMenuInfo.other.generic.y					= y;
+	setupMenuInfo.other.generic.id					= ID_OTHER;
+	setupMenuInfo.other.generic.callback			= UI_SetupMenu_Event; 
+	setupMenuInfo.other.string						= "OTHER";
+	setupMenuInfo.other.color						= color_red;
+	setupMenuInfo.other.style						= UI_CENTER;
+
+//	y += SETUP_MENU_VERTICAL_SPACING;
+//	setupMenuInfo.advanced.generic.type				= MTYPE_PTEXT;
+//	setupMenuInfo.advanced.generic.flags			= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
+//	setupMenuInfo.advanced.generic.x				= 320;
+//	setupMenuInfo.advanced.generic.y				= y;
+//	setupMenuInfo.advanced.generic.id				= ID_ADVANCED;
+//	setupMenuInfo.advanced.generic.callback			= UI_SetupMenu_Event; 
+//	setupMenuInfo.advanced.string					= "ADVANCED";
+//	setupMenuInfo.advanced.color					= color_darkred;
+//	setupMenuInfo.advanced.style					= UI_CENTER;
 
 	if( !trap_Cvar_VariableValue( "cl_paused" ) ) {
 #if 0
@@ -273,7 +319,8 @@ static void UI_SetupMenu_Init( void ) {
 	Menu_AddItem( &setupMenuInfo.menu, &setupMenuInfo.setupcontrols );
 	Menu_AddItem( &setupMenuInfo.menu, &setupMenuInfo.setupsystem );
 	Menu_AddItem( &setupMenuInfo.menu, &setupMenuInfo.game );
-	Menu_AddItem( &setupMenuInfo.menu, &setupMenuInfo.cdkey );
+	Menu_AddItem( &setupMenuInfo.menu, &setupMenuInfo.other );
+//	Menu_AddItem( &setupMenuInfo.menu, &setupMenuInfo.advanced );
 //	Menu_AddItem( &setupMenuInfo.menu, &setupMenuInfo.load );
 //	Menu_AddItem( &setupMenuInfo.menu, &setupMenuInfo.save );
 	if( !trap_Cvar_VariableValue( "cl_paused" ) ) {
@@ -304,4 +351,130 @@ UI_SetupMenu
 void UI_SetupMenu( void ) {
 	UI_SetupMenu_Init();
 	UI_PushMenu( &setupMenuInfo.menu );
+}
+
+
+/*
+===============
+UI_OtherMenu_Event
+===============
+*/
+static void UI_OtherMenu_Event( void *ptr, int event ) {
+	if( event != QM_ACTIVATED ) {
+		return;
+	}
+
+	switch( ((menucommon_s*)ptr)->id ) {
+	case ID_OTHER_CDKEY:
+		UI_CDKeyMenu();
+		break;
+
+	case ID_OTHER_CREDITS:
+		UI_CreditMenu();
+		break;
+
+	case ID_OTHER_BACK:
+		UI_PopMenu();
+		break;
+	}
+}
+
+
+/*
+===============
+UI_OtherMenu_Init
+===============
+*/
+static void UI_OtherMenu_Init( void ) {
+	int				y;
+
+	UI_SetupMenu_Cache();
+
+	memset( &otherMenuInfo, 0, sizeof(otherMenuInfo) );
+	otherMenuInfo.menu.wrapAround = qtrue;
+	otherMenuInfo.menu.fullscreen = qtrue;
+
+	otherMenuInfo.banner.generic.type				= MTYPE_BTEXT;
+	otherMenuInfo.banner.generic.x					= 320;
+	otherMenuInfo.banner.generic.y					= 16;
+	otherMenuInfo.banner.string						= "OTHER";
+	otherMenuInfo.banner.color						= color_white;
+	otherMenuInfo.banner.style						= UI_CENTER;
+
+	otherMenuInfo.framel.generic.type				= MTYPE_BITMAP;
+	otherMenuInfo.framel.generic.name				= ART_FRAMEL;
+	otherMenuInfo.framel.generic.flags				= QMF_INACTIVE;
+	otherMenuInfo.framel.generic.x					= 0;  
+	otherMenuInfo.framel.generic.y					= 78;
+	otherMenuInfo.framel.width  					= 256;
+	otherMenuInfo.framel.height  					= 329;
+
+	otherMenuInfo.framer.generic.type				= MTYPE_BITMAP;
+	otherMenuInfo.framer.generic.name				= ART_FRAMER;
+	otherMenuInfo.framer.generic.flags				= QMF_INACTIVE;
+	otherMenuInfo.framer.generic.x					= 376;
+	otherMenuInfo.framer.generic.y					= 76;
+	otherMenuInfo.framer.width  					= 256;
+	otherMenuInfo.framer.height  					= 334;
+
+	/* Calculate menu height and center it vertically */
+	{
+		int menuItemCount;
+		int totalMenuHeight;
+		int screenCenterY;
+
+		menuItemCount = 2; /* CD Key, CREDITS */
+		totalMenuHeight = menuItemCount * SETUP_MENU_VERTICAL_SPACING;
+		screenCenterY = 240; /* Center of 480px screen */
+		y = screenCenterY - (totalMenuHeight / 2);
+	}
+	otherMenuInfo.cdkey.generic.type				= MTYPE_PTEXT;
+	otherMenuInfo.cdkey.generic.flags				= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
+	otherMenuInfo.cdkey.generic.x					= 320;
+	otherMenuInfo.cdkey.generic.y					= y;
+	otherMenuInfo.cdkey.generic.id					= ID_OTHER_CDKEY;
+	otherMenuInfo.cdkey.generic.callback			= UI_OtherMenu_Event; 
+	otherMenuInfo.cdkey.string						= "CD Key";
+	otherMenuInfo.cdkey.color						= color_red;
+	otherMenuInfo.cdkey.style						= UI_CENTER;
+
+	y += SETUP_MENU_VERTICAL_SPACING;
+	otherMenuInfo.credits.generic.type				= MTYPE_PTEXT;
+	otherMenuInfo.credits.generic.flags				= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
+	otherMenuInfo.credits.generic.x					= 320;
+	otherMenuInfo.credits.generic.y					= y;
+	otherMenuInfo.credits.generic.id				= ID_OTHER_CREDITS;
+	otherMenuInfo.credits.generic.callback			= UI_OtherMenu_Event;
+	otherMenuInfo.credits.string					= "CREDITS";
+	otherMenuInfo.credits.color						= color_red;
+	otherMenuInfo.credits.style						= UI_CENTER;
+
+	otherMenuInfo.back.generic.type					= MTYPE_BITMAP;
+	otherMenuInfo.back.generic.name					= ART_BACK0;
+	otherMenuInfo.back.generic.flags				= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
+	otherMenuInfo.back.generic.id					= ID_OTHER_BACK;
+	otherMenuInfo.back.generic.callback				= UI_OtherMenu_Event;
+	otherMenuInfo.back.generic.x					= 0;
+	otherMenuInfo.back.generic.y					= 480-64;
+	otherMenuInfo.back.width						= 128;
+	otherMenuInfo.back.height						= 64;
+	otherMenuInfo.back.focuspic						= ART_BACK1;
+
+	Menu_AddItem( &otherMenuInfo.menu, &otherMenuInfo.banner );
+	Menu_AddItem( &otherMenuInfo.menu, &otherMenuInfo.framel );
+	Menu_AddItem( &otherMenuInfo.menu, &otherMenuInfo.framer );
+	Menu_AddItem( &otherMenuInfo.menu, &otherMenuInfo.cdkey );
+	Menu_AddItem( &otherMenuInfo.menu, &otherMenuInfo.credits );
+	Menu_AddItem( &otherMenuInfo.menu, &otherMenuInfo.back );
+}
+
+
+/*
+===============
+UI_OtherMenu
+===============
+*/
+void UI_OtherMenu( void ) {
+	UI_OtherMenu_Init();
+	UI_PushMenu( &otherMenuInfo.menu );
 }

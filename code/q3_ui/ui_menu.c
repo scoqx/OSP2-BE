@@ -16,11 +16,10 @@ MAIN MENU
 #define ID_MULTIPLAYER			11
 #define ID_SETUP				12
 #define ID_DEMOS				13
-#define ID_CINEMATICS			14
-#define ID_TEAMARENA			15
+#define ID_TEAMARENA			14
+#define ID_CINEMATICS			15
 #define ID_MODS					16
-#define ID_OSP2BE				17
-#define ID_EXIT					18
+#define ID_EXIT					17
 
 #define MAIN_BANNER_MODEL				"models/mapobjects/banner/banner5.md3"
 #define MAIN_MENU_VERTICAL_SPACING		34
@@ -33,10 +32,9 @@ typedef struct {
 	menutext_s		multiplayer;
 	menutext_s		setup;
 	menutext_s		demos;
-	menutext_s		cinematics;
 	menutext_s		teamArena;
+	menutext_s		cinematics;
 	menutext_s		mods;
-	menutext_s		osp2be;
 	menutext_s		exit;
 
 	qhandle_t		bannerModel;
@@ -62,7 +60,7 @@ static void MainMenu_ExitAction( qboolean result ) {
 		return;
 	}
 	UI_PopMenu();
-	UI_CreditMenu();
+	trap_Cmd_ExecuteText( EXEC_APPEND, "quit\n" );
 }
 
 
@@ -100,10 +98,6 @@ void Main_MenuEvent (void* ptr, int event) {
 
 	case ID_MODS:
 		UI_ModsMenu();
-		break;
-
-	case ID_OSP2BE:
-		UI_Osp2BeMenu();
 		break;
 
 	case ID_TEAMARENA:
@@ -340,17 +334,6 @@ void UI_MainMenu( void ) {
 	s_main.demos.color						= color_red;
 	s_main.demos.style						= style;
 
-	y += MAIN_MENU_VERTICAL_SPACING;
-	s_main.cinematics.generic.type			= MTYPE_PTEXT;
-	s_main.cinematics.generic.flags			= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
-	s_main.cinematics.generic.x				= 320;
-	s_main.cinematics.generic.y				= y;
-	s_main.cinematics.generic.id			= ID_CINEMATICS;
-	s_main.cinematics.generic.callback		= Main_MenuEvent; 
-	s_main.cinematics.string				= "CINEMATICS";
-	s_main.cinematics.color					= color_red;
-	s_main.cinematics.style					= style;
-
 	if (UI_TeamArenaExists()) {
 		teamArena = qtrue;
 		y += MAIN_MENU_VERTICAL_SPACING;
@@ -366,6 +349,17 @@ void UI_MainMenu( void ) {
 	}
 
 	y += MAIN_MENU_VERTICAL_SPACING;
+	s_main.cinematics.generic.type			= MTYPE_PTEXT;
+	s_main.cinematics.generic.flags			= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
+	s_main.cinematics.generic.x				= 320;
+	s_main.cinematics.generic.y				= y;
+	s_main.cinematics.generic.id			= ID_CINEMATICS;
+	s_main.cinematics.generic.callback		= Main_MenuEvent; 
+	s_main.cinematics.string					= "CINEMATICS";
+	s_main.cinematics.color					= color_red;
+	s_main.cinematics.style					= style;
+
+	y += MAIN_MENU_VERTICAL_SPACING;
 	s_main.mods.generic.type			= MTYPE_PTEXT;
 	s_main.mods.generic.flags			= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
 	s_main.mods.generic.x				= 320;
@@ -375,17 +369,6 @@ void UI_MainMenu( void ) {
 	s_main.mods.string					= "MODS";
 	s_main.mods.color					= color_red;
 	s_main.mods.style					= style;
-
-	y += MAIN_MENU_VERTICAL_SPACING;
-	s_main.osp2be.generic.type			= MTYPE_PTEXT;
-	s_main.osp2be.generic.flags			= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
-	s_main.osp2be.generic.x				= 320;
-	s_main.osp2be.generic.y				= y;
-	s_main.osp2be.generic.id			= ID_OSP2BE;
-	s_main.osp2be.generic.callback		= Main_MenuEvent; 
-	s_main.osp2be.string				= "OSP2-BE";
-	s_main.osp2be.color					= color_red;
-	s_main.osp2be.style					= style;
 
 	y += MAIN_MENU_VERTICAL_SPACING;
 	s_main.exit.generic.type				= MTYPE_PTEXT;
@@ -402,12 +385,11 @@ void UI_MainMenu( void ) {
 	Menu_AddItem( &s_main.menu,	&s_main.multiplayer );
 	Menu_AddItem( &s_main.menu,	&s_main.setup );
 	Menu_AddItem( &s_main.menu,	&s_main.demos );
-	Menu_AddItem( &s_main.menu,	&s_main.cinematics );
 	if (teamArena) {
 		Menu_AddItem( &s_main.menu,	&s_main.teamArena );
 	}
+	Menu_AddItem( &s_main.menu,	&s_main.cinematics );
 	Menu_AddItem( &s_main.menu,	&s_main.mods );
-	Menu_AddItem( &s_main.menu,	&s_main.osp2be );
 	Menu_AddItem( &s_main.menu,	&s_main.exit );             
 
 	trap_Key_SetCatcher( KEYCATCH_UI );

@@ -219,6 +219,7 @@ static void UI_CopyHostnameWithColors( char *dst, int size, const char *src );
 static int UI_BuildHostnameColumn( char *dst, int size, const char *src, int fieldWidth );
 static void ArenaServers_DrawList( void *self );
 
+
 /*
 =================
 ArenaServers_DrawFilter
@@ -337,10 +338,10 @@ static void ArenaServers_DrawList( void *self )
 				style |= UI_CENTER;
 			}
 
-			UI_DrawString( x, y, l->itemnames[i], style, color );
-
 			tableptr = &g_arenaservers.table[i];
-			UI_DrawString( x, y, tableptr->hostColumn, style, color );
+
+			UI_DrawString( x, y, l->itemnames[i], style, color );
+			UI_DrawStringServerBrowser( x, y, tableptr->hostColumn, style, color );
 
 			y += SMALLCHAR_HEIGHT;
 		}
@@ -586,14 +587,6 @@ static void ArenaServers_UpdateList( void )
 			MAX_GAMENAMELENGTH, MAX_GAMENAMELENGTH, servernodeptr->gamename,
 			netnames[ servernodeptr->nettype ],
 			pingColor, servernodeptr->pingtime );
-		trap_Print( va( "UI Server Row Debug: \"%s\"\n", tableptr->buff ) );
-		trap_Print( va( "UI Server Raw Debug: host=\"%s\" map=\"%s\" game=\"%s\" ping=%d net=%d color=\"%s\"\n",
-			servernodeptr->hostname,
-			servernodeptr->mapname,
-			servernodeptr->gamename,
-			servernodeptr->pingtime,
-			servernodeptr->nettype,
-			pingColor ) );
 		j++;
 	}
 
@@ -760,11 +753,41 @@ static void UI_CopyHostnameWithColors( char *dst, int size, const char *src )
 {
 	char	*end;
 	int		c;
+	char	controlChar;
 
 	end = dst + size - 1;
 
 	while ( *src && dst < end ) {
 		if ( Q_IsColorString( src ) ) {
+			controlChar = *(src + 1);
+			if ( controlChar == 'X' || controlChar == 'x' ) {
+				/* Check for ^Xrrggbb or ^xrrggbb format */
+				if ( src[2] != '\0' && src[3] != '\0' && src[4] != '\0' &&
+				     src[5] != '\0' && src[6] != '\0' && src[7] != '\0' ) {
+					/* Check if all 6 characters are hex */
+					if (((src[2] >= '0' && src[2] <= '9') || (src[2] >= 'a' && src[2] <= 'f') || (src[2] >= 'A' && src[2] <= 'F')) &&
+					    ((src[3] >= '0' && src[3] <= '9') || (src[3] >= 'a' && src[3] <= 'f') || (src[3] >= 'A' && src[3] <= 'F')) &&
+					    ((src[4] >= '0' && src[4] <= '9') || (src[4] >= 'a' && src[4] <= 'f') || (src[4] >= 'A' && src[4] <= 'F')) &&
+					    ((src[5] >= '0' && src[5] <= '9') || (src[5] >= 'a' && src[5] <= 'f') || (src[5] >= 'A' && src[5] <= 'F')) &&
+					    ((src[6] >= '0' && src[6] <= '9') || (src[6] >= 'a' && src[6] <= 'f') || (src[6] >= 'A' && src[6] <= 'F')) &&
+					    ((src[7] >= '0' && src[7] <= '9') || (src[7] >= 'a' && src[7] <= 'f') || (src[7] >= 'A' && src[7] <= 'F'))) {
+						/* Valid ^Xrrggbb format, copy all 8 characters */
+						if ( dst + 8 > end ) {
+							break;
+						}
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						continue;
+					}
+				}
+			}
+			/* Other color codes (^0-9, ^n, ^f, ^F, ^B, ^b, etc.) */
 			if ( dst + 2 > end ) {
 				break;
 			}
@@ -789,21 +812,55 @@ static void UI_CopyHostnameWithColors( char *dst, int size, const char *src )
 static int UI_BuildHostnameColumn( char *dst, int size, const char *src, int fieldWidth )
 {
 	char	*end;
+	char	*dst_start;
 	int		visible;
 	char	lastColor;
 	int		started;
+	char	controlChar;
 
 	end = dst + size - 1;
+	dst_start = dst;
 	visible = 0;
 	lastColor = '7';
 	started = 0;
 
 	while ( *src && dst < end ) {
 		if ( Q_IsColorString( src ) ) {
+			controlChar = *(src + 1);
+			if ( controlChar == 'X' || controlChar == 'x' ) {
+				/* Check for ^Xrrggbb or ^xrrggbb format */
+				if ( src[2] != '\0' && src[3] != '\0' && src[4] != '\0' &&
+				     src[5] != '\0' && src[6] != '\0' && src[7] != '\0' ) {
+					/* Check if all 6 characters are hex */
+					if (((src[2] >= '0' && src[2] <= '9') || (src[2] >= 'a' && src[2] <= 'f') || (src[2] >= 'A' && src[2] <= 'F')) &&
+					    ((src[3] >= '0' && src[3] <= '9') || (src[3] >= 'a' && src[3] <= 'f') || (src[3] >= 'A' && src[3] <= 'F')) &&
+					    ((src[4] >= '0' && src[4] <= '9') || (src[4] >= 'a' && src[4] <= 'f') || (src[4] >= 'A' && src[4] <= 'F')) &&
+					    ((src[5] >= '0' && src[5] <= '9') || (src[5] >= 'a' && src[5] <= 'f') || (src[5] >= 'A' && src[5] <= 'F')) &&
+					    ((src[6] >= '0' && src[6] <= '9') || (src[6] >= 'a' && src[6] <= 'f') || (src[6] >= 'A' && src[6] <= 'F')) &&
+					    ((src[7] >= '0' && src[7] <= '9') || (src[7] >= 'a' && src[7] <= 'f') || (src[7] >= 'A' && src[7] <= 'F'))) {
+						/* Valid ^Xrrggbb format, copy all 8 characters */
+						if ( dst + 8 > end ) {
+							break;
+						}
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						*dst++ = *src++;
+						continue;
+					}
+				}
+			}
+			/* Other color codes (^0-9, ^n, ^f, ^F, ^B, ^b, etc.) */
+			if ( controlChar >= '0' && controlChar <= '9' ) {
+				lastColor = controlChar;
+			}
 			if ( dst + 2 > end ) {
 				break;
 			}
-			lastColor = *(src + 1);
 			*dst++ = *src++;
 			*dst++ = *src++;
 			continue;
@@ -834,6 +891,7 @@ static int UI_BuildHostnameColumn( char *dst, int size, const char *src, int fie
 	}
 
 	*dst = '\0';
+
 	return visible;
 }
 
@@ -980,16 +1038,6 @@ static void ArenaServers_Insert( const char *adrstr, const char *info, int pingt
 		Q_strncpyz( servernodeptr->gamename, "unknown", sizeof( servernodeptr->gamename ) );
 	}
 
-	trap_Print( va( "UI Server Debug: hostname=\"%s\" map=\"%s\" clients=%d/%d gamename=\"%s\" gametype=%d nettype=%d ping=%d info=\"%s\"\n",
-		servernodeptr->hostname,
-		servernodeptr->mapname,
-		servernodeptr->numclients,
-		servernodeptr->maxclients,
-		servernodeptr->gamename,
-		servernodeptr->gametype,
-		servernodeptr->nettype,
-		servernodeptr->pingtime,
-		info ) );
 }
 
 
@@ -1230,9 +1278,6 @@ static void ArenaServers_DoRefresh( void )
 
 		if (j >= MAX_PINGLISTSIZE) {
 			// no empty slots available yet - wait for timeout
-#ifdef _DEBUG
-			Com_Printf( S_COLOR_YELLOW "no empty slots in ping list\n" );
-#endif
 			break;
 		}
 			
@@ -1690,7 +1735,7 @@ static void ArenaServers_MenuInit( void ) {
 	g_arenaservers.list.generic.y				= y;
 	g_arenaservers.list.width					= MAX_LISTBOXWIDTH;
 	g_arenaservers.list.height					= 12;
-	g_arenaservers.list.scroll					= 12;
+	g_arenaservers.list.scroll					= 1;
 	g_arenaservers.list.generic.dblclick		= ArenaServers_Dblclick;
 	g_arenaservers.list.itemnames				= (const char **)g_arenaservers.items;
 	for( i = 0; i < MAX_LISTBOXITEMS; i++ ) {
@@ -1902,4 +1947,4 @@ UI_ArenaServersMenu
 void UI_ArenaServersMenu( void ) {
 	ArenaServers_MenuInit();
 	UI_PushMenu( &g_arenaservers.menu );
-}						  
+}

@@ -409,16 +409,55 @@ void UI_DrawBannerString( int x, int y, const char* str, int style, vec4_t color
 	UI_DrawBannerString2( x, y, str, color );
 }
 
+static qboolean UI_Hex16GetColor( const char* str, float* color );
 
 int UI_ProportionalStringWidth( const char* str ) {
 	const char *	s;
 	int				ch;
 	int				charWidth;
 	int				width;
+	float			r;
+	float			g;
+	float			b;
+	char			controlChar;
 
 	s = str;
 	width = 0;
 	while ( *s ) {
+		if ( s[0] == '^' && s[1] != '\0' && s[1] != '^' ) {
+			controlChar = s[1];
+			s += 2;
+
+			switch ( controlChar ) {
+				case 'X':
+				case 'x':
+					if ( UI_Hex16GetColor( &s[0], &r ) &&
+						UI_Hex16GetColor( &s[2], &g ) &&
+						UI_Hex16GetColor( &s[4], &b ) ) {
+						s += 6;
+						continue;
+					}
+					break;
+				case 'f':
+					if ( ( uis.realtime & 0x3ff ) >= 512 ) {
+						while ( *s && !( s[0] == '^' && ( s[1] == 'N' || s[1] == 'F' ) ) ) {
+							s++;
+						}
+					}
+					continue;
+				case 'F':
+					if ( ( uis.realtime & 0x3ff ) < 512 ) {
+						while ( *s && !( s[0] == '^' && ( s[1] == 'N' || s[1] == 'f' ) ) ) {
+							s++;
+						}
+					}
+					continue;
+				default:
+					continue;
+			}
+			continue;
+		}
+
 		ch = *s & 127;
 		charWidth = propMap[ch][2];
 		if ( charWidth != -1 ) {
@@ -428,7 +467,9 @@ int UI_ProportionalStringWidth( const char* str ) {
 		s++;
 	}
 
-	width -= PROP_GAP_WIDTH;
+	if ( width > 0 ) {
+		width -= PROP_GAP_WIDTH;
+	}
 	return width;
 }
 
@@ -444,9 +485,20 @@ static void UI_DrawProportionalString2( int x, int y, const char* str, vec4_t co
 	float	fcol;
 	float	fwidth;
 	float	fheight;
+	vec4_t	localColor;
+	vec4_t	tempcolor;
+	float	defaultAlpha;
+	float	r;
+	float	g;
+	float	b;
+	int	blink;
+	char	controlChar;
+
+	Vector4Copy( color, localColor );
+	defaultAlpha = localColor[3];
 
 	// draw the colored text
-	trap_R_SetColor( color );
+	trap_R_SetColor( localColor );
 	
 	ax = x * uis.scale + uis.biasX;
 	ay = y * uis.scale + uis.biasY;
@@ -454,6 +506,102 @@ static void UI_DrawProportionalString2( int x, int y, const char* str, vec4_t co
 	s = str;
 	while ( *s )
 	{
+		/* Always hide ^ followed by a digit (0-9) - skip the symbols but apply color */
+		if ( s[0] == '^' && s[1] >= '0' && s[1] <= '9' )
+		{
+			controlChar = s[1];
+			s += 2;
+			
+			/* Use color as-is - don't replace ^0 with white in proportional font */
+			memcpy( tempcolor, g_color_table[ColorIndex( controlChar )], sizeof( tempcolor ) );
+			tempcolor[3] = localColor[3];
+			Vector4Copy( tempcolor, localColor );
+			trap_R_SetColor( localColor );
+			continue;
+		}
+		
+		/* Handle ^ if it's not part of a valid color code */
+		if ( s[0] == '^' && ( s[1] == '\0' || s[1] == '^' ) )
+		{
+			/* Display ^ as regular character */
+			ch = '^' & 127;
+			if ( propMap[ch][2] != -1 ) {
+				fcol = (float)propMap[ch][0] / 256.0f;
+				frow = (float)propMap[ch][1] / 256.0f;
+				fwidth = (float)propMap[ch][2] / 256.0f;
+				fheight = (float)PROP_HEIGHT / 256.0f;
+				aw = (float)propMap[ch][2] * uis.scale * sizeScale;
+				ah = (float)PROP_HEIGHT * uis.scale * sizeScale;
+				trap_R_DrawStretchPic( ax, ay, aw, ah, fcol, frow, fcol+fwidth, frow+fheight, charset );
+			}
+			ax += aw;
+			s++;
+			continue;
+		}
+		
+		if ( s[0] == '^' && s[1] != '\0' && s[1] != '^' ) {
+			controlChar = s[1];
+			s += 2;
+
+			switch ( controlChar ) {
+				case 'N':
+				case 'n':
+					localColor[3] = defaultAlpha;
+					trap_R_SetColor( localColor );
+					continue;
+				case 'B':
+					blink = uis.realtime & 0x7ff;
+					if ( blink > 1024 ) {
+						blink = (~blink) & 0x7ff;
+					}
+					localColor[3] = blink / 1463.0f + 0.3f;
+					trap_R_SetColor( localColor );
+					continue;
+				case 'b':
+					blink = uis.realtime & 0x7ff;
+					if ( blink > 1024 ) {
+						blink = (~blink) & 0x7ff;
+					}
+					localColor[3] = blink / 1024.0f;
+					trap_R_SetColor( localColor );
+					continue;
+				case 'f':
+					if ( ( uis.realtime & 0x3ff ) >= 512 ) {
+						while ( *s && !( s[0] == '^' && ( s[1] == 'N' || s[1] == 'F' ) ) ) {
+							s++;
+						}
+					}
+					continue;
+				case 'F':
+					if ( ( uis.realtime & 0x3ff ) < 512 ) {
+						while ( *s && !( s[0] == '^' && ( s[1] == 'N' || s[1] == 'f' ) ) ) {
+							s++;
+						}
+					}
+					continue;
+				case 'X':
+				case 'x':
+					if ( UI_Hex16GetColor( &s[0], &r ) &&
+						UI_Hex16GetColor( &s[2], &g ) &&
+						UI_Hex16GetColor( &s[4], &b ) ) {
+						localColor[0] = r;
+						localColor[1] = g;
+						localColor[2] = b;
+						trap_R_SetColor( localColor );
+						s += 6;
+						continue;
+					}
+					break;
+				default:
+					memcpy( tempcolor, g_color_table[ColorIndex( controlChar )], sizeof( tempcolor ) );
+					tempcolor[3] = localColor[3];
+					Vector4Copy( tempcolor, localColor );
+					trap_R_SetColor( localColor );
+					continue;
+			}
+			continue;
+		}
+
 		ch = *s & 127;
 		if ( ch == ' ' ) {
 			aw = (float)PROP_SPACE_WIDTH * uis.scale * sizeScale;
@@ -619,47 +767,274 @@ void UI_DrawProportionalString_AutoWrapped( int x, int y, int xmax, int ystep, c
 UI_DrawString2
 =================
 */
-static void UI_DrawString2( int x, int y, const char* str, vec4_t color, int charw, int charh )
+static qboolean UI_OSPCharHexToInt( char c, int* out )
 {
-	const char* s;
+	if ( c >= '0' && c <= '9' )
+	{
+		*out = c - '0';
+		return qtrue;
+	}
+	if ( c >= 'a' && c <= 'f' )
+	{
+		*out = c - 'a' + 10;
+		return qtrue;
+	}
+	if ( c >= 'A' && c <= 'F' )
+	{
+		*out = c - 'A' + 10;
+		return qtrue;
+	}
+	return qfalse;
+}
+
+static qboolean UI_Hex16GetColor( const char* str, float* color )
+{
+	int d1;
+	int d2;
+	int colorInt;
+
+	if ( !str )
+	{
+		return qfalse;
+	}
+
+	if ( !UI_OSPCharHexToInt( str[0], &d1 ) )
+	{
+		return qfalse;
+	}
+
+	if ( !UI_OSPCharHexToInt( str[1], &d2 ) )
+	{
+		return qfalse;
+	}
+
+	colorInt = d1 * 16 + d2;
+	*color = (float)colorInt;
+	*color /= 255.0f;
+
+	return qtrue;
+}
+
+static void UI_DrawString2( int x, int y, const char* str, vec4_t color, int charw, int charh, qboolean parseColorCodes, qboolean disableColorChange, qboolean convertBlackToWhite )
+{
 	char	ch;
-	int forceColor = qfalse; //APSFIXME;
 	vec4_t	tempcolor;
+	vec4_t	localColor;
+	float	defaultAlpha;
 	float	ax;
 	float	ay;
 	float	aw;
 	float	ah;
 	float	frow;
 	float	fcol;
+	const char* strPtr;
+	float r;
+	float g;
+	float b;
+	int blink;
 
 	if (y < -charh)
 		// offscreen
 		return;
 
+	Vector4Copy( color, localColor );
+	defaultAlpha = localColor[3];
+
 	// draw the colored text
-	trap_R_SetColor( color );
+	trap_R_SetColor( localColor );
 	
 	ax = x * uis.scale + uis.biasX;
 	ay = y * uis.scale + uis.biasY;
 	aw = charw * uis.scale;
 	ah = charh * uis.scale;
 
-	s = str;
-	while ( *s )
+	strPtr = str;
+
+	while ( *strPtr )
 	{
-		if ( Q_IsColorString( s ) )
+		/* Always hide ^ followed by a digit (0-9) - skip the symbols but apply color if parseColorCodes is true */
+		if ( strPtr[0] == '^' && strPtr[1] >= '0' && strPtr[1] <= '9' )
 		{
-			if ( !forceColor )
+			char controlChar;
+			
+			controlChar = strPtr[1];
+			strPtr += 2;
+			
+			/* Apply color if parseColorCodes is enabled */
+			if ( parseColorCodes && !disableColorChange )
 			{
-				memcpy( tempcolor, g_color_table[ColorIndex(s[1])], sizeof( tempcolor ) );
-				tempcolor[3] = color[3];
-				trap_R_SetColor( tempcolor );
+				if ( controlChar == '0' && convertBlackToWhite )
+				{
+					/* Replace black (^0) with white (^7) for visibility - only in server browser */
+					memcpy( tempcolor, g_color_table[ColorIndex( '7' )], sizeof( tempcolor ) );
+				}
+				else
+				{
+					memcpy( tempcolor, g_color_table[ColorIndex( controlChar )], sizeof( tempcolor ) );
+				}
+				tempcolor[3] = localColor[3];
+				Vector4Copy( tempcolor, localColor );
+				trap_R_SetColor( localColor );
 			}
-			s += 2;
+			continue;
+		}
+		
+		/* Handle ^ if it's not part of a valid color code */
+		if ( parseColorCodes && strPtr[0] == '^' )
+		{
+			/* If ^ is at end of string or followed by ^, display it as regular character */
+			if ( strPtr[1] == '\0' || strPtr[1] == '^' )
+			{
+				/* Display ^ as regular character */
+				ch = '^';
+				frow = (ch>>4)*0.0625;
+				fcol = (ch&15)*0.0625;
+				trap_R_DrawStretchPic( ax, ay, aw, ah, fcol, frow, fcol + 0.0625, frow + 0.0625, uis.charset );
+				ax += aw;
+				strPtr++;
+				continue;
+			}
+		}
+		
+		if ( parseColorCodes && strPtr[0] == '^' && strPtr[1] != '\0' && strPtr[1] != '^' )
+		{
+			char controlChar;
+			qboolean processed;
+			const char* saved_strPtr;
+
+			controlChar = strPtr[1];
+			saved_strPtr = strPtr;
+			processed = qfalse;
+
+			/* Skip ^ and controlChar */
+			strPtr += 2;
+
+			switch ( controlChar )
+			{
+				case '0':
+					/* Replace black (^0) with white (^7) for visibility - only in server browser */
+					if ( !disableColorChange )
+					{
+						if ( convertBlackToWhite )
+						{
+							memcpy( tempcolor, g_color_table[ColorIndex( '7' )], sizeof( tempcolor ) );
+						}
+						else
+						{
+							memcpy( tempcolor, g_color_table[ColorIndex( controlChar )], sizeof( tempcolor ) );
+						}
+						tempcolor[3] = localColor[3];
+						Vector4Copy( tempcolor, localColor );
+						trap_R_SetColor( localColor );
+					}
+					processed = qtrue;
+					break;
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					if ( !disableColorChange )
+					{
+						memcpy( tempcolor, g_color_table[ColorIndex( controlChar )], sizeof( tempcolor ) );
+						tempcolor[3] = localColor[3];
+						Vector4Copy( tempcolor, localColor );
+						trap_R_SetColor( localColor );
+					}
+					processed = qtrue;
+					break;
+				case 'N':
+				case 'n':
+					localColor[3] = defaultAlpha;
+					trap_R_SetColor( localColor );
+					processed = qtrue;
+					break;
+				case 'B':
+					blink = uis.realtime & 0x7ff;
+					if ( blink > 1024 )
+					{
+						blink = (~blink) & 0x7ff;
+					}
+					localColor[3] = blink / 1463.0f + 0.3f;
+					trap_R_SetColor( localColor );
+					processed = qtrue;
+					break;
+				case 'b':
+					blink = uis.realtime & 0x7ff;
+					if ( blink > 1024 )
+					{
+						blink = (~blink) & 0x7ff;
+					}
+					localColor[3] = blink / 1024.0f;
+					trap_R_SetColor( localColor );
+					processed = qtrue;
+					break;
+				case 'f':
+					if ( ( uis.realtime & 0x3ff ) >= 512 )
+					{
+						while ( *strPtr && !( strPtr[0] == '^' && ( strPtr[1] == 'N' || strPtr[1] == 'F' ) ) )
+						{
+							strPtr++;
+						}
+					}
+					processed = qtrue;
+					break;
+				case 'F':
+					if ( ( uis.realtime & 0x3ff ) < 512 )
+					{
+						while ( *strPtr && !( strPtr[0] == '^' && ( strPtr[1] == 'N' || strPtr[1] == 'f' ) ) )
+						{
+							strPtr++;
+						}
+					}
+					processed = qtrue;
+					break;
+				case 'X':
+				case 'x':
+					if ( UI_Hex16GetColor( &strPtr[0], &r ) &&
+						UI_Hex16GetColor( &strPtr[2], &g ) &&
+						UI_Hex16GetColor( &strPtr[4], &b ) )
+					{
+						if ( !disableColorChange )
+						{
+							localColor[0] = r;
+							localColor[1] = g;
+							localColor[2] = b;
+							trap_R_SetColor( localColor );
+						}
+						strPtr += 6;
+						processed = qtrue;
+					}
+					else
+					{
+						/* Invalid ^Xrrggbb format - skip ^X and continue with next character */
+						processed = qtrue;
+					}
+					break;
+				default:
+					if ( !disableColorChange )
+					{
+						memcpy( tempcolor, g_color_table[ColorIndex( controlChar )], sizeof( tempcolor ) );
+						tempcolor[3] = localColor[3];
+						Vector4Copy( tempcolor, localColor );
+						trap_R_SetColor( localColor );
+					}
+					processed = qtrue;
+					break;
+			}
+			if ( processed )
+			{
+				continue;
+			}
+			/* If code not processed (shouldn't happen, but just in case), skip ^ and control char */
 			continue;
 		}
 
-		ch = *s & 255;
+		ch = *strPtr & 255;
 		if (ch != ' ')
 		{
 			frow = (ch>>4)*0.0625;
@@ -668,19 +1043,111 @@ static void UI_DrawString2( int x, int y, const char* str, vec4_t color, int cha
 		}
 
 		ax += aw;
-		s++;
+		strPtr++;
 	}
-
 	trap_R_SetColor( NULL );
 }
 
 
 /*
 =================
-UI_DrawString
+UI_StringWidth
+=================
+Calculate visible string width excluding color codes
+*/
+static int UI_StringWidth( const char* str, qboolean parseColorCodes )
+{
+	const char* strPtr;
+	int width;
+	int charw;
+
+	if ( !str || !*str ) {
+		return 0;
+	}
+
+	/* Use SMALLCHAR_WIDTH as default - will be adjusted by caller */
+	charw = SMALLCHAR_WIDTH;
+
+	strPtr = str;
+	width = 0;
+	while ( *strPtr )
+	{
+		if ( parseColorCodes && strPtr[0] == '^' && strPtr[1] != '\0' && strPtr[1] != '^' )
+		{
+			char controlChar;
+
+			controlChar = strPtr[1];
+			strPtr += 2;
+
+			switch ( controlChar )
+			{
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+				case 'N':
+				case 'n':
+				case 'B':
+				case 'b':
+				case 'f':
+				case 'F':
+					/* Skip color codes - don't count them */
+					continue;
+				case 'X':
+				case 'x':
+					/* Check for ^Xrrggbb or ^xrrggbb format */
+					if ( strPtr[0] != '\0' && strPtr[1] != '\0' && strPtr[2] != '\0' &&
+					     strPtr[3] != '\0' && strPtr[4] != '\0' && strPtr[5] != '\0' )
+					{
+						/* Check if all 6 characters are hex */
+						if ( ( ( strPtr[0] >= '0' && strPtr[0] <= '9' ) || ( strPtr[0] >= 'a' && strPtr[0] <= 'f' ) || ( strPtr[0] >= 'A' && strPtr[0] <= 'F' ) ) &&
+						     ( ( strPtr[1] >= '0' && strPtr[1] <= '9' ) || ( strPtr[1] >= 'a' && strPtr[1] <= 'f' ) || ( strPtr[1] >= 'A' && strPtr[1] <= 'F' ) ) &&
+						     ( ( strPtr[2] >= '0' && strPtr[2] <= '9' ) || ( strPtr[2] >= 'a' && strPtr[2] <= 'f' ) || ( strPtr[2] >= 'A' && strPtr[2] <= 'F' ) ) &&
+						     ( ( strPtr[3] >= '0' && strPtr[3] <= '9' ) || ( strPtr[3] >= 'a' && strPtr[3] <= 'f' ) || ( strPtr[3] >= 'A' && strPtr[3] <= 'F' ) ) &&
+						     ( ( strPtr[4] >= '0' && strPtr[4] <= '9' ) || ( strPtr[4] >= 'a' && strPtr[4] <= 'f' ) || ( strPtr[4] >= 'A' && strPtr[4] <= 'F' ) ) &&
+						     ( ( strPtr[5] >= '0' && strPtr[5] <= '9' ) || ( strPtr[5] >= 'a' && strPtr[5] <= 'f' ) || ( strPtr[5] >= 'A' && strPtr[5] <= 'F' ) ) )
+						{
+							/* Valid ^Xrrggbb format - skip all 8 characters (^X + 6 hex) */
+							strPtr += 6;
+							continue;
+						}
+					}
+					/* Invalid format - skip ^X only */
+					break;
+				default:
+					/* Other color codes - skip them */
+					break;
+			}
+			continue;
+		}
+
+		/* Count visible character */
+		if ( *strPtr != ' ' )
+		{
+			width += charw;
+		}
+		else
+		{
+			width += charw;
+		}
+		strPtr++;
+	}
+
+	return width;
+}
+
+/*
+=================
+UI_DrawStringCommon
 =================
 */
-void UI_DrawString( int x, int y, const char* str, int style, vec4_t color )
+static void UI_DrawStringCommon( int x, int y, const char* str, int style, vec4_t color, qboolean parseColorCodes, qboolean convertBlackToWhite )
 {
 	int		len;
 	int		charw;
@@ -689,69 +1156,159 @@ void UI_DrawString( int x, int y, const char* str, int style, vec4_t color )
 	vec4_t	lowlight;
 	float	*drawcolor;
 	vec4_t	dropcolor;
+	double	pulse;
+	int		visibleWidth;
 
-	if( !str ) {
+	if ( !str ) {
 		return;
 	}
 
-	if ((style & UI_BLINK) && ((uis.realtime/BLINK_DIVISOR) & 1))
+	if ( ( style & UI_BLINK ) && ( ( uis.realtime / BLINK_DIVISOR ) & 1 ) )
+	{
 		return;
-
-	if (style & UI_SMALLFONT)
-	{
-		charw =	SMALLCHAR_WIDTH;
-		charh =	SMALLCHAR_HEIGHT;
 	}
-	else if (style & UI_GIANTFONT)
+
+	if ( style & UI_SMALLFONT )
 	{
-		charw =	GIANTCHAR_WIDTH;
-		charh =	GIANTCHAR_HEIGHT;
+		charw = SMALLCHAR_WIDTH;
+		charh = SMALLCHAR_HEIGHT;
+	}
+	else if ( style & UI_GIANTFONT )
+	{
+		charw = GIANTCHAR_WIDTH;
+		charh = GIANTCHAR_HEIGHT;
 	}
 	else
 	{
-		charw =	BIGCHAR_WIDTH;
-		charh =	BIGCHAR_HEIGHT;
+		charw = BIGCHAR_WIDTH;
+		charh = BIGCHAR_HEIGHT;
 	}
 
-	if (style & UI_PULSE)
+	if ( style & UI_PULSE )
 	{
-		lowlight[0] = 0.8*color[0]; 
-		lowlight[1] = 0.8*color[1];
-		lowlight[2] = 0.8*color[2];
-		lowlight[3] = 0.8*color[3];
-		UI_LerpColor(color,lowlight,newcolor,0.5+0.5*sin(uis.realtime/PULSE_DIVISOR));
+		lowlight[0] = 0.8f * color[0];
+		lowlight[1] = 0.8f * color[1];
+		lowlight[2] = 0.8f * color[2];
+		lowlight[3] = 0.8f * color[3];
+		pulse = (double)uis.realtime / (double)PULSE_DIVISOR;
+		UI_LerpColor( color, lowlight, newcolor, 0.5f + 0.5f * (float)sin( pulse ) );
 		drawcolor = newcolor;
-	}	
+	}
 	else
+	{
 		drawcolor = color;
+	}
 
-	switch (style & UI_FORMATMASK)
+	switch ( style & UI_FORMATMASK )
 	{
 		case UI_CENTER:
-			// center justify at x
-			len = strlen(str);
-			x   = x - len*charw/2;
+			if ( parseColorCodes )
+			{
+				visibleWidth = UI_StringWidth( str, parseColorCodes );
+				/* Adjust charw in UI_StringWidth calculation */
+				visibleWidth = visibleWidth * charw / SMALLCHAR_WIDTH;
+				x = x - visibleWidth / 2;
+			}
+			else
+			{
+				len = strlen( str );
+				x = x - len * charw / 2;
+			}
 			break;
 
 		case UI_RIGHT:
-			// right justify at x
-			len = strlen(str);
-			x   = x - len*charw;
+			if ( parseColorCodes )
+			{
+				visibleWidth = UI_StringWidth( str, parseColorCodes );
+				/* Adjust charw in UI_StringWidth calculation */
+				visibleWidth = visibleWidth * charw / SMALLCHAR_WIDTH;
+				x = x - visibleWidth;
+			}
+			else
+			{
+				len = strlen( str );
+				x = x - len * charw;
+			}
 			break;
 
 		default:
-			// left justify at x
 			break;
 	}
 
 	if ( style & UI_DROPSHADOW )
 	{
-		dropcolor[0] = dropcolor[1] = dropcolor[2] = 0;
+		dropcolor[0] = dropcolor[1] = dropcolor[2] = 0.0f;
 		dropcolor[3] = drawcolor[3];
-		UI_DrawString2(x+2,y+2,str,dropcolor,charw,charh);
+		UI_DrawString2( x + 2, y + 2, str, dropcolor, charw, charh, parseColorCodes, qtrue, convertBlackToWhite );
 	}
 
-	UI_DrawString2(x,y,str,drawcolor,charw,charh);
+	UI_DrawString2( x, y, str, drawcolor, charw, charh, parseColorCodes, qfalse, convertBlackToWhite );
+}
+
+/*
+=================
+UI_DrawString
+=================
+*/
+void UI_DrawString( int x, int y, const char* str, int style, vec4_t color )
+{
+	UI_DrawStringCommon( x, y, str, style, color, qtrue, qfalse );
+}
+
+/*
+=================
+UI_DrawStringRaw
+=================
+*/
+void UI_DrawStringRaw( int x, int y, const char* str, int style, vec4_t color )
+{
+	UI_DrawStringCommon( x, y, str, style, color, qfalse, qfalse );
+}
+
+/*
+=================
+UI_DrawStringServerBrowser
+=================
+*/
+void UI_DrawStringServerBrowser( int x, int y, const char* str, int style, vec4_t color )
+{
+	char cleaned[1024];
+	const char* src;
+	char* dst;
+	const char* lookahead;
+	int remaining;
+
+	src = str;
+	dst = cleaned;
+	remaining = sizeof( cleaned ) - 1;
+
+	/* Copy string and cut single ^ at the end (or when no following char) */
+	while ( *src && remaining > 0 )
+	{
+		if ( src[0] == '^' )
+		{
+			/* Check if this ^ is "lonely": only spaces (or nothing) after it */
+			lookahead = src + 1;
+			while ( *lookahead == ' ' )
+			{
+				lookahead++;
+			}
+
+			if ( *lookahead == '\0' )
+			{
+				/* Skip lone ^ and any trailing spaces */
+				src = lookahead;
+				continue;
+			}
+		}
+
+		*dst++ = *src++;
+		remaining--;
+	}
+
+	*dst = '\0';
+
+	UI_DrawStringCommon( x, y, cleaned, style, color, qtrue, qtrue );
 }
 
 
@@ -906,7 +1463,7 @@ void UI_MouseEvent( int dx, int dy )
 		}
 
 		// set focus to item at cursor
-		if (uis.activemenu->cursor != i)
+		if (uis.activemenu->cursor != i || !(((menucommon_s*)(uis.activemenu->items[i]))->flags & QMF_HASMOUSEFOCUS))
 		{
 			Menu_SetCursor( uis.activemenu, i );
 			((menucommon_s*)(uis.activemenu->items[uis.activemenu->cursor_prev]))->flags &= ~QMF_HASMOUSEFOCUS;
@@ -1033,6 +1590,11 @@ qboolean UI_ConsoleCommand( int realTime ) {
 
 	if ( Q_stricmp (cmd, "iamamonkey") == 0 ) {
 		UI_SPUnlockMedals_f();
+		return qtrue;
+	}
+
+	if ( Q_stricmp (cmd, "fonts") == 0 ) {
+		UI_Fonts_f();
 		return qtrue;
 	}
 
@@ -1207,7 +1769,7 @@ void UI_Refresh( int realtime )
 			// draw the background
 			trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
 			if ( uis.activemenu->showlogo ) {
-				UI_DrawHandlePic( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, uis.menuBackShader );
+				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
 			}
 		}
 
@@ -1246,8 +1808,18 @@ void UI_Refresh( int realtime )
 
 void UI_DrawTextBox (int x, int y, int width, int lines)
 {
-	UI_FillRect( x + BIGCHAR_WIDTH/2, y + BIGCHAR_HEIGHT/2, ( width + 1 ) * BIGCHAR_WIDTH, ( lines + 1 ) * BIGCHAR_HEIGHT, colorBlack );
-	UI_DrawRect( x + BIGCHAR_WIDTH/2, y + BIGCHAR_HEIGHT/2, ( width + 1 ) * BIGCHAR_WIDTH, ( lines + 1 ) * BIGCHAR_HEIGHT, colorWhite );
+	float offsetX;
+	float offsetY;
+	float totalWidth;
+	float totalHeight;
+
+	offsetX = 0.5f * (float)BIGCHAR_WIDTH;
+	offsetY = 0.5f * (float)BIGCHAR_HEIGHT;
+	totalWidth = (float)( width + 1 ) * (float)BIGCHAR_WIDTH;
+	totalHeight = (float)( lines + 1 ) * (float)BIGCHAR_HEIGHT;
+
+	UI_FillRect( x + offsetX, y + offsetY, totalWidth, totalHeight, colorBlack );
+	UI_DrawRect( x + offsetX, y + offsetY, totalWidth, totalHeight, colorWhite );
 }
 
 qboolean UI_CursorInRect (int x, int y, int width, int height)

@@ -407,6 +407,31 @@ UI_PlayerAnimation
 static void UI_PlayerAnimation( playerInfo_t *pi, int *legsOld, int *legs, float *legsBackLerp,
 						int *torsoOld, int *torso, float *torsoBackLerp ) {
 
+	if ( pi->freezeActive ) {
+		if ( pi->legs.animation ) {
+			pi->legs.oldFrame = pi->legs.frame = pi->legs.animation->firstFrame;
+		} else {
+			pi->legs.oldFrame = pi->legs.frame = 0;
+		}
+		if ( pi->torso.animation ) {
+			pi->torso.oldFrame = pi->torso.frame = pi->torso.animation->firstFrame;
+		} else {
+			pi->torso.oldFrame = pi->torso.frame = 0;
+		}
+		pi->legs.backlerp = 0.0f;
+		pi->torso.backlerp = 0.0f;
+		pi->legsAnimationTimer = 0;
+		pi->torsoAnimationTimer = 0;
+		jumpHeight = 0;
+		*legsOld = pi->legs.oldFrame;
+		*legs = pi->legs.frame;
+		*legsBackLerp = 0.0f;
+		*torsoOld = pi->torso.oldFrame;
+		*torso = pi->torso.frame;
+		*torsoBackLerp = 0.0f;
+		return;
+	}
+
 	// legs animation
 	pi->legsAnimationTimer -= uis.frametime;
 	if ( pi->legsAnimationTimer < 0 ) {
@@ -659,6 +684,62 @@ float	UI_MachinegunSpinAngle( playerInfo_t *pi ) {
 	return angle;
 }
 
+static unsigned char UI_ColorFloatToByte( float value ) {
+	int channel;
+
+	if ( value <= 0.0f ) {
+		return 0;
+	}
+	if ( value >= 1.0f ) {
+		return 255;
+	}
+
+	channel = (int)( value * 255.0f + 0.5f );
+	if ( channel < 0 ) {
+		channel = 0;
+	}
+	if ( channel > 255 ) {
+		channel = 255;
+	}
+	return (unsigned char)channel;
+}
+
+static void UI_AddOutlineEntity( const refEntity_t *source, const playerInfo_t *pi ) {
+	refEntity_t outline;
+
+	if ( !pi->useOutline || !pi->outlineShader ) {
+		return;
+	}
+
+	outline = *source;
+	outline.customSkin = 0;
+	outline.customShader = pi->outlineShader;
+	outline.shaderRGBA[0] = UI_ColorFloatToByte( pi->outlineColor[0] );
+	outline.shaderRGBA[1] = UI_ColorFloatToByte( pi->outlineColor[1] );
+	outline.shaderRGBA[2] = UI_ColorFloatToByte( pi->outlineColor[2] );
+	outline.shaderRGBA[3] = 0xff;
+
+	trap_R_AddRefEntityToScene( &outline );
+}
+
+static void UI_AddFrozenOverlay( const refEntity_t *source, const playerInfo_t *pi ) {
+	refEntity_t overlay;
+
+	if ( !pi->freezeActive || !pi->freezeShader ) {
+		return;
+	}
+
+	overlay = *source;
+	overlay.customSkin = 0;
+	overlay.customShader = pi->freezeShader;
+	overlay.shaderRGBA[0] = UI_ColorFloatToByte( pi->freezeColor[0] );
+	overlay.shaderRGBA[1] = UI_ColorFloatToByte( pi->freezeColor[1] );
+	overlay.shaderRGBA[2] = UI_ColorFloatToByte( pi->freezeColor[2] );
+	overlay.shaderRGBA[3] = UI_ColorFloatToByte( pi->freezeColor[3] );
+
+	trap_R_AddRefEntityToScene( &overlay );
+}
+
 
 /*
 ===============
@@ -745,8 +826,17 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 	//
 	legs.hModel = pi->legsModel;
 	legs.customSkin = pi->legsSkin;
-	// for colored skins
-	memset( legs.shaderRGBA, 255, sizeof( legs.shaderRGBA ) );
+	if ( pi->useCustomSkinColors ) {
+		legs.shaderRGBA[0] = UI_ColorFloatToByte( pi->customLegsColor[0] );
+		legs.shaderRGBA[1] = UI_ColorFloatToByte( pi->customLegsColor[1] );
+		legs.shaderRGBA[2] = UI_ColorFloatToByte( pi->customLegsColor[2] );
+		legs.shaderRGBA[3] = 0xff;
+	} else {
+		memset( legs.shaderRGBA, 255, sizeof( legs.shaderRGBA ) );
+	}
+	if ( pi->freezeActive ) {
+		legs.shaderRGBA[3] = UI_ColorFloatToByte( pi->freezeColor[3] );
+	}
 
 	VectorCopy( origin, legs.origin );
 
@@ -755,6 +845,8 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 	VectorCopy (legs.origin, legs.oldorigin);
 
 	trap_R_AddRefEntityToScene( &legs );
+	UI_AddOutlineEntity( &legs, pi );
+	UI_AddFrozenOverlay( &legs, pi );
 
 	if (!legs.hModel) {
 		return;
@@ -769,8 +861,17 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 	}
 
 	torso.customSkin = pi->torsoSkin;
-	// for colored skins
-	memset( torso.shaderRGBA, 255, sizeof( torso.shaderRGBA ) );
+	if ( pi->useCustomSkinColors ) {
+		torso.shaderRGBA[0] = UI_ColorFloatToByte( pi->customTorsoColor[0] );
+		torso.shaderRGBA[1] = UI_ColorFloatToByte( pi->customTorsoColor[1] );
+		torso.shaderRGBA[2] = UI_ColorFloatToByte( pi->customTorsoColor[2] );
+		torso.shaderRGBA[3] = 0xff;
+	} else {
+		memset( torso.shaderRGBA, 255, sizeof( torso.shaderRGBA ) );
+	}
+	if ( pi->freezeActive ) {
+		torso.shaderRGBA[3] = UI_ColorFloatToByte( pi->freezeColor[3] );
+	}
 
 	VectorCopy( origin, torso.lightingOrigin );
 
@@ -779,6 +880,8 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 	torso.renderfx = renderfx;
 
 	trap_R_AddRefEntityToScene( &torso );
+	UI_AddOutlineEntity( &torso, pi );
+	UI_AddFrozenOverlay( &torso, pi );
 
 	//
 	// add the head
@@ -788,8 +891,17 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 		return;
 	}
 	head.customSkin = pi->headSkin;
-	// for colored skins
-	memset( head.shaderRGBA, 255, sizeof( head.shaderRGBA ) );
+	if ( pi->useCustomSkinColors ) {
+		head.shaderRGBA[0] = UI_ColorFloatToByte( pi->customHeadColor[0] );
+		head.shaderRGBA[1] = UI_ColorFloatToByte( pi->customHeadColor[1] );
+		head.shaderRGBA[2] = UI_ColorFloatToByte( pi->customHeadColor[2] );
+		head.shaderRGBA[3] = 0xff;
+	} else {
+		memset( head.shaderRGBA, 255, sizeof( head.shaderRGBA ) );
+	}
+	if ( pi->freezeActive ) {
+		head.shaderRGBA[3] = UI_ColorFloatToByte( pi->freezeColor[3] );
+	}
 
 	VectorCopy( origin, head.lightingOrigin );
 
@@ -798,61 +910,65 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 	head.renderfx = renderfx;
 
 	trap_R_AddRefEntityToScene( &head );
+	UI_AddOutlineEntity( &head, pi );
+	UI_AddFrozenOverlay( &head, pi );
 
-	//
-	// add the gun
-	//
-	if ( pi->currentWeapon != WP_NONE ) {
-		memset( &gun, 0, sizeof(gun) );
-		gun.hModel = pi->weaponModel;
-		VectorCopy( origin, gun.lightingOrigin );
-		UI_PositionEntityOnTag( &gun, &torso, pi->torsoModel, "tag_weapon" );
-		gun.renderfx = renderfx;
-		trap_R_AddRefEntityToScene( &gun );
-	}
-
-	//
-	// add the spinning barrel
-	//
-	if ( pi->realWeapon == WP_MACHINEGUN || pi->realWeapon == WP_GAUNTLET || pi->realWeapon == WP_BFG ) {
-		vec3_t	angles;
-
-		memset( &barrel, 0, sizeof(barrel) );
-		VectorCopy( origin, barrel.lightingOrigin );
-		barrel.renderfx = renderfx;
-
-		barrel.hModel = pi->barrelModel;
-		angles[YAW] = 0;
-		angles[PITCH] = 0;
-		angles[ROLL] = UI_MachinegunSpinAngle( pi );
-		if( pi->realWeapon == WP_GAUNTLET || pi->realWeapon == WP_BFG ) {
-			angles[PITCH] = angles[ROLL];
-			angles[ROLL] = 0;
-		}
-		AnglesToAxis( angles, barrel.axis );
-
-		UI_PositionRotatedEntityOnTag( &barrel, &gun, pi->weaponModel, "tag_barrel" );
-
-		trap_R_AddRefEntityToScene( &barrel );
-	}
-
-	//
-	// add muzzle flash
-	//
-	if ( dp_realtime <= pi->muzzleFlashTime && pi->currentWeapon != WP_NONE ) {
-		if ( pi->flashModel ) {
-			memset( &flash, 0, sizeof(flash) );
-			flash.hModel = pi->flashModel;
-			VectorCopy( origin, flash.lightingOrigin );
-			UI_PositionEntityOnTag( &flash, &gun, pi->weaponModel, "tag_flash" );
-			flash.renderfx = renderfx;
-			trap_R_AddRefEntityToScene( &flash );
+	if ( !pi->freezeActive ) {
+		//
+		// add the gun
+		//
+		if ( pi->currentWeapon != WP_NONE ) {
+			memset( &gun, 0, sizeof(gun) );
+			gun.hModel = pi->weaponModel;
+			VectorCopy( origin, gun.lightingOrigin );
+			UI_PositionEntityOnTag( &gun, &torso, pi->torsoModel, "tag_weapon" );
+			gun.renderfx = renderfx;
+			trap_R_AddRefEntityToScene( &gun );
 		}
 
-		// make a dlight for the flash
-		if ( pi->flashDlightColor[0] || pi->flashDlightColor[1] || pi->flashDlightColor[2] ) {
-			trap_R_AddLightToScene( flash.origin, 200 + (rand()&31), pi->flashDlightColor[0],
-				pi->flashDlightColor[1], pi->flashDlightColor[2] );
+		//
+		// add the spinning barrel
+		//
+		if ( pi->realWeapon == WP_MACHINEGUN || pi->realWeapon == WP_GAUNTLET || pi->realWeapon == WP_BFG ) {
+			vec3_t	angles;
+
+			memset( &barrel, 0, sizeof(barrel) );
+			VectorCopy( origin, barrel.lightingOrigin );
+			barrel.renderfx = renderfx;
+
+			barrel.hModel = pi->barrelModel;
+			angles[YAW] = 0;
+			angles[PITCH] = 0;
+			angles[ROLL] = UI_MachinegunSpinAngle( pi );
+			if ( pi->realWeapon == WP_GAUNTLET || pi->realWeapon == WP_BFG ) {
+				angles[PITCH] = angles[ROLL];
+				angles[ROLL] = 0;
+			}
+			AnglesToAxis( angles, barrel.axis );
+
+			UI_PositionRotatedEntityOnTag( &barrel, &gun, pi->weaponModel, "tag_barrel" );
+
+			trap_R_AddRefEntityToScene( &barrel );
+		}
+
+		//
+		// add muzzle flash
+		//
+		if ( dp_realtime <= pi->muzzleFlashTime && pi->currentWeapon != WP_NONE ) {
+			if ( pi->flashModel ) {
+				memset( &flash, 0, sizeof(flash) );
+				flash.hModel = pi->flashModel;
+				VectorCopy( origin, flash.lightingOrigin );
+				UI_PositionEntityOnTag( &flash, &gun, pi->weaponModel, "tag_flash" );
+				flash.renderfx = renderfx;
+				trap_R_AddRefEntityToScene( &flash );
+			}
+
+			// make a dlight for the flash
+			if ( pi->flashDlightColor[0] || pi->flashDlightColor[1] || pi->flashDlightColor[2] ) {
+				trap_R_AddLightToScene( flash.origin, 200 + (rand()&31), pi->flashDlightColor[0],
+					pi->flashDlightColor[1], pi->flashDlightColor[2] );
+			}
 		}
 	}
 

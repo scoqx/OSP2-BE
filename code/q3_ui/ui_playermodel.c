@@ -83,6 +83,19 @@ typedef struct
 } playermodel_t;
 
 static playermodel_t s_playermodel;
+static char s_playermodelModelCvar[MAX_QPATH] = "model";
+static char s_playermodelHeadModelCvar[MAX_QPATH] = "headmodel";
+static playerModelApplyCallback_t s_playerModelCallback = NULL;
+static void *s_playerModelCallbackData = NULL;
+
+typedef struct {
+	char modelName[MAX_QPATH];
+	char headModelName[MAX_QPATH];
+	qboolean hasInitialModel;
+	qboolean hasInitialHead;
+} playerModelStartup_t;
+
+static playerModelStartup_t s_playerModelStartup;
 
 /*
 =================
@@ -172,8 +185,25 @@ PlayerModel_SaveChanges
 */
 static void PlayerModel_SaveChanges( void )
 {
-	trap_Cvar_Set( "model", s_playermodel.modelskin );
-	trap_Cvar_Set( "headmodel", s_playermodel.modelskin );
+	const char *headValue;
+
+	if ( s_playerModelCallback ) {
+		headValue = NULL;
+		if ( s_playermodelHeadModelCvar[0] ) {
+			headValue = s_playermodel.modelskin;
+		}
+		s_playerModelCallback( s_playermodel.modelskin, headValue, s_playerModelCallbackData );
+		s_playerModelCallback = NULL;
+		s_playerModelCallbackData = NULL;
+		return;
+	}
+
+	if ( s_playermodelModelCvar[0] ) {
+		trap_Cvar_Set( s_playermodelModelCvar, s_playermodel.modelskin );
+	}
+	if ( s_playermodelHeadModelCvar[0] ) {
+		trap_Cvar_Set( s_playermodelHeadModelCvar, s_playermodel.modelskin );
+	}
 }
 
 /*
@@ -445,7 +475,13 @@ static void PlayerModel_SetMenuItems( void )
 	Q_CleanStr( s_playermodel.playername.string );
 
 	// model
-	trap_Cvar_VariableStringBuffer( "model", s_playermodel.modelskin, 64 );
+	if ( s_playerModelStartup.hasInitialModel ) {
+		Q_strncpyz( s_playermodel.modelskin, s_playerModelStartup.modelName, sizeof( s_playermodel.modelskin ) );
+	} else if ( s_playermodelModelCvar[0] ) {
+		trap_Cvar_VariableStringBuffer( s_playermodelModelCvar, s_playermodel.modelskin, sizeof( s_playermodel.modelskin ) );
+	} else {
+		s_playermodel.modelskin[0] = '\0';
+	}
 	
 	// find model in our list
 	for (i=0; i<s_playermodel.nummodels; i++)
@@ -483,6 +519,11 @@ static void PlayerModel_SetMenuItems( void )
 			break;
 		}
 	}
+
+	s_playerModelStartup.hasInitialModel = qfalse;
+	s_playerModelStartup.hasInitialHead = qfalse;
+	s_playerModelStartup.modelName[0] = '\0';
+	s_playerModelStartup.headModelName[0] = '\0';
 }
 
 /*
@@ -697,13 +738,97 @@ void PlayerModel_Cache( void )
 	}
 }
 
-void UI_PlayerModelMenu(void)
+void UI_PlayerModelMenuForCvar( const char *modelCvar, const char *headModelCvar )
 {
+	if ( modelCvar && modelCvar[0] ) {
+		Q_strncpyz( s_playermodelModelCvar, modelCvar, sizeof( s_playermodelModelCvar ) );
+	} else {
+		Q_strncpyz( s_playermodelModelCvar, "model", sizeof( s_playermodelModelCvar ) );
+	}
+
+	if ( headModelCvar && headModelCvar[0] ) {
+		Q_strncpyz( s_playermodelHeadModelCvar, headModelCvar, sizeof( s_playermodelHeadModelCvar ) );
+	} else {
+		s_playermodelHeadModelCvar[0] = '\0';
+	}
+
+	s_playerModelCallback = NULL;
+	s_playerModelCallbackData = NULL;
+	s_playerModelStartup.hasInitialModel = qfalse;
+	s_playerModelStartup.hasInitialHead = qfalse;
+
 	PlayerModel_MenuInit();
 
 	UI_PushMenu( &s_playermodel.menu );
 
 	Menu_SetCursorToItem( &s_playermodel.menu, &s_playermodel.pics[s_playermodel.selectedmodel % MAX_MODELSPERPAGE] );
+}
+
+void UI_PlayerModelMenu(void)
+{
+	UI_PlayerModelMenuForCvar( "model", "headmodel" );
+}
+
+void UI_PlayerModelMenu_WithValues( const char *modelValue, const char *headValue, qboolean useTeamModel, qboolean isTeamFriendly, playerModelApplyCallback_t callback, void *userData )
+{
+	const char *modelCvar;
+	const char *headCvar;
+	int cursorIndex;
+
+	modelCvar = "model";
+	headCvar = "headmodel";
+
+	if ( useTeamModel ) {
+		if ( isTeamFriendly ) {
+			modelCvar = "cg_teamModel";
+		} else {
+			modelCvar = "cg_enemyModel";
+		}
+		headCvar = NULL;
+	}
+
+	if ( modelCvar && modelCvar[0] ) {
+		Q_strncpyz( s_playermodelModelCvar, modelCvar, sizeof( s_playermodelModelCvar ) );
+	} else {
+		s_playermodelModelCvar[0] = '\0';
+	}
+
+	if ( headCvar && headCvar[0] ) {
+		Q_strncpyz( s_playermodelHeadModelCvar, headCvar, sizeof( s_playermodelHeadModelCvar ) );
+	} else {
+		s_playermodelHeadModelCvar[0] = '\0';
+	}
+
+	if ( modelValue && modelValue[0] ) {
+		Q_strncpyz( s_playerModelStartup.modelName, modelValue, sizeof( s_playerModelStartup.modelName ) );
+		s_playerModelStartup.hasInitialModel = qtrue;
+	} else {
+		s_playerModelStartup.modelName[0] = '\0';
+		s_playerModelStartup.hasInitialModel = qfalse;
+	}
+
+	if ( headValue && headValue[0] ) {
+		Q_strncpyz( s_playerModelStartup.headModelName, headValue, sizeof( s_playerModelStartup.headModelName ) );
+		s_playerModelStartup.hasInitialHead = qtrue;
+	} else {
+		s_playerModelStartup.headModelName[0] = '\0';
+		s_playerModelStartup.hasInitialHead = qfalse;
+	}
+
+	s_playerModelCallback = callback;
+	s_playerModelCallbackData = userData;
+
+	PlayerModel_MenuInit();
+
+	UI_PushMenu( &s_playermodel.menu );
+
+	if ( s_playermodel.nummodels > 0 ) {
+		cursorIndex = s_playermodel.selectedmodel % MAX_MODELSPERPAGE;
+		if ( cursorIndex < 0 ) {
+			cursorIndex = 0;
+		}
+		Menu_SetCursorToItem( &s_playermodel.menu, &s_playermodel.pics[cursorIndex] );
+	}
 }
 
 

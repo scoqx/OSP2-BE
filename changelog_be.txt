@@ -2,7 +2,7 @@
 
 + cg_itemsRespawnAnimation
 + cg_drawDamage (3/4)
-+ cg_enemyLightning
++ cg_enemyLightningColor
 + cg_uniqueColorTable
 + cg_noVoteBeep
 * cg_drawGun (reworked)
@@ -493,3 +493,20 @@ SHUD:
 
 09.11.2025 be v1.00-beta-9
 * cg_spectPOV fix
+
+05.12.2025 be v1.00-beta-10
+* UI update:
+  * SuperHUD selection ingame menu 
+  * Unlock cinematics, move credits and cinematics to setup, fix color codes, quit without credits, various fixes
+  * Demo save position on list, setup->player->name show colors, ignore CD-Key on startup (set key in settings)
+* SuperHUD:
+  + var element for declaring variables (int, float, string). Check docks docs/superhud
+  + SuperHUD font selection by number
++ /fonts
+* font select by name (cg_bestats_font, cg_scoreboardFont, cg_centerMesagesFont, cg_accuracyFont, cg_teamIndicatorFont)
+* SuperHUD config font select by number
++ added feature to add fonts using fonts.cfg file (osp folder). More info in docs
+* CherryHUD disabled until usable build
+* cg_bestats_autoaction (intermission)
+* cg_giveName 1/2
+* cg_drawRealHeads fix

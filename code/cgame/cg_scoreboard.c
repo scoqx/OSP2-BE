@@ -183,7 +183,7 @@ void CG_DrawClientScore(int y, score_t* score, float* color, float fade, qboolea
 		{
 			int score_x = iconx;
 			if (cg_scoreboardShowId.integer)
-				score_x -= 20;
+				score_x -= 32;
 
 			Com_sprintf(string, sizeof(string), "%i/%i", ci->wins, ci->losses);
 			if (ci->handicap < 100 && !ci->botSkill)
@@ -329,7 +329,7 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 	int iconx, headx;
 	float bWidth = 14;
 	float bHeight = 16;
-	int font = cg_scoreboardFont.integer;
+	int font = CG_FontIndexFromCvar(&cg_scoreboardFont);
 	int proportional = (cg_scoreboardBE.integer & 1) ? DS_PROPORTIONAL : 0;
 
 	if (score->client < 0 || score->client >= cgs.maxclients)
@@ -395,7 +395,7 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 		{
 			int score_x = iconx;
 			if (cg_scoreboardShowId.integer)
-				score_x -= 20;
+				score_x -= 32;
 
 			Com_sprintf(string, sizeof(string), "%i/%i", ci->wins, ci->losses);
 			if (ci->handicap < 100 && !ci->botSkill)
@@ -588,7 +588,7 @@ qboolean CG_DrawOldScoreboard(void)
 	int maxClients;
 	int lineHeight;
 	int topBorderSize, bottomBorderSize;
-	int font = cg_scoreboardFont.integer;
+	int font = CG_FontIndexFromCvar(&cg_scoreboardFont);
 
 	if (cg_hideScores.integer)
 	{
@@ -1116,7 +1116,7 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 	float bWidth = 12, bHeight = 16;
 	clientInfo_t* ci;
 	vec3_t  headAngles;
-	int font = cg_scoreboardFont.integer;
+	int font = CG_FontIndexFromCvar(&cg_scoreboardFont);
 	int proportional = 0;
 
 	if (score->client < 0 || score->client >= cgs.maxclients)
@@ -1808,7 +1808,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 	int drewBlue;
 	int drewSpect;
 	int y;
-	int font = cg_scoreboardFont.integer;
+	int font = CG_FontIndexFromCvar(&cg_scoreboardFont);
 
 	sumScoresBlue = 0;
 	sumScoresRed = 0;

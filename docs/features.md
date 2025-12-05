@@ -1,0 +1,12 @@
+- файл "cversion" (без расширения) в папке OSP позволяет создать cvar доступный серверу:
+Пример содержания файла:
+
+Compilation "Name" Version "version"
+
+При загрузке игры регистрируется:
+compilation_build "Name: version"
+
+- файл "fonts.cfg" в папке OSP позволяет регистрировать шрифты без изменений в коде
+Пример содержания файла:
+"Font name" "gfx/2d/file.cfg"
+"Another font name" "gfx/2d/file2.cfg"

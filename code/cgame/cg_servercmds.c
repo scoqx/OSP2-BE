@@ -364,9 +364,11 @@ static void CG_ConfigStringModified(void)
 		{
 			return;
 		}
-		CG_OSPWStatsDown_f();
+		if (cg_bestats_autoaction.integer)
+		{
+			CG_OSPWStatsDown_f();
+		}
 		CG_ScoresDown_f();
-		// cgs.be.newStats.drawWindow = qtrue;
 	}
 	else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 	{
@@ -1307,6 +1309,237 @@ static void CG_ParseSpecsInfo(void)
 
 /*
 =================
+CG_ReplacePlayerNameInChat
+
+Replace player name in chat message with replacement name if cg_giveName is enabled.
+=================
+*/
+static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
+{
+	const char* colonPos;
+	const char* nameStart;
+	const clientInfo_t* ci;
+	const char* replacementName;
+	
+	if (!cg_giveName.integer)
+	{
+		return;
+	}
+	
+	/* Validate clientNum */
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+	
+	/* Never replace name for local player */
+	if (clientNum == cg.clientNum)
+	{
+		return;
+	}
+	
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid)
+	{
+		return;
+	}
+	
+	/* Find colon position */
+	colonPos = strchr(text, ':');
+	if (!colonPos)
+	{
+		return;
+	}
+	
+	/* Check if this player has a replacement name */
+	/* Replacement names end with '*' character in name_clean */
+	{
+		int nameCleanLen;
+		char replacementNameClean[MAX_QPATH];
+		char tempName[MAX_QPATH];
+		const char* nameInCiName;
+		const char* nameStart;
+		const char* nameEnd;
+		int nameWithColorLen;
+		
+		nameCleanLen = strlen(ci->name_clean);
+		
+		/* Check if name_clean ends with '*' (replacement marker) */
+		if (nameCleanLen == 0 || ci->name_clean[nameCleanLen - 1] != '*')
+		{
+			return;
+		}
+		
+		/* Player has replacement name */
+		/* Extract replacement name from name_clean (without the '*' marker) */
+		Q_strncpyz(replacementNameClean, ci->name_clean, sizeof(replacementNameClean));
+		if (nameCleanLen > 0 && replacementNameClean[nameCleanLen - 1] == '*')
+		{
+			replacementNameClean[nameCleanLen - 1] = 0; /* Remove '*' */
+		}
+		
+		/* Check if ci->name starts with replacement name (no ID/XID prefixes) */
+		/* If it does, we can use it directly (it should be in format ^Xname^0*) */
+		if (strstr(ci->name, replacementNameClean) == ci->name || 
+		    (ci->name[0] == '^' && strstr(ci->name + 2, replacementNameClean) == ci->name + 2))
+		{
+			/* ci->name contains replacement name directly, extract it with ^0* */
+			nameEnd = strstr(ci->name, "^0*");
+			if (nameEnd)
+			{
+				/* Include "^0*" in the extracted name */
+				nameWithColorLen = (nameEnd + 3) - ci->name;
+				if (nameWithColorLen > 0 && nameWithColorLen < sizeof(tempName) - 3)
+				{
+					memcpy(tempName, ci->name, nameWithColorLen);
+					tempName[nameWithColorLen] = 0;
+					/* Add ^7 at the end for chat */
+					Q_strcat(tempName, sizeof(tempName), "^7");
+					replacementName = tempName;
+				}
+				else
+				{
+					/* Fallback: use replacementNameClean with default color */
+					Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+					replacementName = tempName;
+				}
+			}
+			else
+			{
+				/* Fallback: use replacementNameClean with default color */
+				Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+				replacementName = tempName;
+			}
+		}
+		else
+		{
+			/* ci->name has ID/XID prefixes, find the replacement name in it */
+			nameInCiName = strstr(ci->name, replacementNameClean);
+			if (nameInCiName)
+			{
+				/* Find the start of the name (go back to find color code) */
+				nameStart = nameInCiName;
+				/* Go back to find the color code (^X where X is 0-9) */
+				while (nameStart > ci->name && nameStart[-1] != '^' && nameStart[-1] != ':' && nameStart[-1] != ']' && nameStart[-1] != '[')
+				{
+					nameStart--;
+				}
+				/* If we found '^', include it */
+				if (nameStart > ci->name && nameStart[-1] == '^')
+				{
+					nameStart--; /* Include the '^' */
+				}
+				
+				/* Find where the name ends (after '^0*' sequence) */
+				nameEnd = strstr(nameInCiName, "^0*");
+				if (nameEnd)
+				{
+					/* Include "^0*" in the extracted name */
+					nameEnd += 3; /* Skip "^0*" */
+					nameWithColorLen = nameEnd - nameStart;
+					if (nameWithColorLen > 0 && nameWithColorLen < sizeof(tempName) - 3)
+					{
+						memcpy(tempName, nameStart, nameWithColorLen);
+						tempName[nameWithColorLen] = 0;
+						/* Add ^7 at the end for chat */
+						Q_strcat(tempName, sizeof(tempName), "^7");
+						replacementName = tempName;
+					}
+					else
+					{
+						/* Fallback: use replacementNameClean with default color */
+						Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+						replacementName = tempName;
+					}
+				}
+				else
+				{
+					/* Fallback: use replacementNameClean with default color */
+					Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+					replacementName = tempName;
+				}
+			}
+			else
+			{
+				/* Fallback: use replacementNameClean with default color */
+				Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+				replacementName = tempName;
+			}
+		}
+		
+		/* Build new message: preserve prefix + replacement name + colon + rest of message */
+		{
+			char newText[1024];
+			int replacementLen;
+			int restLen;
+			const char* restOfMessage;
+			const char* nameStartInText;
+			int prefixLen;
+			
+			restOfMessage = colonPos + 1; /* Skip colon */
+			restLen = strlen(restOfMessage);
+			replacementLen = strlen(replacementName);
+			
+			/* Check if there's a prefix like "(team) " at the start */
+			nameStartInText = NULL;
+			if (text[0] == '(')
+			{
+				/* Find the closing parenthesis and space after it */
+				nameStartInText = strchr(text, ')');
+				if (nameStartInText && nameStartInText[1] == ' ')
+				{
+					prefixLen = nameStartInText - text + 2; /* Include ") " */
+				}
+				else
+				{
+					prefixLen = 0;
+				}
+			}
+			else
+			{
+				prefixLen = 0;
+			}
+			
+			/* Copy prefix if present, then add replacement name */
+			if (prefixLen > 0 && prefixLen < sizeof(newText) - 1)
+			{
+				/* Copy prefix to newText */
+				memcpy(newText, text, prefixLen);
+				newText[prefixLen] = 0;
+				
+				/* Append replacement name, colon, and rest of message */
+				if (prefixLen + replacementLen + 1 + restLen < sizeof(newText))
+				{
+					Com_sprintf(newText + prefixLen, sizeof(newText) - prefixLen, "%s:%s", replacementName, restOfMessage);
+					Q_strncpyz(text, newText, textSize);
+				}
+			}
+			else
+			{
+				/* No prefix, just replace name */
+				if (replacementLen + 1 + restLen < sizeof(newText))
+				{
+					/* Copy tell prefix if present (special case for tell messages) */
+					if (text[0] == 25 && (text[1] == '(' || text[1] == '['))
+					{
+						newText[0] = text[0];
+						newText[1] = text[1];
+						Com_sprintf(newText + 2, sizeof(newText) - 2, "%s:%s", replacementName, restOfMessage);
+					}
+					else
+					{
+						Com_sprintf(newText, sizeof(newText), "%s:%s", replacementName, restOfMessage);
+					}
+					
+					Q_strncpyz(text, newText, textSize);
+				}
+			}
+		}
+	}
+}
+
+/*
+=================
 CG_ServerCommand
 
 The string has been tokenized and can be retrieved with
@@ -1398,6 +1631,22 @@ void CG_ServerCommand(void)
 			return;
 		}
 
+		/* Replace player name with replacement name if cg_giveName is enabled */
+		/* Get clientNum from command (CG_Argv(2) if available) */
+		{
+			int chatClientNum;
+			int argc;
+			
+			argc = trap_Argc();
+			if (argc >= 3)
+			{
+				chatClientNum = atoi(CG_Argv(2));
+				if (chatClientNum >= 0 && chatClientNum < MAX_CLIENTS)
+				{
+					CG_ReplacePlayerNameInChat(text, sizeof(text), chatClientNum);
+				}
+			}
+		}
 
 		isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_COMMMON_ENABLED;
 		isShudChatEnabled = cg_shudChatEnable.integer & CG_CHAT_COMMMON_ENABLED && ma == MESSAGE_ALLOWED_PLAYER;
@@ -1443,6 +1692,22 @@ void CG_ServerCommand(void)
 			return;
 		}
 
+		/* Replace player name with replacement name if cg_giveName is enabled */
+		/* Get clientNum from command (CG_Argv(2) if available) */
+		{
+			int chatClientNum;
+			int argc;
+			
+			argc = trap_Argc();
+			if (argc >= 3)
+			{
+				chatClientNum = atoi(CG_Argv(2));
+				if (chatClientNum >= 0 && chatClientNum < MAX_CLIENTS)
+				{
+					CG_ReplacePlayerNameInChat(text, sizeof(text), chatClientNum);
+				}
+			}
+		}
 
 		isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_TEAM_ENABLED;
 		isShudChatEnabled = cg_shudChatEnable.integer & CG_CHAT_TEAM_ENABLED && ma == MESSAGE_ALLOWED_PLAYER;

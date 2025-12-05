@@ -80,6 +80,9 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 		return qfalse;
 	}
 
+	/* Clear all variables before loading new config */
+	CG_SHUDVarClearAll();
+
 	do
 	{
 		statusElement = CG_SHUDFileInfoGetElementItem(&finfo);
@@ -108,6 +111,25 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 		{
 			qboolean eoe = qfalse; //end of element
 			qboolean is_default = qfalse;
+			qboolean is_var = qfalse;
+			superhudConfigParseStatus_t varParseStatus;
+
+			/* Check if this is VAR element */
+			is_var = (Q_stricmp(statusElement.item->name, "var") == 0);
+
+			if (is_var)
+			{
+				/* Parse VAR element */
+				varParseStatus = CG_SHUDParseVarElement(&finfo);
+				if (varParseStatus != SUPERHUD_CONFIG_OK)
+				{
+					CG_Printf("^1SuperHUD: error parsing VAR element: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
+					goto error_exit;
+				}
+				/* Skip this element, don't create HUD element for VAR */
+				continue;
+			}
+
 			// parse element body
 			if (!newElementsHead)
 			{

@@ -170,6 +170,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "playerStats_damageRatio", SE_IM, CG_SHUDElementCreatePlayerStatsDamageRatio, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
 	{ "player_name", 0, CG_SHUDElementPlayerNameCreate, CG_SHUDElementPlayerNameRoutine, CG_SHUDElementPlayerNameDestroy },
 	{ "postdecorate", 0, CG_SHUDElementDecorCreate, CG_SHUDElementDecorRoutine, CG_SHUDElementDecorDestroy },
+	{ "var", 0, },
 	{ NULL },
 };
 
@@ -187,6 +188,218 @@ void CG_SHUDAvailableElementsInit(void)
 const superHUDConfigElement_t* CG_SHUDAvailableElementsGet(void)
 {
 	return &superHUDConfigItemElements[0];
+}
+
+static superhudVar_t* superhudVarsHead = NULL;
+
+superhudVar_t* CG_SHUDVarFind(const char* name)
+{
+	superhudVar_t* var;
+
+	if (!name || !name[0])
+	{
+		return NULL;
+	}
+
+	var = superhudVarsHead;
+	while (var)
+	{
+		if (Q_stricmp(var->name, name) == 0)
+		{
+			return var;
+		}
+		var = var->next;
+	}
+
+	return NULL;
+}
+
+void CG_SHUDVarSetInt(const char* name, int value)
+{
+	superhudVar_t* var;
+
+	if (!name || !name[0])
+	{
+		return;
+	}
+
+	var = CG_SHUDVarFind(name);
+	if (var)
+	{
+		var->type = SHUD_VAR_TYPE_INT;
+		var->value.intValue = value;
+		return;
+	}
+
+	var = (superhudVar_t*)Z_Malloc(sizeof(*var));
+	OSP_MEMORY_CHECK(var);
+	memset(var, 0, sizeof(*var));
+	Q_strncpyz(var->name, name, sizeof(var->name));
+	var->type = SHUD_VAR_TYPE_INT;
+	var->value.intValue = value;
+	var->next = superhudVarsHead;
+	superhudVarsHead = var;
+}
+
+void CG_SHUDVarSetFloat(const char* name, float value)
+{
+	superhudVar_t* var;
+
+	if (!name || !name[0])
+	{
+		return;
+	}
+
+	var = CG_SHUDVarFind(name);
+	if (var)
+	{
+		var->type = SHUD_VAR_TYPE_FLOAT;
+		var->value.floatValue = value;
+		return;
+	}
+
+	var = (superhudVar_t*)Z_Malloc(sizeof(*var));
+	OSP_MEMORY_CHECK(var);
+	memset(var, 0, sizeof(*var));
+	Q_strncpyz(var->name, name, sizeof(var->name));
+	var->type = SHUD_VAR_TYPE_FLOAT;
+	var->value.floatValue = value;
+	var->next = superhudVarsHead;
+	superhudVarsHead = var;
+}
+
+void CG_SHUDVarSetString(const char* name, const char* value)
+{
+	superhudVar_t* var;
+
+	if (!name || !name[0])
+	{
+		return;
+	}
+
+	var = CG_SHUDVarFind(name);
+	if (var)
+	{
+		var->type = SHUD_VAR_TYPE_STRING;
+		Q_strncpyz(var->value.stringValue, value ? value : "", sizeof(var->value.stringValue));
+		return;
+	}
+
+	var = (superhudVar_t*)Z_Malloc(sizeof(*var));
+	OSP_MEMORY_CHECK(var);
+	memset(var, 0, sizeof(*var));
+	Q_strncpyz(var->name, name, sizeof(var->name));
+	var->type = SHUD_VAR_TYPE_STRING;
+	Q_strncpyz(var->value.stringValue, value ? value : "", sizeof(var->value.stringValue));
+	var->next = superhudVarsHead;
+	superhudVarsHead = var;
+}
+
+void CG_SHUDVarClearAll(void)
+{
+	superhudVar_t* var;
+	superhudVar_t* next;
+
+	var = superhudVarsHead;
+	while (var)
+	{
+		next = var->next;
+		Z_Free(var);
+		var = next;
+	}
+	superhudVarsHead = NULL;
+}
+
+qboolean CG_SHUDVarGetInt(const char* name, int* value)
+{
+	superhudVar_t* var;
+
+	if (!name || !name[0] || !value)
+	{
+		return qfalse;
+	}
+
+	var = CG_SHUDVarFind(name);
+	if (!var)
+	{
+		return qfalse;
+	}
+
+	if (var->type == SHUD_VAR_TYPE_INT)
+	{
+		*value = var->value.intValue;
+		return qtrue;
+	}
+	else if (var->type == SHUD_VAR_TYPE_FLOAT)
+	{
+		*value = (int)var->value.floatValue;
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+qboolean CG_SHUDVarGetFloat(const char* name, float* value)
+{
+	superhudVar_t* var;
+
+	if (!name || !name[0] || !value)
+	{
+		return qfalse;
+	}
+
+	var = CG_SHUDVarFind(name);
+	if (!var)
+	{
+		return qfalse;
+	}
+
+	if (var->type == SHUD_VAR_TYPE_FLOAT)
+	{
+		*value = var->value.floatValue;
+		return qtrue;
+	}
+	else if (var->type == SHUD_VAR_TYPE_INT)
+	{
+		*value = (float)var->value.intValue;
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+qboolean CG_SHUDVarGetString(const char* name, char* value, int maxlen)
+{
+	superhudVar_t* var;
+
+	if (!name || !name[0] || !value || maxlen <= 0)
+	{
+		return qfalse;
+	}
+
+	var = CG_SHUDVarFind(name);
+	if (!var)
+	{
+		return qfalse;
+	}
+
+	if (var->type == SHUD_VAR_TYPE_STRING)
+	{
+		Q_strncpyz(value, var->value.stringValue, maxlen);
+		return qtrue;
+	}
+	else if (var->type == SHUD_VAR_TYPE_INT)
+	{
+		Com_sprintf(value, maxlen, "%d", var->value.intValue);
+		return qtrue;
+	}
+	else if (var->type == SHUD_VAR_TYPE_FLOAT)
+	{
+		Com_sprintf(value, maxlen, "%g", var->value.floatValue);
+		return qtrue;
+	}
+
+	return qfalse;
 }
 
 superhudGlobalContext_t* CG_SHUDGetContext(void)

@@ -23,7 +23,7 @@
 #define ID_BACK			13
 #define ID_MODEL		14
 
-#define MAX_NAMELENGTH	20
+#define MAX_NAMELENGTH	32
 
 
 typedef struct {
@@ -87,7 +87,7 @@ static void PlayerSettings_DrawName( void *self ) {
 	int				style;
 	char			*txt;
 	char			c;
-	float			*color;
+	vec4_t			color;
 	int				n;
 	int				basex, x, y;
 	char			name[32];
@@ -98,10 +98,10 @@ static void PlayerSettings_DrawName( void *self ) {
 	focus = (f->generic.parent->cursor == f->generic.menuPosition);
 
 	style = UI_LEFT|UI_SMALLFONT;
-	color = text_color_normal;
+	Vector4Copy( text_color_normal, color );
 	if( focus ) {
 		style |= UI_PULSE;
-		color = text_color_highlight;
+		Vector4Copy( text_color_highlight, color );
 	}
 
 	UI_DrawProportionalString( basex, y, "Name", style, color );
@@ -110,19 +110,119 @@ static void PlayerSettings_DrawName( void *self ) {
 	basex += 64;
 	y += PROP_HEIGHT;
 	txt = f->field.buffer;
-	color = g_color_table[ColorIndex(COLOR_WHITE)];
+	Vector4Copy( g_color_table[ColorIndex(COLOR_WHITE)], color );
 	x = basex;
 	while ( (c = *txt) != 0 ) {
+		/* Only parse color codes when field is NOT in focus - when in focus, display all characters as-is */
 		if ( !focus && Q_IsColorString( txt ) ) {
-			n = ColorIndex( *(txt+1) );
-			if( n == 0 ) {
-				n = 7;
+			char controlChar;
+			float r;
+			float g;
+			float b;
+			int d1;
+			int d2;
+			int colorInt;
+			vec4_t hexColor;
+
+			controlChar = *(txt+1);
+			if ( controlChar == 'X' || controlChar == 'x' ) {
+				/* Check for ^Xrrggbb or ^xrrggbb format */
+				if ( txt[2] != '\0' && txt[3] != '\0' && txt[4] != '\0' &&
+				     txt[5] != '\0' && txt[6] != '\0' && txt[7] != '\0' ) {
+					/* Check if all 6 characters are hex and parse colors */
+					if ( ( txt[2] >= '0' && txt[2] <= '9' ) || ( txt[2] >= 'a' && txt[2] <= 'f' ) || ( txt[2] >= 'A' && txt[2] <= 'F' ) ) {
+						if ( ( txt[3] >= '0' && txt[3] <= '9' ) || ( txt[3] >= 'a' && txt[3] <= 'f' ) || ( txt[3] >= 'A' && txt[3] <= 'F' ) ) {
+							if ( ( txt[4] >= '0' && txt[4] <= '9' ) || ( txt[4] >= 'a' && txt[4] <= 'f' ) || ( txt[4] >= 'A' && txt[4] <= 'F' ) ) {
+								if ( ( txt[5] >= '0' && txt[5] <= '9' ) || ( txt[5] >= 'a' && txt[5] <= 'f' ) || ( txt[5] >= 'A' && txt[5] <= 'F' ) ) {
+									if ( ( txt[6] >= '0' && txt[6] <= '9' ) || ( txt[6] >= 'a' && txt[6] <= 'f' ) || ( txt[6] >= 'A' && txt[6] <= 'F' ) ) {
+										if ( ( txt[7] >= '0' && txt[7] <= '9' ) || ( txt[7] >= 'a' && txt[7] <= 'f' ) || ( txt[7] >= 'A' && txt[7] <= 'F' ) ) {
+											/* Valid ^Xrrggbb format, parse and set color */
+											/* Parse red */
+											if ( txt[2] >= '0' && txt[2] <= '9' ) {
+												d1 = txt[2] - '0';
+											} else if ( txt[2] >= 'a' && txt[2] <= 'f' ) {
+												d1 = txt[2] - 'a' + 10;
+											} else {
+												d1 = txt[2] - 'A' + 10;
+											}
+											if ( txt[3] >= '0' && txt[3] <= '9' ) {
+												d2 = txt[3] - '0';
+											} else if ( txt[3] >= 'a' && txt[3] <= 'f' ) {
+												d2 = txt[3] - 'a' + 10;
+											} else {
+												d2 = txt[3] - 'A' + 10;
+											}
+											colorInt = d1 * 16 + d2;
+											r = (float)colorInt / 255.0f;
+
+											/* Parse green */
+											if ( txt[4] >= '0' && txt[4] <= '9' ) {
+												d1 = txt[4] - '0';
+											} else if ( txt[4] >= 'a' && txt[4] <= 'f' ) {
+												d1 = txt[4] - 'a' + 10;
+											} else {
+												d1 = txt[4] - 'A' + 10;
+											}
+											if ( txt[5] >= '0' && txt[5] <= '9' ) {
+												d2 = txt[5] - '0';
+											} else if ( txt[5] >= 'a' && txt[5] <= 'f' ) {
+												d2 = txt[5] - 'a' + 10;
+											} else {
+												d2 = txt[5] - 'A' + 10;
+											}
+											colorInt = d1 * 16 + d2;
+											g = (float)colorInt / 255.0f;
+
+											/* Parse blue */
+											if ( txt[6] >= '0' && txt[6] <= '9' ) {
+												d1 = txt[6] - '0';
+											} else if ( txt[6] >= 'a' && txt[6] <= 'f' ) {
+												d1 = txt[6] - 'a' + 10;
+											} else {
+												d1 = txt[6] - 'A' + 10;
+											}
+											if ( txt[7] >= '0' && txt[7] <= '9' ) {
+												d2 = txt[7] - '0';
+											} else if ( txt[7] >= 'a' && txt[7] <= 'f' ) {
+												d2 = txt[7] - 'a' + 10;
+											} else {
+												d2 = txt[7] - 'A' + 10;
+											}
+											colorInt = d1 * 16 + d2;
+											b = (float)colorInt / 255.0f;
+
+											/* Set color */
+											hexColor[0] = r;
+											hexColor[1] = g;
+											hexColor[2] = b;
+											hexColor[3] = color[3];
+											Vector4Copy( hexColor, color );
+
+											/* Skip all 8 characters */
+											txt += 8;
+											continue;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				/* Invalid format, treat as regular text */
+			} else {
+				n = ColorIndex( controlChar );
+				Vector4Copy( g_color_table[n], color );
+				txt += 2;
+				continue;
 			}
-			color = g_color_table[n];
-			txt += 2;
-			continue;
 		}
-		UI_DrawChar( x, y, c, style, color );
+		/* Use UI_DrawStringRaw to avoid color code parsing when drawing individual characters */
+		{
+			char charBuf[2];
+			charBuf[0] = c;
+			charBuf[1] = '\0';
+			UI_DrawStringRaw( x, y, charBuf, style, color );
+		}
 		txt++;
 		x += SMALLCHAR_WIDTH;
 	}
@@ -141,9 +241,8 @@ static void PlayerSettings_DrawName( void *self ) {
 		UI_DrawChar( basex + f->field.cursor * SMALLCHAR_WIDTH, y, c, style, color_white );
 	}
 
-	// draw at bottom also using proportional font
+	// draw at bottom also using proportional font with colors preserved
 	Q_strncpyz( name, f->field.buffer, sizeof(name) );
-	Q_CleanStr( name );
 	UI_DrawProportionalString( 320, 440, name, UI_CENTER|UI_BIGFONT, text_color_normal );
 }
 

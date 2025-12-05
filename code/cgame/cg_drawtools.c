@@ -735,7 +735,7 @@ text_command_t* CG_CompileText(const char* in)
 						VectorCopy(g_color_table[color_index], commands[i].value.color); //-V557
 						commands[i].type = OSP_TEXT_CMD_TEXT_COLOR;
 						++i;
-						top_color_was_set = qtrue;
+						//top_color_was_set = qtrue;
 					}
 					text += 2;
 					break;
@@ -792,10 +792,33 @@ typedef struct
 	int             shaderCount;
 } font_t;
 
-static font_t fonts[] = {{"id"}, {"idblock"}, {"sansman"}, {"cpma"}, {"m1rage"}, {"elite_emoji"}, {"diablo"}, {"eternal"}, {"qlnumbers"}, {"elite"}, {"elitebigchars"}};
-static int fonts_num = sizeof(fonts) / sizeof(fonts[0]);
+#define MAX_FONTS 32
+static font_t fonts[MAX_FONTS];
+static char customFontNames[MAX_FONTS - 17][MAX_QPATH];
+static int fonts_num = 17;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
+
+static void CG_InitFontNames(void)
+{
+	fonts[0].name = "id";
+	fonts[1].name = "idblock";
+	fonts[2].name = "sansman";
+	fonts[3].name = "cpma";
+	fonts[4].name = "m1rage";
+	fonts[5].name = "elite_emoji";
+	fonts[6].name = "diablo";
+	fonts[7].name = "eternal";
+	fonts[8].name = "qlnumbers";
+	fonts[9].name = "elite";
+	fonts[10].name = "elitebigchars";
+	fonts[11].name = "eliteeternal";
+	fonts[12].name = "bigcharseliteeternal";
+	fonts[13].name = "elitestoropia";
+	fonts[14].name = "bigcharselitestoropia";
+	fonts[15].name = "bigcharseliteorbitron";
+	fonts[16].name = "eliteorbitron";
+}
 
 qboolean CG_FontAvailable(int index)
 {
@@ -825,6 +848,18 @@ void CG_FontSelect(int index)
 int CG_FontIndexFromName(const char* name)
 {
 	int index;
+
+	if (!name || !name[0])
+	{
+		return 0;
+	}
+
+	/* Handle "default" as alias for "sansman" */
+	if (Q_stricmp(name, "default") == 0)
+	{
+		name = "sansman";
+	}
+
 	for (index = 0; index < fonts_num; ++index)
 	{
 		if (Q_stricmp(name, fonts[index].name) == 0)
@@ -833,6 +868,163 @@ int CG_FontIndexFromName(const char* name)
 		}
 	}
 	return 0;
+}
+
+int CG_FontIndexFromString(const char* str)
+{
+	int i;
+	int fontIndex;
+	qboolean isNumber;
+
+	if (!str || !str[0])
+	{
+		return 0;
+	}
+
+	isNumber = qtrue;
+
+	/* Check if string is a number (starts with digit or minus sign, followed by digits) */
+	if (str[0] == '-' || str[0] == '+')
+	{
+		if (str[1] == '\0' || str[1] < '0' || str[1] > '9')
+		{
+			isNumber = qfalse;
+		}
+		else
+		{
+			for (i = 2; str[i] != '\0'; i++)
+			{
+				if (str[i] < '0' || str[i] > '9')
+				{
+					isNumber = qfalse;
+					break;
+				}
+			}
+		}
+	}
+	else if (str[0] >= '0' && str[0] <= '9')
+	{
+		for (i = 1; str[i] != '\0'; i++)
+		{
+			if (str[i] < '0' || str[i] > '9')
+			{
+				isNumber = qfalse;
+				break;
+			}
+		}
+	}
+	else
+	{
+		isNumber = qfalse;
+	}
+
+	if (isNumber)
+	{
+		fontIndex = 0;
+		i = 0;
+		if (str[0] == '-' || str[0] == '+')
+		{
+			i = 1;
+		}
+		while (str[i] >= '0' && str[i] <= '9')
+		{
+			fontIndex = fontIndex * 10 + (str[i] - '0');
+			i++;
+		}
+		if (str[0] == '-')
+		{
+			fontIndex = -fontIndex;
+		}
+		if (fontIndex < 0 || fontIndex >= fonts_num)
+		{
+			return 0;
+		}
+		return fontIndex;
+	}
+	else
+	{
+		fontIndex = CG_FontIndexFromName(str);
+		if (fontIndex == 0 && Q_stricmp(str, "id") != 0)
+		{
+			CG_Printf("Font name '^1%s^7' not found, using default font\n", str);
+		}
+		return fontIndex;
+	}
+}
+
+int CG_FontIndexFromCvar(vmCvar_t* cvar)
+{
+	const char* str;
+	int i;
+	qboolean isNumber;
+	int fontIndex;
+
+	if (!cvar || !cvar->string || !cvar->string[0])
+	{
+		return 0;
+	}
+
+	str = cvar->string;
+	isNumber = qtrue;
+
+	/* Check if string is a number (starts with digit or minus sign, followed by digits) */
+	if (str[0] == '-' || str[0] == '+')
+	{
+		if (str[1] == '\0' || str[1] < '0' || str[1] > '9')
+		{
+			isNumber = qfalse;
+		}
+		else
+		{
+			for (i = 2; str[i] != '\0'; i++)
+			{
+				if (str[i] < '0' || str[i] > '9')
+				{
+					isNumber = qfalse;
+					break;
+				}
+			}
+		}
+	}
+	else if (str[0] >= '0' && str[0] <= '9')
+	{
+		for (i = 1; str[i] != '\0'; i++)
+		{
+			if (str[i] < '0' || str[i] > '9')
+			{
+				isNumber = qfalse;
+				break;
+			}
+		}
+	}
+	else
+	{
+		isNumber = qfalse;
+	}
+
+	if (isNumber)
+	{
+		/* For cvar, use integer value directly for better performance */
+		return cvar->integer;
+	}
+	else
+	{
+		return CG_FontIndexFromString(str);
+	}
+}
+
+int CG_GetFontCount(void)
+{
+	return fonts_num;
+}
+
+const char* CG_GetFontName(int index)
+{
+	if (index >= 0 && index < fonts_num)
+	{
+		return fonts[index].name;
+	}
+	return NULL;
 }
 
 
@@ -1104,9 +1296,125 @@ static void CG_LoadFont(font_t* fnt, const char* fontName)
 	CG_Printf("Font '%s' loaded with %i chars and %i images\n", fontName, chars, shaderCount);
 }
 
+static void CG_LoadCustomFonts(void)
+{
+	char buf[8192];
+	fileHandle_t f;
+	char* token;
+	char* text;
+	int len;
+	char fontName[MAX_QPATH];
+	char fontPath[MAX_QPATH];
+	int i;
+	int customFontIndex;
+
+	len = trap_FS_FOpenFile("fonts.cfg", &f, FS_READ);
+	if (f == FS_INVALID_HANDLE)
+	{
+		return;
+	}
+
+	if (len >= sizeof(buf))
+	{
+		CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: fonts.cfg file is too long: %i\n", len);
+		len = sizeof(buf) - 1;
+	}
+
+	trap_FS_Read(buf, len, f);
+	trap_FS_FCloseFile(f);
+	buf[len] = '\0';
+
+	text = buf;
+	COM_BeginParseSession("fonts.cfg");
+
+	customFontIndex = 0;
+	while (1)
+	{
+		token = COM_ParseExt(&text, qtrue);
+		if (token[0] == '\0')
+		{
+			break;
+		}
+
+		Q_strncpyz(fontName, token, sizeof(fontName));
+
+		token = COM_ParseExt(&text, qfalse);
+		if (token[0] == '\0')
+		{
+			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: missing font path for '%s'\n", fontName);
+			continue;
+		}
+
+		Q_strncpyz(fontPath, token, sizeof(fontPath));
+
+		if (fonts_num >= MAX_FONTS)
+		{
+			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: maximum number of fonts (%d) reached, skipping '%s'\n", MAX_FONTS, fontName);
+			continue;
+		}
+
+		if (customFontIndex >= (MAX_FONTS - 17))
+		{
+			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: maximum number of custom fonts reached, skipping '%s'\n", fontName);
+			continue;
+		}
+
+		for (i = 0; i < fonts_num; i++)
+		{
+			if (Q_stricmp(fonts[i].name, fontName) == 0)
+			{
+				CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: font name '%s' already exists, skipping\n", fontName);
+				break;
+			}
+		}
+
+		if (i < fonts_num)
+		{
+			continue;
+		}
+		
+		/* Check if file exists using trap_FS_FOpenFile */
+		{
+			fileHandle_t testFile;
+			int testLen;
+			testLen = trap_FS_FOpenFile(fontPath, &testFile, FS_READ);
+			if (testFile == FS_INVALID_HANDLE)
+			{
+				CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: Font file '%s' not found, skipping '%s'\n", fontPath, fontName);
+				continue;
+			}
+			trap_FS_FCloseFile(testFile);
+		}
+		
+		Q_strncpyz(customFontNames[customFontIndex], fontName, sizeof(customFontNames[customFontIndex]));
+		fonts[fonts_num].name = customFontNames[customFontIndex];
+		
+		/* Store font index before loading */
+		fonts_num++;
+		customFontIndex++;
+		
+		/* Load font - CG_LoadFont will print errors if file doesn't exist */
+		CG_LoadFont(&fonts[fonts_num - 1], fontPath);
+		
+		/* Check if font was loaded successfully by verifying shaderCount > 0 */
+		if (fonts[fonts_num - 1].shaderCount > 0)
+		{
+			CG_Printf("Custom font '%s' registered from '%s'\n", fontName, fontPath);
+		}
+		else
+		{
+			/* Font loading failed, revert the increment */
+			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: Failed to load font '%s' from '%s'\n", fontName, fontPath);
+			fonts_num--;
+			customFontIndex--;
+			fonts[fonts_num].name = NULL;
+		}
+	}
+}
 
 void CG_LoadFonts(void)
 {
+	CG_InitFontNames();
 	CG_LoadFont(&fonts[0], "gfx/2d/bigchars.cfg");
 	CG_LoadFont(&fonts[1], "gfx/2d/numbers.cfg");
 	CG_LoadFont(&fonts[2], "gfx/2d/sansman.cfg");
@@ -1118,6 +1426,13 @@ void CG_LoadFonts(void)
 	CG_LoadFont(&fonts[8], "gfx/2d/qlnumbers.cfg");
 	CG_LoadFont(&fonts[9], "gfx/2d/Elite.cfg");
 	CG_LoadFont(&fonts[10], "gfx/2d/EliteBigchars.cfg");
+	CG_LoadFont(&fonts[11], "gfx/2d/EliteEternal.cfg");
+	CG_LoadFont(&fonts[12], "gfx/2d/BigcharsEliteEternal.cfg");
+	CG_LoadFont(&fonts[13], "gfx/2d/EliteStoropia.cfg");
+	CG_LoadFont(&fonts[14], "gfx/2d/BigcharsEliteStoropia.cfg");
+	CG_LoadFont(&fonts[15], "gfx/2d/BigcharsEliteOrbitron.cfg");
+	CG_LoadFont(&fonts[16], "gfx/2d/EliteOrbitron.cfg");
+	CG_LoadCustomFonts();
 }
 
 
@@ -3202,7 +3517,10 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	}
 
 	fade = 1.0f;
-	Vector4Copy(setColor, color);
+	if (setColor)
+	{
+		Vector4Copy(setColor, color);
+	}
 
 	/* Сохраним начальный x для сброса между тенью и текстом */
 	xx = ax;

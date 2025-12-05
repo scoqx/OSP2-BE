@@ -148,9 +148,11 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.cin_intro.string				= "INTRO";
 	cinematicsMenuInfo.cin_intro.color				= color_red;
 	cinematicsMenuInfo.cin_intro.style				= UI_CENTER;
+	/* Disabled: all cinematics are now available regardless of restrictions
 	if( uis.demoversion ) {
 		cinematicsMenuInfo.cin_intro.generic.flags |= QMF_GRAYED;
 	}
+	*/
 
 	y += VERTICAL_SPACING;
 	cinematicsMenuInfo.cin_tier1.generic.type		= MTYPE_PTEXT;
@@ -162,9 +164,11 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.cin_tier1.string				= "Tier 1";
 	cinematicsMenuInfo.cin_tier1.color				= color_red;
 	cinematicsMenuInfo.cin_tier1.style				= UI_CENTER;
+	/* Disabled: all cinematics are now available regardless of restrictions
 	if( !UI_CanShowTierVideo( 1 ) ) {
 		cinematicsMenuInfo.cin_tier1.generic.flags |= QMF_GRAYED;
 	}
+	*/
 
 	y += VERTICAL_SPACING;
 	cinematicsMenuInfo.cin_tier2.generic.type		= MTYPE_PTEXT;
@@ -176,9 +180,11 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.cin_tier2.string				= "Tier 2";
 	cinematicsMenuInfo.cin_tier2.color				= color_red;
 	cinematicsMenuInfo.cin_tier2.style				= UI_CENTER;
+	/* Disabled: all cinematics are now available regardless of restrictions
 	if( !UI_CanShowTierVideo( 2 ) ) {
 		cinematicsMenuInfo.cin_tier2.generic.flags |= QMF_GRAYED;
 	}
+	*/
 
 	y += VERTICAL_SPACING;
 	cinematicsMenuInfo.cin_tier3.generic.type		= MTYPE_PTEXT;
@@ -190,9 +196,11 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.cin_tier3.string				= "Tier 3";
 	cinematicsMenuInfo.cin_tier3.color				= color_red;
 	cinematicsMenuInfo.cin_tier3.style				= UI_CENTER;
+	/* Disabled: all cinematics are now available regardless of restrictions
 	if( !UI_CanShowTierVideo( 3 ) ) {
 		cinematicsMenuInfo.cin_tier3.generic.flags |= QMF_GRAYED;
 	}
+	*/
 
 	y += VERTICAL_SPACING;
 	cinematicsMenuInfo.cin_tier4.generic.type		= MTYPE_PTEXT;
@@ -204,9 +212,11 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.cin_tier4.string				= "Tier 4";
 	cinematicsMenuInfo.cin_tier4.color				= color_red;
 	cinematicsMenuInfo.cin_tier4.style				= UI_CENTER;
+	/* Disabled: all cinematics are now available regardless of restrictions
 	if( !UI_CanShowTierVideo( 4 ) ) {
 		cinematicsMenuInfo.cin_tier4.generic.flags |= QMF_GRAYED;
 	}
+	*/
 
 	y += VERTICAL_SPACING;
 	cinematicsMenuInfo.cin_tier5.generic.type		= MTYPE_PTEXT;
@@ -218,9 +228,11 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.cin_tier5.string				= "Tier 5";
 	cinematicsMenuInfo.cin_tier5.color				= color_red;
 	cinematicsMenuInfo.cin_tier5.style				= UI_CENTER;
+	/* Disabled: all cinematics are now available regardless of restrictions
 	if( !UI_CanShowTierVideo( 5 ) ) {
 		cinematicsMenuInfo.cin_tier5.generic.flags |= QMF_GRAYED;
 	}
+	*/
 
 	y += VERTICAL_SPACING;
 	cinematicsMenuInfo.cin_tier6.generic.type		= MTYPE_PTEXT;
@@ -232,9 +244,11 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.cin_tier6.string				= "Tier 6";
 	cinematicsMenuInfo.cin_tier6.color				= color_red;
 	cinematicsMenuInfo.cin_tier6.style				= UI_CENTER;
+	/* Disabled: all cinematics are now available regardless of restrictions
 	if( !UI_CanShowTierVideo( 6 ) ) {
 		cinematicsMenuInfo.cin_tier6.generic.flags |= QMF_GRAYED;
 	}
+	*/
 
 	y += VERTICAL_SPACING;
 	cinematicsMenuInfo.cin_tier7.generic.type		= MTYPE_PTEXT;
@@ -246,9 +260,11 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.cin_tier7.string				= "Tier 7";
 	cinematicsMenuInfo.cin_tier7.color				= color_red;
 	cinematicsMenuInfo.cin_tier7.style				= UI_CENTER;
+	/* Disabled: all cinematics are now available regardless of restrictions
 	if( !UI_CanShowTierVideo( 7 ) ) {
 		cinematicsMenuInfo.cin_tier7.generic.flags |= QMF_GRAYED;
 	}
+	*/
 
 	y += VERTICAL_SPACING;
 	cinematicsMenuInfo.cin_end.generic.type			= MTYPE_PTEXT;
@@ -260,9 +276,11 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.cin_end.string				= "END";
 	cinematicsMenuInfo.cin_end.color				= color_red;
 	cinematicsMenuInfo.cin_end.style				= UI_CENTER;
+	/* Disabled: all cinematics are now available regardless of restrictions
 	if( !UI_CanShowTierVideo( 8 ) ) {
 		cinematicsMenuInfo.cin_end.generic.flags |= QMF_GRAYED;
 	}
+	*/
 
 	cinematicsMenuInfo.back.generic.type		= MTYPE_BITMAP;
 	cinematicsMenuInfo.back.generic.name		= ART_BACK0;

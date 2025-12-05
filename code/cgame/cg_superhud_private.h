@@ -376,6 +376,7 @@ typedef struct
 void CG_SHUDParserInit(void);
 const superHUDConfigElement_t* CG_SHUDFindConfigElementItem(const char* name);
 const superHUDConfigCommand_t* CG_SHUDFindConfigCommandItem(const char* name);
+superhudConfigParseStatus_t CG_SHUDParseVarElement(configFileInfo_t* finfo);
 
 qboolean CG_SHUDFileInfoInit(configFileInfo_t* info, const char* fileContent);
 void CG_SHUDFileInfoTeardown(configFileInfo_t* cfi);
@@ -854,6 +855,35 @@ typedef struct
 	} tempAcc;
 	customStats_t customStats;
 } superhudGlobalContext_t;
+
+typedef enum
+{
+	SHUD_VAR_TYPE_INT,
+	SHUD_VAR_TYPE_FLOAT,
+	SHUD_VAR_TYPE_STRING,
+} superhudVarType_t;
+
+typedef struct superhudVar_s
+{
+	char name[MAX_QPATH];
+	superhudVarType_t type;
+	union
+	{
+		int intValue;
+		float floatValue;
+		char stringValue[MAX_QPATH];
+	} value;
+	struct superhudVar_s* next;
+} superhudVar_t;
+
+superhudVar_t* CG_SHUDVarFind(const char* name);
+void CG_SHUDVarSetInt(const char* name, int value);
+void CG_SHUDVarSetFloat(const char* name, float value);
+void CG_SHUDVarSetString(const char* name, const char* value);
+void CG_SHUDVarClearAll(void);
+qboolean CG_SHUDVarGetInt(const char* name, int* value);
+qboolean CG_SHUDVarGetFloat(const char* name, float* value);
+qboolean CG_SHUDVarGetString(const char* name, char* value, int maxlen);
 
 superhudGlobalContext_t* CG_SHUDGetContext(void);
 void CG_SHUDAvailableElementsInit(void);

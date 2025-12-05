@@ -530,7 +530,7 @@ void CG_ScoreboardContext_Init(void)
 
 
 	// ====== Font and Rendering Settings ======
-	sbSet->font = cg_scoreboardFont.integer;
+	sbSet->font = CG_FontIndexFromCvar(&cg_scoreboardFont);
 	sbSet->flags = DS_SHADOW | DS_PROPORTIONAL;
 
 	// ====== Text Vertical Positioning ======

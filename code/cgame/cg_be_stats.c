@@ -996,7 +996,7 @@ void CG_BEStatsDrawWindow(BEStatToken_t tokens[32][12], int rows)
 	set->height = windowHeight;
 	windowWidth = set->width + set->padding * 2;
 
-	CG_FontSelect(cg_bestats_font.integer);
+	CG_FontSelect(CG_FontIndexFromCvar(&cg_bestats_font));
 	CG_BEStatsDrawWindowBackground(set->x, set->y, windowWidth, set->height);
 	CG_OSPDrawFrameAdjusted(set->x, set->y, windowWidth, set->height, defaultBorderSize, set->borderColor, 0);
 

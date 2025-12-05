@@ -490,6 +490,8 @@ vmCvar_t        cg_clearOnLevelLoad;
 vmCvar_t        cg_spectPOV;
 vmCvar_t        cg_drawRealHeads;
 vmCvar_t        cg_myTeam;
+vmCvar_t        cg_giveName;
+vmCvar_t        cg_bestats_autoaction;
 vmCvar_t        be_run;
 
 static cvarTable_t cvarTable[] =
@@ -709,7 +711,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitSounds },
 	{ &cg_playersXID, "cg_playersXID", "0", CVAR_ARCHIVE},
 	{ &cg_playersID, "cg_playersID", "0", CVAR_ARCHIVE},
-
+	
 	{ &cg_playerModelColors, "cg_playerModelColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerModelColors},
 	{ &cg_playerRailColors,  "cg_playerRailColors", "",  CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerRailColors},
 	{ &cg_playerFrozenColor, "cg_playerFrozenColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerFrozenColor},
@@ -765,6 +767,23 @@ static cvarTable_t cvarTable[] =
 	{ &cg_stackHitSounds,           "cg_stackHitSounds",   "1", CVAR_ARCHIVE },
 	{ &cg_stackHitSoundsTimeout,    "cg_stackHitSoundsTimeout",   "500", CVAR_ARCHIVE },
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
+	{ &cg_shud_chatindex, "cg_shud_chatindex", "0",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg0, "cg_shud_chatmsg0", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg1, "cg_shud_chatmsg1", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg2, "cg_shud_chatmsg2", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg3, "cg_shud_chatmsg3", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg4, "cg_shud_chatmsg4", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg5, "cg_shud_chatmsg5", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg6, "cg_shud_chatmsg6", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg7, "cg_shud_chatmsg7", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg8, "cg_shud_chatmsg8", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg9, "cg_shud_chatmsg9", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg10, "cg_shud_chatmsg10", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg11, "cg_shud_chatmsg11", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg12, "cg_shud_chatmsg12", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg13, "cg_shud_chatmsg13", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg14, "cg_shud_chatmsg14", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg15, "cg_shud_chatmsg15", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
 	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
 	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
@@ -868,27 +887,10 @@ static cvarTable_t cvarTable[] =
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE | CVAR_NEW, },
 	{ &cg_drawRealHeads, "cg_drawRealHeads", "0", CVAR_ARCHIVE | CVAR_NEW, },
-	{ &cg_myTeam, "cg_myTeam", "red", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_myTeam },
+	{ &cg_myTeam, "cg_myTeam", "red", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_myTeam },
+	{ &cg_giveName, "cg_giveName", "0", CVAR_ARCHIVE},
+	{ &cg_bestats_autoaction, "cg_bestats_autoaction", "1", CVAR_ARCHIVE },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
-  
-  { &cg_shud_chatindex, "cg_shud_chatindex", "0",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg0, "cg_shud_chatmsg0", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg1, "cg_shud_chatmsg1", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg2, "cg_shud_chatmsg2", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg3, "cg_shud_chatmsg3", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg4, "cg_shud_chatmsg4", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg5, "cg_shud_chatmsg5", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg6, "cg_shud_chatmsg6", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg7, "cg_shud_chatmsg7", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg8, "cg_shud_chatmsg8", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg9, "cg_shud_chatmsg9", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg10, "cg_shud_chatmsg10", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg11, "cg_shud_chatmsg11", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg12, "cg_shud_chatmsg12", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg13, "cg_shud_chatmsg13", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg14, "cg_shud_chatmsg14", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-  { &cg_shud_chatmsg15, "cg_shud_chatmsg15", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -2543,7 +2545,7 @@ void CG_PrintNewCommandsBE_f(void)
 	{
 		if (!strcmp(cvarTable[i].cvarName, "cg_enemyLightningColor"))
 		{
-			startIndex = i + 1;
+			startIndex = i;
 			break;
 		}
 	}

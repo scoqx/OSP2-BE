@@ -624,24 +624,30 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart)
 {
-	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
 	{
-		trap_Cvar_Set("cg_scoreboardFont", 0);
+		trap_Cvar_Set("cg_scoreboardFont", "0");
 	}
 	// CG_ScoreboardContext_Init();
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart)
 {
-	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
 	{
-		trap_Cvar_Set("cg_teamIndicatorFont", 0);
+		trap_Cvar_Set("cg_teamIndicatorFont", "0");
 	}
 }
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
 {
-	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
 	{
-		trap_Cvar_Set("cg_centerMessagesFont", 0);
+		trap_Cvar_Set("cg_centerMessagesFont", "0");
 	}
 }
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart)
@@ -780,9 +786,11 @@ void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
 {
-	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
 	{
-		trap_Cvar_Set("cg_accuracyFont", 0);
+		trap_Cvar_Set("cg_accuracyFont", "0");
 	}
 }
 
@@ -976,9 +984,11 @@ void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
 {
-	if (!CG_FontAvailable(cvart->vmCvar->integer))
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
 	{
-		trap_Cvar_Set("cg_bestats_font", 0);
+		trap_Cvar_Set("cg_bestats_font", "0");
 	}
 }
 
@@ -1025,6 +1035,14 @@ void CG_LocalEventCvarChanged_chud_file(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart)
 {
-	// Initialize CherryHUD parser first
-	CG_CHUDLoadConfig();
+	// // Initialize CherryHUD parser first
+	// CG_CHUDLoadConfig();
+
+	// Disabled for a while
+	if (cvart->vmCvar->integer)
+	{
+		trap_Cvar_Set("cg_chud", "0");
+		CG_Printf("^1CherryHUD is disabled for a while\n");
+	}
+
 }

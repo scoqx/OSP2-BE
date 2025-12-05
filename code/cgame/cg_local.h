@@ -1862,8 +1862,10 @@ extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
 
+extern vmCvar_t         cg_myTeam;
+extern vmCvar_t         cg_giveName;
+extern vmCvar_t         cg_bestats_autoaction;
 extern vmCvar_t         be_run;
-extern vmCvar_t        cg_myTeam;
 //
 // cg_main.c
 //
@@ -1972,6 +1974,10 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 void CG_FontSelect(int index);
 qboolean CG_FontAvailable(int index);
 int CG_FontIndexFromName(const char* name);
+int CG_FontIndexFromString(const char* str);
+int CG_FontIndexFromCvar(vmCvar_t* cvar);
+int CG_GetFontCount(void);
+const char* CG_GetFontName(int index);
 
 qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y);
 void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor);
@@ -2598,7 +2604,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00-beta-9" // BE
+#define OSP_VERSION "be-1.00-beta-10" // BE
 
 
 

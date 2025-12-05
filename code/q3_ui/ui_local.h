@@ -30,7 +30,7 @@ typedef void (*voidfunc_f)(void);
 #define	MAX_EDIT_LINE			256
 
 #define MAX_MENUDEPTH			8
-#define MAX_MENUITEMS			64
+#define MAX_MENUITEMS			512
 
 #define MTYPE_NULL				0
 #define MTYPE_SLIDER			1	
@@ -57,8 +57,8 @@ typedef void (*voidfunc_f)(void);
 #define QMF_NOONOFFTEXT			0x00000400
 #define QMF_MOUSEONLY			0x00000800	// only mouse input allowed
 #define QMF_HIDDEN				0x00001000	// skips drawing
-#define QMF_GRAYED				0x00002000	// grays and disables
-#define QMF_INACTIVE			0x00004000	// disables any input
+#define QMF_GRAYED				0x00002000U	// grays and disables
+#define QMF_INACTIVE			0x00004000U	// disables any input
 #define QMF_NODEFAULTINIT		0x00008000	// skip default initialization
 #define QMF_OWNERDRAW			0x00010000
 #define QMF_PULSE				0x00020000
@@ -114,6 +114,7 @@ typedef struct {
 	char	buffer[MAX_EDIT_LINE];
 	int		maxchars;
 	qboolean skipKey; // skip single key event
+	int		mouse1time; // time of last mouse click for double-click detection
 } mfield_t;
 
 typedef struct
@@ -216,6 +217,7 @@ extern vec4_t		color_yellow;
 extern vec4_t		color_blue;
 extern vec4_t		color_orange;
 extern vec4_t		color_red;
+extern vec4_t		color_darkred;
 extern vec4_t		color_dim;
 extern vec4_t		name_color;
 extern vec4_t		list_color;
@@ -256,6 +258,63 @@ extern void UI_UpdateCvars( void );
 // ui_credits.c
 //
 extern void UI_CreditMenu( void );
+extern void UI_SuperHUDConfigMenu( void );
+
+//
+// ui_ospdrawtools.c
+//
+#define OSP_TEXT_CMD_MAX 2048
+
+typedef enum
+{
+	OSP_TEXT_CMD_CHAR = 0,
+	OSP_TEXT_CMD_STOP,
+	OSP_TEXT_CMD_FADE,
+	OSP_TEXT_CMD_TEXT_COLOR,
+	OSP_TEXT_CMD_SHADOW_COLOR,
+} text_command_type_t;
+
+typedef struct
+{
+	text_command_type_t type;
+	union
+	{
+		char character;
+		float fade;
+		vec4_t color;
+	} value;
+} text_command_t;
+
+/* Font rendering flags */
+enum
+{
+	DS_VBOTTOM      = 0,   /* vertical bottom is default */
+	DS_HLEFT        = 0,   /* horizontal left is default */
+	DS_SHADOW       = 0x1, /* draw shadow */
+	DS_FORCE_COLOR  = 0x2, /* force color, ignore ^x */
+	DS_PROPORTIONAL = 0x4, /* proportional font */
+	DS_HCENTER      = 0x8, /* horizontal center */
+	DS_HRIGHT       = 0x10,/* horizontal right */
+	DS_VTOP         = 0x20,/* vertical top */
+	DS_VCENTER      = 0x40,/* vertical center */
+	DS_MAX_WIDTH_IS_CHARS = 0x80,/* flag for calculation */
+};
+
+extern void UI_LoadFonts(void);
+extern void UI_FontSelect(int index);
+extern qboolean UI_FontAvailable(int index);
+extern int UI_FontIndexFromName(const char* name);
+extern int UI_FontIndexFromCvar(vmCvar_t* cvar);
+extern int UI_GetFontCount(void);
+extern const char* UI_GetFontName(int index);
+extern void UI_Fonts_f(void);
+extern void UI_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor,
+                                vec4_t shadowColor,
+                                float charWidth, float charHeight, int maxWidth, int flags,
+                                vec4_t background, vec4_t border, vec4_t borderColor);
+extern void UI_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
+extern text_command_t* UI_CompileText(const char* text);
+extern void UI_CompiledTextDestroy(text_command_t* root);
 
 //
 // ui_ingame.c
@@ -276,6 +335,7 @@ extern void UI_Message( const char **lines );
 //
 extern void UI_SetupMenu_Cache( void );
 extern void UI_SetupMenu(void);
+extern void UI_OtherMenu(void);
 
 //
 // ui_team.c
@@ -319,6 +379,12 @@ extern void UI_ModsMenu_Cache( void );
 extern void UI_Osp2BeMenu( void );
 
 //
+// ui_advanced.c
+//
+extern void UI_AdvancedMenu( void );
+extern void Advanced_Cache( void );
+
+//
 // ui_cdkey.c
 //
 extern void UI_CDKeyMenu( void );
@@ -328,7 +394,11 @@ extern void UI_CDKeyMenu_f( void );
 //
 // ui_playermodel.c
 //
+typedef void (*playerModelApplyCallback_t)( const char *modelValue, const char *headValue, void *userData );
+
+extern void UI_PlayerModelMenuForCvar( const char *modelCvar, const char *headModelCvar );
 extern void UI_PlayerModelMenu( void );
+extern void UI_PlayerModelMenu_WithValues( const char *modelValue, const char *headValue, qboolean useTeamModel, qboolean isTeamFriendly, playerModelApplyCallback_t callback, void *userData );
 extern void PlayerModel_Cache( void );
 
 //
@@ -456,6 +526,19 @@ typedef struct {
 	int				barrelTime;
 
 	int				realWeapon;
+
+	// preview customization (UI only)
+	qboolean		useCustomSkinColors;
+	vec4_t			customHeadColor;
+	vec4_t			customTorsoColor;
+	vec4_t			customLegsColor;
+
+	qboolean		useOutline;
+	vec4_t			outlineColor;
+	qhandle_t		outlineShader;
+	qboolean		freezeActive;
+	vec4_t			freezeColor;
+	qhandle_t		freezeShader;
 } playerInfo_t;
 
 void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int time );
@@ -524,6 +607,8 @@ extern void			UI_DrawProportionalString( int x, int y, const char* str, int styl
 extern void			UI_DrawProportionalString_AutoWrapped( int x, int ystart, int xmax, int ystep, const char* str, int style, vec4_t color );
 extern int			UI_ProportionalStringWidth( const char* str );
 extern void			UI_DrawString( int x, int y, const char* str, int style, vec4_t color );
+extern void			UI_DrawStringRaw( int x, int y, const char* str, int style, vec4_t color );
+extern void			UI_DrawStringServerBrowser( int x, int y, const char* str, int style, vec4_t color );
 extern void			UI_DrawChar( int x, int y, int ch, int style, vec4_t color );
 extern qboolean 	UI_CursorInRect (int x, int y, int width, int height);
 extern void			UI_AdjustFrom640( float *x, float *y, float *w, float *h );

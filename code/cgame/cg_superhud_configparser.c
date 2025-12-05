@@ -175,11 +175,120 @@ static superhudConfigParseStatus_t CG_SHUDParseString(configFileInfo_t* finfo, c
 	char* src;
 	char* dst;
 	int lenMax = 0;
+	char varName[MAX_QPATH];
+	int i;
+	int startPos;
 
 	status = CG_SHUDConfigSkipSCN(finfo);
 	if (status != SUPERHUD_CONFIG_OK) return status;
 
+	startPos = finfo->pos;
+	c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+	/* Check if it's a quoted string */
+	if (c == '"')
+	{
+		/* Parse quoted string */
+		dst = finfo->last_line->line + finfo->pos;
+
+		do
+		{
+			c = *dst;
+			if (c == 0 || c == '#' || c == '\n' || c == ';' || c == '}')
+			{
+				break;
+			}
+			++lenMax;
+			++dst;
+		}
+		while (qtrue);
+
+		if (!lenMax)
+		{
+			return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+		}
+
+		dst = Z_Malloc(lenMax + 1);
+		OSP_MEMORY_CHECK(dst);
+
+		src = Z_Malloc(lenMax + 1);
+		OSP_MEMORY_CHECK(src);
+
+		memcpy(src, finfo->last_line->line + finfo->pos, lenMax);
+		src[lenMax] = 0;
+
+		rc = Q_sscanf(src, "\"%s\"", dst);
+
+		if (rc <= 0)
+		{
+			rc = Q_sscanf(src, "%s", dst);
+		}
+
+		if (rc <= 0)
+		{
+			Z_Free(dst);
+			Z_Free(src);
+			return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+		}
+
+		finfo->pos += lenMax;
+
+		Q_strncpyz(value, dst, len);
+
+		Z_Free(dst);
+		Z_Free(src);
+
+		return SUPERHUD_CONFIG_OK;
+	}
+
+	/* Not a quoted string, try to parse as variable name with $ prefix */
+	finfo->pos = startPos;
+	c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+	/* Check if it starts with $ (variable prefix) */
+	if (c != '$')
+	{
+		/* Not a variable, parse as regular string */
+		goto parse_as_string;
+	}
+
+	/* Skip $ */
+	CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+	c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+	/* Check if it's a valid variable name (starts with letter or underscore) */
+	if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
+	{
+		return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+	}
+
+	/* Read variable name */
+	i = 0;
+	while (CG_SHUD_CONFIG_INFO_IS_TEXT_CHARACTER(c) && i < (MAX_QPATH - 1))
+	{
+		varName[i++] = c;
+		CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+	}
+	varName[i] = 0;
+
+	/* Try to get variable value */
+	if (CG_SHUDVarGetString(varName, value, len))
+	{
+		return SUPERHUD_CONFIG_OK;
+	}
+
+	/* Variable not found - use variable name as string value and warn */
+	CG_Printf("^3SuperHUD: variable '$%s' not found, using as string value\n", varName);
+	Q_strncpyz(value, varName, len);
+	return SUPERHUD_CONFIG_OK;
+
+parse_as_string:
+
+	/* Parse as regular string */
+	finfo->pos = startPos;
 	dst = finfo->last_line->line + finfo->pos;
+	lenMax = 0;
 
 	do
 	{
@@ -207,12 +316,7 @@ static superhudConfigParseStatus_t CG_SHUDParseString(configFileInfo_t* finfo, c
 	memcpy(src, finfo->last_line->line + finfo->pos, lenMax);
 	src[lenMax] = 0;
 
-	rc = Q_sscanf(src, "\"%s\"", dst);
-
-	if (rc <= 0)
-	{
-		rc = Q_sscanf(src, "%s", dst);
-	}
+	rc = Q_sscanf(src, "%s", dst);
 
 	if (rc <= 0)
 	{
@@ -237,28 +341,78 @@ static superhudConfigParseStatus_t CG_SHUDParseFloat(configFileInfo_t* finfo, fl
 	int rc;
 	qboolean skip;
 	char c;
+	char varName[MAX_QPATH];
+	int i;
+	int startPos;
+	float varValue;
 
 	status = CG_SHUDConfigSkipSCN(finfo);
 	if (status != SUPERHUD_CONFIG_OK) return status;
 
+	startPos = finfo->pos;
+
+	/* Try to parse as number first */
 	rc = Q_sscanf(finfo->last_line->line + finfo->pos, "%f", value);
 
-	if (rc != 1) return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
-
-	do
+	if (rc == 1)
 	{
-		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
-
-		skip = (c >= '0' && c <= '9') || c == '.' || c == '-';
-
-		if (skip)
+		/* Successfully parsed as number */
+		do
 		{
-			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
-		}
-	}
-	while (skip);
+			c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
 
-	return SUPERHUD_CONFIG_OK;
+			skip = (c >= '0' && c <= '9') || c == '.' || c == '-';
+
+			if (skip)
+			{
+				CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			}
+		}
+		while (skip);
+
+		return SUPERHUD_CONFIG_OK;
+	}
+
+	/* Not a number, try to parse as variable name with $ prefix */
+	finfo->pos = startPos;
+	c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+	/* Check if it starts with $ (variable prefix) */
+	if (c != '$')
+	{
+		return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+	}
+
+	/* Skip $ */
+	CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+	c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+	/* Check if it's a valid variable name (starts with letter or underscore) */
+	if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
+	{
+		return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+	}
+
+	/* Read variable name */
+	i = 0;
+	while (CG_SHUD_CONFIG_INFO_IS_TEXT_CHARACTER(c) && i < (MAX_QPATH - 1))
+	{
+		varName[i++] = c;
+		CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+	}
+	varName[i] = 0;
+
+	/* Try to get variable value */
+	if (CG_SHUDVarGetFloat(varName, &varValue))
+	{
+		*value = varValue;
+		return SUPERHUD_CONFIG_OK;
+	}
+
+	/* Variable not found or wrong type - try to parse as number from variable name */
+	CG_Printf("^3SuperHUD: variable '$%s' not found or wrong type, trying to parse as number\n", varName);
+	return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
 }
 
 static superhudConfigParseStatus_t CG_SHUDParseInt(configFileInfo_t* finfo, int* value)
@@ -267,28 +421,78 @@ static superhudConfigParseStatus_t CG_SHUDParseInt(configFileInfo_t* finfo, int*
 	int rc;
 	qboolean skip;
 	char c;
+	char varName[MAX_QPATH];
+	int i;
+	int startPos;
+	int varValue;
 
 	status = CG_SHUDConfigSkipSCN(finfo);
 	if (status != SUPERHUD_CONFIG_OK) return status;
 
+	startPos = finfo->pos;
+
+	/* Try to parse as number first */
 	rc = Q_sscanf(finfo->last_line->line + finfo->pos, "%i", value);
 
-	if (rc != 1) return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
-
-	do
+	if (rc == 1)
 	{
-		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
-
-		skip = (c >= '0' && c <= '9') || c == '-';
-
-		if (skip)
+		/* Successfully parsed as number */
+		do
 		{
-			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
-		}
-	}
-	while (skip);
+			c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
 
-	return SUPERHUD_CONFIG_OK;
+			skip = (c >= '0' && c <= '9') || c == '-';
+
+			if (skip)
+			{
+				CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			}
+		}
+		while (skip);
+
+		return SUPERHUD_CONFIG_OK;
+	}
+
+	/* Not a number, try to parse as variable name with $ prefix */
+	finfo->pos = startPos;
+	c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+	/* Check if it starts with $ (variable prefix) */
+	if (c != '$')
+	{
+		return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+	}
+
+	/* Skip $ */
+	CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+	c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+	/* Check if it's a valid variable name (starts with letter or underscore) */
+	if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
+	{
+		return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+	}
+
+	/* Read variable name */
+	i = 0;
+	while (CG_SHUD_CONFIG_INFO_IS_TEXT_CHARACTER(c) && i < (MAX_QPATH - 1))
+	{
+		varName[i++] = c;
+		CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+	}
+	varName[i] = 0;
+
+	/* Try to get variable value */
+	if (CG_SHUDVarGetInt(varName, &varValue))
+	{
+		*value = varValue;
+		return SUPERHUD_CONFIG_OK;
+	}
+
+	/* Variable not found or wrong type - try to parse as number from variable name */
+	CG_Printf("^3SuperHUD: variable '$%s' not found or wrong type, trying to parse as number\n", varName);
+	return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
 }
 
 static superhudConfigParseStatus_t CG_SHUDParseVec4t(configFileInfo_t* finfo, vec4_t color)
@@ -1618,4 +1822,181 @@ void CG_SHUDParserInit(void)
 	}
 
 	initialized = qtrue;
+}
+
+/*
+ * Parse VAR element: VAR { x = 1; y = 10.0; z = "Lol"; }
+ * Note: finfo->pos should already be after the opening brace '{'
+ */
+superhudConfigParseStatus_t CG_SHUDParseVarElement(configFileInfo_t* finfo)
+{
+	superhudConfigParseStatus_t status;
+	char varName[MAX_QPATH];
+	char c;
+	int i;
+	qboolean eoe = qfalse;
+	qboolean isNumber;
+	qboolean hasDecimal;
+	int intValue;
+	float floatValue;
+	char stringValue[MAX_QPATH];
+	int startPos;
+
+	/* Parse variables until closing brace */
+	while (!eoe)
+	{
+		/* Skip spaces, newlines, comments */
+		status = CG_SHUDConfigSkipSCN(finfo);
+		if (status == SUPERHUD_CONFIG_END_OF_FILE)
+		{
+			return SUPERHUD_CONFIG_END_OF_FILE;
+		}
+
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+		if (c == '}')
+		{
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			eoe = qtrue;
+			break;
+		}
+
+		/* Read variable name */
+		i = 0;
+		while (CG_SHUD_CONFIG_INFO_IS_TEXT_CHARACTER(c) && c != '=')
+		{
+			if (i < (MAX_QPATH - 1))
+			{
+				varName[i++] = c;
+			}
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+		}
+		varName[i] = 0;
+
+		if (i == 0)
+		{
+			return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+		}
+
+		/* Skip spaces and check for = */
+		status = CG_SHUDConfigSkipSCN(finfo);
+		if (status != SUPERHUD_CONFIG_OK)
+		{
+			return status;
+		}
+
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+		if (c != '=')
+		{
+			return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+		}
+		CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+
+		/* Skip spaces after = */
+		status = CG_SHUDConfigSkipSCN(finfo);
+		if (status != SUPERHUD_CONFIG_OK)
+		{
+			return status;
+		}
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+		/* Determine value type and parse */
+		if (c == '"')
+		{
+			/* String type */
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			i = 0;
+			c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+			while (c != '"' && c != 0 && c != '\n' && i < (MAX_QPATH - 1))
+			{
+				stringValue[i++] = c;
+				CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+				c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+			}
+			stringValue[i] = 0;
+
+			if (c == '"')
+			{
+				CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			}
+
+			CG_SHUDVarSetString(varName, stringValue);
+		}
+		else
+		{
+			/* Check if it's a number (int or float) */
+			startPos = finfo->pos;
+			isNumber = qfalse;
+			hasDecimal = qfalse;
+
+			if (c == '-' || c == '+')
+			{
+				CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+				c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+			}
+
+			if (c >= '0' && c <= '9')
+			{
+				isNumber = qtrue;
+				while ((c >= '0' && c <= '9') || c == '.')
+				{
+					if (c == '.')
+					{
+						hasDecimal = qtrue;
+					}
+					CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+					c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+				}
+			}
+
+			if (isNumber)
+			{
+				/* Restore position and parse number */
+				finfo->pos = startPos;
+				if (hasDecimal)
+				{
+					status = CG_SHUDParseFloat(finfo, &floatValue);
+					if (status == SUPERHUD_CONFIG_OK)
+					{
+						CG_SHUDVarSetFloat(varName, floatValue);
+					}
+					else
+					{
+						return status;
+					}
+				}
+				else
+				{
+					status = CG_SHUDParseInt(finfo, &intValue);
+					if (status == SUPERHUD_CONFIG_OK)
+					{
+						CG_SHUDVarSetInt(varName, intValue);
+					}
+					else
+					{
+						return status;
+					}
+				}
+			}
+			else
+			{
+				return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+			}
+		}
+
+		/* Skip ; or , */
+		status = CG_SHUDConfigSkipSCN(finfo);
+		if (status == SUPERHUD_CONFIG_END_OF_FILE)
+		{
+			return SUPERHUD_CONFIG_END_OF_FILE;
+		}
+
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+		if (c == ';' || c == ',')
+		{
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+		}
+	}
+
+	return SUPERHUD_CONFIG_OK;
 }

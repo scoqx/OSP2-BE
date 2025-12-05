@@ -716,71 +716,25 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	skinPtr = strchr(headModelName, '/');
 	if (skinPtr)
 	{
-		*skinPtr = '\0';  /* Terminate model name */
+		*skinPtr = '\0';
 		Q_strncpyz(headSkinName, skinPtr + 1, sizeof(headSkinName));
 	}
 	else
 	{
-		/* No skin specified, use default */
 		Q_strncpyz(headSkinName, "default", sizeof(headSkinName));
 	}
 
 	/* Register head model */
-	if (headModelName[0] == '*')
-	{
-		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/%s.md3", &headModelName[1], &headModelName[1]);
-	}
-	else
-	{
-		Com_sprintf(filename, sizeof(filename), "models/players/%s/head.md3", headModelName);
-	}
-
+	Com_sprintf(filename, sizeof(filename), "models/players/%s/head.md3", headModelName);
 	ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
 
-	/* if the head model could not be found and we didn't load from the heads folder try to load from there */
-	if (!ci->originalHeadModelHandle && headModelName[0] != '*')
-	{
-		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/%s.md3", headModelName, headModelName);
-		ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
-	}
-
 	/* Register head skin */
-	if (headModelName[0] == '*')
-	{
-		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/head_%s.skin", &headModelName[1], headSkinName);
-	}
-	else
-	{
-		Com_sprintf(filename, sizeof(filename), "models/players/%s/head_%s.skin", headModelName, headSkinName);
-	}
-
+	Com_sprintf(filename, sizeof(filename), "models/players/%s/head_%s.skin", headModelName, headSkinName);
 	ci->originalHeadSkinHandle = trap_R_RegisterSkin(filename);
 
-	/* if the head skin could not be found and we didn't load from the heads folder try to load from there */
-	if (!ci->originalHeadSkinHandle && headModelName[0] != '*')
-	{
-		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/head_%s.skin", headModelName, headSkinName);
-		ci->originalHeadSkinHandle = trap_R_RegisterSkin(filename);
-	}
-
 	/* Register head icon */
-	if (headModelName[0] == '*')
-	{
-		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/icon_%s.tga", &headModelName[1], headSkinName);
-	}
-	else
-	{
-		Com_sprintf(filename, sizeof(filename), "models/players/%s/icon_%s.tga", headModelName, headSkinName);
-	}
-
+	Com_sprintf(filename, sizeof(filename), "models/players/%s/icon_%s.tga", headModelName, headSkinName);
 	ci->originalModelIcon = trap_R_RegisterShaderNoMip(filename);
-
-	/* if the head icon could not be found and we didn't load from the heads folder try to load from there */
-	if (!ci->originalModelIcon && headModelName[0] != '*')
-	{
-		Com_sprintf(filename, sizeof(filename), "models/players/heads/%s/icon_%s.tga", headModelName, headSkinName);
-		ci->originalModelIcon = trap_R_RegisterShaderNoMip(filename);
-	}
 }
 
 void CG_LoadForcedSounds(void)
@@ -845,6 +799,7 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 	char        teamname[MAX_QPATH];
 
 	teamname[0] = 0;
+	
 	modelloaded = qtrue;
 	if (!CG_RegisterClientModelname(ci, ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName, teamname))
 	{
@@ -889,9 +844,6 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 			ci->newAnims = qtrue;
 		}
 	}
-
-	/* register original head model for BERUN */
-	CG_RegisterOriginalHeadModel(ci);
 
 	// sounds
 	dir = ci->modelName;
@@ -1122,11 +1074,11 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 			{
 				/* Original PBE logic */
 				qboolean isOurTeam = cgs.clientinfo[cg.clientNum].rt == ci->rt;
-				qboolean isRedTeamWhileSpec = cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED;
-				isTeamMate = isOurTeam || isRedTeamWhileSpec;
-			}
+			qboolean isRedTeamWhileSpec = cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED;
+			isTeamMate = isOurTeam || isRedTeamWhileSpec;
+		}
 
-			if (isTeamMate)
+		if (isTeamMate)
 			{
 				if (useOriginal)
 				{
@@ -1196,6 +1148,104 @@ static qboolean CG_PlayerNameIsInvisible(clientInfo_t* ci)
 		}
 	}
 	return qtrue;
+}
+
+/*
+ * Generate replacement name for noname/invisible/duplicate players
+ * Mix: 33% animals, 33% funny names, 34% thematic (space/demonic/sci-fi)
+ */
+static const char* replacementNames[] = {
+	"Darth Sumrak", "Amongus", "JustNamed", "Tiger", "Eagle", "Hawkeye", "Falcon Punch", "Shark",
+	"Fox", "Lynx-Lynx", "Panther", "Jaguar^0V12", "Coyote", "Grand_Hyena", "Asteri^0xXx", "Wolverine",
+	"Raven", "Owl", "Crow", "Vulture", "Condor", "Albatross", "PopCitizen_AUX07", "Heron",
+	"Potato", "T0mat0^1Ju1c3", "PickleRobot", "Noodle", "Waffle", "Pancake", "Donut", "Cookie",
+	"Chicken", "Duck", "Gosuvity", "Sakla_Norez", "Sloth", "KeeKee", "Panda", "Raccoon",
+	"Toaster", "KNWR(5)", "Blender", "senoB-suonimuL", "Vacuum", "Dishwasher", "WashingMachine", "Kettle",
+	"Fiend", "Hellhound", "PFE-12", "Scrag", "Spawn", "Revenant", "Archvile", "Titan",
+	"Daedalus", "Core", "Unsaint", "^X00FFFFQuantum", "Nanite", "WinstonSon", "Neural", "Hologram",
+	"Starfighter", "Destroyer", "Cruiser", "Frigate", "XWING", "Dreadnought", "Carrier", "Fleet",
+	"Da^3em^1on", "Hellfire", "Oh Man", "Chaos Knight", "Torment", "Inferno", "Abyss", "Johny^3Br^0a^3v^0o",
+	"DroneX", "Botoed", "Mech", "^XFF00FFPrizrak", "Golem", "Automaton", "Construct", "Lol",
+	"BladeON", "^XFFFFFFScyth3666", "Claw", "Fang", "Thorn", "SpikeOS", "Barb", "Stinger",
+	"Bobo", "Predator", "Skaarj", "Protoss", "Umieko", "Collector", "Vorcha", "Krogan"
+};
+
+#define REPLACEMENT_NAMES_COUNT (sizeof(replacementNames) / sizeof(replacementNames[0]))
+
+static void CG_GenerateReplacementName(unsigned short xid, const char* originalName, int clientNum, char* outName, int outSize)
+{
+	unsigned short hash;
+	char xidStr[16];
+	char clientNumStr[16];
+	int nameIndex;
+	int colorIndex;
+	const char* selectedName;
+	
+	/* Initialize hash */
+	CRC_Init(&hash);
+	
+	/* Add XID to hash */
+	Com_sprintf(xidStr, sizeof(xidStr), "%hu", xid);
+	CRC_ContinueProcessString(&hash, xidStr, strlen(xidStr));
+	
+	/* Add original name to hash */
+	if (originalName && originalName[0])
+	{
+		CRC_ContinueProcessString(&hash, originalName, strlen(originalName));
+	}
+	
+	/* Add clientNum to hash for uniqueness even with same XID and name */
+	Com_sprintf(clientNumStr, sizeof(clientNumStr), "%d", clientNum);
+	CRC_ContinueProcessString(&hash, clientNumStr, strlen(clientNumStr));
+	
+	/* Select replacement name based on hash */
+	nameIndex = hash % REPLACEMENT_NAMES_COUNT;
+	colorIndex = (hash >> 8) % 10; /* 0-9 for ^0-^9 */
+	
+	selectedName = replacementNames[nameIndex];
+	Com_sprintf(outName, outSize, "^%d%s^0*", colorIndex, selectedName);
+}
+
+/*
+ * Check if name should be replaced with replacement name
+ */
+static qboolean CG_ShouldReplaceWithReplacementName(int clientNum, qboolean nameIsInvisible, qboolean is_exists, const char* name_original)
+{
+	if (!cg_giveName.integer)
+	{
+		return qfalse;
+	}
+	
+	/* For value 1: replace names for all players except local player */
+	if (cg_giveName.integer == 1)
+	{
+		if (clientNum == cg.clientNum)
+		{
+			return qfalse;
+		}
+		return qtrue;
+	}
+	
+	/* For value 2: replace names only for duplicates, invisible, and NONAME */
+	if (cg_giveName.integer == 2)
+	{
+		if (nameIsInvisible)
+		{
+			return qtrue;
+		}
+		
+		if (is_exists)
+		{
+			return qtrue;
+		}
+		
+		if (strcmp(name_original, "^1NONAME") == 0)
+		{
+			return qtrue;
+		}
+	}
+	
+	return qfalse;
 }
 
 #define NUM_TO_HEX_CHAR(III) (((III&0x0f) < 10) ? ('0' + (III&0x0f)) : ('a' + ((III&0x0f) - 10)))
@@ -1280,6 +1330,228 @@ static void CG_CheckSpectatorTargetChange(void)
 	}
 }
 
+/*
+===================
+CG_PlayerNameCheckDuplicate
+
+Check if a player name already exists among other clients.
+Returns qtrue if duplicate found, qfalse otherwise.
+===================
+*/
+static qboolean CG_PlayerNameCheckDuplicate(int clientNum, const char* nameClean)
+{
+	int p;
+	char otherOriginalClean[MAX_QPATH];
+	
+	for (p = 0; p < MAX_CLIENTS; ++p)
+	{
+		if (p == clientNum)
+		{
+			continue;
+		}
+		if (!cgs.clientinfo[p].infoValid)
+		{
+			continue;
+		}
+		
+		/* Only check non-invisible names for duplicates */
+		/* Compare using original names, not name_clean which may be already replaced */
+		if (!cgs.clientinfo[p].nameIsInvisible)
+		{
+			Q_strncpyz(otherOriginalClean, cgs.clientinfo[p].name_original, sizeof(otherOriginalClean));
+			CG_RemoveChatEscapeCharAll(otherOriginalClean);
+			if (strcmp(nameClean, otherOriginalClean) == 0)
+			{
+				return qtrue;
+			}
+		}
+	}
+	return qfalse;
+}
+
+/*
+===================
+CG_PlayerNameBuild
+
+Build player name with specified ID and XID display rules.
+showID: 0 = never, 1 = always, 2 = only when duplicate exists
+showXID: 0 = never, 1 = always, 2 = only when duplicate exists
+===================
+*/
+static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exists, int showID, int showXID)
+{
+	qboolean useID;
+	qboolean useXID;
+	qboolean needShowID;
+	qboolean needShowXID;
+	qboolean willGetReplacementName;
+	char replacementName[MAX_QPATH];
+	qboolean useReplacement;
+	const char* displayName;
+	qboolean isNoname;
+	
+	isNoname = (strcmp(ci->name_original, "^1NONAME") == 0);
+	willGetReplacementName = CG_ShouldReplaceWithReplacementName(clientNum, ci->nameIsInvisible, is_exists, ci->name_original);
+	
+	/* For value 1: always show, for value 2: show only if duplicate/NONAME/invisible */
+	/* If name was replaced via cg_giveName, don't show ID/XID for value 2 */
+	if (showID == 1)
+	{
+		needShowID = qtrue;
+	}
+	else if (showID == 2)
+	{
+		needShowID = (is_exists || isNoname || ci->nameIsInvisible);
+		if (cg_giveName.integer && willGetReplacementName)
+		{
+			needShowID = qfalse;
+		}
+	}
+	else
+	{
+		needShowID = qfalse;
+	}
+	
+	if (showXID == 1)
+	{
+		needShowXID = qtrue;
+	}
+	else if (showXID == 2)
+	{
+		needShowXID = (is_exists || isNoname || ci->nameIsInvisible);
+		if (cg_giveName.integer && willGetReplacementName)
+		{
+			needShowXID = qfalse;
+		}
+	}
+	else
+	{
+		needShowXID = qfalse;
+	}
+	
+	useID = needShowID;
+	useXID = needShowXID;
+	/* Always use replacement name if willGetReplacementName is true, regardless of ID/XID settings */
+	useReplacement = willGetReplacementName;
+	
+	if (useReplacement)
+	{
+		CG_GenerateReplacementName(ci->xid, ci->name_original, clientNum, replacementName, sizeof(replacementName));
+		Q_strncpyz(ci->name_clean, replacementName, sizeof(ci->name_clean));
+		CG_RemoveChatEscapeCharAll(ci->name_clean);
+		displayName = replacementName;
+	}
+	else
+	{
+		displayName = ci->nameIsInvisible ? ci->name_codes : ci->name_original;
+	}
+	
+	if (useID && useXID)
+	{
+		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ? 
+		            "[%d]^8%s^7:\'%s^7\'" : "[%d]^8%s^7:%s", 
+		            clientNum, ci->xidStr, displayName);
+	}
+	else if (useXID)
+	{
+		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ? 
+		            "^8%s^7:\'%s^7\'" : "^8%s^7:%s", 
+		            ci->xidStr, displayName);
+	}
+	else if (useID)
+	{
+		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ? 
+		            "[%d]\'%s\'" : "[%d]%s", 
+		            clientNum, displayName);
+	}
+	else
+	{
+		if (useReplacement)
+		{
+			Q_strncpyz(ci->name, replacementName, sizeof(ci->name));
+		}
+		else
+		{
+			Q_strncpyz(ci->name, ci->name_original, sizeof(ci->name));
+		}
+	}
+}
+
+/*
+===================
+CG_PlayerNameFindAndUpdateExisting
+
+Update existing player's name when duplicate is detected.
+===================
+*/
+static void CG_PlayerNameFindAndUpdateExisting(int clientNum, const char* nameClean, int showID, int showXID)
+{
+	int p;
+	char otherOriginalClean[MAX_QPATH];
+	
+	/* Update all players with this name (including original) */
+	/* Compare using original names, not name_clean which may be already replaced */
+	for (p = 0; p < MAX_CLIENTS; ++p)
+	{
+		if (p == clientNum)
+		{
+			continue;
+		}
+		if (!cgs.clientinfo[p].infoValid)
+		{
+			continue;
+		}
+		
+		/* Compare with original name (clean version) */
+		Q_strncpyz(otherOriginalClean, cgs.clientinfo[p].name_original, sizeof(otherOriginalClean));
+		CG_RemoveChatEscapeCharAll(otherOriginalClean);
+		
+		if (!cgs.clientinfo[p].nameIsInvisible && 
+		    strcmp(nameClean, otherOriginalClean) == 0)
+		{
+			/* Mark as duplicate so all players get replacement names if cg_giveName is enabled */
+			CG_PlayerNameBuild(&cgs.clientinfo[p], p, qtrue, showID, showXID);
+		}
+	}
+}
+
+/*
+===================
+CG_PlayerNameBuildFinal
+
+Build final player name with ID/XID prefix based on cvar settings.
+===================
+*/
+static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
+{
+	int showID;
+	int showXID;
+	qboolean is_exists;
+	qboolean willGetReplacement;
+	char originalClean[MAX_QPATH];
+	
+	showID = cg_playersID.integer;
+	showXID = cg_playersXID.integer;
+	
+	/* Check for duplicates using original name (before replacement) */
+	/* Create clean version of original name for comparison */
+	Q_strncpyz(originalClean, ci->name_original, sizeof(originalClean));
+	CG_RemoveChatEscapeCharAll(originalClean);
+	is_exists = CG_PlayerNameCheckDuplicate(clientNum, originalClean);
+	
+	/* Check if this player will get replacement name */
+	willGetReplacement = CG_ShouldReplaceWithReplacementName(clientNum, ci->nameIsInvisible, is_exists, ci->name_original);
+	
+	/* If duplicate found, update all existing players with this name (including original) */
+	/* Use original name for finding duplicates */
+	if (is_exists)
+	{
+		CG_PlayerNameFindAndUpdateExisting(clientNum, originalClean, showID, showXID);
+	}
+	
+	CG_PlayerNameBuild(ci, clientNum, is_exists, showID, showXID);
+}
+
 void CG_NewClientInfo(int clientNum)
 {
 	clientInfo_t* ci;
@@ -1327,192 +1599,7 @@ void CG_NewClientInfo(int clientNum)
 
 	CG_StringMakeEscapeCharRAW(newInfo.name_original, newInfo.name_codes, sizeof(newInfo.name_codes));
 
-	// Build the final name with ID prefix if enabled
-	if (cg_playersID.integer == 1)
-	{
-		// Add client number in square brackets at the beginning
-		if (cg_playersXID.integer)
-		{
-			if (cg_playersXID.integer == 2)
-			{
-				int p;
-				qboolean is_exists = qfalse;
-				// check, is player with this name is exitst
-				for (p = 0; p < MAX_CLIENTS; ++p)
-				{
-					if (p == clientNum)
-					{
-						continue;
-					}
-					//ugly linear search
-					if (cgs.clientinfo[p].infoValid && !cgs.clientinfo[p].nameIsInvisible && strcmp(newInfo.name_clean, cgs.clientinfo[p].name_clean) == 0)
-					{
-						is_exists = qtrue;
-						// okay, it exits. check is another client have xid in the name and append it if not
-						if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
-						{
-							Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]^8%s^7:%s", p, cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
-						}
-						break;
-					}
-				}
-
-				if (newInfo.nameIsInvisible)
-				{
-					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:\'%s^7\'", clientNum, newInfo.xidStr, newInfo.name_codes);
-				}
-				else if (is_exists || (strcmp(newInfo.name_original, "^1NONAME") == 0))
-				{
-					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:%s", clientNum, newInfo.xidStr, newInfo.name_original);
-				}
-				else
-				{
-					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]%s", clientNum, newInfo.name_original);
-				}
-			}
-			else
-			{
-				Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:%s", clientNum, newInfo.xidStr, newInfo.name_original);
-			}
-		}
-		else
-		{
-			Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]%s", clientNum, newInfo.name_original);
-		}
-	}
-	else if (cg_playersID.integer == 2)
-	{
-		// Add client number in square brackets only in special cases
-		if (cg_playersXID.integer)
-		{
-			if (cg_playersXID.integer == 2)
-			{
-				int p;
-				qboolean is_exists = qfalse;
-				// check, is player with this name is exitst
-				for (p = 0; p < MAX_CLIENTS; ++p)
-				{
-					if (p == clientNum)
-					{
-						continue;
-					}
-					//ugly linear search
-					if (cgs.clientinfo[p].infoValid && !cgs.clientinfo[p].nameIsInvisible && strcmp(newInfo.name_clean, cgs.clientinfo[p].name_clean) == 0)
-					{
-						is_exists = qtrue;
-						// okay, it exits. check is another client have xid in the name and append it if not
-						if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
-						{
-							Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]^8%s^7:%s", p, cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
-						}
-						break;
-					}
-				}
-
-				if (newInfo.nameIsInvisible)
-				{
-					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:\'%s^7\'", clientNum, newInfo.xidStr, newInfo.name_codes);
-				}
-				else if (is_exists || (strcmp(newInfo.name_original, "^1NONAME") == 0))
-				{
-					Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:%s", clientNum, newInfo.xidStr, newInfo.name_original);
-				}
-				else
-				{
-					Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
-				}
-			}
-			else
-			{
-				Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]^8%s^7:%s", clientNum, newInfo.xidStr, newInfo.name_original);
-			}
-		}
-		else
-		{
-			int p;
-			qboolean is_exists = qfalse;
-			// check, is player with this name is exitst
-			for (p = 0; p < MAX_CLIENTS; ++p)
-			{
-				if (p == clientNum)
-				{
-					continue;
-				}
-				//ugly linear search
-				if (cgs.clientinfo[p].infoValid && !cgs.clientinfo[p].nameIsInvisible && strcmp(newInfo.name_clean, cgs.clientinfo[p].name_clean) == 0)
-				{
-					is_exists = qtrue;
-					// okay, it exits. check is another client have id in the name and append it if not
-					if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
-					{
-						Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "[%d]%s", p, cgs.clientinfo[p].name_original);
-					}
-					break;
-				}
-			}
-
-			if (newInfo.nameIsInvisible)
-			{
-				Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]\'%s\'", clientNum, newInfo.name_codes);
-			}
-			else if (is_exists || (strcmp(newInfo.name_original, "^1NONAME") == 0))
-			{
-				Com_sprintf(newInfo.name, sizeof(newInfo.name), "[%d]%s", clientNum, newInfo.name_original);
-			}
-			else
-			{
-				Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
-			}
-		}
-	}
-	else if (cg_playersXID.integer)
-	{
-		if (cg_playersXID.integer == 2)
-		{
-			int p;
-			qboolean is_exists = qfalse;
-			// check, is player with this name is exitst
-			for (p = 0; p < MAX_CLIENTS; ++p)
-			{
-				if (p == clientNum)
-				{
-					continue;
-				}
-				//ugly linear search
-				if (cgs.clientinfo[p].infoValid && !cgs.clientinfo[p].nameIsInvisible && strcmp(newInfo.name_clean, cgs.clientinfo[p].name_clean) == 0)
-				{
-					is_exists = qtrue;
-					// okay, it exits. check is another client have xid in the name and append it if not
-					if (strcmp(cgs.clientinfo[p].name_original, cgs.clientinfo[p].name) == 0)
-					{
-						Com_sprintf(cgs.clientinfo[p].name, sizeof(ci->name), "^8%s^7:%s", cgs.clientinfo[p].xidStr, cgs.clientinfo[p].name_original);
-					}
-					break;
-				}
-			}
-
-			if (newInfo.nameIsInvisible)
-			{
-				Com_sprintf(newInfo.name, sizeof(newInfo.name), "^8%s^7:\'%s^7\'", newInfo.xidStr, newInfo.name_codes);
-			}
-			else if (is_exists || (strcmp(newInfo.name_original, "^1NONAME") == 0))
-			{
-				Com_sprintf(newInfo.name, sizeof(newInfo.name), "^8%s^7:%s", newInfo.xidStr, newInfo.name_original);
-			}
-			else
-			{
-				Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
-			}
-		}
-		else
-		{
-			Com_sprintf(newInfo.name, sizeof(newInfo.name), "^8%s^7:%s", newInfo.xidStr, newInfo.name_original);
-		}
-	}
-	else
-	{
-		Q_strncpyz(newInfo.name, newInfo.name_original, sizeof(newInfo.name));
-	}
+	CG_PlayerNameBuildFinal(&newInfo, clientNum);
 
 	// bot skill
 	v = Info_ValueForKey(configstring, "skill");
@@ -1542,9 +1629,12 @@ void CG_NewClientInfo(int clientNum)
 	v = Info_ValueForKey(configstring, "t");
 	newInfo.team = atoi(v);
 
-	// hmodel
+	// hmodel - save original BEFORE any modifications
 	v = Info_ValueForKey(configstring, "hmodel");
 	Q_strncpyz(newInfo.originalHeadModel, v, sizeof(newInfo.originalHeadModel));
+	
+	/* register original head model BEFORE team skin is applied */
+	CG_RegisterOriginalHeadModel(&newInfo);
 
 	// rt
 	v = Info_ValueForKey(configstring, "rt");

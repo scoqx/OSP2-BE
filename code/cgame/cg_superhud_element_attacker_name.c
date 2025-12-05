@@ -54,8 +54,15 @@ void CG_SHUDElementAttackerNameRoutine(void* context)
 		return;
 	}
 
-	info = CG_ConfigString(CS_PLAYERS + clientNum);
-	element->ctx.text = Info_ValueForKey(info, "n");
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS && cgs.clientinfo[clientNum].infoValid)
+	{
+		element->ctx.text = cgs.clientinfo[clientNum].name;
+	}
+	else
+	{
+		info = CG_ConfigString(CS_PLAYERS + clientNum);
+		element->ctx.text = Info_ValueForKey(info, "n");
+	}
 
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }

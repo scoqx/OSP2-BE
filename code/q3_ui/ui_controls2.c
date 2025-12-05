@@ -98,6 +98,7 @@ typedef struct
 #define ID_ALWAYSRUN	36
 #define ID_AUTOSWITCH	37
 #define ID_MOUSESPEED	38
+#define ID_MOUSESPEED_FIELD	42
 #define ID_JOYENABLE	39
 #define ID_JOYTHRESHOLD	40
 #define ID_SMOOTHMOUSE	41
@@ -174,6 +175,7 @@ typedef struct
 	menuaction_s		gesture;
 	menuradiobutton_s	invertmouse;
 	menuslider_s		sensitivity;
+	menufield_s			sensitivityfield;
 	menuradiobutton_s	smoothmouse;
 	menuradiobutton_s	alwaysrun;
 	menuaction_s		showscores;
@@ -546,6 +548,8 @@ static void Controls_Update( void ) {
 			control->flags |= (QMF_HIDDEN|QMF_INACTIVE);
 		}
 	}
+	/* Hide sensitivity field initially */
+	s_controls.sensitivityfield.generic.flags |= (QMF_HIDDEN|QMF_INACTIVE);
 
 	controls = g_controls[s_controls.section];
 
@@ -565,6 +569,58 @@ static void Controls_Update( void ) {
 		control->right  = 320 + 21*SMALLCHAR_WIDTH;
 		control->top    = y;
 		control->bottom = y + SMALLCHAR_HEIGHT;
+	}
+	
+	/* Special handling for sensitivity slider and field - position field on same line as slider, but to the right */
+	if ( s_controls.section == C_LOOKING )
+	{
+		int k;
+		menucommon_s *sliderControl;
+		menufield_s *field;
+		menuslider_s *slider;
+		int sliderX;
+		int sliderBarStartX;
+		int sliderBarWidth;
+		int sliderBarEndX;
+		int fieldX;
+		
+		/* Find sensitivity slider to get its Y position */
+		for( k = 0; (sliderControl = controls[k]) != NULL; k++ )
+		{
+			if ( sliderControl->id == ID_MOUSESPEED )
+			{
+				slider = (menuslider_s *)sliderControl;
+				field = (menufield_s *)&s_controls.sensitivityfield;
+				
+				/* Recalculate slider click area to match visual slider bar */
+				sliderX = 320;
+				sliderBarStartX = sliderX + SMALLCHAR_WIDTH; /* Slider bar starts after label space */
+				sliderBarWidth = 96; /* Slider bar width */
+				sliderBarEndX = sliderBarStartX + sliderBarWidth;
+				
+				/* Set slider click area to match visual slider bar */
+				sliderControl->left = sliderBarStartX - 2; /* Small margin for easier clicking */
+				sliderControl->right = sliderBarEndX + 2; /* Small margin for easier clicking */
+				
+				/* Position field to the right of slider */
+				fieldX = sliderBarEndX + 8; /* 8 pixels gap */
+				field->generic.x = fieldX;
+				field->generic.y = sliderControl->y;
+				/* Recalculate left/right/top/bottom based on field properties */
+				{
+					int w;
+					int h;
+					w = SMALLCHAR_WIDTH;
+					h = SMALLCHAR_HEIGHT;
+					field->generic.left = fieldX - 4;
+					field->generic.right = fieldX + field->field.widthInChars * w + 4;
+					field->generic.top = sliderControl->y;
+					field->generic.bottom = sliderControl->y + h;
+				}
+				field->generic.flags &= ~(QMF_GRAYED|QMF_HIDDEN|QMF_INACTIVE);
+				break;
+			}
+		}
 	}
 
 	if( s_controls.waitingforkey ) {
@@ -601,22 +657,22 @@ static void Controls_Update( void ) {
 	// set buttons
 	switch( s_controls.section ) {
 	case C_MOVEMENT:
-		s_controls.movement.generic.flags &= ~QMF_PULSEIFFOCUS;
+		s_controls.movement.generic.flags &= ~(unsigned)QMF_PULSEIFFOCUS;
 		s_controls.movement.generic.flags |= (QMF_HIGHLIGHT|QMF_HIGHLIGHT_IF_FOCUS);
 		break;
 	
 	case C_LOOKING:
-		s_controls.looking.generic.flags &= ~QMF_PULSEIFFOCUS;
+		s_controls.looking.generic.flags &= ~(unsigned)QMF_PULSEIFFOCUS;
 		s_controls.looking.generic.flags |= (QMF_HIGHLIGHT|QMF_HIGHLIGHT_IF_FOCUS);
 		break;
 	
 	case C_WEAPONS:
-		s_controls.weapons.generic.flags &= ~QMF_PULSEIFFOCUS;
+		s_controls.weapons.generic.flags &= ~(unsigned)QMF_PULSEIFFOCUS;
 		s_controls.weapons.generic.flags |= (QMF_HIGHLIGHT|QMF_HIGHLIGHT_IF_FOCUS);
 		break;		
 
 	case C_MISC:
-		s_controls.misc.generic.flags &= ~QMF_PULSEIFFOCUS;
+		s_controls.misc.generic.flags &= ~(unsigned)QMF_PULSEIFFOCUS;
 		s_controls.misc.generic.flags |= (QMF_HIGHLIGHT|QMF_HIGHLIGHT_IF_FOCUS);
 		break;
 	}
@@ -790,7 +846,18 @@ static void Controls_GetConfig( void )
 	s_controls.smoothmouse.curvalue  = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "m_filter" ) );
 	s_controls.alwaysrun.curvalue    = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "cl_run" ) );
 	s_controls.autoswitch.curvalue   = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "cg_autoswitch" ) );
-	s_controls.sensitivity.curvalue  = UI_ClampCvar( 2, 30, Controls_GetCvarValue( "sensitivity" ) );
+	{
+		float sensValue;
+		sensValue = trap_Cvar_VariableValue( "sensitivity" );
+		if ( sensValue < 0.0f ) {
+			sensValue = 0.0f;
+		}
+		if ( sensValue > 20.0f ) {
+			sensValue = 20.0f;
+		}
+		s_controls.sensitivity.curvalue = sensValue;
+		Com_sprintf( s_controls.sensitivityfield.field.buffer, sizeof( s_controls.sensitivityfield.field.buffer ), "%.2f", sensValue );
+	}
 	s_controls.joyenable.curvalue    = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "in_joystick" ) );
 	s_controls.joythreshold.curvalue = UI_ClampCvar( 0.05f, 0.75f, Controls_GetCvarValue( "joy_threshold" ) );
 	s_controls.freelook.curvalue     = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "cl_freelook" ) );
@@ -832,7 +899,17 @@ static void Controls_SetConfig( void )
 	trap_Cvar_SetValue( "m_filter", s_controls.smoothmouse.curvalue );
 	trap_Cvar_SetValue( "cl_run", s_controls.alwaysrun.curvalue );
 	trap_Cvar_SetValue( "cg_autoswitch", s_controls.autoswitch.curvalue );
-	trap_Cvar_SetValue( "sensitivity", s_controls.sensitivity.curvalue );
+	{
+		float sensValue;
+		sensValue = s_controls.sensitivity.curvalue;
+		if ( sensValue < 0.0f ) {
+			sensValue = 0.0f;
+		}
+		if ( sensValue > 20.0f ) {
+			sensValue = 20.0f;
+		}
+		trap_Cvar_SetValue( "sensitivity", sensValue );
+	}
 	trap_Cvar_SetValue( "in_joystick", s_controls.joyenable.curvalue );
 	trap_Cvar_SetValue( "joy_threshold", s_controls.joythreshold.curvalue );
 	trap_Cvar_SetValue( "cl_freelook", s_controls.freelook.curvalue );
@@ -887,20 +964,77 @@ static sfxHandle_t Controls_MenuKey( int key )
 
 	if (!s_controls.waitingforkey)
 	{
+		menucommon_s *item;
+		item = Menu_ItemAtCursor( &s_controls.menu );
+		if ( item && item->id == ID_MOUSESPEED )
+		{
+			float step;
+			float newValue;
+			sfxHandle_t sound;
+			step = 0.05f;
+			switch ( key )
+			{
+				case K_KP_LEFTARROW:
+				case K_LEFTARROW:
+					newValue = s_controls.sensitivity.curvalue - step;
+					if ( newValue < s_controls.sensitivity.minvalue ) {
+						newValue = s_controls.sensitivity.minvalue;
+						sound = menu_buzz_sound;
+					} else {
+						sound = menu_move_sound;
+					}
+					s_controls.sensitivity.curvalue = newValue;
+					Com_sprintf( s_controls.sensitivityfield.field.buffer, sizeof( s_controls.sensitivityfield.field.buffer ), "%.2f", newValue );
+					if ( s_controls.sensitivity.generic.callback ) {
+						s_controls.sensitivity.generic.callback( &s_controls.sensitivity, QM_ACTIVATED );
+					}
+					return sound;
+				case K_KP_RIGHTARROW:
+				case K_RIGHTARROW:
+					newValue = s_controls.sensitivity.curvalue + step;
+					if ( newValue > s_controls.sensitivity.maxvalue ) {
+						newValue = s_controls.sensitivity.maxvalue;
+						sound = menu_buzz_sound;
+					} else {
+						sound = menu_move_sound;
+					}
+					s_controls.sensitivity.curvalue = newValue;
+					Com_sprintf( s_controls.sensitivityfield.field.buffer, sizeof( s_controls.sensitivityfield.field.buffer ), "%.2f", newValue );
+					if ( s_controls.sensitivity.generic.callback ) {
+						s_controls.sensitivity.generic.callback( &s_controls.sensitivity, QM_ACTIVATED );
+					}
+					return sound;
+			}
+		}
+		/* Check if current item is a field - if so, don't block DEL key */
+		if ( item && item->type == MTYPE_FIELD )
+		{
+			/* Let MenuField_Key handle DEL - don't block it */
+		}
+		else
+		{
+			switch (key)
+			{
+				case K_BACKSPACE:
+				case K_DEL:
+				case K_KP_DEL:
+					key = -1;
+					break;
+			}
+		}
+		if ( key == -1 )
+		{
+			return 0;
+		}
 		switch (key)
 		{
-			case K_BACKSPACE:
-			case K_DEL:
-			case K_KP_DEL:
-				key = -1;
-				break;
 		
 			case K_MOUSE2:
 			case K_ESCAPE:
 				if (s_controls.changesmade)
 					Controls_SetConfig();
 				goto ignorekey;	
-
+			
 			default:
 				goto ignorekey;
 		}
@@ -1093,7 +1227,6 @@ static void Controls_MenuEvent( void* ptr, int event )
 			break;
 
 		case ID_FREELOOK:
-		case ID_MOUSESPEED:
 		case ID_INVERTMOUSE:
 		case ID_SMOOTHMOUSE:
 		case ID_ALWAYSRUN:
@@ -1102,6 +1235,47 @@ static void Controls_MenuEvent( void* ptr, int event )
 		case ID_JOYTHRESHOLD:
 			if (event == QM_ACTIVATED)
 			{
+				s_controls.changesmade = qtrue;
+			}
+			break;
+		case ID_MOUSESPEED:
+			if (event == QM_ACTIVATED)
+			{
+				float step;
+				float newValue;
+				step = 0.05f;
+				newValue = s_controls.sensitivity.curvalue;
+				if ( newValue < 0.0f ) {
+					newValue = 0.0f;
+				}
+				if ( newValue > 20.0f ) {
+					newValue = 20.0f;
+				}
+				newValue = (float)((int)((newValue / step) + 0.5f)) * step;
+				if ( newValue < 0.0f ) {
+					newValue = 0.0f;
+				}
+				if ( newValue > 20.0f ) {
+					newValue = 20.0f;
+				}
+				s_controls.sensitivity.curvalue = newValue;
+				Com_sprintf( s_controls.sensitivityfield.field.buffer, sizeof( s_controls.sensitivityfield.field.buffer ), "%.2f", newValue );
+				s_controls.changesmade = qtrue;
+			}
+			break;
+		case ID_MOUSESPEED_FIELD:
+			if (event == QM_ACTIVATED || event == QM_LOSTFOCUS)
+			{
+				float newValue;
+				newValue = (float)atof( s_controls.sensitivityfield.field.buffer );
+				if ( newValue < 0.0f ) {
+					newValue = 0.0f;
+				}
+				if ( newValue > 20.0f ) {
+					newValue = 20.0f;
+				}
+				s_controls.sensitivity.curvalue = newValue;
+				Com_sprintf( s_controls.sensitivityfield.field.buffer, sizeof( s_controls.sensitivityfield.field.buffer ), "%.2f", newValue );
 				s_controls.changesmade = qtrue;
 			}
 			break;		
@@ -1481,9 +1655,18 @@ static void Controls_MenuInit( void )
 	s_controls.sensitivity.generic.name	     = "Mouse Speed";
 	s_controls.sensitivity.generic.id 	     = ID_MOUSESPEED;
 	s_controls.sensitivity.generic.callback  = Controls_MenuEvent;
-	s_controls.sensitivity.minvalue		     = 2;
-	s_controls.sensitivity.maxvalue		     = 30;
+	s_controls.sensitivity.minvalue		     = 0.0f;
+	s_controls.sensitivity.maxvalue		     = 20.0f;
 	s_controls.sensitivity.generic.statusbar = Controls_StatusBar;
+
+	s_controls.sensitivityfield.generic.type		= MTYPE_FIELD;
+	s_controls.sensitivityfield.generic.flags		= QMF_SMALLFONT;
+	s_controls.sensitivityfield.generic.x			= SCREEN_WIDTH/2 + 120;
+	s_controls.sensitivityfield.generic.y			= s_controls.sensitivity.generic.y;
+	s_controls.sensitivityfield.generic.id			= ID_MOUSESPEED_FIELD;
+	s_controls.sensitivityfield.generic.callback		= Controls_MenuEvent;
+	s_controls.sensitivityfield.field.widthInChars	= 6;
+	s_controls.sensitivityfield.generic.statusbar	= Controls_StatusBar;
 
 	s_controls.gesture.generic.type	     = MTYPE_ACTION;
 	s_controls.gesture.generic.flags     = QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS|QMF_GRAYED|QMF_HIDDEN;
@@ -1553,6 +1736,7 @@ static void Controls_MenuInit( void )
 	Menu_AddItem( &s_controls.menu, &s_controls.misc );
 
 	Menu_AddItem( &s_controls.menu, &s_controls.sensitivity );
+	Menu_AddItem( &s_controls.menu, &s_controls.sensitivityfield );
 	Menu_AddItem( &s_controls.menu, &s_controls.smoothmouse );
 	Menu_AddItem( &s_controls.menu, &s_controls.invertmouse );
 	Menu_AddItem( &s_controls.menu, &s_controls.lookup );

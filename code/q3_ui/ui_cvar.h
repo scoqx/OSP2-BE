@@ -48,6 +48,8 @@ UI_CVAR( ui_drawCrosshair, "cg_drawCrosshair", "4", CVAR_ARCHIVE )
 UI_CVAR( ui_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE )
 UI_CVAR( ui_marks, "cg_marks", "1", CVAR_ARCHIVE )
 
+UI_CVAR( ui_pallete_type, "ui_pallete_type", "0", CVAR_ARCHIVE )
+
 UI_CVAR( ui_server1, "server1", "", CVAR_ARCHIVE )
 UI_CVAR( ui_server2, "server2", "", CVAR_ARCHIVE )
 UI_CVAR( ui_server3, "server3", "", CVAR_ARCHIVE )
@@ -65,6 +67,8 @@ UI_CVAR( ui_server14, "server14", "", CVAR_ARCHIVE )
 UI_CVAR( ui_server15, "server15", "", CVAR_ARCHIVE )
 UI_CVAR( ui_server16, "server16", "", CVAR_ARCHIVE )
 
-UI_CVAR( ui_cdkeychecked, "ui_cdkeychecked", "0", CVAR_ROM )
+UI_CVAR( ui_cdkeychecked, "ui_cdkeychecked", "1", CVAR_ROM )
+
+UI_CVAR( ui_lastDemo, "ui_lastDemo", "", CVAR_NOTABCOMPLETE )
 
 #undef UI_CVAR

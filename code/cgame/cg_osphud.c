@@ -3161,7 +3161,14 @@ static float CG_OSPDrawWeaponSwitchAttacker(float y)
 
 	CG_OSPDrawPlayerIcon(640.0f - 60.0f, y, 60.0f, 60.0f, attacker, color, cgs.clientinfo[attacker].colors.railCore);
 
-	str = Info_ValueForKey(CG_ConfigString(attacker + CS_PLAYERS), "n");
+	if (attacker >= 0 && attacker < MAX_CLIENTS && cgs.clientinfo[attacker].infoValid)
+	{
+		str = cgs.clientinfo[attacker].name;
+	}
+	else
+	{
+		str = Info_ValueForKey(CG_ConfigString(attacker + CS_PLAYERS), "n");
+	}
 	y += 60.0f;
 	CG_DrawBigString(SCREEN_WIDTH - 1, y, str, 0.5f, DS_HRIGHT | DS_SHADOW, 0);
 

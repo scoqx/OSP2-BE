@@ -838,6 +838,24 @@ void CG_PrintPlayerIDs_f(void)
 	}
 }
 
+void CG_Fonts_f(void)
+{
+	int i;
+	int fontCount;
+	const char* fontName;
+
+	fontCount = CG_GetFontCount();
+	CG_Printf("^7Registered fonts:\n");
+	for (i = 0; i < fontCount; i++)
+	{
+		fontName = CG_GetFontName(i);
+		if (fontName)
+		{
+			CG_Printf("^3%2d^7. %s\n", i, fontName);
+		}
+	}
+}
+
 
 void CG_Mute_f(void)
 {
@@ -1068,6 +1086,7 @@ static consoleCommand_t commands[] =
 	{ "sa", cg_sa_f },
 	{ "salist", cg_printsa_f },
 	{ "allowedfeatures", CG_BEdisabledFeatures_f },
+	{ "fonts", CG_Fonts_f },
 };
 
 /*
@@ -1251,4 +1270,5 @@ void CG_InitConsoleCommands(void)
 	trap_AddCommand("decalrotclock");
 	trap_AddCommand("decalrotcounter");
 	trap_AddCommand("testfont");
+	trap_AddCommand("builds");
 }
