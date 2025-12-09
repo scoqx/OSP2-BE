@@ -30,7 +30,7 @@ void CG_SHUDElementGameTimeRoutine(void* context)
 	{
 		int         mins, seconds, tens;
 		int         msec;
-		if (cg_drawTimer.integer == 2 && cgs.timelimit > 0.0f)
+		if (cg_drawTimer.integer == 2 && cgs.timelimit > 0.0f && cg.warmup == 0)
 		{ 
 			msec = (cgs.timelimit * 60.f * 1000.f) - (cg.time - cgs.levelStartTime);
 		}
