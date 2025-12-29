@@ -1436,6 +1436,12 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("    - Megahealth (marks as megahealth)\n");
 	CG_Printf("    - Nothing (uses default from ^3cg_teamTaskSmartDefault^7)\n\n");
 	
+	CG_Printf("^3Muting team tasks:\n");
+	CG_Printf("  ^2mutetasks <player ID>^7   - Mute team tasks from a player\n");
+	CG_Printf("  ^2unmutetasks <player ID>^7 - Unmute team tasks from a player\n");
+	CG_Printf("  ^7Use without arguments to see list of muted players\n");
+	CG_Printf("  ^7Example: ^2mutetasks 5^7 (mute player with ID 5)\n\n");
+	
 	CG_Printf("Cvars for teamTasks starts with ^3cg_teamTask^7\n");
 	CG_Printf("^3For more information about a specific cvar:\n");
 	CG_Printf("  ^2behelp ^3<cvar_name>^7\n\n");

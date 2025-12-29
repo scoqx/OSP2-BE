@@ -542,6 +542,7 @@ SHUD:
   + cg_teamTaskWheelSet
   + cg_teamTaskWheelSensitivity
   + cg_teamTaskThemeColor
+  * +ttwheel - team task wheel
   * Direct tasks: /smart, /attack, /defence, /location, /watch, /yes, /no, /medic 
   + /mutetasks <player ID>
 
@@ -586,4 +587,3 @@ SHUD:
   - disabled var (variable) config feature for a while
   + exec/execute config feature
   + teamTask1-8 elements
-  
