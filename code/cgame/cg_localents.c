@@ -653,6 +653,7 @@ CG_AddScorePlum
 ===================
 */
 #define NUMBER_SIZE     8
+#define MAX_PLUM_DIGITS	10
 
 void CG_AddScorePlum(localEntity_t* le)
 {
@@ -748,7 +749,83 @@ void CG_AddScorePlum(localEntity_t* le)
 	}
 }
 
+void CG_AddDamagePlum( localEntity_t *le ) {
+	refEntity_t	*re;
+	vec3_t		origin, dir, vec, up = {0, 0, 1};
+	float		c;
+	int			i, damage, digits[MAX_PLUM_DIGITS], numdigits, negative;
+	float deltaTime;
+	float size;
 
+	re = &le->refEntity;
+
+	c = ( le->endTime - cg.time ) * le->lifeRate;
+
+	damage = le->radius;
+	if (damage < 10) {
+		re->shaderRGBA[0] = 0xff;
+		re->shaderRGBA[1] = 0xff;
+		re->shaderRGBA[2] = 0xff;
+	}  else if (damage < 30) {
+		re->shaderRGBA[0] = 0xff;
+		re->shaderRGBA[1] = 0xff;
+		re->shaderRGBA[2] = 0x50;
+	}  else if (damage < 50) {
+		re->shaderRGBA[0] = 0xff;
+		re->shaderRGBA[1] = 0xb2;
+		re->shaderRGBA[2] = 0x50;
+	} else {
+		re->shaderRGBA[0] = 0xff;
+		re->shaderRGBA[1] = 0x50;
+		re->shaderRGBA[2] = 0x50;
+	}
+
+
+	if (c < 0.25)
+		re->shaderRGBA[3] = 0xff * 4 * c;
+	else
+		re->shaderRGBA[3] = 0xff;
+
+
+	deltaTime = (cg.time - le->startTime) * 0.001;
+	VectorCopy(le->pos.trBase, origin);
+
+	VectorSubtract(cg.refdef.vieworg, origin, dir);
+	CrossProduct(dir, up, vec);
+	VectorNormalize(vec);
+	VectorNormalize(dir);
+	VectorMA(cg.refdef.vieworg, -8, dir, origin);
+
+	VectorMA(origin, deltaTime, le->pos.trDelta, origin);
+	// like TR_GRAVITY, but with different gravity
+	origin[2] -= 0.5 * 12 * deltaTime * deltaTime;
+
+
+	size = cg_damagePlumSize.value * 0.03;
+	re->radius = size / 2;
+
+	negative = qfalse;
+	if (damage < 0) {
+		negative = qtrue;
+		damage = -damage;
+	}
+
+	for (numdigits = 0; !(numdigits && !damage) && numdigits < MAX_PLUM_DIGITS-1; numdigits++) {
+		digits[numdigits] = damage % 10;
+		damage = damage / 10;
+	}
+
+	if (negative) {
+		digits[numdigits] = 10;
+		numdigits++;
+	}
+
+	for (i = 0; i < numdigits; i++) {
+		VectorMA(origin, ((float)numdigits / 2.0 - 0.5 - (float) i) * size, vec, re->origin);
+		re->customShader = cgs.media.numberShaders[digits[numdigits-1-i]];
+		trap_R_AddRefEntityToScene( re );
+	}
+}
 
 
 //==============================================================================
@@ -816,6 +893,10 @@ void CG_AddLocalEntities(void)
 
 			case LE_SCOREPLUM:
 				CG_AddScorePlum(le);
+				break;
+				
+			case LE_DAMAGEPLUM:
+				CG_AddDamagePlum(le);
 				break;
 
 		}

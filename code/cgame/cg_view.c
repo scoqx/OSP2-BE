@@ -975,6 +975,9 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 
 	// update cg.predictedPlayerState
 	CG_PredictPlayerState();
+	
+	// update ttwheel mark position
+	CG_UpdateSelwheelMark();
 
 	// decide on third person view
 	cg.renderingThirdPerson = (cg_thirdPerson.integer && (cg.demoPlayback || cgs.localServer)) || (cg.snap->ps.stats[STAT_HEALTH] <= 0);

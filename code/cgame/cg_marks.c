@@ -593,33 +593,43 @@ void CG_AddParticleToScene(cparticle_t* p, vec3_t org, float alpha)
 		{
 			VectorMA(org, -p->height, pvup, point);
 			VectorMA(point, -p->width, pvright, point);
-			VectorCopy(point, TRIverts[0].xyz);
-			TRIverts[0].st[0] = 1;
-			TRIverts[0].st[1] = 0;
-			TRIverts[0].modulate[0] = 255;
-			TRIverts[0].modulate[1] = 255;
-			TRIverts[0].modulate[2] = 255;
-			TRIverts[0].modulate[3] = 255 * p->alpha;
+			VectorCopy(point, verts[0].xyz);
+			verts[0].st[0] = 0;
+			verts[0].st[1] = 0;
+			verts[0].modulate[0] = 255;
+			verts[0].modulate[1] = 255;
+			verts[0].modulate[2] = 255;
+			verts[0].modulate[3] = 255 * p->alpha;
 
-			VectorMA(org, p->height, pvup, point);
-			VectorMA(point, -p->width, pvright, point);
-			VectorCopy(point, TRIverts[1].xyz);
-			TRIverts[1].st[0] = 0;
-			TRIverts[1].st[1] = 0;
-			TRIverts[1].modulate[0] = 255;
-			TRIverts[1].modulate[1] = 255;
-			TRIverts[1].modulate[2] = 255;
-			TRIverts[1].modulate[3] = 255 * p->alpha;
+			VectorMA(org, -p->height, pvup, point);
+			VectorMA(point, p->width, pvright, point);
+			VectorCopy(point, verts[1].xyz);
+			verts[1].st[0] = 0;
+			verts[1].st[1] = 1;
+			verts[1].modulate[0] = 255;
+			verts[1].modulate[1] = 255;
+			verts[1].modulate[2] = 255;
+			verts[1].modulate[3] = 255 * p->alpha;
 
 			VectorMA(org, p->height, pvup, point);
 			VectorMA(point, p->width, pvright, point);
-			VectorCopy(point, TRIverts[2].xyz);
-			TRIverts[2].st[0] = 0;
-			TRIverts[2].st[1] = 1;
-			TRIverts[2].modulate[0] = 255;
-			TRIverts[2].modulate[1] = 255;
-			TRIverts[2].modulate[2] = 255;
-			TRIverts[2].modulate[3] = 255 * p->alpha;
+			VectorCopy(point, verts[2].xyz);
+			verts[2].st[0] = 1;
+			verts[2].st[1] = 1;
+			verts[2].modulate[0] = 255;
+			verts[2].modulate[1] = 255;
+			verts[2].modulate[2] = 255;
+			verts[2].modulate[3] = 255 * p->alpha;
+
+			VectorMA(org, p->height, pvup, point);
+			VectorMA(point, -p->width, pvright, point);
+			VectorCopy(point, verts[3].xyz);
+			verts[3].st[0] = 1;
+			verts[3].st[1] = 0;
+			verts[3].modulate[0] = 255;
+			verts[3].modulate[1] = 255;
+			verts[3].modulate[2] = 255;
+			verts[3].modulate[3] = 255 * p->alpha;
 		}
 
 	}
@@ -1142,7 +1152,7 @@ void CG_AddParticleToScene(cparticle_t* p, vec3_t org, float alpha)
 	}
 
 	if (p->type == P_WEATHER || p->type == P_WEATHER_TURBULENT || p->type == P_WEATHER_FLURRY)
-		trap_R_AddPolyToScene(p->pshader, 3, TRIverts);
+		trap_R_AddPolyToScene(p->pshader, 4, verts);
 	else
 		trap_R_AddPolyToScene(p->pshader, 4, verts);
 
@@ -1150,6 +1160,138 @@ void CG_AddParticleToScene(cparticle_t* p, vec3_t org, float alpha)
 
 // Ridah, made this static so it doesn't interfere with other files
 static float roll = 0.0;
+/*
+======================
+CG_ParticleSnowBubble
+
+Creates a bubble particle that falls down like snow
+======================
+*/
+void CG_ParticleSnowBubble(qhandle_t pshader, vec3_t origin, vec3_t origin2, int turb, float range, int snum)
+{
+	cparticle_t* p;
+	float       randsize;
+
+	if (!pshader)
+		CG_Printf("CG_ParticleSnowBubble pshader == ZERO!\n");
+
+	if (!free_particles)
+		return;
+	p = free_particles;
+	free_particles = p->next;
+	p->next = active_particles;
+	active_particles = p;
+	p->time = cg.time;
+	p->color = 0;
+	p->alpha = 0.40f;
+	p->alphavel = 0;
+	p->start = origin[2];
+	p->end = origin2[2];
+	p->pshader = pshader;
+
+	randsize = 0.3 + (crandom() * 0.85);
+
+	p->height = randsize;
+	p->width = randsize;
+
+	// Make bubbles fall down like snow (negative velocity)
+	p->vel[2] = -50 - (crandom() * 10);
+
+	// Use WEATHER type instead of BUBBLE so it resets correctly when falling down
+	if (turb)
+	{
+		p->type = P_WEATHER_TURBULENT;
+		p->vel[2] = -50 * 1.3;
+	}
+	else
+	{
+		p->type = P_WEATHER;
+	}
+
+	VectorCopy(origin, p->org);
+
+	p->org[0] = p->org[0] + (crandom() * range);
+	p->org[1] = p->org[1] + (crandom() * range);
+	p->org[2] = p->org[2] + (crandom() * (p->start - p->end));
+
+	p->vel[0] = p->vel[1] = 0;
+
+	p->accel[0] = p->accel[1] = p->accel[2] = 0;
+
+	if (turb)
+	{
+		p->vel[0] = crandom() * 16;
+		p->vel[1] = crandom() * 16;
+	}
+
+	// Rafael snow pvs check
+	p->snum = snum;
+	p->link = qtrue;
+}
+
+/*
+======================
+CG_CreateWorldSnow
+
+Creates snow particles automatically across the world
+Called periodically to maintain continuous snowfall
+======================
+*/
+static int lastSnowSpawnTime = 0;
+#define SNOW_SPAWN_INTERVAL 10  // milliseconds between snow spawns (reduced for more snow)
+#define SNOW_AREA_SIZE 1024     // size of snow area around player
+#define SNOW_HEIGHT_RANGE 512   // height range for snow
+
+static void CG_CreateWorldSnow(void)
+{
+	vec3_t origin;
+	vec3_t origin2;
+	int i;
+	int numParticles;
+	
+	// Only spawn snow every SNOW_SPAWN_INTERVAL milliseconds
+	if (cg.time - lastSnowSpawnTime < SNOW_SPAWN_INTERVAL)
+	{
+		return;
+	}
+	lastSnowSpawnTime = cg.time;
+	
+	// Don't create snow if we don't have a valid player position
+	if (!cg.snap)
+	{
+		return;
+	}
+	
+	// Create snow in area around player, but world-bound
+	// Use player's position as center, but snow particles will be world-bound
+	VectorCopy(cg.snap->ps.origin, origin);
+	VectorCopy(cg.snap->ps.origin, origin2);
+	
+	// Set height range - snow falls from above to below
+	origin[2] += SNOW_HEIGHT_RANGE;  // top of snow area
+	origin2[2] -= SNOW_HEIGHT_RANGE;  // bottom of snow area
+	
+	// Create many snow particles per spawn for dense snowfall
+	numParticles = 20 + (rand() % 10);  // 50-80 particles per spawn
+	
+	for (i = 0; i < numParticles; i++)
+	{
+		vec3_t snowOrigin;
+		vec3_t snowOrigin2;
+		
+		// Random position in area around player
+		snowOrigin[0] = origin[0] + (crandom() * SNOW_AREA_SIZE);
+		snowOrigin[1] = origin[1] + (crandom() * SNOW_AREA_SIZE);
+		snowOrigin[2] = origin[2];
+		
+		snowOrigin2[0] = origin2[0];
+		snowOrigin2[1] = origin2[1];
+		snowOrigin2[2] = origin2[2];
+		
+		// Create bubble particle that falls down like snow
+		CG_ParticleSnowBubble(cgs.media.snowflakeShader, snowOrigin, snowOrigin2, 1, SNOW_AREA_SIZE, 0);
+	}
+}
 
 /*
 ===============
@@ -1167,6 +1309,13 @@ void CG_AddParticles(void)
 
 	if (!initparticles)
 		CG_ClearParticles();
+
+	// Not enough MAX_PARTICLES
+	// // Create world-bound snow 
+	// if (cg_snow.integer)
+	// {
+	// 	CG_CreateWorldSnow();
+	// }
 
 	VectorCopy(cg.refdef.viewaxis[0], pvforward);
 	VectorCopy(cg.refdef.viewaxis[1], pvright);
@@ -1345,6 +1494,7 @@ void CG_ParticleSnowFlurry(qhandle_t pshader, centity_t* cent)
 void CG_ParticleSnow(qhandle_t pshader, vec3_t origin, vec3_t origin2, int turb, float range, int snum)
 {
 	cparticle_t* p;
+	int snowflakeIndex;
 
 	if (!pshader)
 		CG_Printf("CG_ParticleSnow pshader == ZERO!\n");
@@ -1361,7 +1511,12 @@ void CG_ParticleSnow(qhandle_t pshader, vec3_t origin, vec3_t origin2, int turb,
 	p->alphavel = 0;
 	p->start = origin[2];
 	p->end = origin2[2];
-	p->pshader = pshader;
+	
+	// Select random snowflake from 32 available
+	
+		// Fallback to original shader if snowflake not loaded
+		p->pshader = pshader;
+	
 	p->height = 1;
 	p->width = 1;
 

@@ -1576,7 +1576,7 @@ const superhudConfigParseElement_t CG_SHUDFileInfoGetElementItem(configFileInfo_
 	qboolean skip_line;
 	qboolean start_of_body;
 
-	superhudConfigParseElement_t result = {NULL, SUPERHUD_CONFIG_OK};
+	superhudConfigParseElement_t result = {NULL, SUPERHUD_CONFIG_OK, {0}};
 	// find start of element name
 	do
 	{
@@ -1615,6 +1615,7 @@ const superhudConfigParseElement_t CG_SHUDFileInfoGetElementItem(configFileInfo_
 	}
 	elementName[i] = 0;
 	result.item = CG_SHUDFindConfigElementItem(elementName);
+	Q_strncpyz(result.name, elementName, sizeof(result.name));
 	if (result.item)
 	{
 		result.status = SUPERHUD_CONFIG_OK;
@@ -1744,6 +1745,71 @@ const superhudConfigParseCommand_t CG_SHUDFileInfoGetCommandItem(configFileInfo_
 	return result;
 }
 
+qboolean CG_SHUDFileInfoSkipElementBody(configFileInfo_t* cfi)
+{
+	char c;
+	int depth;
+	qboolean at_body;
+
+	/* move to first '{' */
+	at_body = qfalse;
+	while (!at_body)
+	{
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(cfi);
+		if (c == '{')
+		{
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(cfi);
+			at_body = qtrue;
+			break;
+		}
+		if (c == 0)
+		{
+			if (CG_SHUD_CONFIG_INFO_IS_END_OF_FILE(cfi))
+			{
+				return qfalse;
+			}
+			CG_SHUD_CONFIG_INFO_NEXT_LINE(cfi);
+		}
+		else
+		{
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(cfi);
+		}
+	}
+
+	/* skip until matching closing brace */
+	depth = 1;
+	while (depth > 0)
+	{
+		if (CG_SHUD_CONFIG_INFO_IS_END_OF_FILE(cfi))
+		{
+			return qfalse;
+		}
+
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(cfi);
+
+		if (c == '{')
+		{
+			depth++;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(cfi);
+		}
+		else if (c == '}')
+		{
+			depth--;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(cfi);
+		}
+		else if (c == 0)
+		{
+			CG_SHUD_CONFIG_INFO_NEXT_LINE(cfi);
+		}
+		else
+		{
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(cfi);
+		}
+	}
+
+	return qtrue;
+}
+
 /*
  * Инициализация парсера
  * No need to free allocated memory as object will be destroyed only when cgame.qvm die
@@ -1830,6 +1896,90 @@ void CG_SHUDParserInit(void)
 }
 
 /*
+ * Parse EXECUTE element: execute { command1; command2; }
+ * Note: finfo->pos should already be after the opening brace '{'
+ */
+superhudConfigParseStatus_t CG_SHUDParseExecuteElement(configFileInfo_t* finfo, superhudConfig_t* config)
+{
+	superhudConfigParseStatus_t status;
+	int len;
+	qboolean done;
+	char c;
+
+	status = CG_SHUDConfigSkipSCN(finfo);
+	if (status != SUPERHUD_CONFIG_OK)
+	{
+		return status;
+	}
+
+	len = 0;
+	done = qfalse;
+
+	config->execute.isSet = qfalse;
+	config->execute.value[0] = 0;
+
+	while (!done)
+	{
+		if (CG_SHUD_CONFIG_INFO_IS_END_OF_FILE(finfo))
+		{
+			return SUPERHUD_CONFIG_END_OF_FILE;
+		}
+
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+		if (c == '}')
+		{
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			done = qtrue;
+			break;
+		}
+
+		if (c == '#')
+		{
+			CG_SHUD_CONFIG_INFO_NEXT_LINE(finfo);
+			continue;
+		}
+
+		if (c == 0)
+		{
+			if (len > 0 && len < (SUPERHUD_EXECUTE_MAX_LEN - 1) && config->execute.value[len - 1] != ' ')
+			{
+				config->execute.value[len++] = ' ';
+			}
+			CG_SHUD_CONFIG_INFO_NEXT_LINE(finfo);
+			continue;
+		}
+
+		if (len < (SUPERHUD_EXECUTE_MAX_LEN - 1))
+		{
+			if (c == '\n' || c == '\r' || c == '\t')
+			{
+				if (len > 0 && config->execute.value[len - 1] != ' ')
+				{
+					config->execute.value[len++] = ' ';
+				}
+			}
+			else
+			{
+				config->execute.value[len++] = c;
+			}
+		}
+
+		CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+	}
+
+	config->execute.value[len] = 0;
+
+	if (len == 0)
+	{
+		return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+	}
+
+	config->execute.isSet = qtrue;
+	return SUPERHUD_CONFIG_OK;
+}
+
+/*
  * Parse VAR element: VAR { x = 1; y = 10.0; z = "Lol"; }
  * Note: finfo->pos should already be after the opening brace '{'
  */
@@ -1844,8 +1994,11 @@ superhudConfigParseStatus_t CG_SHUDParseVarElement(configFileInfo_t* finfo)
 	qboolean hasDecimal;
 	int intValue;
 	float floatValue;
+	float floatValues[4];
+	int floatCount;
 	char stringValue[MAX_QPATH];
 	int startPos;
+	int afterValuePos;
 
 	/* Parse variables until closing brace */
 	while (!eoe)
@@ -1933,6 +2086,7 @@ superhudConfigParseStatus_t CG_SHUDParseVarElement(configFileInfo_t* finfo)
 			startPos = finfo->pos;
 			isNumber = qfalse;
 			hasDecimal = qfalse;
+			floatCount = 0;
 
 			if (c == '-' || c == '+')
 			{
@@ -1956,31 +2110,55 @@ superhudConfigParseStatus_t CG_SHUDParseVarElement(configFileInfo_t* finfo)
 
 			if (isNumber)
 			{
-				/* Restore position and parse number */
+				/* Restore position and parse numbers (support up to 4 floats) */
 				finfo->pos = startPos;
-				if (hasDecimal)
+				floatCount = 0;
+				while (floatCount < 4)
 				{
-					status = CG_SHUDParseFloat(finfo, &floatValue);
-					if (status == SUPERHUD_CONFIG_OK)
+					status = CG_SHUDParseFloat(finfo, &floatValues[floatCount]);
+					if (status != SUPERHUD_CONFIG_OK)
 					{
-						CG_SHUDVarSetFloat(varName, floatValue);
+						break;
 					}
-					else
+					floatCount++;
+
+					afterValuePos = finfo->pos;
+					status = CG_SHUDConfigSkipSCN(finfo);
+					if (status != SUPERHUD_CONFIG_OK)
 					{
 						return status;
 					}
+
+					c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+					if (c == ';' || c == '}' || c == 0)
+					{
+						break;
+					}
+					if (c == '-' || c == '+' || (c >= '0' && c <= '9'))
+					{
+						continue;
+					}
+
+					/* Not a number start, rewind to before non-number */
+					finfo->pos = afterValuePos;
+					break;
+				}
+
+				if (floatCount == 4)
+				{
+					CG_SHUDVarSetFloat4(varName, floatValues);
+				}
+				else if (floatCount == 1 && !hasDecimal)
+				{
+					CG_SHUDVarSetInt(varName, (int)floatValues[0]);
+				}
+				else if (floatCount >= 1)
+				{
+					CG_SHUDVarSetFloat(varName, floatValues[0]);
 				}
 				else
 				{
-					status = CG_SHUDParseInt(finfo, &intValue);
-					if (status == SUPERHUD_CONFIG_OK)
-					{
-						CG_SHUDVarSetInt(varName, intValue);
-					}
-					else
-					{
-						return status;
-					}
+					return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
 				}
 			}
 			else

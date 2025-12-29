@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 #define SUPERHUD_DEFAULT_FADEDELAY 1000.0
+#define SUPERHUD_EXECUTE_MAX_LEN   1024
 
 typedef enum
 {
@@ -233,6 +234,11 @@ typedef struct
 		int value;
 		qboolean isSet;
 	} visiblity;
+	struct
+	{
+		char value[SUPERHUD_EXECUTE_MAX_LEN];
+		qboolean isSet;
+	} execute;
 } superhudConfig_t;
 
 typedef superhudConfig_t superhudElementDefault_t;
@@ -363,6 +369,7 @@ typedef struct
 {
 	const superHUDConfigElement_t* item;
 	superhudConfigParseStatus_t status;
+	char name[MAX_QPATH];
 } superhudConfigParseElement_t;
 
 #define SHUD_ELEMENT_INIT(E, CFG)                     \
@@ -377,6 +384,7 @@ void CG_SHUDParserInit(void);
 const superHUDConfigElement_t* CG_SHUDFindConfigElementItem(const char* name);
 const superHUDConfigCommand_t* CG_SHUDFindConfigCommandItem(const char* name);
 superhudConfigParseStatus_t CG_SHUDParseVarElement(configFileInfo_t* finfo);
+superhudConfigParseStatus_t CG_SHUDParseExecuteElement(configFileInfo_t* finfo, superhudConfig_t* config);
 
 qboolean CG_SHUDFileInfoInit(configFileInfo_t* info, const char* fileContent);
 void CG_SHUDFileInfoTeardown(configFileInfo_t* cfi);
@@ -386,6 +394,7 @@ void CG_SHUDFileInfoSkipSpaces(configFileInfo_t* cfi);
 qboolean CG_SHUDFileInfoSkipCommandEnd(configFileInfo_t* cfi);
 const superhudConfigParseElement_t CG_SHUDFileInfoGetElementItem(configFileInfo_t* cfi);
 const superhudConfigParseCommand_t CG_SHUDFileInfoGetCommandItem(configFileInfo_t* cfi);
+qboolean CG_SHUDFileInfoSkipElementBody(configFileInfo_t* cfi);
 
 void* CG_SHUDElementFPSCreate(const superhudConfig_t* config);
 void CG_SHUDElementFPSRoutine(void* context);
@@ -608,6 +617,17 @@ void* CG_SHUDElementObituaries8Create(const superhudConfig_t* config);
 void CG_SHUDElementObituariesRoutine(void* context);
 void CG_SHUDElementObituariesDestroy(void* context);
 
+void* CG_SHUDElementTeamTask1Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamTask2Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamTask3Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamTask4Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamTask5Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamTask6Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamTask7Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamTask8Create(const superhudConfig_t* config);
+void CG_SHUDElementTeamTasksRoutine(void* context);
+void CG_SHUDElementTeamTasksDestroy(void* context);
+
 
 void* CG_SHUDElementTempAccTextCreate(const superhudConfig_t* config);
 void* CG_SHUDElementTempAccIconCreate(const superhudConfig_t* config);
@@ -797,6 +817,30 @@ typedef struct
 
 typedef struct
 {
+	int time;
+	int sender;
+	int taskType;
+	int gameTime; /* Game time when task was sent (msec from level start) */
+	struct
+	{
+		qboolean isInitialized;
+		qhandle_t iconShader;
+		vec4_t senderColor;
+		char senderName[MAX_QPATH];
+		char eventName[MAX_QPATH];
+		char timeString[16];
+		int maxVisibleChars;
+		float baseX;
+		float timeWidth;
+		float senderWidth;
+		float eventNameWidth;
+		float spacing;
+		int maxNameLenPix;
+	} runtime;
+} superhudTeamTasksEntry_t;
+
+typedef struct
+{
 	int lastTrackedWeapon;
 	float lastAccuracy;
 	float kdratio;
@@ -813,6 +857,7 @@ typedef struct
 } customStats_t;
 
 #define SHUD_MAX_OBITUARIES_LINES 8
+#define SHUD_MAX_TEAMTASKS_LINES 8
 #define SHUD_MAX_CHAT_LINES 16
 #define SHUD_MAX_POWERUPS 8
 
@@ -838,6 +883,11 @@ typedef struct
 		superhudObituariesEntry_t line[SHUD_MAX_OBITUARIES_LINES];
 		unsigned int index;
 	} obituaries;
+	struct
+	{
+		superhudTeamTasksEntry_t line[SHUD_MAX_TEAMTASKS_LINES];
+		unsigned int index;
+	} teamTasks;
 	struct superhudPowerupsCache_t
 	{
 		struct superhudPowerupElement_t
@@ -861,6 +911,7 @@ typedef enum
 	SHUD_VAR_TYPE_INT,
 	SHUD_VAR_TYPE_FLOAT,
 	SHUD_VAR_TYPE_STRING,
+	SHUD_VAR_TYPE_FLOAT4,
 } superhudVarType_t;
 
 typedef struct superhudVar_s
@@ -871,6 +922,7 @@ typedef struct superhudVar_s
 	{
 		int intValue;
 		float floatValue;
+		float float4[4];
 		char stringValue[MAX_QPATH];
 	} value;
 	struct superhudVar_s* next;
@@ -879,11 +931,13 @@ typedef struct superhudVar_s
 superhudVar_t* CG_SHUDVarFind(const char* name);
 void CG_SHUDVarSetInt(const char* name, int value);
 void CG_SHUDVarSetFloat(const char* name, float value);
+void CG_SHUDVarSetFloat4(const char* name, const float value[4]);
 void CG_SHUDVarSetString(const char* name, const char* value);
 void CG_SHUDVarClearAll(void);
 qboolean CG_SHUDVarGetInt(const char* name, int* value);
 qboolean CG_SHUDVarGetFloat(const char* name, float* value);
 qboolean CG_SHUDVarGetString(const char* name, char* value, int maxlen);
+qboolean CG_SHUDVarGetFloat4(const char* name, float value[4]);
 
 superhudGlobalContext_t* CG_SHUDGetContext(void);
 void CG_SHUDAvailableElementsInit(void);

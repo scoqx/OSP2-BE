@@ -32,10 +32,10 @@ static const vec3_t weaponBrightColors[WP_NUM_WEAPONS] =
 	{1.0f, 1.0f, 1.0f},      // WP_GAUNTLET      (white)
 	{1.0f, 1.0f, 0.0f},        // WP_MACHINEGUN    (yellow)
 	{1.0f, 0.5f, 0.0f},    // WP_SHOTGUN       (orange)
-	{0.0f, 1.0f, 0.0f},   // WP_GRENADE_LAUNCHER (forest green)
+	{0.0f, 1.0f, 0.0f},   // WP_GRENADE_LAUNCHER (green)
 	{1.0f, 0.0f, 0.0f},      // WP_ROCKET_LAUNCHER (red)
 	{1.0f, 1.0f, 1.0f},        // WP_LIGHTNING     (white)
-	{0.0f, 1.0f, 1.0f},      // WP_RAILGUN       (green)
+	{0.0f, 1.0f, 1.0f},      // WP_RAILGUN       (cyan)
 	{1.0f, 0.0f, 1.0f},    // WP_PLASMAGUN     (magenta)
 	{0.0f, 0.0f, 1.0f},    // WP_BFG           (blue)
 };
@@ -1371,7 +1371,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		shaft_type = LIGHTNING_DEFAULT_SHADER;
 	}
 
-	if (CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING) && (!isOurClient && cg_enemyLightningColor.integer > 0 && CG_IsEnemy(target)))
+	if (CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING) && (!isOurClient && (cg_enemyLightningColor.integer || cg_enemyLightningColor.string) && CG_IsEnemy(target)))
 	{
 		beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
 		beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
@@ -1529,13 +1529,22 @@ static void CG_UpdateGunShaderRGBA(refEntity_t* gun)
 	gun->shaderRGBA[3] = 255 * color[3];
 }
 
+void CG_InitBrightWeaponsColors(void)
+{
+	int i;
+	for (i = 0; i < WP_NUM_WEAPONS; i++)
+	{
+		VectorCopy(weaponBrightColors[i], cgs.be.brightWeaponsColor[i]);
+	}
+}
+
 void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum)
 {
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 	{
-		gun->shaderRGBA[0] = 255 * weaponBrightColors[weaponNum][0];
-		gun->shaderRGBA[1] = 255 * weaponBrightColors[weaponNum][1];
-		gun->shaderRGBA[2] = 255 * weaponBrightColors[weaponNum][2];
+		gun->shaderRGBA[0] = 255 * cgs.be.brightWeaponsColor[weaponNum][0];
+		gun->shaderRGBA[1] = 255 * cgs.be.brightWeaponsColor[weaponNum][1];
+		gun->shaderRGBA[2] = 255 * cgs.be.brightWeaponsColor[weaponNum][2];
 		gun->shaderRGBA[3] = 255;
 	}
 }
@@ -1544,9 +1553,9 @@ void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum)
 {
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 	{
-		ent->shaderRGBA[0] = 255 * weaponBrightColors[weaponNum][0];
-		ent->shaderRGBA[1] = 255 * weaponBrightColors[weaponNum][1];
-		ent->shaderRGBA[2] = 255 * weaponBrightColors[weaponNum][2];
+		ent->shaderRGBA[0] = 255 * cgs.be.brightWeaponsColor[weaponNum][0];
+		ent->shaderRGBA[1] = 255 * cgs.be.brightWeaponsColor[weaponNum][1];
+		ent->shaderRGBA[2] = 255 * cgs.be.brightWeaponsColor[weaponNum][2];
 		ent->shaderRGBA[3] = 255;
 	}
 }

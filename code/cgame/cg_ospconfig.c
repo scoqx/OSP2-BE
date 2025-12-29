@@ -368,3 +368,47 @@ qboolean CG_IsFollowing(void)
 	}
 	return qtrue;
 }
+
+/*
+================
+CG_UpdateAutoHopFromSystemInfo
+
+Reads pmove_autohop from systeminfo and updates cgs.be.autohop.
+================
+*/
+void CG_UpdateAutoHopFromSystemInfo(void)
+{
+	const char* sysInfo;
+	const char* value;
+	int autohop;
+
+	sysInfo = CG_ConfigString(CS_SYSTEMINFO);
+	
+	value = Info_ValueForKey(sysInfo, "pmove_autohop");
+	if (!value || !value[0])
+	{
+		cgs.be.autohop = 0;
+		return;
+	}
+
+	autohop = atoi(value);
+	if (autohop == 0)
+	{
+		cgs.be.autohop = 1;
+		return;
+	}
+
+	if (autohop == 1)
+	{
+		cgs.be.autohop = 1;
+		return;
+	}
+
+	if (autohop == 2)
+	{
+		cgs.be.autohop = 2;
+		return;
+	}
+
+	cgs.be.autohop = 1;
+}

@@ -43,6 +43,23 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_zoomTime", "Zooming time - milliseconds" },
 	{ "cg_zoomSensitivityAuto", "Mouse sensitivity mode during zoom\n  ^20^7 - manual\n  ^21^7 - automatic" },
 	{ "cg_zoomSensitivityMultiplier", "Sensitivity multiplier during zoom for ^3cg_zoomSensitivityAuto ^21^7" },
+	{ "cg_zoomAutoReset", "Auto-reset zoom toggle. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - reset on death\n  ^22^7 - reset on respawn\n  ^24^7 - reset on weapon change" },
+	{ "cg_respawnWeapon", "Select weapon on respawn\n  ^20^7 - use server's weapon\n  ^21^7 - Gauntlet\n  ^22^7 - Machinegun\n  ^23^7 - Shotgun\n  ^24^7 - Grenade Launcher\n  ^25^7 - Rocket Launcher\n  ^26^7 - Lightning Gun\n  ^27^7 - Railgun\n  ^28^7 - Plasma Gun" },
+	{ "cg_exec_weapons", "When to execute weapon commands\n  ^20^7 - disabled\n  ^21^7 - for all (local client and spectating)\n  ^22^7 - only for local client (not when spectating)" },
+	{ "cg_exec_mg", "Execute commands when switching to Machinegun. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
+	{ "cg_exec_sg", "Execute commands when switching to Shotgun. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
+	{ "cg_exec_gl", "Execute commands when switching to Grenade Launcher. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
+	{ "cg_exec_rl", "Execute commands when switching to Rocket Launcher. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
+	{ "cg_exec_lg", "Execute commands when switching to Lightning Gun. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
+	{ "cg_exec_rg", "Execute commands when switching to Railgun. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec amra.cfg" },
+	{ "cg_exec_pg", "Execute commands when switching to Plasma Gun. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
+	{ "cg_exec_gametypes", "When to execute gametype commands\n  ^20^7 - disabled\n  ^21^7 - enabled (on game load)" },
+	{ "cg_exec_dm", "Execute commands when joining FFA/Deathmatch server.\n  ^2cg_fov 100; exec ffa.cfg" },
+	{ "cg_exec_tourney", "Execute commands when joining Tournament server.\n  ^2cg_fov 90; exec tourney.cfg" },
+	{ "cg_exec_tdm", "Execute commands when joining Team Deathmatch server.\n  ^2cg_fov 100; exec tdm.cfg" },
+	{ "cg_exec_ca", "Execute commands when joining Clan Arena server.\n  ^2cg_fov 100; exec ca.cfg" },
+	{ "cg_exec_ctf", "Execute commands when joining Capture The Flag server.\n  ^2cg_fov 100; exec ctf.cfg" },
+	{ "cg_exec_freeze", "Execute commands when joining Freeze Tag server.\n  ^2cg_fov 100; exec freeze.cfg" },
 	{ "cg_fov", "Field of view - degrees" },
 	{ "cg_viewsize", "Size of the game view - percentage" },
 	{ "cg_stereoSeparation", "3D stereo separation level" },
@@ -107,6 +124,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_cameraOrbitDelay", "Rotating delay in milliseconds. Requires ^3cg_thirdPerson^7 ^21^7." },
 	{ "cg_scorePlums", "Toggles the display of the floating scoring number balloons when a player scores a (negative) point or points in any game type. The awarded point value floats up from the target like a balloon and slowly fades out.\nSet ^20^7 to disable." },
 	{ "cg_smoothClients", "Smooth movement of other players by interpolating between snapshots.\n  ^20^7 - disabled (more accurate but jittery)\n  ^21^7 - enabled (smoother visuals)" },
+	{ "cg_smoothDucking", "Smooth the ducking viewheight change\n  ^20^7 - disabled\n  ^21^7 - enabled" },
 	{ "com_cameraMode", "Choose camera mod for ^3cg_thirdperson^7\n  ^20^7 - show player\n  ^21^7 - hide player" },
 	{ "pmove_fixed", "Enable fixed movement sampling rate independent of framerate\n  ^20^7 - use variable framerate sampling (default)\n  ^21^7 - fixed sampling (smoother and more predictable input). May be allowed by server." },
 	{ "pmove_msec", "Sets the waiting time in milliseconds before calling pmove() again. Can only be used when ^3pmove_fixed^7 is ^21^7" },
@@ -257,6 +275,15 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_dlightRG", "Set the dynamic light color for Railgun.\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_dlightPG", "Set the dynamic light color for Plasma Gun.\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_dlightBFG", "Set the dynamic light color for BFG.\n \"^2color^7\" - color name, digit or hex" },
+	{ "cg_brightWeaponsColorGauntlet", "Set the bright weapon color for Gauntlet.\n \"^2color^7\" - color name, digit or hex" },
+	{ "cg_brightWeaponsColorMG", "Set the bright weapon color for Machinegun.\n \"^2color^7\" - color name, digit or hex" },
+	{ "cg_brightWeaponsColorSG", "Set the bright weapon color for Shotgun.\n \"^2color^7\" - color name, digit or hex" },
+	{ "cg_brightWeaponsColorGL", "Set the bright weapon color for Grenade Launcher.\n \"^2color^7\" - color name, digit or hex" },
+	{ "cg_brightWeaponsColorRL", "Set the bright weapon color for Rocket Launcher.\n \"^2color^7\" - color name, digit or hex" },
+	{ "cg_brightWeaponsColorLG", "Set the bright weapon color for Lightning Gun.\n \"^2color^7\" - color name, digit or hex" },
+	{ "cg_brightWeaponsColorRG", "Set the bright weapon color for Railgun.\n \"^2color^7\" - color name, digit or hex" },
+	{ "cg_brightWeaponsColorPG", "Set the bright weapon color for Plasma Gun.\n \"^2color^7\" - color name, digit or hex" },
+	{ "cg_brightWeaponsColorBFG", "Set the bright weapon color for BFG.\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_gunColor", "Weapon color for ^3cg_drawGun^7 ^23^7.\n \"^2color^7\" - color name, digit or hex" },
 	{ "cg_gunOpaque", "Weapon visibility for ^3cg_drawGun^7 ^23^7.\n  ^20^7 - ^21^7" },
 	{ "cg_conObituaries", "Displays kill/freeze messages in the console. Set ^20^7 to hide." },
@@ -347,7 +374,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_friendHudMarkerMaxScale", "Maximum additional scale factor based on distance (applied to base size)." },
 	{ "cg_friendHudMarkerMinScale", "Minimum scale factor based on distance." },
 	{ "cg_friendsWallhack", "Show teammate markers through walls. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - foe\n  ^22^7 - team indicator" },
-	{ "cg_drawHudMarkers", "Whether to display teammate markers on the HUD." },
+	{ "cg_drawHudMarkers", "Display teammate markers on the HUD. Set ^20 ^7to disable." },
 	{ "cg_scoreboardRtColors", "Color of the red team scoreboard. ^3cg_scoreboardBE^7 must be enabled \n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Yellow^7\" or \"^20099FF 99FF00 99FF00^7\" or \"^24 Red 4^7\"." },
 	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Blue^7\" or \"^20099FF 99FF00 20099FF^7\" or \"^24 Red 2^7\"." },
 	{ "cg_scoreboardSpecColor", "Color of the spectator scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color>^7 separated by space. Second argument is optional" },
@@ -362,6 +389,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_bestats_widthCutoff", "Width reduction (cutoff) of the battle statistics window." },
 	{ "cg_teamIndicatorFade", " Ally indicator transparency level when aiming at a teammate. Set ^20^7 to disable." },
 	{ "cg_teamIndicatorFadeRadius", "Radius at which the ally indicator starts fading." },
+	{ "cg_teamTaskFade", "Team task marker transparency level when aiming at a marker. Set ^20^7 to disable." },
+	{ "cg_teamTaskFadeRadius", "Radius at which the team task marker starts fading." },
 	{ "be_enabled", "Enable BE features. Set ^30^7 to disable." },
 	{ "cg_chud", "Enable CherryHUD system. Set ^20^7 to disable CherryHUD." },
 	{ "chud_file", "CherryHUD configuration file name. File must be in the 'chud' directory.\n  \"^2filename^7\"" },
@@ -371,10 +400,47 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_bestats_autoaction", "Display battle statistics at the end of the game. Set ^20^7 to disable." },
 	{ "cg_spectPOV", "Use team perspective when spectating. Set ^20^7 to disable." },
 	{ "cg_drawRealHeads", "Use original player head models (icon) . Set ^20^7 to disable." },
+	{ "cg_teamTask", "Team task markers bitmask:\n  ^21^7 - Enable markers\n  ^22^7 - Play sound when marking\n  ^24^7 - Show/send marker when player dies\n  ^28^7 - Show markers on HUD\n  ^216^7 - Show player name\n  ^232^7 - Use unique colors" },
+	{ "cg_teamTaskMarkTime", "Time for team task markers to remain visible - milliseconds." },
+	{ "cg_teamTaskScale", "Scale factor for team task markers." },
+	{ "cg_teamTaskOpaque", "Opacity level for team task markers\n  ^20.0^7 - ^21.0^7" },
+	{ "cg_teamTaskFont", "Font selection for team task markers\n  ^20^7 - ^210^7" },
+	{ "cg_teamTaskWheel", "Team task selection wheel\n  ^20^7 - disabled\n  ^21^7 - normal wheel\n  ^22^7 - smart mode (first element from ^3cg_teamTaskWheelSet^7 becomes center)" },
+	{ "cg_teamTaskWheelSet", "Configure team task selection wheel elements.\nSpace-separated task names: ^2smart^7, ^2attack^7, ^2defence^7, ^2watch^7, ^2yes^7, ^2no^7, ^2location^7, ^2medic^7.\nWhen ^3cg_teamTaskWheel^7 is ^22^7, first element becomes center." },
+	{ "cg_teamTaskWheelSensitivity", "Cursor sensitivity for team task selection wheel.\nHigher values make cursor move faster." },
+	{ "cg_teamTaskSmartDefault", "Default task for smart mode. Determines center element icon in wheel.\nAvailable values: ^2attack^7, ^2defence^7, ^2watch^7, ^2location^7, ^2medic^7." },
+	{ "cg_teamTaskThemeColor", "Theme color for team task selection wheel elements.\n\"^2color^7\" - color name, digit or hex" },
+	{ "cg_teamTaskHudMarkerMaxDist", "Maximum distance for displaying team task HUD markers\n  ^20^7 - no limit\n  ^2>0^7 - maximum distance" },
+	{ "cg_teamTaskHudMarkerSize", "Base size for team task HUD markers." },
+	{ "cg_teamTaskHudMarkerMaxScale", "Maximum scale for team task HUD markers." },
+	{ "cg_teamTaskHudMarkerMinScale", "Minimum scale for team task HUD markers." },
+	{ "cg_autoHop", "Enable automatic bunny hopping. ^9Requires server support.^7\n  ^20^7 - disabled\n  ^21^7 - enabled (server controlled)" },
+	{ "cg_damagePlums", "Show damage plums (floating damage numbers). ^9Requires server support.^7\n  ^20^7 - disabled\n  ^21^7 - normal mode\n  ^22^7 - stacking mode" },
+	{ "cg_damagePlumSize", "Size of damage plums." },
+	{ "cg_damagePlumsWeapons", "Weapon filter for damage plums. Bitmask:\n  ^21^7 - Gauntlet\n  ^22^7 - Machine Gun\n  ^24^7 - Shotgun\n  ^28^7 - Grenade Launcher\n  ^216^7 - Rocket Launcher\n  ^232^7 - Lightning Gun\n  ^264^7 - Railgun\n  ^2128^7 - Plasma Gun\n  ^2256^7 - BFG" },
+	{ "cg_chatColor", "Color for chat messages. ^20^7-^29^7 or ^2a^7-^2z^7 - Q3A colors." },
+	{ "cg_teamChatColor", "Color for team chat messages. ^20^7-^29^7 or ^2a^7-^2z^7 - Q3A colors." },
+	{ "cg_countdownTimer", "Timer mode\n  ^20^7 - elapsed time\n  ^21^7 - countdown timer" },
+	{ "cg_printui", "Enable printui functionality for displaying text on screen\n  ^20^7 - disabled\n  ^21^7 - enabled" },
+	{ "cg_printui_template", "Template for printui command. Used with ^2t1^7 option.\nFormat: \"^2x y size alignment font number time^7\"" },
+	{ "cg_printui_template2", "Second template for printui command. Used with ^2t2^7 option.\nFormat: \"^2x y size alignment font number time^7\"" },
 };
 
 
 static const int cvarDescriptionTableSize = sizeof(cvarDescriptionTable) / sizeof(cvarDescriptionTable[0]);
+
+const char* CG_GetCvarDescription(const char* cvarName)
+{
+	int i;
+	for (i = 0; i < cvarDescriptionTableSize; i++)
+	{
+		if (!Q_stricmp(cvarDescriptionTable[i].cvarName, cvarName))
+		{
+			return cvarDescriptionTable[i].description;
+		}
+	}
+	return NULL;
+}
 
 void CG_RegisterCvarDescriptions(void)
 {

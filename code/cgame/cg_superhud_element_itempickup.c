@@ -37,7 +37,14 @@ void CG_SHUDElementItemPickupRoutine(void* context)
 	{
 		int         mins, seconds, tens;
 		int         msec;
-		msec = cg.itemPickupTime - cgs.levelStartTime;
+		if (cg_countdownTimer.integer)
+		{
+			msec = CG_GetRemainingGameTimeMsec(qtrue);
+		}
+		else
+		{ 
+			msec = cg.itemPickupTime - cgs.levelStartTime;
+		}
 
 		seconds = msec / 1000;
 		mins = seconds / 60;
@@ -49,6 +56,10 @@ void CG_SHUDElementItemPickupRoutine(void* context)
 			if (element->config.style.value == 2)
 			{
 				element->ctx.text = va("%i:%i%i", mins, tens, seconds); // only time
+			}
+			else if (element->config.style.value == 3)
+			{
+				element->ctx.text = va("%s", bg_itemlist[cg.itemPickup].pickup_name); // only name
 			}
 			else
 			{

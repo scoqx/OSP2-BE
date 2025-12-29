@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_players.c -- handle the media and animation for player entities
 #include "cg_local.h"
 #include "../qcommon/l_crc.h"
+#include "tr_types.h"
 
 
 
@@ -41,6 +42,14 @@ qboolean CG_IsLocalClientSpectator(void)
 	}
 }
 
+qboolean CG_IsLocalClientOnScreen(void)
+{
+	if (!cg.snap || cg.snap->ps.clientNum != cg.clientNum)
+	{
+		return qfalse;
+	}
+	return qtrue;
+}
 
 qboolean CG_IsEnemy(const clientInfo_t* target)
 {
@@ -88,13 +97,13 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 
 			result = (ourPerspectiveTeam != targetTeam);
 
-			/* Debug output */
-			if (cg_debugAnim.integer)
-			{
-				CG_Printf("[CG_IsEnemy] Following %d (team %d) | Target: %s (team %d) | isEnemy=%d\n",
-				          cg.snap->ps.clientNum, ourPerspectiveTeam,
-				          target->name, targetTeam, result);
-			}
+			// /* Debug output */
+			// if (cg_debugAnim.integer)
+			// {
+			// 	CG_Printf("[CG_IsEnemy] Following %d (team %d) | Target: %s (team %d) | isEnemy=%d\n",
+			// 	          cg.snap->ps.clientNum, ourPerspectiveTeam,
+			// 	          target->name, targetTeam, result);
+			// }
 
 			return result;
 		}
@@ -123,6 +132,48 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 	}
 
 	return qfalse;
+}
+
+/*
+=================
+CG_IsEnemySimple
+
+Simple version that just compares teams from clientInfo
+=================
+*/
+qboolean CG_IsEnemySimple(const clientInfo_t* target)
+{
+	const clientInfo_t* local;
+	team_t localTeam;
+	team_t targetTeam;
+	
+	if (!target)
+	{
+		return qfalse;
+	}
+	
+	local = &cgs.clientinfo[cg.clientNum];
+	
+	// Check if target is local player
+	if (target == local)
+	{
+		return qfalse;
+	}
+	
+	// Get teams - use rt for CA gametype, otherwise use team
+	if (CG_OSPIsGameTypeCA(cgs.gametype))
+	{
+		localTeam = local->rt;
+		targetTeam = target->rt;
+	}
+	else
+	{
+		localTeam = local->team;
+		targetTeam = target->team;
+	}
+	
+	// Compare teams - enemy if different teams
+	return (localTeam != targetTeam);
 }
 
 
@@ -701,6 +752,7 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	char* skinPtr;
 	char headModelName[MAX_QPATH];
 	char headSkinName[MAX_QPATH];
+	team_t team;
 
 	ci->originalHeadModelHandle = 0;
 	ci->originalHeadSkinHandle = 0;
@@ -727,6 +779,32 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	/* Register head model */
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/head.md3", headModelName);
 	ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
+
+	/* If model not found, use sarge as default and reset skin to default */
+	if (ci->originalHeadModelHandle == 0)
+	{
+		Q_strncpyz(headModelName, "sarge", sizeof(headModelName));
+		Q_strncpyz(headSkinName, "default", sizeof(headSkinName));
+		Com_sprintf(filename, sizeof(filename), "models/players/%s/head.md3", headModelName);
+		ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
+	}
+
+	/* Determine team color skin if default skin and team game */
+	if (Q_stricmp(headSkinName, "default") == 0)
+	{
+		if (cgs.gametype >= GT_TEAM)
+		{
+			team = ci->team;
+			if (team == TEAM_BLUE)
+			{
+				Q_strncpyz(headSkinName, cg_swapSkins.integer ? "red" : "blue", sizeof(headSkinName));
+			}
+			else if (team == TEAM_RED)
+			{
+				Q_strncpyz(headSkinName, cg_swapSkins.integer ? "blue" : "red", sizeof(headSkinName));
+			}
+		}
+	}
 
 	/* Register head skin */
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/head_%s.skin", headModelName, headSkinName);
@@ -877,6 +955,267 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 		        && cg_entities[i].currentState.eType == ET_PLAYER)
 		{
 			CG_ResetPlayerEntity(&cg_entities[i]);
+		}
+	}
+}
+
+vec3_t* CG_GetAimContactPoint(int clientNum)
+{
+	static vec3_t impactPoint;
+	int i;
+	entityState_t es;
+	vec3_t axis[3];
+	vec3_t start;
+	vec3_t end;
+	trace_t trace;
+	float viewHeight;
+
+	/* Use predicted viewheight for local player, default for others */
+	if (clientNum == cg.clientNum)
+	{
+		viewHeight = cg.predictedPlayerState.viewheight;
+	}
+	else
+	{
+		viewHeight = DEFAULT_VIEWHEIGHT;
+	}
+
+	for (i = 0; i < MAX_GENTITIES; i++)
+	{
+		es = cg_entities[i].currentState;
+		if (es.eType == ET_PLAYER && es.clientNum == clientNum && !(es.eFlags & EF_DEAD))
+		{
+			AnglesToAxis(es.apos.trBase, axis);
+			VectorCopy(es.pos.trBase, start);
+			start[2] += viewHeight;
+			VectorMA(start, 131072, axis[0], end);
+			CG_Trace(&trace, start, vec3_origin, vec3_origin, end, clientNum, CONTENTS_SOLID);
+
+			VectorCopy(trace.endpos, impactPoint);
+			return &impactPoint;
+		}
+	}
+	return NULL;
+}
+
+void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
+{
+	clientInfo_t* ci;
+	int qx;
+	int qy;
+	int qz;
+	int templateID;
+	int toClient;
+	vec3_t coord;
+
+	if (cgs.gametype < GT_TEAM)
+	{
+		return;
+	}
+
+	if (!cg_teamTask.integer)
+	{
+		return;
+	}
+	
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+
+	if (!newInfo || !ci->infoValid || !cg.nextSnap)
+	{
+		return;
+	}
+
+	/* Spectators don't see teamtask marks */
+	if (CG_IsLocalClientSpectator())
+	{
+		return;
+	}
+
+	/* Check if sender is in our team - ignore teamtask from enemies */
+	if (CG_IsEnemySimple(newInfo))
+	{
+		return;
+	}
+
+	/* Check if sender is muted for team tasks */
+	if (CG_TeamTaskFilterIsNameMuted(ci->name_original))
+	{
+		return;
+	}
+
+
+	// {
+	// 	/* Non-team game: only process teamtask from ourselves */
+	// 	if (clientNum != cg.clientNum)
+	// 	{
+	// 		return;
+	// 	}
+	// }
+
+	/* Skip if teamTask hasn't changed */
+	if (newInfo->teamTask == ci->teamTask)
+	{
+		return;
+	}
+
+	/* Process only new non-zero teamTask values */
+	/* Simply react to what we received - process the new teamTask */
+	if (newInfo->teamTask == 0)
+	{
+		/* Zero value - clear event flag, nothing to process */
+		ci->teamTaskEvent = 0;
+		return;
+	}
+
+	/* New non-zero value - process it */
+	ci->teamTaskEvent = newInfo->teamTask; /* Set flag for other functions to check */
+
+	/* Process event immediately - create the mark */
+	/* clientNum is the sender's client ID */
+	CG_OSPTeamTaskUnpack(newInfo->teamTask, clientNum, &toClient, &templateID, &qx, &qy, &qz);
+
+	coord[0] = Dequantize(qx, -3000, 3000, 7);
+	coord[1] = Dequantize(qy, -3000, 3000, 7);
+	coord[2] = Dequantize(qz, -3000, 3000, 7);
+
+	/* Check if this is an overhead mark type (YES or NO) - if so, track player dynamically */
+	/* For TEAMTASK_TARGET, try to find enemy at received position, otherwise use received coordinates */
+	/* For other marks, try to use aim contact point for more accurate positioning */
+	/* clientNum is the sender's client number (always filled), toClient is the recipient (0 = all) */
+	if (CG_IsTeamTaskOverhead(templateID))
+	{
+		/* Overhead mark - will track player dynamically */
+		/* Pass sender's clientNum so mark tracks the sender's head */
+		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+	}
+	else if (templateID == TEAMTASK_TARGET) /* TARGET is auto-selected by smart mode */
+	{
+		/* For TARGET mark, try to find enemy player at the received position */
+		/* If found, use enemy's current position with +24 height, otherwise use received coordinates */
+		int i;
+		centity_t* cent;
+		vec3_t enemyPos;
+		qboolean foundEnemy;
+		float searchRadius;
+		float dist;
+		
+		foundEnemy = qfalse;
+		searchRadius = 128.0f; /* Search radius for finding enemy near received coordinates */
+		
+		/* Try to find enemy player near received coordinates */
+		for (i = 0; i < MAX_GENTITIES; i++)
+		{
+			cent = &cg_entities[i];
+			if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
+			{
+				/* Check if this is an enemy */
+				if (cent->currentState.clientNum >= 0 && cent->currentState.clientNum < MAX_CLIENTS)
+				{
+					clientInfo_t* targetCi;
+					targetCi = &cgs.clientinfo[cent->currentState.clientNum];
+					if (targetCi->infoValid && CG_IsEnemy(targetCi))
+					{
+						/* Check if enemy is near received coordinates */
+						dist = Distance(cent->lerpOrigin, coord);
+						if (dist <= searchRadius)
+						{
+							/* Found enemy - use their position with +24 height */
+							VectorCopy(cent->lerpOrigin, enemyPos);
+							enemyPos[2] += 24.0f;
+							CG_TeamTaskMark(enemyPos, templateID, clientNum, toClient);
+							foundEnemy = qtrue;
+							break;
+						}
+					}
+				}
+			}
+		}
+		
+		/* If enemy not found, use coordinates from message */
+		if (!foundEnemy)
+		{
+			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+		}
+	}
+	else if (templateID == TEAMTASK_REDARMOR || templateID == TEAMTASK_MEGAHEALTH) /* REDARMOR and MEGAHEALTH are auto-selected by smart mode */
+	{
+		/* For red armor and megahealth, find the item entity near received coordinates */
+		/* and use its actual position instead of trace coordinates */
+		int i;
+		centity_t* cent;
+		gitem_t* item;
+		int itemIndex;
+		vec3_t itemPos;
+		qboolean foundItem;
+		float searchRadius;
+		float dist;
+		const char* targetClassname;
+		
+		foundItem = qfalse;
+		searchRadius = 128.0f; /* Search radius for finding item near received coordinates */
+		
+		/* Determine which classname to search for */
+		if (templateID == TEAMTASK_REDARMOR)
+		{
+			targetClassname = "item_armor_body";
+		}
+		else
+		{
+			targetClassname = "item_health_mega";
+		}
+		
+		/* Try to find item entity near received coordinates */
+		for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+		{
+			cent = &cg_entities[i];
+			if (cent->currentState.eType == ET_ITEM)
+			{
+				itemIndex = cent->currentState.modelindex;
+				if (itemIndex >= 1 && itemIndex < bg_numItems)
+				{
+					item = &bg_itemlist[itemIndex];
+					if (item->classname && !Q_stricmp(item->classname, targetClassname))
+					{
+						/* Check if item is near received coordinates */
+						dist = Distance(cent->lerpOrigin, coord);
+						if (dist <= searchRadius)
+						{
+							/* Found item - use its actual position (original position before bob effect) */
+							VectorCopy(cent->lerpOrigin, itemPos);
+							itemPos[2] += 4;
+							CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
+							foundItem = qtrue;
+							break;
+						}
+					}
+				}
+			}
+		}
+		
+		/* If item not found, use coordinates from message */
+		if (!foundItem)
+		{
+			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+		}
+	}
+	else
+	{
+		/* For other marks, try to use aim contact point for more accurate positioning */
+		vec3_t* aimPoint;
+		aimPoint = CG_GetAimContactPoint(clientNum);
+		if (aimPoint != NULL)
+		{
+			CG_TeamTaskMark(*aimPoint, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+		}
+		else
+		{
+			/* Fallback to coord if aimPoint is not available */
+			CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
 		}
 	}
 }
@@ -1173,6 +1512,42 @@ static const char* replacementNames[] = {
 #define REPLACEMENT_NAMES_COUNT (sizeof(replacementNames) / sizeof(replacementNames[0]))
 
 /*
+ * Check if a replacement name is already used by any client (comparison without colors)
+ */
+static qboolean CG_IsReplacementNameUsed(const char* candidateName)
+{
+	int p;
+	char cleanCandidate[MAX_QPATH];
+	char otherClean[MAX_QPATH];
+
+	Q_strncpyz(cleanCandidate, candidateName, sizeof(cleanCandidate));
+	CG_RemoveChatEscapeCharAll(cleanCandidate);
+
+	for (p = 0; p < MAX_CLIENTS; ++p)
+	{
+		if (!cgs.clientinfo[p].infoValid)
+		{
+			continue;
+		}
+
+		Q_strncpyz(otherClean, cgs.clientinfo[p].name_clean, sizeof(otherClean));
+		CG_RemoveChatEscapeCharAll(otherClean);
+
+		if (!otherClean[0])
+		{
+			continue;
+		}
+
+		if (Q_stricmp(cleanCandidate, otherClean) == 0)
+		{
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+/*
  * Extract first color code from name (format: ^digit where digit is 0-9)
  * Returns -1 if no color code found, otherwise returns the digit (0-9)
  */
@@ -1205,6 +1580,8 @@ static void CG_GenerateReplacementName(unsigned short xid, const char* originalN
 	int colorIndex;
 	int originalColorCode;
 	const char* selectedName;
+	int attempt;
+	char tmpName[MAX_QPATH];
 	
 	/* Initialize hash */
 	CRC_Init(&hash);
@@ -1237,6 +1614,21 @@ static void CG_GenerateReplacementName(unsigned short xid, const char* originalN
 	
 	selectedName = replacementNames[nameIndex];
 	Com_sprintf(outName, outSize, "^%d%s^0*", colorIndex, selectedName);
+
+	if (CG_IsReplacementNameUsed(outName))
+	{
+		for (attempt = 0; attempt < REPLACEMENT_NAMES_COUNT; ++attempt)
+		{
+			nameIndex = (nameIndex + 1) % REPLACEMENT_NAMES_COUNT;
+			selectedName = replacementNames[nameIndex];
+			Com_sprintf(tmpName, sizeof(tmpName), "^%d%s^0*", colorIndex, selectedName);
+			if (!CG_IsReplacementNameUsed(tmpName))
+			{
+				Q_strncpyz(outName, tmpName, outSize);
+				break;
+			}
+		}
+	}
 }
 
 /*
@@ -1427,7 +1819,8 @@ static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exis
 	willGetReplacementName = CG_ShouldReplaceWithReplacementName(clientNum, ci->nameIsInvisible, is_exists, ci->name_original);
 	
 	/* For value 1: always show, for value 2: show only if duplicate/NONAME/invisible */
-	/* If name was replaced via cg_giveName, don't show ID/XID for value 2 */
+	/* If cg_giveName is enabled and duplicate exists, don't show ID/XID for value 2 */
+	/* (both original and duplicate players should not show ID/XID when cg_giveName handles duplicates) */
 	if (showID == 1)
 	{
 		needShowID = qtrue;
@@ -1435,7 +1828,13 @@ static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exis
 	else if (showID == 2)
 	{
 		needShowID = (is_exists || isNoname || ci->nameIsInvisible);
-		if (cg_giveName.integer && willGetReplacementName)
+		/* If cg_giveName is enabled and duplicate exists, don't show ID/XID */
+		/* This applies to both original (who keeps name) and duplicates (who get replacement) */
+		if (cg_giveName.integer == 2 && is_exists)
+		{
+			needShowID = qfalse;
+		}
+		else if (cg_giveName.integer && willGetReplacementName)
 		{
 			needShowID = qfalse;
 		}
@@ -1452,7 +1851,13 @@ static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exis
 	else if (showXID == 2)
 	{
 		needShowXID = (is_exists || isNoname || ci->nameIsInvisible);
-		if (cg_giveName.integer && willGetReplacementName)
+		/* If cg_giveName is enabled and duplicate exists, don't show ID/XID */
+		/* This applies to both original (who keeps name) and duplicates (who get replacement) */
+		if (cg_giveName.integer == 2 && is_exists)
+		{
+			needShowXID = qfalse;
+		}
+		else if (cg_giveName.integer && willGetReplacementName)
 		{
 			needShowXID = qfalse;
 		}
@@ -1592,6 +1997,43 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 	CG_PlayerNameBuild(ci, clientNum, is_exists, showID, showXID);
 }
 
+/*
+===================
+CG_IsOnlyTeamTaskChanged
+
+Check if only teamTask field changed in client info.
+Returns qtrue if only teamTask changed, qfalse otherwise.
+===================
+*/
+static qboolean CG_IsOnlyTeamTaskChanged(const clientInfo_t* ci, const clientInfo_t* newInfo)
+{
+	if (!ci->infoValid)
+	{
+		return qfalse;
+	}
+	
+	/* Compare all key fields except teamTask */
+	if (newInfo->xid == ci->xid &&
+	    Q_stricmp(newInfo->name_original, ci->name_original) == 0 &&
+	    newInfo->botSkill == ci->botSkill &&
+	    newInfo->handicap == ci->handicap &&
+	    newInfo->wins == ci->wins &&
+	    newInfo->losses == ci->losses &&
+	    newInfo->team == ci->team &&
+	    newInfo->rt == ci->rt &&
+	    Q_stricmp(newInfo->originalHeadModel, ci->originalHeadModel) == 0)
+	{
+		/* All key fields match - check if teamTask actually changed */
+		if (newInfo->teamTask != ci->teamTask)
+		{
+			/* Only teamTask changed */
+			return qtrue;
+		}
+	}
+	
+	return qfalse;
+}
+
 void CG_NewClientInfo(int clientNum)
 {
 	clientInfo_t* ci;
@@ -1691,6 +2133,10 @@ void CG_NewClientInfo(int clientNum)
 		newInfo.rt = newInfo.team;
 	}
 
+	/* team task */
+	v = Info_ValueForKey(configstring, "tt");
+	newInfo.teamTask = atoi(v);
+
 	//st
 	v = Info_ValueForKey(configstring, "st");
 	if (v && v[0])
@@ -1707,8 +2153,20 @@ void CG_NewClientInfo(int clientNum)
 		}
 	}
 
+	/* Check if only teamTask changed - if so, skip full reload */
+	if (CG_IsOnlyTeamTaskChanged(ci, &newInfo))
+	{
+		/* Only teamTask changed - update it without full reload */
+		CG_ClientInfoUpdateTeamTask(&newInfo, clientNum);
+		ci->teamTask = newInfo.teamTask;
+		/* Don't reset team overlay, don't reload models, don't update other clients */
+		return;
+	}
+	
+	/* Full reload needed - update everything */
 	CG_ClientInfoUpdateModel(&newInfo, isOurClient, isTeamGame, configstring, clientNum);
 	CG_ClientInfoUpdateColors(&newInfo, clientNum);
+	CG_ClientInfoUpdateTeamTask(&newInfo, clientNum);
 	CG_ForceNewClientInfo(ci, &newInfo);
 
 	/* If we changed team, update models & colors */
@@ -2661,6 +3119,7 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack)
 }
 
 
+
 static void CG_FriendHudMarker(centity_t* cent)
 {
 	int team;
@@ -2721,6 +3180,51 @@ static void CG_FriendHudMarker(centity_t* cent)
 
 /*
 ===============
+CG_HasActiveTeamTaskOverhead
+
+Check if player has active team task mark above head
+===============
+*/
+static qboolean CG_HasActiveTeamTaskOverhead(int clientNum)
+{
+	int i;
+	teamTaskMark_t* mark;
+
+	if (!cg_teamTask.integer && !CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return qfalse;
+	}
+
+	if (cgs.gametype < GT_TEAM)
+	{
+		return qfalse;
+	}
+
+	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	{
+		return qfalse;
+	}
+
+	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	{
+		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+
+		if (cg.time >= mark->endTime)
+		{
+			continue;
+		}
+
+		if (mark->isOverhead && mark->clientNum == clientNum)
+		{
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+/*
+===============
 CG_PlayerSprites
 
 Float sprites over the player's head
@@ -2729,6 +3233,17 @@ Float sprites over the player's head
 static void CG_PlayerSprites(centity_t* cent)
 {
 	clientInfo_t* cl;
+	int clientNum;
+
+	clientNum = cent->currentState.clientNum;
+
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+	{
+		if (CG_HasActiveTeamTaskOverhead(clientNum))
+		{
+			return;
+		}
+	}
 
 	if (cent->currentState.eFlags & EF_CONNECTION)
 	{
@@ -3546,7 +4061,9 @@ void CG_Player(centity_t* cent)
 	CG_PlayerSplash(cent);
 
 	if (cg_drawHudMarkers.integer)
+	{
 		CG_FriendHudMarker(cent);
+	}
 
 	if (cg_shadows.integer == 3 && shadow)
 	{

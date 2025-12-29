@@ -605,7 +605,7 @@ static void CG_Missile(centity_t* cent)
 			{
 				const clientInfo_t* ci = &cgs.clientinfo[owner];
 
-				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IsEnemy(ci); // На OSP CA нет данных otherEntityNum
+				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IsEnemy(ci) || cgs.gametype == GT_TOURNAMENT; // OSP не имеет данных otherEntityNum
 
 				if (isAlly)
 				{

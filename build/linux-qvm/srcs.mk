@@ -11,7 +11,7 @@ CG_SRC = \
  cg_main $(CGDIR)/cg_syscalls.asm \
  cg_consolecmds cg_draw cg_drawtools cg_effects cg_ents cg_event cg_info \
  cg_localents cg_players cg_playerstate cg_predict cg_scoreboard cg_marks \
- cg_servercmds cg_snapshot cg_view cg_weapons \
+ cg_servercmds cg_snapshot cg_view cg_weapons cg_printui cg_teamtasks cg_teamtasks_crypto \
  bg_slidemove bg_pmove bg_lib bg_misc \
  q_math q_shared cg_ospconfig cg_osputil cg_osphud cg_unlagged cg_playerscolors\
  cg_localevents cg_customloc cg_cvardescriptions common\
@@ -47,8 +47,9 @@ CG_SRC = \
  cg_superhud_element_weapon_stats cg_superhud_element_player_stats cg_superhud_element_player_name \
  cg_superhud_element_spectators \
  cg_superhud_element_grid \
+ cg_superhud_element_teamtasks \
  l_crc \
- cg_chatfilter cg_crosshair \
+ cg_chatfilter cg_teamtaskfilter cg_crosshair \
  cg_be_util cg_be_stats \
  cg_cherryhud cg_cherryhud_elements cg_cherryhud_private cg_cherryhud_util \
  cg_cherryhud_element_decor \

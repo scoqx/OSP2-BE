@@ -905,17 +905,445 @@ void CG_UnMute_f(void)
 	}
 }
 
-void CG_ShowFont_f(void)
+void CG_MuteTasks_f(void)
 {
+	int p;
+
 	if (trap_Argc() < 2)
 	{
-		cgs.osp.testFont[0] = 0;
+		CG_TeamTaskFilterDump();
+		CG_Printf("\nusage: %s <player ID>\n", CG_Argv(0));
+		return;
+	}
+
+	p = atoi(CG_Argv(1));
+	if (p < MAX_CLIENTS && cgs.clientinfo[p].infoValid)
+	{
+		CG_TeamTaskFilterAddName(cgs.clientinfo[p].name_original);
+		CG_TeamTaskFilterSaveFile(CG_TEAMTASKFILTER_DEFAULT_FILE);
+		CG_Printf("\n^1Player %s team tasks are muted\n", cgs.clientinfo[p].name_clean);
 	}
 	else
 	{
-		Com_sprintf(cgs.osp.testFont, MAX_QPATH, "%s", CG_Argv(1));
+		CG_Printf("\n^1Wrong player ID\n");
 	}
 }
+
+void CG_UnMuteTasks_f(void)
+{
+	int p;
+
+	if (trap_Argc() < 2)
+	{
+		CG_TeamTaskFilterDump();
+		CG_Printf("\nusage: %s <player ID>\n", CG_Argv(0));
+		return;
+	}
+
+	p = atoi(CG_Argv(1));
+	if (p < MAX_CLIENTS && cgs.clientinfo[p].infoValid)
+	{
+		CG_TeamTaskFilterDeleteName(cgs.clientinfo[p].name_original);
+		CG_TeamTaskFilterSaveFile(CG_TEAMTASKFILTER_DEFAULT_FILE);
+		CG_Printf("\n^2Player %s team tasks are unmuted\n", cgs.clientinfo[p].name_clean);
+	}
+	else
+	{
+		CG_Printf("\n^1Wrong player ID\n");
+	}
+}
+
+void CG_ShowFont_f(void)
+{
+	const char* arg;
+	int fontIndex;
+	const char* fontName;
+
+	if (trap_Argc() < 2)
+	{
+		cgs.osp.testFont[0] = 0;
+		return;
+	}
+
+	arg = CG_Argv(1);
+	fontIndex = CG_FontIndexFromString(arg);
+	fontName = CG_GetFontName(fontIndex);
+
+	if (fontName)
+	{
+		Com_sprintf(cgs.osp.testFont, MAX_QPATH, "%s", fontName);
+	}
+	else
+	{
+		/* Fallback: use argument as font name */
+		Com_sprintf(cgs.osp.testFont, MAX_QPATH, "%s", arg);
+	}
+}
+
+
+void CG_SendTeamTaskMark(int toClient, int templateID)
+{
+	int packed;
+	int x;
+	int y;
+	int z;
+	trace_t trace;
+	vec3_t start;
+	vec3_t end;
+
+	if (!cg_teamTask.integer)
+	{
+		return;	
+	}
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return;
+	}
+	if (!CG_IsLocalClientOnScreen())
+	{
+		return;
+	}
+	if (cgs.gametype < GT_TEAM)
+	{
+		CG_PrintOnce("^3There are no teams\n");
+		return;
+	}
+	/* Check if we are in spectator/following mode */
+	if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
+	{
+		return;
+	}
+	/* Check if local player is spectator */
+	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+	{
+		return;
+	}
+	
+	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
+	{
+		return; /* anti-flood: too many commands sent in short time */
+	}
+	/* Anti-flood check 2: bucket limit (6 tokens, 800ms refill) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucket, cg.time))
+	{
+		return; /* anti-flood: bucket limit exceeded */
+	}
+	/* Anti-flood check 3: flood protection (16 tokens, 1100ms refill) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFlood, cg.time))
+	{
+		return; /* anti-flood: flood protection activated */
+	}
+
+	/* Use view direction for positioning (like original) */
+	VectorCopy(cg.refdef.vieworg, start);
+	VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
+
+	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
+	         cg.snap->ps.clientNum, CONTENTS_SOLID);
+
+	x = Quantize(trace.endpos[0], -3000, 3000, 7);
+	y = Quantize(trace.endpos[1], -3000, 3000, 7);
+	z = Quantize(trace.endpos[2], -3000, 3000, 7);
+
+	/* Static mark at trace position */
+	packed = CG_OSPTeamTaskPack(0, templateID, x, y, z);
+	trap_SendClientCommand(va("teamtask %i", packed));
+	trap_SendClientCommand("teamtask 0");
+}
+
+void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
+{
+	int packed;
+	int x;
+	int y;
+	int z;
+	vec3_t playerPos;
+
+	if (!cg_teamTask.integer)
+	{
+		return;
+	}
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return;
+	}
+	if (!CG_IsLocalClientOnScreen())
+	{
+		return;
+	}
+	if (cgs.gametype < GT_TEAM)
+	{
+		CG_PrintOnce("^3There are no teams\n");
+		return;
+	}
+	/* Check if we are in spectator/following mode */
+	if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
+	{
+		return;
+	}
+	/* Check if local player is spectator */
+	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+	{
+		return;
+	}
+	
+	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
+	{
+		return; /* anti-flood: too many commands sent in short time */
+	}
+	/* Anti-flood check 2: bucket limit (6 tokens, 800ms refill) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucket, cg.time))
+	{
+		return; /* anti-flood: bucket limit exceeded */
+	}
+	/* Anti-flood check 3: flood protection (16 tokens, 1100ms refill) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFlood, cg.time))
+	{
+		return; /* anti-flood: flood protection activated */
+	}
+
+	/* Get local player position and add offset above head */
+	VectorCopy(cg.predictedPlayerState.origin, playerPos);
+	playerPos[2] += 48.0f; /* Offset above head */
+
+	x = Quantize(playerPos[0], -3000, 3000, 7);
+	y = Quantize(playerPos[1], -3000, 3000, 7);
+	z = Quantize(playerPos[2], -3000, 3000, 7);
+
+	/* Send to all (0 = broadcast) - templateID is already correct (YES/NO) */
+	packed = CG_OSPTeamTaskPack(toClient, templateID, x, y, z);
+	trap_SendClientCommand(va("teamtask %i", packed));
+	trap_SendClientCommand("teamtask 0");
+}
+
+void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position)
+{
+	int packed;
+	int x;
+	int y;
+	int z;
+
+	if (!cg_teamTask.integer)
+	{
+		return;
+	}
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return;
+	}
+	if (!CG_IsLocalClientOnScreen())
+	{
+		return;
+	}
+	if (cgs.gametype < GT_TEAM)
+	{
+		return;
+	}
+	
+	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
+	{
+		return; /* anti-flood: too many commands sent in short time */
+	}
+	/* Anti-flood check 2: bucket limit (6 tokens, 800ms refill) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucket, cg.time))
+	{
+		return; /* anti-flood: bucket limit exceeded */
+	}
+	/* Anti-flood check 3: flood protection (16 tokens, 1100ms refill) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFlood, cg.time))
+	{
+		return; /* anti-flood: flood protection activated */
+	}
+
+	x = Quantize(position[0], -3000, 3000, 7);
+	y = Quantize(position[1], -3000, 3000, 7);
+	z = Quantize(position[2], -3000, 3000, 7);
+
+	packed = CG_OSPTeamTaskPack(toClient, templateID, x, y, z);
+	trap_SendClientCommand(va("teamtask %i", packed));
+	trap_SendClientCommand("teamtask 0");
+}
+
+void CG_TeamTaskMarkOffense(void)
+{
+	CG_SendTeamTaskMark(0, TEAMTASK_OFFENSE);
+}
+
+void CG_TeamTaskMarkDefence(void)
+{
+	CG_SendTeamTaskMark(0, TEAMTASK_DEFENCE);
+}
+
+void CG_TeamTaskMarkWatch(void)
+{
+	CG_SendTeamTaskMark(0, TEAMTASK_PATROL); /* TEAMTASK_PATROL is used for watch */
+}
+
+void CG_TeamTaskMarkYes(void)
+{
+	CG_SendTeamTaskMarkOverhead(0, TEAMTASK_YES);
+}
+
+void CG_TeamTaskMarkNo(void)
+{
+	CG_SendTeamTaskMarkOverhead(0, TEAMTASK_NO);
+}
+
+void CG_TeamTaskMarkMedic(void)
+{
+	CG_SendTeamTaskMarkOverhead(0, TEAMTASK_MEDIC);
+}
+
+void CG_TeamTaskMarkLocation(void)
+{
+	CG_SendTeamTaskMark(0, TEAMTASK_LOCATION);
+}
+
+void CG_TeamTaskMarkSend(void)
+{
+	int targetType;
+	int markType;
+	trace_t trace;
+	vec3_t start;
+	vec3_t end;
+	vec3_t enemyPos;
+	vec3_t itemPos;
+	int i;
+	centity_t* cent;
+	
+	if (!cg_teamTask.integer)
+	{
+		return;
+	}
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return;
+	}
+	if (!CG_IsLocalClientOnScreen())
+	{
+		return;
+	}
+	
+	/* Check if we have a saved target from wheel opening (valid for 500ms) */
+	if ((cg_teamTaskWheel.integer == 2) && 
+	    cgs.be.teamMarkers.smartTargetTime > 0 &&
+	    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+	    cgs.be.teamMarkers.smartTargetType != 1)
+	{
+		/* Use saved target */
+		targetType = cgs.be.teamMarkers.smartTargetType;
+		VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+	}
+	else
+	{
+		/* Check what we're aiming at using CG_CrosshairTarget */
+		/* Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth */
+		/* If item found, itemPos contains item center position */
+		targetType = CG_CrosshairTarget(itemPos);
+	}
+	
+	switch (targetType)
+	{
+		case 2: /* enemy */
+		{
+			/* Check if we're using saved target */
+			if ((cg_teamTaskWheel.integer == 2) && 
+			    cgs.be.teamMarkers.smartTargetTime > 0 &&
+			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			    cgs.be.teamMarkers.smartTargetType == 2)
+			{
+				/* Use saved enemy position */
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, enemyPos);
+				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos);
+				return;
+			}
+			
+			/* For enemy, get their position and mark at their body (+24 height) */
+			VectorCopy(cg.refdef.vieworg, start);
+			VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
+			
+			CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
+			         cg.snap->ps.clientNum, CONTENTS_SOLID | CONTENTS_BODY);
+			
+			/* Check if we hit a player */
+			if (trace.entityNum >= 0 && trace.entityNum < MAX_CLIENTS)
+			{
+				/* Find player entity and get their position */
+				for (i = 0; i < MAX_GENTITIES; i++)
+				{
+					cent = &cg_entities[i];
+					if (cent->currentState.eType == ET_PLAYER && 
+					    cent->currentState.clientNum == trace.entityNum &&
+					    cent->currentValid)
+					{
+						/* Use enemy player position with +24 height offset */
+						VectorCopy(cent->lerpOrigin, enemyPos);
+						enemyPos[2] += 24.0f;
+						CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos);
+						return;
+					}
+				}
+			}
+			/* Fallback: if enemy entity not found, use trace endpos */
+			VectorCopy(trace.endpos, enemyPos);
+			enemyPos[2] += 24.0f;
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos);
+			return;
+		}
+		case 3: /* red armor */
+			markType = TEAMTASK_REDARMOR;
+			/* Use saved item position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer == 2) && 
+			    cgs.be.teamMarkers.smartTargetTime > 0 &&
+			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			    cgs.be.teamMarkers.smartTargetType == 3)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos);
+			return;
+		case 4: /* megahealth */
+			markType = TEAMTASK_MEGAHEALTH;
+			/* Use saved item position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer == 2) && 
+			    cgs.be.teamMarkers.smartTargetTime > 0 &&
+			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			    cgs.be.teamMarkers.smartTargetType == 4)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos);
+			return;
+		default: /* nothing or other */
+		{
+			teamTaskCommand_t* cmd;
+			int defaultType;
+			
+			// Get default type from cvar (string name)
+			cmd = CG_GetTeamTaskCommandByName(cg_teamTaskSmartDefault.string);
+			
+			// Check if command is valid and selectable
+			if (cmd && cmd->isSelectable)
+			{
+				defaultType = cmd->taskType;
+			}
+			else
+			{
+				// Invalid name, overhead command, or auto-selected commands
+				// Use LOCATION as fallback
+				defaultType = TEAMTASK_LOCATION;
+			}
+			
+			markType = defaultType;
+			CG_SendTeamTaskMark(0, markType);
+			return;
+		}
+	}
+}
+
 
 void CG_DPI_f(void)
 {
@@ -962,17 +1390,111 @@ void CG_DPI_f(void)
 	CG_Printf("^1cm/360:       ^2%.2f\n", local_360);
 }
 
-void cg_sa_f(void)
-{
-	trap_SendClientCommand("statsall");
-	cgs.be.statsAllRequested = qtrue;
-}
-
 void CG_BEdisabledFeatures_f()
 {
 	CG_PrintDisabledFeatures(qtrue);
 }
+
+
 void CG_Stub_f(void) { }
+
+/*
+=================
+CG_TeamTaskHelp_f
+
+Display help information about team tasks
+Usage: teamtaskhelp
+=================
+*/
+void CG_TeamTaskHelp_f(void)
+{
+	CG_Printf("\n^5=== Team Task Help ===\n\n");
+	
+	CG_Printf("^3How to open the wheel menu:\n");
+	CG_Printf("  ^2+ttwheel^7 - Open team task selection wheel\n");
+	CG_Printf("  ^2-ttwheel^7 - Close wheel and send selected command\n");
+	CG_Printf("  ^7Bind a key: ^2bind <key> \"+ttwheel\"^7\n");
+	CG_Printf("  ^7Example: ^2bind mouse3 \"+ttwheel\"^7\n\n");
+	
+	CG_Printf("^3How to use the wheel:\n");
+	CG_Printf("  ^71. Hold the key bound to ^2+ttwheel^7\n");
+	CG_Printf("  ^72. Move mouse to select a task icon\n");
+	CG_Printf("  ^73. Release the key to send the command\n\n");
+	
+	CG_Printf("^3Available team task commands:\n");
+	CG_Printf("  ^2tattack^7    - Mark attack position\n");
+	CG_Printf("  ^2tdefence^7   - Mark defence position\n");
+	CG_Printf("  ^2twatch^7      - Mark watch/patrol position\n");
+	CG_Printf("  ^2tlocation^7  - Mark location/position\n");
+	CG_Printf("  ^2tyes^7        - Send YES (overhead mark)\n");
+	CG_Printf("  ^2tno^7         - Send NO (overhead mark)\n");
+	CG_Printf("  ^2tmedic^7      - Request medic (overhead mark)\n");
+	CG_Printf("  ^2tsmart^7      - Smart mode (auto-detects target)\n");
+	CG_Printf("  ^7Smart mode automatically detects:\n");
+	CG_Printf("    - Enemy players (marks as target)\n");
+	CG_Printf("    - Red armor (marks as redarmor)\n");
+	CG_Printf("    - Megahealth (marks as megahealth)\n");
+	CG_Printf("    - Nothing (uses default from ^3cg_teamTaskSmartDefault^7)\n\n");
+	
+	CG_Printf("Cvars for teamTasks starts with ^3cg_teamTask^7\n");
+	CG_Printf("^3For more information about a specific cvar:\n");
+	CG_Printf("  ^2behelp ^3<cvar_name>^7\n\n");
+}
+
+/*
+=================
+CG_BEHelp_f
+
+Get cvar description
+Usage: behelp <cvar_name>
+=================
+*/
+void CG_BEHelp_f(void)
+{
+	const char* cvarName;
+	const char* description;
+	char currentValue[MAX_CVAR_VALUE_STRING];
+	cvarTable_t* cvarTable;
+	const char* defaultValue;
+
+	if (trap_Argc() < 2)
+	{
+		CG_Printf("^3Usage: behelp <cvar_name>\n");
+		return;
+	}
+
+	cvarName = CG_Argv(1);
+	
+	/* Check if description exists */
+	description = CG_GetCvarDescription(cvarName);
+	if (description && description[0])
+	{
+		/* Get current value */
+		trap_Cvar_VariableStringBuffer(cvarName, currentValue, sizeof(currentValue));
+		
+		/* Get default value */
+		cvarTable = CG_GetCgCvarByName(cvarName);
+		if (cvarTable && cvarTable->defaultString)
+		{
+			defaultValue = cvarTable->defaultString;
+		}
+		else
+		{
+			defaultValue = "unknown";
+		}
+
+		/* Print cvar info */
+		CG_Printf("\"%s\" is \"%s\" default:\"%s\"\n", cvarName, currentValue, defaultValue);
+
+		/* Print description */
+		CG_Printf("%s\n", description);
+	}
+	else
+	{
+		/* No description found, send print command to client */
+		trap_SendConsoleCommand(va("print %s", cvarName));
+	}
+}
 
 typedef struct
 {
@@ -1008,8 +1530,6 @@ static consoleCommand_t commands[] =
 	{ "-scores", CG_ScoresUp_f },
 	{ "+wstats", CG_OSPWStatsDown_f },
 	{ "-wstats", CG_OSPWStatsUp_f },
-	// { "+bstats", CG_BEStatsDown_f },
-	// { "-bstats", CG_BEStatsUp_f },
 	{ "+zoom", CG_ZoomDown_f },
 	{ "-zoom", CG_ZoomUp_f },
 	{ "+zoomtoggle", CG_ZoomToggle_f},
@@ -1080,13 +1600,27 @@ static consoleCommand_t commands[] =
 	{ "playersid", CG_PrintPlayerIDs_f },
 	{ "mute", CG_Mute_f },
 	{ "unmute", CG_UnMute_f },
+	{ "mutetasks", CG_MuteTasks_f },
+	{ "unmutetasks", CG_UnMuteTasks_f },
 	{ "showfont", CG_ShowFont_f },
 	{ "dpi", CG_DPI_f },
 	{ "belist", CG_PrintNewCommandsBE_f },
-	{ "sa", cg_sa_f },
-	{ "salist", cg_printsa_f },
+	// { "salist", cg_printsa_f },
 	{ "allowedfeatures", CG_BEdisabledFeatures_f },
 	{ "fonts", CG_Fonts_f },
+	{ "printui", CG_PrintUI_f },
+	{ "tattack", CG_TeamTaskMarkOffense },
+	{ "tdefence", CG_TeamTaskMarkDefence },
+	{ "twatch", CG_TeamTaskMarkWatch },
+	{ "tyes", CG_TeamTaskMarkYes },
+	{ "tno", CG_TeamTaskMarkNo },
+	{ "tmedic", CG_TeamTaskMarkMedic },
+	{ "tlocation", CG_TeamTaskMarkLocation },
+	{ "tsmart", CG_TeamTaskMarkSend },
+	{ "+ttwheel", CG_SelwheelMarkStart },
+	{ "-ttwheel", CG_SelwheelMarkStop },
+	{ "behelp", CG_BEHelp_f },
+	{ "teamtaskhelp", CG_TeamTaskHelp_f },
 };
 
 /*

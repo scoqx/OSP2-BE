@@ -177,6 +177,20 @@ void CG_LocalEventCvarChanged_cg_autoAction(cvarTable_t* cvart)
 		cgs.osp.nextCvarsUpdateTime = cg.time + 1200;
 	}
 }
+
+void CG_LocalEventCvarChanged_cg_autoHop(cvarTable_t* cvart)
+{
+	if (cgs.be.autohop == 0)
+	{
+		CG_PrintOnce("^1Auto-hop not supported\n");
+		trap_Cvar_Set("cg_autoHop", "0");
+	}
+	else if (cgs.be.autohop == 1)
+	{
+		CG_PrintOnce("^3Auto-hop controlled by server\n");
+		trap_Cvar_Set("cg_autoHop", "1");
+	}
+}
 void CG_LocalEventCvarChanged_snaps(cvarTable_t* cvart)
 {
 	if (cgs.osp.nextCvarsUpdateTime)
@@ -279,7 +293,7 @@ void CG_LocalEventCvarChanged_pmove_fixed(cvarTable_t* cvart)
 {
 	if (cgs.osp.allow_pmove == 0 && pmove_fixed.integer)
 	{
-		CG_Printf("^3Enhanced client sampling has been disabled on this server.\n");
+		CG_PrintOnce("^3Enhanced client sampling has been disabled on this server.\n");
 		trap_Cvar_Set("pmove_fixed", "0");
 	}
 }
@@ -452,11 +466,13 @@ void CG_LocalEventCvarChanged_ch_crosshairDecorActionScale(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_ch_crosshairActionTime(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(50, 1000, cvart->vmCvar->value);
+	cvart->vmCvar->integer = Com_Clamp(50, 1000, cvart->vmCvar->integer);
 }
 
 void CG_LocalEventCvarChanged_ch_crosshairDecorActionTime(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(50, 1000, cvart->vmCvar->value);
+	cvart->vmCvar->integer = Com_Clamp(50, 1000, cvart->vmCvar->integer);
 }
 
 void CG_LocalEventCvarChanged_cg_damageIndicatorOpaque(cvarTable_t* cvart)
@@ -628,7 +644,7 @@ void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart)
 	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
 	if (!CG_FontAvailable(fontIndex))
 	{
-		trap_Cvar_Set("cg_scoreboardFont", "0");
+		trap_Cvar_Set("cg_scoreboardFont", "2");
 	}
 	// CG_ScoreboardContext_Init();
 }
@@ -638,7 +654,16 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart)
 	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
 	if (!CG_FontAvailable(fontIndex))
 	{
-		trap_Cvar_Set("cg_teamIndicatorFont", "0");
+		trap_Cvar_Set("cg_teamIndicatorFont", "2");
+	}
+}
+void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart)
+{
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
+	{
+		trap_Cvar_Set("cg_teamTaskFont", "2");
 	}
 }
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
@@ -647,7 +672,7 @@ void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
 	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
 	if (!CG_FontAvailable(fontIndex))
 	{
-		trap_Cvar_Set("cg_centerMessagesFont", "0");
+		trap_Cvar_Set("cg_centerMessagesFont", "2");
 	}
 }
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart)
@@ -793,6 +818,15 @@ void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
 		trap_Cvar_Set("cg_accuracyFont", "0");
 	}
 }
+
+void CG_LocalEventCvarChanged_ReloadTeamTaskWheel(cvarTable_t* cvart)
+{
+	/* Reset ttwheel elements count to force re-initialization */
+	cgs.be.teamMarkers.ttwheelElementCount = 0;
+	/* Parse and set elements from cvar */
+	CG_SelwheelParseTeamTaskWheel();
+}
+
 
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
 {
@@ -1045,4 +1079,113 @@ void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart)
 		CG_Printf("^1CherryHUD is disabled for a while\n");
 	}
 
+}
+
+void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart)
+{
+	/* If cg_exec_weapons is disabled and user sets any weapon exec cvar, enable it */
+	if (cg_exec_weapons.integer == 0 && cvart->vmCvar->string && cvart->vmCvar->string[0])
+	{
+		trap_Cvar_Set("cg_exec_weapons", "1");
+		CG_PrintOnce(" ^3cg_exec_weapons^7 enabled!\n");
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart)
+{
+	/* If cg_exec_gametypes is disabled and user sets any gametype exec cvar, enable it */
+	if (cg_exec_gametypes.integer == 0 && cvart->vmCvar->string && cvart->vmCvar->string[0])
+	{
+		trap_Cvar_Set("cg_exec_gametypes", "1");
+		CG_PrintOnce(" ^3cg_exec_gametypes^7 enabled!\n");
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart)
+{
+	const char* cvarName = cvart->cvarName;
+	weapon_t weapon = WP_NONE;
+	vec4_t color;
+	int i;
+
+	// Массив соответствий суффиксов имен cvar оружию
+	struct
+	{
+		const char* suffix;
+		weapon_t weaponType;
+	} weaponMap[] =
+	{
+		{ "Gauntlet", WP_GAUNTLET },
+		{ "MG", WP_MACHINEGUN },
+		{ "SG", WP_SHOTGUN },
+		{ "GL", WP_GRENADE_LAUNCHER },
+		{ "RL", WP_ROCKET_LAUNCHER },
+		{ "LG", WP_LIGHTNING },
+		{ "RG", WP_RAILGUN },
+		{ "PG", WP_PLASMAGUN },
+		{ "BFG", WP_BFG },
+		{ NULL, WP_NONE }
+	};
+
+	// Определяем оружие по суффиксу в имени cvar: cg_brightWeaponsColorXXX
+	for (i = 0; weaponMap[i].suffix; i++)
+	{
+		char expectedName[MAX_QPATH];
+		Com_sprintf(expectedName, sizeof(expectedName), "cg_brightWeaponsColor%s", weaponMap[i].suffix);
+		if (Q_stricmp(cvarName, expectedName) == 0)
+		{
+			weapon = weaponMap[i].weaponType;
+			break;
+		}
+	}
+
+	if (weapon > WP_NONE && weapon < WP_NUM_WEAPONS)
+	{
+		if (CG_ParseColorStr(cvart->vmCvar->string, color))
+		{
+			VectorCopy(color, cgs.be.brightWeaponsColor[weapon]);
+		}
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart)
+{
+	if (cvart->vmCvar->integer == 0)
+	{
+	// Clear all elements
+		int i;
+		int cleared = 0;
+		for (i = 0; i < 32; i++)
+		{
+			if (cgs.osp.printui[i].active)
+			{
+				cgs.osp.printui[i].active = qfalse;
+				cleared++;
+			}
+		}
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_teamTaskThemeColor(cvarTable_t* cvart)
+{
+	vec4_t color;
+	if (CG_ParseColorStr(cvart->vmCvar->string, color))
+	{
+		Vector4Copy(color, cgs.be.teamMarkers.teamTaskThemeColor);
+	}
+	else
+	{
+		/* Default to cyan if parsing fails */
+		cgs.be.teamMarkers.teamTaskThemeColor[0] = 0.0f;
+		cgs.be.teamMarkers.teamTaskThemeColor[1] = 1.0f;
+		cgs.be.teamMarkers.teamTaskThemeColor[2] = 1.0f;
+		cgs.be.teamMarkers.teamTaskThemeColor[3] = 1.0f;
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(500, 5000, cvart->vmCvar->value);
+	cvart->vmCvar->integer = Com_Clamp(500, 5000, cvart->vmCvar->integer);
+	CG_PrintOnce("^3cg_teamTaskMarkTime^7 is out of range, set to ^2%d^7\n", cvart->vmCvar->integer);
 }

@@ -510,3 +510,80 @@ SHUD:
 * cg_bestats_autoaction (intermission)
 * cg_giveName 1/2
 * cg_drawRealHeads fix
+
+29.12.2025 be v1.00a
+* OSP2 sync ("astats, bstats", cg_autoAction command fixed)
++ cg_zoomAutoReset
++ cg_smoothDucking
++ cg_respawnWeapon
++ cg_countdownTimer (by fghvgsx)
++ cg_damagePlums (requires server support)
++ cg_damagePlumsSize (requires server support)
++ cg_autoHop (requires server support)
+
+* /belist # description
++ /behelp <cvar>
+
++ TEAM TASKS:
+  + /teamTaskHelp
+  + cg_teamTask
+  + cg_teamTaskSmartDefault
+  + cg_teamTaskMarkTime
+  + cg_teamTaskScale
+  + cg_teamTaskOpaque
+  + cg_teamTaskFade
+  + cg_teamTaskFadeRadius
+  + cg_teamTaskFont
+  + cg_teamTaskHudMarkerMaxDist
+  + cg_teamTaskHudMarkerSize
+  + cg_teamTaskHudMarkerMaxScale
+  + cg_teamTaskHudMarkerMinScale
+  + cg_teamTaskWheel
+  + cg_teamTaskWheelSet
+  + cg_teamTaskWheelSensitivity
+  + cg_teamTaskThemeColor
+  * Direct tasks: /smart, /attack, /defence, /location, /watch, /yes, /no, /medic 
+  + /mutetasks <player ID>
+
++ Exec on event
+  + cg_exec_weapons 0/1/2
+  + cg_exec_mg
+  + cg_exec_sg
+  + cg_exec_gl
+  + cg_exec_rl
+  + cg_exec_lg
+  + cg_exec_rg
+  + cg_exec_pg
+  + cg_exec_gametypes 0/1
+  + cg_exec_dm
+  + cg_exec_tourney
+  + cg_exec_tdm
+  + cg_exec_ca
+  + cg_exec_ctf
+  + cg_exec_freeze
+
++ Bright Weapon Color select
+  + cg_brightWeaponsColorGauntlet
+  + cg_brightWeaponsColorMG
+  + cg_brightWeaponsColorSG
+  + cg_brightWeaponsColorGL
+  + cg_brightWeaponsColorRL
+  + cg_brightWeaponsColorLG
+  + cg_brightWeaponsColorRG
+  + cg_brightWeaponsColorPG
+  + cg_brightWeaponsColorBFG
+
++ PrintUI
+  + cg_printui (just in case)
+  + cg_printui_template
+  + cg_printui_template2
+  + /printui - draw text on the hud
+
+MISC:
+  * cg_altGrenades disabled on tournament mode (DUELs)
+
+SHUD: 
+  - disabled var (variable) config feature for a while
+  + exec/execute config feature
+  + teamTask1-8 elements
+  

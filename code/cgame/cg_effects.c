@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // of event processing
 
 #include "cg_local.h"
+#include "cg_superhud.h"
 
 
 /*
@@ -252,6 +253,456 @@ void CG_ScorePlum(int client, vec3_t org, int score)
 	AnglesToAxis(angles, re->axis);
 }
 
+void CG_DamagePlum(int client, vec3_t org, int damage) {
+	localEntity_t	*le;
+	localEntity_t	*check;
+	localEntity_t	*next;
+	refEntity_t		*re;
+	vec3_t			angles;
+	int				totalDamage;
+	int				timeThreshold;
+	static vec3_t lastPos;
+
+	// only visualize for the client that scored
+	if (client != cg.predictedPlayerState.clientNum || cg_damagePlums.integer == 0) {
+		return;
+	}
+
+	
+	totalDamage = damage;
+	timeThreshold = 750; // milliseconds
+
+	// If stacking enabled (value = 2), sum all damage within time threshold
+	if (cg_damagePlums.integer == 2) {
+		// Sum all recent damage plums and remove them
+		check = cg_activeLocalEntities.prev;
+		for (; check != &cg_activeLocalEntities; check = next) {
+			next = check->prev;
+			
+			if (check->leType != LE_DAMAGEPLUM) {
+				continue;
+			}
+			
+			// Check if this plum is recent (within time threshold)
+			if (cg.time - check->startTime > timeThreshold) {
+				continue;
+			}
+			
+			// Sum damage and remove old plum
+			totalDamage += (int)check->radius;
+			CG_FreeLocalEntity(check);
+		}
+	}
+
+	le = CG_AllocLocalEntity();
+	le->leFlags = 0;
+	le->leType = LE_DAMAGEPLUM;
+	le->startTime = cg.time;
+	le->endTime = cg.time + 1000;
+	le->lifeRate = 1.0 / ( le->endTime - le->startTime );
+
+	
+	le->color[0] = le->color[1] = le->color[2] = le->color[3] = 1.0;
+	le->radius = totalDamage;
+	
+	VectorCopy( org, le->pos.trBase );
+	if (org[2] >= lastPos[2] - 20 && org[2] <= lastPos[2] + 20) {
+		le->pos.trBase[2] -= 20;
+	}
+
+	//CG_Printf( "Plum origin %i %i %i -- %i\n", (int)org[0], (int)org[1], (int)org[2], (int)Distance(org, lastPos));
+	VectorCopy(org, lastPos);
+
+	le->pos.trDelta[0] = 2.0 * crandom();
+	le->pos.trDelta[1] = 2.0 * crandom();
+	le->pos.trDelta[2] = 6.0;
+
+	re = &le->refEntity;
+
+	re->reType = RT_SPRITE;
+	re->renderfx = RF_FIRST_PERSON;
+	re->radius = 11;
+
+	VectorClear(angles);
+	AnglesToAxis( angles, re->axis );
+}
+
+/*
+====================
+CG_ChooseDamageColor
+
+Choose color based on damage amount (for mode 3)
+====================
+*/
+static void CG_ChooseDamageColor(int damage, byte* rgba)
+{
+	if (damage <= 25)
+	{
+		rgba[0] = 80;
+		rgba[1] = 255;
+		rgba[2] = 10;
+		rgba[3] = 255;
+	}
+	else if (damage <= 50)
+	{
+		rgba[0] = 250;
+		rgba[1] = 250;
+		rgba[2] = 10;
+		rgba[3] = 255;
+	}
+	else if (damage <= 75)
+	{
+		rgba[0] = 250;
+		rgba[1] = 170;
+		rgba[2] = 10;
+		rgba[3] = 255;
+	}
+	else if (damage <= 100)
+	{
+		rgba[0] = 250;
+		rgba[1] = 25;
+		rgba[2] = 10;
+		rgba[3] = 255;
+	}
+	else if (damage <= 150)
+	{
+		rgba[0] = 250;
+		rgba[1] = 15;
+		rgba[2] = 150;
+		rgba[3] = 255;
+	}
+	else if (damage <= 200)
+	{
+		rgba[0] = 200;
+		rgba[1] = 15;
+		rgba[2] = 254;
+		rgba[3] = 255;
+	}
+	else
+	{
+		rgba[0] = 128;
+		rgba[1] = 128;
+		rgba[2] = 255;
+		rgba[3] = 255;
+	}
+}
+
+/*
+====================
+CG_GetClientNumByEntityNum
+
+Get client number from entity number in snapshot
+====================
+*/
+static int CG_GetClientNumByEntityNum(int entityNum)
+{
+	int i;
+	centity_t* cent;
+
+	if (!cg.snap)
+	{
+		return -1;
+	}
+
+	for (i = 0; i < cg.snap->numEntities; i++)
+	{
+		cent = &cg_entities[cg.snap->entities[i].number];
+		if (cent->currentState.eType == ET_PLAYER && cent->currentState.number == entityNum)
+		{
+			return cent->currentState.clientNum;
+		}
+	}
+
+	return -1;
+}
+
+/*
+====================
+CG_ParseClientDamagePlum
+
+Parse damage from PERS_HITS and find hit position from snapshot events
+====================
+*/
+void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
+{
+	int hits;
+	int damage;
+	int atta;
+	int i;
+	centity_t* cent;
+	int event;
+	vec3_t origin;
+	vec3_t traceEnd;
+	trace_t trace;
+	qboolean foundHit;
+	int targetClientNum;
+
+
+	if (!cg.snap)
+	{
+		return;
+	}
+
+	hits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
+	
+	// Check for friendly fire or no damage
+	if (hits <= 0)
+	{
+		return;
+	}
+
+	// Calculate real damage from PERS_ATTACKEE_ARMOR (same logic as CG_HitDamage)
+	atta = ps->persistant[PERS_ATTACKEE_ARMOR];
+	damage = (atta == 0) ? hits : (atta & 0x00FF);
+	
+	// Skip if damage is 0
+	if (damage == 0)
+	{
+		return;
+	}
+	
+	cgs.be.clientDamagePrinted = qfalse;
+
+	foundHit = qfalse;
+	targetClientNum = -1;
+
+	// Debug: weapon info
+	if (be_run.integer == 1)
+	{
+		CG_Printf("^3[DamagePlum]^7 Weapon: %d, Damage: %d, Hits: %d\n", ps->weapon, damage, hits);
+	}
+
+	// Search snapshot entities for hit events
+	for (i = 0; i < cg.snap->numEntities; i++)
+	{
+		cent = &cg_entities[cg.snap->entities[i].number];
+		
+		if (cent->currentState.eType >= ET_EVENTS)
+		{
+			event = cent->currentState.eType - ET_EVENTS;
+		}
+		else
+		{
+			if (!cent->currentState.event)
+			{
+				continue;
+			}
+			event = cent->currentState.event & ~EV_EVENT_BITS;
+		}
+
+		// Check for direct hit events
+		if (event == EV_MISSILE_HIT || event == EV_BULLET_HIT_FLESH)
+		{
+			if (be_run.integer == 1)
+			{
+				CG_Printf("^3[DamagePlum]^7 Found event: %s (entityNum: %d, otherEntityNum: %d)\n", 
+					event == EV_MISSILE_HIT ? "EV_MISSILE_HIT" : "EV_BULLET_HIT_FLESH",
+					cent->currentState.number, cent->currentState.otherEntityNum);
+			}
+			
+			if (cent->currentState.otherEntityNum >= 0 && cent->currentState.otherEntityNum < MAX_GENTITIES)
+			{
+				targetClientNum = CG_GetClientNumByEntityNum(cent->currentState.otherEntityNum);
+				if (be_run.integer == 1)
+				{
+					CG_Printf("^3[DamagePlum]^7 CG_GetClientNumByEntityNum(%d) = %d\n", 
+						cent->currentState.otherEntityNum, targetClientNum);
+				}
+				
+				if (targetClientNum >= 0)
+				{
+					// Get player position from centity instead of event position
+					centity_t* targetCent = NULL;
+					int j;
+					
+					// Find player centity by clientNum
+					for (j = 0; j < cg.snap->numEntities; j++)
+					{
+						centity_t* checkCent = &cg_entities[cg.snap->entities[j].number];
+						if (checkCent->currentState.eType == ET_PLAYER && 
+						    checkCent->currentState.clientNum == targetClientNum)
+						{
+							targetCent = checkCent;
+							break;
+						}
+					}
+					
+					if (targetCent && targetCent->currentState.clientNum == targetClientNum)
+					{
+						// Use player position with offset above head
+						VectorCopy(targetCent->lerpOrigin, origin);
+						origin[2] += 40; // Offset above player head
+						if (be_run.integer == 1)
+						{
+							CG_Printf("^3[DamagePlum]^7 Using player position: clientNum=%d, origin=(%.1f,%.1f,%.1f)\n",
+								targetClientNum, origin[0], origin[1], origin[2]);
+						}
+					}
+					else
+					{
+						// Fallback to event position if player centity not found
+						VectorCopy(cent->lerpOrigin, origin);
+						if (be_run.integer == 1)
+						{
+							CG_Printf("^3[DamagePlum]^7 WARNING: Player centity not found, using event position: origin=(%.1f,%.1f,%.1f)\n",
+								origin[0], origin[1], origin[2]);
+						}
+					}
+					
+					foundHit = qtrue;
+					break;
+				}
+				else
+				{
+					if (be_run.integer == 1)
+					{
+						CG_Printf("^3[DamagePlum]^7 WARNING: Failed to get clientNum from entityNum %d\n", 
+							cent->currentState.otherEntityNum);
+					}
+				}
+			}
+		}
+		else if (event == EV_RAILTRAIL && cent->currentState.clientNum == ps->clientNum)
+		{
+			// Railgun hit
+			if (be_run.integer == 1)
+			{
+				CG_Printf("^3[DamagePlum]^7 Found EV_RAILTRAIL event\n");
+			}
+			if (cent->currentState.origin2[0] != 0 || cent->currentState.origin2[1] != 0 || cent->currentState.origin2[2] != 0)
+			{
+				VectorCopy(cent->currentState.origin2, origin);
+				foundHit = qtrue;
+				if (be_run.integer == 1)
+				{
+					CG_Printf("^3[DamagePlum]^7 Hit determined via EV_RAILTRAIL: origin=(%.1f,%.1f,%.1f)\n",
+						origin[0], origin[1], origin[2]);
+				}
+				break;
+			}
+		}
+		else if (event == EV_SHOTGUN && cent->currentState.otherEntityNum == ps->clientNum)
+		{
+			// Shotgun hit
+			if (be_run.integer == 1)
+			{
+				CG_Printf("^3[DamagePlum]^7 Found EV_SHOTGUN event\n");
+			}
+			VectorCopy(cent->lerpOrigin, origin);
+			foundHit = qtrue;
+			if (be_run.integer == 1)
+			{
+				CG_Printf("^3[DamagePlum]^7 Hit determined via EV_SHOTGUN: origin=(%.1f,%.1f,%.1f)\n",
+					origin[0], origin[1], origin[2]);
+			}
+			break;
+		}
+	}
+
+	// If no hit event found, use trace from view
+	if (!foundHit)
+	{
+		if (be_run.integer == 1)
+		{
+			CG_Printf("^3[DamagePlum]^7 No hit event found, using trace from view\n");
+		}
+		VectorCopy(cg.refdef.vieworg, origin);
+		VectorMA(origin, 131072, cg.refdef.viewaxis[0], traceEnd);
+		
+		CG_Trace(&trace, origin, vec3_origin, vec3_origin, traceEnd, ps->clientNum, MASK_SHOT);
+		VectorCopy(trace.endpos, origin);
+		if (be_run.integer == 1)
+		{
+			CG_Printf("^3[DamagePlum]^7 Hit determined via trace: origin=(%.1f,%.1f,%.1f), entityNum=%d\n",
+				origin[0], origin[1], origin[2], trace.entityNum);
+		}
+		
+		// Try to get clientNum from trace entity
+		if (trace.entityNum >= 0 && trace.entityNum < MAX_GENTITIES)
+		{
+			targetClientNum = CG_GetClientNumByEntityNum(trace.entityNum);
+			if (targetClientNum >= 0)
+			{
+				if (be_run.integer == 1)
+				{
+					CG_Printf("^3[DamagePlum]^7 Got clientNum from trace entity: %d\n", targetClientNum);
+				}
+			}
+		}
+	}
+
+	// If we have valid targetClientNum, use player position instead of event/trace position
+	if (targetClientNum >= 0 && targetClientNum < MAX_CLIENTS)
+	{
+		centity_t* playerCent = NULL;
+		int j;
+		
+		// Find player centity by clientNum
+		for (j = 0; j < cg.snap->numEntities; j++)
+		{
+			centity_t* checkCent = &cg_entities[cg.snap->entities[j].number];
+			if (checkCent->currentState.eType == ET_PLAYER && 
+			    checkCent->currentState.clientNum == targetClientNum)
+			{
+				playerCent = checkCent;
+				break;
+			}
+		}
+		
+		if (playerCent && playerCent->currentState.clientNum == targetClientNum)
+		{
+			// Use player position with offset above head
+			VectorCopy(playerCent->lerpOrigin, origin);
+			origin[2] += 40; // Offset above player head
+			if (be_run.integer == 1)
+			{
+				CG_Printf("^3[DamagePlum]^7 Final: Using player position for clientNum=%d: origin=(%.1f,%.1f,%.1f)\n",
+					targetClientNum, origin[0], origin[1], origin[2]);
+			}
+		}
+	}
+
+	// Create damage plum entity
+	{
+		localEntity_t* le;
+		refEntity_t* re;
+		byte color[4];
+
+		CG_ChooseDamageColor(damage, color);
+
+		le = CG_AllocLocalEntity();
+		le->leFlags = 0;
+		le->leType = LE_DAMAGEPLUM;
+		le->startTime = cg.time;
+		le->endTime = cg.time + 1000;
+		le->lifeRate = 1.0 / (le->endTime - le->startTime);
+
+		le->color[0] = color[0] / 255.0f;
+		le->color[1] = color[1] / 255.0f;
+		le->color[2] = color[2] / 255.0f;
+		le->color[3] = color[3] / 255.0f;
+		le->radius = damage;
+
+		VectorCopy(origin, le->pos.trBase);
+
+		le->pos.trDelta[0] = 2.0 * crandom();
+		le->pos.trDelta[1] = 2.0 * crandom();
+		le->pos.trDelta[2] = 6.0;
+
+		re = &le->refEntity;
+		re->reType = RT_SPRITE;
+		re->renderfx = RF_FIRST_PERSON;
+		re->radius = 11;
+
+		cgs.be.clientDamagePrinted = qtrue;
+		
+		if (be_run.integer == 1)
+		{
+			CG_Printf("^3[DamagePlum]^7 Created plum: damage=%d, origin=(%.1f,%.1f,%.1f), targetClientNum=%d, foundHit=%d\n",
+				damage, origin[0], origin[1], origin[2], targetClientNum, foundHit);
+		}
+	}
+}
 
 /*
 ====================
@@ -352,15 +803,20 @@ void CG_Bleed(vec3_t origin, int entityNum)
 
 	if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_BLOOD) && alt)
 	{
+		vec4_t bloodColor;
+		int colorIndex;
+		
 		if (alt < MAX_ALT_SHADERS)
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[alt - 1];
 		else
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[0];
 
-		ex->refEntity.shaderRGBA[0] = cgs.be.altBloodColor[0] * 255;
-		ex->refEntity.shaderRGBA[1] = cgs.be.altBloodColor[1] * 255;
-		ex->refEntity.shaderRGBA[2] = cgs.be.altBloodColor[2] * 255;
-		ex->refEntity.shaderRGBA[3] = cgs.be.altBloodColor[3] * 255;
+		Vector4Copy(cgs.be.altBloodColor, bloodColor);
+
+		ex->refEntity.shaderRGBA[0] = bloodColor[0] * 255;
+		ex->refEntity.shaderRGBA[1] = bloodColor[1] * 255;
+		ex->refEntity.shaderRGBA[2] = bloodColor[2] * 255;
+		ex->refEntity.shaderRGBA[3] = bloodColor[3] * 255;
 	}
 	else
 	{
@@ -601,6 +1057,11 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 	float hfov_y = cg.refdef.fov_y * M_PI / 360;
 	float hfov_x = cg.refdef.fov_x * M_PI / 360;
 
+	if (!shader)
+	{
+		return;
+	}
+
 	VectorSubtract(origin, cg.refdef.vieworg, dir);
 
 	front = DotProduct(dir, cg.refdef.viewaxis[0]);
@@ -612,17 +1073,23 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 	flu[2] = up;
 
 	r = VectorLength(flu);
+	if (r < 0.001f)
+	{
+		return;
+	}
+
 	az = atan2(flu[1], flu[0]);
 	inc = acos(flu[2] / r);
 	inc = M_PI / 2.0 - inc;
 
-	if (fabs(az) < hfov_x && fabs(inc) < hfov_y)
+	/* Only skip drawing if point is in front of camera AND inside FOV */
+	if (front > 0.0f && fabs(az) < hfov_x && fabs(inc) < hfov_y)
 	{
 		// inside fov, no need to draw marker
 		// Note: this isn't entirely accurate
 		return;
 	}
-	else
+	
 	{
 		refEntity_t ent;
 		float phi;
@@ -646,19 +1113,30 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 		ent.radius =  0.5 * radius * tan(hfov_x);
 		ent.customShader = shader;
 
+		if (ent.radius < 0.1f)
+		{
+			ent.radius = 0.1f;
+		}
+
 		ent.shaderRGBA[0] = color[0] * 255;
 		ent.shaderRGBA[1] = color[1] * 255;
 		ent.shaderRGBA[2] = color[2] * 255;
-		ent.shaderRGBA[3] = color[3] * 127;
+		ent.shaderRGBA[3] = color[3] * 168;
 
 		ratio = tan(hfov_y) / tan(hfov_x);
 
 		VectorScale(cg.refdef.viewaxis[0], dist, middleOfPlane);
-		r = dist / cos(hfov_x);
-		VectorScale(cg.refdef.viewaxis[1], r * sin(hfov_x) - ent.radius, planeAxis[0]);
+		
+		{
+			float cosHfovX = cos(hfov_x);
+			float cosHfovY = cos(hfov_y);
+			
+			r = dist / cosHfovX;
+			VectorScale(cg.refdef.viewaxis[1], r * sin(hfov_x) - ent.radius, planeAxis[0]);
 
-		r = dist / cos(hfov_y);
-		VectorScale(cg.refdef.viewaxis[2], -(r * sin(hfov_y) - ent.radius), planeAxis[1]);
+			r = dist / cosHfovY;
+			VectorScale(cg.refdef.viewaxis[2], -(r * sin(hfov_y) - ent.radius), planeAxis[1]);
+		}
 
 		r = cos(phi) * circleSz;
 		VectorScale(planeAxis[0], r, ent.origin);
@@ -666,20 +1144,222 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 		r = sin(phi) * circleSz * 1.0 / ratio;
 		VectorMA(ent.origin, r, planeAxis[1], ent.origin);
 
-		h1 = fabs(VectorLength(planeAxis[0]) / cos(phi));
-		h2 = fabs(VectorLength(planeAxis[1]) / sin(phi));
-		if (h2 < h1)
 		{
-			h1 = h2;
-		}
-		if (VectorLength(ent.origin) > h1)
-		{
-			VectorNormalize(ent.origin);
-			VectorScale(ent.origin, h1, ent.origin);
+			float cosPhi = cos(phi);
+			float sinPhi = sin(phi);
+			
+			if (fabs(cosPhi) < 0.001f)
+			{
+				cosPhi = (cosPhi >= 0) ? 0.001f : -0.001f;
+			}
+			if (fabs(sinPhi) < 0.001f)
+			{
+				sinPhi = (sinPhi >= 0) ? 0.001f : -0.001f;
+			}
+			
+			h1 = fabs(VectorLength(planeAxis[0]) / cosPhi);
+			h2 = fabs(VectorLength(planeAxis[1]) / sinPhi);
+			if (h2 < h1)
+			{
+				h1 = h2;
+			}
+			if (VectorLength(ent.origin) > h1)
+			{
+				VectorNormalize(ent.origin);
+				VectorScale(ent.origin, h1, ent.origin);
+			}
 		}
 
 		VectorAdd(middleOfPlane, ent.origin, ent.origin);
 		VectorAdd(cg.refdef.vieworg, ent.origin, ent.origin);
+
 		trap_R_AddRefEntityToScene(&ent);
+	}
+}
+
+qboolean CG_IsPointOutsideScreen(vec3_t origin, float* outX, float* outY)
+{
+	float x;
+	float y;
+
+	if (!origin)
+	{
+		return qfalse;
+	}
+
+	/* Convert world to screen coordinates */
+	if (!CG_WorldToScreen(origin, &x, &y))
+	{
+		/* Point is behind camera */
+		if (outX)
+		{
+			*outX = 0.0f;
+		}
+		if (outY)
+		{
+			*outY = 0.0f;
+		}
+		return qtrue;
+	}
+
+	if (outX)
+	{
+		*outX = x;
+	}
+	if (outY)
+	{
+		*outY = y;
+	}
+
+	/* Check if point is on screen */
+	/* CG_WorldToScreen returns coordinates relative to full screen (0-640, 0-480) */
+	if (x < 0.0f || x >= SCREEN_WIDTH ||
+	    y < 0.0f || y >= SCREEN_HEIGHT)
+	{
+		/* Point is outside screen */
+		return qtrue;
+	}
+
+	/* Point is on screen */
+	return qfalse;
+}
+
+
+void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
+{
+	teamTaskMark_t* mark;
+	vec3_t center;
+	int i;
+	centity_t* cent;
+	qboolean playerAvailable;
+
+	if (!cg_teamTask.integer)
+	{
+		return;
+	}
+
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return;
+	}
+
+	if (!markType)
+	{
+		return;
+	}
+
+
+	/* Anti-spam: remove old markers of the same type from the same client */
+	/* Show only the last marker of each type from each client */
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+	{
+		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+		{
+			if (cgs.be.teamMarkers.teamTaskMarks[i].clientNum == clientNum && 
+			    cgs.be.teamMarkers.teamTaskMarks[i].markType == markType)
+			{
+				/* Remove this mark by shifting all subsequent marks */
+				for (; i < cgs.be.teamMarkers.numTeamTaskMarks - 1; i++)
+				{
+					cgs.be.teamMarkers.teamTaskMarks[i] = cgs.be.teamMarkers.teamTaskMarks[i + 1];
+				}
+				cgs.be.teamMarkers.numTeamTaskMarks--;
+				i--; /* Adjust index after removal */
+			}
+		}
+	}
+
+	/* If this is an overhead mark (YES, NO, or MEDIC), remove any existing overhead mark from the same player */
+	if (CG_IsTeamTaskOverhead(markType) && clientNum >= 0 && clientNum < MAX_CLIENTS)
+	{
+		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+		{
+			if (cgs.be.teamMarkers.teamTaskMarks[i].clientNum == clientNum && cgs.be.teamMarkers.teamTaskMarks[i].isOverhead)
+			{
+				/* Remove this mark by shifting all subsequent marks */
+				for (; i < cgs.be.teamMarkers.numTeamTaskMarks - 1; i++)
+				{
+					cgs.be.teamMarkers.teamTaskMarks[i] = cgs.be.teamMarkers.teamTaskMarks[i + 1];
+				}
+				cgs.be.teamMarkers.numTeamTaskMarks--;
+				break;
+			}
+		}
+	}
+
+	/* Check if we have space for new mark */
+	if (cgs.be.teamMarkers.numTeamTaskMarks >= MAX_TEAMTASK_MARKS)
+	{
+		/* Remove oldest mark */
+		for (i = 0; i < MAX_TEAMTASK_MARKS - 1; i++)
+		{
+			cgs.be.teamMarkers.teamTaskMarks[i] = cgs.be.teamMarkers.teamTaskMarks[i + 1];
+		}
+		cgs.be.teamMarkers.numTeamTaskMarks = MAX_TEAMTASK_MARKS - 1;
+	}
+
+	mark = &cgs.be.teamMarkers.teamTaskMarks[cgs.be.teamMarkers.numTeamTaskMarks];
+	cgs.be.teamMarkers.numTeamTaskMarks++;
+
+	/* Store markType directly (no overhead flag anymore) */
+	mark->markType = markType;
+
+	/* Check if this is an overhead mark type (YES, NO, or MEDIC) - if so, track player dynamically */
+	playerAvailable = qfalse;
+	if (CG_IsTeamTaskOverhead(markType) && clientNum >= 0 && clientNum < MAX_CLIENTS)
+	{
+		/* Special case for local player - use predicted player entity */
+		if (clientNum == cg.clientNum)
+		{
+			cent = &cg.predictedPlayerEntity;
+			/* Player is available - use their position above head */
+			VectorCopy(cent->lerpOrigin, mark->origin);
+			mark->origin[2] += 48.0f; /* Offset above head */
+			playerAvailable = qtrue;
+		}
+		else
+		{
+			/* Try to find player entity */
+			for (i = 0; i < MAX_GENTITIES; i++)
+			{
+				cent = &cg_entities[i];
+				if (cent->currentState.eType == ET_PLAYER && 
+				    cent->currentState.clientNum == clientNum &&
+				    cent->currentValid)
+				{
+					/* Player is available - use their position above head */
+					VectorCopy(cent->lerpOrigin, mark->origin);
+					mark->origin[2] += 48.0f; /* Offset above head */
+					playerAvailable = qtrue;
+					break;
+				}
+			}
+		}
+	}
+
+	/* If player not available or not an overhead mark, use coordinates from message */
+	if (!playerAvailable)
+	{
+		VectorCopy(coord, center);
+		VectorCopy(center, mark->origin);
+	}
+
+	mark->startTime = cg.time;
+	mark->endTime = cg.time + cg_teamTaskMarkTime.value;
+	mark->clientNum = clientNum; /* Always store sender's clientNum (whose mark it is) */
+	mark->isOverhead = CG_IsTeamTaskOverhead(markType);
+
+	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &mark->shader, mark->color, qfalse, mark->clientNum);
+
+	/* Register team task event for SuperHUD */
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+	{
+		CG_SHUDEventTeamTask(clientNum, markType);
+	}
+
+	/* Play sound when mark appears */
+	if ((cg_teamTask.integer & CG_TEAMTASK_MARKSOUND) && cgs.media.pingSimpleSound)
+	{
+		trap_S_StartLocalSound(cgs.media.pingSimpleSound, CHAN_ANNOUNCER);
 	}
 }

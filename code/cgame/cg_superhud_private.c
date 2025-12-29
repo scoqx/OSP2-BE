@@ -82,6 +82,8 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "powerup8_time", 0, CG_SHUDElementPwTime8Create, CG_SHUDElementPwRoutine, CG_SHUDElementPwDestroy },
 	{ "rankmessage", 0, CG_SHUDElementRankMessageCreate, CG_SHUDElementRankMessageRoutine, CG_SHUDElementRankMessageDestroy},
 	{ "recordingdemo", 0, },
+	{ "execute", 0, },
+	{ "exec", 0, },
 	{ "score_limit", 0, CG_SHUDElementScoreMAXCreate, CG_SHUDElementScoreRoutine, CG_SHUDElementScoreDestroy },
 	{ "score_nme", 0, CG_SHUDElementScoreNMECreate, CG_SHUDElementScoreRoutine, CG_SHUDElementScoreDestroy },
 	{ "score_own", 0, CG_SHUDElementScoreOWNCreate, CG_SHUDElementScoreRoutine, CG_SHUDElementScoreDestroy },
@@ -144,6 +146,14 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "obituary6", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementObituaries6Create, CG_SHUDElementObituariesRoutine, CG_SHUDElementObituariesDestroy },
 	{ "obituary7", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementObituaries7Create, CG_SHUDElementObituariesRoutine, CG_SHUDElementObituariesDestroy },
 	{ "obituary8", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementObituaries8Create, CG_SHUDElementObituariesRoutine, CG_SHUDElementObituariesDestroy },
+	{ "teamTask1", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementTeamTask1Create, CG_SHUDElementTeamTasksRoutine, CG_SHUDElementTeamTasksDestroy },
+	{ "teamTask2", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementTeamTask2Create, CG_SHUDElementTeamTasksRoutine, CG_SHUDElementTeamTasksDestroy },
+	{ "teamTask3", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementTeamTask3Create, CG_SHUDElementTeamTasksRoutine, CG_SHUDElementTeamTasksDestroy },
+	{ "teamTask4", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementTeamTask4Create, CG_SHUDElementTeamTasksRoutine, CG_SHUDElementTeamTasksDestroy },
+	{ "teamTask5", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementTeamTask5Create, CG_SHUDElementTeamTasksRoutine, CG_SHUDElementTeamTasksDestroy },
+	{ "teamTask6", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementTeamTask6Create, CG_SHUDElementTeamTasksRoutine, CG_SHUDElementTeamTasksDestroy },
+	{ "teamTask7", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementTeamTask7Create, CG_SHUDElementTeamTasksRoutine, CG_SHUDElementTeamTasksDestroy },
+	{ "teamTask8", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementTeamTask8Create, CG_SHUDElementTeamTasksRoutine, CG_SHUDElementTeamTasksDestroy },
 	{ "location",  0, CG_SHUDElementLocationCreate, CG_SHUDElementLocationRoutine, CG_SHUDElementLocationDestroy },
 	{ "tempAcc_current", SE_IM | SE_DEAD, CG_SHUDElementTempAccTextCreate, CG_SHUDElementTempAccRoutine, CG_SHUDElementTempAccDestroy },
 	{ "tempAcc_icon", SE_IM | SE_DEAD, CG_SHUDElementTempAccIconCreate, CG_SHUDElementTempAccRoutine, CG_SHUDElementTempAccDestroy },
@@ -170,7 +180,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "playerStats_damageRatio", SE_IM, CG_SHUDElementCreatePlayerStatsDamageRatio, CG_SHUDElementPlayerStatsRoutine, CG_SHUDElementPlayerStatsDestroy },
 	{ "player_name", 0, CG_SHUDElementPlayerNameCreate, CG_SHUDElementPlayerNameRoutine, CG_SHUDElementPlayerNameDestroy },
 	{ "postdecorate", 0, CG_SHUDElementDecorCreate, CG_SHUDElementDecorRoutine, CG_SHUDElementDecorDestroy },
-	{ "var", 0, },
+	// { "var", 0, },
 	{ NULL },
 };
 
@@ -264,6 +274,40 @@ void CG_SHUDVarSetFloat(const char* name, float value)
 	Q_strncpyz(var->name, name, sizeof(var->name));
 	var->type = SHUD_VAR_TYPE_FLOAT;
 	var->value.floatValue = value;
+	var->next = superhudVarsHead;
+	superhudVarsHead = var;
+}
+
+void CG_SHUDVarSetFloat4(const char* name, const float value[4])
+{
+	superhudVar_t* var;
+	int i;
+
+	if (!name || !name[0] || !value)
+	{
+		return;
+	}
+
+	var = CG_SHUDVarFind(name);
+	if (var)
+	{
+		var->type = SHUD_VAR_TYPE_FLOAT4;
+		for (i = 0; i < 4; i++)
+		{
+			var->value.float4[i] = value[i];
+		}
+		return;
+	}
+
+	var = (superhudVar_t*)Z_Malloc(sizeof(*var));
+	OSP_MEMORY_CHECK(var);
+	memset(var, 0, sizeof(*var));
+	Q_strncpyz(var->name, name, sizeof(var->name));
+	var->type = SHUD_VAR_TYPE_FLOAT4;
+	for (i = 0; i < 4; i++)
+	{
+		var->value.float4[i] = value[i];
+	}
 	var->next = superhudVarsHead;
 	superhudVarsHead = var;
 }
@@ -362,6 +406,53 @@ qboolean CG_SHUDVarGetFloat(const char* name, float* value)
 	else if (var->type == SHUD_VAR_TYPE_INT)
 	{
 		*value = (float)var->value.intValue;
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+qboolean CG_SHUDVarGetFloat4(const char* name, float value[4])
+{
+	superhudVar_t* var;
+	int i;
+
+	if (!name || !name[0] || !value)
+	{
+		return qfalse;
+	}
+
+	var = CG_SHUDVarFind(name);
+	if (!var)
+	{
+		return qfalse;
+	}
+
+	if (var->type == SHUD_VAR_TYPE_FLOAT4)
+	{
+		for (i = 0; i < 4; i++)
+		{
+			value[i] = var->value.float4[i];
+		}
+		return qtrue;
+	}
+
+	/* allow single float to broadcast to all components for convenience */
+	if (var->type == SHUD_VAR_TYPE_FLOAT || var->type == SHUD_VAR_TYPE_INT)
+	{
+		float v;
+		if (var->type == SHUD_VAR_TYPE_FLOAT)
+		{
+			v = var->value.floatValue;
+		}
+		else
+		{
+			v = (float)var->value.intValue;
+		}
+		for (i = 0; i < 4; i++)
+		{
+			value[i] = v;
+		}
 		return qtrue;
 	}
 

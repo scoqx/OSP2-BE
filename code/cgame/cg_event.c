@@ -252,6 +252,25 @@ static void CG_Obituary(entityState_t* ent)
 	}
 	ci = &cgs.clientinfo[target];
 
+	/* Send teamTask mark for local client death */
+	/* Don't send mark for freeze events (unfreeze) */
+	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS) &&
+		(cg_teamTask.integer & CG_TEAMTASK_ONDEATH) &&
+		target == cg.clientNum && cgs.gametype >= GT_TEAM &&
+		!isUnfreezeEvent)
+	{
+		centity_t* cent;
+		vec3_t position;
+		
+		cent = &cg_entities[target];
+		if (cent)
+		{
+			VectorCopy(cent->lerpOrigin, position);
+			position[2] += 6.0f;
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_PLAYERDEAD, position);
+		}
+	}
+
 	if (attacker < 0 || attacker >= MAX_CLIENTS)
 	{
 		attacker = ENTITYNUM_WORLD;
@@ -1062,7 +1081,14 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			DEBUGNAME("EV_SCOREPLUM");
 			CG_ScorePlum(cent->currentState.otherEntityNum, cent->lerpOrigin, cent->currentState.time);
 			break;
-
+			
+		case EV_DAMAGEPLUM:
+			DEBUGNAME("EV_DAMAGEPLUM");
+			if (cg_damagePlums.integer)
+			{
+				CG_DamagePlum( cent->currentState.otherEntityNum, cent->lerpOrigin, cent->currentState.time );
+			}
+			break;
 		//
 		// missile impacts
 		//

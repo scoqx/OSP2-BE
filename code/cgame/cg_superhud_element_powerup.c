@@ -223,7 +223,7 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 					pw->element[i].powerup = 0;
 					break;
 			}
-			pw->element[i].time = (pw->element[i].time + 999) / 1000;
+			pw->element[i].time = pw->element[i].time / 1000;
 		}
 	}
 }

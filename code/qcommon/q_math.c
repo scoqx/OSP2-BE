@@ -1405,4 +1405,40 @@ void PerpendicularVector(vec3_t dst, const vec3_t src)
 	VectorNormalize(dst);
 }
 
+int Quantize(float value, float minVal, float maxVal, int bits)
+{
+	int levels;
+	float normalized;
+	int quantized;
+
+	levels = (1 << bits) - 1;  /* 2^bits */
+
+	if (value <= minVal)
+	{
+		return 0;
+	}
+	if (value >= maxVal)
+	{
+		return levels;
+	}
+
+	normalized = (value - minVal) / (maxVal - minVal);
+	quantized = (int)(normalized * levels + 0.5f);
+
+	return quantized;
+}
+
+float Dequantize(int quantized, float minVal, float maxVal, int bits)
+{
+	int levels;
+	float normalized;
+	float result;
+
+	levels = (1 << bits) - 1;
+	normalized = (float)quantized / (float)levels;
+	result = minVal + normalized * (maxVal - minVal);
+
+	return result;
+}
+
 

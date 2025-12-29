@@ -385,6 +385,82 @@ void CG_UpdateWeaponTracking(int weapon)
 
 /*
 ================
+CG_ShouldExecWeaponCommand
+
+Check if weapon commands should be executed based on cg_exec_weapons setting
+================
+*/
+static qboolean CG_ShouldExecWeaponCommand(int clientNum)
+{
+	if (cg_exec_weapons.integer == 0)
+	{
+		return qfalse;
+	}
+	
+	if (cg_exec_weapons.integer == 1)
+	{
+		/* Execute for all (local client and spectating) */
+		return qtrue;
+	}
+	
+	if (cg_exec_weapons.integer == 2)
+	{
+		/* Execute only for local client (not when spectating) */
+		return (clientNum == cg.clientNum) ? qtrue : qfalse;
+	}
+	
+	return qfalse;
+}
+
+/*
+================
+CG_ExecWeaponCommand
+
+Execute commands when weapon is selected
+Commands are separated by semicolon (;)
+================
+*/
+static void CG_ExecWeaponCommand(int weapon)
+{
+	const char* cmd;
+	
+	switch (weapon)
+	{
+		case WP_MACHINEGUN:
+			cmd = cg_exec_mg.string;
+			break;
+		case WP_SHOTGUN:
+			cmd = cg_exec_sg.string;
+			break;
+		case WP_GRENADE_LAUNCHER:
+			cmd = cg_exec_gl.string;
+			break;
+		case WP_ROCKET_LAUNCHER:
+			cmd = cg_exec_rl.string;
+			break;
+		case WP_LIGHTNING:
+			cmd = cg_exec_lg.string;
+			break;
+		case WP_RAILGUN:
+			cmd = cg_exec_rg.string;
+			break;
+		case WP_PLASMAGUN:
+			cmd = cg_exec_pg.string;
+			break;
+		default:
+			return;
+	}
+	
+	if (!cmd || !cmd[0])
+	{
+		return;
+	}
+	
+	trap_SendConsoleCommand(cmd);
+}
+
+/*
+================
 CG_Respawn
 
 A respawn happened this snapshot
@@ -398,8 +474,23 @@ void CG_Respawn(void)
 	// display weapons available
 	cg.weaponSelectTime = cg.time;
 
+
 	// select the weapon the server says we are using
-	cg.weaponSelect = cg.snap->ps.weapon;
+	if (!cg_respawnWeapon.integer)
+	{
+		cg.weaponSelect = cg.snap->ps.weapon;
+	}
+	else
+	{
+		cg.weaponSelect = cg_respawnWeapon.integer;
+	}
+
+	// reset zoom toggle on respawn
+	if ((cg_zoomAutoReset.integer & 2) && cg.zoomed)
+	{
+		cg.zoomed = qfalse;
+		cg.zoomTime = cg.time;
+	}
 }
 
 extern char* eventnames[];
@@ -637,11 +728,11 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		// TODO we need some solution when we take quad cuz sometimes with LG dmg + delayedDMG > 25
 		//damage = ops->powerups[PW_QUAD] ? 26 : damage; // for a homogeneous sound with quad
 
-
 		if (((BE_IsDamageInfoAllowed())
 		        && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
 		{
 			int index;
+			
 			if (damage > 75) index = 3;
 			else if (damage > 50) index = 2;
 			else if (damage > 25) index = 1;
@@ -880,6 +971,33 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	{
 		CG_CheckLocalSounds(ps, ops);
 		CG_HitDamage(ps, ops);
+		
+		// Client-side damage prediction (bit 1 = 2)
+		// DISABLED: Client-side damage plums are temporarily disabled
+		// if (cg_damagePlums.integer & 2)
+		if (0) // Disabled: client-side damage plums
+		{
+			CG_ParseClientDamagePlum(ps, ops);
+		}
+	}
+
+	if (cg.zoomed && 
+	    // reset zoom on death
+	    (((cg_zoomAutoReset.integer & 1) && ops->stats[STAT_HEALTH] > 0 && ps->stats[STAT_HEALTH] <= 0 && cg.snap->ps.stats[STAT_HEALTH] <= 0) ||
+	     // or weapon change
+	     ((cg_zoomAutoReset.integer & 4) && ps->weapon != ops->weapon)))
+	{
+		cg.zoomed = qfalse;
+		cg.zoomTime = cg.time;
+	}
+
+	// execute weapon command on weapon change
+	if (ps->weapon != ops->weapon && ps->weapon != WP_NONE)
+	{
+		if (CG_ShouldExecWeaponCommand(ps->clientNum))
+		{
+			CG_ExecWeaponCommand(ps->weapon);
+		}
 	}
 
 	if (cg_shud.integer)
@@ -891,7 +1009,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	CG_CheckPlayerstateEvents(ps, ops);
 
 	// smooth the ducking viewheight change
-	if (ps->viewheight != ops->viewheight)
+	if (cg_smoothDucking.integer && ps->viewheight != ops->viewheight)
 	{
 		cg.duckChange = ps->viewheight - ops->viewheight;
 		cg.duckTime = cg.time;

@@ -29,6 +29,28 @@ static void CG_SHUDUpdateVisflags(superHUDConfigElement_t* element, const superh
 	}
 }
 
+static void CG_SHUDExecuteCommands(const char* commands)
+{
+	char commandBuffer[SUPERHUD_EXECUTE_MAX_LEN + 2];
+	int len;
+
+	if (!commands || !commands[0])
+	{
+		return;
+	}
+
+	Q_strncpyz(commandBuffer, commands, sizeof(commandBuffer));
+	len = strlen(commandBuffer);
+
+	if (len > 0 && len < (int)(sizeof(commandBuffer) - 1) && commandBuffer[len - 1] != '\n')
+	{
+		commandBuffer[len] = '\n';
+		commandBuffer[len + 1] = 0;
+	}
+
+	trap_SendConsoleCommand(commandBuffer);
+}
+
 qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 {
 	fileHandle_t fileHandle;
@@ -95,8 +117,12 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 				CG_Printf("^1SuperHUD: found unexpected character: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
 				goto error_exit;
 			case SUPERHUD_CONFIG_WRONG_ELEMENT_NAME:
-				CG_Printf("^1SuperHUD: found unknown element name: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
-				goto error_exit;
+				CG_Printf("^1Element not found ^1%s^1: file %s, line %d, pos %d.\n", statusElement.name, superhudFilename, finfo.last_line->line_number, finfo.pos);
+				if (!CG_SHUDFileInfoSkipElementBody(&finfo))
+				{
+					goto error_exit;
+				}
+				continue;
 			case SUPERHUD_CONFIG_LOST_ELEMENT_BODY:
 				CG_Printf("^1SuperHUD: found wrong wrong element body: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
 				goto error_exit;
@@ -112,22 +138,43 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 		{
 			qboolean eoe = qfalse; //end of element
 			qboolean is_default = qfalse;
-			qboolean is_var = qfalse;
+			// qboolean is_var = qfalse;
+			qboolean is_execute = qfalse;
 			superhudConfigParseStatus_t varParseStatus;
+			superhudConfigParseStatus_t execParseStatus;
+			superhudConfig_t execConfig;
 
-			/* Check if this is VAR element */
-			is_var = (Q_stricmp(statusElement.item->name, "var") == 0);
+			// /* Check if this is VAR element */
+			// is_var = (Q_stricmp(statusElement.item->name, "var") == 0);
 
-			if (is_var)
+			// if (is_var)
+			// {
+			// 	/* Parse VAR element */
+			// 	varParseStatus = CG_SHUDParseVarElement(&finfo);
+			// 	if (varParseStatus != SUPERHUD_CONFIG_OK)
+			// 	{
+			// 		CG_Printf("^1SuperHUD: error parsing VAR element: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
+			// 		goto error_exit;
+			// 	}
+			// 	/* Skip this element, don't create HUD element for VAR */
+			// 	continue;
+			// }
+
+			is_execute = (Q_stricmp(statusElement.item->name, "execute") == 0) || (Q_stricmp(statusElement.item->name, "exec") == 0);
+
+			if (is_execute)
 			{
-				/* Parse VAR element */
-				varParseStatus = CG_SHUDParseVarElement(&finfo);
-				if (varParseStatus != SUPERHUD_CONFIG_OK)
+				memset(&execConfig, 0, sizeof(execConfig));
+				execParseStatus = CG_SHUDParseExecuteElement(&finfo, &execConfig);
+				if (execParseStatus != SUPERHUD_CONFIG_OK)
 				{
-					CG_Printf("^1SuperHUD: error parsing VAR element: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
+					CG_Printf("^1SuperHUD: error parsing EXECUTE element: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
 					goto error_exit;
 				}
-				/* Skip this element, don't create HUD element for VAR */
+				if (execConfig.execute.isSet)
+				{
+					CG_SHUDExecuteCommands(execConfig.execute.value);
+				}
 				continue;
 			}
 
@@ -367,6 +414,11 @@ void CG_SHUDRoutine(void)
 	const qboolean is_gt_ft = CG_OSPIsGameTypeFreeze();
 	const qboolean is_gt_ca = CG_OSPIsGameTypeCA(cgs.gametype);
 
+	if (cg_printui.integer)
+	{
+		CG_DrawPrintUI();
+	}
+
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
 	{
@@ -405,6 +457,11 @@ void CG_SHUDRoutine(void)
 	{
 		CG_BEStatsShowStatsInfo();
 	}
+	if (cgs.be.teamMarkers.ttwheelMarkActive)
+	{
+		CG_DrawSelwheelIcons();
+	}
+
 
 }
 
@@ -549,6 +606,58 @@ void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen
 	entry->runtime.isInitialized = qfalse;
 
 	++ctx->obituaries.index;
+}
+
+void CG_SHUDEventTeamTask(int sender, int taskType)
+{
+	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+	superhudTeamTasksEntry_t* entry;
+	int gameTime;
+	int i;
+	int checkIndex;
+	const int duplicateCheckTime = 100;
+	
+	/* Check for duplicate events - same sender and taskType within duplicateCheckTime */
+	if (sender >= 0 && sender < MAX_CLIENTS)
+	{
+		for (i = 0; i < SHUD_MAX_TEAMTASKS_LINES; i++)
+		{
+			checkIndex = (ctx->teamTasks.index - 1 - i + SHUD_MAX_TEAMTASKS_LINES) % SHUD_MAX_TEAMTASKS_LINES;
+			entry = &ctx->teamTasks.line[checkIndex];
+			
+			/* Skip empty entries */
+			if (entry->time == 0)
+			{
+				continue;
+			}
+			
+			/* Check if this is a duplicate (same sender and taskType within time window) */
+			if (entry->sender == sender && entry->taskType == taskType)
+			{
+				int timeDiff;
+				timeDiff = cg.time - entry->time;
+				if (timeDiff >= 0 && timeDiff < duplicateCheckTime)
+				{
+					/* Duplicate event within time window - skip adding */
+					return;
+				}
+			}
+		}
+	}
+	
+	entry = &ctx->teamTasks.line[ctx->teamTasks.index % SHUD_MAX_TEAMTASKS_LINES];
+	memset(entry, 0, sizeof(*entry));
+
+	entry->sender = sender;
+	entry->taskType = taskType;
+	entry->time = cg.time;
+	
+	/* Calculate game time when task was sent */
+	gameTime = cg.time - cgs.levelStartTime;
+	entry->gameTime = gameTime;
+	entry->runtime.isInitialized = qfalse;
+
+	++ctx->teamTasks.index;
 }
 
 void CG_SHUDEventTempAccuracy(int weapon, float accuracy)

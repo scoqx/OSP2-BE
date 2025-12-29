@@ -102,6 +102,11 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_FULLBRIGHT;
 			changed = qtrue;
 		}
+		if (cg_teamTask.integer)
+		{
+			beFlags |= CG_BE_TEAMTASKS;
+			changed = qtrue;
+		}
 	}
 
 	if (changed)
@@ -181,6 +186,11 @@ void CG_PrintDisabledFeatures(qboolean request)
 		if (value & CG_BE_FULLBRIGHT)
 		{
 			Q_strcat(buffer, sizeof(buffer), first ? "Fullbright" : ", fullbright");
+			first = qfalse;
+		}
+		if (value & CG_BE_TEAMTASKS)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Team tasks" : ", team tasks");
 			first = qfalse;
 		}
 		CG_Printf("%s\n", buffer);
@@ -331,4 +341,111 @@ qboolean BE_IsDamageInfoAllowed(void)
 {
 	// Allow damage info if either BE_FEATURE_ENABLED or OSP_CUSTOM_CLIENT_2 allows it
 	return (CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO) || OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED());
+}
+
+int CG_GetRemainingGameTimeMsec(qboolean forItemPickup)
+{
+	int msec;
+	int baseTime;
+
+	if (cgs.timelimit > 0.0f && cg.warmup == 0)
+	{
+		if (forItemPickup)
+		{
+			baseTime = cg.itemPickupTime;
+		}
+		else
+		{
+			baseTime = cg.time;
+		}
+
+		msec = cgs.timelimitMsec - (baseTime - cgs.levelStartTime);
+		return msec;
+	}
+	else 
+	{
+		return cg.time - cgs.levelStartTime;
+	}
+
+}
+
+void CG_ColorWhitenSmart(vec3_t rgb, float *alpha, float strength)
+{
+	float luminance;
+	float factor;
+	float absStrength;
+	qboolean isDarkening;
+
+	if (strength == 0.0f)
+	{
+		return;
+	}
+
+	/* определяем направление и абсолютное значение */
+	isDarkening = (strength < 0.0f);
+	absStrength = (strength < 0.0f) ? -strength : strength;
+
+	/* perceptual luminance */
+	luminance = rgb[0] * 0.299f +
+	            rgb[1] * 0.587f +
+	            rgb[2] * 0.114f;
+
+	if (isDarkening)
+	{
+		/* чем светлее — тем сильнее затемнение */
+		factor = absStrength * luminance;
+	}
+	else
+	{
+		/* чем темнее — тем сильнее отбеливание */
+		factor = absStrength * (1.0f - luminance);
+	}
+
+	if (factor <= 0.0f)
+	{
+		return;
+	}
+
+	if (factor > 1.0f)
+	{
+		factor = 1.0f;
+	}
+
+	if (isDarkening)
+	{
+		/* двигаем цвет к черному */
+		rgb[0] -= rgb[0] * factor;
+		rgb[1] -= rgb[1] * factor;
+		rgb[2] -= rgb[2] * factor;
+	}
+	else
+	{
+		/* двигаем цвет к белому */
+		rgb[0] += (1.0f - rgb[0]) * factor;
+		rgb[1] += (1.0f - rgb[1]) * factor;
+		rgb[2] += (1.0f - rgb[2]) * factor;
+	}
+
+	/* опционально: изменяем альфу для HUD */
+	if (alpha)
+	{
+		if (isDarkening)
+		{
+			/* уменьшаем альфу при затемнении */
+			*alpha -= *alpha * factor * 0.5f;
+			if (*alpha < 0.0f)
+			{
+				*alpha = 0.0f;
+			}
+		}
+		else
+		{
+			/* увеличиваем альфу при отбеливании */
+			*alpha += (1.0f - *alpha) * factor * 0.5f;
+			if (*alpha > 1.0f)
+			{
+				*alpha = 1.0f;
+			}
+		}
+	}
 }

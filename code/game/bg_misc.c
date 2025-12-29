@@ -904,7 +904,7 @@ static qboolean BG_CanArmorBeGrabbed(gitem_t* item, const playerState_t* ps)
 	switch (item->quantity)
 	{
 		case 5:
-			armorTypeItem = armorTypePlayer;                                                    /* Address : 0x1b7b0 Type : Interium */
+			armorTypeItem = armorTypePlayer;
 			break;
 		case 50:
 			armorTypeItem = ARMOR_YELLOW;
@@ -921,13 +921,13 @@ static qboolean BG_CanArmorBeGrabbed(gitem_t* item, const playerState_t* ps)
 	switch (armorTypeItem)
 	{
 		case ARMOR_GREEN:
-			armorMax = 100;                                                                 /* Address : 0x1b79b Type : Interium */
+			armorMax = 100;
 			break;
 		case ARMOR_YELLOW:
-			armorMax = 150;                                                                 /* Address : 0x1b79b Type : Interium */
+			armorMax = 150;
 			break;
 		case ARMOR_RED:
-			armorMax = 200;                                                                 /* Address : 0x1b79b Type : Interium */
+			armorMax = 200;
 			break;
 		default:
 			// unknown armor type
@@ -1272,8 +1272,8 @@ char* eventnames[] =
 
 	"EV_DEBUG_LINE",
 	"EV_STOPLOOPINGSOUND",
-	"EV_TAUNT"
-
+	"EV_TAUNT",
+	"EV_DAMAGEPLUM",
 };
 
 /*

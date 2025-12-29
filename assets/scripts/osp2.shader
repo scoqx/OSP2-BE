@@ -665,3 +665,16 @@ icons/ready
 		rgbgen vertex   
 	}
 }
+
+snowflake
+{
+	sort	underwater
+	cull none
+	entityMergable
+	{
+		map sprites/frozenFoeTag2.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen		vertex
+		alphaGen	vertex
+	}
+}

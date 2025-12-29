@@ -747,10 +747,16 @@ float CG_DrawTimer(float y)
 	int         msec;
 	int         w, h;
 	const float   color[4] = {1.0, 1.0, 1.0, 1.0};
+	if (cg_countdownTimer.integer)
+	{
+		msec = CG_GetRemainingGameTimeMsec(qfalse);
+	}
+	else
+	{
+		msec = cg.time - cgs.levelStartTime;
+		if (msec < 0) msec *= -1;
+	}
 
-	msec = cg.time - cgs.levelStartTime;
-
-	if (msec < 0) msec *= -1;
 
 	seconds = msec / 1000;
 	mins = seconds / 60;
@@ -776,9 +782,17 @@ void CG_DrawTimer2(void)
 	int         w, h;
 	const float   color[4] = {1.0, 1.0, 1.0, 1.0};
 
-	msec = cg.time - cgs.levelStartTime;
+	if (cg_countdownTimer.integer)
+	{
+		msec = CG_GetRemainingGameTimeMsec(qfalse);
+	}
+	else
+	{
+		msec = cg.time - cgs.levelStartTime;
+		if (msec < 0) msec *= -1;
+	}
 
-	if (msec < 0) msec *= -1;
+	// if (msec < 0) msec *= -1;
 
 	seconds = msec / 1000;
 	mins = seconds / 60;
@@ -1935,7 +1949,178 @@ void CG_ScanForCrosshairEntity(void)
 	cg.crosshairClientTime = cg.time;
 }
 
+/*
+=================
+CG_IsLookingAtItemHitbox
+=================
+Returns qtrue if looking at red armor or megahealth hitbox
+*/
+static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* cent, gitem_t* item)
+{
+	vec3_t itemOrigin;
+	vec3_t mins;
+	vec3_t maxs;
+	trace_t hboxTrace;
+	float hbox_height;
+	float hbox_size_xy;
+	clipHandle_t cmodel;
+	
+	if (!item->classname)
+	{
+		return qfalse;
+	}
+	
+	// Only check red armor and megahealth
+	if (Q_stricmp(item->classname, "item_armor_body") &&
+	    Q_stricmp(item->classname, "item_health_mega"))
+	{
+		return qfalse;
+	}
+	
+	// Get original item position (before bob effect)
+	VectorCopy(cent->lerpOrigin, itemOrigin);
+	
+	// If bob effect is active, restore original Z position
+	if (cg_itemFx.integer & 1)
+	{
+		float scale;
+		float bobOffset;
+		
+		scale = 0.005 + cent->currentState.number * 0.00001;
+		bobOffset = 4 + cos((cg.time + 1000) * scale) * 4;
+		itemOrigin[2] -= bobOffset;
+	}
+	
+	// Hitbox parameters (same as in CG_AddItemHitBox)
+	hbox_height = 32.0f;
+	hbox_size_xy = 16.0f;
+	
+	// Create bounding box for hitbox (centered on item, extending upward)
+	mins[0] = -hbox_size_xy;
+	mins[1] = -hbox_size_xy;
+	mins[2] = 0.0f;  // Start from item's original Z
+	maxs[0] = hbox_size_xy;
+	maxs[1] = hbox_size_xy;
+	maxs[2] = hbox_height;  // Extend upward
+	
+	// Create temporary box model for trace
+	cmodel = trap_CM_TempBoxModel(mins, maxs);
+	
+	// Trace from camera to end position, but against the hitbox
+	trap_CM_TransformedBoxTrace(&hboxTrace, start, end,
+	                            vec3_origin, vec3_origin, cmodel,
+	                            MASK_SHOT, itemOrigin, vec3_origin);
+	
+	// If trace hit the hitbox, we're looking at it
+	if (hboxTrace.fraction < 1.0f)
+	{
+		return qtrue;
+	}
+	
+	return qfalse;
+}
 
+/*
+=================
+CG_CrosshairTarget
+=================
+Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth
+If item found, itemPos is filled with item center position
+*/
+int CG_CrosshairTarget(vec3_t itemPos)
+{
+	trace_t trace;
+	vec3_t start, end;
+	centity_t* cent;
+	gitem_t* item;
+	clientInfo_t* ci;
+	int itemIndex;
+	
+	VectorCopy(cg.refdef.vieworg, start);
+	VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
+	
+	/* Use MASK_SHOT to detect both players and items */
+	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
+	         cg.snap->ps.clientNum, MASK_SHOT);
+	
+	// Check if looking at a player
+	if (trace.entityNum < MAX_CLIENTS)
+	{
+		ci = &cgs.clientinfo[trace.entityNum];
+		if (ci->infoValid && CG_IsEnemy(ci))
+		{
+			return 2;  // enemy
+		}
+		return 1;  // nothing (ally or invalid)
+	}
+	
+	// Check all item entities for red armor and megahealth hitboxes
+	// We check all items because trace might not hit the item entity directly,
+	// but we want to detect if we're looking at the hitbox area
+	{
+		int i;
+		centity_t* checkCent;
+		gitem_t* checkItem;
+		int checkItemIndex;
+		vec3_t itemOrigin;
+		trace_t visibilityTrace;
+		
+		for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+		{
+			checkCent = &cg_entities[i];
+			// Check if entity is valid item (don't check currentValid, check eType)
+			if (checkCent->currentState.eType == ET_ITEM)
+			{
+				checkItemIndex = checkCent->currentState.modelindex;
+				if (checkItemIndex >= 1 && checkItemIndex < bg_numItems)
+				{
+					checkItem = &bg_itemlist[checkItemIndex];
+					if (checkItem->classname && (
+					        !Q_stricmp(checkItem->classname, "item_armor_body") ||
+					        !Q_stricmp(checkItem->classname, "item_health_mega")))
+					{
+						// Check if ray intersects with hitbox
+						if (CG_IsLookingAtItemHitbox(start, end, checkCent, checkItem))
+						{
+							// Get item center position (original position before bob effect)
+							VectorCopy(checkCent->lerpOrigin, itemOrigin);
+							if (cg_itemFx.integer & 1)
+							{
+								float scale;
+								float bobOffset;
+								
+								scale = 0.005 + checkCent->currentState.number * 0.00001;
+								bobOffset = 4 + cos((cg.time + 1000) * scale) * 4;
+								itemOrigin[2] -= bobOffset;
+							}
+							
+							// Check visibility - trace from camera to item to make sure there's no wall
+							CG_Trace(&visibilityTrace, start, vec3_origin, vec3_origin, itemOrigin,
+							         cg.snap->ps.clientNum, CONTENTS_SOLID);
+							
+							// Only return item if trace reached it (no wall blocking)
+							if (visibilityTrace.fraction >= 0.99f)
+							{
+								VectorCopy(itemOrigin, itemPos);
+								
+								if (!Q_stricmp(checkItem->classname, "item_armor_body"))
+								{
+									return 3;  // red armor
+								}
+								if (!Q_stricmp(checkItem->classname, "item_health_mega"))
+								{
+									return 4;  // megahealth
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	return 1;  // nothing
+}
 
 /*
 =====================
@@ -2519,6 +2704,7 @@ void CG_OSPDrawNewCredits(void)
 		NULL
 	};
 	static int startTime = 0;
+	
 
 	if (!cgs.be.showCredits)
 	{
@@ -2531,6 +2717,7 @@ void CG_OSPDrawNewCredits(void)
 		startTime = cg.time;
 	}
 
+	/* Don't auto-close credits if slot machine is active */
 	if (cg.time - startTime > showTime)
 	{
 		cgs.be.showCredits = qfalse;
@@ -2693,7 +2880,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 	VectorCopy(cent->lerpOrigin, headPos);
 	headPos[2] += lift;
 
-	if (!CG_WorldCoordToScreen(headPos, &headX, &headY))
+	if (!CG_WorldToScreen(headPos, &headX, &headY))
 		return;
 
 	CG_FontSelect(font);
@@ -3045,7 +3232,7 @@ static void CG_Draw2D(void)
 	{
 		return;
 	}
-
+	
 	if (strlen(cgs.osp.testFont))
 	{
 		CG_DrawTestFont(cgs.osp.testFont);
@@ -3135,6 +3322,43 @@ static void CG_DrawTourneyScoreboard(void)
 	CG_DrawOldTourneyScoreboard();
 }
 
+
+/*
+=====================
+CG_DrawBefore2D
+
+They want to be under main hud
+=====================
+*/
+void CG_DrawBefore2D(void)
+{
+	// Draw 2D before main 2D function
+	if (cg_draw2D.integer)
+	{
+		if (cg_damageDrawFrame.integer & 4 && cgs.be.isHealthLow)
+		{
+			CG_DrawHealthLowOverlay();
+		}
+		if (cg_damageDrawFrame.integer)
+		{
+			CG_DrawDamageFrame();
+		}
+	}
+	
+	// CG_DrawSelwheelMark(); // Cursor of ttwheel
+	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS) &&
+		cg_teamTask.integer)
+	{
+		CG_DrawTeamTaskMarks();
+	}
+	
+	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) &&
+			cg_teamIndicator.integer)
+	{
+		CG_DrawPlayerIndicatorOnScreen();
+	}
+	
+}
 /*
 =====================
 CG_DrawActive
@@ -3189,6 +3413,12 @@ void CG_DrawActive(stereoFrame_t stereoView)
 		VectorMA(cg.refdef.vieworg, -separation, cg.refdef.viewaxis[1], cg.refdef.vieworg);
 	}
 
+	// Draw team task border markers (for marks outside screen)
+	CG_DrawTeamTaskBorderHudMarkers();
+	
+	// Draw ttwheel pointers (arrows pointing to elements) - must be before trap_R_RenderScene
+	CG_DrawSelwheelPointers();
+	
 	// draw 3D view
 	trap_R_RenderScene(&cg.refdef);
 
@@ -3197,29 +3427,120 @@ void CG_DrawActive(stereoFrame_t stereoView)
 	{
 		VectorCopy(baseOrg, cg.refdef.vieworg);
 	}
-
-	// Draw 2D before main 2D function
-	if (cg_draw2D.integer)
-	{
-		if (cg_damageDrawFrame.integer & 4 && cgs.be.isHealthLow)
-		{
-			CG_DrawHealthLowOverlay();
-		}
-		if (cg_damageDrawFrame.integer)
-		{
-			CG_DrawDamageFrame();
-		}
-	}
-
-	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) &&
-	        cg_teamIndicator.integer)
-	{
-		CG_DrawPlayerIndicatorOnScreen();
-	}
-
+	
+	CG_DrawBefore2D();
 	// draw status bar and other floating elements
 	CG_Draw2D();
 
+}
+
+/*
+=================
+CG_DrawRotatedPic
+
+Draw a rotated 2D image using sprite in 3D scene
+Parameters:
+  x, y - center position in screen coordinates (640x480 virtual)
+  w, h - width and height
+  shader - shader handle
+  angle - rotation angle in degrees (clockwise)
+  color - RGBA color (0.0 to 1.0)
+
+Note: This function adds sprite to the main 3D scene, so it must be called
+      BEFORE trap_R_RenderScene(&cg.refdef)
+=================
+*/
+void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, float angle, const vec4_t color)
+{
+	refEntity_t ent;
+	float dist;
+	vec3_t centerPos;
+	float hfov_x;
+	float hfov_y;
+	float radius;
+	float dx;
+	float dy;
+	float offsetX;
+	float offsetY;
+	vec3_t rightOffset;
+	vec3_t upOffset;
+	int r, g, b, a;
+	
+	if (!shader)
+	{
+		return;
+	}
+	
+	// Initialize entity
+	memset(&ent, 0, sizeof(ent));
+	
+	// Convert color to byte values
+	r = (int)(color[0] * 255.0f);
+	g = (int)(color[1] * 255.0f);
+	b = (int)(color[2] * 255.0f);
+	a = (int)(color[3] * 255.0f);
+	
+	if (r > 255) r = 255;
+	if (g > 255) g = 255;
+	if (b > 255) b = 255;
+	if (a > 255) a = 255;
+	if (r < 0) r = 0;
+	if (g < 0) g = 0;
+	if (b < 0) b = 0;
+	if (a < 0) a = 0;
+	
+	// Calculate FOV
+	hfov_x = cg.refdef.fov_x * M_PI / 360.0f;
+	hfov_y = cg.refdef.fov_y * M_PI / 360.0f;
+	
+	// Calculate position based on screen coordinates
+	// Convert screen position to 3D position in front of camera
+	dist = 64.0f; // Distance in front of camera
+	
+	// Offset from center of screen (in 640x480 coordinates)
+	dx = x - SCREEN_WIDTH / 2.0f;
+	dy = y - SCREEN_HEIGHT / 2.0f;
+	
+	// Convert screen offset to 3D offset on plane in front of camera
+	offsetX = dx * tan(hfov_x) / (SCREEN_WIDTH * 0.5f) * dist;
+	offsetY = -dy * tan(hfov_y) / (SCREEN_HEIGHT * 0.5f) * dist; // Negative because screen Y increases downward
+	
+	// Start from center position in front of camera
+	VectorScale(cg.refdef.viewaxis[0], dist, centerPos);
+	
+	// Add right offset (viewaxis[1] is right vector)
+	VectorScale(cg.refdef.viewaxis[1], offsetX, rightOffset);
+	
+	// Add up offset (viewaxis[2] is up vector)
+	VectorScale(cg.refdef.viewaxis[2], offsetY, upOffset);
+	
+	// Combine all offsets
+	VectorAdd(cg.refdef.vieworg, centerPos, ent.origin);
+	VectorAdd(ent.origin, rightOffset, ent.origin);
+	VectorAdd(ent.origin, upOffset, ent.origin);
+	
+	// Calculate size based on screen size and FOV
+	// Convert screen width to 3D radius
+	radius = w * 0.5f * tan(hfov_x) / (SCREEN_WIDTH * 0.5f) * dist;
+	ent.radius = radius;
+	
+	if (ent.radius < 0.1f)
+	{
+		ent.radius = 0.1f;
+	}
+	
+	// Set sprite entity properties
+	ent.reType = RT_SPRITE;
+	ent.renderfx = RF_FIRST_PERSON | RF_DEPTHHACK;
+	ent.rotation = angle; // Rotation in degrees (clockwise)
+	ent.customShader = shader;
+	ent.shaderRGBA[0] = r;
+	ent.shaderRGBA[1] = g;
+	ent.shaderRGBA[2] = b;
+	ent.shaderRGBA[3] = a;
+	
+	// Add to main 3D scene (must be called before trap_R_RenderScene)
+	trap_R_AddRefEntityToScene(&ent);
 }
 
 void CG_OSPSetColor(vec4_t color)

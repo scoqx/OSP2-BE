@@ -30,7 +30,15 @@ void CG_SHUDElementGameTimeRoutine(void* context)
 	{
 		int         mins, seconds, tens;
 		int         msec;
-		msec = cg.time - cgs.levelStartTime;
+		
+		if (cg_countdownTimer.integer)
+		{
+			msec = CG_GetRemainingGameTimeMsec(qfalse);
+		}
+		else
+		{ 
+			msec = cg.time - cgs.levelStartTime;
+		}
 
 		if (msec < 0) msec *= -1;
 

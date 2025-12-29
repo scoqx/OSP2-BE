@@ -178,6 +178,7 @@ void CG_ParseServerinfo(void)
 	cgs.fraglimit = atoi(Info_ValueForKey(info, "fraglimit"));
 	cgs.capturelimit = atoi(Info_ValueForKey(info, "capturelimit"));
 	cgs.timelimit = atoi(Info_ValueForKey(info, "timelimit"));
+	cgs.timelimitMsec = atoi(Info_ValueForKey(info, "timelimit")) * 60 * 1000;
 	cgs.maxclients = atoi(Info_ValueForKey(info, "sv_maxclients"));
 	mapname = Info_ValueForKey(info, "mapname");
 	Com_sprintf(cgs.mapname, sizeof(cgs.mapname), "maps/%s.bsp", mapname);
@@ -317,6 +318,10 @@ static void CG_ConfigStringModified(void)
 	else if (num == CS_SERVERINFO)
 	{
 		CG_ParseServerinfo();
+	}
+	else if (num == CS_SYSTEMINFO)
+	{
+		CG_UpdateAutoHopFromSystemInfo();
 	}
 	else if (num == CS_WARMUP)
 	{
@@ -615,11 +620,16 @@ static void CG_MapRestart(void)
 
 	cg.scoreFadeTime = 0;
 
-	CG_OSPWStatsUp_f();                                                             /* Address : 0xf5df Type : Interium */
+	CG_OSPWStatsUp_f();
 
 	CG_StartMusic();
 
 	trap_S_ClearLoopingSounds(qtrue);
+
+	if (cgs.osp.isOSPv1)
+	{
+		CG_OSPUpdateUserInfo(qtrue);
+	}
 
 	// we really should clear more parts of cg here and stop sounds
 
@@ -1245,6 +1255,104 @@ void CG_BEParseStatsInfo(void)
 	ws->flagTime = statsInfo[OSP_STATS_TIME];
 }
 
+/*
+=================
+CG_OSPAstats
+
+Print topshots weapon or bottomshots weapon
+=================
+*/
+static void CG_OSPAstats(qboolean top)
+{
+	int a = 1;
+	int s = 0;
+	float average;
+	int number_of_entries;
+	int atts;
+	float acc;
+	int hits;
+	char* color_code;
+	int client_num;
+	int kills;
+	int deaths;
+	float level;
+	float treshold;
+
+	number_of_entries = atoi(CG_Argv(a++));
+	if (number_of_entries == 0)
+	{
+		return;
+	}
+
+	average = atoi(CG_Argv(a++));
+
+	CG_Printf("\n^3  Acc Hits/Atts Kills Deaths\n");
+	CG_Printf("----------------------------------------------------------\n");
+	for (s = 0; s < number_of_entries; ++s)
+	{
+		client_num = atoi(CG_Argv(a++));
+		atts = atoi(CG_Argv(a++));
+		hits = atoi(CG_Argv(a++));
+		kills = atoi(CG_Argv(a++));
+		deaths = atoi(CG_Argv(a++));
+
+		acc = atts > 0 ? (float)(100 * atts) / (float)hits : 0;
+		level = top ? acc : (float)average + 0.999f;
+		treshold = top ? average : acc;
+		color_code = level >= treshold ? "^3" : "^7";
+
+		CG_Printf(va("%s%5.1f ^5%4d/%-4d ^2%5d ^1%6d %s%s\n", color_code, acc, hits, atts, kills, deaths, color_code, cgs.clientinfo[client_num].name_clean));
+	}
+	CG_Printf("\n\n");
+}
+
+/*
+=================
+CG_OSPBstats
+
+Print topshots weapon or bottomshots weapon
+=================
+*/
+static void CG_OSPBstats(qboolean top)
+{
+	int a = 1;
+	int number_of_weapon;
+	int hits;
+	int atts;
+	int client_num;
+	int kills;
+	int deaths;
+	float acc;
+
+	number_of_weapon = atoi(CG_Argv(a++));
+	if (number_of_weapon == 0)
+	{
+		CG_Printf("\n^3No qualifying %sshot info available.\n\n", top ? "top" : "bottom");
+		return;
+	}
+
+	CG_Printf("\n^2%sst Match Accuracies:\n", top ? "Be" : "Wor");
+	CG_Printf("^3WP   Acc Hits/Atts Kills Deaths\n");
+	CG_Printf("-------------------------------------------------------------\n");
+
+	while (number_of_weapon)
+	{
+		client_num = atoi(CG_Argv(a++));
+		atts = atoi(CG_Argv(a++));
+		hits = atoi(CG_Argv(a++));
+		kills = atoi(CG_Argv(a++));
+		deaths = atoi(CG_Argv(a++));
+
+		acc = atts > 0 ? (float)(100 * atts) / (float)hits : 0;
+
+		CG_Printf(va("^3%s ^7%5.1f ^5%4d/%-4d ^2%5d ^1%6d ^7%s\n", weaponShortNames[number_of_weapon], acc, atts, hits, kills, deaths, cgs.clientinfo[client_num].name_clean));
+
+		number_of_weapon = atoi(CG_Argv(a++));
+	}
+	CG_Printf("\n\n");
+}
+
+
 static void CG_HandleScmdsCommand(void)
 {
 	const char* part;
@@ -1305,6 +1413,81 @@ static void CG_ParseSpecsInfo(void)
 			cgs.be.followingMe |= (1 << clientNum);
 		}
 	}
+}
+
+/*
+=================
+CG_InsertChatColor
+
+Insert or replace color code at the beginning of message text (after colon and spaces).
+Format: "Name: message" -> "Name: ^Xmessage" where X is color code (digit 0-9 or letter a-z/A-Z).
+Server sends: "name^Xmessage" format, so we need to find colon, then find/replace color in message text.
+=================
+*/
+static void CG_InsertChatColor(char* text, int textSize, char colorChar)
+{
+	const char* colonPos;
+	char newText[1024];
+	int colonIndex;
+	int messageStart;
+	int textLen;
+	int colorCodeLen;
+	int colorInsertPos;
+	
+	/* Find colon position */
+	colonPos = strchr(text, ':');
+	if (!colonPos)
+	{
+		return;
+	}
+	
+	colonIndex = colonPos - text;
+	textLen = strlen(text);
+	
+	/* Find the start of actual message text (skip colon and spaces) */
+	messageStart = colonIndex + 1;
+	while (messageStart < textLen && text[messageStart] == ' ')
+	{
+		messageStart++;
+	}
+	
+	/* If no message text after colon, don't insert color */
+	if (messageStart >= textLen)
+	{
+		return;
+	}
+	
+	colorInsertPos = messageStart;
+	
+	/* Check if color code already exists at message start (server may have added it) */
+	/* Support both digits (0-9) and letters (a-z, A-Z) */
+	if (messageStart < textLen && text[messageStart] == '^' && 
+	    messageStart + 1 < textLen && 
+	    ((text[messageStart + 1] >= '0' && text[messageStart + 1] <= '9') ||
+	     (text[messageStart + 1] >= 'a' && text[messageStart + 1] <= 'z') ||
+	     (text[messageStart + 1] >= 'A' && text[messageStart + 1] <= 'Z')))
+	{
+		/* Color code already exists at message start, replace it */
+		text[messageStart + 1] = colorChar;
+		return;
+	}
+	
+	/* Build color code string (^X where X is colorChar) */
+	colorCodeLen = 2; /* ^ + character */
+	
+	/* Check if we have enough space */
+	if (textLen + colorCodeLen >= textSize - 1)
+	{
+		return;
+	}
+	
+	/* Build new message: everything before message start + color code + message text */
+	memcpy(newText, text, colorInsertPos); /* Copy up to message start */
+	newText[colorInsertPos] = '^';
+	newText[colorInsertPos + 1] = colorChar;
+	memcpy(newText + colorInsertPos + 2, text + colorInsertPos, textLen - colorInsertPos + 1); /* Copy rest including null terminator */
+	
+	Q_strncpyz(text, newText, textSize);
 }
 
 /*
@@ -1488,31 +1671,31 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 		if (strstr(ci->name, replacementNameClean) == ci->name || 
 		    (ci->name[0] == '^' && strstr(ci->name + 2, replacementNameClean) == ci->name + 2))
 		{
-			/* ci->name contains replacement name directly, extract it with ^0* */
+			/* ci->name contains replacement name directly, extract it without ^0* */
 			nameEnd = strstr(ci->name, "^0*");
 			if (nameEnd)
 			{
-				/* Include "^0*" in the extracted name */
-				nameWithColorLen = (nameEnd + 3) - ci->name;
+				/* Extract name up to (but not including) "^0*" to preserve color code */
+				nameWithColorLen = nameEnd - ci->name;
 				if (nameWithColorLen > 0 && nameWithColorLen < sizeof(tempName) - 3)
 				{
 					memcpy(tempName, ci->name, nameWithColorLen);
 					tempName[nameWithColorLen] = 0;
-					/* Add ^7 at the end for chat */
+					/* Add ^7 at the end for chat to reset color */
 					Q_strcat(tempName, sizeof(tempName), "^7");
 					replacementName = tempName;
 				}
 				else
 				{
 					/* Fallback: use replacementNameClean with default color */
-					Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+					Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
 					replacementName = tempName;
 				}
 			}
 			else
 			{
 				/* Fallback: use replacementNameClean with default color */
-				Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+				Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
 				replacementName = tempName;
 			}
 		}
@@ -1529,45 +1712,44 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 				{
 					nameStart--;
 				}
-				/* If we found '^', include it */
-				if (nameStart > ci->name && nameStart[-1] == '^')
+				/* If we found '^', verify it's a color code and include it */
+				if (nameStart > ci->name && nameStart[-1] == '^' && nameStart[0] >= '0' && nameStart[0] <= '9')
 				{
-					nameStart--; /* Include the '^' */
+					nameStart--; /* Include the '^' (color digit is already at nameStart[0]) */
 				}
 				
-				/* Find where the name ends (after '^0*' sequence) */
+				/* Find where the name ends (before '^0*' sequence) */
 				nameEnd = strstr(nameInCiName, "^0*");
 				if (nameEnd)
 				{
-					/* Include "^0*" in the extracted name */
-					nameEnd += 3; /* Skip "^0*" */
+					/* Extract name up to (but not including) "^0*" to preserve color code */
 					nameWithColorLen = nameEnd - nameStart;
 					if (nameWithColorLen > 0 && nameWithColorLen < sizeof(tempName) - 3)
 					{
 						memcpy(tempName, nameStart, nameWithColorLen);
 						tempName[nameWithColorLen] = 0;
-						/* Add ^7 at the end for chat */
+						/* Add ^7 at the end for chat to reset color */
 						Q_strcat(tempName, sizeof(tempName), "^7");
 						replacementName = tempName;
 					}
 					else
 					{
 						/* Fallback: use replacementNameClean with default color */
-						Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+						Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
 						replacementName = tempName;
 					}
 				}
 				else
 				{
 					/* Fallback: use replacementNameClean with default color */
-					Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+					Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
 					replacementName = tempName;
 				}
 			}
 			else
 			{
 				/* Fallback: use replacementNameClean with default color */
-				Com_sprintf(tempName, sizeof(tempName), "^7%s^0*^7", replacementNameClean);
+				Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
 				replacementName = tempName;
 			}
 		}
@@ -1690,7 +1872,7 @@ void CG_ServerCommand(void)
 		Q_strncpyz(text, CG_Argv(1), sizeof(text));
 		CG_RemoveChatEscapeChar(text);
 
-		// фильтрация говна сервера к3мск по маске "had <число> health and <число> armor left"
+		// фильтрация сообщений сервера к3мск по маске "had <число> health and <число> armor left"
 		if (cg_ignoreServerMessages.integer & 1)
 		{
 			// Проверка фильтра "had <число> health and <число> armor left"
@@ -1707,7 +1889,6 @@ void CG_ServerCommand(void)
 
 		if (cg_ignoreServerMessages.integer & 2)
 		{
-			// Проверяем, есть ли в тексте "chat fragged"
 			if (strstr(text, "chat fragged") != NULL)
 			{
 				return;
@@ -1767,6 +1948,21 @@ void CG_ServerCommand(void)
 		}
 
 		CG_RemoveChatEscapeChar(text);
+
+		/* Insert default chat color at the beginning of message text (after colon) */
+		/* This replaces any server-provided color with our default color */
+		/* Support both digits (0-9) and letters (a-z, A-Z) */
+		if (cg_chatColor.string[0] != '\0')
+		{
+			char colorChar;
+			colorChar = cg_chatColor.string[0];
+			if ((colorChar >= '0' && colorChar <= '9') ||
+			    (colorChar >= 'a' && colorChar <= 'z') ||
+			    (colorChar >= 'A' && colorChar <= 'Z'))
+			{
+				CG_InsertChatColor(text, 1024, colorChar);
+			}
+		}
 
 		if (isVanilaChatEnabled)
 		{
@@ -1833,6 +2029,21 @@ void CG_ServerCommand(void)
 		CG_WrapPlayerNameInParentheses(text, 1024);
 		
 		CG_InjectCustomLoc(text, 1024);
+
+		/* Insert default team chat color at the beginning of message text (after colon) */
+		/* This replaces any server-provided color with our default color */
+		/* Support both digits (0-9) and letters (a-z, A-Z) */
+		if (cg_teamChatColor.string[0] != '\0')
+		{
+			char colorChar;
+			colorChar = cg_teamChatColor.string[0];
+			if ((colorChar >= '0' && colorChar <= '9') ||
+			    (colorChar >= 'a' && colorChar <= 'z') ||
+			    (colorChar >= 'A' && colorChar <= 'Z'))
+			{
+				CG_InsertChatColor(text, 1024, colorChar);
+			}
+		}
 
 		if (isVanilaChatEnabled)
 		{
@@ -1920,6 +2131,31 @@ void CG_ServerCommand(void)
 	{
 		return;
 	}
+//dmgplum - damage plum for projectile weapons (GL/RL) via server command
+	if (Q_stricmp(cmd, "dmgplum") == 0)
+	{
+		int damage;
+		int argc;
+		vec3_t position;
+		
+		// Only process if enabled (1 = normal, 2 = stacking)
+		if (cg_damagePlums.integer < 1)
+		{
+			return;
+		}
+		
+		argc = trap_Argc();
+		if (argc >= 5)
+		{
+			damage = atoi(CG_Argv(1));
+			position[0] = atof(CG_Argv(2));
+			position[1] = atof(CG_Argv(3));
+			position[2] = atof(CG_Argv(4));
+			
+			CG_DamagePlum(cg.predictedPlayerState.clientNum, position, damage);
+		}
+		return;
+	}
 //xstats1
 	if (Q_stricmp(cmd, "xstats1") == 0)
 	{
@@ -1945,6 +2181,7 @@ void CG_ServerCommand(void)
 //astats
 	if (Q_stricmp(cmd, "astats") == 0)
 	{
+		CG_OSPAstats(qtrue);
 		return;
 	}
 //astatsb
@@ -1955,6 +2192,7 @@ void CG_ServerCommand(void)
 //bstats
 	if (Q_stricmp(cmd, "bstats") == 0)
 	{
+		CG_OSPBstats(qtrue);
 		return;
 	}
 //bstatsb

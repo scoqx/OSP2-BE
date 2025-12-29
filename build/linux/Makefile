@@ -337,6 +337,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_cvardescriptions.o \
   $(B)/$(MOD)/cgame/cg_crosshair.o \
   $(B)/$(MOD)/cgame/cg_chatfilter.o \
+  $(B)/$(MOD)/cgame/cg_teamtaskfilter.o \
   $(B)/$(MOD)/cgame/cg_consolecmds.o \
   $(B)/$(MOD)/cgame/cg_customloc.o \
   $(B)/$(MOD)/cgame/cg_draw.o \

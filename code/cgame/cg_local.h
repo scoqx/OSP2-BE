@@ -63,6 +63,7 @@ extern "C" {
 #define PULSE_SCALE         1.5         // amount to scale up the icons when activating
 
 #define MAX_STEP_CHANGE     32
+#define MAX_SELWHEEL_ELEMENTS 10
 
 #define MAX_VERTS_ON_POLY   10
 #define MAX_MARK_POLYS      10240
@@ -242,6 +243,7 @@ typedef enum
 	LE_FADE_RGB,
 	LE_SCALE_FADE,
 	LE_SCOREPLUM,
+	LE_DAMAGEPLUM
 } leType_t;
 
 typedef enum
@@ -367,6 +369,7 @@ typedef struct
 	int             wins, losses;   // in tourney mode
 
 	int             teamTask;       // task in teamplay (offence/defence)
+	int             teamTaskEvent;  // pending team task event to process (0 = no event)
 	qboolean        teamLeader;     // true when this is a team leader
 
 	int             powerups;       // so can display quad/flag status
@@ -488,6 +491,19 @@ typedef struct
 	int numpositions;
 } skulltrail_t;
 
+#define MAX_TEAMTASK_MARKS  32
+
+typedef struct
+{
+	vec3_t origin;
+	int markType;
+	int startTime;
+	int endTime;
+	qhandle_t shader;
+	vec4_t color;
+	int clientNum; /* Always filled: sender's client number (whose mark it is) */
+	qboolean isOverhead; /* True if mark should track player's head dynamically */
+} teamTaskMark_t;
 
 #define MAX_REWARDSTACK     10
 #define MAX_SOUNDBUFFER     20
@@ -499,6 +515,15 @@ typedef struct
 
 #define MAX_PREDICTED_EVENTS    16
 #define NUM_SAVED_STATES (CMD_BACKUP + 2)
+
+// Token Bucket for anti-flood
+typedef struct
+{
+	int tokens;         /* текущее количество */
+	int maxTokens;      /* максимум */
+	int refillTime;     /* мс на 1 токен */
+	int lastTime;       /* cg.time последнего апдейта */
+} tokenBucket_t;
 
 typedef struct
 {
@@ -829,6 +854,7 @@ typedef struct
 	qhandle_t   grenadeCPMANoPicMipShaderNew;
 	qhandle_t   grenadeCPMAModel;
 	qhandle_t   waterBubbleShader;
+	qhandle_t   snowflakeShader;
 	qhandle_t   bloodTrailShader;
 
 	qhandle_t   numberShaders[11];
@@ -961,6 +987,38 @@ typedef struct
 
 	qhandle_t  tempAccIcon;
 
+	qhandle_t cursor;
+	qhandle_t selectCursor;
+	qhandle_t sizeCursor;
+	qhandle_t customShader[16];
+
+	// teamTasks
+	qhandle_t teamTasksAttack;
+	qhandle_t teamTasksDefence;
+	qhandle_t teamTasksWatch;
+	qhandle_t teamTasksDead;
+	qhandle_t teamTasksYes;
+	qhandle_t teamTasksNo;
+	qhandle_t teamTasksLocation;
+	qhandle_t teamTasksTarget;
+	qhandle_t teamTasksRedarmor;
+	qhandle_t teamTasksMegahealth;
+	qhandle_t teamTasksMedic;
+
+	qhandle_t teamTasksAttack_marker;
+	qhandle_t teamTasksDefence_marker;
+	qhandle_t teamTasksWatch_marker;
+	qhandle_t teamTasksDead_marker;
+	qhandle_t teamTasksLocation_marker;
+	qhandle_t teamTasksTarget_marker;
+	qhandle_t teamTasksRedarmor_marker;
+	qhandle_t teamTasksMegahealth_marker;
+	qhandle_t teamTasksMedic_marker;
+	qhandle_t teamTasksCircle;
+	qhandle_t teamTasksSmart;
+	qhandle_t teamTasksWheelbg;
+	qhandle_t teamTasksPointing;
+
 	// sounds
 	sfxHandle_t quadSound;
 	sfxHandle_t tracerSound;
@@ -1069,11 +1127,6 @@ typedef struct
 	sfxHandle_t countFightSound;
 	sfxHandle_t countPrepareSound;
 
-	qhandle_t cursor;
-	qhandle_t selectCursor;
-	qhandle_t sizeCursor;
-	qhandle_t customShader[16];
-
 	sfxHandle_t regenSound;
 	sfxHandle_t protectSound;
 	sfxHandle_t n_healthSound;
@@ -1083,6 +1136,8 @@ typedef struct
 	sfxHandle_t wstbimpmSound;
 	sfxHandle_t wstbimpdSound;
 	sfxHandle_t wstbactvSound;
+	
+	sfxHandle_t pingSimpleSound;
 
 } cgMedia_t;
 
@@ -1226,6 +1281,45 @@ typedef struct cgs_be_s
 	qboolean supportedServer;
 	int followingMe;
 	qboolean showScores;
+	int autohop;  // 0 = нет pmove_autohop в cs, 1 = есть и нельзя управлять, 2 = можно управлять
+	// Client-side damage prediction (bit 1 = 2)
+	qboolean clientDamagePrinted;  // whether damage was already shown
+	vec3_t brightWeaponsColor[WP_NUM_WEAPONS];
+	
+	// team task markers
+	struct
+	{
+		int         numTeamTaskMarks;
+		teamTaskMark_t  teamTaskMarks[MAX_TEAMTASK_MARKS];
+		
+		// anti-flood for sending team task commands - fast limit (1 per 150ms)
+		tokenBucket_t sendCommandBucketFast;
+		// anti-flood for sending team task commands - bucket limit (4 tokens, 800ms refill)
+		tokenBucket_t sendCommandBucket;
+		// anti-flood for sending team task commands - flood protection (13 tokens, 300ms refill)
+		tokenBucket_t sendCommandBucketFlood;
+		
+		// ttwheel mark
+		qboolean    ttwheelMarkActive;
+		float       ttwheelMarkX;
+		float       ttwheelMarkY;
+		int         lastCmdNum;
+		int         lastCmdAngles[3];
+		int         lastMovementTime;
+		int         ttwheelHoveredIcon; // -1 = none, icon index (updated each frame)
+		int         ttwheelSelectedIcon; // -1 = none, icon index (fixed when hovered, used on release)
+		int         ttwheelElementCount; // Number of active elements
+		qhandle_t   ttwheelElementShaders[MAX_SELWHEEL_ELEMENTS]; // Shaders for each element
+		void        (*ttwheelElementActions[MAX_SELWHEEL_ELEMENTS])(void); // Action callbacks
+		char        ttwheelElementCommands[MAX_SELWHEEL_ELEMENTS][MAX_STRING_CHARS]; // Console commands for each element
+		vec4_t      teamTaskThemeColor; // Theme color for team task UI elements
+		
+		// smart target memory (for wheel opening)
+		int         smartTargetType; // 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth
+		vec3_t      smartTargetPos; // Position of target (enemy or item)
+		int         smartTargetTime; // Time when target was saved (for 500ms memory)
+		int         smartTargetEntityNum; // Entity number of enemy (if target is enemy)
+	} teamMarkers;
 } cgs_be_t;
 
 #define BE_ENABLED              be_enabled.integer
@@ -1243,6 +1337,15 @@ typedef struct cgs_be_s
 #define CG_BE_TEAM_INDICATOR    (1 << 9) // 512
 #define CG_BE_DAMAGEINFO        (1 << 10) // 1024
 #define CG_BE_FULLBRIGHT        (1 << 11) // 2048
+#define CG_BE_TEAMTASKS        (1 << 12) // 4096
+
+// Team task flags (bitmask for cg_teamTask)
+#define CG_TEAMTASK_ENABLED        (1 << 0)  // 1 - Enable team task markers
+#define CG_TEAMTASK_MARKSOUND      (1 << 1)  // 2 - Play sound when marking
+#define CG_TEAMTASK_ONDEATH        (1 << 2)  // 4 - Show marker when player dies
+#define CG_TEAMTASK_HUDMARKER      (1 << 3)  // 8 - Show markers on HUD
+#define CG_TEAMTASK_SHOWNAME       (1 << 4)  // 16 - Show player name below mark when hovering
+#define CG_TEAMTASK_UNIQUECOLORS   (1 << 5)  // 32 - Use unique colors
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -1342,6 +1445,25 @@ typedef struct cgs_osp_s
 		qboolean key[4];
 		qboolean scoreboard;
 	} chud;
+	struct
+	{
+		char text[MAX_STRING_CHARS];
+		float x;
+		float y;
+		vec4_t color;
+		vec4_t shadowColor;
+		float charWidth;
+		float charHeight;
+		int flags;
+		vec4_t background;
+		vec4_t border;
+		vec4_t borderColor;
+		int fontIndex;
+		int startTime;
+		float duration;
+		float fadeTime;
+		qboolean active;
+	} printui[32];
 } cgs_osp_t;
 
 
@@ -1382,6 +1504,7 @@ typedef struct
 	int             fraglimit;
 	int             capturelimit;
 	int             timelimit;
+	int             timelimitMsec;
 	int             maxclients;
 	char            mapname[MAX_QPATH];
 	char            redTeam[MAX_QPATH];
@@ -1566,6 +1689,7 @@ extern vmCvar_t           cg_altLightning;
 extern vmCvar_t           cg_altPlasma;
 extern vmCvar_t           cg_ammoCheck;
 extern vmCvar_t           cg_autoAction;
+extern vmCvar_t           cg_autoHop;
 extern vmCvar_t           cg_clientLog;
 extern vmCvar_t           cg_crosshairPulse;
 extern vmCvar_t           cg_customLoc;
@@ -1865,6 +1989,49 @@ extern vmCvar_t           cg_shud_chatmsg15;
 extern vmCvar_t         cg_myTeam;
 extern vmCvar_t         cg_giveName;
 extern vmCvar_t         cg_bestats_autoaction;
+extern vmCvar_t         cg_zoomAutoReset;
+extern vmCvar_t         cg_smoothDucking;
+extern vmCvar_t         cg_respawnWeapon;
+extern vmCvar_t         cg_exec_weapons;
+extern vmCvar_t         cg_exec_mg;
+extern vmCvar_t         cg_exec_sg;
+extern vmCvar_t         cg_exec_gl;
+extern vmCvar_t         cg_exec_rl;
+extern vmCvar_t         cg_exec_lg;
+extern vmCvar_t         cg_exec_rg;
+extern vmCvar_t         cg_exec_pg;
+extern vmCvar_t         cg_exec_gametypes;
+extern vmCvar_t         cg_exec_dm;
+extern vmCvar_t         cg_exec_tourney;
+extern vmCvar_t         cg_exec_tdm;
+extern vmCvar_t         cg_exec_ca;
+extern vmCvar_t         cg_exec_ctf;
+extern vmCvar_t         cg_exec_freeze;
+extern vmCvar_t         cg_damagePlums;
+extern vmCvar_t         cg_damagePlumSize;
+extern vmCvar_t			cg_teamTaskMarkTime;
+extern vmCvar_t			cg_teamTask;
+extern vmCvar_t			cg_teamTaskScale;
+extern vmCvar_t			cg_teamTaskOpaque;
+extern vmCvar_t			cg_teamTaskFade;
+extern vmCvar_t			cg_teamTaskFadeRadius;
+extern vmCvar_t			cg_teamTaskFont;
+extern vmCvar_t			cg_teamTaskWheel;
+extern vmCvar_t			cg_teamTaskWheelSet;
+extern vmCvar_t			cg_teamTaskWheelSensitivity;
+extern vmCvar_t			cg_teamTaskThemeColor;
+extern vmCvar_t			cg_teamTaskSmartDefault;
+extern vmCvar_t        	cg_teamTaskHudMarkerMaxDist;
+extern vmCvar_t        	cg_teamTaskHudMarkerSize;
+extern vmCvar_t        	cg_teamTaskHudMarkerMaxScale;
+extern vmCvar_t        	cg_teamTaskHudMarkerMinScale;
+extern vmCvar_t			cg_printui;
+extern vmCvar_t			cg_printui_template;
+extern vmCvar_t			cg_printui_template2;
+extern vmCvar_t			cg_chatColor;
+extern vmCvar_t			cg_teamChatColor;
+extern vmCvar_t			cg_countdownTimer;
+// extern vmCvar_t			cg_snow;
 extern vmCvar_t         be_run;
 //
 // cg_main.c
@@ -1890,10 +2057,12 @@ const char* CG_Argv(int arg);
 void QDECL CG_Printf(const char* msg, ...);
 void QDECL CG_Error(const char* msg, ...);
 void CG_PrintLog(char* msg);
+void QDECL CG_PrintOnce(const char* msg, ...);
 
 void CG_StartMusic(void);
 
 void CG_UpdateCvars(void);
+void CG_UpdateAutoHopFromSystemInfo(void);
 
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);
@@ -1963,6 +2132,7 @@ void CG_FillRect(float x, float y, float width, float height, const float* color
 void CG_DrawPicOld(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader);
+void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, float angle, const vec4_t color);
 
 float CG_OSPDrawStringLength(const char* string, float ax, float aw, int proportional);
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth);
@@ -1979,7 +2149,7 @@ int CG_FontIndexFromCvar(vmCvar_t* cvar);
 int CG_GetFontCount(void);
 const char* CG_GetFontName(int index);
 
-qboolean CG_WorldCoordToScreen(const vec3_t world, float* x, float* y);
+qboolean CG_WorldToScreen(const vec3_t world, float* x, float* y);
 void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor);
 void CG_OSPAdjustTeamColorBEStats(const vec4_t inColor, vec4_t outColor);
 
@@ -2111,6 +2281,8 @@ void CG_DrawAmmoWarning(void);
 void CG_DrawReward(void);
 void CG_DrawWarmup(void);
 void CG_ScanForCrosshairEntity(void);
+int CG_CrosshairTarget(vec3_t itemPos);
+void CG_CheckAutoshoot(void);
 // void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context);
 // int CG_OSPDrawLeftSlidingWindow(float arg0, float arg1, float arg2, float time3Sec, int numberOfLines, int sizeOfLine, int w, int h, char* text, int windowPosX, float* borderColor, float* bodyColor);
 void CG_OSPDrawIntermission(void);
@@ -2158,7 +2330,9 @@ void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
 
 qboolean CG_IsEnemy(const clientInfo_t* target);
+qboolean CG_IsEnemySimple(const clientInfo_t* target);
 qboolean CG_IsLocalClientSpectator(void);
+qboolean CG_IsLocalClientOnScreen(void);
 qboolean CG_IsFrozenEntity(const centity_t* cent);
 
 //
@@ -2230,6 +2404,7 @@ void CG_UpdateWeaponDlightColor(weapon_t weapon);
 
 float CG_GetWeaponTempAccuracy(int weapon);
 void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum);
+void CG_InitBrightWeaponsColors(void);
 
 
 //
@@ -2249,6 +2424,8 @@ void    CG_ImpactMark(qhandle_t markShader,
 //
 void    CG_InitLocalEntities(void);
 localEntity_t*   CG_AllocLocalEntity(void);
+void CG_FreeLocalEntity(localEntity_t* le);
+extern localEntity_t cg_activeLocalEntities;
 void    CG_AddLocalEntities(void);
 
 //
@@ -2266,6 +2443,9 @@ localEntity_t* CG_SmokePuff(const vec3_t p,
 void CG_BubbleTrail(vec3_t start, vec3_t end, float spacing);
 void CG_SpawnEffect(vec3_t org);
 void CG_ScorePlum(int client, vec3_t org, int score);
+void CG_DamagePlum(int client, vec3_t org, int damage);
+void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops);
+
 
 void CG_GibPlayer(vec3_t playerOrigin);
 void CG_BigExplode(vec3_t playerOrigin);
@@ -2277,6 +2457,17 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
                                 qboolean isSprite);
 
 void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle);
+void CG_TestSkullMarker(void);
+qboolean CG_IsPointOutsideScreen(vec3_t origin, float* outX, float* outY);
+void CG_DrawTeamTaskMarks(void);
+void CG_DrawTeamTaskBorderHudMarkers(void);
+void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark);
+
+// Token Bucket functions for anti-flood
+void TokenBucket_Init(tokenBucket_t* b, int maxTokens, int refillTime, int now);
+qboolean TokenBucket_Consume(tokenBucket_t* b, int now);
+int TokenBucket_TimeToNext(tokenBucket_t* b, int now);
+void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum);
 
 
 //
@@ -2375,6 +2566,8 @@ const char* CG_GetCTFLocation(int loc);
 void CG_UpdateBeFeatures(void);
 void cg_printsa_f(void);
 void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2);
+int CG_GetRemainingGameTimeMsec(qboolean forItemPickup);
+void CG_ColorWhitenSmart(vec3_t rgb, float *alpha, float strength);
 
 //
 //cg_be_stats
@@ -2385,6 +2578,7 @@ void CG_BEStatsResetInit(void);
 //cg_cvardescriptions.c
 //
 void CG_RegisterCvarDescriptions(void);
+const char* CG_GetCvarDescription(const char* cvarName);
 //===============================================
 
 //
@@ -2604,7 +2798,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00-beta-10" // BE
+#define OSP_VERSION "be-1.00a" // BE
 
 
 
@@ -2616,6 +2810,7 @@ extern int modeShotgunPromode;
 extern int modeShotgunNumberOfPellets;
 extern float modeShotgunKoeff;
 extern const char* weaponNames[10];
+extern const char* weaponShortNames[10];
 extern int global_viewlistFirstOption;
 extern int statsInfo[24];
 
@@ -2711,6 +2906,8 @@ void CG_OSPNormalizeNameCopy(char* from, char* to, unsigned int size);
 void CG_DynamicMemReport(void);
 const char* CG_LoadLine(const char* ptr, char* out, int outSize);
 qboolean CG_ParseColorStr(const char* str, vec4_t out);
+void CG_PrintUI_f(void);
+void CG_DrawPrintUI(void);
 
 
 /*
@@ -2762,6 +2959,58 @@ qboolean CG_ChatfilterIsNameMuted(const char* name);
 void CG_ChatfilterDump(void);
 
 //
+// cg_teamtaskfilter.c
+//
+#define CG_TEAMTASKFILTER_DEFAULT_FILE "teamtaskfilter"
+void CG_TeamTaskFilterLoadFile(const char* filename);
+void CG_TeamTaskFilterSaveFile(const char* filename);
+void CG_TeamTaskFilterAddName(const char* name);
+void CG_TeamTaskFilterDeleteName(const char* name);
+qboolean CG_TeamTaskFilterIsNameMuted(const char* name);
+void CG_TeamTaskFilterDump(void);
+
+//
+// cg_teamtasks.c
+//
+int CG_OSPTeamTaskPack(int toClient, int templateID, int x, int y, int z);
+void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* templateID, int* x, int* y, int* z);
+void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position);
+void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient);
+void CG_TeamTaskMarkOffense(void);
+void CG_TeamTaskMarkDefence(void);
+void CG_TeamTaskMarkWatch(void);
+void CG_TeamTaskMarkYes(void);
+void CG_TeamTaskMarkNo(void);
+void CG_TeamTaskMarkMedic(void);
+void CG_TeamTaskMarkLocation(void);
+void CG_TeamTaskMarkSend(void);
+void CG_SelwheelMarkStart(void);
+void CG_SelwheelMarkStop(void);
+void CG_UpdateSelwheelMark(void);
+void CG_DrawSelwheelMark(void);
+void CG_DrawSelwheelIcons(void);
+void CG_DrawSelwheelPointers(void);
+
+/* TeamTask command structure */
+typedef struct
+{
+	const char* name;
+	const char* altName; /* Alternative name (e.g., "position" for "location") */
+	teamtask_t taskType;
+	qboolean isOverhead;
+	qboolean isSelectable; /* Can be selected as default in smart mode */
+	void (*action)(void);
+	const char* command;
+} teamTaskCommand_t;
+
+teamTaskCommand_t* CG_GetTeamTaskCommandByName(const char* name);
+qboolean CG_IsTeamTaskOverhead(teamtask_t taskType);
+int CG_GetSelwheelIconAtPosition(float x, float y);
+void CG_SelwheelSetElements(int count, qhandle_t* shaders, void (**actions)(void), const char** commands);
+void CG_SelwheelParseTeamTaskWheel(void);
+
+
+//
 // cg_localevents.c
 //
 void CG_UpdateMyTeamColors(void);
@@ -2775,6 +3024,7 @@ void CG_LocalEventCvarChanged_cg_followpowerup(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_followkiller(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_followviewcam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_autoAction(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_autoHop(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_snaps(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_useScreenShotJPEG(cvarTable_t* cvart);
 
@@ -2859,6 +3109,9 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorOffset(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_ReloadTeamTaskWheel(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamTaskThemeColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart);
@@ -2872,6 +3125,7 @@ void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart);
+
 void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart);
@@ -2882,6 +3136,11 @@ void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_chud_file(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart);
 #ifdef __cplusplus
 }
 #endif
