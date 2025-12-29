@@ -1500,6 +1500,28 @@ void CG_BEHelp_f(void)
 	}
 }
 
+/*
+=================
+CG_ColorCharList_f
+
+Display color codes in alphabetical order
+Usage: colorcharlist
+=================
+*/
+static void CG_ColorCharList_f(void)
+{
+	int i;
+	char ch;
+
+	CG_Printf("Color codes:\n");
+	for (i = 0; i < 26; i++)
+	{
+		ch = 'a' + i;
+		CG_Printf("^%c%c ", ch, ch);
+	}
+	CG_Printf("\n");
+}
+
 typedef struct
 {
 	char*    cmd;
@@ -1625,6 +1647,7 @@ static consoleCommand_t commands[] =
 	{ "-ttwheel", CG_SelwheelMarkStop },
 	{ "behelp", CG_BEHelp_f },
 	{ "teamtaskhelp", CG_TeamTaskHelp_f },
+	{ "colorcharlist", CG_ColorCharList_f },
 };
 
 /*

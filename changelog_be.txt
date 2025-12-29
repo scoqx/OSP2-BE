@@ -582,6 +582,7 @@ SHUD:
 
 MISC:
   * cg_altGrenades disabled on tournament mode (DUELs)
+  /colorcharlist
 
 SHUD: 
   - disabled var (variable) config feature for a while
