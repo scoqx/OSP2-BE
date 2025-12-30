@@ -383,7 +383,7 @@ void CG_UpdateAutoHopFromSystemInfo(void)
 	int autohop;
 
 	sysInfo = CG_ConfigString(CS_SYSTEMINFO);
-	
+
 	value = Info_ValueForKey(sysInfo, "pmove_autohop");
 	if (!value || !value[0])
 	{

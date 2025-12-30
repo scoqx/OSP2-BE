@@ -1365,7 +1365,7 @@ static void CG_LoadCustomFonts(void)
 		{
 			continue;
 		}
-		
+
 		/* Check if file exists using trap_FS_FOpenFile */
 		{
 			fileHandle_t testFile;
@@ -1378,17 +1378,17 @@ static void CG_LoadCustomFonts(void)
 			}
 			trap_FS_FCloseFile(testFile);
 		}
-		
+
 		Q_strncpyz(customFontNames[customFontIndex], fontName, sizeof(customFontNames[customFontIndex]));
 		fonts[fonts_num].name = customFontNames[customFontIndex];
-		
+
 		/* Store font index before loading */
 		fonts_num++;
 		customFontIndex++;
-		
+
 		/* Load font - CG_LoadFont will print errors if file doesn't exist */
 		CG_LoadFont(&fonts[fonts_num - 1], fontPath);
-		
+
 		/* Check if font was loaded successfully by verifying shaderCount > 0 */
 		if (fonts[fonts_num - 1].shaderCount > 0)
 		{
@@ -3506,7 +3506,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	}
 
 	shadowEnabled = (flags & DS_SHADOW) && (shadowColor != NULL) && (shadowColor[3] != 0.0f);
-	
+
 	if (shadowEnabled)
 	{
 		xx_add = charWidth / 10.0f;
@@ -3535,7 +3535,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	}
 
 	/* Optimize: two passes - first all shadows, then all text - reduces color changes */
-	
+
 	/* First pass: draw all shadows */
 	if (shadowEnabled)
 	{
@@ -3544,10 +3544,10 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		Vector4Copy(shadowCol, currentShadowColor);
 		shadowFadeValue = shadowFade;
 		fade = 1.0f;
-		
+
 		/* Save starting position */
 		xx = ax;
-		
+
 		for (i = 0; i < OSP_TEXT_CMD_MAX && text_commands[i].type != OSP_TEXT_CMD_STOP; i++)
 		{
 			curr = &text_commands[i];
@@ -3558,7 +3558,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 				{
 					int index;
 					float spaceAdd;
-					
+
 					index = curr->value.character;
 					if (index < 0)
 						index += 256;
@@ -3636,7 +3636,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 					break;
 			}
 		}
-		
+
 		/* Restore position for text pass */
 		ax = xx;
 	}
@@ -3645,7 +3645,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	textColorChanged = 1;
 	Vector4Copy(color, currentTextColor);
 	fade = 1.0f;
-	
+
 	for (i = 0; i < OSP_TEXT_CMD_MAX && text_commands[i].type != OSP_TEXT_CMD_STOP; i++)
 	{
 		curr = &text_commands[i];
@@ -3656,7 +3656,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 			{
 				int index;
 				float spaceAdd;
-				
+
 				index = curr->value.character;
 				if (index < 0)
 					index += 256;

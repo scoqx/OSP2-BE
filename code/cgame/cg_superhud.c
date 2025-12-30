@@ -149,15 +149,15 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 
 			// if (is_var)
 			// {
-			// 	/* Parse VAR element */
-			// 	varParseStatus = CG_SHUDParseVarElement(&finfo);
-			// 	if (varParseStatus != SUPERHUD_CONFIG_OK)
-			// 	{
-			// 		CG_Printf("^1SuperHUD: error parsing VAR element: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
-			// 		goto error_exit;
-			// 	}
-			// 	/* Skip this element, don't create HUD element for VAR */
-			// 	continue;
+			//  /* Parse VAR element */
+			//  varParseStatus = CG_SHUDParseVarElement(&finfo);
+			//  if (varParseStatus != SUPERHUD_CONFIG_OK)
+			//  {
+			//      CG_Printf("^1SuperHUD: error parsing VAR element: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
+			//      goto error_exit;
+			//  }
+			//  /* Skip this element, don't create HUD element for VAR */
+			//  continue;
 			// }
 
 			is_execute = (Q_stricmp(statusElement.item->name, "execute") == 0) || (Q_stricmp(statusElement.item->name, "exec") == 0);
@@ -358,23 +358,23 @@ error_exit:
  */
 void CG_SHUDChatRestore(void)
 {
-  char cvar_name[MAX_QPATH];
-  char index_str[MAX_QPATH];
-  int i;
-  int index;
+	char cvar_name[MAX_QPATH];
+	char index_str[MAX_QPATH];
+	int i;
+	int index;
 	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
 
-  trap_Cvar_VariableStringBuffer("cg_shud_chatindex", index_str, sizeof(index_str));
-  ctx->chat.index = atoi(index_str);
+	trap_Cvar_VariableStringBuffer("cg_shud_chatindex", index_str, sizeof(index_str));
+	ctx->chat.index = atoi(index_str);
 
 	for (i = 0; i < SHUD_MAX_CHAT_LINES; ++i)
 	{
 		index = (ctx->chat.index + i) % SHUD_MAX_CHAT_LINES;
-  	Com_sprintf(cvar_name, MAX_QPATH, "cg_shud_chatmsg%d", index);
-  	trap_Cvar_VariableStringBuffer(cvar_name, ctx->chat.line[index].message, sizeof(ctx->chat.line[index].message));
+		Com_sprintf(cvar_name, MAX_QPATH, "cg_shud_chatmsg%d", index);
+		trap_Cvar_VariableStringBuffer(cvar_name, ctx->chat.line[index].message, sizeof(ctx->chat.line[index].message));
 	}
-  trap_Cvar_VariableStringBuffer("cg_shud_chatindex", index_str, sizeof(index_str));
-  ctx->chat.index = atoi(index_str);
+	trap_Cvar_VariableStringBuffer("cg_shud_chatindex", index_str, sizeof(index_str));
+	ctx->chat.index = atoi(index_str);
 }
 
 /*
@@ -616,7 +616,7 @@ void CG_SHUDEventTeamTask(int sender, int taskType)
 	int i;
 	int checkIndex;
 	const int duplicateCheckTime = 100;
-	
+
 	/* Check for duplicate events - same sender and taskType within duplicateCheckTime */
 	if (sender >= 0 && sender < MAX_CLIENTS)
 	{
@@ -624,13 +624,13 @@ void CG_SHUDEventTeamTask(int sender, int taskType)
 		{
 			checkIndex = (ctx->teamTasks.index - 1 - i + SHUD_MAX_TEAMTASKS_LINES) % SHUD_MAX_TEAMTASKS_LINES;
 			entry = &ctx->teamTasks.line[checkIndex];
-			
+
 			/* Skip empty entries */
 			if (entry->time == 0)
 			{
 				continue;
 			}
-			
+
 			/* Check if this is a duplicate (same sender and taskType within time window) */
 			if (entry->sender == sender && entry->taskType == taskType)
 			{
@@ -644,14 +644,14 @@ void CG_SHUDEventTeamTask(int sender, int taskType)
 			}
 		}
 	}
-	
+
 	entry = &ctx->teamTasks.line[ctx->teamTasks.index % SHUD_MAX_TEAMTASKS_LINES];
 	memset(entry, 0, sizeof(*entry));
 
 	entry->sender = sender;
 	entry->taskType = taskType;
 	entry->time = cg.time;
-	
+
 	/* Calculate game time when task was sent */
 	gameTime = cg.time - cgs.levelStartTime;
 	entry->gameTime = gameTime;

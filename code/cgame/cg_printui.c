@@ -39,7 +39,7 @@ static int CG_ParseVec4FromArgs(int argc, int* i, vec4_t out)
 	{
 		return 0;
 	}
-	
+
 	(*i)++;
 	out[0] = atof(CG_Argv(*i));
 	(*i)++;
@@ -48,7 +48,7 @@ static int CG_ParseVec4FromArgs(int argc, int* i, vec4_t out)
 	out[2] = atof(CG_Argv(*i));
 	(*i)++;
 	out[3] = atof(CG_Argv(*i));
-	
+
 	return 4;
 }
 
@@ -66,10 +66,10 @@ static int CG_ParseFloatFromArgs(int argc, int* i, float* out)
 	{
 		return 0;
 	}
-	
+
 	(*i)++;
 	*out = atof(CG_Argv(*i));
-	
+
 	return 1;
 }
 
@@ -83,11 +83,11 @@ Returns qtrue if successful, qfalse if failed
 */
 static qboolean CG_ParseVec4FromTokens(char** token, char** nextToken, vec4_t out)
 {
-	if (!*nextToken || !**nextToken)
+	if (!*nextToken || !** nextToken)
 	{
 		return qfalse;
 	}
-	
+
 	*token = *nextToken;
 	*nextToken = strchr(*token, ' ');
 	if (*nextToken)
@@ -96,8 +96,8 @@ static qboolean CG_ParseVec4FromTokens(char** token, char** nextToken, vec4_t ou
 		(*nextToken)++;
 	}
 	out[0] = atof(*token);
-	
-	if (!*nextToken || !**nextToken)
+
+	if (!*nextToken || !** nextToken)
 	{
 		return qfalse;
 	}
@@ -109,8 +109,8 @@ static qboolean CG_ParseVec4FromTokens(char** token, char** nextToken, vec4_t ou
 		(*nextToken)++;
 	}
 	out[1] = atof(*token);
-	
-	if (!*nextToken || !**nextToken)
+
+	if (!*nextToken || !** nextToken)
 	{
 		return qfalse;
 	}
@@ -122,8 +122,8 @@ static qboolean CG_ParseVec4FromTokens(char** token, char** nextToken, vec4_t ou
 		(*nextToken)++;
 	}
 	out[2] = atof(*token);
-	
-	if (!*nextToken || !**nextToken)
+
+	if (!*nextToken || !** nextToken)
 	{
 		return qfalse;
 	}
@@ -135,7 +135,7 @@ static qboolean CG_ParseVec4FromTokens(char** token, char** nextToken, vec4_t ou
 		(*nextToken)++;
 	}
 	out[3] = atof(*token);
-	
+
 	return qtrue;
 }
 
@@ -149,11 +149,11 @@ Returns qtrue if successful, qfalse if failed
 */
 static qboolean CG_ParseFloatFromTokens(char** token, char** nextToken, float* out)
 {
-	if (!*nextToken || !**nextToken)
+	if (!*nextToken || !** nextToken)
 	{
 		return qfalse;
 	}
-	
+
 	*token = *nextToken;
 	*nextToken = strchr(*token, ' ');
 	if (*nextToken)
@@ -162,7 +162,7 @@ static qboolean CG_ParseFloatFromTokens(char** token, char** nextToken, float* o
 		(*nextToken)++;
 	}
 	*out = atof(*token);
-	
+
 	return qtrue;
 }
 
@@ -181,14 +181,14 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 	const char* colorStr;
 	const char* shadowColorStr;
 	char* xPos;
-	
+
 	if (!templateStr || !templateStr[0])
 	{
 		return; // Empty template
 	}
-	
+
 	Q_strncpyz(templateCopy, templateStr, sizeof(templateCopy));
-	
+
 	token = templateCopy;
 	while (token && *token)
 	{
@@ -201,7 +201,7 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 		{
 			break;
 		}
-		
+
 		// Find next space
 		nextToken = strchr(token, ' ');
 		if (nextToken)
@@ -209,7 +209,7 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 			*nextToken = '\0';
 			nextToken++;
 		}
-		
+
 		// Color parsing (c prefix)
 		if (token[0] == 'c' && token[1] != 's' && token[1] != '\0')
 		{
@@ -290,7 +290,7 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 		{
 			char* timeValueToken;
 			char* savedNextToken;
-			
+
 			timeValueToken = nextToken;
 			savedNextToken = nextToken;
 			nextToken = strchr(timeValueToken, ' ');
@@ -299,7 +299,7 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 				*nextToken = '\0';
 				nextToken++;
 			}
-			
+
 			// Parse time values: 1/s = 3.5s, 2/m = 10s, 3/l = 60s, u/4 = unlimited
 			if (Q_stricmp(timeValueToken, "1") == 0 || Q_stricmp(timeValueToken, "s") == 0)
 			{
@@ -327,7 +327,7 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 		else if (token[0] == 'f' && (Q_stricmp(token, "fadeTime") == 0 || Q_stricmp(token, "fade") == 0) && nextToken && *nextToken)
 		{
 			char* fadeTimeValueToken;
-			
+
 			fadeTimeValueToken = nextToken;
 			nextToken = strchr(fadeTimeValueToken, ' ');
 			if (nextToken)
@@ -335,7 +335,7 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 				*nextToken = '\0';
 				nextToken++;
 			}
-			
+
 			// Parse fadeTime values: 0 = no fade, 1/s = 0.25s, 2/m = 0.5s, 3/l = 1s
 			if (Q_stricmp(fadeTimeValueToken, "0") == 0)
 			{
@@ -379,21 +379,21 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 			// Check if current token looks like a number (not a command)
 			qboolean isNumber;
 			char* testNextToken;
-			
+
 			isNumber = qfalse;
 			// Check if it's not a known command
-			if (token[0] != 'c' && token[0] != 'h' && token[0] != 'f' && 
-			    token[0] != 'b' && token[0] != 't' && token[0] != 'p' &&
-			    Q_stricmp(token, "font") != 0 && Q_stricmp(token, "pos") != 0)
+			if (token[0] != 'c' && token[0] != 'h' && token[0] != 'f' &&
+			        token[0] != 'b' && token[0] != 't' && token[0] != 'p' &&
+			        Q_stricmp(token, "font") != 0 && Q_stricmp(token, "pos") != 0)
 			{
 				// Check if it looks like a number
-				if ((token[0] >= '0' && token[0] <= '9') || 
-				    token[0] == '+' || token[0] == '-' || token[0] == '.')
+				if ((token[0] >= '0' && token[0] <= '9') ||
+				        token[0] == '+' || token[0] == '-' || token[0] == '.')
 				{
 					isNumber = qtrue;
 				}
 			}
-			
+
 			// Check if next token is also a number
 			if (isNumber)
 			{
@@ -406,21 +406,21 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 				if (*testNextToken)
 				{
 					// Check if it's not a command
-					if (testNextToken[0] != 'c' && testNextToken[0] != 'h' && testNextToken[0] != 'f' && 
-					    testNextToken[0] != 'b' && testNextToken[0] != 't' && testNextToken[0] != 'p' &&
-					    Q_stricmpn(testNextToken, "font", 4) != 0 && Q_stricmpn(testNextToken, "pos", 3) != 0 &&
-					    Q_stricmpn(testNextToken, "time", 4) != 0 && Q_stricmpn(testNextToken, "fadeTime", 8) != 0 && Q_stricmpn(testNextToken, "fade", 4) != 0)
+					if (testNextToken[0] != 'c' && testNextToken[0] != 'h' && testNextToken[0] != 'f' &&
+					        testNextToken[0] != 'b' && testNextToken[0] != 't' && testNextToken[0] != 'p' &&
+					        Q_stricmpn(testNextToken, "font", 4) != 0 && Q_stricmpn(testNextToken, "pos", 3) != 0 &&
+					        Q_stricmpn(testNextToken, "time", 4) != 0 && Q_stricmpn(testNextToken, "fadeTime", 8) != 0 && Q_stricmpn(testNextToken, "fade", 4) != 0)
 					{
 						// Check if it looks like a number
-						if ((testNextToken[0] >= '0' && testNextToken[0] <= '9') || 
-						    testNextToken[0] == '+' || testNextToken[0] == '-' || testNextToken[0] == '.')
+						if ((testNextToken[0] >= '0' && testNextToken[0] <= '9') ||
+						        testNextToken[0] == '+' || testNextToken[0] == '-' || testNextToken[0] == '.')
 						{
 							// Found two numbers in a row - treat as position
 							// Only set position if it hasn't been set from command arguments
 							if (!*hasPos)
 							{
 								*x = atof(token);
-								
+
 								// Parse second number
 								token = nextToken;
 								nextToken = strchr(token, ' ');
@@ -436,7 +436,7 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 					}
 				}
 			}
-			
+
 			// If we didn't recognize it as position, check flags
 			if (!*hasPos)
 			{
@@ -466,7 +466,7 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 				*flags &= ~DS_SHADOW;
 			}
 		}
-		
+
 		token = nextToken;
 	}
 }
@@ -483,14 +483,14 @@ static void CG_ApplyPrintUITemplate(const char* cvarName, vec4_t textColor, vec4
 	char templateStr[MAX_STRING_CHARS];
 	qboolean hadPosBeforeTemplate;
 	qboolean templateHasPos;
-	
+
 	// Remember if position was already set from command arguments
 	hadPosBeforeTemplate = *hasPos;
 	templateHasPos = qfalse;
-	
+
 	trap_Cvar_VariableStringBuffer(cvarName, templateStr, sizeof(templateStr));
 	CG_ParsePrintUITemplate(templateStr, textColor, shadowColor, background, border, borderColor, charWidth, charHeight, flags, fontIndex, duration, fadeTime, hasBackground, hasBorder, hAlign, x, y, &templateHasPos);
-	
+
 	// Only set hasPos from template if it wasn't already set from command arguments
 	// Position from command has priority over position from template
 	if (templateHasPos && !hadPosBeforeTemplate)
@@ -543,7 +543,7 @@ void CG_PrintUI_f(void)
 	argc = trap_Argc();
 
 	if (cg_printui.integer == 0)
-	{	
+	{
 		CG_PrintOnce("^3cg_printui disabled!^7\n");
 		return;
 	}
@@ -587,7 +587,7 @@ void CG_PrintUI_f(void)
 			int clearNum = atoi(CG_Argv(2));
 			int activeCount = 0;
 			int currentNum = 0;
-			
+
 			for (i = 0; i < 32; i++)
 			{
 				if (cgs.osp.printui[i].active)
@@ -633,11 +633,11 @@ void CG_PrintUI_f(void)
 			{
 				currentNum++;
 				activeCount++;
-				CG_Printf("^3%d.^7 \"%s\"^7 at (%.0f, %.0f)\n", 
-					currentNum, 
-					cgs.osp.printui[i].text,
-					cgs.osp.printui[i].x,
-					cgs.osp.printui[i].y);
+				CG_Printf("^3%d.^7 \"%s\"^7 at (%.0f, %.0f)\n",
+				          currentNum,
+				          cgs.osp.printui[i].text,
+				          cgs.osp.printui[i].x,
+				          cgs.osp.printui[i].y);
 			}
 		}
 
@@ -647,7 +647,7 @@ void CG_PrintUI_f(void)
 		}
 		return;
 	}
-	
+
 	// Parse text from quoted string
 	// Text is always the first argument(s) and must be in quotes
 	// Collect arguments starting from first until we find closing quote or numeric argument
@@ -656,18 +656,18 @@ void CG_PrintUI_f(void)
 		int len;
 		qboolean foundClosingQuote;
 		qboolean startsWithQuote;
-		
+
 		textArgEnd = 1;
 		text[0] = '\0';
 		foundClosingQuote = qfalse;
 		startsWithQuote = qfalse;
-		
+
 		if (argc <= 1)
 		{
 			// No arguments
 			return;
 		}
-		
+
 		// Check if first argument starts with quote
 		Q_strncpyz(arg, CG_Argv(1), sizeof(arg));
 		if (arg[0] == '"')
@@ -708,10 +708,10 @@ void CG_PrintUI_f(void)
 				char* startQuote;
 				char* endQuote;
 				int textLen;
-				
+
 				trap_Args(argsStr, sizeof(argsStr));
 				startQuote = strchr(argsStr, '"');
-				
+
 				if (startQuote != NULL)
 				{
 					endQuote = strchr(startQuote + 1, '"');
@@ -723,7 +723,7 @@ void CG_PrintUI_f(void)
 						{
 							memcpy(text, startQuote + 1, textLen);
 							text[textLen] = '\0';
-							
+
 							// Find which argument contains closing quote
 							for (i = 1; i < argc; i++)
 							{
@@ -761,34 +761,34 @@ void CG_PrintUI_f(void)
 					}
 				}
 			}
-			
+
 			// If still no quote found, but text should be in quotes,
 			// collect arguments until we hit numeric argument or template
 			if (!startsWithQuote)
 			{
 				Q_strncpyz(text, arg, sizeof(text));
 				pos = strlen(text);
-				
+
 				// Collect arguments until numeric or template
 				for (i = 2; i < argc; i++)
 				{
 					char nextArg[MAX_TOKEN_CHARS];
 					float testNum;
 					char* endPtr;
-					
+
 					Q_strncpyz(nextArg, CG_Argv(i), sizeof(nextArg));
 					testNum = atof(nextArg);
 					endPtr = nextArg;
 					while (*endPtr == ' ' || *endPtr == '\t') endPtr++;
-					
+
 					// Check if numeric or template - if so, stop here
 					if ((testNum != 0.0f || (*endPtr >= '0' && *endPtr <= '9') || *endPtr == '-' || *endPtr == '+') ||
-					    Q_stricmp(nextArg, "t1") == 0 || Q_stricmp(nextArg, "t2") == 0)
+					        Q_stricmp(nextArg, "t1") == 0 || Q_stricmp(nextArg, "t2") == 0)
 					{
 						textArgEnd = i - 1;
 						break;
 					}
-					
+
 					// Add this argument to text
 					Q_strncpyz(arg, CG_Argv(i), sizeof(arg));
 					len = strlen(arg);
@@ -805,14 +805,14 @@ void CG_PrintUI_f(void)
 						break;
 					}
 				}
-				
+
 				if (i >= argc)
 				{
 					textArgEnd = argc - 1;
 				}
 			}
 		}
-		
+
 		// If quote spans multiple arguments, collect them
 		if (startsWithQuote && !foundClosingQuote)
 		{
@@ -821,7 +821,7 @@ void CG_PrintUI_f(void)
 			{
 				Q_strncpyz(arg, CG_Argv(i), sizeof(arg));
 				len = strlen(arg);
-				
+
 				// Check if this argument ends with quote
 				if (len > 0 && arg[len - 1] == '"')
 				{
@@ -854,7 +854,7 @@ void CG_PrintUI_f(void)
 						break;
 					}
 				}
-				
+
 				// Check if next argument is numeric (x coordinate) or template
 				// If so, stop collecting (quote might be missing)
 				if (i + 1 < argc)
@@ -862,15 +862,15 @@ void CG_PrintUI_f(void)
 					char nextArg[MAX_TOKEN_CHARS];
 					float testNum;
 					char* endPtr;
-					
+
 					Q_strncpyz(nextArg, CG_Argv(i + 1), sizeof(nextArg));
 					testNum = atof(nextArg);
 					endPtr = nextArg;
 					while (*endPtr == ' ' || *endPtr == '\t') endPtr++;
-					
+
 					// Check if numeric or template
 					if ((testNum != 0.0f || (*endPtr >= '0' && *endPtr <= '9') || *endPtr == '-' || *endPtr == '+') ||
-					    Q_stricmp(nextArg, "t1") == 0 || Q_stricmp(nextArg, "t2") == 0)
+					        Q_stricmp(nextArg, "t1") == 0 || Q_stricmp(nextArg, "t2") == 0)
 					{
 						// Stop here, this was the last text argument
 						textArgEnd = i;
@@ -878,20 +878,20 @@ void CG_PrintUI_f(void)
 					}
 				}
 			}
-			
+
 			if (!foundClosingQuote && i >= argc)
 			{
 				textArgEnd = argc - 1;
 			}
 		}
-		
+
 		// Fallback: if still no text, use first argument
 		if (text[0] == '\0' && argc > 1)
 		{
 			Q_strncpyz(text, CG_Argv(1), sizeof(text));
 		}
 	}
-	
+
 	// Check if template is used and if it has position
 	if (argc >= 3)
 	{
@@ -940,16 +940,16 @@ void CG_PrintUI_f(void)
 							float dummyX;
 							float dummyY;
 							qboolean dummyHasPos;
-							
+
 							dummyHasPos = qfalse;
 							dummyX = 0.0f;
 							dummyY = 0.0f;
-							
+
 							// Try parsing template to see if position is set
-							CG_ParsePrintUITemplate(templateStr, dummyColor, dummyShadow, dummyBg, dummyBorder, dummyBorderColor, 
-							                         &dummyWidth, &dummyHeight, &dummyFlags, &dummyFont, &dummyDuration, &dummyFade, 
-							                         &dummyHasBg, &dummyHasBorder, &dummyHAlign, &dummyX, &dummyY, &dummyHasPos);
-							
+							CG_ParsePrintUITemplate(templateStr, dummyColor, dummyShadow, dummyBg, dummyBorder, dummyBorderColor,
+							                        &dummyWidth, &dummyHeight, &dummyFlags, &dummyFont, &dummyDuration, &dummyFade,
+							                        &dummyHasBg, &dummyHasBorder, &dummyHAlign, &dummyX, &dummyY, &dummyHasPos);
+
 							if (dummyHasPos)
 							{
 								templateHasPos = qtrue;
@@ -961,7 +961,7 @@ void CG_PrintUI_f(void)
 			}
 		}
 	}
-	
+
 	// Require at least text, or text + template with position
 	// Check if we have enough arguments after text (either x y or template)
 	if (textArgEnd + 1 >= argc && !templateHasPos)
@@ -1056,7 +1056,7 @@ void CG_PrintUI_f(void)
 	for (i = textArgEnd + 1; i < argc; i++)
 	{
 		Q_strncpyz(arg, CG_Argv(i), sizeof(arg));
-		
+
 		// Apply template 1
 		if (Q_stricmp(arg, "t1") == 0)
 		{
@@ -1232,16 +1232,16 @@ void CG_PrintUI_f(void)
 		int existingHAlign;
 		int currentHAlign;
 		int j;
-		
+
 		currentHAlign = flags & (DS_HLEFT | DS_HRIGHT | DS_HCENTER);
-		
+
 		for (j = 0; j < 32; j++)
 		{
 			if (cgs.osp.printui[j].active)
 			{
 				// Check if position matches (with small epsilon for float comparison)
-				if (fabs(cgs.osp.printui[j].x - x) < 0.1f && 
-				    fabs(cgs.osp.printui[j].y - y) < 0.1f)
+				if (fabs(cgs.osp.printui[j].x - x) < 0.1f &&
+				        fabs(cgs.osp.printui[j].y - y) < 0.1f)
 				{
 					// Check if horizontal alignment matches
 					existingHAlign = cgs.osp.printui[j].flags & (DS_HLEFT | DS_HRIGHT | DS_HCENTER);
@@ -1370,11 +1370,11 @@ void CG_DrawPrintUI(void)
 			finalBackground[3] *= fade;
 		}
 
-		if (cgs.osp.printui[i].border[0] > 0.0f || 
-			cgs.osp.printui[i].border[1] > 0.0f ||
-			cgs.osp.printui[i].border[2] > 0.0f ||
-			cgs.osp.printui[i].border[3] > 0.0f
-		)
+		if (cgs.osp.printui[i].border[0] > 0.0f ||
+		        cgs.osp.printui[i].border[1] > 0.0f ||
+		        cgs.osp.printui[i].border[2] > 0.0f ||
+		        cgs.osp.printui[i].border[3] > 0.0f
+		   )
 		{
 			Vector4Copy(cgs.osp.printui[i].border, finalBorder);
 			Vector4Copy(cgs.osp.printui[i].borderColor, finalBorderColor);
@@ -1393,18 +1393,18 @@ void CG_DrawPrintUI(void)
 
 		// Draw the text
 		CG_OSPDrawStringNew(
-			cgs.osp.printui[i].x,
-			cgs.osp.printui[i].y,
-			cgs.osp.printui[i].text,
-			finalColor,
-			finalShadowColor,
-			cgs.osp.printui[i].charWidth,
-			cgs.osp.printui[i].charHeight,
-			SCREEN_WIDTH,
-			cgs.osp.printui[i].flags,
-			(cgs.osp.printui[i].background[3] > 0.0f) ? finalBackground : NULL,
-			(cgs.osp.printui[i].border[3] > 0.0f) ? finalBorder : NULL,
-			(cgs.osp.printui[i].border[3] > 0.0f) ? finalBorderColor : NULL
+		    cgs.osp.printui[i].x,
+		    cgs.osp.printui[i].y,
+		    cgs.osp.printui[i].text,
+		    finalColor,
+		    finalShadowColor,
+		    cgs.osp.printui[i].charWidth,
+		    cgs.osp.printui[i].charHeight,
+		    SCREEN_WIDTH,
+		    cgs.osp.printui[i].flags,
+		    (cgs.osp.printui[i].background[3] > 0.0f) ? finalBackground : NULL,
+		    (cgs.osp.printui[i].border[3] > 0.0f) ? finalBorder : NULL,
+		    (cgs.osp.printui[i].border[3] > 0.0f) ? finalBorderColor : NULL
 		);
 	}
 }

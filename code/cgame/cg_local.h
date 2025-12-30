@@ -1137,7 +1137,7 @@ typedef struct
 	sfxHandle_t wstbimpmSound;
 	sfxHandle_t wstbimpdSound;
 	sfxHandle_t wstbactvSound;
-	
+
 	sfxHandle_t pingSimpleSound;
 
 } cgMedia_t;
@@ -1286,20 +1286,20 @@ typedef struct cgs_be_s
 	// Client-side damage prediction (bit 1 = 2)
 	qboolean clientDamagePrinted;  // whether damage was already shown
 	vec3_t brightWeaponsColor[WP_NUM_WEAPONS];
-	
+
 	// team task markers
 	struct
 	{
 		int         numTeamTaskMarks;
 		teamTaskMark_t  teamTaskMarks[MAX_TEAMTASK_MARKS];
-		
+
 		// anti-flood for sending team task commands - fast limit (1 per 150ms)
 		tokenBucket_t sendCommandBucketFast;
 		// anti-flood for sending team task commands - bucket limit (4 tokens, 800ms refill)
 		tokenBucket_t sendCommandBucket;
 		// anti-flood for sending team task commands - flood protection (13 tokens, 300ms refill)
 		tokenBucket_t sendCommandBucketFlood;
-		
+
 		// ttwheel mark
 		qboolean    ttwheelMarkActive;
 		float       ttwheelMarkX;
@@ -1311,10 +1311,10 @@ typedef struct cgs_be_s
 		int         ttwheelSelectedIcon; // -1 = none, icon index (fixed when hovered, used on release)
 		int         ttwheelElementCount; // Number of active elements
 		qhandle_t   ttwheelElementShaders[MAX_SELWHEEL_ELEMENTS]; // Shaders for each element
-		void        (*ttwheelElementActions[MAX_SELWHEEL_ELEMENTS])(void); // Action callbacks
+		void (*ttwheelElementActions[MAX_SELWHEEL_ELEMENTS])(void);        // Action callbacks
 		char        ttwheelElementCommands[MAX_SELWHEEL_ELEMENTS][MAX_STRING_CHARS]; // Console commands for each element
 		vec4_t      teamTaskThemeColor; // Theme color for team task UI elements
-		
+
 		// smart target memory (for wheel opening)
 		int         smartTargetType; // 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth
 		vec3_t      smartTargetPos; // Position of target (enemy or item)
@@ -2010,29 +2010,29 @@ extern vmCvar_t         cg_exec_ctf;
 extern vmCvar_t         cg_exec_freeze;
 extern vmCvar_t         cg_damagePlums;
 extern vmCvar_t         cg_damagePlumSize;
-extern vmCvar_t			cg_teamTaskMarkTime;
-extern vmCvar_t			cg_teamTask;
-extern vmCvar_t			cg_teamTaskScale;
-extern vmCvar_t			cg_teamTaskOpaque;
-extern vmCvar_t			cg_teamTaskFade;
-extern vmCvar_t			cg_teamTaskFadeRadius;
-extern vmCvar_t			cg_teamTaskFont;
-extern vmCvar_t			cg_teamTaskWheel;
-extern vmCvar_t			cg_teamTaskWheelSet;
-extern vmCvar_t			cg_teamTaskWheelSensitivity;
-extern vmCvar_t			cg_teamTaskThemeColor;
-extern vmCvar_t			cg_teamTaskSmartDefault;
-extern vmCvar_t        	cg_teamTaskHudMarkerMaxDist;
-extern vmCvar_t        	cg_teamTaskHudMarkerSize;
-extern vmCvar_t        	cg_teamTaskHudMarkerMaxScale;
-extern vmCvar_t        	cg_teamTaskHudMarkerMinScale;
-extern vmCvar_t			cg_printui;
-extern vmCvar_t			cg_printui_template;
-extern vmCvar_t			cg_printui_template2;
-extern vmCvar_t			cg_chatColor;
-extern vmCvar_t			cg_teamChatColor;
-extern vmCvar_t			cg_countdownTimer;
-// extern vmCvar_t			cg_snow;
+extern vmCvar_t         cg_teamTaskMarkTime;
+extern vmCvar_t         cg_teamTask;
+extern vmCvar_t         cg_teamTaskScale;
+extern vmCvar_t         cg_teamTaskOpaque;
+extern vmCvar_t         cg_teamTaskFade;
+extern vmCvar_t         cg_teamTaskFadeRadius;
+extern vmCvar_t         cg_teamTaskFont;
+extern vmCvar_t         cg_teamTaskWheel;
+extern vmCvar_t         cg_teamTaskWheelSet;
+extern vmCvar_t         cg_teamTaskWheelSensitivity;
+extern vmCvar_t         cg_teamTaskThemeColor;
+extern vmCvar_t         cg_teamTaskSmartDefault;
+extern vmCvar_t         cg_teamTaskHudMarkerMaxDist;
+extern vmCvar_t         cg_teamTaskHudMarkerSize;
+extern vmCvar_t         cg_teamTaskHudMarkerMaxScale;
+extern vmCvar_t         cg_teamTaskHudMarkerMinScale;
+extern vmCvar_t         cg_printui;
+extern vmCvar_t         cg_printui_template;
+extern vmCvar_t         cg_printui_template2;
+extern vmCvar_t         cg_chatColor;
+extern vmCvar_t         cg_teamChatColor;
+extern vmCvar_t         cg_countdownTimer;
+// extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_run;
 //
 // cg_main.c
@@ -2570,7 +2570,7 @@ void CG_UpdateBeFeatures(void);
 void cg_printsa_f(void);
 void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2);
 int CG_GetRemainingGameTimeMsec(qboolean forItemPickup);
-void CG_ColorWhitenSmart(vec3_t rgb, float *alpha, float strength);
+void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength);
 
 //
 //cg_be_stats

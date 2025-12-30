@@ -42,7 +42,7 @@ void CG_SHUDElementItemPickupRoutine(void* context)
 			msec = CG_GetRemainingGameTimeMsec(qtrue);
 		}
 		else
-		{ 
+		{
 			msec = cg.itemPickupTime - cgs.levelStartTime;
 		}
 

@@ -1248,46 +1248,46 @@ static void CG_CreateWorldSnow(void)
 	vec3_t origin2;
 	int i;
 	int numParticles;
-	
+
 	// Only spawn snow every SNOW_SPAWN_INTERVAL milliseconds
 	if (cg.time - lastSnowSpawnTime < SNOW_SPAWN_INTERVAL)
 	{
 		return;
 	}
 	lastSnowSpawnTime = cg.time;
-	
+
 	// Don't create snow if we don't have a valid player position
 	if (!cg.snap)
 	{
 		return;
 	}
-	
+
 	// Create snow in area around player, but world-bound
 	// Use player's position as center, but snow particles will be world-bound
 	VectorCopy(cg.snap->ps.origin, origin);
 	VectorCopy(cg.snap->ps.origin, origin2);
-	
+
 	// Set height range - snow falls from above to below
 	origin[2] += SNOW_HEIGHT_RANGE;  // top of snow area
 	origin2[2] -= SNOW_HEIGHT_RANGE;  // bottom of snow area
-	
+
 	// Create many snow particles per spawn for dense snowfall
 	numParticles = 20 + (rand() % 10);  // 50-80 particles per spawn
-	
+
 	for (i = 0; i < numParticles; i++)
 	{
 		vec3_t snowOrigin;
 		vec3_t snowOrigin2;
-		
+
 		// Random position in area around player
 		snowOrigin[0] = origin[0] + (crandom() * SNOW_AREA_SIZE);
 		snowOrigin[1] = origin[1] + (crandom() * SNOW_AREA_SIZE);
 		snowOrigin[2] = origin[2];
-		
+
 		snowOrigin2[0] = origin2[0];
 		snowOrigin2[1] = origin2[1];
 		snowOrigin2[2] = origin2[2];
-		
+
 		// Create bubble particle that falls down like snow
 		CG_ParticleSnowBubble(cgs.media.snowflakeShader, snowOrigin, snowOrigin2, 1, SNOW_AREA_SIZE, 0);
 	}
@@ -1311,10 +1311,10 @@ void CG_AddParticles(void)
 		CG_ClearParticles();
 
 	// Not enough MAX_PARTICLES
-	// // Create world-bound snow 
+	// // Create world-bound snow
 	// if (cg_snow.integer)
 	// {
-	// 	CG_CreateWorldSnow();
+	//  CG_CreateWorldSnow();
 	// }
 
 	VectorCopy(cg.refdef.viewaxis[0], pvforward);
@@ -1511,12 +1511,12 @@ void CG_ParticleSnow(qhandle_t pshader, vec3_t origin, vec3_t origin2, int turb,
 	p->alphavel = 0;
 	p->start = origin[2];
 	p->end = origin2[2];
-	
+
 	// Select random snowflake from 32 available
-	
-		// Fallback to original shader if snowflake not loaded
-		p->pshader = pshader;
-	
+
+	// Fallback to original shader if snowflake not loaded
+	p->pshader = pshader;
+
 	p->height = 1;
 	p->width = 1;
 

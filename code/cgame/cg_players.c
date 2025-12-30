@@ -111,9 +111,9 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 			// /* Debug output */
 			// if (cg_debugAnim.integer)
 			// {
-			// 	CG_Printf("[CG_IsEnemy] Following %d (team %d) | Target: %s (team %d) | isEnemy=%d\n",
-			// 	          cg.snap->ps.clientNum, ourPerspectiveTeam,
-			// 	          target->name, targetTeam, result);
+			//  CG_Printf("[CG_IsEnemy] Following %d (team %d) | Target: %s (team %d) | isEnemy=%d\n",
+			//            cg.snap->ps.clientNum, ourPerspectiveTeam,
+			//            target->name, targetTeam, result);
 			// }
 
 			return result;
@@ -157,20 +157,20 @@ qboolean CG_IsEnemySimple(const clientInfo_t* target)
 	const clientInfo_t* local;
 	team_t localTeam;
 	team_t targetTeam;
-	
+
 	if (!target)
 	{
 		return qfalse;
 	}
-	
+
 	local = &cgs.clientinfo[cg.clientNum];
-	
+
 	// Check if target is local player
 	if (target == local)
 	{
 		return qfalse;
 	}
-	
+
 	// Get teams - use rt for CA gametype, otherwise use team
 	if (CG_OSPIsGameTypeCA(cgs.gametype))
 	{
@@ -182,7 +182,7 @@ qboolean CG_IsEnemySimple(const clientInfo_t* target)
 		localTeam = local->team;
 		targetTeam = target->team;
 	}
-	
+
 	// Compare teams - enemy if different teams
 	return (localTeam != targetTeam);
 }
@@ -888,7 +888,7 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 	char        teamname[MAX_QPATH];
 
 	teamname[0] = 0;
-	
+
 	modelloaded = qtrue;
 	if (!CG_RegisterClientModelname(ci, ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName, teamname))
 	{
@@ -1028,7 +1028,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	{
 		return;
 	}
-	
+
 	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
 	{
 		return;
@@ -1061,11 +1061,11 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 
 
 	// {
-	// 	/* Non-team game: only process teamtask from ourselves */
-	// 	if (clientNum != cg.clientNum)
-	// 	{
-	// 		return;
-	// 	}
+	//  /* Non-team game: only process teamtask from ourselves */
+	//  if (clientNum != cg.clientNum)
+	//  {
+	//      return;
+	//  }
 	// }
 
 	/* Skip if teamTask hasn't changed */
@@ -1114,10 +1114,10 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 		qboolean foundEnemy;
 		float searchRadius;
 		float dist;
-		
+
 		foundEnemy = qfalse;
 		searchRadius = 128.0f; /* Search radius for finding enemy near received coordinates */
-		
+
 		/* Try to find enemy player near received coordinates */
 		for (i = 0; i < MAX_GENTITIES; i++)
 		{
@@ -1146,101 +1146,101 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 				}
 			}
 		}
-		
+
 		/* If enemy not found, use coordinates from message */
 		if (!foundEnemy)
 		{
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 		}
 	}
-		else if (templateID == TEAMTASK_FROZEN_ALLY || templateID == TEAMTASK_FROZEN_ENEMY) /* FROZEN_ALLY and FROZEN_ENEMY are auto-selected by smart mode */
+	else if (templateID == TEAMTASK_FROZEN_ALLY || templateID == TEAMTASK_FROZEN_ENEMY) /* FROZEN_ALLY and FROZEN_ENEMY are auto-selected by smart mode */
+	{
+		/* For frozen bodies, try to find frozen entity at received position */
+		/* If found, use frozen entity's current position with +24 height, otherwise use received coordinates */
+		int i;
+		centity_t* cent;
+		vec3_t frozenPos;
+		qboolean foundFrozen;
+		float searchRadius;
+		float dist;
+		int frozenClientNum;
+		clientInfo_t* frozenCi;
+
+		foundFrozen = qfalse;
+		searchRadius = 128.0f; /* Search radius for finding frozen entity near received coordinates */
+
+		/* Try to find frozen entity near received coordinates */
+		for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
 		{
-			/* For frozen bodies, try to find frozen entity at received position */
-			/* If found, use frozen entity's current position with +24 height, otherwise use received coordinates */
-			int i;
-			centity_t* cent;
-			vec3_t frozenPos;
-			qboolean foundFrozen;
-			float searchRadius;
-			float dist;
-			int frozenClientNum;
-			clientInfo_t* frozenCi;
-			
-			foundFrozen = qfalse;
-			searchRadius = 128.0f; /* Search radius for finding frozen entity near received coordinates */
-			
-			/* Try to find frozen entity near received coordinates */
-			for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+			cent = &cg_entities[i];
+			if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
 			{
-				cent = &cg_entities[i];
-				if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
+				/* Check if this is a frozen entity */
+				if (CG_IsFrozenEntity(cent))
 				{
-					/* Check if this is a frozen entity */
-					if (CG_IsFrozenEntity(cent))
+					frozenClientNum = cent->currentState.otherEntityNum;
+					if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS)
 					{
-						frozenClientNum = cent->currentState.otherEntityNum;
-						if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS)
+						frozenCi = &cgs.clientinfo[frozenClientNum];
+						if (frozenCi->infoValid)
 						{
-							frozenCi = &cgs.clientinfo[frozenClientNum];
-							if (frozenCi->infoValid)
+							/* Check if frozen body matches the expected type (ally or enemy) */
+							qboolean isEnemy;
+							qboolean matchesType;
+
+							isEnemy = CG_IsEnemy(frozenCi);
+							if (templateID == TEAMTASK_FROZEN_ALLY)
 							{
-								/* Check if frozen body matches the expected type (ally or enemy) */
-								qboolean isEnemy;
-								qboolean matchesType;
-								
-								isEnemy = CG_IsEnemy(frozenCi);
-								if (templateID == TEAMTASK_FROZEN_ALLY)
+								matchesType = !isEnemy;
+							}
+							else /* TEAMTASK_FROZEN_ENEMY */
+							{
+								matchesType = isEnemy;
+							}
+
+							if (matchesType)
+							{
+								/* Check if frozen entity is near received coordinates */
+								dist = Distance(cent->lerpOrigin, coord);
+								if (dist <= searchRadius)
 								{
-									matchesType = !isEnemy;
-								}
-								else /* TEAMTASK_FROZEN_ENEMY */
-								{
-									matchesType = isEnemy;
-								}
-								
-								if (matchesType)
-								{
-									/* Check if frozen entity is near received coordinates */
-									dist = Distance(cent->lerpOrigin, coord);
-									if (dist <= searchRadius)
-									{
-										/* Found frozen entity - use its position with +24 height */
-										VectorCopy(cent->lerpOrigin, frozenPos);
-										frozenPos[2] += 24.0f;
-										CG_TeamTaskMark(frozenPos, templateID, clientNum, toClient);
-										foundFrozen = qtrue;
-										break;
-									}
+									/* Found frozen entity - use its position with +24 height */
+									VectorCopy(cent->lerpOrigin, frozenPos);
+									frozenPos[2] += 24.0f;
+									CG_TeamTaskMark(frozenPos, templateID, clientNum, toClient);
+									foundFrozen = qtrue;
+									break;
 								}
 							}
 						}
 					}
 				}
 			}
-			
-			/* If frozen entity not found, use coordinates from message */
-			if (!foundFrozen)
-			{
-				CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-			}
 		}
-		else if (templateID == TEAMTASK_REDARMOR || templateID == TEAMTASK_MEGAHEALTH) /* REDARMOR and MEGAHEALTH are auto-selected by smart mode */
+
+		/* If frozen entity not found, use coordinates from message */
+		if (!foundFrozen)
 		{
-			/* For red armor and megahealth, find the item entity near received coordinates */
-			/* and use its actual position instead of trace coordinates */
-			int i;
-			centity_t* cent;
-			gitem_t* item;
-			int itemIndex;
-			vec3_t itemPos;
-			qboolean foundItem;
-			float searchRadius;
-			float dist;
-			const char* targetClassname;
-		
+			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+		}
+	}
+	else if (templateID == TEAMTASK_REDARMOR || templateID == TEAMTASK_MEGAHEALTH) /* REDARMOR and MEGAHEALTH are auto-selected by smart mode */
+	{
+		/* For red armor and megahealth, find the item entity near received coordinates */
+		/* and use its actual position instead of trace coordinates */
+		int i;
+		centity_t* cent;
+		gitem_t* item;
+		int itemIndex;
+		vec3_t itemPos;
+		qboolean foundItem;
+		float searchRadius;
+		float dist;
+		const char* targetClassname;
+
 		foundItem = qfalse;
 		searchRadius = 128.0f; /* Search radius for finding item near received coordinates */
-		
+
 		/* Determine which classname to search for */
 		if (templateID == TEAMTASK_REDARMOR)
 		{
@@ -1250,7 +1250,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 		{
 			targetClassname = "item_health_mega";
 		}
-		
+
 		/* Try to find item entity near received coordinates */
 		for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
 		{
@@ -1278,7 +1278,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 				}
 			}
 		}
-		
+
 		/* If item not found, use coordinates from message */
 		if (!foundItem)
 		{
@@ -1495,11 +1495,11 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 			{
 				/* Original PBE logic */
 				qboolean isOurTeam = cgs.clientinfo[cg.clientNum].rt == ci->rt;
-			qboolean isRedTeamWhileSpec = cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED;
-			isTeamMate = isOurTeam || isRedTeamWhileSpec;
-		}
+				qboolean isRedTeamWhileSpec = cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR && ci->rt == TEAM_RED;
+				isTeamMate = isOurTeam || isRedTeamWhileSpec;
+			}
 
-		if (isTeamMate)
+			if (isTeamMate)
 			{
 				if (useOriginal)
 				{
@@ -1575,7 +1575,8 @@ static qboolean CG_PlayerNameIsInvisible(clientInfo_t* ci)
  * Generate replacement name for noname/invisible/duplicate players
  * Mix: 33% animals, 33% funny names, 34% thematic (space/demonic/sci-fi)
  */
-static const char* replacementNames[] = {
+static const char* replacementNames[] =
+{
 	"Darth Sumrak", "Amongus", "JustNamed", "Tiger", "Eagle", "Hawkeye", "Falcon Punch", "Shark",
 	"Fox", "Lynx-Lynx", "Panther", "Jaguar^0V12", "Coyote", "Grand_Hyena", "Asteri^0xXx", "Wolverine",
 	"Raven", "Owl", "Crow", "Vulture", "Condor", "Albatross", "PopCitizen_AUX07", "Heron",
@@ -1636,12 +1637,12 @@ static qboolean CG_IsReplacementNameUsed(const char* candidateName)
 static int CG_ExtractFirstColorCode(const char* name)
 {
 	int i;
-	
+
 	if (!name || !name[0])
 	{
 		return -1;
 	}
-	
+
 	for (i = 0; name[i]; i++)
 	{
 		if (name[i] == '^' && name[i + 1] >= '0' && name[i + 1] <= '9')
@@ -1649,7 +1650,7 @@ static int CG_ExtractFirstColorCode(const char* name)
 			return name[i + 1] - '0';
 		}
 	}
-	
+
 	return -1;
 }
 
@@ -1664,28 +1665,28 @@ static void CG_GenerateReplacementName(unsigned short xid, const char* originalN
 	const char* selectedName;
 	int attempt;
 	char tmpName[MAX_QPATH];
-	
+
 	/* Initialize hash */
 	CRC_Init(&hash);
-	
+
 	/* Add XID to hash */
 	Com_sprintf(xidStr, sizeof(xidStr), "%hu", xid);
 	CRC_ContinueProcessString(&hash, xidStr, strlen(xidStr));
-	
+
 	/* Add original name to hash */
 	if (originalName && originalName[0])
 	{
 		CRC_ContinueProcessString(&hash, originalName, strlen(originalName));
 	}
-	
+
 	/* Add clientNum to hash for uniqueness even with same XID and name */
 	Com_sprintf(clientNumStr, sizeof(clientNumStr), "%d", clientNum);
 	CRC_ContinueProcessString(&hash, clientNumStr, strlen(clientNumStr));
-	
+
 	/* Select replacement name based on hash */
 	nameIndex = hash % REPLACEMENT_NAMES_COUNT;
 	colorIndex = (hash >> 8) % 10; /* 0-9 for ^0-^9 */
-	
+
 	/* Try to extract color code from original name */
 	originalColorCode = CG_ExtractFirstColorCode(originalName);
 	if (originalColorCode >= 0)
@@ -1693,7 +1694,7 @@ static void CG_GenerateReplacementName(unsigned short xid, const char* originalN
 		/* Use color from original name if found */
 		colorIndex = originalColorCode;
 	}
-	
+
 	selectedName = replacementNames[nameIndex];
 	Com_sprintf(outName, outSize, "^%d%s^0*", colorIndex, selectedName);
 
@@ -1722,7 +1723,7 @@ static qboolean CG_ShouldReplaceWithReplacementName(int clientNum, qboolean name
 	{
 		return qfalse;
 	}
-	
+
 	/* For value 1: replace names for all players except local player */
 	if (cg_giveName.integer == 1)
 	{
@@ -1732,7 +1733,7 @@ static qboolean CG_ShouldReplaceWithReplacementName(int clientNum, qboolean name
 		}
 		return qtrue;
 	}
-	
+
 	/* For value 2: replace names only for duplicates, invisible, and NONAME */
 	if (cg_giveName.integer == 2)
 	{
@@ -1740,18 +1741,18 @@ static qboolean CG_ShouldReplaceWithReplacementName(int clientNum, qboolean name
 		{
 			return qtrue;
 		}
-		
+
 		if (is_exists)
 		{
 			return qtrue;
 		}
-		
+
 		if (strcmp(name_original, "^1NONAME") == 0)
 		{
 			return qtrue;
 		}
 	}
-	
+
 	return qfalse;
 }
 
@@ -1849,7 +1850,7 @@ static qboolean CG_PlayerNameCheckDuplicate(int clientNum, const char* nameClean
 {
 	int p;
 	char otherOriginalClean[MAX_QPATH];
-	
+
 	for (p = 0; p < MAX_CLIENTS; ++p)
 	{
 		if (p == clientNum)
@@ -1860,7 +1861,7 @@ static qboolean CG_PlayerNameCheckDuplicate(int clientNum, const char* nameClean
 		{
 			continue;
 		}
-		
+
 		/* Only check non-invisible names for duplicates */
 		/* Compare using original names, not name_clean which may be already replaced */
 		if (!cgs.clientinfo[p].nameIsInvisible)
@@ -1896,10 +1897,10 @@ static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exis
 	qboolean useReplacement;
 	const char* displayName;
 	qboolean isNoname;
-	
+
 	isNoname = (strcmp(ci->name_original, "^1NONAME") == 0);
 	willGetReplacementName = CG_ShouldReplaceWithReplacementName(clientNum, ci->nameIsInvisible, is_exists, ci->name_original);
-	
+
 	/* For value 1: always show, for value 2: show only if duplicate/NONAME/invisible */
 	/* If cg_giveName is enabled and duplicate exists, don't show ID/XID for value 2 */
 	/* (both original and duplicate players should not show ID/XID when cg_giveName handles duplicates) */
@@ -1925,7 +1926,7 @@ static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exis
 	{
 		needShowID = qfalse;
 	}
-	
+
 	if (showXID == 1)
 	{
 		needShowXID = qtrue;
@@ -1948,12 +1949,12 @@ static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exis
 	{
 		needShowXID = qfalse;
 	}
-	
+
 	useID = needShowID;
 	useXID = needShowXID;
 	/* Always use replacement name if willGetReplacementName is true, regardless of ID/XID settings */
 	useReplacement = willGetReplacementName;
-	
+
 	if (useReplacement)
 	{
 		/* Extract color from ci->name if it exists and contains color code (already processed name) */
@@ -1972,23 +1973,23 @@ static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exis
 	{
 		displayName = ci->nameIsInvisible ? ci->name_codes : ci->name_original;
 	}
-	
+
 	if (useID && useXID)
 	{
-		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ? 
-		            "[%d]^8%s^7:\'%s^7\'" : "[%d]^8%s^7:%s", 
+		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ?
+		            "[%d]^8%s^7:\'%s^7\'" : "[%d]^8%s^7:%s",
 		            clientNum, ci->xidStr, displayName);
 	}
 	else if (useXID)
 	{
-		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ? 
-		            "^8%s^7:\'%s^7\'" : "^8%s^7:%s", 
+		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ?
+		            "^8%s^7:\'%s^7\'" : "^8%s^7:%s",
 		            ci->xidStr, displayName);
 	}
 	else if (useID)
 	{
-		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ? 
-		            "[%d]\'%s\'" : "[%d]%s", 
+		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ?
+		            "[%d]\'%s\'" : "[%d]%s",
 		            clientNum, displayName);
 	}
 	else
@@ -2015,7 +2016,7 @@ static void CG_PlayerNameFindAndUpdateExisting(int clientNum, const char* nameCl
 {
 	int p;
 	char otherOriginalClean[MAX_QPATH];
-	
+
 	/* Update all players with this name (including original) */
 	/* Compare using original names, not name_clean which may be already replaced */
 	for (p = 0; p < MAX_CLIENTS; ++p)
@@ -2028,13 +2029,13 @@ static void CG_PlayerNameFindAndUpdateExisting(int clientNum, const char* nameCl
 		{
 			continue;
 		}
-		
+
 		/* Compare with original name (clean version) */
 		Q_strncpyz(otherOriginalClean, cgs.clientinfo[p].name_original, sizeof(otherOriginalClean));
 		CG_RemoveChatEscapeCharAll(otherOriginalClean);
-		
-		if (!cgs.clientinfo[p].nameIsInvisible && 
-		    strcmp(nameClean, otherOriginalClean) == 0)
+
+		if (!cgs.clientinfo[p].nameIsInvisible &&
+		        strcmp(nameClean, otherOriginalClean) == 0)
 		{
 			/* Mark as duplicate so all players get replacement names if cg_giveName is enabled */
 			CG_PlayerNameBuild(&cgs.clientinfo[p], p, qtrue, showID, showXID);
@@ -2056,26 +2057,26 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 	qboolean is_exists;
 	qboolean willGetReplacement;
 	char originalClean[MAX_QPATH];
-	
+
 	showID = cg_playersID.integer;
 	showXID = cg_playersXID.integer;
-	
+
 	/* Check for duplicates using original name (before replacement) */
 	/* Create clean version of original name for comparison */
 	Q_strncpyz(originalClean, ci->name_original, sizeof(originalClean));
 	CG_RemoveChatEscapeCharAll(originalClean);
 	is_exists = CG_PlayerNameCheckDuplicate(clientNum, originalClean);
-	
+
 	/* Check if this player will get replacement name */
 	willGetReplacement = CG_ShouldReplaceWithReplacementName(clientNum, ci->nameIsInvisible, is_exists, ci->name_original);
-	
+
 	/* If duplicate found, update all existing players with this name (including original) */
 	/* Use original name for finding duplicates */
 	if (is_exists)
 	{
 		CG_PlayerNameFindAndUpdateExisting(clientNum, originalClean, showID, showXID);
 	}
-	
+
 	CG_PlayerNameBuild(ci, clientNum, is_exists, showID, showXID);
 }
 
@@ -2093,28 +2094,28 @@ static qboolean CG_IsOnlyTeamTaskChanged(const clientInfo_t* ci, const clientInf
 	const char* oldConfigstring;
 	char newCS[MAX_STRING_CHARS];
 	char oldCS[MAX_STRING_CHARS];
-	
+
 	if (!ci->infoValid)
 	{
 		return qfalse;
 	}
-	
+
 	/* Get old configstring */
 	clientNum = ci - cgs.clientinfo;
 	oldConfigstring = CG_ConfigString(clientNum + CS_PLAYERS);
-	
+
 	if (!oldConfigstring || !oldConfigstring[0])
 	{
 		return qfalse;
 	}
-	
+
 	/* Copy configstrings and remove "tt" field from both */
 	Q_strncpyz(newCS, configstring, sizeof(newCS));
 	Q_strncpyz(oldCS, oldConfigstring, sizeof(oldCS));
-	
+
 	Info_RemoveKey(newCS, "tt");
 	Info_RemoveKey(oldCS, "tt");
-	
+
 	/* Compare configstrings without "tt" field */
 	if (Q_stricmp(newCS, oldCS) == 0)
 	{
@@ -2125,7 +2126,7 @@ static qboolean CG_IsOnlyTeamTaskChanged(const clientInfo_t* ci, const clientInf
 			return qtrue;
 		}
 	}
-	
+
 	return qfalse;
 }
 
@@ -2209,7 +2210,7 @@ void CG_NewClientInfo(int clientNum)
 	// hmodel - save original BEFORE any modifications
 	v = Info_ValueForKey(configstring, "hmodel");
 	Q_strncpyz(newInfo.originalHeadModel, v, sizeof(newInfo.originalHeadModel));
-	
+
 	/* register original head model BEFORE team skin is applied */
 	CG_RegisterOriginalHeadModel(&newInfo);
 
@@ -2257,7 +2258,7 @@ void CG_NewClientInfo(int clientNum)
 		/* Don't reset team overlay, don't reload models, don't update other clients */
 		return;
 	}
-	
+
 	/* Full reload needed - update everything */
 	CG_ClientInfoUpdateModel(&newInfo, isOurClient, isTeamGame, configstring, clientNum);
 	CG_ClientInfoUpdateColors(&newInfo, clientNum);
@@ -3402,9 +3403,9 @@ static void CG_PlayerSprites(centity_t* cent)
 				/* Check if there is an active TEAMTASK_FROZEN_ALLY mark for this frozen ally */
 				qboolean hasActiveMark;
 				qhandle_t shader;
-				
+
 				hasActiveMark = CG_HasActiveFrozenAllyMark(cent);
-				
+
 				/* Only draw frozenFoeTagShader if there is no active team task mark */
 				if (!hasActiveMark)
 				{
@@ -3856,7 +3857,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	maxs[0] -= hbox_offset;
 	maxs[1] -= hbox_offset;
 	maxs[2] -= hbox_offset;
-	
+
 	// get the extents (size)
 	extx = maxs[0] - mins[0];
 	exty = maxs[1] - mins[1];

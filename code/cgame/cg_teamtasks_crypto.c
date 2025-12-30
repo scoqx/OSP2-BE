@@ -83,51 +83,51 @@ static int CG_PermutePackData(int toClient, int templateID, int x, int y, int z,
 	/* 6 possible permutations of 3 coordinates */
 	switch (scheme & 0x07)
 	{
-	case 0:  /* X, Y, Z */
-		coord1 = x;
-		coord2 = y;
-		coord3 = z;
-		break;
-	case 1:  /* X, Z, Y */
-		coord1 = x;
-		coord2 = z;
-		coord3 = y;
-		break;
-	case 2:  /* Y, X, Z */
-		coord1 = y;
-		coord2 = x;
-		coord3 = z;
-		break;
-	case 3:  /* Y, Z, X */
-		coord1 = y;
-		coord2 = z;
-		coord3 = x;
-		break;
-	case 4:  /* Z, X, Y */
-		coord1 = z;
-		coord2 = x;
-		coord3 = y;
-		break;
-	case 5:  /* Z, Y, X */
-		coord1 = z;
-		coord2 = y;
-		coord3 = x;
-		break;
-	case 6:  /* X, Y, Z (same as 0, but different scheme number for variety) */
-		coord1 = x;
-		coord2 = y;
-		coord3 = z;
-		break;
-	case 7:  /* X, Z, Y (same as 1, but different scheme number for variety) */
-		coord1 = x;
-		coord2 = z;
-		coord3 = y;
-		break;
-	default:
-		coord1 = x;
-		coord2 = y;
-		coord3 = z;
-		break;
+		case 0:  /* X, Y, Z */
+			coord1 = x;
+			coord2 = y;
+			coord3 = z;
+			break;
+		case 1:  /* X, Z, Y */
+			coord1 = x;
+			coord2 = z;
+			coord3 = y;
+			break;
+		case 2:  /* Y, X, Z */
+			coord1 = y;
+			coord2 = x;
+			coord3 = z;
+			break;
+		case 3:  /* Y, Z, X */
+			coord1 = y;
+			coord2 = z;
+			coord3 = x;
+			break;
+		case 4:  /* Z, X, Y */
+			coord1 = z;
+			coord2 = x;
+			coord3 = y;
+			break;
+		case 5:  /* Z, Y, X */
+			coord1 = z;
+			coord2 = y;
+			coord3 = x;
+			break;
+		case 6:  /* X, Y, Z (same as 0, but different scheme number for variety) */
+			coord1 = x;
+			coord2 = y;
+			coord3 = z;
+			break;
+		case 7:  /* X, Z, Y (same as 1, but different scheme number for variety) */
+			coord1 = x;
+			coord2 = z;
+			coord3 = y;
+			break;
+		default:
+			coord1 = x;
+			coord2 = y;
+			coord3 = z;
+			break;
 	}
 
 	/* Standard packing: toClient, templateID (5 bits for 0-31), coord1, coord2, coord3 */
@@ -163,60 +163,60 @@ static void CG_PermuteUnpackData(int packed, int scheme, int* toClient, int* tem
 	/* Extract coordinates based on scheme */
 	switch (scheme & 0x07)
 	{
-	case 0:  /* X, Y, Z */
-		CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
-		*x = coord1;
-		*y = coord2;
-		*z = coord3;
-		break;
-	case 1:  /* X, Z, Y */
-		CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
-		*x = coord1;
-		*y = coord3;
-		*z = coord2;
-		break;
-	case 2:  /* Y, X, Z */
-		CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
-		*x = coord2;
-		*y = coord1;
-		*z = coord3;
-		break;
-	case 3:  /* Y, Z, X */
-		CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
-		*x = coord3;
-		*y = coord1;
-		*z = coord2;
-		break;
-	case 4:  /* Z, X, Y */
-		CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
-		*x = coord2;
-		*y = coord3;
-		*z = coord1;
-		break;
-	case 5:  /* Z, Y, X */
-		CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
-		*x = coord3;
-		*y = coord2;
-		*z = coord1;
-		break;
-	case 6:  /* X, Y, Z (same as 0) */
-		CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
-		*x = coord1;
-		*y = coord2;
-		*z = coord3;
-		break;
-	case 7:  /* X, Z, Y (same as 1) */
-		CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
-		*x = coord1;
-		*y = coord3;
-		*z = coord2;
-		break;
-	default:
-		CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
-		*x = coord1;
-		*y = coord2;
-		*z = coord3;
-		break;
+		case 0:  /* X, Y, Z */
+			CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
+			*x = coord1;
+			*y = coord2;
+			*z = coord3;
+			break;
+		case 1:  /* X, Z, Y */
+			CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
+			*x = coord1;
+			*y = coord3;
+			*z = coord2;
+			break;
+		case 2:  /* Y, X, Z */
+			CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
+			*x = coord2;
+			*y = coord1;
+			*z = coord3;
+			break;
+		case 3:  /* Y, Z, X */
+			CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
+			*x = coord3;
+			*y = coord1;
+			*z = coord2;
+			break;
+		case 4:  /* Z, X, Y */
+			CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
+			*x = coord2;
+			*y = coord3;
+			*z = coord1;
+			break;
+		case 5:  /* Z, Y, X */
+			CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
+			*x = coord3;
+			*y = coord2;
+			*z = coord1;
+			break;
+		case 6:  /* X, Y, Z (same as 0) */
+			CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
+			*x = coord1;
+			*y = coord2;
+			*z = coord3;
+			break;
+		case 7:  /* X, Z, Y (same as 1) */
+			CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
+			*x = coord1;
+			*y = coord3;
+			*z = coord2;
+			break;
+		default:
+			CG_ExtractCoordinates(packed, &coord1, &coord2, &coord3);
+			*x = coord1;
+			*y = coord2;
+			*z = coord3;
+			break;
 	}
 
 	/* Standard extraction: toClient, templateID (5 bits for 0-31) */
@@ -258,8 +258,8 @@ int CG_OSPTeamTaskPack(int toClient, int templateID,
 
 	/* Calculate parity/verification bit from encrypted data and senderID */
 	/* This adds extra protection - bit 4 is XOR of key bits and data */
-	verificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^ 
-	                   (encrypted >> 11) ^ (encrypted >> 17) ^ 
+	verificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^
+	                   (encrypted >> 11) ^ (encrypted >> 17) ^
 	                   senderIDPacked) & 0x01;
 
 	/* Combine: bit 4 = verification, bits 3-0 = senderID */
@@ -289,11 +289,11 @@ void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* te
 	if (senderClientID >= 0 && senderClientID < MAX_CLIENTS && cgs.clientinfo[senderClientID].infoValid)
 	{
 		cryptoKey = CG_GenerateCryptoKey(senderClientID);
-		
+
 		/* Decrypt senderID (cyclic shift, keep within 4 bits) */
 		extractedSenderID = senderIDPacked ^ ((cryptoKey >> 5) & 0x0F);
 		extractedSenderID = ((extractedSenderID - 52) & 0x0F);
-		
+
 		/* Verify extracted senderID matches expected */
 		if (extractedSenderID != senderClientID)
 		{
@@ -305,11 +305,11 @@ void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* te
 			*z = 0;
 			return;
 		}
-		
+
 		/* Verify verification bit matches expected */
-		expectedVerificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^ 
-		                          (encrypted >> 11) ^ (encrypted >> 17) ^ 
-		                          senderIDPacked) & 0x01;
+		expectedVerificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^
+		                           (encrypted >> 11) ^ (encrypted >> 17) ^
+		                           senderIDPacked) & 0x01;
 		if (verificationBit != expectedVerificationBit)
 		{
 			/* Verification bit mismatch - REJECT data */
@@ -334,18 +334,18 @@ void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* te
 				continue;
 			}
 			cryptoKey = CG_GenerateCryptoKey(i);
-			
+
 			/* Decrypt senderID (cyclic shift, keep within 6 bits) */
 			extractedSenderID = senderIDPacked ^ ((cryptoKey >> 7) & 0x3F);
 			extractedSenderID = ((extractedSenderID - 52) & 0x3F);
-			
+
 			if (extractedSenderID == i)
 			{
 				/* Verify verification bit matches */
 				int expectedVerificationBit;
-				expectedVerificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^ 
-				                          (encrypted >> 11) ^ (encrypted >> 17) ^ 
-				                          senderIDPacked) & 0x01;
+				expectedVerificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^
+				                           (encrypted >> 11) ^ (encrypted >> 17) ^
+				                           senderIDPacked) & 0x01;
 				if (verificationBit == expectedVerificationBit)
 				{
 					/* Found correct sender with matching verification */

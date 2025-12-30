@@ -699,14 +699,14 @@ void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.redTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_rtColor);
-	
+
 	CG_UpdateMyTeamColors();
 }
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.blueTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_btColor);
-	
+
 	CG_UpdateMyTeamColors();
 }
 
@@ -718,14 +718,14 @@ void CG_UpdateMyTeamColors(void)
 	static vec4_t originalScoreboardBtColor = {0, 0, 0, 0};
 	static qboolean colorsInitialized = qfalse;
 	static qboolean colorsSwapped = qfalse;
-	
+
 	vec4_t tempColor;
 	team_t currentTeam;
-	
+
 	// Проверяем, инициализированы ли цвета (не равны нулю)
 	qboolean colorsLoaded = (cgs.be.redTeamColor[0] != 0 || cgs.be.redTeamColor[1] != 0 || cgs.be.redTeamColor[2] != 0) &&
-	                       (cgs.be.blueTeamColor[0] != 0 || cgs.be.blueTeamColor[1] != 0 || cgs.be.blueTeamColor[2] != 0);
-	
+	                        (cgs.be.blueTeamColor[0] != 0 || cgs.be.blueTeamColor[1] != 0 || cgs.be.blueTeamColor[2] != 0);
+
 	// Сохраняем оригинальные цвета когда они загружены и не были свапнуты
 	if (colorsLoaded && !colorsSwapped)
 	{
@@ -735,13 +735,13 @@ void CG_UpdateMyTeamColors(void)
 		Vector4Copy(scoreboard_btColor, originalScoreboardBtColor);
 		colorsInitialized = qtrue;
 	}
-	
+
 	// Если цвета еще не инициализированы, ничего не делаем
 	if (!colorsInitialized)
 	{
 		return;
 	}
-	
+
 	// Восстанавливаем оригинальные цвета только если они были изменены
 	if (colorsSwapped)
 	{
@@ -751,7 +751,7 @@ void CG_UpdateMyTeamColors(void)
 		Vector4Copy(originalScoreboardBtColor, scoreboard_btColor);
 		colorsSwapped = qfalse;
 	}
-	
+
 	// Определяем текущую команду игрока
 	if (cg.snap && cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR)
 	{
@@ -762,7 +762,7 @@ void CG_UpdateMyTeamColors(void)
 		// Если в спеке, используем команду из clientinfo
 		currentTeam = cgs.clientinfo[cg.clientNum].team;
 	}
-	
+
 	// Проверяем, хочет ли игрок красные цвета для своей команды
 	if (cg_myTeam.integer == 1 || Q_stricmp(cg_myTeam.string, "red") == 0)
 	{
@@ -773,12 +773,12 @@ void CG_UpdateMyTeamColors(void)
 			Vector4Copy(cgs.be.redTeamColor, tempColor);
 			Vector4Copy(cgs.be.blueTeamColor, cgs.be.redTeamColor);
 			Vector4Copy(tempColor, cgs.be.blueTeamColor);
-			
+
 			// Также меняем цвета scoreboard
 			Vector4Copy(scoreboard_rtColor, tempColor);
 			Vector4Copy(scoreboard_btColor, scoreboard_rtColor);
 			Vector4Copy(tempColor, scoreboard_btColor);
-			
+
 			colorsSwapped = qtrue;
 		}
 		// Если игрок за красных, ничего не меняем
@@ -792,12 +792,12 @@ void CG_UpdateMyTeamColors(void)
 			Vector4Copy(cgs.be.redTeamColor, tempColor);
 			Vector4Copy(cgs.be.blueTeamColor, cgs.be.redTeamColor);
 			Vector4Copy(tempColor, cgs.be.blueTeamColor);
-			
+
 			// Также меняем цвета scoreboard
 			Vector4Copy(scoreboard_rtColor, tempColor);
 			Vector4Copy(scoreboard_btColor, scoreboard_rtColor);
 			Vector4Copy(tempColor, scoreboard_btColor);
-			
+
 			colorsSwapped = qtrue;
 		}
 		// Если игрок за синих, ничего не меняем
@@ -1152,7 +1152,7 @@ void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart)
 {
 	if (cvart->vmCvar->integer == 0)
 	{
-	// Clear all elements
+		// Clear all elements
 		int i;
 		int cleared = 0;
 		for (i = 0; i < 32; i++)
@@ -1189,7 +1189,7 @@ void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart)
 	int newValue;
 
 	oldValue = cvart->vmCvar->integer;
-	
+
 	if (oldValue < 500 || oldValue > 5000)
 	{
 		newValue = Com_Clamp(500, 5000, oldValue);

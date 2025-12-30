@@ -253,41 +253,47 @@ void CG_ScorePlum(int client, vec3_t org, int score)
 	AnglesToAxis(angles, re->axis);
 }
 
-void CG_DamagePlum(int client, vec3_t org, int damage) {
-	localEntity_t	*le;
-	localEntity_t	*check;
-	localEntity_t	*next;
-	refEntity_t		*re;
-	vec3_t			angles;
-	int				totalDamage;
-	int				timeThreshold;
+void CG_DamagePlum(int client, vec3_t org, int damage)
+{
+	localEntity_t*   le;
+	localEntity_t*   check;
+	localEntity_t*   next;
+	refEntity_t*     re;
+	vec3_t          angles;
+	int             totalDamage;
+	int             timeThreshold;
 	static vec3_t lastPos;
 
 	// only visualize for the client that scored
-	if (client != cg.predictedPlayerState.clientNum || cg_damagePlums.integer == 0) {
+	if (client != cg.predictedPlayerState.clientNum || cg_damagePlums.integer == 0)
+	{
 		return;
 	}
 
-	
+
 	totalDamage = damage;
 	timeThreshold = 750; // milliseconds
 
 	// If stacking enabled (value = 2), sum all damage within time threshold
-	if (cg_damagePlums.integer == 2) {
+	if (cg_damagePlums.integer == 2)
+	{
 		// Sum all recent damage plums and remove them
 		check = cg_activeLocalEntities.prev;
-		for (; check != &cg_activeLocalEntities; check = next) {
+		for (; check != &cg_activeLocalEntities; check = next)
+		{
 			next = check->prev;
-			
-			if (check->leType != LE_DAMAGEPLUM) {
+
+			if (check->leType != LE_DAMAGEPLUM)
+			{
 				continue;
 			}
-			
+
 			// Check if this plum is recent (within time threshold)
-			if (cg.time - check->startTime > timeThreshold) {
+			if (cg.time - check->startTime > timeThreshold)
+			{
 				continue;
 			}
-			
+
 			// Sum damage and remove old plum
 			totalDamage += (int)check->radius;
 			CG_FreeLocalEntity(check);
@@ -299,14 +305,15 @@ void CG_DamagePlum(int client, vec3_t org, int damage) {
 	le->leType = LE_DAMAGEPLUM;
 	le->startTime = cg.time;
 	le->endTime = cg.time + 1000;
-	le->lifeRate = 1.0 / ( le->endTime - le->startTime );
+	le->lifeRate = 1.0 / (le->endTime - le->startTime);
 
-	
+
 	le->color[0] = le->color[1] = le->color[2] = le->color[3] = 1.0;
 	le->radius = totalDamage;
-	
-	VectorCopy( org, le->pos.trBase );
-	if (org[2] >= lastPos[2] - 20 && org[2] <= lastPos[2] + 20) {
+
+	VectorCopy(org, le->pos.trBase);
+	if (org[2] >= lastPos[2] - 20 && org[2] <= lastPos[2] + 20)
+	{
 		le->pos.trBase[2] -= 20;
 	}
 
@@ -324,7 +331,7 @@ void CG_DamagePlum(int client, vec3_t org, int damage) {
 	re->radius = 11;
 
 	VectorClear(angles);
-	AnglesToAxis( angles, re->axis );
+	AnglesToAxis(angles, re->axis);
 }
 
 /*
@@ -444,7 +451,7 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 	}
 
 	hits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
-	
+
 	// Check for friendly fire or no damage
 	if (hits <= 0)
 	{
@@ -454,13 +461,13 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 	// Calculate real damage from PERS_ATTACKEE_ARMOR (same logic as CG_HitDamage)
 	atta = ps->persistant[PERS_ATTACKEE_ARMOR];
 	damage = (atta == 0) ? hits : (atta & 0x00FF);
-	
+
 	// Skip if damage is 0
 	if (damage == 0)
 	{
 		return;
 	}
-	
+
 	cgs.be.clientDamagePrinted = qfalse;
 
 	foundHit = qfalse;
@@ -476,7 +483,7 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 	for (i = 0; i < cg.snap->numEntities; i++)
 	{
 		cent = &cg_entities[cg.snap->entities[i].number];
-		
+
 		if (cent->currentState.eType >= ET_EVENTS)
 		{
 			event = cent->currentState.eType - ET_EVENTS;
@@ -495,38 +502,38 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 		{
 			if (be_run.integer == 1)
 			{
-				CG_Printf("^3[DamagePlum]^7 Found event: %s (entityNum: %d, otherEntityNum: %d)\n", 
-					event == EV_MISSILE_HIT ? "EV_MISSILE_HIT" : "EV_BULLET_HIT_FLESH",
-					cent->currentState.number, cent->currentState.otherEntityNum);
+				CG_Printf("^3[DamagePlum]^7 Found event: %s (entityNum: %d, otherEntityNum: %d)\n",
+				          event == EV_MISSILE_HIT ? "EV_MISSILE_HIT" : "EV_BULLET_HIT_FLESH",
+				          cent->currentState.number, cent->currentState.otherEntityNum);
 			}
-			
+
 			if (cent->currentState.otherEntityNum >= 0 && cent->currentState.otherEntityNum < MAX_GENTITIES)
 			{
 				targetClientNum = CG_GetClientNumByEntityNum(cent->currentState.otherEntityNum);
 				if (be_run.integer == 1)
 				{
-					CG_Printf("^3[DamagePlum]^7 CG_GetClientNumByEntityNum(%d) = %d\n", 
-						cent->currentState.otherEntityNum, targetClientNum);
+					CG_Printf("^3[DamagePlum]^7 CG_GetClientNumByEntityNum(%d) = %d\n",
+					          cent->currentState.otherEntityNum, targetClientNum);
 				}
-				
+
 				if (targetClientNum >= 0)
 				{
 					// Get player position from centity instead of event position
 					centity_t* targetCent = NULL;
 					int j;
-					
+
 					// Find player centity by clientNum
 					for (j = 0; j < cg.snap->numEntities; j++)
 					{
 						centity_t* checkCent = &cg_entities[cg.snap->entities[j].number];
-						if (checkCent->currentState.eType == ET_PLAYER && 
-						    checkCent->currentState.clientNum == targetClientNum)
+						if (checkCent->currentState.eType == ET_PLAYER &&
+						        checkCent->currentState.clientNum == targetClientNum)
 						{
 							targetCent = checkCent;
 							break;
 						}
 					}
-					
+
 					if (targetCent && targetCent->currentState.clientNum == targetClientNum)
 					{
 						// Use player position with offset above head
@@ -535,7 +542,7 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 						if (be_run.integer == 1)
 						{
 							CG_Printf("^3[DamagePlum]^7 Using player position: clientNum=%d, origin=(%.1f,%.1f,%.1f)\n",
-								targetClientNum, origin[0], origin[1], origin[2]);
+							          targetClientNum, origin[0], origin[1], origin[2]);
 						}
 					}
 					else
@@ -545,10 +552,10 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 						if (be_run.integer == 1)
 						{
 							CG_Printf("^3[DamagePlum]^7 WARNING: Player centity not found, using event position: origin=(%.1f,%.1f,%.1f)\n",
-								origin[0], origin[1], origin[2]);
+							          origin[0], origin[1], origin[2]);
 						}
 					}
-					
+
 					foundHit = qtrue;
 					break;
 				}
@@ -556,8 +563,8 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 				{
 					if (be_run.integer == 1)
 					{
-						CG_Printf("^3[DamagePlum]^7 WARNING: Failed to get clientNum from entityNum %d\n", 
-							cent->currentState.otherEntityNum);
+						CG_Printf("^3[DamagePlum]^7 WARNING: Failed to get clientNum from entityNum %d\n",
+						          cent->currentState.otherEntityNum);
 					}
 				}
 			}
@@ -576,7 +583,7 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 				if (be_run.integer == 1)
 				{
 					CG_Printf("^3[DamagePlum]^7 Hit determined via EV_RAILTRAIL: origin=(%.1f,%.1f,%.1f)\n",
-						origin[0], origin[1], origin[2]);
+					          origin[0], origin[1], origin[2]);
 				}
 				break;
 			}
@@ -593,7 +600,7 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 			if (be_run.integer == 1)
 			{
 				CG_Printf("^3[DamagePlum]^7 Hit determined via EV_SHOTGUN: origin=(%.1f,%.1f,%.1f)\n",
-					origin[0], origin[1], origin[2]);
+				          origin[0], origin[1], origin[2]);
 			}
 			break;
 		}
@@ -608,15 +615,15 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 		}
 		VectorCopy(cg.refdef.vieworg, origin);
 		VectorMA(origin, 131072, cg.refdef.viewaxis[0], traceEnd);
-		
+
 		CG_Trace(&trace, origin, vec3_origin, vec3_origin, traceEnd, ps->clientNum, MASK_SHOT);
 		VectorCopy(trace.endpos, origin);
 		if (be_run.integer == 1)
 		{
 			CG_Printf("^3[DamagePlum]^7 Hit determined via trace: origin=(%.1f,%.1f,%.1f), entityNum=%d\n",
-				origin[0], origin[1], origin[2], trace.entityNum);
+			          origin[0], origin[1], origin[2], trace.entityNum);
 		}
-		
+
 		// Try to get clientNum from trace entity
 		if (trace.entityNum >= 0 && trace.entityNum < MAX_GENTITIES)
 		{
@@ -636,19 +643,19 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 	{
 		centity_t* playerCent = NULL;
 		int j;
-		
+
 		// Find player centity by clientNum
 		for (j = 0; j < cg.snap->numEntities; j++)
 		{
 			centity_t* checkCent = &cg_entities[cg.snap->entities[j].number];
-			if (checkCent->currentState.eType == ET_PLAYER && 
-			    checkCent->currentState.clientNum == targetClientNum)
+			if (checkCent->currentState.eType == ET_PLAYER &&
+			        checkCent->currentState.clientNum == targetClientNum)
 			{
 				playerCent = checkCent;
 				break;
 			}
 		}
-		
+
 		if (playerCent && playerCent->currentState.clientNum == targetClientNum)
 		{
 			// Use player position with offset above head
@@ -657,7 +664,7 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 			if (be_run.integer == 1)
 			{
 				CG_Printf("^3[DamagePlum]^7 Final: Using player position for clientNum=%d: origin=(%.1f,%.1f,%.1f)\n",
-					targetClientNum, origin[0], origin[1], origin[2]);
+				          targetClientNum, origin[0], origin[1], origin[2]);
 			}
 		}
 	}
@@ -695,11 +702,11 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 		re->radius = 11;
 
 		cgs.be.clientDamagePrinted = qtrue;
-		
+
 		if (be_run.integer == 1)
 		{
 			CG_Printf("^3[DamagePlum]^7 Created plum: damage=%d, origin=(%.1f,%.1f,%.1f), targetClientNum=%d, foundHit=%d\n",
-				damage, origin[0], origin[1], origin[2], targetClientNum, foundHit);
+			          damage, origin[0], origin[1], origin[2], targetClientNum, foundHit);
 		}
 	}
 }
@@ -805,7 +812,7 @@ void CG_Bleed(vec3_t origin, int entityNum)
 	{
 		vec4_t bloodColor;
 		int colorIndex;
-		
+
 		if (alt < MAX_ALT_SHADERS)
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[alt - 1];
 		else
@@ -1089,7 +1096,7 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 		// Note: this isn't entirely accurate
 		return;
 	}
-	
+
 	{
 		refEntity_t ent;
 		float phi;
@@ -1126,11 +1133,11 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 		ratio = tan(hfov_y) / tan(hfov_x);
 
 		VectorScale(cg.refdef.viewaxis[0], dist, middleOfPlane);
-		
+
 		{
 			float cosHfovX = cos(hfov_x);
 			float cosHfovY = cos(hfov_y);
-			
+
 			r = dist / cosHfovX;
 			VectorScale(cg.refdef.viewaxis[1], r * sin(hfov_x) - ent.radius, planeAxis[0]);
 
@@ -1147,7 +1154,7 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 		{
 			float cosPhi = cos(phi);
 			float sinPhi = sin(phi);
-			
+
 			if (fabs(cosPhi) < 0.001f)
 			{
 				cosPhi = (cosPhi >= 0) ? 0.001f : -0.001f;
@@ -1156,7 +1163,7 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 			{
 				sinPhi = (sinPhi >= 0) ? 0.001f : -0.001f;
 			}
-			
+
 			h1 = fabs(VectorLength(planeAxis[0]) / cosPhi);
 			h2 = fabs(VectorLength(planeAxis[1]) / sinPhi);
 			if (h2 < h1)
@@ -1214,7 +1221,7 @@ qboolean CG_IsPointOutsideScreen(vec3_t origin, float* outX, float* outY)
 	/* Check if point is on screen */
 	/* CG_WorldToScreen returns coordinates relative to full screen (0-640, 0-480) */
 	if (x < 0.0f || x >= SCREEN_WIDTH ||
-	    y < 0.0f || y >= SCREEN_HEIGHT)
+	        y < 0.0f || y >= SCREEN_HEIGHT)
 	{
 		/* Point is outside screen */
 		return qtrue;
@@ -1255,8 +1262,8 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	{
 		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
 		{
-			if (cgs.be.teamMarkers.teamTaskMarks[i].clientNum == clientNum && 
-			    cgs.be.teamMarkers.teamTaskMarks[i].markType == markType)
+			if (cgs.be.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
+			        cgs.be.teamMarkers.teamTaskMarks[i].markType == markType)
 			{
 				/* Remove this mark by shifting all subsequent marks */
 				for (; i < cgs.be.teamMarkers.numTeamTaskMarks - 1; i++)
@@ -1323,9 +1330,9 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 			for (i = 0; i < MAX_GENTITIES; i++)
 			{
 				cent = &cg_entities[i];
-				if (cent->currentState.eType == ET_PLAYER && 
-				    cent->currentState.clientNum == clientNum &&
-				    cent->currentValid)
+				if (cent->currentState.eType == ET_PLAYER &&
+				        cent->currentState.clientNum == clientNum &&
+				        cent->currentValid)
 				{
 					/* Player is available - use their position above head */
 					VectorCopy(cent->lerpOrigin, mark->origin);

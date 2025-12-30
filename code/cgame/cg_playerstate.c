@@ -396,19 +396,19 @@ static qboolean CG_ShouldExecWeaponCommand(int clientNum)
 	{
 		return qfalse;
 	}
-	
+
 	if (cg_exec_weapons.integer == 1)
 	{
 		/* Execute for all (local client and spectating) */
 		return qtrue;
 	}
-	
+
 	if (cg_exec_weapons.integer == 2)
 	{
 		/* Execute only for local client (not when spectating) */
 		return (clientNum == cg.clientNum) ? qtrue : qfalse;
 	}
-	
+
 	return qfalse;
 }
 
@@ -423,7 +423,7 @@ Commands are separated by semicolon (;)
 static void CG_ExecWeaponCommand(int weapon)
 {
 	const char* cmd;
-	
+
 	switch (weapon)
 	{
 		case WP_MACHINEGUN:
@@ -450,12 +450,12 @@ static void CG_ExecWeaponCommand(int weapon)
 		default:
 			return;
 	}
-	
+
 	if (!cmd || !cmd[0])
 	{
 		return;
 	}
-	
+
 	trap_SendConsoleCommand(cmd);
 }
 
@@ -732,7 +732,7 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		        && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
 		{
 			int index;
-			
+
 			if (damage > 75) index = 3;
 			else if (damage > 50) index = 2;
 			else if (damage > 25) index = 1;
@@ -971,7 +971,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	{
 		CG_CheckLocalSounds(ps, ops);
 		CG_HitDamage(ps, ops);
-		
+
 		// Client-side damage prediction (bit 1 = 2)
 		// DISABLED: Client-side damage plums are temporarily disabled
 		// if (cg_damagePlums.integer & 2)
@@ -981,11 +981,11 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 		}
 	}
 
-	if (cg.zoomed && 
-	    // reset zoom on death
-	    (((cg_zoomAutoReset.integer & 1) && ops->stats[STAT_HEALTH] > 0 && ps->stats[STAT_HEALTH] <= 0 && cg.snap->ps.stats[STAT_HEALTH] <= 0) ||
-	     // or weapon change
-	     ((cg_zoomAutoReset.integer & 4) && ps->weapon != ops->weapon)))
+	if (cg.zoomed &&
+	        // reset zoom on death
+	        (((cg_zoomAutoReset.integer & 1) && ops->stats[STAT_HEALTH] > 0 && ps->stats[STAT_HEALTH] <= 0 && cg.snap->ps.stats[STAT_HEALTH] <= 0) ||
+	         // or weapon change
+	         ((cg_zoomAutoReset.integer & 4) && ps->weapon != ops->weapon)))
 	{
 		cg.zoomed = qfalse;
 		cg.zoomTime = cg.time;

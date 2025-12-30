@@ -975,7 +975,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 
 	// update cg.predictedPlayerState
 	CG_PredictPlayerState();
-	
+
 	// update ttwheel mark position
 	CG_UpdateSelwheelMark();
 

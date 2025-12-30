@@ -1433,60 +1433,60 @@ static void CG_InsertChatColor(char* text, int textSize, char colorChar)
 	int textLen;
 	int colorCodeLen;
 	int colorInsertPos;
-	
+
 	/* Find colon position */
 	colonPos = strchr(text, ':');
 	if (!colonPos)
 	{
 		return;
 	}
-	
+
 	colonIndex = colonPos - text;
 	textLen = strlen(text);
-	
+
 	/* Find the start of actual message text (skip colon and spaces) */
 	messageStart = colonIndex + 1;
 	while (messageStart < textLen && text[messageStart] == ' ')
 	{
 		messageStart++;
 	}
-	
+
 	/* If no message text after colon, don't insert color */
 	if (messageStart >= textLen)
 	{
 		return;
 	}
-	
+
 	colorInsertPos = messageStart;
-	
+
 	/* Check if color code already exists at message start (server may have added it) */
 	/* Support both digits (0-9) and letters (a-z, A-Z) */
-	if (messageStart < textLen && text[messageStart] == '^' && 
-	    messageStart + 1 < textLen && 
-	    ((text[messageStart + 1] >= '0' && text[messageStart + 1] <= '9') ||
-	     (text[messageStart + 1] >= 'a' && text[messageStart + 1] <= 'z') ||
-	     (text[messageStart + 1] >= 'A' && text[messageStart + 1] <= 'Z')))
+	if (messageStart < textLen && text[messageStart] == '^' &&
+	        messageStart + 1 < textLen &&
+	        ((text[messageStart + 1] >= '0' && text[messageStart + 1] <= '9') ||
+	         (text[messageStart + 1] >= 'a' && text[messageStart + 1] <= 'z') ||
+	         (text[messageStart + 1] >= 'A' && text[messageStart + 1] <= 'Z')))
 	{
 		/* Color code already exists at message start, replace it */
 		text[messageStart + 1] = colorChar;
 		return;
 	}
-	
+
 	/* Build color code string (^X where X is colorChar) */
 	colorCodeLen = 2; /* ^ + character */
-	
+
 	/* Check if we have enough space */
 	if (textLen + colorCodeLen >= textSize - 1)
 	{
 		return;
 	}
-	
+
 	/* Build new message: everything before message start + color code + message text */
 	memcpy(newText, text, colorInsertPos); /* Copy up to message start */
 	newText[colorInsertPos] = '^';
 	newText[colorInsertPos + 1] = colorChar;
 	memcpy(newText + colorInsertPos + 2, text + colorInsertPos, textLen - colorInsertPos + 1); /* Copy rest including null terminator */
-	
+
 	Q_strncpyz(text, newText, textSize);
 }
 
@@ -1508,14 +1508,14 @@ static void CG_WrapPlayerNameInParentheses(char* text, int textSize)
 	int prefixLen;
 	const char* nameStartInText;
 	int i;
-	
+
 	/* Find colon position */
 	colonPos = strchr(text, ':');
 	if (!colonPos)
 	{
 		return;
 	}
-	
+
 	/* Check if there's a prefix like "(team) " at the start */
 	nameStartInText = NULL;
 	if (text[0] == '(')
@@ -1538,18 +1538,18 @@ static void CG_WrapPlayerNameInParentheses(char* text, int textSize)
 		prefixLen = 0;
 		nameStart = text;
 	}
-	
+
 	/* Check if name is already wrapped in parentheses */
 	if (nameStart[0] == '(')
 	{
 		/* Already wrapped, don't wrap again */
 		return;
 	}
-	
+
 	nameLen = colonPos - nameStart;
 	restOfMessage = colonPos; /* Include colon and rest of message */
 	restLen = strlen(restOfMessage);
-	
+
 	/* Build new message: prefix + ( + name + ) + colon + rest of message */
 	/* Use memcpy instead of sprintf to avoid issues with special characters in name */
 	if (prefixLen > 0)
@@ -1557,40 +1557,40 @@ static void CG_WrapPlayerNameInParentheses(char* text, int textSize)
 		/* Copy prefix to newText */
 		memcpy(newText, text, prefixLen);
 		i = prefixLen;
-		
+
 		/* Add opening parenthesis */
 		newText[i++] = '(';
-		
+
 		/* Copy name (everything before colon) */
 		memcpy(newText + i, nameStart, nameLen);
 		i += nameLen;
-		
+
 		/* Add closing parenthesis after name */
 		newText[i++] = ')';
-		
+
 		/* Copy rest of message (colon and message text) */
 		memcpy(newText + i, restOfMessage, restLen + 1); /* +1 for null terminator */
-		
+
 		Q_strncpyz(text, newText, textSize);
 	}
 	else
 	{
 		/* No prefix, just wrap name */
 		i = 0;
-		
+
 		/* Add opening parenthesis */
 		newText[i++] = '(';
-		
+
 		/* Copy name (everything before colon) */
 		memcpy(newText + i, nameStart, nameLen);
 		i += nameLen;
-		
+
 		/* Add closing parenthesis after name */
 		newText[i++] = ')';
-		
+
 		/* Copy rest of message (colon and message text) */
 		memcpy(newText + i, restOfMessage, restLen + 1); /* +1 for null terminator */
-		
+
 		Q_strncpyz(text, newText, textSize);
 	}
 }
@@ -1608,37 +1608,37 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 	const char* nameStart;
 	const clientInfo_t* ci;
 	const char* replacementName;
-	
+
 	if (!cg_giveName.integer)
 	{
 		return;
 	}
-	
+
 	/* Validate clientNum */
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
 	{
 		return;
 	}
-	
+
 	/* Never replace name for local player */
 	if (clientNum == cg.clientNum)
 	{
 		return;
 	}
-	
+
 	ci = &cgs.clientinfo[clientNum];
 	if (!ci->infoValid)
 	{
 		return;
 	}
-	
+
 	/* Find colon position */
 	colonPos = strchr(text, ':');
 	if (!colonPos)
 	{
 		return;
 	}
-	
+
 	/* Check if this player has a replacement name */
 	/* Replacement names end with '*' character in name_clean */
 	{
@@ -1649,15 +1649,15 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 		const char* nameStart;
 		const char* nameEnd;
 		int nameWithColorLen;
-		
+
 		nameCleanLen = strlen(ci->name_clean);
-		
+
 		/* Check if name_clean ends with '*' (replacement marker) */
 		if (nameCleanLen == 0 || ci->name_clean[nameCleanLen - 1] != '*')
 		{
 			return;
 		}
-		
+
 		/* Player has replacement name */
 		/* Extract replacement name from name_clean (without the '*' marker) */
 		Q_strncpyz(replacementNameClean, ci->name_clean, sizeof(replacementNameClean));
@@ -1665,11 +1665,11 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 		{
 			replacementNameClean[nameCleanLen - 1] = 0; /* Remove '*' */
 		}
-		
+
 		/* Check if ci->name starts with replacement name (no ID/XID prefixes) */
 		/* If it does, we can use it directly (it should be in format ^Xname^0*) */
-		if (strstr(ci->name, replacementNameClean) == ci->name || 
-		    (ci->name[0] == '^' && strstr(ci->name + 2, replacementNameClean) == ci->name + 2))
+		if (strstr(ci->name, replacementNameClean) == ci->name ||
+		        (ci->name[0] == '^' && strstr(ci->name + 2, replacementNameClean) == ci->name + 2))
 		{
 			/* ci->name contains replacement name directly, extract it without ^0* */
 			nameEnd = strstr(ci->name, "^0*");
@@ -1717,7 +1717,7 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 				{
 					nameStart--; /* Include the '^' (color digit is already at nameStart[0]) */
 				}
-				
+
 				/* Find where the name ends (before '^0*' sequence) */
 				nameEnd = strstr(nameInCiName, "^0*");
 				if (nameEnd)
@@ -1753,7 +1753,7 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 				replacementName = tempName;
 			}
 		}
-		
+
 		/* Build new message: preserve prefix + replacement name + colon + rest of message */
 		{
 			char newText[1024];
@@ -1762,11 +1762,11 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 			const char* restOfMessage;
 			const char* nameStartInText;
 			int prefixLen;
-			
+
 			restOfMessage = colonPos + 1; /* Skip colon */
 			restLen = strlen(restOfMessage);
 			replacementLen = strlen(replacementName);
-			
+
 			/* Check if there's a prefix like "(team) " at the start */
 			nameStartInText = NULL;
 			if (text[0] == '(')
@@ -1786,14 +1786,14 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 			{
 				prefixLen = 0;
 			}
-			
+
 			/* Copy prefix if present, then add replacement name */
 			if (prefixLen > 0 && prefixLen < sizeof(newText) - 1)
 			{
 				/* Copy prefix to newText */
 				memcpy(newText, text, prefixLen);
 				newText[prefixLen] = 0;
-				
+
 				/* Append replacement name, colon, and rest of message */
 				if (prefixLen + replacementLen + 1 + restLen < sizeof(newText))
 				{
@@ -1817,7 +1817,7 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 					{
 						Com_sprintf(newText, sizeof(newText), "%s:%s", replacementName, restOfMessage);
 					}
-					
+
 					Q_strncpyz(text, newText, textSize);
 				}
 			}
@@ -1922,7 +1922,7 @@ void CG_ServerCommand(void)
 		{
 			int chatClientNum;
 			int argc;
-			
+
 			argc = trap_Argc();
 			if (argc >= 3)
 			{
@@ -1957,8 +1957,8 @@ void CG_ServerCommand(void)
 			char colorChar;
 			colorChar = cg_chatColor.string[0];
 			if ((colorChar >= '0' && colorChar <= '9') ||
-			    (colorChar >= 'a' && colorChar <= 'z') ||
-			    (colorChar >= 'A' && colorChar <= 'Z'))
+			        (colorChar >= 'a' && colorChar <= 'z') ||
+			        (colorChar >= 'A' && colorChar <= 'Z'))
 			{
 				CG_InsertChatColor(text, 1024, colorChar);
 			}
@@ -1998,7 +1998,7 @@ void CG_ServerCommand(void)
 		{
 			int chatClientNum;
 			int argc;
-			
+
 			argc = trap_Argc();
 			if (argc >= 3)
 			{
@@ -2024,10 +2024,10 @@ void CG_ServerCommand(void)
 		}
 
 		CG_RemoveChatEscapeChar(text);
-		
+
 		/* Wrap player name in parentheses for team chat (after removing escape chars) */
 		CG_WrapPlayerNameInParentheses(text, 1024);
-		
+
 		CG_InjectCustomLoc(text, 1024);
 
 		/* Insert default team chat color at the beginning of message text (after colon) */
@@ -2038,8 +2038,8 @@ void CG_ServerCommand(void)
 			char colorChar;
 			colorChar = cg_teamChatColor.string[0];
 			if ((colorChar >= '0' && colorChar <= '9') ||
-			    (colorChar >= 'a' && colorChar <= 'z') ||
-			    (colorChar >= 'A' && colorChar <= 'Z'))
+			        (colorChar >= 'a' && colorChar <= 'z') ||
+			        (colorChar >= 'A' && colorChar <= 'Z'))
 			{
 				CG_InsertChatColor(text, 1024, colorChar);
 			}
@@ -2137,13 +2137,13 @@ void CG_ServerCommand(void)
 		int damage;
 		int argc;
 		vec3_t position;
-		
+
 		// Only process if enabled (1 = normal, 2 = stacking)
 		if (cg_damagePlums.integer < 1)
 		{
 			return;
 		}
-		
+
 		argc = trap_Argc();
 		if (argc >= 5)
 		{
@@ -2151,7 +2151,7 @@ void CG_ServerCommand(void)
 			position[0] = atof(CG_Argv(2));
 			position[1] = atof(CG_Argv(3));
 			position[2] = atof(CG_Argv(4));
-			
+
 			CG_DamagePlum(cg.predictedPlayerState.clientNum, position, damage);
 		}
 		return;

@@ -255,13 +255,13 @@ static void CG_Obituary(entityState_t* ent)
 	/* Send teamTask mark for local client death */
 	/* Don't send mark for freeze events (unfreeze) */
 	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS) &&
-		(cg_teamTask.integer & CG_TEAMTASK_ONDEATH) &&
-		target == cg.clientNum && cgs.gametype >= GT_TEAM &&
-		!isUnfreezeEvent)
+	        (cg_teamTask.integer & CG_TEAMTASK_ONDEATH) &&
+	        target == cg.clientNum && cgs.gametype >= GT_TEAM &&
+	        !isUnfreezeEvent)
 	{
 		centity_t* cent;
 		vec3_t position;
-		
+
 		cent = &cg_entities[target];
 		if (cent)
 		{
@@ -286,7 +286,7 @@ static void CG_Obituary(entityState_t* ent)
 	{
 		return;
 	}
-	
+
 	/* Use processed name from clientInfo if available, otherwise fallback to config string */
 	if (target >= 0 && target < MAX_CLIENTS && cgs.clientinfo[target].infoValid)
 	{
@@ -296,7 +296,7 @@ static void CG_Obituary(entityState_t* ent)
 	{
 		Q_strncpyz(targetName, Info_ValueForKey(targetInfo, "n"), sizeof(targetName) - 2);
 	}
-	
+
 	strcat(targetName, S_COLOR_WHITE);
 	CG_RemoveChatEscapeChar(&targetName[0]);
 
@@ -1081,12 +1081,12 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			DEBUGNAME("EV_SCOREPLUM");
 			CG_ScorePlum(cent->currentState.otherEntityNum, cent->lerpOrigin, cent->currentState.time);
 			break;
-			
+
 		case EV_DAMAGEPLUM:
 			DEBUGNAME("EV_DAMAGEPLUM");
 			if (cg_damagePlums.integer)
 			{
-				CG_DamagePlum( cent->currentState.otherEntityNum, cent->lerpOrigin, cent->currentState.time );
+				CG_DamagePlum(cent->currentState.otherEntityNum, cent->lerpOrigin, cent->currentState.time);
 			}
 			break;
 		//

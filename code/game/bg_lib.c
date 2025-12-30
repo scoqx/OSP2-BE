@@ -1188,17 +1188,17 @@ void AddString(char** buf_p, char* string, int width, int prec)
 }
 
 
-char *BG_StripColor( char *string )
+char* BG_StripColor(char* string)
 {
-	char *s;
-	char *d;
+	char* s;
+	char* d;
 	int c;
 
 	s = string;
 	d = string;
-	while ( ( c = *s ) != 0 )
+	while ((c = *s) != 0)
 	{
-		if ( Q_IsColorString( s ) )
+		if (Q_IsColorString(s))
 		{
 			s++;
 		}
@@ -1216,31 +1216,31 @@ char *BG_StripColor( char *string )
 }
 
 
-char *Q_stristr( const char *str1, const char *str2 )
+char* Q_stristr(const char* str1, const char* str2)
 {
-	char *cp;
-	char *s1;
-	char *s2;
+	char* cp;
+	char* s1;
+	char* s2;
 	int c1;
 	int c2;
 
-	if ( !*str2 )
+	if (!*str2)
 	{
-		return (char *)str1;
+		return (char*)str1;
 	}
 
-	cp = (char *)str1;
+	cp = (char*)str1;
 
-	while ( *cp )
+	while (*cp)
 	{
 		s1 = cp;
-		s2 = (char *)str2;
+		s2 = (char*)str2;
 
-		while ( *s1 && *s2 )
+		while (*s1 && *s2)
 		{
-			c1 = tolower( (unsigned char)*s1 );
-			c2 = tolower( (unsigned char)*s2 );
-			if ( c1 != c2 )
+			c1 = tolower((unsigned char) * s1);
+			c2 = tolower((unsigned char) * s2);
+			if (c1 != c2)
 			{
 				break;
 			}
@@ -1249,7 +1249,7 @@ char *Q_stristr( const char *str1, const char *str2 )
 			s2++;
 		}
 
-		if ( *s2 == '\0' )
+		if (*s2 == '\0')
 		{
 			return cp;
 		}
@@ -1260,14 +1260,14 @@ char *Q_stristr( const char *str1, const char *str2 )
 	return NULL;
 }
 
-int BG_sprintf( char *buf, const char *format, ... )
+int BG_sprintf(char* buf, const char* format, ...)
 {
 	va_list argptr;
 	int retval;
 
-	va_start( argptr, format );
-	retval = vsprintf( buf, format, argptr );
-	va_end( argptr );
+	va_start(argptr, format);
+	retval = vsprintf(buf, format, argptr);
+	va_end(argptr);
 
 	return retval;
 }
@@ -1325,7 +1325,7 @@ reswitch:
 				flags |= LADJUST;
 				goto rflag;
 			case '.':
-				if ( *fmt == '*' )
+				if (*fmt == '*')
 				{
 					n = *arg;
 					arg++;

@@ -1964,43 +1964,43 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 	float hbox_height;
 	float hbox_size_xy;
 	clipHandle_t cmodel;
-	
+
 	// Skip items that are picked up or removed (same checks as in CG_Item)
 	if (!cent->currentState.modelindex || (cent->currentState.eFlags & EF_NODRAW))
 	{
 		return qfalse;
 	}
-	
+
 	if (!item->classname)
 	{
 		return qfalse;
 	}
-	
+
 	// Only check red armor and megahealth
 	if (Q_stricmp(item->classname, "item_armor_body") &&
-	    Q_stricmp(item->classname, "item_health_mega"))
+	        Q_stricmp(item->classname, "item_health_mega"))
 	{
 		return qfalse;
 	}
-	
+
 	// Get original item position (before bob effect)
 	VectorCopy(cent->lerpOrigin, itemOrigin);
-	
+
 	// If bob effect is active, restore original Z position
 	if (cg_itemFx.integer & 1)
 	{
 		float scale;
 		float bobOffset;
-		
+
 		scale = 0.005 + cent->currentState.number * 0.00001;
 		bobOffset = 4 + cos((cg.time + 1000) * scale) * 4;
 		itemOrigin[2] -= bobOffset;
 	}
-	
+
 	// Hitbox parameters (same as in CG_AddItemHitBox)
 	hbox_height = 32.0f;
 	hbox_size_xy = 16.0f;
-	
+
 	// Create bounding box for hitbox (centered on item, extending upward)
 	mins[0] = -hbox_size_xy;
 	mins[1] = -hbox_size_xy;
@@ -2008,21 +2008,21 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 	maxs[0] = hbox_size_xy;
 	maxs[1] = hbox_size_xy;
 	maxs[2] = hbox_height;  // Extend upward
-	
+
 	// Create temporary box model for trace
 	cmodel = trap_CM_TempBoxModel(mins, maxs);
-	
+
 	// Trace from camera to end position, but against the hitbox
 	trap_CM_TransformedBoxTrace(&hboxTrace, start, end,
 	                            vec3_origin, vec3_origin, cmodel,
 	                            MASK_SHOT, itemOrigin, vec3_origin);
-	
+
 	// If trace hit the hitbox, we're looking at it
 	if (hboxTrace.fraction < 1.0f)
 	{
 		return qtrue;
 	}
-	
+
 	return qfalse;
 }
 
@@ -2042,14 +2042,14 @@ int CG_CrosshairTarget(vec3_t itemPos)
 	clientInfo_t* ci;
 	int itemIndex;
 	int frozenClientNum;
-	
+
 	VectorCopy(cg.refdef.vieworg, start);
 	VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
-	
+
 	/* Use MASK_SHOT to detect both players and items */
 	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
 	         cg.snap->ps.clientNum, MASK_SHOT);
-	
+
 	// Check if looking at a frozen entity
 	if (trace.entityNum >= MAX_CLIENTS && trace.entityNum < MAX_GENTITIES)
 	{
@@ -2076,7 +2076,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 			}
 		}
 	}
-	
+
 	// Check if looking at a player
 	if (trace.entityNum < MAX_CLIENTS)
 	{
@@ -2087,7 +2087,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 		}
 		return 1;  // nothing (ally or invalid)
 	}
-	
+
 	// Check all item entities for red armor and megahealth hitboxes
 	// We check all items because trace might not hit the item entity directly,
 	// but we want to detect if we're looking at the hitbox area
@@ -2098,7 +2098,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 		int checkItemIndex;
 		vec3_t itemOrigin;
 		trace_t visibilityTrace;
-		
+
 		for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
 		{
 			checkCent = &cg_entities[i];
@@ -2110,21 +2110,21 @@ int CG_CrosshairTarget(vec3_t itemPos)
 				{
 					continue;
 				}
-				
+
 				// Additional check: skip if entity is not in current snapshot
 				// This helps avoid detecting items that were removed from the world
 				if (!checkCent->currentValid)
 				{
 					continue;
 				}
-				
+
 				checkItemIndex = checkCent->currentState.modelindex;
 				if (checkItemIndex >= 1 && checkItemIndex < bg_numItems)
 				{
 					checkItem = &bg_itemlist[checkItemIndex];
 					if (checkItem->classname && (
-					        !Q_stricmp(checkItem->classname, "item_armor_body") ||
-					        !Q_stricmp(checkItem->classname, "item_health_mega")))
+					            !Q_stricmp(checkItem->classname, "item_armor_body") ||
+					            !Q_stricmp(checkItem->classname, "item_health_mega")))
 					{
 						// Check if ray intersects with hitbox
 						if (CG_IsLookingAtItemHitbox(start, end, checkCent, checkItem))
@@ -2135,21 +2135,21 @@ int CG_CrosshairTarget(vec3_t itemPos)
 							{
 								float scale;
 								float bobOffset;
-								
+
 								scale = 0.005 + checkCent->currentState.number * 0.00001;
 								bobOffset = 4 + cos((cg.time + 1000) * scale) * 4;
 								itemOrigin[2] -= bobOffset;
 							}
-							
+
 							// Check visibility - trace from camera to item to make sure there's no wall
 							CG_Trace(&visibilityTrace, start, vec3_origin, vec3_origin, itemOrigin,
 							         cg.snap->ps.clientNum, CONTENTS_SOLID);
-							
+
 							// Only return item if trace reached it (no wall blocking)
 							if (visibilityTrace.fraction >= 0.99f)
 							{
 								VectorCopy(itemOrigin, itemPos);
-								
+
 								if (!Q_stricmp(checkItem->classname, "item_armor_body"))
 								{
 									return 3;  // red armor
@@ -2165,7 +2165,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 			}
 		}
 	}
-	
+
 	return 1;  // nothing
 }
 
@@ -2751,7 +2751,7 @@ void CG_OSPDrawNewCredits(void)
 		NULL
 	};
 	static int startTime = 0;
-	
+
 
 	if (!cgs.be.showCredits)
 	{
@@ -3067,7 +3067,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 		{
 			/* Check if there is an active TEAMTASK_FROZEN_ALLY mark for this frozen ally */
 			qboolean hasActiveMark;
-			
+
 			/* If clientNum >= MAX_CLIENTS, cent already points to frozen entity */
 			/* Otherwise, use ci->frozenEntity to get frozen entity */
 			if (clientNum >= MAX_CLIENTS)
@@ -3091,7 +3091,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 			{
 				hasActiveMark = qfalse;
 			}
-			
+
 			/* Only draw frozenFoeTagShader if there is no active team task mark */
 			if (!hasActiveMark)
 			{
@@ -3310,7 +3310,7 @@ static void CG_Draw2D(void)
 	{
 		return;
 	}
-	
+
 	if (strlen(cgs.osp.testFont))
 	{
 		CG_DrawTestFont(cgs.osp.testFont);
@@ -3422,24 +3422,24 @@ void CG_DrawBefore2D(void)
 			CG_DrawDamageFrame();
 		}
 	}
-	
+
 	// Draw cursor ttwheel (if bitmask & 4 is set)
 	if ((cg_teamTaskWheel.integer & 4) && cgs.be.teamMarkers.ttwheelMarkActive)
 	{
 		CG_DrawSelwheelMark();
 	}
 	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS) &&
-		cg_teamTask.integer)
+	        cg_teamTask.integer)
 	{
 		CG_DrawTeamTaskMarks();
 	}
-	
+
 	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) &&
-			cg_teamIndicator.integer)
+	        cg_teamIndicator.integer)
 	{
 		CG_DrawPlayerIndicatorOnScreen();
 	}
-	
+
 }
 /*
 =====================
@@ -3497,10 +3497,10 @@ void CG_DrawActive(stereoFrame_t stereoView)
 
 	// Draw team task border markers (for marks outside screen)
 	CG_DrawTeamTaskBorderHudMarkers();
-	
+
 	// Draw ttwheel pointers (arrows pointing to elements) - must be before trap_R_RenderScene
 	CG_DrawSelwheelPointers();
-	
+
 	// draw 3D view
 	trap_R_RenderScene(&cg.refdef);
 
@@ -3509,7 +3509,7 @@ void CG_DrawActive(stereoFrame_t stereoView)
 	{
 		VectorCopy(baseOrg, cg.refdef.vieworg);
 	}
-	
+
 	CG_DrawBefore2D();
 	// draw status bar and other floating elements
 	CG_Draw2D();
@@ -3547,21 +3547,21 @@ void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, flo
 	vec3_t rightOffset;
 	vec3_t upOffset;
 	int r, g, b, a;
-	
+
 	if (!shader)
 	{
 		return;
 	}
-	
+
 	// Initialize entity
 	memset(&ent, 0, sizeof(ent));
-	
+
 	// Convert color to byte values
 	r = (int)(color[0] * 255.0f);
 	g = (int)(color[1] * 255.0f);
 	b = (int)(color[2] * 255.0f);
 	a = (int)(color[3] * 255.0f);
-	
+
 	if (r > 255) r = 255;
 	if (g > 255) g = 255;
 	if (b > 255) b = 255;
@@ -3570,47 +3570,47 @@ void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, flo
 	if (g < 0) g = 0;
 	if (b < 0) b = 0;
 	if (a < 0) a = 0;
-	
+
 	// Calculate FOV
 	hfov_x = cg.refdef.fov_x * M_PI / 360.0f;
 	hfov_y = cg.refdef.fov_y * M_PI / 360.0f;
-	
+
 	// Calculate position based on screen coordinates
 	// Convert screen position to 3D position in front of camera
 	dist = 64.0f; // Distance in front of camera
-	
+
 	// Offset from center of screen (in 640x480 coordinates)
 	dx = x - SCREEN_WIDTH / 2.0f;
 	dy = y - SCREEN_HEIGHT / 2.0f;
-	
+
 	// Convert screen offset to 3D offset on plane in front of camera
 	offsetX = dx * tan(hfov_x) / (SCREEN_WIDTH * 0.5f) * dist;
 	offsetY = -dy * tan(hfov_y) / (SCREEN_HEIGHT * 0.5f) * dist; // Negative because screen Y increases downward
-	
+
 	// Start from center position in front of camera
 	VectorScale(cg.refdef.viewaxis[0], dist, centerPos);
-	
+
 	// Add right offset (viewaxis[1] is right vector)
 	VectorScale(cg.refdef.viewaxis[1], offsetX, rightOffset);
-	
+
 	// Add up offset (viewaxis[2] is up vector)
 	VectorScale(cg.refdef.viewaxis[2], offsetY, upOffset);
-	
+
 	// Combine all offsets
 	VectorAdd(cg.refdef.vieworg, centerPos, ent.origin);
 	VectorAdd(ent.origin, rightOffset, ent.origin);
 	VectorAdd(ent.origin, upOffset, ent.origin);
-	
+
 	// Calculate size based on screen size and FOV
 	// Convert screen width to 3D radius
 	radius = w * 0.5f * tan(hfov_x) / (SCREEN_WIDTH * 0.5f) * dist;
 	ent.radius = radius;
-	
+
 	if (ent.radius < 0.1f)
 	{
 		ent.radius = 0.1f;
 	}
-	
+
 	// Set sprite entity properties
 	ent.reType = RT_SPRITE;
 	ent.renderfx = RF_FIRST_PERSON | RF_DEPTHHACK;
@@ -3620,7 +3620,7 @@ void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, flo
 	ent.shaderRGBA[1] = g;
 	ent.shaderRGBA[2] = b;
 	ent.shaderRGBA[3] = a;
-	
+
 	// Add to main 3D scene (must be called before trap_R_RenderScene)
 	trap_R_AddRefEntityToScene(&ent);
 }

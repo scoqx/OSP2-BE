@@ -993,7 +993,7 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 
 	if (!cg_teamTask.integer)
 	{
-		return;	
+		return;
 	}
 	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
 	{
@@ -1022,7 +1022,7 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	{
 		return;
 	}
-	
+
 	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
 	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
 	{
@@ -1095,7 +1095,7 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	{
 		return;
 	}
-	
+
 	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
 	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
 	{
@@ -1153,7 +1153,7 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 	{
 		return;
 	}
-	
+
 	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
 	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
 	{
@@ -1225,7 +1225,7 @@ void CG_TeamTaskMarkSend(void)
 	vec3_t itemPos;
 	int i;
 	centity_t* cent;
-	
+
 	if (!cg_teamTask.integer)
 	{
 		return;
@@ -1242,12 +1242,12 @@ void CG_TeamTaskMarkSend(void)
 	{
 		return;
 	}
-	
+
 	/* Check if we have a saved target from wheel opening (valid for 500ms) */
-	if ((cg_teamTaskWheel.integer & 2) && 
-	    cgs.be.teamMarkers.smartTargetTime > 0 &&
-	    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-	    cgs.be.teamMarkers.smartTargetType != 1)
+	if ((cg_teamTaskWheel.integer & 2) &&
+	        cgs.be.teamMarkers.smartTargetTime > 0 &&
+	        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+	        cgs.be.teamMarkers.smartTargetType != 1)
 	{
 		/* Use saved target */
 		targetType = cgs.be.teamMarkers.smartTargetType;
@@ -1260,15 +1260,15 @@ void CG_TeamTaskMarkSend(void)
 		/* If item found, itemPos contains item center position */
 		targetType = CG_CrosshairTarget(itemPos);
 	}
-	
+
 	switch (targetType)
 	{
 		case 5: /* frozen ally */
 			/* Use saved frozen position if available, otherwise use current itemPos */
-			if ((cg_teamTaskWheel.integer & 2) && 
-			    cgs.be.teamMarkers.smartTargetTime > 0 &&
-			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			    cgs.be.teamMarkers.smartTargetType == 5)
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 5)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
@@ -1276,10 +1276,10 @@ void CG_TeamTaskMarkSend(void)
 			return;
 		case 6: /* frozen enemy */
 			/* Use saved frozen position if available, otherwise use current itemPos */
-			if ((cg_teamTaskWheel.integer & 2) && 
-			    cgs.be.teamMarkers.smartTargetTime > 0 &&
-			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			    cgs.be.teamMarkers.smartTargetType == 6)
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 6)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
@@ -1288,24 +1288,24 @@ void CG_TeamTaskMarkSend(void)
 		case 2: /* enemy */
 		{
 			/* Check if we're using saved target */
-			if ((cg_teamTaskWheel.integer & 2) && 
-			    cgs.be.teamMarkers.smartTargetTime > 0 &&
-			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			    cgs.be.teamMarkers.smartTargetType == 2)
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 2)
 			{
 				/* Use saved enemy position */
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, enemyPos);
 				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qtrue);
 				return;
 			}
-			
+
 			/* For enemy, get their position and mark at their body (+24 height) */
 			VectorCopy(cg.refdef.vieworg, start);
 			VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
-			
+
 			CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
 			         cg.snap->ps.clientNum, CONTENTS_SOLID | CONTENTS_BODY);
-			
+
 			/* Check if we hit a player */
 			if (trace.entityNum >= 0 && trace.entityNum < MAX_CLIENTS)
 			{
@@ -1313,9 +1313,9 @@ void CG_TeamTaskMarkSend(void)
 				for (i = 0; i < MAX_GENTITIES; i++)
 				{
 					cent = &cg_entities[i];
-					if (cent->currentState.eType == ET_PLAYER && 
-					    cent->currentState.clientNum == trace.entityNum &&
-					    cent->currentValid)
+					if (cent->currentState.eType == ET_PLAYER &&
+					        cent->currentState.clientNum == trace.entityNum &&
+					        cent->currentValid)
 					{
 						/* Use enemy player position with +24 height offset */
 						VectorCopy(cent->lerpOrigin, enemyPos);
@@ -1334,10 +1334,10 @@ void CG_TeamTaskMarkSend(void)
 		case 3: /* red armor */
 			markType = TEAMTASK_REDARMOR;
 			/* Use saved item position if available, otherwise use current itemPos */
-			if ((cg_teamTaskWheel.integer & 2) && 
-			    cgs.be.teamMarkers.smartTargetTime > 0 &&
-			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			    cgs.be.teamMarkers.smartTargetType == 3)
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 3)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
@@ -1346,10 +1346,10 @@ void CG_TeamTaskMarkSend(void)
 		case 4: /* megahealth */
 			markType = TEAMTASK_MEGAHEALTH;
 			/* Use saved item position if available, otherwise use current itemPos */
-			if ((cg_teamTaskWheel.integer & 2) && 
-			    cgs.be.teamMarkers.smartTargetTime > 0 &&
-			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			    cgs.be.teamMarkers.smartTargetType == 4)
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 4)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
@@ -1359,10 +1359,10 @@ void CG_TeamTaskMarkSend(void)
 		{
 			teamTaskCommand_t* cmd;
 			int defaultType;
-			
+
 			// Get default type from cvar (string name)
 			cmd = CG_GetTeamTaskCommandByName(cg_teamTaskSmartDefault.string);
-			
+
 			// Check if command is valid and selectable
 			if (cmd && cmd->isSelectable)
 			{
@@ -1374,7 +1374,7 @@ void CG_TeamTaskMarkSend(void)
 				// Use LOCATION as fallback
 				defaultType = TEAMTASK_LOCATION;
 			}
-			
+
 			markType = defaultType;
 			CG_SendTeamTaskMark(0, markType);
 			return;
@@ -1447,18 +1447,18 @@ Usage: teamtaskhelp
 void CG_TeamTaskHelp_f(void)
 {
 	CG_Printf("\n^5=== Team Task Help ===\n\n");
-	
+
 	CG_Printf("^3How to open the wheel menu:\n");
 	CG_Printf("  ^2+ttwheel^7 - Open team task selection wheel\n");
 	CG_Printf("  ^2-ttwheel^7 - Close wheel and send selected command\n");
 	CG_Printf("  ^7Bind a key: ^2bind <key> \"+ttwheel\"^7\n");
 	CG_Printf("  ^7Example: ^2bind mouse3 \"+ttwheel\"^7\n\n");
-	
+
 	CG_Printf("^3How to use the wheel:\n");
 	CG_Printf("  ^71. Hold the key bound to ^2+ttwheel^7\n");
 	CG_Printf("  ^72. Move mouse to select a task icon\n");
 	CG_Printf("  ^73. Release the key to send the command\n\n");
-	
+
 	CG_Printf("^3Available team task commands:\n");
 	CG_Printf("  ^2tattack^7    - Mark attack position\n");
 	CG_Printf("  ^2tdefence^7   - Mark defence position\n");
@@ -1474,11 +1474,11 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("    - Red armor (marks as redarmor)\n");
 	CG_Printf("    - Megahealth (marks as megahealth)\n");
 	CG_Printf("    - Nothing (uses default from ^3cg_teamTaskSmartDefault^7)\n\n");
-	
+
 	CG_Printf("^3Muting team tasks:\n");
 	CG_Printf("  ^2mutetasks <player ID>^7   - Mute team tasks from a player\n");
 	CG_Printf("  ^2unmutetasks <player ID>^7 - Unmute team tasks from a player\n");
-	
+
 	CG_Printf("Cvars for teamTasks starts with ^3cg_teamTask^7\n");
 	CG_Printf("^3For more information about a specific cvar:\n");
 	CG_Printf("  ^2behelp ^3<cvar_name>^7\n\n");
@@ -1507,14 +1507,14 @@ void CG_BEHelp_f(void)
 	}
 
 	cvarName = CG_Argv(1);
-	
+
 	/* Check if description exists */
 	description = CG_GetCvarDescription(cvarName);
 	if (description && description[0])
 	{
 		/* Get current value */
 		trap_Cvar_VariableStringBuffer(cvarName, currentValue, sizeof(currentValue));
-		
+
 		/* Get default value */
 		cvarTable = CG_GetCgCvarByName(cvarName);
 		if (cvarTable && cvarTable->defaultString)

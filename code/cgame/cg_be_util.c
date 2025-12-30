@@ -362,14 +362,14 @@ int CG_GetRemainingGameTimeMsec(qboolean forItemPickup)
 		msec = cgs.timelimitMsec - (baseTime - cgs.levelStartTime);
 		return msec;
 	}
-	else 
+	else
 	{
 		return cg.time - cgs.levelStartTime;
 	}
 
 }
 
-void CG_ColorWhitenSmart(vec3_t rgb, float *alpha, float strength)
+void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 {
 	float luminance;
 	float factor;

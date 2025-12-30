@@ -89,7 +89,7 @@ static void CG_SHUDElementTeamTasksUpdatePosition(shudElementTeamTasks_t* elemen
 
 	CG_FontSelect(element->ctxSender.fontIndex);
 	senderWidth = CG_OSPDrawStringLenPix(entry->runtime.senderName, element->config.fontsize.value[0], element->ctxSender.flags, entry->runtime.maxNameLenPix);
-	
+
 	CG_FontSelect(element->ctxEventName.fontIndex);
 	eventNameWidth = CG_OSPDrawStringLenPix(entry->runtime.eventName, element->config.fontsize.value[0], element->ctxEventName.flags, 0);
 
@@ -240,7 +240,7 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 	/* Draw sender name */
 	element->ctxSender.text = entry->runtime.senderName;
 	element->ctxSender.coord.named.x = currentX;
-	
+
 	/* Apply sender color based on style */
 	if (element->config.style.isSet)
 	{

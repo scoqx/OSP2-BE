@@ -768,7 +768,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitSounds },
 	{ &cg_playersXID, "cg_playersXID", "0", CVAR_ARCHIVE},
 	{ &cg_playersID, "cg_playersID", "0", CVAR_ARCHIVE},
-	
+
 	{ &cg_playerModelColors, "cg_playerModelColors", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerModelColors},
 	{ &cg_playerRailColors,  "cg_playerRailColors", "",  CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerRailColors},
 	{ &cg_playerFrozenColor, "cg_playerFrozenColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_playerFrozenColor},
@@ -824,23 +824,23 @@ static cvarTable_t cvarTable[] =
 	{ &cg_stackHitSounds,           "cg_stackHitSounds",   "1", CVAR_ARCHIVE },
 	{ &cg_stackHitSoundsTimeout,    "cg_stackHitSoundsTimeout",   "500", CVAR_ARCHIVE },
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
-	{ &cg_shud_chatindex, "cg_shud_chatindex", "0",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg0, "cg_shud_chatmsg0", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg1, "cg_shud_chatmsg1", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg2, "cg_shud_chatmsg2", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg3, "cg_shud_chatmsg3", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg4, "cg_shud_chatmsg4", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg5, "cg_shud_chatmsg5", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg6, "cg_shud_chatmsg6", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg7, "cg_shud_chatmsg7", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg8, "cg_shud_chatmsg8", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg9, "cg_shud_chatmsg9", "",   CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg10, "cg_shud_chatmsg10", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg11, "cg_shud_chatmsg11", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg12, "cg_shud_chatmsg12", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg13, "cg_shud_chatmsg13", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg14, "cg_shud_chatmsg14", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg15, "cg_shud_chatmsg15", "", CVAR_INIT|CVAR_NORESTART|CVAR_TEMP|CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatindex, "cg_shud_chatindex", "0",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg0, "cg_shud_chatmsg0", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg1, "cg_shud_chatmsg1", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg2, "cg_shud_chatmsg2", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg3, "cg_shud_chatmsg3", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg4, "cg_shud_chatmsg4", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg5, "cg_shud_chatmsg5", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg6, "cg_shud_chatmsg6", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg7, "cg_shud_chatmsg7", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg8, "cg_shud_chatmsg8", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg9, "cg_shud_chatmsg9", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg10, "cg_shud_chatmsg10", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg11, "cg_shud_chatmsg11", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg12, "cg_shud_chatmsg12", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg13, "cg_shud_chatmsg13", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg14, "cg_shud_chatmsg14", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg15, "cg_shud_chatmsg15", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
 	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
 	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
@@ -1544,7 +1544,7 @@ static void CG_RegisterSounds(void)
 
 
 	// Team Task
-	cgs.media.pingSimpleSound = trap_S_RegisterSound( "sound/teamplay/ping-simple.wav", qfalse );
+	cgs.media.pingSimpleSound = trap_S_RegisterSound("sound/teamplay/ping-simple.wav", qfalse);
 }
 
 qhandle_t CG_GetFragSound(void)
@@ -2317,40 +2317,40 @@ void CG_ParseCompilationInfo(void)
 	char version[MAX_QPATH];
 	vmCvar_t compilation_build;
 	int parseResult;
-	
+
 	// Открываем файл 'cversion'
 	fileSize = trap_FS_FOpenFile("cversion", &fileHandle, FS_READ);
 	if (fileSize <= 0 || !fileHandle)
 	{
 		return; // Файл не найден
 	}
-	
+
 	// Читаем содержимое файла
 	fileContent = Z_Malloc(fileSize + 1);
 	OSP_MEMORY_CHECK(fileContent);
 	trap_FS_Read(fileContent, fileSize, fileHandle);
 	trap_FS_FCloseFile(fileHandle);
 	fileContent[fileSize] = 0;
-	
+
 	// Убираем символы новой строки и пробелы в конце
 	while (fileSize > 0 && (fileContent[fileSize - 1] == '\n' || fileContent[fileSize - 1] == '\r' || fileContent[fileSize - 1] == ' '))
 	{
 		fileContent[fileSize - 1] = 0;
 		fileSize--;
 	}
-	
+
 	// Парсим содержимое файла
 	parseResult = Q_sscanf(fileContent, "Compilation \"%s\" Version \"%s\"", name, version);
-	
+
 	if (parseResult == 2)
 	{
 		// Формируем строку NAME:VERSION
 		Com_sprintf(buildString, sizeof(buildString), "%s: %s", name, version);
-		
+
 		// Регистрируем cvar
 		trap_Cvar_Register(&compilation_build, "compilation_build", buildString, CVAR_USERINFO | CVAR_ROM);
 	}
-	
+
 	Z_Free(fileContent);
 }
 
@@ -2365,9 +2365,9 @@ static void CG_ExecGametypeCommand(void)
 {
 	const char* cmd;
 	qboolean isFreeze;
-		
+
 	isFreeze = (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze);
-	
+
 	/* Check for freeze tag first */
 	if (isFreeze)
 	{
@@ -2397,7 +2397,7 @@ static void CG_ExecGametypeCommand(void)
 				break;
 		}
 	}
-	
+
 	if (cmd && cmd[0])
 	{
 		trap_SendConsoleCommand(cmd);
@@ -2415,7 +2415,7 @@ void CG_InitTeamTaskMarkers(void)
 {
 	cgs.be.teamMarkers.numTeamTaskMarks = 0;
 	memset(cgs.be.teamMarkers.teamTaskMarks, 0, sizeof(cgs.be.teamMarkers.teamTaskMarks));
-	
+
 	/* Initialize anti-flood token bucket for sending team task commands: fast limit (1 token, refill 1 token per 150ms) */
 	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketFast, 1, 150, cg.time);
 	/* Initialize anti-flood token bucket for sending team task commands: bucket limit (4 tokens, refill 1 token per 800ms) */
@@ -2762,13 +2762,13 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 			}
 		}
 	}
-	
-	/* Execute gametype command on init */	
+
+	/* Execute gametype command on init */
 	if (cg_exec_gametypes.integer == 0)
 	{
 		CG_ExecGametypeCommand();
 	}
-	
+
 	if (cg_execVstr.string[0])
 	{
 		const char* str = va("vstr %s;", cg_execVstr.string);
@@ -2904,7 +2904,7 @@ void CG_PrintNewCommandsBE_f(void)
 
 			/* Get current value */
 			trap_Cvar_VariableStringBuffer(cvarName, currentValue, sizeof(currentValue));
-			
+
 			/* Get default value */
 			if (cvarTable[foundIndex].defaultString)
 			{
