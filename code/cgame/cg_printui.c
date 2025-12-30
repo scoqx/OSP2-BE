@@ -558,7 +558,7 @@ void CG_PrintUI_f(void)
 		CG_Printf("^7example:  ^3printui ^2\"Hello World!\" 240 240^7\n");
 		CG_Printf("^7example:  ^3printui ^2\"There's Example\" t1^7\n");
 		CG_Printf("^7example:  ^3printui ^2\"Of Print UI\" t2^7\n");
-		CG_Printf("^92. Options:\n");
+		CG_Printf("^92. Options: ^332 ^7rows of printui are available\n");
 		CG_Printf("  ^5c^2<color>^7 - text color (e.g., ^2cWhite^7, ^2c7^7, ^2cFF^7)\n");
 		CG_Printf("  ^5cs^2<color>^7 - shadow color\n");
 		CG_Printf("  ^5<^2w^5>^2x<^2h^5>^7 - text size (e.g., ^210x14^7)\n");

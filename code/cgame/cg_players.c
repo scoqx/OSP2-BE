@@ -26,6 +26,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_types.h"
 
 
+qboolean CG_IsLocalClientDead(void)
+{
+	if (cg.snap->ps.clientNum = cg.clientNum)
+	{
+		return (cg.snap->ps.stats[STAT_HEALTH] <= 0) ? qtrue : qfalse;
+	}
+	return qfalse;
+}
 
 
 qboolean CG_IsLocalClientSpectator(void)

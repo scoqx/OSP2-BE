@@ -267,7 +267,7 @@ static void CG_Obituary(entityState_t* ent)
 		{
 			VectorCopy(cent->lerpOrigin, position);
 			position[2] += 6.0f;
-			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_PLAYERDEAD, position);
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_PLAYERDEAD, position, qfalse);
 		}
 	}
 

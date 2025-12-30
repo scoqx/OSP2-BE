@@ -2471,6 +2471,27 @@ void CG_SelwheelMarkStop(void)
 
 /*
 =================
+CG_SelwheelMarkClose
+
+Close ttwheel without sending command or executing action
+=================
+*/
+void CG_SelwheelMarkClose(void)
+{
+	/* Deactivate ttwheel without sending command or executing action */
+	cgs.be.teamMarkers.ttwheelMarkActive = qfalse;
+	cgs.be.teamMarkers.ttwheelHoveredIcon = -1;
+	cgs.be.teamMarkers.ttwheelSelectedIcon = -1;
+	
+	/* Clear saved smart target */
+	cgs.be.teamMarkers.smartTargetType = 1;
+	VectorClear(cgs.be.teamMarkers.smartTargetPos);
+	cgs.be.teamMarkers.smartTargetTime = 0;
+	cgs.be.teamMarkers.smartTargetEntityNum = -1;
+}
+
+/*
+=================
 CG_SelwheelSetElements
 
 Set the elements for ttwheel menu

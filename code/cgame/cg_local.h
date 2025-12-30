@@ -2329,10 +2329,11 @@ void CG_LoadForcedSounds(void);
 void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
 
-qboolean CG_IsEnemy(const clientInfo_t* target);
-qboolean CG_IsEnemySimple(const clientInfo_t* target);
+qboolean CG_IsLocalClientDead(void);
 qboolean CG_IsLocalClientSpectator(void);
 qboolean CG_IsLocalClientOnScreen(void);
+qboolean CG_IsEnemy(const clientInfo_t* target);
+qboolean CG_IsEnemySimple(const clientInfo_t* target);
 qboolean CG_IsFrozenEntity(const centity_t* cent);
 
 //
@@ -2974,7 +2975,7 @@ void CG_TeamTaskFilterDump(void);
 //
 int CG_OSPTeamTaskPack(int toClient, int templateID, int x, int y, int z);
 void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* templateID, int* x, int* y, int* z);
-void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position);
+void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position, qboolean ignoreDead);
 void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient);
 void CG_TeamTaskMarkOffense(void);
 void CG_TeamTaskMarkDefence(void);
@@ -2986,6 +2987,7 @@ void CG_TeamTaskMarkLocation(void);
 void CG_TeamTaskMarkSend(void);
 void CG_SelwheelMarkStart(void);
 void CG_SelwheelMarkStop(void);
+void CG_SelwheelMarkClose(void);
 void CG_UpdateSelwheelMark(void);
 void CG_DrawSelwheelMark(void);
 void CG_DrawSelwheelIcons(void);

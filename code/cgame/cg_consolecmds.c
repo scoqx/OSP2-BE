@@ -1003,6 +1003,10 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	{
 		return;
 	}
+	if (CG_IsLocalClientDead())
+	{
+		return;
+	}
 	if (cgs.gametype < GT_TEAM)
 	{
 		CG_PrintOnce("^3There are no teams\n");
@@ -1072,6 +1076,10 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	{
 		return;
 	}
+	if (CG_IsLocalClientDead())
+	{
+		return;
+	}
 	if (cgs.gametype < GT_TEAM)
 	{
 		CG_PrintOnce("^3There are no teams\n");
@@ -1118,7 +1126,7 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	trap_SendClientCommand("teamtask 0");
 }
 
-void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position)
+void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position, qboolean ignoreDead)
 {
 	int packed;
 	int x;
@@ -1138,6 +1146,10 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 		return;
 	}
 	if (cgs.gametype < GT_TEAM)
+	{
+		return;
+	}
+	if (ignoreDead && CG_IsLocalClientDead())
 	{
 		return;
 	}
@@ -1226,6 +1238,10 @@ void CG_TeamTaskMarkSend(void)
 	{
 		return;
 	}
+	if (CG_IsLocalClientDead())
+	{
+		return;
+	}
 	
 	/* Check if we have a saved target from wheel opening (valid for 500ms) */
 	if ((cg_teamTaskWheel.integer == 2) && 
@@ -1257,7 +1273,7 @@ void CG_TeamTaskMarkSend(void)
 			{
 				/* Use saved enemy position */
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, enemyPos);
-				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos);
+				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qtrue);
 				return;
 			}
 			
@@ -1282,7 +1298,7 @@ void CG_TeamTaskMarkSend(void)
 						/* Use enemy player position with +24 height offset */
 						VectorCopy(cent->lerpOrigin, enemyPos);
 						enemyPos[2] += 24.0f;
-						CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos);
+						CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qtrue);
 						return;
 					}
 				}
@@ -1290,7 +1306,7 @@ void CG_TeamTaskMarkSend(void)
 			/* Fallback: if enemy entity not found, use trace endpos */
 			VectorCopy(trace.endpos, enemyPos);
 			enemyPos[2] += 24.0f;
-			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos);
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qtrue);
 			return;
 		}
 		case 3: /* red armor */
@@ -1303,7 +1319,7 @@ void CG_TeamTaskMarkSend(void)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
-			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos);
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qtrue);
 			return;
 		case 4: /* megahealth */
 			markType = TEAMTASK_MEGAHEALTH;
@@ -1315,7 +1331,7 @@ void CG_TeamTaskMarkSend(void)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
-			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos);
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qtrue);
 			return;
 		default: /* nothing or other */
 		{
@@ -1645,6 +1661,7 @@ static consoleCommand_t commands[] =
 	{ "tsmart", CG_TeamTaskMarkSend },
 	{ "+ttwheel", CG_SelwheelMarkStart },
 	{ "-ttwheel", CG_SelwheelMarkStop },
+	{ "ttwheelclose", CG_SelwheelMarkClose },
 	{ "behelp", CG_BEHelp_f },
 	{ "teamtaskhelp", CG_TeamTaskHelp_f },
 	{ "colorcharlist", CG_ColorCharList_f },
