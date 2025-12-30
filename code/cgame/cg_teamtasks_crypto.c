@@ -272,7 +272,6 @@ void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* te
 	int encrypted;
 	int senderIDPacked;
 	int cryptoKey;
-	int extractedSenderID;
 	int decrypted;
 	int expectedVerificationBit;
 
@@ -288,14 +287,16 @@ void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* te
 	/* If senderClientID is valid, verify it matches */
 	if (senderClientID >= 0 && senderClientID < MAX_CLIENTS && cgs.clientinfo[senderClientID].infoValid)
 	{
+		int expectedSenderIDPacked;
 		cryptoKey = CG_GenerateCryptoKey(senderClientID);
 
-		/* Decrypt senderID (cyclic shift, keep within 4 bits) */
-		extractedSenderID = senderIDPacked ^ ((cryptoKey >> 5) & 0x0F);
-		extractedSenderID = ((extractedSenderID - 52) & 0x0F);
+		/* Reconstruct expected senderIDPacked using same logic as packing */
+		/* This is the correct way to verify sender, since multiple clientIDs can map to same value after & 0x0F */
+		expectedSenderIDPacked = ((senderClientID + 52) & 0x0F);
+		expectedSenderIDPacked = expectedSenderIDPacked ^ ((cryptoKey >> 5) & 0x0F);
 
-		/* Verify extracted senderID matches expected */
-		if (extractedSenderID != senderClientID)
+		/* Verify expected senderIDPacked matches received */
+		if (expectedSenderIDPacked != senderIDPacked)
 		{
 			/* SenderID mismatch - REJECT data */
 			*toClient = 0;
@@ -321,51 +322,54 @@ void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* te
 			return;
 		}
 	}
-	else
-	{
-		/* Sender was unknown/invalid - try to find correct sender */
-		int i;
-		int found;
-		found = 0;
-		for (i = 0; i < MAX_CLIENTS && !found; i++)
+		else
 		{
-			if (!cgs.clientinfo[i].infoValid)
+			/* Sender was unknown/invalid - try to find correct sender */
+			int i;
+			int found;
+			found = 0;
+			for (i = 0; i < MAX_CLIENTS && !found; i++)
 			{
-				continue;
-			}
-			cryptoKey = CG_GenerateCryptoKey(i);
-
-			/* Decrypt senderID (cyclic shift, keep within 6 bits) */
-			extractedSenderID = senderIDPacked ^ ((cryptoKey >> 7) & 0x3F);
-			extractedSenderID = ((extractedSenderID - 52) & 0x3F);
-
-			if (extractedSenderID == i)
-			{
-				/* Verify verification bit matches */
-				int expectedVerificationBit;
-				expectedVerificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^
-				                           (encrypted >> 11) ^ (encrypted >> 17) ^
-				                           senderIDPacked) & 0x01;
-				if (verificationBit == expectedVerificationBit)
+				int expectedSenderIDPacked;
+				if (!cgs.clientinfo[i].infoValid)
 				{
-					/* Found correct sender with matching verification */
-					senderClientID = i;
-					found = 1;
+					continue;
+				}
+				cryptoKey = CG_GenerateCryptoKey(i);
+
+				/* Reconstruct expected senderIDPacked using same logic as packing */
+				/* This is the correct way to verify sender, since multiple clientIDs can map to same value after & 0x0F */
+				expectedSenderIDPacked = ((i + 52) & 0x0F);
+				expectedSenderIDPacked = expectedSenderIDPacked ^ ((cryptoKey >> 5) & 0x0F);
+
+				/* Check if this clientID produces the same senderIDPacked */
+				if (expectedSenderIDPacked == senderIDPacked)
+				{
+					/* Verify verification bit matches */
+					int expectedVerificationBit;
+					expectedVerificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^
+					                           (encrypted >> 11) ^ (encrypted >> 17) ^
+					                           senderIDPacked) & 0x01;
+					if (verificationBit == expectedVerificationBit)
+					{
+						/* Found correct sender with matching verification */
+						senderClientID = i;
+						found = 1;
+					}
 				}
 			}
-		}
 
-		if (!found)
-		{
-			/* No valid sender found - REJECT data */
-			*toClient = 0;
-			*templateID = 0;
-			*x = 0;
-			*y = 0;
-			*z = 0;
-			return;
+			if (!found)
+			{
+				/* No valid sender found - REJECT data */
+				*toClient = 0;
+				*templateID = 0;
+				*x = 0;
+				*y = 0;
+				*z = 0;
+				return;
+			}
 		}
-	}
 
 	/* Decrypt data with verified key */
 	decrypted = encrypted ^ (cryptoKey & 0xFFFFFFE0);
