@@ -28,11 +28,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 qboolean CG_IsLocalClientDead(void)
 {
-	if (cg.snap->ps.clientNum = cg.clientNum)
+	if (cg.snap && cg.snap->ps.pm_type == PM_DEAD)
 	{
-		return (cg.snap->ps.stats[STAT_HEALTH] <= 0) ? qtrue : qfalse;
+		return qtrue;
 	}
-	return qfalse;
+	else
+	{
+		return qfalse;
+	}
 }
 
 
