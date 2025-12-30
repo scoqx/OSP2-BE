@@ -1003,7 +1003,7 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	{
 		return;
 	}
-	if (CG_IsLocalClientDead())
+	if (CG_IsDead())
 	{
 		return;
 	}
@@ -1076,7 +1076,7 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	{
 		return;
 	}
-	if (CG_IsLocalClientDead())
+	if (CG_IsDead())
 	{
 		return;
 	}
@@ -1149,7 +1149,7 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 	{
 		return;
 	}
-	if (ignoreDead && CG_IsLocalClientDead())
+	if (ignoreDead && CG_IsDead())
 	{
 		return;
 	}
@@ -1238,13 +1238,13 @@ void CG_TeamTaskMarkSend(void)
 	{
 		return;
 	}
-	if (CG_IsLocalClientDead())
+	if (CG_IsDead())
 	{
 		return;
 	}
 	
 	/* Check if we have a saved target from wheel opening (valid for 500ms) */
-	if ((cg_teamTaskWheel.integer == 2) && 
+	if ((cg_teamTaskWheel.integer & 2) && 
 	    cgs.be.teamMarkers.smartTargetTime > 0 &&
 	    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
 	    cgs.be.teamMarkers.smartTargetType != 1)
@@ -1256,17 +1256,39 @@ void CG_TeamTaskMarkSend(void)
 	else
 	{
 		/* Check what we're aiming at using CG_CrosshairTarget */
-		/* Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth */
+		/* Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy */
 		/* If item found, itemPos contains item center position */
 		targetType = CG_CrosshairTarget(itemPos);
 	}
 	
 	switch (targetType)
 	{
+		case 5: /* frozen ally */
+			/* Use saved frozen position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer & 2) && 
+			    cgs.be.teamMarkers.smartTargetTime > 0 &&
+			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			    cgs.be.teamMarkers.smartTargetType == 5)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_FROZEN_ALLY, itemPos, qtrue);
+			return;
+		case 6: /* frozen enemy */
+			/* Use saved frozen position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer & 2) && 
+			    cgs.be.teamMarkers.smartTargetTime > 0 &&
+			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			    cgs.be.teamMarkers.smartTargetType == 6)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_FROZEN_ENEMY, itemPos, qtrue);
+			return;
 		case 2: /* enemy */
 		{
 			/* Check if we're using saved target */
-			if ((cg_teamTaskWheel.integer == 2) && 
+			if ((cg_teamTaskWheel.integer & 2) && 
 			    cgs.be.teamMarkers.smartTargetTime > 0 &&
 			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
 			    cgs.be.teamMarkers.smartTargetType == 2)
@@ -1312,7 +1334,7 @@ void CG_TeamTaskMarkSend(void)
 		case 3: /* red armor */
 			markType = TEAMTASK_REDARMOR;
 			/* Use saved item position if available, otherwise use current itemPos */
-			if ((cg_teamTaskWheel.integer == 2) && 
+			if ((cg_teamTaskWheel.integer & 2) && 
 			    cgs.be.teamMarkers.smartTargetTime > 0 &&
 			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
 			    cgs.be.teamMarkers.smartTargetType == 3)
@@ -1324,7 +1346,7 @@ void CG_TeamTaskMarkSend(void)
 		case 4: /* megahealth */
 			markType = TEAMTASK_MEGAHEALTH;
 			/* Use saved item position if available, otherwise use current itemPos */
-			if ((cg_teamTaskWheel.integer == 2) && 
+			if ((cg_teamTaskWheel.integer & 2) && 
 			    cgs.be.teamMarkers.smartTargetTime > 0 &&
 			    (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
 			    cgs.be.teamMarkers.smartTargetType == 4)
@@ -1448,6 +1470,7 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("  ^2tsmart^7      - Smart mode (auto-detects target)\n");
 	CG_Printf("  ^7Smart mode automatically detects:\n");
 	CG_Printf("    - Enemy players (marks as target)\n");
+	CG_Printf("    - Frozen enemy and ally bodies\n");
 	CG_Printf("    - Red armor (marks as redarmor)\n");
 	CG_Printf("    - Megahealth (marks as megahealth)\n");
 	CG_Printf("    - Nothing (uses default from ^3cg_teamTaskSmartDefault^7)\n\n");

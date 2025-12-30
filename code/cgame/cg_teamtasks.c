@@ -28,6 +28,63 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 /*
 =================
+CG_HasActiveFrozenAllyMark
+
+Check if there is an active TEAMTASK_FROZEN_ALLY mark near the frozen entity
+Returns qtrue if active mark found, qfalse otherwise
+=================
+*/
+qboolean CG_HasActiveFrozenAllyMark(centity_t* frozenCent)
+{
+	int i;
+	teamTaskMark_t* mark;
+	float dist;
+	float searchRadius;
+	int frozenClientNum;
+	clientInfo_t* frozenCi;
+	
+	if (!frozenCent || !CG_IsFrozenEntity(frozenCent))
+	{
+		return qfalse;
+	}
+	
+	frozenClientNum = frozenCent->currentState.otherEntityNum;
+	if (frozenClientNum < 0 || frozenClientNum >= MAX_CLIENTS)
+	{
+		return qfalse;
+	}
+	
+	frozenCi = &cgs.clientinfo[frozenClientNum];
+	if (!frozenCi->infoValid || CG_IsEnemy(frozenCi))
+	{
+		/* Not an ally */
+		return qfalse;
+	}
+	
+	searchRadius = 64.0f; /* Search radius for finding mark near frozen entity */
+	
+	/* Check all active marks */
+	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	{
+		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		
+		/* Check if mark is active and of type TEAMTASK_FROZEN_ALLY */
+		if (mark->markType == TEAMTASK_FROZEN_ALLY && cg.time < mark->endTime)
+		{
+			/* Check if mark is near frozen entity */
+			dist = Distance(mark->origin, frozenCent->lerpOrigin);
+			if (dist <= searchRadius)
+			{
+				return qtrue;
+			}
+		}
+	}
+	
+	return qfalse;
+}
+
+/*
+=================
 TeamTask command definitions
 =================
 */
@@ -393,6 +450,76 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 				}
 			}
 			break;
+		case TEAMTASK_FROZEN_ALLY:
+			if (useMarkerShader)
+			{
+				*shader = cgs.media.teamTasksFrozen_marker;
+				/* HUD marker color is white */
+				color[0] = 1.0f;
+				color[1] = 1.0f;
+				color[2] = 1.0f;
+				color[3] = 1.0f;
+			}
+			else
+			{
+				*shader = cgs.media.frozenFoeTagShader;
+				/* World marker color is own team color */
+				{
+					int myTeam;
+					myTeam = cg.snap->ps.persistant[PERS_TEAM];
+					if (myTeam == TEAM_RED)
+					{
+						VectorCopy(cgs.be.redTeamColor, color);
+					}
+					else if (myTeam == TEAM_BLUE)
+					{
+						VectorCopy(cgs.be.blueTeamColor, color);
+					}
+					else
+					{
+						color[0] = 1.0f;
+						color[1] = 1.0f;
+						color[2] = 1.0f;
+					}
+					color[3] = 1.0f;
+				}
+			}
+			break;
+		case TEAMTASK_FROZEN_ENEMY:
+			if (useMarkerShader)
+			{
+				*shader = cgs.media.teamTasksFrozen_marker;
+				/* HUD marker color is white */
+				color[0] = 1.0f;
+				color[1] = 1.0f;
+				color[2] = 1.0f;
+				color[3] = 1.0f;
+			}
+			else
+			{
+				*shader = cgs.media.frozenFoeTagShader;
+				/* World marker color is enemy team color */
+				{
+					int myTeam;
+					myTeam = cg.snap->ps.persistant[PERS_TEAM];
+					if (myTeam == TEAM_RED)
+					{
+						VectorCopy(cgs.be.blueTeamColor, color);
+					}
+					else if (myTeam == TEAM_BLUE)
+					{
+						VectorCopy(cgs.be.redTeamColor, color);
+					}
+					else
+					{
+						color[0] = 1.0f;
+						color[1] = 1.0f;
+						color[2] = 1.0f;
+					}
+					color[3] = 1.0f;
+				}
+			}
+			break;
 		default:
 			if (useMarkerShader)
 			{
@@ -570,7 +697,46 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		}
 
 		/* Set color with alpha 0.25 and apply fade */
-		if ((cg_teamTask.integer & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		if (mark->markType == TEAMTASK_FROZEN_ALLY || mark->markType == TEAMTASK_FROZEN_ENEMY)
+		{
+			/* For frozen bodies, use team color for pulsing circle */
+			int myTeam;
+			myTeam = cg.snap->ps.persistant[PERS_TEAM];
+			if (mark->markType == TEAMTASK_FROZEN_ALLY)
+			{
+				/* Use own team color */
+				if (myTeam == TEAM_RED)
+				{
+					VectorCopy(cgs.be.redTeamColor, pulseColor);
+				}
+				else if (myTeam == TEAM_BLUE)
+				{
+					VectorCopy(cgs.be.blueTeamColor, pulseColor);
+				}
+				else
+				{
+					Vector4Copy(color, pulseColor);
+				}
+			}
+			else /* TEAMTASK_FROZEN_ENEMY */
+			{
+				/* Use enemy team color */
+				if (myTeam == TEAM_RED)
+				{
+					VectorCopy(cgs.be.blueTeamColor, pulseColor);
+				}
+				else if (myTeam == TEAM_BLUE)
+				{
+					VectorCopy(cgs.be.redTeamColor, pulseColor);
+				}
+				else
+				{
+					Vector4Copy(color, pulseColor);
+				}
+			}
+			pulseColor[3] = 0.25f * endFade;
+		}
+		else if ((cg_teamTask.integer & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			/* Use unique color for pulsing circle */
 			VectorCopy(UNIQUE_COLOR(mark->clientNum), pulseColor);
@@ -1211,7 +1377,7 @@ void CG_UpdateSelwheelMark(void)
 			centerX = SCREEN_WIDTH / 2.0f;
 			centerY = SCREEN_HEIGHT / 2.0f;
 			iconRadius = 20.0f; // Distance from center to icons (in 640x480 coordinates, reduced by 1/3)
-			maxRadius = iconRadius + 5; // Slightly larger than icon position (increased by 10 pixels)
+			maxRadius = iconRadius + 10.0f; // Slightly larger than icon position (increased by 10 pixels)
 			
 			// Calculate distance from center (all in 640x480 coordinates)
 			dx = cgs.be.teamMarkers.ttwheelMarkX - centerX;
@@ -1323,14 +1489,11 @@ void CG_DrawSelwheelMark(void)
 	{
 		return;
 	}
-	
-	// Mark size
 	size = 1.0f;
 	
-	// Mark color (white with some transparency)
-	color[0] = 1.0f;
-	color[1] = 1.0f;
-	color[2] = 1.0f;
+	// Mark color (theme color with darkening -0.4)
+	Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, color);
+	CG_ColorWhitenSmart(color, NULL, -0.4f);
 	color[3] = 0.8f;
 	
 	x = cgs.be.teamMarkers.ttwheelMarkX;
@@ -1339,6 +1502,7 @@ void CG_DrawSelwheelMark(void)
 	// Adjust coordinates from 640x480 to actual screen size
 	CG_AdjustFrom640_Old(&x, &y, &size, &size, qfalse);
 	
+	size = 4.0f;
 	// Draw the mark as a small square
 	trap_R_SetColor(color);
 	trap_R_DrawStretchPic(
@@ -1434,7 +1598,7 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 	}
 	
 	// Check if bitmask & 2 is set (center element exists)
-	if ((cg_teamTaskWheel.integer == 2) && elementCount > 1)
+	if ((cg_teamTaskWheel.integer & 2) && elementCount > 1)
 	{
 		// Center element exists at index 0, check if cursor is in center zone
 		if (distFromCenter < minRadius)
@@ -1446,7 +1610,7 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 		angleStep = 2.0f * M_PI / (float)(elementCount - 1);
 		i = 1; // Start checking from index 1
 	}
-	else if ((cg_teamTaskWheel.integer == 2) && elementCount == 1)
+	else if ((cg_teamTaskWheel.integer & 2) && elementCount == 1)
 	{
 		// Only center element exists
 		if (distFromCenter < minRadius)
@@ -1479,7 +1643,7 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 	for (; i < cgs.be.teamMarkers.ttwheelElementCount; i++)
 	{
 		// Calculate element angle
-		if ((cg_teamTaskWheel.integer == 2) && elementCount > 1)
+		if ((cg_teamTaskWheel.integer & 2) && elementCount > 1)
 		{
 			// For elements around center (index 1+), use (i - 1) for angle calculation
 			iconAngle = startAngle + angleStep * (float)(i - 1);
@@ -1685,7 +1849,7 @@ void CG_DrawSelwheelIcons(void)
 	else
 	{
 		// Check if cursor is in center reset zone (only if no center element)
-		if (!(cg_teamTaskWheel.integer == 2))
+		if (!(cg_teamTaskWheel.integer & 2))
 		{
 			float centerXCheck;
 			float centerYCheck;
@@ -1723,7 +1887,7 @@ void CG_DrawSelwheelIcons(void)
 	}
 	
 	// Draw center element first (if bitmask & 2 is set)
-	if ((cg_teamTaskWheel.integer == 2) && cgs.be.teamMarkers.ttwheelElementCount > 0)
+	if ((cg_teamTaskWheel.integer & 2) && cgs.be.teamMarkers.ttwheelElementCount > 0)
 	{
 		if (cgs.be.teamMarkers.ttwheelElementShaders[0])
 		{
@@ -1768,7 +1932,19 @@ void CG_DrawSelwheelIcons(void)
 			}
 			
 			// Draw center icon
-			trap_R_SetColor(iconColor);
+			// Use gray color for non-selected element, white for selected
+			if (hoveredIcon == 0 || cgs.be.teamMarkers.ttwheelSelectedIcon == 0)
+			{
+				// Element is selected - use white color
+				trap_R_SetColor(iconColor);
+			}
+			else
+			{
+				// Element is not selected - use gray color
+				vec4_t grayColor;
+				Vector4Set(grayColor, 0.75f, 0.75f, 0.75f, 1.0f);
+				trap_R_SetColor(grayColor);
+			}
 			trap_R_DrawStretchPic(
 				centerIconX - centerIconSize * 0.5f,
 				centerIconY - centerIconSize * 0.5f,
@@ -1831,7 +2007,7 @@ void CG_DrawSelwheelIcons(void)
 		}
 		
 		// Distribute evenly around circle starting from 9 o'clock
-		if ((cg_teamTaskWheel.integer == 2) && cgs.be.teamMarkers.ttwheelElementCount > 1)
+		if ((cg_teamTaskWheel.integer & 2) && cgs.be.teamMarkers.ttwheelElementCount > 1)
 		{
 			// Center element exists, distribute other elements (i-1) around circle
 			iconAngle = startAngle + (2.0f * M_PI * (float)(i - 1) / (float)(cgs.be.teamMarkers.ttwheelElementCount - 1));
@@ -1860,7 +2036,7 @@ void CG_DrawSelwheelIcons(void)
 			CG_AdjustFrom640_Old(NULL, NULL, &iconRadiusIcon, NULL, qfalse);
 			
 			// Calculate icon angle (same as in CG_GetSelwheelIconAtPosition)
-			if ((cg_teamTaskWheel.integer == 2) && cgs.be.teamMarkers.ttwheelElementCount > 1)
+			if ((cg_teamTaskWheel.integer & 2) && cgs.be.teamMarkers.ttwheelElementCount > 1)
 			{
 				iconAngleIcon = startAngle + (2.0f * M_PI * (float)(i - 1) / (float)(cgs.be.teamMarkers.ttwheelElementCount - 1));
 			}
@@ -1903,7 +2079,19 @@ void CG_DrawSelwheelIcons(void)
 		}
 		
 		// Draw icon
-		trap_R_SetColor(iconColor);
+		// Use gray color for non-selected elements, white for selected
+		if (hoveredIcon == i || cgs.be.teamMarkers.ttwheelSelectedIcon == i)
+		{
+			// Element is selected - use white color
+			trap_R_SetColor(iconColor);
+		}
+		else
+		{
+			// Element is not selected - use gray color
+			vec4_t grayColor;
+			Vector4Set(grayColor, 0.6f, 0.6f, 0.6f, 1.0f);
+			trap_R_SetColor(grayColor);
+		}
 		trap_R_DrawStretchPic(
 			adjustedX - adjustedSize * 0.5f,
 			adjustedY - adjustedSize * 0.5f,
@@ -2110,6 +2298,11 @@ void CG_DrawSelwheelPointers(void)
 	int i;
 	int startIndex;
 	
+	if (!cg_teamTaskWheel.integer && 8)
+	{
+		return;
+	}
+
 	if (!cgs.be.teamMarkers.ttwheelMarkActive)
 	{
 		return;
@@ -2137,26 +2330,26 @@ void CG_DrawSelwheelPointers(void)
 	// Pointer radius: between center and icons (in unused zone)
 	// Icons use iconRadius = 20.0f in 640x480 coordinates
 	// Use smaller radius for pointers (between center and icons)
-	pointerRadius = 12.0f; // Position between center and icons (in 640x480 coordinates)
+	pointerRadius = 24.0f; // Position between center and icons (in 640x480 coordinates)
 	pointerSize = 8.0f; // Size of pointer arrow (increased for visibility)
 	
 	// Start angle: 9 o'clock = 270 degrees = 3π/2 radians
 	startAngle = M_PI * 1.5f;
-	
+	Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, activeColor);
+	CG_ColorWhitenSmart(activeColor, NULL, 0.4f);
 	// Active color (white) for selected element
-	Vector4Set(activeColor, 1.0f, 1.0f, 1.0f, 1.0f);
 	
 	// Inactive color (gray) for non-selected elements
-	Vector4Set(inactiveColor, 0.5f, 0.5f, 0.5f, 0.8f);
+	Vector4Set(inactiveColor, 0.6f, 0.6f, 0.6f, 0.8f);
 	
 	// Determine start index based on center element
-	if ((cg_teamTaskWheel.integer == 2) && elementCount > 1)
+	if ((cg_teamTaskWheel.integer & 2) && elementCount > 1)
 	{
 		// Center element exists at index 0, draw pointers for other elements (1+)
 		angleStep = 2.0f * M_PI / (float)(elementCount - 1);
 		startIndex = 1;
 	}
-	else if ((cg_teamTaskWheel.integer == 2) && elementCount == 1)
+	else if ((cg_teamTaskWheel.integer & 2) && elementCount == 1)
 	{
 		// Only center element exists, no pointers needed
 		return;
@@ -2172,7 +2365,7 @@ void CG_DrawSelwheelPointers(void)
 	for (i = startIndex; i < elementCount; i++)
 	{
 		// Calculate angle for this element
-		if ((cg_teamTaskWheel.integer == 2) && elementCount > 1)
+		if ((cg_teamTaskWheel.integer & 2) && elementCount > 1)
 		{
 			// Center element exists, use (i - 1) for angle calculation
 			pointerAngle = startAngle + angleStep * (float)(i - 1);
@@ -2184,29 +2377,46 @@ void CG_DrawSelwheelPointers(void)
 		}
 		
 		// Calculate pointer position
-		// Use same logic as icons to ensure correct positioning
+		// CG_DrawRotatedPic expects coordinates in 640x480 virtual system, not scaled
+		// Compensate for different X/Y scaling due to FOV to keep perfect circle
 		{
 			float pointerX;
 			float pointerY;
 			qhandle_t pointerShader;
 			vec4_t pointerColor;
-			float pointerRadiusScaled;
-			float centerXScaled;
-			float centerYScaled;
+			float centerX;
+			float centerY;
+			float hfov_x;
+			float hfov_y;
+			float compensation;
+			float dx;
+			float dy;
 			
-			// Use same calculation as icons - scale coordinates first
-			centerXScaled = SCREEN_WIDTH / 2.0f;
-			centerYScaled = SCREEN_HEIGHT / 2.0f;
-			pointerRadiusScaled = pointerRadius;
+			// Use 640x480 coordinates (320, 240 = center)
+			// CG_DrawRotatedPic will handle scaling internally
+			centerX = 320.0f; // Center X in 640x480 coordinates
+			centerY = 240.0f; // Center Y in 640x480 coordinates
 			
-			CG_AdjustFrom640_Old(&centerXScaled, &centerYScaled, NULL, NULL, qfalse);
-			CG_AdjustFrom640_Old(NULL, NULL, &pointerRadiusScaled, NULL, qfalse);
+			// Calculate FOV to compensate for ellipse distortion
+			hfov_x = cg.refdef.fov_x * M_PI / 360.0f;
+			hfov_y = cg.refdef.fov_y * M_PI / 360.0f;
 			
-			// Calculate position using same formula as icons
-			// Note: icons use iconRadiusIcon = 60.0f (scaled), we use pointerRadiusScaled
-			// Use negative cos to fix left/right mirroring issue
-			pointerX = centerXScaled - cos(pointerAngle) * pointerRadiusScaled;
-			pointerY = centerYScaled - sin(pointerAngle) * pointerRadiusScaled; // Negative because screen Y increases downward
+			// Compensation factor to make circle perfect (compensate for different X/Y scaling)
+			// CG_DrawRotatedPic uses: offsetX = dx * tan(hfov_x) / (SCREEN_WIDTH * 0.5f)
+			//                        offsetY = dy * tan(hfov_y) / (SCREEN_HEIGHT * 0.5f)
+			// To make circle, we need: offsetX/offsetY ratio to be 1:1
+			// So we compensate Y coordinate
+			compensation = (tan(hfov_x) * SCREEN_HEIGHT) / (tan(hfov_y) * SCREEN_WIDTH);
+			
+			// Calculate position in 640x480 coordinates
+			dx = -cos(pointerAngle) * pointerRadius;
+			dy = -sin(pointerAngle) * pointerRadius;
+			
+			// Apply compensation to Y to keep perfect circle
+			dy = dy * compensation;
+			
+			pointerX = centerX + dx;
+			pointerY = centerY + dy; // Negative because screen Y increases downward
 			
 			// Use teamTasksPointing if available, otherwise fallback to whiteShader
 			if (cgs.media.teamTasksPointing)
@@ -2231,14 +2441,16 @@ void CG_DrawSelwheelPointers(void)
 			}
 			
 			// Draw pointer arrow
+			// CG_DrawRotatedPic expects coordinates and size in 640x480 virtual system
 			// Arrow should point outward (toward icon), so add 180 degrees to point away from center
+			// Rotate 90 degrees counter-clockwise (subtract 90 degrees)
 			CG_DrawRotatedPic(
 				pointerX,
 				pointerY,
 				pointerSize,
 				pointerSize,
 				pointerShader,
-				pointerAngle * 180.0f / M_PI + 180.0f, // Convert to degrees and add 180 to point outward
+				pointerAngle * 180.0f / M_PI + 180.0f + 90.0f, // Convert to degrees, add 180 to point outward, subtract 90 for counter-clockwise rotation
 				pointerColor
 			);
 		}
@@ -2276,6 +2488,10 @@ void CG_SelwheelMarkStart(void)
 	{
 		return;
 	}
+	if (CG_IsDead())
+	{
+		return;
+	}
 	/* Check if we are in spectator/following mode */
 	if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
 	{
@@ -2307,7 +2523,7 @@ void CG_SelwheelMarkStart(void)
 	cgs.be.teamMarkers.ttwheelHoveredIcon = -1;
 	
 	// If smart mode is enabled (bitmask & 2), save target at wheel opening
-	if (cg_teamTaskWheel.integer == 2)
+	if (cg_teamTaskWheel.integer & 2)
 	{
 		vec3_t itemPos;
 		trace_t trace;
@@ -2366,6 +2582,11 @@ void CG_SelwheelMarkStart(void)
 			// Item (red armor or megahealth) - use item center position
 			VectorCopy(itemPos, cgs.be.teamMarkers.smartTargetPos);
 		}
+		else if (cgs.be.teamMarkers.smartTargetType == 5 || cgs.be.teamMarkers.smartTargetType == 6)
+		{
+			// Frozen body (ally or enemy) - use frozen body position
+			VectorCopy(itemPos, cgs.be.teamMarkers.smartTargetPos);
+		}
 		else
 		{
 			// Nothing - clear target
@@ -2389,7 +2610,7 @@ void CG_SelwheelMarkStart(void)
 	}
 	
 	// If bitmask & 2 is set, select center element (index 0) by default
-	if ((cg_teamTaskWheel.integer == 2) && cgs.be.teamMarkers.ttwheelElementCount > 0)
+	if ((cg_teamTaskWheel.integer & 2) && cgs.be.teamMarkers.ttwheelElementCount > 0)
 	{
 		cgs.be.teamMarkers.ttwheelSelectedIcon = 0;
 	}
@@ -2573,7 +2794,7 @@ void CG_SelwheelParseTeamTaskWheel(void)
 	/* Use global teamTaskCommands array */
 
 	count = 0;
-	hasCenterElement = (cg_teamTaskWheel.integer == 2) ? qtrue : qfalse;
+	hasCenterElement = (cg_teamTaskWheel.integer & 2) ? qtrue : qfalse;
 
 	/* If bitmask & 2 is set and cg_teamTaskWheelSet is not empty, use first element as center */
 	if (hasCenterElement && cg_teamTaskWheelSet.string[0] != '\0')

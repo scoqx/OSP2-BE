@@ -1965,6 +1965,12 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 	float hbox_size_xy;
 	clipHandle_t cmodel;
 	
+	// Skip items that are picked up or removed (same checks as in CG_Item)
+	if (!cent->currentState.modelindex || (cent->currentState.eFlags & EF_NODRAW))
+	{
+		return qfalse;
+	}
+	
 	if (!item->classname)
 	{
 		return qfalse;
@@ -2024,7 +2030,7 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 =================
 CG_CrosshairTarget
 =================
-Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth
+Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy
 If item found, itemPos is filled with item center position
 */
 int CG_CrosshairTarget(vec3_t itemPos)
@@ -2035,6 +2041,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 	gitem_t* item;
 	clientInfo_t* ci;
 	int itemIndex;
+	int frozenClientNum;
 	
 	VectorCopy(cg.refdef.vieworg, start);
 	VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
@@ -2042,6 +2049,33 @@ int CG_CrosshairTarget(vec3_t itemPos)
 	/* Use MASK_SHOT to detect both players and items */
 	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
 	         cg.snap->ps.clientNum, MASK_SHOT);
+	
+	// Check if looking at a frozen entity
+	if (trace.entityNum >= MAX_CLIENTS && trace.entityNum < MAX_GENTITIES)
+	{
+		cent = &cg_entities[trace.entityNum];
+		if (CG_IsFrozenEntity(cent))
+		{
+			frozenClientNum = cent->currentState.otherEntityNum;
+			if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS)
+			{
+				ci = &cgs.clientinfo[frozenClientNum];
+				if (ci->infoValid)
+				{
+					VectorCopy(cent->lerpOrigin, itemPos);
+					itemPos[2] += 24.0f; /* Offset above frozen body */
+					if (CG_IsEnemy(ci))
+					{
+						return 6;  // frozen enemy
+					}
+					else
+					{
+						return 5;  // frozen ally
+					}
+				}
+			}
+		}
+	}
 	
 	// Check if looking at a player
 	if (trace.entityNum < MAX_CLIENTS)
@@ -2068,9 +2102,22 @@ int CG_CrosshairTarget(vec3_t itemPos)
 		for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
 		{
 			checkCent = &cg_entities[i];
-			// Check if entity is valid item (don't check currentValid, check eType)
+			// Check if entity is valid item
 			if (checkCent->currentState.eType == ET_ITEM)
 			{
+				// Skip items that are picked up or removed (same checks as in CG_Item)
+				if (!checkCent->currentState.modelindex || (checkCent->currentState.eFlags & EF_NODRAW))
+				{
+					continue;
+				}
+				
+				// Additional check: skip if entity is not in current snapshot
+				// This helps avoid detecting items that were removed from the world
+				if (!checkCent->currentValid)
+				{
+					continue;
+				}
+				
 				checkItemIndex = checkCent->currentState.modelindex;
 				if (checkItemIndex >= 1 && checkItemIndex < bg_numItems)
 				{
@@ -3018,9 +3065,40 @@ void CG_DrawPlayerIndicator(int clientNum)
 		}
 		else if (ci->isFrozenEnt && (cg_teamIndicator.integer & PI_FROZEN))
 		{
-			trap_R_SetColor(color);
-			CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.frozenFoeTagShader);
-			trap_R_SetColor(NULL);
+			/* Check if there is an active TEAMTASK_FROZEN_ALLY mark for this frozen ally */
+			qboolean hasActiveMark;
+			
+			/* If clientNum >= MAX_CLIENTS, cent already points to frozen entity */
+			/* Otherwise, use ci->frozenEntity to get frozen entity */
+			if (clientNum >= MAX_CLIENTS)
+			{
+				hasActiveMark = CG_HasActiveFrozenAllyMark(cent);
+			}
+			else if (ci->frozenEntity >= 0 && ci->frozenEntity < MAX_GENTITIES)
+			{
+				centity_t* frozenCent;
+				frozenCent = &cg_entities[ci->frozenEntity];
+				if (frozenCent->currentValid && CG_IsFrozenEntity(frozenCent))
+				{
+					hasActiveMark = CG_HasActiveFrozenAllyMark(frozenCent);
+				}
+				else
+				{
+					hasActiveMark = qfalse;
+				}
+			}
+			else
+			{
+				hasActiveMark = qfalse;
+			}
+			
+			/* Only draw frozenFoeTagShader if there is no active team task mark */
+			if (!hasActiveMark)
+			{
+				trap_R_SetColor(color);
+				CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.frozenFoeTagShader);
+				trap_R_SetColor(NULL);
+			}
 		}
 	}
 }
@@ -3345,7 +3423,11 @@ void CG_DrawBefore2D(void)
 		}
 	}
 	
-	// CG_DrawSelwheelMark(); // Cursor of ttwheel
+	// Draw cursor ttwheel (if bitmask & 4 is set)
+	if ((cg_teamTaskWheel.integer & 4) && cgs.be.teamMarkers.ttwheelMarkActive)
+	{
+		CG_DrawSelwheelMark();
+	}
 	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS) &&
 		cg_teamTask.integer)
 	{

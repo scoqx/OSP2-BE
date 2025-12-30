@@ -979,7 +979,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamTaskFade, "cg_teamTaskFade", "0.5", CVAR_ARCHIVE  | CVAR_NEW},
 	{ &cg_teamTaskFadeRadius, "cg_teamTaskFadeRadius", "128", CVAR_ARCHIVE  | CVAR_NEW},
 	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE  | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskFont, },
-	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
+	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
 	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "smart medic attack defence watch yes no", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
 	{ &cg_teamTaskWheelSensitivity, "cg_teamTaskWheelSensitivity", "5.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskThemeColor, "cg_teamTaskThemeColor", "Red", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskThemeColor },
@@ -1745,6 +1745,7 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksRedarmor_marker = trap_R_RegisterShader("teamTasks_redarmor_m");
 	cgs.media.teamTasksMegahealth_marker = trap_R_RegisterShader("teamTasks_megahealth_m");
 	cgs.media.teamTasksMedic_marker = trap_R_RegisterShader("teamTasks_medic_m");
+	cgs.media.teamTasksFrozen_marker = trap_R_RegisterShader("teamTasks_frozen_m");
 	/* team tasks misc */
 	cgs.media.teamTasksCircle = trap_R_RegisterShader("teamTasks_circle");
 	cgs.media.teamTasksSmart = trap_R_RegisterShader("teamTasks_smart");

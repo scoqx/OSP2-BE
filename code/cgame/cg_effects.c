@@ -1349,6 +1349,8 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	mark->clientNum = clientNum; /* Always store sender's clientNum (whose mark it is) */
 	mark->isOverhead = CG_IsTeamTaskOverhead(markType);
 
+
+
 	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &mark->shader, mark->color, qfalse, mark->clientNum);
 
 	/* Register team task event for SuperHUD */

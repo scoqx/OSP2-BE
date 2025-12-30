@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_types.h"
 
 
-qboolean CG_IsLocalClientDead(void)
+qboolean CG_IsDead(void)
 {
 	if (cg.snap && cg.snap->ps.pm_type == PM_DEAD)
 	{
@@ -1153,19 +1153,90 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 		}
 	}
-	else if (templateID == TEAMTASK_REDARMOR || templateID == TEAMTASK_MEGAHEALTH) /* REDARMOR and MEGAHEALTH are auto-selected by smart mode */
-	{
-		/* For red armor and megahealth, find the item entity near received coordinates */
-		/* and use its actual position instead of trace coordinates */
-		int i;
-		centity_t* cent;
-		gitem_t* item;
-		int itemIndex;
-		vec3_t itemPos;
-		qboolean foundItem;
-		float searchRadius;
-		float dist;
-		const char* targetClassname;
+		else if (templateID == TEAMTASK_FROZEN_ALLY || templateID == TEAMTASK_FROZEN_ENEMY) /* FROZEN_ALLY and FROZEN_ENEMY are auto-selected by smart mode */
+		{
+			/* For frozen bodies, try to find frozen entity at received position */
+			/* If found, use frozen entity's current position with +24 height, otherwise use received coordinates */
+			int i;
+			centity_t* cent;
+			vec3_t frozenPos;
+			qboolean foundFrozen;
+			float searchRadius;
+			float dist;
+			int frozenClientNum;
+			clientInfo_t* frozenCi;
+			
+			foundFrozen = qfalse;
+			searchRadius = 128.0f; /* Search radius for finding frozen entity near received coordinates */
+			
+			/* Try to find frozen entity near received coordinates */
+			for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+			{
+				cent = &cg_entities[i];
+				if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
+				{
+					/* Check if this is a frozen entity */
+					if (CG_IsFrozenEntity(cent))
+					{
+						frozenClientNum = cent->currentState.otherEntityNum;
+						if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS)
+						{
+							frozenCi = &cgs.clientinfo[frozenClientNum];
+							if (frozenCi->infoValid)
+							{
+								/* Check if frozen body matches the expected type (ally or enemy) */
+								qboolean isEnemy;
+								qboolean matchesType;
+								
+								isEnemy = CG_IsEnemy(frozenCi);
+								if (templateID == TEAMTASK_FROZEN_ALLY)
+								{
+									matchesType = !isEnemy;
+								}
+								else /* TEAMTASK_FROZEN_ENEMY */
+								{
+									matchesType = isEnemy;
+								}
+								
+								if (matchesType)
+								{
+									/* Check if frozen entity is near received coordinates */
+									dist = Distance(cent->lerpOrigin, coord);
+									if (dist <= searchRadius)
+									{
+										/* Found frozen entity - use its position with +24 height */
+										VectorCopy(cent->lerpOrigin, frozenPos);
+										frozenPos[2] += 24.0f;
+										CG_TeamTaskMark(frozenPos, templateID, clientNum, toClient);
+										foundFrozen = qtrue;
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			/* If frozen entity not found, use coordinates from message */
+			if (!foundFrozen)
+			{
+				CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+			}
+		}
+		else if (templateID == TEAMTASK_REDARMOR || templateID == TEAMTASK_MEGAHEALTH) /* REDARMOR and MEGAHEALTH are auto-selected by smart mode */
+		{
+			/* For red armor and megahealth, find the item entity near received coordinates */
+			/* and use its actual position instead of trace coordinates */
+			int i;
+			centity_t* cent;
+			gitem_t* item;
+			int itemIndex;
+			vec3_t itemPos;
+			qboolean foundItem;
+			float searchRadius;
+			float dist;
+			const char* targetClassname;
 		
 		foundItem = qfalse;
 		searchRadius = 128.0f; /* Search radius for finding item near received coordinates */
@@ -3328,12 +3399,21 @@ static void CG_PlayerSprites(centity_t* cent)
 		{
 			if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
 			{
+				/* Check if there is an active TEAMTASK_FROZEN_ALLY mark for this frozen ally */
+				qboolean hasActiveMark;
 				qhandle_t shader;
-				if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && cg_friendsWallhack.integer & 1)
-					shader = cgs.media.frozenFoeTagShaderWallhack;
-				else
-					shader = cgs.media.frozenFoeTagShader;
-				CG_PlayerFloatSprite(cent, shader, NULL);
+				
+				hasActiveMark = CG_HasActiveFrozenAllyMark(cent);
+				
+				/* Only draw frozenFoeTagShader if there is no active team task mark */
+				if (!hasActiveMark)
+				{
+					if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && cg_friendsWallhack.integer & 1)
+						shader = cgs.media.frozenFoeTagShaderWallhack;
+					else
+						shader = cgs.media.frozenFoeTagShader;
+					CG_PlayerFloatSprite(cent, shader, NULL);
+				}
 			}
 			else if (cg_drawFriend.integer != 2)
 			{

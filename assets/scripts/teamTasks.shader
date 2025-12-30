@@ -247,6 +247,17 @@ teamTasks_flag_m
 	}
 }
 
+teamTasks_frozen_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/frozen_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
 // misc
 
 teamTasks_pointing

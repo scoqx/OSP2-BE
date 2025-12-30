@@ -1014,6 +1014,7 @@ typedef struct
 	qhandle_t teamTasksRedarmor_marker;
 	qhandle_t teamTasksMegahealth_marker;
 	qhandle_t teamTasksMedic_marker;
+	qhandle_t teamTasksFrozen_marker;
 	qhandle_t teamTasksCircle;
 	qhandle_t teamTasksSmart;
 	qhandle_t teamTasksWheelbg;
@@ -2329,7 +2330,7 @@ void CG_LoadForcedSounds(void);
 void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
 
-qboolean CG_IsLocalClientDead(void);
+qboolean CG_IsDead(void);
 qboolean CG_IsLocalClientSpectator(void);
 qboolean CG_IsLocalClientOnScreen(void);
 qboolean CG_IsEnemy(const clientInfo_t* target);
@@ -2463,6 +2464,7 @@ qboolean CG_IsPointOutsideScreen(vec3_t origin, float* outX, float* outY);
 void CG_DrawTeamTaskMarks(void);
 void CG_DrawTeamTaskBorderHudMarkers(void);
 void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark);
+qboolean CG_HasActiveFrozenAllyMark(centity_t* frozenCent);
 
 // Token Bucket functions for anti-flood
 void TokenBucket_Init(tokenBucket_t* b, int maxTokens, int refillTime, int now);
@@ -2799,7 +2801,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00a" // BE
+#define OSP_VERSION "be-1.00b" // BE
 
 
 

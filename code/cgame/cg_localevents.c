@@ -1185,7 +1185,17 @@ void CG_LocalEventCvarChanged_cg_teamTaskThemeColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart)
 {
-	cvart->vmCvar->value = Com_Clamp(500, 5000, cvart->vmCvar->value);
-	cvart->vmCvar->integer = Com_Clamp(500, 5000, cvart->vmCvar->integer);
-	CG_PrintOnce("^3cg_teamTaskMarkTime^7 is out of range, set to ^2%d^7\n", cvart->vmCvar->integer);
+	int oldValue;
+	int newValue;
+
+	oldValue = cvart->vmCvar->integer;
+	
+	if (oldValue < 500 || oldValue > 5000)
+	{
+		newValue = Com_Clamp(500, 5000, oldValue);
+		cvart->vmCvar->value = (float)newValue;
+		cvart->vmCvar->integer = newValue;
+		trap_Cvar_Set(cvart->cvarName, va("%d", newValue));
+		CG_PrintOnce("^3cg_teamTaskMarkTime^7 is out of range, set to ^2%d^7\n", newValue);
+	}
 }

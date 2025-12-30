@@ -588,3 +588,10 @@ SHUD:
   - disabled var (variable) config feature for a while
   + exec/execute config feature
   + teamTask1-8 elements
+
+30.12.2025 be v1.00b
++ frozenFoeTag new 512x512 image
++ TEAM TASKS:
+  + cg_teamTaskWheel bitmask: 4 - draw cursor, 8 - draw pointers
+  + /tsmart - detect frozen body 
+  * various fixes
