@@ -1461,8 +1461,8 @@ typedef struct cgs_osp_s
 		vec4_t borderColor;
 		int fontIndex;
 		int startTime;
-		float duration;
-		float fadeTime;
+		int duration;
+		int fadeTime;
 		qboolean active;
 	} printui[32];
 } cgs_osp_t;
@@ -2801,7 +2801,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00b" // BE
+#define OSP_VERSION "be-1.00c" // BE
 
 
 

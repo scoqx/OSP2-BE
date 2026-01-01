@@ -595,3 +595,6 @@ SHUD:
   + cg_teamTaskWheel bitmask: 4 - draw cursor, 8 - draw pointers
   + /tsmart - detect frozen body 
   * various fixes
+02.01.2026 be v1.00c
+* printui time/fade rework
+* defend sound fix

@@ -27,6 +27,50 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 /*
 =================
+CG_IsValidNumber
+
+Check if string is a valid integer number
+Returns qtrue if valid, qfalse otherwise
+=================
+*/
+static qboolean CG_IsValidNumber(const char* str)
+{
+	const char* p;
+
+	if (!str || !*str)
+	{
+		return qfalse;
+	}
+
+	p = str;
+
+	// Allow optional sign
+	if (*p == '+' || *p == '-')
+	{
+		p++;
+	}
+
+	// Must have at least one digit
+	if (*p < '0' || *p > '9')
+	{
+		return qfalse;
+	}
+
+	// Check all remaining characters are digits
+	while (*p)
+	{
+		if (*p < '0' || *p > '9')
+		{
+			return qfalse;
+		}
+		p++;
+	}
+
+	return qtrue;
+}
+
+/*
+=================
 CG_ParseVec4FromArgs
 
 Parse 4 float values from command arguments starting at index i
@@ -173,7 +217,7 @@ CG_ParsePrintUITemplate
 Parse template string from cvar and apply parameters
 =================
 */
-static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, vec4_t shadowColor, vec4_t background, vec4_t border, vec4_t borderColor, float* charWidth, float* charHeight, int* flags, int* fontIndex, float* duration, float* fadeTime, qboolean* hasBackground, qboolean* hasBorder, int* hAlign, float* x, float* y, qboolean* hasPos)
+static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, vec4_t shadowColor, vec4_t background, vec4_t border, vec4_t borderColor, float* charWidth, float* charHeight, int* flags, int* fontIndex, int* duration, int* fadeTime, qboolean* hasBackground, qboolean* hasBorder, int* hAlign, float* x, float* y, qboolean* hasPos)
 {
 	char templateCopy[MAX_STRING_CHARS];
 	char* token;
@@ -289,10 +333,9 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 		else if (token[0] == 't' && Q_stricmp(token, "time") == 0 && nextToken && *nextToken)
 		{
 			char* timeValueToken;
-			char* savedNextToken;
+			int timeValueMs;
 
 			timeValueToken = nextToken;
-			savedNextToken = nextToken;
 			nextToken = strchr(timeValueToken, ' ');
 			if (nextToken)
 			{
@@ -300,33 +343,46 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 				nextToken++;
 			}
 
-			// Parse time values: 1/s = 3.5s, 2/m = 10s, 3/l = 60s, u/4 = unlimited
-			if (Q_stricmp(timeValueToken, "1") == 0 || Q_stricmp(timeValueToken, "s") == 0)
+			// Check for letter values first
+			if (Q_stricmp(timeValueToken, "l") == 0)
 			{
-				*duration = 3.5f; // Short: 3.5 seconds
+				*duration = 60000; // Long: 60 seconds = 60000 ms
 			}
-			else if (Q_stricmp(timeValueToken, "2") == 0 || Q_stricmp(timeValueToken, "m") == 0)
+			else if (Q_stricmp(timeValueToken, "u") == 0 || Q_stricmp(timeValueToken, "unlimited") == 0)
 			{
-				*duration = 10.0f; // Medium: 10 seconds
-			}
-			else if (Q_stricmp(timeValueToken, "3") == 0 || Q_stricmp(timeValueToken, "l") == 0)
-			{
-				*duration = 60.0f; // Long: 60 seconds
-			}
-			else if (Q_stricmp(timeValueToken, "u") == 0 || Q_stricmp(timeValueToken, "4") == 0 || Q_stricmp(timeValueToken, "unlimited") == 0)
-			{
-				*duration = -1.0f; // Unlimited
+				*duration = -1; // Unlimited
 			}
 			else
 			{
-				// Default to short if invalid value
-				*duration = 3.5f;
+				// Try to parse as number (milliseconds)
+				if (CG_IsValidNumber(timeValueToken))
+				{
+					timeValueMs = atoi(timeValueToken);
+					// Valid number
+					if (timeValueMs < 0)
+					{
+						timeValueMs = 0;
+					}
+					else if (timeValueMs > 10000)
+					{
+						// More than 10 seconds, limit to 10 seconds
+						timeValueMs = 10000;
+					}
+					// Store in milliseconds
+					*duration = timeValueMs;
+				}
+				else
+				{
+					// Invalid value, default to 3500 ms (3.5 seconds)
+					*duration = 3500;
+				}
 			}
 		}
 		// Fade time
 		else if (token[0] == 'f' && (Q_stricmp(token, "fadeTime") == 0 || Q_stricmp(token, "fade") == 0) && nextToken && *nextToken)
 		{
 			char* fadeTimeValueToken;
+			int fadeTimeValueMs;
 
 			fadeTimeValueToken = nextToken;
 			nextToken = strchr(fadeTimeValueToken, ' ');
@@ -336,27 +392,27 @@ static void CG_ParsePrintUITemplate(const char* templateStr, vec4_t textColor, v
 				nextToken++;
 			}
 
-			// Parse fadeTime values: 0 = no fade, 1/s = 0.25s, 2/m = 0.5s, 3/l = 1s
-			if (Q_stricmp(fadeTimeValueToken, "0") == 0)
+			// Parse as number (milliseconds)
+			if (CG_IsValidNumber(fadeTimeValueToken))
 			{
-				*fadeTime = 0.0f; // No fade
-			}
-			else if (Q_stricmp(fadeTimeValueToken, "1") == 0 || Q_stricmp(fadeTimeValueToken, "s") == 0)
-			{
-				*fadeTime = 0.25f; // Short: 0.25 seconds
-			}
-			else if (Q_stricmp(fadeTimeValueToken, "2") == 0 || Q_stricmp(fadeTimeValueToken, "m") == 0)
-			{
-				*fadeTime = 0.5f; // Medium: 0.5 seconds
-			}
-			else if (Q_stricmp(fadeTimeValueToken, "3") == 0 || Q_stricmp(fadeTimeValueToken, "l") == 0)
-			{
-				*fadeTime = 1.0f; // Long: 1 second
+				fadeTimeValueMs = atoi(fadeTimeValueToken);
+				// Valid number
+				if (fadeTimeValueMs < 0)
+				{
+					fadeTimeValueMs = 0;
+				}
+				else if (fadeTimeValueMs > 5000)
+				{
+					// Limit to 5000 ms
+					fadeTimeValueMs = 5000;
+				}
+				// Store in milliseconds
+				*fadeTime = fadeTimeValueMs;
 			}
 			else
 			{
-				// Default to no fade if invalid value
-				*fadeTime = 0.0f;
+				// Invalid value, default to no fade
+				*fadeTime = 0;
 			}
 		}
 		// Position (pos x y)
@@ -478,7 +534,7 @@ CG_ApplyPrintUITemplate
 Apply template from cvar (helper function to avoid code duplication)
 =================
 */
-static void CG_ApplyPrintUITemplate(const char* cvarName, vec4_t textColor, vec4_t shadowColor, vec4_t background, vec4_t border, vec4_t borderColor, float* charWidth, float* charHeight, int* flags, int* fontIndex, float* duration, float* fadeTime, qboolean* hasBackground, qboolean* hasBorder, int* hAlign, float* x, float* y, qboolean* hasPos, qboolean* templatePos)
+static void CG_ApplyPrintUITemplate(const char* cvarName, vec4_t textColor, vec4_t shadowColor, vec4_t background, vec4_t border, vec4_t borderColor, float* charWidth, float* charHeight, int* flags, int* fontIndex, int* duration, int* fadeTime, qboolean* hasBackground, qboolean* hasBorder, int* hAlign, float* x, float* y, qboolean* hasPos, qboolean* templatePos)
 {
 	char templateStr[MAX_STRING_CHARS];
 	qboolean hadPosBeforeTemplate;
@@ -529,8 +585,8 @@ void CG_PrintUI_f(void)
 	float charHeight = 14.0f;
 	int flags = DS_PROPORTIONAL | DS_SHADOW;
 	int fontIndex = 2; // Default to sansman
-	float duration = 5.0f;
-	float fadeTime = 0.25f;
+	int duration = 5000; // Default: 5 seconds = 5000 ms
+	int fadeTime = 250; // Default: 0.25 seconds = 250 ms
 	qboolean hasBackground = qfalse;
 	qboolean hasBorder = qfalse;
 	const char* colorStr;
@@ -567,8 +623,8 @@ void CG_PrintUI_f(void)
 		CG_Printf("  ^5b <^2r^5> <^2g^5> <^2b^5> <^2a^5>^7 - border size (e.g., ^2b 1 1 1 1^7)\n");
 		CG_Printf("  ^5bc <^2r^5> <^2g^5> <^2b^5> <^2a^5>^7 - border color (e.g., ^2bc 1 1 1 1^7)\n");
 		CG_Printf("  ^5bg <^2r^5> <^2g^5> <^2b^5> <^2a^5>^7 - background color (e.g., ^2bg 1 1 1 1^7)\n");
-		CG_Printf("  ^5time <^21^5|^22^5|^23^5|^24^5|^2s^5|^2m^5|^2l^5|^2u^5>^7 - display duration (^21^7/^2s^7=3.5s, ^22^7/^2m^7=10s, ^23^7/^2l^7=60s, ^24^7/^2u^7=unlimited)\n");
-		CG_Printf("  ^5fade^5/^5fadeTime <^20^5|^21^5|^22^5|^23^5|^2s^5|^2m^5|^2l^5>^7 - fade duration (^20^7=no fade, ^21^5/^2s^7=0.25s, ^22^5/^2m^7=0.5s, ^23^5/^2l^7=1s)\n");
+		CG_Printf("  ^5time <^2<ms>^5|^2l^5|^2u^5>^7 - display duration (^2<ms>^7=0-10000 ms, max 10s, ^2l^7=60s, ^2u^7=unlimited)\n");
+		CG_Printf("  ^5fade^5/^5fadeTime <^2<ms>^5>^7 - fade duration in milliseconds (^2<ms>^7=0-5000 ms)\n");
 		CG_Printf("  ^5fMono^7 - disable proportional font\n");
 		CG_Printf("  ^5fNoShadow^7 - disable shadow\n");
 		CG_Printf("  ^5t1^7 - apply template from ^3cg_printui_template^7\n");
@@ -932,8 +988,8 @@ void CG_PrintUI_f(void)
 							float dummyHeight;
 							int dummyFlags;
 							int dummyFont;
-							float dummyDuration;
-							float dummyFade;
+							int dummyDuration;
+							int dummyFade;
 							qboolean dummyHasBg;
 							qboolean dummyHasBorder;
 							int dummyHAlign;
@@ -982,8 +1038,8 @@ void CG_PrintUI_f(void)
 		CG_Printf("  b <r> <g> <b> <a> - border size\n");
 		CG_Printf("  bc <r> <g> <b> <a> - border color\n");
 		CG_Printf("  bg <r> <g> <b> <a> - background color\n");
-		CG_Printf("  time <1|2|3|4 or s|m|l|u> - display duration (1/s=3.5s, 2/m=10s, 3/l=60s, 4/u=unlimited)\n");
-		CG_Printf("  fade/fadeTime <0|1|2|3|s|m|l> - fade duration (0=no fade, 1/s=0.25s, 2/m=0.5s, 3/l=1s)\n");
+		CG_Printf("  time <ms|l|u> - display duration (ms=0-10000 ms, max 10s, l=60s, u=unlimited)\n");
+		CG_Printf("  fade/fadeTime <ms> - fade duration in milliseconds (ms=0-5000 ms)\n");
 		CG_Printf("  fMono - disable proportional font\n");
 		CG_Printf("  fNoShadow - disable shadow\n");
 		CG_Printf("  t1 - apply template from cg_printui_template\n");
@@ -1150,55 +1206,78 @@ void CG_PrintUI_f(void)
 		// Duration
 		else if (Q_stricmp(arg, "time") == 0 && i + 1 < argc)
 		{
+			const char* timeValueStr;
+			int timeValueMs;
+
 			i++;
-			// Parse time values: 1/s = 3.5s, 2/m = 10s, 3/l = 60s, u/4 = unlimited
-			if (Q_stricmp(CG_Argv(i), "1") == 0 || Q_stricmp(CG_Argv(i), "s") == 0)
+			timeValueStr = CG_Argv(i);
+
+			// Check for letter values first
+			if (Q_stricmp(timeValueStr, "l") == 0)
 			{
-				duration = 3.5f; // Short: 3.5 seconds
+				duration = 60000; // Long: 60 seconds = 60000 ms
 			}
-			else if (Q_stricmp(CG_Argv(i), "2") == 0 || Q_stricmp(CG_Argv(i), "m") == 0)
+			else if (Q_stricmp(timeValueStr, "u") == 0 || Q_stricmp(timeValueStr, "unlimited") == 0)
 			{
-				duration = 10.0f; // Medium: 10 seconds
-			}
-			else if (Q_stricmp(CG_Argv(i), "3") == 0 || Q_stricmp(CG_Argv(i), "l") == 0)
-			{
-				duration = 60.0f; // Long: 60 seconds
-			}
-			else if (Q_stricmp(CG_Argv(i), "u") == 0 || Q_stricmp(CG_Argv(i), "4") == 0 || Q_stricmp(CG_Argv(i), "unlimited") == 0)
-			{
-				duration = -1.0f; // Unlimited
+				duration = -1; // Unlimited
 			}
 			else
 			{
-				// Default to short if invalid value
-				duration = 3.5f;
+				// Try to parse as number (milliseconds)
+				if (CG_IsValidNumber(timeValueStr))
+				{
+					timeValueMs = atoi(timeValueStr);
+					// Valid number
+					if (timeValueMs < 0)
+					{
+						timeValueMs = 0;
+					}
+					else if (timeValueMs > 10000)
+					{
+						// More than 10 seconds, limit to 10 seconds and show warning
+						CG_Printf("^3Warning: Time value %d ms exceeds maximum of 10000 ms (10 seconds), limiting to 10 seconds\n", timeValueMs);
+						timeValueMs = 10000;
+					}
+					// Store in milliseconds
+					duration = timeValueMs;
+				}
+				else
+				{
+					// Invalid value, default to 3500 ms (3.5 seconds)
+					duration = 3500;
+				}
 			}
 		}
 		// Fade time
 		else if ((Q_stricmp(arg, "fadeTime") == 0 || Q_stricmp(arg, "fade") == 0) && i + 1 < argc)
 		{
+			const char* fadeTimeValueStr;
+			int fadeTimeValueMs;
+
 			i++;
-			// Parse fadeTime values: 0 = no fade, 1/s = 0.25s, 2/m = 0.5s, 3/l = 1s
-			if (Q_stricmp(CG_Argv(i), "0") == 0)
+			fadeTimeValueStr = CG_Argv(i);
+
+			// Parse as number (milliseconds)
+			if (CG_IsValidNumber(fadeTimeValueStr))
 			{
-				fadeTime = 0.0f; // No fade
-			}
-			else if (Q_stricmp(CG_Argv(i), "1") == 0 || Q_stricmp(CG_Argv(i), "s") == 0)
-			{
-				fadeTime = 0.25f; // Short: 0.25 seconds
-			}
-			else if (Q_stricmp(CG_Argv(i), "2") == 0 || Q_stricmp(CG_Argv(i), "m") == 0)
-			{
-				fadeTime = 0.5f; // Medium: 0.5 seconds
-			}
-			else if (Q_stricmp(CG_Argv(i), "3") == 0 || Q_stricmp(CG_Argv(i), "l") == 0)
-			{
-				fadeTime = 1.0f; // Long: 1 second
+				fadeTimeValueMs = atoi(fadeTimeValueStr);
+				// Valid number
+				if (fadeTimeValueMs < 0)
+				{
+					fadeTimeValueMs = 0;
+				}
+				else if (fadeTimeValueMs > 5000)
+				{
+					// Limit to 5000 ms
+					fadeTimeValueMs = 5000;
+				}
+				// Store in milliseconds
+				fadeTime = fadeTimeValueMs;
 			}
 			else
 			{
-				// Default to no fade if invalid value
-				fadeTime = 0.0f;
+				// Invalid value, default to no fade
+				fadeTime = 0;
 			}
 		}
 		// Flags
@@ -1301,7 +1380,7 @@ Draw all active printui elements
 void CG_DrawPrintUI(void)
 {
 	int i;
-	float elapsed;
+	int elapsed;
 	float fade;
 	vec4_t finalColor;
 	vec4_t finalShadowColor;
@@ -1321,35 +1400,35 @@ void CG_DrawPrintUI(void)
 			continue;
 		}
 
-		elapsed = (cg.time - cgs.osp.printui[i].startTime) / 1000.0f;
+		elapsed = cg.time - cgs.osp.printui[i].startTime;
 
-		if (elapsed < 0.0f)
+		if (elapsed < 0)
 		{
 			// Time hasn't started yet, skip
 			continue;
 		}
 
-		// Check if expired (skip check if duration is -1.0f which means unlimited)
-		if (cgs.osp.printui[i].duration >= 0.0f && elapsed >= cgs.osp.printui[i].duration)
+		// Check if expired (skip check if duration is -1 which means unlimited)
+		if (cgs.osp.printui[i].duration >= 0 && elapsed >= cgs.osp.printui[i].duration)
 		{
 			cgs.osp.printui[i].active = qfalse;
 			continue;
 		}
 
 		// Calculate fade
-		if (cgs.osp.printui[i].fadeTime <= 0.0f)
+		if (cgs.osp.printui[i].fadeTime <= 0)
 		{
 			fade = 1.0f;
 		}
 		else if (elapsed < cgs.osp.printui[i].fadeTime)
 		{
 			// Fade in
-			fade = elapsed / cgs.osp.printui[i].fadeTime;
+			fade = (float)elapsed / (float)cgs.osp.printui[i].fadeTime;
 		}
-		else if (cgs.osp.printui[i].duration >= 0.0f && elapsed > cgs.osp.printui[i].duration - cgs.osp.printui[i].fadeTime)
+		else if (cgs.osp.printui[i].duration >= 0 && elapsed > cgs.osp.printui[i].duration - cgs.osp.printui[i].fadeTime)
 		{
 			// Fade out (only if not unlimited)
-			fade = (cgs.osp.printui[i].duration - elapsed) / cgs.osp.printui[i].fadeTime;
+			fade = (float)(cgs.osp.printui[i].duration - elapsed) / (float)cgs.osp.printui[i].fadeTime;
 		}
 		else
 		{

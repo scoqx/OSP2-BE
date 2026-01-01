@@ -931,10 +931,10 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		return qfalse;
 	}
 
-	/* Special handling for own overhead marks (YES, NO, MEDIC) - fix at top of screen */
-	if (mark->isOverhead && mark->clientNum == cg.clientNum)
+	/* Special handling for own overhead marks (YES, NO, MEDIC) in first person only */
+	if (mark->isOverhead && mark->clientNum == cg.clientNum && !cg.renderingThirdPerson)
 	{
-		/* Fixed position at top center of screen */
+		/* First person view - fixed position at top center of screen */
 		renderData->x = SCREEN_WIDTH * 0.5f;
 		renderData->y = 20.0f; /* Fixed position from top */
 
@@ -958,18 +958,38 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		/* Update position dynamically if this is an overhead mark (YES/NO) and player is available */
 		if (mark->isOverhead && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
-			/* Try to find player entity and update position */
-			for (j = 0; j < MAX_GENTITIES; j++)
+			/* Special case for local player - use predicted player entity */
+			if (mark->clientNum == cg.clientNum)
 			{
-				cent = &cg_entities[j];
-				if (cent->currentState.eType == ET_PLAYER &&
-				        cent->currentState.clientNum == mark->clientNum &&
-				        cent->currentValid)
+				cent = &cg.predictedPlayerEntity;
+				if (cent->currentValid)
 				{
 					/* Update position above player's head */
 					VectorCopy(cent->lerpOrigin, mark->origin);
 					mark->origin[2] += 48.0f; /* Offset above head */
-					break;
+				}
+				else
+				{
+					/* Fallback: use predicted player state origin */
+					VectorCopy(cg.predictedPlayerState.origin, mark->origin);
+					mark->origin[2] += 48.0f; /* Offset above head */
+				}
+			}
+			else
+			{
+				/* Try to find player entity and update position */
+				for (j = 0; j < MAX_GENTITIES; j++)
+				{
+					cent = &cg_entities[j];
+					if (cent->currentState.eType == ET_PLAYER &&
+					        cent->currentState.clientNum == mark->clientNum &&
+					        cent->currentValid)
+					{
+						/* Update position above player's head */
+						VectorCopy(cent->lerpOrigin, mark->origin);
+						mark->origin[2] += 48.0f; /* Offset above head */
+						break;
+					}
 				}
 			}
 		}
@@ -1012,14 +1032,18 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		}
 
 		/* Convert world to screen coordinates and check if mark is outside screen */
-		if (CG_IsPointOutsideScreen(mark->origin, &renderData->x, &renderData->y))
+		/* Skip for own overhead marks in first person (already have fixed position) */
+		if (!(mark->isOverhead && mark->clientNum == cg.clientNum && !cg.renderingThirdPerson))
 		{
-			/* Mark is outside screen - skip, border marker drawn in CG_DrawTeamTaskBorderHudMarkers */
-			return qfalse;
-		}
+			if (CG_IsPointOutsideScreen(mark->origin, &renderData->x, &renderData->y))
+			{
+				/* Mark is outside screen - skip, border marker drawn in CG_DrawTeamTaskBorderHudMarkers */
+				return qfalse;
+			}
 
-		/* Shift marker up so that bottom of icon points to the mark position */
-		renderData->y -= renderData->iconH * 0.5f;
+			/* Shift marker up so that bottom of icon points to the mark position */
+			renderData->y -= renderData->iconH * 0.5f;
+		}
 	}
 
 	/* Calculate end fade effect (linear fade from 1.0 to 0.0 over TEAMTASK_MARK_FADE_TIME before endTime) */

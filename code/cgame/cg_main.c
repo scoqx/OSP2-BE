@@ -989,8 +989,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamTaskHudMarkerMaxScale, "cg_teamTaskHudMarkerMaxScale", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskHudMarkerMinScale, "cg_teamTaskHudMarkerMinScale", "0.3", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_printui, "cg_printui", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_printui },
-	{ &cg_printui_template, "cg_printui_template", "640 20 18x24 hR font 2 time m", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_printui_template2, "cg_printui_template2", "320 100 22x30 hC font 4 time s", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_printui_template, "cg_printui_template", "640 20 18x24 hR font 2 time 2000", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_printui_template2, "cg_printui_template2", "320 100 22x30 hC font 4 time 2000", CVAR_ARCHIVE | CVAR_NEW },
 	// { &cg_snow, "cg_snow", "1", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
 	{ &cg_brightWeaponsColorGauntlet, "cg_brightWeaponsColorGauntlet", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_brightWeaponsColorMG, "cg_brightWeaponsColorMG", "Yellow", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
@@ -1464,7 +1464,7 @@ static void CG_RegisterSounds(void)
 	cgs.media.deniedSound = trap_S_RegisterSound("sound/feedback/denied.wav", qtrue);
 	cgs.media.humiliationSound = trap_S_RegisterSound("sound/feedback/humiliation.wav", qtrue);
 	cgs.media.assistSound = trap_S_RegisterSound("sound/feedback/assist.wav", qtrue);
-	cgs.media.defendSound = trap_S_RegisterSound("sound/feedback/defence.wav", qtrue);
+	cgs.media.defendSound = trap_S_RegisterSound("sound/feedback/defense.wav", qtrue);
 
 	cgs.media.takenLeadSound = trap_S_RegisterSound("sound/feedback/takenlead.wav", qtrue);
 	cgs.media.tiedLeadSound = trap_S_RegisterSound("sound/feedback/tiedlead.wav", qtrue);
