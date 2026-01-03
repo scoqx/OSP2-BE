@@ -1541,7 +1541,10 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("  ^71. Hold the key bound to ^2+ttwheel^7\n");
 	CG_Printf("  ^72. Move mouse to select a task icon\n");
 	CG_Printf("  ^73. Release the key to send the command\n\n");
-
+	CG_Printf("^3Wheel settings:\n");
+	CG_Printf("  ^1Aim lock ^7enabled by default\n");
+	CG_Printf("  ^7To disable add to ^3cg_teamTaskWheel ^216^7 (bitmask)\n");
+	CG_Printf("  ^7An example: your value is ^24^7 -> need set to ^220^7 (^24^7+^216^7=^220^7)\n\n");
 	CG_Printf("^3Available team task commands:\n");
 	CG_Printf("  ^2tAttack^7    - Mark attack position\n");
 	CG_Printf("  ^2tDefence^7   - Mark defence position\n");
