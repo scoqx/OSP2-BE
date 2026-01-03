@@ -595,6 +595,19 @@ SHUD:
   + cg_teamTaskWheel bitmask: 4 - draw cursor, 8 - draw pointers
   + /tsmart - detect frozen body 
   * various fixes
+
 02.01.2026 be v1.00c
 * printui time/fade rework
 * defend sound fix
+
+04.01.2026 be v1.00d
++ TEAM TASKS:
+  + /tHere
+  + cg_teamTaskWheel bitmask 16 - disable aim lock
+  + cg_teamTaskWheelScale
+  + different death team task sound
+  + unknown team task icon
+  * location icon changed
+  * team task death fix
+  * various fixes
+* PrintUI layer fix

@@ -1285,6 +1285,16 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 		}
 	}
+	else if (templateID == TEAMTASK_PLAYERDEAD)
+	{
+		/* For death marks, use coordinates from message directly (position of death) */
+		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+	}
+	else if (templateID == TEAMTASK_HERE_DEAD)
+	{
+		/* For HERE_DEAD marks, use coordinates from message directly (death position) */
+		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+	}
 	else
 	{
 		/* For other marks, try to use aim contact point for more accurate positioning */

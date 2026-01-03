@@ -778,8 +778,11 @@ void CG_RemoveChatEscapeCharAll(char* text)
 			        CG_Hex16GetColor(&text[i + 4], &tmp) &&
 			        CG_Hex16GetColor(&text[i + 6], &tmp))
 			{
-				i += 6;
+				i += 7; /* Skip ^X and 6 hex characters (total 8 characters, -1 because for loop will increment) */
+				continue;
 			}
+			++i; /* Skip ^ if invalid format, then continue to skip X via loop increment */
+			continue;
 		}
 		else if (command == '^')
 		{

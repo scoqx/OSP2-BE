@@ -292,3 +292,14 @@ teamTasks_smart
 		rgbgen vertex
 	}
 }
+
+teamTasks_unknown
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/unknown.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}

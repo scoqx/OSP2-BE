@@ -1019,6 +1019,7 @@ typedef struct
 	qhandle_t teamTasksSmart;
 	qhandle_t teamTasksWheelbg;
 	qhandle_t teamTasksPointing;
+	qhandle_t teamTasksUnknown;
 
 	// sounds
 	sfxHandle_t quadSound;
@@ -1139,6 +1140,7 @@ typedef struct
 	sfxHandle_t wstbactvSound;
 
 	sfxHandle_t pingSimpleSound;
+	sfxHandle_t pingDeathSound;
 
 } cgMedia_t;
 
@@ -1299,6 +1301,8 @@ typedef struct cgs_be_s
 		tokenBucket_t sendCommandBucket;
 		// anti-flood for sending team task commands - flood protection (13 tokens, 300ms refill)
 		tokenBucket_t sendCommandBucketFlood;
+		// cooldown for tHere command (1 token, 2000ms refill = 2 seconds)
+		tokenBucket_t sendCommandBucketHere;
 
 		// ttwheel mark
 		qboolean    ttwheelMarkActive;
@@ -1320,6 +1324,16 @@ typedef struct cgs_be_s
 		vec3_t      smartTargetPos; // Position of target (enemy or item)
 		int         smartTargetTime; // Time when target was saved (for 500ms memory)
 		int         smartTargetEntityNum; // Entity number of enemy (if target is enemy)
+
+		// death position storage (for team task markers)
+		vec3_t      deathPosition; // Position where player died
+		qboolean    deathPositionValid; // True if death position is valid
+
+		// sensitivity adjustment for wheel (bitmask & 8)
+		qboolean    sensitivityAdjusted; // True if sensitivity was adjusted for wheel
+		float       savedSensitivity; // Saved sensitivity value before adjustment
+		float       savedWheelSensitivity; // Saved wheel sensitivity value before adjustment
+		float       adjustedWheelSensitivity; // Adjusted wheel sensitivity value
 	} teamMarkers;
 } cgs_be_t;
 
@@ -2020,6 +2034,9 @@ extern vmCvar_t         cg_teamTaskFont;
 extern vmCvar_t         cg_teamTaskWheel;
 extern vmCvar_t         cg_teamTaskWheelSet;
 extern vmCvar_t         cg_teamTaskWheelSensitivity;
+extern vmCvar_t         cg_teamTaskWheelScale;
+extern vmCvar_t         cg_storedSensitivity;
+extern vmCvar_t         sensitivity;
 extern vmCvar_t         cg_teamTaskThemeColor;
 extern vmCvar_t         cg_teamTaskSmartDefault;
 extern vmCvar_t         cg_teamTaskHudMarkerMaxDist;
@@ -2801,7 +2818,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00c" // BE
+#define OSP_VERSION "be-1.00b" // BE
 
 
 
@@ -2978,6 +2995,7 @@ void CG_TeamTaskFilterDump(void);
 int CG_OSPTeamTaskPack(int toClient, int templateID, int x, int y, int z);
 void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* templateID, int* x, int* y, int* z);
 void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position, qboolean ignoreDead);
+void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent);
 void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient);
 void CG_TeamTaskMarkOffense(void);
 void CG_TeamTaskMarkDefence(void);
@@ -2986,6 +3004,7 @@ void CG_TeamTaskMarkYes(void);
 void CG_TeamTaskMarkNo(void);
 void CG_TeamTaskMarkMedic(void);
 void CG_TeamTaskMarkLocation(void);
+void CG_TeamTaskMarkHere(void);
 void CG_TeamTaskMarkSend(void);
 void CG_SelwheelMarkStart(void);
 void CG_SelwheelMarkStop(void);

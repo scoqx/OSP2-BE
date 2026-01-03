@@ -414,11 +414,6 @@ void CG_SHUDRoutine(void)
 	const qboolean is_gt_ft = CG_OSPIsGameTypeFreeze();
 	const qboolean is_gt_ca = CG_OSPIsGameTypeCA(cgs.gametype);
 
-	if (cg_printui.integer)
-	{
-		CG_DrawPrintUI();
-	}
-
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
 	{
@@ -461,7 +456,11 @@ void CG_SHUDRoutine(void)
 	{
 		CG_DrawSelwheelIcons();
 	}
-
+	
+	if (cg_printui.integer)
+	{
+		CG_DrawPrintUI();
+	}
 
 }
 

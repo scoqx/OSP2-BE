@@ -1367,8 +1367,15 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	}
 
 	/* Play sound when mark appears */
-	if ((cg_teamTask.integer & CG_TEAMTASK_MARKSOUND) && cgs.media.pingSimpleSound)
+	if (cg_teamTask.integer & CG_TEAMTASK_MARKSOUND)
 	{
-		trap_S_StartLocalSound(cgs.media.pingSimpleSound, CHAN_ANNOUNCER);
+		if (markType == TEAMTASK_PLAYERDEAD && cgs.media.pingDeathSound)
+		{
+			trap_S_StartLocalSound(cgs.media.pingDeathSound, CHAN_ANNOUNCER);
+		}
+		else if (cgs.media.pingSimpleSound)
+		{
+			trap_S_StartLocalSound(cgs.media.pingSimpleSound, CHAN_ANNOUNCER);
+		}
 	}
 }

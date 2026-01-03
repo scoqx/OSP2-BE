@@ -11,7 +11,7 @@ CG_SRC = \
  cg_main $(CGDIR)/cg_syscalls.asm \
  cg_consolecmds cg_draw cg_drawtools cg_effects cg_ents cg_event cg_info \
  cg_localents cg_players cg_playerstate cg_predict cg_scoreboard cg_marks \
- cg_servercmds cg_snapshot cg_view cg_weapons cg_printui cg_teamtasks cg_teamtasks_crypto \
+ cg_servercmds cg_snapshot cg_view cg_weapons cg_printui cg_teamtasks_tokenbucket cg_teamtasks_utils cg_teamtasks_draw cg_teamtasks_selwheel cg_teamtasks_crypto \
  bg_slidemove bg_pmove bg_lib bg_misc \
  q_math q_shared cg_ospconfig cg_osputil cg_osphud cg_unlagged cg_playerscolors\
  cg_localevents cg_customloc cg_cvardescriptions common\

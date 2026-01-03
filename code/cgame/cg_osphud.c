@@ -3933,10 +3933,6 @@ void CG_OSPHUDRoutine(void)
 
 	isTeamGame = cgs.gametype >= GT_TEAM ? qtrue : qfalse;
 
-	if (cg_printui.integer)
-	{
-		CG_DrawPrintUI();
-	}
 	if (cg.snap->ps.pm_type == PM_INTERMISSION)
 	{
 		CG_OSPDrawIntermission();
@@ -4215,6 +4211,11 @@ void CG_OSPHUDRoutine(void)
 		{
 			CG_DrawSelwheelIcons();
 		}
+	}
+	
+	if (cg_printui.integer)
+	{
+		CG_DrawPrintUI();
 	}
 }
 

@@ -405,9 +405,10 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamTaskScale", "Scale factor for team task markers." },
 	{ "cg_teamTaskOpaque", "Opacity level for team task markers\n  ^20.0^7 - ^21.0^7" },
 	{ "cg_teamTaskFont", "Font selection for team task markers\n  ^20^7 - ^210^7" },
-	{ "cg_teamTaskWheel", "Team task selection wheel. Bitmask:\n  ^20^7 - disabled\n  Any non-zero - normal wheel\n  ^22^7 - center mode (first element from ^3cg_teamTaskWheelSet^7 becomes center)\n  ^24^7 - cursor\n  ^28^7 - pointers" },
-	{ "cg_teamTaskWheelSet", "Configure team task selection wheel elements.\nSpace-separated task names: ^2smart^7, ^2attack^7, ^2defence^7, ^2watch^7, ^2yes^7, ^2no^7, ^2location^7, ^2medic^7." },
+	{ "cg_teamTaskWheel", "Team task selection wheel. Bitmask:\n  ^20^7 - disabled\n  Any non-zero - normal wheel\n  ^22^7 - center mode (first element from ^3cg_teamTaskWheelSet^7 becomes center)\n  ^24^7 - cursor\n  ^28^7 - pointers\n  ^216^7 - disable aim lock" },
+	{ "cg_teamTaskWheelSet", "Configure team task selection wheel elements.\nSpace-separated task names: ^2smart^7, ^2attack^7, ^2defence^7, ^2watch^7, ^2yes^7, ^2no^7, ^2location^7, ^2medic^7, ^2here^7." },
 	{ "cg_teamTaskWheelSensitivity", "Cursor sensitivity for team task selection wheel.\nHigher values make cursor move faster." },
+	{ "cg_teamTaskWheelScale", "Scale factor for team task selection wheel.\nAffects size of icons, pointers, mark, and active areas.\n  ^2>0^7 - scale multiplier (1.0 = default)" },
 	{ "cg_teamTaskSmartDefault", "Default task for smart mode. Determines center element icon in wheel.\nAvailable values: ^2attack^7, ^2defence^7, ^2watch^7, ^2location^7, ^2medic^7." },
 	{ "cg_teamTaskThemeColor", "Theme color for team task selection wheel elements.\n\"^2color^7\" - color name, digit or hex" },
 	{ "cg_teamTaskHudMarkerMaxDist", "Maximum distance for displaying team task HUD markers\n  ^20^7 - no limit\n  ^2>0^7 - maximum distance" },
@@ -424,6 +425,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_printui", "Enable printui functionality for displaying text on screen\n  ^20^7 - disabled\n  ^21^7 - enabled" },
 	{ "cg_printui_template", "Template for printui command. Used with ^2t1^7 option.\nFormat: \"^2x y size alignment font number time^7\"" },
 	{ "cg_printui_template2", "Second template for printui command. Used with ^2t2^7 option.\nFormat: \"^2x y size alignment font number time^7\"" },
+	{ "sensitivity", "Sets base mouse sensitivity (mouse speed)." },
 };
 
 

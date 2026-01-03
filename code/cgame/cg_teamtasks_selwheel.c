@@ -20,1307 +20,75 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 //
-// cg_teamtasks.c -- team task marks rendering
+// cg_teamtasks_selwheel.c -- team task selection wheel functions
 
 #include "cg_local.h"
 
-#define TEAMTASK_MARK_FADE_TIME 800 /* Fade duration in milliseconds (0.8 seconds) */
+/* External reference to teamTaskCommands array from cg_teamtasks_utils.c */
+extern teamTaskCommand_t teamTaskCommands[];
+#define NUM_TEAMTASK_COMMANDS 11
+
+/* Constants for selection wheel */
+#define SELWHEEL_ICON_RADIUS 20.0f /* Distance from center to icons (in 640x480 coordinates) */
+#define SELWHEEL_ICON_SIZE 6.0f /* Base icon size (in 640x480 coordinates) */
+#define SELWHEEL_MIN_RADIUS 12.0f /* Small center area for reset */
+#define SELWHEEL_MAX_RADIUS_EXTENSION 40.0f /* Extension beyond icons for activation zone */
+#define SELWHEEL_MARK_MAX_RADIUS_OFFSET 10.0f /* Offset for mark max radius */
+#define SELWHEEL_RETURN_MAX_RADIUS_OFFSET 5.0f /* Offset for return max radius */
+#define SELWHEEL_START_ANGLE (M_PI * 1.5f) /* 9 o'clock = 270 degrees = 3π/2 radians */
 
 /*
 =================
-CG_HasActiveFrozenAllyMark
+CG_GetScreenCenter
 
-Check if there is an active TEAMTASK_FROZEN_ALLY mark near the frozen entity
-Returns qtrue if active mark found, qfalse otherwise
+Get screen center coordinates
 =================
 */
-qboolean CG_HasActiveFrozenAllyMark(centity_t* frozenCent)
+static void CG_GetScreenCenter(float* centerX, float* centerY)
 {
-	int i;
-	teamTaskMark_t* mark;
-	float dist;
-	float searchRadius;
-	int frozenClientNum;
-	clientInfo_t* frozenCi;
-
-	if (!frozenCent || !CG_IsFrozenEntity(frozenCent))
-	{
-		return qfalse;
-	}
-
-	frozenClientNum = frozenCent->currentState.otherEntityNum;
-	if (frozenClientNum < 0 || frozenClientNum >= MAX_CLIENTS)
-	{
-		return qfalse;
-	}
-
-	frozenCi = &cgs.clientinfo[frozenClientNum];
-	if (!frozenCi->infoValid || CG_IsEnemy(frozenCi))
-	{
-		/* Not an ally */
-		return qfalse;
-	}
-
-	searchRadius = 64.0f; /* Search radius for finding mark near frozen entity */
-
-	/* Check all active marks */
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
-	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
-
-		/* Check if mark is active and of type TEAMTASK_FROZEN_ALLY */
-		if (mark->markType == TEAMTASK_FROZEN_ALLY && cg.time < mark->endTime)
-		{
-			/* Check if mark is near frozen entity */
-			dist = Distance(mark->origin, frozenCent->lerpOrigin);
-			if (dist <= searchRadius)
-			{
-				return qtrue;
-			}
-		}
-	}
-
-	return qfalse;
+	*centerX = SCREEN_WIDTH / 2.0f;
+	*centerY = SCREEN_HEIGHT / 2.0f;
 }
 
 /*
 =================
-TeamTask command definitions
+CG_GetSelwheelIconAngle
+
+Calculate icon angle for given index
+Returns angle in radians
 =================
 */
-
-/* Global teamtask commands array */
-static teamTaskCommand_t teamTaskCommands[] =
+static float CG_GetSelwheelIconAngle(int index, int elementCount, qboolean hasCenterElement)
 {
-	{ "attack", NULL, TEAMTASK_OFFENSE, qfalse, qtrue, CG_TeamTaskMarkOffense, "tattack" },
-	{ "defence", NULL, TEAMTASK_DEFENCE, qfalse, qtrue, CG_TeamTaskMarkDefence, "tdefence" },
-	{ "watch", NULL, TEAMTASK_PATROL, qfalse, qtrue, CG_TeamTaskMarkWatch, "twatch" },
-	{ "yes", NULL, TEAMTASK_YES, qtrue, qfalse, CG_TeamTaskMarkYes, "tyes" },
-	{ "no", NULL, TEAMTASK_NO, qtrue, qfalse, CG_TeamTaskMarkNo, "tno" },
-	{ "location", "position", TEAMTASK_LOCATION, qfalse, qtrue, CG_TeamTaskMarkLocation, "tlocation" },
-	{ "target", NULL, TEAMTASK_TARGET, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
-	{ "redarmor", NULL, TEAMTASK_REDARMOR, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
-	{ "megahealth", NULL, TEAMTASK_MEGAHEALTH, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
-	{ "medic", NULL, TEAMTASK_MEDIC, qtrue, qfalse, CG_TeamTaskMarkMedic, "tmedic" }
-};
+	float angleStep;
+	float iconAngle;
 
-#define NUM_TEAMTASK_COMMANDS (sizeof(teamTaskCommands) / sizeof(teamTaskCommands[0]))
-
-/*
-=================
-CG_GetTeamTaskShaderByType
-
-Get shader handle for teamtask type
-Returns 0 if not found or not loaded
-=================
-*/
-static qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType)
-{
-	switch (taskType)
+	if (hasCenterElement && elementCount > 1)
 	{
-		case TEAMTASK_OFFENSE:
-			return cgs.media.teamTasksAttack;
-		case TEAMTASK_DEFENCE:
-			return cgs.media.teamTasksDefence;
-		case TEAMTASK_PATROL:
-			return cgs.media.teamTasksWatch;
-		case TEAMTASK_YES:
-			return cgs.media.teamTasksYes;
-		case TEAMTASK_NO:
-			return cgs.media.teamTasksNo;
-		case TEAMTASK_LOCATION:
-			return cgs.media.teamTasksLocation;
-		case TEAMTASK_MEDIC:
-			return cgs.media.teamTasksMedic;
-		default:
-			return 0;
-	}
-}
-
-/*
-=================
-CG_GetTeamTaskCommandByName
-
-Get teamtask command by name (checks both name and altName)
-Returns NULL if not found
-=================
-*/
-teamTaskCommand_t* CG_GetTeamTaskCommandByName(const char* name)
-{
-	int i;
-
-	if (!name || name[0] == '\0')
-	{
-		return NULL;
-	}
-
-	for (i = 0; i < NUM_TEAMTASK_COMMANDS; i++)
-	{
-		if (Q_stricmp(teamTaskCommands[i].name, name) == 0)
-		{
-			return &teamTaskCommands[i];
-		}
-		if (teamTaskCommands[i].altName && Q_stricmp(teamTaskCommands[i].altName, name) == 0)
-		{
-			return &teamTaskCommands[i];
-		}
-	}
-
-	return NULL;
-}
-
-/*
-=================
-CG_GetTeamTaskCommandByType
-
-Get teamtask command by type
-Returns NULL if not found
-=================
-*/
-static teamTaskCommand_t* CG_GetTeamTaskCommandByType(teamtask_t taskType)
-{
-	int i;
-
-	for (i = 0; i < NUM_TEAMTASK_COMMANDS; i++)
-	{
-		if (teamTaskCommands[i].taskType == taskType)
-		{
-			return &teamTaskCommands[i];
-		}
-	}
-
-	return NULL;
-}
-
-/*
-=================
-CG_IsTeamTaskOverhead
-
-Check if teamtask type is overhead command
-=================
-*/
-qboolean CG_IsTeamTaskOverhead(teamtask_t taskType)
-{
-	teamTaskCommand_t* cmd;
-
-	cmd = CG_GetTeamTaskCommandByType(taskType);
-	if (cmd)
-	{
-		return cmd->isOverhead;
-	}
-
-	return qfalse;
-}
-
-// Token Bucket functions for anti-flood
-void TokenBucket_Init(tokenBucket_t* b, int maxTokens, int refillTime, int now)
-{
-	b->maxTokens = maxTokens;
-	b->refillTime = refillTime;
-	b->tokens = maxTokens;
-	b->lastTime = now;
-}
-
-static void TokenBucket_Update(tokenBucket_t* b, int now)
-{
-	int delta;
-	int add;
-
-	delta = now - b->lastTime;
-	if (delta <= 0)
-	{
-		return;
-	}
-
-	add = delta / b->refillTime;
-	if (add <= 0)
-	{
-		return;
-	}
-
-	b->tokens += add;
-	if (b->tokens > b->maxTokens)
-	{
-		b->tokens = b->maxTokens;
-	}
-
-	b->lastTime += add * b->refillTime;
-}
-
-qboolean TokenBucket_Consume(tokenBucket_t* b, int now)
-{
-	TokenBucket_Update(b, now);
-
-	if (b->tokens <= 0)
-	{
-		return qfalse;
-	}
-
-	b->tokens--;
-	return qtrue;
-}
-
-int TokenBucket_TimeToNext(tokenBucket_t* b, int now)
-{
-	int timeRemaining;
-
-	/* Update bucket first to get accurate time */
-	TokenBucket_Update(b, now);
-
-	if (b->tokens > 0)
-	{
-		return 0;
-	}
-
-	timeRemaining = b->refillTime - (now - b->lastTime);
-	if (timeRemaining < 0)
-	{
-		return 0;
-	}
-
-	return timeRemaining;
-}
-
-void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum)
-{
-	clientInfo_t* cl;
-
-	switch (markType)
-	{
-		case TEAMTASK_OFFENSE:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksAttack_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksAttack;
-			}
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_DEFENCE:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksDefence_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksDefence;
-			}
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_PATROL: /* TEAMTASK_PATROL is used for watch */
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksWatch_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksWatch;
-			}
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_PLAYERDEAD:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksDead_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksDead;
-			}
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_YES:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksYes;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksYes;
-			}
-			color[0] = 0.7f;
-			color[1] = 1.0f;
-			color[2] = 0.7f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_NO:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksNo;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksNo;
-			}
-			color[0] = 1.0f;
-			color[1] = 0.7f;
-			color[2] = 0.7f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_LOCATION:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksLocation_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksLocation;
-			}
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_TARGET:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksTarget_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksTarget;
-			}
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_REDARMOR:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksRedarmor_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksRedarmor;
-			}
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_MEGAHEALTH:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksMegahealth_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksMegahealth;
-			}
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			break;
-		case TEAMTASK_MEDIC:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksMedic_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksMedic;
-			}
-			/* Default white color */
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			/* Check health and armor of client who sent the command */
-			if (clientNum >= 0 && clientNum < MAX_CLIENTS)
-			{
-				cl = &cgs.clientinfo[clientNum];
-				if (!(cg_healthColorLevels.integer & 2) && cl->health > 0)
-				{
-					CG_GetColorForHealth(cl->health, cl->armor, color, NULL);
-				}
-			}
-			break;
-		case TEAMTASK_FROZEN_ALLY:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksFrozen_marker;
-				/* HUD marker color is white */
-				color[0] = 1.0f;
-				color[1] = 1.0f;
-				color[2] = 1.0f;
-				color[3] = 1.0f;
-			}
-			else
-			{
-				*shader = cgs.media.frozenFoeTagShader;
-				/* World marker color is own team color */
-				{
-					int myTeam;
-					myTeam = cg.snap->ps.persistant[PERS_TEAM];
-					if (myTeam == TEAM_RED)
-					{
-						VectorCopy(cgs.be.redTeamColor, color);
-					}
-					else if (myTeam == TEAM_BLUE)
-					{
-						VectorCopy(cgs.be.blueTeamColor, color);
-					}
-					else
-					{
-						color[0] = 1.0f;
-						color[1] = 1.0f;
-						color[2] = 1.0f;
-					}
-					color[3] = 1.0f;
-				}
-			}
-			break;
-		case TEAMTASK_FROZEN_ENEMY:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksFrozen_marker;
-				/* HUD marker color is white */
-				color[0] = 1.0f;
-				color[1] = 1.0f;
-				color[2] = 1.0f;
-				color[3] = 1.0f;
-			}
-			else
-			{
-				*shader = cgs.media.frozenFoeTagShader;
-				/* World marker color is enemy team color */
-				{
-					int myTeam;
-					myTeam = cg.snap->ps.persistant[PERS_TEAM];
-					if (myTeam == TEAM_RED)
-					{
-						VectorCopy(cgs.be.blueTeamColor, color);
-					}
-					else if (myTeam == TEAM_BLUE)
-					{
-						VectorCopy(cgs.be.redTeamColor, color);
-					}
-					else
-					{
-						color[0] = 1.0f;
-						color[1] = 1.0f;
-						color[2] = 1.0f;
-					}
-					color[3] = 1.0f;
-				}
-			}
-			break;
-		default:
-			if (useMarkerShader)
-			{
-				*shader = cgs.media.teamTasksDefence_marker;
-			}
-			else
-			{
-				*shader = cgs.media.teamTasksDefence;
-			}
-			color[0] = 1.0f;
-			color[1] = 1.0f;
-			color[2] = 1.0f;
-			color[3] = 1.0f;
-			break;
-	}
-}
-
-void CG_DrawTeamTaskBorderHudMarkers(void)
-{
-	int i;
-	float x;
-	float y;
-	teamTaskMark_t* mark;
-
-	if (!cg_teamTask.integer && !CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
-	{
-		return;
-	}
-
-	if (cgs.gametype < GT_TEAM)
-	{
-		return;
-	}
-
-	/* Check if local player is spectator */
-	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
-	{
-		return;
-	}
-
-	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
-	{
-		return;
-	}
-
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
-	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
-
-		/* Skip expired marks */
-		if (cg.time >= mark->endTime)
-		{
-			continue;
-		}
-
-		/* Skip own overhead marks (YES, NO, MEDIC) - don't show in border markers */
-		if (mark->isOverhead && mark->clientNum == cg.clientNum)
-		{
-			continue;
-		}
-
-		/* Check if mark is outside screen - if yes, draw border marker */
-		if (CG_IsPointOutsideScreen(mark->origin, NULL, NULL))
-		{
-			if (cg_teamTask.integer & CG_TEAMTASK_HUDMARKER)
-			{
-				CG_DrawTeamTaskBorderMarker(mark);
-			}
-		}
-	}
-}
-
-void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
-{
-	vec4_t color;
-	float distance;
-	float hfov_x;
-	float size;
-	qhandle_t shader;
-	float baseRadius;
-	float pulseTime;
-	float pulseProgress;
-	float pulseScale;
-	vec4_t pulseColor;
-	int timeUntilEnd;
-	float endFade;
-
-	if (!mark)
-	{
-		return;
-	}
-
-	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &shader, color, qtrue, mark->clientNum);
-
-	if (!shader)
-	{
-		return;
-	}
-
-	distance = Distance(mark->origin, cg.predictedPlayerState.origin);
-
-	// Check maximum distance
-	if (cg_teamTaskHudMarkerMaxDist.integer > 0 && distance > cg_teamTaskHudMarkerMaxDist.value)
-	{
-		return;
-	}
-
-	distance = MAX(distance, 1.0f);
-	hfov_x = cg.refdef.fov_x * M_PI / 360.0f;
-	size = 1.0f / tan(hfov_x) * 1000.0f / distance;
-	size = MIN(cg_teamTaskHudMarkerMaxScale.value, size);
-	size = MAX(cg_teamTaskHudMarkerMinScale.value, size);
-
-	baseRadius = cg_teamTaskHudMarkerSize.value * size;
-
-	/* Calculate end fade effect (linear fade from 1.0 to 0.0 over TEAMTASK_MARK_FADE_TIME before endTime) */
-	timeUntilEnd = mark->endTime - cg.time;
-	if (timeUntilEnd <= TEAMTASK_MARK_FADE_TIME)
-	{
-		endFade = (float)timeUntilEnd / (float)TEAMTASK_MARK_FADE_TIME;
-		if (endFade < 0.0f)
-		{
-			endFade = 0.0f;
-		}
+		/* Center element exists, distribute other elements (index-1) around circle */
+		angleStep = 2.0f * M_PI / (float)(elementCount - 1);
+		iconAngle = SELWHEEL_START_ANGLE + angleStep * (float)(index - 1);
 	}
 	else
 	{
-		endFade = 1.0f;
+		/* No center element, distribute all elements around circle */
+		angleStep = 2.0f * M_PI / (float)elementCount;
+		iconAngle = SELWHEEL_START_ANGLE + angleStep * (float)index;
 	}
 
-	/* Apply fade to main marker color */
+	/* Normalize to 0..2π range */
+	if (iconAngle < 0.0f)
 	{
-		vec4_t fadedColor;
-		Vector4Copy(color, fadedColor);
-		fadedColor[3] *= endFade;
-		CG_HudBorderMarker(mark->origin, fadedColor, baseRadius, shader, 0);
+		iconAngle += 2.0f * M_PI;
 	}
-
-	/* Draw pulsing circle effect */
-	if (cgs.media.teamTasksCircle)
+	else if (iconAngle >= 2.0f * M_PI)
 	{
-		vec3_t dir;
-		float front, left, up;
-		vec3_t flu;
-		float r, inc, az;
-		float hfov_y;
-		refEntity_t ent;
-		float phi;
-		float dist;
-		vec3_t middleOfPlane;
-		vec3_t planeAxis[2];
-		float ratio;
-		float circleSz;
-		float h1, h2;
-		float cosPhi, sinPhi;
-
-		/* Calculate pulse animation - more pronounced effect */
-		pulseTime = (cg.time - mark->startTime) / 1000.0f;
-		pulseTime = pulseTime - floor(pulseTime); /* Keep in 0.0 to 1.0 range */
-
-		/* Use smoothstep for more pronounced pulse effect */
-		if (pulseTime < 0.5f)
-		{
-			/* Grow from 0.9 to 1.5 in first half */
-			pulseProgress = pulseTime * 2.0f; /* 0.0 to 1.0 */
-			pulseProgress = pulseProgress * pulseProgress * (3.0f - 2.0f * pulseProgress); /* Smoothstep */
-			pulseScale = 0.9f + pulseProgress * (1.5f - 0.9f);
-		}
-		else
-		{
-			/* Shrink from 1.5 to 0.9 in second half */
-			pulseProgress = (pulseTime - 0.5f) * 2.0f; /* 0.0 to 1.0 */
-			pulseProgress = pulseProgress * pulseProgress * (3.0f - 2.0f * pulseProgress); /* Smoothstep */
-			pulseScale = 1.5f - pulseProgress * (1.5f - 0.9f);
-		}
-
-		/* Set color with alpha 0.25 and apply fade */
-		if (mark->markType == TEAMTASK_FROZEN_ALLY || mark->markType == TEAMTASK_FROZEN_ENEMY)
-		{
-			/* For frozen bodies, use team color for pulsing circle */
-			int myTeam;
-			myTeam = cg.snap->ps.persistant[PERS_TEAM];
-			if (mark->markType == TEAMTASK_FROZEN_ALLY)
-			{
-				/* Use own team color */
-				if (myTeam == TEAM_RED)
-				{
-					VectorCopy(cgs.be.redTeamColor, pulseColor);
-				}
-				else if (myTeam == TEAM_BLUE)
-				{
-					VectorCopy(cgs.be.blueTeamColor, pulseColor);
-				}
-				else
-				{
-					Vector4Copy(color, pulseColor);
-				}
-			}
-			else /* TEAMTASK_FROZEN_ENEMY */
-			{
-				/* Use enemy team color */
-				if (myTeam == TEAM_RED)
-				{
-					VectorCopy(cgs.be.blueTeamColor, pulseColor);
-				}
-				else if (myTeam == TEAM_BLUE)
-				{
-					VectorCopy(cgs.be.redTeamColor, pulseColor);
-				}
-				else
-				{
-					Vector4Copy(color, pulseColor);
-				}
-			}
-			pulseColor[3] = 0.25f * endFade;
-		}
-		else if ((cg_teamTask.integer & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
-		{
-			/* Use unique color for pulsing circle */
-			VectorCopy(UNIQUE_COLOR(mark->clientNum), pulseColor);
-			pulseColor[3] = 0.25f * endFade;
-		}
-		else
-		{
-			Vector4Copy(color, pulseColor);
-			pulseColor[3] = 0.25f * endFade;
-		}
-
-		/* Use same positioning logic as CG_HudBorderMarker but with baseRadius for positioning */
-		hfov_y = cg.refdef.fov_y * M_PI / 360.0f;
-		hfov_x = cg.refdef.fov_x * M_PI / 360.0f;
-
-		VectorSubtract(mark->origin, cg.refdef.vieworg, dir);
-		front = DotProduct(dir, cg.refdef.viewaxis[0]);
-		left = DotProduct(dir, cg.refdef.viewaxis[1]);
-		up = DotProduct(dir, cg.refdef.viewaxis[2]);
-
-		flu[0] = front;
-		flu[1] = left;
-		flu[2] = up;
-
-		r = VectorLength(flu);
-		if (r < 0.001f)
-		{
-			return;
-		}
-
-		az = atan2(flu[1], flu[0]);
-		inc = acos(flu[2] / r);
-		inc = M_PI / 2.0 - inc;
-
-		/* Only skip drawing if point is in front of camera AND inside FOV */
-		if (front > 0.0f && fabs(az) < hfov_x && fabs(inc) < hfov_y)
-		{
-			return;
-		}
-
-		memset(&ent, 0, sizeof(ent));
-		ent.reType = RT_SPRITE;
-		ent.renderfx = RF_FIRST_PERSON;
-
-		phi = atan2(-flu[2], flu[1]);
-		ent.rotation = phi / M_PI * 180;
-		ent.rotation += 180;
-
-		/* Use baseRadius for positioning (to keep center aligned), but pulseScale * baseRadius for visual size */
-		ent.radius = 0.5 * baseRadius * pulseScale * tan(hfov_x);
-		ent.customShader = cgs.media.teamTasksCircle;
-
-		if (ent.radius < 0.1f)
-		{
-			ent.radius = 0.1f;
-		}
-
-		ent.shaderRGBA[0] = pulseColor[0] * 255;
-		ent.shaderRGBA[1] = pulseColor[1] * 255;
-		ent.shaderRGBA[2] = pulseColor[2] * 255;
-		ent.shaderRGBA[3] = pulseColor[3] * 255;
-
-		ratio = tan(hfov_y) / tan(hfov_x);
-
-		dist = 8;
-		VectorScale(cg.refdef.viewaxis[0], dist, middleOfPlane);
-
-		{
-			float cosHfovX = cos(hfov_x);
-			float cosHfovY = cos(hfov_y);
-			float baseRadiusForPos = 0.5 * baseRadius * tan(hfov_x);
-
-			r = dist / cosHfovX;
-			VectorScale(cg.refdef.viewaxis[1], r * sin(hfov_x) - baseRadiusForPos, planeAxis[0]);
-
-			r = dist / cosHfovY;
-			VectorScale(cg.refdef.viewaxis[2], -(r * sin(hfov_y) - baseRadiusForPos), planeAxis[1]);
-		}
-
-		circleSz = 100;
-		r = cos(phi) * circleSz;
-		VectorScale(planeAxis[0], r, ent.origin);
-
-		r = sin(phi) * circleSz * 1.0 / ratio;
-		VectorMA(ent.origin, r, planeAxis[1], ent.origin);
-
-		cosPhi = cos(phi);
-		sinPhi = sin(phi);
-
-		if (fabs(cosPhi) < 0.001f)
-		{
-			cosPhi = (cosPhi >= 0) ? 0.001f : -0.001f;
-		}
-		if (fabs(sinPhi) < 0.001f)
-		{
-			sinPhi = (sinPhi >= 0) ? 0.001f : -0.001f;
-		}
-
-		h1 = fabs(VectorLength(planeAxis[0]) / cosPhi);
-		h2 = fabs(VectorLength(planeAxis[1]) / sinPhi);
-		if (h2 < h1)
-		{
-			h1 = h2;
-		}
-		if (VectorLength(ent.origin) > h1)
-		{
-			VectorNormalize(ent.origin);
-			VectorScale(ent.origin, h1, ent.origin);
-		}
-
-		VectorAdd(middleOfPlane, ent.origin, ent.origin);
-		VectorAdd(cg.refdef.vieworg, ent.origin, ent.origin);
-
-		trap_R_AddRefEntityToScene(&ent);
+		iconAngle -= 2.0f * M_PI;
 	}
+
+	return iconAngle;
 }
 
-typedef struct
-{
-	float distMin;
-	float distMax;
-	float fadeStrength;
-	float fadeRadius;
-	float fadeRadiusSq;
-	float crosshairX;
-	float crosshairY;
-	qboolean useFade;
-	int font;
-} teamTaskMarkConstants_t;
-
-typedef struct
-{
-	float x;
-	float y;
-	float distance;
-	float h;
-	float w;
-	float iconW;
-	float iconH;
-	float fade;
-	float endFade;
-	float nameFade;
-	qboolean showSpawnEffect;
-	float spawnIconW;
-	float spawnIconH;
-	vec4_t spawnColor;
-	vec4_t color;
-	qboolean isHovering;
-	int font;
-	float spawnFade; /* Alpha fade-in for main icon (0.0 to 1.0) */
-	float spawnScale; /* Scale for main icon (0.25 to 1.0) */
-} teamTaskMarkRenderData_t;
-
-static void CG_InitTeamTaskMarkConstants(teamTaskMarkConstants_t* constants)
-{
-	constants->distMin = 0.0f;
-	constants->distMax = 2500.0f;
-	constants->fadeStrength = cg_teamTaskFade.value; // 0.0 = no fade, 1.0 = full fade
-	constants->fadeRadius = cg_teamTaskFadeRadius.value;
-	constants->fadeRadiusSq = constants->fadeRadius * constants->fadeRadius;
-	constants->crosshairX = SCREEN_WIDTH * 0.5f;
-	constants->crosshairY = SCREEN_HEIGHT * 0.5f;
-	constants->useFade = (constants->fadeStrength > 0.0f);
-	constants->font = CG_FontIndexFromCvar(&cg_teamTaskFont);
-}
-
-static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
-                                       const teamTaskMarkConstants_t* constants,
-                                       teamTaskMarkRenderData_t* renderData)
-{
-	float t;
-	int timeUntilEnd;
-	int j;
-	centity_t* cent;
-	float dx;
-	float dy;
-	float distToCrosshairSq;
-	float distToCrosshair;
-	float coreFade;
-	int timeSinceStart;
-	int spawnEffectDuration;
-	float spawnProgress;
-	float spawnAlpha;
-	const float hoverRadius = 32.0f; /* Distance in pixels to consider as "hovering" */
-	const float hoverRadiusSq = hoverRadius * hoverRadius;
-	const int appearanceDuration = 350;
-
-	/* Skip death marks if CG_TEAMTASK_ONDEATH flag is not set */
-	if (mark->markType == TEAMTASK_PLAYERDEAD && !(cg_teamTask.integer & CG_TEAMTASK_ONDEATH))
-	{
-		return qfalse;
-	}
-
-	/* Special handling for own overhead marks (YES, NO, MEDIC) in first person only */
-	if (mark->isOverhead && mark->clientNum == cg.clientNum && !cg.renderingThirdPerson)
-	{
-		/* First person view - fixed position at top center of screen */
-		renderData->x = SCREEN_WIDTH * 0.5f;
-		renderData->y = 20.0f; /* Fixed position from top */
-
-		/* Fixed size for own overhead icons */
-		renderData->h = 10.0f * cg_teamTaskScale.value;
-		renderData->w = renderData->h * 0.75f;
-		renderData->iconW = renderData->w * 4;
-		renderData->iconH = renderData->h * 4;
-
-		/* Copy font from constants */
-		renderData->font = constants->font;
-
-		/* Fixed distance for fade calculations */
-		renderData->distance = 100.0f;
-
-		/* Set t to 0 for fixed size calculations */
-		t = 0.0f;
-	}
-	else
-	{
-		/* Update position dynamically if this is an overhead mark (YES/NO) and player is available */
-		if (mark->isOverhead && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
-		{
-			/* Special case for local player - use predicted player entity */
-			if (mark->clientNum == cg.clientNum)
-			{
-				cent = &cg.predictedPlayerEntity;
-				if (cent->currentValid)
-				{
-					/* Update position above player's head */
-					VectorCopy(cent->lerpOrigin, mark->origin);
-					mark->origin[2] += 48.0f; /* Offset above head */
-				}
-				else
-				{
-					/* Fallback: use predicted player state origin */
-					VectorCopy(cg.predictedPlayerState.origin, mark->origin);
-					mark->origin[2] += 48.0f; /* Offset above head */
-				}
-			}
-			else
-			{
-				/* Try to find player entity and update position */
-				for (j = 0; j < MAX_GENTITIES; j++)
-				{
-					cent = &cg_entities[j];
-					if (cent->currentState.eType == ET_PLAYER &&
-					        cent->currentState.clientNum == mark->clientNum &&
-					        cent->currentValid)
-					{
-						/* Update position above player's head */
-						VectorCopy(cent->lerpOrigin, mark->origin);
-						mark->origin[2] += 48.0f; /* Offset above head */
-						break;
-					}
-				}
-			}
-		}
-
-		/* Calculate distance from camera to mark */
-		renderData->distance = Distance(mark->origin, cg.refdef.vieworg);
-
-		/* Copy font from constants */
-		renderData->font = constants->font;
-
-		/* Calculate scale factor using same logic as CG_DrawPlayerIndicator */
-		t = (renderData->distance - constants->distMin) / (constants->distMax - constants->distMin);
-		if (t < 0.0f)
-		{
-			t = 0.0f;
-		}
-		if (t > 1.0f)
-		{
-			t = 1.0f;
-		}
-
-		/* Calculate text size (same as CG_DrawPlayerIndicator) */
-		renderData->h = 10.0f - (t * 8.0f);
-		renderData->w = renderData->h * 0.75f;
-
-		/* Apply scale */
-		renderData->h *= cg_teamTaskScale.value;
-		renderData->w *= cg_teamTaskScale.value;
-
-		/* Calculate icon size (4 times text width, but 2 times for death marks) */
-		if (mark->markType == TEAMTASK_PLAYERDEAD)
-		{
-			renderData->iconW = renderData->w * 2;
-			renderData->iconH = renderData->h * 2;
-		}
-		else
-		{
-			renderData->iconW = renderData->w * 4;
-			renderData->iconH = renderData->h * 4;
-		}
-
-		/* Convert world to screen coordinates and check if mark is outside screen */
-		/* Skip for own overhead marks in first person (already have fixed position) */
-		if (!(mark->isOverhead && mark->clientNum == cg.clientNum && !cg.renderingThirdPerson))
-		{
-			if (CG_IsPointOutsideScreen(mark->origin, &renderData->x, &renderData->y))
-			{
-				/* Mark is outside screen - skip, border marker drawn in CG_DrawTeamTaskBorderHudMarkers */
-				return qfalse;
-			}
-
-			/* Shift marker up so that bottom of icon points to the mark position */
-			renderData->y -= renderData->iconH * 0.5f;
-		}
-	}
-
-	/* Calculate end fade effect (linear fade from 1.0 to 0.0 over TEAMTASK_MARK_FADE_TIME before endTime) */
-	timeUntilEnd = mark->endTime - cg.time;
-	if (timeUntilEnd <= TEAMTASK_MARK_FADE_TIME)
-	{
-		renderData->endFade = (float)timeUntilEnd / (float)TEAMTASK_MARK_FADE_TIME;
-		if (renderData->endFade < 0.0f)
-		{
-			renderData->endFade = 0.0f;
-		}
-	}
-	else
-	{
-		renderData->endFade = 1.0f;
-	}
-
-	/* Calculate distance to crosshair for fade and hover detection */
-	dx = renderData->x - constants->crosshairX;
-	dy = renderData->y - constants->crosshairY;
-	distToCrosshairSq = dx * dx + dy * dy;
-
-	/* Initialize fade to 1.0 */
-	renderData->fade = 1.0f;
-
-	/* Calculate fade based on distance to crosshair - skip for own overhead icons */
-	if (constants->useFade && !(mark->isOverhead && mark->clientNum == cg.clientNum))
-	{
-		if (distToCrosshairSq < constants->fadeRadiusSq)
-		{
-			distToCrosshair = SQRTFAST(distToCrosshairSq);
-			coreFade = distToCrosshair / constants->fadeRadius;
-			/* Clamp coreFade to valid range */
-			if (coreFade < 0.0f)
-			{
-				coreFade = 0.0f;
-			}
-			/* When distToCrosshair = 0 (on crosshair), fade should be (1.0 - fadeStrength) */
-			/* When distToCrosshair = fadeRadius (at edge), fade should be 1.0 (no fade) */
-			/* This makes markers fade out (become more transparent) when aiming at them */
-			renderData->fade = 1.0f - ((1.0f - coreFade) * constants->fadeStrength);
-			/* Clamp fade to valid range */
-			if (renderData->fade < 0.0f)
-			{
-				renderData->fade = 0.0f;
-			}
-			else if (renderData->fade > 1.0f)
-			{
-				renderData->fade = 1.0f;
-			}
-		}
-	}
-
-	/* Apply end fade effect (must be applied after crosshair fade, always applies) */
-	renderData->fade = renderData->fade * renderData->endFade;
-
-	/* Calculate appearance effect (main icon fade-in and scale) */
-	timeSinceStart = cg.time - mark->startTime;
-
-	if (timeSinceStart >= 0 && timeSinceStart < appearanceDuration)
-	{
-		/* Calculate appearance progress (0.0 to 1.0) */
-		float appearanceProgress = (float)timeSinceStart / (float)appearanceDuration;
-
-		/* Main icon fade-in: alpha from 0.0 to 1.0 */
-		renderData->spawnFade = appearanceProgress;
-
-		/* Main icon scale: from 0.25 to 1.0 */
-		renderData->spawnScale = 0.25f + appearanceProgress * 0.75f;
-	}
-	else
-	{
-		/* After appearance effect - full visibility and scale */
-		renderData->spawnFade = 1.0f;
-		renderData->spawnScale = 1.0f;
-	}
-
-	/* Calculate spawn effect (second icon) */
-	spawnEffectDuration = 1000; /* 1 second */
-	renderData->showSpawnEffect = (timeSinceStart >= 0 && timeSinceStart < spawnEffectDuration);
-
-	if (renderData->showSpawnEffect)
-	{
-		/* Calculate spawn effect progress (0.0 to 1.0) */
-		spawnProgress = (float)timeSinceStart / (float)spawnEffectDuration;
-
-		/* Alpha for spawn effect (second icon) decreases linearly from 1.0 to 0.0 */
-		spawnAlpha = 1.0f - spawnProgress;
-
-		/* Spawn effect icon size increases from original size to 3x size (scale already applied to iconW/iconH) */
-		renderData->spawnIconW = renderData->iconW * (0.8f + spawnProgress * 1.5f);
-		renderData->spawnIconH = renderData->iconH * (0.8f + spawnProgress * 1.5f);
-
-		/* Set spawn effect color with alpha */
-		if ((cg_teamTask.integer & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
-		{
-			/* Use unique color for spawn effect */
-			VectorCopy(UNIQUE_COLOR(mark->clientNum), renderData->spawnColor);
-			renderData->spawnColor[3] = spawnAlpha * cg_teamTaskOpaque.value * renderData->fade;
-		}
-		else
-		{
-			Vector4Copy(mark->color, renderData->spawnColor);
-			renderData->spawnColor[3] *= spawnAlpha * cg_teamTaskOpaque.value * renderData->fade;
-		}
-	}
-
-	/* Set color with alpha (apply spawn fade for fade-in effect) */
-	Vector4Copy(mark->color, renderData->color);
-	renderData->color[3] *= renderData->spawnFade * cg_teamTaskOpaque.value * renderData->fade;
-
-	/* Calculate hover state and name fade based on distance to marker */
-	renderData->isHovering = (distToCrosshairSq < hoverRadiusSq && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS);
-
-	/* Calculate name fade based on distance to crosshair - closer = more visible */
-	if (mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
-	{
-		const float nameFadeRadiusBase = 32.0f; /* Base distance in pixels where name starts to appear */
-		float nameFadeRadius;
-		float nameFadeRadiusSq;
-
-		/* Scale nameFadeRadius based on distance to marker - farther markers need smaller radius */
-		/* Use same scale factor 't' that's used for text size scaling */
-		nameFadeRadius = nameFadeRadiusBase * (1.0f - t * 0.25f); /* Scale from 1x to 0.5x based on distance */
-		nameFadeRadiusSq = nameFadeRadius * nameFadeRadius;
-
-		/* For own overhead icons, don't show name */
-		if (mark->isOverhead && mark->clientNum == cg.clientNum)
-		{
-			renderData->nameFade = 0.0f;
-		}
-		/* Use scaled radius for name visibility - closer to marker = more visible name */
-		else if (distToCrosshairSq < nameFadeRadiusSq)
-		{
-			distToCrosshair = SQRTFAST(distToCrosshairSq);
-			/* Inverse fade: closer to center (distToCrosshair = 0) = nameFade = 1.0, at edge = nameFade = 0.0 */
-			renderData->nameFade = 1.0f - (distToCrosshair / nameFadeRadius);
-			if (renderData->nameFade < 0.0f)
-			{
-				renderData->nameFade = 0.0f;
-			}
-			if (renderData->nameFade > 1.0f)
-			{
-				renderData->nameFade = 1.0f;
-			}
-		}
-		else
-		{
-			/* Outside scaled radius - name not visible */
-			renderData->nameFade = 0.0f;
-		}
-	}
-	else
-	{
-		/* Not a player mark - no name to show */
-		renderData->nameFade = 0.0f;
-	}
-
-	return qtrue;
-}
-
-static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRenderData_t* renderData)
-{
-	vec4_t nameColor;
-	vec4_t shadowColor;
-	float nameY;
-	clientInfo_t* ci;
-
-	/* Draw spawn effect sprite */
-	if (renderData->showSpawnEffect)
-	{
-		trap_R_SetColor(renderData->spawnColor);
-		CG_DrawPic(renderData->x - renderData->spawnIconW * 0.5f,
-		           renderData->y - renderData->spawnIconH * 0.5f,
-		           renderData->spawnIconW, renderData->spawnIconH, mark->shader);
-		trap_R_SetColor(NULL);
-	}
-
-	/* Draw sprite with spawn scale */
-	trap_R_SetColor(renderData->color);
-	CG_DrawPic(renderData->x - renderData->iconW * 0.5f * renderData->spawnScale,
-	           renderData->y - renderData->iconH * 0.5f * renderData->spawnScale,
-	           renderData->iconW * renderData->spawnScale,
-	           renderData->iconH * renderData->spawnScale, mark->shader);
-	trap_R_SetColor(NULL);
-
-	/* Draw player name below mark when hovering */
-	if ((cg_teamTask.integer & CG_TEAMTASK_SHOWNAME) && renderData->nameFade > 0.0f && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
-	{
-		ci = &cgs.clientinfo[mark->clientNum];
-		if (ci->infoValid && ci->name[0])
-		{
-			/* White color with same alpha as mark, multiplied by name fade */
-			Vector4Set(nameColor, 1.0f, 1.0f, 1.0f, renderData->color[3] * renderData->nameFade);
-			Vector4Set(shadowColor, 0.0f, 0.0f, 0.0f, renderData->color[3] * renderData->nameFade);
-			/* Position name below mark */
-			nameY = renderData->y + renderData->iconH * 0.5f + renderData->h * 0.5f;
-			CG_FontSelect(renderData->font);
-			/* Draw player name */
-			CG_OSPDrawStringNew(
-			    renderData->x, nameY,
-			    ci->name,
-			    nameColor,
-			    shadowColor,
-			    renderData->w, renderData->h,
-			    0, /* no max width limit */
-			    DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW,
-			    NULL, NULL, NULL
-			);
-		}
-	}
-}
-
-void CG_DrawTeamTaskMarks(void)
-{
-	int i;
-	int j;
-	teamTaskMarkConstants_t constants;
-	teamTaskMarkRenderData_t renderData;
-	teamTaskMark_t* mark;
-
-	/* Check conditions */
-	if (cgs.gametype < GT_TEAM)
-	{
-		return;
-	}
-
-	if (CG_IsLocalClientSpectator())
-	{
-		return;
-	}
-
-	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
-	{
-		return;
-	}
-
-	/* Initialize constants */
-	CG_InitTeamTaskMarkConstants(&constants);
-
-	/* Process and render each mark */
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
-	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
-
-		/* Remove expired marks */
-		if (cg.time >= mark->endTime)
-		{
-			for (j = i; j < cgs.be.teamMarkers.numTeamTaskMarks - 1; j++)
-			{
-				cgs.be.teamMarkers.teamTaskMarks[j] = cgs.be.teamMarkers.teamTaskMarks[j + 1];
-			}
-			cgs.be.teamMarkers.numTeamTaskMarks--;
-			i--;
-			continue;
-		}
-
-		/* Process mark (calculate positions, fade, hover state) */
-		if (!CG_ProcessTeamTaskMark(mark, i, &constants, &renderData))
-		{
-			/* Mark is outside screen, skip rendering */
-			continue;
-		}
-
-		/* Render mark (draw sprite, spawn effect, player name) */
-		CG_RenderTeamTaskMark(mark, &renderData);
-	}
-}
-
-
-/*
-=================
-CG_UpdateSelwheelMark
-
-Update mark position based on mouse movement from usercmd_t
-=================
-*/
 void CG_UpdateSelwheelMark(void)
 {
 	int currentCmdNum;
@@ -1386,23 +154,34 @@ void CG_UpdateSelwheelMark(void)
 		}
 
 		// Update position based on movement
-		sensitivity = cg_teamTaskWheelSensitivity.value; // Use cvar to control mark movement speed
+		// Use adjusted wheel sensitivity if bitmask & 8 is set
+		if (cgs.be.teamMarkers.sensitivityAdjusted)
+		{
+			sensitivity = cgs.be.teamMarkers.adjustedWheelSensitivity;
+		}
+		else
+		{
+			sensitivity = cg_teamTaskWheelSensitivity.value; // Use cvar to control mark movement speed
+		}
 		cgs.be.teamMarkers.ttwheelMarkX -= yawDelta * sensitivity; // Inverted: right mouse = right mark
 		cgs.be.teamMarkers.ttwheelMarkY += pitchDelta * sensitivity;
 
 		// Clamp to circular boundary (radius slightly larger than icon position)
 		{
 			float maxRadius;
-			float iconRadius;
 			float dx;
 			float dy;
 			float distFromCenter;
 			float angle;
+			float scale;
 
-			centerX = SCREEN_WIDTH / 2.0f;
-			centerY = SCREEN_HEIGHT / 2.0f;
-			iconRadius = 20.0f; // Distance from center to icons (in 640x480 coordinates, reduced by 1/3)
-			maxRadius = iconRadius + 10.0f; // Slightly larger than icon position (increased by 10 pixels)
+			CG_GetScreenCenter(&centerX, &centerY);
+			scale = cg_teamTaskWheelScale.value;
+			if (scale <= 0.0f)
+			{
+				scale = 1.0f;
+			}
+			maxRadius = (SELWHEEL_ICON_RADIUS + SELWHEEL_MARK_MAX_RADIUS_OFFSET) * scale;
 
 			// Calculate distance from center (all in 640x480 coordinates)
 			dx = cgs.be.teamMarkers.ttwheelMarkX - centerX;
@@ -1443,16 +222,19 @@ void CG_UpdateSelwheelMark(void)
 	if (timeSinceMovement > 500)
 	{
 		float maxRadius;
-		float iconRadius;
 		float dx;
 		float dy;
 		float distFromCenter;
 		float angle;
+		float scale;
 
-		centerX = SCREEN_WIDTH / 2.0f;
-		centerY = SCREEN_HEIGHT / 2.0f;
-		iconRadius = 20.0f; // Distance from center to icons (in 640x480 coordinates, reduced by 1/3)
-		maxRadius = iconRadius + 5; // Slightly larger than icon position (increased by 10 pixels)
+		CG_GetScreenCenter(&centerX, &centerY);
+		scale = cg_teamTaskWheelScale.value;
+		if (scale <= 0.0f)
+		{
+			scale = 1.0f;
+		}
+		maxRadius = (SELWHEEL_ICON_RADIUS + SELWHEEL_RETURN_MAX_RADIUS_OFFSET) * scale;
 
 		// Smooth return to center (all in 640x480 coordinates)
 		returnSpeed = 0.15f; // Adjust this value to control return speed (0.0 = instant, 1.0 = very slow)
@@ -1501,12 +283,19 @@ void CG_DrawSelwheelMark(void)
 	float size;
 	qhandle_t shader;
 	vec4_t color;
+	float scale;
 
 	if (!cgs.be.teamMarkers.ttwheelMarkActive)
 	{
 		return;
 	}
 
+	// Get scale value
+	scale = cg_teamTaskWheelScale.value;
+	if (scale <= 0.0f)
+	{
+		scale = 1.0f;
+	}
 
 	// Use white shader for the mark
 	shader = cgs.media.whiteShader;
@@ -1527,7 +316,7 @@ void CG_DrawSelwheelMark(void)
 	// Adjust coordinates from 640x480 to actual screen size
 	CG_AdjustFrom640_Old(&x, &y, &size, &size, qfalse);
 
-	size = 4.0f;
+	size = 4.0f * scale;
 	// Draw the mark as a small square
 	trap_R_SetColor(color);
 	trap_R_DrawStretchPic(
@@ -1580,32 +369,41 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 		return -1;
 	}
 
-	// Icons are fixed at screen center, not following the mark
-	centerX = SCREEN_WIDTH / 2.0f;
-	centerY = SCREEN_HEIGHT / 2.0f;
-	iconRadius = 20.0f; // Distance from center to icons (reduced by 1/3)
-	iconSize = 6; // Base icon size (reduced by 1/3 from 8.0f)
-
-	// Adjust coordinates from 640x480 to actual screen size
-	CG_AdjustFrom640_Old(&centerX, &centerY, NULL, NULL, qfalse);
-	CG_AdjustFrom640_Old(&x, &y, NULL, NULL, qfalse);
-	CG_AdjustFrom640_Old(NULL, NULL, &iconRadius, &iconSize, qfalse);
-
-	// Calculate distance from center and angle
-	distFromCenter = sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
-	cursorAngle = atan2(-(y - centerY), x - centerX); // Negative Y because screen Y increases downward
-
-	// Normalize angle to 0..2π range
-	if (cursorAngle < 0.0f)
+	// Get scale value
 	{
-		cursorAngle += 2.0f * M_PI;
-	}
+		float scale;
+		scale = cg_teamTaskWheelScale.value;
+		if (scale <= 0.0f)
+		{
+			scale = 1.0f;
+		}
 
-	// Define activation zone: from minRadius to maxRadius
-	// minRadius: small area in center where we reset selection
-	// maxRadius: extend to cover area between center and icons, and beyond
-	minRadius = 12.0f; // Small center area for reset (increased for larger center zone)
-	maxRadius = iconRadius + 40.0f; // Extend beyond icons to cover gaps (proportionally reduced)
+		// Icons are fixed at screen center, not following the mark
+		CG_GetScreenCenter(&centerX, &centerY);
+		iconRadius = SELWHEEL_ICON_RADIUS * scale;
+		iconSize = SELWHEEL_ICON_SIZE * scale;
+
+		// Adjust coordinates from 640x480 to actual screen size
+		CG_AdjustFrom640_Old(&centerX, &centerY, NULL, NULL, qfalse);
+		CG_AdjustFrom640_Old(&x, &y, NULL, NULL, qfalse);
+		CG_AdjustFrom640_Old(NULL, NULL, &iconRadius, &iconSize, qfalse);
+
+		// Calculate distance from center and angle
+		distFromCenter = sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
+		cursorAngle = atan2(-(y - centerY), x - centerX); // Negative Y because screen Y increases downward
+
+		// Normalize angle to 0..2π range
+		if (cursorAngle < 0.0f)
+		{
+			cursorAngle += 2.0f * M_PI;
+		}
+
+		// Define activation zone: from minRadius to maxRadius
+		// minRadius: small area in center where we reset selection
+		// maxRadius: extend to cover area between center and icons, and beyond
+		minRadius = SELWHEEL_MIN_RADIUS * scale;
+		maxRadius = iconRadius + SELWHEEL_MAX_RADIUS_EXTENSION * scale;
+	}
 
 	// Adjust radii to screen size
 	{
@@ -1662,32 +460,13 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 	}
 
 	// Start angle: 9 o'clock = 270 degrees = 3π/2 radians
-	startAngle = M_PI * 1.5f;
+	startAngle = SELWHEEL_START_ANGLE;
 
 	// Check each element's sector (elements start from i)
 	for (; i < cgs.be.teamMarkers.ttwheelElementCount; i++)
 	{
 		// Calculate element angle
-		if ((cg_teamTaskWheel.integer & 2) && elementCount > 1)
-		{
-			// For elements around center (index 1+), use (i - 1) for angle calculation
-			iconAngle = startAngle + angleStep * (float)(i - 1);
-		}
-		else
-		{
-			// Normal case: all elements around circle
-			iconAngle = startAngle + angleStep * (float)i;
-		}
-
-		// Normalize iconAngle to 0..2π range
-		if (iconAngle < 0.0f)
-		{
-			iconAngle += 2.0f * M_PI;
-		}
-		else if (iconAngle >= 2.0f * M_PI)
-		{
-			iconAngle -= 2.0f * M_PI;
-		}
+		iconAngle = CG_GetSelwheelIconAngle(i, elementCount, (cg_teamTaskWheel.integer & 2) ? qtrue : qfalse);
 
 		// Calculate angle difference
 		angleDiff = cursorAngle - iconAngle;
@@ -1745,18 +524,24 @@ void CG_DrawSelwheelIcons(void)
 	int hoveredIcon;
 	int i;
 	int font = CG_FontIndexFromCvar(&cg_teamTaskFont);
+	float scale;
 
 	if (!cgs.be.teamMarkers.ttwheelMarkActive)
 	{
 		return;
 	}
 
+	// Get scale value
+	scale = cg_teamTaskWheelScale.value;
+	if (scale <= 0.0f)
+	{
+		scale = 1.0f;
+	}
 
 	// Icons are fixed at screen center, not following the mark
-	centerX = SCREEN_WIDTH / 2.0f;
-	centerY = SCREEN_HEIGHT / 2.0f;
-	iconRadius = 20.0f; // Distance from center to icons (reduced by 1/3)
-	iconSize = 6; // Base icon size (reduced by 1/3 from 8.0f)
+	CG_GetScreenCenter(&centerX, &centerY);
+	iconRadius = SELWHEEL_ICON_RADIUS * scale;
+	iconSize = SELWHEEL_ICON_SIZE * scale;
 	backgroundSize = iconSize * 1.2f; // Background size when hovered
 
 	// Check for cooldown and display text above icons
@@ -1783,7 +568,7 @@ void CG_DrawSelwheelIcons(void)
 			Com_sprintf(cooldownText, sizeof(cooldownText), "Cooldown: %i.%i seconds", seconds, milliseconds / 100);
 
 			/* Position text above icons - use screen coordinates directly */
-			cooldownTextX = SCREEN_WIDTH / 2.0f;
+			CG_GetScreenCenter(&cooldownTextX, NULL);
 			cooldownTextY = 100; /* Above icons with some spacing */
 
 			/* Text size */
@@ -1823,7 +608,7 @@ void CG_DrawSelwheelIcons(void)
 	backgroundColor[3] = 0.3f;
 
 	// Start angle: 9 o'clock = 270 degrees = 3π/2 radians
-	startAngle = M_PI * 1.5f;
+	startAngle = SELWHEEL_START_ANGLE;
 
 	// Draw center wheel background (size slightly smaller than icon radius)
 	{
@@ -1832,8 +617,7 @@ void CG_DrawSelwheelIcons(void)
 		float wheelSize;
 		vec4_t wheelColor;
 
-		wheelX = SCREEN_WIDTH / 2.0f;
-		wheelY = SCREEN_HEIGHT / 2.0f;
+		CG_GetScreenCenter(&wheelX, &wheelY);
 		wheelSize = iconRadius * 5;
 
 		// Use theme color for wheel background
@@ -1885,11 +669,10 @@ void CG_DrawSelwheelIcons(void)
 			float tempW;
 			float tempH;
 
-			centerXCheck = SCREEN_WIDTH / 2.0f;
-			centerYCheck = SCREEN_HEIGHT / 2.0f;
+			CG_GetScreenCenter(&centerXCheck, &centerYCheck);
 			markXCheck = cgs.be.teamMarkers.ttwheelMarkX;
 			markYCheck = cgs.be.teamMarkers.ttwheelMarkY;
-			minRadiusCheck = 12.0f; // Match minRadius from CG_GetSelwheelIconAtPosition
+			minRadiusCheck = SELWHEEL_MIN_RADIUS * scale;
 
 			CG_AdjustFrom640_Old(&centerXCheck, &centerYCheck, NULL, NULL, qfalse);
 			CG_AdjustFrom640_Old(&markXCheck, &markYCheck, NULL, NULL, qfalse);
@@ -1925,8 +708,7 @@ void CG_DrawSelwheelIcons(void)
 			float smartIconY;
 			vec4_t smartIconColor;
 
-			centerIconX = SCREEN_WIDTH / 2.0f;
-			centerIconY = SCREEN_HEIGHT / 2.0f;
+			CG_GetScreenCenter(&centerIconX, &centerIconY);
 			centerIconSize = iconSize * 1.2f; // Larger center icon
 			centerIconBgSize = backgroundSize * 1.2f; // Larger background for center icon
 			smartIconSize = iconSize * 0.4f; // Smart icon size - small icon in corner
@@ -1958,7 +740,17 @@ void CG_DrawSelwheelIcons(void)
 
 			// Draw center icon
 			// Use gray color for non-selected element, white for selected
-			if (hoveredIcon == 0 || cgs.be.teamMarkers.ttwheelSelectedIcon == 0)
+			// Special handling for tHere: use theme color with whitening 0.8
+			if (cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+			        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tHere"))
+			{
+				// tHere element - use theme color with whitening 0.8
+				vec4_t hereColor;
+				Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, hereColor);
+				CG_ColorWhitenSmart(hereColor, NULL, 0.8f);
+				trap_R_SetColor(hereColor);
+			}
+			else if (hoveredIcon == 0 || cgs.be.teamMarkers.ttwheelSelectedIcon == 0)
 			{
 				// Element is selected - use white color
 				trap_R_SetColor(iconColor);
@@ -1982,10 +774,10 @@ void CG_DrawSelwheelIcons(void)
 			    cgs.be.teamMarkers.ttwheelElementShaders[0]);
 			trap_R_SetColor(NULL);
 
-			// Draw smart icon in right top corner of center icon (always, if command is tsmart)
+			// Draw smart icon in right top corner of center icon (always, if command is tSmart)
 			// Draw after main icon so it appears on top
 			if (cgs.media.teamTasksSmart && cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-			        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tsmart"))
+			        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tSmart"))
 			{
 				// White color when element is not selected, theme color when selected
 				if (hoveredIcon == 0 || cgs.be.teamMarkers.ttwheelSelectedIcon == 0)
@@ -2032,16 +824,7 @@ void CG_DrawSelwheelIcons(void)
 		}
 
 		// Distribute evenly around circle starting from 9 o'clock
-		if ((cg_teamTaskWheel.integer & 2) && cgs.be.teamMarkers.ttwheelElementCount > 1)
-		{
-			// Center element exists, distribute other elements (i-1) around circle
-			iconAngle = startAngle + (2.0f * M_PI * (float)(i - 1) / (float)(cgs.be.teamMarkers.ttwheelElementCount - 1));
-		}
-		else
-		{
-			// No center element, distribute all elements around circle
-			iconAngle = startAngle + (2.0f * M_PI * (float)i / (float)cgs.be.teamMarkers.ttwheelElementCount);
-		}
+		iconAngle = CG_GetSelwheelIconAngle(i, cgs.be.teamMarkers.ttwheelElementCount, (cg_teamTaskWheel.integer & 2) ? qtrue : qfalse);
 
 		// Calculate icon position using the SAME logic as CG_GetSelwheelIconAtPosition
 		// to ensure icon is centered in activation block
@@ -2052,23 +835,15 @@ void CG_DrawSelwheelIcons(void)
 			float iconAngleIcon;
 
 			// Use same calculation as in CG_GetSelwheelIconAtPosition
-			centerXIcon = SCREEN_WIDTH / 2.0f;
-			centerYIcon = SCREEN_HEIGHT / 2.0f;
-			iconRadiusIcon = 60.0f;
+			CG_GetScreenCenter(&centerXIcon, &centerYIcon);
+			iconRadiusIcon = 60.0f * scale;
 
 			// Adjust coordinates from 640x480 to actual screen size
 			CG_AdjustFrom640_Old(&centerXIcon, &centerYIcon, NULL, NULL, qfalse);
 			CG_AdjustFrom640_Old(NULL, NULL, &iconRadiusIcon, NULL, qfalse);
 
 			// Calculate icon angle (same as in CG_GetSelwheelIconAtPosition)
-			if ((cg_teamTaskWheel.integer & 2) && cgs.be.teamMarkers.ttwheelElementCount > 1)
-			{
-				iconAngleIcon = startAngle + (2.0f * M_PI * (float)(i - 1) / (float)(cgs.be.teamMarkers.ttwheelElementCount - 1));
-			}
-			else
-			{
-				iconAngleIcon = startAngle + (2.0f * M_PI * (float)i / (float)cgs.be.teamMarkers.ttwheelElementCount);
-			}
+			iconAngleIcon = CG_GetSelwheelIconAngle(i, cgs.be.teamMarkers.ttwheelElementCount, (cg_teamTaskWheel.integer & 2) ? qtrue : qfalse);
 
 			// Calculate icon position (same as in CG_GetSelwheelIconAtPosition)
 			// These coordinates are already scaled
@@ -2105,7 +880,17 @@ void CG_DrawSelwheelIcons(void)
 
 		// Draw icon
 		// Use gray color for non-selected elements, white for selected
-		if (hoveredIcon == i || cgs.be.teamMarkers.ttwheelSelectedIcon == i)
+		// Special handling for tHere: use theme color with whitening 0.8
+		if (cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+		        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tHere"))
+		{
+			// tHere element - use theme color with whitening 0.8
+			vec4_t hereColor;
+			Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, hereColor);
+			CG_ColorWhitenSmart(hereColor, NULL, 0.8f);
+			trap_R_SetColor(hereColor);
+		}
+		else if (hoveredIcon == i || cgs.be.teamMarkers.ttwheelSelectedIcon == i)
 		{
 			// Element is selected - use white color
 			trap_R_SetColor(iconColor);
@@ -2128,9 +913,9 @@ void CG_DrawSelwheelIcons(void)
 		    1,
 		    cgs.be.teamMarkers.ttwheelElementShaders[i]);
 
-		// Draw smart icon in right top corner of icon (always, if command is tsmart)
+		// Draw smart icon in right top corner of icon (always, if command is tSmart)
 		if (cgs.media.teamTasksSmart && cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-		        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tsmart"))
+		        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tSmart"))
 		{
 			float smartIconSizeWheel;
 			float smartIconXWheel;
@@ -2352,16 +1137,26 @@ void CG_DrawSelwheelPointers(void)
 
 	selectedIcon = cgs.be.teamMarkers.ttwheelSelectedIcon;
 
-	// Pointer radius: between center and icons (in unused zone)
-	// Icons use iconRadius = 20.0f in 640x480 coordinates
-	// Use smaller radius for pointers (between center and icons)
-	pointerRadius = 24.0f; // Position between center and icons (in 640x480 coordinates)
-	pointerSize = 8.0f; // Size of pointer arrow (increased for visibility)
+	// Get scale value
+	{
+		float scale;
+		scale = cg_teamTaskWheelScale.value;
+		if (scale <= 0.0f)
+		{
+			scale = 1.0f;
+		}
+
+		// Pointer radius: between center and icons (in unused zone)
+		// Icons use iconRadius = 20.0f in 640x480 coordinates
+		// Use smaller radius for pointers (between center and icons)
+		pointerRadius = 24.0f * scale; // Position between center and icons (in 640x480 coordinates)
+		pointerSize = 8.0f * scale; // Size of pointer arrow (increased for visibility)
+	}
 
 	// Start angle: 9 o'clock = 270 degrees = 3π/2 radians
-	startAngle = M_PI * 1.5f;
+	startAngle = SELWHEEL_START_ANGLE;
 	Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, activeColor);
-	CG_ColorWhitenSmart(activeColor, NULL, 0.4f);
+	CG_ColorWhitenSmart(activeColor, NULL, 0.2f);
 	// Active color (white) for selected element
 
 	// Inactive color (gray) for non-selected elements
@@ -2390,16 +1185,7 @@ void CG_DrawSelwheelPointers(void)
 	for (i = startIndex; i < elementCount; i++)
 	{
 		// Calculate angle for this element
-		if ((cg_teamTaskWheel.integer & 2) && elementCount > 1)
-		{
-			// Center element exists, use (i - 1) for angle calculation
-			pointerAngle = startAngle + angleStep * (float)(i - 1);
-		}
-		else
-		{
-			// No center element, use i for angle calculation
-			pointerAngle = startAngle + angleStep * (float)i;
-		}
+		pointerAngle = CG_GetSelwheelIconAngle(i, elementCount, (cg_teamTaskWheel.integer & 2) ? qtrue : qfalse);
 
 		// Calculate pointer position
 		// CG_DrawRotatedPic expects coordinates in 640x480 virtual system, not scaled
@@ -2419,8 +1205,7 @@ void CG_DrawSelwheelPointers(void)
 
 			// Use 640x480 coordinates (320, 240 = center)
 			// CG_DrawRotatedPic will handle scaling internally
-			centerX = 320.0f; // Center X in 640x480 coordinates
-			centerY = 240.0f; // Center Y in 640x480 coordinates
+			CG_GetScreenCenter(&centerX, &centerY);
 
 			// Calculate FOV to compensate for ellipse distortion
 			hfov_x = cg.refdef.fov_x * M_PI / 360.0f;
@@ -2484,6 +1269,38 @@ void CG_DrawSelwheelPointers(void)
 
 /*
 =================
+CG_SelwheelRestoreSensitivity
+
+Restore sensitivity if it was adjusted for wheel
+=================
+*/
+static void CG_SelwheelRestoreSensitivity(void)
+{
+	float storedSensitivity;
+	char sensitivityStr[32];
+
+	if (cgs.be.teamMarkers.sensitivityAdjusted)
+	{
+		// Update cvar to get latest value
+		trap_Cvar_Update(&cg_storedSensitivity);
+		
+		// Get stored sensitivity value directly from cvar (float, preserves precision)
+		storedSensitivity = cg_storedSensitivity.value;
+		if (storedSensitivity < 0.0f)
+		{
+			storedSensitivity = 0.0f;
+		}
+		
+		// Restore original sensitivity value
+		Com_sprintf(sensitivityStr, sizeof(sensitivityStr), "%f", storedSensitivity);
+		trap_Cvar_Set("sensitivity", sensitivityStr);
+		
+		cgs.be.teamMarkers.sensitivityAdjusted = qfalse;
+	}
+}
+
+/*
+=================
 CG_SelwheelMarkStart
 
 Start ttwheel mark tracking
@@ -2508,20 +1325,24 @@ void CG_SelwheelMarkStart(void)
 	{
 		return;
 	}
+	if (cgs.gametype < GT_TEAM)
+	{
+		return;
+	}
 	/* Check if we are not playing (observing another client) */
-	if (!CG_IsLocalClientOnScreen())
-	{
-		return;
-	}
-	if (CG_IsDead())
-	{
-		return;
-	}
+	// if (!CG_IsLocalClientOnScreen())
+	// {
+	// 	return;
+	// }
+	// if (CG_IsDead())
+	// {
+	// 	return;
+	// }
 	/* Check if we are in spectator/following mode */
-	if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
-	{
-		return;
-	}
+	// if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
+	// {
+	// 	return;
+	// }
 	/* Check if local player is spectator */
 	if (CG_IsLocalClientSpectator())
 	{
@@ -2543,8 +1364,7 @@ void CG_SelwheelMarkStart(void)
 
 	// First time activation - initialize position to center
 	cgs.be.teamMarkers.ttwheelMarkActive = qtrue;
-	cgs.be.teamMarkers.ttwheelMarkX = SCREEN_WIDTH / 2.0f;
-	cgs.be.teamMarkers.ttwheelMarkY = SCREEN_HEIGHT / 2.0f;
+	CG_GetScreenCenter(&cgs.be.teamMarkers.ttwheelMarkX, &cgs.be.teamMarkers.ttwheelMarkY);
 	cgs.be.teamMarkers.ttwheelHoveredIcon = -1;
 
 	// If smart mode is enabled (bitmask & 2), save target at wheel opening
@@ -2661,6 +1481,59 @@ void CG_SelwheelMarkStart(void)
 	}
 
 	cgs.be.teamMarkers.lastMovementTime = cg.time;
+
+	// Adjust sensitivity by default, unless bitmask & 16 is set (disable aim lock)
+	if (!(cg_teamTaskWheel.integer & 16))
+	{
+		float currentSensitivity;
+		float currentWheelSensitivity;
+		float newWheelSensitivity;
+		char sensitivityStr[32];
+
+		// Update cvar to get latest value
+		trap_Cvar_Update(&sensitivity);
+		
+		// Get current sensitivity value directly from cvar (float, preserves precision)
+		currentSensitivity = sensitivity.value;
+		if (currentSensitivity < 0.0f)
+		{
+			currentSensitivity = 0.0f;
+		}
+
+		// Get current wheel sensitivity
+		currentWheelSensitivity = cg_teamTaskWheelSensitivity.value;
+
+		// Save values
+		cgs.be.teamMarkers.savedSensitivity = currentSensitivity;
+		cgs.be.teamMarkers.savedWheelSensitivity = currentWheelSensitivity;
+
+		// Store original sensitivity value directly in cvar (float, preserves precision)
+		Com_sprintf(sensitivityStr, sizeof(sensitivityStr), "%f", currentSensitivity);
+		trap_Cvar_Set("cg_storedSensitivity", sensitivityStr);
+
+		// Calculate new wheel sensitivity to maintain overall sensitivity
+		// old_sens * wheel_sens = new_sens * new_wheel_sens
+		// new_wheel_sens = (old_sens * wheel_sens) / new_sens
+		if (currentSensitivity > 0.002f)
+		{
+			newWheelSensitivity = (currentSensitivity * currentWheelSensitivity) / 0.002f;
+		}
+		else
+		{
+			// If sensitivity is already very low, don't adjust
+			newWheelSensitivity = currentWheelSensitivity;
+		}
+
+		cgs.be.teamMarkers.adjustedWheelSensitivity = newWheelSensitivity;
+		cgs.be.teamMarkers.sensitivityAdjusted = qtrue;
+
+		// Set sensitivity to 0.001 (use precise string to avoid float precision loss)
+		trap_Cvar_Set("sensitivity", "0.002");
+	}
+	else
+	{
+		cgs.be.teamMarkers.sensitivityAdjusted = qfalse;
+	}
 }
 
 /*
@@ -2703,6 +1576,9 @@ void CG_SelwheelMarkStop(void)
 		}
 	}
 
+	// Restore sensitivity if it was adjusted
+	CG_SelwheelRestoreSensitivity();
+
 	// Deactivate ttwheel AFTER sending command
 	cgs.be.teamMarkers.ttwheelMarkActive = qfalse;
 	cgs.be.teamMarkers.ttwheelHoveredIcon = -1;
@@ -2724,6 +1600,9 @@ Close ttwheel without sending command or executing action
 */
 void CG_SelwheelMarkClose(void)
 {
+	/* Restore sensitivity if it was adjusted */
+	CG_SelwheelRestoreSensitivity();
+
 	/* Deactivate ttwheel without sending command or executing action */
 	cgs.be.teamMarkers.ttwheelMarkActive = qfalse;
 	cgs.be.teamMarkers.ttwheelHoveredIcon = -1;
@@ -2744,7 +1623,7 @@ Set the elements for ttwheel menu
 count: number of elements (max MAX_SELWHEEL_ELEMENTS)
 shaders: array of shader handles for icons
 actions: array of function pointers for actions
-commands: array of console command strings (e.g. "tattack", "tdefence", etc.)
+commands: array of console command strings (e.g. "tAttack", "tDefence", etc.)
 =================
 */
 void CG_SelwheelSetElements(int count, qhandle_t* shaders, void (**actions)(void), const char** commands)
@@ -2871,7 +1750,7 @@ void CG_SelwheelParseTeamTaskWheel(void)
 			}
 		}
 
-		/* If first element from cvar failed, fallback to tsmart */
+		/* If first element from cvar failed, fallback to tSmart */
 		if (!centerElementSet)
 		{
 			cmd = CG_GetTeamTaskCommandByName(cg_teamTaskSmartDefault.string);
@@ -2882,7 +1761,7 @@ void CG_SelwheelParseTeamTaskWheel(void)
 				{
 					shaders[count] = centerShader;
 					actions[count] = CG_TeamTaskMarkSend;
-					commands[count] = "tsmart";
+					commands[count] = "tSmart";
 					count++;
 					centerElementSet = qtrue;
 				}
@@ -2891,12 +1770,12 @@ void CG_SelwheelParseTeamTaskWheel(void)
 			{
 				shaders[count] = cgs.media.teamTasksLocation;
 				actions[count] = CG_TeamTaskMarkSend;
-				commands[count] = "tsmart";
+				commands[count] = "tSmart";
 				count++;
 			}
 		}
 	}
-	/* If bitmask & 2 is set but cg_teamTaskWheelSet is empty, add tsmart as center element (index 0) */
+	/* If bitmask & 2 is set but cg_teamTaskWheelSet is empty, add tSmart as center element (index 0) */
 	else if (hasCenterElement)
 	{
 		teamTaskCommand_t* cmd;
@@ -2913,7 +1792,7 @@ void CG_SelwheelParseTeamTaskWheel(void)
 			{
 				shaders[count] = smartShader;
 				actions[count] = CG_TeamTaskMarkSend;
-				commands[count] = "tsmart";
+				commands[count] = "tSmart";
 				count++;
 			}
 		}
@@ -2922,7 +1801,7 @@ void CG_SelwheelParseTeamTaskWheel(void)
 		{
 			shaders[count] = cgs.media.teamTasksLocation;
 			actions[count] = CG_TeamTaskMarkSend;
-			commands[count] = "tsmart";
+			commands[count] = "tSmart";
 			count++;
 		}
 	}
@@ -2930,6 +1809,37 @@ void CG_SelwheelParseTeamTaskWheel(void)
 	/* If cvar is empty, use default elements (all commands with actions, excluding auto-selected) */
 	if (cg_teamTaskWheelSet.string[0] == '\0')
 	{
+		/* Add tSmart as first element if hasCenterElement is not set */
+		if (!hasCenterElement && count < MAX_SELWHEEL_ELEMENTS)
+		{
+			teamTaskCommand_t* cmd;
+			qhandle_t smartShader;
+
+			/* Get default type from cvar (string name) */
+			cmd = CG_GetTeamTaskCommandByName(cg_teamTaskSmartDefault.string);
+
+			/* Check if command is valid and has action */
+			if (cmd && cmd->action != NULL)
+			{
+				smartShader = CG_GetTeamTaskShaderByType(cmd->taskType);
+				if (smartShader)
+				{
+					shaders[count] = smartShader;
+					actions[count] = CG_TeamTaskMarkSend;
+					commands[count] = "tSmart";
+					count++;
+				}
+			}
+			/* Fallback to location if cvar is invalid or shader not loaded */
+			if (count == 0 && cgs.media.teamTasksLocation)
+			{
+				shaders[count] = cgs.media.teamTasksLocation;
+				actions[count] = CG_TeamTaskMarkSend;
+				commands[count] = "tSmart";
+				count++;
+			}
+		}
+
 		/* Use all default elements that have actions (exclude auto-selected: target, redarmor, megahealth) */
 		for (i = 0; i < NUM_TEAMTASK_COMMANDS && count < MAX_SELWHEEL_ELEMENTS; i++)
 		{
@@ -2993,14 +1903,53 @@ void CG_SelwheelParseTeamTaskWheel(void)
 			/* Find matching element using global array */
 			{
 				teamTaskCommand_t* cmd;
+				qboolean elementAdded;
 
-				cmd = CG_GetTeamTaskCommandByName(token);
-				if (cmd && cmd->action != NULL)
+				elementAdded = qfalse;
+
+				/* Check if token is "tSmart" or "smart" */
+				if (!Q_stricmp(token, "tSmart") || !Q_stricmp(token, "smart"))
 				{
-					shaders[count] = CG_GetTeamTaskShaderByType(cmd->taskType);
-					actions[count] = cmd->action;
-					commands[count] = cmd->command;
-					count++;
+					qhandle_t smartShader;
+
+					/* Get default type from cvar (string name) */
+					cmd = CG_GetTeamTaskCommandByName(cg_teamTaskSmartDefault.string);
+
+					/* Check if command is valid and has action */
+					if (cmd && cmd->action != NULL)
+					{
+						smartShader = CG_GetTeamTaskShaderByType(cmd->taskType);
+						if (smartShader)
+						{
+							shaders[count] = smartShader;
+							actions[count] = CG_TeamTaskMarkSend;
+							commands[count] = "tSmart";
+							count++;
+							elementAdded = qtrue;
+						}
+					}
+					/* Fallback to location if cvar is invalid or shader not loaded */
+					if (!elementAdded && cgs.media.teamTasksLocation)
+					{
+						shaders[count] = cgs.media.teamTasksLocation;
+						actions[count] = CG_TeamTaskMarkSend;
+						commands[count] = "tSmart";
+						count++;
+						elementAdded = qtrue;
+					}
+				}
+
+				/* If not tSmart, try to find in global array */
+				if (!elementAdded)
+				{
+					cmd = CG_GetTeamTaskCommandByName(token);
+					if (cmd && cmd->action != NULL)
+					{
+						shaders[count] = CG_GetTeamTaskShaderByType(cmd->taskType);
+						actions[count] = cmd->action;
+						commands[count] = cmd->command;
+						count++;
+					}
 				}
 			}
 		}

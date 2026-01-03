@@ -507,6 +507,9 @@ vmCvar_t        cg_teamTaskFont;
 vmCvar_t        cg_teamTaskWheel;
 vmCvar_t        cg_teamTaskWheelSet;
 vmCvar_t        cg_teamTaskWheelSensitivity;
+vmCvar_t        cg_teamTaskWheelScale;
+vmCvar_t        cg_storedSensitivity;
+vmCvar_t        sensitivity;
 vmCvar_t        cg_teamTaskThemeColor;
 vmCvar_t        cg_teamTaskSmartDefault;
 vmCvar_t        cg_teamTaskHudMarkerMaxDist;
@@ -979,11 +982,13 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamTaskFade, "cg_teamTaskFade", "0.5", CVAR_ARCHIVE  | CVAR_NEW},
 	{ &cg_teamTaskFadeRadius, "cg_teamTaskFadeRadius", "128", CVAR_ARCHIVE  | CVAR_NEW},
 	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE  | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskFont, },
-	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
-	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "smart medic attack defence watch yes no", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
-	{ &cg_teamTaskWheelSensitivity, "cg_teamTaskWheelSensitivity", "5.0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "12", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
+	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "defence here medic smart yes no", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
+	{ &cg_teamTaskWheelSensitivity, "cg_teamTaskWheelSensitivity", "3.0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teamTaskWheelScale, "cg_teamTaskWheelScale", "1.0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_storedSensitivity, "cg_storedSensitivity", "1.0", CVAR_NOTABCOMPLETE | CVAR_ARCHIVE | CVAR_INIT },
 	{ &cg_teamTaskThemeColor, "cg_teamTaskThemeColor", "Red", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskThemeColor },
-	{ &cg_teamTaskSmartDefault, "cg_teamTaskSmartDefault", "location", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel }, /* Default: location */
+	{ &cg_teamTaskSmartDefault, "cg_teamTaskSmartDefault", "attack", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel }, /* Default: location */
 	{ &cg_teamTaskHudMarkerMaxDist, "cg_teamTaskHudMarkerMaxDist", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskHudMarkerSize, "cg_teamTaskHudMarkerSize", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskHudMarkerMaxScale, "cg_teamTaskHudMarkerMaxScale", "1", CVAR_ARCHIVE | CVAR_NEW },
@@ -1001,7 +1006,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_brightWeaponsColorRG, "cg_brightWeaponsColorRG", "Cyan", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_brightWeaponsColorPG, "cg_brightWeaponsColorPG", "Magenta", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_brightWeaponsColorBFG, "cg_brightWeaponsColorBFG", "Blue", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
+	{ &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
 
@@ -1102,6 +1107,7 @@ void CG_RegisterCvars(void)
 	trap_Cvar_Register(NULL, "headmodel", DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
 	trap_Cvar_Register(NULL, "team_model", DEFAULT_TEAM_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
 	trap_Cvar_Register(NULL, "team_headmodel", DEFAULT_TEAM_HEAD, CVAR_USERINFO | CVAR_ARCHIVE);
+	trap_Cvar_Register(&sensitivity, "sensitivity", "5.0", CVAR_ARCHIVE);
 
 	CG_OSPCvarsRestrictValues();
 }
@@ -1545,6 +1551,7 @@ static void CG_RegisterSounds(void)
 
 	// Team Task
 	cgs.media.pingSimpleSound = trap_S_RegisterSound("sound/teamplay/ping-simple.wav", qfalse);
+	cgs.media.pingDeathSound = trap_S_RegisterSound("sound/teamplay/ping-death.wav", qfalse);
 }
 
 qhandle_t CG_GetFragSound(void)
@@ -1751,6 +1758,7 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksSmart = trap_R_RegisterShader("teamTasks_smart");
 	cgs.media.teamTasksWheelbg = trap_R_RegisterShader("teamTasks_wheelbg");
 	cgs.media.teamTasksPointing = trap_R_RegisterShader("teamTasks_pointing");
+	cgs.media.teamTasksUnknown = trap_R_RegisterShader("teamTasks_unknown");
 
 	cgs.osp.decalOSPShaderCopyCount = 0;
 	cgs.osp.decalOSPShader[0] = trap_R_RegisterShader("decalOSP");
@@ -2422,6 +2430,12 @@ void CG_InitTeamTaskMarkers(void)
 	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucket, 10, 600, cg.time);
 	/* Initialize anti-flood token bucket for sending team task commands: flood protection (16 tokens, refill 1 token per 1100ms) */
 	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketFlood, 64, 1000, cg.time);
+	/* Initialize cooldown token bucket for tHere command (1 token, refill 1 token per 2000ms = 2 seconds) */
+	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketHere, 1, 2000, cg.time);
+
+	/* Initialize death position storage */
+	VectorClear(cgs.be.teamMarkers.deathPosition);
+	cgs.be.teamMarkers.deathPositionValid = qfalse;
 }
 
 /*

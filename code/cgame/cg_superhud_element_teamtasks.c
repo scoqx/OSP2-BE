@@ -401,6 +401,12 @@ static void CG_SHUDTeamTaskGetTaskName(int taskType, char* name, int maxlen)
 		case TEAMTASK_FROZEN_ENEMY:
 			taskName = "Frozen enemy";
 			break;
+		case TEAMTASK_HERE_ALIVE:
+			taskName = "Here";
+			break;
+		case TEAMTASK_HERE_DEAD:
+			taskName = "Here (dead)";
+			break;
 		default:
 			taskName = "Unknown";
 			break;

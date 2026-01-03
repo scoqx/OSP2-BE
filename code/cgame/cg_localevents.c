@@ -1035,6 +1035,7 @@ void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart)
 {
 	CG_ParseCvarTwoFloats(cvart, &cgs.be.settings.textSize[0], &cgs.be.settings.textSize[1]);
 }
+
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0])
@@ -1053,20 +1054,12 @@ void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart)
 	CG_UpdateBeFeatures();
 }
 
-void CG_LocalEventCvarChanged_cg_scoreboardTextSize(cvarTable_t* cvart)
-{
-	CG_ParseCvarTwoFloats(cvart, &cgs.be.sbSettings.textSize[0], &cgs.be.sbSettings.textSize[1]);
-	// CG_ScoreboardContext_Init();
-}
-void CG_LocalEventCvarChanged_cg_scoreboardScale(cvarTable_t* cvart)
-{
-	// CG_ScoreboardContext_Init();
-}
 void CG_LocalEventCvarChanged_chud_file(cvarTable_t* cvart)
 {
 	// Initialize CherryHUD parser first
 	CG_CHUDLoadConfig();
 }
+
 void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart)
 {
 	// // Initialize CherryHUD parser first

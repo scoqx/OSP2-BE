@@ -1141,15 +1141,19 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 	{
 		return;
 	}
-	if (!CG_IsLocalClientOnScreen())
+	if (!ignoreDead)
 	{
-		return;
+		if (!CG_IsLocalClientOnScreen())
+		{
+			return;
+		}
 	}
+	
 	if (cgs.gametype < GT_TEAM)
 	{
 		return;
 	}
-	if (ignoreDead && CG_IsDead())
+	if (!ignoreDead && CG_IsDead())
 	{
 		return;
 	}
@@ -1214,6 +1218,84 @@ void CG_TeamTaskMarkLocation(void)
 	CG_SendTeamTaskMark(0, TEAMTASK_LOCATION);
 }
 
+void CG_TeamTaskMarkHere(void)
+{
+	int i;
+	centity_t* cent;
+	vec3_t backupPosition;
+	qboolean backUpPositionValid;
+	int timeRemaining;
+
+	if (cgs.gametype < GT_TEAM)
+	{
+		CG_PrintOnce("^3There are no teams\n");
+		return;
+	}
+	/* Check cooldown for tHere command (2 seconds) */
+	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketHere, cg.time))
+	{
+		return;
+	}
+
+	/* Find frozen entity that belongs to local player */
+	for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+	{
+		cent = &cg_entities[i];
+		if (cent->currentState.eType == ET_PLAYER &&
+		    cent->currentState.clientNum == cg.clientNum &&
+		    cent->currentValid &&
+		    CG_IsFrozenEntity(cent))
+		{
+			/* Found our frozen entity - copy coordinates */
+			VectorCopy(cent->lerpOrigin, backupPosition);
+			backupPosition[2] += 24.0f;
+			backUpPositionValid = qtrue;
+			break;
+		}
+	}
+
+	if (CG_IsDead() || !CG_IsLocalClientOnScreen())
+	{
+		if (cgs.be.teamMarkers.deathPositionValid)
+		{
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_DEAD, cgs.be.teamMarkers.deathPosition, qtrue);
+		}
+		else if (backUpPositionValid)
+		{
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_DEAD, backupPosition, qtrue);
+		}
+		else
+		{
+			/* Player is dead/spectating but no death position available */
+			CG_Printf("^3No death position available\n");
+		}
+		return;
+	}
+	
+
+	/* Check if we're currently alive */
+	if (!CG_IsDead() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
+	{
+		/* Player is alive - send HERE_ALIVE with current position */
+		CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_ALIVE, cg.predictedPlayerState.origin, qfalse);
+	}
+	else {
+		if (cgs.be.teamMarkers.deathPositionValid)
+		{
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_DEAD, cgs.be.teamMarkers.deathPosition, qtrue);
+		}
+		else if (backUpPositionValid)
+		{
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_DEAD, backupPosition, qtrue);
+		}
+		else
+		{
+			/* Player is dead/spectating but no death position available */
+			CG_Printf("^3No death position available\n");
+		}
+	}
+}
+
 void CG_TeamTaskMarkSend(void)
 {
 	int targetType;
@@ -1272,7 +1354,7 @@ void CG_TeamTaskMarkSend(void)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
-			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_FROZEN_ALLY, itemPos, qtrue);
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_FROZEN_ALLY, itemPos, qfalse);
 			return;
 		case 6: /* frozen enemy */
 			/* Use saved frozen position if available, otherwise use current itemPos */
@@ -1283,7 +1365,7 @@ void CG_TeamTaskMarkSend(void)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
-			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_FROZEN_ENEMY, itemPos, qtrue);
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_FROZEN_ENEMY, itemPos, qfalse);
 			return;
 		case 2: /* enemy */
 		{
@@ -1295,7 +1377,7 @@ void CG_TeamTaskMarkSend(void)
 			{
 				/* Use saved enemy position */
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, enemyPos);
-				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qtrue);
+				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qfalse);
 				return;
 			}
 
@@ -1320,7 +1402,7 @@ void CG_TeamTaskMarkSend(void)
 						/* Use enemy player position with +24 height offset */
 						VectorCopy(cent->lerpOrigin, enemyPos);
 						enemyPos[2] += 24.0f;
-						CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qtrue);
+						CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qfalse);
 						return;
 					}
 				}
@@ -1328,7 +1410,7 @@ void CG_TeamTaskMarkSend(void)
 			/* Fallback: if enemy entity not found, use trace endpos */
 			VectorCopy(trace.endpos, enemyPos);
 			enemyPos[2] += 24.0f;
-			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qtrue);
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qfalse);
 			return;
 		}
 		case 3: /* red armor */
@@ -1341,7 +1423,7 @@ void CG_TeamTaskMarkSend(void)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
-			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qtrue);
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
 		case 4: /* megahealth */
 			markType = TEAMTASK_MEGAHEALTH;
@@ -1353,7 +1435,7 @@ void CG_TeamTaskMarkSend(void)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
-			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qtrue);
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
 		default: /* nothing or other */
 		{
@@ -1460,14 +1542,15 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("  ^73. Release the key to send the command\n\n");
 
 	CG_Printf("^3Available team task commands:\n");
-	CG_Printf("  ^2tattack^7    - Mark attack position\n");
-	CG_Printf("  ^2tdefence^7   - Mark defence position\n");
-	CG_Printf("  ^2twatch^7      - Mark watch/patrol position\n");
-	CG_Printf("  ^2tlocation^7  - Mark location/position\n");
-	CG_Printf("  ^2tyes^7        - Send YES (overhead mark)\n");
-	CG_Printf("  ^2tno^7         - Send NO (overhead mark)\n");
-	CG_Printf("  ^2tmedic^7      - Request medic (overhead mark)\n");
-	CG_Printf("  ^2tsmart^7      - Smart mode (auto-detects target)\n");
+	CG_Printf("  ^2tAttack^7    - Mark attack position\n");
+	CG_Printf("  ^2tDefence^7   - Mark defence position\n");
+	CG_Printf("  ^2tWatch^7      - Mark watch/patrol position\n");
+	CG_Printf("  ^2tLocation^7  - Mark location/position\n");
+	CG_Printf("  ^2tYes^7        - Send YES (overhead mark)\n");
+	CG_Printf("  ^2tNo^7         - Send NO (overhead mark)\n");
+	CG_Printf("  ^2tMedic^7      - Request medic (overhead mark)\n");
+	CG_Printf("  ^2tHere^7       - Mark your current position (alive) or death location (dead)\n");
+	CG_Printf("  ^2tSmart^7      - Smart mode (auto-detects target)\n");
 	CG_Printf("  ^7Smart mode automatically detects:\n");
 	CG_Printf("    - Enemy players (marks as target)\n");
 	CG_Printf("    - Frozen enemy and ally bodies\n");
@@ -1674,14 +1757,15 @@ static consoleCommand_t commands[] =
 	{ "allowedfeatures", CG_BEdisabledFeatures_f },
 	{ "fonts", CG_Fonts_f },
 	{ "printui", CG_PrintUI_f },
-	{ "tattack", CG_TeamTaskMarkOffense },
-	{ "tdefence", CG_TeamTaskMarkDefence },
-	{ "twatch", CG_TeamTaskMarkWatch },
-	{ "tyes", CG_TeamTaskMarkYes },
-	{ "tno", CG_TeamTaskMarkNo },
-	{ "tmedic", CG_TeamTaskMarkMedic },
-	{ "tlocation", CG_TeamTaskMarkLocation },
-	{ "tsmart", CG_TeamTaskMarkSend },
+	{ "tAttack", CG_TeamTaskMarkOffense },
+	{ "tDefence", CG_TeamTaskMarkDefence },
+	{ "tWatch", CG_TeamTaskMarkWatch },
+	{ "tYes", CG_TeamTaskMarkYes },
+	{ "tNo", CG_TeamTaskMarkNo },
+	{ "tMedic", CG_TeamTaskMarkMedic },
+	{ "tLocation", CG_TeamTaskMarkLocation },
+	{ "tHere", CG_TeamTaskMarkHere },
+	{ "tSmart", CG_TeamTaskMarkSend },
 	{ "+ttwheel", CG_SelwheelMarkStart },
 	{ "-ttwheel", CG_SelwheelMarkStop },
 	{ "ttwheelclose", CG_SelwheelMarkClose },
