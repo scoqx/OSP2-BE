@@ -1283,18 +1283,18 @@ static void CG_SelwheelRestoreSensitivity(void)
 	{
 		// Update cvar to get latest value
 		trap_Cvar_Update(&cg_storedSensitivity);
-		
+
 		// Get stored sensitivity value directly from cvar (float, preserves precision)
 		storedSensitivity = cg_storedSensitivity.value;
 		if (storedSensitivity < 0.0f)
 		{
 			storedSensitivity = 0.0f;
 		}
-		
+
 		// Restore original sensitivity value
 		Com_sprintf(sensitivityStr, sizeof(sensitivityStr), "%f", storedSensitivity);
 		trap_Cvar_Set("sensitivity", sensitivityStr);
-		
+
 		cgs.be.teamMarkers.sensitivityAdjusted = qfalse;
 	}
 }
@@ -1332,16 +1332,16 @@ void CG_SelwheelMarkStart(void)
 	/* Check if we are not playing (observing another client) */
 	// if (!CG_IsLocalClientOnScreen())
 	// {
-	// 	return;
+	//  return;
 	// }
 	// if (CG_IsDead())
 	// {
-	// 	return;
+	//  return;
 	// }
 	/* Check if we are in spectator/following mode */
 	// if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
 	// {
-	// 	return;
+	//  return;
 	// }
 	/* Check if local player is spectator */
 	if (CG_IsLocalClientSpectator())
@@ -1492,7 +1492,7 @@ void CG_SelwheelMarkStart(void)
 
 		// Update cvar to get latest value
 		trap_Cvar_Update(&sensitivity);
-		
+
 		// Get current sensitivity value directly from cvar (float, preserves precision)
 		currentSensitivity = sensitivity.value;
 		if (currentSensitivity < 0.0f)

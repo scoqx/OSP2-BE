@@ -4212,7 +4212,7 @@ void CG_OSPHUDRoutine(void)
 			CG_DrawSelwheelIcons();
 		}
 	}
-	
+
 	if (cg_printui.integer)
 	{
 		CG_DrawPrintUI();

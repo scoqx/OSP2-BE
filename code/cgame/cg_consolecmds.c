@@ -1148,7 +1148,7 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 			return;
 		}
 	}
-	
+
 	if (cgs.gametype < GT_TEAM)
 	{
 		return;
@@ -1242,9 +1242,9 @@ void CG_TeamTaskMarkHere(void)
 	{
 		cent = &cg_entities[i];
 		if (cent->currentState.eType == ET_PLAYER &&
-		    cent->currentState.clientNum == cg.clientNum &&
-		    cent->currentValid &&
-		    CG_IsFrozenEntity(cent))
+		        cent->currentState.clientNum == cg.clientNum &&
+		        cent->currentValid &&
+		        CG_IsFrozenEntity(cent))
 		{
 			/* Found our frozen entity - copy coordinates */
 			VectorCopy(cent->lerpOrigin, backupPosition);
@@ -1271,7 +1271,7 @@ void CG_TeamTaskMarkHere(void)
 		}
 		return;
 	}
-	
+
 
 	/* Check if we're currently alive */
 	if (!CG_IsDead() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
@@ -1279,7 +1279,8 @@ void CG_TeamTaskMarkHere(void)
 		/* Player is alive - send HERE_ALIVE with current position */
 		CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_ALIVE, cg.predictedPlayerState.origin, qfalse);
 	}
-	else {
+	else
+	{
 		if (cgs.be.teamMarkers.deathPositionValid)
 		{
 			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_DEAD, cgs.be.teamMarkers.deathPosition, qtrue);

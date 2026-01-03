@@ -322,54 +322,54 @@ void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* te
 			return;
 		}
 	}
-		else
+	else
+	{
+		/* Sender was unknown/invalid - try to find correct sender */
+		int i;
+		int found;
+		found = 0;
+		for (i = 0; i < MAX_CLIENTS && !found; i++)
 		{
-			/* Sender was unknown/invalid - try to find correct sender */
-			int i;
-			int found;
-			found = 0;
-			for (i = 0; i < MAX_CLIENTS && !found; i++)
+			int expectedSenderIDPacked;
+			if (!cgs.clientinfo[i].infoValid)
 			{
-				int expectedSenderIDPacked;
-				if (!cgs.clientinfo[i].infoValid)
-				{
-					continue;
-				}
-				cryptoKey = CG_GenerateCryptoKey(i);
-
-				/* Reconstruct expected senderIDPacked using same logic as packing */
-				/* This is the correct way to verify sender, since multiple clientIDs can map to same value after & 0x0F */
-				expectedSenderIDPacked = ((i + 52) & 0x0F);
-				expectedSenderIDPacked = expectedSenderIDPacked ^ ((cryptoKey >> 5) & 0x0F);
-
-				/* Check if this clientID produces the same senderIDPacked */
-				if (expectedSenderIDPacked == senderIDPacked)
-				{
-					/* Verify verification bit matches */
-					int expectedVerificationBit;
-					expectedVerificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^
-					                           (encrypted >> 11) ^ (encrypted >> 17) ^
-					                           senderIDPacked) & 0x01;
-					if (verificationBit == expectedVerificationBit)
-					{
-						/* Found correct sender with matching verification */
-						senderClientID = i;
-						found = 1;
-					}
-				}
+				continue;
 			}
+			cryptoKey = CG_GenerateCryptoKey(i);
 
-			if (!found)
+			/* Reconstruct expected senderIDPacked using same logic as packing */
+			/* This is the correct way to verify sender, since multiple clientIDs can map to same value after & 0x0F */
+			expectedSenderIDPacked = ((i + 52) & 0x0F);
+			expectedSenderIDPacked = expectedSenderIDPacked ^ ((cryptoKey >> 5) & 0x0F);
+
+			/* Check if this clientID produces the same senderIDPacked */
+			if (expectedSenderIDPacked == senderIDPacked)
 			{
-				/* No valid sender found - REJECT data */
-				*toClient = 0;
-				*templateID = 0;
-				*x = 0;
-				*y = 0;
-				*z = 0;
-				return;
+				/* Verify verification bit matches */
+				int expectedVerificationBit;
+				expectedVerificationBit = ((cryptoKey >> 11) ^ (cryptoKey >> 17) ^
+				                           (encrypted >> 11) ^ (encrypted >> 17) ^
+				                           senderIDPacked) & 0x01;
+				if (verificationBit == expectedVerificationBit)
+				{
+					/* Found correct sender with matching verification */
+					senderClientID = i;
+					found = 1;
+				}
 			}
 		}
+
+		if (!found)
+		{
+			/* No valid sender found - REJECT data */
+			*toClient = 0;
+			*templateID = 0;
+			*x = 0;
+			*y = 0;
+			*z = 0;
+			return;
+		}
+	}
 
 	/* Decrypt data with verified key */
 	decrypted = encrypted ^ (cryptoKey & 0xFFFFFFE0);

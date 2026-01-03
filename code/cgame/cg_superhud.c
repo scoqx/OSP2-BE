@@ -456,7 +456,7 @@ void CG_SHUDRoutine(void)
 	{
 		CG_DrawSelwheelIcons();
 	}
-	
+
 	if (cg_printui.integer)
 	{
 		CG_DrawPrintUI();
