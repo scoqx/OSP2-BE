@@ -1294,6 +1294,25 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 		}
 	}
 
+	/* If this is a HERE_DEAD mark, remove any existing PLAYERDEAD mark from the same player */
+	if (markType == TEAMTASK_HERE_DEAD && clientNum >= 0 && clientNum < MAX_CLIENTS)
+	{
+		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+		{
+			if (cgs.be.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
+			        cgs.be.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_PLAYERDEAD)
+			{
+				/* Remove this mark by shifting all subsequent marks */
+				for (; i < cgs.be.teamMarkers.numTeamTaskMarks - 1; i++)
+				{
+					cgs.be.teamMarkers.teamTaskMarks[i] = cgs.be.teamMarkers.teamTaskMarks[i + 1];
+				}
+				cgs.be.teamMarkers.numTeamTaskMarks--;
+				break;
+			}
+		}
+	}
+
 	/* Check if we have space for new mark */
 	if (cgs.be.teamMarkers.numTeamTaskMarks >= MAX_TEAMTASK_MARKS)
 	{
