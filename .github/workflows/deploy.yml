@@ -1,4 +1,4 @@
-name: Deploy version.json to scoqx.github.io
+name: Deploy version files to scoqx.github.io
 
 permissions:
   contents: write
@@ -25,17 +25,6 @@ jobs:
         with:
           ref: master
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
-      - name: Generate version.json
-        run: |
-          python util/extract_version.py
-          echo "✅ version.json created:"
-          cat version.json
-
       - name: Checkout target repo scoqx.github.io
         uses: actions/checkout@v3
         with:
@@ -47,7 +36,8 @@ jobs:
       - name: Copy files to target repo
         run: |
           mkdir -p target-repo/assets
-          cp version.json target-repo/version.json
+          cp assets/version.txt target-repo/assets/version.txt
+          cp assets/version_changelog.txt target-repo/assets/version_changelog.txt
           cp assets/OSP2.cfg target-repo/assets/OSP2.cfg
           cp assets/OSP2English.cfg target-repo/assets/OSP2English.cfg
           cp changelog_be.txt target-repo/assets/changelog_be.txt
@@ -57,6 +47,6 @@ jobs:
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add version.json assets/
-          git diff --quiet --cached || git commit -m "Update version.json and assets [auto]"
+          git add assets/
+          git diff --quiet --cached || git commit -m "Update version files and assets [auto]"
           git push origin ${{ env.TARGET_BRANCH }}

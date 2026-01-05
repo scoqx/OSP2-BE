@@ -12,7 +12,52 @@ dirs:
 
 .PHONY: all dirs
 
-$(PK3): vm/cgame.qvm vm/ui.qvm
+../../assets/version.txt: $(CGDIR)/cg_local.h
+	@echo "Extracting version from $(CGDIR)/cg_local.h"
+	@grep -E '^#define OSP_VERSION' $(CGDIR)/cg_local.h | sed -E 's/^#define OSP_VERSION "([^"]*)".*/\1/' > $@
+	@echo "Version file created: $$(cat $@)"
+
+../../assets/version_changelog.txt: ../../changelog_be.txt ../../assets/version.txt
+	@echo "Extracting changelog for current version"
+	@VERSION_NUM=$$(cat ../../assets/version.txt | sed 's/be-//'); \
+	VERSION_FULL=$$(cat ../../assets/version.txt | sed 's/be-/be v/'); \
+	awk -v ver="$$VERSION_NUM" -v ver_full="$$VERSION_FULL" ' \
+		BEGIN { found=0; printing=0; date=""; version=""; first_line=1 } \
+		/^[0-9][0-9]\.[0-9][0-9]\.[0-9][0-9][0-9][0-9] be v/ { \
+			if (printing) exit; \
+			if ($$0 ~ "v[ ]*" ver) { \
+				found=1; \
+				printing=1; \
+				date=$$1; \
+				sub(/^[^ ]* /, "", $$0); \
+				version=$$0; \
+				next; \
+			} else { \
+				printing=0; \
+			} \
+		} \
+		printing { \
+			if (first_line) { \
+				print "Version: " version; \
+				print "Date: " date; \
+				print "Changes:"; \
+				first_line=0; \
+			} else { \
+				print; \
+			} \
+		} \
+		END { \
+			if (!found) { \
+				print "Version: " ver_full; \
+				print "Date: none"; \
+				print "Changes:"; \
+				print "none"; \
+			} \
+		} \
+	' ../../changelog_be.txt > $@
+	@echo "Changelog file created for version: $$(grep "^Version:" $@)"
+
+$(PK3): vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt
 	$(7Z) $@ vm/*.qvm vm/*.jts ../../assets/*
 
 cc = cd vm/$1 && $(Q3LCC) $2 -o $(notdir $@).tmp ../../$< && mv $(notdir $@).tmp $(notdir $@)
