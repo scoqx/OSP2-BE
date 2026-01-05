@@ -2104,14 +2104,20 @@ CG_RegisterClients
 static void CG_RegisterClients(void)
 {
 	int     i;
+	const char*      clientInfo;
 
 	CG_LoadingClient(cg.clientNum);
 	CG_UpdateOurClientInfo();
 
+	/* Check if server supports team task by looking for "tt" field in our configstring */
+	clientInfo = CG_ConfigString(CS_PLAYERS + cg.clientNum);
+	if (clientInfo[0] && strstr(clientInfo, "\\tt"))
+	{
+		cgs.be.teamMarkers.supportedServer = qtrue;
+	}
+
 	for (i = 0 ; i < MAX_CLIENTS ; i++)
 	{
-		const char*      clientInfo;
-
 		if (cg.clientNum == i)
 		{
 			continue;

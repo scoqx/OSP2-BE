@@ -1044,6 +1044,15 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	{
 		return;
 	}
+	if (cgs.gametype < GT_TEAM)
+	{
+		CG_PrintOnce("^3There are no teams\n");
+		return;
+	}
+	if (!CG_IsTeamTaskSupported())
+	{
+		return;
+	}
 	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
 	{
 		return;
@@ -1054,11 +1063,6 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	}
 	if (CG_IsDead())
 	{
-		return;
-	}
-	if (cgs.gametype < GT_TEAM)
-	{
-		CG_PrintOnce("^3There are no teams\n");
 		return;
 	}
 	/* Check if we are in spectator/following mode */
@@ -1117,6 +1121,15 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	{
 		return;
 	}
+	if (cgs.gametype < GT_TEAM)
+	{
+		CG_PrintOnce("^3There are no teams\n");
+		return;
+	}
+	if (!CG_IsTeamTaskSupported())
+	{
+		return;
+	}
 	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
 	{
 		return;
@@ -1127,11 +1140,6 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	}
 	if (CG_IsDead())
 	{
-		return;
-	}
-	if (cgs.gametype < GT_TEAM)
-	{
-		CG_PrintOnce("^3There are no teams\n");
 		return;
 	}
 	/* Check if we are in spectator/following mode */
@@ -1186,6 +1194,14 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 	{
 		return;
 	}
+	if (cgs.gametype < GT_TEAM)
+	{
+		return;
+	}
+	if (!CG_IsTeamTaskSupported())
+	{
+		return;
+	}
 	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
 	{
 		return;
@@ -1197,16 +1213,10 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 			return;
 		}
 	}
-
-	if (cgs.gametype < GT_TEAM)
-	{
-		return;
-	}
 	if (!ignoreDead && CG_IsDead())
 	{
 		return;
 	}
-
 	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
 	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
 	{

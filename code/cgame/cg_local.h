@@ -1334,6 +1334,8 @@ typedef struct cgs_be_s
 		float       savedSensitivity; // Saved sensitivity value before adjustment
 		float       savedWheelSensitivity; // Saved wheel sensitivity value before adjustment
 		float       adjustedWheelSensitivity; // Adjusted wheel sensitivity value
+
+		qboolean    supportedServer; // True if server supports team task (has "tt" field in player configstrings)
 	} teamMarkers;
 } cgs_be_t;
 

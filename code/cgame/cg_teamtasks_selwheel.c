@@ -1312,7 +1312,15 @@ void CG_SelwheelMarkStart(void)
 	usercmd_t currentCmd;
 
 	/* Check if teamTask is disabled */
+	if (cgs.gametype < GT_TEAM)
+	{
+		return;
+	}
 	if (!cg_teamTask.integer)
+	{
+		return;
+	}
+	if (!CG_IsTeamTaskSupported())
 	{
 		return;
 	}
@@ -1322,10 +1330,6 @@ void CG_SelwheelMarkStart(void)
 	}
 	/* Check if teamTaskWheel is disabled */
 	if (!cg_teamTaskWheel.integer)
-	{
-		return;
-	}
-	if (cgs.gametype < GT_TEAM)
 	{
 		return;
 	}

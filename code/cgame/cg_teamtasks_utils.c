@@ -282,3 +282,15 @@ qboolean CG_IsTeamTaskOverhead(teamtask_t taskType)
 	return qfalse;
 }
 
+
+/*
+=================
+CG_IsTeamTaskSupported
+
+Check if server supports team task
+=================
+*/
+qboolean CG_IsTeamTaskSupported(void)
+{
+	return cgs.be.teamMarkers.supportedServer;
+}
