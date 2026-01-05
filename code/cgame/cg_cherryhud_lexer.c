@@ -1,6 +1,8 @@
 #include "cg_local.h"
 #include "cg_cherryhud_private.h"
 
+#include "../qcommon/qcommon.h"
+
 static char CG_CHUDLexerPeek(cherryhud_lexer_t* lexer);
 static char CG_CHUDLexerAdvance(cherryhud_lexer_t* lexer);
 static void CG_CHUDLexerSkipWhitespace(cherryhud_lexer_t* lexer);

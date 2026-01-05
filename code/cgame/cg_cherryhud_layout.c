@@ -1,6 +1,8 @@
 #include "cg_cherryhud_private.h"
 #include "cg_local.h"
 
+#include "../qcommon/qcommon.h"
+
 static cherryhudLayoutManager_t g_layoutManager = {0};
 
 #define MAX_LAYOUT_PROPERTIES 1024
@@ -408,6 +410,8 @@ void CG_CHUDLayoutSetDefaultProperties(cherryhudLayoutProperties_t* props) {
     
     props->isSet = qtrue;
 }
+
+void CG_CHUDLayoutCalculateElementInternal(cherryhudElement_t* element, const cherryhudLayoutContext_t* context, cherryhudLayoutBounds_t* bounds);
 
 cherryhudLayoutBounds_t* CG_CHUDLayoutCalculateElement(cherryhudElement_t* element, const cherryhudLayoutContext_t* context) {
     layoutBoundsEntry_t* entry;

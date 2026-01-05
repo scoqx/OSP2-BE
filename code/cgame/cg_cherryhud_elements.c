@@ -4,6 +4,7 @@
 // Global element counter to limit memory usage
 static int g_elementCount = 0;
 #include "../qcommon/q_shared.h"
+#include "../qcommon/qcommon.h"
 
 /*
  * Common element helper functions to reduce code duplication

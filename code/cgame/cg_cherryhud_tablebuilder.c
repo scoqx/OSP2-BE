@@ -1,6 +1,7 @@
 #include "cg_cherryhud_private.h"
 #include "cg_local.h"
 #include "../qcommon/q_shared.h"  // For vec2_t and VectorCopy
+#include "../qcommon/qcommon.h" 
 
 // ============================================================================
 // GLOBAL VARIABLES AND DATA STRUCTURES
@@ -31,7 +32,6 @@ static void CG_CHUDTableRenderBorder(cherryhudTable_t* table);
 // Configuration helpers
 static void CG_CHUDSetDefaultTableProperties(cherryhudTable_t* table);
 static void CG_CHUDGetConfigWithFallback(cherryhudConfig_t* config, const char* type);
-void CG_CHUDSetDefaultElementProperties(cherryhudConfig_t* config);
 
 qboolean CG_CHUDTableRenderBackgroundAndBorder(cherryhudTable_t* table);
 qboolean CG_CHUDTableRowRenderBackgroundAndBorder(cherryhudTable_t* table, cherryhudTableRow_t* row);

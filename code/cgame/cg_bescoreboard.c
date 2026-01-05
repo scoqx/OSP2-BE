@@ -1062,6 +1062,97 @@ static void DrawScoreboardColumnHeaders(scoreboardContext_t* sb, float baseX, co
     }
 }
 
+// Draw the background and frame for scoreboard (unified for all gametypes)
+static void DrawScoreboardBackgroundAndFrame(float frameX, float frameY, float frameW, float frameH, scoreboardContext_t* sb, int gametype, int team) 
+{
+    vec4_t bgColor, hdrColor;
+    vec4_t tempbgColor, temphdrColor;
+
+    // Set team-specific colors for team-based gametypes
+    if (gametype >= GT_TEAM) {
+        if (team == TEAM_RED) {
+            if (cgs.be.sbSettings.redColors.bodyBg[3] >= 0.0f)
+            {
+                Vector4Copy(cgs.be.sbSettings.redColors.bodyBg, bgColor);
+            }
+            else
+            {
+                Vector4Copy(scoreboard_rtColor, bgColor);
+            }
+            if (cgs.be.sbSettings.redColors.headerBg[3] >= 0.0f)
+            {
+                Vector4Copy(cgs.be.sbSettings.redColors.headerBg, hdrColor);
+            }
+            else
+            {
+                Vector4Copy(scoreboard_rtColor, hdrColor);
+            }
+
+        } else if (team == TEAM_BLUE) {
+            if (cgs.be.sbSettings.blueColors.bodyBg[3] >= 0.0f)
+            {
+                Vector4Copy(cgs.be.sbSettings.blueColors.bodyBg, bgColor);
+            }
+            else
+            {
+                Vector4Copy(scoreboard_btColor, bgColor);
+            }
+            if (cgs.be.sbSettings.blueColors.headerBg[3] >= 0.0f)
+            {
+                Vector4Copy(cgs.be.sbSettings.blueColors.headerBg, hdrColor);
+            }
+            else
+            {
+                Vector4Copy(scoreboard_btColor, hdrColor);
+            }
+
+        }
+    }
+    // Handle single player and other non-team modes
+    else if (gametype <= GT_SINGLE_PLAYER) {
+
+         if (cgs.be.sbSettings.ffaColors.bodyBg[3] >= 0.0f)
+         {
+             Vector4Copy(cgs.be.sbSettings.ffaColors.bodyBg, bgColor);
+         }
+         else
+         {
+             Vector4Copy(sbSet->background, bgColor);
+         }
+           
+        if (cgs.be.sbSettings.ffaColors.headerBg[3] >= 0.0f)
+        {
+            Vector4Copy(cgs.be.sbSettings.ffaColors.headerBg, hdrColor);
+        }
+        else
+        {
+            Vector4Copy(sbSet->background, hdrColor);
+        }
+    }
+
+    // this should work for all gametypes
+    if (team == TEAM_SPECTATOR) {
+        if (cgs.be.sbSettings.specColors.bodyBg[3] >= 0.0f)
+        {
+            Vector4Copy(cgs.be.sbSettings.specColors.bodyBg, bgColor);
+        }
+        else
+        {
+            Vector4Copy(sb->background, bgColor);
+        }
+    }
+
+    // Apply the colors
+    CG_OSPAdjustTeamColor(bgColor, tempbgColor);
+    CG_OSPAdjustTeamColor(hdrColor, temphdrColor);
+
+    CG_FillRect(frameX, frameY, frameW, frameH, temphdrColor);
+    CG_FillRect(frameX, frameY, frameW, sb->headerHeight, tempbgColor);
+
+    CG_OSPDrawFrameAdjusted(frameX, frameY, frameW, frameH, sb->defaultBorder, sb->borderColor, qtrue);
+    CG_OSPDrawFrameAdjusted(frameX, frameY, frameW, frameH, sb->defaultBorder, colorBlack, qfalse);
+}
+
 // Helper function for drawing scoreboard frame (unified for FFA and Team)
 static void CG_DrawScoreboardFrameUnified(short isTeamMode, short forceDouble, int (*drawListFunc)(short)) {
     int i;
@@ -1169,7 +1260,7 @@ static void CG_DrawScoreboardFrameUnified(short isTeamMode, short forceDouble, i
         // Single column mode
         CG_CalcScoreboardColumnWidths(sbSet->baseX, sbSet);
 
-        DrawScoreboardBackgroundAndFrame(frameX_left, frameY, frameW, frameH, sbSet, qfalse);
+        DrawScoreboardBackgroundAndFrame(frameX_left, frameY, frameW, frameH, sbSet, qfalse, 0);
 
         // Draw header info: both on left base
         CG_OSPDrawStringNew(sbSet->baseX, sbSet->headerY, topHeader, infoColor, sbSet->title.shadowColor,
@@ -1287,98 +1378,6 @@ int CG_DrawScoreboardTeam(short isDouble) {
     max_y = (y_left > y_right ? y_left : y_right);
     max_y = CG_DrawSpectatorList(max_y, sbSet->baseX, qtrue); // Always double for spectators too
     return max_y;
-}
-
-
-// Draw the background and frame for scoreboard (unified for all gametypes)
-static void DrawScoreboardBackgroundAndFrame(float frameX, float frameY, float frameW, float frameH, scoreboardContext_t* sb, int gametype, int team) 
-{
-    vec4_t bgColor, hdrColor;
-    vec4_t tempbgColor, temphdrColor;
-
-    // Set team-specific colors for team-based gametypes
-    if (gametype >= GT_TEAM) {
-        if (team == TEAM_RED) {
-            if (cgs.be.sbSettings.redColors.bodyBg[3] >= 0.0f)
-            {
-                Vector4Copy(cgs.be.sbSettings.redColors.bodyBg, bgColor);
-            }
-            else
-            {
-                Vector4Copy(scoreboard_rtColor, bgColor);
-            }
-            if (cgs.be.sbSettings.redColors.headerBg[3] >= 0.0f)
-            {
-                Vector4Copy(cgs.be.sbSettings.redColors.headerBg, hdrColor);
-            }
-            else
-            {
-                Vector4Copy(scoreboard_rtColor, hdrColor);
-            }
-
-        } else if (team == TEAM_BLUE) {
-            if (cgs.be.sbSettings.blueColors.bodyBg[3] >= 0.0f)
-            {
-                Vector4Copy(cgs.be.sbSettings.blueColors.bodyBg, bgColor);
-            }
-            else
-            {
-                Vector4Copy(scoreboard_btColor, bgColor);
-            }
-            if (cgs.be.sbSettings.blueColors.headerBg[3] >= 0.0f)
-            {
-                Vector4Copy(cgs.be.sbSettings.blueColors.headerBg, hdrColor);
-            }
-            else
-            {
-                Vector4Copy(scoreboard_btColor, hdrColor);
-            }
-
-        }
-    }
-    // Handle single player and other non-team modes
-    else if (gametype <= GT_SINGLE_PLAYER) {
-
-         if (cgs.be.sbSettings.ffaColors.bodyBg[3] >= 0.0f)
-         {
-             Vector4Copy(cgs.be.sbSettings.ffaColors.bodyBg, bgColor);
-         }
-         else
-         {
-             Vector4Copy(sbSet->background, bgColor);
-         }
-           
-        if (cgs.be.sbSettings.ffaColors.headerBg[3] >= 0.0f)
-        {
-            Vector4Copy(cgs.be.sbSettings.ffaColors.headerBg, hdrColor);
-        }
-        else
-        {
-            Vector4Copy(sbSet->background, hdrColor);
-        }
-    }
-
-    // this should work for all gametypes
-    if (team == TEAM_SPECTATOR) {
-        if (cgs.be.sbSettings.specColors.bodyBg[3] >= 0.0f)
-        {
-            Vector4Copy(cgs.be.sbSettings.specColors.bodyBg, bgColor);
-        }
-        else
-        {
-            Vector4Copy(sb->background, bgColor);
-        }
-    }
-
-    // Apply the colors
-    CG_OSPAdjustTeamColor(bgColor, tempbgColor);
-    CG_OSPAdjustTeamColor(hdrColor, temphdrColor);
-
-    CG_FillRect(frameX, frameY, frameW, frameH, temphdrColor);
-    CG_FillRect(frameX, frameY, frameW, sb->headerHeight, tempbgColor);
-
-    CG_OSPDrawFrameAdjusted(frameX, frameY, frameW, frameH, sb->defaultBorder, sb->borderColor, qtrue);
-    CG_OSPDrawFrameAdjusted(frameX, frameY, frameW, frameH, sb->defaultBorder, colorBlack, qfalse);
 }
 
 // Main scoreboard drawing function for Team mode

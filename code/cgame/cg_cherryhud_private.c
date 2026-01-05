@@ -1,5 +1,7 @@
 #include "cg_cherryhud_private.h"
 
+#include "../qcommon/qcommon.h"
+
 static cherryhudGlobalContext_t cherryhudGlobalContext;
 
 // Global storage for prefixed configs

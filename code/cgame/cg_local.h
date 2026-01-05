@@ -2361,6 +2361,11 @@ void CG_BEStatsResetInit(void);
 //cg_cvardescriptions.c
 //
 void CG_RegisterCvarDescriptions(void);
+
+//
+//cg_bescoreboard.c
+//
+int CG_DrawSpectatorList(int yStart, float baseX, short isDouble);
 //===============================================
 
 //
@@ -2619,6 +2624,7 @@ extern int statsInfo[24];
 #define OSP_STATS_WEAPON_MASK       21
 #define OSP_STATS_UNKNOWN1          22
 #define OSP_STATS_UNKNOWN2          23
+#define OSP_STATS_NUM               24
 
 
 // OSP Custom client
