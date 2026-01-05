@@ -3187,7 +3187,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		CG_OSPDrawFrame(ax, ay, expectedLenght, ah, border, borderColor, 0);
 	}
 
-	shadowEnabled = (flags & DS_SHADOW) && (shadowColor[3] != 0.0f);
+	shadowEnabled = (flags & DS_SHADOW) && (shadowColor && shadowColor[3] != 0.0f);
 	if (shadowEnabled)
 	{
 		xx_add = charWidth / 10.0f;

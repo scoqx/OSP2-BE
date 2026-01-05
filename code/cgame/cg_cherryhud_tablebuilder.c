@@ -493,8 +493,6 @@ static void CG_CHUDTableGetModifiedTemplate(cherryhudConfig_t* result, cherryhud
                 if (prefixedConfig->size.isSet) {
                     result->size.value[0] = prefixedConfig->size.value[0];
                     result->size.value[1] = prefixedConfig->size.value[1];
-                    result->size.value[2] = prefixedConfig->size.value[2];
-                    result->size.value[3] = prefixedConfig->size.value[3];
                     result->size.isSet = qtrue;
                 } else {
                 }

@@ -304,6 +304,10 @@ static void CG_BEStatsBuildGeneral_Tournament(BEStatToken_t tokens[32][12], int*
 	int col = 0;
 	const newStatsInfo_t* s = &cgs.be.newStats;
 
+	if (outCols == NULL) {
+		outCols = &col;
+	}
+
 	if (cg_bestats_style.integer == 2)
 	{
 		// 1st row
@@ -366,6 +370,11 @@ static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCo
 	const newStatsInfo_t* s = &cgs.be.newStats;
 	int style = cg_bestats_style.integer;  // глобальная переменная/настройка
 	qboolean isFreeze = cgs.osp.gameTypeFreeze;
+
+	if (outCols == NULL) {
+		outCols = &col;
+	}
+
 	if (style == 2)
 	{
 		// Titles
@@ -459,6 +468,10 @@ static void CG_BEStatsBuildGeneral_CTF(BEStatToken_t tokens[32][12], int* outCol
 	const newStatsInfo_t* s = &cgs.be.newStats;
 	char timeStr[MAX_TOKEN_LEN];
 
+	if (outCols == NULL) {
+		outCols = &col;
+	}
+
 	if (cg_bestats_style.integer == 2)
 	{
 		int mins = s->flagTime / 60;
@@ -548,6 +561,10 @@ static void CG_BEStatsBuildGeneral_CA(BEStatToken_t tokens[32][12], int* outCols
 	int col = 0;
 	const newStatsInfo_t* s = &cgs.be.newStats;
 
+	if (outCols == NULL) {
+		outCols = &col;
+	}
+
 	if (cg_bestats_style.integer == 2)
 	{
 		// 1st row
@@ -600,8 +617,14 @@ static void CG_BEStatsBuildGeneral_CA(BEStatToken_t tokens[32][12], int* outCols
 
 static void CG_BEStatsBuildGeneral_Default(BEStatToken_t tokens[32][12], int* outCols)
 {
+	int dummy = 0;
+
 	int style = cg_bestats_style.integer;
 	const newStatsInfo_t* s = &cgs.be.newStats;
+
+	if (outCols == NULL) {
+		outCols = &dummy;
+	}
 
 	if (style == 2)
 	{
