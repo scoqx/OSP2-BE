@@ -611,3 +611,8 @@ SHUD:
   * team task death fix
   * various fixes
 * PrintUI layer fix
+
+05.01.2025 be v1.00e
+SuperHUD:
+ + visflags: gauntlet, machinegun, shotgun, grenade
+    rocket, lightning, railgun, plasma, bfg

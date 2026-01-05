@@ -397,6 +397,69 @@ void CG_SHUDLoadConfig(void)
 	}
 }
 
+/*
+================
+CG_SHUDCheckWeaponFlags
+
+Check if element should be skipped based on weapon flags.
+Returns qtrue if element should be skipped (weapon flags are set but current weapon doesn't match).
+================
+*/
+static qboolean CG_SHUDCheckWeaponFlags(int vflags, int currentWeapon)
+{
+	int weaponFlags;
+	qboolean hasWeaponFlags;
+	qboolean weaponMatches;
+
+	weaponFlags = (vflags & (SE_WEAPON_GAUNTLET | SE_WEAPON_MACHINEGUN | SE_WEAPON_SHOTGUN |
+	                         SE_WEAPON_GRENADE_LAUNCHER | SE_WEAPON_ROCKET_LAUNCHER |
+	                         SE_WEAPON_LIGHTNING | SE_WEAPON_RAILGUN | SE_WEAPON_PLASMAGUN | SE_WEAPON_BFG));
+	hasWeaponFlags = (weaponFlags != 0);
+	weaponMatches = qfalse;
+
+	if (hasWeaponFlags)
+	{
+		if ((vflags & SE_WEAPON_GAUNTLET) && currentWeapon == WP_GAUNTLET)
+		{
+			weaponMatches = qtrue;
+		}
+		else if ((vflags & SE_WEAPON_MACHINEGUN) && currentWeapon == WP_MACHINEGUN)
+		{
+			weaponMatches = qtrue;
+		}
+		else if ((vflags & SE_WEAPON_SHOTGUN) && currentWeapon == WP_SHOTGUN)
+		{
+			weaponMatches = qtrue;
+		}
+		else if ((vflags & SE_WEAPON_GRENADE_LAUNCHER) && currentWeapon == WP_GRENADE_LAUNCHER)
+		{
+			weaponMatches = qtrue;
+		}
+		else if ((vflags & SE_WEAPON_ROCKET_LAUNCHER) && currentWeapon == WP_ROCKET_LAUNCHER)
+		{
+			weaponMatches = qtrue;
+		}
+		else if ((vflags & SE_WEAPON_LIGHTNING) && currentWeapon == WP_LIGHTNING)
+		{
+			weaponMatches = qtrue;
+		}
+		else if ((vflags & SE_WEAPON_RAILGUN) && currentWeapon == WP_RAILGUN)
+		{
+			weaponMatches = qtrue;
+		}
+		else if ((vflags & SE_WEAPON_PLASMAGUN) && currentWeapon == WP_PLASMAGUN)
+		{
+			weaponMatches = qtrue;
+		}
+		else if ((vflags & SE_WEAPON_BFG) && currentWeapon == WP_BFG)
+		{
+			weaponMatches = qtrue;
+		}
+	}
+
+	return (hasWeaponFlags && !weaponMatches);
+}
+
 void CG_SHUDRoutine(void)
 {
 	superhudElement_t* last = elementsHead;
@@ -413,6 +476,7 @@ void CG_SHUDRoutine(void)
 	const qboolean is_gt_ctf = cgs.gametype == GT_CTF;
 	const qboolean is_gt_ft = CG_OSPIsGameTypeFreeze();
 	const qboolean is_gt_ca = CG_OSPIsGameTypeCA(cgs.gametype);
+	int currentWeapon;
 
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
@@ -423,6 +487,9 @@ void CG_SHUDRoutine(void)
 	{
 		// check visibility
 		vflags = last->config.visiblity.isSet ? last->config.visiblity.value : last->element.visibility;
+
+		// Get current weapon (same logic as CG_ExecWeaponCommand)
+		currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
 
 		skip = (!(vflags & SE_IM) && is_intermission) ||
 		       ((vflags & SE_TEAM_ONLY) && (!is_team_game)) ||
@@ -439,7 +506,8 @@ void CG_SHUDRoutine(void)
 		       ((vflags & SE_GT_CTF) && is_gt_ctf) ||
 		       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
 		       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
-		       ((vflags & SE_GT_CLANARENA) && is_gt_ca)
+		       ((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
+		       CG_SHUDCheckWeaponFlags(vflags, currentWeapon)
 		       ;
 
 		if (!skip && last->element.routine)

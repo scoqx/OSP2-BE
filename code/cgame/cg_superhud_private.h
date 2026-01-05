@@ -318,6 +318,24 @@ typedef enum
 #define SE_GT_FREEZETAG_STR "gt_freezetag"
 #define SE_GT_CLANARENA (1 << 16) // 0x00010000
 #define SE_GT_CLANARENA_STR "gt_clanarena"
+#define SE_WEAPON_GAUNTLET (1 << 17) // 0x00020000
+#define SE_WEAPON_GAUNTLET_STR "gauntlet"
+#define SE_WEAPON_MACHINEGUN (1 << 18) // 0x00040000
+#define SE_WEAPON_MACHINEGUN_STR "machinegun"
+#define SE_WEAPON_SHOTGUN (1 << 19) // 0x00080000
+#define SE_WEAPON_SHOTGUN_STR "shotgun"
+#define SE_WEAPON_GRENADE_LAUNCHER (1 << 20) // 0x00100000
+#define SE_WEAPON_GRENADE_LAUNCHER_STR "grenade"
+#define SE_WEAPON_ROCKET_LAUNCHER (1 << 21) // 0x00200000
+#define SE_WEAPON_ROCKET_LAUNCHER_STR "rocket"
+#define SE_WEAPON_LIGHTNING (1 << 22) // 0x00400000
+#define SE_WEAPON_LIGHTNING_STR "lightning"
+#define SE_WEAPON_RAILGUN (1 << 23) // 0x00800000
+#define SE_WEAPON_RAILGUN_STR "railgun"
+#define SE_WEAPON_PLASMAGUN (1 << 24) // 0x01000000
+#define SE_WEAPON_PLASMAGUN_STR "plasma"
+#define SE_WEAPON_BFG (1 << 25) // 0x02000000
+#define SE_WEAPON_BFG_STR "bfg"
 
 #define SHUD_CHECK_SHOW_EMPTY(element) ( \
     ((element) != NULL) && \

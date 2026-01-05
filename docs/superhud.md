@@ -269,10 +269,20 @@ fps {
 - gt_ctf - скрывать при режиме игры "Захват флага"
 - gt_freezetag - скрывать при режиме игры "Freezetag/Unfreeze"
 - gt_clanarena - скрывать при режиме игры "Clan Arena"
+- gauntlet - видно только когда активно оружие Gauntlet
+- machinegun - видно только когда активно оружие Machinegun
+- shotgun - видно только когда активно оружие Shotgun
+- grenade - видно только когда активно оружие Grenade Launcher
+- rocket - видно только когда активно оружие Rocket Launcher
+- lightning - видно только когда активно оружие Lightning Gun
+- railgun - видно только когда активно оружие Railgun
+- plasma - видно только когда активно оружие Plasmagun
+- bfg - видно только когда активно оружие BFG
 
 Можно указывать несколько вариантов через пробел:
 
     visflags teamonly key1show;
+    visflags machinegun rocket lightning;
 
 ### Obituary1 - Obituary8
 

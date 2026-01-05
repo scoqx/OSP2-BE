@@ -627,6 +627,15 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_TOURNEY_STR, SE_GT_TOURNEY, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_FREEZETAG_STR, SE_GT_FREEZETAG, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_CLANARENA_STR, SE_GT_CLANARENA, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_GAUNTLET_STR, SE_WEAPON_GAUNTLET, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_MACHINEGUN_STR, SE_WEAPON_MACHINEGUN, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_SHOTGUN_STR, SE_WEAPON_SHOTGUN, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_GRENADE_LAUNCHER_STR, SE_WEAPON_GRENADE_LAUNCHER, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_ROCKET_LAUNCHER_STR, SE_WEAPON_ROCKET_LAUNCHER, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_LIGHTNING_STR, SE_WEAPON_LIGHTNING, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_RAILGUN_STR, SE_WEAPON_RAILGUN, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_PLASMAGUN_STR, SE_WEAPON_PLASMAGUN, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_BFG_STR, SE_WEAPON_BFG, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHOW_EMPTY_STR, SE_SHOW_EMPTY, &flags)
 		   )
 		{

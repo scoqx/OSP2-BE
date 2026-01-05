@@ -143,11 +143,15 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 ### exec / execute
 
 - Выполняет консольные команды при загрузке конфига худа.
-- Можно использовать несколько команд, разделяя точкой с запятой.
+- Команды указываются внутри фигурных скобок, разделяются пробелами или переносами строк.
+- Можно использовать несколько команд, разделяя их пробелами или точкой с запятой.
 
 **Синтаксис:**
 ```
-exec { cg_fov 100; exec myconfig.cfg }
+exec {
+    cg_fov 100
+    exec myconfig.cfg
+}
 
 execute { cg_fov 100; exec myconfig.cfg }
 ```
@@ -161,8 +165,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 
 ### color
 
-- При color "E", "T" или "H" - `color2` регулирует прозрачность (color2 0 0 0 1) где 1 - прозрачность.
-- Color "H" - динамический цвет, зависящий от текущего здоровья игрока. 
+- При color "E" или "T" - `color2` регулирует прозрачность (color2 0 0 0 1) где 1 - прозрачность. 
 
 ### ItemPickup
 
@@ -220,10 +223,20 @@ execute { cg_fov 100; exec myconfig.cfg }
 - gt_ctf - скрывать при режиме игры "Захват флага"
 - gt_freezetag - скрывать при режиме игры "Freezetag/Unfreeze"
 - gt_clanarena - скрывать при режиме игры "Clan Arena"
+- gauntlet - видно только когда активно оружие Gauntlet
+- machinegun - видно только когда активно оружие Machinegun
+- shotgun - видно только когда активно оружие Shotgun
+- grenade - видно только когда активно оружие Grenade Launcher
+- rocket - видно только когда активно оружие Rocket Launcher
+- lightning - видно только когда активно оружие Lightning Gun
+- railgun - видно только когда активно оружие Railgun
+- plasma - видно только когда активно оружие Plasmagun
+- bfg - видно только когда активно оружие BFG
 
 Можно указывать несколько вариантов через пробел:
 
     visflags teamonly key1show;
+    visflags machinegun rocket lightning;
 
 ### Obituary1 - Obituary8
 
