@@ -1101,7 +1101,7 @@ static void CG_InjectCustomLoc(char* str, int size)
 
 void CG_BEParseStatsInfo(void)
 {
-	static int lastStatsInfo[MAX_QPATH] = { 0 };
+	static int lastStatsInfo[OSP_STATS_NUM] = { 0 };
 	char args[1024];
 	int i, weaponIndex, arg_cnt;
 	int hits, shots, kills, deaths;
@@ -1119,7 +1119,10 @@ void CG_BEParseStatsInfo(void)
 
 	int totalArgs = trap_Argc();
 
-	for (i = 0; i < totalArgs - 1 && i < MAX_QPATH; i++)
+	// Don't leave garbage; useful when totalArgs < OSP_STATS_NUM
+	memset(statsInfo, 0, sizeof(statsInfo));
+
+	for (i = 0; i < totalArgs - 1 && i < OSP_STATS_NUM; i++)
 	{
 		trap_Argv(i + 1, args, sizeof(args));
 		statsInfo[i] = atoi(args);
@@ -1131,7 +1134,7 @@ void CG_BEParseStatsInfo(void)
 	if (!changed)
 		return;
 
-	memcpy(lastStatsInfo, statsInfo, sizeof(int) * MAX_QPATH);
+	memcpy(lastStatsInfo, statsInfo, sizeof(statsInfo));
 
 	if (cgs.osp.gameTypeFreeze)
 	{
@@ -1145,7 +1148,8 @@ void CG_BEParseStatsInfo(void)
 
 	arg_cnt = 23;
 
-	for (weaponIndex = 0; weaponIndex < WP_NUM_WEAPONS; weaponIndex++)
+	// weaponIndex = 1: WP_NONE should always be ignored even if weapon mask has it flagged
+	for (weaponIndex = 1; weaponIndex < WP_NUM_WEAPONS; weaponIndex++)
 	{
 		if (statsInfo[OSP_STATS_WEAPON_MASK] & (1 << weaponIndex))
 		{
