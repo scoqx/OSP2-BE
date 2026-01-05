@@ -2900,6 +2900,7 @@ qboolean BE_isSupportedServer(void);
 void CG_PrintDisabledFeatures(qboolean request);
 
 qboolean CG_IsSpectatorOnScreen(void);
+qboolean CG_IsClientFreeFloat(void);
 qboolean CG_IsFollowing(void);
 
 //

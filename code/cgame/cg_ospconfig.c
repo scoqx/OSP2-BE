@@ -349,6 +349,11 @@ qboolean CG_IsSpectatorOnScreen(void)
 	return (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
 }
 
+qboolean CG_IsClientFreeFloat(void)
+{
+	return cg.snap->ps.pm_type == PM_SPECTATOR;
+}
+
 qboolean CG_IsFollowing(void)
 {
 	if (!cg.demoPlayback)

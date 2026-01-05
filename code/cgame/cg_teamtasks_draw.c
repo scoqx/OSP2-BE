@@ -756,14 +756,16 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 	centity_t* cent;
 	qboolean playerFound;
 	qboolean isFollowing;
+	qboolean isFreeFloat;
 
 	playerFound = qfalse;
 	isFollowing = CG_IsFollowing();
+	isFreeFloat = CG_IsClientFreeFloat();
 
 	/* Special case for local player */
 	if (mark->clientNum == cg.clientNum)
 	{
-		if (isFollowing)
+		if (isFollowing || isFreeFloat)
 		{
 			/* When following another player, use death coordinates for own HERE_DEAD */
 			/* Don't update position - keep original death position */

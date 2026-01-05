@@ -159,6 +159,55 @@ static void CG_Viewpos_f(void)
 	          (int)cg.refdefViewAngles[YAW]);
 }
 
+/*
+=============
+CG_PMType_f
+
+Debugging command to print the current pm_type
+=============
+*/
+static void CG_PMType_f(void)
+{
+	int pmType;
+	const char* pmTypeStr;
+
+	pmType = cg.predictedPlayerState.pm_type;
+
+	switch (pmType)
+	{
+		case PM_NORMAL:
+			pmTypeStr = "PM_NORMAL";
+			break;
+		case PM_NOCLIP:
+			pmTypeStr = "PM_NOCLIP";
+			break;
+		case PM_SPECTATOR:
+			pmTypeStr = "PM_SPECTATOR";
+			break;
+		case PM_DEAD:
+			pmTypeStr = "PM_DEAD";
+			break;
+		case PM_FREEZE:
+			pmTypeStr = "PM_FREEZE";
+			break;
+		case PM_INTERMISSION:
+			pmTypeStr = "PM_INTERMISSION";
+			break;
+		case PM_SPINTERMISSION:
+			pmTypeStr = "PM_SPINTERMISSION";
+			break;
+		default:
+			pmTypeStr = "UNKNOWN";
+			break;
+	}
+
+	CG_Printf("pm_type: %i (%s)\n", pmType, pmTypeStr);
+	if (cg.snap)
+	{
+		CG_Printf("snap->ps.pm_type: %i\n", cg.snap->ps.pm_type);
+	}
+}
+
 
 void CG_ScoresDown_f(void)
 {
@@ -1678,6 +1727,7 @@ static consoleCommand_t commands[] =
 	{ "nextskin", CG_TestModelNextSkin_f },
 	{ "prevskin", CG_TestModelPrevSkin_f },
 	{ "viewpos", CG_Viewpos_f },
+	// { "pmtype", CG_PMType_f },
 	{ "+scores", CG_ScoresDown_f },
 	{ "-scores", CG_ScoresUp_f },
 	{ "+wstats", CG_OSPWStatsDown_f },

@@ -1006,7 +1006,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_brightWeaponsColorRG, "cg_brightWeaponsColorRG", "Cyan", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_brightWeaponsColorPG, "cg_brightWeaponsColorPG", "Magenta", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_brightWeaponsColorBFG, "cg_brightWeaponsColorBFG", "Blue", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &be_run, "be_run", "0", CVAR_ARCHIVE },
+	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
 
