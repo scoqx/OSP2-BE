@@ -678,3 +678,104 @@ snowflake
 		alphaGen	vertex
 	}
 }
+
+// weapon icons
+//
+icons/iconw_gauntlet
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_gauntlet.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+icons/iconw_machinegun
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_machinegun.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+icons/iconw_rocket
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_rocket.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+
+icons/iconw_shotgun
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_shotgun.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbgen identitylighting
+	}
+}
+
+icons/iconw_grenade
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_grenade.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+
+icons/iconw_lightning
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_lightning.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+
+icons/iconw_plasma
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_plasma.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+
+icons/iconw_railgun
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_railgun.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+
+icons/iconw_bfg
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_bfg.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+
+icons/iconw_grapple
+{
+	nopicmip
+	nomipmaps
+	{
+		map icons/iconw_grapple.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}

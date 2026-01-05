@@ -1,5 +1,4 @@
-Version: be v1.00e
-Date: 05.01.2025
-Changes:
+05.01.2025 be v1.00e
++ SUPERHUD, visflags: gauntlet, machinegun, shotgun, grenade
     rocket, lightning, railgun, plasma, bfg
 * Team tasks fix

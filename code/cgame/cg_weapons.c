@@ -759,8 +759,10 @@ void CG_RegisterWeapon(int weaponNum)
 		weaponInfo->weaponMidpoint[i] = mins[i] + 0.5 * (maxs[i] - mins[i]);
 	}
 
-	weaponInfo->weaponIcon = trap_R_RegisterShader(item->icon);
-	weaponInfo->ammoIcon = trap_R_RegisterShader(item->icon);
+	// Use already registered icon from CG_RegisterItemVisuals (registered with NoMip for weapons)
+	weaponInfo->weaponIcon = cg_items[item - bg_itemlist].icon;
+	CG_Printf("^6------------>weaponIcon: %s\n", item->icon);
+	weaponInfo->ammoIcon = cg_items[item - bg_itemlist].icon;
 
 	for (ammo = bg_itemlist + 1 ; ammo->classname ; ammo++)
 	{
@@ -1068,11 +1070,14 @@ void CG_RegisterItemVisuals(int itemNum)
 
 	itemInfo->models[0] = trap_R_RegisterModel(item->world_model[0]);
 
-	itemInfo->icon = item->icon ? trap_R_RegisterShader(item->icon) : 0;
-
 	if (item->giType == IT_WEAPON)
 	{
+		itemInfo->icon = item->icon ? trap_R_RegisterShaderNoMip(item->icon) : 0;
 		CG_RegisterWeapon(item->giTag);
+	}
+	else
+	{
+		itemInfo->icon = item->icon ? trap_R_RegisterShader(item->icon) : 0;
 	}
 
 	//
