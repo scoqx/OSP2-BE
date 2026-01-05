@@ -806,10 +806,10 @@ typedef struct
 	qhandle_t   viewBloodShader;
 	qhandle_t   damageIndicatorCenter;
 	qhandle_t   tracerShader;
-	qhandle_t   crosshairShader[NUM_CROSSHAIRS + 1];
-	qhandle_t   crosshairShader45[NUM_CROSSHAIRS + 1];
-	qhandle_t   crosshairDecorShader[NUM_CROSSHAIRS + 1];
-	qhandle_t   crosshairDecorShader45[NUM_CROSSHAIRS + 1];
+	qhandle_t   crosshairShader[NUM_CROSSHAIRS];
+	qhandle_t   crosshairShader45[NUM_CROSSHAIRS];
+	qhandle_t   crosshairDecorShader[NUM_CROSSHAIRS];
+	qhandle_t   crosshairDecorShader45[NUM_CROSSHAIRS];
 	int         numberOfCrosshairs;
 	int         numberOfCrosshairDecors;
 	qhandle_t   lagometerShader;
