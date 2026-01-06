@@ -761,7 +761,6 @@ void CG_RegisterWeapon(int weaponNum)
 
 	// Use already registered icon from CG_RegisterItemVisuals (registered with NoMip for weapons)
 	weaponInfo->weaponIcon = cg_items[item - bg_itemlist].icon;
-	CG_Printf("^6------------>weaponIcon: %s\n", item->icon);
 	weaponInfo->ammoIcon = cg_items[item - bg_itemlist].icon;
 
 	for (ammo = bg_itemlist + 1 ; ammo->classname ; ammo++)
