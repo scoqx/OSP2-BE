@@ -30,6 +30,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Create version files
+        run: |
+          cd build/linux-qvm
+          make ../../assets/version.txt ../../assets/version_changelog.txt
+      
       - name: build
         working-directory: build/linux-qvm
         run: |

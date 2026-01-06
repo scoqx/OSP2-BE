@@ -44,7 +44,9 @@ FORCE:
 	@echo "Changelog file created for version: $$(head -n 1 $@)"
 
 $(PK3): vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt
-	$(7Z) $@ vm/*.qvm vm/*.jts ../../assets/*
+	@echo "Creating package with version files..."
+	@echo "Version: $$(cat ../../assets/version.txt)"
+	$(7Z) $@ vm/*.qvm vm/*.jts ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/*
 
 cc = cd vm/$1 && $(Q3LCC) $2 -o $(notdir $@).tmp ../../$< && mv $(notdir $@).tmp $(notdir $@)
 qa_cc = $(call cc,game,$(QA_CFLAGS))
