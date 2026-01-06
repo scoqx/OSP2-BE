@@ -1851,7 +1851,7 @@ static consoleCommand_t commands[] =
 	{ "-ttwheel", CG_SelwheelMarkStop },
 	{ "ttwheelclose", CG_SelwheelMarkClose },
 	{ "behelp", CG_BEHelp_f },
-	{ "teamtaskhelp", CG_TeamTaskHelp_f },
+	{ "teamTaskHelp", CG_TeamTaskHelp_f },
 	{ "teamTaskClients", CG_TeamTaskClients_f },
 	{ "colorcharlist", CG_ColorCharList_f },
 };

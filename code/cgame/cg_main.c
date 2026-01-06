@@ -1553,6 +1553,8 @@ static void CG_RegisterSounds(void)
 	// Team Task
 	cgs.media.pingSimpleSound = trap_S_RegisterSound("sound/teamplay/ping-simple.wav", qfalse);
 	cgs.media.pingDeathSound = trap_S_RegisterSound("sound/teamplay/ping-death.wav", qfalse);
+	cgs.media.pingAcceptSound = trap_S_RegisterSound("sound/teamplay/ping-accept.wav", qfalse);
+	cgs.media.pingDenySound = trap_S_RegisterSound("sound/teamplay/ping-deny.wav", qfalse);
 }
 
 qhandle_t CG_GetFragSound(void)

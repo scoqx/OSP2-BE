@@ -618,7 +618,10 @@ SHUD:
 * Team tasks fix
 
 06.01.2025 be v1.00f
-* tSmart frozen enemy/ally fix
++ TEAM TASKS:
+  + /teamTaskClients (who already sent works only on team)
+  + Yes/No sounds
+  * tSmart frozen enemy/ally fix
 * Some default settings was changed
 + cg_teamIndicatorFontSize
 * cg_accuracyFontSize - 1/2 args

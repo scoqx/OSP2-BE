@@ -1146,6 +1146,8 @@ typedef struct
 
 	sfxHandle_t pingSimpleSound;
 	sfxHandle_t pingDeathSound;
+	sfxHandle_t pingAcceptSound;
+	sfxHandle_t pingDenySound;
 
 } cgMedia_t;
 
