@@ -10,14 +10,16 @@ all: dirs $(PK3)
 dirs:
 	mkdir -p vm/game vm/cgame vm/ui
 
-.PHONY: all dirs
+.PHONY: all dirs FORCE
 
-../../assets/version.txt: $(CGDIR)/cg_local.h
+FORCE:
+
+../../assets/version.txt: FORCE $(CGDIR)/cg_local.h
 	@echo "Extracting version from $(CGDIR)/cg_local.h"
 	@grep -E '^#define OSP_VERSION' $(CGDIR)/cg_local.h | sed -E 's/^#define OSP_VERSION "([^"]*)".*/\1/' > $@
 	@echo "Version file created: $$(cat $@)"
 
-../../assets/version_changelog.txt: ../../changelog_be.txt ../../assets/version.txt
+../../assets/version_changelog.txt: FORCE ../../changelog_be.txt ../../assets/version.txt
 	@echo "Extracting changelog for current version"
 	@VERSION_NUM=$$(cat ../../assets/version.txt | sed 's/be-//'); \
 	awk -v ver="$$VERSION_NUM" ' \
