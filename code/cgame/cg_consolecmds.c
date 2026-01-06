@@ -887,6 +887,23 @@ void CG_PrintPlayerIDs_f(void)
 	}
 }
 
+void CG_TeamTaskClients_f(void)
+{
+	int p;
+	CG_Printf("\n^5Team Task Support Status:\n");
+	CG_Printf("^7| ^3%2s ^7| ^5%32s ^7| ^3%10s\n", "ID", "Player name", "Supports TT");
+	CG_Printf("^7------------------------------------------------------------------------------\n");
+	for (p = 0; p < MAX_CLIENTS; ++p)
+	{
+		if (cgs.clientinfo[p].infoValid)
+		{
+			CG_Printf("^7| ^3%2d ^7| %32s ^7| %s\n", p, cgs.clientinfo[p].name_clean, 
+				cgs.clientinfo[p].supportsTeamTask ? "^2Yes" : "^1No");
+		}
+	}
+	CG_Printf("\n");
+}
+
 void CG_Fonts_f(void)
 {
 	int i;
@@ -1835,6 +1852,7 @@ static consoleCommand_t commands[] =
 	{ "ttwheelclose", CG_SelwheelMarkClose },
 	{ "behelp", CG_BEHelp_f },
 	{ "teamtaskhelp", CG_TeamTaskHelp_f },
+	{ "teamTaskClients", CG_TeamTaskClients_f },
 	{ "colorcharlist", CG_ColorCharList_f },
 };
 

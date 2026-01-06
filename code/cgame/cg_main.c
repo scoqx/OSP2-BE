@@ -912,7 +912,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_drawHudMarkers, "cg_drawHudMarkers", "1", CVAR_ARCHIVE },
 	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE },
-	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_accuracyFontSize },
+	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "10 14", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_accuracyFontSize },
 	{ &cg_accuracyIconSize, "cg_accuracyIconSize", "18", CVAR_ARCHIVE },
 	{ &cg_accuracyFont, "cg_accuracyFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_accuracyFont, },
 	{ &ch_crosshairActionColorLow,  "ch_crosshairActionColorLow", "white",  CVAR_ARCHIVE, CG_LocalEventCvarChanged_ch_crosshairActionColor },

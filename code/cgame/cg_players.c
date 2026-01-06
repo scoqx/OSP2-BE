@@ -1090,6 +1090,12 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	/* clientNum is the sender's client ID */
 	CG_OSPTeamTaskUnpack(newInfo->teamTask, clientNum, &toClient, &templateID, &qx, &qy, &qz);
 
+	/* Mark that player supports team task only if unpack was successful (templateID != 0) */
+	if (templateID != 0)
+	{
+		ci->supportsTeamTask = qtrue;
+	}
+
 	coord[0] = Dequantize(qx, -3000, 3000, 7);
 	coord[1] = Dequantize(qy, -3000, 3000, 7);
 	coord[2] = Dequantize(qz, -3000, 3000, 7);

@@ -370,6 +370,7 @@ typedef struct
 
 	int             teamTask;       // task in teamplay (offence/defence)
 	int             teamTaskEvent;  // pending team task event to process (0 = no event)
+	qboolean        supportsTeamTask; // true if player has sent at least one teamTask
 	qboolean        teamLeader;     // true when this is a team leader
 
 	int             powerups;       // so can display quad/flag status

@@ -3147,7 +3147,7 @@ typedef enum
 	STATS_POS_RIGHT
 } shudWeaponStatsPos_t;
 
-void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float textSize)
+void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize)
 {
 	float iconX = 0.0f, iconY = 0.0f;
 	const float blockSpacing = 4.0f, textOffset = 2.0f;
@@ -3155,7 +3155,8 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float tex
 	char accStr[16];
 	int textFlags;
 	newStatsInfo_t* ws = &cgs.be.newStats;
-	float charWidth;
+	float charWidth;  /* Character width for text */
+	float charHeight; /* Character height for text */
 	int maxCharCount = 4;
 	float approxTextWidth;
 	int shots;
@@ -3164,13 +3165,27 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float tex
 	int font = CG_FontIndexFromCvar(&cg_accuracyFont);
 	qhandle_t icon;
 	
+	/* Get character width and height from cvar or use default */
 	if (cgs.be.accuracyFontSize[0] > 0.0f || cgs.be.accuracyFontSize[1] > 0.0f)
 	{
-		charWidth = cgs.be.accuracyFontSize[0];
+		/* Use custom width and height from cvar */
+		charWidth = cgs.be.accuracyFontSize[0];  /* Width from cvar */
+		charHeight = cgs.be.accuracyFontSize[1];  /* Height from cvar */
+		/* If only one value provided, use it for both */
+		if (charWidth <= 0.0f)
+		{
+			charWidth = charHeight;
+		}
+		if (charHeight <= 0.0f)
+		{
+			charHeight = charWidth;
+		}
 	}
 	else
 	{
-		charWidth = textSize * 0.75f;
+		/* Use old behavior: single value for both width and height */
+		charWidth = 8;
+		charHeight = 10;
 	}
 	approxTextWidth = charWidth * maxCharCount;
 
@@ -3240,7 +3255,7 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float tex
 		textFlags |= iconBeforeText ? DS_HLEFT : DS_HRIGHT;
 
 		textX = iconBeforeText ? iconX + iconSize + textOffset : iconX - textOffset;
-		textY = iconY + (iconSize - textSize) * 0.5f;
+		textY = iconY + (iconSize - charHeight) * 0.5f;
 
 		if (iconBeforeText)
 		{
@@ -3252,7 +3267,7 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float tex
 			}
 		}
 		CG_FontSelect(font);
-		CG_OSPDrawStringNew(textX, textY, accStr, colorWhite, colorBlack, charWidth, textSize,
+		CG_OSPDrawStringNew(textX, textY, accStr, colorWhite, colorBlack, charWidth, charHeight,
 		                    SCREEN_WIDTH, textFlags, NULL, NULL, NULL);
 
 		if (!iconBeforeText)
@@ -3275,24 +3290,13 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float tex
 
 void CG_DrawWeaponStatsWrapper(void)
 {
-
 	shudWeaponStatsPos_t position;
 	float iconSize;
-	float textSize;
 
 	if (!cg_drawAccuracy.integer)
 		return;
 
 	iconSize = cg_accuracyIconSize.value;
-	if (cgs.be.accuracyFontSize[0] > 0.0f || cgs.be.accuracyFontSize[1] > 0.0f)
-	{
-		textSize = cgs.be.accuracyFontSize[1];
-	}
-	else
-	{
-		textSize = cg_accuracyFontSize.value;
-	}
-
 
 	switch (cg_drawAccuracy.integer)
 	{
@@ -3312,7 +3316,7 @@ void CG_DrawWeaponStatsWrapper(void)
 			return;
 	}
 
-	CG_DrawWeaponStats(position, iconSize, textSize);
+	CG_DrawWeaponStats(position, iconSize);
 }
 
 
