@@ -540,7 +540,6 @@ vmCvar_t        cg_damagePlumSize;
 vmCvar_t        cg_damagePlumsWeapons;
 vmCvar_t        cg_chatColor;
 vmCvar_t        cg_teamChatColor;
-
 vmCvar_t        cg_brightWeaponsColorGauntlet;
 vmCvar_t        cg_brightWeaponsColorMG;
 vmCvar_t        cg_brightWeaponsColorSG;
@@ -550,8 +549,9 @@ vmCvar_t        cg_brightWeaponsColorLG;
 vmCvar_t        cg_brightWeaponsColorRG;
 vmCvar_t        cg_brightWeaponsColorPG;
 vmCvar_t        cg_brightWeaponsColorBFG;
-
 vmCvar_t        cg_countdownTimer;
+vmCvar_t        cg_teamIndicatorFontSize;
+
 // vmCvar_t        cg_snow;
 
 static cvarTable_t cvarTable[] =
@@ -856,11 +856,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_hitBoxColor, "cg_hitBoxColor", "004444", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
 	{ &cg_drawGunForceAspect, "cg_drawGunForceAspect", "0", CVAR_ARCHIVE },
 	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
-	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE },
-	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "Magenta", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
+	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "00FF00", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
 	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE },
-	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE },
-	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
+	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "FFFFFF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
 	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
 	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
@@ -878,15 +878,15 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
 	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE },
 	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE },
-	{ &cg_teamIndicator, "cg_teamIndicator", "14", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
-	{ &cg_teamIndicatorAdjust, "cg_teamIndicatorAdjust", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorAdjust },
+	{ &cg_teamIndicator, "cg_teamIndicator", "10", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
+	{ &cg_teamIndicatorAdjust, "cg_teamIndicatorAdjust", "0.9", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorAdjust },
 	{ &cg_teamIndicatorColor, "cg_teamIndicatorColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorColor },
 	{ &cg_teamIndicatorOpaque, "cg_teamIndicatorOpaque", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorOpaque },
-	{ &cg_teamIndicatorBgColor, "cg_teamIndicatorBgColor", "444444", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorBgColor },
-	{ &cg_teamIndicatorBgOpaque, "cg_teamIndicatorBgOpaque", "0.4", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque },
+	{ &cg_teamIndicatorBgColor, "cg_teamIndicatorBgColor", "000000", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorBgColor },
+	{ &cg_teamIndicatorBgOpaque, "cg_teamIndicatorBgOpaque", "0.2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque },
 	{ &cg_teamIndicatorOffset, "cg_teamIndicatorOffset", "12", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorOffset },
 	{ &cg_teamIndicatorMaxLength, "cg_teamIndicatorMaxLength", "13", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength },
-	{ &cg_teamIndicatorFont, "cg_teamIndicatorFont", "4", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFont, },
+	{ &cg_teamIndicatorFont, "cg_teamIndicatorFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFont, },
 	{ &cg_scoreboardBE, "cg_scoreboardBE", "0", CVAR_ARCHIVE, },
 	{ &cg_scoreboardFont, "cg_scoreboardFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardFont },
 	{ &cg_centerMessagesFont, "cg_centerMessagesFont", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_centerMessagesFont },
@@ -906,13 +906,13 @@ static cvarTable_t cvarTable[] =
 	{ &cg_redTeamColor, "cg_redTeamColor", "Red", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_redTeamColor },
 	{ &cg_blueTeamColor, "cg_blueTeamColor", "Blue", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_blueTeamColor },
 	{ &cg_friendHudMarkerMaxDist, "cg_friendHudMarkerMaxDist", "0", CVAR_ARCHIVE },
-	{ &cg_friendHudMarkerSize, "cg_friendHudMarkerSize", "1.25", CVAR_ARCHIVE },
+	{ &cg_friendHudMarkerSize, "cg_friendHudMarkerSize", "1", CVAR_ARCHIVE },
 	{ &cg_friendHudMarkerMaxScale, "cg_friendHudMarkerMaxScale", "1", CVAR_ARCHIVE },
-	{ &cg_friendHudMarkerMinScale, "cg_friendHudMarkerMinScale", "0.4", CVAR_ARCHIVE },
+	{ &cg_friendHudMarkerMinScale, "cg_friendHudMarkerMinScale", "0.3", CVAR_ARCHIVE },
 	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_drawHudMarkers, "cg_drawHudMarkers", "1", CVAR_ARCHIVE },
 	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE },
-	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE },
+	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "12", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_accuracyFontSize },
 	{ &cg_accuracyIconSize, "cg_accuracyIconSize", "18", CVAR_ARCHIVE },
 	{ &cg_accuracyFont, "cg_accuracyFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_accuracyFont, },
 	{ &ch_crosshairActionColorLow,  "ch_crosshairActionColorLow", "white",  CVAR_ARCHIVE, CG_LocalEventCvarChanged_ch_crosshairActionColor },
@@ -978,7 +978,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "2800", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
 	{ &cg_teamTask, "cg_teamTask", "31", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskScale, "cg_teamTaskScale", "1.0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamTaskOpaque, "cg_teamTaskOpaque", "1.0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teamTaskOpaque, "cg_teamTaskOpaque", "0.7", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskFade, "cg_teamTaskFade", "0.5", CVAR_ARCHIVE  | CVAR_NEW},
 	{ &cg_teamTaskFadeRadius, "cg_teamTaskFadeRadius", "128", CVAR_ARCHIVE  | CVAR_NEW},
 	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE  | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskFont, },
@@ -1006,6 +1006,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_brightWeaponsColorRG, "cg_brightWeaponsColorRG", "Cyan", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_brightWeaponsColorPG, "cg_brightWeaponsColorPG", "Magenta", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_brightWeaponsColorBFG, "cg_brightWeaponsColorBFG", "Blue", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_teamIndicatorFontSize, "cg_teamIndicatorFontSize", "12 9", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorFontSize },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -2266,6 +2267,7 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_teamIndicatorBgOpaque");
 	CG_CvarTouch("cg_teamIndicatorOffset");
 	CG_CvarTouch("cg_teamIndicatorMaxLength");
+	CG_CvarTouch("cg_teamIndicatorFontSize");
 	CG_CvarTouch("cg_teamIndicatorAdjust");
 
 	CG_CvarTouch("cg_teamIndicatorFont");
@@ -2296,6 +2298,8 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_bestats_pos");
 	CG_CvarTouch("cg_bestats_font");
 	CG_CvarTouch("cg_bestats_bgColor");
+
+	CG_CvarTouch("cg_accuracyFontSize");
 
 	CG_CvarTouch("cg_autoHop");
 	CG_CvarTouch("cg_teamTaskFont");

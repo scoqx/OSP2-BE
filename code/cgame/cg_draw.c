@@ -2917,8 +2917,16 @@ void CG_DrawPlayerIndicator(int clientNum)
 	if (t < 0.0f) t = 0.0f;
 	if (t > 1.0f) t = 1.0f;
 
-	h = (12.0f - (t * 8.0f)) * cg_teamIndicatorAdjust.value;
-	w = (h * 0.75f) * cg_teamIndicatorAdjust.value;
+	if (cgs.be.playerIndicatorFontSize[0] > 0.0f || cgs.be.playerIndicatorFontSize[1] > 0.0f)
+	{
+		w = cgs.be.playerIndicatorFontSize[0];
+		h = cgs.be.playerIndicatorFontSize[1];
+	}
+	else
+	{
+		h = (12.0f - (t * 8.0f)) * cg_teamIndicatorAdjust.value;
+		w = (h * 0.75f) * cg_teamIndicatorAdjust.value;
+	}
 
 	rawLift = liftMinAdj + t * (liftMaxAdj - liftMinAdj);
 	lift = lastLift[clientNum] + (rawLift - lastLift[clientNum]) * smoothFactor;
@@ -3147,14 +3155,25 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize, float tex
 	char accStr[16];
 	int textFlags;
 	newStatsInfo_t* ws = &cgs.be.newStats;
-	float charWidth = textSize * 0.75f;
+	float charWidth;
 	int maxCharCount = 4;
-	float approxTextWidth = charWidth * maxCharCount;
+	float approxTextWidth;
 	int shots;
 	qboolean horizontal, iconBeforeText;
 	float textX, textY;
 	int font = CG_FontIndexFromCvar(&cg_accuracyFont);
 	qhandle_t icon;
+	
+	if (cgs.be.accuracyFontSize[0] > 0.0f || cgs.be.accuracyFontSize[1] > 0.0f)
+	{
+		charWidth = cgs.be.accuracyFontSize[0];
+	}
+	else
+	{
+		charWidth = textSize * 0.75f;
+	}
+	approxTextWidth = charWidth * maxCharCount;
+
 
 	for (wp = WP_MACHINEGUN; wp <= WP_PLASMAGUN; wp++)
 		if (ws->stats[wp].shots > 0) visibleCount++;
@@ -3265,7 +3284,14 @@ void CG_DrawWeaponStatsWrapper(void)
 		return;
 
 	iconSize = cg_accuracyIconSize.value;
-	textSize = cg_accuracyFontSize.value;
+	if (cgs.be.accuracyFontSize[0] > 0.0f || cgs.be.accuracyFontSize[1] > 0.0f)
+	{
+		textSize = cgs.be.accuracyFontSize[1];
+	}
+	else
+	{
+		textSize = cg_accuracyFontSize.value;
+	}
 
 
 	switch (cg_drawAccuracy.integer)

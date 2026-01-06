@@ -616,3 +616,9 @@ SHUD:
 + SUPERHUD, visflags: gauntlet, machinegun, shotgun, grenade
     rocket, lightning, railgun, plasma, bfg
 * Team tasks fix
+
+06.01.2025 be v1.00f
+* tSmart frozen enemy/ally fix
+* Some default settings was changed
++ cg_teamIndicatorFontSize
+* cg_accuracyFontSize - 1/2 args

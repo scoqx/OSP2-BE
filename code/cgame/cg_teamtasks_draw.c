@@ -170,6 +170,11 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 			*markerShader = cgs.media.teamTasksLocation_marker;
 			*worldShader = cgs.media.teamTasksLocation;
 			break;
+		case TEAMTASK_FROZEN_ALLY:
+		case TEAMTASK_FROZEN_ENEMY:
+			*markerShader = cgs.media.teamTasksFrozen_marker;
+			*worldShader = cgs.media.frozenFoeTagShader;
+			break;
 		default:
 			*markerShader = cgs.media.teamTasksUnknown;
 			*worldShader = cgs.media.teamTasksUnknown;

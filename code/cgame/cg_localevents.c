@@ -53,10 +53,17 @@ void CG_ParseCvarTwoFloats(const cvarTable_t* cvart, float* out1, float* out2)
 	token1 = Q_strtok(buffer, " \t");
 	token2 = Q_strtok(NULL, " \t");
 
-	if (!token1 || !token2) return;
+	if (!token1) return;
 
 	*out1 = (float)atof(token1);
-	*out2 = (float)atof(token2);
+	if (token2)
+	{
+		*out2 = (float)atof(token2);
+	}
+	else
+	{
+		*out2 = *out1;
+	}
 }
 
 static void CG_ParseCvarTwoColors(const cvarTable_t* cvart, vec4_t out1, vec4_t out2)
@@ -656,6 +663,26 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_teamIndicatorFont", "2");
 	}
+}
+void CG_LocalEventCvarChanged_cg_teamIndicatorFontSize(cvarTable_t* cvart)
+{
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string || cvart->vmCvar->string[0] == '\0')
+	{
+		cgs.be.playerIndicatorFontSize[0] = 0.0f;
+		cgs.be.playerIndicatorFontSize[1] = 0.0f;
+		return;
+	}
+	CG_ParseCvarTwoFloats(cvart, &cgs.be.playerIndicatorFontSize[0], &cgs.be.playerIndicatorFontSize[1]);
+}
+void CG_LocalEventCvarChanged_cg_accuracyFontSize(cvarTable_t* cvart)
+{
+	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string || cvart->vmCvar->string[0] == '\0')
+	{
+		cgs.be.accuracyFontSize[0] = 0.0f;
+		cgs.be.accuracyFontSize[1] = 0.0f;
+		return;
+	}
+	CG_ParseCvarTwoFloats(cvart, &cgs.be.accuracyFontSize[0], &cgs.be.accuracyFontSize[1]);
 }
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart)
 {

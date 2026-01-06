@@ -1276,6 +1276,8 @@ typedef struct cgs_be_s
 	vec4_t blueTeamColor;
 	vec4_t playerIndicatorColor;
 	vec4_t playerIndicatorBgColor;
+	vec2_t playerIndicatorFontSize;
+	vec2_t accuracyFontSize;
 	customWeaponStats_t weaponStats[WP_NUM_WEAPONS];
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
@@ -2051,6 +2053,9 @@ extern vmCvar_t         cg_printui_template2;
 extern vmCvar_t         cg_chatColor;
 extern vmCvar_t         cg_teamChatColor;
 extern vmCvar_t         cg_countdownTimer;
+extern vmCvar_t         cg_teamIndicatorFontSize;
+
+
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_run;
 //
@@ -3133,6 +3138,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorBgColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorOffset(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_teamIndicatorFontSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart);
@@ -3147,6 +3153,7 @@ void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_accuracyFontSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);

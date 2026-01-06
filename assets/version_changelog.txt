@@ -2,3 +2,4 @@
 + SUPERHUD, visflags: gauntlet, machinegun, shotgun, grenade
     rocket, lightning, railgun, plasma, bfg
 * Team tasks fix
+
