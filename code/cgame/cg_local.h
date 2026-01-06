@@ -2368,6 +2368,7 @@ qboolean CG_IsEnemy(const clientInfo_t* target);
 qboolean CG_IsEnemySimple(const clientInfo_t* target);
 qboolean CG_IsFrozenEntity(const centity_t* cent);
 qboolean CG_IsWarmup(void);
+qboolean CG_IsIntermission(void);
 
 //
 // cg_predict.c

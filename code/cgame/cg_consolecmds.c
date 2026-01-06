@@ -1074,6 +1074,10 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	{
 		return;
 	}
+	if (CG_IsIntermission())
+	{
+		return;
+	}
 	if (!CG_IsLocalClientOnScreen())
 	{
 		return;
@@ -1151,6 +1155,10 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	{
 		return;
 	}
+	if (CG_IsIntermission())
+	{
+		return;
+	}
 	if (!CG_IsLocalClientOnScreen())
 	{
 		return;
@@ -1220,6 +1228,10 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 		return;
 	}
 	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return;
+	}
+	if (CG_IsIntermission())
 	{
 		return;
 	}
