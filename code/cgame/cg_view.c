@@ -855,6 +855,26 @@ static int CG_CalcViewValues(void)
 
 /*
 =====================
+CG_IsWarmup
+
+Returns qtrue if currently in warmup, qfalse otherwise.
+=====================
+*/
+qboolean CG_IsWarmup(void)
+{
+	if (cg.warmup == 0)
+	{
+		return qfalse;
+	}
+	else 
+	{
+		return qtrue;
+	}
+}
+
+
+/*
+=====================
 CG_PowerupTimerSounds
 =====================
 */

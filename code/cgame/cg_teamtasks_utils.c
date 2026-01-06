@@ -97,6 +97,10 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent)
 	qboolean shouldSendMark = qfalse;
 
 	/* Check conditions */
+	if (CG_IsWarmup())
+	{
+		return;
+	}
 	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
 	{
 		return;
@@ -293,4 +297,51 @@ Check if server supports team task
 qboolean CG_IsTeamTaskSupported(void)
 {
 	return cgs.be.teamMarkers.supportedServer;
+}
+
+/*
+=================
+CG_ClearRoundSpecificTeamTaskMarks
+
+Remove specific team task marks when round changes:
+- TEAMTASK_FROZEN_ALLY
+- TEAMTASK_FROZEN_ENEMY
+- TEAMTASK_HERE_DEAD
+- TEAMTASK_PLAYERDEAD
+Uses pack array algorithm (O(n) instead of O(n²))
+=================
+*/
+void CG_ClearRoundSpecificTeamTaskMarks(void)
+{
+	int i;
+	int writeIndex;
+	teamTaskMark_t* mark;
+
+	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	{
+		return;
+	}
+
+	/* Pack array: copy valid marks to the beginning, excluding round-specific marks */
+	writeIndex = 0;
+	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	{
+		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+
+		/* Keep only marks that are NOT round-specific */
+		if (mark->markType != TEAMTASK_FROZEN_ALLY &&
+		        mark->markType != TEAMTASK_FROZEN_ENEMY &&
+		        mark->markType != TEAMTASK_HERE_DEAD &&
+		        mark->markType != TEAMTASK_PLAYERDEAD)
+		{
+			if (writeIndex != i)
+			{
+				cgs.be.teamMarkers.teamTaskMarks[writeIndex] = cgs.be.teamMarkers.teamTaskMarks[i];
+			}
+			writeIndex++;
+		}
+	}
+
+	/* Update count */
+	cgs.be.teamMarkers.numTeamTaskMarks = writeIndex;
 }

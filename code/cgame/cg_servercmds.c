@@ -219,6 +219,47 @@ static void CG_ParseWarmup(void)
 }
 
 /*
+==================
+CG_ParseScoresUpdate
+
+Parse and update scores from configstring.
+Handles round change detection and clearing round-specific marks.
+==================
+*/
+static void CG_ParseScoresUpdate(int teamNum, const char* str)
+{
+	int newScore;
+	int* prevScore;
+	int* currentScore;
+	int* teamCount;
+
+	if (teamNum == 1)
+	{
+		prevScore = &cg.prevScores1;
+		currentScore = &cgs.scores1;
+		teamCount = &cgs.osp.osp_teamcount1;
+	}
+	else
+	{
+		prevScore = &cg.prevScores2;
+		currentScore = &cgs.scores2;
+		teamCount = &cgs.osp.osp_teamcount2;
+	}
+
+	*teamCount = -1;
+	Q_sscanf(str, "%i %i", &newScore, teamCount);
+
+	/* Check if round changed before updating values */
+	if (cgs.gametype == GT_TEAM && CG_OSPIsGameTypeFreeze() && *prevScore != newScore)
+	{
+		CG_ClearRoundSpecificTeamTaskMarks();
+	}
+
+	*prevScore = *currentScore;
+	*currentScore = newScore;
+}
+
+/*
 ================
 CG_SetConfigValues
 
@@ -231,6 +272,8 @@ void CG_SetConfigValues(void)
 
 	cgs.scores1 = atoi(CG_ConfigString(CS_SCORES1));
 	cgs.scores2 = atoi(CG_ConfigString(CS_SCORES2));
+	cg.prevScores1 = cgs.scores1;
+	cg.prevScores2 = cgs.scores2;
 	cgs.levelStartTime = atoi(CG_ConfigString(CS_LEVEL_START_TIME));
 	if (cgs.gametype == GT_CTF)
 	{
@@ -329,13 +372,11 @@ static void CG_ConfigStringModified(void)
 	}
 	else if (num == CS_SCORES1)
 	{
-		cgs.osp.osp_teamcount1 = -1;
-		Q_sscanf(str, "%i %i", &cgs.scores1, &cgs.osp.osp_teamcount1);
+		CG_ParseScoresUpdate(1, str);
 	}
 	else if (num == CS_SCORES2)
 	{
-		cgs.osp.osp_teamcount2 = -1;
-		Q_sscanf(str, "%i %i", &cgs.scores2, &cgs.osp.osp_teamcount2);
+		CG_ParseScoresUpdate(2, str);
 	}
 	else if (num == CS_LEVEL_START_TIME)
 	{
@@ -2135,7 +2176,7 @@ void CG_ServerCommand(void)
 		return;
 	}
 //dmgplum - damage plum for projectile weapons (GL/RL) via server command
-	if (Q_stricmp(cmd, "dmgplum") == 0)
+	if (Q_stricmp(cmd, "dmgplum_proj") == 0)
 	{
 		int damage;
 		int argc;

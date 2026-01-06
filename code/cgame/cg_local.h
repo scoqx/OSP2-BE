@@ -675,6 +675,10 @@ typedef struct
 	int         warmup;
 	int         warmupCount;
 
+	// previous scores for round detection
+	int         prevScores1;
+	int         prevScores2;
+
 	//==========================
 
 	int         itemPickup;
@@ -2360,6 +2364,7 @@ qboolean CG_IsLocalClientOnScreen(void);
 qboolean CG_IsEnemy(const clientInfo_t* target);
 qboolean CG_IsEnemySimple(const clientInfo_t* target);
 qboolean CG_IsFrozenEntity(const centity_t* cent);
+qboolean CG_IsWarmup(void);
 
 //
 // cg_predict.c
@@ -3004,6 +3009,7 @@ int CG_OSPTeamTaskPack(int toClient, int templateID, int x, int y, int z);
 void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* templateID, int* x, int* y, int* z);
 void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position, qboolean ignoreDead);
 void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent);
+void CG_ClearRoundSpecificTeamTaskMarks(void);
 void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient);
 void CG_TeamTaskMarkOffense(void);
 void CG_TeamTaskMarkDefence(void);

@@ -48,38 +48,47 @@ Returns qtrue if color was set, qfalse otherwise
 */
 static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolean isAlly)
 {
-	int myTeam;
+	int myRealTeam;
 
-	myTeam = cg.snap->ps.persistant[PERS_TEAM];
+	myRealTeam = cgs.clientinfo[cg.clientNum].team;
+
+	/* Determine which team color to use and copy it */
 	if (isAlly)
 	{
 		/* Use own team color */
-		if (myTeam == TEAM_RED)
+		if (myRealTeam == TEAM_RED)
 		{
 			VectorCopy(cgs.be.redTeamColor, color);
-			return qtrue;
 		}
-		else if (myTeam == TEAM_BLUE)
+		else if (myRealTeam == TEAM_BLUE)
 		{
 			VectorCopy(cgs.be.blueTeamColor, color);
-			return qtrue;
+		}
+		else
+		{
+			return qfalse;
 		}
 	}
 	else
 	{
 		/* Use enemy team color */
-		if (myTeam == TEAM_RED)
+		if (myRealTeam == TEAM_RED)
 		{
 			VectorCopy(cgs.be.blueTeamColor, color);
-			return qtrue;
 		}
-		else if (myTeam == TEAM_BLUE)
+		else if (myRealTeam == TEAM_BLUE)
 		{
 			VectorCopy(cgs.be.redTeamColor, color);
-			return qtrue;
+		}
+		else
+		{
+			return qfalse;
 		}
 	}
-	return qfalse;
+
+	/* Apply whitening (called once for all valid cases) */
+	CG_ColorWhitenSmart(color, NULL, 0.6f);
+	return qtrue;
 }
 
 /*
@@ -170,6 +179,19 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 			*markerShader = cgs.media.teamTasksLocation_marker;
 			*worldShader = cgs.media.teamTasksLocation;
 			break;
+		case TEAMTASK_HERE_DEAD:
+			/* Use frozen shader in freeze mode, otherwise use dead shader */
+			if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+			{
+				*markerShader = cgs.media.teamTasksFrozen_marker;
+				*worldShader = cgs.media.frozenFoeTagShader;
+			}
+			else
+			{
+				*markerShader = cgs.media.teamTasksDead_marker;
+				*worldShader = cgs.media.teamTasksDead;
+			}
+			break;
 		case TEAMTASK_FROZEN_ALLY:
 		case TEAMTASK_FROZEN_ENEMY:
 			*markerShader = cgs.media.teamTasksFrozen_marker;
@@ -247,12 +269,20 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			}
 			break;
 		case TEAMTASK_HERE_DEAD:
-			/* Override shader for freeze mode */
-			if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+			if (useMarkerShader)
 			{
-				*shader = useMarkerShader ? cgs.media.teamTasksFrozen_marker : cgs.media.frozenFoeTagShader;
+				/* HUD marker color is white */
+				CG_SetWhiteColor(color);
 			}
-			CG_SetWhiteColor(color);
+			else
+			{
+				/* World marker color is own team color (HERE_DEAD is always for own team) */
+				if (!CG_GetTeamColorForFrozenMark(markType, color, qtrue))
+				{
+					CG_SetWhiteColor(color);
+				}
+				color[3] = 1.0f;
+			}
 			break;
 		default:
 			CG_SetWhiteColor(color);
@@ -482,11 +512,19 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		}
 
 		/* Set color with alpha 0.25 and apply fade */
-		if (mark->markType == TEAMTASK_FROZEN_ALLY || mark->markType == TEAMTASK_FROZEN_ENEMY)
+		if (mark->markType == TEAMTASK_FROZEN_ALLY || mark->markType == TEAMTASK_FROZEN_ENEMY || mark->markType == TEAMTASK_HERE_DEAD)
 		{
-			/* For frozen bodies, use team color for pulsing circle */
+			/* For frozen bodies and HERE_DEAD, use team color for pulsing circle */
 			qboolean isAlly;
-			isAlly = (mark->markType == TEAMTASK_FROZEN_ALLY);
+			if (mark->markType == TEAMTASK_HERE_DEAD)
+			{
+				/* HERE_DEAD is always for own team */
+				isAlly = qtrue;
+			}
+			else
+			{
+				isAlly = (mark->markType == TEAMTASK_FROZEN_ALLY);
+			}
 			if (!CG_GetTeamColorForFrozenMark(mark->markType, pulseColor, isAlly))
 			{
 				Vector4Copy(color, pulseColor);
@@ -1264,7 +1302,8 @@ void CG_DrawTeamTaskMarks(void)
 
 	/* Draw own HERE_DEAD marks as overhead in first person (in addition to world rendering) */
 	/* Only show overhead if we're observing ourselves (not following another player) */
-	if (!cg.renderingThirdPerson && CG_IsLocalClientOnScreen())
+	/* Don't show overhead in free float mode (already shown in HUD marker) */
+	if (!cg.renderingThirdPerson && CG_IsLocalClientOnScreen() && !CG_IsClientFreeFloat())
 	{
 		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
 		{
