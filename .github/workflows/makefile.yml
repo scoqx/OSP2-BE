@@ -47,8 +47,28 @@ jobs:
           if-no-files-found: error
           retention-days: 5
 
+  linux-so:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: build
+        working-directory: build/linux
+        run: |
+          make
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: so
+          path: build/linux/build/release-linux-x86_64/osp2/cgamex86_64.so
+          if-no-files-found: error
+          retention-days: 5
+
   deploy-to-gh-pages:
-    needs: linux-qvm
+    needs: [linux-qvm, linux-so]
     runs-on: ubuntu-latest
     env:
       TARGET_REPO: scoqx/scoqx.github.io
@@ -56,11 +76,11 @@ jobs:
       GIT_USER_NAME: GitHub Actions
       GIT_USER_EMAIL: actions@github.com
     steps:
-      - name: Download artifact
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: qvm
-          path: qvm_artifact
+          pattern: '*'
+          path: artifacts
 
       - name: Checkout target repo
         uses: actions/checkout@v3
@@ -70,16 +90,17 @@ jobs:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           path: target-repo
 
-      - name: Copy artifact to assets folder
+      - name: Copy artifacts to assets folder
         run: |
           mkdir -p target-repo/assets
-          cp qvm_artifact/zz-osp-pak8be.pk3 target-repo/assets/
+          cp artifacts/qvm/zz-osp-pak8be.pk3 target-repo/assets/
+          cp artifacts/so/cgamex86_64.so target-repo/assets/
 
       - name: Commit and push changes
         run: |
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add assets/zz-osp-pak8be.pk3
-          git diff --quiet --cached || git commit -m "Update zz-osp-pak8be.pk3 [auto]"
+          git add assets/zz-osp-pak8be.pk3 assets/cgamex86_64.so
+          git diff --quiet --cached || git commit -m "Update zz-osp-pak8be.pk3 and cgamex86_64.so [auto]"
           git push origin ${{ env.TARGET_BRANCH }}
