@@ -18,6 +18,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseFill(configFileInfo_
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseFont(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseFontSize(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImage(configFileInfo_t* finfo, superhudConfig_t* config);
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImage2(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImageTC(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseItTeam(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseMargins(configFileInfo_t* finfo, superhudConfig_t* config);
@@ -57,6 +58,7 @@ static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 	{ "font", CG_SHUDConfigCommandParseFont },
 	{ "fontsize", CG_SHUDConfigCommandParseFontSize },
 	{ "image", CG_SHUDConfigCommandParseImage },
+	{ "image2", CG_SHUDConfigCommandParseImage2 },
 	{ "imagetc", CG_SHUDConfigCommandParseImageTC },
 	{ "itteam", CG_SHUDConfigCommandParseItTeam },
 	{ "margins", CG_SHUDConfigCommandParseMargins },
@@ -636,6 +638,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_RAILGUN_STR, SE_WEAPON_RAILGUN, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_PLASMAGUN_STR, SE_WEAPON_PLASMAGUN, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_BFG_STR, SE_WEAPON_BFG, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_HEALTH_LOW_STR, SE_HEALTH_LOW, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHOW_EMPTY_STR, SE_SHOW_EMPTY, &flags)
 		   )
 		{
@@ -929,6 +932,23 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImage(configFileInfo
 		return status;
 	}
 	config->image.isSet = qtrue;
+
+	return SUPERHUD_CONFIG_OK;
+}
+
+/*
+ * parse IMAGE2 str
+ */
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImage2(configFileInfo_t* finfo, superhudConfig_t* config)
+{
+	superhudConfigParseStatus_t status;
+	config->image2.isSet = qfalse;
+	status = CG_SHUDParseString(finfo, config->image2.value, MAX_QPATH);
+	if (status != SUPERHUD_CONFIG_OK)
+	{
+		return status;
+	}
+	config->image2.isSet = qtrue;
 
 	return SUPERHUD_CONFIG_OK;
 }

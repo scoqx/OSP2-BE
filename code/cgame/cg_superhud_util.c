@@ -554,6 +554,18 @@ void CG_SHUDBarMakeContext(const superhudConfig_t* in, superhudBarContext_t* out
 	{
 		Vector4Set(out->color_back, 0, 0, 0, 0);
 	}
+
+	// Load images for bar if specified
+	out->image = 0;
+	out->image2 = 0;
+	if (config.image.isSet)
+	{
+		out->image = trap_R_RegisterShader(config.image.value);
+	}
+	if (config.image2.isSet)
+	{
+		out->image2 = trap_R_RegisterShader(config.image2.value);
+	}
 }
 
 qboolean CG_SHUDIsTimeOut(const superhudConfig_t* cfg, int startTime)
@@ -795,9 +807,86 @@ static void CG_SHUDBarPreparePrintBTT(const superhudBarContext_t* ctx, float val
 	coords->bar2_value[1] += ctx->bar[1][3] - coords->bar2_value[3]; //y = y + max_height - height
 }
 
+/*
+ * Calculate texture coordinates for bar image divided into 100 parts
+ * Returns texture coordinates (s1, t1, s2, t2) for the given progress value (0.0 to 1.0)
+ * direction: bar direction (horizontal or vertical)
+ * progress: progress value from 0.0 to 1.0
+ */
+static void CG_SHUDBarGetImageTexCoords(superhudDirection_t direction, float progress, float* s1, float* t1, float* s2, float* t2)
+{
+	int parts;
+	float partSize;
+	float endProgress;
+
+	// Clamp progress to 0.0 - 1.0
+	if (progress < 0.0f)
+	{
+		progress = 0.0f;
+	}
+	if (progress > 1.0f)
+	{
+		progress = 1.0f;
+	}
+
+	// Calculate how many parts (out of 100) should be visible
+	parts = (int)(progress * 100.0f);
+	if (parts > 100)
+	{
+		parts = 100;
+	}
+	if (parts < 0)
+	{
+		parts = 0;
+	}
+
+	partSize = 1.0f / 100.0f;
+	endProgress = (float)parts * partSize;
+
+	if (direction == SUPERHUD_DIR_LEFT_TO_RIGHT)
+	{
+		// Horizontal bar left to right: show from left
+		*s1 = 0.0f;
+		*t1 = 0.0f;
+		*s2 = endProgress;
+		*t2 = 1.0f;
+	}
+	else if (direction == SUPERHUD_DIR_RIGHT_TO_LEFT)
+	{
+		// Horizontal bar right to left: show from right
+		*s1 = 1.0f - endProgress;
+		*t1 = 0.0f;
+		*s2 = 1.0f;
+		*t2 = 1.0f;
+	}
+	else if (direction == SUPERHUD_DIR_TOP_TO_BOTTOM)
+	{
+		// Vertical bar top to bottom: show from top
+		*s1 = 0.0f;
+		*t1 = 0.0f;
+		*s2 = 1.0f;
+		*t2 = endProgress;
+	}
+	else // SUPERHUD_DIR_BOTTOM_TO_TOP
+	{
+		// Vertical bar bottom to top: show from bottom
+		*s1 = 0.0f;
+		*t1 = 1.0f - endProgress;
+		*s2 = 1.0f;
+		*t2 = 1.0f;
+	}
+}
+
 void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, float value)
 {
 	drawBarCoords_t coords;
+	float progress1;
+	float progress2;
+	float s1, t1, s2, t2;
+	float s1_2, t1_2, s2_2, t2_2;
+	qhandle_t shader1;
+	qhandle_t shader2;
+	qboolean useImage;
 
 	memset(&coords, 0, sizeof(coords));
 
@@ -818,6 +907,36 @@ void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, flo
 			break;
 	}
 
+	// Calculate progress for bar images (0.0 to 1.0)
+	if (ctx->two_bars)
+	{
+		// For doublebar, calculate progress for each bar
+		if (ctx->direction == SUPERHUD_DIR_LEFT_TO_RIGHT || ctx->direction == SUPERHUD_DIR_RIGHT_TO_LEFT)
+		{
+			progress1 = coords.bar1_value[2] / ctx->bar[0][2];
+			progress2 = coords.bar2_value[2] / ctx->bar[1][2];
+		}
+		else
+		{
+			progress1 = coords.bar1_value[3] / ctx->bar[0][3];
+			progress2 = coords.bar2_value[3] / ctx->bar[1][3];
+		}
+	}
+	else
+	{
+		// Single bar
+		if (ctx->direction == SUPERHUD_DIR_LEFT_TO_RIGHT || ctx->direction == SUPERHUD_DIR_RIGHT_TO_LEFT)
+		{
+			progress1 = coords.bar1_value[2] / ctx->bar[0][2];
+		}
+		else
+		{
+			progress1 = coords.bar1_value[3] / ctx->bar[0][3];
+		}
+		progress2 = 0.0f;
+	}
+
+	// Draw background
 	trap_R_SetColor(ctx->color_back);
 	trap_R_DrawStretchPic(coords.bar1_bottom[0], coords.bar1_bottom[1], coords.bar1_bottom[2], coords.bar1_bottom[3],
 	                      0, 0, 0, 0,
@@ -828,10 +947,38 @@ void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, flo
 		                      0, 0, 0, 0,
 		                      cgs.media.whiteShader);
 	}
+
+	// Draw bar value with image if specified
+	useImage = (ctx->image != 0);
+	shader1 = useImage ? ctx->image : cgs.media.whiteShader;
+	shader2 = (ctx->image2 != 0) ? ctx->image2 : shader1;
+
+	if (useImage)
+	{
+		CG_SHUDBarGetImageTexCoords(ctx->direction, progress1, &s1, &t1, &s2, &t2);
+	}
+	else
+	{
+		s1 = 0.0f;
+		t1 = 0.0f;
+		s2 = 0.0f;
+		t2 = 0.0f;
+	}
+
 	trap_R_SetColor(ctx->color_top);
 	trap_R_DrawStretchPic(coords.bar1_value[0], coords.bar1_value[1], coords.bar1_value[2], coords.bar1_value[3],
-	                      0, 0, 0, 0,
-	                      cgs.media.whiteShader);
+	                      s1, t1, s2, t2,
+	                      shader1);
+
+	// Draw second layer if image2 is specified
+	if (ctx->image2 != 0)
+	{
+		CG_SHUDBarGetImageTexCoords(ctx->direction, progress1, &s1_2, &t1_2, &s2_2, &t2_2);
+		trap_R_DrawStretchPic(coords.bar1_value[0], coords.bar1_value[1], coords.bar1_value[2], coords.bar1_value[3],
+		                      s1_2, t1_2, s2_2, t2_2,
+		                      ctx->image2);
+	}
+
 	if (ctx->two_bars)
 	{
 		if (cfg->style.value == 2 || cfg->style.value == 3)
@@ -839,9 +986,30 @@ void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, flo
 			trap_R_SetColor(ctx->color2_top); // 2nd bar color
 		}
 
+		if (useImage)
+		{
+			CG_SHUDBarGetImageTexCoords(ctx->direction, progress2, &s1, &t1, &s2, &t2);
+		}
+		else
+		{
+			s1 = 0.0f;
+			t1 = 0.0f;
+			s2 = 0.0f;
+			t2 = 0.0f;
+		}
+
 		trap_R_DrawStretchPic(coords.bar2_value[0], coords.bar2_value[1], coords.bar2_value[2], coords.bar2_value[3],
-		                      0, 0, 0, 0,
-		                      cgs.media.whiteShader);
+		                      s1, t1, s2, t2,
+		                      shader1);
+
+		// Draw second layer for second bar if image2 is specified
+		if (ctx->image2 != 0)
+		{
+			CG_SHUDBarGetImageTexCoords(ctx->direction, progress2, &s1_2, &t1_2, &s2_2, &t2_2);
+			trap_R_DrawStretchPic(coords.bar2_value[0], coords.bar2_value[1], coords.bar2_value[2], coords.bar2_value[3],
+			                      s1_2, t1_2, s2_2, t2_2,
+			                      ctx->image2);
+		}
 	}
 	trap_R_SetColor(NULL);
 }

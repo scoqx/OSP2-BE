@@ -93,11 +93,13 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent)
 {
 	centity_t* cent;
 	vec3_t position;
-	qboolean shouldSavePosition = qfalse;
-	qboolean shouldSendMark = qfalse;
 
 	/* Check conditions */
 	if (CG_IsWarmup())
+	{
+		return;
+	}
+	if (!cg_teamTask.integer)
 	{
 		return;
 	}
@@ -129,27 +131,12 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent)
 	VectorCopy(cent->lerpOrigin, position);
 	position[2] += 6.0f;
 
-	/* Always save death position for local client */
-	shouldSavePosition = qtrue;
-
-	/* Send team task mark only if enabled */
-	if (cg_teamTask.integer & CG_TEAMTASK_ONDEATH)
-	{
-		shouldSendMark = qtrue;
-	}
-
 	/* Save death coordinates */
-	if (shouldSavePosition)
-	{
-		VectorCopy(position, cgs.be.teamMarkers.deathPosition);
-		cgs.be.teamMarkers.deathPositionValid = qtrue;
-	}
+	VectorCopy(position, cgs.be.teamMarkers.deathPosition);
+	cgs.be.teamMarkers.deathPositionValid = qtrue;
 
 	/* Send team task mark */
-	if (shouldSendMark)
-	{
-		CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_PLAYERDEAD, position, qtrue);
-	}
+	CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_PLAYERDEAD, position, qtrue);
 }
 
 /*

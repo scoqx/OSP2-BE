@@ -1,4 +1,6 @@
-07.01.2025 be v1.00g
+07.01.2025 be v1.00h
 * Meta: 
   * announcer, stats fix, .so build
 + E/T colors (enemy/team) for cvars
++ SUPERHUD:
+  + healthBar/armorBar - image/image2 support

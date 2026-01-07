@@ -152,6 +152,11 @@ typedef struct
 	} image;
 	struct
 	{
+		char value[MAX_QPATH];
+		qboolean isSet;
+	} image2;
+	struct
+	{
 		vec4_t value;
 		qboolean isSet;
 	} imagetc;
@@ -336,6 +341,8 @@ typedef enum
 #define SE_WEAPON_PLASMAGUN_STR "plasma"
 #define SE_WEAPON_BFG (1 << 25) // 0x02000000
 #define SE_WEAPON_BFG_STR "bfg"
+#define SE_HEALTH_LOW (1 << 26) // 0x04000000
+#define SE_HEALTH_LOW_STR "lowhp"
 
 #define SHUD_CHECK_SHOW_EMPTY(element) ( \
     ((element) != NULL) && \
@@ -744,6 +751,8 @@ typedef struct
 	vec4_t color2_top; // color of top bar of doublebar
 	vec4_t color_back; // color of background
 	qboolean two_bars; // one or two bars
+	qhandle_t image; // shader for bar image (divided into 100 parts)
+	qhandle_t image2; // shader for second layer (divided into 100 parts)
 } superhudBarContext_t;
 
 #define OSPHUD_TEAMOVERLAY_STR_SIZE 128

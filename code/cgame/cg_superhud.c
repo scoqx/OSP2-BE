@@ -507,6 +507,7 @@ void CG_SHUDRoutine(void)
 		       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
 		       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
 		       ((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
+		       /* ((vflags & SE_HEALTH_LOW) && !cgs.be.isHealthLow) || */
 		       CG_SHUDCheckWeaponFlags(vflags, currentWeapon)
 		       ;
 
