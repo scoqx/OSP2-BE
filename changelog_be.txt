@@ -627,5 +627,6 @@ SHUD:
 * cg_accuracyFontSize - 1/2 args
 
 07.01.2025 be v1.00g
-* Announcer fix (Meta)
+* Meta: 
+  * announcer, stats fix, .so build
 + E/T colors (enemy/team) for cvars
