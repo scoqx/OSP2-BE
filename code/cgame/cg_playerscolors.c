@@ -1,5 +1,60 @@
 #include "cg_local.h"
 
+/*
+=================
+CG_GetColorFromETCode
+
+Получает цвет из E/T кода (E = enemy, T = team)
+Возвращает qtrue если символ был E или T, иначе qfalse
+=================
+*/
+static qboolean CG_GetColorFromETCode(char code, vec3_t out)
+{
+	team_t myTeam;
+
+	if (code != 'E' && code != 'T')
+	{
+		return qfalse;
+	}
+
+	myTeam = cgs.be.myTeam;
+
+	if (code == 'T')
+	{
+		// Team color - color of my team
+		if (myTeam == TEAM_RED)
+		{
+			VectorCopy(cgs.be.redTeamColor, out);
+		}
+		else if (myTeam == TEAM_BLUE)
+		{
+			VectorCopy(cgs.be.blueTeamColor, out);
+		}
+		else
+		{
+			VectorCopy(cgs.be.redTeamColor, out);
+		}
+	}
+	else
+	{
+		// Enemy color - color of enemy team
+		if (myTeam == TEAM_RED)
+		{
+			VectorCopy(cgs.be.blueTeamColor, out);
+		}
+		else if (myTeam == TEAM_BLUE)
+		{
+			VectorCopy(cgs.be.redTeamColor, out);
+		}
+		else
+		{
+			VectorCopy(cgs.be.blueTeamColor, out);
+		}
+	}
+
+	return qtrue;
+}
+
 const vec3_t uniqueColorTable[UNIQUE_COLORS_TABLE_SIZE] =
 {
 	{ 1, 0, 0 },       /* Red */
@@ -98,20 +153,48 @@ static void CG_PlayerColorsFromEnemyColors(playerColors_t* colors, playerColorsO
 		if (cg_teamRails.integer == 2 && color1[0] != '0')
 		{
 			if (override) override->isRailColorSet = qtrue;
-			CG_OSPColorFromChar(color1[0], colors->railCore);
+			// Check for E/T codes (1st argument - rail)
+			if (!CG_GetColorFromETCode(color1[0], colors->railCore))
+			{
+				CG_OSPColorFromChar(color1[0], colors->railCore);
+			}
 		}
 
 		if (override) override->isModelColorSet = qtrue;
-		CG_OSPColorFromChar(color1[1], colors->head);
-		CG_OSPColorFromChar(color1[2], colors->torso);
-		CG_OSPColorFromChar(color1[3], colors->legs);
+		// Check for E/T codes (4th argument - legs)
+		if (!CG_GetColorFromETCode(color1[3], colors->legs))
+		{
+			CG_OSPColorFromChar(color1[3], colors->legs);
+		}
+		// Check for E/T codes (3rd argument - torso)
+		if (!CG_GetColorFromETCode(color1[2], colors->torso))
+		{
+			CG_OSPColorFromChar(color1[2], colors->torso);
+		}
+		// Check for E/T codes (2nd argument - head)
+		if (!CG_GetColorFromETCode(color1[1], colors->head))
+		{
+			CG_OSPColorFromChar(color1[1], colors->head);
+		}
 	}
 	else if (color1Len == 3)
 	{
 		if (override) override->isModelColorSet = qtrue;
-		CG_OSPColorFromChar(color1[0], colors->head);
-		CG_OSPColorFromChar(color1[1], colors->torso);
-		CG_OSPColorFromChar(color1[2], colors->legs);
+		// Check for E/T codes (3rd argument - legs)
+		if (!CG_GetColorFromETCode(color1[2], colors->legs))
+		{
+			CG_OSPColorFromChar(color1[2], colors->legs);
+		}
+		// Check for E/T codes (2nd argument - torso)
+		if (!CG_GetColorFromETCode(color1[1], colors->torso))
+		{
+			CG_OSPColorFromChar(color1[1], colors->torso);
+		}
+		// Check for E/T codes (1st argument - head)
+		if (!CG_GetColorFromETCode(color1[0], colors->head))
+		{
+			CG_OSPColorFromChar(color1[0], colors->head);
+		}
 	}
 
 }
@@ -125,20 +208,48 @@ static void CG_PlayerColorsFromTeamColors(playerColors_t* colors, playerColorsOv
 		if (cg_teamRails.integer == 2 && color1[0] != '0')
 		{
 			if (override) override->isRailColorSet = qtrue;
-			CG_OSPColorFromChar(color1[0], colors->railCore);
+			// Check for E/T codes (1st argument - rail)
+			if (!CG_GetColorFromETCode(color1[0], colors->railCore))
+			{
+				CG_OSPColorFromChar(color1[0], colors->railCore);
+			}
 		}
 
 		if (override) override->isModelColorSet = qtrue;
-		CG_OSPColorFromChar(color1[1], colors->head);
-		CG_OSPColorFromChar(color1[2], colors->torso);
-		CG_OSPColorFromChar(color1[3], colors->legs);
+		// Check for E/T codes (4th argument - legs)
+		if (!CG_GetColorFromETCode(color1[3], colors->legs))
+		{
+			CG_OSPColorFromChar(color1[3], colors->legs);
+		}
+		// Check for E/T codes (3rd argument - torso)
+		if (!CG_GetColorFromETCode(color1[2], colors->torso))
+		{
+			CG_OSPColorFromChar(color1[2], colors->torso);
+		}
+		// Check for E/T codes (2nd argument - head)
+		if (!CG_GetColorFromETCode(color1[1], colors->head))
+		{
+			CG_OSPColorFromChar(color1[1], colors->head);
+		}
 	}
 	else if (color1Len == 3)
 	{
 		if (override) override->isModelColorSet = qtrue;
-		CG_OSPColorFromChar(color1[0], colors->head);
-		CG_OSPColorFromChar(color1[1], colors->torso);
-		CG_OSPColorFromChar(color1[2], colors->legs);
+		// Check for E/T codes (3rd argument - legs)
+		if (!CG_GetColorFromETCode(color1[2], colors->legs))
+		{
+			CG_OSPColorFromChar(color1[2], colors->legs);
+		}
+		// Check for E/T codes (2nd argument - torso)
+		if (!CG_GetColorFromETCode(color1[1], colors->torso))
+		{
+			CG_OSPColorFromChar(color1[1], colors->torso);
+		}
+		// Check for E/T codes (1st argument - head)
+		if (!CG_GetColorFromETCode(color1[0], colors->head))
+		{
+			CG_OSPColorFromChar(color1[0], colors->head);
+		}
 	}
 
 }
@@ -169,9 +280,21 @@ static void CG_PlayerColorsLoadOverrides(playerColors_t* colors,
 		if (len == 3)
 		{
 			if (override) override->isModelColorSet = qtrue;
-			CG_OSPColorFromChar(modelColors->string[0], colors->head);
-			CG_OSPColorFromChar(modelColors->string[1], colors->torso);
-			CG_OSPColorFromChar(modelColors->string[2], colors->legs);
+			// Check for E/T codes (3rd argument)
+			if (!CG_GetColorFromETCode(modelColors->string[2], colors->legs))
+			{
+				CG_OSPColorFromChar(modelColors->string[2], colors->legs);
+			}
+			// Check for E/T codes (2nd argument)
+			if (!CG_GetColorFromETCode(modelColors->string[1], colors->torso))
+			{
+				CG_OSPColorFromChar(modelColors->string[1], colors->torso);
+			}
+			// Check for E/T codes (1st argument)
+			if (!CG_GetColorFromETCode(modelColors->string[0], colors->head))
+			{
+				CG_OSPColorFromChar(modelColors->string[0], colors->head);
+			}
 		}
 		// 8bit hex format: rrggbb rrggbb rrggbb
 		if (len == 18)
@@ -198,8 +321,16 @@ static void CG_PlayerColorsLoadOverrides(playerColors_t* colors,
 		if (len == 2)
 		{
 			if (override) override->isRailColorSet = qtrue;
-			CG_OSPColorFromChar(railColors->string[0], colors->railCore);
-			CG_OSPColorFromChar(railColors->string[1], colors->railRings);
+			// Check for E/T codes (2nd argument)
+			if (!CG_GetColorFromETCode(railColors->string[1], colors->railRings))
+			{
+				CG_OSPColorFromChar(railColors->string[1], colors->railRings);
+			}
+			// Check for E/T codes (1st argument)
+			if (!CG_GetColorFromETCode(railColors->string[0], colors->railCore))
+			{
+				CG_OSPColorFromChar(railColors->string[0], colors->railCore);
+			}
 		}
 		// 8bit hex format: rrggbbrrggbb
 		if (len == 12)

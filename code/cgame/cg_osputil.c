@@ -368,6 +368,53 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 	len = strlen(str);
 	if (!len || len > 8) return qfalse;
 
+	// Handle T (team) and E (enemy) color codes - check BEFORE tolower (uppercase only)
+	// lowercase 'e' and 't' are Quake 3 color codes, so we only accept uppercase
+	if (len == 1 && (str[0] == 'T' || str[0] == 'E'))
+	{
+		team_t myTeam;
+		char originalChar;
+
+		// Use tracked team from cgs.be.myTeam (updated every frame)
+		myTeam = cgs.be.myTeam;
+		originalChar = str[0];
+
+		// Return team or enemy color based on my team
+		if (originalChar == 'T')
+		{
+			// Team color - color of my team
+			if (myTeam == TEAM_RED)
+			{
+				Vector4Copy(cgs.be.redTeamColor, out);
+			}
+			else if (myTeam == TEAM_BLUE)
+			{
+				Vector4Copy(cgs.be.blueTeamColor, out);
+			}
+			else
+			{
+				Vector4Copy(cgs.be.redTeamColor, out);
+			}
+		}
+		else
+		{
+			// Enemy color - color of enemy team
+			if (myTeam == TEAM_RED)
+			{
+				Vector4Copy(cgs.be.blueTeamColor, out);
+			}
+			else if (myTeam == TEAM_BLUE)
+			{
+				Vector4Copy(cgs.be.redTeamColor, out);
+			}
+			else
+			{
+				Vector4Copy(cgs.be.blueTeamColor, out);
+			}
+		}
+		return qtrue;
+	}
+
 	for (i = 0; i < 8 && *str; ++i, ++str)
 	{
 		in[i] = tolower(*str);
@@ -457,6 +504,167 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 
 
 	return qfalse;
+}
+
+/*
+=================
+CG_UpdateMyTeam
+
+Отслеживает команду игрока каждый кадр и обновляет cgs.be.myTeam
+для динамического обновления цветов T/E
+=================
+*/
+void CG_UpdateMyTeam(void)
+{
+	team_t currentTeam;
+	const clientInfo_t* ourClient;
+
+	/* Safety check */
+	if (cg.clientNum < 0 || cg.clientNum >= MAX_CLIENTS)
+	{
+		cgs.be.myTeam = TEAM_RED;
+		return;
+	}
+
+	ourClient = &cgs.clientinfo[cg.clientNum];
+
+	/* Determine team with spectPOV logic */
+	if (cg_spectPOV.integer && ourClient->team == TEAM_SPECTATOR)
+	{
+		if (cg.snap && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+		        cg.snap->ps.clientNum >= 0 &&
+		        cg.snap->ps.clientNum < MAX_CLIENTS)
+		{
+			if (CG_OSPIsGameTypeCA(cgs.gametype))
+			{
+				currentTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
+			}
+			else
+			{
+				currentTeam = cgs.clientinfo[cg.snap->ps.clientNum].team;
+			}
+		}
+		else
+		{
+			/* Not following anyone - red team is ally */
+			currentTeam = TEAM_RED;
+		}
+	}
+	else
+	{
+		/* Not in spectator or spectPOV disabled */
+		if (cg.snap && cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR)
+		{
+			currentTeam = cg.snap->ps.persistant[PERS_TEAM];
+		}
+		else
+		{
+			if (CG_OSPIsGameTypeCA(cgs.gametype))
+			{
+				currentTeam = ourClient->rt;
+			}
+			else
+			{
+				currentTeam = ourClient->team;
+			}
+		}
+	}
+
+	/* If still in spectator and not following, use red as ally */
+	if (currentTeam == TEAM_SPECTATOR)
+	{
+		currentTeam = TEAM_RED;
+	}
+
+	/* Update tracked team */
+	cgs.be.myTeam = currentTeam;
+	CG_ReloadColors();
+}
+
+/*
+=================
+CG_ReloadColors
+
+Проверяет все cvar с цветами и обновляет те, которые содержат 'E' или 'T'
+для динамического обновления цветов при смене команды
+=================
+*/
+void CG_ReloadColors(void)
+{
+	static const char* colorCvars[] =
+	{
+		"ch_crosshairColor",
+		"ch_crosshairActionColor",
+		"ch_crosshairActionColorLow",
+		"ch_crosshairActionColorMid",
+		"ch_crosshairActionColorHigh",
+		"ch_crosshairDecorColor",
+		"ch_crosshairDecorActionColor",
+		"ch_crosshairDecorActionColorLow",
+		"ch_crosshairDecorActionColorMid",
+		"ch_crosshairDecorActionColorHigh",
+		"cg_hitBoxColor",
+		"cg_enemyOutlineColor",
+		"cg_teamOutlineColor",
+		"cg_altBloodColor",
+		"cg_altShadowColor",
+		"cg_altGrenadesColor",
+		"cg_enemyGrenadesColor",
+		"cg_healthColor",
+		"cg_healthLowColor",
+		"cg_healthMidColor",
+		"cg_redTeamColor",
+		"cg_blueTeamColor",
+		"cg_markTeamColor",
+		"cg_scoreboardRtColors",
+		"cg_scoreboardBtColors",
+		"cg_scoreboardSpecColor",
+		"cg_bestats_bgColor",
+		"cg_teamTaskThemeColor",
+		"cg_teamIndicatorColor",
+		"cg_teamIndicatorBgColor",
+		"cg_brightWeaponsColorGauntlet",
+		"cg_brightWeaponsColorMG",
+		"cg_brightWeaponsColorSG",
+		"cg_brightWeaponsColorGL",
+		"cg_brightWeaponsColorRL",
+		"cg_brightWeaponsColorLG",
+		"cg_brightWeaponsColorRG",
+		"cg_brightWeaponsColorPG",
+		"cg_brightWeaponsColorBFG",
+		NULL
+	};
+
+	const char** cvarName;
+	char cvarValue[MAX_CVAR_VALUE_STRING];
+	int i;
+	qboolean needsUpdate;
+
+	cvarName = &colorCvars[0];
+	while (*cvarName)
+	{
+		// Get cvar value
+		trap_Cvar_VariableStringBuffer(*cvarName, cvarValue, sizeof(cvarValue));
+
+		// Check if value contains 'E' or 'T' (uppercase only, lowercase 'e' and 't' are color codes)
+		needsUpdate = qfalse;
+		for (i = 0; cvarValue[i]; ++i)
+		{
+			if (cvarValue[i] == 'E' || cvarValue[i] == 'T')
+			{
+				needsUpdate = qtrue;
+				break;
+			}
+		}
+
+		// If contains 'E' or 'T', update the cvar
+		if (needsUpdate)
+		{
+			CG_CvarTouch(*cvarName);
+		}
+
+		++cvarName;
+	}
 }
 
 

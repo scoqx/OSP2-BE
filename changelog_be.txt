@@ -625,3 +625,7 @@ SHUD:
 * Some default settings was changed
 + cg_teamIndicatorFontSize
 * cg_accuracyFontSize - 1/2 args
+
+07.01.2025 be v1.00g
+* Announcer fix (Meta)
++ E/T colors (enemy/team) for cvars

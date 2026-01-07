@@ -1007,6 +1007,9 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		return;
 	}
 
+	// update tracked team for dynamic T/E color updates
+	CG_UpdateMyTeam();
+
 	// let the client system know what our weapon and zoom settings are
 	trap_SetUserCmdValue(cg.weaponSelect, cg.zoomSensitivity);
 

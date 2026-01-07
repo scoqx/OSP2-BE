@@ -1297,6 +1297,7 @@ typedef struct cgs_be_s
 	// Client-side damage prediction (bit 1 = 2)
 	qboolean clientDamagePrinted;  // whether damage was already shown
 	vec3_t brightWeaponsColor[WP_NUM_WEAPONS];
+	team_t myTeam;  // отслеживание команды игрока для динамического обновления цветов T/E
 
 	// team task markers
 	struct
@@ -2114,6 +2115,7 @@ void CG_BuildSpectatorString(void);
 char* CG_OSPGetCvarName(vmCvar_t* cvar) ;
 cvarTable_t* CG_GetCgCvarByName(const char* name);
 void CG_CvarTouch(const char* name);
+void CG_ReloadColors(void);
 void CG_CvarResetToDefault(const char* name);
 
 qhandle_t CG_GetFragSound(void);
@@ -2834,7 +2836,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00f" // BE
+#define OSP_VERSION "be-1.00g" // BE
 
 
 
@@ -3055,6 +3057,7 @@ void CG_SelwheelParseTeamTaskWheel(void);
 // cg_localevents.c
 //
 void CG_UpdateMyTeamColors(void);
+void CG_UpdateMyTeam(void);
 
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cl_maxpackets(cvarTable_t* cvart);
