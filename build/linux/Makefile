@@ -337,6 +337,16 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_cvardescriptions.o \
   $(B)/$(MOD)/cgame/cg_crosshair.o \
   $(B)/$(MOD)/cgame/cg_chatfilter.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_element_decor.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_elements.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_layout.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_lexer_commands.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_lexer_parser.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_lexer.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_private.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_tablebuilder.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_util.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud.o \
   $(B)/$(MOD)/cgame/cg_teamtaskfilter.o \
   $(B)/$(MOD)/cgame/cg_consolecmds.o \
   $(B)/$(MOD)/cgame/cg_customloc.o \
@@ -362,6 +372,9 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_osphud.o \
   $(B)/$(MOD)/cgame/cg_osputil.o \
   $(B)/$(MOD)/cgame/cg_unlagged.o \
+  $(B)/$(MOD)/cgame/cg_be_util.o \
+  $(B)/$(MOD)/cgame/cg_be_stats.o \
+  $(B)/$(MOD)/cgame/cg_bescoreboard.o \
   $(B)/$(MOD)/cgame/cg_superhud.o \
   $(B)/$(MOD)/cgame/cg_superhud_configparser.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_ammomessage.o \
@@ -374,6 +387,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_fragmessage.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_gametime.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_gametype.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_grid.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_itempickup.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_itempickupicon.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_localtime.o \
@@ -382,6 +396,8 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_ng.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_ngp.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_obituaries.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_player_name.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_player_stats.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_powerup.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_pred.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_rankmessage.o \
@@ -397,13 +413,16 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_sbhi.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_score.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_specmessage.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_spectators.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_speed.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_target_name.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_target_status.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_team.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_teamcount.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_tempAcc.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_vmw.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_warmupinfo.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_weapon_stats.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_weaponlist.o \
   $(B)/$(MOD)/cgame/cg_superhud_private.o \
   $(B)/$(MOD)/cgame/cg_superhud_util.o \

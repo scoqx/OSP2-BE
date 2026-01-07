@@ -1,4 +1,5 @@
 #include "cg_superhud_private.h"
+#include "../qcommon/qcommon.h"
 
 static superhudGlobalContext_t superhudGlobalContext;
 

@@ -1,4 +1,5 @@
 #include "cg_cherryhud_private.h"
+#include "../qcommon/qcommon.h"
 
 static cherryhudGlobalContext_t cherryhudGlobalContext;
 
@@ -881,7 +882,7 @@ void CG_CHUDGetActivePos(const cherryhudConfig_t* config, float currentHeight, v
 		prefixedConfig = CG_CHUDGetPrefixedConfig(config, mode);
 		if (prefixedConfig && prefixedConfig->pos.isSet)
 		{
-			Vector4Copy(prefixedConfig->pos.value, result);
+			Vector2Copy(prefixedConfig->pos.value, result);
 			return;
 		}
 	}
@@ -889,7 +890,7 @@ void CG_CHUDGetActivePos(const cherryhudConfig_t* config, float currentHeight, v
 	// Return default pos
 	if (config->pos.isSet)
 	{
-		Vector4Copy(config->pos.value, result);
+		Vector2Copy(config->pos.value, result);
 	}
 	else
 	{
@@ -919,7 +920,7 @@ void CG_CHUDGetActiveSize(const cherryhudConfig_t* config, float currentHeight, 
 		}
 		if (prefixedConfig && prefixedConfig->size.isSet)
 		{
-			Vector4Copy(prefixedConfig->size.value, result);
+			Vector2Copy(prefixedConfig->size.value, result);
 			return;
 		}
 		else
@@ -930,7 +931,7 @@ void CG_CHUDGetActiveSize(const cherryhudConfig_t* config, float currentHeight, 
 	// Return default size
 	if (config->size.isSet)
 	{
-		Vector4Copy(config->size.value, result);
+		Vector2Copy(config->size.value, result);
 	}
 	else
 	{
@@ -958,7 +959,7 @@ void CG_CHUDGetActiveSizeFromContainer(const cherryhudConfig_t* config, const ch
 		prefixedConfig = CG_CHUDGetPrefixedConfig(config, mode);
 		if (prefixedConfig && prefixedConfig->size.isSet)
 		{
-			Vector4Copy(prefixedConfig->size.value, result);
+			Vector2Copy(prefixedConfig->size.value, result);
 			return;
 		}
 		else
@@ -969,7 +970,7 @@ void CG_CHUDGetActiveSizeFromContainer(const cherryhudConfig_t* config, const ch
 	// Return default size
 	if (config->size.isSet)
 	{
-		Vector4Copy(config->size.value, result);
+		Vector2Copy(config->size.value, result);
 	}
 	else
 	{
@@ -997,7 +998,7 @@ void CG_CHUDGetActivePosFromContainer(const cherryhudConfig_t* config, const cha
 		prefixedConfig = CG_CHUDGetPrefixedConfig(config, mode);
 		if (prefixedConfig && prefixedConfig->pos.isSet)
 		{
-			Vector4Copy(prefixedConfig->pos.value, result);
+			Vector2Copy(prefixedConfig->pos.value, result);
 			return;
 		}
 	}
@@ -1005,7 +1006,7 @@ void CG_CHUDGetActivePosFromContainer(const cherryhudConfig_t* config, const cha
 	// Return default pos
 	if (config->pos.isSet)
 	{
-		Vector4Copy(config->pos.value, result);
+		Vector2Copy(config->pos.value, result);
 	}
 	else
 	{

@@ -23,7 +23,7 @@ void* CG_SHUDElementNGCreate(const superhudConfig_t* config)
 	}
 
 	CG_SHUDTextMakeContext(&element->config, &element->tctx);
-	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
+	CG_SHUDFillAndFrameForText(&element->config, &element->tctx);
 
 	element->tctx.coord.named.x = 320;
 	element->tctx.coord.named.y = 232;

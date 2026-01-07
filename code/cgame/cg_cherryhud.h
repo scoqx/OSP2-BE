@@ -1,5 +1,5 @@
-#ifndef CG_SUPERHUD_H
-#define CG_SUPERHUD_H
+#ifndef CG_CHERRYHUD_H
+#define CG_CHERRYHUD_H
 
 #include "cg_local.h"
 
