@@ -363,6 +363,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_playerstate.o \
   $(B)/$(MOD)/cgame/cg_playerscolors.o \
   $(B)/$(MOD)/cgame/cg_predict.o \
+  $(B)/$(MOD)/cgame/cg_printui.o \
   $(B)/$(MOD)/cgame/cg_scoreboard.o \
   $(B)/$(MOD)/cgame/cg_servercmds.o \
   $(B)/$(MOD)/cgame/cg_snapshot.o \
@@ -419,6 +420,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_target_status.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_team.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_teamcount.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_teamtasks.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_tempAcc.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_vmw.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_warmupinfo.o \
@@ -426,6 +428,11 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_weaponlist.o \
   $(B)/$(MOD)/cgame/cg_superhud_private.o \
   $(B)/$(MOD)/cgame/cg_superhud_util.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_selwheel.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_tokenbucket.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_utils.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_crypto.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_draw.o \
   \
   $(B)/$(MOD)/game/bg_lib.o \
   $(B)/$(MOD)/game/bg_misc.o \

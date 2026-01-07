@@ -1108,7 +1108,7 @@ void CG_DrawSelwheelPointers(void)
 	int i;
 	int startIndex;
 
-	if (!cg_teamTaskWheel.integer && 8)
+	if (!(cg_teamTaskWheel.integer & 8))
 	{
 		return;
 	}

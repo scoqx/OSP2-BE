@@ -2625,6 +2625,7 @@ int CG_DrawSpectatorList(int yStart, float baseX, short isDouble);
 // cg_teamtasks_utils.c
 //
 qboolean CG_IsTeamTaskSupported(void);
+qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType);
 //===============================================
 
 //
