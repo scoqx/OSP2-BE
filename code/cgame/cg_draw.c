@@ -3049,10 +3049,10 @@ void CG_DrawPlayerIndicator(int clientNum)
 			    headX, headY + h,
 			    statsText,
 			    statsColor,
-			    NULL,
+			    colorBlack,
 			    w2, h2,
 			    SCREEN_WIDTH,
-			    DS_PROPORTIONAL | DS_HCENTER,
+			    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
 			    bgColor,
 			    NULL,
 			    NULL
