@@ -3004,7 +3004,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 
 		rectY += h;
 
-		if (isSpec && cg_teamIndicator.integer & PI_SPECTATOR)
+		if (isSpec && (cg_teamIndicator.integer & PI_SPECTATOR))
 		{
 			if (ci->team == TEAM_RED)
 				Vector4Copy(cgs.be.redTeamColor, teamColor);
@@ -3023,7 +3023,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 			}
 		}
 		teamColor[3] = nameColor[3];
-		if (isSpec && cg_teamIndicator.integer & PI_SPECTATOR || cgs.be.markedTeam[clientNum])
+		if (isSpec && (cg_teamIndicator.integer & PI_SPECTATOR) || cgs.be.markedTeam[clientNum])
 			CG_FillRect(rectX, rectY, rectW, rectH, teamColor);
 	}
 
@@ -3049,7 +3049,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 			    headX, headY + h,
 			    statsText,
 			    statsColor,
-			    NULL,
+			    colorBlack,
 			    w2, h2,
 			    SCREEN_WIDTH,
 			    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,

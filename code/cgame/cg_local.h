@@ -2617,6 +2617,17 @@ void CG_BEStatsResetInit(void);
 //
 void CG_RegisterCvarDescriptions(void);
 const char* CG_GetCvarDescription(const char* cvarName);
+
+//
+//cg_bescoreboard.c
+//
+int CG_DrawSpectatorList(int yStart, float baseX, short isDouble);
+
+//
+// cg_teamtasks_utils.c
+//
+qboolean CG_IsTeamTaskSupported(void);
+qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType);
 //===============================================
 
 //
@@ -2876,6 +2887,7 @@ extern int statsInfo[24];
 #define OSP_STATS_WEAPON_MASK       21
 #define OSP_STATS_UNKNOWN1          22
 #define OSP_STATS_UNKNOWN2          23
+#define OSP_STATS_NUM               24
 
 
 // OSP Custom client
