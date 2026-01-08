@@ -1,6 +1,7 @@
 #include "cg_cherryhud_private.h"
 #include "cg_local.h"
 #include "../qcommon/q_shared.h"  // For vec2_t and VectorCopy
+#include "../qcommon/qcommon.h" 
 
 // ============================================================================
 // GLOBAL VARIABLES AND DATA STRUCTURES
@@ -31,7 +32,6 @@ static void CG_CHUDTableRenderBorder(cherryhudTable_t* table);
 // Configuration helpers
 static void CG_CHUDSetDefaultTableProperties(cherryhudTable_t* table);
 static void CG_CHUDGetConfigWithFallback(cherryhudConfig_t* config, const char* type);
-void CG_CHUDSetDefaultElementProperties(cherryhudConfig_t* config);
 
 qboolean CG_CHUDTableRenderBackgroundAndBorder(cherryhudTable_t* table);
 qboolean CG_CHUDTableRowRenderBackgroundAndBorder(cherryhudTable_t* table, cherryhudTableRow_t* row);
@@ -493,8 +493,6 @@ static void CG_CHUDTableGetModifiedTemplate(cherryhudConfig_t* result, cherryhud
                 if (prefixedConfig->size.isSet) {
                     result->size.value[0] = prefixedConfig->size.value[0];
                     result->size.value[1] = prefixedConfig->size.value[1];
-                    result->size.value[2] = prefixedConfig->size.value[2];
-                    result->size.value[3] = prefixedConfig->size.value[3];
                     result->size.isSet = qtrue;
                 } else {
                 }

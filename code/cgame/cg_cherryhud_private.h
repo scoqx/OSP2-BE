@@ -675,6 +675,9 @@ void CG_CHUDConfigPickImageBorderColor(const cherryhudConfig_t* config, float* c
 qboolean CG_CHUDConfigHasImageBackground(const cherryhudConfig_t* config);
 qboolean CG_CHUDConfigHasImageBorder(const cherryhudConfig_t* config);
 
+void CG_CHUDConfigPickBorderColor(const cherryhudConfig_t* config, float* color, qboolean alphaOverride);
+
+
 
 typedef struct
 {
@@ -831,6 +834,7 @@ typedef struct {
     qboolean isContainerTitle;      // Whether this title is associated with a container
 } cherryhudTitleBlock_t;
 
+void CG_CHUDSetDefaultElementProperties(cherryhudConfig_t* config);
 void CG_CHUDCreateTitleBlock(const cherryhudConfig_t* config);
 void CG_CHUDCreateTitleBlockForContainer(const cherryhudConfig_t* config, const char* containerType);
 void CG_CHUDUpdateTitleBlockConfig(int blockIndex, const cherryhudConfig_t* config);
@@ -852,6 +856,7 @@ void CG_CHUDSetConfigByType(const char* type, const cherryhudConfig_t* config);
 const cherryhudConfig_t* CG_CHUDGetConfigByType(const char* type);
 qboolean CG_CHUDIsConfigLoadedByType(const char* type);
 void CG_CHUDClearConfigByType(const char* type);
+void CG_CHUDClearConfig(cherryhudConfig_t* config);
 void CG_CHUDClearAllConfigs(void);
 
 // Compact and double config management
@@ -1008,6 +1013,7 @@ void CG_CHUDAddElementToBlock(cherryhudBlock_t* block, cherryhudElement_t* eleme
 
 // Rendering functions
 void CG_CHUDRenderBlock(cherryhudBlock_t* block, float parentX, float parentY);
+void CG_CHUDRenderElementWithMode(cherryhudElement_t* element, const char* containerType, float currentHeight);
 
 // Configuration inheritance
 void CG_CHUDInheritConfig(cherryhudConfig_t* child, const cherryhudConfig_t* parent);
@@ -1277,6 +1283,9 @@ cherryhud_parser_t* CG_CHUDLexerParserCreate(const char* input);
 void CG_CHUDLexerParserDestroy(cherryhud_parser_t* parser);
 cherryhudConfigParseStatus_t CG_CHUDLexerParserParse(cherryhud_parser_t* parser, cherryhudConfig_t* config);
 
+void CG_CHUDLexerParserResetStatics(void);
+void CG_CHUDResetElementCounter(void);
+
 cherryhud_token_t* CG_CHUDLexerParserGetCurrentToken(cherryhud_parser_t* parser);
 cherryhud_token_t* CG_CHUDLexerParserPeekToken(cherryhud_parser_t* parser, int offset);
 qboolean CG_CHUDLexerParserIsAtEnd(cherryhud_parser_t* parser);
@@ -1430,6 +1439,9 @@ void CG_CHUDRenderContainerBackgroundFromBounds(const cherryhudConfig_t* config,
 void CG_CHUDRenderContainerBackgroundFromBoundsWithHeight(const cherryhudConfig_t* config, cherryhudLayoutBounds_t* bounds, float currentHeight);
 qboolean CG_CHUDValidateClientNum(int clientNum);
 void CG_CHUDRenderElementText(const cherryhudConfig_t* config, cherryhudTextContext_t* textCtx, const char* displayText);
+
+void CG_CHUDSetTextContextFromBounds(cherryhudTextContext_t* textCtx, cherryhudLayoutBounds_t* bounds);
+void CG_CHUDSetDrawContextFromBounds(cherryhudDrawContext_t* drawCtx, cherryhudLayoutBounds_t* bounds);
 
 // Generic type handler lookup structure
 typedef struct {

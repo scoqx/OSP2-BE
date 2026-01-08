@@ -861,6 +861,10 @@ const superHUDConfigElement_t* CG_SHUDAvailableElementsGet(void);
 
 int CG_SHUDGetAmmo(int wpi);
 
+void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ctx);
+qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg);
+void CG_SHUDConfigPickBorderColor(const superhudConfig_t* config, float* color, qboolean alphaOverride);
+void CG_SHUDDrawBorderDirect(const superhudCoord_t* coord, const vec4_t border, const vec4_t borderColor);
 
 #ifdef __cplusplus
 }
