@@ -179,6 +179,7 @@ jobs:
       GIT_USER_EMAIL: actions@github.com
     steps:
       - name: Download artifacts
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           pattern: |
@@ -187,14 +188,17 @@ jobs:
             osp2-be-win
             version-files
           path: artifacts
-          if-no-files-found: warn
 
       - name: Debug artifacts structure
         run: |
           echo "Artifacts directory structure:"
-          ls -la artifacts/ || echo "artifacts directory does not exist"
           if [ -d artifacts ]; then
+            ls -la artifacts/
+            echo "Files in artifacts:"
             find artifacts -type f || echo "No files found in artifacts"
+          else
+            echo "Warning: artifacts directory does not exist"
+            mkdir -p artifacts
           fi
 
       - name: Checkout target repo
@@ -214,43 +218,116 @@ jobs:
       - name: Copy artifacts to assets folder
         run: |
           mkdir -p target-repo/assets
-          # Copy Linux QVM only (not MinGW)
-          # Handle both possible artifact structures (file or directory)
-          if [ -f artifacts/qvm-linux/zz-osp-pak8be.pk3 ]; then
-            cp artifacts/qvm-linux/zz-osp-pak8be.pk3 target-repo/assets/
-          elif [ -f artifacts/qvm-linux ]; then
-            cp artifacts/qvm-linux target-repo/assets/zz-osp-pak8be.pk3
+          
+          # Function to copy file with fallback paths
+          copy_file() {
+            local src="$1"
+            local dst="$2"
+            if [ -f "$src" ]; then
+              cp "$src" "$dst" && echo "Copied: $src -> $dst"
+              return 0
+            fi
+            return 1
+          }
+          
+          # Copy Linux QVM (zz-osp-pak8be.pk3)
+          if ! copy_file "artifacts/qvm-linux/zz-osp-pak8be.pk3" "target-repo/assets/zz-osp-pak8be.pk3"; then
+            if ! copy_file "artifacts/qvm-linux" "target-repo/assets/zz-osp-pak8be.pk3"; then
+              if find artifacts -name "zz-osp-pak8be.pk3" -exec cp {} target-repo/assets/ \; 2>/dev/null; then
+                echo "Found zz-osp-pak8be.pk3 via find"
+              else
+                echo "Warning: zz-osp-pak8be.pk3 not found in artifacts"
+              fi
+            fi
+          fi
+          
+          # Copy Linux libraries archive (osp2-be-linux.tar.gz)
+          if ! copy_file "artifacts/osp2-be-linux/osp2-be-linux.tar.gz" "target-repo/assets/osp2-be-linux.tar.gz"; then
+            if ! copy_file "artifacts/osp2-be-linux" "target-repo/assets/osp2-be-linux.tar.gz"; then
+              if find artifacts -name "osp2-be-linux.tar.gz" -exec cp {} target-repo/assets/ \; 2>/dev/null; then
+                echo "Found osp2-be-linux.tar.gz via find"
+              else
+                echo "Warning: osp2-be-linux.tar.gz not found in artifacts"
+              fi
+            fi
+          fi
+          
+          # Copy Windows libraries archive (osp2-be-win.zip)
+          if ! copy_file "artifacts/osp2-be-win/osp2-be-win.zip" "target-repo/assets/osp2-be-win.zip"; then
+            if ! copy_file "artifacts/osp2-be-win" "target-repo/assets/osp2-be-win.zip"; then
+              if find artifacts -name "osp2-be-win.zip" -exec cp {} target-repo/assets/ \; 2>/dev/null; then
+                echo "Found osp2-be-win.zip via find"
+              else
+                echo "Warning: osp2-be-win.zip not found in artifacts"
+              fi
+            fi
+          fi
+          
+          # Copy version files from artifacts
+          if ! copy_file "artifacts/version-files/version.txt" "target-repo/assets/version.txt"; then
+            if find artifacts -name "version.txt" -exec cp {} target-repo/assets/ \; 2>/dev/null; then
+              echo "Found version.txt via find"
+            else
+              echo "Warning: version.txt not found in artifacts"
+            fi
+          fi
+          
+          if ! copy_file "artifacts/version-files/version_changelog.txt" "target-repo/assets/version_changelog.txt"; then
+            if find artifacts -name "version_changelog.txt" -exec cp {} target-repo/assets/ \; 2>/dev/null; then
+              echo "Found version_changelog.txt via find"
+            else
+              echo "Warning: version_changelog.txt not found in artifacts"
+            fi
+          fi
+          
+          # Copy config files from source repo (always copy, fail if missing)
+          if [ -f source-repo/assets/OSP2.cfg ]; then
+            cp source-repo/assets/OSP2.cfg target-repo/assets/OSP2.cfg
+            echo "Copied: OSP2.cfg"
           else
-            echo "Warning: qvm-linux artifact not found"
+            echo "Error: OSP2.cfg not found in source-repo/assets/"
           fi
-          # Copy library files
-          if [ -f artifacts/osp2-be-linux/osp2-be-linux.tar.gz ]; then
-            cp artifacts/osp2-be-linux/osp2-be-linux.tar.gz target-repo/assets/
-          elif [ -f artifacts/osp2-be-linux ]; then
-            cp artifacts/osp2-be-linux target-repo/assets/osp2-be-linux.tar.gz
+          
+          if [ -f source-repo/assets/OSP2English.cfg ]; then
+            cp source-repo/assets/OSP2English.cfg target-repo/assets/OSP2English.cfg
+            echo "Copied: OSP2English.cfg"
+          else
+            echo "Error: OSP2English.cfg not found in source-repo/assets/"
           fi
-          if [ -f artifacts/osp2-be-win/osp2-be-win.zip ]; then
-            cp artifacts/osp2-be-win/osp2-be-win.zip target-repo/assets/
-          elif [ -f artifacts/osp2-be-win ]; then
-            cp artifacts/osp2-be-win target-repo/assets/osp2-be-win.zip
+          
+          if [ -f source-repo/changelog_be.txt ]; then
+            cp source-repo/changelog_be.txt target-repo/assets/changelog_be.txt
+            echo "Copied: changelog_be.txt"
+          else
+            echo "Error: changelog_be.txt not found in source-repo/"
           fi
-          # Copy version files from artifacts (created during build)
-          if [ -f artifacts/version-files/version.txt ]; then
-            cp artifacts/version-files/version.txt target-repo/assets/version.txt
-          fi
-          if [ -f artifacts/version-files/version_changelog.txt ]; then
-            cp artifacts/version-files/version_changelog.txt target-repo/assets/version_changelog.txt
-          fi
-          # Copy config files from source repo
-          cp source-repo/assets/OSP2.cfg target-repo/assets/OSP2.cfg
-          cp source-repo/assets/OSP2English.cfg target-repo/assets/OSP2English.cfg
-          cp source-repo/changelog_be.txt target-repo/assets/changelog_be.txt
+          
+          # List all copied files
+          echo ""
+          echo "=== Files in target-repo/assets ==="
+          ls -lh target-repo/assets/ || echo "Assets directory is empty"
+          echo ""
+          echo "=== File count ==="
+          ls -1 target-repo/assets/ | wc -l || echo "0"
 
       - name: Commit and push changes
         run: |
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add assets/
-          git diff --quiet --cached || git commit -m "Update build artifacts, version files and configs [auto]"
-          git push origin ${{ env.TARGET_BRANCH }}
+          
+          # Add all files in assets directory
+          git add assets/ || true
+          
+          # Check if there are changes to commit
+          if ! git diff --quiet --cached; then
+            git commit -m "Update build artifacts, version files and configs [auto]"
+            git push origin ${{ env.TARGET_BRANCH }}
+            echo "Changes committed and pushed successfully"
+          else
+            echo "No changes to commit"
+          fi
+          
+          # Verify files are present
+          echo "Final files in assets:"
+          ls -lh assets/ || echo "Assets directory is empty or missing"
