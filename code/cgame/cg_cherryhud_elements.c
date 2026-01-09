@@ -504,20 +504,12 @@ cherryhudElement_t* CG_CHUDCreateElementFromConfig(const cherryhudConfig_t* conf
 {
 	cherryhudElement_t* element;
 	cherryhudConfig_t elementConfig;
-	const cherryHUDConfigElement_t* elementDef;
-	const char* elementType;
 	const cherryhudElementTypeInfo_t* typeInfo;
 	qboolean hadPosition;
-	static int elementCount = 0;
 
 	if (!config)
 	{
 		return NULL;
-	}
-
-	// CRITICAL: Reset counter on first element (indicates new config load)
-	if (g_elementCount == 0)
-	{
 	}
 
 	// Count elements

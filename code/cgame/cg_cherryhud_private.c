@@ -235,10 +235,10 @@ static configEntry_t* CG_CHUDConfigSet(const char* key, configType_t type, const
 	return entry;
 }
 
-static const configEntry_t* CG_CHUDConfigGet(const char* key, configType_t type)
+/* static const configEntry_t* CG_CHUDConfigGet(const char* key, configType_t type)
 {
 	return CG_CHUDConfigFind(key, type);
-}
+} */
 
 static int CG_CHUDConfigGetAllOfType(configType_t type, configEntry_t** entries, int maxEntries)
 {
@@ -742,7 +742,6 @@ float CG_CHUDGetBaseHeightForMode(const char* containerType)
 	int playerCount, spectatorCount;
 	float baseRowHeight, baseRowSpacing;
 	float baseHeight;
-	int i;
 
 	if (!containerType)
 	{
@@ -1362,8 +1361,6 @@ void CG_CHUDLoadDefaultTemplates(void)
 
 void CG_CHUDResetSystem(void)
 {
-	int i;
-
 	// idk why but this is need to be
 	CG_CHUDClearTitleBlocks();
 
@@ -1760,10 +1757,8 @@ qboolean CG_CHUDTitleBlockHasContainer(const cherryhudTitleBlock_t* titleBlock)
 
 qboolean CG_CHUDContainerHasContent(const char* containerType)
 {
-	cherryhudTable_t* table;
 	int playerCount;
 	int spectatorCount;
-	const char* tableType;
 	const char* playersContainerName;
 	const char* spectatorsContainerName;
 
@@ -2163,7 +2158,7 @@ const char* CG_CHUDGetContainerName(cherryhudBlockType_t type)
 }
 
 
-// Helper function to build arrays from unified types
+/* // Helper function to build arrays from unified types
 static void CG_CHUDBuildTypeArray(cherryhudElementTypeCategory_t category, const char** array, int maxSize)
 {
 	int i, j;
@@ -2178,7 +2173,7 @@ static void CG_CHUDBuildTypeArray(cherryhudElementTypeCategory_t category, const
 		}
 	}
 	array[j] = NULL;
-}
+} */
 
 
 

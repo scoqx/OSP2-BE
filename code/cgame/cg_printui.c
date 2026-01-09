@@ -104,6 +104,9 @@ Parse 1 float value from command arguments starting at index i
 Returns 1 if successful, 0 if failed
 =================
 */
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static int CG_ParseFloatFromArgs(int argc, int* i, float* out)
 {
 	if (*i + 1 >= argc)
@@ -708,7 +711,7 @@ void CG_PrintUI_f(void)
 	// Text is always the first argument(s) and must be in quotes
 	// Collect arguments starting from first until we find closing quote or numeric argument
 	{
-		int pos;
+		int pos = 0;
 		int len;
 		qboolean foundClosingQuote;
 		qboolean startsWithQuote;

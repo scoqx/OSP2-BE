@@ -2619,11 +2619,6 @@ void CG_RegisterCvarDescriptions(void);
 const char* CG_GetCvarDescription(const char* cvarName);
 
 //
-//cg_bescoreboard.c
-//
-int CG_DrawSpectatorList(int yStart, float baseX, short isDouble);
-
-//
 // cg_teamtasks_utils.c
 //
 qboolean CG_IsTeamTaskSupported(void);

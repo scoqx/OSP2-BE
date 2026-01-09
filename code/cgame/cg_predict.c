@@ -36,6 +36,9 @@ static  centity_t*   cg_triggerEntities[MAX_ENTITIES_IN_SNAPSHOT];
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))
 
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static int IsUnacceptableError(playerState_t* ps, playerState_t* pps)
 {
 	vec3_t delta;
@@ -624,7 +627,6 @@ void CG_PredictPlayerState(void)
 	qboolean    moved;
 	usercmd_t   oldestCmd;
 	usercmd_t   latestCmd;
-	int stateIndex = 0, predictCmd = 0;
 
 	cg.hyperspace = qfalse; // will be set if touching a trigger_teleport
 

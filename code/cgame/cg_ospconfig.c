@@ -233,7 +233,6 @@ void CG_OSPConfigXHitBoxSet(int value)
 {
 	const char* config;
 	const char* hitboxStr;
-	const char* cheatsStr;
 
 	config = CG_ConfigString(XQ3E_ALLOW_FEATURES);
 	hitboxStr = Info_ValueForKey(config, "x_hck_ps_enemy_hitbox");

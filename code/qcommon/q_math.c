@@ -293,7 +293,7 @@ void ByteToDir(int b, vec3_t dir)
 
 unsigned ColorBytes3(float r, float g, float b)
 {
-	unsigned    i;
+	unsigned    i = 0;
 
 	((byte*)&i)[0] = r * 255;
 	((byte*)&i)[1] = g * 255;
@@ -630,7 +630,8 @@ float Q_rsqrt(float number)
 
 float Q_fabs(float f)
 {
-	int tmp = * (int*) &f;
+	int tmp;
+	tmp = * (int*) &f;
 	tmp &= 0x7FFFFFFF;
 	return * (float*) &tmp;
 }

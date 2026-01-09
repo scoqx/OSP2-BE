@@ -1418,7 +1418,6 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 	else
 	{
 		const char* forceModelString = cg_forceModel.integer ? cfgModelString : NULL;
-		const char* forceHModelString = cg_forceModel.integer ? cfgHModelString : NULL;
 		const char* enemyModelString = NULL;
 		const qboolean useOriginal = cg_spectOrigModel.integer && CG_IsFollowing() && cg.snap->ps.clientNum == clientNum;
 
@@ -2071,7 +2070,6 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 	int showID;
 	int showXID;
 	qboolean is_exists;
-	qboolean willGetReplacement;
 	char originalClean[MAX_QPATH];
 
 	showID = cg_playersID.integer;
@@ -2082,9 +2080,6 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 	Q_strncpyz(originalClean, ci->name_original, sizeof(originalClean));
 	CG_RemoveChatEscapeCharAll(originalClean);
 	is_exists = CG_PlayerNameCheckDuplicate(clientNum, originalClean);
-
-	/* Check if this player will get replacement name */
-	willGetReplacement = CG_ShouldReplaceWithReplacementName(clientNum, ci->nameIsInvisible, is_exists, ci->name_original);
 
 	/* If duplicate found, update all existing players with this name (including original) */
 	/* Use original name for finding duplicates */
@@ -2154,7 +2149,6 @@ void CG_NewClientInfo(int clientNum)
 	const char*  v;
 	const qboolean isOurClient = clientNum == cg.clientNum;
 	const qboolean isTeamGame = cgs.gametype >= GT_TEAM;
-	qboolean forceAddXid = qfalse;
 
 
 	ci = &cgs.clientinfo[clientNum];
@@ -3106,9 +3100,6 @@ static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color
 
 static qhandle_t CG_GetPlayerSpriteShader(centity_t* cent)
 {
-	qhandle_t* shaderarr;
-	int totalhp;
-
 	if (CG_IsFrozenEntity(cent))
 	{
 		return cgs.media.frozenFoeTagShader;
@@ -3142,10 +3133,6 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack)
 {
 	centity_t* cent;
 	clientInfo_t* ci;
-	clientInfo_t* player = &cgs.clientinfo[cg.clientNum];
-
-	trace_t tr;
-	vec3_t traceStart, traceEnd;
 
 	int clientNum;
 	int freezeLimit = MAX_CLIENTS;
@@ -3252,7 +3239,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 		return;
 	}
 
-	if (!(cg_friendsWallhack.integer & 1) && !CG_FriendVisible(cent) || !CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && !CG_FriendVisible(cent))
+	if ((!(cg_friendsWallhack.integer & 1) && !CG_FriendVisible(cent)) || (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && !CG_FriendVisible(cent)))
 	{
 		return;
 	}
@@ -3470,7 +3457,6 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 {
 	vec3_t      end, mins = {-15, -15, 0}, maxs = {15, 15, 2};
 	trace_t     trace;
-	float       alpha;
 	float       yawAngle = cent->pe.legs.yawAngle;
 	int         alt = cg_altShadow.integer;
 	qhandle_t shadowMarkShader;
@@ -3824,7 +3810,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	ci = &cgs.clientinfo[cent->currentState.clientNum];
 
 	// don't draw it if it's us in first-person, for dead players, for frozen players, for invisible players
-	if (cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson ||
+	if ((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
 	        cent->currentState.eFlags & EF_DEAD ||
 	        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && cent->currentState.powerups & (1 << PW_BATTLESUIT)) ||
 	        cent->currentState.powerups & (1 << PW_INVIS))
@@ -3894,7 +3880,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	// set the polygon's vertex colors
 	for (i = 0; i < 4; i++)
 	{
-		if (cg_hitBoxColor.integer || cg_hitBoxColor.string)
+		if (cg_hitBoxColor.integer || cg_hitBoxColor.string[0])
 		{
 			vec4_t color;
 			Vector4Copy(cgs.be.hitBoxColor, color);

@@ -1031,6 +1031,10 @@ cvarTable_t* CG_GetCgCvarByName(const char* name)
 	{
 		target = target->next;
 	}
+	if (target == NULL)
+	{
+		return NULL;
+	}
 	return Q_stricmp(name, target->cvarName) == 0 ? target : NULL;
 }
 
@@ -1182,6 +1186,11 @@ void QDECL CG_Printf(const char* msg, ...)
 	va_list     argptr;
 	char        text[1024];
 
+	if (msg == NULL)
+	{
+		return;
+	}
+
 	va_start(argptr, msg);
 	vsprintf(text, msg, argptr);
 	va_end(argptr);
@@ -1254,6 +1263,9 @@ void QDECL CG_PrintOnce(const char* msg, ...)
 	trap_Print(text);
 }
 
+#ifdef __GNUC__
+__attribute__((noreturn))
+#endif
 void QDECL CG_Error(const char* msg, ...)
 {
 	va_list     argptr;
@@ -1265,11 +1277,17 @@ void QDECL CG_Error(const char* msg, ...)
 
 	CG_PrintLog(text);
 	trap_Error(text);
+#ifdef __GNUC__
+	while (1) {}
+#endif
 }
 
 #ifndef CGAME_HARD_LINKED
 // this is only here so the functions in q_shared.c and bg_*.c can link (FIXME)
 
+#ifdef __GNUC__
+__attribute__((noreturn))
+#endif
 void QDECL Com_Error(int level, const char* error, ...)
 {
 	va_list     argptr;
@@ -1713,13 +1731,13 @@ static void CG_RegisterGraphics(void)
 		cgs.media.crosshairShader45[i] = trap_R_RegisterShader(va("gfx/2d/crosshair%i_r45", i));
 	}
 	// osp2 crosshairs
-	for (; i <= NUM_CROSSHAIRS ; i++)
+	for (; i < NUM_CROSSHAIRS ; i++)
 	{
 		cgs.media.crosshairShader[i] = trap_R_RegisterShader(va("gfx/2d/crosshair_%i",  i));
 		cgs.media.crosshairShader45[i] = trap_R_RegisterShaderNoMip(va("gfx/2d/crosshair_%i_r45",  i));
 	}
 	// save how many crosshair do we have
-	cgs.media.numberOfCrosshairs = i;
+	cgs.media.numberOfCrosshairs = NUM_CROSSHAIRS;
 
 	// decors
 	for (i = 1; i <= NUM_DECORS ; i++)
@@ -2196,7 +2214,7 @@ void CG_CheckFogBypass(void)
 	                                NULL
 	                              };
 
-	if (cgs.mapname && cgs.mapname[0] != '\0')
+	if (cgs.mapname[0] != '\0')
 	{
 		const char* mapPrefix = "maps/";
 		const char* mapStart = strstr(cgs.mapname, mapPrefix);
@@ -2461,7 +2479,6 @@ Will perform callbacks to make the loading info screen update.
 int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 {
 	const char*  s;
-	int i;
 	// clear everything
 	memset(&cgs, 0, sizeof(cgs));
 	memset(&cg, 0, sizeof(cg));
@@ -2989,6 +3006,9 @@ void CG_PrintNewCommandsBE_f(void)
 	}
 }
 
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static void trap_Cvar_SetDescription_local(const char* name, const char* description)
 {
 	(void)name;

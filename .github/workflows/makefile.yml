@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  linux-qvm:
+  linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,43 +32,70 @@ jobs:
 
       - name: Create version files
         run: |
-          cd build/linux-qvm
+          cd build/qvm
           make ../../assets/version.txt ../../assets/version_changelog.txt
       
-      - name: build
-        working-directory: build/linux-qvm
+      - name: build-qvm
+        working-directory: build/qvm
         run: |
           make
+
+      - name: build-so
+        working-directory: build/library
+        run: |
+          make MOD=osp2
 
       - uses: actions/upload-artifact@v4
         with:
           name: qvm
-          path: build/linux-qvm/zz-osp-pak8be.pk3
+          path: build/qvm/zz-osp-pak8be.pk3
           if-no-files-found: error
           retention-days: 5
 
-  linux-so:
-    runs-on: ubuntu-latest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: so
+          path: build/library/build/release-linux-x86_64/osp2/cgamex86_64.so
+          if-no-files-found: error
+          retention-days: 5
+
+  mingw:
+    name: MinGW GCC
+    runs-on: windows-2022
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: build
-        working-directory: build/linux
+      - name: Create version files
+        run: |
+          cd build/qvm
+          make ../../assets/version.txt ../../assets/version_changelog.txt
+
+      - name: build-qvm
+        working-directory: build/qvm
+        run: |
+          make
+
+      - name: build-dll
+        working-directory: build/library
         run: |
           make MOD=osp2
 
       - uses: actions/upload-artifact@v4
         with:
-          name: so
-          path: build/linux/build/release-linux-x86_64/osp2/cgamex86_64.so
+          name: dll
+          path: build/library/build/release-mingw64-x86_64/osp2/cgamex86_64.dll
           if-no-files-found: error
           retention-days: 5
 
   deploy-to-gh-pages:
-    needs: [linux-qvm, linux-so]
+    needs: [linux, mingw]
     runs-on: ubuntu-latest
     env:
       TARGET_REPO: scoqx/scoqx.github.io
@@ -95,12 +122,13 @@ jobs:
           mkdir -p target-repo/assets
           cp artifacts/qvm/zz-osp-pak8be.pk3 target-repo/assets/
           cp artifacts/so/cgamex86_64.so target-repo/assets/
+          cp artifacts/dll/cgamex86_64.dll target-repo/assets/
 
       - name: Commit and push changes
         run: |
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add assets/zz-osp-pak8be.pk3 assets/cgamex86_64.so
-          git diff --quiet --cached || git commit -m "Update zz-osp-pak8be.pk3 and cgamex86_64.so [auto]"
+          git add assets/zz-osp-pak8be.pk3 assets/cgamex86_64.so assets/cgamex86_64.dll
+          git diff --quiet --cached || git commit -m "Update zz-osp-pak8be.pk3, cgamex86_64.so and cgamex86_64.dll [auto]"
           git push origin ${{ env.TARGET_BRANCH }}

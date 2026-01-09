@@ -24,7 +24,7 @@ static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseModel(cherryhud_parse
 static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseMonospace(cherryhud_parser_t* parser, cherryhudConfig_t* config);
 static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseOffset(cherryhud_parser_t* parser, cherryhudConfig_t* config);
 static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseText(cherryhud_parser_t* parser, cherryhudConfig_t* config);
-static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseTextAlign(cherryhud_parser_t* parser, cherryhudConfig_t* config);
+/* static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseTextAlign(cherryhud_parser_t* parser, cherryhudConfig_t* config); */
 static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseTextAlignV(cherryhud_parser_t* parser, cherryhudConfig_t* config);
 static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseTextOffset(cherryhud_parser_t* parser, cherryhudConfig_t* config);
 static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseTime(cherryhud_parser_t* parser, cherryhudConfig_t* config);
@@ -975,6 +975,7 @@ static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseText(cherryhud_parser
 	return status;
 }
 
+#if 0
 static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseTextAlign(cherryhud_parser_t* parser, cherryhudConfig_t* config)
 {
 	cherryhudConfigParseStatus_t status;
@@ -991,6 +992,7 @@ static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseTextAlign(cherryhud_p
 	}
 	return status;
 }
+#endif
 
 
 static cherryhudConfigParseStatus_t CG_CHUDLexerParserParseTextOffset(cherryhud_parser_t* parser, cherryhudConfig_t* config)

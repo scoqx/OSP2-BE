@@ -16,7 +16,6 @@ shudElementObituaries_t cg_obituaries;
 
 static qhandle_t CG_SHUDObituaryGetModIcon(int mod, qboolean unfrozen);
 static void CG_SHUDObituarySetTeamColor(vec4_t color, int team);
-static int CG_TruncateStringWithCodes(const char* input, char* output, int maxVisibleChars);
 
 static void* CG_SHUDElementObituariesCreate(const superhudConfig_t* config, int line)
 {

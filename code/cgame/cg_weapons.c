@@ -693,7 +693,7 @@ void CG_UpdateWeaponDlightColor(weapon_t weapon)
 		NULL,//WP_GRAPPLING_HOOK
 	};
 	const vmCvar_t* cvar;
-	vec3_t color;
+	vec4_t color;
 
 	if (weapon <= WP_NONE || weapon >= WP_NUM_WEAPONS || ((cvar = weaponCvars[weapon]) == NULL))
 	{
@@ -1748,7 +1748,14 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 
 
 	VectorMA(gun.origin, lerped.origin[2], parent->axis[2], gun.origin);
-	MatrixMultiply(lerped.axis, parent->axis, gun.axis);
+	{
+		vec3_t tempAxis[3];
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+		MatrixMultiply(lerped.axis, parent->axis, tempAxis);
+#pragma GCC diagnostic pop
+		AxisCopy(tempAxis, gun.axis);
+	}
 	gun.backlerp = parent->backlerp;
 
 	if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
@@ -1774,7 +1781,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	}
 
 	if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
-	        (cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
+	        ((cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON)))
 	{
 		if (!usedBrightColor)
 		{
@@ -1815,7 +1822,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			barrel.customShader = cgs.media.firstPersonGun;
 		}
 		else if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
-		         (cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON))
+		         ((cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON)))
 		{
 			CG_UpdateGunShaderRGBA(&barrel);
 			barrel.customShader = cgs.media.firstPersonGun;
@@ -2017,7 +2024,7 @@ void CG_DrawWeaponSelect(void)
 	int     i;
 	int     bits;
 	int     count;
-	int     x, y, w;
+	int     x, y;
 	char*    name;
 	float*   color;
 

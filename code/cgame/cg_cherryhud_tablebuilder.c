@@ -27,7 +27,6 @@ static void CG_CHUDTableDestroyRow(cherryhudTableRow_t* row);
 static void CG_CHUDTableUpdateRow(cherryhudTable_t* table, int index, const cherryhudPlayerData_t* playerData);
 
 // Table rendering helpers
-static void CG_CHUDTableRenderBorder(cherryhudTable_t* table);
 
 // Configuration helpers
 static void CG_CHUDSetDefaultTableProperties(cherryhudTable_t* table);
@@ -344,7 +343,7 @@ void CG_CHUDTableCollectPlayerData(cherryhudPlayerData_t* players, int* numPlaye
 		ci = &cgs.clientinfo[i];
 
 		// Skip invalid clients
-		if (!ci->infoValid || !ci->name || !ci->name[0]) continue;
+		if (!ci->infoValid || !ci->name[0]) continue;
 
 		// Determine if this client is a spectator
 		if (ci->team == TEAM_SPECTATOR)
@@ -394,18 +393,15 @@ void CG_CHUDTableCollectPlayerData(cherryhudPlayerData_t* players, int* numPlaye
 		// Fallback to stats if no score data
 		if (!player->scoreData)
 		{
-			if (cgs.be.statsAll)
-			{
-				player->score = cgs.be.statsAll[i].kills;
-				player->ping = 0;
-				player->connected = qtrue;
-			}
-			else
-			{
-				player->score = 0;
-				player->ping = 0;
-				player->connected = qfalse;
-			}
+			player->score = cgs.be.statsAll[i].kills;
+			player->ping = 0;
+			player->connected = qtrue;
+		}
+		else
+		{
+			player->score = 0;
+			player->ping = 0;
+			player->connected = qfalse;
 		}
 
 		(*numPlayers)++;
@@ -448,14 +444,6 @@ static void CG_CHUDTableCreateRow(cherryhudTable_t* table, int index, const cher
 {
 	cherryhudTableRow_t* row;
 	const cherryhudConfig_t* playerRowTemplate;
-	const cherryhudConfig_t* playerInfoTemplate;
-	cherryhudConfig_t elementConfig;
-	cherryhudElement_t* element;
-	cherryhudElement_t* last;
-	cherryhudLayoutContext_t layoutContext;
-	cherryhudLayoutProperties_t layoutProps;
-	cherryhudLayoutBounds_t* finalBounds;
-	int i, templateCount;
 
 	if (!table || !table->rows || index < 0 || index >= table->maxRows || !playerData)
 	{
@@ -1102,7 +1090,6 @@ float CG_CHUDScoreboardCalculateHeight(void)
 	{
 		const cherryhudScoreboardBlock_t* block = &order->blocks[i];
 		float blockSpacing;
-		float heightBefore = totalHeight;
 
 		// Use rowSpacing from block config if set, otherwise use default spacing
 		blockSpacing = block->config.rowSpacing.isSet ? block->config.rowSpacing.value : defaultSpacing;
@@ -1485,6 +1472,9 @@ void CG_CHUDTableUpdateProperties(cherryhudTable_t* table)
 }
 
 // Collect and prepare player data
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static void CG_CHUDTablePrepareData(cherryhudTable_t* table, cherryhudPlayerData_t* players, int* numPlayers, int* playerHash)
 {
 	int i;
@@ -1816,8 +1806,6 @@ void CG_CHUDTableRender(cherryhudTable_t* table)
 	cherryhudElement_t* element;
 	cherryhudTableRow_t* row;
 	int elementIndex;
-	float maxHeight;
-	float tableSpacing;
 
 	if (!table || !table->rows || table->numRows <= 0)
 	{
@@ -1870,7 +1858,8 @@ void CG_CHUDTableRender(cherryhudTable_t* table)
 	}
 }
 
-// Render table border
+// Render table border - unused
+#if 0
 static void CG_CHUDTableRenderBorder(cherryhudTable_t* table)
 {
 	cherryhudConfig_t config;
@@ -1891,6 +1880,7 @@ static void CG_CHUDTableRenderBorder(cherryhudTable_t* table)
 	// Use the existing border function which handles coordinates properly
 	CG_CHUDDrawBorder(&config);
 }
+#endif
 
 // ============================================================================
 // UNIFIED RENDERING FUNCTIONS
@@ -1899,8 +1889,6 @@ static void CG_CHUDTableRenderBorder(cherryhudTable_t* table)
 // Render table background and border
 qboolean CG_CHUDTableRenderBackgroundAndBorder(cherryhudTable_t* table)
 {
-	vec4_t bgColor;
-	vec4_t borderColor;
 	qboolean rendered = qfalse;
 
 	if (!table)
@@ -1920,8 +1908,6 @@ qboolean CG_CHUDTableRenderBackgroundAndBorder(cherryhudTable_t* table)
 qboolean CG_CHUDTableRowRenderBackgroundAndBorder(cherryhudTable_t* table, cherryhudTableRow_t* row)
 {
 	const cherryhudConfig_t* rowConfig;
-	vec4_t bgColor;
-	vec4_t borderColor;
 	qboolean rendered = qfalse;
 
 	if (!table || !row)
@@ -2368,7 +2354,6 @@ void CG_CHUDRenderScoreboardElementsInOrder(const cherryhudConfig_t* scoreboardC
 	float currentY;
 	float scoreboardX, scoreboardY;
 	const cherryhudScoreboardOrder_t* order;
-	cherryhudTable_t* globalTable = CG_CHUDGetGlobalTable();
 	float dynamicHeight;
 	int i;
 
@@ -2438,7 +2423,6 @@ void CG_CHUDTableRenderTitleBlockByIndex(int titleBlockIndex, const cherryhudCon
 	cherryhudConfig_t config;
 	int i;
 	int elementCount;
-	cherryhudTable_t* table;
 	const cherryhudTitleBlock_t* titleBlock;
 	cherryhudElement_t* element;
 	cherryhudLayoutContext_t elementContext;
@@ -3182,7 +3166,7 @@ static void CG_CHUDCountPlayers(int* playerCount, int* spectatorCount)
 		ci = &cgs.clientinfo[i];
 
 		// Strict validation - only include valid clients
-		if (!ci->infoValid || !ci->name || !ci->name[0]) continue;
+		if (!ci->infoValid || !ci->name[0]) continue;
 
 		// Classify player type based on game mode
 		if (ci->team == TEAM_SPECTATOR)

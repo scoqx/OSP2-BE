@@ -1,6 +1,4 @@
 #
-# edawn Makefile
-#
 # GNU Make required
 #
 
@@ -24,7 +22,7 @@ endif
 -include Makefile.local
 
 ifndef MOD
-MOD=baseq3a
+MOD=osp2
 endif
 
 ifeq ($(COMPILE_PLATFORM),cygwin)
@@ -40,6 +38,9 @@ ifeq ($(PLATFORM),mingw32)
   MINGW=1
 endif
 ifeq ($(PLATFORM),mingw64)
+  MINGW=1
+endif
+ifeq ($(PLATFORM),windows)
   MINGW=1
 endif
 
@@ -118,7 +119,7 @@ ifeq ($(PLATFORM),linux)
     LIB=lib64
   endif
 
-  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
+  BASE_CFLAGS = -Wall -Werror -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
 
   OPTIMIZE = -O2 -fvisibility=hidden -fomit-frame-pointer -ffast-math
 
@@ -202,8 +203,6 @@ endif
 
 TARGETS += \
   $(B)/$(MOD)/cgame$(SHLIBNAME) 
-
-BUILD_UI ?= 0
 
 ifeq ("$(CC)", $(findstring "$(CC)", "clang" "clang++"))
   BASE_CFLAGS += -Qunused-arguments
@@ -325,6 +324,7 @@ makedirs:
 	@if [ ! -d $(B)/$(MOD)/cgame ];then $(MKDIR) $(B)/$(MOD)/cgame;fi
 	@if [ ! -d $(B)/$(MOD)/qcommon ];then $(MKDIR) $(B)/$(MOD)/qcommon;fi
 	@if [ ! -d $(B)/$(MOD)/game ];then $(MKDIR) $(B)/$(MOD)/game;fi
+	@if [ ! -d $(B)/$(MOD)/ui ];then $(MKDIR) $(B)/$(MOD)/ui;fi
 	@if [ ! -d $(B)/$(MOD)/vm ];then $(MKDIR) $(B)/$(MOD)/vm;fi
 
 #############################################################################
@@ -337,16 +337,6 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_cvardescriptions.o \
   $(B)/$(MOD)/cgame/cg_crosshair.o \
   $(B)/$(MOD)/cgame/cg_chatfilter.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_element_decor.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_elements.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_layout.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_lexer_commands.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_lexer_parser.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_lexer.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_private.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_tablebuilder.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_util.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud.o \
   $(B)/$(MOD)/cgame/cg_teamtaskfilter.o \
   $(B)/$(MOD)/cgame/cg_consolecmds.o \
   $(B)/$(MOD)/cgame/cg_customloc.o \
@@ -363,19 +353,21 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_playerstate.o \
   $(B)/$(MOD)/cgame/cg_playerscolors.o \
   $(B)/$(MOD)/cgame/cg_predict.o \
-  $(B)/$(MOD)/cgame/cg_printui.o \
   $(B)/$(MOD)/cgame/cg_scoreboard.o \
   $(B)/$(MOD)/cgame/cg_servercmds.o \
   $(B)/$(MOD)/cgame/cg_snapshot.o \
   $(B)/$(MOD)/cgame/cg_view.o \
   $(B)/$(MOD)/cgame/cg_weapons.o \
+  $(B)/$(MOD)/cgame/cg_printui.o \
   $(B)/$(MOD)/cgame/cg_ospconfig.o \
   $(B)/$(MOD)/cgame/cg_osphud.o \
   $(B)/$(MOD)/cgame/cg_osputil.o \
   $(B)/$(MOD)/cgame/cg_unlagged.o \
-  $(B)/$(MOD)/cgame/cg_be_util.o \
-  $(B)/$(MOD)/cgame/cg_be_stats.o \
-  $(B)/$(MOD)/cgame/cg_bescoreboard.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_tokenbucket.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_utils.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_draw.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_selwheel.o \
+  $(B)/$(MOD)/cgame/cg_teamtasks_crypto.o \
   $(B)/$(MOD)/cgame/cg_superhud.o \
   $(B)/$(MOD)/cgame/cg_superhud_configparser.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_ammomessage.o \
@@ -397,8 +389,6 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_ng.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_ngp.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_obituaries.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_player_name.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_player_stats.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_powerup.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_pred.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_rankmessage.o \
@@ -420,19 +410,28 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_target_status.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_team.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_teamcount.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_teamtasks.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_tempAcc.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_vmw.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_warmupinfo.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_weapon_stats.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_weaponlist.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_weapon_stats.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_player_stats.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_player_name.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_teamtasks.o \
   $(B)/$(MOD)/cgame/cg_superhud_private.o \
   $(B)/$(MOD)/cgame/cg_superhud_util.o \
-  $(B)/$(MOD)/cgame/cg_teamtasks_selwheel.o \
-  $(B)/$(MOD)/cgame/cg_teamtasks_tokenbucket.o \
-  $(B)/$(MOD)/cgame/cg_teamtasks_utils.o \
-  $(B)/$(MOD)/cgame/cg_teamtasks_crypto.o \
-  $(B)/$(MOD)/cgame/cg_teamtasks_draw.o \
+  $(B)/$(MOD)/cgame/cg_be_util.o \
+  $(B)/$(MOD)/cgame/cg_be_stats.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_elements.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_private.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_util.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_element_decor.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_lexer.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_lexer_parser.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_lexer_commands.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_layout.o \
+  $(B)/$(MOD)/cgame/cg_cherryhud_tablebuilder.o \
   \
   $(B)/$(MOD)/game/bg_lib.o \
   $(B)/$(MOD)/game/bg_misc.o \
@@ -502,7 +501,6 @@ $(B)/$(MOD)/qagame$(SHLIBNAME): $(QAOBJ)
 ## BASEQ3 UI
 #############################################################################
 
-ifeq ($(BUILD_UI),1)
 UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_main.o \
   $(B)/$(MOD)/ui/bg_misc.o \
@@ -523,7 +521,6 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_menu.o \
   $(B)/$(MOD)/ui/ui_mfield.o \
   $(B)/$(MOD)/ui/ui_mods.o \
-  $(B)/$(MOD)/ui/ui_osp2be.o \
   $(B)/$(MOD)/ui/ui_network.o \
   $(B)/$(MOD)/ui/ui_options.o \
   $(B)/$(MOD)/ui/ui_playermodel.o \
@@ -555,9 +552,6 @@ UIOBJ = $(UIOBJ_) $(B)/$(MOD)/ui/ui_syscalls.o
 $(B)/$(MOD)/ui$(SHLIBNAME): $(UIOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(UIOBJ)
-else
-UIOBJ :=
-endif
 
 #############################################################################
 ## GAME MODULE RULES
@@ -575,13 +569,11 @@ $(B)/$(MOD)/cgame/%.o: $(CGDIR)/%.c
 $(B)/$(MOD)/game/%.o: $(QADIR)/%.c
 	$(DO_GAME_CC)
 
-ifeq ($(BUILD_UI),1)
 $(B)/$(MOD)/ui/bg_%.o: $(QADIR)/bg_%.c
 	$(DO_UI_CC)
 
 $(B)/$(MOD)/ui/%.o: $(UIDIR)/%.c
 	$(DO_UI_CC)
-endif
 
 $(B)/$(MOD)/qcommon/%.o: $(COMDIR)/%.c
 	$(DO_GAME_CC)

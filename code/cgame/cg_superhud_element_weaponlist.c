@@ -278,7 +278,6 @@ void CG_SHUDElementWeaponListRoutine(void* context)
 {
 	shudElementWeaponList_t* element = (shudElementWeaponList_t*)context;
 	int i;
-	vec4_t bgColor;
 
 	CG_SHUDElementWeaponListSetup(element, element->config.textAlign.value);
 

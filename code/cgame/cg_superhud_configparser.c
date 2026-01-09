@@ -577,7 +577,6 @@ static qboolean CG_SHUDConfigCommandParseVisFlagsVariant(configFileInfo_t* finfo
 {
 	qboolean isFound = qfalse;
 	const char* str = finfo->last_line->line + finfo->pos;
-	char c;
 
 	if (Q_stricmpn(str, token, strlen(token)) == 0)
 	{
@@ -2021,8 +2020,6 @@ superhudConfigParseStatus_t CG_SHUDParseVarElement(configFileInfo_t* finfo)
 	qboolean eoe = qfalse;
 	qboolean isNumber;
 	qboolean hasDecimal;
-	int intValue;
-	float floatValue;
 	float floatValues[4];
 	int floatCount;
 	char stringValue[MAX_QPATH];

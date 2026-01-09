@@ -10,7 +10,7 @@ void CG_ParseCvarTwoStrings(const cvarTable_t* cvart, char* out1, char* out2, in
 	char buffer[MAX_CVAR_VALUE_STRING];
 	char* token1, *token2;
 
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (!cvart || !cvart->vmCvar) return;
 	if (cvart->vmCvar->string[0] == '\0') return;
 
 	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
@@ -28,7 +28,7 @@ void CG_ParseCvarTwoInts(const cvarTable_t* cvart, int* out1, int* out2)
 	char buffer[MAX_CVAR_VALUE_STRING];
 	char* token1, *token2;
 
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (!cvart || !cvart->vmCvar) return;
 	if (cvart->vmCvar->string[0] == '\0') return;
 
 	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
@@ -46,7 +46,7 @@ void CG_ParseCvarTwoFloats(const cvarTable_t* cvart, float* out1, float* out2)
 	char buffer[MAX_CVAR_VALUE_STRING];
 	char* token1, *token2;
 
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
+	if (!cvart || !cvart->vmCvar) return;
 	if (cvart->vmCvar->string[0] == '\0') return;
 
 	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
@@ -64,24 +64,6 @@ void CG_ParseCvarTwoFloats(const cvarTable_t* cvart, float* out1, float* out2)
 	{
 		*out2 = *out1;
 	}
-}
-
-static void CG_ParseCvarTwoColors(const cvarTable_t* cvart, vec4_t out1, vec4_t out2)
-{
-	char buffer[MAX_CVAR_VALUE_STRING];
-	char* token1, *token2;
-
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string) return;
-	if (cvart->vmCvar->string[0] == '\0') return;
-
-	Q_strncpyz(buffer, cvart->vmCvar->string, sizeof(buffer));
-	token1 = Q_strtok(buffer, " \t");
-	token2 = Q_strtok(NULL, " \t");
-
-	if (!token1 || !token2) return;
-
-	CG_ParseColorStr(token1, out1);
-	CG_ParseColorStr(token2, out2);
 }
 
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
@@ -666,7 +648,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorFontSize(cvarTable_t* cvart)
 {
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string || cvart->vmCvar->string[0] == '\0')
+	if (!cvart || !cvart->vmCvar || cvart->vmCvar->string[0] == '\0')
 	{
 		cgs.be.playerIndicatorFontSize[0] = 0.0f;
 		cgs.be.playerIndicatorFontSize[1] = 0.0f;
@@ -676,7 +658,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFontSize(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_accuracyFontSize(cvarTable_t* cvart)
 {
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string || cvart->vmCvar->string[0] == '\0')
+	if (!cvart || !cvart->vmCvar || cvart->vmCvar->string[0] == '\0')
 	{
 		cgs.be.accuracyFontSize[0] = 0.0f;
 		cgs.be.accuracyFontSize[1] = 0.0f;
@@ -927,9 +909,9 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 	char* token2;
 	char* token3;
 
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
+	if (!cvart || !cvart->vmCvar)
 	{
-		CG_Printf("^1Invalid cvar or string pointer\n");
+		CG_Printf("^1Invalid cvar pointer\n");
 		return;
 	}
 
@@ -969,9 +951,9 @@ void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
 	char* token2;
 	char* token3;
 
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
+	if (!cvart || !cvart->vmCvar)
 	{
-		CG_Printf("^1Invalid cvar or string pointer\n");
+		CG_Printf("^1Invalid cvar pointer\n");
 		return;
 	}
 
@@ -1010,7 +992,7 @@ void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart)
 	char* token1;
 	char* token2;
 
-	if (!cvart || !cvart->vmCvar || !cvart->vmCvar->string)
+	if (!cvart || !cvart->vmCvar)
 	{
 		CG_Printf("^1Invalid cvar or string pointer\n");
 		customScoreboardColorIsSet_spec = 0;
@@ -1104,7 +1086,7 @@ void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart)
 {
 	/* If cg_exec_weapons is disabled and user sets any weapon exec cvar, enable it */
-	if (cg_exec_weapons.integer == 0 && cvart->vmCvar->string && cvart->vmCvar->string[0])
+	if (cg_exec_weapons.integer == 0 && cvart->vmCvar->string[0])
 	{
 		trap_Cvar_Set("cg_exec_weapons", "1");
 		CG_PrintOnce(" ^3cg_exec_weapons^7 enabled!\n");
@@ -1114,7 +1096,7 @@ void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart)
 {
 	/* If cg_exec_gametypes is disabled and user sets any gametype exec cvar, enable it */
-	if (cg_exec_gametypes.integer == 0 && cvart->vmCvar->string && cvart->vmCvar->string[0])
+	if (cg_exec_gametypes.integer == 0 && cvart->vmCvar->string[0])
 	{
 		trap_Cvar_Set("cg_exec_gametypes", "1");
 		CG_PrintOnce(" ^3cg_exec_gametypes^7 enabled!\n");

@@ -957,9 +957,8 @@ int CG_FontIndexFromCvar(vmCvar_t* cvar)
 	const char* str;
 	int i;
 	qboolean isNumber;
-	int fontIndex;
 
-	if (!cvar || !cvar->string || !cvar->string[0])
+	if (!cvar || !cvar->string[0])
 	{
 		return 0;
 	}
@@ -1028,6 +1027,9 @@ const char* CG_GetFontName(int index)
 }
 
 
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static qboolean CG_FileExist(const char* file)
 {
 	fileHandle_t    f;
@@ -1062,7 +1064,6 @@ static void CG_LoadFont(font_t* fnt, const char* fontName)
 	float w1, w2;
 	float s1, s2;
 	float x0, y0;
-	qboolean swapped;
 
 	len = trap_FS_FOpenFile(fontName, &f, FS_READ);
 	if (f == FS_INVALID_HANDLE)
@@ -1369,8 +1370,7 @@ static void CG_LoadCustomFonts(void)
 		/* Check if file exists using trap_FS_FOpenFile */
 		{
 			fileHandle_t testFile;
-			int testLen;
-			testLen = trap_FS_FOpenFile(fontPath, &testFile, FS_READ);
+			trap_FS_FOpenFile(fontPath, &testFile, FS_READ);
 			if (testFile == FS_INVALID_HANDLE)
 			{
 				CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: Font file '%s' not found, skipping '%s'\n", fontPath, fontName);
@@ -2746,7 +2746,7 @@ float CG_OSPDrawStringLengthNew(const char* string, float ax, float aw, float ma
 static float GetSymbolSize(char sym, qboolean proportional, float charWidth)
 {
 	const font_metric_t* fm;
-	fm = &metrics[sym];
+	fm = &metrics[(unsigned char)sym];
 
 	if (proportional)
 	{
@@ -2896,7 +2896,6 @@ static float RestrictCompiledStringChars(text_command_t* cmd, int maxChars)
 
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth)
 {
-	float           max_ax;
 	int rez;
 	text_command_t* text_commands;
 
@@ -2924,7 +2923,6 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 	const font_metric_t* fm;
 	const float*     tc; // texture coordinates for char
 	float           ax, ay, aw, aw1, ah; // absolute positions/dimensions
-	float           scale;
 	float           x_end, xx;
 	float                   fade = 1.0f;
 	vec4_t          color;
@@ -3402,7 +3400,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	const font_metric_t* fm;
 	const float* tc; // texture coordinates for char
 	float ax, ay, aw, aw1, ah; // absolute positions/dimensions
-	float x_end, xx;
+	float xx;
 	float fade;
 	vec4_t color;
 	float xx_add, yy_add;
@@ -3826,12 +3824,11 @@ void CG_OSPDrawGradientRect(int startX, int startY, int rectWidth, int rectHeigh
 void CG_OSPDrawGradientFrame(float x, float y, float width, float height,
                              int border, int direction, float speed, float gradientScale, int colored)
 {
-	int outerX, outerY, outerW, outerH;
+	int outerX, outerY, outerW;
 
 	outerX = (int)(x - border);
 	outerY = (int)(y - border);
 	outerW = (int)(width + 2 * border);
-	outerH = (int)(height + 2 * border);
 
 	CG_OSPDrawGradientRect(outerX, outerY, outerW, border, direction, speed, gradientScale, colored);
 

@@ -96,7 +96,6 @@ void CG_UpdateSelwheelMark(void)
 	float sensitivity;
 	float pitchDelta;
 	float yawDelta;
-	qboolean hasMovement;
 	int timeSinceMovement;
 	float centerX;
 	float centerY;
@@ -119,13 +118,10 @@ void CG_UpdateSelwheelMark(void)
 	// STEP 1: Check for mouse movement FIRST
 	// This must be checked BEFORE any center return logic
 	// ============================================
-	hasMovement = qfalse;
-
 	// Compare current angles with saved angles
 	if (currentCmd.angles[PITCH] != cgs.be.teamMarkers.lastCmdAngles[PITCH] ||
 	        currentCmd.angles[YAW] != cgs.be.teamMarkers.lastCmdAngles[YAW])
 	{
-		hasMovement = qtrue;
 
 		// ============================================
 		// STEP 2: Movement detected - update mark position
@@ -349,7 +345,6 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 	float distFromCenter;
 	float cursorAngle;
 	float iconAngle;
-	float startAngle;
 	float angleStep;
 	float minRadius;
 	float maxRadius;
@@ -459,9 +454,6 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 		return -1; // Too far - no selection
 	}
 
-	// Start angle: 9 o'clock = 270 degrees = 3π/2 radians
-	startAngle = SELWHEEL_START_ANGLE;
-
 	// Check each element's sector (elements start from i)
 	for (; i < cgs.be.teamMarkers.ttwheelElementCount; i++)
 	{
@@ -507,8 +499,6 @@ void CG_DrawSelwheelIcons(void)
 	float iconRadius;
 	float iconSize;
 	float backgroundSize;
-	float iconAngle;
-	float startAngle;
 	vec4_t iconColor;
 	vec4_t backgroundColor;
 	float iconX;
@@ -517,10 +507,6 @@ void CG_DrawSelwheelIcons(void)
 	float adjustedY;
 	float adjustedSize;
 	float adjustedBgSize;
-	float borderThickness;
-	float tempW;
-	float tempH;
-	vec4_t debugColor;
 	int hoveredIcon;
 	int i;
 	int font = CG_FontIndexFromCvar(&cg_teamTaskFont);
@@ -606,9 +592,6 @@ void CG_DrawSelwheelIcons(void)
 	backgroundColor[1] = cgs.be.teamMarkers.teamTaskThemeColor[1];
 	backgroundColor[2] = cgs.be.teamMarkers.teamTaskThemeColor[2];
 	backgroundColor[3] = 0.3f;
-
-	// Start angle: 9 o'clock = 270 degrees = 3π/2 radians
-	startAngle = SELWHEEL_START_ANGLE;
 
 	// Draw center wheel background (size slightly smaller than icon radius)
 	{
@@ -822,9 +805,6 @@ void CG_DrawSelwheelIcons(void)
 		{
 			continue;
 		}
-
-		// Distribute evenly around circle starting from 9 o'clock
-		iconAngle = CG_GetSelwheelIconAngle(i, cgs.be.teamMarkers.ttwheelElementCount, (cg_teamTaskWheel.integer & 2) ? qtrue : qfalse);
 
 		// Calculate icon position using the SAME logic as CG_GetSelwheelIconAtPosition
 		// to ensure icon is centered in activation block
@@ -1094,13 +1074,9 @@ Draw arrows pointing to ttwheel elements (must be called before trap_R_RenderSce
 */
 void CG_DrawSelwheelPointers(void)
 {
-	float centerX;
-	float centerY;
 	float pointerRadius;
 	float pointerSize;
 	float pointerAngle;
-	float startAngle;
-	float angleStep;
 	vec4_t activeColor;
 	vec4_t inactiveColor;
 	int selectedIcon;
@@ -1153,8 +1129,6 @@ void CG_DrawSelwheelPointers(void)
 		pointerSize = 8.0f * scale; // Size of pointer arrow (increased for visibility)
 	}
 
-	// Start angle: 9 o'clock = 270 degrees = 3π/2 radians
-	startAngle = SELWHEEL_START_ANGLE;
 	Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, activeColor);
 	CG_ColorWhitenSmart(activeColor, NULL, 0.2f);
 	// Active color (white) for selected element
@@ -1166,7 +1140,6 @@ void CG_DrawSelwheelPointers(void)
 	if ((cg_teamTaskWheel.integer & 2) && elementCount > 1)
 	{
 		// Center element exists at index 0, draw pointers for other elements (1+)
-		angleStep = 2.0f * M_PI / (float)(elementCount - 1);
 		startIndex = 1;
 	}
 	else if ((cg_teamTaskWheel.integer & 2) && elementCount == 1)
@@ -1177,7 +1150,6 @@ void CG_DrawSelwheelPointers(void)
 	else
 	{
 		// No center element, draw pointers for all elements
-		angleStep = 2.0f * M_PI / (float)elementCount;
 		startIndex = 0;
 	}
 

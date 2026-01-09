@@ -28,7 +28,6 @@ void CG_UpdateBeFeatures(void)
 	qboolean changed = qfalse;
 	int i = 0;
 	int beFlags = 0;
-	clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
 	clientInfo_t* otherCi = &cgs.clientinfo[i];
 
 	qboolean isFbSkin = qfalse;
@@ -92,7 +91,7 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_ALT_BLOOD;
 			changed = qtrue;
 		}
-		if (cg_enemyLightningColor.integer || cg_enemyLightningColor.string)
+		if (cg_enemyLightningColor.integer)
 		{
 			beFlags |= CG_BE_ENEMYLIGHTNING;
 			changed = qtrue;
@@ -205,7 +204,6 @@ void CG_BEParseXStatsToStatsAll(void)
 	int client_id;
 	int hits_value, atts_value, kills_value, deaths_value;
 	int pickUps, drops;
-	float accuracy;
 	int armor_taken, health_taken, megahealth, green_armor, red_armor, yellow_armor;
 	int damage_given, damage_rcvd;
 	int totalKills, totalDeaths;
@@ -324,7 +322,7 @@ void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
 	char buffer[MAX_CVAR_VALUE_STRING];
 	char* token1, *token2;
 
-	if (!cvar || !cvar->string) return;
+	if (!cvar) return;
 	if (cvar->string[0] == '\0') return;
 
 	Q_strncpyz(buffer, cvar->string, sizeof(buffer));
@@ -447,5 +445,45 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 				*alpha = 1.0f;
 			}
 		}
+	}
+}
+
+
+/*
+=====================
+CG_IsWarmup
+
+Returns qtrue if currently in warmup, qfalse otherwise.
+=====================
+*/
+qboolean CG_IsWarmup(void)
+{
+	if (cg.warmup == 0)
+	{
+		return qfalse;
+	}
+	else 
+	{
+		return qtrue;
+	}
+}
+
+
+/*
+=====================
+CG_IsIntermission
+
+Returns qtrue if currently in intermission, qfalse otherwise.
+=====================
+*/
+qboolean CG_IsIntermission(void)
+{
+	if (cg.intermissionStarted == 0)
+	{
+		return qfalse;
+	}
+	else 
+	{
+		return qtrue;
 	}
 }

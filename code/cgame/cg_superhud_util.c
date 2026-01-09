@@ -885,7 +885,6 @@ void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, flo
 	float s1, t1, s2, t2;
 	float s1_2, t1_2, s2_2, t2_2;
 	qhandle_t shader1;
-	qhandle_t shader2;
 	qboolean useImage;
 
 	memset(&coords, 0, sizeof(coords));
@@ -951,7 +950,6 @@ void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, flo
 	// Draw bar value with image if specified
 	useImage = (ctx->image != 0);
 	shader1 = useImage ? ctx->image : cgs.media.whiteShader;
-	shader2 = (ctx->image2 != 0) ? ctx->image2 : shader1;
 
 	if (useImage)
 	{

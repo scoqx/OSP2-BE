@@ -81,7 +81,6 @@ static qboolean CG_SHUDScoresGetOWN(int* scores)
 	{
 		case TEAM_FREE:
 		{
-			int playerScore = cg.snap->ps.persistant[PERS_SCORE];
 			*scores = cgs.scores1;
 			return *scores != SCORE_NOT_PRESENT;
 		}
@@ -165,8 +164,6 @@ void CG_SHUDElementScoreRoutine(void* context)
 	shudElementScore* element = (shudElementScore*)context;
 	int scores;
 	qboolean result = qfalse;
-	int playerScore;
-	qboolean shouldUseColor2;
 	switch (element->type)
 	{
 		case SHUD_ELEMENT_SCORE_OWN:

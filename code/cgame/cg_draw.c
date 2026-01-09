@@ -1656,7 +1656,6 @@ static float CG_DrawDisconnect(float pos)
 {
 	int         cmdNum;
 	usercmd_t   cmd;
-	const char*      s;
 
 	// draw the phone jack if we are completely past our buffers
 	cmdNum = trap_GetCurrentCmdNumber() - CMD_BACKUP + 1;
@@ -1866,7 +1865,6 @@ void CG_ScanForCrosshairEntity(void)
 	vec3_t start, end;
 	int content;
 	vec3_t l;
-	int dist;
 
 	VectorCopy(cg.refdef.vieworg, start);
 	VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
@@ -2038,9 +2036,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 	trace_t trace;
 	vec3_t start, end;
 	centity_t* cent;
-	gitem_t* item;
 	clientInfo_t* ci;
-	int itemIndex;
 	int frozenClientNum;
 
 	VectorCopy(cg.refdef.vieworg, start);
@@ -2376,7 +2372,6 @@ CG_DrawAmmoWarning
 void CG_DrawAmmoWarning(void)
 {
 	const char*  s;
-	int         w;
 
 	if (cg_drawAmmoWarning.integer == 0)
 	{
@@ -2396,7 +2391,6 @@ void CG_DrawAmmoWarning(void)
 	{
 		s = "LOW AMMO WARNING";
 	}
-	w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
 	CG_DrawBigString(SCREEN_WIDTH / 2.0f, 64, s, 1.0f, DS_HCENTER | DS_SHADOW, 0);
 }
 
@@ -2584,7 +2578,7 @@ void CG_DrawWarmup(void)
 Damage frame
 ===
 */
-static void CG_DrawDamageFrame()
+static void CG_DrawDamageFrame(void)
 {
 	float x = 0.0f;
 	float y = 0.0f;
@@ -2593,7 +2587,6 @@ static void CG_DrawDamageFrame()
 	vec4_t borderSizeOriginal;
 	float size = cg_damageFrameSize.value;
 
-	int i;
 	vec4_t red;
 
 	if ((cg_damageDrawFrame.integer & 3) == 0)
@@ -2842,7 +2835,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 	int actualClientNum;
 	char tmpName[MAX_QPATH];
 
-	vec3_t headPos, bodyPos, legsPos;
+	vec3_t headPos;
 	vec3_t viewer, toTarget;
 	float headX, headY;
 	float w, h;
@@ -3023,7 +3016,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 			}
 		}
 		teamColor[3] = nameColor[3];
-		if (isSpec && (cg_teamIndicator.integer & PI_SPECTATOR) || cgs.be.markedTeam[clientNum])
+		if ((isSpec && (cg_teamIndicator.integer & PI_SPECTATOR)) || cgs.be.markedTeam[clientNum])
 			CG_FillRect(rectX, rectY, rectW, rectH, teamColor);
 	}
 
@@ -3114,7 +3107,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 
 void CG_DrawPlayerIndicatorOnScreen(void)
 {
-	int i, range;
+	int i;
 	int scanRange = MAX_CLIENTS;
 	int useWallhack;
 
@@ -3325,8 +3318,6 @@ void CG_DrawWeaponStatsWrapper(void)
 CG_Draw2D
 =================
 */
-
-static int colorChangeStartTime;
 
 static void CG_Draw2D(void)
 {

@@ -240,11 +240,9 @@ static void CG_CHUDLexerAddToken(cherryhud_lexer_t* lexer, cherryhud_token_t* to
 		cherryhud_token_t* new_tokens;
 		cherryhud_token_t* old_tokens;
 		int new_capacity;
-		int old_capacity;
 		int i;
 
 		new_capacity = lexer->token_capacity * 2;
-		old_capacity = lexer->token_capacity;
 		old_tokens = lexer->tokens;
 
 		// CRITICAL: Allocate new array BEFORE copying

@@ -761,7 +761,6 @@ void CG_RemoveChatEscapeChar(char* text)
 void CG_StringMakeEscapeCharRAW(const char* in, char* out, int max)
 {
 	int i, l;
-	char command;
 	qboolean fix_color = qfalse;
 
 	l = 0;
@@ -1441,7 +1440,6 @@ static void CG_ParseSpecsInfo(void)
 {
 	int argc = trap_Argc();
 	int i;
-	int clientId;
 
 	cgs.be.followingMe = 0;
 
@@ -1653,7 +1651,6 @@ Replace player name in chat message with replacement name if cg_giveName is enab
 static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 {
 	const char* colonPos;
-	const char* nameStart;
 	const clientInfo_t* ci;
 	const char* replacementName;
 

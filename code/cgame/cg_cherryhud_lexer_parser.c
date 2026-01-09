@@ -626,9 +626,6 @@ cherryhudConfigParseStatus_t CG_CHUDLexerParserParseElementContent(cherryhud_par
 	cherryhudConfigParseStatus_t status;
 	cherryhudConfig_t elementConfig;
 	cherryhud_token_t* token;
-	cherryhud_token_t* currentToken;
-	const char* elementType;
-	const char* elementText;
 	qboolean isDefaultElement;
 
 	token = CG_CHUDLexerParserGetCurrentToken(parser);
@@ -672,8 +669,6 @@ cherryhudConfigParseStatus_t CG_CHUDLexerParserParseElementContent(cherryhud_par
 		{
 			break;
 		}
-
-		currentToken = CG_CHUDLexerParserGetCurrentToken(parser);
 
 		if (CG_CHUDLexerParserMatch(parser, TOKEN_BLOCK_END))
 		{
@@ -734,7 +729,8 @@ cherryhudConfigParseStatus_t CG_CHUDLexerParserParseElementContent(cherryhud_par
 	return CHERRYHUD_CONFIG_OK;
 }
 
-/* Helper function to process serverInfo elements */
+/* Helper function to process serverInfo elements - unused */
+#if 0
 static cherryhudConfigParseStatus_t CG_CHUDProcessServerInfoElement(const char* elementName, cherryhudConfig_t* elementConfig)
 {
 	char originalType[MAX_QPATH] = "";
@@ -761,6 +757,7 @@ static cherryhudConfigParseStatus_t CG_CHUDProcessServerInfoElement(const char* 
 
 	return CHERRYHUD_CONFIG_OK;
 }
+#endif
 
 /* Helper function to set context for block elements */
 static void CG_CHUDSetBlockContext(const cherryhudElementTypeInfo_t* contextTypeInfo, const char* blockName)
@@ -773,7 +770,6 @@ static void CG_CHUDSetBlockContext(const cherryhudElementTypeInfo_t* contextType
 
 		if (context >= CHERRYHUD_CONTEXT_PLAYER_ROW && context <= CHERRYHUD_CONTEXT_TITLE)
 		{
-			int oldContext = g_currentRowContext;
 			g_currentRowContext = context;
 		}
 		else
@@ -788,7 +784,6 @@ static void CG_CHUDSetBlockContext(const cherryhudElementTypeInfo_t* contextType
 /* Helper function to process element based on type info */
 static cherryhudConfigParseStatus_t CG_CHUDProcessElementByType(const cherryhudElementTypeInfo_t* typeInfo, const char* elementName, cherryhudConfig_t* elementConfig)
 {
-	int bonusFlag;
 	qboolean isDefault;
 
 	// Check if this is a !default element
@@ -813,8 +808,6 @@ static cherryhudConfigParseStatus_t CG_CHUDProcessElementByType(const cherryhudE
 		}
 		return CHERRYHUD_CONFIG_OK;
 	}
-
-	bonusFlag = typeInfo->bonusFlag;
 
 	switch (typeInfo->category)
 	{
@@ -871,8 +864,6 @@ cherryhudConfigParseStatus_t CG_CHUDLexerParserParseUniversal(cherryhud_parser_t
 	cherryhudConfigParseStatus_t status;
 	cherryhud_token_t* token;
 	cherryhudConfig_t elementConfig;
-	cherryhudTable_t* table;
-	cherryhudTitleBlock_t* block;
 	const cherryhudElementTypeInfo_t* contextTypeInfo;
 	const cherryhudElementTypeInfo_t* typeInfo;
 	qboolean isTitleBlock;

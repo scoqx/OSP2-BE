@@ -32,13 +32,10 @@ qboolean CG_CHUDLoadConfigWithLexer(const char* filename)
 {
 	fileHandle_t fileHandle;
 	int fileContentSize;
-	int tableCount, elementCount;
 	char* fileContent;
 	char cherryhudFilename[MAX_QPATH];
 	cherryhudConfig_t config;
-	cherryhudConfigParseStatus_t status;
 	cherryhudConfigParseResult_t parseResult;
-	cherryhudTable_t* table;
 
 	// Check if filename is valid
 	if (!filename || !filename[0])
@@ -117,14 +114,6 @@ qboolean CG_CHUDLoadConfigWithLexer(const char* filename)
 		return qfalse;
 	}
 
-	// Count elements and tables for success message
-	elementCount = CG_CHUDGetPlayerInfoTemplateCount();
-	table = CG_CHUDGetGlobalTable();
-	if (table)
-	{
-		tableCount = 1;
-	}
-
 	// CRITICAL: Clear config to prevent memory leak on successful parse
 	CG_CHUDClearConfig(&config);
 
@@ -156,7 +145,7 @@ void CG_CHUDLoadConfig(void)
 	CG_CHUDLayoutInit();
 
 	// Check if chud_file is properly initialized
-	if (chud_file.string && chud_file.string[0])
+	if (chud_file.string[0])
 	{
 		configFile = chud_file.string;
 	}
@@ -164,23 +153,9 @@ void CG_CHUDLoadConfig(void)
 	// Use only lexer-based parser (legacy parser disabled)
 	if (CG_CHUDLoadConfigWithLexer(configFile))
 	{
-		int elementCount, tableCount;
-		cherryhudTable_t* table;
-
-		// Count elements and tables for success message
-		elementCount = CG_CHUDGetPlayerRowElementCount();
-		tableCount = 0;
-		table = CG_CHUDGetGlobalTable();
-		if (table)
-		{
-			tableCount = 1;
-		}
-
-
 		// Title blocks are cleared in CG_CHUDResetSystem() before loading new config
 
-		CG_Printf("^2CherryHUD: %s loaded successfully - %d tables, %d elements\n",
-		          configFile, tableCount, elementCount);
+		CG_Printf("^2CherryHUD: %s loaded successfully\n", configFile);
 	}
 	else
 	{

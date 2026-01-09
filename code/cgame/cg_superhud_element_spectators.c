@@ -12,7 +12,7 @@ void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config)
 {
 	shudElementSpectators_t* element;
 
-	if (!BE_isSupportedServer)
+	if (!BE_isSupportedServer())
 	{
 		return NULL;
 	}
@@ -30,16 +30,8 @@ static qboolean CG_SHUD_SpectatorsBuildString(char* out, int outSize)
 	int len = 0;
 	int clientId;
 	qboolean hasSpectators = qfalse;
-	shudElementSpectators_t* element;
 
-	if (element->config.style.isSet && element->config.style.value & 2)
-	{
-		Q_strncpyz(out, "", outSize);
-	}
-	else
-	{
-		Q_strncpyz(out, "Spectators:", outSize);
-	}
+	Q_strncpyz(out, "Spectators:", outSize);
 	len = strlen(out);
 
 	for (clientId = 0; clientId < MAX_CLIENTS; ++clientId)
@@ -80,7 +72,7 @@ void CG_SHUDElementSpectatorsRoutine(void* context)
 	shudElementSpectators_t* element = (shudElementSpectators_t*)context;
 	static char buffer[MAX_STRING_CHARS];
 
-	if (!BE_isSupportedServer && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	if (!BE_isSupportedServer() && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
 	{
 		return;
 	}

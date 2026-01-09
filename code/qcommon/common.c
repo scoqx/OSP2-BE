@@ -73,6 +73,9 @@ static memzone_t *smallzone;
 
 static int mainzone_static[MAINZONE_STATIC_SIZE/sizeof(int)]; //static mainzone memory
 //
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static const char *tagName[ TAG_COUNT ] = {
 	"FREE",
 	"GENERAL",
@@ -109,6 +112,9 @@ static void Zone_Stats( const char *name, const memzone_t *z, qboolean printDeta
 
 	for ( block = zone->blocklist.next ; ; ) {
 		if ( printDetails ) {
+#ifdef __GNUC__
+			__attribute__((unused))
+#endif
 			int tag = block->tag;
 			// Com_Printf( "block:%p  size:%8i  tag: %s\n", (void *)block, block->size,
 			// 	(unsigned)tag < TAG_COUNT ? tagName[ tag ] : va( "%i", tag ) );

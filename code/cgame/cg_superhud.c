@@ -140,7 +140,6 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 			qboolean is_default = qfalse;
 			// qboolean is_var = qfalse;
 			qboolean is_execute = qfalse;
-			superhudConfigParseStatus_t varParseStatus;
 			superhudConfigParseStatus_t execParseStatus;
 			superhudConfig_t execConfig;
 
@@ -560,7 +559,6 @@ static void CG_SHUDChatLineSave(const char* message, int index)
 
 static void CG_SHUDChatIndexSave(int index)
 {
-	char cvar_name[MAX_QPATH];
 	trap_Cvar_Set("cg_shud_chatindex", va("%d", index));
 }
 
@@ -658,7 +656,6 @@ void CG_SHUDEventTeamChat(const char* message)
 
 void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen)
 {
-	int i;
 	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
 	superhudObituariesEntry_t* entry = &ctx->obituaries.line[ctx->obituaries.index % SHUD_MAX_OBITUARIES_LINES];
 

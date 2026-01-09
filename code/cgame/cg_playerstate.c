@@ -295,10 +295,9 @@ void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
 
 void CG_UpdateWeaponTracking(int weapon)
 {
-	static int lastHitCount = 0;
 	static int lastHitsValue = 0;
-	int currentAmmo, currentHits, hitsDelta;
-	const int atta;
+	int currentAmmo, hitsDelta;
+	int atta;
 	int currentDamage, actualHits;
 	customWeaponStats_t* ws = &cgs.be.weaponStats[weapon];
 	playerState_t* ps = &cg.snap->ps;
@@ -311,7 +310,6 @@ void CG_UpdateWeaponTracking(int weapon)
 		ws->hitsCurrent = 0;
 		ws->shotsStart = 0;
 		ws->lastAmmo = 0;
-		lastHitCount = 0;
 		lastHitsValue = 0;
 		return;
 	}
@@ -324,7 +322,6 @@ void CG_UpdateWeaponTracking(int weapon)
 		ws->hitsCurrent = 0;
 		ws->shotsStart = 0;
 		ws->lastAmmo = 0;
-		lastHitCount = 0;
 		lastHitsValue = 0;
 		return;
 	}
@@ -332,6 +329,9 @@ void CG_UpdateWeaponTracking(int weapon)
 	// Получаем текущее количество патронов и вычисляем разность попаданий
 	currentAmmo = ps->ammo[weapon];
 	hitsDelta = ps->persistant[PERS_HITS] - lastHitsValue;
+
+	// Calculate real damage from PERS_ATTACKEE_ARMOR (same logic as CG_HitDamage)
+	atta = ps->persistant[PERS_ATTACKEE_ARMOR];
 
 	// Проверяем режим OSP для определения метода подсчета попаданий и урона
 	if (atta == 0) // OSP режим - в PERS_HITS хранится урон, количество попаданий = 1
@@ -375,7 +375,7 @@ void CG_UpdateWeaponTracking(int weapon)
 	// Инициализация для Lightning
 	if (ps->weapon == weapon)
 	{
-		lastHitCount = actualHits;
+		// actualHits calculated above
 	}
 }
 

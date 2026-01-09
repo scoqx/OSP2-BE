@@ -168,7 +168,6 @@ qboolean CG_BEStatsInitColors(const vec4_t color)
 qboolean CG_BEStatsInitTokenDefaults(void)
 {
 	int i, j;
-	int flags, bit;
 	for (i = 0; i < 32; ++i)
 	{
 		for (j = 0; j < 12; ++j)
@@ -1093,7 +1092,6 @@ void CG_BEStatsShowStatsInfo(void)
 {
 	int row = 0;
 	int rowsAdded;
-	static qboolean initialized = qfalse;
 
 	// Clear table here
 	memset(tokens, 0, sizeof(tokens));

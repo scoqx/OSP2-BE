@@ -64,9 +64,9 @@ void CG_OSPNormalizeText(char* src, int size, char* dst)
 int CG_OSPGetNormalizedStringSize(const char* str)
 {
 	int i = 0;
-	while (*str)
+	while (str && *str)
 	{
-		if (str && *str == '^' && *(str + 1) != 0 &&  *(str + 1) != '^')
+		if (*str == '^' && *(str + 1) != 0 &&  *(str + 1) != '^')
 		{
 			if (*(str + 1) == 'x' || *(str + 1) == 'X')
 			{
@@ -286,7 +286,6 @@ const char* CG_LoadLine(const char* ptr, char* out, int outSize)
 
 static char CG_CharFromHex4bit(char in)
 {
-	char offset = in;
 	if (in >= '0' && in <= '9')
 	{
 		return in - '0';
@@ -316,7 +315,6 @@ static void CG_ParseColorStr12Bit(const char* str, vec4_t out)
 {
 	char hexstr[4] = {'0', '0', '0', 0};
 	const int len = strlen(str);
-	int i;
 
 	Q_strncpyz(&hexstr[3 - len], str, len + 1);
 
@@ -330,7 +328,6 @@ static void CG_ParseColorStr24Bit(const char* str, vec4_t out)
 {
 	char hexstr[7] = {'0', '0', '0', '0', '0', '0', 0};
 	const int len = strlen(str);
-	int i;
 
 	Q_strncpyz(&hexstr[6 - len], str, len + 1);
 

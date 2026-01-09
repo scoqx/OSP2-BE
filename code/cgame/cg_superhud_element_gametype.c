@@ -62,8 +62,6 @@ void CG_SHUDElementGameTypeRoutine(void* context)
 		else
 		{
 			const char* text;
-			int len;
-			int width;
 
 			if (cgs.osp.clanBaseTeamDM)
 			{

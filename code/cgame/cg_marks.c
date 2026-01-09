@@ -482,7 +482,6 @@ void CG_AddParticleToScene(cparticle_t* p, vec3_t org, float alpha)
 	float       ratio;
 	float       invratio;
 	vec3_t      color;
-	polyVert_t  TRIverts[3];
 	vec3_t      rright2, rup2;
 
 	if (p->type == P_WEATHER || p->type == P_WEATHER_TURBULENT || p->type == P_WEATHER_FLURRY
@@ -1237,11 +1236,17 @@ Creates snow particles automatically across the world
 Called periodically to maintain continuous snowfall
 ======================
 */
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static int lastSnowSpawnTime = 0;
 #define SNOW_SPAWN_INTERVAL 10  // milliseconds between snow spawns (reduced for more snow)
 #define SNOW_AREA_SIZE 1024     // size of snow area around player
 #define SNOW_HEIGHT_RANGE 512   // height range for snow
 
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static void CG_CreateWorldSnow(void)
 {
 	vec3_t origin;
@@ -1494,7 +1499,6 @@ void CG_ParticleSnowFlurry(qhandle_t pshader, centity_t* cent)
 void CG_ParticleSnow(qhandle_t pshader, vec3_t origin, vec3_t origin2, int turb, float range, int snum)
 {
 	cparticle_t* p;
-	int snowflakeIndex;
 
 	if (!pshader)
 		CG_Printf("CG_ParticleSnow pshader == ZERO!\n");

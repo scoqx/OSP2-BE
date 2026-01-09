@@ -93,7 +93,7 @@ void CG_CHUDLayoutShutdown(void)
 
 static int CG_CHUDLayoutHashElement(void* element)
 {
-	return ((unsigned int)element) % LAYOUT_BOUNDS_HASH_SIZE;
+	return ((unsigned long)element) % LAYOUT_BOUNDS_HASH_SIZE;
 }
 
 static layoutBoundsEntry_t* CG_CHUDLayoutFindBounds(void* element)

@@ -581,7 +581,7 @@ Draw the normal in-game scoreboard
 */
 qboolean CG_DrawOldScoreboard(void)
 {
-	int     x, y, w, i, n1, n2;
+	int     y, i, n1, n2;
 	float   fade;
 	float*   fadeColor;
 	char*    s;
@@ -1655,19 +1655,8 @@ static void CG_OSPDrawTeamSummary(
 	char values[3][128];
 	float posX[3];
 	int i, count = 0;
-	vec4_t headerColor;
 	vec4_t curColor;
 	int proportional = (cg_scoreboardBE.integer & 1) ? DS_PROPORTIONAL : 0;
-
-
-	if (cg_scoreboardBE.integer & 4)
-	{
-		Vector4Copy(colorWhite, headerColor);
-	}
-	else
-	{
-		Vector4Copy(titleColor, headerColor);
-	}
 
 
 	if (cgs.gametype >= GT_CTF)

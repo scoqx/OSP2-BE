@@ -811,7 +811,6 @@ void CG_Bleed(vec3_t origin, int entityNum)
 	if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_BLOOD) && alt)
 	{
 		vec4_t bloodColor;
-		int colorIndex;
 
 		if (alt < MAX_ALT_SHADERS)
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[alt - 1];
