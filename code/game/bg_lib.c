@@ -1002,7 +1002,7 @@ double fabs(double x)
 	return x < 0 ? -x : x;
 }
 
-
+#endif
 
 //=========================================================
 
@@ -1188,7 +1188,7 @@ void AddString(char** buf_p, char* string, int width, int prec)
 }
 
 
-char* BG_StripColor(char* string)
+Q_EXPORT char* BG_StripColor(char* string)
 {
 	char* s;
 	char* d;
@@ -1216,7 +1216,7 @@ char* BG_StripColor(char* string)
 }
 
 
-char* Q_stristr(const char* str1, const char* str2)
+Q_EXPORT char* Q_stristr(const char* str1, const char* str2)
 {
 	char* cp;
 	char* s1;
@@ -1260,7 +1260,7 @@ char* Q_stristr(const char* str1, const char* str2)
 	return NULL;
 }
 
-int BG_sprintf(char* buf, const char* format, ...)
+Q_EXPORT int BG_sprintf(char* buf, const char* format, ...)
 {
 	va_list argptr;
 	int retval;
@@ -1281,6 +1281,7 @@ just to keep it simpler.  For example, the '*' and '$' are not
 currently supported.  I've tried to make it so that it will just
 parse and ignore formats we don't support.
 */
+#if defined ( Q3_VM )
 int vsprintf(char* buffer, const char* fmt, va_list argptr)
 {
 	int*     arg;
@@ -1290,7 +1291,6 @@ int vsprintf(char* buffer, const char* fmt, va_list argptr)
 	int     width;
 	int     prec;
 	int     n;
-	char    sign;
 
 	buf_p = buffer;
 	arg = (int*)argptr;
@@ -1314,7 +1314,6 @@ int vsprintf(char* buffer, const char* fmt, va_list argptr)
 		flags = 0;
 		width = 0;
 		prec = -1;
-		sign = '\0';
 
 rflag:
 		ch = *fmt++;
@@ -1383,7 +1382,7 @@ reswitch:
 #endif
 				break;
 			case 's':
-				AddString(&buf_p, (char*)*arg, width, prec);
+				AddString(&buf_p, (char*)(intptr_t)*arg, width, prec);
 				arg++;
 				break;
 			case '%':
@@ -1400,11 +1399,9 @@ done:
 	*buf_p = 0;
 	return buf_p - buffer;
 }
+#endif
 
-int Q_vsprintf(char* buffer, const char* fmt, va_list argptr)
+Q_EXPORT int Q_vsprintf(char* buffer, const char* fmt, va_list argptr)
 {
 	return vsprintf(buffer, fmt, argptr);
 }
-
-
-#endif

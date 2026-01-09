@@ -23,7 +23,13 @@ typedef struct
 
 static rankstatus_t	s_rankstatus;
 
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuframework_s	s_rankstatus_menu;
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuaction_s		s_rankstatus_ok;
 
 static grank_status_t	s_status = 0;

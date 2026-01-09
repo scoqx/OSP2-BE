@@ -59,7 +59,12 @@ extern "C" {
 #pragma warning(disable : 4220)     // varargs matches remaining parameters
 #endif
 
-#if ((__GNUC__ >= 3) && (!__EMX__) && (!sun))
+#if defined(_WIN32) && !defined(__GNUC__)
+#define Q_EXPORT __declspec(dllexport)
+#elif defined(_WIN32) && defined(__GNUC__)
+/* MinGW on Windows - use both for compatibility */
+#define Q_EXPORT __attribute__((visibility("default"))) __declspec(dllexport)
+#elif ((__GNUC__ >= 3) && (!__EMX__) && (!sun))
 #define Q_EXPORT __attribute__((visibility("default")))
 #else
 #define Q_EXPORT

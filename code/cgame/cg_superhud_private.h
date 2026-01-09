@@ -309,6 +309,14 @@ typedef enum
 #define SE_KEY3_SHOW_STR  "key3show"
 #define SE_KEY4_SHOW  (1 << 9)  // 0x00000200
 #define SE_KEY4_SHOW_STR  "key4show"
+#define SE_KEY5_SHOW  (1U << 27)  // 0x08000000
+#define SE_KEY5_SHOW_STR  "key5show"
+#define SE_KEY6_SHOW  (1U << 28)  // 0x10000000
+#define SE_KEY6_SHOW_STR  "key6show"
+#define SE_KEY7_SHOW  (1U << 29)  // 0x20000000
+#define SE_KEY7_SHOW_STR  "key7show"
+#define SE_KEY8_SHOW  (1U << 30)  // 0x40000000
+#define SE_KEY8_SHOW_STR  "key8show"
 #define SE_SHOW_EMPTY  (1 << 10) // 0x00000400
 #define SE_SHOW_EMPTY_STR  "showempty"
 #define SE_GT_FFA   (1 << 11) // 0x00000800

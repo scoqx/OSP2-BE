@@ -83,6 +83,12 @@ all: dirs $(PK3)
 
 dirs:
 	mkdir -p vm/game vm/cgame vm/ui
+ifeq ($(PLATFORM),linux)
+	@if [ -f tools/q3lcc ]; then chmod +x tools/q3lcc; fi
+	@if [ -f tools/q3asm ]; then chmod +x tools/q3asm; fi
+	@if [ -f tools/q3cpp ]; then chmod +x tools/q3cpp; fi
+	@if [ -f tools/q3rcc ]; then chmod +x tools/q3rcc; fi
+endif
 
 .PHONY: all dirs FORCE
 

@@ -1,5 +1,8 @@
 name: Makefile CI
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ "master" ]
@@ -47,17 +50,94 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: qvm
+          name: qvm-linux
           path: build/qvm/zz-osp-pak8be.pk3
           if-no-files-found: error
           retention-days: 5
 
+      - name: Package Linux libraries
+        run: |
+          cd build/library/build/release-linux-x86_64/osp2
+          zip -j ../../../../osp2-be-linux.zip cgamex86_64.so uix86_64.so
+
       - uses: actions/upload-artifact@v4
         with:
-          name: so
-          path: build/library/build/release-linux-x86_64/osp2/cgamex86_64.so
+          name: osp2-be-linux
+          path: build/library/osp2-be-linux.zip
           if-no-files-found: error
           retention-days: 5
+
+  create-release:
+    needs: [linux, mingw]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: qvm-linux
+          path: artifacts/linux
+
+      - name: Download Linux libraries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: osp2-be-linux
+          path: artifacts/linux-libs
+
+      - name: Download Windows libraries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: osp2-be-win
+          path: artifacts/win-libs
+
+      - name: Extract Linux libraries
+        run: |
+          cd artifacts/linux-libs
+          unzip -j osp2-be-linux.zip -d ../linux-libs-extracted
+
+      - name: Extract Windows libraries
+        run: |
+          cd artifacts/win-libs
+          unzip -j osp2-be-win.zip -d ../win-libs-extracted
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat assets/version.txt | head -n 1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest-build
+          name: Latest Build (${{ steps.version.outputs.version }})
+          body: |
+            Latest build artifacts.
+            
+            **Files included:**
+            - `zz-osp-pak8be.pk3` - QVM package
+            - `cgamex86_64.so` - Linux cgame library
+            - `uix86_64.so` - Linux UI library
+            - `cgamex86_64.dll` - Windows cgame library
+            - `uix86_64.dll` - Windows UI library
+            
+            **Version:** ${{ steps.version.outputs.version }}
+          files: |
+            artifacts/linux/zz-osp-pak8be.pk3
+            artifacts/linux-libs-extracted/cgamex86_64.so
+            artifacts/linux-libs-extracted/uix86_64.so
+            artifacts/win-libs-extracted/cgamex86_64.dll
+            artifacts/win-libs-extracted/uix86_64.dll
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   mingw:
     name: MinGW GCC
@@ -87,10 +167,15 @@ jobs:
         run: |
           make MOD=osp2
 
+      - name: Package Windows libraries
+        run: |
+          cd build/library/build/release-mingw64-x86_64/osp2
+          zip -j ../../../../osp2-be-win.zip cgamex86_64.dll uix86_64.dll
+
       - uses: actions/upload-artifact@v4
         with:
-          name: dll
-          path: build/library/build/release-mingw64-x86_64/osp2/cgamex86_64.dll
+          name: osp2-be-win
+          path: build/library/osp2-be-win.zip
           if-no-files-found: error
           retention-days: 5
 
@@ -106,7 +191,10 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: '*'
+          pattern: |
+            qvm-linux
+            osp2-be-linux
+            osp2-be-win
           path: artifacts
 
       - name: Checkout target repo
@@ -120,15 +208,17 @@ jobs:
       - name: Copy artifacts to assets folder
         run: |
           mkdir -p target-repo/assets
-          cp artifacts/qvm/zz-osp-pak8be.pk3 target-repo/assets/
-          cp artifacts/so/cgamex86_64.so target-repo/assets/
-          cp artifacts/dll/cgamex86_64.dll target-repo/assets/
+          # Copy Linux QVM only (not MinGW)
+          cp artifacts/qvm-linux/zz-osp-pak8be.pk3 target-repo/assets/
+          # Copy library zip files
+          cp artifacts/osp2-be-linux/osp2-be-linux.zip target-repo/assets/
+          cp artifacts/osp2-be-win/osp2-be-win.zip target-repo/assets/
 
       - name: Commit and push changes
         run: |
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add assets/zz-osp-pak8be.pk3 assets/cgamex86_64.so assets/cgamex86_64.dll
-          git diff --quiet --cached || git commit -m "Update zz-osp-pak8be.pk3, cgamex86_64.so and cgamex86_64.dll [auto]"
+          git add assets/zz-osp-pak8be.pk3 assets/osp2-be-linux.zip assets/osp2-be-win.zip
+          git diff --quiet --cached || git commit -m "Update zz-osp-pak8be.pk3, osp2-be-linux.zip and osp2-be-win.zip [auto]"
           git push origin ${{ env.TARGET_BRANCH }}

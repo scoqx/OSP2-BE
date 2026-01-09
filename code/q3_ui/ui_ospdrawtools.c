@@ -165,6 +165,9 @@ text_command_t* UI_CompileText(const char* in)
 	text_command_t* commands;
 	text_command_t* result;
 	char* text;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	char* dmem;
 	int i;
 	int len;
@@ -432,7 +435,7 @@ int UI_FontIndexFromCvar(vmCvar_t* cvar)
 	int fontIndex;
 	qboolean isNumber;
 
-	if (!cvar || !cvar->string || cvar->string[0] == '\0')
+	if (!cvar || cvar->string[0] == '\0')
 	{
 		return 0;
 	}
@@ -877,6 +880,9 @@ static void UI_LoadCustomFonts(void)
 		/* Check if file exists using trap_FS_FOpenFile */
 		{
 			fileHandle_t testFile;
+#ifdef __GNUC__
+			__attribute__((unused))
+#endif
 			int testLen;
 			testLen = trap_FS_FOpenFile(fontPath, &testFile, FS_READ);
 			if (testFile == FS_INVALID_HANDLE)
@@ -955,7 +961,7 @@ static int CompiledStringSize(const text_command_t* cmd)
 static float GetSymbolSize(char sym, qboolean proportional, float charWidth)
 {
 	const font_metric_t* fm;
-	fm = &metrics[sym];
+	fm = &metrics[(unsigned char)sym];
 
 	if (proportional)
 	{
@@ -1208,7 +1214,11 @@ void UI_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	const font_metric_t* fm;
 	const float* tc;
 	float ax, ay, aw, aw1, ah;
-	float x_end, xx;
+	float x_end;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
+	float xx;
 	float fade;
 	vec4_t color;
 	float xx_add, yy_add;

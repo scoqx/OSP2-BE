@@ -202,7 +202,8 @@ ifndef SHLIBNAME
 endif
 
 TARGETS += \
-  $(B)/$(MOD)/cgame$(SHLIBNAME) 
+  $(B)/$(MOD)/cgame$(SHLIBNAME) \
+  $(B)/$(MOD)/ui$(SHLIBNAME) 
 
 ifeq ("$(CC)", $(findstring "$(CC)", "clang" "clang++"))
   BASE_CFLAGS += -Qunused-arguments
@@ -543,9 +544,32 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_team.o \
   $(B)/$(MOD)/ui/ui_teamorders.o \
   $(B)/$(MOD)/ui/ui_video.o \
+  $(B)/$(MOD)/ui/ui_advanced.o \
+  $(B)/$(MOD)/ui/ui_colorpicker.o \
+  $(B)/$(MOD)/ui/ui_login.o \
+  $(B)/$(MOD)/ui/ui_rankings.o \
+  $(B)/$(MOD)/ui/ui_rankstatus.o \
+  $(B)/$(MOD)/ui/ui_signup.o \
+  $(B)/$(MOD)/ui/ui_specifyleague.o \
+  $(B)/$(MOD)/ui/ui_spreset.o \
+  $(B)/$(MOD)/ui/ui_superhudconfig.o \
+  $(B)/$(MOD)/ui/ui_ospdrawtools.o \
+  $(B)/$(MOD)/ui/ui_osp2be.o \
+  $(B)/$(MOD)/ui/ui_osp2be_constants.o \
+  $(B)/$(MOD)/ui/ui_osp2be_controls.o \
+  $(B)/$(MOD)/ui/ui_osp2be_draw.o \
+  $(B)/$(MOD)/ui/ui_osp2be_explosives.o \
+  $(B)/$(MOD)/ui/ui_osp2be_general.o \
+  $(B)/$(MOD)/ui/ui_osp2be_player.o \
+  $(B)/$(MOD)/ui/ui_osp2be_preview.o \
+  $(B)/$(MOD)/ui/ui_osp2be_railgun.o \
+  $(B)/$(MOD)/ui/ui_osp2be_superhud.o \
+  $(B)/$(MOD)/ui/ui_osp2be_teams.o \
+  $(B)/$(MOD)/ui/ui_osp2be_utils.o \
+  $(B)/$(MOD)/ui/ui_osp2be_weapon.o \
   \
-  $(B)/$(MOD)/game/q_math.o \
-  $(B)/$(MOD)/game/q_shared.o
+  $(B)/$(MOD)/ui/q_math.o \
+  $(B)/$(MOD)/ui/q_shared.o
 
 UIOBJ = $(UIOBJ_) $(B)/$(MOD)/ui/ui_syscalls.o
 
@@ -573,6 +597,9 @@ $(B)/$(MOD)/ui/bg_%.o: $(QADIR)/bg_%.c
 	$(DO_UI_CC)
 
 $(B)/$(MOD)/ui/%.o: $(UIDIR)/%.c
+	$(DO_UI_CC)
+
+$(B)/$(MOD)/ui/q_%.o: $(COMDIR)/q_%.c
 	$(DO_UI_CC)
 
 $(B)/$(MOD)/qcommon/%.o: $(COMDIR)/%.c

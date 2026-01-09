@@ -528,6 +528,9 @@ void Osp2Be_SetupColorButtonControl( int index, const osp2beCvarDef_t *def ) {
 		int buttonWidth;
 		int buttonHeight;
 		int spacing;
+#ifdef __GNUC__
+		__attribute__((unused))
+#endif
 		double rowWidth;
 		int rowStartX;
 		int buttonX;

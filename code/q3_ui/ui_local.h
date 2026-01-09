@@ -15,6 +15,22 @@
 
 typedef void (*voidfunc_f)(void);
 
+// GRank status types
+typedef int grank_status_t;
+#define QGR_STATUS_NEW			0
+#define QGR_STATUS_PENDING		1
+#define QGR_STATUS_VALIDATING	2
+#define QGR_STATUS_LEAVING		3
+#define QGR_STATUS_NO_USER		4
+#define QGR_STATUS_BAD_PASSWORD	5
+#define QGR_STATUS_USER_EXISTS	6
+#define QGR_STATUS_NO_MEMBERSHIP	7
+#define QGR_STATUS_TIMEOUT		8
+#define QGR_STATUS_INVALIDUSER	9
+#define QGR_STATUS_ERROR		10
+#define QGR_STATUS_SPECTATOR	11
+#define QGR_STATUS_ACTIVE		12
+
 #define EXTERN_UI_CVAR
 	#include "ui_cvar.h"
 #undef EXTERN_UI_CVAR
@@ -718,6 +734,11 @@ void			trap_SetCDKey( char *buf );
 qboolean		trap_VerifyCDKey( const char *key, const char *chksum); // bk001208 - RC4
 
 void			trap_SetPbClStatus( int status );
+void			trap_CL_UI_RankUserLogin( const char *name, const char *password );
+int				trap_CL_UI_RankGetLeauges( const char *playername );
+void			trap_CL_UI_RankUserCreate( const char *name, const char *password );
+void			trap_CL_UI_RankUserReset( void );
+void			trap_CL_UI_RankUserRequestLogout( void );
 
 //
 // ui_addbots.c

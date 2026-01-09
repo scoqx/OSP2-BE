@@ -963,6 +963,9 @@ static void UI_ColorPicker_DrawPreview(uiColorPicker_t *picker, int previewX, in
 	vec4_t fieldBackground;
 	vec4_t focusBackground;
 	vec4_t buttonBackground;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	vec4_t buttonHover;
 	int hexFieldX;
 	int hexFieldY;

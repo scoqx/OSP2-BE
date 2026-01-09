@@ -768,7 +768,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
 	{ &cg_spectGlow, "cg_spectGlow", "0", CVAR_ARCHIVE },
 	{ &cg_spectOrigModel, "cg_spectOrigModel", "0", CVAR_ARCHIVE },
-	{ &cg_hitSounds, "cg_hitSounds", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitSounds },
+	{ &cg_hitSounds, "cg_hitSounds", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitSounds },
 	{ &cg_playersXID, "cg_playersXID", "0", CVAR_ARCHIVE},
 	{ &cg_playersID, "cg_playersID", "0", CVAR_ARCHIVE},
 

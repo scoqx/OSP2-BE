@@ -384,6 +384,9 @@ static void SuperHUDConfig_MenuInit( void ) {
 
 static void SuperHUDConfig_DrawList( void *self ) {
 	menulist_s *l;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	int x;
 	int y;
 	int base;
@@ -403,7 +406,13 @@ static void SuperHUDConfig_DrawList( void *self ) {
 	int checkY;
 	int checkW;
 	int checkH;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	int itemStartX;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	int itemEndX;
 
 	l = (menulist_s *)self;
@@ -413,10 +422,16 @@ static void SuperHUDConfig_DrawList( void *self ) {
 
 	hoverIndex = -1;
 	if ( l->generic.flags & QMF_HASMOUSEFOCUS ) {
+#ifdef __GNUC__
+		__attribute__((unused))
+#endif
 		int menuX;
 		int menuY;
 		int menuWidth;
 		int maxVisibleY;
+#ifdef __GNUC__
+		__attribute__((unused))
+#endif
 		int visibleItemY;
 		int visibleItemIndex;
 		
@@ -456,6 +471,9 @@ static void SuperHUDConfig_DrawList( void *self ) {
 		int menuY;
 		int menuHeight;
 		int maxVisibleY;
+#ifdef __GNUC__
+		__attribute__((unused))
+#endif
 		int itemsDrawn;
 		int maxItemsToDraw;
 		

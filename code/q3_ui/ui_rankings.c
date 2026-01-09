@@ -31,12 +31,33 @@ typedef struct
 
 static rankings_t	s_rankings;
 
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuframework_s	s_rankings_menu;
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuaction_s		s_rankings_login;
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuaction_s		s_rankings_logout;
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuaction_s		s_rankings_create;
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuaction_s		s_rankings_spectate;
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuaction_s		s_rankings_setup;
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuaction_s		s_rankings_leave;
 
 

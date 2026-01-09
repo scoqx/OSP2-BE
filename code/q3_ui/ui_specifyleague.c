@@ -70,7 +70,7 @@ table_t league_table[MAX_LISTBOXITEMS];
 char *leaguename_items[MAX_LISTBOXITEMS];
 
 
-static void SpecifyLeague_GetList()
+static void SpecifyLeague_GetList(void)
 {
 	int count = 0;
 	int i;

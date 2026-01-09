@@ -500,6 +500,10 @@ void CG_SHUDRoutine(void)
 		       ((vflags & SE_KEY2_SHOW) && !cgs.osp.shud.key[1]) ||
 		       ((vflags & SE_KEY3_SHOW) && !cgs.osp.shud.key[2]) ||
 		       ((vflags & SE_KEY4_SHOW) && !cgs.osp.shud.key[3]) ||
+		       ((vflags & SE_KEY5_SHOW) && !cgs.osp.shud.key[4]) ||
+		       ((vflags & SE_KEY6_SHOW) && !cgs.osp.shud.key[5]) ||
+		       ((vflags & SE_KEY7_SHOW) && !cgs.osp.shud.key[6]) ||
+		       ((vflags & SE_KEY8_SHOW) && !cgs.osp.shud.key[7]) ||
 		       ((vflags & SE_GT_FFA) && is_gt_ffa) ||
 		       ((vflags & SE_GT_TDM) && is_gt_tdm) ||
 		       ((vflags & SE_GT_CTF) && is_gt_ctf) ||

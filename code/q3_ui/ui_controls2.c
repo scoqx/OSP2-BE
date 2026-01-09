@@ -577,6 +577,9 @@ static void Controls_Update( void ) {
 		int k;
 		menucommon_s *sliderControl;
 		menufield_s *field;
+#ifdef __GNUC__
+		__attribute__((unused))
+#endif
 		menuslider_s *slider;
 		int sliderX;
 		int sliderBarStartX;

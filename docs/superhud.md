@@ -265,6 +265,10 @@ fps {
 - key2show - скрывать если не нажата кнопка +shudkey2
 - key3show - скрывать если не нажата кнопка +shudkey3
 - key4show - скрывать если не нажата кнопка +shudkey4
+- key5show - скрывать если не нажата кнопка +shudkey5
+- key6show - скрывать если не нажата кнопка +shudkey6
+- key7show - скрывать если не нажата кнопка +shudkey7
+- key8show - скрывать если не нажата кнопка +shudkey8
 - showempty - показывать пустые значения `для  элементов: weapon/player stats, tempAcc, Score_NME, StatusBar_ArmorCount`
 - gt_ffa - скрывать при режиме игры каждый сам за себя (Free for all)
 - gt_tourney -  скрывать при турнирном режиме игры (дуэли)

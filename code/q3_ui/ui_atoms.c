@@ -900,6 +900,9 @@ static void UI_DrawString2( int x, int y, const char* str, vec4_t color, int cha
 		{
 			char controlChar;
 			qboolean processed;
+#ifdef __GNUC__
+			__attribute__((unused))
+#endif
 			const char* saved_strPtr;
 
 			controlChar = strPtr[1];

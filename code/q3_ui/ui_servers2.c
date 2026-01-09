@@ -812,6 +812,9 @@ static void UI_CopyHostnameWithColors( char *dst, int size, const char *src )
 static int UI_BuildHostnameColumn( char *dst, int size, const char *src, int fieldWidth )
 {
 	char	*end;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	char	*dst_start;
 	int		visible;
 	char	lastColor;

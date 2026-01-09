@@ -622,6 +622,10 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY2_SHOW_STR, SE_KEY2_SHOW, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY3_SHOW_STR, SE_KEY3_SHOW, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY4_SHOW_STR, SE_KEY4_SHOW, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY5_SHOW_STR, SE_KEY5_SHOW, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY6_SHOW_STR, SE_KEY6_SHOW, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY7_SHOW_STR, SE_KEY7_SHOW, &flags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY8_SHOW_STR, SE_KEY8_SHOW, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_FFA_STR, SE_GT_FFA, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_TDM_STR, SE_GT_TDM, &flags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_CTF_STR, SE_GT_CTF, &flags) ||

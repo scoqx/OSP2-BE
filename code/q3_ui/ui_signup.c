@@ -39,8 +39,17 @@ typedef struct
 
 static signup_t	s_signup;
 
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuframework_s	s_signup_menu;
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuaction_s		s_signup_signup;
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
 static menuaction_s		s_signup_cancel;
 
 static vec4_t s_signup_color_prompt  = {1.00, 0.43, 0.00, 1.00};
@@ -82,8 +91,7 @@ static void Signup_MenuEvent( void* ptr, int event ) {
 		*/
 		trap_CL_UI_RankUserCreate(
 			s_signup.name_box.field.buffer, 
-			s_signup.password_box.field.buffer, 
-			s_signup.email_box.field.buffer );
+			s_signup.password_box.field.buffer );
 
 		UI_ForceMenuOff();
 		break;

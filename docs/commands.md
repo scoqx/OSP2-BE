@@ -1189,6 +1189,10 @@ yaw value - значение yaw, если не указано, будет вз�
     +shudkey2
     +shudkey3
     +shudkey4
+    +shudkey5
+    +shudkey6
+    +shudkey7
+    +shudkey8
 
 Команды для суперхуда (см. superhud.md)
 

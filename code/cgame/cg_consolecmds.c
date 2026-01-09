@@ -539,6 +539,46 @@ void CG_ShudKey4Up_f(void)
 	cgs.osp.shud.key[3] = qfalse;
 }
 
+void CG_ShudKey5Down_f(void)
+{
+	cgs.osp.shud.key[4] = qtrue;
+}
+
+void CG_ShudKey5Up_f(void)
+{
+	cgs.osp.shud.key[4] = qfalse;
+}
+
+void CG_ShudKey6Down_f(void)
+{
+	cgs.osp.shud.key[5] = qtrue;
+}
+
+void CG_ShudKey6Up_f(void)
+{
+	cgs.osp.shud.key[5] = qfalse;
+}
+
+void CG_ShudKey7Down_f(void)
+{
+	cgs.osp.shud.key[6] = qtrue;
+}
+
+void CG_ShudKey7Up_f(void)
+{
+	cgs.osp.shud.key[6] = qfalse;
+}
+
+void CG_ShudKey8Down_f(void)
+{
+	cgs.osp.shud.key[7] = qtrue;
+}
+
+void CG_ShudKey8Up_f(void)
+{
+	cgs.osp.shud.key[7] = qfalse;
+}
+
 void CG_ChudKey1Down_f(void)
 {
 	cgs.osp.chud.key[0] = qtrue;
@@ -1764,6 +1804,14 @@ static consoleCommand_t commands[] =
 	{ "-shudkey3", CG_ShudKey3Up_f },
 	{ "+shudkey4", CG_ShudKey4Down_f },
 	{ "-shudkey4", CG_ShudKey4Up_f },
+	{ "+shudkey5", CG_ShudKey5Down_f },
+	{ "-shudkey5", CG_ShudKey5Up_f },
+	{ "+shudkey6", CG_ShudKey6Down_f },
+	{ "-shudkey6", CG_ShudKey6Up_f },
+	{ "+shudkey7", CG_ShudKey7Down_f },
+	{ "-shudkey7", CG_ShudKey7Up_f },
+	{ "+shudkey8", CG_ShudKey8Down_f },
+	{ "-shudkey8", CG_ShudKey8Up_f },
 	{ "+chudkey1", CG_ChudKey1Down_f },
 	{ "-chudkey1", CG_ChudKey1Up_f },
 	{ "+chudkey2", CG_ChudKey2Down_f },

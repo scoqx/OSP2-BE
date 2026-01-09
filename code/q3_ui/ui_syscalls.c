@@ -379,3 +379,23 @@ qboolean trap_VerifyCDKey( const char *key, const char *chksum) {
 void trap_SetPbClStatus( int status ) {
 	syscall( UI_SET_PBCLSTATUS, status );
 }
+
+void trap_CL_UI_RankUserLogin( const char *name, const char *password ) {
+	syscall( UI_CL_UI_RANK_USER_LOGIN, name, password );
+}
+
+int trap_CL_UI_RankGetLeauges( const char *playername ) {
+	return syscall( UI_CL_UI_RANK_GET_LEAUGES, playername );
+}
+
+void trap_CL_UI_RankUserCreate( const char *name, const char *password ) {
+	syscall( UI_CL_UI_RANK_USER_CREATE, name, password );
+}
+
+void trap_CL_UI_RankUserReset( void ) {
+	syscall( UI_CL_UI_RANK_USER_RESET );
+}
+
+void trap_CL_UI_RankUserRequestLogout( void ) {
+	syscall( UI_CL_UI_RANK_USER_REQUEST_LOGOUT );
+}

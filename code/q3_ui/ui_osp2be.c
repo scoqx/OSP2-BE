@@ -30,7 +30,6 @@ qhandle_t osp2beFrozenIcon;
 static vmCvar_t ui_be_font;
 
 static void Osp2Be_OpenColorPicker( int controlIndex );
-static void Osp2Be_GetCurrentColorValue( int controlIndex, const osp2beCvarDef_t *def, char *buffer, int bufferSize );
 static void Osp2Be_FieldEvent( void *ptr, int event );
 static void Osp2Be_ColorPickerApply( const char *hexValue, void *userData );
 static void Osp2Be_SetStatus( const char *text );
@@ -1984,7 +1983,13 @@ static void Osp2Be_ButtonEvent( void *ptr, int event ) {
 	}
 
 	if ( def->controlType == OSP2BE_CONTROL_BUTTON && def->special == OSP2BE_SPECIAL_MODEL_SELECTOR ) {
+#ifdef __GNUC__
+		__attribute__((unused))
+#endif
 		const char *modelCvar = NULL;
+#ifdef __GNUC__
+		__attribute__((unused))
+#endif
 		const char *headCvar = NULL;
 		char currentModel[MAX_QPATH];
 		char currentHead[MAX_QPATH];
@@ -2341,9 +2346,21 @@ void UI_Osp2BeMenu( void ) {
 	int fieldWidthPixels;
 	int fieldX;
 	int formRight;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	float screenWidth;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	float contentWidth;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	int formWidth;
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
 	int previewX;
 	int buttonSpacing;
 	int button1X;
@@ -2422,7 +2439,13 @@ void UI_Osp2BeMenu( void ) {
 		int designCenterX;
 		int screenCenterX;
 		int offsetX;
+#ifdef __GNUC__
+		__attribute__((unused))
+#endif
 		int singlePageBgCenterX;
+#ifdef __GNUC__
+		__attribute__((unused))
+#endif
 		int singlePageBgOffsetX;
 		
 		designCenterX = osp2be_layout.design_width / 2;
@@ -2523,7 +2546,7 @@ void UI_Osp2BeMenu( void ) {
 	baseY = 24 + SMALLCHAR_HEIGHT + 8 + (SMALLCHAR_HEIGHT + 8) + 8;
 	rowHeight = osp2be_row.height;
 	fieldWidthPixels = osp2be_layout.field_width_chars * SMALLCHAR_WIDTH;
-	formRight = s_osp2be.contentLeft + formWidth;
+	formRight = s_osp2be.contentLeft + s_osp2be.formWidth;
 	fieldX = formRight - fieldWidthPixels - osp2be_layout.field_padding + osp2be_layout.color_swatch_size + osp2be_layout.color_swatch_gap;
 	sliderOffset = (rowHeight - SMALLCHAR_HEIGHT) / 2;
 	if ( sliderOffset < 0 ) {
@@ -2608,7 +2631,7 @@ void UI_Osp2BeMenu( void ) {
 	s_osp2be.preview.generic.type = MTYPE_BITMAP;
 	s_osp2be.preview.generic.flags = QMF_INACTIVE;
 	s_osp2be.preview.generic.ownerdraw = Osp2Be_DrawPreview;
-	s_osp2be.preview.generic.x = previewX;
+	s_osp2be.preview.generic.x = s_osp2be.previewX;
 	s_osp2be.preview.generic.y = osp2be_layout.preview_y + 64;
 	s_osp2be.preview.width = osp2be_layout.preview_width;
 	s_osp2be.preview.height = osp2be_layout.preview_height;
