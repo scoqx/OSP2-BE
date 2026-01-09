@@ -2034,11 +2034,6 @@ extern vmCvar_t         cg_exec_tdm;
 extern vmCvar_t         cg_exec_ca;
 extern vmCvar_t         cg_exec_ctf;
 extern vmCvar_t         cg_exec_freeze;
-extern vmCvar_t         cg_exec_intermission;
-extern vmCvar_t         cg_exec_warmupEnded;
-extern vmCvar_t         cg_exec_joinGame;
-extern vmCvar_t         cg_exec_joinSpec;
-extern vmCvar_t         cg_exec_onDeath;
 extern vmCvar_t         cg_damagePlums;
 extern vmCvar_t         cg_damagePlumSize;
 extern vmCvar_t         cg_teamTaskMarkTime;
@@ -2067,6 +2062,11 @@ extern vmCvar_t         cg_chatColor;
 extern vmCvar_t         cg_teamChatColor;
 extern vmCvar_t         cg_countdownTimer;
 extern vmCvar_t         cg_teamIndicatorFontSize;
+extern vmCvar_t         cg_exec_intermission;
+extern vmCvar_t         cg_exec_warmupEnded;
+extern vmCvar_t         cg_exec_joinGame;
+extern vmCvar_t         cg_exec_joinSpec;
+extern vmCvar_t         cg_exec_onDeath;
 
 
 // extern vmCvar_t          cg_snow;

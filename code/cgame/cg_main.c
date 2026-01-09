@@ -534,11 +534,6 @@ vmCvar_t        cg_exec_tdm;
 vmCvar_t        cg_exec_ca;
 vmCvar_t        cg_exec_ctf;
 vmCvar_t        cg_exec_freeze;
-vmCvar_t        cg_exec_intermission;
-vmCvar_t        cg_exec_warmupEnded;
-vmCvar_t        cg_exec_joinGame;
-vmCvar_t        cg_exec_joinSpec;
-vmCvar_t        cg_exec_onDeath;
 vmCvar_t        cg_autoHop;
 vmCvar_t        cg_damagePlums;
 vmCvar_t        cg_damagePlumSize;
@@ -556,6 +551,11 @@ vmCvar_t        cg_brightWeaponsColorPG;
 vmCvar_t        cg_brightWeaponsColorBFG;
 vmCvar_t        cg_countdownTimer;
 vmCvar_t        cg_teamIndicatorFontSize;
+vmCvar_t        cg_exec_intermission;
+vmCvar_t        cg_exec_warmupEnded;
+vmCvar_t        cg_exec_joinGame;
+vmCvar_t        cg_exec_joinSpec;
+vmCvar_t        cg_exec_onDeath;
 
 // vmCvar_t        cg_snow;
 
@@ -974,15 +974,10 @@ static cvarTable_t cvarTable[] =
 	{ &cg_exec_ca, "cg_exec_ca", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_ctf, "cg_exec_ctf", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_freeze, "cg_exec_freeze", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_exec_intermission, "cg_exec_intermission", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_warmupEnded, "cg_exec_warmupEnded", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_joinGame, "cg_exec_joinGame", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_joinSpec, "cg_exec_joinSpec", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_onDeath, "cg_exec_onDeath", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW },
-	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop},
+	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW, CG_LocalEventCvarChanged_cg_autoHop},
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "2800", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
@@ -1017,6 +1012,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_brightWeaponsColorPG, "cg_brightWeaponsColorPG", "Magenta", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_brightWeaponsColorBFG, "cg_brightWeaponsColorBFG", "Blue", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_teamIndicatorFontSize, "cg_teamIndicatorFontSize", "8 10", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorFontSize },
+	{ &cg_exec_intermission, "cg_exec_intermission", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_warmupEnded, "cg_exec_warmupEnded", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_joinGame, "cg_exec_joinGame", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_joinSpec, "cg_exec_joinSpec", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_onDeath, "cg_exec_onDeath", "", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -3038,6 +3038,11 @@ void CG_PrintNewCommandsBE_f(void)
 			{
 				break;
 			}
+			// Skip commands with CVAR_NOTABCOMPLETE flag
+			if (cvarTable[i].cvarFlags & CVAR_NOTABCOMPLETE)
+			{
+				continue;
+			}
 			commandNum++;
 			if (commandNum == requestedNum)
 			{
@@ -3095,6 +3100,12 @@ void CG_PrintNewCommandsBE_f(void)
 		if (!strcmp(cvarTable[i].cvarName, "be_run"))
 		{
 			break;
+		}
+
+		// Skip commands with CVAR_NOTABCOMPLETE flag
+		if (cvarTable[i].cvarFlags & CVAR_NOTABCOMPLETE)
+		{
+			continue;
 		}
 
 		commandNum++;
