@@ -101,18 +101,18 @@ jobs:
         uses: actions/download-artifact@v4
 
       - name: Create latest build
-        uses: czietz/action-automatic-releases@latest
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: "latest-build"
+          tag_name: latest-build
+          name: Latest Build
           prerelease: false
-          title: Latest Build
           files: |
-            qvm-linux
-            cgame-linux
-            ui-linux
-            cgame-win
-            ui-win
+            qvm-linux/zz-osp-pak8be.pk3
+            cgame-linux/cgamex86_64.so
+            ui-linux/uix86_64.so
+            cgame-win/cgamex86_64.dll
+            ui-win/uix86_64.dll
+          generate_release_notes: false
 
   mingw:
     name: MinGW GCC
