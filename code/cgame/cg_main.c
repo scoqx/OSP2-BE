@@ -534,6 +534,11 @@ vmCvar_t        cg_exec_tdm;
 vmCvar_t        cg_exec_ca;
 vmCvar_t        cg_exec_ctf;
 vmCvar_t        cg_exec_freeze;
+vmCvar_t        cg_exec_intermission;
+vmCvar_t        cg_exec_warmupEnded;
+vmCvar_t        cg_exec_joinGame;
+vmCvar_t        cg_exec_joinSpec;
+vmCvar_t        cg_exec_onDeath;
 vmCvar_t        cg_autoHop;
 vmCvar_t        cg_damagePlums;
 vmCvar_t        cg_damagePlumSize;
@@ -969,6 +974,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_exec_ca, "cg_exec_ca", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_ctf, "cg_exec_ctf", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_freeze, "cg_exec_freeze", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
+	{ &cg_exec_intermission, "cg_exec_intermission", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_warmupEnded, "cg_exec_warmupEnded", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_joinGame, "cg_exec_joinGame", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_joinSpec, "cg_exec_joinSpec", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_onDeath, "cg_exec_onDeath", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW },
@@ -2339,6 +2349,73 @@ void CG_InitCvars(void)
 
 /*
 =================
+CG_InitPlayerColors
+
+Force update player colors if color cvars contain 'T' or 'E'
+This is needed because CG_CvarTouch doesn't trigger callbacks
+if the cvar was already loaded from config
+=================
+*/
+static void CG_InitPlayerColors(void)
+{
+	static const char* playerColorCvars[] =
+	{
+		"cg_enemyModelColors",
+		"cg_enemyRailColors",
+		"cg_enemyFrozenColor",
+		"cg_teamModelColors",
+		"cg_teamRailColors",
+		"cg_teamFrozenColor",
+		"cg_playerModelColors",
+		"cg_playerRailColors",
+		"cg_playerFrozenColor",
+		"cg_enemyColors",
+		"cg_teamColors",
+		NULL
+	};
+
+	const char** cvarName;
+	char cvarValue[MAX_CVAR_VALUE_STRING];
+	int i;
+	qboolean needsUpdate;
+
+	needsUpdate = qfalse;
+	cvarName = &playerColorCvars[0];
+	while (*cvarName)
+	{
+		// Get cvar value
+		trap_Cvar_VariableStringBuffer(*cvarName, cvarValue, sizeof(cvarValue));
+
+		// Check if value contains 'E' or 'T' (uppercase only)
+		for (i = 0; cvarValue[i]; ++i)
+		{
+			if (cvarValue[i] == 'E' || cvarValue[i] == 'T')
+			{
+				needsUpdate = qtrue;
+				break;
+			}
+		}
+
+		if (needsUpdate)
+		{
+			break;
+		}
+
+		++cvarName;
+	}
+
+	// If any player color cvar contains 'T' or 'E', force update
+	if (needsUpdate)
+	{
+		// Update team info first so T/E colors are interpreted correctly
+		CG_UpdateMyTeam();
+		CG_RebuildPlayerColors();
+		CG_UpdateAllClientsInfo();
+	}
+}
+
+/*
+=================
 CG_ParseCompilationInfo
 
 Parse compilation info from 'cversion' file and set compilation_build cvar
@@ -2394,6 +2471,33 @@ void CG_ParseCompilationInfo(void)
 
 /*
 ================
+CG_ExecCommandIfSet
+
+Execute command from cvar if it's set (non-empty)
+Returns qtrue if command was executed, qfalse otherwise
+================
+*/
+qboolean CG_ExecCommandIfSet(vmCvar_t* cvar)
+{
+	const char* cmd;
+
+	if (!cvar)
+	{
+		return qfalse;
+	}
+
+	cmd = cvar->string;
+	if (cmd && cmd[0])
+	{
+		trap_SendConsoleCommand(cmd);
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+/*
+================
 CG_ExecGametypeCommand
 
 Execute commands when gametype is set
@@ -2401,44 +2505,44 @@ Execute commands when gametype is set
 */
 static void CG_ExecGametypeCommand(void)
 {
-	const char* cmd;
 	qboolean isFreeze;
+	vmCvar_t* cmdCvar;
 
 	isFreeze = (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze);
 
 	/* Check for freeze tag first */
 	if (isFreeze)
 	{
-		cmd = cg_exec_freeze.string;
+		cmdCvar = &cg_exec_freeze;
 	}
 	else
 	{
 		switch (cgs.gametype)
 		{
 			case GT_FFA:
-				cmd = cg_exec_dm.string;
+				cmdCvar = &cg_exec_dm;
 				break;
 			case GT_TOURNAMENT:
-				cmd = cg_exec_tourney.string;
+				cmdCvar = &cg_exec_tourney;
 				break;
 			case GT_TEAM:
-				cmd = cg_exec_tdm.string;
+				cmdCvar = &cg_exec_tdm;
 				break;
 			case GT_CA:
-				cmd = cg_exec_ca.string;
+				cmdCvar = &cg_exec_ca;
 				break;
 			case GT_CTF:
-				cmd = cg_exec_ctf.string;
+				cmdCvar = &cg_exec_ctf;
 				break;
 			default:
-				cmd = NULL;
+				cmdCvar = NULL;
 				break;
 		}
 	}
 
-	if (cmd && cmd[0])
+	if (cmdCvar)
 	{
-		trap_SendConsoleCommand(cmd);
+		CG_ExecCommandIfSet(cmdCvar);
 	}
 }
 
@@ -2711,6 +2815,10 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_RegisterClients();       // if low on memory, some clients will be deferred
 
 	cg.loading = qfalse;    // future players will be deferred
+
+	// Force update player colors if color cvars contain 'T' or 'E'
+	// Must be called after clients are registered
+	CG_InitPlayerColors();
 
 	CG_InitLocalEntities();
 

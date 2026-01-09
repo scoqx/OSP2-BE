@@ -422,41 +422,36 @@ Commands are separated by semicolon (;)
 */
 static void CG_ExecWeaponCommand(int weapon)
 {
-	const char* cmd;
+	vmCvar_t* cmdCvar;
 
 	switch (weapon)
 	{
 		case WP_MACHINEGUN:
-			cmd = cg_exec_mg.string;
+			cmdCvar = &cg_exec_mg;
 			break;
 		case WP_SHOTGUN:
-			cmd = cg_exec_sg.string;
+			cmdCvar = &cg_exec_sg;
 			break;
 		case WP_GRENADE_LAUNCHER:
-			cmd = cg_exec_gl.string;
+			cmdCvar = &cg_exec_gl;
 			break;
 		case WP_ROCKET_LAUNCHER:
-			cmd = cg_exec_rl.string;
+			cmdCvar = &cg_exec_rl;
 			break;
 		case WP_LIGHTNING:
-			cmd = cg_exec_lg.string;
+			cmdCvar = &cg_exec_lg;
 			break;
 		case WP_RAILGUN:
-			cmd = cg_exec_rg.string;
+			cmdCvar = &cg_exec_rg;
 			break;
 		case WP_PLASMAGUN:
-			cmd = cg_exec_pg.string;
+			cmdCvar = &cg_exec_pg;
 			break;
 		default:
 			return;
 	}
 
-	if (!cmd || !cmd[0])
-	{
-		return;
-	}
-
-	trap_SendConsoleCommand(cmd);
+	CG_ExecCommandIfSet(cmdCvar);
 }
 
 /*
@@ -1035,6 +1030,12 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	{
 		cg.zoomed = qfalse;
 		cg.zoomTime = cg.time;
+	}
+
+	// check for death and execute death command
+	if (ops->stats[STAT_HEALTH] > 0 && ps->stats[STAT_HEALTH] <= 0)
+	{
+		CG_ExecCommandIfSet(&cg_exec_onDeath);
 	}
 
 	// execute weapon command on weapon change

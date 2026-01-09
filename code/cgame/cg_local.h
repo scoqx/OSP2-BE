@@ -2034,6 +2034,11 @@ extern vmCvar_t         cg_exec_tdm;
 extern vmCvar_t         cg_exec_ca;
 extern vmCvar_t         cg_exec_ctf;
 extern vmCvar_t         cg_exec_freeze;
+extern vmCvar_t         cg_exec_intermission;
+extern vmCvar_t         cg_exec_warmupEnded;
+extern vmCvar_t         cg_exec_joinGame;
+extern vmCvar_t         cg_exec_joinSpec;
+extern vmCvar_t         cg_exec_onDeath;
 extern vmCvar_t         cg_damagePlums;
 extern vmCvar_t         cg_damagePlumSize;
 extern vmCvar_t         cg_teamTaskMarkTime;
@@ -2581,6 +2586,8 @@ void CG_StringMakeEscapeCharRAW(const char* in, char* out, int max);
 //
 void CG_Respawn(void);
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
+void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam);
+qboolean CG_ExecCommandIfSet(vmCvar_t* cvar);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
 qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack);
 
@@ -2842,7 +2849,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00i" // BE
+#define OSP_VERSION "be-1.00j" // BE
 
 
 

@@ -636,3 +636,10 @@ SHUD:
 09.01.2026 be v1.00i
 + uix86_64.so, cgamex86_64.dll and uix86_64.dll
 + shudkey5-8
+
+09.01.2026 be v1.00j
++ cg_exec_intermission
++ cg_exec_warmupEnded
++ cg_exec_joinGame
++ cg_exec_joinSpec
++ cg_exec_onDeath

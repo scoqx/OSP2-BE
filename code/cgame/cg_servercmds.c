@@ -205,8 +205,13 @@ static void CG_ParseWarmup(void)
 
 	if (warmup == 0 && cg.warmup)
 	{
+		const char* cmd;
+
 		// Очистка новой статистики
 		memset(&cgs.be.newStats, 0, sizeof(cgs.be.newStats));
+
+		/* Execute warmup ended command */
+		CG_ExecCommandIfSet(&cg_exec_warmupEnded);
 	}
 	else if (warmup > 0 && cg.warmup <= 0)
 	{
@@ -403,6 +408,10 @@ static void CG_ConfigStringModified(void)
 	}
 	else if (num == CS_INTERMISSION)
 	{
+		qboolean prevIntermissionStarted;
+		const char* cmd;
+
+		prevIntermissionStarted = cg.intermissionStarted;
 		cg.intermissionStarted = atoi(str);
 		if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_SPECTATOR &&
 		        CG_OSPIsGameTypeCA(cgs.gametype) &&
@@ -415,6 +424,12 @@ static void CG_ConfigStringModified(void)
 			CG_OSPWStatsDown_f();
 		}
 		CG_ScoresDown_f();
+
+		/* Execute intermission command when intermission starts */
+		if (!prevIntermissionStarted && cg.intermissionStarted)
+		{
+			CG_ExecCommandIfSet(&cg_exec_intermission);
+		}
 	}
 	else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 	{

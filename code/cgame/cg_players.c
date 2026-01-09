@@ -2140,6 +2140,99 @@ static qboolean CG_IsOnlyTeamTaskChanged(const clientInfo_t* ci, const clientInf
 
 	return qfalse;
 }
+/*
+==================
+CG_CheckTeamChangeCommands
+
+Execute commands when player changes team
+Called when configstring is updated, so we can rely on server's team information
+==================
+*/
+void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam)
+{
+
+	/* Handle first connection - when player first connects and joins a team */
+	if (prevTeam == -1)
+	{
+		/* If player immediately joined a game team (not spectator), execute join game command */
+		if (currentTeam != TEAM_SPECTATOR)
+		{
+			CG_ExecCommandIfSet(&cg_exec_joinGame);
+		}
+		/* If player immediately joined spectator team, execute join spec command */
+		else if (currentTeam == TEAM_SPECTATOR)
+		{
+			CG_ExecCommandIfSet(&cg_exec_joinSpec);
+		}
+		return;
+	}
+
+	/* Check if team actually changed */
+	if (prevTeam == currentTeam)
+	{
+		return;
+	}
+
+	/* Execute join game command when leaving spectator team */
+	if (prevTeam == TEAM_SPECTATOR && currentTeam != TEAM_SPECTATOR)
+	{
+		CG_ExecCommandIfSet(&cg_exec_joinGame);
+	}
+
+	/* Execute join spec command when joining spectator team */
+	if (prevTeam != TEAM_SPECTATOR && currentTeam == TEAM_SPECTATOR)
+	{
+		CG_ExecCommandIfSet(&cg_exec_joinSpec);
+	}
+}
+/*
+==================
+CG_CheckTeamChangeFromConfigstring
+
+Check for team changes and execute commands based on configstring
+Called when configstring is updated, so we can rely on server's team information
+==================
+*/
+static void CG_CheckTeamChangeFromConfigstring(const clientInfo_t* ci, const clientInfo_t* newInfo)
+{
+	static team_t lastKnownTeam = -1;
+	team_t prevTeam;
+	team_t currentTeam;
+
+	/* Determine team based on gametype for command execution */
+	/* Use configstring data - prevTeam from old ci (before update), currentTeam from newInfo */
+	if (CG_OSPIsGameTypeCA(cgs.gametype))
+	{
+		/* Use ci->rt if it's valid, otherwise use lastKnownTeam */
+		if (ci->infoValid)
+		{
+			prevTeam = ci->rt;
+		}
+		else
+		{
+			prevTeam = (lastKnownTeam == -1) ? -1 : lastKnownTeam;
+		}
+		currentTeam = newInfo->rt;
+		lastKnownTeam = newInfo->rt;
+	}
+	else
+	{
+		/* Use ci->team if it's valid, otherwise use lastKnownTeam */
+		if (ci->infoValid)
+		{
+			prevTeam = ci->team;
+		}
+		else
+		{
+			prevTeam = (lastKnownTeam == -1) ? -1 : lastKnownTeam;
+		}
+		currentTeam = newInfo->team;
+		lastKnownTeam = newInfo->team;
+	}
+
+	/* Check for team changes and execute commands based on configstring */
+	CG_CheckTeamChangeCommands(prevTeam, currentTeam);
+}
 
 void CG_NewClientInfo(int clientNum)
 {
@@ -2273,40 +2366,48 @@ void CG_NewClientInfo(int clientNum)
 	CG_ClientInfoUpdateModel(&newInfo, isOurClient, isTeamGame, configstring, clientNum);
 	CG_ClientInfoUpdateColors(&newInfo, clientNum);
 	CG_ClientInfoUpdateTeamTask(&newInfo, clientNum);
+
+		/* Check for team changes and execute commands based on configstring */
+		/* Do this BEFORE updating ci, so we can compare old vs new team */
+		if (isOurClient)
+		{
+			CG_CheckTeamChangeFromConfigstring(ci, &newInfo);
+		}
+
 	CG_ForceNewClientInfo(ci, &newInfo);
 
-	/* If we changed team, update models & colors */
-	if (isOurClient)
-	{
-		static team_t ourTeam = -1;
-		static int ourClientNum = -1;
-		static qboolean wasSpectator = qtrue;
-		qboolean isSpectator;
-		qboolean spectatorStateChanged;
-		const qboolean isTeamChanged = cgs.clientinfo[cg.clientNum].rt != ourTeam;
-		const qboolean isClientIdChanged = ourClientNum != cg.clientNum;
-		numSortedTeamPlayers = 0; //reset team overlay
-		if (isTeamGame && isTeamChanged)
+		/* If we changed team, update models & colors */
+		if (isOurClient)
 		{
-			ourTeam = cgs.clientinfo[cg.clientNum].rt;
-			CG_UpdateMyTeamColors();
-			CG_UpdateOtherClientsInfo();
-		}
+			static team_t ourTeam = -1;
+			static int ourClientNum = -1;
+			static qboolean wasSpectator = qtrue;
+			qboolean isSpectator;
+			qboolean spectatorStateChanged;
+			const qboolean isTeamChanged = cgs.clientinfo[cg.clientNum].rt != ourTeam;
+			const qboolean isClientIdChanged = ourClientNum != cg.clientNum;
+			numSortedTeamPlayers = 0; //reset team overlay
+			if (isTeamGame && isTeamChanged)
+			{
+				ourTeam = cgs.clientinfo[cg.clientNum].rt;
+				CG_UpdateMyTeamColors();
+				CG_UpdateOtherClientsInfo();
+			}
 
-		if (isTeamGame && isClientIdChanged)
-		{
-			ourClientNum = cg.clientNum;
-			CG_UpdateOtherClientsInfo();
-		}
+			if (isTeamGame && isClientIdChanged)
+			{
+				ourClientNum = cg.clientNum;
+				CG_UpdateOtherClientsInfo();
+			}
 
-		isSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR || cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
-		spectatorStateChanged = (wasSpectator != isSpectator);
-		if (spectatorStateChanged)
-		{
-			wasSpectator = isSpectator;
-			CG_UpdateOtherClientsInfo();
+			isSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR || cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
+			spectatorStateChanged = (wasSpectator != isSpectator);
+			if (spectatorStateChanged)
+			{
+				wasSpectator = isSpectator;
+				CG_UpdateOtherClientsInfo();
+			}
 		}
-	}
 
 	// Update real client count when client info changes (not in demo mode)
 	if (!cg.demoPlayback)
