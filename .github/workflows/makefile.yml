@@ -72,12 +72,12 @@ jobs:
       - name: Package Linux libraries for website
         run: |
           cd build/library/build/release-linux-x86_64/osp2
-          zip -j ../../../osp2-be-linux.zip cgamex86_64.so uix86_64.so
+          tar -czf ../../../osp2-be-linux.tar.gz cgamex86_64.so uix86_64.so
 
       - uses: actions/upload-artifact@v4
         with:
           name: osp2-be-linux
-          path: build/library/osp2-be-linux.zip
+          path: build/library/osp2-be-linux.tar.gz
           if-no-files-found: error
           retention-days: 5
 
@@ -187,6 +187,15 @@ jobs:
             osp2-be-win
             version-files
           path: artifacts
+          if-no-files-found: warn
+
+      - name: Debug artifacts structure
+        run: |
+          echo "Artifacts directory structure:"
+          ls -la artifacts/ || echo "artifacts directory does not exist"
+          if [ -d artifacts ]; then
+            find artifacts -type f || echo "No files found in artifacts"
+          fi
 
       - name: Checkout target repo
         uses: actions/checkout@v3
@@ -205,14 +214,33 @@ jobs:
       - name: Copy artifacts to assets folder
         run: |
           mkdir -p target-repo/assets
-          # Copy Linux QVM only (not MinGW) - find file regardless of structure
-          find artifacts/qvm-linux -name "*.pk3" -type f -exec cp {} target-repo/assets/zz-osp-pak8be.pk3 \;
-          # Copy library zip files
-          find artifacts/osp2-be-linux -name "*.zip" -type f -exec cp {} target-repo/assets/osp2-be-linux.zip \;
-          find artifacts/osp2-be-win -name "*.zip" -type f -exec cp {} target-repo/assets/osp2-be-win.zip \;
+          # Copy Linux QVM only (not MinGW)
+          # Handle both possible artifact structures (file or directory)
+          if [ -f artifacts/qvm-linux/zz-osp-pak8be.pk3 ]; then
+            cp artifacts/qvm-linux/zz-osp-pak8be.pk3 target-repo/assets/
+          elif [ -f artifacts/qvm-linux ]; then
+            cp artifacts/qvm-linux target-repo/assets/zz-osp-pak8be.pk3
+          else
+            echo "Warning: qvm-linux artifact not found"
+          fi
+          # Copy library files
+          if [ -f artifacts/osp2-be-linux/osp2-be-linux.tar.gz ]; then
+            cp artifacts/osp2-be-linux/osp2-be-linux.tar.gz target-repo/assets/
+          elif [ -f artifacts/osp2-be-linux ]; then
+            cp artifacts/osp2-be-linux target-repo/assets/osp2-be-linux.tar.gz
+          fi
+          if [ -f artifacts/osp2-be-win/osp2-be-win.zip ]; then
+            cp artifacts/osp2-be-win/osp2-be-win.zip target-repo/assets/
+          elif [ -f artifacts/osp2-be-win ]; then
+            cp artifacts/osp2-be-win target-repo/assets/osp2-be-win.zip
+          fi
           # Copy version files from artifacts (created during build)
-          find artifacts/version-files -name "version.txt" -type f -exec cp {} target-repo/assets/version.txt \;
-          find artifacts/version-files -name "version_changelog.txt" -type f -exec cp {} target-repo/assets/version_changelog.txt \;
+          if [ -f artifacts/version-files/version.txt ]; then
+            cp artifacts/version-files/version.txt target-repo/assets/version.txt
+          fi
+          if [ -f artifacts/version-files/version_changelog.txt ]; then
+            cp artifacts/version-files/version_changelog.txt target-repo/assets/version_changelog.txt
+          fi
           # Copy config files from source repo
           cp source-repo/assets/OSP2.cfg target-repo/assets/OSP2.cfg
           cp source-repo/assets/OSP2English.cfg target-repo/assets/OSP2English.cfg
