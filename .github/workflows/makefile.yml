@@ -159,7 +159,8 @@ jobs:
       - name: Package Windows libraries for website
         run: |
           cd build/library/build/release-mingw64-x86_64/osp2
-          zip -j ../../../osp2-be-win.zip cgamex86_64.dll uix86_64.dll
+          if [ -f ../../../osp2-be-win.zip ]; then rm ../../../osp2-be-win.zip; fi
+          ../../../../qvm/tools/7za.exe a -tzip -mx=0 ../../../osp2-be-win.zip cgamex86_64.dll uix86_64.dll
 
       - uses: actions/upload-artifact@v4
         with:
