@@ -117,11 +117,22 @@ FORCE:
 		END { \
 			if (!found) { \
 				print "Version not found: be v" ver > "/dev/stderr"; \
-				exit 1; \
+				exit 0; \
 			} \
 		} \
-	' ../../changelog_be.txt > $@
-	@echo "Changelog file created for version: $$(head -n 1 $@)"
+	' ../../changelog_be.txt > $@.tmp; \
+	if [ -s $@.tmp ]; then \
+		mv $@.tmp $@; \
+		echo "Changelog file created for version: $$(head -n 1 $@)"; \
+	else \
+		rm -f $@.tmp; \
+		if [ -f $@ ]; then \
+			echo "Version be v$$VERSION_NUM not found in changelog, keeping existing version_changelog.txt"; \
+		else \
+			echo "Version be v$$VERSION_NUM not found in changelog, creating placeholder"; \
+			echo "Version be v$$VERSION_NUM not found in changelog" > $@; \
+		fi; \
+	fi
 
 #$(PK3): vm/qagame.qvm vm/cgame.qvm vm/ui.qvm
 $(PK3): vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt
