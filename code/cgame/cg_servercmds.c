@@ -205,8 +205,6 @@ static void CG_ParseWarmup(void)
 
 	if (warmup == 0 && cg.warmup)
 	{
-		const char* cmd;
-
 		// Очистка новой статистики
 		memset(&cgs.be.newStats, 0, sizeof(cgs.be.newStats));
 
@@ -409,7 +407,6 @@ static void CG_ConfigStringModified(void)
 	else if (num == CS_INTERMISSION)
 	{
 		qboolean prevIntermissionStarted;
-		const char* cmd;
 
 		prevIntermissionStarted = cg.intermissionStarted;
 		cg.intermissionStarted = atoi(str);
