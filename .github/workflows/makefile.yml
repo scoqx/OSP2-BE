@@ -205,14 +205,14 @@ jobs:
       - name: Copy artifacts to assets folder
         run: |
           mkdir -p target-repo/assets
-          # Copy Linux QVM only (not MinGW)
-          cp artifacts/qvm-linux/zz-osp-pak8be.pk3 target-repo/assets/
+          # Copy Linux QVM only (not MinGW) - find file regardless of structure
+          find artifacts/qvm-linux -name "*.pk3" -type f -exec cp {} target-repo/assets/zz-osp-pak8be.pk3 \;
           # Copy library zip files
-          cp artifacts/osp2-be-linux/osp2-be-linux.zip target-repo/assets/
-          cp artifacts/osp2-be-win/osp2-be-win.zip target-repo/assets/
+          find artifacts/osp2-be-linux -name "*.zip" -type f -exec cp {} target-repo/assets/osp2-be-linux.zip \;
+          find artifacts/osp2-be-win -name "*.zip" -type f -exec cp {} target-repo/assets/osp2-be-win.zip \;
           # Copy version files from artifacts (created during build)
-          cp artifacts/version-files/version.txt target-repo/assets/version.txt
-          cp artifacts/version-files/version_changelog.txt target-repo/assets/version_changelog.txt
+          find artifacts/version-files -name "version.txt" -type f -exec cp {} target-repo/assets/version.txt \;
+          find artifacts/version-files -name "version_changelog.txt" -type f -exec cp {} target-repo/assets/version_changelog.txt \;
           # Copy config files from source repo
           cp source-repo/assets/OSP2.cfg target-repo/assets/OSP2.cfg
           cp source-repo/assets/OSP2English.cfg target-repo/assets/OSP2English.cfg
