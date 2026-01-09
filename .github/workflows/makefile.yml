@@ -310,24 +310,91 @@ jobs:
           echo "=== File count ==="
           ls -1 target-repo/assets/ | wc -l || echo "0"
 
+      - name: Verify files before commit
+        run: |
+          echo "=== Verifying files in target-repo/assets ==="
+          cd target-repo
+          if [ ! -d assets ]; then
+            echo "ERROR: assets directory does not exist!"
+            exit 1
+          fi
+          
+          echo "Files found:"
+          ls -lh assets/ || echo "No files found"
+          
+          # Check for required files
+          required_files=(
+            "OSP2.cfg"
+            "OSP2English.cfg"
+            "changelog_be.txt"
+          )
+          
+          missing_files=()
+          for file in "${required_files[@]}"; do
+            if [ ! -f "assets/$file" ]; then
+              missing_files+=("$file")
+              echo "WARNING: Required file missing: $file"
+            else
+              echo "OK: $file exists"
+            fi
+          done
+          
+          if [ ${#missing_files[@]} -gt 0 ]; then
+            echo "ERROR: Some required files are missing!"
+            exit 1
+          fi
+          
+          echo "=== File verification complete ==="
+
       - name: Commit and push changes
         run: |
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
           
-          # Add all files in assets directory
-          git add assets/ || true
+          # Show git status before adding
+          echo "=== Git status before add ==="
+          git status
           
-          # Check if there are changes to commit
-          if ! git diff --quiet --cached; then
+          # Add all files in assets directory (force add)
+          git add -A assets/
+          git add -f assets/ || true
+          
+          # Show git status after adding
+          echo "=== Git status after add ==="
+          git status
+          
+          # Show what will be committed
+          echo "=== Files staged for commit ==="
+          git diff --cached --name-only || echo "No staged files"
+          
+          # Show diff to see what changed
+          echo "=== Changes to be committed ==="
+          git diff --cached --stat || echo "No changes"
+          
+          # Check if there are any changes (staged or unstaged)
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Changes detected, committing..."
             git commit -m "Update build artifacts, version files and configs [auto]"
-            git push origin ${{ env.TARGET_BRANCH }}
+            echo "=== Commit created ==="
+            git log -1 --stat
+            echo "=== Pushing to ${{ env.TARGET_BRANCH }} ==="
+            git push origin ${{ env.TARGET_BRANCH }} || {
+              echo "ERROR: Push failed!"
+              echo "Checking remote configuration..."
+              git remote -v
+              exit 1
+            }
             echo "Changes committed and pushed successfully"
           else
-            echo "No changes to commit"
+            echo "No changes detected in repository"
+            echo "=== Current files in assets ==="
+            ls -lh assets/ || echo "Assets directory is empty or missing"
+            echo "=== Git log (last 3 commits) ==="
+            git log -3 --oneline
           fi
           
           # Verify files are present
-          echo "Final files in assets:"
+          echo ""
+          echo "=== Final verification: files in assets ==="
           ls -lh assets/ || echo "Assets directory is empty or missing"
