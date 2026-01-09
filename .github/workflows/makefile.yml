@@ -179,25 +179,32 @@ jobs:
       GIT_USER_EMAIL: actions@github.com
     steps:
       - name: Download artifacts
-        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          pattern: |
-            qvm-linux
-            osp2-be-linux
-            osp2-be-win
-            version-files
           path: artifacts
+          merge-multiple: false
 
       - name: Debug artifacts structure
         run: |
-          echo "Artifacts directory structure:"
+          echo "=== Artifacts directory structure ==="
           if [ -d artifacts ]; then
-            ls -la artifacts/
-            echo "Files in artifacts:"
-            find artifacts -type f || echo "No files found in artifacts"
+            echo "Artifacts directory exists"
+            ls -laR artifacts/ || echo "Cannot list artifacts directory"
+            echo ""
+            echo "=== All files in artifacts (find) ==="
+            find artifacts -type f 2>/dev/null | head -20 || echo "No files found in artifacts"
+            echo ""
+            echo "=== Looking for specific files ==="
+            for file in "zz-osp-pak8be.pk3" "osp2-be-linux.tar.gz" "osp2-be-win.zip" "version.txt" "version_changelog.txt"; do
+              found=$(find artifacts -name "$file" -type f 2>/dev/null | head -1)
+              if [ -n "$found" ]; then
+                echo "Found: $file -> $found ($(du -h "$found" | cut -f1))"
+              else
+                echo "Missing: $file"
+              fi
+            done
           else
-            echo "Warning: artifacts directory does not exist"
+            echo "ERROR: artifacts directory does not exist"
             mkdir -p artifacts
           fi
 
@@ -219,84 +226,37 @@ jobs:
         run: |
           mkdir -p target-repo/assets
           
-          # Function to copy file with fallback paths
-          copy_file() {
-            local src="$1"
-            local dst="$2"
-            if [ -f "$src" ]; then
-              cp "$src" "$dst" && echo "Copied: $src -> $dst"
+          # Function to find and copy file
+          find_and_copy() {
+            local filename="$1"
+            local dest="$2"
+            local found_file
+            
+            # Try multiple possible locations
+            found_file=$(find artifacts -name "$filename" -type f 2>/dev/null | head -1)
+            
+            if [ -n "$found_file" ] && [ -f "$found_file" ]; then
+              cp "$found_file" "$dest"
+              echo "Copied: $found_file -> $dest ($(du -h "$dest" | cut -f1))"
               return 0
             fi
+            
+            echo "Warning: $filename not found in artifacts"
             return 1
           }
           
           # Copy Linux QVM (zz-osp-pak8be.pk3)
-          if ! copy_file "artifacts/qvm-linux/zz-osp-pak8be.pk3" "target-repo/assets/zz-osp-pak8be.pk3"; then
-            if ! copy_file "artifacts/qvm-linux" "target-repo/assets/zz-osp-pak8be.pk3"; then
-              if find artifacts -name "zz-osp-pak8be.pk3" -exec cp {} target-repo/assets/ \; 2>/dev/null; then
-                echo "Found zz-osp-pak8be.pk3 via find"
-              else
-                echo "Warning: zz-osp-pak8be.pk3 not found in artifacts"
-              fi
-            fi
-          fi
+          find_and_copy "zz-osp-pak8be.pk3" "target-repo/assets/zz-osp-pak8be.pk3"
           
           # Copy Linux libraries archive (osp2-be-linux.tar.gz)
-          if ! copy_file "artifacts/osp2-be-linux/osp2-be-linux.tar.gz" "target-repo/assets/osp2-be-linux.tar.gz"; then
-            if ! copy_file "artifacts/osp2-be-linux" "target-repo/assets/osp2-be-linux.tar.gz"; then
-              found_file=$(find artifacts -name "osp2-be-linux.tar.gz" -type f | head -1)
-              if [ -n "$found_file" ] && [ -f "$found_file" ]; then
-                cp "$found_file" "target-repo/assets/osp2-be-linux.tar.gz"
-                echo "Found and copied osp2-be-linux.tar.gz via find from: $found_file"
-              else
-                echo "Warning: osp2-be-linux.tar.gz not found in artifacts"
-              fi
-            fi
-          fi
-          
-          # Verify Linux archive was copied
-          if [ -f "target-repo/assets/osp2-be-linux.tar.gz" ]; then
-            echo "Verified: osp2-be-linux.tar.gz copied successfully ($(du -h target-repo/assets/osp2-be-linux.tar.gz | cut -f1))"
-          else
-            echo "ERROR: osp2-be-linux.tar.gz was not copied!"
-          fi
+          find_and_copy "osp2-be-linux.tar.gz" "target-repo/assets/osp2-be-linux.tar.gz"
           
           # Copy Windows libraries archive (osp2-be-win.zip)
-          if ! copy_file "artifacts/osp2-be-win/osp2-be-win.zip" "target-repo/assets/osp2-be-win.zip"; then
-            if ! copy_file "artifacts/osp2-be-win" "target-repo/assets/osp2-be-win.zip"; then
-              found_file=$(find artifacts -name "osp2-be-win.zip" -type f | head -1)
-              if [ -n "$found_file" ] && [ -f "$found_file" ]; then
-                cp "$found_file" "target-repo/assets/osp2-be-win.zip"
-                echo "Found and copied osp2-be-win.zip via find from: $found_file"
-              else
-                echo "Warning: osp2-be-win.zip not found in artifacts"
-              fi
-            fi
-          fi
+          find_and_copy "osp2-be-win.zip" "target-repo/assets/osp2-be-win.zip"
           
-          # Verify Windows archive was copied
-          if [ -f "target-repo/assets/osp2-be-win.zip" ]; then
-            echo "Verified: osp2-be-win.zip copied successfully ($(du -h target-repo/assets/osp2-be-win.zip | cut -f1))"
-          else
-            echo "ERROR: osp2-be-win.zip was not copied!"
-          fi
-          
-          # Copy version files from artifacts
-          if ! copy_file "artifacts/version-files/version.txt" "target-repo/assets/version.txt"; then
-            if find artifacts -name "version.txt" -exec cp {} target-repo/assets/ \; 2>/dev/null; then
-              echo "Found version.txt via find"
-            else
-              echo "Warning: version.txt not found in artifacts"
-            fi
-          fi
-          
-          if ! copy_file "artifacts/version-files/version_changelog.txt" "target-repo/assets/version_changelog.txt"; then
-            if find artifacts -name "version_changelog.txt" -exec cp {} target-repo/assets/ \; 2>/dev/null; then
-              echo "Found version_changelog.txt via find"
-            else
-              echo "Warning: version_changelog.txt not found in artifacts"
-            fi
-          fi
+          # Copy version files
+          find_and_copy "version.txt" "target-repo/assets/version.txt"
+          find_and_copy "version_changelog.txt" "target-repo/assets/version_changelog.txt"
           
           # Copy config files from source repo (always copy, fail if missing)
           if [ -f source-repo/assets/OSP2.cfg ]; then
@@ -402,23 +362,16 @@ jobs:
           echo "=== Git status before add ==="
           git status
           
-          # Add all files in assets directory (force add)
-          git add -A assets/
-          git add -f assets/ || true
+          # Force add all files in assets directory
+          git add -A -f assets/
           
-          # Explicitly add archive files to ensure they are tracked
-          if [ -f "assets/osp2-be-linux.tar.gz" ]; then
-            git add -f assets/osp2-be-linux.tar.gz
-            echo "Explicitly added osp2-be-linux.tar.gz"
-          fi
-          if [ -f "assets/osp2-be-win.zip" ]; then
-            git add -f assets/osp2-be-win.zip
-            echo "Explicitly added osp2-be-win.zip"
-          fi
-          if [ -f "assets/zz-osp-pak8be.pk3" ]; then
-            git add -f assets/zz-osp-pak8be.pk3
-            echo "Explicitly added zz-osp-pak8be.pk3"
-          fi
+          # Explicitly add all expected files to ensure they are tracked
+          for file in "osp2-be-linux.tar.gz" "osp2-be-win.zip" "zz-osp-pak8be.pk3" "version.txt" "version_changelog.txt" "OSP2.cfg" "OSP2English.cfg" "changelog_be.txt"; do
+            if [ -f "assets/$file" ]; then
+              git add -f "assets/$file"
+              echo "Added: assets/$file"
+            fi
+          done
           
           # Show git status after adding
           echo "=== Git status after add ==="
@@ -432,8 +385,18 @@ jobs:
           echo "=== Changes to be committed ==="
           git diff --cached --stat || echo "No changes"
           
-          # Check if there are any changes (staged or unstaged)
+          # Check if there are any changes (check both staged and working directory)
+          has_changes=false
+          if [ -n "$(git diff --cached --name-only)" ]; then
+            has_changes=true
+            echo "Staged changes detected"
+          fi
           if [ -n "$(git status --porcelain)" ]; then
+            has_changes=true
+            echo "Working directory changes detected"
+          fi
+          
+          if [ "$has_changes" = "true" ]; then
             echo "Changes detected, committing..."
             git commit -m "Update build artifacts, version files and configs [auto]"
             echo "=== Commit created ==="
