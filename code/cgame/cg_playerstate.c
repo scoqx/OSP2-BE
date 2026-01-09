@@ -461,6 +461,46 @@ static void CG_ExecWeaponCommand(int weapon)
 
 /*
 ================
+CG_ForceExecOnSpectateStart
+
+Force exec weapon command when starting to spectate a player
+================
+*/
+static void CG_ForceExecOnSpectateStart(playerState_t* ps)
+{
+	static int lastSnapClientNum = -1;
+	int currentSnapClientNum;
+	qboolean isFollowing;
+
+	if (!cg.snap)
+	{
+		lastSnapClientNum = -1;
+		return;
+	}
+
+	isFollowing = (cg.snap->ps.pm_flags & PMF_FOLLOW) ? qtrue : qfalse;
+	if (isFollowing && cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+	{
+		currentSnapClientNum = cg.snap->ps.clientNum;
+	}
+	else
+	{
+		currentSnapClientNum = -1;
+	}
+
+	// If we started following a different player, force exec
+	if (isFollowing && currentSnapClientNum != lastSnapClientNum && 
+	    currentSnapClientNum != -1 && ps->weapon != WP_NONE && 
+	    cg_exec_weapons.integer != 0)
+	{
+		CG_ExecWeaponCommand(ps->weapon);
+	}
+
+	lastSnapClientNum = currentSnapClientNum;
+}
+
+/*
+================
 CG_Respawn
 
 A respawn happened this snapshot
@@ -1005,6 +1045,9 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 			CG_ExecWeaponCommand(ps->weapon);
 		}
 	}
+
+	// force exec when starting to spectate (only at the beginning)
+	CG_ForceExecOnSpectateStart(ps);
 
 	if (cg_shud.integer)
 		CG_UpdateWeaponTracking(WP_LIGHTNING);
