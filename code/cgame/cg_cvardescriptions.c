@@ -53,6 +53,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_exec_lg", "Execute commands when switching to Lightning Gun. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
 	{ "cg_exec_rg", "Execute commands when switching to Railgun. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec amra.cfg" },
 	{ "cg_exec_pg", "Execute commands when switching to Plasma Gun. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
+	{ "cg_exec_gauntlet", "Execute commands when switching to Gauntlet. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
+	{ "cg_exec_bfg", "Execute commands when switching to BFG. Multiple commands separated by semicolon (;).\n  ^2cg_fov 100; exec myconfig.cfg" },
 	{ "cg_exec_gametypes", "When to execute gametype commands\n  ^20^7 - disabled\n  ^21^7 - enabled (on game load)" },
 	{ "cg_exec_dm", "Execute commands when joining FFA/Deathmatch server.\n  ^2cg_fov 100; exec ffa.cfg" },
 	{ "cg_exec_tourney", "Execute commands when joining Tournament server.\n  ^2cg_fov 90; exec tourney.cfg" },

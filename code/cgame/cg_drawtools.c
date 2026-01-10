@@ -794,8 +794,8 @@ typedef struct
 
 #define MAX_FONTS 32
 static font_t fonts[MAX_FONTS];
-static char customFontNames[MAX_FONTS - 17][MAX_QPATH];
-static int fonts_num = 17;
+static char customFontNames[MAX_FONTS - 19][MAX_QPATH];
+static int fonts_num = 19;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
 
@@ -818,6 +818,8 @@ static void CG_InitFontNames(void)
 	fonts[14].name = "bigcharselitestoropia";
 	fonts[15].name = "bigcharseliteorbitron";
 	fonts[16].name = "eliteorbitron";
+	fonts[17].name = "q4snumbers";
+	fonts[18].name = "q4mnumbers";
 }
 
 qboolean CG_FontAvailable(int index)
@@ -1064,6 +1066,9 @@ static void CG_LoadFont(font_t* fnt, const char* fontName)
 	float w1, w2;
 	float s1, s2;
 	float x0, y0;
+
+	/* Clear buffer to prevent reading old data from previous font */
+	memset(buf, 0, sizeof(buf));
 
 	len = trap_FS_FOpenFile(fontName, &f, FS_READ);
 	if (f == FS_INVALID_HANDLE)
@@ -1347,7 +1352,7 @@ static void CG_LoadCustomFonts(void)
 			continue;
 		}
 
-		if (customFontIndex >= (MAX_FONTS - 17))
+		if (customFontIndex >= (MAX_FONTS - 19))
 		{
 			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: maximum number of custom fonts reached, skipping '%s'\n", fontName);
 			continue;
@@ -1425,6 +1430,8 @@ void CG_LoadFonts(void)
 	CG_LoadFont(&fonts[14], "gfx/2d/BigcharsEliteStoropia.cfg");
 	CG_LoadFont(&fonts[15], "gfx/2d/BigcharsEliteOrbitron.cfg");
 	CG_LoadFont(&fonts[16], "gfx/2d/EliteOrbitron.cfg");
+	CG_LoadFont(&fonts[17], "gfx/2d/q4snumbers.cfg");
+	CG_LoadFont(&fonts[18], "gfx/2d/q4mnumbers.cfg");
 	CG_LoadCustomFonts();
 }
 

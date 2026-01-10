@@ -1,6 +1,6 @@
-09.01.2026 be v1.00j
-+ cg_exec_intermission
-+ cg_exec_warmupEnded
-+ cg_exec_joinGame
-+ cg_exec_joinSpec
-+ cg_exec_onDeath
+10.01.2026 be v1.00k
+SuperHUD: 
+  Tuborg: + 2 numeric fonts (q4snumbers, q4mnumbers), 
+          + 2 HUD configs (q4_strogg, q4_marine)
++ cg_exec_gauntlet
++ cg_exec_bfg

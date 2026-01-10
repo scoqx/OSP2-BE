@@ -556,6 +556,8 @@ vmCvar_t        cg_exec_warmupEnded;
 vmCvar_t        cg_exec_joinGame;
 vmCvar_t        cg_exec_joinSpec;
 vmCvar_t        cg_exec_onDeath;
+vmCvar_t        cg_exec_gauntlet;
+vmCvar_t        cg_exec_bfg;
 
 // vmCvar_t        cg_snow;
 
@@ -1017,6 +1019,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_exec_joinGame, "cg_exec_joinGame", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_exec_joinSpec, "cg_exec_joinSpec", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_exec_onDeath, "cg_exec_onDeath", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_gauntlet, "cg_exec_gauntlet", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_bfg, "cg_exec_bfg", "", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };

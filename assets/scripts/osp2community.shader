@@ -54,3 +54,27 @@ gfx/2d/hudres/Timer2
         rgbgen vertex   
     }
 }
+
+gfx/2d/hudres/ekg
+{
+   nopicmip
+    {
+        map gfx/2d/hudres/ekg.tga
+        blendfunc blend
+        tcMod scroll 1 0
+        tcMod scale 1 1
+        rgbGen identity
+    }
+}
+
+gfx/2d/hudres/s_ekg
+{
+   nopicmip
+    {
+        map gfx/2d/hudres/s_ekg.tga
+        blendfunc blend
+        tcMod scroll 0.7 0
+        tcMod scale 1 1
+        rgbGen identity
+    }
+}

@@ -120,7 +120,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | Fade          | r g b a        | Затухание к этому цвету.                                  |
 | Fadedelay     | milliseconds   | Скорость затухания.                                       |
 | Fill          |                | Заливка цветом BgColor.                                   |
-| Font          | name или число | Название шрифта или индекс шрифта (0-16).                 |
+| Font          | name или число | Название шрифта или индекс шрифта (0-18).                 |
 | FontSize      | w h            | Размер шрифта ширина и высота.                            |
 | Image         | string         | Путь к шейдеру или картинке.                              |
 | Image2        | string         | Путь к шейдеру или картинке для второго слоя.             |
@@ -226,6 +226,7 @@ fps {
 - id
 - idblock
 - sansman
+- cpma
 - m1rage
 - elite_emoji
 - diablo
@@ -233,6 +234,14 @@ fps {
 - qlnumbers
 - elite
 - elitebigchars
+- eliteeternal
+- bigcharseliteeternal
+- elitestoropia
+- bigcharselitestoropia
+- bigcharseliteorbitron
+- eliteorbitron
+- q4stroggnumbers
+- q4marinenumbers
 
 ### WeaponList 
 

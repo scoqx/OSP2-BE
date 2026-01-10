@@ -2067,6 +2067,8 @@ extern vmCvar_t         cg_exec_warmupEnded;
 extern vmCvar_t         cg_exec_joinGame;
 extern vmCvar_t         cg_exec_joinSpec;
 extern vmCvar_t         cg_exec_onDeath;
+extern vmCvar_t         cg_exec_gauntlet;
+extern vmCvar_t         cg_exec_bfg;
 
 
 // extern vmCvar_t          cg_snow;
@@ -2849,7 +2851,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00j" // BE
+#define OSP_VERSION "be-1.00k" // BE
 
 
 

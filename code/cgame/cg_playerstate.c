@@ -426,6 +426,9 @@ static void CG_ExecWeaponCommand(int weapon)
 
 	switch (weapon)
 	{
+		case WP_GAUNTLET:
+			cmdCvar = &cg_exec_gauntlet;
+			break;
 		case WP_MACHINEGUN:
 			cmdCvar = &cg_exec_mg;
 			break;
@@ -446,6 +449,9 @@ static void CG_ExecWeaponCommand(int weapon)
 			break;
 		case WP_PLASMAGUN:
 			cmdCvar = &cg_exec_pg;
+			break;
+		case WP_BFG:
+			cmdCvar = &cg_exec_bfg;
 			break;
 		default:
 			return;

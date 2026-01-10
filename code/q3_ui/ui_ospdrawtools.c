@@ -35,8 +35,8 @@ typedef struct
 
 #define MAX_FONTS 32
 static font_t fonts[MAX_FONTS];
-static char customFontNames[MAX_FONTS - 17][MAX_QPATH];
-static int fonts_num = 17;
+static char customFontNames[MAX_FONTS - 19][MAX_QPATH];
+static int fonts_num = 19;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
 
@@ -377,6 +377,8 @@ static void UI_InitFontNames(void)
 	fonts[14].name = "bigcharselitestoropia";
 	fonts[15].name = "bigcharseliteorbitron";
 	fonts[16].name = "eliteorbitron";
+	fonts[17].name = "q4snumbers";
+	fonts[18].name = "q4mnumbers";
 }
 
 qboolean UI_FontAvailable(int index)
@@ -857,7 +859,7 @@ static void UI_LoadCustomFonts(void)
 			continue;
 		}
 
-		if (customFontIndex >= (MAX_FONTS - 17))
+		if (customFontIndex >= (MAX_FONTS - 19))
 		{
 			trap_Print(va(S_COLOR_YELLOW "UI_LoadCustomFonts: maximum number of custom fonts reached, skipping '%s'\n", fontName));
 			continue;
@@ -939,6 +941,8 @@ void UI_LoadFonts(void)
 	UI_LoadFont(&fonts[14], "gfx/2d/BigcharsEliteStoropia.cfg");
 	UI_LoadFont(&fonts[15], "gfx/2d/BigcharsEliteOrbitron.cfg");
 	UI_LoadFont(&fonts[16], "gfx/2d/EliteOrbitron.cfg");
+	UI_LoadFont(&fonts[17], "gfx/2d/q4snumbers.cfg");
+	UI_LoadFont(&fonts[18], "gfx/2d/q4mnumbers.cfg");
 	UI_LoadCustomFonts();
 }
 
