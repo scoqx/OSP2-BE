@@ -2954,7 +2954,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	if (cg_chud.integer)
 	{
-		CG_CvarTouch("chud_file");
+		// CG_CvarTouch("chud_file");
+		CG_CvarTouch("cg_chud");
 	}
 
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);
