@@ -885,12 +885,43 @@ void CG_PrintPlayerIDs_f(void)
 void CG_TeamTaskClients_f(void)
 {
 	int p;
-	CG_Printf("\n^5Team Task Support Status:\n");
-	CG_Printf("^7| ^3%2s ^7| ^5%32s ^7| ^3%10s\n", "ID", "Player name", "Supports TT");
+	team_t myTeam;
+	
+	// Check if gametype is team-based
+	if (cgs.gametype < GT_TEAM)
+	{
+		CG_Printf("^1Error:^7 This command works only in team gametypes.\n");
+		return;
+	}
+	
+	// Check if player is spectator
+	if (cg.clientNum < 0 || cg.clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+	
+	if (!cgs.clientinfo[cg.clientNum].infoValid)
+	{
+		return;
+	}
+	
+	myTeam = cgs.clientinfo[cg.clientNum].team;
+	
+	if (myTeam == TEAM_SPECTATOR)
+	{	
+		CG_Printf("You are a spectator.\n");
+		return;
+	}
+	
+	// Print team members
+	CG_Printf("^5Team Task Support Status (%s^5 team):\n", 
+		myTeam == TEAM_RED ? "^1RED" : "^4BLUE");
+	CG_Printf("^7| ^3%2s ^7| ^5%32s ^7| ^3%10s\n", "ID", "Player name", "Supports team tasks");
 	CG_Printf("^7------------------------------------------------------------------------------\n");
+	
 	for (p = 0; p < MAX_CLIENTS; ++p)
 	{
-		if (cgs.clientinfo[p].infoValid)
+		if (cgs.clientinfo[p].infoValid && cgs.clientinfo[p].team == myTeam)
 		{
 			CG_Printf("^7| ^3%2d ^7| %32s ^7| %s\n", p, cgs.clientinfo[p].name_clean, 
 				cgs.clientinfo[p].supportsTeamTask ? "^2Yes" : "^1No");
@@ -1379,6 +1410,93 @@ void CG_TeamTaskMarkHere(void)
 	}
 }
 
+void CG_TeamTaskMarkWarn(void)
+{
+	int i;
+	centity_t* cent;
+	vec3_t backupPosition;
+	qboolean backUpPositionValid;
+
+	if (cgs.gametype < GT_TEAM)
+	{
+		CG_PrintOnce("^3There are no teams\n");
+		return;
+	}
+
+	/* Find frozen entity that belongs to local player */
+	for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+	{
+		cent = &cg_entities[i];
+		if (cent->currentState.eType == ET_PLAYER &&
+		        cent->currentState.clientNum == cg.clientNum &&
+		        cent->currentValid &&
+		        CG_IsFrozenEntity(cent))
+		{
+			/* Found our frozen entity - copy coordinates */
+			VectorCopy(cent->lerpOrigin, backupPosition);
+			backupPosition[2] += 24.0f;
+			backUpPositionValid = qtrue;
+			break;
+		}
+	}
+
+	if (CG_IsDead() || !CG_IsLocalClientOnScreen())
+	{
+		/* Check cooldown for tWarn DEAD command (2 seconds) */
+		if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketWarn, cg.time))
+		{
+			return;
+		}
+
+		/* Player is dead - send WARN_DEAD with death coordinates (same as HERE_DEAD) */
+		if (cgs.be.teamMarkers.deathPositionValid)
+		{
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_WARN_DEAD, cgs.be.teamMarkers.deathPosition, qtrue);
+		}
+		else if (backUpPositionValid)
+		{
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_WARN_DEAD, backupPosition, qtrue);
+		}
+		else
+		{
+			/* Player is dead/spectating but no death position available */
+			CG_Printf("^3No death position available\n");
+		}
+		return;
+	}
+
+	/* Check if we're currently alive */
+	if (!CG_IsDead() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
+	{
+		/* Player is alive - send WARN_ALIVE using view direction (like tAttack) */
+		CG_SendTeamTaskMark(0, TEAMTASK_WARN_ALIVE);
+		return;
+	}
+	else
+	{
+		/* Check cooldown for tWarn DEAD command (2 seconds) */
+		if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketWarn, cg.time))
+		{
+			return;
+		}
+
+		/* Player is dead/spectating - send WARN_DEAD */
+		if (cgs.be.teamMarkers.deathPositionValid)
+		{
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_WARN_DEAD, cgs.be.teamMarkers.deathPosition, qtrue);
+		}
+		else if (backUpPositionValid)
+		{
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_WARN_DEAD, backupPosition, qtrue);
+		}
+		else
+		{
+			/* Player is dead/spectating but no death position available */
+			CG_Printf("^3No death position available\n");
+		}
+	}
+}
+
 void CG_TeamTaskMarkSend(void)
 {
 	int targetType;
@@ -1421,7 +1539,7 @@ void CG_TeamTaskMarkSend(void)
 	else
 	{
 		/* Check what we're aiming at using CG_CrosshairTarget */
-		/* Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy */
+		/* Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy, 7 = quaddamage, 8 = regeneration, 9 = battlesuit, 10 = haste, 11 = yellow armor, 12 = health */
 		/* If item found, itemPos contains item center position */
 		targetType = CG_CrosshairTarget(itemPos);
 	}
@@ -1515,6 +1633,78 @@ void CG_TeamTaskMarkSend(void)
 			        cgs.be.teamMarkers.smartTargetTime > 0 &&
 			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
 			        cgs.be.teamMarkers.smartTargetType == 4)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
+			return;
+		case 7: /* quaddamage */
+			markType = TEAMTASK_QUADDAMAGE;
+			/* Use saved item position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 7)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
+			return;
+		case 8: /* regeneration */
+			markType = TEAMTASK_REGENERATION;
+			/* Use saved item position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 8)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
+			return;
+		case 9: /* battlesuit */
+			markType = TEAMTASK_BATTLESUIT;
+			/* Use saved item position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 9)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
+			return;
+		case 10: /* haste */
+			markType = TEAMTASK_HASTE;
+			/* Use saved item position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 10)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
+			return;
+		case 11: /* yellow armor */
+			markType = TEAMTASK_YELLOWARMOR;
+			/* Use saved item position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 11)
+			{
+				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+			}
+			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
+			return;
+		case 12: /* health */
+			markType = TEAMTASK_HEALTH;
+			/* Use saved item position if available, otherwise use current itemPos */
+			if ((cg_teamTaskWheel.integer & 2) &&
+			        cgs.be.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.be.teamMarkers.smartTargetType == 12)
 			{
 				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
 			}
@@ -1636,12 +1826,19 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("  ^2tNo^7         - Send NO (overhead mark)\n");
 	CG_Printf("  ^2tMedic^7      - Request medic (overhead mark)\n");
 	CG_Printf("  ^2tHere^7       - Mark your current position (alive) or death location (dead)\n");
+	CG_Printf("  ^2tWarn^7       - Mark crosshair position (alive) or death location (dead)\n");
 	CG_Printf("  ^2tSmart^7      - Smart mode (auto-detects target)\n");
 	CG_Printf("  ^7Smart mode automatically detects:\n");
 	CG_Printf("    - Enemy players (marks as target)\n");
 	CG_Printf("    - Frozen enemy and ally bodies\n");
 	CG_Printf("    - Red armor (marks as redarmor)\n");
 	CG_Printf("    - Megahealth (marks as megahealth)\n");
+	CG_Printf("    - Quad damage (marks as quaddamage)\n");
+	CG_Printf("    - Regeneration (marks as regeneration)\n");
+	CG_Printf("    - Battle suit (marks as battlesuit)\n");
+	CG_Printf("    - Haste (marks as haste)\n");
+	CG_Printf("    - Yellow armor (marks as yellowarmor)\n");
+	CG_Printf("    - Health bubbles (marks as health)\n");
 	CG_Printf("    - Nothing (uses default from ^3cg_teamTaskSmartDefault^7)\n\n");
 
 	CG_Printf("^3Muting team tasks:\n");
@@ -1859,6 +2056,7 @@ static consoleCommand_t commands[] =
 	{ "tMedic", CG_TeamTaskMarkMedic },
 	{ "tLocation", CG_TeamTaskMarkLocation },
 	{ "tHere", CG_TeamTaskMarkHere },
+	{ "tWarn", CG_TeamTaskMarkWarn },
 	{ "tSmart", CG_TeamTaskMarkSend },
 	{ "+ttwheel", CG_SelwheelMarkStart },
 	{ "-ttwheel", CG_SelwheelMarkStop },

@@ -69,7 +69,15 @@ void CG_SHUDElementSBAmBRoutine(void* context)
 	}
 	else if (ammo > element->red)
 	{
-		VectorSet(element->ctx.color_top, 1.0f, 0.7f, 0.0f);
+		// Use color2 if set, otherwise use default yellow
+		if (element->config.color2.isSet)
+		{
+			Vector4Copy(element->config.color2.value.rgba, element->ctx.color_top);
+		}
+		else
+		{
+			VectorSet(element->ctx.color_top, 1.0f, 0.7f, 0.0f);
+		}
 	}
 	else if (cg.time & 512)
 	{

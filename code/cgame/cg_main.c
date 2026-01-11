@@ -558,6 +558,8 @@ vmCvar_t        cg_exec_joinSpec;
 vmCvar_t        cg_exec_onDeath;
 vmCvar_t        cg_exec_gauntlet;
 vmCvar_t        cg_exec_bfg;
+vmCvar_t        cg_simpleItemsRadius;
+vmCvar_t        cg_simpleItemsBob;
 
 // vmCvar_t        cg_snow;
 
@@ -990,7 +992,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamTaskFadeRadius, "cg_teamTaskFadeRadius", "128", CVAR_ARCHIVE  | CVAR_NEW},
 	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE  | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskFont, },
 	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "12", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
-	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "defence here medic smart yes no", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
+	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "defence here medic smart yes no warn", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
 	{ &cg_teamTaskWheelSensitivity, "cg_teamTaskWheelSensitivity", "3.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskWheelScale, "cg_teamTaskWheelScale", "1.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_storedSensitivity, "cg_storedSensitivity", "1.0", CVAR_NOTABCOMPLETE | CVAR_ARCHIVE | CVAR_INIT },
@@ -1021,6 +1023,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_exec_onDeath, "cg_exec_onDeath", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_exec_gauntlet, "cg_exec_gauntlet", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_exec_bfg, "cg_exec_bfg", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_simpleItemsRadius, "cg_simpleItemsRadius", "14", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_simpleItemsRadius },
+	{ &cg_simpleItemsBob, "cg_simpleItemsBob", "0", CVAR_ARCHIVE },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1776,7 +1780,14 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksTarget = trap_R_RegisterShader("teamTasks_target");
 	cgs.media.teamTasksRedarmor = trap_R_RegisterShader("teamTasks_redarmor");
 	cgs.media.teamTasksMegahealth = trap_R_RegisterShader("teamTasks_megahealth");
+	cgs.media.teamTasksQuad = trap_R_RegisterShader("teamTasks_quad");
+	cgs.media.teamTasksRegen = trap_R_RegisterShader("teamTasks_regen");
+	cgs.media.teamTasksBattlesuit = trap_R_RegisterShader("teamTasks_battlesuit");
+	cgs.media.teamTasksHaste = trap_R_RegisterShader("teamTasks_haste");
+	cgs.media.teamTasksYellowarmor = trap_R_RegisterShader("teamTasks_yellowarmor");
+	cgs.media.teamTasksHealth = trap_R_RegisterShader("teamTasks_health");
 	cgs.media.teamTasksMedic = trap_R_RegisterShader("teamTasks_medic");
+	cgs.media.teamTasksWarning = trap_R_RegisterShader("teamTasks_warning");
 	/* team tasks hud markers */
 	cgs.media.teamTasksAttack_marker = trap_R_RegisterShader("teamTasks_attack_m");
 	cgs.media.teamTasksDefence_marker = trap_R_RegisterShader("teamTasks_defence_m");
@@ -1786,7 +1797,14 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksTarget_marker = trap_R_RegisterShader("teamTasks_target_m");
 	cgs.media.teamTasksRedarmor_marker = trap_R_RegisterShader("teamTasks_redarmor_m");
 	cgs.media.teamTasksMegahealth_marker = trap_R_RegisterShader("teamTasks_megahealth_m");
+	cgs.media.teamTasksQuad_marker = trap_R_RegisterShader("teamTasks_quad_m");
+	cgs.media.teamTasksRegen_marker = trap_R_RegisterShader("teamTasks_regen_m");
+	cgs.media.teamTasksBattlesuit_marker = trap_R_RegisterShader("teamTasks_battlesuit_m");
+	cgs.media.teamTasksHaste_marker = trap_R_RegisterShader("teamTasks_haste_m");
+	cgs.media.teamTasksYellowarmor_marker = trap_R_RegisterShader("teamTasks_yellowarmor_m");
+	cgs.media.teamTasksHealth_marker = trap_R_RegisterShader("teamTasks_health_m");
 	cgs.media.teamTasksMedic_marker = trap_R_RegisterShader("teamTasks_medic_m");
+	cgs.media.teamTasksWarning_marker = trap_R_RegisterShader("teamTasks_warning_m");
 	cgs.media.teamTasksFrozen_marker = trap_R_RegisterShader("teamTasks_frozen_m");
 	/* team tasks misc */
 	cgs.media.teamTasksCircle = trap_R_RegisterShader("teamTasks_circle");
@@ -1888,6 +1906,8 @@ static void CG_RegisterGraphics(void)
 
 	cgs.media.armorModel[2] = trap_R_RegisterModel("models/powerups/armor/armor_red.md3");
 	cgs.media.armorIcon[2]  = trap_R_RegisterShaderNoMip("icons/iconr_red");
+
+	cgs.media.healthIcon = trap_R_RegisterShaderNoMip("icons/iconh_yellow");
 
 	cgs.media.machinegunBrassModel = trap_R_RegisterModel("models/weapons2/shells/m_shell.md3");
 	cgs.media.shotgunBrassModel = trap_R_RegisterModel("models/weapons2/shells/s_shell.md3");
@@ -2570,6 +2590,8 @@ void CG_InitTeamTaskMarkers(void)
 	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketFlood, 64, 1000, cg.time);
 	/* Initialize cooldown token bucket for tHere command (1 token, refill 1 token per 2000ms = 2 seconds) */
 	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketHere, 1, 2000, cg.time);
+	/* Initialize cooldown token bucket for tWarn command (1 token, refill 1 token per 2000ms = 2 seconds) */
+	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketWarn, 1, 2000, cg.time);
 
 	/* Initialize death position storage */
 	VectorClear(cgs.be.teamMarkers.deathPosition);

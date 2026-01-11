@@ -1230,9 +1230,12 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 		}
 	}
-	else if (templateID == TEAMTASK_REDARMOR || templateID == TEAMTASK_MEGAHEALTH) /* REDARMOR and MEGAHEALTH are auto-selected by smart mode */
+	else if (templateID == TEAMTASK_REDARMOR || templateID == TEAMTASK_MEGAHEALTH ||
+	         templateID == TEAMTASK_QUADDAMAGE || templateID == TEAMTASK_REGENERATION ||
+	         templateID == TEAMTASK_BATTLESUIT || templateID == TEAMTASK_HASTE ||
+	         templateID == TEAMTASK_YELLOWARMOR || templateID == TEAMTASK_HEALTH) /* Items auto-selected by smart mode */
 	{
-		/* For red armor and megahealth, find the item entity near received coordinates */
+		/* For items, find the item entity near received coordinates */
 		/* and use its actual position instead of trace coordinates */
 		int i;
 		centity_t* cent;
@@ -1252,9 +1255,35 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 		{
 			targetClassname = "item_armor_body";
 		}
-		else
+		else if (templateID == TEAMTASK_MEGAHEALTH)
 		{
 			targetClassname = "item_health_mega";
+		}
+		else if (templateID == TEAMTASK_QUADDAMAGE)
+		{
+			targetClassname = "item_quad";
+		}
+		else if (templateID == TEAMTASK_REGENERATION)
+		{
+			targetClassname = "item_regen";
+		}
+		else if (templateID == TEAMTASK_BATTLESUIT)
+		{
+			targetClassname = "item_enviro";
+		}
+		else if (templateID == TEAMTASK_HASTE)
+		{
+			targetClassname = "item_haste";
+		}
+		else if (templateID == TEAMTASK_YELLOWARMOR)
+		{
+			targetClassname = "item_armor_combat";
+		}
+		else /* TEAMTASK_HEALTH */
+		{
+			/* For health, we need to check both item_health and item_health_large */
+			/* This will be handled in the loop below */
+			targetClassname = NULL; /* Will check both */
 		}
 
 		/* Try to find item entity near received coordinates */
@@ -1267,18 +1296,40 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 				if (itemIndex >= 1 && itemIndex < bg_numItems)
 				{
 					item = &bg_itemlist[itemIndex];
-					if (item->classname && !Q_stricmp(item->classname, targetClassname))
+					if (item->classname)
 					{
-						/* Check if item is near received coordinates */
-						dist = Distance(cent->lerpOrigin, coord);
-						if (dist <= searchRadius)
+						/* For health, check both item_health and item_health_large */
+						if (templateID == TEAMTASK_HEALTH)
 						{
-							/* Found item - use its actual position (original position before bob effect) */
-							VectorCopy(cent->lerpOrigin, itemPos);
-							itemPos[2] += 4;
-							CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
-							foundItem = qtrue;
-							break;
+							if (!Q_stricmp(item->classname, "item_health") ||
+							    !Q_stricmp(item->classname, "item_health_large"))
+							{
+								/* Check if item is near received coordinates */
+								dist = Distance(cent->lerpOrigin, coord);
+								if (dist <= searchRadius)
+								{
+									/* Found item - use its actual position (original position before bob effect) */
+									VectorCopy(cent->lerpOrigin, itemPos);
+									itemPos[2] += 4;
+									CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
+									foundItem = qtrue;
+									break;
+								}
+							}
+						}
+						else if (!Q_stricmp(item->classname, targetClassname))
+						{
+							/* Check if item is near received coordinates */
+							dist = Distance(cent->lerpOrigin, coord);
+							if (dist <= searchRadius)
+							{
+								/* Found item - use its actual position (original position before bob effect) */
+								VectorCopy(cent->lerpOrigin, itemPos);
+								itemPos[2] += 4;
+								CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
+								foundItem = qtrue;
+								break;
+							}
 						}
 					}
 				}
@@ -1296,10 +1347,25 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 		/* For death marks, use coordinates from message directly (position of death) */
 		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 	}
-	else if (templateID == TEAMTASK_HERE_DEAD)
+	else if (templateID == TEAMTASK_HERE_DEAD || templateID == TEAMTASK_WARN_DEAD)
 	{
-		/* For HERE_DEAD marks, use coordinates from message directly (death position) */
+		/* For HERE_DEAD and WARN_DEAD marks, use coordinates from message directly (death position) */
 		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+	}
+	else if (templateID == TEAMTASK_WARN_ALIVE)
+	{
+		/* For WARN_ALIVE, try to use aim contact point for more accurate positioning (like other marks) */
+		vec3_t* aimPoint;
+		aimPoint = CG_GetAimContactPoint(clientNum);
+		if (aimPoint != NULL)
+		{
+			CG_TeamTaskMark(*aimPoint, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+		}
+		else
+		{
+			/* Fallback to coord if aimPoint is not available */
+			CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+		}
 	}
 	else
 	{

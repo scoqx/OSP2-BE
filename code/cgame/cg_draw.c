@@ -1951,7 +1951,7 @@ void CG_ScanForCrosshairEntity(void)
 =================
 CG_IsLookingAtItemHitbox
 =================
-Returns qtrue if looking at red armor or megahealth hitbox
+Returns qtrue if looking at item hitbox (for items that support hitbox detection)
 */
 static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* cent, gitem_t* item)
 {
@@ -1970,13 +1970,6 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 	}
 
 	if (!item->classname)
-	{
-		return qfalse;
-	}
-
-	// Only check red armor and megahealth
-	if (Q_stricmp(item->classname, "item_armor_body") &&
-	        Q_stricmp(item->classname, "item_health_mega"))
 	{
 		return qfalse;
 	}
@@ -2002,10 +1995,10 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 	// Create bounding box for hitbox (centered on item, extending upward)
 	mins[0] = -hbox_size_xy;
 	mins[1] = -hbox_size_xy;
-	mins[2] = 0.0f;  // Start from item's original Z
+	mins[2] = -8.0f;  // Start 8 pixels below item's original Z (extended downward)
 	maxs[0] = hbox_size_xy;
 	maxs[1] = hbox_size_xy;
-	maxs[2] = hbox_height;  // Extend upward
+	maxs[2] = hbox_height;  // Extend upward (top stays at same position)
 
 	// Create temporary box model for trace
 	cmodel = trap_CM_TempBoxModel(mins, maxs);
@@ -2028,7 +2021,8 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 =================
 CG_CrosshairTarget
 =================
-Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy
+Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy,
+         7 = quaddamage, 8 = regeneration, 9 = battlesuit, 10 = haste, 11 = yellow armor, 12 = health
 If item found, itemPos is filled with item center position
 */
 int CG_CrosshairTarget(vec3_t itemPos)
@@ -2120,7 +2114,14 @@ int CG_CrosshairTarget(vec3_t itemPos)
 					checkItem = &bg_itemlist[checkItemIndex];
 					if (checkItem->classname && (
 					            !Q_stricmp(checkItem->classname, "item_armor_body") ||
-					            !Q_stricmp(checkItem->classname, "item_health_mega")))
+					            !Q_stricmp(checkItem->classname, "item_health_mega") ||
+					            !Q_stricmp(checkItem->classname, "item_quad") ||
+					            !Q_stricmp(checkItem->classname, "item_regen") ||
+					            !Q_stricmp(checkItem->classname, "item_enviro") ||
+					            !Q_stricmp(checkItem->classname, "item_haste") ||
+					            !Q_stricmp(checkItem->classname, "item_armor_combat") ||
+					            !Q_stricmp(checkItem->classname, "item_health") ||
+					            !Q_stricmp(checkItem->classname, "item_health_large")))
 					{
 						// Check if ray intersects with hitbox
 						if (CG_IsLookingAtItemHitbox(start, end, checkCent, checkItem))
@@ -2153,6 +2154,31 @@ int CG_CrosshairTarget(vec3_t itemPos)
 								if (!Q_stricmp(checkItem->classname, "item_health_mega"))
 								{
 									return 4;  // megahealth
+								}
+								if (!Q_stricmp(checkItem->classname, "item_quad"))
+								{
+									return 7;  // quaddamage
+								}
+								if (!Q_stricmp(checkItem->classname, "item_regen"))
+								{
+									return 8;  // regeneration
+								}
+								if (!Q_stricmp(checkItem->classname, "item_enviro"))
+								{
+									return 9;  // battlesuit
+								}
+								if (!Q_stricmp(checkItem->classname, "item_haste"))
+								{
+									return 10;  // haste
+								}
+								if (!Q_stricmp(checkItem->classname, "item_armor_combat"))
+								{
+									return 11;  // yellow armor
+								}
+								if (!Q_stricmp(checkItem->classname, "item_health") ||
+								    !Q_stricmp(checkItem->classname, "item_health_large"))
+								{
+									return 12;  // health (both 25 and 50)
 								}
 							}
 						}

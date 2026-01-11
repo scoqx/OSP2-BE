@@ -794,7 +794,7 @@ static void CG_SHUDBarPreparePrintTTB(const superhudBarContext_t* ctx, float val
 		{
 			height = 0;
 		}
-		coords->bar1_value[2] = height;
+		coords->bar1_value[3] = height; // Set height (index 3), not width (index 2)
 	}
 }
 
@@ -803,8 +803,17 @@ static void CG_SHUDBarPreparePrintBTT(const superhudBarContext_t* ctx, float val
 	//Just make top to bottom and mirror it
 	CG_SHUDBarPreparePrintTTB(ctx, value, coords);
 
-	coords->bar1_value[1] += ctx->bar[0][3] - coords->bar1_value[3]; //y = y + max_height - height
-	coords->bar2_value[1] += ctx->bar[1][3] - coords->bar2_value[3]; //y = y + max_height - height
+	if (ctx->two_bars)
+	{
+		// For double bar, adjust both bars
+		coords->bar1_value[1] += ctx->bar[0][3] - coords->bar1_value[3]; //y = y + max_height - height
+		coords->bar2_value[1] += ctx->bar[1][3] - coords->bar2_value[3]; //y = y + max_height - height
+	}
+	else
+	{
+		// For single bar
+		coords->bar1_value[1] += ctx->bar[0][3] - coords->bar1_value[3]; //y = y + max_height - height
+	}
 }
 
 /*

@@ -1201,3 +1201,17 @@ void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart)
 		CG_PrintOnce("^3cg_teamTaskMarkTime^7 is out of range, set to ^2%d^7\n", newValue);
 	}
 }
+
+void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart)
+{
+	if (cvart->vmCvar->value < 8.00f || cvart->vmCvar->integer < 8)
+	{
+		trap_Cvar_Set(cvart->cvarName, "8");
+		CG_PrintOnce("^3cg_simpleItemsRadius^7 is out of range, set to ^28^7\n");
+	}
+	else if (cvart->vmCvar->value > 24.00f || cvart->vmCvar->integer > 24)
+	{
+		trap_Cvar_Set(cvart->cvarName, "24");
+		CG_PrintOnce("^3cg_simpleItemsRadius^7 is out of range, set to ^224^7\n");
+	}
+}

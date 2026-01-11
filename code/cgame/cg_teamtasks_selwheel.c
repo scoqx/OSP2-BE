@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 /* External reference to teamTaskCommands array from cg_teamtasks_utils.c */
 extern teamTaskCommand_t teamTaskCommands[];
-#define NUM_TEAMTASK_COMMANDS 11
+#define NUM_TEAMTASK_COMMANDS 12
 
 /* Constants for selection wheel */
 #define SELWHEEL_ICON_RADIUS 20.0f /* Distance from center to icons (in 640x480 coordinates) */
@@ -1398,9 +1398,12 @@ void CG_SelwheelMarkStart(void)
 				cgs.be.teamMarkers.smartTargetPos[2] += 24.0f;
 			}
 		}
-		else if (cgs.be.teamMarkers.smartTargetType == 3 || cgs.be.teamMarkers.smartTargetType == 4)
+		else if (cgs.be.teamMarkers.smartTargetType == 3 || cgs.be.teamMarkers.smartTargetType == 4 ||
+		         cgs.be.teamMarkers.smartTargetType == 7 || cgs.be.teamMarkers.smartTargetType == 8 ||
+		         cgs.be.teamMarkers.smartTargetType == 9 || cgs.be.teamMarkers.smartTargetType == 10 ||
+		         cgs.be.teamMarkers.smartTargetType == 11 || cgs.be.teamMarkers.smartTargetType == 12)
 		{
-			// Item (red armor or megahealth) - use item center position
+			// Item (red armor, megahealth, quaddamage, regeneration, battlesuit, haste, yellow armor, health) - use item center position
 			VectorCopy(itemPos, cgs.be.teamMarkers.smartTargetPos);
 		}
 		else if (cgs.be.teamMarkers.smartTargetType == 5 || cgs.be.teamMarkers.smartTargetType == 6)

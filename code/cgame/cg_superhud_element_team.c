@@ -163,6 +163,10 @@ void CG_SHUDElementTeamRoutine(void* context)
 	int index;
 	int ourTeam;
 
+	if (!cg_drawTeamOverlay.integer)
+	{
+		return;
+	}
 	if (CG_OSPIsGameTypeFreeze())
 	{
 		ourTeam = cgs.clientinfo[cg.clientNum].rt;

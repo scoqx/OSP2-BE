@@ -782,6 +782,7 @@ typedef struct
 
 	qhandle_t   armorModel[3];
 	qhandle_t   armorIcon[3];
+	qhandle_t   healthIcon;
 
 	qhandle_t   teamStatusBar;
 
@@ -1008,7 +1009,14 @@ typedef struct
 	qhandle_t teamTasksTarget;
 	qhandle_t teamTasksRedarmor;
 	qhandle_t teamTasksMegahealth;
+	qhandle_t teamTasksQuad;
+	qhandle_t teamTasksRegen;
+	qhandle_t teamTasksBattlesuit;
+	qhandle_t teamTasksHaste;
+	qhandle_t teamTasksYellowarmor;
+	qhandle_t teamTasksHealth;
 	qhandle_t teamTasksMedic;
+	qhandle_t teamTasksWarning;
 
 	qhandle_t teamTasksAttack_marker;
 	qhandle_t teamTasksDefence_marker;
@@ -1018,7 +1026,14 @@ typedef struct
 	qhandle_t teamTasksTarget_marker;
 	qhandle_t teamTasksRedarmor_marker;
 	qhandle_t teamTasksMegahealth_marker;
+	qhandle_t teamTasksQuad_marker;
+	qhandle_t teamTasksRegen_marker;
+	qhandle_t teamTasksBattlesuit_marker;
+	qhandle_t teamTasksHaste_marker;
+	qhandle_t teamTasksYellowarmor_marker;
+	qhandle_t teamTasksHealth_marker;
 	qhandle_t teamTasksMedic_marker;
+	qhandle_t teamTasksWarning_marker;
 	qhandle_t teamTasksFrozen_marker;
 	qhandle_t teamTasksCircle;
 	qhandle_t teamTasksSmart;
@@ -1313,6 +1328,8 @@ typedef struct cgs_be_s
 		tokenBucket_t sendCommandBucketFlood;
 		// cooldown for tHere command (1 token, 2000ms refill = 2 seconds)
 		tokenBucket_t sendCommandBucketHere;
+		// cooldown for tWarn command (1 token, 2000ms refill = 2 seconds)
+		tokenBucket_t sendCommandBucketWarn;
 
 		// ttwheel mark
 		qboolean    ttwheelMarkActive;
@@ -1330,7 +1347,7 @@ typedef struct cgs_be_s
 		vec4_t      teamTaskThemeColor; // Theme color for team task UI elements
 
 		// smart target memory (for wheel opening)
-		int         smartTargetType; // 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth
+		int         smartTargetType; // 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy, 7 = quaddamage, 8 = regeneration, 9 = battlesuit, 10 = haste, 11 = yellow armor, 12 = health
 		vec3_t      smartTargetPos; // Position of target (enemy or item)
 		int         smartTargetTime; // Time when target was saved (for 500ms memory)
 		int         smartTargetEntityNum; // Entity number of enemy (if target is enemy)
@@ -2069,6 +2086,8 @@ extern vmCvar_t         cg_exec_joinSpec;
 extern vmCvar_t         cg_exec_onDeath;
 extern vmCvar_t         cg_exec_gauntlet;
 extern vmCvar_t         cg_exec_bfg;
+extern vmCvar_t           cg_simpleItemsRadius;
+extern vmCvar_t           cg_simpleItemsBob;
 
 
 // extern vmCvar_t          cg_snow;
@@ -2851,7 +2870,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00k" // BE
+#define OSP_VERSION "be-1.00l" // BE
 
 
 
@@ -3041,6 +3060,7 @@ void CG_TeamTaskMarkNo(void);
 void CG_TeamTaskMarkMedic(void);
 void CG_TeamTaskMarkLocation(void);
 void CG_TeamTaskMarkHere(void);
+void CG_TeamTaskMarkWarn(void);
 void CG_TeamTaskMarkSend(void);
 void CG_SelwheelMarkStart(void);
 void CG_SelwheelMarkStop(void);
@@ -3187,7 +3207,6 @@ void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart);
-
 void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart);
@@ -3203,6 +3222,8 @@ void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart);
+
 #ifdef __cplusplus
 }
 #endif

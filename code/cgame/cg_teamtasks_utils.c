@@ -155,9 +155,16 @@ teamTaskCommand_t teamTaskCommands[] =
 	{ "no", NULL, TEAMTASK_NO, qtrue, qfalse, CG_TeamTaskMarkNo, "tNo" },
 	{ "location", "position", TEAMTASK_LOCATION, qfalse, qtrue, CG_TeamTaskMarkLocation, "tLocation" },
 	{ "here", NULL, TEAMTASK_HERE_ALIVE, qtrue, qtrue, CG_TeamTaskMarkHere, "tHere" },
+	{ "warn", NULL, TEAMTASK_WARN_ALIVE, qfalse, qtrue, CG_TeamTaskMarkWarn, "tWarn" },
 	{ "target", NULL, TEAMTASK_TARGET, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
 	{ "redarmor", NULL, TEAMTASK_REDARMOR, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
 	{ "megahealth", NULL, TEAMTASK_MEGAHEALTH, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
+	{ "quaddamage", NULL, TEAMTASK_QUADDAMAGE, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
+	{ "regeneration", NULL, TEAMTASK_REGENERATION, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
+	{ "battlesuit", NULL, TEAMTASK_BATTLESUIT, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
+	{ "haste", NULL, TEAMTASK_HASTE, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
+	{ "yellowarmor", NULL, TEAMTASK_YELLOWARMOR, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
+	{ "health", NULL, TEAMTASK_HEALTH, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
 	{ "medic", NULL, TEAMTASK_MEDIC, qtrue, qfalse, CG_TeamTaskMarkMedic, "tMedic" }
 };
 
@@ -193,6 +200,10 @@ qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType)
 			return cgs.media.teamTasksLocation;  // Use existing location shader for alive player
 		case TEAMTASK_HERE_DEAD:
 			return cgs.media.teamTasksDead;      // Use existing skull shader for death location
+		case TEAMTASK_WARN_ALIVE:
+			return cgs.media.teamTasksWarning;
+		case TEAMTASK_WARN_DEAD:
+			return cgs.media.teamTasksWarning;
 		default:
 			return 0;
 	}
@@ -294,6 +305,7 @@ Remove specific team task marks when round changes:
 - TEAMTASK_FROZEN_ALLY
 - TEAMTASK_FROZEN_ENEMY
 - TEAMTASK_HERE_DEAD
+- TEAMTASK_WARN_DEAD
 - TEAMTASK_PLAYERDEAD
 Uses pack array algorithm (O(n) instead of O(n²))
 =================
@@ -319,6 +331,7 @@ void CG_ClearRoundSpecificTeamTaskMarks(void)
 		if (mark->markType != TEAMTASK_FROZEN_ALLY &&
 		        mark->markType != TEAMTASK_FROZEN_ENEMY &&
 		        mark->markType != TEAMTASK_HERE_DEAD &&
+		        mark->markType != TEAMTASK_WARN_DEAD &&
 		        mark->markType != TEAMTASK_PLAYERDEAD)
 		{
 			if (writeIndex != i)

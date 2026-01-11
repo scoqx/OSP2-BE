@@ -252,12 +252,90 @@ static void CG_AddSimpleItem(centity_t* cent)
 	memset(&ent, 0, sizeof(ent));
 	ent.reType = RT_SPRITE;
 	VectorCopy(cent->lerpOrigin, ent.origin);
-	ent.radius = 14;
+	if (cg_simpleItems.integer == 2)
+	{
+		ent.radius = 14;
+	}
+	else if (cg_simpleItems.integer)
+	{
+		ent.radius = cg_simpleItemsRadius.integer;
+		if (ent.radius > 24)
+		{
+			ent.radius = 24;
+		}
+		if (ent.radius < 8)
+		{
+			ent.radius = 8;
+		}
+		if (ent.radius > 14)
+		{
+			qboolean isAmmoOrWeapon = qfalse;
+			float originalRadius = ent.radius;
+			
+			switch (item->giType)
+			{
+				case IT_AMMO:
+				case IT_WEAPON:
+					ent.radius *= 0.8f;
+					isAmmoOrWeapon = qtrue;
+					break;
+				default:
+					break;
+			}
+			
+			if (isAmmoOrWeapon)
+			{
+				float centerLift = (originalRadius - 14) * 1.5f;
+				ent.origin[2] += centerLift;
+			}
+			else
+			{
+				ent.origin[2] += (ent.radius - 14) * 1.5f;
+			}
+		}
+	}
+
 	ent.customShader = cg_items[modelIndex].icon;
 	ent.shaderRGBA[0] = 255;
 	ent.shaderRGBA[1] = 255;
 	ent.shaderRGBA[2] = 255;
 	ent.shaderRGBA[3] = 255;
+
+	// items bob up and down continuously
+	if (cg_simpleItemsBob.integer)
+	{
+		qboolean shouldBob = qfalse;
+		
+		if (cg_simpleItemsBob.integer == 1)
+		{
+			// All simple items except armor shard
+			shouldBob = qtrue;
+		}
+		else if (cg_simpleItemsBob.integer == 2)
+		{
+			// Only IT_ARMOR (except shard), IT_POWERUP, IT_HOLDABLE and MEGAHEALTH (item_health_large)
+			if (item->giType == IT_ARMOR && Q_stricmp(item->classname, "item_armor_shard"))
+			{
+				shouldBob = qtrue;
+			}
+			else if (item->giType == IT_POWERUP || item->giType == IT_HOLDABLE)
+			{
+				shouldBob = qtrue;
+			}
+			else if (!Q_stricmp(item->classname, "item_health_mega"))
+			{
+				// MEGAHEALTH (item_health_large)
+				shouldBob = qtrue;
+			}
+		}
+		
+		if (shouldBob)
+		{
+			// Use unified timer so all items bob in sync
+			float scale = 0.005;
+			ent.origin[2] += 4 + cos((cg.time + 1000) * scale) * 4;
+		}
+	}
 
 	if (cg_simpleItems.integer == 2)
 	{

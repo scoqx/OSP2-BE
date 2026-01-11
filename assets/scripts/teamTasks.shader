@@ -126,6 +126,84 @@ teamTasks_megahealth
 	}
 }
 
+teamTasks_battlesuit
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_battlesuit.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_haste
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_haste.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_health
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_health.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_quad
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_quad.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_regen
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_regen.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_yellowarmor
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_yellowarmor.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+
+teamTasks_warning
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/warning.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
 
 teamTasks_flag
 {
@@ -231,6 +309,83 @@ teamTasks_megahealth_m
 	nopicmip
 	{
 		map sprites/teamTasks/item_megahealth_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_battlesuit_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_battlesuit_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_haste_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_haste_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_health_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_health_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_quad_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_quad_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_regen_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_regen_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_yellowarmor_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_yellowarmor_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_warning_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/warning_marker.tga
 		blendfunc blend
 		rgbgen vertex
 	}

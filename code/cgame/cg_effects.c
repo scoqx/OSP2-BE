@@ -1293,8 +1293,8 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 		}
 	}
 
-	/* If this is a HERE_DEAD mark, remove any existing PLAYERDEAD mark from the same player */
-	if (markType == TEAMTASK_HERE_DEAD && clientNum >= 0 && clientNum < MAX_CLIENTS)
+	/* If this is a HERE_DEAD or WARN_DEAD mark, remove any existing PLAYERDEAD mark from the same player */
+	if ((markType == TEAMTASK_HERE_DEAD || markType == TEAMTASK_WARN_DEAD) && clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
 		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
 		{
@@ -1329,7 +1329,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	/* Store markType directly (no overhead flag anymore) */
 	mark->markType = markType;
 
-	/* Check if this is an overhead mark type (YES, NO, or MEDIC) - if so, track player dynamically */
+	/* Check if this is an overhead mark type (YES, NO, MEDIC, or HERE_ALIVE) - if so, track player dynamically */
 	playerAvailable = qfalse;
 	if (CG_IsTeamTaskOverhead(markType) && clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
@@ -1363,6 +1363,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	}
 
 	/* If player not available or not an overhead mark, use coordinates from message */
+	/* Note: WARN_ALIVE coordinates are already set via CG_GetAimContactPoint in cg_players.c */
 	if (!playerAvailable)
 	{
 		VectorCopy(coord, center);

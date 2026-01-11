@@ -431,9 +431,11 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamChatColor", "Color for team chat messages. ^20^7-^29^7 or ^2a^7-^2z^7 - Q3A colors." },
 	{ "cg_countdownTimer", "Timer mode\n  ^20^7 - elapsed time\n  ^21^7 - countdown timer" },
 	{ "cg_printui", "Enable printui functionality for displaying text on screen\n  ^20^7 - disabled\n  ^21^7 - enabled" },
-	{ "cg_printui_template", "Template for printui command. Used with ^2t1^7 option.\nFormat: \"^2x y size alignment font number time^7\"" },
-	{ "cg_printui_template2", "Second template for printui command. Used with ^2t2^7 option.\nFormat: \"^2x y size alignment font number time^7\"" },
+	{ "cg_printui_template", "Template for printui command. Used with ^2t1^7 option.\nFormat: \"^2use any printUI parameters here\"" },
+	{ "cg_printui_template2", "Second template for printui command. Used with ^2t2^7 option.\nFormat: \"^2use any printUI parameters here\"" },
 	{ "sensitivity", "Sets base mouse sensitivity (mouse speed)." },
+	{ "cg_simpleItemsRadius", "Sets the radius (size) of simple items sprites. Range: ^28^7-^224^7. Default: ^214^7." },
+	{ "cg_simpleItemsBob", "Enables bouncing animation for simple items. Values:\n  ^20^7 - disabled\n  ^21^7 - all simple items (except armor shard)\n  ^22^7 - only armor (except shard), powerups, holdables and mega health" },
 };
 
 

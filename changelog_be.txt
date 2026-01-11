@@ -650,3 +650,13 @@ SuperHUD:
           + 2 HUD configs (q4_strogg, q4_marine)
 + cg_exec_gauntlet
 + cg_exec_bfg
+
+11.01.2026 be v1.00l
+TEAMTASKS:
+  + /tSmart detect: quad damage, haste, battle suit, regeneration, yellow armor, health bubbles (50/25 with same icon), 
+  + /tWarn alive/dead action
+SuperHUD:
+  * cg_drawTeamOverlay affects of team# elements (disable/enable)
+  * StatusBar_AmmoBar direction fix, +color2 support
++ cg_simpleItemsRadius (QL)
++ cg_simpleItemsBob (QL) - 0/1/2 

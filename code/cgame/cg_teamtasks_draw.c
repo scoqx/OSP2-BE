@@ -192,10 +192,43 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 				*worldShader = cgs.media.teamTasksDead;
 			}
 			break;
+		case TEAMTASK_WARN_ALIVE:
+			*markerShader = cgs.media.teamTasksWarning_marker;
+			*worldShader = cgs.media.teamTasksWarning;
+			break;
+		case TEAMTASK_WARN_DEAD:
+			/* Always use warning shader for WARN_DEAD */
+			*markerShader = cgs.media.teamTasksWarning_marker;
+			*worldShader = cgs.media.teamTasksWarning;
+			break;
 		case TEAMTASK_FROZEN_ALLY:
 		case TEAMTASK_FROZEN_ENEMY:
 			*markerShader = cgs.media.teamTasksFrozen_marker;
 			*worldShader = cgs.media.frozenFoeTagShader;
+			break;
+		case TEAMTASK_QUADDAMAGE:
+			*markerShader = cgs.media.teamTasksQuad_marker;
+			*worldShader = cgs.media.teamTasksQuad;
+			break;
+		case TEAMTASK_REGENERATION:
+			*markerShader = cgs.media.teamTasksRegen_marker;
+			*worldShader = cgs.media.teamTasksRegen;
+			break;
+		case TEAMTASK_BATTLESUIT:
+			*markerShader = cgs.media.teamTasksBattlesuit_marker;
+			*worldShader = cgs.media.teamTasksBattlesuit;
+			break;
+		case TEAMTASK_HASTE:
+			*markerShader = cgs.media.teamTasksHaste_marker;
+			*worldShader = cgs.media.teamTasksHaste;
+			break;
+		case TEAMTASK_YELLOWARMOR:
+			*markerShader = cgs.media.teamTasksYellowarmor_marker;
+			*worldShader = cgs.media.teamTasksYellowarmor;
+			break;
+		case TEAMTASK_HEALTH:
+			*markerShader = cgs.media.teamTasksHealth_marker;
+			*worldShader = cgs.media.teamTasksHealth;
 			break;
 		default:
 			*markerShader = cgs.media.teamTasksUnknown;
@@ -512,11 +545,11 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		}
 
 		/* Set color with alpha 0.25 and apply fade */
-		if (mark->markType == TEAMTASK_FROZEN_ALLY || mark->markType == TEAMTASK_FROZEN_ENEMY || mark->markType == TEAMTASK_HERE_DEAD)
+		if (mark->markType == TEAMTASK_FROZEN_ALLY || mark->markType == TEAMTASK_FROZEN_ENEMY || mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD)
 		{
-			/* For frozen bodies and HERE_DEAD, use team color for pulsing circle */
+			/* For frozen bodies, HERE_DEAD, and WARN_DEAD, use team color for pulsing circle */
 			qboolean isAlly;
-			if (mark->markType == TEAMTASK_HERE_DEAD)
+			if (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD)
 			{
 				/* HERE_DEAD is always for own team */
 				isAlly = qtrue;
@@ -898,7 +931,8 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 	}
 
 	/* Special handling for HERE_DEAD marks in freeze mode - use snowflake for frozen bodies */
-	if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+	/* WARN_DEAD always uses warning shader, not snowflake */
+	if (mark->markType == TEAMTASK_HERE_DEAD && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
 	{
 		mark->shader = cgs.media.frozenFoeTagShader;  /* Snowflake for frozen death location */
 	}
@@ -1114,7 +1148,8 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 	/* ============================================
 	   CATEGORY 1: Overhead marks (YES, NO, MEDIC, HERE_ALIVE in first person)
 	   ============================================ */
-	if ((mark->isOverhead && mark->clientNum == cg.clientNum && !cg.renderingThirdPerson) || shouldDisplayAsOverhead)
+	/* WARN_ALIVE should never be displayed as overhead - always show in world */
+	if ((mark->isOverhead && mark->clientNum == cg.clientNum && !cg.renderingThirdPerson && mark->markType != TEAMTASK_WARN_ALIVE) || shouldDisplayAsOverhead)
 	{
 		CG_ProcessOverheadMark(mark, constants, renderData);
 		t = 0.0f; /* Fixed size for overhead marks */
@@ -1133,6 +1168,17 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		else if (mark->markType == TEAMTASK_HERE_DEAD && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			/* HERE_DEAD: Use death coordinates or frozen entity position */
+			CG_ProcessHereDeadMark(mark);
+		}
+		else if (mark->markType == TEAMTASK_WARN_ALIVE && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		{
+			/* WARN_ALIVE: Always use static position (coordinates sent from view direction trace) */
+			/* Position is where player was looking at (CONTENT_SOLID hit), no dynamic update */
+			CG_ProcessStandardMark(mark);
+		}
+		else if (mark->markType == TEAMTASK_WARN_DEAD && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		{
+			/* WARN_DEAD: Use death coordinates or frozen entity position (same as HERE_DEAD) */
 			CG_ProcessHereDeadMark(mark);
 		}
 		else if (mark->isOverhead && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
@@ -1184,14 +1230,14 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		}
 
 		/* Convert world to screen coordinates and check if mark is outside screen */
-		isOwnHereDead = (mark->clientNum == cg.clientNum && mark->markType == TEAMTASK_HERE_DEAD);
+		isOwnHereDead = (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD));
 
 		/* Convert to screen coordinates */
 		isOutsideScreen = CG_IsPointOutsideScreen(mark->origin, &renderData->x, &renderData->y);
 
 		if (isOutsideScreen)
 		{
-			/* For own HERE_DEAD, always process it (will be shown in border markers) */
+			/* For own HERE_DEAD and WARN_DEAD, always process it (will be shown in border markers) */
 			/* For other marks, skip if outside screen */
 			if (!isOwnHereDead)
 			{
@@ -1309,8 +1355,8 @@ void CG_DrawTeamTaskMarks(void)
 		{
 			mark = &cgs.be.teamMarkers.teamTaskMarks[i];
 
-			/* Check if this is own HERE_DEAD mark */
-			if (mark->clientNum == cg.clientNum && mark->markType == TEAMTASK_HERE_DEAD)
+			/* Check if this is own HERE_DEAD or WARN_DEAD mark */
+			if (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))
 			{
 				teamTaskMarkRenderData_t overheadRenderData;
 

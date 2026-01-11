@@ -68,6 +68,7 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 	char superhudFilename[MAX_QPATH];
 	int numberOfElements = 0;
 	int numberOfElementsCreated = 0;
+	qboolean hasTeamElements = qfalse;
 
 	/* loading config file */
 	Com_sprintf(superhudFilename, MAX_QPATH, "hud/%s.cfg", filename);
@@ -160,6 +161,19 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 			// }
 
 			is_execute = (Q_stricmp(statusElement.item->name, "execute") == 0) || (Q_stricmp(statusElement.item->name, "exec") == 0);
+
+			// Check for team overlay elements (team1-team16)
+			if (statusElement.item && statusElement.item->name && 
+			    Q_stricmpn(statusElement.item->name, "team", 4) == 0)
+			{
+				const char* name = statusElement.item->name;
+				// Check if it's team1-team16 (single or double digit)
+				if ((name[4] >= '1' && name[4] <= '9') ||
+				    (name[4] == '1' && name[5] >= '0' && name[5] <= '6'))
+				{
+					hasTeamElements = qtrue;
+				}
+			}
 
 			if (is_execute)
 			{
@@ -272,6 +286,11 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 	}
 	else
 	{
+		/* Check for team overlay elements if cg_drawTeamOverlay is disabled */
+		if (cg_drawTeamOverlay.integer == 0 && hasTeamElements)
+		{
+			CG_Printf("^3[SuperHUD] Teamoverlay elements disabled by ^1cg_drawTeamOverlay^3, set ^21^3 to enable\n");
+		}
 
 		/* creating HUD routines */
 		newElementLast = newElementsHead;
