@@ -532,6 +532,9 @@ void CG_Respawn(void)
 		cg.zoomed = qfalse;
 		cg.zoomTime = cg.time;
 	}
+
+	// clear death-related team task marks after respawn
+	CG_ClearPlayerDeathTeamTaskMarks();
 }
 
 extern char* eventnames[];

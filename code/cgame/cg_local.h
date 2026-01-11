@@ -3051,6 +3051,8 @@ void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* te
 void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position, qboolean ignoreDead);
 void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent);
 void CG_ClearRoundSpecificTeamTaskMarks(void);
+void CG_ClearPlayerDeathTeamTaskMarks(void);
+void CG_ClearClientHereDeadMarks(int clientNum);
 void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient);
 void CG_TeamTaskMarkOffense(void);
 void CG_TeamTaskMarkDefence(void);

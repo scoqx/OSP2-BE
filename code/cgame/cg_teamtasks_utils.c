@@ -332,7 +332,98 @@ void CG_ClearRoundSpecificTeamTaskMarks(void)
 		        mark->markType != TEAMTASK_FROZEN_ENEMY &&
 		        mark->markType != TEAMTASK_HERE_DEAD &&
 		        mark->markType != TEAMTASK_WARN_DEAD &&
-		        mark->markType != TEAMTASK_PLAYERDEAD)
+		        mark->markType != TEAMTASK_PLAYERDEAD
+			)
+		{
+			if (writeIndex != i)
+			{
+				cgs.be.teamMarkers.teamTaskMarks[writeIndex] = cgs.be.teamMarkers.teamTaskMarks[i];
+			}
+			writeIndex++;
+		}
+	}
+
+	/* Update count */
+	cgs.be.teamMarkers.numTeamTaskMarks = writeIndex;
+}
+
+/*
+=================
+CG_ClearPlayerDeathTeamTaskMarks
+
+Clears death-related team task marks for the current player after respawn
+Removes: TEAMTASK_PLAYERDEAD, TEAMTASK_HERE_DEAD, TEAMTASK_WARN_DEAD
+Uses pack array algorithm (O(n) instead of O(n²))
+=================
+*/
+void CG_ClearPlayerDeathTeamTaskMarks(void)
+{
+	int i;
+	int writeIndex;
+	teamTaskMark_t* mark;
+
+	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	{
+		return;
+	}
+
+	/* Pack array: copy valid marks to the beginning, excluding death marks for current player */
+	writeIndex = 0;
+	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	{
+		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+
+		/* Keep mark if it's not a death mark OR if it's not for current player */
+		if (!((mark->markType == TEAMTASK_PLAYERDEAD ||
+		       mark->markType == TEAMTASK_HERE_DEAD ||
+		       mark->markType == TEAMTASK_WARN_DEAD) &&
+		      mark->clientNum == cg.clientNum))
+		{
+			if (writeIndex != i)
+			{
+				cgs.be.teamMarkers.teamTaskMarks[writeIndex] = cgs.be.teamMarkers.teamTaskMarks[i];
+			}
+			writeIndex++;
+		}
+	}
+
+	/* Update count */
+	cgs.be.teamMarkers.numTeamTaskMarks = writeIndex;
+}
+
+/*
+=================
+CG_ClearClientHereDeadMarks
+
+Clears HERE_DEAD team task marks for a specific client
+Used when player is unfrozen in freeze tag mode
+Uses pack array algorithm (O(n) instead of O(n²))
+=================
+*/
+void CG_ClearClientHereDeadMarks(int clientNum)
+{
+	int i;
+	int writeIndex;
+	teamTaskMark_t* mark;
+
+	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	{
+		return;
+	}
+
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+
+	/* Pack array: copy valid marks to the beginning, excluding HERE_DEAD marks for specified client */
+	writeIndex = 0;
+	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	{
+		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+
+		/* Keep mark if it's not HERE_DEAD OR if it's not for specified client */
+		if (!(mark->markType == TEAMTASK_HERE_DEAD && mark->clientNum == clientNum))
 		{
 			if (writeIndex != i)
 			{
