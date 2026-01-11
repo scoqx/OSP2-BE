@@ -2082,7 +2082,6 @@ int CG_CrosshairTarget(vec3_t itemPos)
 	if (trace.entityNum < MAX_CLIENTS)
 	{
 		centity_t* playerCent;
-		playerState_t* ps;
 		
 		ci = &cgs.clientinfo[trace.entityNum];
 		if (!ci->infoValid)
