@@ -1,7 +1,8 @@
-11.01.2026 be v1.00l
+11.01.2026 be v1.00l1
 TEAMTASKS:
-  + /tSmart detect: quad damage, haste, battle suit, regeneration, yellow armor, health bubbles (50/25 with same icon), 
+  + /tSmart detect: flags, flag carriers, quad damage, haste, battle suit, regeneration, yellow armor, health bubbles
   + /tWarn alive/dead action
+  * /tHere + carrying flag 
 SuperHUD:
   * cg_drawTeamOverlay affects of team# elements (disable/enable)
   * StatusBar_AmmoBar direction fix, +color2 support

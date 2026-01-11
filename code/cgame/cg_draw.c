@@ -1989,7 +1989,17 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 	}
 
 	// Hitbox parameters (same as in CG_AddItemHitBox)
-	hbox_height = 32.0f;
+	// Flags have higher hitbox (60) than other items (40)
+	if (cgs.gametype == GT_CTF && item->classname &&
+	    (!Q_stricmp(item->classname, "team_CTF_redflag") ||
+	     !Q_stricmp(item->classname, "team_CTF_blueflag")))
+	{
+		hbox_height = 60.0f;
+	}
+	else
+	{
+		hbox_height = 40.0f;
+	}
 	hbox_size_xy = 16.0f;
 
 	// Create bounding box for hitbox (centered on item, extending upward)
@@ -2022,7 +2032,8 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 CG_CrosshairTarget
 =================
 Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy,
-         7 = quaddamage, 8 = regeneration, 9 = battlesuit, 10 = haste, 11 = yellow armor, 12 = health
+         7 = quaddamage, 8 = regeneration, 9 = battlesuit, 10 = haste, 11 = yellow armor, 12 = health,
+         13 = red flag carrier, 14 = blue flag carrier, 15 = red flag, 16 = blue flag (CTF only)
 If item found, itemPos is filled with item center position
 */
 int CG_CrosshairTarget(vec3_t itemPos)
@@ -2070,12 +2081,44 @@ int CG_CrosshairTarget(vec3_t itemPos)
 	// Check if looking at a player
 	if (trace.entityNum < MAX_CLIENTS)
 	{
+		centity_t* playerCent;
+		playerState_t* ps;
+		
 		ci = &cgs.clientinfo[trace.entityNum];
-		if (ci->infoValid && CG_IsEnemy(ci))
+		if (!ci->infoValid)
+		{
+			return 1;  // nothing (invalid)
+		}
+		
+		// Check for flag carriers in CTF mode
+		if (cgs.gametype == GT_CTF)
+		{
+			// Get player entity to check powerups
+			playerCent = &cg_entities[trace.entityNum];
+			if (playerCent && playerCent->currentValid)
+			{
+				// Check if player has red flag
+				if (playerCent->currentState.powerups & (1 << PW_REDFLAG))
+				{
+					VectorCopy(playerCent->lerpOrigin, itemPos);
+					itemPos[2] += 24.0f;
+					return 13;  // red flag carrier
+				}
+				// Check if player has blue flag
+				if (playerCent->currentState.powerups & (1 << PW_BLUEFLAG))
+				{
+					VectorCopy(playerCent->lerpOrigin, itemPos);
+					itemPos[2] += 24.0f;
+					return 14;  // blue flag carrier
+				}
+			}
+		}
+		
+		if (CG_IsEnemy(ci))
 		{
 			return 2;  // enemy
 		}
-		return 1;  // nothing (ally or invalid)
+		return 1;  // nothing (ally)
 	}
 
 	// Check all item entities for red armor and megahealth hitboxes
@@ -2121,7 +2164,10 @@ int CG_CrosshairTarget(vec3_t itemPos)
 					            !Q_stricmp(checkItem->classname, "item_haste") ||
 					            !Q_stricmp(checkItem->classname, "item_armor_combat") ||
 					            !Q_stricmp(checkItem->classname, "item_health") ||
-					            !Q_stricmp(checkItem->classname, "item_health_large")))
+					            !Q_stricmp(checkItem->classname, "item_health_large") ||
+					            (cgs.gametype == GT_CTF && (
+					                !Q_stricmp(checkItem->classname, "team_CTF_redflag") ||
+					                !Q_stricmp(checkItem->classname, "team_CTF_blueflag")))))
 					{
 						// Check if ray intersects with hitbox
 						if (CG_IsLookingAtItemHitbox(start, end, checkCent, checkItem))
@@ -2179,6 +2225,18 @@ int CG_CrosshairTarget(vec3_t itemPos)
 								    !Q_stricmp(checkItem->classname, "item_health_large"))
 								{
 									return 12;  // health (both 25 and 50)
+								}
+								// CTF flags
+								if (cgs.gametype == GT_CTF)
+								{
+									if (!Q_stricmp(checkItem->classname, "team_CTF_redflag"))
+									{
+										return 15;  // red flag
+									}
+									if (!Q_stricmp(checkItem->classname, "team_CTF_blueflag"))
+									{
+										return 16;  // blue flag
+									}
 								}
 							}
 						}

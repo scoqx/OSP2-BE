@@ -1017,7 +1017,10 @@ typedef struct
 	qhandle_t teamTasksHealth;
 	qhandle_t teamTasksMedic;
 	qhandle_t teamTasksWarning;
+	qhandle_t teamTasksFlag;
+	qhandle_t teamTasksFlagcarrier;
 
+	// teamTasks hud markers 
 	qhandle_t teamTasksAttack_marker;
 	qhandle_t teamTasksDefence_marker;
 	qhandle_t teamTasksWatch_marker;
@@ -1035,6 +1038,10 @@ typedef struct
 	qhandle_t teamTasksMedic_marker;
 	qhandle_t teamTasksWarning_marker;
 	qhandle_t teamTasksFrozen_marker;
+	qhandle_t teamTasksFlag_marker;
+	qhandle_t teamTasksFlagcarrier_marker;
+
+	// teamTasks misc
 	qhandle_t teamTasksCircle;
 	qhandle_t teamTasksSmart;
 	qhandle_t teamTasksWheelbg;
@@ -1347,7 +1354,7 @@ typedef struct cgs_be_s
 		vec4_t      teamTaskThemeColor; // Theme color for team task UI elements
 
 		// smart target memory (for wheel opening)
-		int         smartTargetType; // 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy, 7 = quaddamage, 8 = regeneration, 9 = battlesuit, 10 = haste, 11 = yellow armor, 12 = health
+		int         smartTargetType; // 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy, 7 = quaddamage, 8 = regeneration, 9 = battlesuit, 10 = haste, 11 = yellow armor, 12 = health, 13 = red flag carrier, 14 = blue flag carrier, 15 = red flag, 16 = blue flag (CTF only)
 		vec3_t      smartTargetPos; // Position of target (enemy or item)
 		int         smartTargetTime; // Time when target was saved (for 500ms memory)
 		int         smartTargetEntityNum; // Entity number of enemy (if target is enemy)
@@ -2870,7 +2877,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00l" // BE
+#define OSP_VERSION "be-1.00l1" // BE
 
 
 

@@ -217,6 +217,18 @@ teamTasks_flag
 }
 
 
+teamTasks_flagcarrier
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/flagcarrier.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+
 // Hud markers 
 teamTasks_defence_m
 {
@@ -397,6 +409,17 @@ teamTasks_flag_m
 	nopicmip
 	{
 		map sprites/teamTasks/flag_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_flagcarrier_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/flagcarrier_marker.tga
 		blendfunc blend
 		rgbgen vertex
 	}

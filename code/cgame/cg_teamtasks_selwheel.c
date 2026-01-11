@@ -1401,9 +1401,15 @@ void CG_SelwheelMarkStart(void)
 		else if (cgs.be.teamMarkers.smartTargetType == 3 || cgs.be.teamMarkers.smartTargetType == 4 ||
 		         cgs.be.teamMarkers.smartTargetType == 7 || cgs.be.teamMarkers.smartTargetType == 8 ||
 		         cgs.be.teamMarkers.smartTargetType == 9 || cgs.be.teamMarkers.smartTargetType == 10 ||
-		         cgs.be.teamMarkers.smartTargetType == 11 || cgs.be.teamMarkers.smartTargetType == 12)
+		         cgs.be.teamMarkers.smartTargetType == 11 || cgs.be.teamMarkers.smartTargetType == 12 ||
+		         cgs.be.teamMarkers.smartTargetType == 15 || cgs.be.teamMarkers.smartTargetType == 16)
 		{
-			// Item (red armor, megahealth, quaddamage, regeneration, battlesuit, haste, yellow armor, health) - use item center position
+			// Item (red armor, megahealth, quaddamage, regeneration, battlesuit, haste, yellow armor, health, flags) - use item center position
+			VectorCopy(itemPos, cgs.be.teamMarkers.smartTargetPos);
+		}
+		else if (cgs.be.teamMarkers.smartTargetType == 13 || cgs.be.teamMarkers.smartTargetType == 14)
+		{
+			// Flag carrier - use player position
 			VectorCopy(itemPos, cgs.be.teamMarkers.smartTargetPos);
 		}
 		else if (cgs.be.teamMarkers.smartTargetType == 5 || cgs.be.teamMarkers.smartTargetType == 6)

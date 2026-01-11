@@ -1389,8 +1389,18 @@ void CG_TeamTaskMarkHere(void)
 	/* Check if we're currently alive */
 	if (!CG_IsDead() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
 	{
-		/* Player is alive - send HERE_ALIVE with current position */
-		CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_ALIVE, cg.predictedPlayerState.origin, qfalse);
+		/* Check if player has flag in CTF mode */
+		if (cgs.gametype == GT_CTF && 
+		    (cg.predictedPlayerState.powerups[PW_REDFLAG] || cg.predictedPlayerState.powerups[PW_BLUEFLAG]))
+		{
+			/* Player has flag - send HERE_FLAG with current position */
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_FLAG, cg.predictedPlayerState.origin, qfalse);
+		}
+		else
+		{
+			/* Player is alive without flag - send HERE_ALIVE with current position */
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_ALIVE, cg.predictedPlayerState.origin, qfalse);
+		}
 	}
 	else
 	{
@@ -1710,6 +1720,66 @@ void CG_TeamTaskMarkSend(void)
 			}
 			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
+		case 13: /* red flag carrier (CTF) */
+			if (cgs.gametype == GT_CTF)
+			{
+				/* Use saved position if available, otherwise use current itemPos */
+				if ((cg_teamTaskWheel.integer & 2) &&
+				        cgs.be.teamMarkers.smartTargetTime > 0 &&
+				        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+				        cgs.be.teamMarkers.smartTargetType == 13)
+				{
+					VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				}
+				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_REDFLAG_CARRIER, itemPos, qfalse);
+				return;
+			}
+			break;
+		case 14: /* blue flag carrier (CTF) */
+			if (cgs.gametype == GT_CTF)
+			{
+				/* Use saved position if available, otherwise use current itemPos */
+				if ((cg_teamTaskWheel.integer & 2) &&
+				        cgs.be.teamMarkers.smartTargetTime > 0 &&
+				        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+				        cgs.be.teamMarkers.smartTargetType == 14)
+				{
+					VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				}
+				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_BLUEFLAG_CARRIER, itemPos, qfalse);
+				return;
+			}
+			break;
+		case 15: /* red flag (CTF) */
+			if (cgs.gametype == GT_CTF)
+			{
+				/* Use saved item position if available, otherwise use current itemPos */
+				if ((cg_teamTaskWheel.integer & 2) &&
+				        cgs.be.teamMarkers.smartTargetTime > 0 &&
+				        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+				        cgs.be.teamMarkers.smartTargetType == 15)
+				{
+					VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				}
+				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_REDFLAG, itemPos, qfalse);
+				return;
+			}
+			break;
+		case 16: /* blue flag (CTF) */
+			if (cgs.gametype == GT_CTF)
+			{
+				/* Use saved item position if available, otherwise use current itemPos */
+				if ((cg_teamTaskWheel.integer & 2) &&
+				        cgs.be.teamMarkers.smartTargetTime > 0 &&
+				        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
+				        cgs.be.teamMarkers.smartTargetType == 16)
+				{
+					VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				}
+				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_BLUEFLAG, itemPos, qfalse);
+				return;
+			}
+			break;
 		default: /* nothing or other */
 		{
 			teamTaskCommand_t* cmd;

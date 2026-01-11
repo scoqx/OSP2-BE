@@ -1233,7 +1233,8 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	else if (templateID == TEAMTASK_REDARMOR || templateID == TEAMTASK_MEGAHEALTH ||
 	         templateID == TEAMTASK_QUADDAMAGE || templateID == TEAMTASK_REGENERATION ||
 	         templateID == TEAMTASK_BATTLESUIT || templateID == TEAMTASK_HASTE ||
-	         templateID == TEAMTASK_YELLOWARMOR || templateID == TEAMTASK_HEALTH) /* Items auto-selected by smart mode */
+	         templateID == TEAMTASK_YELLOWARMOR || templateID == TEAMTASK_HEALTH ||
+	         (cgs.gametype == GT_CTF && (templateID == TEAMTASK_REDFLAG || templateID == TEAMTASK_BLUEFLAG))) /* Items auto-selected by smart mode */
 	{
 		/* For items, find the item entity near received coordinates */
 		/* and use its actual position instead of trace coordinates */
@@ -1278,6 +1279,14 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 		else if (templateID == TEAMTASK_YELLOWARMOR)
 		{
 			targetClassname = "item_armor_combat";
+		}
+		else if (cgs.gametype == GT_CTF && templateID == TEAMTASK_REDFLAG)
+		{
+			targetClassname = "team_CTF_redflag";
+		}
+		else if (cgs.gametype == GT_CTF && templateID == TEAMTASK_BLUEFLAG)
+		{
+			targetClassname = "team_CTF_blueflag";
 		}
 		else /* TEAMTASK_HEALTH */
 		{
@@ -1338,6 +1347,60 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 
 		/* If item not found, use coordinates from message */
 		if (!foundItem)
+		{
+			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+		}
+	}
+	else if (cgs.gametype == GT_CTF && (templateID == TEAMTASK_REDFLAG_CARRIER || templateID == TEAMTASK_BLUEFLAG_CARRIER))
+	{
+		/* For flag carriers, try to find player with flag near received coordinates */
+		int i;
+		centity_t* cent;
+		vec3_t carrierPos;
+		qboolean foundCarrier;
+		float searchRadius;
+		float dist;
+		int powerupFlag;
+
+		foundCarrier = qfalse;
+		searchRadius = 256.0f; /* Search radius for finding flag carrier near received coordinates */
+
+		/* Determine which powerup to check for */
+		if (templateID == TEAMTASK_REDFLAG_CARRIER)
+		{
+			powerupFlag = PW_REDFLAG;
+		}
+		else /* TEAMTASK_BLUEFLAG_CARRIER */
+		{
+			powerupFlag = PW_BLUEFLAG;
+		}
+
+		/* Try to find player with flag near received coordinates */
+		for (i = 0; i < MAX_CLIENTS; i++)
+		{
+			cent = &cg_entities[i];
+			if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
+			{
+				/* Check if player has the flag */
+				if (cent->currentState.powerups & (1 << powerupFlag))
+				{
+					/* Check if player is near received coordinates */
+					dist = Distance(cent->lerpOrigin, coord);
+					if (dist <= searchRadius)
+					{
+						/* Found flag carrier - use their position with +24 height */
+						VectorCopy(cent->lerpOrigin, carrierPos);
+						carrierPos[2] += 24.0f;
+						CG_TeamTaskMark(carrierPos, templateID, clientNum, toClient);
+						foundCarrier = qtrue;
+						break;
+					}
+				}
+			}
+		}
+
+		/* If flag carrier not found, use coordinates from message */
+		if (!foundCarrier)
 		{
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 		}

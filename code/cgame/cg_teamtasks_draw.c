@@ -179,6 +179,10 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 			*markerShader = cgs.media.teamTasksLocation_marker;
 			*worldShader = cgs.media.teamTasksLocation;
 			break;
+		case TEAMTASK_HERE_FLAG:
+			*markerShader = cgs.media.teamTasksFlagcarrier_marker;
+			*worldShader = cgs.media.teamTasksFlagcarrier;
+			break;
 		case TEAMTASK_HERE_DEAD:
 			/* Use frozen shader in freeze mode, otherwise use dead shader */
 			if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
@@ -229,6 +233,16 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 		case TEAMTASK_HEALTH:
 			*markerShader = cgs.media.teamTasksHealth_marker;
 			*worldShader = cgs.media.teamTasksHealth;
+			break;
+		case TEAMTASK_REDFLAG:
+		case TEAMTASK_BLUEFLAG:
+			*markerShader = cgs.media.teamTasksFlag_marker;
+			*worldShader = cgs.media.teamTasksFlag;
+			break;
+		case TEAMTASK_REDFLAG_CARRIER:
+		case TEAMTASK_BLUEFLAG_CARRIER:
+			*markerShader = cgs.media.teamTasksFlagcarrier_marker;
+			*worldShader = cgs.media.teamTasksFlagcarrier;
 			break;
 		default:
 			*markerShader = cgs.media.teamTasksUnknown;
@@ -314,6 +328,101 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 				{
 					CG_SetWhiteColor(color);
 				}
+				color[3] = 1.0f;
+			}
+			break;
+		case TEAMTASK_HERE_FLAG:
+			if (useMarkerShader)
+			{
+				/* HUD marker (overhead) color is white */
+				CG_SetWhiteColor(color);
+			}
+			else
+			{
+				/* World marker color is enemy team color relative to sender (player always carries enemy flag) */
+				if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+				{
+					clientInfo_t* senderCi;
+					senderCi = &cgs.clientinfo[clientNum];
+					if (senderCi->infoValid)
+					{
+						/* Get sender's team and use enemy team color */
+						if (senderCi->team == TEAM_RED)
+						{
+							/* Sender is RED, carries BLUE flag */
+							VectorCopy(cgs.be.blueTeamColor, color);
+						}
+						else if (senderCi->team == TEAM_BLUE)
+						{
+							/* Sender is BLUE, carries RED flag */
+							VectorCopy(cgs.be.redTeamColor, color);
+						}
+						else
+						{
+							CG_SetWhiteColor(color);
+						}
+					}
+					else
+					{
+						CG_SetWhiteColor(color);
+					}
+				}
+				else
+				{
+					CG_SetWhiteColor(color);
+				}
+				color[3] = 1.0f;
+			}
+			break;
+		case TEAMTASK_REDFLAG:
+			if (useMarkerShader)
+			{
+				/* HUD marker: white (not colored), pulsing circle will be colored */
+				CG_SetWhiteColor(color);
+			}
+			else
+			{
+				/* World marker color is red team color */
+				VectorCopy(cgs.be.redTeamColor, color);
+				color[3] = 1.0f;
+			}
+			break;
+		case TEAMTASK_BLUEFLAG:
+			if (useMarkerShader)
+			{
+				/* HUD marker: white (not colored), pulsing circle will be colored */
+				CG_SetWhiteColor(color);
+			}
+			else
+			{
+				/* World marker color is blue team color */
+				VectorCopy(cgs.be.blueTeamColor, color);
+				color[3] = 1.0f;
+			}
+			break;
+		case TEAMTASK_REDFLAG_CARRIER:
+			if (useMarkerShader)
+			{
+				/* HUD marker: white (not colored), pulsing circle will be colored */
+				CG_SetWhiteColor(color);
+			}
+			else
+			{
+				/* World marker color is red team color */
+				VectorCopy(cgs.be.redTeamColor, color);
+				color[3] = 1.0f;
+			}
+			break;
+		case TEAMTASK_BLUEFLAG_CARRIER:
+			if (useMarkerShader)
+			{
+				/* HUD marker: white (not colored), pulsing circle will be colored */
+				CG_SetWhiteColor(color);
+			}
+			else
+			{
+				/* World marker color is blue team color */
+				VectorCopy(cgs.be.blueTeamColor, color);
 				color[3] = 1.0f;
 			}
 			break;
@@ -435,11 +544,11 @@ void CG_DrawTeamTaskBorderHudMarkers(void)
 		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
 
 		/* Skip own overhead marks (YES, NO, MEDIC) - don't show in border markers */
-		/* Also skip own HERE_ALIVE marks in first person (they're displayed as overhead) */
+		/* Also skip own HERE_ALIVE and HERE_FLAG marks in first person (they're displayed as overhead) */
 		/* HERE_DEAD always shows in world, so don't skip it in border markers */
 		if ((mark->isOverhead && mark->clientNum == cg.clientNum) ||
 		        (mark->clientNum == cg.clientNum &&
-		         mark->markType == TEAMTASK_HERE_ALIVE &&
+		         (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG) &&
 		         !cg.renderingThirdPerson))
 		{
 			continue;
@@ -559,6 +668,54 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 				isAlly = (mark->markType == TEAMTASK_FROZEN_ALLY);
 			}
 			if (!CG_GetTeamColorForFrozenMark(mark->markType, pulseColor, isAlly))
+			{
+				Vector4Copy(color, pulseColor);
+			}
+			pulseColor[3] = 0.25f * endFade;
+		}
+		else if (mark->markType == TEAMTASK_REDFLAG || mark->markType == TEAMTASK_REDFLAG_CARRIER)
+		{
+			/* For red flag and carrier, use red team color for pulsing circle */
+			VectorCopy(cgs.be.redTeamColor, pulseColor);
+			pulseColor[3] = 0.25f * endFade;
+		}
+		else if (mark->markType == TEAMTASK_BLUEFLAG || mark->markType == TEAMTASK_BLUEFLAG_CARRIER)
+		{
+			/* For blue flag and carrier, use blue team color for pulsing circle */
+			VectorCopy(cgs.be.blueTeamColor, pulseColor);
+			pulseColor[3] = 0.25f * endFade;
+		}
+		else if (mark->markType == TEAMTASK_HERE_FLAG)
+		{
+			/* For HERE_FLAG, use enemy team color relative to sender (player always carries enemy flag) */
+			if (mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+			{
+				clientInfo_t* senderCi;
+				senderCi = &cgs.clientinfo[mark->clientNum];
+				if (senderCi->infoValid)
+				{
+					/* Get sender's team and use enemy team color */
+					if (senderCi->team == TEAM_RED)
+					{
+						/* Sender is RED, carries BLUE flag */
+						VectorCopy(cgs.be.blueTeamColor, pulseColor);
+					}
+					else if (senderCi->team == TEAM_BLUE)
+					{
+						/* Sender is BLUE, carries RED flag */
+						VectorCopy(cgs.be.redTeamColor, pulseColor);
+					}
+					else
+					{
+						Vector4Copy(color, pulseColor);
+					}
+				}
+				else
+				{
+					Vector4Copy(color, pulseColor);
+				}
+			}
+			else
 			{
 				Vector4Copy(color, pulseColor);
 			}
@@ -1140,9 +1297,9 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		return qfalse;
 	}
 
-	/* Check if this is own HERE_ALIVE mark that should be displayed as overhead in first person */
+	/* Check if this is own HERE_ALIVE or HERE_FLAG mark that should be displayed as overhead in first person */
 	shouldDisplayAsOverhead = (mark->clientNum == cg.clientNum &&
-	                           mark->markType == TEAMTASK_HERE_ALIVE &&
+	                           (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG) &&
 	                           !cg.renderingThirdPerson);
 
 	/* ============================================
@@ -1163,6 +1320,11 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		if (mark->markType == TEAMTASK_HERE_ALIVE && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			/* HERE_ALIVE: Update position above player's head */
+			CG_ProcessHereAliveMark(mark);
+		}
+		else if (mark->markType == TEAMTASK_HERE_FLAG && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		{
+			/* HERE_FLAG: Update position above player's head (same as HERE_ALIVE, but player has flag) */
 			CG_ProcessHereAliveMark(mark);
 		}
 		else if (mark->markType == TEAMTASK_HERE_DEAD && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)

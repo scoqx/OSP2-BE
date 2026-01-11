@@ -1788,6 +1788,8 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksHealth = trap_R_RegisterShader("teamTasks_health");
 	cgs.media.teamTasksMedic = trap_R_RegisterShader("teamTasks_medic");
 	cgs.media.teamTasksWarning = trap_R_RegisterShader("teamTasks_warning");
+	cgs.media.teamTasksFlag = trap_R_RegisterShader("teamTasks_flag");
+	cgs.media.teamTasksFlagcarrier = trap_R_RegisterShader("teamTasks_flagcarrier");
 	/* team tasks hud markers */
 	cgs.media.teamTasksAttack_marker = trap_R_RegisterShader("teamTasks_attack_m");
 	cgs.media.teamTasksDefence_marker = trap_R_RegisterShader("teamTasks_defence_m");
@@ -1805,6 +1807,8 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksHealth_marker = trap_R_RegisterShader("teamTasks_health_m");
 	cgs.media.teamTasksMedic_marker = trap_R_RegisterShader("teamTasks_medic_m");
 	cgs.media.teamTasksWarning_marker = trap_R_RegisterShader("teamTasks_warning_m");
+	cgs.media.teamTasksFlag_marker = trap_R_RegisterShader("teamTasks_flag_m");
+	cgs.media.teamTasksFlagcarrier_marker = trap_R_RegisterShader("teamTasks_flagcarrier_m");
 	cgs.media.teamTasksFrozen_marker = trap_R_RegisterShader("teamTasks_frozen_m");
 	/* team tasks misc */
 	cgs.media.teamTasksCircle = trap_R_RegisterShader("teamTasks_circle");

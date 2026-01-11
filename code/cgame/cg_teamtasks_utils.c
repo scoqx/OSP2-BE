@@ -155,6 +155,7 @@ teamTaskCommand_t teamTaskCommands[] =
 	{ "no", NULL, TEAMTASK_NO, qtrue, qfalse, CG_TeamTaskMarkNo, "tNo" },
 	{ "location", "position", TEAMTASK_LOCATION, qfalse, qtrue, CG_TeamTaskMarkLocation, "tLocation" },
 	{ "here", NULL, TEAMTASK_HERE_ALIVE, qtrue, qtrue, CG_TeamTaskMarkHere, "tHere" },
+	{ "hereflag", NULL, TEAMTASK_HERE_FLAG, qtrue, qtrue, NULL, NULL }, /* Auto-selected by tHere when player has flag */
 	{ "warn", NULL, TEAMTASK_WARN_ALIVE, qfalse, qtrue, CG_TeamTaskMarkWarn, "tWarn" },
 	{ "target", NULL, TEAMTASK_TARGET, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
 	{ "redarmor", NULL, TEAMTASK_REDARMOR, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
@@ -200,10 +201,18 @@ qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType)
 			return cgs.media.teamTasksLocation;  // Use existing location shader for alive player
 		case TEAMTASK_HERE_DEAD:
 			return cgs.media.teamTasksDead;      // Use existing skull shader for death location
+		case TEAMTASK_HERE_FLAG:
+			return cgs.media.teamTasksFlagcarrier;   // Use flagcarrier shader (will be colored based on flag type)
 		case TEAMTASK_WARN_ALIVE:
 			return cgs.media.teamTasksWarning;
 		case TEAMTASK_WARN_DEAD:
 			return cgs.media.teamTasksWarning;
+		case TEAMTASK_REDFLAG:
+		case TEAMTASK_BLUEFLAG:
+			return cgs.media.teamTasksFlag;
+		case TEAMTASK_REDFLAG_CARRIER:
+		case TEAMTASK_BLUEFLAG_CARRIER:
+			return cgs.media.teamTasksFlagcarrier;
 		default:
 			return 0;
 	}
