@@ -164,6 +164,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	superhudObituariesEntry_t* entry;
 	int index;
 	float currentX;
+	float bgX, bgY, bgW, bgH;
 
 	index = (element->gctx->obituaries.index - element->index) % SHUD_MAX_OBITUARIES_LINES;
 	entry = &element->gctx->obituaries.line[index];
@@ -186,15 +187,15 @@ void CG_SHUDElementObituariesRoutine(void* context)
 
 	currentX = entry->runtime.baseX;
 
+	/* Calculate background/border coordinates for local player events */
+	bgX = entry->runtime.baseX - (element->ctxMod.coord.named.h * 0.05);
+	bgY = element->ctxAttacker.coord.named.y - (element->ctxAttacker.coord.named.h * 0.55);
+	bgW = entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->ctxMod.coord.named.h * 0.15);
+	bgH = element->ctxAttacker.coord.named.h * 1.1;
+
 	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target) // Фон для всего элемента
 	{
-		CG_FillRect(
-		    entry->runtime.baseX - (element->ctxMod.coord.named.h * 0.05), // X
-		    element->ctxAttacker.coord.named.y - (element->ctxAttacker.coord.named.h * 0.55), // Y
-		    entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->ctxMod.coord.named.h * 0.15), // Ширина
-		    element->ctxAttacker.coord.named.h * 1.1, // Высота
-		    element->config.bgcolor.value.rgba // Цвет и прозрачность из конфига
-		);
+		CG_FillRect(bgX, bgY, bgW, bgH, element->config.bgcolor.value.rgba);
 	}
 	if (entry->attacker != entry->target)
 	{
@@ -335,6 +336,33 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	}
 	element->ctxTarget.width = entry->runtime.maxNameLenPix;
 	CG_SHUDTextPrintNew(&element->config, &element->ctxTarget, qfalse);
+
+	/* Draw border on entire line if configured and for local player events */
+	if ((cg.clientNum == entry->attacker || cg.clientNum == entry->target) &&
+	    element->config.border.isSet && element->config.borderColor.isSet)
+	{
+		vec4_t coord;
+		vec4_t borderColor;
+		float x, y, w, h;
+
+		/* Use same coordinates as background fill */
+		x = bgX;
+		y = bgY;
+		w = bgW;
+		h = bgH;
+
+		CG_AdjustFrom640(&x, &y, &w, &h);
+
+		coord[0] = x;
+		coord[1] = y;
+		coord[2] = w;
+		coord[3] = h;
+
+		CG_SHUDConfigPickBorderColor(&element->config, borderColor, qfalse);
+
+		CG_OSPDrawFrame(coord[0], coord[1], coord[2], coord[3],
+		                (float*)element->config.border.value, borderColor, qfalse);
+	}
 }
 
 static void CG_SHUDObituarySetTeamColor(vec4_t color, int team)
