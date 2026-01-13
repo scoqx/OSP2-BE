@@ -2075,6 +2075,7 @@ extern vmCvar_t         cg_exec_joinSpec;
 extern vmCvar_t         cg_exec_onDeath;
 extern vmCvar_t         cg_exec_gauntlet;
 extern vmCvar_t         cg_exec_bfg;
+extern vmCvar_t         cg_exec_shud;
 extern vmCvar_t           cg_simpleItemsRadius;
 extern vmCvar_t           cg_simpleItemsBob;
 extern vmCvar_t        cg_brightWeaponsOpaque;
@@ -2283,6 +2284,7 @@ float* CG_TeamColor(int team);
 void CG_TileClear(void);
 void CG_ColorForHealth(vec4_t hcolor, char* color);
 void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor);
+void CG_UpdateHealthLowFlag(void);
 
 void UI_DrawProportionalString(int x, int y, const char* str, int style, vec4_t color);
 void CG_DrawRect(float x, float y, float width, float height, float size, const float* color);
@@ -2879,7 +2881,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00m1" // BE
+#define OSP_VERSION "be-1.00m2" // BE
 
 
 

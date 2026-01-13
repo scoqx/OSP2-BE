@@ -184,7 +184,7 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 					CG_Printf("^1SuperHUD: error parsing EXECUTE element: file %s, line %d, pos %d.\n", superhudFilename, finfo.last_line->line_number, finfo.pos);
 					goto error_exit;
 				}
-				if (execConfig.execute.isSet)
+				if (execConfig.execute.isSet && cg_exec_shud.integer)
 				{
 					CG_SHUDExecuteCommands(execConfig.execute.value);
 				}
@@ -529,7 +529,7 @@ void CG_SHUDRoutine(void)
 		       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
 		       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
 		       ((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
-		       /* ((vflags & SE_HEALTH_LOW) && !cgs.be.isHealthLow) || */
+		       ((vflags & SE_HEALTH_LOW) && !cgs.be.isHealthLow) ||
 		       CG_SHUDCheckWeaponFlags(vflags, currentWeapon)
 		       ;
 

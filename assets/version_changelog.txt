@@ -1,8 +1,11 @@
-13.01.2025 be v1.00m1
+13.01.2025 be v1.00m2
 + SuperHUD:
   + StatusBar_AmmoBar: fix
   + weaponMaxValue
+  + visflags: lowhp
 + M1rage SuperHUD configs: m1rQ4style, m1rQLstyle, AGENT
-+ cg_brightWeaponsOpaque
++ cg_brightWeaponsOpaque 0-1
++ cg_exec_shud 0/1
 + /behelp - about main features
 + /behelp bitmask - how to use bitmask
+* lowhp fix

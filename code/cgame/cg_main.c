@@ -540,6 +540,7 @@ vmCvar_t        cg_exec_joinSpec;
 vmCvar_t        cg_exec_onDeath;
 vmCvar_t        cg_exec_gauntlet;
 vmCvar_t        cg_exec_bfg;
+vmCvar_t        cg_exec_shud;
 vmCvar_t        cg_simpleItemsRadius;
 vmCvar_t        cg_simpleItemsBob;
 vmCvar_t        cg_brightWeaponsOpaque;
@@ -990,6 +991,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_exec_onDeath, "cg_exec_onDeath", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_exec_gauntlet, "cg_exec_gauntlet", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_exec_bfg, "cg_exec_bfg", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_exec_shud, "cg_exec_shud", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_simpleItemsRadius, "cg_simpleItemsRadius", "14", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_simpleItemsRadius },
 	{ &cg_simpleItemsBob, "cg_simpleItemsBob", "0", CVAR_ARCHIVE },
 	{ &cg_brightWeaponsOpaque, "cg_brightWeaponsOpaque", "1.0", CVAR_ARCHIVE | CVAR_NEW },

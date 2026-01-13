@@ -67,6 +67,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_exec_joinGame", "Execute commands when joining game from spectator team. Multiple commands separated by semicolon (;).\n  ^2echo Joined game; exec game.cfg" },
 	{ "cg_exec_joinSpec", "Execute commands when joining spectator team. Multiple commands separated by semicolon (;).\n  ^2echo Joined spectators; exec spec.cfg" },
 	{ "cg_exec_onDeath", "Execute commands when player dies. Multiple commands separated by semicolon (;).\n  ^2echo Died; exec death.cfg" },
+	{ "cg_exec_shud", "When to execute exec commands in SuperHUD config files\n  ^20^7 - disabled\n  ^21^7 - enabled" },
 	{ "cg_fov", "Field of view - degrees" },
 	{ "cg_viewsize", "Size of the game view - percentage" },
 	{ "cg_stereoSeparation", "3D stereo separation level" },
