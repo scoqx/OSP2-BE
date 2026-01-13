@@ -39,6 +39,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorderColor(configFi
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseBorderColor2(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseStyle(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseShadowColor(configFileInfo_t* finfo, superhudConfig_t* config);
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseWeaponMaxValue(configFileInfo_t* finfo, superhudConfig_t* config);
 
 static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 {
@@ -78,6 +79,7 @@ static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 	{ "borderColor", CG_SHUDConfigCommandParseBorderColor },
 	{ "borderColor2", CG_SHUDConfigCommandParseBorderColor2 },
 	{ "style", CG_SHUDConfigCommandParseStyle },
+	{ "weaponMaxValue", CG_SHUDConfigCommandParseWeaponMaxValue },
 	{ NULL, NULL, NULL },
 };
 
@@ -1502,6 +1504,96 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseShadowColor(configFi
 	config->shadowColor.isSet = qtrue;
 
 	return status;
+}
+
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseWeaponMaxValue(configFileInfo_t* finfo, superhudConfig_t* config)
+{
+	superhudConfigParseStatus_t status;
+	char c;
+	int i;
+	int startPos;
+	int lenMax;
+	char* src;
+	char* dst;
+
+	config->weaponMaxValue.isSet = qfalse;
+
+	/* Skip whitespace */
+	status = CG_SHUDConfigSkipSCN(finfo);
+	if (status != SUPERHUD_CONFIG_OK) return status;
+
+	startPos = finfo->pos;
+	c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+
+	/* Check if it's a quoted string */
+	if (c == '"')
+	{
+		/* Parse quoted string */
+		CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+		i = 0;
+		c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+		while (c != '"' && c != 0 && c != '\n' && i < (sizeof(config->weaponMaxValue.value) - 1))
+		{
+			config->weaponMaxValue.value[i++] = c;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			c = CG_SHUD_CONFIG_INFO_GET_CHAR(finfo);
+		}
+		config->weaponMaxValue.value[i] = 0;
+		if (c == '"')
+		{
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+		}
+		config->weaponMaxValue.isSet = qtrue;
+		return SUPERHUD_CONFIG_OK;
+	}
+
+	/* Parse unquoted string - read until ; or } */
+	finfo->pos = startPos;
+	dst = finfo->last_line->line + finfo->pos;
+	lenMax = 0;
+
+	do
+	{
+		c = *dst;
+		if (c == 0 || c == '#' || c == '\n' || c == ';' || c == '}')
+		{
+			break;
+		}
+		++lenMax;
+		++dst;
+	}
+	while (qtrue);
+
+	if (lenMax == 0)
+	{
+		return SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+	}
+
+	/* Copy string, trimming trailing whitespace */
+	i = 0;
+	src = finfo->last_line->line + finfo->pos;
+	while (i < lenMax && i < (sizeof(config->weaponMaxValue.value) - 1))
+	{
+		c = src[i];
+		if (c == 0 || c == '#' || c == '\n' || c == ';' || c == '}')
+		{
+			break;
+		}
+		config->weaponMaxValue.value[i] = c;
+		++i;
+	}
+
+	/* Trim trailing whitespace */
+	while (i > 0 && (config->weaponMaxValue.value[i - 1] == ' ' || config->weaponMaxValue.value[i - 1] == '\t'))
+	{
+		--i;
+	}
+	config->weaponMaxValue.value[i] = 0;
+
+	finfo->pos = startPos + lenMax;
+
+	config->weaponMaxValue.isSet = qtrue;
+	return SUPERHUD_CONFIG_OK;
 }
 
 /*

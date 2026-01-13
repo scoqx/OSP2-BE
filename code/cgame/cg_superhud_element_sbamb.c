@@ -7,8 +7,9 @@ typedef struct
 {
 	superhudConfig_t config;
 	superhudBarContext_t ctx;
-	int maxammo[MAX_WEAPONS];
+	int maxammo[WP_NUM_WEAPONS];
 	int last_weapon;
+	int last_maxammo;
 	int red;
 	int white;
 } shudElementStatusbarAmmoBar;
@@ -20,11 +21,19 @@ void* CG_SHUDElementSBAmBCreate(const superhudConfig_t* config)
 
 	SHUD_ELEMENT_INIT(element, config);
 
-	for (i = 0; i < MAX_WEAPONS; ++i)
+	/* Initialize all weapons with default value 200 */
+	for (i = 0; i < WP_NUM_WEAPONS; ++i)
 	{
-		element->maxammo[i] = 100;
+		element->maxammo[i] = 200;
 	}
 	element->last_weapon = -1;
+	element->last_maxammo = -1;
+
+	/* Parse weaponMaxValue if set */
+	if (element->config.weaponMaxValue.isSet)
+	{
+		CG_SHUDParseWeaponMaxValue(element->config.weaponMaxValue.value, element->maxammo, WP_NUM_WEAPONS);
+	}
 
 	return element;
 }
@@ -34,7 +43,6 @@ void CG_SHUDElementSBAmBRoutine(void* context)
 	shudElementStatusbarAmmoBar* element = (shudElementStatusbarAmmoBar*)context;
 	int wp;
 	int ammo;
-	qboolean ammoOverflow;
 
 	if (!cg.snap)
 	{
@@ -46,19 +54,22 @@ void CG_SHUDElementSBAmBRoutine(void* context)
 	if (wp == WP_NONE || wp == WP_GAUNTLET) return;
 
 	ammo = CG_SHUDGetAmmo(wp);
-	ammoOverflow = ammo > element->maxammo[wp];
 
-	if (wp != element->last_weapon || ammoOverflow)
+	/* Get the maximum ammo for current weapon - must be exactly what we set */
 	{
-		//if weapon changed or got more ammo than we have before, reinitailize
-		element->last_weapon = wp;
-		if (ammoOverflow)
+		int current_maxammo;
+		current_maxammo = element->maxammo[wp];
+
+		/* Update context only if weapon changed OR maxammo changed */
+		if (wp != element->last_weapon || element->last_weapon == -1 || current_maxammo != element->last_maxammo)
 		{
-			element->maxammo[wp] = ammo;
+			/* Weapon or maxammo changed, reinitialize */
+			element->last_weapon = wp;
+			element->last_maxammo = current_maxammo;
+			element->white = current_maxammo / 2;
+			element->red = current_maxammo / 8;
+			CG_SHUDBarMakeContext(&element->config, &element->ctx, current_maxammo);
 		}
-		element->white = element->maxammo[wp] / 2;
-		element->red = element->maxammo[wp] / 8;
-		CG_SHUDBarMakeContext(&element->config, &element->ctx, element->maxammo[wp]);
 	}
 
 	element->ctx.color_top[3] = 1.0f;

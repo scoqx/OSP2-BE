@@ -1,5 +1,6 @@
 #include "./cg_superhud_private.h"
 #include "cg_local.h"
+#include "../qcommon/qcommon.h"
 
 typedef struct
 {
@@ -1248,4 +1249,76 @@ int CG_SHUDGetAmmo(int wpi)
 	if (ammo < 0) ammo = 0;
 	if (ammo > 999) ammo = 999;
 	return ammo;
+}
+
+/*
+ * Parse weaponMaxValue string and apply values to maxammo array
+ * Format: "weaponNum value weaponNum value ..."
+ * Example: "1 50 2 100" sets weapon 1 to 50, weapon 2 to 100
+ */
+void CG_SHUDParseWeaponMaxValue(const char* valueStr, int* maxammo, int arraySize)
+{
+	char parseStr[256];
+	char* parsePtr;
+	char* nextPtr;
+	int weaponNum;
+	int maxValue;
+	int pairCount;
+
+	if (!valueStr || !maxammo || arraySize <= 0)
+	{
+		return;
+	}
+
+	Q_strncpyz(parseStr, valueStr, sizeof(parseStr));
+	parsePtr = parseStr;
+
+	/* Parse pairs: weapon number and max value */
+	pairCount = 0;
+	while (*parsePtr != 0 && pairCount < arraySize)
+	{
+		/* Skip whitespace */
+		while (*parsePtr == ' ' || *parsePtr == '\t')
+		{
+			parsePtr++;
+		}
+		if (*parsePtr == 0) break;
+
+		/* Parse weapon number and value */
+		if (Q_sscanf(parsePtr, "%i %i", &weaponNum, &maxValue) == 2)
+		{
+			/* Validate weapon number and ignore gauntlet (weapon 1) - it has no ammo */
+			if (weaponNum >= 0 && weaponNum < arraySize && weaponNum != 1)
+			{
+				maxammo[weaponNum] = maxValue;
+			}
+
+			/* Move pointer past first number */
+			nextPtr = parsePtr;
+			while (*nextPtr != 0 && *nextPtr != ' ' && *nextPtr != '\t')
+			{
+				nextPtr++;
+			}
+			/* Skip whitespace */
+			while (*nextPtr == ' ' || *nextPtr == '\t')
+			{
+				nextPtr++;
+			}
+			/* Move pointer past second number */
+			while (*nextPtr != 0 && *nextPtr != ' ' && *nextPtr != '\t')
+			{
+				nextPtr++;
+			}
+			parsePtr = nextPtr;
+			pairCount++;
+		}
+		else
+		{
+			/* Invalid format, skip to next space or end */
+			while (*parsePtr != 0 && *parsePtr != ' ' && *parsePtr != '\t')
+			{
+				parsePtr++;
+			}
+		}
+	}
 }

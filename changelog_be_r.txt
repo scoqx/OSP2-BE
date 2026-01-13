@@ -1,0 +1,667 @@
+13.01.2025 be v1.00m1
++ cg_brightWeaponsOpaque
++ /behelp - about main features
++ /behelp bitmask - how to use bitmask
+
+11.01.2026 be v1.00l1
+TEAMTASKS:
+  + /tSmart detect: flags, flag carriers, quad damage, haste, battle suit, regeneration, yellow armor, health bubbles
+  + /tWarn alive/dead action
+  * /tHere + carrying flag 
+SuperHUD:
+  * cg_drawTeamOverlay affects of team# elements (disable/enable)
+  * StatusBar_AmmoBar direction fix, +color2 support
++ cg_simpleItemsRadius (QL)
++ cg_simpleItemsBob (QL) - 0/1/2
+
+10.01.2026 be v1.00k
+SuperHUD: 
+  Tuborg: + 2 numeric fonts (q4snumbers, q4mnumbers), 
+          + 2 HUD configs (q4_strogg, q4_marine)
++ cg_exec_gauntlet
++ cg_exec_bfg
+
+09.01.2026 be v1.00j
++ cg_exec_intermission
++ cg_exec_warmupEnded
++ cg_exec_joinGame
++ cg_exec_joinSpec
++ cg_exec_onDeath
+
+09.01.2026 be v1.00i
++ uix86_64.so, cgamex86_64.dll and uix86_64.dll
++ shudkey5-8
+
+07.01.2025 be v1.00h
+* Meta: 
+  * announcer, stats fix, .so build
++ E/T colors (enemy/team) for cvars
++ SUPERHUD:
+  + healthBar/armorBar - image/image2 support
+
+06.01.2025 be v1.00f
++ TEAM TASKS:
+  + /teamTaskClients (who already sent works only on team)
+  + Yes/No sounds
+  * tSmart frozen enemy/ally fix
+* Some default settings was changed
++ cg_teamIndicatorFontSize
+* cg_accuracyFontSize - 1/2 args
+
+05.01.2025 be v1.00e
++ SUPERHUD, visflags: gauntlet, machinegun, shotgun, grenade
+    rocket, lightning, railgun, plasma, bfg
+* Team tasks fix
+
+04.01.2026 be v1.00d
++ TEAM TASKS:
+  + /tHere
+  + cg_teamTaskWheel bitmask 16 - disable aim lock
+  + cg_teamTaskWheelScale
+  + different death team task sound
+  + unknown team task icon
+  * location icon changed
+  * team task death fix
+  * various fixes
+* PrintUI layer fix
+
+02.01.2026 be v1.00c
+* printui time/fade rework
+* defend sound fix
+
+30.12.2025 be v1.00b
++ frozenFoeTag new 512x512 image
++ TEAM TASKS:
+  + cg_teamTaskWheel bitmask: 4 - draw cursor, 8 - draw pointers
+  + /tsmart - detect frozen body 
+  * various fixes
+
+29.12.2025 be v1.00a
+* OSP2 sync ("astats, bstats", cg_autoAction command fixed)
++ cg_zoomAutoReset
++ cg_smoothDucking
++ cg_respawnWeapon
++ cg_countdownTimer (by fghvgsx)
++ cg_damagePlums (requires server support)
++ cg_damagePlumsSize (requires server support)
++ cg_autoHop (requires server support)
+
+* /belist # description
++ /behelp <cvar>
+
++ TEAM TASKS:
+  + /teamTaskHelp
+  + cg_teamTask
+  + cg_teamTaskSmartDefault
+  + cg_teamTaskMarkTime
+  + cg_teamTaskScale
+  + cg_teamTaskOpaque
+  + cg_teamTaskFade
+  + cg_teamTaskFadeRadius
+  + cg_teamTaskFont
+  + cg_teamTaskHudMarkerMaxDist
+  + cg_teamTaskHudMarkerSize
+  + cg_teamTaskHudMarkerMaxScale
+  + cg_teamTaskHudMarkerMinScale
+  + cg_teamTaskWheel
+  + cg_teamTaskWheelSet
+  + cg_teamTaskWheelSensitivity
+  + cg_teamTaskThemeColor
+  * +ttwheel - team task wheel
+  * Direct tasks: /smart, /attack, /defence, /location, /watch, /yes, /no, /medic 
+  + /mutetasks <player ID>
+
++ Exec on event
+  + cg_exec_weapons 0/1/2
+  + cg_exec_mg
+  + cg_exec_sg
+  + cg_exec_gl
+  + cg_exec_rl
+  + cg_exec_lg
+  + cg_exec_rg
+  + cg_exec_pg
+  + cg_exec_gametypes 0/1
+  + cg_exec_dm
+  + cg_exec_tourney
+  + cg_exec_tdm
+  + cg_exec_ca
+  + cg_exec_ctf
+  + cg_exec_freeze
+
++ Bright Weapon Color select
+  + cg_brightWeaponsColorGauntlet
+  + cg_brightWeaponsColorMG
+  + cg_brightWeaponsColorSG
+  + cg_brightWeaponsColorGL
+  + cg_brightWeaponsColorRL
+  + cg_brightWeaponsColorLG
+  + cg_brightWeaponsColorRG
+  + cg_brightWeaponsColorPG
+  + cg_brightWeaponsColorBFG
+
++ PrintUI
+  + cg_printui (just in case)
+  + cg_printui_template
+  + cg_printui_template2
+  + /printui - draw text on the hud
+
+MISC:
+  * cg_altGrenades disabled on tournament mode (DUELs)
+  /colorcharlist
+
+SHUD: 
+  - disabled var (variable) config feature for a while
+  + exec/execute config feature
+  + teamTask1-8 elements
+
+05.12.2025 be v1.00-beta-10
+* UI update:
+  * SuperHUD selection ingame menu, Widescreen background image
+  * Unlock cinematics, move credits and cinematics to setup, fix color codes, quit without credits, various fixes
+  * Demo save position on list, setup->player->name show colors, ignore CD-Key on startup (set key in settings)
+* SuperHUD:
+  + var element for declaring variables (int, float, string). Check docks docs/superhud
+  + SuperHUD font selection by number
++ /fonts
+* font select by name (cg_bestats_font, cg_scoreboardFont, cg_centerMesagesFont, cg_accuracyFont, cg_teamIndicatorFont)
+* SuperHUD config font select by number
++ added feature to add fonts using fonts.cfg file (osp folder). More info in docs
+* CherryHUD disabled until usable build
+* cg_bestats_autoaction (intermission)
+* cg_giveName 1/2
+* cg_drawRealHeads fix
+
+09.11.2025 be v1.00-beta-9
+* cg_spectPOV fix
+
+31.10.2025 be v1.00-beta-8
+* cg_drawHitbox 2/3 fix (KONSTALKER)
+
+SHUD:
+* Update fonts: Elite
+* update configs (m1r, m1rqlstyle, AGENT, ChikiPiki, California)
+
+20.10.2025 be v1.00-beta-7
++ cg_myTeam
+* cg_altGrenades 3 - ignore cg_drawBrightWeapons
+
+15.10.2025 be v1.00-beta-5
++ tools / Updater OSP2-BE for Windows and Linux
+* CHUD fixes
+* hitbox 3 disabled
+
+14.10.2025 be v1.00-beta-4
++ cg_chud
++ chud_file
++ cg_clearOnLevelLoad
++ cg_playersID 1/2
++ cg_spectPOV
++ cg_drawRealHeads
++ Introducing CherryHUD: table system to show scoreboard, stats etc.
+  * beta, only nonTeam gametypes for a while
+  * 2 configs available: default and d2
+* cg_teamSound doesnt affect on local player model anymore
+* cg_drawAmmoWarning fix
+* cg_scoreboardBE fix
+* be_enabled fix (fullbright, damage info)
+* cg_friendsWallhack fix (not disabling drawHudElements now)
+* r_fullbright unlocked again
+* fix color by digit (0-9)
+* add crouch animation to player model in air
+SHUD:
+ + update configs (m1r, m1rqlstyle, AGENT)
+ * SCORE_OWN/NME fixed for nonTeam gametypes
+ * tempAcc osp fix
+
+04.09.2025 be v0.95
++ cg_drawHitbox 2 disabled for a while (need fix)
+* scoreboard visual fix
+SHUD: 
++ visflags, gt_ffa, gt_tourney, gt_tdm, gt_ctf, gt_unfreeze, gt_clanarena
+
+03.09.2025 be v0.94e
+SHUD:
++ config - ChikiPiki.cfg (by Musin)
++ spectators element, works only at supported server`
+
+01.09.2025 be v0.94d
+* allstats better aligning
++ bestats gauntlet info
++ cg_healthColorLevels 2 - disable coloring for team foe
++ extended server support
++ pre-register Power-Up icons
+* hud flagstatus fix
++ SHUD config - kmodel.cfg (koreanmodel)
+* damage frame fix
+
+26.08.2025 be v0.93
+
+* cg_scoreboardRtColors/cg_scoreboardBtColors
+  + 3rd argument (optional) change titles color
+* cg_scoreboardSpecColor
+  + 2nd argument (optional) change title color
+* cg_damageDrawFrame
+  + Bitmask 4, draw pulse frame at low health
+
++ cg_drawCenterMessages 2 - print text with shadow
+
++ be_features - read only
++ be_enable
+
+- cg_noSlidingWindow
+
+* various fixes
+
+09.08.2025 be v0.92a
+
++ cg_teamIndicatorFade
++ cg_teamIndicatorFadeRadius
+* cg_scoreboardBE bitmask (+ '4')
+* cg_friendsWallhack bitmask (+ '2')
+* various fixes
+
+07.08.2025 be v0.92
+
+* altGrenades fix
+* scoreboard/wstats fix
+
+28.07.2025 be v0.91x
+
+* hitsounds unlocked
+* friends wallhack unlocked
+
+27.07.2025 be v0.91
+
+cg_friendsWallhack can be disabled on server. Set configstring 888 to 1.
+
++wstats reworked
+
+description later
++ cg_bestats_style
++ cg_bestats_textSize
++ cg_bestats_font
++ cg_bestats_pos
++ cg_bestats_bgColor
++ cg_bestats_bgOpaque
++ cg_bestats_spacingAdjust
++ cg_bestats_widthCutoff
+
+22.07.2025 be v0.9e
+Only for cg_scoreboardBE
++ cg_scoreboardDrawPowerUps
+SHUD
++ FPS style 1
++ Localtime style 1
+* fix powerup timer: starts from 30, last displayed second is 1 (previously 29 to 0)
+
+21.07.2025 be v0.9b
+Only for cg_scoreboardBE
++ cg_scoreboardRtColors
++ cg_scoreboardBtColors
++ cg_scoreboardSpecColor
+
+20.07.2025 be v0.9
++ cg_friendHudMarkerMaxDist
++ cg_friendHudMarkerSize
++ cg_friendHudMarkerMaxScale
++ cg_friendHudMarkerMinScale
++ cg_friendsWallhack
++ cg_drawHudMarkers
++ cg_markTeam
++ cg_markTeamColor
++ cg_mySound
++ cg_teamSound
++ cg_enemySound
+
+17.07.2025 be v0.089
++ ch_crosshairAction bitmask 8 - hitcolor by damage
++ ch_crosshairDecorAction bitmask 8 - hitcolor by damage
+ Set colors:
++ ch_crosshairActionColorLow
++ ch_crosshairActionColorMid
++ ch_crosshairActionColorHigh
++ ch_crosshairDecorActionColorLow
++ ch_crosshairDecorActionColorMid
++ ch_crosshairDecorActionColorHigh
+
++ color names: orange, pink
+
+SHUD:
+  + hud config - lwp9k
+
+16.07.2025 be v0.088
++ cg_drawAccuracy
++ cg_accuracyFontSize
++ cg_accuracyIconSize
++ cg_accuracyFont
+
+16.07.2025 be v0.087a
+* FIX Scoreboard with
+  * cg_redTeamColor cg_blueTeamColor
+
+14.07.2025 be v0.087
++ cg_redTeamColor
++ cg_blueTeamColor
+
+14.07.2025 be v0.086a
+SHUD:
+  * Updated m1r, m1rqlstyle, AGENT hud configs
+  * Obituaries style 2 - colored nicknames in team modes
+  * bgcolor, bordercolor team colors support 'E' and 'T'
+  + bgcolor2, bordercolor2 - set alpha when 'E' or 'T' setted (like color2)
+  + docs/superhud inside the mod.pk3
+
+29.06.2025 be v0.085b 
++ cg_healthColor
++ cg_healthLowColor
++ cg_healthMidColor
+* r_fullbright 1 unlocked
+
+* SHUD:
+  * Predecorate/Postdecorate - added feature to use { text "string"; } to pring text on the HUD
+  + player_name - new element
+
+27.06.2025 be v0.084e
++ cg_drawAmmoWarning 1 - new counting system + ammo low sound
+  * 2 - default old
+
+25.06.2025 be v0.084d
++ cg_ignoreServerMessages - Hides the message from server. Bitmask
+  * 1 - killer HP/AP (Q3MSK, FFA server)
+  * 2 - chat fragged (not only q3msk)
+  * 4 - server's chat messages
+
+23.06.2025 be v0.084c
++ cg_gibs 2 (more blood)
+* various fixes
+
+15.06.2025 be v0.084
++ cg_itemFx - bitmask
+ * 1 - bounce
+ * 2 - rotating
+ * 4 - scale
++ cg_bubbleTrail
+* cg_altBattleSuit shader changed
+* enemy cg_altLightning 3 changed
+* changed some default values for cvars
+- cg_itemsRespawnAnimation
+
+12.06.2025 be v0.083
++ cg_altGrenades 2
++ cg_altGrenadesColor (cg_altGrenades 2 only)
++ cg_enemyGrenadesColor (cg_altGrenades 2 only)
++ cg_altBattleSuit
+
+08.06.2025 be v0.081
++ cg_scoreboardBE 3 - old style team scores
++ outline optimisation
+* hitbox shaders renamed
+
+06.06.2025 be v0.08
++ Fullbright player models support (use /fb. e.g. keel/fb)
++ cg_drawBrightWeapons
+* rail chamber default color is white
+* various fixes
+
+31.05.2025 be v0.07
++ Description for commands. Requires Q3E version dated April 14, 2025 or later
++ cg_railCustomChamber
+  * 1 - reloading color = core color
+  * 2 - standing color = rings color
+* Rail chamber color in other player hands/in world have green color by default (QL-like), if cg_railCustomChamber = 2 - using this color 
+* ScoreboardBE parse info fix
+* updated diwoc's hud
+* small fixes
+
+* SHUD:
+  + element 'localdate'
+  + style 3 for StatusBar_HealthBar/StatusBar_ArmorBar 
+  * StatusBar_AmmoCount/WeaponList -  shows ammo in red when it's 0
+
+07.05.2025 be v0.06d7
+
+* cg_teamIndicator bitmask:
+  * 8 show data for frozen player
+  * 16 enable icons
+* Replace OSP2 net.png image
+* various fixes
+* huds updated
+
+05.05.2025 be v0.06d3
+
+* scoreboard fixes
+* reduced spacing in obituaries
+* superhud/hud/ diwocfull.cfg -> diwoc2.cfg
+
+04.05.2025 be v0.06d
+
++ cg_scoreboardBE - alt default scoreboard
++ cg_scoreboardFont - font for alt scoreboard
+* cg_teamIndicator: 
+  + 8 bitmask (show icons (only for dead now))
+  + show all names while spectating
++ cg_teamIndicatorFont
++ cg_centerMesagesFont
+* cg_drawCrosshairNames:
+  + 2 option - teammates
+  + 3 option - enemies
+
+* SHUD: StatusBar_ArmorCount fix
+
+03.05.2025 be v0.06c2
+
++ cg_teamIndicator;
++ cg_teamIndicatorAdjust;
++ cg_teamIndicatorColor;
++ cg_teamIndicatorOpaque;
++ cg_teamIndicatorBgColor;
++ cg_teamIndicatorBgOpaque;
++ cg_teamIndicatorOffset;
++ cg_teamIndicatorMaxLength;
+* cg_drawFriend
+  + option 2 (draw only freeze foe)
+
+30.04.2025 be v0.06a
+
+* SHUD:
+  * Player/Weapon stats fix
+  * StatusBar_ArmorCount 
+    + visflags: showempty
+    + color works for '0'
+
+28.04.2025 be v0.06
+
+* SHUD:
+  + grid
+  + tempAcc_icon
+  - tempAcc_last
+
+27.04.2025 be v0.059q
+
+* tempAcc 1 sec timeout restored
+
+27.04.2025 be v0.059o
+
+* cg_drawRewards bitmask
+  * 2 - disable icon, 4 - disable float sprite, 8 - disable sound
+* restricted names in scoreboard
+* restricted strings have "." instead of "..." at the end
+
+24.04.2025 be v.0.059j
+
+* crosshairNames
+  + teammates names in fog
+  + ignore fog on maps: Asylum, Quarantine, oxodm32, oxodm90, rjldm3, gen_q1dm1
+
+24.04.2025 be v.0.059e
+
++ StatusBar_AmmoCount shading when realoading
+  * dark grey by default, or color2 is set
+  * disable by style (any)
+
+23.04.2025 be v0.059t
+
+* cg_altShadows/cg_altBlood multiply shaders support
+  + cg_altShadow 2
+  * markShadowNew, markShadowNew2, markShadowNew3...
+  * bloodExplosionNew, bloodExplosionNew2, bloodExplosionNew3...
+* SHUD: 
+  + playerStats_damage_ratio
+  + shadowColor for text
+  * visflags: showempty for enemyscore, tempAcc
+
+22.04.2025 be v0.058
+
+* cg_shadows 2 -> -1
++ cg_altShadow
++ cg_altShadowColor
++ cg_scoreboardShowId
+
+22.04.2025 be v0.057
+
+* SHUD: 
+  + hud/California.cfg (by Musin)
+  + hud resourses (gfx/2d/hudres/)
+
+21.04.2025 be v0.056x
++ cg_noSlidingWindow 2 option 
+  * 1 disable MoTD
+  * 2 disable any sliding window
++ cg_shadows 2 option - static player shadow
+
+* SHUD: 
+  + weaponStats_## - accuracy
+  + weaponStats_##_icon
+
+  + playerStats_DG
+  + playerStats_DR
+  + playerStats_DG_icon
+  + playerStats_DR_icon
+  
+  * visflags: showempty only for weapon/playerStats
+
+17.04.2025 be v0.055t
+* +wstats additional data
+  + Kill/death ratio (K/D)
+  + Damage given/recieved Ratio
+
+16.04.2025 be v0.054t2
+* gun pos fixed
+
+15.04.2025 be v0.054t1
++ cg_gunPos
++ cg_shotGunTracer
++ cg_railStaticRings
++ cg_railRingsSize 
+  
+* cg_railTrailRadius -> cg_railRingsRadius
+* cg_railTrailRotation -> cg_railRingsRotation
+* cg_railTrailSpacing -> cg_railRingsSpacing
+
+13.04.2025 be v0.053
+
++ cg_noSlidingWindow
+
+12.04.2025 be v0.052
+
+* cg_drawRewards 2
+
+12.04.2025 be v0.051
+
+* cg_drawOutline team colors fixed
+
+* SHUD: 
+  + tempAcc styles options
+  + CurrentWeaponStats styles options
+  + scoresScore_NME	style
+  + Configs (m1rqlstyle, AGENT, diwoc_light, cybra, RTG, zoti)
+
+10.04.2025 be v0.05
+
++ cg_altBlood
++ cg_altBloodColor
+* cg_altPlasma 
+  + option 2
+
+09.04.2025 be v0.042
+
++ cg_underwaterFovWarp
+
+09.04.2025 be v0.041
+  
++ belist
+
+08.04.2025 be v0.04
+
++ cg_drawOutline
++ cg_enemyOutlineColor
++ cg_teamOutlineColor
++ cg_enemyOutlineColorUnique
++ cg_enemyOutlineSize
++ cg_teamOutlineSize
+
+07.04.2025 be v0.032
+
+  + cg_drawHitBox 3
+
+06.04.2025 be v0.032
+
+  + cg_drawHitBox 2
+
+05.04.2025 be v0.031
+
+  + cg_drawGunForceAspect
+  * clientconfig
+    + Hitbox permission from server
+
+05.04.2025 be v0.03
+
+* cg_drawHitBox enabled. Server permission required
+    + cg_hitBoxColor <color>
+    * HQ shader (lol)
+
+* cg_damageDrawFrame options
+  + 1 gradient
+  + 2 old solid border
+
+03.04.2025 be v0.02
+
+*cg_drawDamage (3/4) reworked to:
+    + cg_damageDrawFrame;
+    + cg_damageFrameSize;
+    + cg_damageFrameOpaque;
+
++ cg_shud_currentWeapons;
+
+* SHUD: 
+  + Current Weapon Stats shows accuracy
+      + CurrentWeaponStats
+      + CurrentWeaponStats_icon
+
+* tempAcc reworked:
+    * fixed calc
+    - tempAcc_last
+    
+
+* weaponlist:
+    + border for choosen weapon
+
++ various fixes
+
+27.05.2025 be v 0.01
+
++ cg_itemsRespawnAnimation
++ cg_drawDamage (3/4)
++ cg_enemyLightningColor
++ cg_uniqueColorTable
++ cg_noVoteBeep
+* cg_drawGun (reworked)
+
+* SHUD: 
+  + Border (border, borderColor)
+  * Background for text elements (reworked)
+  + Background for client events in obituaries
+  + Temporal LG accuracy
+  + Item pickup style 2
+  + Color E/T transparency via color2
+  + Armor bar over HP bar

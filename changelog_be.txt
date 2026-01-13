@@ -663,6 +663,10 @@ SuperHUD:
 + cg_simpleItemsBob (QL) - 0/1/2 
 
 13.01.2025 be v1.00m
++ SuperHUD:
+  + StatusBar_AmmoBar: fix
+  + weaponMaxValue
++ M1rage SuperHUD configs: m1rQ4style, m1rQLstyle, AGENT
 + cg_brightWeaponsOpaque
 + /behelp - about main features
 + /behelp bitmask - how to use bitmask

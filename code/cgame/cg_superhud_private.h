@@ -244,6 +244,11 @@ typedef struct
 		char value[SUPERHUD_EXECUTE_MAX_LEN];
 		qboolean isSet;
 	} execute;
+	struct
+	{
+		char value[256];
+		qboolean isSet;
+	} weaponMaxValue;
 } superhudConfig_t;
 
 typedef superhudConfig_t superhudElementDefault_t;
@@ -979,6 +984,7 @@ void CG_SHUDAvailableElementsInit(void);
 const superHUDConfigElement_t* CG_SHUDAvailableElementsGet(void);
 
 int CG_SHUDGetAmmo(int wpi);
+void CG_SHUDParseWeaponMaxValue(const char* valueStr, int* maxammo, int arraySize);
 
 void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ctx);
 qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg);
