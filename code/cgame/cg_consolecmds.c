@@ -1863,6 +1863,43 @@ void CG_Stub_f(void) { }
 
 /*
 =================
+CG_RestoreSensitivity_f
+
+Restore sensitivity from uc_sensitivity cvar
+Usage: restoreSensitivity
+=================
+*/
+void CG_RestoreSensitivity_f(void)
+{
+	float oldSensitivity;
+	float newSensitivity;
+	char sensitivityStr[32];
+
+	// Get current (old) sensitivity value
+	trap_Cvar_Update(&sensitivity);
+	oldSensitivity = sensitivity.value;
+	if (oldSensitivity < 0.0f)
+	{
+		oldSensitivity = 0.0f;
+	}
+
+	// Get stored sensitivity value from uc_sensitivity
+	trap_Cvar_Update(&uc_sensitivity);
+	newSensitivity = uc_sensitivity.value;
+	if (newSensitivity < 0.0f)
+	{
+		newSensitivity = 0.0f;
+	}
+
+	// Restore sensitivity
+	Com_sprintf(sensitivityStr, sizeof(sensitivityStr), "%f", newSensitivity);
+	trap_Cvar_Set("sensitivity", sensitivityStr);
+	
+	CG_Printf("^2Sensitivity restored from ^3%.3f^7 to ^3%.3f^7\n", oldSensitivity, newSensitivity);
+}
+
+/*
+=================
 CG_TeamTaskHelp_f
 
 Display help information about team tasks
@@ -1886,7 +1923,8 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("^3Wheel settings:\n");
 	CG_Printf("  ^1Aim lock ^7enabled by default\n");
 	CG_Printf("  ^7To disable add to ^3cg_teamTaskWheel ^216^7 (bitmask)\n");
-	CG_Printf("  ^7An example: your value is ^24^7 -> need set to ^220^7 (^24^7+^216^7=^220^7)\n\n");
+	CG_Printf("  ^7An example: your value is ^24^7 -> need set to ^220^7 (^24^7+^216^7=^220^7)\n");
+	CG_Printf("  ^7Wheel changes sensitivity automatically - use ^2/restoreSensitivity^7 to restore it\n\n");
 	CG_Printf("^3Available team task commands:\n");
 	CG_Printf("  ^2tAttack^7    - Mark attack position\n");
 	CG_Printf("  ^2tDefence^7   - Mark defence position\n");
@@ -1922,6 +1960,40 @@ void CG_TeamTaskHelp_f(void)
 
 /*
 =================
+CG_BEHelp_PrintFeature
+
+Helper function to print BE feature info
+=================
+*/
+static void CG_BEHelp_PrintFeature(const char* cvarName, int featureFlag, const char* description, int zeroCheck)
+{
+	char currentValue[MAX_CVAR_VALUE_STRING];
+	
+	trap_Cvar_VariableStringBuffer(cvarName, currentValue, sizeof(currentValue));
+	
+	if (!BE_ENABLED)
+	{
+		CG_Printf("  ^3%s ^7\"^9BE^7\" - %s\n", cvarName, description);
+	}
+	else if (cgs.be.disableFeatures & featureFlag)
+	{
+		CG_Printf("  ^3%s ^7\"^1SRV^7\" - %s\n", cvarName, description);
+	}
+	else
+	{
+		if (zeroCheck == -1)
+		{
+			CG_Printf("  ^3%s ^7\"%s%s^7\" - %s\n", cvarName, atoi(currentValue) < 0 ? "^1" : "^2", currentValue, description);
+		}
+		else
+		{
+			CG_Printf("  ^3%s ^7\"%s%s^7\" - %s\n", cvarName, atoi(currentValue) == 0 ? "^1" : "^2", currentValue, description);
+		}
+	}
+}
+
+/*
+=================
 CG_BEHelp_f
 
 Get cvar description
@@ -1938,11 +2010,60 @@ void CG_BEHelp_f(void)
 
 	if (trap_Argc() < 2)
 	{
-		CG_Printf("^3Usage: behelp <cvar_name>\n");
+		CG_Printf("^7Get description for any qvm cvar by its ^2name.\n");
+		CG_Printf("^7Usage: ^3/behelp ^2<cvar_name>\n");
+		CG_Printf("^7Example: ^3/behelp ^2cg_teamTask\n");
+		CG_Printf("^7For bitmask guide: ^3/behelp ^2bitmask\n\n");
+		
+		CG_Printf("^9BE ^7Features Control:\n");
+		CG_Printf("^7Set ^2be_enabled 0^7 to disable all features.\n\n");
+		
+		CG_Printf("^3Available BE Features:\n\n");
+		
+		CG_BEHelp_PrintFeature("cg_friendsWallhack", CG_BE_TEAM_FOE_WH, "Show teammate markers through walls", 0);
+		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);
+		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color for enemies", 0);
+		CG_BEHelp_PrintFeature("cg_markTeam", CG_BE_MARK_TEAMMATE, "Mark teammate(s) to change outline color", -1);
+		CG_BEHelp_PrintFeature("cg_altShadow", CG_BE_ALT_SHADOW, "Alternative shadow", 0);
+		CG_BEHelp_PrintFeature("cg_altBlood", CG_BE_ALT_BLOOD, "Alternative blood effects on model hit", 0);
+		CG_BEHelp_PrintFeature("cg_altPlasma", CG_BE_ALT_PLASMAGUN, "Alternative plasma projectile and trail rendering", 0);
+		CG_BEHelp_PrintFeature("cg_drawOutline", CG_BE_OUTLINE, "Set player outline rendering mode", 0);
+		CG_BEHelp_PrintFeature("cg_teamIndicator", CG_BE_TEAM_INDICATOR, "Draw player indicator over ally", 0);
+		// CG_BEHelp_PrintFeature("cg_damagePlums", CG_BE_DAMAGEINFO, "Show damage plums (floating damage numbers)", 0);
+		CG_BEHelp_PrintFeature("cg_drawBrightWeapons", CG_BE_FULLBRIGHT, "Render weapons with a single bright color", 0);
+		CG_BEHelp_PrintFeature("cg_teamTask", CG_BE_TEAMTASKS, "Team task markers", 0);
+		
 		return;
 	}
 
 	cvarName = CG_Argv(1);
+
+	/* Check if user wants bitmask guide */
+	if (!Q_stricmp(cvarName, "bitmask"))
+	{
+		CG_Printf("^3Bitmask Guide\n");
+		
+		CG_Printf("^7A bitmask allows you to combine multiple options into a single number.\n");
+		CG_Printf("^7Each option is represented by a power of 2 (bit).\n\n");
+		
+		CG_Printf("^3How to use:\n");
+		CG_Printf("^7To enable multiple options, add their values together.\n");
+		CG_Printf("^7Example: If option 1 = ^91^7, option 2 = ^82^7, option 3 ^7= ^34^7:\n");
+		CG_Printf("^7  To enable option 1 and 3: ^91 ^7+ ^34 ^7= ^25^7\n");
+		CG_Printf("^7  To enable all three: ^91 ^7+ ^82 ^7+ ^34 ^7= ^27^7\n\n");
+		
+		CG_Printf("^3Example with ^3cg_teamTask^7:\n");
+		CG_Printf("^7  ^91^7 - Enable markers\n");
+		CG_Printf("^7  ^82^7 - Play sound when marking\n");
+		CG_Printf("^7  ^34^7 - Show marker when player dies\n");
+		CG_Printf("^7  ^48^7 - Show markers on HUD\n");
+		CG_Printf("^7  ^516^7 - Show player name\n");
+		CG_Printf("^7  ^632^7 - Use unique colors\n\n");
+		CG_Printf("^7To enable markers, sound, and HUD: ^91 ^7+ ^82 ^7+ ^48 ^7= ^211^7\n");
+		CG_Printf("^7Command: ^3cg_teamTask ^211\n\n");
+		
+		return;
+	}
 
 	/* Check if description exists */
 	description = CG_GetCvarDescription(cvarName);
@@ -1970,8 +2091,10 @@ void CG_BEHelp_f(void)
 	}
 	else
 	{
-		/* No description found, send print command to client */
-		trap_SendConsoleCommand(va("print %s", cvarName));
+		/* No description found, show usage */
+		CG_Printf("^7Usage: ^3/behelp ^2<cvar_name>\n");
+		CG_Printf("^7Example: ^3/behelp ^2cg_teamTask\n");
+		CG_Printf("^7For bitmask guide: ^3/behelp bitmask\n");
 	}
 }
 
@@ -2135,6 +2258,7 @@ static consoleCommand_t commands[] =
 	{ "teamTaskHelp", CG_TeamTaskHelp_f },
 	{ "teamTaskClients", CG_TeamTaskClients_f },
 	{ "colorcharlist", CG_ColorCharList_f },
+	{ "restoreSensitivity", CG_RestoreSensitivity_f },
 };
 
 /*

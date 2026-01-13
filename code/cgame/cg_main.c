@@ -439,24 +439,6 @@ vmCvar_t        ch_crosshairDecorActionColorLow;
 vmCvar_t        ch_crosshairDecorActionColorMid;
 vmCvar_t        ch_crosshairDecorActionColorHigh;
 
-vmCvar_t           cg_shud_chatindex;
-vmCvar_t           cg_shud_chatmsg0;
-vmCvar_t           cg_shud_chatmsg1;
-vmCvar_t           cg_shud_chatmsg2;
-vmCvar_t           cg_shud_chatmsg3;
-vmCvar_t           cg_shud_chatmsg4;
-vmCvar_t           cg_shud_chatmsg5;
-vmCvar_t           cg_shud_chatmsg6;
-vmCvar_t           cg_shud_chatmsg7;
-vmCvar_t           cg_shud_chatmsg8;
-vmCvar_t           cg_shud_chatmsg9;
-vmCvar_t           cg_shud_chatmsg10;
-vmCvar_t           cg_shud_chatmsg11;
-vmCvar_t           cg_shud_chatmsg12;
-vmCvar_t           cg_shud_chatmsg13;
-vmCvar_t           cg_shud_chatmsg14;
-vmCvar_t           cg_shud_chatmsg15;
-
 vmCvar_t        cg_friendHudMarkerMaxDist;
 vmCvar_t        cg_friendHudMarkerSize;
 vmCvar_t        cg_friendHudMarkerMaxScale;
@@ -560,6 +542,8 @@ vmCvar_t        cg_exec_gauntlet;
 vmCvar_t        cg_exec_bfg;
 vmCvar_t        cg_simpleItemsRadius;
 vmCvar_t        cg_simpleItemsBob;
+vmCvar_t        cg_brightWeaponsOpaque;
+vmCvar_t        uc_sensitivity;
 
 // vmCvar_t        cg_snow;
 
@@ -836,23 +820,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_stackHitSounds,           "cg_stackHitSounds",   "1", CVAR_ARCHIVE },
 	{ &cg_stackHitSoundsTimeout,    "cg_stackHitSoundsTimeout",   "500", CVAR_ARCHIVE },
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
-	{ &cg_shud_chatindex, "cg_shud_chatindex", "0",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg0, "cg_shud_chatmsg0", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg1, "cg_shud_chatmsg1", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg2, "cg_shud_chatmsg2", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg3, "cg_shud_chatmsg3", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg4, "cg_shud_chatmsg4", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg5, "cg_shud_chatmsg5", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg6, "cg_shud_chatmsg6", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg7, "cg_shud_chatmsg7", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg8, "cg_shud_chatmsg8", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg9, "cg_shud_chatmsg9", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg10, "cg_shud_chatmsg10", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg11, "cg_shud_chatmsg11", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg12, "cg_shud_chatmsg12", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg13, "cg_shud_chatmsg13", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg14, "cg_shud_chatmsg14", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
-	{ &cg_shud_chatmsg15, "cg_shud_chatmsg15", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
 	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
 	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
@@ -1025,8 +992,49 @@ static cvarTable_t cvarTable[] =
 	{ &cg_exec_bfg, "cg_exec_bfg", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_simpleItemsRadius, "cg_simpleItemsRadius", "14", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_simpleItemsRadius },
 	{ &cg_simpleItemsBob, "cg_simpleItemsBob", "0", CVAR_ARCHIVE },
+	{ &cg_brightWeaponsOpaque, "cg_brightWeaponsOpaque", "1.0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
+};
+
+// temp cvars
+vmCvar_t           cg_shud_chatindex;
+vmCvar_t           cg_shud_chatmsg0;
+vmCvar_t           cg_shud_chatmsg1;
+vmCvar_t           cg_shud_chatmsg2;
+vmCvar_t           cg_shud_chatmsg3;
+vmCvar_t           cg_shud_chatmsg4;
+vmCvar_t           cg_shud_chatmsg5;
+vmCvar_t           cg_shud_chatmsg6;
+vmCvar_t           cg_shud_chatmsg7;
+vmCvar_t           cg_shud_chatmsg8;
+vmCvar_t           cg_shud_chatmsg9;
+vmCvar_t           cg_shud_chatmsg10;
+vmCvar_t           cg_shud_chatmsg11;
+vmCvar_t           cg_shud_chatmsg12;
+vmCvar_t           cg_shud_chatmsg13;
+vmCvar_t           cg_shud_chatmsg14;
+vmCvar_t           cg_shud_chatmsg15;
+
+static cvarTable_t cvarTable_temp[] = {
+	{ &cg_shud_chatindex, "cg_shud_chatindex", "0",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg0, "cg_shud_chatmsg0", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg1, "cg_shud_chatmsg1", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg2, "cg_shud_chatmsg2", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg3, "cg_shud_chatmsg3", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg4, "cg_shud_chatmsg4", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg5, "cg_shud_chatmsg5", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg6, "cg_shud_chatmsg6", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg7, "cg_shud_chatmsg7", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg8, "cg_shud_chatmsg8", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg9, "cg_shud_chatmsg9", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg10, "cg_shud_chatmsg10", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg11, "cg_shud_chatmsg11", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg12, "cg_shud_chatmsg12", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg13, "cg_shud_chatmsg13", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg14, "cg_shud_chatmsg14", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_shud_chatmsg15, "cg_shud_chatmsg15", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -1131,6 +1139,12 @@ void CG_RegisterCvars(void)
 	trap_Cvar_Register(NULL, "team_model", DEFAULT_TEAM_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
 	trap_Cvar_Register(NULL, "team_headmodel", DEFAULT_TEAM_HEAD, CVAR_USERINFO | CVAR_ARCHIVE);
 	trap_Cvar_Register(&sensitivity, "sensitivity", "5.0", CVAR_ARCHIVE);
+
+	// temp table, no update (only manual with trap_Cvar_Update)
+	for (i = 0, cv = cvarTable_temp; i < sizeof(cvarTable_temp) / sizeof(cvarTable_temp[0]); i++, cv++)
+	{
+		trap_Cvar_Register(cv->vmCvar, cv->cvarName, cv->defaultString, cv->cvarFlags);
+	}
 
 	CG_OSPCvarsRestrictValues();
 }

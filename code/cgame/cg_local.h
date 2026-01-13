@@ -2019,24 +2019,6 @@ extern vmCvar_t         cg_clearOnLevelLoad;
 extern vmCvar_t         cg_spectPOV;
 extern vmCvar_t         cg_drawRealHeads;
 
-extern vmCvar_t           cg_shud_chatindex;
-extern vmCvar_t           cg_shud_chatmsg0;
-extern vmCvar_t           cg_shud_chatmsg1;
-extern vmCvar_t           cg_shud_chatmsg2;
-extern vmCvar_t           cg_shud_chatmsg3;
-extern vmCvar_t           cg_shud_chatmsg4;
-extern vmCvar_t           cg_shud_chatmsg5;
-extern vmCvar_t           cg_shud_chatmsg6;
-extern vmCvar_t           cg_shud_chatmsg7;
-extern vmCvar_t           cg_shud_chatmsg8;
-extern vmCvar_t           cg_shud_chatmsg9;
-extern vmCvar_t           cg_shud_chatmsg10;
-extern vmCvar_t           cg_shud_chatmsg11;
-extern vmCvar_t           cg_shud_chatmsg12;
-extern vmCvar_t           cg_shud_chatmsg13;
-extern vmCvar_t           cg_shud_chatmsg14;
-extern vmCvar_t           cg_shud_chatmsg15;
-
 extern vmCvar_t         cg_myTeam;
 extern vmCvar_t         cg_giveName;
 extern vmCvar_t         cg_bestats_autoaction;
@@ -2095,7 +2077,27 @@ extern vmCvar_t         cg_exec_gauntlet;
 extern vmCvar_t         cg_exec_bfg;
 extern vmCvar_t           cg_simpleItemsRadius;
 extern vmCvar_t           cg_simpleItemsBob;
+extern vmCvar_t        cg_brightWeaponsOpaque;
+extern vmCvar_t        uc_sensitivity;
 
+// temp cvars
+extern vmCvar_t           cg_shud_chatindex;
+extern vmCvar_t           cg_shud_chatmsg0;
+extern vmCvar_t           cg_shud_chatmsg1;
+extern vmCvar_t           cg_shud_chatmsg2;
+extern vmCvar_t           cg_shud_chatmsg3;
+extern vmCvar_t           cg_shud_chatmsg4;
+extern vmCvar_t           cg_shud_chatmsg5;
+extern vmCvar_t           cg_shud_chatmsg6;
+extern vmCvar_t           cg_shud_chatmsg7;
+extern vmCvar_t           cg_shud_chatmsg8;
+extern vmCvar_t           cg_shud_chatmsg9;
+extern vmCvar_t           cg_shud_chatmsg10;
+extern vmCvar_t           cg_shud_chatmsg11;
+extern vmCvar_t           cg_shud_chatmsg12;
+extern vmCvar_t           cg_shud_chatmsg13;
+extern vmCvar_t           cg_shud_chatmsg14;
+extern vmCvar_t           cg_shud_chatmsg15;
 
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_run;
@@ -2877,7 +2879,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00l1" // BE
+#define OSP_VERSION "be-1.00m" // BE
 
 
 

@@ -105,10 +105,18 @@ UI_RegisterCvars
 void UI_RegisterCvars( void ) {
 	int			i;
 	cvarTable_t	*cv;
+	float		sensitivityValue;
 
 	for ( i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++ ) {
 		trap_Cvar_Register( cv->vmCvar, cv->cvarName, cv->defaultString, cv->cvarFlags );
 	}
+
+	// Save current sensitivity value to uc_sensitivity
+	sensitivityValue = trap_Cvar_VariableValue( "sensitivity" );
+	if (sensitivityValue < 0.0f) {
+		sensitivityValue = 0.0f;
+	}
+	trap_Cvar_SetValue( "uc_sensitivity", sensitivityValue );
 }
 
 /*

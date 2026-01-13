@@ -436,6 +436,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "sensitivity", "Sets base mouse sensitivity (mouse speed)." },
 	{ "cg_simpleItemsRadius", "Sets the radius (size) of simple items sprites. Range: ^28^7-^224^7. Default: ^214^7." },
 	{ "cg_simpleItemsBob", "Enables bouncing animation for simple items. Values:\n  ^20^7 - disabled\n  ^21^7 - all simple items (except armor shard)\n  ^22^7 - only armor (except shard), powerups, holdables and mega health" },
+	{ "cg_brightWeaponsOpaque", "Opacity for weapons rendered with ^3cg_drawBrightWeapons^7\n  ^20^7 - ^21^7" },
 };
 
 

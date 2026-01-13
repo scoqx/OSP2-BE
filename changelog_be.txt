@@ -661,3 +661,8 @@ SuperHUD:
   * StatusBar_AmmoBar direction fix, +color2 support
 + cg_simpleItemsRadius (QL)
 + cg_simpleItemsBob (QL) - 0/1/2 
+
+13.01.2025 be v1.00m
++ cg_brightWeaponsOpaque
++ /behelp - about main features
++ /behelp bitmask - how to use bitmask

@@ -1540,23 +1540,35 @@ void CG_InitBrightWeaponsColors(void)
 
 void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum)
 {
+	float opacity;
+	
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 	{
+		opacity = atof(cg_brightWeaponsOpaque.string);
+		if (opacity < 0.0f) opacity = 0.0f;
+		if (opacity > 1.0f) opacity = 1.0f;
+		
 		gun->shaderRGBA[0] = 255 * cgs.be.brightWeaponsColor[weaponNum][0];
 		gun->shaderRGBA[1] = 255 * cgs.be.brightWeaponsColor[weaponNum][1];
 		gun->shaderRGBA[2] = 255 * cgs.be.brightWeaponsColor[weaponNum][2];
-		gun->shaderRGBA[3] = 255;
+		gun->shaderRGBA[3] = 255 * opacity;
 	}
 }
 
 void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum)
 {
+	float opacity;
+	
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 	{
+		opacity = atof(cg_brightWeaponsOpaque.string);
+		if (opacity < 0.0f) opacity = 0.0f;
+		if (opacity > 1.0f) opacity = 1.0f;
+		
 		ent->shaderRGBA[0] = 255 * cgs.be.brightWeaponsColor[weaponNum][0];
 		ent->shaderRGBA[1] = 255 * cgs.be.brightWeaponsColor[weaponNum][1];
 		ent->shaderRGBA[2] = 255 * cgs.be.brightWeaponsColor[weaponNum][2];
-		ent->shaderRGBA[3] = 255;
+		ent->shaderRGBA[3] = 255 * opacity;
 	}
 }
 

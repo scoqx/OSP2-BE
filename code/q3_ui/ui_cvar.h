@@ -71,4 +71,6 @@ UI_CVAR( ui_cdkeychecked, "ui_cdkeychecked", "1", CVAR_ROM )
 
 UI_CVAR( ui_lastDemo, "ui_lastDemo", "", CVAR_NOTABCOMPLETE )
 
+UI_CVAR( uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE )
+
 #undef UI_CVAR

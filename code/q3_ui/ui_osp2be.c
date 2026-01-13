@@ -2690,3 +2690,29 @@ void UI_Osp2BeMenu( void ) {
 	Menu_SetCursorToItem( &s_osp2be.menu, &s_osp2be.category );
 }
 
+/*
+ * =================
+ * Osp2Be_Init_Input (commented out - for future use)
+ * =================
+ * Получение привязок клавиш из UI для передачи в cgame
+ * 
+ * NOTE: Requires Controls_GetKeyAssignment to be made non-static in ui_controls2.c
+ * Add this declaration if Controls_GetKeyAssignment becomes extern:
+ * extern void Controls_GetKeyAssignment(char *command, int *twokeys);
+ */
+/*
+void Osp2Be_Init_Input( void ) {
+	int keys[2];
+	char name[32];
+	
+	Controls_GetKeyAssignment("+scores", keys);
+
+	if (keys[0] != -1)
+		trap_Key_KeynumToStringBuf(keys[0], name, 32);
+	else
+		*name = 0;
+
+	trap_Cvar_Set("cgx_scores_key", name);
+}
+*/
+
