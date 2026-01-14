@@ -1456,6 +1456,50 @@ static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new)
 }
 
 
+/*
+ * Check if skin exists for given model
+ */
+static qboolean CG_SkinExists(const char* modelName, const char* skinName)
+{
+	char filename[MAX_QPATH];
+	qhandle_t testSkin;
+
+	if (!modelName || !modelName[0] || !skinName || !skinName[0])
+	{
+		return qfalse;
+	}
+
+	/* Check lower skin */
+	Com_sprintf(filename, sizeof(filename), "models/players/%s/lower_%s.skin", modelName, skinName);
+	testSkin = trap_R_RegisterSkin(filename);
+	if (!testSkin)
+	{
+		/* Try characters folder */
+		Com_sprintf(filename, sizeof(filename), "models/players/characters/%s/lower_%s.skin", modelName, skinName);
+		testSkin = trap_R_RegisterSkin(filename);
+		if (!testSkin)
+		{
+			return qfalse;
+		}
+	}
+
+	/* Check upper skin */
+	Com_sprintf(filename, sizeof(filename), "models/players/%s/upper_%s.skin", modelName, skinName);
+	testSkin = trap_R_RegisterSkin(filename);
+	if (!testSkin)
+	{
+		/* Try characters folder */
+		Com_sprintf(filename, sizeof(filename), "models/players/characters/%s/upper_%s.skin", modelName, skinName);
+		testSkin = trap_R_RegisterSkin(filename);
+		if (!testSkin)
+		{
+			return qfalse;
+		}
+	}
+
+	return qtrue;
+}
+
 static void CG_UpdateModelFromString(char* modelName, char* skinName, const char* resultModelString, qboolean isOurClient, team_t team)
 {
 	const char* nameModel;
@@ -1520,7 +1564,16 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	}
 	else if (!(isPmSkin || isFbSkin))
 	{
-		nameSkin = "default";
+		/* In non-team modes, check if the custom skin exists before falling back to default */
+		if (nameSkin && CG_SkinExists(nameModel, nameSkin))
+		{
+			/* Skin exists, use it */
+		}
+		else
+		{
+			/* Skin doesn't exist, use default */
+			nameSkin = "default";
+		}
 	}
 
 	Q_strncpyz(modelName, nameModel, MAX_QPATH);
@@ -1868,13 +1921,15 @@ static qboolean CG_ShouldReplaceWithReplacementName(int clientNum, qboolean name
 		return qfalse;
 	}
 
+	/* Never replace name for local player - always keep original name */
+	if (clientNum == cg.clientNum)
+	{
+		return qfalse;
+	}
+
 	/* For value 1: replace names for all players except local player */
 	if (cg_giveName.integer == 1)
 	{
-		if (clientNum == cg.clientNum)
-		{
-			return qfalse;
-		}
 		return qtrue;
 	}
 

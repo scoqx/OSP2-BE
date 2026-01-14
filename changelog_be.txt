@@ -673,3 +673,7 @@ SuperHUD:
 + /behelp - about main features
 + /behelp bitmask - how to use bitmask
 * lowhp fix
+
+15.01.2025 be v1.00n
+* Player models skin fix
+* cg_giveName fix
