@@ -350,6 +350,43 @@ static qboolean CG_ParseAnimationFile(const char* filename, clientInfo_t* ci)
 
 /*
 ==========================
+CG_SkinExists
+
+Check if a skin file exists for the given model and skin name
+==========================
+*/
+static qboolean CG_SkinExists(const char* modelName, const char* skinName)
+{
+	char filename[MAX_QPATH];
+	fileHandle_t f;
+	int len;
+
+	if (!modelName || !skinName || !modelName[0] || !skinName[0])
+	{
+		return qfalse;
+	}
+
+	// Check if lower skin exists
+	Com_sprintf(filename, MAX_QPATH, "models/players/%s/lower_%s.skin", modelName, skinName);
+	len = trap_FS_FOpenFile(filename, &f, FS_READ);
+	if (len > 0)
+	{
+		trap_FS_FCloseFile(f);
+		// Also check upper skin
+		Com_sprintf(filename, MAX_QPATH, "models/players/%s/upper_%s.skin", modelName, skinName);
+		len = trap_FS_FOpenFile(filename, &f, FS_READ);
+		if (len > 0)
+		{
+			trap_FS_FCloseFile(f);
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+/*
+==========================
 CG_RegisterClientSkin
 ==========================
 */
@@ -692,7 +729,16 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	}
 	else if (!isPmSkin)
 	{
-		nameSkin = "default";
+		/* In non-team modes, check if the custom skin exists before falling back to default */
+		if (nameSkin && CG_SkinExists(nameModel, nameSkin))
+		{
+			/* Skin exists, use it */
+		}
+		else
+		{
+			/* Skin doesn't exist, use default */
+			nameSkin = "default";
+		}
 	}
 
 	Q_strncpyz(modelName, nameModel, MAX_QPATH);
