@@ -409,7 +409,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_bestats_autoaction", "Display battle statistics at the end of the game. Set ^20^7 to disable." },
 	{ "cg_spectPOV", "Use team perspective when spectating. Set ^20^7 to disable." },
 	{ "cg_drawRealHeads", "Use original player head models (icon) . Set ^20^7 to disable." },
-	{ "cg_teamTask", "Team task markers bitmask:\n  ^21^7 - Enable markers\n  ^22^7 - Play sound when marking\n  ^24^7 - Show/send marker when player dies\n  ^28^7 - Show markers on HUD\n  ^216^7 - Show player name\n  ^232^7 - Use unique colors" },
+	{ "cg_teamTask", "Team task markers bitmask:\n  ^21^7 - Enable markers\n  ^22^7 - Play sound when marking\n  ^24^7 - Show/send marker when player dies\n  ^28^7 - Show markers on HUD\n  ^216^7 - Show player name\n  ^232^7 - Use unique colors\n  ^264^7 - Show distance" },
 	{ "cg_teamTaskMarkTime", "Time for team task markers to remain visible - milliseconds." },
 	{ "cg_teamTaskScale", "Scale factor for team task markers." },
 	{ "cg_teamTaskOpaque", "Opacity level for team task markers\n  ^20.0^7 - ^21.0^7" },
@@ -438,6 +438,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_simpleItemsRadius", "Sets the radius (size) of simple items sprites. Range: ^28^7-^224^7. Default: ^214^7." },
 	{ "cg_simpleItemsBob", "Enables bouncing animation for simple items. Values:\n  ^20^7 - disabled\n  ^21^7 - all simple items (except armor shard)\n  ^22^7 - only armor (except shard), powerups, holdables and mega health" },
 	{ "cg_brightWeaponsOpaque", "Opacity for weapons rendered with ^3cg_drawBrightWeapons^7\n  ^20^7 - ^21^7" },
+	{ "cg_teamTaskIconMinSize", "Minimum size of team task icons displayed in the world." },
 };
 
 

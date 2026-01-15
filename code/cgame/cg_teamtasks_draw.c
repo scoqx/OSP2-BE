@@ -1379,6 +1379,12 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		renderData->h *= cg_teamTaskScale.value;
 		renderData->w *= cg_teamTaskScale.value;
 
+		/* Apply minimum text size limit */
+		if (renderData->w < cg_teamTaskIconMinSize.value)
+			renderData->w = cg_teamTaskIconMinSize.value * 0.75;
+		if (renderData->h < cg_teamTaskIconMinSize.value)
+			renderData->h = cg_teamTaskIconMinSize.value;
+
 		/* Calculate icon size (4 times text width, but 2 times for death marks) */
 		if (mark->markType == TEAMTASK_PLAYERDEAD)
 		{
@@ -1390,6 +1396,12 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 			renderData->iconW = renderData->w * 4;
 			renderData->iconH = renderData->h * 4;
 		}
+
+		/* Apply minimum icon size limit */
+		if (renderData->iconW < cg_teamTaskIconMinSize.value)
+			renderData->iconW = cg_teamTaskIconMinSize.value * 0.75f;
+		if (renderData->iconH < cg_teamTaskIconMinSize.value)
+			renderData->iconH = cg_teamTaskIconMinSize.value;
 
 		/* Convert world to screen coordinates and check if mark is outside screen */
 		isOwnHereDead = (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD));
@@ -1445,6 +1457,38 @@ static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRender
 	           renderData->iconW * renderData->spawnScale,
 	           renderData->iconH * renderData->spawnScale, mark->shader);
 	trap_R_SetColor(NULL);
+
+	/* Draw distance above mark when enabled */
+	if ((cg_teamTask.integer & CG_TEAMTASK_SHOWDISTANCE) && renderData->nameFade > 0.0f)
+	{
+		char distanceStr[16];
+		vec4_t distanceColor;
+		vec4_t distanceShadowColor;
+		float distanceY;
+
+		/* Format distance as integer meters */
+		Com_sprintf(distanceStr, sizeof(distanceStr), "%dm", (int)renderData->distance / 10);
+
+		/* White color with same alpha as mark, multiplied by name fade */
+		Vector4Set(distanceColor, 1.0f, 1.0f, 1.0f, renderData->color[3] * renderData->nameFade);
+		Vector4Set(distanceShadowColor, 0.0f, 0.0f, 0.0f, renderData->color[3] * renderData->nameFade);
+
+		/* Position distance above mark */
+		distanceY = (-2) + renderData->y - renderData->iconH * 0.5f - renderData->h * 0.5f;
+		CG_FontSelect(renderData->font);
+
+		/* Draw distance */
+		CG_OSPDrawStringNew(
+		    renderData->x, distanceY,
+		    distanceStr,
+		    distanceColor,
+		    distanceShadowColor,
+		    renderData->w, renderData->h,
+		    0, /* no max width limit */
+		    DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW,
+		    NULL, NULL, NULL
+		);
+	}
 
 	/* Draw player name below mark when hovering */
 	if ((cg_teamTask.integer & CG_TEAMTASK_SHOWNAME) && renderData->nameFade > 0.0f && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)

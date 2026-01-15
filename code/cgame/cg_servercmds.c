@@ -208,6 +208,9 @@ static void CG_ParseWarmup(void)
 		// Очистка новой статистики
 		memset(&cgs.be.newStats, 0, sizeof(cgs.be.newStats));
 
+		// Очистка teamTask меток
+		CG_InitTeamTaskMarkers();
+
 		/* Execute warmup ended command */
 		CG_ExecCommandIfSet(&cg_exec_warmupEnded);
 	}

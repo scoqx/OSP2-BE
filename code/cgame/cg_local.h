@@ -1397,6 +1397,7 @@ typedef struct cgs_be_s
 #define CG_TEAMTASK_HUDMARKER      (1 << 3)  // 8 - Show markers on HUD
 #define CG_TEAMTASK_SHOWNAME       (1 << 4)  // 16 - Show player name below mark when hovering
 #define CG_TEAMTASK_UNIQUECOLORS   (1 << 5)  // 32 - Use unique colors
+#define CG_TEAMTASK_SHOWDISTANCE   (1 << 6)  // 64 - Show distance in meters
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -2080,6 +2081,7 @@ extern vmCvar_t           cg_simpleItemsRadius;
 extern vmCvar_t           cg_simpleItemsBob;
 extern vmCvar_t        cg_brightWeaponsOpaque;
 extern vmCvar_t        uc_sensitivity;
+extern vmCvar_t        cg_teamTaskIconMinSize;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2881,7 +2883,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00n" // BE
+#define OSP_VERSION "be-1.00n1" // BE
 
 
 
@@ -3064,6 +3066,7 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent);
 void CG_ClearRoundSpecificTeamTaskMarks(void);
 void CG_ClearPlayerDeathTeamTaskMarks(void);
 void CG_ClearClientHereDeadMarks(int clientNum);
+void CG_InitTeamTaskMarkers(void);
 void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient);
 void CG_TeamTaskMarkOffense(void);
 void CG_TeamTaskMarkDefence(void);

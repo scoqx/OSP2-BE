@@ -863,10 +863,10 @@ void CG_ReloadHud_f(void)
 	CG_SHUDLoadConfig();
 }
 
-void CG_ReloadCHUD_f(void)
-{
-	CG_CHUDLoadConfig();
-}
+// void CG_ReloadCHUD_f(void)
+// {
+// 	CG_CHUDLoadConfig();
+// }
 
 void CG_PrintPlayerIDs_f(void)
 {
@@ -2228,7 +2228,7 @@ static consoleCommand_t commands[] =
 	{ "decalrotclock", CG_OSPDecalRotClock_f },
 	{ "decalrotcounter", CG_OSPDecalRotCounter_f },
 	{ "reloadHUD", CG_ReloadHud_f },
-	{ "reloadCHUD", CG_ReloadCHUD_f },
+	// { "reloadCHUD", CG_ReloadCHUD_f },
 	{ "playersid", CG_PrintPlayerIDs_f },
 	{ "mute", CG_Mute_f },
 	{ "unmute", CG_UnMute_f },

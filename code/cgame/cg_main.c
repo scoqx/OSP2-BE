@@ -545,6 +545,7 @@ vmCvar_t        cg_simpleItemsRadius;
 vmCvar_t        cg_simpleItemsBob;
 vmCvar_t        cg_brightWeaponsOpaque;
 vmCvar_t        uc_sensitivity;
+vmCvar_t        cg_teamTaskIconMinSize;
 
 // vmCvar_t        cg_snow;
 
@@ -996,6 +997,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_simpleItemsBob, "cg_simpleItemsBob", "0", CVAR_ARCHIVE },
 	{ &cg_brightWeaponsOpaque, "cg_brightWeaponsOpaque", "1.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE | CVAR_NEW },
+	{ &cg_teamTaskIconMinSize, "cg_teamTaskIconMinSize", "3", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };

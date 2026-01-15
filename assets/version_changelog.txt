@@ -1,3 +1,4 @@
-15.01.2025 be v1.00n
+15.01.2025 be v1.00n1
++ cg_teamTaskIconMinSize
 * Player models skin fix
 * cg_giveName fix

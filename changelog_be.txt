@@ -674,6 +674,8 @@ SuperHUD:
 + /behelp bitmask - how to use bitmask
 * lowhp fix
 
-15.01.2025 be v1.00n
+15.01.2025 be v1.00n1
++ cg_teamTaskIconMinSize
++ cg_teamTask bitmask 64 - draw distance
 * Player models skin fix
 * cg_giveName fix
