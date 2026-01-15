@@ -487,3 +487,49 @@ qboolean CG_IsIntermission(void)
 		return qtrue;
 	}
 }
+
+/*
+=====================
+CG_DefineServer
+
+Define server-specific features based on config string.
+=====================
+*/
+void CG_DefineServer(int num, const char* str)
+{
+	if (num == 0)
+	{
+		if (strstr(str, "administrator") || strstr(str, "adminless"))
+		{
+			cgs.be.server.fpsclassico = qtrue;
+		}
+		if (strstr(str, ".Admin/X")) // not working da i pohuy poka
+		{
+			cgs.be.server.q3msk = qtrue;
+		}
+	}
+}
+
+void FPSC_IsUnfreezeServer(void)
+{
+	if (CG_IsFPSClassicoServer())
+	{
+		if (strstr(CG_ConfigString(CS_SERVERINFO), "gamename\\unfreeze"))
+		{
+			cgs.osp.gameTypeFreeze = 1;
+		}
+	}
+}
+
+qboolean CG_IsFPSClassicoServer(void)
+{
+	return cgs.be.server.fpsclassico;
+}
+
+void CG_SendGetStatsInfo(void)
+{
+	if (!CG_IsFPSClassicoServer())
+	{
+		trap_SendClientCommand("getstatsinfo");
+	}
+}

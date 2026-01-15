@@ -1371,6 +1371,12 @@ typedef struct cgs_be_s
 
 		qboolean    supportedServer; // True if server supports team task (has "tt" field in player configstrings)
 	} teamMarkers;
+
+	struct
+	{
+		qboolean fpsclassico;
+		qboolean q3msk;
+	} server;
 } cgs_be_t;
 
 #define BE_ENABLED              be_enabled.integer
@@ -2643,10 +2649,14 @@ const char* CG_GetCTFLocation(int loc);
 //cg_be_util.c
 //
 void CG_UpdateBeFeatures(void);
+void CG_DefineServer(int num, const char* str);
 void cg_printsa_f(void);
 void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2);
 int CG_GetRemainingGameTimeMsec(qboolean forItemPickup);
 void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength);
+void FPSC_IsUnfreezeServer(void);
+qboolean CG_IsFPSClassicoServer(void);
+void CG_SendGetStatsInfo(void);
 
 //
 //cg_be_stats
@@ -2883,7 +2893,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00n1" // BE
+#define OSP_VERSION "be-1.00o" // BE
 
 
 

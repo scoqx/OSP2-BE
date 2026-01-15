@@ -820,7 +820,7 @@ void CG_DrawOldTourneyScoreboard(void)
 	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;
-		trap_SendClientCommand("getstatsinfo");
+		CG_SendGetStatsInfo();
 	}
 
 	color[0] = 1;
@@ -1996,7 +1996,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;
-		trap_SendClientCommand("getstatsinfo");
+		CG_SendGetStatsInfo();
 	}
 
 	return qtrue;

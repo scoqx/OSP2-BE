@@ -177,7 +177,7 @@ void CG_ScoresDown_f(void)
 		if (!cg.demoPlayback && cg.statsRequestTime < cg.time)
 		{
 			cg.statsRequestTime = cg.time + 2250;
-			trap_SendClientCommand("getstatsinfo");
+			CG_SendGetStatsInfo();
 		}
 	cg.showScores = qtrue;
 	cg.showAccuracy = qtrue;
@@ -478,7 +478,7 @@ void CG_OSPWStatsDown_f(void)
 	if (cg.statsRequestTime + 1000 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;
-		trap_SendClientCommand("getstatsinfo");
+		CG_SendGetStatsInfo();
 	}
 	cgs.be.newStats.drawWindow = qtrue;
 

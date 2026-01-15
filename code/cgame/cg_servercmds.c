@@ -186,6 +186,7 @@ void CG_ParseServerinfo(void)
 	trap_Cvar_Set("g_redTeam", cgs.redTeam);
 	Q_strncpyz(cgs.blueTeam, Info_ValueForKey(info, "g_blueTeam"), sizeof(cgs.blueTeam));
 	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
+	CG_DefineServer(CS_SERVERINFO, info);
 }
 
 /*
@@ -252,8 +253,12 @@ static void CG_ParseScoresUpdate(int teamNum, const char* str)
 		teamCount = &cgs.osp.osp_teamcount2;
 	}
 
-	*teamCount = -1;
-	Q_sscanf(str, "%i %i", &newScore, teamCount);
+	Q_sscanf(str, "%i", &newScore);
+	if (!CG_IsFPSClassicoServer())
+	{
+		*teamCount = -1;
+		Q_sscanf(str, "%i %i", &newScore, teamCount);
+	}
 
 	/* Check if round changed before updating values */
 	if (cgs.gametype == GT_TEAM && CG_OSPIsGameTypeFreeze() && *prevScore != newScore)
@@ -383,6 +388,21 @@ static void CG_ConfigStringModified(void)
 	else if (num == CS_SCORES2)
 	{
 		CG_ParseScoresUpdate(2, str);
+	}
+	
+	else if (num == CS_REDPLAYERALIVE)
+	{	
+		if (CG_IsFPSClassicoServer())
+		{
+			cgs.osp.osp_teamcount1 = atoi(str);
+		}
+	}
+	else if (num == CS_BLUEPLAYERALIVE)
+	{
+		if (CG_IsFPSClassicoServer())
+		{
+			cgs.osp.osp_teamcount2 = atoi(str);
+		}
 	}
 	else if (num == CS_LEVEL_START_TIME)
 	{

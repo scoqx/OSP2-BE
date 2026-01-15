@@ -679,3 +679,7 @@ SuperHUD:
 + cg_teamTask bitmask 64 - draw distance
 * Player models skin fix
 * cg_giveName fix
+
+16.01.2025 be v1.00o
+* Improved Freeze mode compatibility with FPSClassico servers
+  + Define FreezeTag, players alive, grenade launcher fix

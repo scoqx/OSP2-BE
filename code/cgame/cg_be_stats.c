@@ -1103,7 +1103,7 @@ void CG_BEStatsShowStatsInfo(void)
 		if (cg.statsRequestTime + 1000 < cg.time)
 		{
 			cg.statsRequestTime = cg.time;
-			trap_SendClientCommand("getstatsinfo");
+			CG_SendGetStatsInfo();
 		}
 	}
 	// General

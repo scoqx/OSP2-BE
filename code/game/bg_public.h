@@ -75,6 +75,7 @@ extern "C" {
 #define CS_TEAMVOTE_STRING      14
 #define CS_TEAMVOTE_YES         16
 #define CS_TEAMVOTE_NO          18
+#define CS_REDPLAYERALIVE       19		// FPS Classsico
 
 #define CS_GAME_VERSION         20
 #define CS_LEVEL_START_TIME     21      // so the timer only shows the current level
@@ -85,6 +86,7 @@ extern "C" {
 
 #define CS_ITEMS                27      // string of 0's and 1's that tell which items are present
 
+#define CS_BLUEPLAYERALIVE      29      // FPS Classsico
 #define CS_MODELS               32
 #define CS_SOUNDS               (CS_MODELS+MAX_MODELS) //32+256 = 288
 #define CS_PLAYERS              (CS_SOUNDS+MAX_SOUNDS) // 288 + 256 = 544

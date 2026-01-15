@@ -190,6 +190,15 @@ qboolean CG_IsEnemySimple(const clientInfo_t* target)
 
 qboolean CG_IsFrozenEntity(const centity_t* cent)
 {
+	int powerUpType;
+	if (CG_IsFPSClassicoServer())
+	{
+		powerUpType = PW_INVIS;
+	}
+	else
+	{
+		powerUpType = PW_BATTLESUIT;
+	}
 	if (!cent->currentValid)
 		return qfalse;
 
@@ -199,7 +208,7 @@ qboolean CG_IsFrozenEntity(const centity_t* cent)
 	if (cent->currentState.eType != ET_PLAYER)
 		return qfalse;
 
-	if (!(cent->currentState.powerups & (1 << PW_BATTLESUIT)))
+	if (!(cent->currentState.powerups & (1 << powerUpType)))
 		return qfalse;
 
 	if (cent->currentState.weapon != WP_NONE)
