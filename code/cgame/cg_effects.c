@@ -262,6 +262,8 @@ void CG_DamagePlum(int client, vec3_t org, int damage)
 	vec3_t          angles;
 	int             totalDamage;
 	int             timeThreshold;
+	int             eventCount;
+	qboolean        isMultiHit;
 	static vec3_t lastPos;
 
 	// only visualize for the client that scored
@@ -273,30 +275,60 @@ void CG_DamagePlum(int client, vec3_t org, int damage)
 
 	totalDamage = damage;
 	timeThreshold = 750; // milliseconds
+	isMultiHit = qfalse;
 
-	// If stacking enabled (value = 2), sum all damage within time threshold
+	// If stacking enabled (value = 2), check if multiple events came at the same time
 	if (cg_damagePlums.integer == 2)
 	{
-		// Sum all recent damage plums and remove them
+		// Count how many damage plums were created at the same time (before this one)
+		// Events that come at the same time indicate one projectile/rail hitting multiple targets
+		eventCount = 0;
 		check = cg_activeLocalEntities.prev;
-		for (; check != &cg_activeLocalEntities; check = next)
+		for (; check != &cg_activeLocalEntities; check = check->prev)
 		{
-			next = check->prev;
-
 			if (check->leType != LE_DAMAGEPLUM)
 			{
 				continue;
 			}
 
-			// Check if this plum is recent (within time threshold)
-			if (cg.time - check->startTime > timeThreshold)
+			// Check if this plum was created at the same time (exact match)
+			if (check->startTime == cg.time)
 			{
-				continue;
+				eventCount++;
 			}
+		}
 
-			// Sum damage and remove old plum
-			totalDamage += (int)check->radius;
-			CG_FreeLocalEntity(check);
+		// If more than one event at the same time (including this one), don't sum damage
+		// This handles rockets, grenades, plasma, and railgun hitting multiple targets
+		if (eventCount > 0)
+		{
+			isMultiHit = qtrue;
+		}
+
+		// If not a multi-hit, proceed with normal stacking
+		if (!isMultiHit)
+		{
+			// Sum all recent damage plums and remove them
+			check = cg_activeLocalEntities.prev;
+			for (; check != &cg_activeLocalEntities; check = next)
+			{
+				next = check->prev;
+
+				if (check->leType != LE_DAMAGEPLUM)
+				{
+					continue;
+				}
+
+				// Check if this plum is recent (within time threshold)
+				if (cg.time - check->startTime > timeThreshold)
+				{
+					continue;
+				}
+
+				// Sum damage and remove old plum
+				totalDamage += (int)check->radius;
+				CG_FreeLocalEntity(check);
+			}
 		}
 	}
 
