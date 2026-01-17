@@ -337,8 +337,12 @@ void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
 
 qboolean BE_IsDamageInfoAllowed(void)
 {
+	if (CG_OSPIsGameTypeCA(cgs.gametype))
+	{
+		return qtrue;
+	}
 	// Allow damage info if either BE_FEATURE_ENABLED or OSP_CUSTOM_CLIENT_2 allows it
-	if (CG_IsFPSClassicoServer())
+	else if (CG_IsFPSClassicoServer())
 	{
 		return qfalse;
 	}
