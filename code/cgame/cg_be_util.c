@@ -338,7 +338,14 @@ void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
 qboolean BE_IsDamageInfoAllowed(void)
 {
 	// Allow damage info if either BE_FEATURE_ENABLED or OSP_CUSTOM_CLIENT_2 allows it
-	return (CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO) || OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED());
+	if (CG_IsFPSClassicoServer())
+	{
+		return qfalse;
+	}
+	else
+	{
+		return (CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO) || OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED());
+	}
 }
 
 int CG_GetRemainingGameTimeMsec(qboolean forItemPickup)

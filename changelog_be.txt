@@ -683,3 +683,10 @@ SuperHUD:
 16.01.2025 be v1.00o
 * Improved Freeze mode compatibility with FPSClassico servers
   + Define FreezeTag, players alive, grenade launcher fix
+
+17.01.2025 be v1.00p
+* FPSClassico:
+  * fixed machinegun fire interval
+  * fixed frozen player body state
+  * Dealt damage info disabled 
+* cg_enableBreath can now be disabled by the server (g_enableBreath 0)

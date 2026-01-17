@@ -423,3 +423,15 @@ void CG_UpdateAutoHopFromSystemInfo(void)
 
 	cgs.be.autohop = 1;
 }
+
+void CG_SetServerSettingsBE(void)
+{
+	const char* sysInfo;
+	const char* value;
+
+	sysInfo = CG_ConfigString(CS_SYSTEMINFO);
+
+	value = Info_ValueForKey(sysInfo, "g_enableBreath");
+
+	cgs.be.server.enableBreath = (value[0] == '\0' || Q_stricmp(value, "0") != 0) ? 1 : 0;
+}

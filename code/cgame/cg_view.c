@@ -921,6 +921,203 @@ static void CG_PlayBufferedSounds(void)
 
 /*
 =================
+CG_CheckStatChanges
+
+Check for changes in player stats and print them to console
+=================
+*/
+// static void CG_CheckStatChanges(void)
+// {
+// 	static int lastStats[16] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+// 	static int lastPers[16] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+// 	static qboolean initialized = qfalse;
+// 	int currentStats[16];
+// 	int currentPers[16];
+// 	int i;
+// 	qboolean hasChanges = qfalse;
+
+// 	if (!cg.snap)
+// 		return;
+
+// 	// Get current stats
+// 	currentStats[STAT_HEALTH] = cg.snap->ps.stats[STAT_HEALTH];
+// 	currentStats[STAT_HOLDABLE_ITEM] = cg.snap->ps.stats[STAT_HOLDABLE_ITEM];
+// 	currentStats[STAT_WEAPONS] = cg.snap->ps.stats[STAT_WEAPONS];
+// 	currentStats[STAT_ARMOR] = cg.snap->ps.stats[STAT_ARMOR];
+// 	currentStats[STAT_DEAD_YAW] = cg.snap->ps.stats[STAT_DEAD_YAW];
+// 	currentStats[STAT_CLIENTS_READY] = cg.snap->ps.stats[STAT_CLIENTS_READY];
+// 	currentStats[STAT_MAX_HEALTH] = cg.snap->ps.stats[STAT_MAX_HEALTH];
+// 	currentStats[STAT_OSP_PHYS] = cg.snap->ps.stats[STAT_OSP_PHYS];
+// 	currentStats[STAT_RAIL_DELAY] = cg.snap->ps.stats[STAT_RAIL_DELAY];
+// 	currentStats[STAT_ARMOR_TYPE] = cg.snap->ps.stats[STAT_ARMOR_TYPE];
+// 	currentStats[STAT_OSP_10] = cg.snap->ps.stats[STAT_OSP_10];
+// 	currentStats[STAT_WEAPON_DELAY] = cg.snap->ps.stats[STAT_WEAPON_DELAY];
+
+// 	// Get current persistent values
+// 	currentPers[PERS_SCORE] = cg.snap->ps.persistant[PERS_SCORE];
+// 	currentPers[PERS_HITS] = cg.snap->ps.persistant[PERS_HITS];
+// 	currentPers[PERS_RANK] = cg.snap->ps.persistant[PERS_RANK];
+// 	currentPers[PERS_TEAM] = cg.snap->ps.persistant[PERS_TEAM];
+// 	currentPers[PERS_SPAWN_COUNT] = cg.snap->ps.persistant[PERS_SPAWN_COUNT];
+// 	currentPers[PERS_PLAYEREVENTS] = cg.snap->ps.persistant[PERS_PLAYEREVENTS];
+// 	currentPers[PERS_ATTACKER] = cg.snap->ps.persistant[PERS_ATTACKER];
+// 	currentPers[PERS_ATTACKEE_ARMOR] = cg.snap->ps.persistant[PERS_ATTACKEE_ARMOR];
+// 	currentPers[PERS_KILLED] = cg.snap->ps.persistant[PERS_KILLED];
+// 	currentPers[PERS_IMPRESSIVE_COUNT] = cg.snap->ps.persistant[PERS_IMPRESSIVE_COUNT];
+// 	currentPers[PERS_EXCELLENT_COUNT] = cg.snap->ps.persistant[PERS_EXCELLENT_COUNT];
+// 	currentPers[PERS_DEFEND_COUNT] = cg.snap->ps.persistant[PERS_DEFEND_COUNT];
+// 	currentPers[PERS_ASSIST_COUNT] = cg.snap->ps.persistant[PERS_ASSIST_COUNT];
+// 	currentPers[PERS_GAUNTLET_FRAG_COUNT] = cg.snap->ps.persistant[PERS_GAUNTLET_FRAG_COUNT];
+// 	currentPers[PERS_CAPTURES] = cg.snap->ps.persistant[PERS_CAPTURES];
+
+// 	// Initialize on first call
+// 	if (!initialized)
+// 	{
+// 		for (i = 0; i < 16; i++)
+// 		{
+// 			lastStats[i] = currentStats[i];
+// 			lastPers[i] = currentPers[i];
+// 		}
+// 		initialized = qtrue;
+// 		return;
+// 	}
+
+// 	// Check for stat changes
+// 	for (i = 0; i < 12; i++) // Only check the first 12 stats (0-11)
+// 	{
+// 		if (lastStats[i] != currentStats[i])
+// 		{
+// 			if (!hasChanges)
+// 			{
+// 				CG_Printf("^5Stat Changes:\n");
+// 				hasChanges = qtrue;
+// 			}
+
+// 			// Print stat name and value
+// 			switch (i)
+// 			{
+// 				case STAT_HEALTH:
+// 					CG_Printf("^7STAT_HEALTH: ^1%d ^7-> ^2%d\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_HOLDABLE_ITEM:
+// 					CG_Printf("^7STAT_HOLDABLE_ITEM: ^1%d ^7-> ^2%d\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_WEAPONS:
+// 					CG_Printf("^7STAT_WEAPONS: ^1%d ^7-> ^2%d ^3(16 bit fields)\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_ARMOR:
+// 					CG_Printf("^7STAT_ARMOR: ^1%d ^7-> ^2%d\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_DEAD_YAW:
+// 					CG_Printf("^7STAT_DEAD_YAW: ^1%d ^7-> ^2%d ^3(look this direction when dead)\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_CLIENTS_READY:
+// 					CG_Printf("^7STAT_CLIENTS_READY: ^1%d ^7-> ^2%d ^3(bit mask of clients wishing to exit intermission)\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_MAX_HEALTH:
+// 					CG_Printf("^7STAT_MAX_HEALTH: ^1%d ^7-> ^2%d ^3(health/armor limit, changeable by handicap)\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_OSP_PHYS:
+// 					CG_Printf("^7STAT_OSP_PHYS: ^1%d ^7-> ^2%d\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_RAIL_DELAY:
+// 					CG_Printf("^7STAT_RAIL_DELAY: ^1%d ^7-> ^2%d\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_ARMOR_TYPE:
+// 					CG_Printf("^7STAT_ARMOR_TYPE: ^1%d ^7-> ^2%d ^3(armor: red/green/yellow)\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_OSP_10:
+// 					CG_Printf("^7STAT_OSP_10: ^1%d ^7-> ^2%d\n", lastStats[i], currentStats[i]);
+// 					break;
+// 				case STAT_WEAPON_DELAY:
+// 					CG_Printf("^7STAT_WEAPON_DELAY: ^1%d ^7-> ^2%d\n", lastStats[i], currentStats[i]);
+// 					break;
+// 			}
+// 		}
+// 	}
+
+// 	// Check for persistent value changes
+// 	for (i = 0; i < 15; i++) // PERS enum has 15 values (0-14)
+// 	{
+// 		if (lastPers[i] != currentPers[i])
+// 		{
+// 			if (!hasChanges)
+// 			{
+// 				CG_Printf("^5Stat Changes:\n");
+// 				hasChanges = qtrue;
+// 			}
+
+// 			// Print persistent value name and value
+// 			switch (i)
+// 			{
+// 				case PERS_SCORE:
+// 					CG_Printf("^7PERS_SCORE: ^1%d ^7-> ^2%d ^3(!!! MUST NOT CHANGE, SERVER AND GAME BOTH REFERENCE !!!)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_HITS:
+// 					CG_Printf("^7PERS_HITS: ^1%d ^7-> ^2%d ^3(total points damage inflicted so damage beeps can sound on change)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_RANK:
+// 					CG_Printf("^7PERS_RANK: ^1%d ^7-> ^2%d ^3(player rank or team rank)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_TEAM:
+// 					CG_Printf("^7PERS_TEAM: ^1%d ^7-> ^2%d ^3(player team)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_SPAWN_COUNT:
+// 					CG_Printf("^7PERS_SPAWN_COUNT: ^1%d ^7-> ^2%d ^3(incremented every respawn)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_PLAYEREVENTS:
+// 					CG_Printf("^7PERS_PLAYEREVENTS: ^1%d ^7-> ^2%d ^3(16 bits that can be flipped for events)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_ATTACKER:
+// 					CG_Printf("^7PERS_ATTACKER: ^1%d ^7-> ^2%d ^3(clientnum of last damage inflicter)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_ATTACKEE_ARMOR:
+// 					CG_Printf("^7PERS_ATTACKEE_ARMOR: ^1%d ^7-> ^2%d ^3(health/armor of last person we attacked)\n", lastPers[i], currentPers[i]);
+// 					{
+// 						int diff = currentPers[i] - lastPers[i];
+// 						CG_Printf("^8    diff: ^5%d^7, hex: ^6%04X ^7-> ^6%04X\n",
+// 						          diff,
+// 						          (unsigned short)lastPers[i], (unsigned short)currentPers[i]);
+// 						if (diff < 0) {
+// 							int damage = (-diff) / 256;
+// 							CG_Printf("^8    damage: ^6%d\n", damage);
+// 						}
+// 					}
+// 					break;
+// 				case PERS_KILLED:
+// 					CG_Printf("^7PERS_KILLED: ^1%d ^7-> ^2%d ^3(count of the number of times you died)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_IMPRESSIVE_COUNT:
+// 					CG_Printf("^7PERS_IMPRESSIVE_COUNT: ^1%d ^7-> ^2%d ^3(two railgun hits in a row)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_EXCELLENT_COUNT:
+// 					CG_Printf("^7PERS_EXCELLENT_COUNT: ^1%d ^7-> ^2%d ^3(two successive kills in a short amount of time)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_DEFEND_COUNT:
+// 					CG_Printf("^7PERS_DEFEND_COUNT: ^1%d ^7-> ^2%d ^3(defend awards)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_ASSIST_COUNT:
+// 					CG_Printf("^7PERS_ASSIST_COUNT: ^1%d ^7-> ^2%d ^3(assist awards)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_GAUNTLET_FRAG_COUNT:
+// 					CG_Printf("^7PERS_GAUNTLET_FRAG_COUNT: ^1%d ^7-> ^2%d ^3(kills with the guantlet)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 				case PERS_CAPTURES:
+// 					CG_Printf("^7PERS_CAPTURES: ^1%d ^7-> ^2%d ^3(captures)\n", lastPers[i], currentPers[i]);
+// 					break;
+// 			}
+// 		}
+// 	}
+
+// 	// Update last values
+// 	for (i = 0; i < 16; i++)
+// 	{
+// 		lastStats[i] = currentStats[i];
+// 		lastPers[i] = currentPers[i];
+// 	}
+// }
+/*
+=================
 CG_DrawActiveFrame
 
 Generates and draws a game scene and status information at the given time.
@@ -980,6 +1177,9 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 
 	// update ttwheel mark position
 	CG_UpdateSelwheelMark();
+
+	// check for stat changes and print to console
+	// CG_CheckStatChanges();
 
 	// decide on third person view
 	cg.renderingThirdPerson = (cg_thirdPerson.integer && (cg.demoPlayback || cgs.localServer)) || (cg.snap->ps.stats[STAT_HEALTH] <= 0);

@@ -1,3 +1,4 @@
 16.01.2025 be v1.00o
 * Improved Freeze mode compatibility with FPSClassico servers
-  - Frozen state, Players alive, 
+  + Define FreezeTag, players alive, grenade launcher fix
+

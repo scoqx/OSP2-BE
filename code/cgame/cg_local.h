@@ -1320,7 +1320,6 @@ typedef struct cgs_be_s
 	qboolean clientDamagePrinted;  // whether damage was already shown
 	vec3_t brightWeaponsColor[WP_NUM_WEAPONS];
 	team_t myTeam;  // отслеживание команды игрока для динамического обновления цветов T/E
-
 	// team task markers
 	struct
 	{
@@ -1376,6 +1375,8 @@ typedef struct cgs_be_s
 	{
 		qboolean fpsclassico;
 		qboolean q3msk;
+
+		int enableBreath;
 	} server;
 } cgs_be_t;
 
@@ -2140,6 +2141,7 @@ void CG_StartMusic(void);
 
 void CG_UpdateCvars(void);
 void CG_UpdateAutoHopFromSystemInfo(void);
+void CG_SetServerSettingsBE(void);
 
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);
@@ -2393,7 +2395,8 @@ enum
 	PI_STATS       = 4,
 	PI_FROZEN      = 8,
 	PI_ICON      = 16,
-	PI_SPECTATOR = 32
+	PI_SPECTATOR = 32,
+	PI_WEAPON = 64
 };
 
 //

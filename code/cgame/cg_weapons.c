@@ -2322,7 +2322,7 @@ static qboolean CG_IsDoubleShoot(weapon_t weap)
 			addTime = 900;
 			break;
 		case WP_MACHINEGUN:
-			addTime = 90; //-V1037
+			addTime = CG_IsFPSClassicoServer() ? 70 : 90; //-V1037
 			break;
 		case WP_GRENADE_LAUNCHER:
 			addTime = modeGrenadeTime - 100; //-V1037

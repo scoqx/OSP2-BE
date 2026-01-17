@@ -258,7 +258,7 @@ void CG_DrawInformation(void)
 		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
 		y += PROP_HEIGHT;
 	}
-
+	
 	// game type
 	switch (cgs.gametype)
 	{

@@ -190,15 +190,6 @@ qboolean CG_IsEnemySimple(const clientInfo_t* target)
 
 qboolean CG_IsFrozenEntity(const centity_t* cent)
 {
-	int powerUpType;
-	if (CG_IsFPSClassicoServer())
-	{
-		powerUpType = PW_INVIS;
-	}
-	else
-	{
-		powerUpType = PW_BATTLESUIT;
-	}
 	if (!cent->currentValid)
 		return qfalse;
 
@@ -208,7 +199,7 @@ qboolean CG_IsFrozenEntity(const centity_t* cent)
 	if (cent->currentState.eType != ET_PLAYER)
 		return qfalse;
 
-	if (!(cent->currentState.powerups & (1 << powerUpType)))
+	if (!(cent->currentState.powerups & (1 << PW_BATTLESUIT)))
 		return qfalse;
 
 	if (cent->currentState.weapon != WP_NONE)
@@ -3214,7 +3205,8 @@ static void CG_BreathPuffs(centity_t* cent, refEntity_t* head)
 
 	ci = &cgs.clientinfo[ cent->currentState.clientNum ];
 
-	if (!cg_enableBreath.integer)
+	if (!cgs.be.server.enableBreath ||
+		!cg_enableBreath.integer)
 	{
 		return;
 	}
