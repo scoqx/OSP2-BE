@@ -149,6 +149,11 @@ void CG_UpdateSelwheelMark(void)
 			yawDelta += 360.0f;
 		}
 
+		if (m_pitch.value < 0.0f)
+		{
+			pitchDelta = -pitchDelta;
+		}
+
 		// Update position based on movement
 		// Use adjusted wheel sensitivity if bitmask & 8 is set
 		if (cgs.be.teamMarkers.sensitivityAdjusted)

@@ -1,4 +1,4 @@
-16.01.2025 be v1.00o
-* Improved Freeze mode compatibility with FPSClassico servers
-  + Define FreezeTag, players alive, grenade launcher fix
-
+19.01.2025 be v1.00q
++ cg_hitSoundsQC
++ fragSound2-5 from XQ3E
+* +ttwheel inverted mouse fix

@@ -439,6 +439,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_simpleItemsBob", "Enables bouncing animation for simple items. Values:\n  ^20^7 - disabled\n  ^21^7 - all simple items (except armor shard)\n  ^22^7 - only armor (except shard), powerups, holdables and mega health" },
 	{ "cg_brightWeaponsOpaque", "Opacity for weapons rendered with ^3cg_drawBrightWeapons^7\n  ^20^7 - ^21^7" },
 	{ "cg_teamTaskIconMinSize", "Minimum size of team task icons displayed in the world." },
+	{ "cg_hitSoundsQC", "Hit sound set (Quake Champions)\n  ^20^7 - default\n  ^21^7 - QC" },
 };
 
 

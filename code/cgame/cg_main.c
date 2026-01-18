@@ -546,6 +546,7 @@ vmCvar_t        cg_simpleItemsBob;
 vmCvar_t        cg_brightWeaponsOpaque;
 vmCvar_t        uc_sensitivity;
 vmCvar_t        cg_teamTaskIconMinSize;
+vmCvar_t        cg_hitSoundsQC;
 
 // vmCvar_t        cg_snow;
 
@@ -926,78 +927,79 @@ static cvarTable_t cvarTable[] =
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE },
 	{ &cg_drawRealHeads, "cg_drawRealHeads", "0", CVAR_ARCHIVE },
 	{ &cg_myTeam, "cg_myTeam", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_myTeam },
-	{ &cg_giveName, "cg_giveName", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_giveName, "cg_giveName", "0", CVAR_ARCHIVE },
 	{ &cg_bestats_autoaction, "cg_bestats_autoaction", "1", CVAR_ARCHIVE },
-	{ &cg_zoomAutoReset, "cg_zoomAutoReset", "3", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_smoothDucking, "cg_smoothDucking", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_respawnWeapon, "cg_respawnWeapon", "0", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW },
-	{ &cg_countdownTimer, "cg_countdownTimer", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_weapons, "cg_exec_weapons", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_mg, "cg_exec_mg", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_weapon },
-	{ &cg_exec_sg, "cg_exec_sg", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_weapon },
-	{ &cg_exec_gl, "cg_exec_gl", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_weapon },
-	{ &cg_exec_rl, "cg_exec_rl", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_weapon },
-	{ &cg_exec_lg, "cg_exec_lg", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_weapon },
-	{ &cg_exec_rg, "cg_exec_rg", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_weapon },
-	{ &cg_exec_pg, "cg_exec_pg", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_weapon },
-	{ &cg_exec_gametypes, "cg_exec_gametypes", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_dm, "cg_exec_dm", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_exec_tourney, "cg_exec_tourney", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_exec_tdm, "cg_exec_tdm", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_exec_ca, "cg_exec_ca", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_exec_ctf, "cg_exec_ctf", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_exec_freeze, "cg_exec_freeze", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW },
-	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW },
-	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_NEW, CG_LocalEventCvarChanged_cg_autoHop},
-	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "2800", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
-	{ &cg_teamTask, "cg_teamTask", "31", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamTaskScale, "cg_teamTaskScale", "1.0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamTaskOpaque, "cg_teamTaskOpaque", "0.7", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamTaskFade, "cg_teamTaskFade", "0.5", CVAR_ARCHIVE  | CVAR_NEW},
-	{ &cg_teamTaskFadeRadius, "cg_teamTaskFadeRadius", "128", CVAR_ARCHIVE  | CVAR_NEW},
-	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE  | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskFont, },
-	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "12", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
-	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "defence here medic smart yes no warn", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
-	{ &cg_teamTaskWheelSensitivity, "cg_teamTaskWheelSensitivity", "3.0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamTaskWheelScale, "cg_teamTaskWheelScale", "1.0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_zoomAutoReset, "cg_zoomAutoReset", "3", CVAR_ARCHIVE },
+	{ &cg_smoothDucking, "cg_smoothDucking", "1", CVAR_ARCHIVE },
+	{ &cg_respawnWeapon, "cg_respawnWeapon", "0", CVAR_ARCHIVE | CVAR_USERINFO },
+	{ &cg_countdownTimer, "cg_countdownTimer", "0", CVAR_ARCHIVE },
+	{ &cg_exec_weapons, "cg_exec_weapons", "1", CVAR_ARCHIVE },
+	{ &cg_exec_mg, "cg_exec_mg", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
+	{ &cg_exec_sg, "cg_exec_sg", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
+	{ &cg_exec_gl, "cg_exec_gl", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
+	{ &cg_exec_rl, "cg_exec_rl", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
+	{ &cg_exec_lg, "cg_exec_lg", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
+	{ &cg_exec_rg, "cg_exec_rg", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
+	{ &cg_exec_pg, "cg_exec_pg", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
+	{ &cg_exec_gametypes, "cg_exec_gametypes", "1", CVAR_ARCHIVE },
+	{ &cg_exec_dm, "cg_exec_dm", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
+	{ &cg_exec_tourney, "cg_exec_tourney", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
+	{ &cg_exec_tdm, "cg_exec_tdm", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
+	{ &cg_exec_ca, "cg_exec_ca", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
+	{ &cg_exec_ctf, "cg_exec_ctf", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
+	{ &cg_exec_freeze, "cg_exec_freeze", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
+	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
+	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
+	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
+	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop},
+	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
+	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
+	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "2800", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
+	{ &cg_teamTask, "cg_teamTask", "31", CVAR_ARCHIVE },
+	{ &cg_teamTaskScale, "cg_teamTaskScale", "1.0", CVAR_ARCHIVE },
+	{ &cg_teamTaskOpaque, "cg_teamTaskOpaque", "0.7", CVAR_ARCHIVE },
+	{ &cg_teamTaskFade, "cg_teamTaskFade", "0.5", CVAR_ARCHIVE },
+	{ &cg_teamTaskFadeRadius, "cg_teamTaskFadeRadius", "128", CVAR_ARCHIVE },
+	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE , CG_LocalEventCvarChanged_cg_teamTaskFont, },
+	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "12", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
+	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "defence here medic smart yes no warn", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
+	{ &cg_teamTaskWheelSensitivity, "cg_teamTaskWheelSensitivity", "3.0", CVAR_ARCHIVE },
+	{ &cg_teamTaskWheelScale, "cg_teamTaskWheelScale", "1.0", CVAR_ARCHIVE },
 	{ &cg_storedSensitivity, "cg_storedSensitivity", "1.0", CVAR_NOTABCOMPLETE | CVAR_ARCHIVE | CVAR_INIT },
-	{ &cg_teamTaskThemeColor, "cg_teamTaskThemeColor", "Red", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamTaskThemeColor },
-	{ &cg_teamTaskSmartDefault, "cg_teamTaskSmartDefault", "attack", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_ReloadTeamTaskWheel }, /* Default: location */
-	{ &cg_teamTaskHudMarkerMaxDist, "cg_teamTaskHudMarkerMaxDist", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamTaskHudMarkerSize, "cg_teamTaskHudMarkerSize", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamTaskHudMarkerMaxScale, "cg_teamTaskHudMarkerMaxScale", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamTaskHudMarkerMinScale, "cg_teamTaskHudMarkerMinScale", "0.3", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_printui, "cg_printui", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_printui },
-	{ &cg_printui_template, "cg_printui_template", "640 20 18x24 hR font 2 time 2000", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_printui_template2, "cg_printui_template2", "320 100 22x30 hC font 4 time 2000", CVAR_ARCHIVE | CVAR_NEW },
-	// { &cg_snow, "cg_snow", "1", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
-	{ &cg_brightWeaponsColorGauntlet, "cg_brightWeaponsColorGauntlet", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorMG, "cg_brightWeaponsColorMG", "Yellow", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorSG, "cg_brightWeaponsColorSG", "Orange", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorGL, "cg_brightWeaponsColorGL", "Green", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorRL, "cg_brightWeaponsColorRL", "Red", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorLG, "cg_brightWeaponsColorLG", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorRG, "cg_brightWeaponsColorRG", "Cyan", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorPG, "cg_brightWeaponsColorPG", "Magenta", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorBFG, "cg_brightWeaponsColorBFG", "Blue", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_teamIndicatorFontSize, "cg_teamIndicatorFontSize", "8 10", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_teamIndicatorFontSize },
-	{ &cg_exec_intermission, "cg_exec_intermission", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_warmupEnded, "cg_exec_warmupEnded", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_joinGame, "cg_exec_joinGame", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_joinSpec, "cg_exec_joinSpec", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_onDeath, "cg_exec_onDeath", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_gauntlet, "cg_exec_gauntlet", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_bfg, "cg_exec_bfg", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_exec_shud, "cg_exec_shud", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teamTaskThemeColor, "cg_teamTaskThemeColor", "Red", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskThemeColor },
+	{ &cg_teamTaskSmartDefault, "cg_teamTaskSmartDefault", "attack", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel }, /* Default: location */
+	{ &cg_teamTaskHudMarkerMaxDist, "cg_teamTaskHudMarkerMaxDist", "0", CVAR_ARCHIVE },
+	{ &cg_teamTaskHudMarkerSize, "cg_teamTaskHudMarkerSize", "1", CVAR_ARCHIVE },
+	{ &cg_teamTaskHudMarkerMaxScale, "cg_teamTaskHudMarkerMaxScale", "1", CVAR_ARCHIVE },
+	{ &cg_teamTaskHudMarkerMinScale, "cg_teamTaskHudMarkerMinScale", "0.3", CVAR_ARCHIVE },
+	{ &cg_printui, "cg_printui", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_printui },
+	{ &cg_printui_template, "cg_printui_template", "640 20 18x24 hR font 2 time 2000", CVAR_ARCHIVE },
+	{ &cg_printui_template2, "cg_printui_template2", "320 100 22x30 hC font 4 time 2000", CVAR_ARCHIVE },
+	// { &cg_snow, "cg_snow", "1", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &cg_brightWeaponsColorGauntlet, "cg_brightWeaponsColorGauntlet", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_brightWeaponsColorMG, "cg_brightWeaponsColorMG", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_brightWeaponsColorSG, "cg_brightWeaponsColorSG", "Orange", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_brightWeaponsColorGL, "cg_brightWeaponsColorGL", "Green", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_brightWeaponsColorRL, "cg_brightWeaponsColorRL", "Red", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_brightWeaponsColorLG, "cg_brightWeaponsColorLG", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_brightWeaponsColorRG, "cg_brightWeaponsColorRG", "Cyan", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_brightWeaponsColorPG, "cg_brightWeaponsColorPG", "Magenta", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_brightWeaponsColorBFG, "cg_brightWeaponsColorBFG", "Blue", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
+	{ &cg_teamIndicatorFontSize, "cg_teamIndicatorFontSize", "8 10", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFontSize },
+	{ &cg_exec_intermission, "cg_exec_intermission", "", CVAR_ARCHIVE },
+	{ &cg_exec_warmupEnded, "cg_exec_warmupEnded", "", CVAR_ARCHIVE },
+	{ &cg_exec_joinGame, "cg_exec_joinGame", "", CVAR_ARCHIVE },
+	{ &cg_exec_joinSpec, "cg_exec_joinSpec", "", CVAR_ARCHIVE },
+	{ &cg_exec_onDeath, "cg_exec_onDeath", "", CVAR_ARCHIVE },
+	{ &cg_exec_gauntlet, "cg_exec_gauntlet", "", CVAR_ARCHIVE },
+	{ &cg_exec_bfg, "cg_exec_bfg", "", CVAR_ARCHIVE },
+	{ &cg_exec_shud, "cg_exec_shud", "1", CVAR_ARCHIVE },
 	{ &cg_simpleItemsRadius, "cg_simpleItemsRadius", "14", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_simpleItemsRadius },
 	{ &cg_simpleItemsBob, "cg_simpleItemsBob", "0", CVAR_ARCHIVE },
 	{ &cg_brightWeaponsOpaque, "cg_brightWeaponsOpaque", "1.0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE | CVAR_NEW },
 	{ &cg_teamTaskIconMinSize, "cg_teamTaskIconMinSize", "3", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_hitSoundsQC, "cg_hitSoundsQC", "0", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1506,14 +1508,27 @@ static void CG_RegisterSounds(void)
 	cgs.media.talkSound = trap_S_RegisterSound("sound/player/talk.wav", qfalse);
 	cgs.media.landSound = trap_S_RegisterSound("sound/player/land1.wav", qfalse);
 
+
+	// ========= Not using in code. But this files are originally in OSP1.03
 	cgs.media.hitLowestSound = trap_S_RegisterSound("sound/feedback/hitlowest.wav", qfalse);
 	cgs.media.hitLowSound = trap_S_RegisterSound("sound/feedback/hitlow.wav", qfalse);
-	cgs.media.hitSound = trap_S_RegisterSound("sound/feedback/hit.wav", qfalse);
-	cgs.media.hitSounds[0] = trap_S_RegisterSound("sound/feedback/hit25.wav", qfalse);
-	cgs.media.hitSounds[1] = trap_S_RegisterSound("sound/feedback/hit50.wav", qfalse);
-	cgs.media.hitSounds[2] = trap_S_RegisterSound("sound/feedback/hit75.wav", qfalse);
-	cgs.media.hitSounds[3] = trap_S_RegisterSound("sound/feedback/hit100.wav", qfalse);
 	cgs.media.hitHighSound = trap_S_RegisterSound("sound/feedback/hithigh.wav", qfalse);
+	// =========
+	cgs.media.hitSound = trap_S_RegisterSound("sound/feedback/hit.wav", qfalse);
+	if (!cg_hitSoundsQC.integer)
+	{
+		cgs.media.hitSounds[0] = trap_S_RegisterSound("sound/feedback/hit25.wav", qfalse);
+		cgs.media.hitSounds[1] = trap_S_RegisterSound("sound/feedback/hit50.wav", qfalse);
+		cgs.media.hitSounds[2] = trap_S_RegisterSound("sound/feedback/hit75.wav", qfalse);
+		cgs.media.hitSounds[3] = trap_S_RegisterSound("sound/feedback/hit100.wav", qfalse);
+	}
+	else
+	{
+		cgs.media.hitSounds[0] = trap_S_RegisterSound("sound/feedback/hit25QC.wav", qfalse);
+		cgs.media.hitSounds[1] = trap_S_RegisterSound("sound/feedback/hit50QC.wav", qfalse);
+		cgs.media.hitSounds[2] = trap_S_RegisterSound("sound/feedback/hit75QC.wav", qfalse);
+		cgs.media.hitSounds[3] = trap_S_RegisterSound("sound/feedback/hit100QC.wav", qfalse);
+	}
 	// QC incoming damage sound
 	cgs.media.gotDamageSounds[0] = trap_S_RegisterSound("sound/feedback/damage_qc25.wav", qfalse);
 	cgs.media.gotDamageSounds[1] = trap_S_RegisterSound("sound/feedback/damage_qc50.wav", qfalse);
