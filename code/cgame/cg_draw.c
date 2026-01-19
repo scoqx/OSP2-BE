@@ -2412,6 +2412,11 @@ void CG_OSPDrawIntermission()
 	}
 	CG_OSPSetColor(NULL);
 	CG_DrawPicOld(590.0f, 430.f, 50.0f, 50.0f, cgs.media.blender180Shader);
+	
+	if (cgs.be.newStats.drawWindow)
+	{
+		CG_BEStatsShowStatsInfo();
+	}
 }
 
 /*

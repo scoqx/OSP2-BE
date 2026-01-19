@@ -692,7 +692,8 @@ SuperHUD:
 * cg_enableBreath can now be disabled by the server (g_enableBreath 0)
 * Clan Arena: Dealt damage info fixed
 
-19.01.2025 be v1.00q1
+19.01.2025 be v1.00q2
 + cg_hitSoundsQC
 + fragSound2-5 from XQ3E
 * +ttwheel inverted mouse fix
+* cg_bestats_autoaction 1 fix in osp hud
