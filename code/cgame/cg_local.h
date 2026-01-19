@@ -2658,7 +2658,7 @@ void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
 int CG_GetRemainingGameTimeMsec(qboolean forItemPickup);
 void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength);
 void FPSC_IsUnfreezeServer(void);
-qboolean CG_IsFPSClassicoServer(void);
+qboolean CG_isFPSClassicoServer(void);
 void CG_SendGetStatsInfo(void);
 
 //
@@ -2896,7 +2896,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00q" // BE
+#define OSP_VERSION "be-1.00q1" // BE
 
 
 

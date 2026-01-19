@@ -1093,6 +1093,11 @@ void CG_BEStatsShowStatsInfo(void)
 	int row = 0;
 	int rowsAdded;
 
+	if (CG_isFPSClassicoServer())
+	{
+		return;
+	}
+
 	// Clear table here
 	memset(tokens, 0, sizeof(tokens));
 	// Init

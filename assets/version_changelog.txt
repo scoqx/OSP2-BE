@@ -1,4 +1,4 @@
-19.01.2025 be v1.00q
+19.01.2025 be v1.00q1
 + cg_hitSoundsQC
 + fragSound2-5 from XQ3E
 * +ttwheel inverted mouse fix

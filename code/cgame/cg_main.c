@@ -2790,7 +2790,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_OSPConfigMinTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MIN)));
 		CG_OSPConfigMaxTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MAX)));
 		CG_OSPConfigClanBaseTDMSet(atoi(CG_ConfigString(CS_OSP_CLAN_BASE_TEAM_DM)));
-		if (!CG_IsFPSClassicoServer())
+		if (!CG_isFPSClassicoServer())
 		{
 			CG_OSPConfigFreezeModeSet(atoi(CG_ConfigString(CS_OSP_FREEZE_GAME_TYPE)));
 		}

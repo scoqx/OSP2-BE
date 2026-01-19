@@ -255,7 +255,7 @@ static void CG_ParseScoresUpdate(int teamNum, const char* str)
 	}
 
 	Q_sscanf(str, "%i", &newScore);
-	if (!CG_IsFPSClassicoServer())
+	if (!CG_isFPSClassicoServer())
 	{
 		*teamCount = -1;
 		Q_sscanf(str, "%i %i", &newScore, teamCount);
@@ -393,14 +393,14 @@ static void CG_ConfigStringModified(void)
 	
 	else if (num == CS_REDPLAYERALIVE)
 	{	
-		if (CG_IsFPSClassicoServer())
+		if (CG_isFPSClassicoServer())
 		{
 			cgs.osp.osp_teamcount1 = atoi(str);
 		}
 	}
 	else if (num == CS_BLUEPLAYERALIVE)
 	{
-		if (CG_IsFPSClassicoServer())
+		if (CG_isFPSClassicoServer())
 		{
 			cgs.osp.osp_teamcount2 = atoi(str);
 		}

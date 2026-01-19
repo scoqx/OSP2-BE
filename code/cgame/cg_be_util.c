@@ -342,7 +342,7 @@ qboolean BE_IsDamageInfoAllowed(void)
 		return qtrue;
 	}
 	// Allow damage info if either BE_FEATURE_ENABLED or OSP_CUSTOM_CLIENT_2 allows it
-	else if (CG_IsFPSClassicoServer())
+	else if (CG_isFPSClassicoServer())
 	{
 		return qfalse;
 	}
@@ -523,7 +523,7 @@ void CG_DefineServer(int num, const char* str)
 
 void FPSC_IsUnfreezeServer(void)
 {
-	if (CG_IsFPSClassicoServer())
+	if (CG_isFPSClassicoServer())
 	{
 		if (strstr(CG_ConfigString(CS_SERVERINFO), "gamename\\unfreeze"))
 		{
@@ -532,14 +532,14 @@ void FPSC_IsUnfreezeServer(void)
 	}
 }
 
-qboolean CG_IsFPSClassicoServer(void)
+qboolean CG_isFPSClassicoServer(void)
 {
 	return cgs.be.server.fpsclassico;
 }
 
 void CG_SendGetStatsInfo(void)
 {
-	if (!CG_IsFPSClassicoServer())
+	if (!CG_isFPSClassicoServer())
 	{
 		trap_SendClientCommand("getstatsinfo");
 	}

@@ -77,7 +77,7 @@ void CG_OSPSetMode(int value)
 	modeMaxAmmoGrenade                 = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
 	modeMaxAmmoRocket                  = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
 	modeMaxAmmoRail                    = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
-	if (!CG_IsFPSClassicoServer())
+	if (!CG_isFPSClassicoServer())
 	{
 		modeGrenadeTime = OSP_SET_MODE_VARIANT(value, 800, 800, 700);//-V583
 	}
