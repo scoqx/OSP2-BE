@@ -79,6 +79,12 @@ qa_asm = $(call srcs,$(QA_SRC),vm/game)
 cg_asm = $(call srcs,$(CG_SRC),vm/cgame)
 ui_asm = $(call srcs,$(UI_SRC),vm/ui)
 
+ifeq ($(MINGW),1)
+  PYTHON ?= python
+else
+  PYTHON ?= python3
+endif
+
 all: dirs $(PK3)
 
 dirs:
@@ -90,7 +96,10 @@ ifeq ($(PLATFORM),linux)
 	@if [ -f tools/q3rcc ]; then chmod +x tools/q3rcc; fi
 endif
 
-.PHONY: all dirs FORCE
+.PHONY: all dirs FORCE check_cvardesc
+
+check_cvardesc: FORCE
+	@$(PYTHON) ../../scripts/check_cvardesc_len.py
 
 FORCE:
 
@@ -148,7 +157,7 @@ ui_cc = $(call cc,ui,$(UI_CFLAGS))
 #vm/qagame.qvm: $(qa_asm)
 #	$(Q3ASM) -o $@ $(qa_asm)
 
-vm/cgame.qvm: $(cg_asm)
+vm/cgame.qvm: check_cvardesc $(cg_asm)
 	$(Q3ASM) -o $@ $(cg_asm)
 
 vm/ui.qvm: $(ui_asm)
