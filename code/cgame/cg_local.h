@@ -812,6 +812,7 @@ typedef struct
 
 	qhandle_t   lightningShader; //probably removed
 	qhandle_t   firstPersonGun;
+	qhandle_t   altFullBrightShader;
 
 	qhandle_t   unk_media_60;
 	qhandle_t   unk_media_61;
@@ -2109,6 +2110,7 @@ extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
 extern vmCvar_t			  cg_hitSoundsQC;
+extern vmCvar_t			  cg_brightWeaponsShader;
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_run;
 //
@@ -2490,6 +2492,7 @@ void CG_UpdateWeaponDlightColor(weapon_t weapon);
 float CG_GetWeaponTempAccuracy(int weapon);
 void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum);
 void CG_InitBrightWeaponsColors(void);
+qhandle_t CG_SelectBrightWeaponsShader(void);
 
 
 //
@@ -2896,7 +2899,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00q2" // BE
+#define OSP_VERSION "be-1.00q3" // BE
 
 
 

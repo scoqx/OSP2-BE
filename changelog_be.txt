@@ -697,3 +697,4 @@ SuperHUD:
 + fragSound2-5 from XQ3E
 * +ttwheel inverted mouse fix
 * cg_bestats_autoaction 1 fix in osp hud
++ cg_brightWeaponsShader 1/2

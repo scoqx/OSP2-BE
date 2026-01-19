@@ -440,6 +440,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_brightWeaponsOpaque", "Opacity for weapons rendered with ^3cg_drawBrightWeapons^7\n  ^20^7 - ^21^7" },
 	{ "cg_teamTaskIconMinSize", "Minimum size of team task icons displayed in the world." },
 	{ "cg_hitSoundsQC", "Hit sound set (Quake Champions)\n  ^20^7 - default\n  ^21^7 - QC" },
+	{ "cg_brightWeaponsShader", "Shader for weapons rendered with ^3cg_drawBrightWeapons^7\n  ^21^7 - default\n  ^22^7 - alternative (ignores ^3cg_brightWeaponsOpaque^7)" },
 };
 
 

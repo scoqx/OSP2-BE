@@ -1,4 +1,5 @@
-19.01.2025 be v1.00q1
+19.01.2025 be v1.00q2
 + cg_hitSoundsQC
 + fragSound2-5 from XQ3E
 * +ttwheel inverted mouse fix
+* cg_bestats_autoaction 1 fix in osp hud

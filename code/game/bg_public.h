@@ -741,9 +741,16 @@ qboolean    BG_CanItemBeGrabbed(int gametype, const entityState_t* ent, const pl
 
 
 // g_dmflags->integer flags
-#define DF_NO_FALLING           8
-#define DF_FIXED_FOV            16
-#define DF_NO_FOOTSTEPS         32
+#define DF_NO_FALLING				8
+#define DF_FIXED_FOV				16
+#define DF_NO_FOOTSTEPS				32 
+// MRX
+#define DF_NO_ITEM_RESET			64
+#define DF_NO_TEAM_RESET			128
+#define DF_INSTANT_WEAPON_CHANGE	256
+#define DF_NO_BUNNY					512
+#define DF_NO_EMPTY_USE_ITEM_SOUND	1024
+
 
 // content masks
 #define MASK_ALL                (-1)

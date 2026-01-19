@@ -547,6 +547,7 @@ vmCvar_t        cg_brightWeaponsOpaque;
 vmCvar_t        uc_sensitivity;
 vmCvar_t        cg_teamTaskIconMinSize;
 vmCvar_t        cg_hitSoundsQC;
+vmCvar_t        cg_brightWeaponsShader;
 
 // vmCvar_t        cg_snow;
 
@@ -1000,6 +1001,7 @@ static cvarTable_t cvarTable[] =
 	{ &uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE | CVAR_NEW },
 	{ &cg_teamTaskIconMinSize, "cg_teamTaskIconMinSize", "3", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_hitSoundsQC, "cg_hitSoundsQC", "0", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
+	{ &cg_brightWeaponsShader, "cg_brightWeaponsShader", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1764,6 +1766,7 @@ static void CG_RegisterGraphics(void)
 	}
 
 	cgs.media.firstPersonGun = trap_R_RegisterShader("firstPersonGun");
+	cgs.media.altFullBrightShader = trap_R_RegisterShader("altFullBrightShader");
 
 	cgs.media.bloodTrailShader = trap_R_RegisterShader("bloodTrail");
 	cgs.media.lagometerShader = trap_R_RegisterShader("lagometer");

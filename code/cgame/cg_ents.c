@@ -501,7 +501,7 @@ static void CG_Item(centity_t* cent)
 		ent.nonNormalizedAxes = qtrue;
 		if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 8))
 		{
-			ent.customShader = cgs.media.firstPersonGun;
+			ent.customShader = CG_SelectBrightWeaponsShader();
 			CG_SetWeaponBrightColorWorld(&ent, item->giTag);
 		}
 	}
@@ -691,9 +691,9 @@ static void CG_Missile(centity_t* cent)
 					ent.shaderRGBA[1] = cgs.be.altGrenadesColor[1] * 255;
 					ent.shaderRGBA[2] = cgs.be.altGrenadesColor[2] * 255;
 
-					if (cg_altGrenades.integer == 2 && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && cgs.media.firstPersonGun)
+					if (cg_altGrenades.integer == 2 && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && CG_SelectBrightWeaponsShader())
 					{
-						ent.customShader = cgs.media.firstPersonGun;
+						ent.customShader = CG_SelectBrightWeaponsShader();
 					}
 					else
 					{
@@ -706,9 +706,9 @@ static void CG_Missile(centity_t* cent)
 					ent.shaderRGBA[1] = cgs.be.enemyGrenadesColor[1] * 255;
 					ent.shaderRGBA[2] = cgs.be.enemyGrenadesColor[2] * 255;
 
-					if (cg_altGrenades.integer == 2 && cg_drawBrightWeapons.integer & 4 && cgs.media.firstPersonGun)
+					if (cg_altGrenades.integer == 2 && cg_drawBrightWeapons.integer & 4 && CG_SelectBrightWeaponsShader())
 					{
-						ent.customShader = cgs.media.firstPersonGun;
+						ent.customShader = CG_SelectBrightWeaponsShader();
 					}
 					else
 					{

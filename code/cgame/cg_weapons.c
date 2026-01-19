@@ -1572,6 +1572,17 @@ void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum)
 	}
 }
 
+qhandle_t CG_SelectBrightWeaponsShader(void)
+{
+	if (cg_brightWeaponsShader.integer == 2)
+	{
+		return cgs.media.altFullBrightShader;
+	}
+	else
+	{
+		return cgs.media.firstPersonGun;
+	}
+}
 /*
 =============
 CG_AddPlayerWeapon
@@ -1776,19 +1787,19 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		{
 			CG_SetWeaponBrightColor(&gun, weaponNum);
 			usedBrightColor = qtrue;
-			gun.customShader = cgs.media.firstPersonGun;
+			gun.customShader = CG_SelectBrightWeaponsShader();
 		}
 		else if ((cg_drawBrightWeapons.integer & 2) && isTeammate)
 		{
 			CG_SetWeaponBrightColor(&gun, weaponNum);
 			usedBrightColor = qtrue;
-			gun.customShader = cgs.media.firstPersonGun;
+			gun.customShader = CG_SelectBrightWeaponsShader();
 		}
 		else if ((cg_drawBrightWeapons.integer & 4) && isEnemy)
 		{
 			CG_SetWeaponBrightColor(&gun, weaponNum);
 			usedBrightColor = qtrue;
-			gun.customShader = cgs.media.firstPersonGun;
+			gun.customShader = CG_SelectBrightWeaponsShader();
 		}
 	}
 
@@ -1831,13 +1842,13 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		if (usedBrightColor)
 		{
 			CG_SetWeaponBrightColor(&barrel, weaponNum);
-			barrel.customShader = cgs.media.firstPersonGun;
+			barrel.customShader = CG_SelectBrightWeaponsShader();
 		}
 		else if (((cg_drawGun.integer & DRAW_GUN_GHOST) && (gun.renderfx & RF_FIRST_PERSON)) ||
 		         ((cg_drawGun.integer == 3) && (gun.renderfx & RF_FIRST_PERSON)))
 		{
 			CG_UpdateGunShaderRGBA(&barrel);
-			barrel.customShader = cgs.media.firstPersonGun;
+			barrel.customShader = CG_SelectBrightWeaponsShader();
 		}
 		if ((barrel.renderfx & RF_FIRST_PERSON) && cg_drawGunForceAspect.integer)
 		{

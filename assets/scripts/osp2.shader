@@ -678,3 +678,16 @@ snowflake
 		alphaGen	vertex
 	}
 }
+
+altFullBrightShader
+{
+	sort nearest
+    {
+        map textures/effects/envmapghost.jpg
+        blendFunc add
+	    tcmod rotate 30
+        tcmod scroll 1 .1
+        rgbGen entity
+	    alphaGen entity
+    }
+}
