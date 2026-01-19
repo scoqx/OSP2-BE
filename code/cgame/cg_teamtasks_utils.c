@@ -342,7 +342,7 @@ void CG_ClearRoundSpecificTeamTaskMarks(void)
 		        mark->markType != TEAMTASK_HERE_DEAD &&
 		        mark->markType != TEAMTASK_WARN_DEAD &&
 		        mark->markType != TEAMTASK_PLAYERDEAD
-			)
+		   )
 		{
 			if (writeIndex != i)
 			{
@@ -384,9 +384,9 @@ void CG_ClearPlayerDeathTeamTaskMarks(void)
 
 		/* Keep mark if it's not a death mark OR if it's not for current player */
 		if (!((mark->markType == TEAMTASK_PLAYERDEAD ||
-		       mark->markType == TEAMTASK_HERE_DEAD ||
-		       mark->markType == TEAMTASK_WARN_DEAD) &&
-		      mark->clientNum == cg.clientNum))
+		        mark->markType == TEAMTASK_HERE_DEAD ||
+		        mark->markType == TEAMTASK_WARN_DEAD) &&
+		        mark->clientNum == cg.clientNum))
 		{
 			if (writeIndex != i)
 			{

@@ -163,13 +163,13 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 			is_execute = (Q_stricmp(statusElement.item->name, "execute") == 0) || (Q_stricmp(statusElement.item->name, "exec") == 0);
 
 			// Check for team overlay elements (team1-team16)
-			if (statusElement.item && statusElement.item->name && 
-			    Q_stricmpn(statusElement.item->name, "team", 4) == 0)
+			if (statusElement.item && statusElement.item->name &&
+			        Q_stricmpn(statusElement.item->name, "team", 4) == 0)
 			{
 				const char* name = statusElement.item->name;
 				// Check if it's team1-team16 (single or double digit)
 				if ((name[4] >= '1' && name[4] <= '9') ||
-				    (name[4] == '1' && name[5] >= '0' && name[5] <= '6'))
+				        (name[4] == '1' && name[5] >= '0' && name[5] <= '6'))
 				{
 					hasTeamElements = qtrue;
 				}

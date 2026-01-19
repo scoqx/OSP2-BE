@@ -1311,7 +1311,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 						if (templateID == TEAMTASK_HEALTH)
 						{
 							if (!Q_stricmp(item->classname, "item_health") ||
-							    !Q_stricmp(item->classname, "item_health_large"))
+							        !Q_stricmp(item->classname, "item_health_large"))
 							{
 								/* Check if item is near received coordinates */
 								dist = Distance(cent->lerpOrigin, coord);
@@ -2551,47 +2551,47 @@ void CG_NewClientInfo(int clientNum)
 	CG_ClientInfoUpdateColors(&newInfo, clientNum);
 	CG_ClientInfoUpdateTeamTask(&newInfo, clientNum);
 
-		/* Check for team changes and execute commands based on configstring */
-		/* Do this BEFORE updating ci, so we can compare old vs new team */
-		if (isOurClient)
-		{
-			CG_CheckTeamChangeFromConfigstring(ci, &newInfo);
-		}
+	/* Check for team changes and execute commands based on configstring */
+	/* Do this BEFORE updating ci, so we can compare old vs new team */
+	if (isOurClient)
+	{
+		CG_CheckTeamChangeFromConfigstring(ci, &newInfo);
+	}
 
 	CG_ForceNewClientInfo(ci, &newInfo);
 
-		/* If we changed team, update models & colors */
-		if (isOurClient)
+	/* If we changed team, update models & colors */
+	if (isOurClient)
+	{
+		static team_t ourTeam = -1;
+		static int ourClientNum = -1;
+		static qboolean wasSpectator = qtrue;
+		qboolean isSpectator;
+		qboolean spectatorStateChanged;
+		const qboolean isTeamChanged = cgs.clientinfo[cg.clientNum].rt != ourTeam;
+		const qboolean isClientIdChanged = ourClientNum != cg.clientNum;
+		numSortedTeamPlayers = 0; //reset team overlay
+		if (isTeamGame && isTeamChanged)
 		{
-			static team_t ourTeam = -1;
-			static int ourClientNum = -1;
-			static qboolean wasSpectator = qtrue;
-			qboolean isSpectator;
-			qboolean spectatorStateChanged;
-			const qboolean isTeamChanged = cgs.clientinfo[cg.clientNum].rt != ourTeam;
-			const qboolean isClientIdChanged = ourClientNum != cg.clientNum;
-			numSortedTeamPlayers = 0; //reset team overlay
-			if (isTeamGame && isTeamChanged)
-			{
-				ourTeam = cgs.clientinfo[cg.clientNum].rt;
-				CG_UpdateMyTeamColors();
-				CG_UpdateOtherClientsInfo();
-			}
-
-			if (isTeamGame && isClientIdChanged)
-			{
-				ourClientNum = cg.clientNum;
-				CG_UpdateOtherClientsInfo();
-			}
-
-			isSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR || cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
-			spectatorStateChanged = (wasSpectator != isSpectator);
-			if (spectatorStateChanged)
-			{
-				wasSpectator = isSpectator;
-				CG_UpdateOtherClientsInfo();
-			}
+			ourTeam = cgs.clientinfo[cg.clientNum].rt;
+			CG_UpdateMyTeamColors();
+			CG_UpdateOtherClientsInfo();
 		}
+
+		if (isTeamGame && isClientIdChanged)
+		{
+			ourClientNum = cg.clientNum;
+			CG_UpdateOtherClientsInfo();
+		}
+
+		isSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR || cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
+		spectatorStateChanged = (wasSpectator != isSpectator);
+		if (spectatorStateChanged)
+		{
+			wasSpectator = isSpectator;
+			CG_UpdateOtherClientsInfo();
+		}
+	}
 
 	// Update real client count when client info changes (not in demo mode)
 	if (!cg.demoPlayback)
@@ -3206,7 +3206,7 @@ static void CG_BreathPuffs(centity_t* cent, refEntity_t* head)
 	ci = &cgs.clientinfo[ cent->currentState.clientNum ];
 
 	if (!cgs.be.server.enableBreath ||
-		!cg_enableBreath.integer)
+	        !cg_enableBreath.integer)
 	{
 		return;
 	}

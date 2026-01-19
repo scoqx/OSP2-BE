@@ -473,7 +473,7 @@ qboolean CG_IsWarmup(void)
 	{
 		return qfalse;
 	}
-	else 
+	else
 	{
 		return qtrue;
 	}
@@ -493,7 +493,7 @@ qboolean CG_IsIntermission(void)
 	{
 		return qfalse;
 	}
-	else 
+	else
 	{
 		return qtrue;
 	}

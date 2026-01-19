@@ -339,7 +339,7 @@ void CG_SHUDElementObituariesRoutine(void* context)
 
 	/* Draw border on entire line if configured and for local player events */
 	if ((cg.clientNum == entry->attacker || cg.clientNum == entry->target) &&
-	    element->config.border.isSet && element->config.borderColor.isSet)
+	        element->config.border.isSet && element->config.borderColor.isSet)
 	{
 		vec4_t coord;
 		vec4_t borderColor;

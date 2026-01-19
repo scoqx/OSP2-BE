@@ -1021,7 +1021,7 @@ typedef struct
 	qhandle_t teamTasksFlag;
 	qhandle_t teamTasksFlagcarrier;
 
-	// teamTasks hud markers 
+	// teamTasks hud markers
 	qhandle_t teamTasksAttack_marker;
 	qhandle_t teamTasksDefence_marker;
 	qhandle_t teamTasksWatch_marker;
@@ -2109,8 +2109,8 @@ extern vmCvar_t           cg_shud_chatmsg12;
 extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
-extern vmCvar_t			  cg_hitSoundsQC;
-extern vmCvar_t			  cg_brightWeaponsShader;
+extern vmCvar_t           cg_hitSoundsQC;
+extern vmCvar_t           cg_brightWeaponsShader;
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_run;
 //

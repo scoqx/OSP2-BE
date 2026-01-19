@@ -490,9 +490,9 @@ static void CG_ForceExecOnSpectateStart(playerState_t* ps)
 	}
 
 	// If we started following a different player, force exec
-	if (isFollowing && currentSnapClientNum != lastSnapClientNum && 
-	    currentSnapClientNum != -1 && ps->weapon != WP_NONE && 
-	    cg_exec_weapons.integer != 0)
+	if (isFollowing && currentSnapClientNum != lastSnapClientNum &&
+	        currentSnapClientNum != -1 && ps->weapon != WP_NONE &&
+	        cg_exec_weapons.integer != 0)
 	{
 		CG_ExecWeaponCommand(ps->weapon);
 	}
@@ -962,7 +962,7 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 		{
 			highScore = cgs.scores2;
 		}
-		
+
 		if (!(cg.fraglimitWarnings & 4) && highScore == (cgs.fraglimit - 1))
 		{
 			cg.fraglimitWarnings |= 1 | 2 | 4;

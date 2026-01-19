@@ -75,7 +75,7 @@ extern "C" {
 #define CS_TEAMVOTE_STRING      14
 #define CS_TEAMVOTE_YES         16
 #define CS_TEAMVOTE_NO          18
-#define CS_REDPLAYERALIVE       19		// FPS Classsico
+#define CS_REDPLAYERALIVE       19      // FPS Classsico
 
 #define CS_GAME_VERSION         20
 #define CS_LEVEL_START_TIME     21      // so the timer only shows the current level
@@ -646,7 +646,7 @@ typedef enum
 	TEAMTASK_YELLOWARMOR,
 	TEAMTASK_HEALTH,
 	TEAMTASK_HERE_FLAG,
-	TEAMTASK_REDFLAG, 
+	TEAMTASK_REDFLAG,
 	TEAMTASK_BLUEFLAG,
 	TEAMTASK_REDFLAG_CARRIER,
 	TEAMTASK_BLUEFLAG_CARRIER
@@ -741,15 +741,15 @@ qboolean    BG_CanItemBeGrabbed(int gametype, const entityState_t* ent, const pl
 
 
 // g_dmflags->integer flags
-#define DF_NO_FALLING				8
-#define DF_FIXED_FOV				16
-#define DF_NO_FOOTSTEPS				32 
+#define DF_NO_FALLING               8
+#define DF_FIXED_FOV                16
+#define DF_NO_FOOTSTEPS             32
 // MRX
-#define DF_NO_ITEM_RESET			64
-#define DF_NO_TEAM_RESET			128
-#define DF_INSTANT_WEAPON_CHANGE	256
-#define DF_NO_BUNNY					512
-#define DF_NO_EMPTY_USE_ITEM_SOUND	1024
+#define DF_NO_ITEM_RESET            64
+#define DF_NO_TEAM_RESET            128
+#define DF_INSTANT_WEAPON_CHANGE    256
+#define DF_NO_BUNNY                 512
+#define DF_NO_EMPTY_USE_ITEM_SOUND  1024
 
 
 // content masks

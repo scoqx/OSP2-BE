@@ -1991,8 +1991,8 @@ static qboolean CG_IsLookingAtItemHitbox(vec3_t start, vec3_t end, centity_t* ce
 	// Hitbox parameters (same as in CG_AddItemHitBox)
 	// Flags have higher hitbox (60) than other items (40)
 	if (cgs.gametype == GT_CTF && item->classname &&
-	    (!Q_stricmp(item->classname, "team_CTF_redflag") ||
-	     !Q_stricmp(item->classname, "team_CTF_blueflag")))
+	        (!Q_stricmp(item->classname, "team_CTF_redflag") ||
+	         !Q_stricmp(item->classname, "team_CTF_blueflag")))
 	{
 		hbox_height = 60.0f;
 	}
@@ -2082,13 +2082,13 @@ int CG_CrosshairTarget(vec3_t itemPos)
 	if (trace.entityNum < MAX_CLIENTS)
 	{
 		centity_t* playerCent;
-		
+
 		ci = &cgs.clientinfo[trace.entityNum];
 		if (!ci->infoValid)
 		{
 			return 1;  // nothing (invalid)
 		}
-		
+
 		// Check for flag carriers in CTF mode
 		if (cgs.gametype == GT_CTF)
 		{
@@ -2112,7 +2112,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 				}
 			}
 		}
-		
+
 		if (CG_IsEnemy(ci))
 		{
 			return 2;  // enemy
@@ -2165,8 +2165,8 @@ int CG_CrosshairTarget(vec3_t itemPos)
 					            !Q_stricmp(checkItem->classname, "item_health") ||
 					            !Q_stricmp(checkItem->classname, "item_health_large") ||
 					            (cgs.gametype == GT_CTF && (
-					                !Q_stricmp(checkItem->classname, "team_CTF_redflag") ||
-					                !Q_stricmp(checkItem->classname, "team_CTF_blueflag")))))
+					                 !Q_stricmp(checkItem->classname, "team_CTF_redflag") ||
+					                 !Q_stricmp(checkItem->classname, "team_CTF_blueflag")))))
 					{
 						// Check if ray intersects with hitbox
 						if (CG_IsLookingAtItemHitbox(start, end, checkCent, checkItem))
@@ -2221,7 +2221,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 									return 11;  // yellow armor
 								}
 								if (!Q_stricmp(checkItem->classname, "item_health") ||
-								    !Q_stricmp(checkItem->classname, "item_health_large"))
+								        !Q_stricmp(checkItem->classname, "item_health_large"))
 								{
 									return 12;  // health (both 25 and 50)
 								}
@@ -2412,7 +2412,7 @@ void CG_OSPDrawIntermission()
 	}
 	CG_OSPSetColor(NULL);
 	CG_DrawPicOld(590.0f, 430.f, 50.0f, 50.0f, cgs.media.blender180Shader);
-	
+
 	if (cgs.be.newStats.drawWindow)
 	{
 		CG_BEStatsShowStatsInfo();
@@ -3245,7 +3245,7 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize)
 	float textX, textY;
 	int font = CG_FontIndexFromCvar(&cg_accuracyFont);
 	qhandle_t icon;
-	
+
 	/* Get character width and height from cvar or use default */
 	if (cgs.be.accuracyFontSize[0] > 0.0f || cgs.be.accuracyFontSize[1] > 0.0f)
 	{

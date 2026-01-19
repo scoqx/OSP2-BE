@@ -390,9 +390,9 @@ static void CG_ConfigStringModified(void)
 	{
 		CG_ParseScoresUpdate(2, str);
 	}
-	
+
 	else if (num == CS_REDPLAYERALIVE)
-	{	
+	{
 		if (CG_isFPSClassicoServer())
 		{
 			cgs.osp.osp_teamcount1 = atoi(str);

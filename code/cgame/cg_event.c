@@ -188,13 +188,13 @@ void CG_OSPObituaryFreeze(entityState_t* es, char* targetName)
 		}
 	}
 	CG_SHUDEventObituaries(actorId, targetId, MOD_UNKNOWN, qtrue);
-	
+
 	// Clear HERE_DEAD marks for unfrozen player in freeze tag mode
 	if (cgs.osp.gameTypeFreeze)
 	{
 		CG_ClearClientHereDeadMarks(targetId);
 	}
-	
+
 	if (actorId == cg.snap->ps.clientNum)
 	{
 		CG_ObituaryFragmessage(va("You thawed %s", targetName));

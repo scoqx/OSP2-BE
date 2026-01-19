@@ -271,7 +271,7 @@ static void CG_AddSimpleItem(centity_t* cent)
 		{
 			qboolean isAmmoOrWeapon = qfalse;
 			float originalRadius = ent.radius;
-			
+
 			switch (item->giType)
 			{
 				case IT_AMMO:
@@ -282,7 +282,7 @@ static void CG_AddSimpleItem(centity_t* cent)
 				default:
 					break;
 			}
-			
+
 			if (isAmmoOrWeapon)
 			{
 				float centerLift = (originalRadius - 14) * 1.5f;
@@ -305,7 +305,7 @@ static void CG_AddSimpleItem(centity_t* cent)
 	if (cg_simpleItemsBob.integer)
 	{
 		qboolean shouldBob = qfalse;
-		
+
 		if (cg_simpleItemsBob.integer == 1)
 		{
 			// All simple items except armor shard
@@ -328,7 +328,7 @@ static void CG_AddSimpleItem(centity_t* cent)
 				shouldBob = qtrue;
 			}
 		}
-		
+
 		if (shouldBob)
 		{
 			// Use unified timer so all items bob in sync

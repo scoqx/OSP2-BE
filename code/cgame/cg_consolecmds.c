@@ -865,7 +865,7 @@ void CG_ReloadHud_f(void)
 
 // void CG_ReloadCHUD_f(void)
 // {
-// 	CG_CHUDLoadConfig();
+//  CG_CHUDLoadConfig();
 // }
 
 void CG_PrintPlayerIDs_f(void)
@@ -886,45 +886,45 @@ void CG_TeamTaskClients_f(void)
 {
 	int p;
 	team_t myTeam;
-	
+
 	// Check if gametype is team-based
 	if (cgs.gametype < GT_TEAM)
 	{
 		CG_Printf("^1Error:^7 This command works only in team gametypes.\n");
 		return;
 	}
-	
+
 	// Check if player is spectator
 	if (cg.clientNum < 0 || cg.clientNum >= MAX_CLIENTS)
 	{
 		return;
 	}
-	
+
 	if (!cgs.clientinfo[cg.clientNum].infoValid)
 	{
 		return;
 	}
-	
+
 	myTeam = cgs.clientinfo[cg.clientNum].team;
-	
+
 	if (myTeam == TEAM_SPECTATOR)
-	{	
+	{
 		CG_Printf("You are a spectator.\n");
 		return;
 	}
-	
+
 	// Print team members
-	CG_Printf("^5Team Task Support Status (%s^5 team):\n", 
-		myTeam == TEAM_RED ? "^1RED" : "^4BLUE");
+	CG_Printf("^5Team Task Support Status (%s^5 team):\n",
+	          myTeam == TEAM_RED ? "^1RED" : "^4BLUE");
 	CG_Printf("^7| ^3%2s ^7| ^5%32s ^7| ^3%10s\n", "ID", "Player name", "Supports team tasks");
 	CG_Printf("^7------------------------------------------------------------------------------\n");
-	
+
 	for (p = 0; p < MAX_CLIENTS; ++p)
 	{
 		if (cgs.clientinfo[p].infoValid && cgs.clientinfo[p].team == myTeam)
 		{
-			CG_Printf("^7| ^3%2d ^7| %32s ^7| %s\n", p, cgs.clientinfo[p].name_clean, 
-				cgs.clientinfo[p].supportsTeamTask ? "^2Yes" : "^1No");
+			CG_Printf("^7| ^3%2d ^7| %32s ^7| %s\n", p, cgs.clientinfo[p].name_clean,
+			          cgs.clientinfo[p].supportsTeamTask ? "^2Yes" : "^1No");
 		}
 	}
 	CG_Printf("\n");
@@ -1390,8 +1390,8 @@ void CG_TeamTaskMarkHere(void)
 	if (!CG_IsDead() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
 	{
 		/* Check if player has flag in CTF mode */
-		if (cgs.gametype == GT_CTF && 
-		    (cg.predictedPlayerState.powerups[PW_REDFLAG] || cg.predictedPlayerState.powerups[PW_BLUEFLAG]))
+		if (cgs.gametype == GT_CTF &&
+		        (cg.predictedPlayerState.powerups[PW_REDFLAG] || cg.predictedPlayerState.powerups[PW_BLUEFLAG]))
 		{
 			/* Player has flag - send HERE_FLAG with current position */
 			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_FLAG, cg.predictedPlayerState.origin, qfalse);
@@ -1894,7 +1894,7 @@ void CG_RestoreSensitivity_f(void)
 	// Restore sensitivity
 	Com_sprintf(sensitivityStr, sizeof(sensitivityStr), "%f", newSensitivity);
 	trap_Cvar_Set("sensitivity", sensitivityStr);
-	
+
 	CG_Printf("^2Sensitivity restored from ^3%.3f^7 to ^3%.3f^7\n", oldSensitivity, newSensitivity);
 }
 
@@ -1968,9 +1968,9 @@ Helper function to print BE feature info
 static void CG_BEHelp_PrintFeature(const char* cvarName, int featureFlag, const char* description, int zeroCheck)
 {
 	char currentValue[MAX_CVAR_VALUE_STRING];
-	
+
 	trap_Cvar_VariableStringBuffer(cvarName, currentValue, sizeof(currentValue));
-	
+
 	if (!BE_ENABLED)
 	{
 		CG_Printf("  ^3%s ^7\"^9BE^7\" - %s\n", cvarName, description);
@@ -2014,12 +2014,12 @@ void CG_BEHelp_f(void)
 		CG_Printf("^7Usage: ^3/behelp ^2<cvar_name>\n");
 		CG_Printf("^7Example: ^3/behelp ^2cg_teamTask\n");
 		CG_Printf("^7For bitmask guide: ^3/behelp ^2bitmask\n\n");
-		
+
 		CG_Printf("^9BE ^7Features Control:\n");
 		CG_Printf("^7Set ^2be_enabled 0^7 to disable all features.\n\n");
-		
+
 		CG_Printf("^3Available BE Features:\n\n");
-		
+
 		CG_BEHelp_PrintFeature("cg_friendsWallhack", CG_BE_TEAM_FOE_WH, "Show teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);
 		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color for enemies", 0);
@@ -2032,7 +2032,7 @@ void CG_BEHelp_f(void)
 		// CG_BEHelp_PrintFeature("cg_damagePlums", CG_BE_DAMAGEINFO, "Show damage plums (floating damage numbers)", 0);
 		CG_BEHelp_PrintFeature("cg_drawBrightWeapons", CG_BE_FULLBRIGHT, "Render weapons with a single bright color", 0);
 		CG_BEHelp_PrintFeature("cg_teamTask", CG_BE_TEAMTASKS, "Team task markers", 0);
-		
+
 		return;
 	}
 
@@ -2042,16 +2042,16 @@ void CG_BEHelp_f(void)
 	if (!Q_stricmp(cvarName, "bitmask"))
 	{
 		CG_Printf("^3Bitmask Guide\n");
-		
+
 		CG_Printf("^7A bitmask allows you to combine multiple options into a single number.\n");
 		CG_Printf("^7Each option is represented by a power of 2 (bit).\n\n");
-		
+
 		CG_Printf("^3How to use:\n");
 		CG_Printf("^7To enable multiple options, add their values together.\n");
 		CG_Printf("^7Example: If option 1 = ^91^7, option 2 = ^82^7, option 3 ^7= ^34^7:\n");
 		CG_Printf("^7  To enable option 1 and 3: ^91 ^7+ ^34 ^7= ^25^7\n");
 		CG_Printf("^7  To enable all three: ^91 ^7+ ^82 ^7+ ^34 ^7= ^27^7\n\n");
-		
+
 		CG_Printf("^3Example with ^3cg_teamTask^7:\n");
 		CG_Printf("^7  ^91^7 - Enable markers\n");
 		CG_Printf("^7  ^82^7 - Play sound when marking\n");
@@ -2061,7 +2061,7 @@ void CG_BEHelp_f(void)
 		CG_Printf("^7  ^632^7 - Use unique colors\n\n");
 		CG_Printf("^7To enable markers, sound, and HUD: ^91 ^7+ ^82 ^7+ ^48 ^7= ^211^7\n");
 		CG_Printf("^7Command: ^3cg_teamTask ^211\n\n");
-		
+
 		return;
 	}
 

@@ -237,7 +237,7 @@ static configEntry_t* CG_CHUDConfigSet(const char* key, configType_t type, const
 
 /* static const configEntry_t* CG_CHUDConfigGet(const char* key, configType_t type)
 {
-	return CG_CHUDConfigFind(key, type);
+    return CG_CHUDConfigFind(key, type);
 } */
 
 static int CG_CHUDConfigGetAllOfType(configType_t type, configEntry_t** entries, int maxEntries)
@@ -2161,18 +2161,18 @@ const char* CG_CHUDGetContainerName(cherryhudBlockType_t type)
 /* // Helper function to build arrays from unified types
 static void CG_CHUDBuildTypeArray(cherryhudElementTypeCategory_t category, const char** array, int maxSize)
 {
-	int i, j;
+    int i, j;
 
-	j = 0;
-	for (i = 0; g_unifiedElementTypes[i].name && j < maxSize - 1; i++)
-	{
-		if (g_unifiedElementTypes[i].category == category)
-		{
-			array[j] = g_unifiedElementTypes[i].name;
-			j++;
-		}
-	}
-	array[j] = NULL;
+    j = 0;
+    for (i = 0; g_unifiedElementTypes[i].name && j < maxSize - 1; i++)
+    {
+        if (g_unifiedElementTypes[i].category == category)
+        {
+            array[j] = g_unifiedElementTypes[i].name;
+            j++;
+        }
+    }
+    array[j] = NULL;
 } */
 
 

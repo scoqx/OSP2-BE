@@ -303,7 +303,8 @@ static void CG_BEStatsBuildGeneral_Tournament(BEStatToken_t tokens[32][12], int*
 	int col = 0;
 	const newStatsInfo_t* s = &cgs.be.newStats;
 
-	if (outCols == NULL) {
+	if (outCols == NULL)
+	{
 		outCols = &col; // dummy address to avoid segfault
 	}
 
@@ -370,7 +371,8 @@ static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCo
 	int style = cg_bestats_style.integer;  // глобальная переменная/настройка
 	qboolean isFreeze = cgs.osp.gameTypeFreeze;
 
-	if (outCols == NULL) {
+	if (outCols == NULL)
+	{
 		outCols = &col; // dummy address to avoid segfault
 	}
 
@@ -467,7 +469,8 @@ static void CG_BEStatsBuildGeneral_CTF(BEStatToken_t tokens[32][12], int* outCol
 	const newStatsInfo_t* s = &cgs.be.newStats;
 	char timeStr[MAX_TOKEN_LEN];
 
-	if (outCols == NULL) {
+	if (outCols == NULL)
+	{
 		outCols = &col; // dummy address to avoid segfault
 	}
 
@@ -560,7 +563,8 @@ static void CG_BEStatsBuildGeneral_CA(BEStatToken_t tokens[32][12], int* outCols
 	int col = 0;
 	const newStatsInfo_t* s = &cgs.be.newStats;
 
-	if (outCols == NULL) {
+	if (outCols == NULL)
+	{
 		outCols = &col; // dummy address to avoid segfault
 	}
 
@@ -620,7 +624,8 @@ static void CG_BEStatsBuildGeneral_Default(BEStatToken_t tokens[32][12], int* ou
 	int style = cg_bestats_style.integer;
 	const newStatsInfo_t* s = &cgs.be.newStats;
 
-	if (outCols == NULL) {
+	if (outCols == NULL)
+	{
 		outCols = &dummy; // dummy address to avoid segfault
 	}
 

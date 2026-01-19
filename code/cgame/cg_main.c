@@ -961,7 +961,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamTaskOpaque, "cg_teamTaskOpaque", "0.7", CVAR_ARCHIVE },
 	{ &cg_teamTaskFade, "cg_teamTaskFade", "0.5", CVAR_ARCHIVE },
 	{ &cg_teamTaskFadeRadius, "cg_teamTaskFadeRadius", "128", CVAR_ARCHIVE },
-	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE , CG_LocalEventCvarChanged_cg_teamTaskFont, },
+	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskFont, },
 	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "12", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
 	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "defence here medic smart yes no warn", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
 	{ &cg_teamTaskWheelSensitivity, "cg_teamTaskWheelSensitivity", "3.0", CVAR_ARCHIVE },
@@ -1025,7 +1025,8 @@ vmCvar_t           cg_shud_chatmsg13;
 vmCvar_t           cg_shud_chatmsg14;
 vmCvar_t           cg_shud_chatmsg15;
 
-static cvarTable_t cvarTable_temp[] = {
+static cvarTable_t cvarTable_temp[] =
+{
 	{ &cg_shud_chatindex, "cg_shud_chatindex", "0",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
 	{ &cg_shud_chatmsg0, "cg_shud_chatmsg0", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
 	{ &cg_shud_chatmsg1, "cg_shud_chatmsg1", "",   CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
