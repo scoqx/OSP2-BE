@@ -3108,7 +3108,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 			CG_FillRect(rectX, rectY, rectW, rectH, teamColor);
 	}
 
-	if ((cg_teamIndicator.integer & PI_STATS) && cgs.gametype != GT_CA)
+	if (cg_teamIndicator.integer & PI_STATS)
 	{
 		int health = ci->health;
 		int armor = ci->armor;

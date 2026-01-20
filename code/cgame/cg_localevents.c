@@ -68,16 +68,18 @@ void CG_ParseCvarTwoFloats(const cvarTable_t* cvart, float* out1, float* out2)
 
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
 {
-	if ((cg_drawTeamOverlay.integer > 0) ||
-	        ((!(cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE)) &&
-	         (ch_TeamCrosshairHealth.integer > 0 || ch_crosshairTeamInfo.integer > 0)))
-	{
-		trap_Cvar_Set("teamoverlay", "1");
-	}
-	else
-	{
-		trap_Cvar_Set("teamoverlay", "0");
-	}
+	// if ((cg_drawTeamOverlay.integer > 0) ||
+	//         ((!(cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE)) &&
+	//          (ch_TeamCrosshairHealth.integer > 0 || ch_crosshairTeamInfo.integer > 0)))
+	// {
+	// 	trap_Cvar_Set("teamoverlay", "1");
+	// }
+	// else
+	// {
+	// 	trap_Cvar_Set("teamoverlay", "0");
+	// }
+	// We are using tinfo not only in team overlay
+	trap_Cvar_Set("teamoverlay", "1");
 }
 
 void CG_LocalEventCvarChanged_cl_maxpackets(cvarTable_t* cvart)

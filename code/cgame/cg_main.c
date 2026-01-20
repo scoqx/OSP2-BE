@@ -548,6 +548,7 @@ vmCvar_t        uc_sensitivity;
 vmCvar_t        cg_teamTaskIconMinSize;
 vmCvar_t        cg_hitSoundsQC;
 vmCvar_t        cg_brightWeaponsShader;
+vmCvar_t        teamoverlay2;
 
 // vmCvar_t        cg_snow;
 
@@ -624,7 +625,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawTeamOverlay},
-	{ &teamoverlay, "teamoverlay", "0", CVAR_USERINFO | CVAR_ROM },
+	{ &teamoverlay, "teamoverlay", "1", CVAR_USERINFO | CVAR_ROM },
 	{ &cg_stats, "cg_stats", "0",  },
 	{ &cg_buildScript, "com_buildScript", "0",  },
 	{ &cg_paused, "cl_paused", "0", CVAR_ROM },

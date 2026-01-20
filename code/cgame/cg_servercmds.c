@@ -30,6 +30,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static int xstats1_received_count = 0;
 static int last_xstats1_sequence = -1;
+static qboolean teamoverlay2_registered = qfalse;
+
+static void CG_RegisterTeamOverlay2ForFPSClassicoServer(void)
+{
+	if (!CG_isFPSClassicoServer())
+	{
+		return;
+	}
+
+	if (!teamoverlay2_registered)
+	{
+		trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "1", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
+		teamoverlay2_registered = qtrue;
+	}
+
+	trap_Cvar_Set("teamoverlay2", "1");
+	trap_Cvar_Update(&teamoverlay2);
+}
 
 
 /*
@@ -187,6 +205,10 @@ void CG_ParseServerinfo(void)
 	Q_strncpyz(cgs.blueTeam, Info_ValueForKey(info, "g_blueTeam"), sizeof(cgs.blueTeam));
 	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
 	CG_DefineServer(CS_SERVERINFO, info);
+	
+	/* Register teamoverlay2 for FPS Classico server */
+	CG_RegisterTeamOverlay2ForFPSClassicoServer();
+
 	CG_SetServerSettingsBE();
 }
 

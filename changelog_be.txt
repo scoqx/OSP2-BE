@@ -698,3 +698,7 @@ SuperHUD:
 * +ttwheel inverted mouse fix
 * cg_bestats_autoaction 1 fix in osp hud
 + cg_brightWeaponsShader 1/2
+
+20.01.2025 be v1.00r
+* fixed HP/AP info in CA (does not depend on cg_drawTeamOverlay)
+* fixed cg_drawTeamOverlay behavior in FPSClassico
