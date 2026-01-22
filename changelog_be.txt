@@ -703,7 +703,9 @@ SuperHUD:
 * fixed HP/AP info in CA (does not depend on cg_drawTeamOverlay)
 * fixed cg_drawTeamOverlay behavior in FPSClassico
 
-22.01.2025 be v1.00s1
+22.01.2025 be v1.00s2
+* OSP2 sync (SHUD lagometer)
++ cg_teleportEffect
 + cg_noExplosions 0/1
 + cg_noItemUseSound 0/1
 + cg_friendsWallhackFrozen 0/1

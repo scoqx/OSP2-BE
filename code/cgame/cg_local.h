@@ -2098,6 +2098,8 @@ extern vmCvar_t           cg_hitSoundsQC;
 extern vmCvar_t           cg_brightWeaponsShader;
 extern vmCvar_t           teamoverlay2;
 extern vmCvar_t        cg_friendsWallhackFrozen;
+extern vmCvar_t        cg_teleportEffect;
+
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2905,7 +2907,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00s1" // BE
+#define OSP_VERSION "be-1.00s2" // BE
 
 
 

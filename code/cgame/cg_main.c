@@ -552,6 +552,7 @@ vmCvar_t        teamoverlay2;
 vmCvar_t        cg_noExplosions;
 vmCvar_t        cg_noItemUseSound;
 vmCvar_t        cg_friendsWallhackFrozen;
+vmCvar_t        cg_teleportEffect;
 
 // vmCvar_t        cg_snow;
 
@@ -1009,6 +1010,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_noExplosions, "cg_noExplosions", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_noItemUseSound, "cg_noItemUseSound", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendsWallhackFrozen, "cg_friendsWallhackFrozen", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teleportEffect, "cg_teleportEffect", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };

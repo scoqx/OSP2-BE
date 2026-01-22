@@ -2021,6 +2021,7 @@ void CG_BEHelp_f(void)
 		CG_Printf("^3Available BE Features:\n\n");
 
 		CG_BEHelp_PrintFeature("cg_friendsWallhack", CG_BE_TEAM_FOE_WH, "Show teammate markers through walls", 0);
+		CG_BEHelp_PrintFeature("cg_friendsWallhackFrozen", CG_BE_TEAM_FROZEN, "Show frozen teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);
 		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color for enemies", 0);
 		CG_BEHelp_PrintFeature("cg_markTeam", CG_BE_MARK_TEAMMATE, "Mark teammate(s) to change outline color", -1);

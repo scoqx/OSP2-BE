@@ -444,6 +444,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_noExplosions", "Disable all projectile and weapon impact explosions. Set ^20^7 to enable explosions." },
 	{ "cg_noItemUseSound", "Disable \"no item\" sound when trying to use an unavailable item. Set ^20^7 to enable the sound." },
 	{ "cg_friendsWallhackFrozen", "Show frozen teammate markers through walls. Set ^20^7 to disable." },
+	{ "cg_teleportEffect", "Show teleport effect for local player. Set ^20^7 to disable." },
 };
 
 

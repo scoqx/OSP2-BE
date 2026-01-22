@@ -1,8 +1,10 @@
-22.01.2025 be v1.00s
+22.01.2025 be v1.00s1
 + cg_noExplosions 0/1
 + cg_noItemUseSound 0/1
 + cg_friendsWallhackFrozen 0/1
 * ch_crosshairAction bitmask 8 fix
 * Pickup item fix (OSP server)
 * FPSClassico fix - weapon switching time
-* SHUD config updated: m1rQLstyle, m1rQ4style
+SuperHUD:
+  * configs updated: m1rQLstyle, m1rQ4style
+  * StatusBar_AmmoBar color/color2 fix
