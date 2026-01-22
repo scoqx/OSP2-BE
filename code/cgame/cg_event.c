@@ -588,7 +588,10 @@ static void CG_UseItem(centity_t* cent)
 	{
 		default:
 		case HI_NONE:
-			trap_S_StartSound(NULL, es->number, CHAN_BODY, cgs.media.useNothingSound);
+			if (!cg_noItemUseSound.integer)
+			{
+				trap_S_StartSound(NULL, es->number, CHAN_BODY, cgs.media.useNothingSound);
+			}
 			break;
 
 		case HI_TELEPORTER:
@@ -937,16 +940,22 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 					break;
 				}
 				item = &bg_itemlist[ index ];
+				
 				// powerup pickups are global
 				if (item->pickup_sound)
 				{
 					trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_AUTO, trap_S_RegisterSound(item->pickup_sound, qfalse));
 				}
 
-				// show icon and name on status bar
-				if (es->number == cg.snap->ps.clientNum)
+				// For powerups, check if it appeared in playerState (local or spectated player)
+				// For OSP 1.03, powerups are not picked up by the local player, so we need to check if it appeared in playerState
+				if (item->giType == IT_POWERUP && cg.snap->ps.powerups[item->giTag] != 0)
 				{
-					CG_ItemPickup(index);
+					// Prevent double pickup when both EV_ITEM_PICKUP and EV_GLOBAL_ITEM_PICKUP are sent
+					if (!(cg.itemPickup == index && (cg.time - cg.itemPickupTime) < 200))
+					{
+						CG_ItemPickup(index);
+					}
 				}
 			}
 			break;

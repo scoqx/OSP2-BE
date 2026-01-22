@@ -80,13 +80,14 @@ void CG_OSPSetMode(int value)
 	if (!CG_isFPSClassicoServer())
 	{
 		modeGrenadeTime = OSP_SET_MODE_VARIANT(value, 800, 800, 700);//-V583
+		modeFinishWeaponChangeTime         = OSP_SET_MODE_VARIANT(value, 250, 250, 0);//-V583
 	}
 	else
 	{
+		modeFinishWeaponChangeTime = 200;
 		modeGrenadeTime = 600;
 	}
 	modeBeginWeaponChangeTime          = OSP_SET_MODE_VARIANT(value, 200, 200, 0);//-V583
-	modeFinishWeaponChangeTime         = OSP_SET_MODE_VARIANT(value, 250, 250, 0);//-V583
 	modePMNoAmmoTime                   = OSP_SET_MODE_VARIANT(value, 500, 500, 100);//-V583
 	modeShotgunPromode                 = OSP_SET_MODE_VARIANT(value, 0, 2, 1);
 	modeHitLevelSounds                 = OSP_SET_MODE_VARIANT(value, qfalse, qtrue, qtrue);

@@ -2590,13 +2590,17 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 			light = 300;
 			isSprite = qtrue;
 			duration = 1000;
-			if (cg_oldRocket.integer == 0)
+			if (!cg_noExplosions.integer || (cg_noExplosions.integer && !CG_BE_FEATURE_ENABLED(CG_BE_NO_EXPLOSIONS)))
 			{
-				// explosion sprite animation
-				VectorMA(origin, 24, dir, sprOrg);
-				VectorScale(dir, 64, sprVel);
+				if (cg_oldRocket.integer == 0)
+				{
+					// explosion sprite animation
+					VectorMA(origin, 24, dir, sprOrg);
+					VectorScale(dir, 64, sprVel);
+	
+					CG_ParticleExplosion("explode1", sprOrg, sprVel, 1400, 20, 30);
+				}
 
-				CG_ParticleExplosion("explode1", sprOrg, sprVel, 1400, 20, 30);
 			}
 			break;
 		case WP_RAILGUN:
@@ -2747,17 +2751,20 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 	//
 	// create the explosion
 	//
-	if (mod)
+	if (!cg_noExplosions.integer || (cg_noExplosions.integer && !CG_BE_FEATURE_ENABLED(CG_BE_NO_EXPLOSIONS)))
 	{
-		le = CG_MakeExplosion(origin, dir,
-		                      mod, shader,
-		                      duration, isSprite);
-		le->light = light;
-		VectorCopy(lightColor, le->lightColor);
-		if (weapon == WP_RAILGUN)
+		if (mod)
 		{
-			// colorize with client color
-			VectorCopy(cgs.clientinfo[clientNum].colors.railCore, le->color);
+			le = CG_MakeExplosion(origin, dir,
+								  mod, shader,
+								  duration, isSprite);
+			le->light = light;
+			VectorCopy(lightColor, le->lightColor);
+			if (weapon == WP_RAILGUN)
+			{
+				// colorize with client color
+				VectorCopy(cgs.clientinfo[clientNum].colors.railCore, le->color);
+			}
 		}
 	}
 

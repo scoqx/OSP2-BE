@@ -549,6 +549,9 @@ vmCvar_t        cg_teamTaskIconMinSize;
 vmCvar_t        cg_hitSoundsQC;
 vmCvar_t        cg_brightWeaponsShader;
 vmCvar_t        teamoverlay2;
+vmCvar_t        cg_noExplosions;
+vmCvar_t        cg_noItemUseSound;
+vmCvar_t        cg_friendsWallhackFrozen;
 
 // vmCvar_t        cg_snow;
 
@@ -1003,6 +1006,9 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamTaskIconMinSize, "cg_teamTaskIconMinSize", "3", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_hitSoundsQC, "cg_hitSoundsQC", "0", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
 	{ &cg_brightWeaponsShader, "cg_brightWeaponsShader", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_noExplosions, "cg_noExplosions", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_noItemUseSound, "cg_noItemUseSound", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_friendsWallhackFrozen, "cg_friendsWallhackFrozen", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1518,9 +1524,9 @@ static void CG_RegisterSounds(void)
 	cgs.media.hitLowSound = trap_S_RegisterSound("sound/feedback/hitlow.wav", qfalse);
 	cgs.media.hitHighSound = trap_S_RegisterSound("sound/feedback/hithigh.wav", qfalse);
 	// =========
-	cgs.media.hitSound = trap_S_RegisterSound("sound/feedback/hit.wav", qfalse);
 	if (!cg_hitSoundsQC.integer)
 	{
+		cgs.media.hitSound = trap_S_RegisterSound("sound/feedback/hit.wav", qfalse);
 		cgs.media.hitSounds[0] = trap_S_RegisterSound("sound/feedback/hit25.wav", qfalse);
 		cgs.media.hitSounds[1] = trap_S_RegisterSound("sound/feedback/hit50.wav", qfalse);
 		cgs.media.hitSounds[2] = trap_S_RegisterSound("sound/feedback/hit75.wav", qfalse);
@@ -1528,6 +1534,7 @@ static void CG_RegisterSounds(void)
 	}
 	else
 	{
+		cgs.media.hitSound = trap_S_RegisterSound("sound/feedback/hitQC.wav", qfalse);
 		cgs.media.hitSounds[0] = trap_S_RegisterSound("sound/feedback/hit25QC.wav", qfalse);
 		cgs.media.hitSounds[1] = trap_S_RegisterSound("sound/feedback/hit50QC.wav", qfalse);
 		cgs.media.hitSounds[2] = trap_S_RegisterSound("sound/feedback/hit75QC.wav", qfalse);
@@ -2499,36 +2506,36 @@ void CG_ParseCompilationInfo(void)
 	vmCvar_t compilation_build;
 	int parseResult;
 
-	// Открываем файл 'cversion'
+	// Open the 'cversion' file
 	fileSize = trap_FS_FOpenFile("cversion", &fileHandle, FS_READ);
 	if (fileSize <= 0 || !fileHandle)
 	{
-		return; // Файл не найден
+		return; // File not found
 	}
 
-	// Читаем содержимое файла
+	// Read the file contents
 	fileContent = Z_Malloc(fileSize + 1);
 	OSP_MEMORY_CHECK(fileContent);
 	trap_FS_Read(fileContent, fileSize, fileHandle);
 	trap_FS_FCloseFile(fileHandle);
 	fileContent[fileSize] = 0;
 
-	// Убираем символы новой строки и пробелы в конце
+	// Remove newline characters and trailing spaces
 	while (fileSize > 0 && (fileContent[fileSize - 1] == '\n' || fileContent[fileSize - 1] == '\r' || fileContent[fileSize - 1] == ' '))
 	{
 		fileContent[fileSize - 1] = 0;
 		fileSize--;
 	}
 
-	// Парсим содержимое файла
+	// Parse the file contents
 	parseResult = Q_sscanf(fileContent, "Compilation \"%s\" Version \"%s\"", name, version);
 
 	if (parseResult == 2)
 	{
-		// Формируем строку NAME:VERSION
+		// Form the NAME:VERSION string
 		Com_sprintf(buildString, sizeof(buildString), "%s: %s", name, version);
 
-		// Регистрируем cvar
+		// Register the cvar
 		trap_Cvar_Register(&compilation_build, "compilation_build", buildString, CVAR_USERINFO | CVAR_ROM);
 	}
 

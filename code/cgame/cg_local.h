@@ -1396,7 +1396,9 @@ typedef struct cgs_be_s
 #define CG_BE_TEAM_INDICATOR    (1 << 9) // 512
 #define CG_BE_DAMAGEINFO        (1 << 10) // 1024
 #define CG_BE_FULLBRIGHT        (1 << 11) // 2048
-#define CG_BE_TEAMTASKS        (1 << 12) // 4096
+#define CG_BE_TEAMTASKS        	(1 << 12) // 4096
+#define CG_BE_NO_EXPLOSIONS     (1 << 13) // 8192
+#define CG_BE_TEAM_FROZEN		(1 << 14) // 16384
 
 // Team task flags (bitmask for cg_teamTask)
 #define CG_TEAMTASK_ENABLED        (1 << 0)  // 1 - Enable team task markers
@@ -2090,6 +2092,12 @@ extern vmCvar_t           cg_simpleItemsBob;
 extern vmCvar_t        cg_brightWeaponsOpaque;
 extern vmCvar_t        uc_sensitivity;
 extern vmCvar_t        cg_teamTaskIconMinSize;
+extern vmCvar_t        cg_noExplosions;
+extern vmCvar_t        cg_noItemUseSound;
+extern vmCvar_t           cg_hitSoundsQC;
+extern vmCvar_t           cg_brightWeaponsShader;
+extern vmCvar_t           teamoverlay2;
+extern vmCvar_t        cg_friendsWallhackFrozen;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2109,9 +2117,6 @@ extern vmCvar_t           cg_shud_chatmsg12;
 extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
-extern vmCvar_t           cg_hitSoundsQC;
-extern vmCvar_t           cg_brightWeaponsShader;
-extern vmCvar_t           teamoverlay2;
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_run;
 //
@@ -2900,7 +2905,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00r" // BE
+#define OSP_VERSION "be-1.00s" // BE
 
 
 

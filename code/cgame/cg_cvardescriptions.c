@@ -382,7 +382,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_friendHudMarkerSize", "Base size of the teammate HUD marker." },
 	{ "cg_friendHudMarkerMaxScale", "Maximum additional scale factor based on distance (applied to base size)." },
 	{ "cg_friendHudMarkerMinScale", "Minimum scale factor based on distance." },
-	{ "cg_friendsWallhack", "Show teammate markers through walls. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - foe\n  ^22^7 - team indicator" },
+	{ "cg_friendsWallhack", "Show teammate markers through walls. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - foe\n  ^22^7 - team indicator\n  ^24^7 - frozen teammates" },
 	{ "cg_drawHudMarkers", "Display teammate markers on the HUD. Set ^20 ^7to disable." },
 	{ "cg_scoreboardRtColors", "Color of the red team scoreboard. ^3cg_scoreboardBE^7 must be enabled \n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Yellow^7\", \"^2T E T^7\", \"^20099FF 99FF00 99FF00^7\" or \"^24 Red 4^7\"." },
 	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Blue^7\", \"^2E T E^7\", \"^20099FF 99FF00 20099FF^7\" or \"^24 Red 2^7\"." },
@@ -400,7 +400,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamIndicatorFadeRadius", "Radius at which the ally indicator starts fading." },
 	{ "cg_teamTaskFade", "Team task marker transparency level when aiming at a marker. Set ^20^7 to disable." },
 	{ "cg_teamTaskFadeRadius", "Radius at which the team task marker starts fading." },
-	{ "be_enabled", "Enable BE features. Set ^30^7 to disable." },
+	{ "be_enabled", "Enable [^9BE^7] features. Set ^20^7 to disable." },
 	{ "cg_chud", "Enable CherryHUD system. Set ^20^7 to disable CherryHUD." },
 	{ "chud_file", "CherryHUD configuration file name. File must be in the 'chud' directory.\n  \"^2filename^7\"" },
 	{ "cg_clearOnLevelLoad", "Clear console when loading a new level. Set ^20^7 to disable." },
@@ -441,6 +441,9 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamTaskIconMinSize", "Minimum size of team task icons displayed in the world." },
 	{ "cg_hitSoundsQC", "Hit sound set (Quake Champions)\n  ^20^7 - default\n  ^21^7 - QC" },
 	{ "cg_brightWeaponsShader", "Shader for weapons rendered with ^3cg_drawBrightWeapons^7\n  ^21^7 - default\n  ^22^7 - alternative (ignores ^3cg_brightWeaponsOpaque^7)" },
+	{ "cg_noExplosions", "Disable all projectile and weapon impact explosions. Set ^20^7 to enable explosions." },
+	{ "cg_noItemUseSound", "Disable \"no item\" sound when trying to use an unavailable item. Set ^20^7 to enable the sound." },
+	{ "cg_friendsWallhackFrozen", "Show frozen teammate markers through walls. Set ^20^7 to disable." },
 };
 
 

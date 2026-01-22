@@ -3500,6 +3500,16 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack)
 			return qfalse;
 	}
 
+	// If server disabled frozen teammate visibility through walls or client disabled it
+	if (ci->isFrozenEnt && !CG_IsEnemy(ci))
+	{
+		if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN) || !cg_friendsWallhackFrozen.integer)
+		{
+			if (!CG_FriendVisible(cent))
+				return qfalse;
+		}
+	}
+
 	return qtrue;
 }
 
@@ -3521,6 +3531,11 @@ static void CG_FriendHudMarker(centity_t* cent)
 	        || (cent->currentState.eFlags & EF_DEAD && !CG_IsFrozenEntity(cent))
 	        || cent->currentState.number == cg.snap->ps.clientNum
 	        || cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	{
+		return;
+	}
+
+	if (CG_IsFrozenEntity(cent) && !CG_FriendVisible(cent) && (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN) || !cg_friendsWallhackFrozen.integer))
 	{
 		return;
 	}
@@ -3698,8 +3713,19 @@ static void CG_PlayerSprites(centity_t* cent)
 				/* Only draw frozenFoeTagShader if there is no active team task mark */
 				if (!hasActiveMark)
 				{
-					if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && cg_friendsWallhack.integer & 1)
-						shader = cgs.media.frozenFoeTagShaderWallhack;
+					if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN))
+						shader = cgs.media.frozenFoeTagShader;
+					else if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && (cg_friendsWallhack.integer & 1))
+					{
+						if (cg_friendsWallhackFrozen.integer)
+						{
+							shader = cgs.media.frozenFoeTagShaderWallhack;
+						}
+						else
+						{
+							shader = cgs.media.frozenFoeTagShader;
+						}
+					}
 					else
 						shader = cgs.media.frozenFoeTagShader;
 					CG_PlayerFloatSprite(cent, shader, NULL);

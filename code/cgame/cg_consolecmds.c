@@ -2032,6 +2032,7 @@ void CG_BEHelp_f(void)
 		// CG_BEHelp_PrintFeature("cg_damagePlums", CG_BE_DAMAGEINFO, "Show damage plums (floating damage numbers)", 0);
 		CG_BEHelp_PrintFeature("cg_drawBrightWeapons", CG_BE_FULLBRIGHT, "Render weapons with a single bright color", 0);
 		CG_BEHelp_PrintFeature("cg_teamTask", CG_BE_TEAMTASKS, "Team task markers", 0);
+		CG_BEHelp_PrintFeature("cg_noExplosions", CG_BE_NO_EXPLOSIONS, "Disable all projectile and weapon impact explosions", 0);
 
 		return;
 	}

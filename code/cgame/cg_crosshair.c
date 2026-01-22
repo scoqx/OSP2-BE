@@ -239,7 +239,7 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 	{
 		CG_ColorForHealth(hcolor, NULL);
 	}
-	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
+	else if (BE_IsDamageInfoAllowed() && ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
 	{
 		CG_CrosshairPickDamageColor(
 		    cgs.osp.crosshair.color,
@@ -252,7 +252,7 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 		    hcolor
 		);
 	}
-	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR)
+	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR || (!BE_IsDamageInfoAllowed() && ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE))
 	{
 		CG_CrosshairGetHitColor(cgs.osp.crosshair.color, cgs.osp.crosshair.actionColor, ch_crosshairActionTime.integer, hcolor);
 	}
@@ -267,7 +267,7 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 
 static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 {
-	if ((BE_IsDamageInfoAllowed()) && (BE_IsDamageInfoAllowed()) && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
+	if (BE_IsDamageInfoAllowed() && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
 	{
 		CG_CrosshairPickDamageColor(
 		    cgs.osp.crosshair.decorColor,
@@ -280,7 +280,7 @@ static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 		    hcolor
 		);
 	}
-	else if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR)
+	else if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR || (!BE_IsDamageInfoAllowed() && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE))
 	{
 		CG_CrosshairGetHitColor(cgs.osp.crosshair.decorColor, cgs.osp.crosshair.decorActionColor, ch_crosshairDecorActionTime.integer, hcolor);
 	}

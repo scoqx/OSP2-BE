@@ -106,6 +106,16 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_TEAMTASKS;
 			changed = qtrue;
 		}
+		if (cg_noExplosions.integer)
+		{
+			beFlags |= CG_BE_NO_EXPLOSIONS;
+			changed = qtrue;
+		}
+		if (cg_friendsWallhackFrozen.integer)
+		{
+			beFlags |= CG_BE_TEAM_FROZEN;
+			changed = qtrue;
+		}
 	}
 
 	if (changed)
@@ -124,7 +134,7 @@ void CG_PrintDisabledFeatures(qboolean request)
 			CG_Printf("   [^9OSP2-BE^7] All features enabled.\n");
 		}
 	}
-	else if (value == 4095) // all bits set
+	else if (value == 32767) // all bits set (15 bits: 0-14)
 	{
 		CG_Printf("   [^9OSP2-BE^7] All features disabled.\n");
 	}
@@ -190,6 +200,16 @@ void CG_PrintDisabledFeatures(qboolean request)
 		if (value & CG_BE_TEAMTASKS)
 		{
 			Q_strcat(buffer, sizeof(buffer), first ? "Team tasks" : ", team tasks");
+			first = qfalse;
+		}
+		if (value & CG_BE_NO_EXPLOSIONS)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "No explosions" : ", no explosions");
+			first = qfalse;
+		}
+		if (value & CG_BE_TEAM_FROZEN)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Team frozen" : ", team frozen");
 			first = qfalse;
 		}
 		CG_Printf("%s\n", buffer);
