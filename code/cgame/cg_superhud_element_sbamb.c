@@ -2,6 +2,21 @@
 #include "cg_superhud_private.h"
 #include "../qcommon/qcommon.h"
 
+/* Low ammo thresholds - same as in CG_CheckAmmo */
+static int lowAmmoThresholds[WP_NUM_WEAPONS] =
+{
+	/* WP_NONE */            0,
+	/* WP_GAUNTLET */        0,
+	/* WP_MACHINEGUN */      30,
+	/* WP_SHOTGUN */         5,
+	/* WP_GRENADE_LAUNCHER */5,
+	/* WP_ROCKET_LAUNCHER */ 5,
+	/* WP_LIGHTNING */       30,
+	/* WP_RAILGUN */         5,
+	/* WP_PLASMAGUN */       30,
+	/* WP_BFG */             5,
+	/* WP_GRAPPLING_HOOK */  0
+};
 
 typedef struct
 {
@@ -10,8 +25,6 @@ typedef struct
 	int maxammo[WP_NUM_WEAPONS];
 	int last_weapon;
 	int last_maxammo;
-	int red;
-	int white;
 } shudElementStatusbarAmmoBar;
 
 void* CG_SHUDElementSBAmBCreate(const superhudConfig_t* config)
@@ -66,42 +79,64 @@ void CG_SHUDElementSBAmBRoutine(void* context)
 			/* Weapon or maxammo changed, reinitialize */
 			element->last_weapon = wp;
 			element->last_maxammo = current_maxammo;
-			element->white = current_maxammo / 2;
-			element->red = current_maxammo / 8;
 			CG_SHUDBarMakeContext(&element->config, &element->ctx, current_maxammo);
 		}
 	}
 
 	element->ctx.color_top[3] = 1.0f;
 
-	if (ammo > element->white)
+	/* Limit ammo to maxammo for color calculation and bar display */
 	{
-		VectorCopy(colorWhite, element->ctx.color_top);
-	}
-	else if (ammo > element->red)
-	{
-		// Use color2 if set, otherwise use default yellow
-		if (element->config.color2.isSet)
+		int display_ammo;
+		int threshold;
+		qboolean isLowAmmo;
+		display_ammo = ammo;
+		if (display_ammo > element->last_maxammo)
 		{
-			Vector4Copy(element->config.color2.value.rgba, element->ctx.color_top);
+			display_ammo = element->last_maxammo;
+		}
+
+		/* Use same thresholds as CG_CheckAmmo */
+		threshold = lowAmmoThresholds[wp];
+		isLowAmmo = qfalse;
+		if (ammo == 0)
+		{
+			isLowAmmo = qtrue;
+		}
+		else if (threshold > 0 && ammo <= threshold)
+		{
+			isLowAmmo = qtrue;
+		}
+
+		if (isLowAmmo)
+		{
+			/* Low ammo - use color2, or red if not set */
+			if (element->config.color2.isSet)
+			{
+				Vector4Copy(element->config.color2.value.rgba, element->ctx.color_top);
+			}
+			else
+			{
+				VectorCopy(colorRed, element->ctx.color_top);
+			}
 		}
 		else
 		{
-			VectorSet(element->ctx.color_top, 1.0f, 0.7f, 0.0f);
+			/* High ammo - use color, or white if not set */
+			if (element->config.color.isSet)
+			{
+				Vector4Copy(element->config.color.value.rgba, element->ctx.color_top);
+			}
+			else
+			{
+				VectorCopy(colorWhite, element->ctx.color_top);
+			}
 		}
-	}
-	else if (cg.time & 512)
-	{
-		VectorCopy(colorRed, element->ctx.color_top);
-	}
-	else
-	{
-		element->ctx.color_top[3] = 0;
-	}
 
-	CG_SHUDFill(&element->config);
-	CG_SHUDDrawBorder(&element->config);
-	CG_SHUDBarPrint(&element->config, &element->ctx, ammo);
+		CG_SHUDFill(&element->config);
+		CG_SHUDDrawBorder(&element->config);
+		CG_SHUDBarPrint(&element->config, &element->ctx, display_ammo);
+	}
 }
 
 void CG_SHUDElementSBAmBDestroy(void* context)
