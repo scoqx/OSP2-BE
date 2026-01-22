@@ -205,7 +205,7 @@ void CG_ParseServerinfo(void)
 	Q_strncpyz(cgs.blueTeam, Info_ValueForKey(info, "g_blueTeam"), sizeof(cgs.blueTeam));
 	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
 	CG_DefineServer(CS_SERVERINFO, info);
-	
+
 	/* Register teamoverlay2 for FPS Classico server */
 	CG_RegisterTeamOverlay2ForFPSClassicoServer();
 

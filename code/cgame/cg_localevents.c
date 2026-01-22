@@ -72,11 +72,11 @@ void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
 	//         ((!(cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE)) &&
 	//          (ch_TeamCrosshairHealth.integer > 0 || ch_crosshairTeamInfo.integer > 0)))
 	// {
-	// 	trap_Cvar_Set("teamoverlay", "1");
+	//  trap_Cvar_Set("teamoverlay", "1");
 	// }
 	// else
 	// {
-	// 	trap_Cvar_Set("teamoverlay", "0");
+	//  trap_Cvar_Set("teamoverlay", "0");
 	// }
 	// We are using tinfo not only in team overlay
 	trap_Cvar_Set("teamoverlay", "1");

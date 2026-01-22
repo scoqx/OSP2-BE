@@ -2597,7 +2597,7 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 					// explosion sprite animation
 					VectorMA(origin, 24, dir, sprOrg);
 					VectorScale(dir, 64, sprVel);
-	
+
 					CG_ParticleExplosion("explode1", sprOrg, sprVel, 1400, 20, 30);
 				}
 
@@ -2756,8 +2756,8 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 		if (mod)
 		{
 			le = CG_MakeExplosion(origin, dir,
-								  mod, shader,
-								  duration, isSprite);
+			                      mod, shader,
+			                      duration, isSprite);
 			le->light = light;
 			VectorCopy(lightColor, le->lightColor);
 			if (weapon == WP_RAILGUN)

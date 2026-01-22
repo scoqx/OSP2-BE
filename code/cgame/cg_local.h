@@ -1396,9 +1396,9 @@ typedef struct cgs_be_s
 #define CG_BE_TEAM_INDICATOR    (1 << 9) // 512
 #define CG_BE_DAMAGEINFO        (1 << 10) // 1024
 #define CG_BE_FULLBRIGHT        (1 << 11) // 2048
-#define CG_BE_TEAMTASKS        	(1 << 12) // 4096
+#define CG_BE_TEAMTASKS         (1 << 12) // 4096
 #define CG_BE_NO_EXPLOSIONS     (1 << 13) // 8192
-#define CG_BE_TEAM_FROZEN		(1 << 14) // 16384
+#define CG_BE_TEAM_FROZEN       (1 << 14) // 16384
 
 // Team task flags (bitmask for cg_teamTask)
 #define CG_TEAMTASK_ENABLED        (1 << 0)  // 1 - Enable team task markers

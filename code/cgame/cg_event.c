@@ -940,7 +940,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 					break;
 				}
 				item = &bg_itemlist[ index ];
-				
+
 				// powerup pickups are global
 				if (item->pickup_sound)
 				{
