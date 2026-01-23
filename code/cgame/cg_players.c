@@ -970,6 +970,46 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 	}
 }
 
+qboolean CG_IsPlayerAvailable(int clientNum)
+{
+	int i;
+	entityState_t es;
+	centity_t* cent;
+	qboolean found;
+
+	/* For local player, always consider available if not dead */
+	if (clientNum == cg.clientNum)
+	{
+		if (cg.predictedPlayerState.pm_type != PM_DEAD && cg.predictedPlayerState.pm_type != PM_SPINTERMISSION)
+		{
+			return qtrue;
+		}
+		else
+		{
+			return qfalse;
+		}
+	}
+
+	found = qfalse;
+
+	for (i = 0; i < MAX_GENTITIES; i++)
+	{
+		cent = &cg_entities[i];
+		es = cent->currentState;
+		if (es.eType == ET_PLAYER && es.clientNum == clientNum)
+		{
+			/* Check if entity is valid and player is available */
+			if (!(es.eFlags & EF_DEAD) && cent->currentValid)
+			{
+				found = qtrue;
+				break;
+			}
+		}
+	}
+
+	return found;
+}
+
 vec3_t* CG_GetAimContactPoint(int clientNum)
 {
 	static vec3_t impactPoint;
@@ -982,15 +1022,21 @@ vec3_t* CG_GetAimContactPoint(int clientNum)
 	trace_t trace;
 	float viewHeight;
 
-	/* Use predicted viewheight for local player, default for others */
+	/* For local player, use predicted player state and refdef */
 	if (clientNum == cg.clientNum)
 	{
 		viewHeight = cg.predictedPlayerState.viewheight;
+		VectorCopy(cg.refdef.vieworg, start);
+		/* Use viewaxis directly (already computed from refdefViewAngles) */
+		VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
+		CG_Trace(&trace, start, vec3_origin, vec3_origin, end, clientNum, CONTENTS_SOLID);
+
+		VectorCopy(trace.endpos, impactPoint);
+		return &impactPoint;
 	}
-	else
-	{
-		viewHeight = DEFAULT_VIEWHEIGHT;
-	}
+
+	/* For other players, use entity state */
+	viewHeight = DEFAULT_VIEWHEIGHT;
 
 	for (i = 0; i < MAX_GENTITIES; i++)
 	{
@@ -1420,31 +1466,53 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	}
 	else if (templateID == TEAMTASK_WARN_ALIVE)
 	{
-		/* For WARN_ALIVE, try to use aim contact point for more accurate positioning (like other marks) */
+		/* For WARN_ALIVE, check if sender is available - if yes, use aim contact point, otherwise use coordinates from command */
 		vec3_t* aimPoint;
-		aimPoint = CG_GetAimContactPoint(clientNum);
-		if (aimPoint != NULL)
+		qboolean playerAvailable;
+
+		playerAvailable = CG_IsPlayerAvailable(clientNum);
+		if (playerAvailable)
 		{
-			CG_TeamTaskMark(*aimPoint, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+			aimPoint = CG_GetAimContactPoint(clientNum);
+			if (aimPoint != NULL)
+			{
+				CG_TeamTaskMark(*aimPoint, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+			}
+			else
+			{
+				/* Fallback to coord if aimPoint calculation failed */
+				CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+			}
 		}
 		else
 		{
-			/* Fallback to coord if aimPoint is not available */
+			/* Sender not available - use coordinates from command */
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
 		}
 	}
 	else
 	{
-		/* For other marks, try to use aim contact point for more accurate positioning */
+		/* For other marks, check if sender is available - if yes, use aim contact point, otherwise use coordinates from command */
 		vec3_t* aimPoint;
-		aimPoint = CG_GetAimContactPoint(clientNum);
-		if (aimPoint != NULL)
+		qboolean playerAvailable;
+
+		playerAvailable = CG_IsPlayerAvailable(clientNum);
+		if (playerAvailable)
 		{
-			CG_TeamTaskMark(*aimPoint, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+			aimPoint = CG_GetAimContactPoint(clientNum);
+			if (aimPoint != NULL)
+			{
+				CG_TeamTaskMark(*aimPoint, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+			}
+			else
+			{
+				/* Fallback to coord if aimPoint calculation failed */
+				CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+			}
 		}
 		else
 		{
-			/* Fallback to coord if aimPoint is not available */
+			/* Sender not available - use coordinates from command */
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
 		}
 	}

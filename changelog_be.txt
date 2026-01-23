@@ -716,7 +716,7 @@ SuperHUD:
   * configs updated: m1rQLstyle, m1rQ4style
   * StatusBar_AmmoBar color/color2 fix
 
-23.01.2025 be v1.00t2
+23.01.2025 be v1.00t3
 TEAMTASKS:
   * IMPORTANT FIX FOR COMMON TASKS (Attack, Defence, Watch, Location)
   + tPickup (Mark that you picked up an item (megahealth, red armor, yellow armor))
