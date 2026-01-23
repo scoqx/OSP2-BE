@@ -322,6 +322,7 @@ static void CG_ParseColorStr12Bit(const char* str, vec4_t out)
 	out[0] = CG_FloatColorFromHex4bit(hexstr[0]);
 	out[1] = CG_FloatColorFromHex4bit(hexstr[1]);
 	out[2] = CG_FloatColorFromHex4bit(hexstr[2]);
+	out[3] = 1.0f;
 }
 
 static void CG_ParseColorStr24Bit(const char* str, vec4_t out)
@@ -335,6 +336,7 @@ static void CG_ParseColorStr24Bit(const char* str, vec4_t out)
 	out[0] = CG_FloatColorFromHex8bit(hexstr[0], hexstr[1]);
 	out[1] = CG_FloatColorFromHex8bit(hexstr[2], hexstr[3]);
 	out[2] = CG_FloatColorFromHex8bit(hexstr[4], hexstr[5]);
+	out[3] = 1.0f;
 }
 
 // static void CG_ParseColorStr32Bit(const char* str, vec4_t out)

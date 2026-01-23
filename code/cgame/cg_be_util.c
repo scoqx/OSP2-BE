@@ -430,18 +430,16 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 		factor = absStrength * (1.0f - luminance);
 	}
 
-	if (factor <= 0.0f)
-	{
-		return;
-	}
-
-	if (factor > 1.0f)
-	{
-		factor = 1.0f;
-	}
-
 	if (isDarkening)
 	{
+		if (factor <= 0.0f)
+		{
+			return;
+		}
+		if (factor > 1.0f)
+		{
+			factor = 1.0f;
+		}
 		/* двигаем цвет к черному */
 		rgb[0] -= rgb[0] * factor;
 		rgb[1] -= rgb[1] * factor;
@@ -449,10 +447,15 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 	}
 	else
 	{
-		/* двигаем цвет к белому */
-		rgb[0] += (1.0f - rgb[0]) * factor;
-		rgb[1] += (1.0f - rgb[1]) * factor;
-		rgb[2] += (1.0f - rgb[2]) * factor;
+		/* для осветления используем absStrength напрямую с линейной интерполяцией к белому */
+		/* Это гарантирует, что все компоненты двигаются к 1.0 пропорционально strength */
+		if (absStrength > 1.0f)
+		{
+			absStrength = 1.0f;
+		}
+		rgb[0] = rgb[0] * (1.0f - absStrength) + 1.0f * absStrength;
+		rgb[1] = rgb[1] * (1.0f - absStrength) + 1.0f * absStrength;
+		rgb[2] = rgb[2] * (1.0f - absStrength) + 1.0f * absStrength;
 	}
 
 	/* опционально: изменяем альфу для HUD */
