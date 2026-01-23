@@ -371,20 +371,38 @@ static void CG_PlayerColorsLoadOverrides(playerColors_t* colors,
 	if (lightningColor)
 	{
 		int len = strlen(lightningColor->string);
+		vec4_t parsedColor;
+		qboolean colorParsed = qfalse;
+
 		// one number per color format
-		if (len == 1)
+		if (len == 1 && lightningColor->string[0] != '0')
 		{
 			if (override) override->isLightningColorSet = qtrue;
 			CG_OSPColorFromChar(lightningColor->string[0], colors->lightning);
+			colorParsed = qtrue;
 		}
 
 		// 8bit hex format: rrggbb
-		if (len == 6)
+		if (!colorParsed && len == 6)
 		{
 			if (override) override->isLightningColorSet = qtrue;
 			CG_Hex16GetColor(&lightningColor->string[0], &colors->lightning[0]);
 			CG_Hex16GetColor(&lightningColor->string[2], &colors->lightning[1]);
 			CG_Hex16GetColor(&lightningColor->string[4], &colors->lightning[2]);
+			colorParsed = qtrue;
+		}
+
+		// string color names (Red, Blue, etc.) or other formats
+		// Skip if it's exactly "0" (disabled), but allow "0x..." formats
+		if (!colorParsed && len > 0 && !(len == 1 && lightningColor->string[0] == '0'))
+		{
+			if (CG_ParseColorStr(lightningColor->string, parsedColor))
+			{
+				if (override) override->isLightningColorSet = qtrue;
+				colors->lightning[0] = parsedColor[0];
+				colors->lightning[1] = parsedColor[1];
+				colors->lightning[2] = parsedColor[2];
+			}
 		}
 	}
 }

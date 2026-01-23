@@ -91,7 +91,7 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_ALT_BLOOD;
 			changed = qtrue;
 		}
-		if (cg_enemyLightningColor.integer)
+		if (cgs.osp.enemyColorsOverride.isLightningColorSet)
 		{
 			beFlags |= CG_BE_ENEMYLIGHTNING;
 			changed = qtrue;

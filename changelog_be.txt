@@ -724,3 +724,4 @@ TEAMTASKS:
   + Warn individual sound
   * +ttwheel visual improvements
 + cg_altRail 0/1
+* cg_enemyLightningColor fixed

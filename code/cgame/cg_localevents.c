@@ -524,6 +524,7 @@ void CG_LocalEventCvarChanged_cg_conObituaries(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart)
 {
 	CG_RebuildPlayerColors();
+	CG_UpdateBeFeatures();
 	CG_UpdateAllClientsInfo();
 }
 
