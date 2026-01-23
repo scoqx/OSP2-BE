@@ -766,7 +766,7 @@ void CG_DrawSelwheelIcons(void)
 				// tHere element - use theme color with whitening 0.8
 				vec4_t hereColor;
 				Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, hereColor);
-				CG_ColorWhitenSmart(hereColor, NULL, 0.8f);
+				CG_ColorWhitenSmart(hereColor, NULL, 0.5f);
 				trap_R_SetColor(hereColor);
 			}
 			else if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
