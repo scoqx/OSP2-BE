@@ -733,8 +733,8 @@ void CG_DrawSelwheelIcons(void)
 			{
 				// Use dark gray background for unavailable commands when player is not alive
 				if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-				    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
-				    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tHere"))
+				        Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
+				        Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tHere"))
 				{
 					vec4_t darkGrayBg;
 					Vector4Set(darkGrayBg, 0.1f, 0.1f, 0.1f, 1.0f);
@@ -809,8 +809,8 @@ void CG_DrawSelwheelIcons(void)
 			{
 				// If player is not alive and command is unavailable, use gray color
 				if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-				    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
-				    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tHere"))
+				        Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
+				        Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tHere"))
 				{
 					// Command is unavailable - use gray color
 					Vector4Set(smartIconColor, 0.3f, 0.3f, 0.3f, 1.0f);
@@ -916,8 +916,8 @@ void CG_DrawSelwheelIcons(void)
 			// Draw background icon
 			// Use dark gray background for unavailable commands when player is not alive
 			if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-			    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
-			    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tHere"))
+			        Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
+			        Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tHere"))
 			{
 				vec4_t darkGrayBg;
 				Vector4Set(darkGrayBg, 0.1f, 0.1f, 0.1f, 1.0f);
@@ -1001,8 +1001,8 @@ void CG_DrawSelwheelIcons(void)
 
 			// If player is not alive and command is unavailable, use gray color
 			if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-			    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
-			    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tHere"))
+			        Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
+			        Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tHere"))
 			{
 				// Command is unavailable - use gray color
 				Vector4Set(smartIconColorWheel, 0.3f, 0.3f, 0.3f, 1.0f);

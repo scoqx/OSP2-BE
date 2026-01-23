@@ -1851,7 +1851,7 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksMegahealthPickup = trap_R_RegisterShader("teamTasks_megahealth_pickup");
 	cgs.media.teamTasksYellowarmorPickup = trap_R_RegisterShader("teamTasks_yellowarmor_pickup");
 	/*====================
-	team tasks hud markers 
+	team tasks hud markers
 	====================*/
 	cgs.media.teamTasksAttack_marker = trap_R_RegisterShader("teamTasks_attack_m");
 	cgs.media.teamTasksDefence_marker = trap_R_RegisterShader("teamTasks_defence_m");
