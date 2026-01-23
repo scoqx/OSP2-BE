@@ -617,6 +617,61 @@ CG_ItemPickup
 A new item was picked up this frame
 ================
 */
+/*
+=================
+CG_TrackPickupItemForTeamTask
+
+Track picked up item for /tPickup command (5 seconds memory)
+Only tracks megahealth, redarmor, yellowarmor
+=================
+*/
+static void CG_TrackPickupItemForTeamTask(int itemNum)
+{
+	gitem_t* item;
+	const char* classname;
+
+	// Check if teamTask is enabled
+	if (cg_teamTask.integer == 0)
+	{
+		return;
+	}
+
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return;
+	}
+
+	// Only track if we're observing ourselves (not spectating another player)
+	if (!CG_IsLocalClientOnScreen())
+	{
+		return;
+	}
+
+	item = &bg_itemlist[itemNum];
+	if (item->classname)
+	{
+		classname = item->classname;
+		if (!Q_stricmp(classname, "item_health_mega"))
+		{
+			cgs.be.teamMarkers.pickupItemType = TEAMTASK_MEGAHEALTH;
+			VectorCopy(cg.predictedPlayerState.origin, cgs.be.teamMarkers.pickupItemPosition);
+			cgs.be.teamMarkers.pickupItemTime = cg.time;
+		}
+		else if (!Q_stricmp(classname, "item_armor_body"))
+		{
+			cgs.be.teamMarkers.pickupItemType = TEAMTASK_REDARMOR;
+			VectorCopy(cg.predictedPlayerState.origin, cgs.be.teamMarkers.pickupItemPosition);
+			cgs.be.teamMarkers.pickupItemTime = cg.time;
+		}
+		else if (!Q_stricmp(classname, "item_armor_combat"))
+		{
+			cgs.be.teamMarkers.pickupItemType = TEAMTASK_YELLOWARMOR;
+			VectorCopy(cg.predictedPlayerState.origin, cgs.be.teamMarkers.pickupItemPosition);
+			cgs.be.teamMarkers.pickupItemTime = cg.time;
+		}
+	}
+}
+
 static void CG_ItemPickup(int itemNum)
 {
 	cg.itemPickup = itemNum;
@@ -633,6 +688,8 @@ static void CG_ItemPickup(int itemNum)
 		}
 	}
 
+	// Track pickup item for /tPickup command
+	CG_TrackPickupItemForTeamTask(itemNum);
 }
 
 

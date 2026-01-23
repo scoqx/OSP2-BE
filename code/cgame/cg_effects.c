@@ -1362,8 +1362,9 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	mark->markType = markType;
 
 	/* Check if this is an overhead mark type (YES, NO, MEDIC, or HERE_ALIVE) - if so, track player dynamically */
+	/* Also check for pickup marks (isPickup=true) - they should track player if available */
 	playerAvailable = qfalse;
-	if (CG_IsTeamTaskOverhead(markType) && clientNum >= 0 && clientNum < MAX_CLIENTS)
+	if ((CG_IsTeamTaskOverhead(markType) || (toClient == 1)) && clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
 		/* Special case for local player - use predicted player entity */
 		if (clientNum == cg.clientNum)
@@ -1394,7 +1395,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 		}
 	}
 
-	/* If player not available or not an overhead mark, use coordinates from message */
+	/* If player not available or not an overhead/pickup mark, use coordinates from message */
 	/* Note: WARN_ALIVE coordinates are already set via CG_GetAimContactPoint in cg_players.c */
 	if (!playerAvailable)
 	{
@@ -1406,35 +1407,73 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	mark->endTime = cg.time + cg_teamTaskMarkTime.value;
 	mark->clientNum = clientNum; /* Always store sender's clientNum (whose mark it is) */
 	mark->isOverhead = CG_IsTeamTaskOverhead(markType);
+	mark->isPickup = (toClient == 1); /* True if this is a pickup mark (toClient=1) */
 
 
 
-	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &mark->shader, mark->color, qfalse, mark->clientNum);
+	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &mark->shader, mark->color, qfalse, mark->clientNum, mark->isPickup);
 
 	/* Register team task event for SuperHUD */
 	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
-		CG_SHUDEventTeamTask(clientNum, markType);
+		CG_SHUDEventTeamTask(clientNum, markType, mark->isPickup);
 	}
 
 	/* Play sound when mark appears */
 	if (cg_teamTask.integer & CG_TEAMTASK_MARKSOUND)
 	{
+		sfxHandle_t soundToPlay;
+		soundToPlay = 0;
+
 		if (markType == TEAMTASK_PLAYERDEAD && cgs.media.pingDeathSound)
 		{
-			trap_S_StartLocalSound(cgs.media.pingDeathSound, CHAN_ANNOUNCER);
+			soundToPlay = cgs.media.pingDeathSound;
 		}
-		else if (markType == TEAMTASK_YES && cgs.media.pingAcceptSound)
+		else if (markType == TEAMTASK_YES)
 		{
-			trap_S_StartLocalSound(cgs.media.pingAcceptSound, CHAN_ANNOUNCER);
+			if (cg_teamTaskNewSounds.integer & 2 && cgs.media.pingAcceptSoundNew)
+			{
+				soundToPlay = cgs.media.pingAcceptSoundNew;
+			}
+			else if (cgs.media.pingAcceptSound)
+			{
+				soundToPlay = cgs.media.pingAcceptSound;
+			}
 		}
-		else if (markType == TEAMTASK_NO && cgs.media.pingDenySound)
+		else if (markType == TEAMTASK_NO)
 		{
-			trap_S_StartLocalSound(cgs.media.pingDenySound, CHAN_ANNOUNCER);
+			if (cg_teamTaskNewSounds.integer & 4 && cgs.media.pingDenySoundNew)
+			{
+				soundToPlay = cgs.media.pingDenySoundNew;
+			}
+			else if (cgs.media.pingDenySound)
+			{
+				soundToPlay = cgs.media.pingDenySound;
+			}
 		}
-		else if (cgs.media.pingSimpleSound)
+		else if (mark->isPickup && cgs.media.pingPickupSound)
 		{
-			trap_S_StartLocalSound(cgs.media.pingSimpleSound, CHAN_ANNOUNCER);
+			soundToPlay = cgs.media.pingPickupSound;
+		}
+		else if ((markType == TEAMTASK_WARN_ALIVE || markType == TEAMTASK_WARN_DEAD) && cgs.media.pingAttentionSound)
+		{
+			soundToPlay = cgs.media.pingAttentionSound;
+		}
+		else
+		{
+			if (cg_teamTaskNewSounds.integer & 1 && cgs.media.pingSimpleSoundNew)
+			{
+				soundToPlay = cgs.media.pingSimpleSoundNew;
+			}
+			else if (cgs.media.pingSimpleSound)
+			{
+				soundToPlay = cgs.media.pingSimpleSound;
+			}
+		}
+
+		if (soundToPlay)
+		{
+			trap_S_StartLocalSound(soundToPlay, CHAN_ANNOUNCER);
 		}
 	}
 }

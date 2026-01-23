@@ -26,6 +26,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define TEAMTASK_MARK_FADE_TIME 800 /* Fade duration in milliseconds (0.8 seconds) */
 
+/* Forward declarations */
+static qboolean CG_HasPickupMarkForItem(teamTaskMark_t* itemMark);
+
 /*
 =================
 CG_SetWhiteColor
@@ -127,7 +130,7 @@ CG_GetTeamTaskShaderPair
 Get shader pair (marker and world) for team task type
 =================
 */
-static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhandle_t* worldShader)
+static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhandle_t* worldShader, qboolean isPickup)
 {
 	switch (markType)
 	{
@@ -164,12 +167,28 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 			*worldShader = cgs.media.teamTasksTarget;
 			break;
 		case TEAMTASK_REDARMOR:
-			*markerShader = cgs.media.teamTasksRedarmor_marker;
-			*worldShader = cgs.media.teamTasksRedarmor;
+			if (isPickup)
+			{
+				*markerShader = cgs.media.teamTasksRedarmorPickup_marker;
+				*worldShader = cgs.media.teamTasksRedarmorPickup;
+			}
+			else
+			{
+				*markerShader = cgs.media.teamTasksRedarmor_marker;
+				*worldShader = cgs.media.teamTasksRedarmor;
+			}
 			break;
 		case TEAMTASK_MEGAHEALTH:
-			*markerShader = cgs.media.teamTasksMegahealth_marker;
-			*worldShader = cgs.media.teamTasksMegahealth;
+			if (isPickup)
+			{
+				*markerShader = cgs.media.teamTasksMegahealthPickup_marker;
+				*worldShader = cgs.media.teamTasksMegahealthPickup;
+			}
+			else
+			{
+				*markerShader = cgs.media.teamTasksMegahealth_marker;
+				*worldShader = cgs.media.teamTasksMegahealth;
+			}
 			break;
 		case TEAMTASK_MEDIC:
 			*markerShader = cgs.media.teamTasksMedic_marker;
@@ -227,8 +246,16 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 			*worldShader = cgs.media.teamTasksHaste;
 			break;
 		case TEAMTASK_YELLOWARMOR:
-			*markerShader = cgs.media.teamTasksYellowarmor_marker;
-			*worldShader = cgs.media.teamTasksYellowarmor;
+			if (isPickup)
+			{
+				*markerShader = cgs.media.teamTasksYellowarmorPickup_marker;
+				*worldShader = cgs.media.teamTasksYellowarmorPickup;
+			}
+			else
+			{
+				*markerShader = cgs.media.teamTasksYellowarmor_marker;
+				*worldShader = cgs.media.teamTasksYellowarmor;
+			}
 			break;
 		case TEAMTASK_HEALTH:
 			*markerShader = cgs.media.teamTasksHealth_marker;
@@ -251,14 +278,14 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 	}
 }
 
-void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum)
+void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum, qboolean isPickup)
 {
 	clientInfo_t* cl;
 	qhandle_t markerShader;
 	qhandle_t worldShader;
 
 	/* Get shader pair for this mark type */
-	CG_GetTeamTaskShaderPair(markType, &markerShader, &worldShader);
+	CG_GetTeamTaskShaderPair(markType, &markerShader, &worldShader, isPickup);
 	*shader = useMarkerShader ? markerShader : worldShader;
 
 	/* Set color based on mark type */
@@ -546,10 +573,18 @@ void CG_DrawTeamTaskBorderHudMarkers(void)
 		/* Skip own overhead marks (YES, NO, MEDIC) - don't show in border markers */
 		/* Also skip own HERE_ALIVE and HERE_FLAG marks in first person (they're displayed as overhead) */
 		/* HERE_DEAD always shows in world, so don't skip it in border markers */
+		/* Skip own pickup marks - they're displayed as overhead in center of screen */
 		if ((mark->isOverhead && mark->clientNum == cg.clientNum) ||
 		        (mark->clientNum == cg.clientNum &&
 		         (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG) &&
-		         !cg.renderingThirdPerson))
+		         !cg.renderingThirdPerson) ||
+		        (mark->isPickup && mark->clientNum == cg.clientNum))
+		{
+			continue;
+		}
+
+		/* Skip item marks if there is a pickup mark from the same player with close coordinates */
+		if (CG_HasPickupMarkForItem(mark))
 		{
 			continue;
 		}
@@ -581,7 +616,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		return;
 	}
 
-	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &shader, color, qtrue, mark->clientNum);
+	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &shader, color, qtrue, mark->clientNum, mark->isPickup);
 
 	if (!shader)
 	{
@@ -1282,6 +1317,56 @@ static void CG_ProcessCommonMarkData(teamTaskMark_t* mark, float t,
 	}
 }
 
+/*
+=================
+CG_HasPickupMarkForItem
+
+Check if there is a pickup mark (from any player) for this item mark
+(with coordinates within 64 units radius and matching item type)
+=================
+*/
+static qboolean CG_HasPickupMarkForItem(teamTaskMark_t* itemMark)
+{
+	int i;
+	teamTaskMark_t* otherMark;
+	float dist;
+	float searchRadius;
+
+	/* Only check for item marks (not pickup marks themselves) */
+	if (itemMark->isPickup)
+	{
+		return qfalse;
+	}
+
+	/* Only check for specific item types */
+	if (itemMark->markType != TEAMTASK_REDARMOR &&
+	        itemMark->markType != TEAMTASK_MEGAHEALTH &&
+	        itemMark->markType != TEAMTASK_YELLOWARMOR)
+	{
+		return qfalse;
+	}
+
+	/* Check if there is a pickup mark (from any player) with matching item type */
+	searchRadius = 64.0f;
+	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	{
+		otherMark = &cgs.be.teamMarkers.teamTaskMarks[i];
+
+		/* Check if this is a pickup mark with matching item type */
+		if (otherMark->isPickup && otherMark->markType == itemMark->markType)
+		{
+			/* Check if coordinates are within search radius */
+			dist = Distance(itemMark->origin, otherMark->origin);
+			if (dist <= searchRadius)
+			{
+				return qtrue;
+			}
+		}
+	}
+
+	return qfalse;
+}
+
 static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
                                        const teamTaskMarkConstants_t* constants,
                                        teamTaskMarkRenderData_t* renderData)
@@ -1293,6 +1378,12 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 
 	/* Skip death marks if CG_TEAMTASK_ONDEATH flag is not set */
 	if (mark->markType == TEAMTASK_PLAYERDEAD && !(cg_teamTask.integer & CG_TEAMTASK_ONDEATH))
+	{
+		return qfalse;
+	}
+
+	/* Skip item marks if there is a pickup mark from the same player with close coordinates */
+	if (CG_HasPickupMarkForItem(mark))
 	{
 		return qfalse;
 	}
@@ -1342,6 +1433,11 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		{
 			/* WARN_DEAD: Use death coordinates or frozen entity position (same as HERE_DEAD) */
 			CG_ProcessHereDeadMark(mark);
+		}
+		else if (mark->isPickup && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		{
+			/* Pickup marks: Update position above player's head if player is available, otherwise use static coordinates */
+			CG_ProcessHereAliveMark(mark); /* Same logic as HERE_ALIVE */
 		}
 		else if (mark->isOverhead && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
@@ -1552,7 +1648,7 @@ void CG_DrawTeamTaskMarks(void)
 		CG_RenderTeamTaskMark(mark, &renderData);
 	}
 
-	/* Draw own HERE_DEAD marks as overhead in first person (in addition to world rendering) */
+	/* Draw own HERE_DEAD, WARN_DEAD, and PICKUP marks as overhead in first person (in addition to world rendering) */
 	/* Only show overhead if we're observing ourselves (not following another player) */
 	/* Don't show overhead in free float mode (already shown in HUD marker) */
 	if (!cg.renderingThirdPerson && CG_IsLocalClientOnScreen() && !CG_IsClientFreeFloat())
@@ -1561,8 +1657,8 @@ void CG_DrawTeamTaskMarks(void)
 		{
 			mark = &cgs.be.teamMarkers.teamTaskMarks[i];
 
-			/* Check if this is own HERE_DEAD or WARN_DEAD mark */
-			if (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))
+			/* Check if this is own HERE_DEAD, WARN_DEAD, or PICKUP mark */
+			if (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD || mark->isPickup))
 			{
 				teamTaskMarkRenderData_t overheadRenderData;
 

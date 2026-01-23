@@ -516,11 +516,15 @@ void CG_DrawSelwheelIcons(void)
 	int i;
 	int font = CG_FontIndexFromCvar(&cg_teamTaskFont);
 	float scale;
+	qboolean isNotAlive;
 
 	if (!cgs.be.teamMarkers.ttwheelMarkActive)
 	{
 		return;
 	}
+
+	// Check if player is not alive (dead, spectator, or free float)
+	isNotAlive = CG_IsDead() || CG_IsLocalClientSpectator() || CG_IsClientFreeFloat();
 
 	// Get scale value
 	scale = cg_teamTaskWheelScale.value;
@@ -685,7 +689,21 @@ void CG_DrawSelwheelIcons(void)
 	// Draw center element first (if bitmask & 2 is set)
 	if ((cg_teamTaskWheel.integer & 2) && cgs.be.teamMarkers.ttwheelElementCount > 0)
 	{
-		if (cgs.be.teamMarkers.ttwheelElementShaders[0])
+		qhandle_t centerShader;
+
+		/* Update pickup icon in real-time if this is pickup command */
+		if (cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+		        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tPickup"))
+		{
+			/* Update shader in real-time based on current pickup state */
+			centerShader = CG_GetPickupShader();
+		}
+		else
+		{
+			centerShader = cgs.be.teamMarkers.ttwheelElementShaders[0];
+		}
+
+		if (centerShader)
 		{
 			float centerIconX;
 			float centerIconY;
@@ -713,7 +731,19 @@ void CG_DrawSelwheelIcons(void)
 			// If hovered or selected, draw background first
 			if (hoveredIcon == 0 || cgs.be.teamMarkers.ttwheelSelectedIcon == 0)
 			{
-				trap_R_SetColor(backgroundColor);
+				// Use dark gray background for unavailable commands when player is not alive
+				if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+				    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
+				    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tHere"))
+				{
+					vec4_t darkGrayBg;
+					Vector4Set(darkGrayBg, 0.1f, 0.1f, 0.1f, 1.0f);
+					trap_R_SetColor(darkGrayBg);
+				}
+				else
+				{
+					trap_R_SetColor(backgroundColor);
+				}
 				trap_R_DrawStretchPic(
 				    centerIconX - centerIconBgSize * 0.5f,
 				    centerIconY - centerIconBgSize * 0.5f,
@@ -723,12 +753,13 @@ void CG_DrawSelwheelIcons(void)
 				    0,
 				    1,
 				    1,
-				    cgs.be.teamMarkers.ttwheelElementShaders[0]);
+				    centerShader);
 			}
 
 			// Draw center icon
 			// Use gray color for non-selected element, white for selected
 			// Special handling for tHere: use theme color with whitening 0.8
+			// If player is not alive, make unavailable commands gray (except tWarn and tHere)
 			if (cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
 			        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tHere"))
 			{
@@ -737,6 +768,15 @@ void CG_DrawSelwheelIcons(void)
 				Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, hereColor);
 				CG_ColorWhitenSmart(hereColor, NULL, 0.8f);
 				trap_R_SetColor(hereColor);
+			}
+			else if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+			         Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
+			         Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tHere"))
+			{
+				// Player is not alive and command is not tWarn or tHere - use dark gray (unavailable)
+				vec4_t darkGrayColor;
+				Vector4Set(darkGrayColor, 0.3f, 0.3f, 0.3f, 1.0f);
+				trap_R_SetColor(darkGrayColor);
 			}
 			else if (hoveredIcon == 0 || cgs.be.teamMarkers.ttwheelSelectedIcon == 0)
 			{
@@ -759,7 +799,7 @@ void CG_DrawSelwheelIcons(void)
 			    0,
 			    1,
 			    1,
-			    cgs.be.teamMarkers.ttwheelElementShaders[0]);
+			    centerShader);
 			trap_R_SetColor(NULL);
 
 			// Draw smart icon in right top corner of center icon (always, if command is tSmart)
@@ -767,8 +807,15 @@ void CG_DrawSelwheelIcons(void)
 			if (cgs.media.teamTasksSmart && cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
 			        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tSmart"))
 			{
-				// White color when element is not selected, theme color when selected
-				if (hoveredIcon == 0 || cgs.be.teamMarkers.ttwheelSelectedIcon == 0)
+				// If player is not alive and command is unavailable, use gray color
+				if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+				    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
+				    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[0], "tHere"))
+				{
+					// Command is unavailable - use gray color
+					Vector4Set(smartIconColor, 0.3f, 0.3f, 0.3f, 1.0f);
+				}
+				else if (hoveredIcon == 0 || cgs.be.teamMarkers.ttwheelSelectedIcon == 0)
 				{
 					// Element is selected - use theme color
 					Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, smartIconColor);
@@ -806,9 +853,26 @@ void CG_DrawSelwheelIcons(void)
 	// Draw icons around circle
 	for (; i < cgs.be.teamMarkers.ttwheelElementCount; i++)
 	{
-		if (!cgs.be.teamMarkers.ttwheelElementShaders[i])
+		qhandle_t currentShader;
+
+		/* Update pickup icon in real-time if this is pickup command */
+		if (cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+		        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tPickup"))
 		{
-			continue;
+			/* Update shader in real-time based on current pickup state */
+			currentShader = CG_GetPickupShader();
+			if (!currentShader)
+			{
+				continue;
+			}
+		}
+		else
+		{
+			currentShader = cgs.be.teamMarkers.ttwheelElementShaders[i];
+			if (!currentShader)
+			{
+				continue;
+			}
 		}
 
 		// Calculate icon position using the SAME logic as CG_GetSelwheelIconAtPosition
@@ -850,7 +914,19 @@ void CG_DrawSelwheelIcons(void)
 		if (hoveredIcon == i)
 		{
 			// Draw background icon
-			trap_R_SetColor(backgroundColor);
+			// Use dark gray background for unavailable commands when player is not alive
+			if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+			    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
+			    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tHere"))
+			{
+				vec4_t darkGrayBg;
+				Vector4Set(darkGrayBg, 0.1f, 0.1f, 0.1f, 1.0f);
+				trap_R_SetColor(darkGrayBg);
+			}
+			else
+			{
+				trap_R_SetColor(backgroundColor);
+			}
 			trap_R_DrawStretchPic(
 			    adjustedX - adjustedBgSize * 0.5f,
 			    adjustedY - adjustedBgSize * 0.5f,
@@ -860,12 +936,13 @@ void CG_DrawSelwheelIcons(void)
 			    0,
 			    1,
 			    1,
-			    cgs.be.teamMarkers.ttwheelElementShaders[i]);
+			    currentShader);
 		}
 
 		// Draw icon
 		// Use gray color for non-selected elements, white for selected
 		// Special handling for tHere: use theme color with whitening 0.8
+		// If player is not alive, make unavailable commands gray (except tWarn and tHere)
 		if (cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
 		        !Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tHere"))
 		{
@@ -874,6 +951,15 @@ void CG_DrawSelwheelIcons(void)
 			Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, hereColor);
 			CG_ColorWhitenSmart(hereColor, NULL, 0.8f);
 			trap_R_SetColor(hereColor);
+		}
+		else if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+		         Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
+		         Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tHere"))
+		{
+			// Player is not alive and command is not tWarn or tHere - use dark gray (unavailable)
+			vec4_t darkGrayColor;
+			Vector4Set(darkGrayColor, 0.3f, 0.3f, 0.3f, 1.0f);
+			trap_R_SetColor(darkGrayColor);
 		}
 		else if (hoveredIcon == i || cgs.be.teamMarkers.ttwheelSelectedIcon == i)
 		{
@@ -896,7 +982,7 @@ void CG_DrawSelwheelIcons(void)
 		    0,
 		    1,
 		    1,
-		    cgs.be.teamMarkers.ttwheelElementShaders[i]);
+		    currentShader);
 
 		// Draw smart icon in right top corner of icon (always, if command is tSmart)
 		if (cgs.media.teamTasksSmart && cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
@@ -913,8 +999,15 @@ void CG_DrawSelwheelIcons(void)
 			smartIconXWheel = adjustedX + adjustedSize * 0.5f - smartIconSizeWheel * 0.5f;
 			smartIconYWheel = adjustedY - adjustedSize * 0.5f + smartIconSizeWheel * 0.5f;
 
-			// White color when element is not selected, theme color when selected
-			if (hoveredIcon == i || cgs.be.teamMarkers.ttwheelSelectedIcon == i)
+			// If player is not alive and command is unavailable, use gray color
+			if (isNotAlive && cgs.be.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+			    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
+			    Q_stricmp(cgs.be.teamMarkers.ttwheelElementCommands[i], "tHere"))
+			{
+				// Command is unavailable - use gray color
+				Vector4Set(smartIconColorWheel, 0.3f, 0.3f, 0.3f, 1.0f);
+			}
+			else if (hoveredIcon == i || cgs.be.teamMarkers.ttwheelSelectedIcon == i)
 			{
 				// Element is selected - use theme color
 				Vector4Copy(cgs.be.teamMarkers.teamTaskThemeColor, smartIconColorWheel);
@@ -1728,7 +1821,15 @@ void CG_SelwheelParseTeamTaskWheel(void)
 			cmd = CG_GetTeamTaskCommandByName(firstToken);
 			if (cmd && cmd->action != NULL)
 			{
-				centerShader = CG_GetTeamTaskShaderByType(cmd->taskType);
+				/* Special handling for pickup command - use dynamic shader */
+				if (!Q_stricmp(cmd->command, "tPickup"))
+				{
+					centerShader = CG_GetPickupShader();
+				}
+				else
+				{
+					centerShader = CG_GetTeamTaskShaderByType(cmd->taskType);
+				}
 				if (centerShader)
 				{
 					shaders[count] = centerShader;
@@ -1835,7 +1936,15 @@ void CG_SelwheelParseTeamTaskWheel(void)
 		{
 			if (teamTaskCommands[i].action != NULL)
 			{
-				shaders[count] = CG_GetTeamTaskShaderByType(teamTaskCommands[i].taskType);
+				/* Special handling for pickup command - use dynamic shader */
+				if (!Q_stricmp(teamTaskCommands[i].command, "tPickup"))
+				{
+					shaders[count] = CG_GetPickupShader();
+				}
+				else
+				{
+					shaders[count] = CG_GetTeamTaskShaderByType(teamTaskCommands[i].taskType);
+				}
 				actions[count] = teamTaskCommands[i].action;
 				commands[count] = teamTaskCommands[i].command;
 				count++;
@@ -1935,7 +2044,15 @@ void CG_SelwheelParseTeamTaskWheel(void)
 					cmd = CG_GetTeamTaskCommandByName(token);
 					if (cmd && cmd->action != NULL)
 					{
-						shaders[count] = CG_GetTeamTaskShaderByType(cmd->taskType);
+						/* Special handling for pickup command - use dynamic shader */
+						if (!Q_stricmp(cmd->command, "tPickup"))
+						{
+							shaders[count] = CG_GetPickupShader();
+						}
+						else
+						{
+							shaders[count] = CG_GetTeamTaskShaderByType(cmd->taskType);
+						}
 						actions[count] = cmd->action;
 						commands[count] = cmd->command;
 						count++;

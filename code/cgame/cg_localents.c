@@ -911,6 +911,10 @@ void CG_AddLocalEntities(void)
 				CG_AddDamagePlum(le);
 				break;
 
+			case LE_RAIL_EFFECT:
+				CG_AddRailEffect(le);
+				break;
+
 		}
 	}
 }

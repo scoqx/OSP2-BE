@@ -861,6 +861,7 @@ typedef struct
 	int sender;
 	int taskType;
 	int gameTime; /* Game time when task was sent (msec from level start) */
+	qboolean isPickup; /* True if this is a pickup mark (toClient=1) */
 	struct
 	{
 		qboolean isInitialized;

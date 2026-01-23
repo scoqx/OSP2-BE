@@ -228,6 +228,39 @@ teamTasks_flagcarrier
 	}
 }
 
+// Item Pickup
+teamTasks_redarmor_pickup
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_redarmor_pickup.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_megahealth_pickup
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_megahealth_pickup.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_yellowarmor_pickup
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_yellowarmor_pickup.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
 
 // Hud markers 
 teamTasks_defence_m
@@ -436,8 +469,41 @@ teamTasks_frozen_m
 	}
 }
 
-// misc
+// Item Pickup Markers
+teamTasks_redarmor_pickup_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_redarmor_pickup_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
 
+teamTasks_megahealth_pickup_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_megahealth_pickup_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_yellowarmor_pickup_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/item_yellowarmor_pickup_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+// misc
 teamTasks_pointing
 {
 	nomipmaps
@@ -477,6 +543,17 @@ teamTasks_unknown
 	nopicmip
 	{
 		map sprites/teamTasks/unknown.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_pickupEmpty
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/template_pickup.tga
 		blendfunc blend
 		rgbgen vertex
 	}

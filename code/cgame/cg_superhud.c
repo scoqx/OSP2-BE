@@ -696,7 +696,7 @@ void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen
 	++ctx->obituaries.index;
 }
 
-void CG_SHUDEventTeamTask(int sender, int taskType)
+void CG_SHUDEventTeamTask(int sender, int taskType, qboolean isPickup)
 {
 	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
 	superhudTeamTasksEntry_t* entry;
@@ -738,6 +738,7 @@ void CG_SHUDEventTeamTask(int sender, int taskType)
 
 	entry->sender = sender;
 	entry->taskType = taskType;
+	entry->isPickup = isPickup;
 	entry->time = cg.time;
 
 	/* Calculate game time when task was sent */

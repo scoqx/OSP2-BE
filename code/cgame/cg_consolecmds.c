@@ -1507,6 +1507,49 @@ void CG_TeamTaskMarkWarn(void)
 	}
 }
 
+void CG_TeamTaskMarkPickup(void)
+{
+	int itemType;
+	int markType;
+
+	if (cgs.gametype < GT_TEAM)
+	{
+		CG_PrintOnce("^3There are no teams\n");
+		return;
+	}
+
+	/* Check if we're observing ourselves (not spectating another player) */
+	if (!CG_IsLocalClientOnScreen())
+	{
+		return;
+	}
+
+	/* Check if we have a valid pickup item (within 5 seconds) */
+	if (cgs.be.teamMarkers.pickupItemType == 0)
+	{
+		return;
+	}
+
+	/* Check if pickup item is still valid (5 seconds = 5000ms) */
+	if ((cg.time - cgs.be.teamMarkers.pickupItemTime) > 5000)
+	{
+		cgs.be.teamMarkers.pickupItemType = 0;
+		return;
+	}
+
+	itemType = cgs.be.teamMarkers.pickupItemType;
+	if (itemType == TEAMTASK_MEGAHEALTH || itemType == TEAMTASK_REDARMOR || itemType == TEAMTASK_YELLOWARMOR)
+	{
+		markType = itemType;
+		/* Send teamTask with toClient=1 flag to indicate this is a pickup mark */
+		CG_SendTeamTaskMarkAtPosition(1, markType, cgs.be.teamMarkers.pickupItemPosition, qfalse);
+	}
+	else
+	{
+		CG_Printf("^3Invalid pickup item type\n");
+	}
+}
+
 void CG_TeamTaskMarkSend(void)
 {
 	int targetType;
@@ -1925,16 +1968,38 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("  ^7To disable add to ^3cg_teamTaskWheel ^216^7 (bitmask)\n");
 	CG_Printf("  ^7An example: your value is ^24^7 -> need set to ^220^7 (^24^7+^216^7=^220^7)\n");
 	CG_Printf("  ^7Wheel changes sensitivity automatically - use ^2/restoreSensitivity^7 to restore it\n\n");
+	CG_Printf("^3Configuring wheel elements (^3cg_teamTaskWheelSet^7):\n");
+	CG_Printf("  ^7Use ^3cg_teamTaskWheelSet^7 to customize which tasks appear in the wheel menu\n");
+	CG_Printf("  ^7Format: space-separated task names\n");
+	CG_Printf("  ^7Example: ^2seta cg_teamTaskWheelSet \"smart medic attack defence warn yes no here\"^7\n\n");
+	CG_Printf("  ^3Available tasks for ^3cg_teamTaskWheelSet^7:\n");
+	CG_Printf("    ^2smart^7      - Smart mode (auto-detects target)\n");
+	CG_Printf("    ^2attack^7     - Mark attack position\n");
+	CG_Printf("    ^2defence^7    - Mark defence position\n");
+	CG_Printf("    ^2watch^7       - Mark watch/patrol position\n");
+	CG_Printf("    ^2location^7    - Mark location/position (also accepts \"position\")\n");
+	CG_Printf("    ^2yes^7         - Send YES (overhead mark)\n");
+	CG_Printf("    ^2no^7          - Send NO (overhead mark)\n");
+	CG_Printf("    ^2medic^7       - Request medic (overhead mark)\n");
+	CG_Printf("    ^2here^7        - Mark your current position (alive) or death location (dead)\n");
+	CG_Printf("    ^2warn^7        - Mark crosshair position (alive) or death location (dead)\n");
+	CG_Printf("    ^2pickup^7      - Mark that you picked up an item (megahealth, redarmor, yellowarmor)\n\n");
+	CG_Printf("  ^3Center mode (bit 2 in ^3cg_teamTaskWheel^7):\n");
+	CG_Printf("    ^7When enabled, the first element from ^3cg_teamTaskWheelSet^7 becomes the center element\n");
+	CG_Printf("    ^7If ^3cg_teamTaskWheelSet^7 is empty, ^2tSmart^7 is used as center element\n");
+	CG_Printf("    ^7Example with center mode: ^2seta cg_teamTaskWheel \"6\"^7 (^24^7+^22^7=^26^7)\n");
+	CG_Printf("    ^7Then first task in ^3cg_teamTaskWheelSet^7 will be in the center\n\n");
 	CG_Printf("^3Available team task commands:\n");
-	CG_Printf("  ^2tAttack^7    - Mark attack position\n");
-	CG_Printf("  ^2tDefence^7   - Mark defence position\n");
+	CG_Printf("  ^2tAttack^7     - Mark attack position\n");
+	CG_Printf("  ^2tDefence^7    - Mark defence position\n");
 	CG_Printf("  ^2tWatch^7      - Mark watch/patrol position\n");
-	CG_Printf("  ^2tLocation^7  - Mark location/position\n");
+	CG_Printf("  ^2tLocation^7   - Mark location/position\n");
 	CG_Printf("  ^2tYes^7        - Send YES (overhead mark)\n");
 	CG_Printf("  ^2tNo^7         - Send NO (overhead mark)\n");
 	CG_Printf("  ^2tMedic^7      - Request medic (overhead mark)\n");
 	CG_Printf("  ^2tHere^7       - Mark your current position (alive) or death location (dead)\n");
 	CG_Printf("  ^2tWarn^7       - Mark crosshair position (alive) or death location (dead)\n");
+	CG_Printf("  ^2tPickup^7     - Mark that you picked up an item (megahealth, redarmor, yellowarmor)\n");
 	CG_Printf("  ^2tSmart^7      - Smart mode (auto-detects target)\n");
 	CG_Printf("  ^7Smart mode automatically detects:\n");
 	CG_Printf("    - Enemy players (marks as target)\n");
@@ -2252,6 +2317,7 @@ static consoleCommand_t commands[] =
 	{ "tLocation", CG_TeamTaskMarkLocation },
 	{ "tHere", CG_TeamTaskMarkHere },
 	{ "tWarn", CG_TeamTaskMarkWarn },
+	{ "tPickup", CG_TeamTaskMarkPickup },
 	{ "tSmart", CG_TeamTaskMarkSend },
 	{ "+ttwheel", CG_SelwheelMarkStart },
 	{ "-ttwheel", CG_SelwheelMarkStop },

@@ -213,6 +213,14 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	localEntity_t* le;
 	refEntity_t*   re;
 
+	// Check for alternate rail effect
+	if (cg_altRail.integer == 1)
+	{
+		CG_RailTrail2(ci, start, end);
+		return;
+	}
+	// Default rail trail (cg_altRail.integer == 0)
+
 
 
 	start[2] -= 4;
@@ -389,6 +397,161 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 		{
 			j = j + cg_railRingsRotation.integer < 36 ? j + cg_railRingsRotation.integer : (j + cg_railRingsRotation.integer) % 36;
 		}
+	}
+}
+
+/*
+==========================
+CG_RailTrail2 - WICKED!
+
+Alternate Fire trail
+
+FIXME: Kinda buggy on space maps(when you shoot into space & players) the rail trail disappears instantly.
+==========================
+*/
+void CG_RailTrail2(clientInfo_t* ci, vec3_t start, vec3_t end)
+{
+	localEntity_t* le;
+	refEntity_t* re;
+	vec3_t adjustedStart, adjustedEnd;
+
+	// Apply same offset as standard rail
+	VectorCopy(start, adjustedStart);
+	VectorCopy(end, adjustedEnd);
+	adjustedStart[2] -= 4;
+
+	// core beam
+	le = CG_AllocLocalEntity();
+	re = &le->refEntity;
+
+	le->leType = LE_FADE_RGB;
+	le->startTime = cg.time;
+	le->endTime = cg.time + cg_railTrailTime.value;
+	le->lifeRate = 1.0 / (le->endTime - le->startTime);
+
+	re->shaderTime = cg.time / 1000.0f;
+	re->reType = RT_RAIL_CORE;
+	re->customShader = cgs.media.railCoreShader;
+
+	VectorCopy(adjustedStart, re->origin);
+	VectorCopy(adjustedEnd, re->oldorigin);
+
+	le->color[0] = ci->colors.railCore[0] * 0.75;
+	le->color[1] = ci->colors.railCore[1] * 0.75;
+	le->color[2] = ci->colors.railCore[2] * 0.75;
+	le->color[3] = 1.0f;
+
+	AxisClear(re->axis);
+
+	// spiral effect entity - uses railRings color for proper enemy/team/self detection
+	le = CG_AllocLocalEntity();
+	re = &le->refEntity;
+	//le->generic1 = ci->team;
+	le->leType = LE_RAIL_EFFECT;
+	le->startTime = cg.time;
+	le->endTime = cg.time + cg_railTrailTime.value;
+
+	le->lifeRate = 1.0 / (le->endTime - le->startTime);
+
+	re->shaderTime = cg.time / 1000.0f;
+	re->reType = RT_RAIL_CORE;
+	re->customShader = cgs.media.railCoreShader;
+
+	VectorCopy(adjustedStart, re->origin);
+	VectorCopy(adjustedEnd, re->oldorigin);
+
+	// Use railRings color for spiral particles (like standard rail rings)
+	le->color[0] = ci->colors.railRings[0] * 0.75;
+	le->color[1] = ci->colors.railRings[1] * 0.75;
+	le->color[2] = ci->colors.railRings[2] * 0.75;
+	le->color[3] = 1.0f;
+
+	AxisClear(re->axis);
+}
+
+/*
+====================
+CG_AddRailEffect - CG_RailTrail2 effect(AF trail)
+====================
+*/
+void CG_AddRailEffect(localEntity_t* le)
+{
+	refEntity_t* re;
+	vec3_t forward, right, up, posx, posy, pos, oldpos, move, vec;
+	float c, len, radius, theta, sn, cs, spacing;
+	int i, r, g, b;
+
+	re = &le->refEntity;
+	c = (le->endTime - cg.time) * le->lifeRate;
+	c *= 0xff;
+
+	spacing = 16.0f;
+
+	VectorCopy(re->origin, move);
+	VectorSubtract(re->oldorigin, re->origin, vec);
+
+	// Find the forward, right, and up vectors
+	VectorCopy(vec, forward);
+	VectorNormalize(forward);
+	PerpendicularVector(right, forward);
+	CrossProduct(forward, right, up);
+
+	len = VectorNormalize(vec);
+	VectorScale(vec, spacing, vec);
+
+	// Use color from le->color (which contains railRings color with proper enemy/team/self detection)
+	// le->color is already multiplied by 0.75, so we need to divide by 0.75 to get original value
+	// then multiply by 255 for shaderRGBA and by (c/0xff) for fade
+	r = (int)(le->color[0] / 0.75f * 255.0f * (c / 0xff));
+	g = (int)(le->color[1] / 0.75f * 255.0f * (c / 0xff));
+	b = (int)(le->color[2] / 0.75f * 255.0f * (c / 0xff));
+
+	// Initialize oldpos to starting position
+	VectorCopy(move, oldpos);
+
+	for (i = 0; i < len; i += spacing)
+	{
+		// Maximum radius depends on cg_railRingsRadius, fade based on time
+		radius = cg_railRingsRadius.value * sin(i / len * M_PI) * (c / 0xff);
+
+		theta = (float)(i - cg.time % 360) * M_PI / 180 * 2;
+
+		cs = cos(theta);
+		sn = sin(theta);
+
+		VectorScale(right, cs, posx);
+		VectorScale(up, sn, posy);
+		VectorAdd(posx, posy, pos);
+
+		VectorScale(pos, radius, pos);
+
+		VectorAdd(pos, move, pos);
+
+		if (i > 0)
+		{
+			// Add particle directly to scene without creating local entity
+			// to avoid exhausting the local entity pool
+			refEntity_t particle;
+
+			memset(&particle, 0, sizeof(particle));
+			particle.reType = RT_RAIL_CORE;
+			particle.customShader = cgs.media.railCoreShader;
+
+			particle.shaderRGBA[0] = r;
+			particle.shaderRGBA[1] = g;
+			particle.shaderRGBA[2] = b;
+			particle.shaderRGBA[3] = (int)(0xff * c * le->color[3] / 0xff);
+
+			AxisClear(particle.axis);
+
+			VectorCopy(pos, particle.origin);
+			VectorCopy(oldpos, particle.oldorigin);
+
+			trap_R_AddRefEntityToScene(&particle);
+		}
+
+		VectorAdd(move, vec, move);
+		VectorCopy(pos, oldpos);
 	}
 }
 
@@ -1004,12 +1167,12 @@ void CG_RegisterWeapon(int weaponNum)
 				cgs.media.railRingsShaderNoPicMip = cgs.media.railRingsShader;
 			}
 
-			cgs.media.railCoreShader = trap_R_RegisterShader("railCore");
-			cgs.media.railCoreShaderNoPicMip = trap_R_RegisterShader("railCoreNoPicMip");
-			if (!cgs.media.railCoreShaderNoPicMip)
-			{
-				cgs.media.railCoreShaderNoPicMip = cgs.media.railCoreShader;
-			}
+		cgs.media.railCoreShader = trap_R_RegisterShader("railCore");
+		cgs.media.railCoreShaderNoPicMip = trap_R_RegisterShader("railCoreNoPicMip");
+		if (!cgs.media.railCoreShaderNoPicMip)
+		{
+			cgs.media.railCoreShaderNoPicMip = cgs.media.railCoreShader;
+		}
 			break;
 
 		case WP_BFG:

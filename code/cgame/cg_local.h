@@ -243,7 +243,8 @@ typedef enum
 	LE_FADE_RGB,
 	LE_SCALE_FADE,
 	LE_SCOREPLUM,
-	LE_DAMAGEPLUM
+	LE_DAMAGEPLUM,
+	LE_RAIL_EFFECT
 } leType_t;
 
 typedef enum
@@ -504,6 +505,7 @@ typedef struct
 	vec4_t color;
 	int clientNum; /* Always filled: sender's client number (whose mark it is) */
 	qboolean isOverhead; /* True if mark should track player's head dynamically */
+	qboolean isPickup; /* True if this is a pickup mark (toClient=1) */
 } teamTaskMark_t;
 
 #define MAX_REWARDSTACK     10
@@ -999,7 +1001,7 @@ typedef struct
 	qhandle_t sizeCursor;
 	qhandle_t customShader[16];
 
-	// teamTasks
+	// team tasks
 	qhandle_t teamTasksAttack;
 	qhandle_t teamTasksDefence;
 	qhandle_t teamTasksWatch;
@@ -1020,8 +1022,13 @@ typedef struct
 	qhandle_t teamTasksWarning;
 	qhandle_t teamTasksFlag;
 	qhandle_t teamTasksFlagcarrier;
-
-	// teamTasks hud markers
+	// team tasks pickup items
+	qhandle_t teamTasksRedarmorPickup;
+	qhandle_t teamTasksMegahealthPickup;
+	qhandle_t teamTasksYellowarmorPickup;
+	/*====================
+	team tasks hud markers 
+	====================*/
 	qhandle_t teamTasksAttack_marker;
 	qhandle_t teamTasksDefence_marker;
 	qhandle_t teamTasksWatch_marker;
@@ -1041,13 +1048,17 @@ typedef struct
 	qhandle_t teamTasksFrozen_marker;
 	qhandle_t teamTasksFlag_marker;
 	qhandle_t teamTasksFlagcarrier_marker;
-
-	// teamTasks misc
+	// team tasks item pickup markers
+	qhandle_t teamTasksRedarmorPickup_marker;
+	qhandle_t teamTasksMegahealthPickup_marker;
+	qhandle_t teamTasksYellowarmorPickup_marker;
+	// team tasks misc
 	qhandle_t teamTasksCircle;
 	qhandle_t teamTasksSmart;
 	qhandle_t teamTasksWheelbg;
 	qhandle_t teamTasksPointing;
 	qhandle_t teamTasksUnknown;
+	qhandle_t teamTasksPickupEmpty;
 
 	// sounds
 	sfxHandle_t quadSound;
@@ -1171,6 +1182,11 @@ typedef struct
 	sfxHandle_t pingDeathSound;
 	sfxHandle_t pingAcceptSound;
 	sfxHandle_t pingDenySound;
+	sfxHandle_t pingAttentionSound;
+	sfxHandle_t pingPickupSound;
+	sfxHandle_t pingSimpleSoundNew;
+	sfxHandle_t pingAcceptSoundNew;
+	sfxHandle_t pingDenySoundNew;
 
 } cgMedia_t;
 
@@ -1362,6 +1378,11 @@ typedef struct cgs_be_s
 		// death position storage (for team task markers)
 		vec3_t      deathPosition; // Position where player died
 		qboolean    deathPositionValid; // True if death position is valid
+
+		// pickup items storage (for /tPickup command)
+		int         pickupItemType; // 0 = none, TEAMTASK_MEGAHEALTH, TEAMTASK_REDARMOR, TEAMTASK_YELLOWARMOR
+		vec3_t      pickupItemPosition; // Position where item was picked up
+		int         pickupItemTime; // Time when item was picked up (for 5 seconds memory)
 
 		// sensitivity adjustment for wheel (bitmask & 8)
 		qboolean    sensitivityAdjusted; // True if sensitivity was adjusted for wheel
@@ -2099,6 +2120,7 @@ extern vmCvar_t           cg_brightWeaponsShader;
 extern vmCvar_t           teamoverlay2;
 extern vmCvar_t        cg_friendsWallhackFrozen;
 extern vmCvar_t        cg_teleportEffect;
+extern vmCvar_t        cg_teamTaskNewSounds;
 
 
 // temp cvars
@@ -2119,6 +2141,7 @@ extern vmCvar_t           cg_shud_chatmsg12;
 extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
+extern vmCvar_t           cg_altRail;
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_run;
 //
@@ -2488,6 +2511,8 @@ void CG_ShotgunFire(entityState_t* es);
 void CG_Bullet(vec3_t origin, int sourceEntityNum, vec3_t normal, qboolean flesh, int fleshEntityNum);
 
 void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end);
+void CG_RailTrail2(clientInfo_t* ci, vec3_t start, vec3_t end);
+void CG_AddRailEffect(localEntity_t* le);
 void CG_GrappleTrail(centity_t* ent, const weaponInfo_t* wi);
 void CG_AddViewWeapon(playerState_t* ps);
 void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent, int team);
@@ -2564,7 +2589,7 @@ qboolean CG_HasActiveFrozenAllyMark(centity_t* frozenCent);
 void TokenBucket_Init(tokenBucket_t* b, int maxTokens, int refillTime, int now);
 qboolean TokenBucket_Consume(tokenBucket_t* b, int now);
 int TokenBucket_TimeToNext(tokenBucket_t* b, int now);
-void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum);
+void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum, qboolean isPickup);
 
 
 //
@@ -2688,6 +2713,7 @@ const char* CG_GetCvarDescription(const char* cvarName);
 //
 qboolean CG_IsTeamTaskSupported(void);
 qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType);
+qhandle_t CG_GetPickupShader(void);
 //===============================================
 
 //
@@ -2907,7 +2933,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00s2" // BE
+#define OSP_VERSION "be-1.00t" // BE
 
 
 
@@ -3101,6 +3127,7 @@ void CG_TeamTaskMarkMedic(void);
 void CG_TeamTaskMarkLocation(void);
 void CG_TeamTaskMarkHere(void);
 void CG_TeamTaskMarkWarn(void);
+void CG_TeamTaskMarkPickup(void);
 void CG_TeamTaskMarkSend(void);
 void CG_SelwheelMarkStart(void);
 void CG_SelwheelMarkStop(void);

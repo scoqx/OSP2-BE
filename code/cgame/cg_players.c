@@ -975,6 +975,7 @@ vec3_t* CG_GetAimContactPoint(int clientNum)
 	static vec3_t impactPoint;
 	int i;
 	entityState_t es;
+	centity_t* cent;
 	vec3_t axis[3];
 	vec3_t start;
 	vec3_t end;
@@ -993,8 +994,10 @@ vec3_t* CG_GetAimContactPoint(int clientNum)
 
 	for (i = 0; i < MAX_GENTITIES; i++)
 	{
-		es = cg_entities[i].currentState;
-		if (es.eType == ET_PLAYER && es.clientNum == clientNum && !(es.eFlags & EF_DEAD))
+		cent = &cg_entities[i];
+		es = cent->currentState;
+		/* Check if entity is valid and player is available */
+		if (es.eType == ET_PLAYER && es.clientNum == clientNum && !(es.eFlags & EF_DEAD) && cent->currentValid)
 		{
 			AnglesToAxis(es.apos.trBase, axis);
 			VectorCopy(es.pos.trBase, start);

@@ -1,34 +1,23 @@
-## Adding CVAR Variables
+# Adding CVAR Variables
 
-When adding a new cvar (console variable), it must be added to **the end** of the following lists:
+При добавлении нового cvar нужно добавить его в **КОНЕЦ** трёх мест:
 
-1. **In main file** (e.g., `cg_main.c`): Add the `vmCvar_t` variable declaration at the end of the variable declarations list (before `static cvarTable_t cvarTable[]`)
-2. **In cvarTable array**: Add the entry at the end of `static cvarTable_t cvarTable[]` array
-3. **In local header** (e.g., `cg_local.h`): Add the `extern vmCvar_t` declaration at the end of the extern declarations list
+1. **cg_main.c** - в конец списка `vmCvar_t` переменных (перед `cvarTable[]`)
+2. **cg_main.c** - в конец массива `cvarTable[]` с флагом `CVAR_NEW`
+3. **cg_local.h** - в конец списка `extern vmCvar_t` объявлений
 
-**Important**: 
-- New cvars are always added at the **bottom/end** of each list, never in the middle.
-- **Always add the `CVAR_NEW` flag** to new cvar entries in the `cvarTable[]` array (e.g., `CVAR_ARCHIVE | CVAR_NEW`).
-- **Always add descriptions** for new cvars. See detailed rules in `@OSP2-PBE/.cursor/rules/Description rules`:
-  - Add descriptions in `assets/OSP2.cfg` (Russian) and `assets/OSP2English.cfg` (English) after `/belist` command
-  - Add descriptions in `code/cgame/cg_cvardescriptions.c` in `cvarDescriptionTable[]` array at the end
-  - Descriptions should be added when work is completed
+**Важно:**
+- Всегда добавляй в **КОНЕЦ**, никогда в середину
+- Всегда добавляй флаг `CVAR_NEW` в `cvarTable[]`
 
-Example:
+Пример:
 ```c
-// In cg_main.c - add at end of vmCvar_t declarations
-vmCvar_t        cg_simpleItemsBob;
-vmCvar_t        cg_newCvar;  // ✓ Add new cvar here at the end
+// 1. cg_main.c - в конец vmCvar_t
+vmCvar_t cg_newCvar;
 
-// In cvarTable[] - add at end of array
-static cvarTable_t cvarTable[] =
-{
-    // ... existing entries ...
-    { &cg_simpleItemsBob, "cg_simpleItemsBob", "0", CVAR_ARCHIVE },
-    { &cg_newCvar, "cg_newCvar", "0", CVAR_ARCHIVE | CVAR_NEW },  // ✓ Add new entry here at the end
-};
+// 2. cg_main.c - в конец cvarTable[]
+{ &cg_newCvar, "cg_newCvar", "0", CVAR_ARCHIVE | CVAR_NEW },
 
-// In cg_local.h - add at end of extern declarations
-extern vmCvar_t           cg_simpleItemsBob;
-extern vmCvar_t           cg_newCvar;  // ✓ Add new extern here at the end
+// 3. cg_local.h - в конец extern
+extern vmCvar_t cg_newCvar;
 ```

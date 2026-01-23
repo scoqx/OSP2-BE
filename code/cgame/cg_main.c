@@ -553,6 +553,8 @@ vmCvar_t        cg_noExplosions;
 vmCvar_t        cg_noItemUseSound;
 vmCvar_t        cg_friendsWallhackFrozen;
 vmCvar_t        cg_teleportEffect;
+vmCvar_t           cg_altRail;
+vmCvar_t        cg_teamTaskNewSounds;
 
 // vmCvar_t        cg_snow;
 
@@ -968,7 +970,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamTaskFadeRadius, "cg_teamTaskFadeRadius", "128", CVAR_ARCHIVE },
 	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskFont, },
 	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "12", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
-	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "defence here medic smart yes no warn", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
+	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "defence here medic smart yes no warn pickup", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
 	{ &cg_teamTaskWheelSensitivity, "cg_teamTaskWheelSensitivity", "3.0", CVAR_ARCHIVE },
 	{ &cg_teamTaskWheelScale, "cg_teamTaskWheelScale", "1.0", CVAR_ARCHIVE },
 	{ &cg_storedSensitivity, "cg_storedSensitivity", "1.0", CVAR_NOTABCOMPLETE | CVAR_ARCHIVE | CVAR_INIT },
@@ -1011,6 +1013,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_noItemUseSound, "cg_noItemUseSound", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_friendsWallhackFrozen, "cg_friendsWallhackFrozen", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teleportEffect, "cg_teleportEffect", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_altRail, "cg_altRail", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teamTaskNewSounds, "cg_teamTaskNewSounds", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1637,6 +1641,11 @@ static void CG_RegisterSounds(void)
 	cgs.media.pingDeathSound = trap_S_RegisterSound("sound/teamplay/ping-death.wav", qfalse);
 	cgs.media.pingAcceptSound = trap_S_RegisterSound("sound/teamplay/ping-accept.wav", qfalse);
 	cgs.media.pingDenySound = trap_S_RegisterSound("sound/teamplay/ping-deny.wav", qfalse);
+	cgs.media.pingAttentionSound = trap_S_RegisterSound("sound/teamplay/ping-attention.wav", qfalse);
+	cgs.media.pingPickupSound = trap_S_RegisterSound("sound/teamplay/ping-pickup.wav", qfalse);
+	cgs.media.pingSimpleSoundNew = trap_S_RegisterSound("sound/teamplay/ping-simple-new.wav", qfalse);
+	cgs.media.pingAcceptSoundNew = trap_S_RegisterSound("sound/teamplay/ping-accept-new.wav", qfalse);
+	cgs.media.pingDenySoundNew = trap_S_RegisterSound("sound/teamplay/ping-deny-new.wav", qfalse);
 }
 
 qhandle_t CG_GetFragSound(void)
@@ -1837,7 +1846,13 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksWarning = trap_R_RegisterShader("teamTasks_warning");
 	cgs.media.teamTasksFlag = trap_R_RegisterShader("teamTasks_flag");
 	cgs.media.teamTasksFlagcarrier = trap_R_RegisterShader("teamTasks_flagcarrier");
-	/* team tasks hud markers */
+	/* team tasks pickup items */
+	cgs.media.teamTasksRedarmorPickup = trap_R_RegisterShader("teamTasks_redarmor_pickup");
+	cgs.media.teamTasksMegahealthPickup = trap_R_RegisterShader("teamTasks_megahealth_pickup");
+	cgs.media.teamTasksYellowarmorPickup = trap_R_RegisterShader("teamTasks_yellowarmor_pickup");
+	/*====================
+	team tasks hud markers 
+	====================*/
 	cgs.media.teamTasksAttack_marker = trap_R_RegisterShader("teamTasks_attack_m");
 	cgs.media.teamTasksDefence_marker = trap_R_RegisterShader("teamTasks_defence_m");
 	cgs.media.teamTasksWatch_marker = trap_R_RegisterShader("teamTasks_watch_m");
@@ -1857,12 +1872,17 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksFlag_marker = trap_R_RegisterShader("teamTasks_flag_m");
 	cgs.media.teamTasksFlagcarrier_marker = trap_R_RegisterShader("teamTasks_flagcarrier_m");
 	cgs.media.teamTasksFrozen_marker = trap_R_RegisterShader("teamTasks_frozen_m");
+	/* team tasks item pickup markers */
+	cgs.media.teamTasksRedarmorPickup_marker = trap_R_RegisterShader("teamTasks_redarmor_pickup_m");
+	cgs.media.teamTasksMegahealthPickup_marker = trap_R_RegisterShader("teamTasks_megahealth_pickup_m");
+	cgs.media.teamTasksYellowarmorPickup_marker = trap_R_RegisterShader("teamTasks_yellowarmor_pickup_m");
 	/* team tasks misc */
 	cgs.media.teamTasksCircle = trap_R_RegisterShader("teamTasks_circle");
 	cgs.media.teamTasksSmart = trap_R_RegisterShader("teamTasks_smart");
 	cgs.media.teamTasksWheelbg = trap_R_RegisterShader("teamTasks_wheelbg");
 	cgs.media.teamTasksPointing = trap_R_RegisterShader("teamTasks_pointing");
 	cgs.media.teamTasksUnknown = trap_R_RegisterShader("teamTasks_unknown");
+	cgs.media.teamTasksPickupEmpty = trap_R_RegisterShader("teamTasks_pickupEmpty");
 
 	cgs.osp.decalOSPShaderCopyCount = 0;
 	cgs.osp.decalOSPShader[0] = trap_R_RegisterShader("decalOSP");
@@ -2647,6 +2667,11 @@ void CG_InitTeamTaskMarkers(void)
 	/* Initialize death position storage */
 	VectorClear(cgs.be.teamMarkers.deathPosition);
 	cgs.be.teamMarkers.deathPositionValid = qfalse;
+
+	/* Initialize pickup item storage */
+	cgs.be.teamMarkers.pickupItemType = 0;
+	VectorClear(cgs.be.teamMarkers.pickupItemPosition);
+	cgs.be.teamMarkers.pickupItemTime = 0;
 }
 
 /*

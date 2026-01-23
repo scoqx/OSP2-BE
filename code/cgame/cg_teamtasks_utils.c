@@ -166,7 +166,8 @@ teamTaskCommand_t teamTaskCommands[] =
 	{ "haste", NULL, TEAMTASK_HASTE, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
 	{ "yellowarmor", NULL, TEAMTASK_YELLOWARMOR, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
 	{ "health", NULL, TEAMTASK_HEALTH, qfalse, qfalse, NULL, NULL }, /* Auto-selected by smart mode */
-	{ "medic", NULL, TEAMTASK_MEDIC, qtrue, qfalse, CG_TeamTaskMarkMedic, "tMedic" }
+	{ "medic", NULL, TEAMTASK_MEDIC, qtrue, qfalse, CG_TeamTaskMarkMedic, "tMedic" },
+	{ "pickup", NULL, TEAMTASK_NONE, qfalse, qtrue, CG_TeamTaskMarkPickup, "tPickup" }
 };
 
 #define NUM_TEAMTASK_COMMANDS (sizeof(teamTaskCommands) / sizeof(teamTaskCommands[0]))
@@ -179,6 +180,47 @@ Get shader handle for teamtask type
 Returns 0 if not found or not loaded
 =================
 */
+/*
+=================
+CG_GetPickupShader
+
+Get shader for pickup command based on current pickup item state
+Returns pickupEmpty if no item picked up or expired, otherwise returns corresponding pickup icon
+=================
+*/
+qhandle_t CG_GetPickupShader(void)
+{
+	int itemType;
+
+	/* Check if we have a valid pickup item (within 5 seconds) */
+	if (cgs.be.teamMarkers.pickupItemType == 0)
+	{
+		return cgs.media.teamTasksPickupEmpty;
+	}
+
+	/* Check if pickup item is still valid (5 seconds = 5000ms) */
+	if ((cg.time - cgs.be.teamMarkers.pickupItemTime) > 5000)
+	{
+		return cgs.media.teamTasksPickupEmpty;
+	}
+
+	itemType = cgs.be.teamMarkers.pickupItemType;
+	if (itemType == TEAMTASK_MEGAHEALTH)
+	{
+		return cgs.media.teamTasksMegahealthPickup;
+	}
+	else if (itemType == TEAMTASK_REDARMOR)
+	{
+		return cgs.media.teamTasksRedarmorPickup;
+	}
+	else if (itemType == TEAMTASK_YELLOWARMOR)
+	{
+		return cgs.media.teamTasksYellowarmorPickup;
+	}
+
+	return cgs.media.teamTasksPickupEmpty;
+}
+
 qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType)
 {
 	switch (taskType)
