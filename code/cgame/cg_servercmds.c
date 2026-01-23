@@ -2006,8 +2006,12 @@ void CG_ServerCommand(void)
 		messageAllowed_t ma;
 		qboolean isVanilaChatEnabled;
 		qboolean isShudChatEnabled;
+		qboolean isTellMessage;
 
 		Q_strncpyz(text, CG_Argv(1), 1024);
+
+		/* Tell messages should use color ^6 (magenta) instead of regular chat color */
+		isTellMessage = (text[0] == 25 && (text[1] == '(' || text[1] == '['));
 
 		ma = CG_ChatCheckMessageAllowed(text);
 		if (ma == MESSAGE_NOTALLOWED)
@@ -2052,18 +2056,26 @@ void CG_ServerCommand(void)
 
 		CG_RemoveChatEscapeChar(text);
 
-		/* Insert default chat color at the beginning of message text (after colon) */
-		/* This replaces any server-provided color with our default color */
-		/* Support both digits (0-9) and letters (a-z, A-Z) */
-		if (cg_chatColor.string[0] != '\0')
+		if (isTellMessage)
 		{
-			char colorChar;
-			colorChar = cg_chatColor.string[0];
-			if ((colorChar >= '0' && colorChar <= '9') ||
-			        (colorChar >= 'a' && colorChar <= 'z') ||
-			        (colorChar >= 'A' && colorChar <= 'Z'))
+			/* Insert magenta color (^6) for tell messages */
+			CG_InsertChatColor(text, 1024, '6');
+		}
+		else
+		{
+			/* Insert default chat color at the beginning of message text (after colon) */
+			/* This replaces any server-provided color with our default color */
+			/* Support both digits (0-9) and letters (a-z, A-Z) */
+			if (cg_chatColor.string[0] != '\0')
 			{
-				CG_InsertChatColor(text, 1024, colorChar);
+				char colorChar;
+				colorChar = cg_chatColor.string[0];
+				if ((colorChar >= '0' && colorChar <= '9') ||
+				        (colorChar >= 'a' && colorChar <= 'z') ||
+				        (colorChar >= 'A' && colorChar <= 'Z'))
+				{
+					CG_InsertChatColor(text, 1024, colorChar);
+				}
 			}
 		}
 

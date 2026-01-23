@@ -775,6 +775,13 @@ qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 			continue;
 		}
 
+		if (set->statsStyle == 2 && ws->deaths > 0 &&
+		        ws->shots == 0 && ws->hits == 0 && ws->kills == 0 &&
+		        ws->pickUps == 0 && ws->drops == 0)
+		{
+			continue;
+		}
+
 		col = 0;
 
 		if (set->statsStyle == 2)
