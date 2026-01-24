@@ -32,7 +32,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "flagstatus_own", SE_TEAM_ONLY, CG_SHUDElementFlagStatusOWNCreate, CG_SHUDElementFlagStatusRoutine, CG_SHUDElementFlagStatusDestroy },
 	{ "followmessage", 0, CG_SHUDElementFollowMessageCreate, CG_SHUDElementFollowMessageRoutine, CG_SHUDElementFollowMessageDestroy },
 	{ "fps", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementFPSCreate, CG_SHUDElementFPSRoutine, CG_SHUDElementFPSDestroy },
-	{ "fragmessage", 0, CG_SHUDElementFragMessageCreate, CG_SHUDElementFragMessageRoutine, CG_SHUDElementFragMessageDestroy },
+	{ "fragmessage", SE_SPECT, CG_SHUDElementFragMessageCreate, CG_SHUDElementFragMessageRoutine, CG_SHUDElementFragMessageDestroy },
 	{ "gametime", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementGameTimeCreate, CG_SHUDElementGameTimeRoutine, CG_SHUDElementGameTimeDestroy },
 	{ "gametype", 0, CG_SHUDElementGameTypeCreate, CG_SHUDElementGameTypeRoutine, CG_SHUDElementGameTypeDestroy },
 	{ "itempickup", 0, CG_SHUDElementItemPickupCreate, CG_SHUDElementItemPickupRoutine, CG_SHUDElementItemPickupDestroy },

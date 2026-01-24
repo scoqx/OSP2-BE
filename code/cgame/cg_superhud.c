@@ -495,6 +495,7 @@ void CG_SHUDRoutine(void)
 	const qboolean is_gt_ft = CG_OSPIsGameTypeFreeze();
 	const qboolean is_gt_ca = CG_OSPIsGameTypeCA(cgs.gametype);
 	int currentWeapon;
+	qboolean is_spectator_for_element = is_spectator;
 
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
@@ -509,10 +510,17 @@ void CG_SHUDRoutine(void)
 		// Get current weapon (same logic as CG_ExecWeaponCommand)
 		currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
 
+		// Special check for fragmessage: also consider PM_SPECTATOR state
+		
+		if (last->element.name && Q_stricmp(last->element.name, "fragmessage") == 0)
+		{
+			is_spectator_for_element = is_spectator || cg.predictedPlayerState.pm_type == PM_SPECTATOR;
+		}
+
 		skip = (!(vflags & SE_IM) && is_intermission) ||
 		       ((vflags & SE_TEAM_ONLY) && (!is_team_game)) ||
 		       (!(vflags & SE_DEAD) && is_dead) ||
-		       (!(vflags & SE_SPECT) && is_spectator) ||
+		       (!(vflags & SE_SPECT) && is_spectator_for_element) ||
 		       ((vflags & SE_SCORES_HIDE) && is_scores) ||
 		       ((vflags & SE_DEMO_HIDE) && cg.demoPlayback) ||
 		       ((vflags & SE_KEY1_SHOW) && !cgs.osp.shud.key[0]) ||

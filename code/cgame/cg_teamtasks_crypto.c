@@ -284,6 +284,20 @@ void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* te
 	/* Get encrypted data (bits 31-5) */
 	encrypted = packed & 0xFFFFFFE0;
 
+	/* Security check: reject values with no encrypted data (encrypted == 0) */
+	/* Valid encoded values must contain encrypted templateID and coordinates */
+	/* Values like 1, 2, etc. have encrypted = 0 and cannot be valid */
+	if (encrypted == 0)
+	{
+		/* No encrypted data - reject to prevent bypassing protection */
+		*toClient = 0;
+		*templateID = 0;
+		*x = 0;
+		*y = 0;
+		*z = 0;
+		return;
+	}
+
 	/* If senderClientID is valid, verify it matches */
 	if (senderClientID >= 0 && senderClientID < MAX_CLIENTS && cgs.clientinfo[senderClientID].infoValid)
 	{
