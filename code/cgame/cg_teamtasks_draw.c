@@ -1023,44 +1023,51 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 	int j;
 	centity_t* cent;
 	qboolean playerFound;
-	qboolean isFollowing;
-	qboolean isFreeFloat;
+	qboolean frozenFound;
 
 	playerFound = qfalse;
-	isFollowing = CG_IsFollowing();
-	isFreeFloat = CG_IsClientFreeFloat();
+	frozenFound = qfalse;
 
-	/* Special case for local player */
+	/* Special case for local player - always check frozen entity first, then use death coordinates */
 	if (mark->clientNum == cg.clientNum)
 	{
-		if (isFollowing || isFreeFloat)
+		/* For own HERE_DEAD/WARN_DEAD marks, first try to find frozen entity */
+		if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
 		{
-			/* When following another player, use death coordinates for own HERE_DEAD */
-			/* Don't update position - keep original death position */
-			playerFound = qfalse; /* Will be handled below */
+			/* Search for frozen entity in range MAX_CLIENTS..MAX_GENTITIES */
+			for (j = MAX_CLIENTS; j < MAX_GENTITIES; j++)
+			{
+				cent = &cg_entities[j];
+				if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
+				{
+					/* Check if this is a frozen entity */
+					if (CG_IsFrozenEntity(cent))
+					{
+						int frozenClientNum;
+						frozenClientNum = cent->currentState.otherEntityNum;
+						if (frozenClientNum == mark->clientNum)
+						{
+							/* Found frozen entity for own client - use its position above head */
+							VectorCopy(cent->lerpOrigin, mark->origin);
+							mark->origin[2] += 48.0f; /* Offset above head */
+							frozenFound = qtrue;
+							break;
+						}
+					}
+				}
+			}
 		}
-		else
+
+		/* If frozen entity not found, keep original death position from message */
+		if (!frozenFound)
 		{
-			cent = &cg.predictedPlayerEntity;
-			if (cent->currentValid)
-			{
-				/* Update position above player's head */
-				VectorCopy(cent->lerpOrigin, mark->origin);
-				mark->origin[2] += 48.0f; /* Offset above head */
-				playerFound = qtrue;
-			}
-			else
-			{
-				/* Fallback: use predicted player state origin */
-				VectorCopy(cg.predictedPlayerState.origin, mark->origin);
-				mark->origin[2] += 48.0f; /* Offset above head */
-				playerFound = qtrue;
-			}
+			/* Use death coordinates that were set when mark was created (from message) */
+			/* Don't update position - keep original death position */
 		}
 	}
 	else
 	{
-		/* Try to find player entity and update position */
+		/* For other players, try to find player entity and update position */
 		for (j = 0; j < MAX_GENTITIES; j++)
 		{
 			cent = &cg_entities[j];
@@ -1075,50 +1082,46 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 				break;
 			}
 		}
-	}
 
-	/* If player not found, check freeze mode */
-	if (!playerFound)
-	{
-		/* Try to find frozen entity in freeze mode */
-		if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+		/* If player not found, check freeze mode */
+		if (!playerFound)
 		{
-			qboolean frozenFound;
-
-			frozenFound = qfalse;
-
-			/* Search for frozen entity in range MAX_CLIENTS..MAX_GENTITIES */
-			for (j = MAX_CLIENTS; j < MAX_GENTITIES; j++)
+			/* Try to find frozen entity in freeze mode */
+			if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
 			{
-				cent = &cg_entities[j];
-				if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
+				/* Search for frozen entity in range MAX_CLIENTS..MAX_GENTITIES */
+				for (j = MAX_CLIENTS; j < MAX_GENTITIES; j++)
 				{
-					/* Check if this is a frozen entity */
-					if (CG_IsFrozenEntity(cent))
+					cent = &cg_entities[j];
+					if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
 					{
-						int frozenClientNum;
-						frozenClientNum = cent->currentState.otherEntityNum;
-						if (frozenClientNum == mark->clientNum)
+						/* Check if this is a frozen entity */
+						if (CG_IsFrozenEntity(cent))
 						{
-							/* Found frozen entity for this client - use its position above head */
-							VectorCopy(cent->lerpOrigin, mark->origin);
-							mark->origin[2] += 48.0f; /* Offset above head */
-							frozenFound = qtrue;
-							break;
+							int frozenClientNum;
+							frozenClientNum = cent->currentState.otherEntityNum;
+							if (frozenClientNum == mark->clientNum)
+							{
+								/* Found frozen entity for this client - use its position above head */
+								VectorCopy(cent->lerpOrigin, mark->origin);
+								mark->origin[2] += 48.0f; /* Offset above head */
+								frozenFound = qtrue;
+								break;
+							}
 						}
 					}
 				}
-			}
 
-			/* If frozen entity not found, keep original death position */
-			if (!frozenFound)
-			{
-				/* Frozen entity not available, keep the death position that was set when mark was created */
+				/* If frozen entity not found, keep original death position */
+				if (!frozenFound)
+				{
+					/* Frozen entity not available, keep the death position that was set when mark was created */
+				}
 			}
-		}
-		else
-		{
-			/* Not freeze mode, keep the death position that was set when mark was created */
+			else
+			{
+				/* Not freeze mode, keep the death position that was set when mark was created */
+			}
 		}
 	}
 
