@@ -15,7 +15,6 @@ typedef struct
 
 static qhandle_t CG_SHUDTeamTaskGetTaskIcon(int taskType, qboolean isPickup);
 static void CG_SHUDTeamTaskGetTaskName(int taskType, char* name, int maxlen, qboolean isPickup);
-static void CG_SHUDTeamTaskSetTeamColor(vec4_t color, int team);
 
 static void* CG_SHUDElementTeamTasksCreate(const superhudConfig_t* config, int line)
 {
@@ -148,14 +147,7 @@ static void CG_SHUDElementTeamTasksInitializeRuntime(shudElementTeamTasks_t* ele
 		ci = &cgs.clientinfo[entry->sender];
 		if (ci->infoValid)
 		{
-			if (cgs.gametype >= GT_TEAM && (element->config.style.isSet && element->config.style.value == 2))
-			{
-				Q_strncpyz(entry->runtime.senderName, ci->name_clean, MAX_QPATH);
-			}
-			else
-			{
-				Q_strncpyz(entry->runtime.senderName, ci->name, MAX_QPATH);
-			}
+			Q_strncpyz(entry->runtime.senderName, ci->name, MAX_QPATH);
 		}
 		else
 		{
@@ -170,35 +162,8 @@ static void CG_SHUDElementTeamTasksInitializeRuntime(shudElementTeamTasks_t* ele
 	/* Get event name */
 	CG_SHUDTeamTaskGetTaskName(entry->taskType, entry->runtime.eventName, sizeof(entry->runtime.eventName), entry->isPickup);
 
-	/* Set sender color */
-	if (entry->sender >= 0 && entry->sender < MAX_CLIENTS)
-	{
-		ci = &cgs.clientinfo[entry->sender];
-		if (ci->infoValid)
-		{
-			CG_SHUDTeamTaskSetTeamColor(entry->runtime.senderColor, ci->team);
-		}
-		else
-		{
-			Vector4Copy(colorWhite, entry->runtime.senderColor);
-		}
-	}
-	else
-	{
-		Vector4Copy(colorWhite, entry->runtime.senderColor);
-	}
-
-	if (element->config.style.isSet && element->config.style.value)
-	{
-		if (element->config.bgcolor.isSet && element->config.style.value == 1)
-		{
-			entry->runtime.senderColor[3] = element->config.bgcolor.value.rgba[3];
-		}
-		else if (element->config.color.isSet && element->config.style.value == 2)
-		{
-			entry->runtime.senderColor[3] = element->config.color.value.rgba[3];
-		}
-	}
+	/* Set sender color - always white since we only display our own team */
+	Vector4Copy(colorWhite, entry->runtime.senderColor);
 
 	entry->runtime.isInitialized = qtrue;
 }
@@ -237,79 +202,76 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 
 	currentX = entry->runtime.baseX;
 
+	/* Calculate total width of the line for background and border */
+	{
+		float totalWidth;
+		float bgX;
+		float bgY;
+		float bgW;
+		float bgH;
+		superhudCoord_t bgCoord;
+		vec4_t bgColor;
+		vec4_t borderColor;
+
+		/* Calculate total width of the line */
+		totalWidth = entry->runtime.spacing * 2 + entry->runtime.senderWidth + element->ctxIcon.coord.named.w + entry->runtime.eventNameWidth;
+
+		/* Calculate background/border position and size */
+		bgX = entry->runtime.baseX;
+		bgY = element->config.rect.value[1];
+		bgW = totalWidth;
+		bgH = element->config.rect.value[3];
+
+		/* Draw background fill if fill and bgcolor are set */
+		if (element->config.fill.isSet && element->config.bgcolor.isSet)
+		{
+			/* Set up coord for background */
+			bgCoord.named.x = bgX;
+			bgCoord.named.y = bgY;
+			bgCoord.named.w = bgW;
+			bgCoord.named.h = bgH;
+
+			/* Get background color with fade support */
+			CG_SHUDConfigPickBgColor(&element->config, bgColor, qfalse);
+			/* Apply fade to background color alpha (fade is already calculated in ctxTime.color) */
+			bgColor[3] *= element->ctxTime.color[3];
+
+			/* Draw background */
+			CG_SHUDFillWithColor(&bgCoord, bgColor);
+		}
+
+		/* Draw border if border and borderColor are set */
+		if (element->config.border.isSet && element->config.borderColor.isSet)
+		{
+			float borderX;
+			float borderY;
+			float borderW;
+			float borderH;
+
+			/* Use same coordinates as background */
+			borderX = bgX;
+			borderY = bgY;
+			borderW = bgW;
+			borderH = bgH;
+
+			/* Adjust coordinates for 640x480 */
+			CG_AdjustFrom640(&borderX, &borderY, &borderW, &borderH);
+
+			/* Get border color with fade support */
+			CG_SHUDConfigPickBorderColor(&element->config, borderColor, qfalse);
+			/* Apply fade to border color alpha (fade is already calculated in ctxTime.color) */
+			borderColor[3] *= element->ctxTime.color[3];
+
+			/* Draw border (outer border) */
+			CG_OSPDrawFrame(borderX, borderY, borderW, borderH,
+			                (float*)element->config.border.value, borderColor, qfalse);
+		}
+	}
+
 	/* Draw sender name */
 	element->ctxSender.text = entry->runtime.senderName;
 	element->ctxSender.coord.named.x = currentX;
-
-	/* Apply sender color based on style */
-	if (element->config.style.isSet)
-	{
-		qboolean shouldColorSender;
-		qboolean isSenderTeammate;
-		qboolean isLocalPlayerSpectator;
-
-		/* Check if local player is spectator */
-		isLocalPlayerSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
-
-		/* Check if sender is teammate */
-		if (entry->sender >= 0 && entry->sender < MAX_CLIENTS)
-		{
-			clientInfo_t* ci;
-			ci = &cgs.clientinfo[entry->sender];
-			if (ci->infoValid)
-			{
-				isSenderTeammate = (ci->team == cgs.clientinfo[cg.clientNum].team);
-			}
-			else
-			{
-				isSenderTeammate = qfalse;
-			}
-		}
-		else
-		{
-			isSenderTeammate = qfalse;
-		}
-
-		/* Determine if we should color sender based on bitmask */
-		shouldColorSender = qfalse;
-		if (isLocalPlayerSpectator)
-		{
-			/* If local player is spectator, color regardless of flags */
-			shouldColorSender = qtrue;
-		}
-		else if (element->config.style.value & 4) /* bit 4: only teammates */
-		{
-			shouldColorSender = isSenderTeammate;
-		}
-		else if (element->config.style.value & 8) /* bit 8: only enemies */
-		{
-			shouldColorSender = !isSenderTeammate;
-		}
-		else /* neither bit set: color both */
-		{
-			shouldColorSender = qtrue;
-		}
-
-		if (shouldColorSender)
-		{
-			if (element->config.style.value & 1)
-			{
-				Vector4Copy(entry->runtime.senderColor, element->ctxSender.background);
-			}
-			else if (element->config.style.value & 2)
-			{
-				Vector4Copy(entry->runtime.senderColor, element->ctxSender.color);
-			}
-		}
-		else
-		{
-			element->ctxSender.background[3] = 0;
-		}
-	}
-	else
-	{
-		element->ctxSender.background[3] = 0;
-	}
+	element->ctxSender.background[3] = 0;
 
 	element->ctxSender.width = entry->runtime.maxNameLenPix;
 	CG_SHUDTextPrintNew(&element->config, &element->ctxSender, qfalse);
@@ -320,6 +282,7 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 	{
 		element->ctxIcon.image = entry->runtime.iconShader;
 		element->ctxIcon.coord.named.x = currentX;
+		element->ctxIcon.coord.named.w = element->ctxIcon.coord.named.h * 0.75f;
 		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxIcon);
 		currentX += element->ctxIcon.coord.named.w + entry->runtime.spacing;
 	}
@@ -330,22 +293,6 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 	CG_SHUDTextPrintNew(&element->config, &element->ctxEventName, qfalse);
 }
 
-static void CG_SHUDTeamTaskSetTeamColor(vec4_t color, int team)
-{
-	switch (team)
-	{
-		case TEAM_RED:
-			VectorCopy(cgs.be.redTeamColor, color);
-			break;
-		case TEAM_BLUE:
-			VectorCopy(cgs.be.blueTeamColor, color);
-			break;
-		default:
-			VectorCopy(colorWhite, color);
-			break;
-	}
-	color[3] = 0.25f;
-}
 
 static qhandle_t CG_SHUDTeamTaskGetTaskIcon(int taskType, qboolean isPickup)
 {
@@ -432,10 +379,10 @@ static void CG_SHUDTeamTaskGetTaskName(int taskType, char* name, int maxlen, qbo
 				taskName = "Here (dead)";
 				break;
 			case TEAMTASK_WARN_ALIVE:
-				taskName = "Warn";
+				taskName = "Caution";
 				break;
 			case TEAMTASK_WARN_DEAD:
-				taskName = "Warn (dead)";
+				taskName = "Caution (dead)";
 				break;
 			default:
 				taskName = "Unknown";

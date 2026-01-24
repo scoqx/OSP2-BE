@@ -1475,11 +1475,21 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		renderData->h *= cg_teamTaskScale.value;
 		renderData->w *= cg_teamTaskScale.value;
 
-		/* Apply minimum text size limit */
-		if (renderData->w < cg_teamTaskIconMinSize.value)
-			renderData->w = cg_teamTaskIconMinSize.value * 0.75;
-		if (renderData->h < cg_teamTaskIconMinSize.value)
-			renderData->h = cg_teamTaskIconMinSize.value;
+		/* Apply minimum text size limit - preserve aspect ratio (w/h = 0.75) */
+		{
+			float minSize;
+			float scaleFactor;
+			minSize = cg_teamTaskIconMinSize.value;
+			/* Check if height is below minimum, scale both dimensions proportionally to maintain aspect ratio */
+			if (renderData->h < minSize)
+			{
+				scaleFactor = minSize / renderData->h;
+				renderData->h = minSize;
+				renderData->w = renderData->w * scaleFactor;
+				/* After scaling, w should be minSize * 0.75, but recalculate to ensure exact ratio */
+				renderData->w = renderData->h * 0.75f;
+			}
+		}
 
 		/* Calculate icon size (4 times text width, but 2 times for death marks) */
 		if (mark->markType == TEAMTASK_PLAYERDEAD)
@@ -1493,11 +1503,21 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 			renderData->iconH = renderData->h * 4;
 		}
 
-		/* Apply minimum icon size limit */
-		if (renderData->iconW < cg_teamTaskIconMinSize.value)
-			renderData->iconW = cg_teamTaskIconMinSize.value * 0.75f;
-		if (renderData->iconH < cg_teamTaskIconMinSize.value)
-			renderData->iconH = cg_teamTaskIconMinSize.value;
+		/* Apply minimum icon size limit - preserve aspect ratio (iconW/iconH = w/h = 0.75) */
+		{
+			float minSize;
+			float scaleFactor;
+			minSize = cg_teamTaskIconMinSize.value;
+			/* Check if icon height is below minimum, scale both dimensions proportionally to maintain aspect ratio */
+			if (renderData->iconH < minSize)
+			{
+				scaleFactor = minSize / renderData->iconH;
+				renderData->iconH = minSize;
+				renderData->iconW = renderData->iconW * scaleFactor;
+				/* After scaling, iconW should be minSize * 0.75, but recalculate to ensure exact ratio */
+				renderData->iconW = renderData->iconH * 0.75f;
+			}
+		}
 
 		/* Convert world to screen coordinates and check if mark is outside screen */
 		isOwnHereDead = (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD));
