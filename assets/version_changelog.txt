@@ -1,4 +1,4 @@
-23.01.2025 be v1.00t4
+23.01.2025 be v1.00t5
 TEAMTASKS:
   * IMPORTANT FIX FOR COMMON TASKS (Attack, Defence, Watch, Location)
   + tPickup (Mark that you picked up an item (megahealth, red armor, yellow armor))
@@ -10,3 +10,4 @@ TEAMTASKS:
 + cg_altRail 0/1
 * cg_enemyLightningColor fixed
 * cg_bestats_style 2 visual fix
+- *outLineSize 3 (wide) removed

@@ -2933,7 +2933,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00t4" // BE
+#define OSP_VERSION "be-1.00t5" // BE (Black Edition)
 
 
 
@@ -3109,8 +3109,8 @@ void CG_TeamTaskFilterDump(void);
 //
 // cg_teamtasks.c
 //
-int CG_OSPTeamTaskPack(int toClient, int templateID, int x, int y, int z);
-void CG_OSPTeamTaskUnpack(int packed, int senderClientID, int* toClient, int* templateID, int* x, int* y, int* z);
+int CG_TeamTaskPack(int toClient, int templateID, int x, int y, int z);
+void CG_TeamTaskUnpack(int packed, int senderClientID, int* toClient, int* templateID, int* x, int* y, int* z);
 void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position, qboolean ignoreDead);
 void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent);
 void CG_ClearRoundSpecificTeamTaskMarks(void);

@@ -2069,14 +2069,12 @@ static void CG_RegisterGraphics(void)
 	cgs.media.outlineShader =
 	    (cg_enemyOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
 	    (cg_enemyOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
-	    (cg_enemyOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
 	    trap_R_RegisterShader("outlineMedium");
 
 	// Team outline
 	cgs.media.teamOutlineShader =
 	    (cg_teamOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
 	    (cg_teamOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
-	    (cg_teamOutlineSize.integer == 3) ? trap_R_RegisterShader("outlineWide") :
 	    trap_R_RegisterShader("outlineMedium");
 
 	// BE New Scoreboard

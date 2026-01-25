@@ -1151,7 +1151,7 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	z = Quantize(trace.endpos[2], -3000, 3000, 7);
 
 	/* Static mark at trace position */
-	packed = CG_OSPTeamTaskPack(0, templateID, x, y, z);
+	packed = CG_TeamTaskPack(0, templateID, x, y, z);
 	trap_SendClientCommand(va("teamtask %i", packed));
 	trap_SendClientCommand("teamtask 0");
 }
@@ -1229,7 +1229,7 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	z = Quantize(playerPos[2], -3000, 3000, 7);
 
 	/* Send to all (0 = broadcast) - templateID is already correct (YES/NO) */
-	packed = CG_OSPTeamTaskPack(toClient, templateID, x, y, z);
+	packed = CG_TeamTaskPack(toClient, templateID, x, y, z);
 	trap_SendClientCommand(va("teamtask %i", packed));
 	trap_SendClientCommand("teamtask 0");
 }
@@ -1292,7 +1292,7 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 	y = Quantize(position[1], -3000, 3000, 7);
 	z = Quantize(position[2], -3000, 3000, 7);
 
-	packed = CG_OSPTeamTaskPack(toClient, templateID, x, y, z);
+	packed = CG_TeamTaskPack(toClient, templateID, x, y, z);
 	trap_SendClientCommand(va("teamtask %i", packed));
 	trap_SendClientCommand("teamtask 0");
 }

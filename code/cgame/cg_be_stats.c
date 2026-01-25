@@ -1,26 +1,26 @@
 /*
 ===========================================================================
-Copyright (C) 1999-2005 Id Software, Inc.
+cg_be_stats.c
 
-This file is part of Quake III Arena source code.
+BE (Backend Engine) statistics display system
 
-Quake III Arena source code is free software; you can redistribute it
-and/or modify it under the terms of the GNU General Public License as
-published by the Free Software Foundation; either version 2 of the License,
-or (at your option) any later version.
+Copyright (c) 2026 diwoc
+Contact: diwoc@outlook.com
 
-Quake III Arena source code is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+This file contains original work created by diwoc.
+It is included in the OSP2-BE modification for Quake III Arena and is
+distributed under the terms of the project's primary license.
 
-You should have received a copy of the GNU General Public License
-along with Foobar; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+Additional licensing:
+Original portions authored by diwoc may also be used under the
+DIWOC Custom Non-Commercial License v1.0, provided such portions are
+separated from all id Software code and Quake III Arena–derived material.
+
+For details, refer to LICENSE_DIWOC.txt.
 ===========================================================================
 */
 //
-// cg_scoreboard -- draw the scoreboard on top of the game screen
+// cg_be_stats.c -- BE statistics display system
 #include "cg_local.h"
 
 #define MAX_TOKEN_LEN MAX_QPATH

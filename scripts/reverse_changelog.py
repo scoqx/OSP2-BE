@@ -17,7 +17,7 @@ def reverse_changelog(input_file, output_file):
     
     # Паттерн для начала блока версии: дата + "be v" + версия
     # Пример: "27.05.2025 be v 0.01" или "03.04.2025 be v0.02"
-    version_pattern = re.compile(r'^\d{2}\.\d{2}\.\d{4}\s+be\s+v', re.MULTILINE)
+    version_pattern = re.compile(r'^\d{2}\.\d{2}\.\d{4}\s+be\s+v\s*', re.MULTILINE)
     
     # Находим все позиции начала блоков
     matches = list(version_pattern.finditer(content))

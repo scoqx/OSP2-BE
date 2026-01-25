@@ -370,19 +370,6 @@ hboxNew_cullback
 	}
 }
 
-outlineWide
-{
-	nopicmip
-  	nomipmaps
-    deformVertexes wave 1 sin 1.8 0 0 0
-	cull back
-	{
-		map *white
-        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-		rgbGen entity	
-	}
-}
-
 outlineMedium
 {
 	nopicmip

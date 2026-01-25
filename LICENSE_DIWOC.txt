@@ -1,0 +1,185 @@
+DIWOC CUSTOM NON-COMMERCIAL LICENSE v1.0
+
+Copyright (c) 2026 diwoc
+Contact: diwoc@outlook.com
+
+This license applies to original code authored by diwoc, specifically including
+but not limited to the following files:
+- code/cgame/cg_teamtasks_crypto.c
+- code/cgame/cg_teamtaskfilter.c
+- code/cgame/cg_teamtasks_draw.c
+- code/cgame/cg_teamtasks_selwheel.c
+- code/cgame/cg_teamtasks_tokenbucket.c
+- code/cgame/cg_teamtasks_utils.c
+- code/cgame/cg_be_stats.c
+- code/cgame/cg_be_util.c
+
+================================================================================
+1. DEFINITIONS
+================================================================================
+
+1.1. "Licensor" means diwoc, the copyright owner of the Original Work.
+
+1.2. "Original Work" means the original code authored by diwoc, including all
+     functions, algorithms, and implementations created from scratch by diwoc,
+     specifically including but not limited to:
+     - Cryptographic and data packing/unpacking routines in cg_teamtasks_crypto.c
+     - Team task filtering system in cg_teamtaskfilter.c
+     - Team task marker rendering functions in cg_teamtasks_draw.c
+     - Team task selection wheel implementation in cg_teamtasks_selwheel.c
+     - Token bucket anti-flood system in cg_teamtasks_tokenbucket.c
+     - Team task utility functions and command definitions in cg_teamtasks_utils.c
+     - BE (Black Edition) statistics display system in cg_be_stats.c
+     - BE (Black Edition) utility functions in cg_be_util.c
+
+1.3. "Derivative Work" means any work based upon the Original Work, including
+     modifications, enhancements, or adaptations of the Original Work.
+
+1.4. "You" or "Your" means an individual or entity exercising permissions
+     granted by this License.
+
+1.5. "Non-Commercial Use" means use that is not primarily intended for or
+     directed toward commercial advantage or monetary compensation.
+
+================================================================================
+2. GRANT OF LICENSE
+================================================================================
+
+2.1. Subject to the terms and conditions of this License, Licensor hereby
+     grants You a worldwide, royalty-free, non-exclusive, non-transferable
+     license to use, copy, modify, and distribute the Original Work for
+     Non-Commercial Use only.
+
+2.2. This license applies only to the Original Work authored by diwoc. Any
+     portions of code that are derived from id Software's Quake III Arena
+     source code, or any other third-party code, remain subject to their
+     respective licenses.
+
+================================================================================
+3. CONDITIONS AND RESTRICTIONS
+================================================================================
+
+3.1. Attribution Requirement:
+     You must retain all copyright notices, this License, and the following
+     attribution in all copies or substantial portions of the Original Work:
+     
+     "Portions of this code are Copyright (c) 2026 diwoc.
+      Licensed under the DIWOC Custom Non-Commercial License v1.0.
+      See LICENSE_DIWOC.txt for details."
+
+3.2. Source Code Distribution:
+     If You distribute the Original Work or Derivative Works, You must:
+     (a) Include a copy of this License with the distribution
+     (b) Include the source code of the Original Work
+     (c) Clearly identify which portions are the Original Work
+
+3.3. Commercial Use Prohibition:
+     You may NOT use, copy, modify, or distribute the Original Work or
+     Derivative Works for any commercial purpose, including but not limited to:
+     - Selling the software or any product incorporating the Original Work
+     - Using the Original Work in a commercial product or service
+     - Charging fees for access to software containing the Original Work
+     - Using the Original Work for any revenue-generating activity
+     
+     Commercial use requires explicit written permission from the Licensor.
+
+3.4. No Warranty:
+     THE ORIGINAL WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+     IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR
+     OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+     ARISING FROM, OUT OF OR IN CONNECTION WITH THE ORIGINAL WORK OR THE
+     USE OR OTHER DEALINGS IN THE ORIGINAL WORK.
+
+3.5. Patent Grant:
+     This License does not grant any rights to use any trade names, trademarks,
+     service marks, or product names of the Licensor, except as required for
+     reasonable and customary use in describing the origin of the Original Work.
+
+================================================================================
+4. COMPATIBILITY WITH OTHER LICENSES
+================================================================================
+
+4.1. This License is designed to be compatible with the id Software Limited
+     Use Software License Agreement for Quake III Arena modifications, provided
+     that:
+     (a) The Original Work is used only in non-commercial modifications
+     (b) All terms of the id Software license are also complied with
+     (c) This License does not override or conflict with the id Software license
+
+4.2. When the Original Work is distributed as part of a larger work (such as
+     OSP2-BE modification), the Original Work remains subject to this License,
+     while other portions remain subject to their respective licenses.
+
+================================================================================
+5. TERMINATION
+================================================================================
+
+5.1. This License and the rights granted hereunder will terminate automatically
+     if You fail to comply with terms herein and fail to cure such breach within
+     30 days of becoming aware of the breach.
+
+5.2. Upon termination, You must destroy all copies of the Original Work in Your
+     possession or control.
+
+================================================================================
+6. INTELLECTUAL PROPERTY
+================================================================================
+
+6.1. The Licensor retains all right, title, and interest in and to the
+     Original Work, including all intellectual property rights therein.
+
+6.2. This License does not grant You any rights to use the Licensor's name,
+     trademarks, or other distinctive brand features, except as required for
+     attribution purposes.
+
+================================================================================
+7. EXPORT COMPLIANCE
+================================================================================
+
+7.1. You agree that the Original Work will not be shipped, transferred, or
+     exported into any country in violation of the U.S. Export Administration
+     Act or any other law governing such matters.
+
+================================================================================
+8. GOVERNING LAW
+================================================================================
+
+8.1. This License shall be governed by and construed in accordance with the
+     laws of the jurisdiction in which the Licensor resides, without regard to
+     its conflict of law provisions.
+
+================================================================================
+9. SEVERABILITY
+================================================================================
+
+9.1. If any provision of this License is held to be unenforceable, such
+     provision shall be reformed only to the extent necessary to make it
+     enforceable, and the remainder of this License shall remain in full
+     force and effect.
+
+================================================================================
+10. ENTIRE AGREEMENT
+================================================================================
+
+10.1. This License constitutes the entire agreement between the parties
+      regarding the Original Work and supersedes all prior or contemporaneous
+      communications, proposals, and agreements relating to the subject matter
+      hereof.
+
+================================================================================
+ACKNOWLEDGMENT
+================================================================================
+
+BY USING, COPYING, MODIFYING, OR DISTRIBUTING THE ORIGINAL WORK, YOU AGREE
+TO BE BOUND BY THE TERMS OF THIS LICENSE. IF YOU DO NOT AGREE TO THE TERMS
+OF THIS LICENSE, YOU MUST NOT USE, COPY, MODIFY, OR DISTRIBUTE THE ORIGINAL
+WORK.
+
+For questions or commercial licensing inquiries, please contact:
+diwoc@outlook.com
+
+================================================================================
+END OF LICENSE
+================================================================================

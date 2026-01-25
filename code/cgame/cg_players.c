@@ -1137,7 +1137,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 
 	/* Process event immediately - create the mark */
 	/* clientNum is the sender's client ID */
-	CG_OSPTeamTaskUnpack(newInfo->teamTask, clientNum, &toClient, &templateID, &qx, &qy, &qz);
+	CG_TeamTaskUnpack(newInfo->teamTask, clientNum, &toClient, &templateID, &qx, &qy, &qz);
 
 	/* Security check: reject if unpack failed (templateID == 0 means invalid/forged data) */
 	if (templateID == 0)

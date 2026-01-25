@@ -1,3 +1,25 @@
+/*
+===========================================================================
+cg_be_util.c
+
+BE (Backend Engine) utility functions
+
+Copyright (c) 2026 diwoc
+Contact: diwoc@outlook.com
+
+This file contains original work created by diwoc.
+It is included in the OSP2-BE modification for Quake III Arena and is
+distributed under the terms of the project's primary license.
+
+Additional licensing:
+Original portions authored by diwoc may also be used under the
+DIWOC Custom Non-Commercial License v1.0, provided such portions are
+separated from all id Software code and Quake III Arena–derived material.
+
+For details, refer to LICENSE_DIWOC.txt.
+===========================================================================
+*/
+
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
 
