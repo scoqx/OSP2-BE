@@ -2821,7 +2821,7 @@ void CG_OSPDrawNewCredits(void)
 		"",
 		"Special thanks to:",
 		"Snems, Kr3m, Mirage, Mus1n",
-		"MrX, Paragon, Zenx",
+		"MrX, Zenx",
 		"",
 		"Based on source codes:",
 		"OSP   ^Bhttps://www.orangesmoothie.org",

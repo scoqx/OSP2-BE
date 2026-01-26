@@ -49,27 +49,41 @@ void CG_PredictWeaponEffects(centity_t* cent)
 		vec3_t      muzzlePoint, forward, right, up;
 		trace_t trace;
 		vec3_t endPoint;
-		// get the muzzle point
-		VectorCopy(cg.predictedPlayerState.origin, muzzlePoint);
-		muzzlePoint[2] += cg.predictedPlayerState.viewheight;
-
-		// get forward, right, and up
+		vec3_t centerPoint;
+		
+		// get forward, right, and up vectors (always needed for trace direction)
 		AngleVectors(cg.predictedPlayerState.viewangles, forward, right, up);
-		VectorMA(muzzlePoint, 14, forward, muzzlePoint);
-		// do we have it on for the rail gun?
+		
+		// Calculate center point for accurate trace (always from view center for correct endpoint)
 
-		// trace forward
-		VectorMA(muzzlePoint, 8192, forward, endPoint);
+		VectorCopy(cg.predictedPlayerState.origin, centerPoint);
+		centerPoint[2] += cg.predictedPlayerState.viewheight;
+		VectorMA(centerPoint, 14, forward, centerPoint);
+		
+		// Trace from center point to get accurate endpoint (where crosshair points)
+		VectorMA(centerPoint, 8192, forward, endPoint);
+		CG_Trace(&trace, centerPoint, vec3_origin, vec3_origin, endPoint, cg.predictedPlayerState.clientNum, CONTENTS_SOLID);
+		
+		// If cg_railFix is enabled, use muzzle position from weapon model for trail start
+		if (cg_railFix.integer)
+		{
+			// get the muzzle point from weapon model tag
+			if (!CG_GetFirstPersonRailgunMuzzlePoint(muzzlePoint))
+			{
+				// Fallback to center point if model tag lookup fails
+				VectorCopy(centerPoint, muzzlePoint);
+			}
+		}
+		else
+		{
+			// Old logic: approximate muzzle position
+			VectorCopy(centerPoint, muzzlePoint);
+			// do the magic-number adjustment
+			VectorMA(muzzlePoint, 4, right, muzzlePoint);
+			VectorMA(muzzlePoint, -1, up, muzzlePoint);
+		}
 
-
-		// find the rail's end point
-		CG_Trace(&trace, muzzlePoint, vec3_origin, vec3_origin, endPoint, cg.predictedPlayerState.clientNum, CONTENTS_SOLID);
-
-		// do the magic-number adjustment
-		VectorMA(muzzlePoint, 4, right, muzzlePoint);
-		VectorMA(muzzlePoint, -1, up, muzzlePoint);
-
-		// draw a rail trail
+		// draw a rail trail from muzzle to accurate endpoint
 		CG_RailTrail(&cgs.clientinfo[cent->currentState.clientNum], muzzlePoint, trace.endpos);
 		//Com_Printf( "Predicted rail trail\n" );
 

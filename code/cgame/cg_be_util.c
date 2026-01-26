@@ -138,6 +138,11 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_TEAM_FROZEN;
 			changed = qtrue;
 		}
+		// if (cgs.be.customFreezeSound)
+		// {
+		// 	beFlags |= CG_BE_FREEZE_SOUND_FIX;
+		// 	changed = qtrue;
+		// }
 	}
 
 	if (changed)
@@ -234,6 +239,11 @@ void CG_PrintDisabledFeatures(qboolean request)
 			Q_strcat(buffer, sizeof(buffer), first ? "Team frozen" : ", team frozen");
 			first = qfalse;
 		}
+		// if (value & CG_BE_FREEZE_SOUND_FIX)
+		// {
+		// 	Q_strcat(buffer, sizeof(buffer), first ? "Freeze sound fix" : ", freeze sound fix");
+		// 	first = qfalse;
+		// }
 		CG_Printf("%s\n", buffer);
 	}
 }

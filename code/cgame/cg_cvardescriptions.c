@@ -447,6 +447,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teleportEffect", "Show teleport effect for local player. Set ^20^7 to disable." },
 	{ "cg_altRail", "Alternative railgun trail rendering. Set ^20^7 to use default trail, ^21^7 for alternative. Spiral radius can be adjusted with ^3cg_railRingsRadius^7." },
 	{ "cg_teamTaskNewSounds", "New team task sounds. Bitmask:\n  ^21^7 - default sound\n  ^22^7 - accept sound\n  ^24^7 - deny sound" },
+	{ "cg_railFix", "Fix rail trail start point. Set ^20^7 to disable." },
+	{ "cg_freezeSoundFix", "Replace freeze sound with alternative sound. Set ^20^7 to disable." },
 };
 
 

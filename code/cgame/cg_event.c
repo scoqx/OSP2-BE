@@ -738,6 +738,32 @@ void CG_PainEvent(centity_t* cent, int health)
 
 /*
 ==============
+CG_GetFreezeSoundReplacement
+
+Returns replacement sound handle for forced sounds, or 0 if no replacement needed
+==============
+*/
+static sfxHandle_t CG_GetFreezeSoundReplacement(const char* soundName, int eventParm)
+{
+	if (!soundName || !soundName[0])
+	{
+		return 0;
+	}
+
+	if (Q_stricmp(soundName, "sound/player/tankjr/jump1.wav") == 0)
+	{
+		if (cg_freezeSoundFix.integer == 1 && cgs.media.freezeSoundReplacement)
+		{
+			cgs.be.customFreezeSound = qtrue;
+			return cgs.media.freezeSoundReplacement;
+		}
+	}
+	cgs.be.customFreezeSound = qfalse;
+	return 0;
+}
+
+/*
+==============
 CG_EntityEvent
 
 An entity has an event value
@@ -1187,7 +1213,26 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			}
 			else
 			{
-				CG_RailTrail(ci, es->origin2, es->pos.trBase);
+				vec3_t railStart;
+				
+				// If cg_railFix is enabled, use muzzle position from weapon model for first person view
+				if (cg_railFix.integer && es->clientNum == cg.predictedPlayerState.clientNum &&
+				        !cg.renderingThirdPerson && !cg.demoPlayback)
+				{
+					// Calculate muzzle position from weapon model tag
+					if (!CG_GetFirstPersonRailgunMuzzlePoint(railStart))
+					{
+						// Fallback to original position if model tag lookup fails
+						VectorCopy(es->origin2, railStart);
+					}
+				}
+				else
+				{
+					// Use original position from server (old logic)
+					VectorCopy(es->origin2, railStart);
+				}
+				
+				CG_RailTrail(ci, railStart, es->pos.trBase);
 				if (es->eventParm != 255)
 				{
 					ByteToDir(es->eventParm, dir);
@@ -1213,27 +1258,46 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			break;
 
 		case EV_GENERAL_SOUND:
+		{
+			sfxHandle_t soundHandle;
 			DEBUGNAME("EV_GENERAL_SOUND");
-			if (cgs.gameSounds[ es->eventParm ])
+			s = CG_ConfigString(CS_SOUNDS + es->eventParm);
+			if (cg_freezeSoundFix.integer != 0)
 			{
-				trap_S_StartSound(NULL, es->number, CHAN_VOICE, cgs.gameSounds[ es->eventParm ]);
+				soundHandle = CG_GetFreezeSoundReplacement(s, es->eventParm);
+				if (soundHandle)
+				{
+					trap_S_StartSound(NULL, es->number, CHAN_VOICE, soundHandle);
+				}
+				else
+				{
+					trap_S_StartSound(NULL, es->number, CHAN_VOICE, CG_CustomSound(es->number, s));
+				}
 			}
 			else
 			{
-				s = CG_ConfigString(CS_SOUNDS + es->eventParm);
-				trap_S_StartSound(NULL, es->number, CHAN_VOICE, CG_CustomSound(es->number, s));
+				if (cgs.gameSounds[ es->eventParm ])
+				{
+					trap_S_StartSound(NULL, es->number, CHAN_VOICE, cgs.gameSounds[ es->eventParm ]);
+				}
+				else
+				{
+					trap_S_StartSound(NULL, es->number, CHAN_VOICE, CG_CustomSound(es->number, s));
+				}
 			}
 			break;
+		}
 
 		case EV_GLOBAL_SOUND:   // play from the player's head so it never diminishes
 			DEBUGNAME("EV_GLOBAL_SOUND");
+			s = CG_ConfigString(CS_SOUNDS + es->eventParm);
+			// CG_Printf("^3[SOUND DEBUG]^7 EV_GLOBAL_SOUND: index=^2%i^7, sound=^2%s^7, entity=^2%i^7\n", es->eventParm, s[0] ? s : "(registered)", es->number);
 			if (cgs.gameSounds[ es->eventParm ])
 			{
 				trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_AUTO, cgs.gameSounds[ es->eventParm ]);
 			}
 			else
 			{
-				s = CG_ConfigString(CS_SOUNDS + es->eventParm);
 				trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_AUTO, CG_CustomSound(es->number, s));
 			}
 			break;

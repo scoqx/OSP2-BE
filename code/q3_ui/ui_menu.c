@@ -52,6 +52,41 @@ static errorMessage_t s_errorMessage;
 
 /*
 =================
+Main_MenuKey
+=================
+*/
+static sfxHandle_t Main_MenuKey( int key ) {
+	int textY;
+	int textHeight;
+	int textWidth;
+	int clickX;
+	int clickY;
+	
+	if ( key == K_MOUSE1 ) {
+		clickX = uis.cursorx;
+		clickY = uis.cursory;
+		
+		if (uis.demoversion) {
+			textY = 375;
+		} else {
+			textY = 425;
+		}
+		
+		textHeight = SMALLCHAR_HEIGHT;
+		textWidth = strlen( "OSP2-BE (Black Edition), 2025-2026, diwoc" ) * SMALLCHAR_WIDTH;
+		
+		if ( clickY >= textY && clickY <= textY + textHeight &&
+		     clickX >= 320 - textWidth / 2 && clickX <= 320 + textWidth / 2 ) {
+			UI_CreditMenu2();
+			return menu_move_sound;
+		}
+	}
+	
+	return Menu_DefaultKey( &s_main.menu, key );
+}
+
+/*
+=================
 MainMenu_ExitAction
 =================
 */
@@ -143,6 +178,7 @@ static void Main_MenuDraw( void ) {
 	float			adjust;
 	float			x, y, w, h;
 	vec4_t			color = {0.5, 0, 0, 1};
+	vec4_t			colorBE = {0.4, 0.4, 0.4, 0.15};
 
 	// setup the refdef
 
@@ -203,8 +239,10 @@ static void Main_MenuDraw( void ) {
 
 	if (uis.demoversion) {
 		UI_DrawProportionalString( 320, 372, "DEMO      FOR MATURE AUDIENCES      DEMO", UI_CENTER|UI_SMALLFONT, color );
+		UI_DrawString( 320, 375, "OSP2-BE (Black Edition), 2025-2026, diwoc", UI_CENTER|UI_SMALLFONT|UI_PULSE_2, colorBE );
 		UI_DrawString( 320, 400, "Quake III Arena(c) 1999-2000, Id Software, Inc.  All Rights Reserved", UI_CENTER|UI_SMALLFONT, color );
 	} else {
+		UI_DrawString( 320, 425, "OSP2-BE (Black Edition), 2025-2026, diwoc", UI_CENTER|UI_SMALLFONT|UI_PULSE_2, colorBE );
 		UI_DrawString( 320, 450, "Quake III Arena(c) 1999-2000, Id Software, Inc.  All Rights Reserved", UI_CENTER|UI_SMALLFONT, color );
 	}
 }
@@ -286,6 +324,7 @@ void UI_MainMenu( void ) {
 	}
 
 	s_main.menu.draw = Main_MenuDraw;
+	s_main.menu.key = Main_MenuKey;
 	s_main.menu.fullscreen = qtrue;
 	s_main.menu.wrapAround = qtrue;
 	s_main.menu.showlogo = qtrue;

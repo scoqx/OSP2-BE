@@ -214,7 +214,7 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	refEntity_t*   re;
 
 	// Check for alternate rail effect
-	if (cg_altRail.integer == 1)
+	if (cg_altRail.integer)
 	{
 		CG_RailTrail2(ci, start, end);
 		return;
@@ -3227,6 +3227,69 @@ BULLETS
 
 ============================================================================
 */
+
+/*
+======================
+CG_GetFirstPersonRailgunMuzzlePoint
+
+Calculate railgun muzzle position for first person view using weapon model tags
+Same logic as CG_AddPlayerWeapon, just get flash.origin for railgun
+======================
+*/
+qboolean CG_GetFirstPersonRailgunMuzzlePoint(vec3_t muzzle)
+{
+	refEntity_t hand;
+	refEntity_t gun;
+	refEntity_t flash;
+	vec3_t angles;
+	weaponInfo_t* weapon;
+	centity_t* cent;
+	clientInfo_t* ci;
+	float fovOffset;
+	
+	if (cg.renderingThirdPerson)
+	{
+		return qfalse;
+	}
+	
+	cent = &cg.predictedPlayerEntity;
+	weapon = &cg_weapons[WP_RAILGUN];
+	
+	if (!weapon->registered || !weapon->handsModel || !weapon->weaponModel || !weapon->flashModel)
+	{
+		return qfalse;
+	}
+	
+	// Set up hand (minimal setup for tag positioning)
+	memset(&hand, 0, sizeof(hand));
+	CG_CalculateWeaponPosition(hand.origin, angles);
+	fovOffset = (cg_fov.integer > 90) ? -0.2 * (cg_fov.integer - 90) : 0;
+	VectorMA(hand.origin, cg_gun_x.value, cg.refdef.viewaxis[0], hand.origin);
+	VectorMA(hand.origin, cg_gun_y.value, cg.refdef.viewaxis[1], hand.origin);
+	VectorMA(hand.origin, (cg_gun_z.value + fovOffset), cg.refdef.viewaxis[2], hand.origin);
+	AnglesToAxis(angles, hand.axis);
+	ci = &cgs.clientinfo[cent->currentState.clientNum];
+	hand.frame = CG_MapTorsoToWeaponFrame(ci, cent->pe.torso.frame);
+	hand.oldframe = CG_MapTorsoToWeaponFrame(ci, cent->pe.torso.oldFrame);
+	hand.backlerp = cent->pe.torso.backlerp;
+	hand.hModel = weapon->handsModel;
+	
+	// Position gun on tag_weapon, then apply railgun offset
+	CG_PositionEntityOnTag(&gun, &hand, weapon->handsModel, "tag_weapon");
+	VectorMA(gun.origin, 0.45, hand.axis[1], gun.origin);
+	gun.frame = hand.frame;
+	gun.oldframe = hand.oldframe;
+	gun.backlerp = hand.backlerp;
+	gun.hModel = weapon->weaponModel;
+	
+	// Position flash on tag_flash
+	memset(&flash, 0, sizeof(flash));
+	flash.hModel = weapon->flashModel;
+	CG_PositionRotatedEntityOnTag(&flash, &gun, weapon->weaponModel, "tag_flash");
+	
+	VectorCopy(flash.origin, muzzle);
+	return qtrue;
+}
 
 /*
 ======================

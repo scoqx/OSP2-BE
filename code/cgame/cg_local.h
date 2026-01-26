@@ -1188,6 +1188,8 @@ typedef struct
 	sfxHandle_t pingAcceptSoundNew;
 	sfxHandle_t pingDenySoundNew;
 
+	sfxHandle_t freezeSoundReplacement;
+
 } cgMedia_t;
 
 typedef struct osp_decal_s
@@ -1337,6 +1339,7 @@ typedef struct cgs_be_s
 	qboolean clientDamagePrinted;  // whether damage was already shown
 	vec3_t brightWeaponsColor[WP_NUM_WEAPONS];
 	team_t myTeam;  // отслеживание команды игрока для динамического обновления цветов T/E
+	qboolean customFreezeSound;
 	// team task markers
 	struct
 	{
@@ -1420,6 +1423,7 @@ typedef struct cgs_be_s
 #define CG_BE_TEAMTASKS         (1 << 12) // 4096
 #define CG_BE_NO_EXPLOSIONS     (1 << 13) // 8192
 #define CG_BE_TEAM_FROZEN       (1 << 14) // 16384
+// #define CG_BE_FREEZE_SOUND_FIX  (1 << 15) // 32768
 
 // Team task flags (bitmask for cg_teamTask)
 #define CG_TEAMTASK_ENABLED        (1 << 0)  // 1 - Enable team task markers
@@ -2142,6 +2146,8 @@ extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
 extern vmCvar_t           cg_altRail;
+extern vmCvar_t           cg_railFix;
+extern vmCvar_t           cg_freezeSoundFix;
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_run;
 //
@@ -2514,6 +2520,7 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end);
 void CG_RailTrail2(clientInfo_t* ci, vec3_t start, vec3_t end);
 void CG_AddRailEffect(localEntity_t* le);
 void CG_GrappleTrail(centity_t* ent, const weaponInfo_t* wi);
+qboolean CG_GetFirstPersonRailgunMuzzlePoint(vec3_t muzzle);
 void CG_AddViewWeapon(playerState_t* ps);
 void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent, int team);
 void CG_DrawWeaponSelect(void);
@@ -2933,7 +2940,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00t5" // BE (Black Edition)
+#define OSP_VERSION "be-1.00u" // BE (Black Edition)
 
 
 

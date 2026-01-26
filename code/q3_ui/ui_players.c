@@ -923,6 +923,13 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 			VectorCopy( origin, gun.lightingOrigin );
 			UI_PositionEntityOnTag( &gun, &torso, pi->torsoModel, "tag_weapon" );
 			gun.renderfx = renderfx;
+			// Set custom weapon color if specified
+			if ( pi->useCustomWeaponColor ) {
+				gun.shaderRGBA[0] = UI_ColorFloatToByte( pi->customWeaponColor[0] );
+				gun.shaderRGBA[1] = UI_ColorFloatToByte( pi->customWeaponColor[1] );
+				gun.shaderRGBA[2] = UI_ColorFloatToByte( pi->customWeaponColor[2] );
+				gun.shaderRGBA[3] = UI_ColorFloatToByte( pi->customWeaponColor[3] );
+			}
 			trap_R_AddRefEntityToScene( &gun );
 		}
 

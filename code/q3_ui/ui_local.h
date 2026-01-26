@@ -274,6 +274,7 @@ extern void UI_UpdateCvars( void );
 // ui_credits.c
 //
 extern void UI_CreditMenu( void );
+extern void UI_CreditMenu2( void );
 extern void UI_SuperHUDConfigMenu( void );
 
 //
@@ -548,6 +549,8 @@ typedef struct {
 	vec4_t			customHeadColor;
 	vec4_t			customTorsoColor;
 	vec4_t			customLegsColor;
+	qboolean		useCustomWeaponColor;
+	vec4_t			customWeaponColor;
 
 	qboolean		useOutline;
 	vec4_t			outlineColor;

@@ -690,7 +690,25 @@ void UI_DrawProportionalString( int x, int y, const char* str, int style, vec4_t
 		drawcolor[0] = color[0];
 		drawcolor[1] = color[1];
 		drawcolor[2] = color[2];
-		drawcolor[3] = 0.5 + 0.5 * sin( ( uis.realtime % TMOD_075 ) / PULSE_DIVISOR );
+		drawcolor[3] = 0.5 + 0.5 * sin( ( uis.realtime % TMOD_1000 ) / PULSE_DIVISOR );
+		UI_DrawProportionalString2( x, y, str, drawcolor, sizeScale, uis.charsetPropGlow );
+		return;
+	}
+	
+	if ( style & UI_PULSE_2 ) {
+		float pulseAlpha;
+		
+		drawcolor[0] = color[0] * 0.25;
+		drawcolor[1] = color[1] * 0.25;
+		drawcolor[2] = color[2] * 0.25;
+		drawcolor[3] = color[3];
+		UI_DrawProportionalString2( x, y, str, drawcolor, sizeScale, uis.charsetProp );
+
+		drawcolor[0] = color[0];
+		drawcolor[1] = color[1];
+		drawcolor[2] = color[2];
+		pulseAlpha = 0.5 + 0.5 * cos( 2.0 * 3.14159265358979323846 * ( uis.realtime % 1000 ) / 1000.0 );
+		drawcolor[3] = color[3] * pulseAlpha;
 		UI_DrawProportionalString2( x, y, str, drawcolor, sizeScale, uis.charsetPropGlow );
 		return;
 	}
@@ -1161,6 +1179,9 @@ static void UI_DrawStringCommon( int x, int y, const char* str, int style, vec4_
 	vec4_t	dropcolor;
 	double	pulse;
 	int		visibleWidth;
+	float	pulseAlpha;
+	vec4_t	baseColor;
+	vec4_t	pulseColor;
 
 	if ( !str ) {
 		return;
@@ -1236,6 +1257,32 @@ static void UI_DrawStringCommon( int x, int y, const char* str, int style, vec4_
 
 		default:
 			break;
+	}
+
+	if ( style & UI_PULSE_2 )
+	{
+		baseColor[0] = color[0] * 0.15f;
+		baseColor[1] = color[1] * 0.15f;
+		baseColor[2] = color[2] * 0.15f;
+		baseColor[3] = color[3];
+		
+		if ( style & UI_DROPSHADOW )
+		{
+			dropcolor[0] = dropcolor[1] = dropcolor[2] = 0.0f;
+			dropcolor[3] = baseColor[3];
+			UI_DrawString2( x + 2, y + 2, str, dropcolor, charw, charh, parseColorCodes, qtrue, convertBlackToWhite );
+		}
+		
+		UI_DrawString2( x, y, str, baseColor, charw, charh, parseColorCodes, qfalse, convertBlackToWhite );
+		
+		pulseAlpha = 0.5f + 0.5f * (float)cos( 2.0f * 3.14159265358979323846f * ( uis.realtime % 1000 ) / 1000.0f );
+		pulseColor[0] = color[0];
+		pulseColor[1] = color[1];
+		pulseColor[2] = color[2];
+		pulseColor[3] = color[3] * pulseAlpha;
+		
+		UI_DrawString2( x, y, str, pulseColor, charw, charh, parseColorCodes, qfalse, convertBlackToWhite );
+		return;
 	}
 
 	if ( style & UI_DROPSHADOW )

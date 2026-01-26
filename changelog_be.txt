@@ -695,3 +695,9 @@ TEAMTASKS:
 * cg_enemyLightningColor fixed
 * cg_bestats_style 2 visual fix
 - *outLineSize 3 (wide) removed
+
+26.01.2025 be v1.00u
++ UI credits
++ cg_railFix (test)
++ cg_freezeSoundFix
++ docs/teamTaskHelp_RU.txt

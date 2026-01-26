@@ -287,6 +287,8 @@ vmCvar_t           cg_playerFrozenColor;
 vmCvar_t           cg_teamModelColors;
 vmCvar_t           cg_teamRailColors;
 vmCvar_t           cg_teamFrozenColor;
+
+vmCvar_t           cg_freezeSoundFix;
 vmCvar_t           cg_teamFrozenFoe;
 
 vmCvar_t           cg_enemyModelColors;
@@ -553,7 +555,8 @@ vmCvar_t        cg_noExplosions;
 vmCvar_t        cg_noItemUseSound;
 vmCvar_t        cg_friendsWallhackFrozen;
 vmCvar_t        cg_teleportEffect;
-vmCvar_t           cg_altRail;
+vmCvar_t        cg_altRail;
+vmCvar_t        cg_railFix;
 vmCvar_t        cg_teamTaskNewSounds;
 
 // vmCvar_t        cg_snow;
@@ -1014,7 +1017,9 @@ static cvarTable_t cvarTable[] =
 	{ &cg_friendsWallhackFrozen, "cg_friendsWallhackFrozen", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teleportEffect, "cg_teleportEffect", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_altRail, "cg_altRail", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_railFix, "cg_railFix", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskNewSounds, "cg_teamTaskNewSounds", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_freezeSoundFix, "cg_freezeSoundFix", "", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1635,6 +1640,7 @@ static void CG_RegisterSounds(void)
 	cgs.media.hgrenb1aSound = trap_S_RegisterSound("sound/weapons/grenade/hgrenb1a.wav", qfalse);
 	cgs.media.hgrenb2aSound = trap_S_RegisterSound("sound/weapons/grenade/hgrenb2a.wav", qfalse);
 
+	cgs.media.freezeSoundReplacement = trap_S_RegisterSound("sound/player/sorlag/fall1.wav", qfalse);
 
 	// Team Task
 	cgs.media.pingSimpleSound = trap_S_RegisterSound("sound/teamplay/ping-simple.wav", qfalse);
