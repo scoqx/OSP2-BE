@@ -696,7 +696,7 @@ TEAMTASKS:
 * cg_bestats_style 2 visual fix
 - *outLineSize 3 (wide) removed
 
-26.01.2025 be v1.00u3
+26.01.2025 be v1.00u4
 + UI BE Credits
 + ui_beCreditsFont
 + Loading screen version

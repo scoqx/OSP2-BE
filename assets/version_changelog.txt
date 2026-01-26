@@ -1,8 +1,10 @@
-26.01.2025 be v1.00u2
+26.01.2025 be v1.00u4
 + UI BE Credits
++ ui_beCreditsFont
 + Loading screen version
 + cg_infoVersionFont
 + cg_railFix (test)
 + cg_freezeSoundFix
 + docs/teamTaskHelp_RU.txt
 * FPSClassico small fix
+* cg_drawRealHeads small fix

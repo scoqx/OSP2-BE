@@ -1642,7 +1642,7 @@ static void CG_RegisterSounds(void)
 	cgs.media.hgrenb1aSound = trap_S_RegisterSound("sound/weapons/grenade/hgrenb1a.wav", qfalse);
 	cgs.media.hgrenb2aSound = trap_S_RegisterSound("sound/weapons/grenade/hgrenb2a.wav", qfalse);
 
-	cgs.media.freezeSoundReplacement = trap_S_RegisterSound("sound/player/sorlag/fall1.wav", qfalse);
+	cgs.media.freezeSoundReplacement = trap_S_RegisterSound("sound/misc/unfreeze2.wav", qfalse);
 
 	// Team Task
 	cgs.media.pingSimpleSound = trap_S_RegisterSound("sound/teamplay/ping-simple.wav", qfalse);
