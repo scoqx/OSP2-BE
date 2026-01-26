@@ -2096,8 +2096,13 @@ static void CG_RegisterGraphics(void)
 	cgs.media.scoreboardBELeaderboard = trap_R_RegisterShaderNoMip("icons/leaderboard");
 	cgs.media.scoreboardBEReady = trap_R_RegisterShaderNoMip("icons/ready");
 
+	cgs.media.unknownSkinIcon = trap_R_RegisterShaderNoMip("models/players/icon_unknown.tga");
 
-
+	cgs.media.unknownHeadModel = trap_R_RegisterModel("models/players/sarge/head.md3");
+	if (cgs.media.unknownHeadModel)
+	{
+		cgs.media.unknownHeadSkin = trap_R_RegisterSkin("models/players/sarge/head_default.skin");
+	}
 
 	memset(cg_items, 0, sizeof(cg_items));
 	memset(cg_weapons, 0, sizeof(cg_weapons));

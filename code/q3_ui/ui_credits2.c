@@ -193,9 +193,14 @@ static void UI_CreditMenu2_Draw( void ) {
 
 	UI_CreditMenu2_DrawPlayer();
 
-	/* Ensure font 2 is selected for credits text */
+	/* Ensure selected font is active for credits text */
 	if (font_loaded) {
-		UI_FontSelect(2);
+		int fontIndex;
+		fontIndex = UI_FontIndexFromCvar( &ui_beCreditsFont );
+		if ( !UI_FontAvailable( fontIndex ) ) {
+			fontIndex = 2; /* fallback to sansman */
+		}
+		UI_FontSelect(fontIndex);
 	}
 
 	y = y_pos;	
@@ -261,12 +266,20 @@ void UI_CreditMenu2( void ) {
 
 	UI_LoadFonts();
 	
-	/* Select font 2 (sansman) for credits text */
-	if (UI_FontAvailable(2)) {
-		UI_FontSelect(2);
-		font_loaded = qtrue;
-	} else {
-		font_loaded = qfalse;
+	/* Update and select font from cvar */
+	{
+		int fontIndex;
+		fontIndex = UI_FontIndexFromCvar( &ui_beCreditsFont );
+		if ( !UI_FontAvailable( fontIndex ) ) {
+			fontIndex = 2; /* fallback to sansman */
+			trap_Cvar_Set( "ui_beCreditsFont", "2" );
+		}
+		if (UI_FontAvailable(fontIndex)) {
+			UI_FontSelect(fontIndex);
+			font_loaded = qtrue;
+		} else {
+			font_loaded = qfalse;
+		}
 	}
 
 	UI_InitPlayerModels();

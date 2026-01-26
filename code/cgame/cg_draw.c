@@ -194,6 +194,12 @@ void CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headA
 		{
 			cm = ci->originalHeadModelHandle;
 			headSkin = ci->originalHeadSkinHandle;
+			// If model not found, use sarge/default as fallback
+			if (!cm && cgs.media.unknownHeadModel)
+			{
+				cm = cgs.media.unknownHeadModel;
+				headSkin = cgs.media.unknownHeadSkin;
+			}
 		}
 		else
 		{
@@ -245,6 +251,11 @@ void CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headA
 		if (cg_drawRealHeads.integer)
 		{
 			iconToUse = ci->originalModelIcon;
+			// If icon not found, use icon_unknown.tga as fallback
+			if (!iconToUse)
+			{
+				iconToUse = cgs.media.unknownSkinIcon;
+			}
 		}
 		else
 		{

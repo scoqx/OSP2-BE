@@ -786,6 +786,9 @@ typedef struct
 	qhandle_t   armorIcon[3];
 	qhandle_t   healthIcon;
 
+	qhandle_t   unknownHeadModel;
+	qhandle_t   unknownHeadSkin;
+
 	qhandle_t   teamStatusBar;
 
 	qhandle_t   deferShader;
@@ -914,6 +917,7 @@ typedef struct
 	qhandle_t   flagIcon_blue;
 	qhandle_t   teleporterIcon;
 	qhandle_t   medkitIcon;
+	qhandle_t   unknownSkinIcon;
 
 	// weapon effect models
 	qhandle_t   bulletFlashModel;
@@ -2941,7 +2945,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00u2" // BE (Black Edition)
+#define OSP_VERSION "be-1.00u3" // BE (Black Edition)
 
 
 
