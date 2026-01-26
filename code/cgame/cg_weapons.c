@@ -3241,12 +3241,13 @@ qboolean CG_GetFirstPersonRailgunMuzzlePoint(vec3_t muzzle)
 	refEntity_t hand;
 	refEntity_t gun;
 	refEntity_t flash;
+	orientation_t lerped;
 	vec3_t angles;
 	weaponInfo_t* weapon;
 	centity_t* cent;
 	clientInfo_t* ci;
 	float fovOffset;
-	
+
 	if (cg.renderingThirdPerson)
 	{
 		return qfalse;
@@ -3276,7 +3277,19 @@ qboolean CG_GetFirstPersonRailgunMuzzlePoint(vec3_t muzzle)
 	
 	// Position gun on tag_weapon, then apply railgun offset
 	CG_PositionEntityOnTag(&gun, &hand, weapon->handsModel, "tag_weapon");
+	trap_R_LerpTag(&lerped, weapon->handsModel, hand.oldframe, hand.frame,
+	              1.0f - hand.backlerp, "tag_weapon");
+	/* Undo tag Y (already in gun from PositionEntityOnTag), match CG_AddPlayerWeapon cg_gunPos logic */
+	VectorMA(gun.origin, -lerped.origin[1], hand.axis[1], gun.origin);
 	VectorMA(gun.origin, 0.45, hand.axis[1], gun.origin);
+	if (cg_gunPos.integer == 2)
+	{
+		VectorMA(gun.origin, -lerped.origin[1], hand.axis[1], gun.origin);
+	}
+	else if (cg_gunPos.integer != 3)
+	{
+		VectorMA(gun.origin, lerped.origin[1], hand.axis[1], gun.origin);
+	}
 	gun.frame = hand.frame;
 	gun.oldframe = hand.oldframe;
 	gun.backlerp = hand.backlerp;
@@ -3288,6 +3301,7 @@ qboolean CG_GetFirstPersonRailgunMuzzlePoint(vec3_t muzzle)
 	CG_PositionRotatedEntityOnTag(&flash, &gun, weapon->weaponModel, "tag_flash");
 	
 	VectorCopy(flash.origin, muzzle);
+	VectorMA(muzzle, 2, hand.axis[2], muzzle);
 	return qtrue;
 }
 
