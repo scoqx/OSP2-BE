@@ -2048,7 +2048,7 @@ static void PM_Weapon(void)
 			addTime = 100; //-V1037
 			break;
 		case WP_RAILGUN:
-			if (modeUnknown2)
+			if (modeUnknown2 || modeFPSClassico)
 			{
 				addTime = 1000;
 			}

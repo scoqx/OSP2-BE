@@ -687,6 +687,15 @@ void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
 		trap_Cvar_Set("cg_centerMessagesFont", "2");
 	}
 }
+void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart)
+{
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
+	{
+		trap_Cvar_Set("cg_infoVersionFont", "2");
+	}
+}
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.be.altGrenadesColor);

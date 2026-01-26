@@ -171,6 +171,8 @@ void CG_DrawInformation(void)
 	qhandle_t   levelshot;
 	qhandle_t   detail;
 	char        buf[1024];
+	char        versionStr[64];
+	const char* versionPtr;
 
 	info = CG_ConfigString(CS_SERVERINFO);
 	sysInfo = CG_ConfigString(CS_SYSTEMINFO);
@@ -314,5 +316,20 @@ void CG_DrawInformation(void)
 			y += PROP_HEIGHT;
 		}
 	}
+
+	// Draw OSP2-BE version in bottom right corner
+	versionPtr = OSP_VERSION;
+	if (Q_strncmp(versionPtr, "be-", 3) == 0)
+	{
+		versionPtr += 3; // Skip "be-" prefix
+	}
+	Com_sprintf(versionStr, sizeof(versionStr), "OSP2-BE(%s)", versionPtr);
+	CG_FontSelect(CG_FontIndexFromCvar(&cg_infoVersionFont));
+	CG_OSPDrawStringNew(640.0f, 467.0f, versionStr,
+	                    colorWhite, colorBlack,
+	                    8.0f, 12.0f,
+	                    SCREEN_WIDTH,
+	                    DS_HRIGHT | DS_PROPORTIONAL | DS_SHADOW,
+	                    NULL, NULL, NULL);
 }
 

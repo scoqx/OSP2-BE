@@ -103,6 +103,7 @@ extern int modeUnknown2;    //3528
 extern int modeUnknown3;    //352c
 extern int modeUnknown4;    //3530
 extern int modeShotgunPromode;    //3514
+extern int modeFPSClassico;    // FPSClassico server flag
 
 void PM_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 void PM_ClipVelocityOSP(vec3_t in, vec3_t normal, vec3_t out, float overbounce);

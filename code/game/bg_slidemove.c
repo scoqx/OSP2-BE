@@ -53,6 +53,7 @@ int modeUnknown2;    //3528
 int modeUnknown3;    //352c
 int modeUnknown4;    //3530
 int modeShotgunPromode;    //3514
+int modeFPSClassico;    // FPSClassico server flag
 /*
 
 input: origin, velocity, bounds, groundPlane, trace function

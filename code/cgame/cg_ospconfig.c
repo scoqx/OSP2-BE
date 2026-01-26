@@ -97,6 +97,7 @@ void CG_OSPSetMode(int value)
 	modeUnknown2                       = value & OSP_SERVER_MODE_PROMODE_OPT1 ? 1 : 0;
 	modeUnknown3                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 200 : 0;
 	modeUnknown4                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 100 : 0;
+	modeFPSClassico                    = CG_isFPSClassicoServer() ? 1 : 0;
 }
 
 

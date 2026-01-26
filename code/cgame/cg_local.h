@@ -2148,6 +2148,7 @@ extern vmCvar_t           cg_shud_chatmsg15;
 extern vmCvar_t           cg_altRail;
 extern vmCvar_t           cg_railFix;
 extern vmCvar_t           cg_freezeSoundFix;
+extern vmCvar_t           cg_infoVersionFont;
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_run;
 //
@@ -2940,7 +2941,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00u" // BE (Black Edition)
+#define OSP_VERSION "be-1.00u1" // BE (Black Edition)
 
 
 
@@ -3265,6 +3266,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFontSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ReloadTeamTaskWheel(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskThemeColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart);

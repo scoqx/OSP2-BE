@@ -288,7 +288,6 @@ vmCvar_t           cg_teamModelColors;
 vmCvar_t           cg_teamRailColors;
 vmCvar_t           cg_teamFrozenColor;
 
-vmCvar_t           cg_freezeSoundFix;
 vmCvar_t           cg_teamFrozenFoe;
 
 vmCvar_t           cg_enemyModelColors;
@@ -558,6 +557,8 @@ vmCvar_t        cg_teleportEffect;
 vmCvar_t        cg_altRail;
 vmCvar_t        cg_railFix;
 vmCvar_t        cg_teamTaskNewSounds;
+vmCvar_t        cg_freezeSoundFix;
+vmCvar_t        cg_infoVersionFont;
 
 // vmCvar_t        cg_snow;
 
@@ -1020,6 +1021,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_railFix, "cg_railFix", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskNewSounds, "cg_teamTaskNewSounds", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_freezeSoundFix, "cg_freezeSoundFix", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_infoVersionFont, "cg_infoVersionFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_infoVersionFont },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -2402,6 +2404,7 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_teamIndicatorFont");
 	CG_CvarTouch("cg_scoreboardFont");
 	CG_CvarTouch("cg_centerMessagesFont");
+	CG_CvarTouch("cg_infoVersionFont");
 
 	CG_CvarTouch("cg_altGrenadesColor");
 	CG_CvarTouch("cg_enemyGrenadesColor");
