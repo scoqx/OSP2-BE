@@ -222,6 +222,8 @@ static void UI_CreditMenu2_Draw( void ) {
 	DRAW_WSTEP1("Mus1n")
 	DRAW_WSTEP1("MrX")
 	DRAW_WSTEP1("Zenx")
+	DRAW_WSTEP1("Tuborg")
+	DRAW_WSTEP1("Meta")
 	DRAW_WSTEP1("")
 	DRAW_WSTEP1("Based on source codes:")
 	DRAW_WSTEP1("OSP")

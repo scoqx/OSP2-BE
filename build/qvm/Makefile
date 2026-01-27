@@ -99,7 +99,15 @@ endif
 .PHONY: all dirs FORCE check_cvardesc
 
 check_cvardesc: FORCE
+ifeq ($(MINGW),1)
+	@if command -v $(PYTHON) >/dev/null 2>&1; then \
+		$(PYTHON) ../../scripts/check_cvardesc_len.py; \
+	else \
+		echo "Warning: Python not found, skipping cvar description check"; \
+	fi
+else
 	@$(PYTHON) ../../scripts/check_cvardesc_len.py
+endif
 
 FORCE:
 
