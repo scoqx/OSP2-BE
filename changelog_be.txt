@@ -696,7 +696,7 @@ TEAMTASKS:
 * cg_bestats_style 2 visual fix
 - *outLineSize 3 (wide) removed
 
-26.01.2025 be v1.00u4
+26.01.2025 be v1.00u5
 + UI BE Credits
 + ui_beCreditsFont
 + Loading screen version
@@ -706,3 +706,5 @@ TEAMTASKS:
 + docs/teamTaskHelp_RU.txt
 * FPSClassico small fix
 * cg_drawRealHeads small fix
+* cg_teamIndicator HP/AP fade fix
++ sound/player/bitterman/drown.wav

@@ -3039,7 +3039,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 		float crosshairX = SCREEN_WIDTH * 0.5f;
 		float crosshairY = SCREEN_HEIGHT * 0.5f;
 		float dx = headX - crosshairX;
-		float dy = headY - crosshairY;
+		float dy = (headY + (cgs.be.playerIndicatorFontSize[1] / 2.0f)) - crosshairY;
 		float distToCrosshair = SQRTFAST(dx * dx + dy * dy);
 
 		if (distToCrosshair < fadeRadius)
@@ -3128,6 +3128,7 @@ void CG_DrawPlayerIndicator(int clientNum)
 		{
 			char statsText[16];
 			vec4_t statsColor;
+			vec4_t statsShadow = { 0.0f, 0.0f, 0.0f, 0.0f };
 			float w2;
 			float h2 = h - 2.0f;
 			if (h2 < 4.0f) h2 = 4.0f;
@@ -3136,12 +3137,12 @@ void CG_DrawPlayerIndicator(int clientNum)
 			Com_sprintf(statsText, sizeof(statsText), "[%d/%d]", health, armor);
 			CG_GetColorForHealth(health, armor, statsColor, NULL);
 			statsColor[3] = nameColor[3];
-
+			statsShadow[3] = statsColor[3];
 			CG_OSPDrawStringNew(
 			    headX, headY + h,
 			    statsText,
 			    statsColor,
-			    colorBlack,
+			    statsShadow,
 			    w2, h2,
 			    SCREEN_WIDTH,
 			    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
