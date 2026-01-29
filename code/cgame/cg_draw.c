@@ -25,7 +25,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 #include "cg_superhud.h"
-#include "cg_cherryhud.h"
 
 int sortedTeamPlayers[TEAM_MAXOVERLAY];
 int numSortedTeamPlayers;
@@ -2431,7 +2430,7 @@ void CG_OSPDrawIntermission()
 	CG_OSPSetColor(NULL);
 	CG_DrawPicOld(590.0f, 430.f, 50.0f, 50.0f, cgs.media.blender180Shader);
 
-	if (cgs.be.newStats.drawWindow)
+	if (cgs.newStats.drawWindow)
 	{
 		CG_BEStatsShowStatsInfo();
 	}
@@ -3217,11 +3216,13 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 	int i;
 	int scanRange = MAX_CLIENTS;
 	int useWallhack;
+	int outClientNum;
+	qboolean outIsFrozenEnt;
+	int outFrozenEntity;
+	clientInfo_t* ci;
 
 	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
-	{
 		scanRange = MAX_GENTITIES;
-	}
 
 	useWallhack = (cg_friendsWallhack.integer & 2) ? 1 : 0;
 
@@ -3230,9 +3231,12 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 		if (i == cg.snap->ps.clientNum)
 			continue;
 
-		if (!CG_IsPlayerValidAndVisible(i, useWallhack))
+		if (!CG_IsPlayerValidAndVisible(i, useWallhack, &outClientNum, &outIsFrozenEnt, &outFrozenEntity))
 			continue;
 
+		ci = &cgs.clientinfo[outClientNum];
+		ci->isFrozenEnt = outIsFrozenEnt;
+		ci->frozenEntity = outFrozenEntity;
 		CG_DrawPlayerIndicator(i);
 	}
 }
@@ -3254,7 +3258,7 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize)
 	int wp, visibleCount = 0;
 	char accStr[16];
 	int textFlags;
-	newStatsInfo_t* ws = &cgs.be.newStats;
+	newStatsInfo_t* ws = &cgs.newStats;
 	float charWidth;  /* Character width for text */
 	float charHeight; /* Character height for text */
 	int maxCharCount = 4;
@@ -3453,20 +3457,12 @@ static void CG_Draw2D(void)
 	{
 		CG_SHUDRoutine();
 		CG_DrawWarmupShud();
-		if (cg_chud.integer)
-		{
-			CG_CHUDRoutine();
-		}
 		return;
 	}
 
 	if (cg_enableOSPHUD.integer)
 	{
 		CG_OSPHUDRoutine();
-		if (cg_chud.integer)
-		{
-			CG_CHUDRoutine();
-		}
 		return;
 	}
 
@@ -3555,7 +3551,7 @@ void CG_DrawBefore2D(void)
 	}
 
 	// Draw cursor ttwheel (if bitmask & 4 is set)
-	if ((cg_teamTaskWheel.integer & 4) && cgs.be.teamMarkers.ttwheelMarkActive)
+	if ((cg_teamTaskWheel.integer & 4) && cgs.teamMarkers.ttwheelMarkActive)
 	{
 		CG_DrawSelwheelMark();
 	}

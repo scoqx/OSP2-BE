@@ -62,9 +62,9 @@ qboolean CG_HasActiveFrozenAllyMark(centity_t* frozenCent)
 	searchRadius = 64.0f; /* Search radius for finding mark near frozen entity */
 
 	/* Check all active marks */
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		mark = &cgs.teamMarkers.teamTaskMarks[i];
 
 		/* Check if mark is active and of type TEAMTASK_FROZEN_ALLY */
 		if (mark->markType == TEAMTASK_FROZEN_ALLY && cg.time < mark->endTime)
@@ -95,11 +95,11 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent)
 	vec3_t position;
 
 	/* Check conditions */
-	if (CG_IsWarmup())
+	if (!cg_teamTask.integer)
 	{
 		return;
 	}
-	if (!cg_teamTask.integer)
+	if (cg.warmup)
 	{
 		return;
 	}
@@ -132,8 +132,8 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent)
 	position[2] += 6.0f;
 
 	/* Save death coordinates */
-	VectorCopy(position, cgs.be.teamMarkers.deathPosition);
-	cgs.be.teamMarkers.deathPositionValid = qtrue;
+	VectorCopy(position, cgs.teamMarkers.deathPosition);
+	cgs.teamMarkers.deathPositionValid = qtrue;
 
 	/* Send team task mark */
 	CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_PLAYERDEAD, position, qtrue);
@@ -193,18 +193,18 @@ qhandle_t CG_GetPickupShader(void)
 	int itemType;
 
 	/* Check if we have a valid pickup item (within 5 seconds) */
-	if (cgs.be.teamMarkers.pickupItemType == 0)
+	if (cgs.teamMarkers.pickupItemType == 0)
 	{
 		return cgs.media.teamTasksPickupEmpty;
 	}
 
 	/* Check if pickup item is still valid (5 seconds = 5000ms) */
-	if ((cg.time - cgs.be.teamMarkers.pickupItemTime) > 5000)
+	if ((cg.time - cgs.teamMarkers.pickupItemTime) > 5000)
 	{
 		return cgs.media.teamTasksPickupEmpty;
 	}
 
-	itemType = cgs.be.teamMarkers.pickupItemType;
+	itemType = cgs.teamMarkers.pickupItemType;
 	if (itemType == TEAMTASK_MEGAHEALTH)
 	{
 		return cgs.media.teamTasksMegahealthPickup;
@@ -345,7 +345,7 @@ Check if server supports team task
 */
 qboolean CG_IsTeamTaskSupported(void)
 {
-	return cgs.be.teamMarkers.supportedServer;
+	return cgs.teamMarkers.supportedServer;
 }
 
 /*
@@ -367,16 +367,16 @@ void CG_ClearRoundSpecificTeamTaskMarks(void)
 	int writeIndex;
 	teamTaskMark_t* mark;
 
-	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	if (cgs.teamMarkers.numTeamTaskMarks == 0)
 	{
 		return;
 	}
 
 	/* Pack array: copy valid marks to the beginning, excluding round-specific marks */
 	writeIndex = 0;
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		mark = &cgs.teamMarkers.teamTaskMarks[i];
 
 		/* Keep only marks that are NOT round-specific */
 		if (mark->markType != TEAMTASK_FROZEN_ALLY &&
@@ -388,14 +388,14 @@ void CG_ClearRoundSpecificTeamTaskMarks(void)
 		{
 			if (writeIndex != i)
 			{
-				cgs.be.teamMarkers.teamTaskMarks[writeIndex] = cgs.be.teamMarkers.teamTaskMarks[i];
+				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
 			}
 			writeIndex++;
 		}
 	}
 
 	/* Update count */
-	cgs.be.teamMarkers.numTeamTaskMarks = writeIndex;
+	cgs.teamMarkers.numTeamTaskMarks = writeIndex;
 }
 
 /*
@@ -413,16 +413,16 @@ void CG_ClearPlayerDeathTeamTaskMarks(void)
 	int writeIndex;
 	teamTaskMark_t* mark;
 
-	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	if (cgs.teamMarkers.numTeamTaskMarks == 0)
 	{
 		return;
 	}
 
 	/* Pack array: copy valid marks to the beginning, excluding death marks for current player */
 	writeIndex = 0;
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		mark = &cgs.teamMarkers.teamTaskMarks[i];
 
 		/* Keep mark if it's not a death mark OR if it's not for current player */
 		if (!((mark->markType == TEAMTASK_PLAYERDEAD ||
@@ -432,14 +432,14 @@ void CG_ClearPlayerDeathTeamTaskMarks(void)
 		{
 			if (writeIndex != i)
 			{
-				cgs.be.teamMarkers.teamTaskMarks[writeIndex] = cgs.be.teamMarkers.teamTaskMarks[i];
+				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
 			}
 			writeIndex++;
 		}
 	}
 
 	/* Update count */
-	cgs.be.teamMarkers.numTeamTaskMarks = writeIndex;
+	cgs.teamMarkers.numTeamTaskMarks = writeIndex;
 }
 
 /*
@@ -457,7 +457,7 @@ void CG_ClearClientHereDeadMarks(int clientNum)
 	int writeIndex;
 	teamTaskMark_t* mark;
 
-	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	if (cgs.teamMarkers.numTeamTaskMarks == 0)
 	{
 		return;
 	}
@@ -469,21 +469,21 @@ void CG_ClearClientHereDeadMarks(int clientNum)
 
 	/* Pack array: copy valid marks to the beginning, excluding HERE_DEAD marks for specified client */
 	writeIndex = 0;
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		mark = &cgs.teamMarkers.teamTaskMarks[i];
 
 		/* Keep mark if it's not HERE_DEAD OR if it's not for specified client */
 		if (!(mark->markType == TEAMTASK_HERE_DEAD && mark->clientNum == clientNum))
 		{
 			if (writeIndex != i)
 			{
-				cgs.be.teamMarkers.teamTaskMarks[writeIndex] = cgs.be.teamMarkers.teamTaskMarks[i];
+				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
 			}
 			writeIndex++;
 		}
 	}
 
 	/* Update count */
-	cgs.be.teamMarkers.numTeamTaskMarks = writeIndex;
+	cgs.teamMarkers.numTeamTaskMarks = writeIndex;
 }

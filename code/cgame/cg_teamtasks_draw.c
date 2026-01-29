@@ -472,30 +472,30 @@ static void CG_RemoveExpiredTeamTaskMarks(void)
 	int writeIndex;
 	teamTaskMark_t* mark;
 
-	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	if (cgs.teamMarkers.numTeamTaskMarks == 0)
 	{
 		return;
 	}
 
 	/* Pack array: copy valid marks to the beginning */
 	writeIndex = 0;
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		mark = &cgs.teamMarkers.teamTaskMarks[i];
 
 		/* Keep only non-expired marks */
 		if (cg.time < mark->endTime)
 		{
 			if (writeIndex != i)
 			{
-				cgs.be.teamMarkers.teamTaskMarks[writeIndex] = cgs.be.teamMarkers.teamTaskMarks[i];
+				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
 			}
 			writeIndex++;
 		}
 	}
 
 	/* Update count */
-	cgs.be.teamMarkers.numTeamTaskMarks = writeIndex;
+	cgs.teamMarkers.numTeamTaskMarks = writeIndex;
 }
 
 /*
@@ -530,7 +530,7 @@ static qboolean CG_CanDrawTeamTaskMarks(qboolean checkTeamTaskCvar)
 	}
 
 	/* Check if there are any marks */
-	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	if (cgs.teamMarkers.numTeamTaskMarks == 0)
 	{
 		return qfalse;
 	}
@@ -553,7 +553,7 @@ void CG_DrawTeamTaskBorderHudMarkers(void)
 	/* Remove expired marks first (optimized pack array) */
 	CG_RemoveExpiredTeamTaskMarks();
 
-	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	if (cgs.teamMarkers.numTeamTaskMarks == 0)
 	{
 		return;
 	}
@@ -566,9 +566,9 @@ void CG_DrawTeamTaskBorderHudMarkers(void)
 		return;
 	}
 
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		mark = &cgs.teamMarkers.teamTaskMarks[i];
 
 		/* Skip own overhead marks (YES, NO, MEDIC) - don't show in border markers */
 		/* Also skip own HERE_ALIVE and HERE_FLAG marks in first person (they're displayed as overhead) */
@@ -1351,9 +1351,9 @@ static qboolean CG_HasPickupMarkForItem(teamTaskMark_t* itemMark)
 
 	/* Check if there is a pickup mark (from any player) with matching item type */
 	searchRadius = 64.0f;
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 	{
-		otherMark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		otherMark = &cgs.teamMarkers.teamTaskMarks[i];
 
 		/* Check if this is a pickup mark with matching item type */
 		if (otherMark->isPickup && otherMark->markType == itemMark->markType)
@@ -1656,9 +1656,9 @@ void CG_DrawTeamTaskMarks(void)
 	CG_InitTeamTaskMarkConstants(&constants);
 
 	/* Process and render each mark */
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		mark = &cgs.teamMarkers.teamTaskMarks[i];
 
 		/* Process mark (calculate positions, fade, hover state) */
 		if (!CG_ProcessTeamTaskMark(mark, i, &constants, &renderData))
@@ -1676,9 +1676,9 @@ void CG_DrawTeamTaskMarks(void)
 	/* Don't show overhead in free float mode (already shown in HUD marker) */
 	if (!cg.renderingThirdPerson && CG_IsLocalClientOnScreen() && !CG_IsClientFreeFloat())
 	{
-		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 		{
-			mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+			mark = &cgs.teamMarkers.teamTaskMarks[i];
 
 			/* Check if this is own HERE_DEAD, WARN_DEAD, or PICKUP mark */
 			if (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD || mark->isPickup))

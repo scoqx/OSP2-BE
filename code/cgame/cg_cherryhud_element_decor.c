@@ -599,7 +599,7 @@ static void CG_CHUDDecorGetPlayerScore(cherryhudDecorElement_t* element)
 	}
 	else
 	{
-		playerScore = cgs.be.statsAll[element->clientNum].kills;
+		playerScore = cgs.statsAll[element->clientNum].kills;
 	}
 	CG_CHUDDecorApplyFormatting(element, (float)playerScore);
 }
@@ -645,27 +645,27 @@ static void CG_CHUDDecorGetPlayerScoreStat(cherryhudDecorElement_t* element, con
 
 static void CG_CHUDDecorGetPlayerDeaths(cherryhudDecorElement_t* element)
 {
-	CG_CHUDDecorGetPlayerStat(element, (float)cgs.be.statsAll[element->clientNum].deaths);
+	CG_CHUDDecorGetPlayerStat(element, (float)cgs.statsAll[element->clientNum].deaths);
 }
 
 static void CG_CHUDDecorGetPlayerKD(cherryhudDecorElement_t* element)
 {
-	CG_CHUDDecorGetPlayerStat(element, cgs.be.statsAll[element->clientNum].kdratio);
+	CG_CHUDDecorGetPlayerStat(element, cgs.statsAll[element->clientNum].kdratio);
 }
 
 static void CG_CHUDDecorGetPlayerDamageGiven(cherryhudDecorElement_t* element)
 {
-	CG_CHUDDecorGetPlayerStat(element, (float)cgs.be.statsAll[element->clientNum].dmgGiven);
+	CG_CHUDDecorGetPlayerStat(element, (float)cgs.statsAll[element->clientNum].dmgGiven);
 }
 
 static void CG_CHUDDecorGetPlayerDamageReceived(cherryhudDecorElement_t* element)
 {
-	CG_CHUDDecorGetPlayerStat(element, (float)cgs.be.statsAll[element->clientNum].dmgReceived);
+	CG_CHUDDecorGetPlayerStat(element, (float)cgs.statsAll[element->clientNum].dmgReceived);
 }
 
 static void CG_CHUDDecorGetPlayerDamageRatio(cherryhudDecorElement_t* element)
 {
-	CG_CHUDDecorGetPlayerStat(element, cgs.be.statsAll[element->clientNum].damageRatio);
+	CG_CHUDDecorGetPlayerStat(element, cgs.statsAll[element->clientNum].damageRatio);
 }
 
 static void CG_CHUDDecorGetPlayerId(cherryhudDecorElement_t* element)
@@ -697,7 +697,7 @@ static void CG_CHUDDecorGetPlayerXid(cherryhudDecorElement_t* element)
 
 static void CG_CHUDDecorGetPlayerSkill(cherryhudDecorElement_t* element)
 {
-	newStatsInfo_t* st = &cgs.be.statsAll[element->clientNum];
+	newStatsInfo_t* st = &cgs.statsAll[element->clientNum];
 	qhandle_t skillShader = 0;
 
 	// Initialize draw context if not already done
@@ -855,7 +855,7 @@ static void CG_CHUDDecorGetGameCaptureLimit(cherryhudDecorElement_t* element)
 // Helper function for weapon stats
 static void CG_CHUDDecorGetWeaponStat(cherryhudDecorElement_t* element, const char* statType)
 {
-	newStatsInfo_t* stats = &cgs.be.statsAll[element->clientNum];
+	newStatsInfo_t* stats = &cgs.statsAll[element->clientNum];
 	float value = 0.0f;
 
 	if (Q_stricmp(statType, "kills") == 0)

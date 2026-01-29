@@ -242,7 +242,7 @@ static void CG_ParseWarmup(void)
 	if (warmup == 0 && cg.warmup)
 	{
 		// Очистка новой статистики
-		memset(&cgs.be.newStats, 0, sizeof(cgs.be.newStats));
+		memset(&cgs.newStats, 0, sizeof(cgs.newStats));
 
 		// Очистка teamTask меток
 		CG_InitTeamTaskMarkers();
@@ -1240,7 +1240,7 @@ void CG_BEParseStatsInfo(void)
 	int losses;
 	qboolean changed = qfalse;
 
-	newStatsInfo_t* ws = &cgs.be.newStats;
+	newStatsInfo_t* ws = &cgs.newStats;
 
 	int totalArgs = trap_Argc();
 

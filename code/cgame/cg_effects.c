@@ -1291,17 +1291,17 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	/* Show only the last marker of each type from each client */
 	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
-		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 		{
-			if (cgs.be.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
-			        cgs.be.teamMarkers.teamTaskMarks[i].markType == markType)
+			if (cgs.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
+			        cgs.teamMarkers.teamTaskMarks[i].markType == markType)
 			{
 				/* Remove this mark by shifting all subsequent marks */
-				for (; i < cgs.be.teamMarkers.numTeamTaskMarks - 1; i++)
+				for (; i < cgs.teamMarkers.numTeamTaskMarks - 1; i++)
 				{
-					cgs.be.teamMarkers.teamTaskMarks[i] = cgs.be.teamMarkers.teamTaskMarks[i + 1];
+					cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
 				}
-				cgs.be.teamMarkers.numTeamTaskMarks--;
+				cgs.teamMarkers.numTeamTaskMarks--;
 				i--; /* Adjust index after removal */
 			}
 		}
@@ -1310,16 +1310,16 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	/* If this is an overhead mark (YES, NO, or MEDIC), remove any existing overhead mark from the same player */
 	if (CG_IsTeamTaskOverhead(markType) && clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
-		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 		{
-			if (cgs.be.teamMarkers.teamTaskMarks[i].clientNum == clientNum && cgs.be.teamMarkers.teamTaskMarks[i].isOverhead)
+			if (cgs.teamMarkers.teamTaskMarks[i].clientNum == clientNum && cgs.teamMarkers.teamTaskMarks[i].isOverhead)
 			{
 				/* Remove this mark by shifting all subsequent marks */
-				for (; i < cgs.be.teamMarkers.numTeamTaskMarks - 1; i++)
+				for (; i < cgs.teamMarkers.numTeamTaskMarks - 1; i++)
 				{
-					cgs.be.teamMarkers.teamTaskMarks[i] = cgs.be.teamMarkers.teamTaskMarks[i + 1];
+					cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
 				}
-				cgs.be.teamMarkers.numTeamTaskMarks--;
+				cgs.teamMarkers.numTeamTaskMarks--;
 				break;
 			}
 		}
@@ -1328,17 +1328,17 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	/* If this is a HERE_DEAD or WARN_DEAD mark, remove any existing PLAYERDEAD mark from the same player */
 	if ((markType == TEAMTASK_HERE_DEAD || markType == TEAMTASK_WARN_DEAD) && clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
-		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 		{
-			if (cgs.be.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
-			        cgs.be.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_PLAYERDEAD)
+			if (cgs.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
+			        cgs.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_PLAYERDEAD)
 			{
 				/* Remove this mark by shifting all subsequent marks */
-				for (; i < cgs.be.teamMarkers.numTeamTaskMarks - 1; i++)
+				for (; i < cgs.teamMarkers.numTeamTaskMarks - 1; i++)
 				{
-					cgs.be.teamMarkers.teamTaskMarks[i] = cgs.be.teamMarkers.teamTaskMarks[i + 1];
+					cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
 				}
-				cgs.be.teamMarkers.numTeamTaskMarks--;
+				cgs.teamMarkers.numTeamTaskMarks--;
 				break;
 			}
 		}
@@ -1348,36 +1348,36 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	/* This ensures that only one of these marks exists per player at a time */
 	if ((markType == TEAMTASK_HERE_DEAD || markType == TEAMTASK_WARN_DEAD) && clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
-		for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 		{
-			if (cgs.be.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
-			        (cgs.be.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_HERE_DEAD ||
-			         cgs.be.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_WARN_DEAD))
+			if (cgs.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
+			        (cgs.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_HERE_DEAD ||
+			         cgs.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_WARN_DEAD))
 			{
 				/* Remove this mark by shifting all subsequent marks */
-				for (; i < cgs.be.teamMarkers.numTeamTaskMarks - 1; i++)
+				for (; i < cgs.teamMarkers.numTeamTaskMarks - 1; i++)
 				{
-					cgs.be.teamMarkers.teamTaskMarks[i] = cgs.be.teamMarkers.teamTaskMarks[i + 1];
+					cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
 				}
-				cgs.be.teamMarkers.numTeamTaskMarks--;
+				cgs.teamMarkers.numTeamTaskMarks--;
 				break;
 			}
 		}
 	}
 
 	/* Check if we have space for new mark */
-	if (cgs.be.teamMarkers.numTeamTaskMarks >= MAX_TEAMTASK_MARKS)
+	if (cgs.teamMarkers.numTeamTaskMarks >= MAX_TEAMTASK_MARKS)
 	{
 		/* Remove oldest mark */
 		for (i = 0; i < MAX_TEAMTASK_MARKS - 1; i++)
 		{
-			cgs.be.teamMarkers.teamTaskMarks[i] = cgs.be.teamMarkers.teamTaskMarks[i + 1];
+			cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
 		}
-		cgs.be.teamMarkers.numTeamTaskMarks = MAX_TEAMTASK_MARKS - 1;
+		cgs.teamMarkers.numTeamTaskMarks = MAX_TEAMTASK_MARKS - 1;
 	}
 
-	mark = &cgs.be.teamMarkers.teamTaskMarks[cgs.be.teamMarkers.numTeamTaskMarks];
-	cgs.be.teamMarkers.numTeamTaskMarks++;
+	mark = &cgs.teamMarkers.teamTaskMarks[cgs.teamMarkers.numTeamTaskMarks];
+	cgs.teamMarkers.numTeamTaskMarks++;
 
 	/* Store markType directly (no overhead flag anymore) */
 	mark->markType = markType;

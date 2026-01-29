@@ -269,7 +269,7 @@ void CG_BEParseXStatsToStatsAll(void)
 		return;
 	}
 
-	ws = &cgs.be.statsAll[client_id];
+	ws = &cgs.statsAll[client_id];
 
 	for (i = 1; i < WP_NUM_WEAPONS; ++i)
 	{
@@ -352,7 +352,7 @@ void cg_printsa_f(void)
 	CG_Printf("^5StatsAll:\n");
 	for (i = 0; i < MAX_CLIENTS; ++i)
 	{
-		ws = &cgs.be.statsAll[i];
+		ws = &cgs.statsAll[i];
 		if (!ws->infoValid)
 			continue;
 
@@ -517,45 +517,6 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 
 /*
 =====================
-CG_IsWarmup
-
-Returns qtrue if currently in warmup, qfalse otherwise.
-=====================
-*/
-qboolean CG_IsWarmup(void)
-{
-	if (cg.warmup == 0)
-	{
-		return qfalse;
-	}
-	else
-	{
-		return qtrue;
-	}
-}
-
-
-/*
-=====================
-CG_IsIntermission
-
-Returns qtrue if currently in intermission, qfalse otherwise.
-=====================
-*/
-qboolean CG_IsIntermission(void)
-{
-	if (cg.intermissionStarted == 0)
-	{
-		return qfalse;
-	}
-	else
-	{
-		return qtrue;
-	}
-}
-
-/*
-=====================
 CG_DefineServer
 
 Define server-specific features based on config string.
@@ -617,60 +578,25 @@ void CG_Get_f(void)
 	int fileSize;
 	char* fileContent;
 	int i;
-	int cmdLen;
 	int prefixLen;
+	int nameLen;
 
 	cmd = CG_Argv(0);
-	if (!cmd || !cmd[0])
-	{
-		return;
-	}
-
-	/* Check if command starts with "get" (case-insensitive) */
 	prefixLen = 3; /* length of "get" */
-	cmdLen = 0;
-	while (cmd[cmdLen] != '\0')
+	nameLen = 0;
+	while (cmd[prefixLen + nameLen] != '\0' && nameLen < 64)
 	{
-		cmdLen++;
+		nameLen++;
 	}
-
-	if (cmdLen <= prefixLen)
-	{
-		return;
-	}
-
-	/* Case-insensitive check for "get" prefix */
-	for (i = 0; i < prefixLen; i++)
-	{
-		char c1;
-		char c2;
-		c1 = cmd[i];
-		c2 = "get"[i];
-		if (c1 >= 'A' && c1 <= 'Z')
-		{
-			c1 = c1 + ('a' - 'A');
-		}
-		if (c2 >= 'A' && c2 <= 'Z')
-		{
-			c2 = c2 + ('a' - 'A');
-		}
-		if (c1 != c2)
-		{
-			return;
-		}
-	}
-
-	/* Extract config name (everything after "get") */
-	if (cmdLen - prefixLen > 64)
+	if (nameLen == 0)
 	{
 		return;
 	}
-
-	for (i = 0; i < cmdLen - prefixLen; i++)
+	for (i = 0; i < nameLen; i++)
 	{
 		configName[i] = cmd[prefixLen + i];
 	}
-	configName[cmdLen - prefixLen] = '\0';
+	configName[nameLen] = '\0';
 
 	/* Build file path: beconfigs/customConfig_<name>.cfg (case-insensitive filesystem) */
 	Com_sprintf(filePath, sizeof(filePath), "beconfigs/customConfig_%s.cfg", configName);

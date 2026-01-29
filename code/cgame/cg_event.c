@@ -653,21 +653,21 @@ static void CG_TrackPickupItemForTeamTask(int itemNum)
 		classname = item->classname;
 		if (!Q_stricmp(classname, "item_health_mega"))
 		{
-			cgs.be.teamMarkers.pickupItemType = TEAMTASK_MEGAHEALTH;
-			VectorCopy(cg.predictedPlayerState.origin, cgs.be.teamMarkers.pickupItemPosition);
-			cgs.be.teamMarkers.pickupItemTime = cg.time;
+			cgs.teamMarkers.pickupItemType = TEAMTASK_MEGAHEALTH;
+			VectorCopy(cg.predictedPlayerState.origin, cgs.teamMarkers.pickupItemPosition);
+			cgs.teamMarkers.pickupItemTime = cg.time;
 		}
 		else if (!Q_stricmp(classname, "item_armor_body"))
 		{
-			cgs.be.teamMarkers.pickupItemType = TEAMTASK_REDARMOR;
-			VectorCopy(cg.predictedPlayerState.origin, cgs.be.teamMarkers.pickupItemPosition);
-			cgs.be.teamMarkers.pickupItemTime = cg.time;
+			cgs.teamMarkers.pickupItemType = TEAMTASK_REDARMOR;
+			VectorCopy(cg.predictedPlayerState.origin, cgs.teamMarkers.pickupItemPosition);
+			cgs.teamMarkers.pickupItemTime = cg.time;
 		}
 		else if (!Q_stricmp(classname, "item_armor_combat"))
 		{
-			cgs.be.teamMarkers.pickupItemType = TEAMTASK_YELLOWARMOR;
-			VectorCopy(cg.predictedPlayerState.origin, cgs.be.teamMarkers.pickupItemPosition);
-			cgs.be.teamMarkers.pickupItemTime = cg.time;
+			cgs.teamMarkers.pickupItemType = TEAMTASK_YELLOWARMOR;
+			VectorCopy(cg.predictedPlayerState.origin, cgs.teamMarkers.pickupItemPosition);
+			cgs.teamMarkers.pickupItemTime = cg.time;
 		}
 	}
 }

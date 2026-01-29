@@ -4204,11 +4204,11 @@ void CG_OSPHUDRoutine(void)
 		{
 			CG_OSPDrawCenterString();
 		}
-		if (cgs.be.newStats.drawWindow)
+		if (cgs.newStats.drawWindow)
 		{
 			CG_BEStatsShowStatsInfo();
 		}
-		if (cgs.be.teamMarkers.ttwheelMarkActive)
+		if (cgs.teamMarkers.ttwheelMarkActive)
 		{
 			CG_DrawSelwheelIcons();
 		}

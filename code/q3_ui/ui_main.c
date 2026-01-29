@@ -178,9 +178,13 @@ static void UI_ScanCustomConfigFiles( void ) {
 									bindsList[bindsListLen] = ' ';
 									bindsListLen++;
 								}
-								// Copy name part
+								// Copy name part (preserve case from filename)
 								for ( j = 0; j < nameLen; j++ ) {
 									bindsList[bindsListLen + j] = filename[prefixLen + j];
+								}
+								/* First letter of each name to uppercase (engine may return lowercase) */
+								if ( nameLen > 0 && bindsList[bindsListLen] >= 'a' && bindsList[bindsListLen] <= 'z' ) {
+									bindsList[bindsListLen] = bindsList[bindsListLen] - ( 'a' - 'A' );
 								}
 								bindsListLen += nameLen;
 								bindsList[bindsListLen] = '\0';

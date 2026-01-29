@@ -843,7 +843,7 @@ void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_ReloadTeamTaskWheel(cvarTable_t* cvart)
 {
 	/* Reset ttwheel elements count to force re-initialization */
-	cgs.be.teamMarkers.ttwheelElementCount = 0;
+	cgs.teamMarkers.ttwheelElementCount = 0;
 	/* Parse and set elements from cvar */
 	CG_SelwheelParseTeamTaskWheel();
 }
@@ -1075,26 +1075,6 @@ void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart)
 	CG_UpdateBeFeatures();
 }
 
-void CG_LocalEventCvarChanged_chud_file(cvarTable_t* cvart)
-{
-	// Initialize CherryHUD parser first
-	CG_CHUDLoadConfig();
-}
-
-void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart)
-{
-	// // Initialize CherryHUD parser first
-	// CG_CHUDLoadConfig();
-
-	// Disabled for a while
-	if (cvart->vmCvar->integer)
-	{
-		trap_Cvar_Set("cg_chud", "0");
-		CG_Printf("^1CherryHUD is disabled for a while\n");
-	}
-
-}
-
 void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart)
 {
 	/* If cg_exec_weapons is disabled and user sets any weapon exec cvar, enable it */
@@ -1185,15 +1165,15 @@ void CG_LocalEventCvarChanged_cg_teamTaskThemeColor(cvarTable_t* cvart)
 	vec4_t color;
 	if (CG_ParseColorStr(cvart->vmCvar->string, color))
 	{
-		Vector4Copy(color, cgs.be.teamMarkers.teamTaskThemeColor);
+		Vector4Copy(color, cgs.teamMarkers.teamTaskThemeColor);
 	}
 	else
 	{
 		/* Default to cyan if parsing fails */
-		cgs.be.teamMarkers.teamTaskThemeColor[0] = 0.0f;
-		cgs.be.teamMarkers.teamTaskThemeColor[1] = 1.0f;
-		cgs.be.teamMarkers.teamTaskThemeColor[2] = 1.0f;
-		cgs.be.teamMarkers.teamTaskThemeColor[3] = 1.0f;
+		cgs.teamMarkers.teamTaskThemeColor[0] = 0.0f;
+		cgs.teamMarkers.teamTaskThemeColor[1] = 1.0f;
+		cgs.teamMarkers.teamTaskThemeColor[2] = 1.0f;
+		cgs.teamMarkers.teamTaskThemeColor[3] = 1.0f;
 	}
 }
 

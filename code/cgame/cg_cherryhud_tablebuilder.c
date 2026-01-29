@@ -393,7 +393,7 @@ void CG_CHUDTableCollectPlayerData(cherryhudPlayerData_t* players, int* numPlaye
 		// Fallback to stats if no score data
 		if (!player->scoreData)
 		{
-			player->score = cgs.be.statsAll[i].kills;
+			player->score = cgs.statsAll[i].kills;
 			player->ping = 0;
 			player->connected = qtrue;
 		}
@@ -2293,7 +2293,7 @@ static void CG_CHUDRenderScoreboardRequestData(void)
 	{
 		cg.statsAllRequestTime = cg.time + 2100;
 		trap_SendClientCommand("statsall");
-		cgs.be.statsAllRequested = qtrue;
+		cgs.statsAllRequested = qtrue;
 	}
 }
 

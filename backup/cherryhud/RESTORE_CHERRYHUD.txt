@@ -1,0 +1,32 @@
+========================================
+  Восстановление CherryHUD в проект
+  Restoring CherryHUD into the project
+========================================
+
+1. Восстановить файлы из backup в проект:
+   - backup/cherryhud/code/cgame/* -> code/cgame/
+   - backup/cherryhud/docs/cherryhud.md -> docs/
+   - backup/cherryhud/assets/chud/* -> assets/chud/
+
+2. Добавить CherryHUD в сборку:
+
+   build/qvm/srcs.mk — в CG_SRC после cg_be_stats добавить:
+     cg_cherryhud cg_cherryhud_elements cg_cherryhud_private cg_cherryhud_util \
+     cg_cherryhud_element_decor \
+     cg_cherryhud_lexer cg_cherryhud_lexer_parser cg_cherryhud_lexer_commands \
+     cg_cherryhud_layout cg_cherryhud_tablebuilder \
+
+   build/library/Makefile — в CGOBJ_ после cg_be_stats.o добавить:
+     $(B)/$(MOD)/cgame/cg_cherryhud.o \
+     $(B)/$(MOD)/cgame/cg_cherryhud_elements.o \
+     ... (все .o для cherryhud)
+
+3. Вернуть вызовы CherryHUD в коде:
+   - cg_draw.c: #include "cg_cherryhud.h", вызовы CG_CHUDRoutine() в блоках cg_shud/cg_enableOSPHUD
+   - cg_local.h: объявления CG_CHUDLoadConfig, CG_CHUDMemoryDebug_f, chud_file, cg_chud, CG_LocalEventCvarChanged_chud_file, CG_LocalEventCvarChanged_cg_chud
+   - cg_main.c: vmCvar_t chud_file, cg_chud; записи в cvarTable; блок с cg_chud.integer в CG_Init
+   - cg_localevents.c: реализация CG_LocalEventCvarChanged_chud_file (CG_CHUDLoadConfig), CG_LocalEventCvarChanged_cg_chud
+   - cg_cvardescriptions.c: описания для "cg_chud" и "chud_file"
+   - cg_consolecmds.c: при необходимости раскомментировать CG_ReloadCHUD_f / reloadCHUD
+
+4. Пересобрать проект.

@@ -109,7 +109,7 @@ void* CG_SHUDElementIconCreatePG(const superhudConfig_t* config)
 void CG_SHUDElementWeaponStatsRoutine(void* context)
 {
 	shudElementWeaponStats_t* element = (shudElementWeaponStats_t*)context;
-	newStatsInfo_t* cs = &cgs.be.newStats;
+	newStatsInfo_t* cs = &cgs.newStats;
 	playerState_t* ps = &cg.snap->ps;
 
 	int weapon = (element->weaponIndex == 0) ? ps->weapon : element->weaponIndex;

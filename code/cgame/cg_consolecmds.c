@@ -504,12 +504,12 @@ void CG_OSPWStatsDown_f(void)
 		cg.statsRequestTime = cg.time;
 		CG_SendGetStatsInfo();
 	}
-	cgs.be.newStats.drawWindow = qtrue;
+	cgs.newStats.drawWindow = qtrue;
 
 }
 void CG_OSPWStatsUp_f(void)
 {
-	cgs.be.newStats.drawWindow = qfalse;
+	cgs.newStats.drawWindow = qfalse;
 	CG_BEStatsResetInit();
 }
 
@@ -887,11 +887,6 @@ void CG_ReloadHud_f(void)
 	CG_SHUDLoadConfig();
 }
 
-// void CG_ReloadCHUD_f(void)
-// {
-//  CG_CHUDLoadConfig();
-// }
-
 void CG_PrintPlayerIDs_f(void)
 {
 	int p;
@@ -1124,7 +1119,7 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	{
 		return;
 	}
-	if (CG_IsIntermission())
+	if (cg.intermissionStarted)
 	{
 		return;
 	}
@@ -1148,17 +1143,17 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	}
 
 	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketFast, cg.time))
 	{
 		return; /* anti-flood: too many commands sent in short time */
 	}
 	/* Anti-flood check 2: bucket limit (6 tokens, 800ms refill) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucket, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucket, cg.time))
 	{
 		return; /* anti-flood: bucket limit exceeded */
 	}
 	/* Anti-flood check 3: flood protection (16 tokens, 1100ms refill) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFlood, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketFlood, cg.time))
 	{
 		return; /* anti-flood: flood protection activated */
 	}
@@ -1205,7 +1200,7 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	{
 		return;
 	}
-	if (CG_IsIntermission())
+	if (cg.intermissionStarted)
 	{
 		return;
 	}
@@ -1229,17 +1224,17 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	}
 
 	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketFast, cg.time))
 	{
 		return; /* anti-flood: too many commands sent in short time */
 	}
 	/* Anti-flood check 2: bucket limit (6 tokens, 800ms refill) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucket, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucket, cg.time))
 	{
 		return; /* anti-flood: bucket limit exceeded */
 	}
 	/* Anti-flood check 3: flood protection (16 tokens, 1100ms refill) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFlood, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketFlood, cg.time))
 	{
 		return; /* anti-flood: flood protection activated */
 	}
@@ -1281,7 +1276,7 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 	{
 		return;
 	}
-	if (CG_IsIntermission())
+	if (cg.intermissionStarted)
 	{
 		return;
 	}
@@ -1297,17 +1292,17 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 		return;
 	}
 	/* Anti-flood check 1: fast limit (not more than once per 150ms) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFast, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketFast, cg.time))
 	{
 		return; /* anti-flood: too many commands sent in short time */
 	}
 	/* Anti-flood check 2: bucket limit (6 tokens, 800ms refill) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucket, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucket, cg.time))
 	{
 		return; /* anti-flood: bucket limit exceeded */
 	}
 	/* Anti-flood check 3: flood protection (16 tokens, 1100ms refill) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketFlood, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketFlood, cg.time))
 	{
 		return; /* anti-flood: flood protection activated */
 	}
@@ -1369,7 +1364,7 @@ void CG_TeamTaskMarkHere(void)
 		return;
 	}
 	/* Check cooldown for tHere command (2 seconds) */
-	if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketHere, cg.time))
+	if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketHere, cg.time))
 	{
 		return;
 	}
@@ -1393,9 +1388,9 @@ void CG_TeamTaskMarkHere(void)
 
 	if (CG_IsDead() || !CG_IsLocalClientOnScreen())
 	{
-		if (cgs.be.teamMarkers.deathPositionValid)
+		if (cgs.teamMarkers.deathPositionValid)
 		{
-			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_DEAD, cgs.be.teamMarkers.deathPosition, qtrue);
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_DEAD, cgs.teamMarkers.deathPosition, qtrue);
 		}
 		else if (backUpPositionValid)
 		{
@@ -1428,9 +1423,9 @@ void CG_TeamTaskMarkHere(void)
 	}
 	else
 	{
-		if (cgs.be.teamMarkers.deathPositionValid)
+		if (cgs.teamMarkers.deathPositionValid)
 		{
-			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_DEAD, cgs.be.teamMarkers.deathPosition, qtrue);
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_HERE_DEAD, cgs.teamMarkers.deathPosition, qtrue);
 		}
 		else if (backUpPositionValid)
 		{
@@ -1477,15 +1472,15 @@ void CG_TeamTaskMarkWarn(void)
 	if (CG_IsDead() || !CG_IsLocalClientOnScreen())
 	{
 		/* Check cooldown for tWarn DEAD command (2 seconds) */
-		if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketWarn, cg.time))
+		if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketWarn, cg.time))
 		{
 			return;
 		}
 
 		/* Player is dead - send WARN_DEAD with death coordinates (same as HERE_DEAD) */
-		if (cgs.be.teamMarkers.deathPositionValid)
+		if (cgs.teamMarkers.deathPositionValid)
 		{
-			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_WARN_DEAD, cgs.be.teamMarkers.deathPosition, qtrue);
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_WARN_DEAD, cgs.teamMarkers.deathPosition, qtrue);
 		}
 		else if (backUpPositionValid)
 		{
@@ -1509,15 +1504,15 @@ void CG_TeamTaskMarkWarn(void)
 	else
 	{
 		/* Check cooldown for tWarn DEAD command (2 seconds) */
-		if (!TokenBucket_Consume(&cgs.be.teamMarkers.sendCommandBucketWarn, cg.time))
+		if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketWarn, cg.time))
 		{
 			return;
 		}
 
 		/* Player is dead/spectating - send WARN_DEAD */
-		if (cgs.be.teamMarkers.deathPositionValid)
+		if (cgs.teamMarkers.deathPositionValid)
 		{
-			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_WARN_DEAD, cgs.be.teamMarkers.deathPosition, qtrue);
+			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_WARN_DEAD, cgs.teamMarkers.deathPosition, qtrue);
 		}
 		else if (backUpPositionValid)
 		{
@@ -1549,24 +1544,24 @@ void CG_TeamTaskMarkPickup(void)
 	}
 
 	/* Check if we have a valid pickup item (within 5 seconds) */
-	if (cgs.be.teamMarkers.pickupItemType == 0)
+	if (cgs.teamMarkers.pickupItemType == 0)
 	{
 		return;
 	}
 
 	/* Check if pickup item is still valid (5 seconds = 5000ms) */
-	if ((cg.time - cgs.be.teamMarkers.pickupItemTime) > 5000)
+	if ((cg.time - cgs.teamMarkers.pickupItemTime) > 5000)
 	{
-		cgs.be.teamMarkers.pickupItemType = 0;
+		cgs.teamMarkers.pickupItemType = 0;
 		return;
 	}
 
-	itemType = cgs.be.teamMarkers.pickupItemType;
+	itemType = cgs.teamMarkers.pickupItemType;
 	if (itemType == TEAMTASK_MEGAHEALTH || itemType == TEAMTASK_REDARMOR || itemType == TEAMTASK_YELLOWARMOR)
 	{
 		markType = itemType;
 		/* Send teamTask with toClient=1 flag to indicate this is a pickup mark */
-		CG_SendTeamTaskMarkAtPosition(1, markType, cgs.be.teamMarkers.pickupItemPosition, qfalse);
+		CG_SendTeamTaskMarkAtPosition(1, markType, cgs.teamMarkers.pickupItemPosition, qfalse);
 	}
 	else
 	{
@@ -1605,13 +1600,13 @@ void CG_TeamTaskMarkSend(void)
 
 	/* Check if we have a saved target from wheel opening (valid for 500ms) */
 	if ((cg_teamTaskWheel.integer & 2) &&
-	        cgs.be.teamMarkers.smartTargetTime > 0 &&
-	        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-	        cgs.be.teamMarkers.smartTargetType != 1)
+	        cgs.teamMarkers.smartTargetTime > 0 &&
+	        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+	        cgs.teamMarkers.smartTargetType != 1)
 	{
 		/* Use saved target */
-		targetType = cgs.be.teamMarkers.smartTargetType;
-		VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+		targetType = cgs.teamMarkers.smartTargetType;
+		VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 	}
 	else
 	{
@@ -1626,22 +1621,22 @@ void CG_TeamTaskMarkSend(void)
 		case 5: /* frozen ally */
 			/* Use saved frozen position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 5)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 5)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_FROZEN_ALLY, itemPos, qfalse);
 			return;
 		case 6: /* frozen enemy */
 			/* Use saved frozen position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 6)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 6)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_FROZEN_ENEMY, itemPos, qfalse);
 			return;
@@ -1649,12 +1644,12 @@ void CG_TeamTaskMarkSend(void)
 		{
 			/* Check if we're using saved target */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 2)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 2)
 			{
 				/* Use saved enemy position */
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, enemyPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, enemyPos);
 				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_TARGET, enemyPos, qfalse);
 				return;
 			}
@@ -1695,11 +1690,11 @@ void CG_TeamTaskMarkSend(void)
 			markType = TEAMTASK_REDARMOR;
 			/* Use saved item position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 3)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 3)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
@@ -1707,11 +1702,11 @@ void CG_TeamTaskMarkSend(void)
 			markType = TEAMTASK_MEGAHEALTH;
 			/* Use saved item position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 4)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 4)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
@@ -1719,11 +1714,11 @@ void CG_TeamTaskMarkSend(void)
 			markType = TEAMTASK_QUADDAMAGE;
 			/* Use saved item position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 7)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 7)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
@@ -1731,11 +1726,11 @@ void CG_TeamTaskMarkSend(void)
 			markType = TEAMTASK_REGENERATION;
 			/* Use saved item position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 8)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 8)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
@@ -1743,11 +1738,11 @@ void CG_TeamTaskMarkSend(void)
 			markType = TEAMTASK_BATTLESUIT;
 			/* Use saved item position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 9)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 9)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
@@ -1755,11 +1750,11 @@ void CG_TeamTaskMarkSend(void)
 			markType = TEAMTASK_HASTE;
 			/* Use saved item position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 10)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 10)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
@@ -1767,11 +1762,11 @@ void CG_TeamTaskMarkSend(void)
 			markType = TEAMTASK_YELLOWARMOR;
 			/* Use saved item position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 11)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 11)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
@@ -1779,11 +1774,11 @@ void CG_TeamTaskMarkSend(void)
 			markType = TEAMTASK_HEALTH;
 			/* Use saved item position if available, otherwise use current itemPos */
 			if ((cg_teamTaskWheel.integer & 2) &&
-			        cgs.be.teamMarkers.smartTargetTime > 0 &&
-			        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-			        cgs.be.teamMarkers.smartTargetType == 12)
+			        cgs.teamMarkers.smartTargetTime > 0 &&
+			        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+			        cgs.teamMarkers.smartTargetType == 12)
 			{
-				VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+				VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 			}
 			CG_SendTeamTaskMarkAtPosition(0, markType, itemPos, qfalse);
 			return;
@@ -1792,11 +1787,11 @@ void CG_TeamTaskMarkSend(void)
 			{
 				/* Use saved position if available, otherwise use current itemPos */
 				if ((cg_teamTaskWheel.integer & 2) &&
-				        cgs.be.teamMarkers.smartTargetTime > 0 &&
-				        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-				        cgs.be.teamMarkers.smartTargetType == 13)
+				        cgs.teamMarkers.smartTargetTime > 0 &&
+				        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+				        cgs.teamMarkers.smartTargetType == 13)
 				{
-					VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+					VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 				}
 				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_REDFLAG_CARRIER, itemPos, qfalse);
 				return;
@@ -1807,11 +1802,11 @@ void CG_TeamTaskMarkSend(void)
 			{
 				/* Use saved position if available, otherwise use current itemPos */
 				if ((cg_teamTaskWheel.integer & 2) &&
-				        cgs.be.teamMarkers.smartTargetTime > 0 &&
-				        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-				        cgs.be.teamMarkers.smartTargetType == 14)
+				        cgs.teamMarkers.smartTargetTime > 0 &&
+				        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+				        cgs.teamMarkers.smartTargetType == 14)
 				{
-					VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+					VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 				}
 				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_BLUEFLAG_CARRIER, itemPos, qfalse);
 				return;
@@ -1822,11 +1817,11 @@ void CG_TeamTaskMarkSend(void)
 			{
 				/* Use saved item position if available, otherwise use current itemPos */
 				if ((cg_teamTaskWheel.integer & 2) &&
-				        cgs.be.teamMarkers.smartTargetTime > 0 &&
-				        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-				        cgs.be.teamMarkers.smartTargetType == 15)
+				        cgs.teamMarkers.smartTargetTime > 0 &&
+				        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+				        cgs.teamMarkers.smartTargetType == 15)
 				{
-					VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+					VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 				}
 				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_REDFLAG, itemPos, qfalse);
 				return;
@@ -1837,11 +1832,11 @@ void CG_TeamTaskMarkSend(void)
 			{
 				/* Use saved item position if available, otherwise use current itemPos */
 				if ((cg_teamTaskWheel.integer & 2) &&
-				        cgs.be.teamMarkers.smartTargetTime > 0 &&
-				        (cg.time - cgs.be.teamMarkers.smartTargetTime) < 500 &&
-				        cgs.be.teamMarkers.smartTargetType == 16)
+				        cgs.teamMarkers.smartTargetTime > 0 &&
+				        (cg.time - cgs.teamMarkers.smartTargetTime) < 500 &&
+				        cgs.teamMarkers.smartTargetType == 16)
 				{
-					VectorCopy(cgs.be.teamMarkers.smartTargetPos, itemPos);
+					VectorCopy(cgs.teamMarkers.smartTargetPos, itemPos);
 				}
 				CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_BLUEFLAG, itemPos, qfalse);
 				return;
@@ -2381,8 +2376,13 @@ qboolean CG_ConsoleCommand(void)
 		}
 	}
 
-	/* Dynamic /get<name> commands (e.g. getElite) */
-	if (cmd[3] != '\0' && !Q_stricmpn(cmd, "get", 3))
+	/* Dynamic /get<name> commands (e.g. getElite): require at least "getX" (4 chars) */
+	i = 0;
+	while (cmd[i] != '\0' && i < 4)
+	{
+		i++;
+	}
+	if (i > 3 && !Q_stricmpn(cmd, "get", 3))
 	{
 		CG_Get_f();
 		return qtrue;

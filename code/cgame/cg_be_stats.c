@@ -301,7 +301,7 @@ qhandle_t CG_BEStatsResolveMediaHandle(const char* mediaPath)
 static void CG_BEStatsBuildGeneral_Tournament(BEStatToken_t tokens[32][12], int* outCols)
 {
 	int col = 0;
-	const newStatsInfo_t* s = &cgs.be.newStats;
+	const newStatsInfo_t* s = &cgs.newStats;
 
 	if (outCols == NULL)
 	{
@@ -367,7 +367,7 @@ static void CG_BEStatsBuildGeneral_Tournament(BEStatToken_t tokens[32][12], int*
 static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCols)
 {
 	int col = 0;
-	const newStatsInfo_t* s = &cgs.be.newStats;
+	const newStatsInfo_t* s = &cgs.newStats;
 	int style = cg_bestats_style.integer;  // глобальная переменная/настройка
 	qboolean isFreeze = cgs.osp.gameTypeFreeze;
 
@@ -466,7 +466,7 @@ static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCo
 static void CG_BEStatsBuildGeneral_CTF(BEStatToken_t tokens[32][12], int* outCols)
 {
 	int col = 0;
-	const newStatsInfo_t* s = &cgs.be.newStats;
+	const newStatsInfo_t* s = &cgs.newStats;
 	char timeStr[MAX_TOKEN_LEN];
 
 	if (outCols == NULL)
@@ -561,7 +561,7 @@ static void CG_BEStatsBuildGeneral_CTF(BEStatToken_t tokens[32][12], int* outCol
 static void CG_BEStatsBuildGeneral_CA(BEStatToken_t tokens[32][12], int* outCols)
 {
 	int col = 0;
-	const newStatsInfo_t* s = &cgs.be.newStats;
+	const newStatsInfo_t* s = &cgs.newStats;
 
 	if (outCols == NULL)
 	{
@@ -622,7 +622,7 @@ static void CG_BEStatsBuildGeneral_Default(BEStatToken_t tokens[32][12], int* ou
 {
 	int dummy = 0;
 	int style = cg_bestats_style.integer;
-	const newStatsInfo_t* s = &cgs.be.newStats;
+	const newStatsInfo_t* s = &cgs.newStats;
 
 	if (outCols == NULL)
 	{
@@ -728,7 +728,7 @@ void CG_BEStatsBuildGeneral(BEStatToken_t tokens[32][12], int startRow, int* out
 
 qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 {
-	const newStatsInfo_t* s = &cgs.be.newStats;
+	const newStatsInfo_t* s = &cgs.newStats;
 	int col, row, i;
 	const weaponStats_t* ws;
 	char buf[64];
@@ -893,7 +893,7 @@ qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 
 void CG_BEStatsBuildBonusStats(BEStatToken_t tokens[32][12], int* rowOut)
 {
-	const newStatsInfo_t* s = &cgs.be.newStats;
+	const newStatsInfo_t* s = &cgs.newStats;
 	int row = *rowOut;
 	char buf[MAX_TOKEN_LEN];
 	char armorText[MAX_TOKEN_LEN];
@@ -1115,7 +1115,7 @@ void CG_BEStatsShowStatsInfo(void)
 	// Init
 	CG_BEStatsInit();
 	// Request Stats without pressing button
-	if (!cgs.be.newStats.drawWindow)
+	if (!cgs.newStats.drawWindow)
 	{
 		if (cg.statsRequestTime + 1000 < cg.time)
 		{

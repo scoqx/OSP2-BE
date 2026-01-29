@@ -28,6 +28,31 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 
 /*
+ * Inline weapon exec: no function call for QVM. Use _w and _c so macro body never
+ * contains ps/ops; pass (ps->weapon, ps->clientNum) as (_w,_c) at call site.
+ */
+ #define CG_EXEC_WEAPON_SWITCH_INLINE(_w, _c) do { \
+	const char* _cmd; \
+	int _mode = cg_exec_weapons.integer; \
+	if (_mode == 0) break; \
+	if (_mode == 2 && (_c) != cg.clientNum) break; \
+	_cmd = NULL; \
+	switch (_w) { \
+		case WP_GAUNTLET: _cmd = cg_exec_gauntlet.string; break; \
+		case WP_MACHINEGUN: _cmd = cg_exec_mg.string; break; \
+		case WP_SHOTGUN: _cmd = cg_exec_sg.string; break; \
+		case WP_GRENADE_LAUNCHER: _cmd = cg_exec_gl.string; break; \
+		case WP_ROCKET_LAUNCHER: _cmd = cg_exec_rl.string; break; \
+		case WP_LIGHTNING: _cmd = cg_exec_lg.string; break; \
+		case WP_RAILGUN: _cmd = cg_exec_rg.string; break; \
+		case WP_PLASMAGUN: _cmd = cg_exec_pg.string; break; \
+		case WP_BFG: _cmd = cg_exec_bfg.string; break; \
+		default: break; \
+	} \
+	if (_cmd && _cmd[0]) trap_SendConsoleCommand(_cmd); \
+} while (0)
+
+/*
 ==============
 CG_CheckAmmo
 
@@ -385,83 +410,6 @@ void CG_UpdateWeaponTracking(int weapon)
 
 /*
 ================
-CG_ShouldExecWeaponCommand
-
-Check if weapon commands should be executed based on cg_exec_weapons setting
-================
-*/
-static qboolean CG_ShouldExecWeaponCommand(int clientNum)
-{
-	if (cg_exec_weapons.integer == 0)
-	{
-		return qfalse;
-	}
-
-	if (cg_exec_weapons.integer == 1)
-	{
-		/* Execute for all (local client and spectating) */
-		return qtrue;
-	}
-
-	if (cg_exec_weapons.integer == 2)
-	{
-		/* Execute only for local client (not when spectating) */
-		return (clientNum == cg.clientNum) ? qtrue : qfalse;
-	}
-
-	return qfalse;
-}
-
-/*
-================
-CG_ExecWeaponCommand
-
-Execute commands when weapon is selected
-Commands are separated by semicolon (;)
-================
-*/
-static void CG_ExecWeaponCommand(int weapon)
-{
-	vmCvar_t* cmdCvar;
-
-	switch (weapon)
-	{
-		case WP_GAUNTLET:
-			cmdCvar = &cg_exec_gauntlet;
-			break;
-		case WP_MACHINEGUN:
-			cmdCvar = &cg_exec_mg;
-			break;
-		case WP_SHOTGUN:
-			cmdCvar = &cg_exec_sg;
-			break;
-		case WP_GRENADE_LAUNCHER:
-			cmdCvar = &cg_exec_gl;
-			break;
-		case WP_ROCKET_LAUNCHER:
-			cmdCvar = &cg_exec_rl;
-			break;
-		case WP_LIGHTNING:
-			cmdCvar = &cg_exec_lg;
-			break;
-		case WP_RAILGUN:
-			cmdCvar = &cg_exec_rg;
-			break;
-		case WP_PLASMAGUN:
-			cmdCvar = &cg_exec_pg;
-			break;
-		case WP_BFG:
-			cmdCvar = &cg_exec_bfg;
-			break;
-		default:
-			return;
-	}
-
-	CG_ExecCommandIfSet(cmdCvar);
-}
-
-/*
-================
 CG_ForceExecOnSpectateStart
 
 Force exec weapon command when starting to spectate a player
@@ -489,12 +437,20 @@ static void CG_ForceExecOnSpectateStart(playerState_t* ps)
 		currentSnapClientNum = -1;
 	}
 
-	// If we started following a different player, force exec
-	if (isFollowing && currentSnapClientNum != lastSnapClientNum &&
-	        currentSnapClientNum != -1 && ps->weapon != WP_NONE &&
-	        cg_exec_weapons.integer != 0)
+	/* Early exit when weapon exec disabled: still update lastSnapClientNum */
+	if (cg_exec_weapons.integer == 0)
 	{
-		CG_ExecWeaponCommand(ps->weapon);
+		lastSnapClientNum = currentSnapClientNum;
+		return;
+	}
+
+	/* If we started following a different player, force exec */
+	if (isFollowing && currentSnapClientNum != lastSnapClientNum &&
+	        currentSnapClientNum != -1 && ps->weapon != WP_NONE)
+	{
+		int _w = ps->weapon;
+		int _c = ps->clientNum;
+		CG_EXEC_WEAPON_SWITCH_INLINE(_w, _c);
 	}
 
 	lastSnapClientNum = currentSnapClientNum;
@@ -1049,10 +1005,9 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	// execute weapon command on weapon change
 	if (ps->weapon != ops->weapon && ps->weapon != WP_NONE)
 	{
-		if (CG_ShouldExecWeaponCommand(ps->clientNum))
-		{
-			CG_ExecWeaponCommand(ps->weapon);
-		}
+		int _w = ps->weapon;
+		int _c = ps->clientNum;
+		CG_EXEC_WEAPON_SWITCH_INLINE(_w, _c);
 	}
 
 	// force exec when starting to spectate (only at the beginning)

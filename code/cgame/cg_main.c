@@ -467,8 +467,6 @@ vmCvar_t        cg_teamIndicatorFade;
 vmCvar_t        cg_teamIndicatorFadeRadius;
 vmCvar_t        be_features;
 vmCvar_t        be_enabled;
-vmCvar_t        chud_file;
-vmCvar_t        cg_chud;
 vmCvar_t        cg_scoreboardTextSize;
 vmCvar_t        cg_scoreboardScale;
 vmCvar_t        cg_scoreboardWidth;
@@ -932,8 +930,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE },
 	{ &be_features, "be_features", "", CVAR_ROM  },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
-	{ &chud_file, "chud_file", "default.cfg", CVAR_ARCHIVE, CG_LocalEventCvarChanged_chud_file },
-	{ &cg_chud, "cg_chud", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_chud },
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE },
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE },
 	{ &cg_drawRealHeads, "cg_drawRealHeads", "0", CVAR_ARCHIVE },
@@ -961,7 +957,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_exec_freeze, "cg_exec_freeze", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
-	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE },
+	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop},
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
@@ -2249,7 +2245,7 @@ static void CG_RegisterClients(void)
 	clientInfo = CG_ConfigString(CS_PLAYERS + cg.clientNum);
 	if (clientInfo[0] && strstr(clientInfo, "\\tt"))
 	{
-		cgs.be.teamMarkers.supportedServer = qtrue;
+		cgs.teamMarkers.supportedServer = qtrue;
 	}
 
 	for (i = 0 ; i < MAX_CLIENTS ; i++)
@@ -2646,9 +2642,9 @@ static void CG_ExecGametypeCommand(void)
 		}
 	}
 
-	if (cmdCvar)
+	if (cmdCvar && cmdCvar->string[0])
 	{
-		CG_ExecCommandIfSet(cmdCvar);
+		trap_SendConsoleCommand(cmdCvar->string);
 	}
 }
 
@@ -2661,28 +2657,28 @@ Initialize team task markers
 */
 void CG_InitTeamTaskMarkers(void)
 {
-	cgs.be.teamMarkers.numTeamTaskMarks = 0;
-	memset(cgs.be.teamMarkers.teamTaskMarks, 0, sizeof(cgs.be.teamMarkers.teamTaskMarks));
+	cgs.teamMarkers.numTeamTaskMarks = 0;
+	memset(cgs.teamMarkers.teamTaskMarks, 0, sizeof(cgs.teamMarkers.teamTaskMarks));
 
 	/* Initialize anti-flood token bucket for sending team task commands: fast limit (1 token, refill 1 token per 150ms) */
-	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketFast, 1, 150, cg.time);
+	TokenBucket_Init(&cgs.teamMarkers.sendCommandBucketFast, 1, 150, cg.time);
 	/* Initialize anti-flood token bucket for sending team task commands: bucket limit (4 tokens, refill 1 token per 800ms) */
-	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucket, 10, 600, cg.time);
+	TokenBucket_Init(&cgs.teamMarkers.sendCommandBucket, 10, 600, cg.time);
 	/* Initialize anti-flood token bucket for sending team task commands: flood protection (16 tokens, refill 1 token per 1100ms) */
-	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketFlood, 64, 1000, cg.time);
+	TokenBucket_Init(&cgs.teamMarkers.sendCommandBucketFlood, 64, 1000, cg.time);
 	/* Initialize cooldown token bucket for tHere command (1 token, refill 1 token per 2000ms = 2 seconds) */
-	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketHere, 1, 2000, cg.time);
+	TokenBucket_Init(&cgs.teamMarkers.sendCommandBucketHere, 1, 2000, cg.time);
 	/* Initialize cooldown token bucket for tWarn command (1 token, refill 1 token per 2000ms = 2 seconds) */
-	TokenBucket_Init(&cgs.be.teamMarkers.sendCommandBucketWarn, 1, 2000, cg.time);
+	TokenBucket_Init(&cgs.teamMarkers.sendCommandBucketWarn, 1, 2000, cg.time);
 
 	/* Initialize death position storage */
-	VectorClear(cgs.be.teamMarkers.deathPosition);
-	cgs.be.teamMarkers.deathPositionValid = qfalse;
+	VectorClear(cgs.teamMarkers.deathPosition);
+	cgs.teamMarkers.deathPositionValid = qfalse;
 
 	/* Initialize pickup item storage */
-	cgs.be.teamMarkers.pickupItemType = 0;
-	VectorClear(cgs.be.teamMarkers.pickupItemPosition);
-	cgs.be.teamMarkers.pickupItemTime = 0;
+	cgs.teamMarkers.pickupItemType = 0;
+	VectorClear(cgs.teamMarkers.pickupItemPosition);
+	cgs.teamMarkers.pickupItemTime = 0;
 
 	/* Initialize last tell sender for reply command */
 	cgs.be.lastTellSender = -1;
@@ -3047,12 +3043,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	{
 		const char* str = va("vstr %s;", cg_execVstr.string);
 		trap_SendConsoleCommand(str);
-	}
-
-	if (cg_chud.integer)
-	{
-		// CG_CvarTouch("chud_file");
-		CG_CvarTouch("cg_chud");
 	}
 
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);

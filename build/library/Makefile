@@ -423,16 +423,6 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_util.o \
   $(B)/$(MOD)/cgame/cg_be_util.o \
   $(B)/$(MOD)/cgame/cg_be_stats.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_elements.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_private.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_util.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_element_decor.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_lexer.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_lexer_parser.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_lexer_commands.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_layout.o \
-  $(B)/$(MOD)/cgame/cg_cherryhud_tablebuilder.o \
   \
   $(B)/$(MOD)/game/bg_lib.o \
   $(B)/$(MOD)/game/bg_misc.o \

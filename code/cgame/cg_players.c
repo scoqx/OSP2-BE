@@ -26,192 +26,48 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_types.h"
 
 
-qboolean CG_IsDead(void)
-{
-	if (cg.snap && (cg.snap->ps.pm_type == PM_DEAD || cg.snap->ps.pm_type == PM_SPINTERMISSION))
-	{
-		return qtrue;
-	}
-	else
-	{
-		return qfalse;
-	}
-}
-
-
-qboolean CG_IsLocalClientSpectator(void)
-{
-	const clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
-
-	if (cgs.gametype == GT_CA)
-	{
-		return (ci->rt == TEAM_SPECTATOR) ? qtrue : qfalse;
-	}
-	else
-	{
-		return (ci->team == TEAM_SPECTATOR) ? qtrue : qfalse;
-	}
-}
-
-qboolean CG_IsLocalClientOnScreen(void)
-{
-	if (!cg.snap || cg.snap->ps.clientNum != cg.clientNum)
-	{
-		return qfalse;
-	}
-	return qtrue;
-}
-
 qboolean CG_IsEnemy(const clientInfo_t* target)
 {
-	const clientInfo_t* local = &cgs.clientinfo[cg.clientNum];
-	int myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
-	int myRealTeam  = local->team;
-	int enemyTeam = target->team;
+	const clientInfo_t* local;
+	int myStateTeam;
+	int myRealTeam;
+	int enemyTeam;
+	int isCA;
+	int followClient;
 	team_t ourPerspectiveTeam;
+	team_t targetTeam;
 
-	if (CG_OSPIsGameTypeCA(cgs.gametype))
-	{
-		myRealTeam = local->rt;
-		enemyTeam = target->rt;
-	}
-
-
+	local = &cgs.clientinfo[cg.clientNum];
 	if (target == local)
-	{
 		return qfalse;
-	}
-
 	if (cgs.gametype <= GT_SINGLE_PLAYER)
-	{
 		return qtrue;
-	}
+
+	myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
+	isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+	myRealTeam = isCA ? local->rt : local->team;
+	enemyTeam = isCA ? target->rt : target->team;
 
 	if (myStateTeam == TEAM_SPECTATOR)
 	{
-		/* BE: Enhanced spectator perspective logic - exact copy from OSP2-BE */
-		if (cg_spectPOV.integer && cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+		followClient = cg.snap->ps.clientNum;
+		if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) && followClient >= 0 && followClient < MAX_CLIENTS)
 		{
-			qboolean result;
-			team_t targetTeam;
-
-			if (CG_OSPIsGameTypeCA(cgs.gametype))
-			{
-				ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
-				targetTeam = target->rt;
-			}
-			else
-			{
-				ourPerspectiveTeam = cgs.clientinfo[cg.snap->ps.clientNum].team;
-				targetTeam = target->team;
-			}
-
-			result = (ourPerspectiveTeam != targetTeam);
-
-			// /* Debug output */
-			// if (cg_debugAnim.integer)
-			// {
-			//  CG_Printf("[CG_IsEnemy] Following %d (team %d) | Target: %s (team %d) | isEnemy=%d\n",
-			//            cg.snap->ps.clientNum, ourPerspectiveTeam,
-			//            target->name, targetTeam, result);
-			// }
-
-			return result;
+			ourPerspectiveTeam = isCA ? cgs.clientinfo[followClient].rt : cgs.clientinfo[followClient].team;
+			targetTeam = isCA ? target->rt : target->team;
+			return (ourPerspectiveTeam != targetTeam);
 		}
-		else
-		{
-			/* Original PBE logic */
-			if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
-			{
-				return enemyTeam == TEAM_BLUE;
-			}
-			if (myRealTeam == TEAM_BLUE)
-			{
-				return enemyTeam == TEAM_RED;
-			}
-			return qfalse;
-		}
+		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
+			return (enemyTeam == TEAM_BLUE);
+		if (myRealTeam == TEAM_BLUE)
+			return (enemyTeam == TEAM_RED);
+		return qfalse;
 	}
 
 	if (myStateTeam == TEAM_RED)
-	{
-		return enemyTeam == TEAM_BLUE;
-	}
+		return (enemyTeam == TEAM_BLUE);
 	if (myStateTeam == TEAM_BLUE)
-	{
-		return enemyTeam == TEAM_RED;
-	}
-
-	return qfalse;
-}
-
-/*
-=================
-CG_IsEnemySimple
-
-Simple version that just compares teams from clientInfo
-=================
-*/
-qboolean CG_IsEnemySimple(const clientInfo_t* target)
-{
-	const clientInfo_t* local;
-	team_t localTeam;
-	team_t targetTeam;
-
-	if (!target)
-	{
-		return qfalse;
-	}
-
-	local = &cgs.clientinfo[cg.clientNum];
-
-	// Check if target is local player
-	if (target == local)
-	{
-		return qfalse;
-	}
-
-	// Get teams - use rt for CA gametype, otherwise use team
-	if (CG_OSPIsGameTypeCA(cgs.gametype))
-	{
-		localTeam = local->rt;
-		targetTeam = target->rt;
-	}
-	else
-	{
-		localTeam = local->team;
-		targetTeam = target->team;
-	}
-
-	// Compare teams - enemy if different teams
-	return (localTeam != targetTeam);
-}
-
-
-qboolean CG_IsFrozenEntity(const centity_t* cent)
-{
-	if (!cent->currentValid)
-		return qfalse;
-
-	if (!cgs.osp.gameTypeFreeze)
-		return qfalse;
-
-	if (cent->currentState.eType != ET_PLAYER)
-		return qfalse;
-
-	if (!(cent->currentState.powerups & (1 << PW_BATTLESUIT)))
-		return qfalse;
-
-	if (cent->currentState.weapon != WP_NONE)
-		return qfalse;
-
-	if (cent - cg_entities >= MAX_CLIENTS &&
-	        cent->currentState.otherEntityNum >= 0 &&
-	        cent->currentState.otherEntityNum <= MAX_CLIENTS)
-	{
-		return qtrue;
-	}
-
+		return (enemyTeam == TEAM_RED);
 	return qfalse;
 }
 
@@ -3490,33 +3346,35 @@ static qboolean CG_FriendVisible(centity_t* cent)
 	return qfalse;
 }
 
-qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack)
+qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack,
+    int *outClientNum, qboolean *outIsFrozenEnt, int *outFrozenEntity)
 {
 	centity_t* cent;
 	clientInfo_t* ci;
-
+	qboolean isEnemy;
+	qboolean isFrozenEnt;
+	qboolean needVis;
 	int clientNum;
+	int frozenEntity;
 	int freezeLimit = MAX_CLIENTS;
 
 	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
-	{
 		freezeLimit = MAX_GENTITIES;
-	}
 
 	if (clientOrEntityNum < 0 || clientOrEntityNum >= freezeLimit)
 		return qfalse;
 
 	cent = &cg_entities[clientOrEntityNum];
-
 	if (!cent->currentValid || cent->currentState.eType != ET_PLAYER)
 		return qfalse;
 
 	clientNum = clientOrEntityNum;
+	isFrozenEnt = qfalse;
+	frozenEntity = 0;
 
 	if (clientOrEntityNum >= MAX_CLIENTS && CG_IsFrozenEntity(cent))
 	{
 		clientNum = cent->currentState.otherEntityNum;
-
 		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
 			return qfalse;
 
@@ -3524,15 +3382,8 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack)
 		if (!ci->infoValid)
 			return qfalse;
 
-		if (clientOrEntityNum < 0 || clientOrEntityNum >= MAX_GENTITIES)
-			return qfalse;
-
-		if (!cg_entities[clientOrEntityNum].currentValid)
-			return qfalse;
-
-		ci->isFrozenEnt = qtrue;
-		ci->frozenEntity = clientOrEntityNum;
-
+		isFrozenEnt = qtrue;
+		frozenEntity = clientOrEntityNum;
 		cent = &cg_entities[clientOrEntityNum];
 	}
 	else
@@ -3543,48 +3394,32 @@ qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack)
 		ci = &cgs.clientinfo[clientNum];
 		if (!ci->infoValid)
 			return qfalse;
-
-		ci->isFrozenEnt = qfalse;
-		ci->frozenEntity = 0;
 	}
 
 	if (ci->team == TEAM_SPECTATOR)
 		return qfalse;
 
+	isEnemy = CG_IsEnemy(ci);
 	if (CG_IsLocalClientSpectator())
 	{
-		if (cg_teamIndicator.integer & PI_SPECTATOR)
-		{
-			;
-		}
-		else
-		{
-			if (CG_IsEnemy(ci))
-				return qfalse;
-		}
+		if (!(cg_teamIndicator.integer & PI_SPECTATOR) && isEnemy)
+			return qfalse;
 	}
 	else
 	{
-		if (CG_IsEnemy(ci))
+		if (isEnemy)
 			return qfalse;
 	}
 
-	if (!wallhack)
-	{
-		if (!CG_FriendVisible(cent))
-			return qfalse;
-	}
+	needVis = (!wallhack) ||
+	    (isFrozenEnt && !isEnemy &&
+	     (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN) || !cg_friendsWallhackFrozen.integer));
+	if (needVis && !CG_FriendVisible(cent))
+		return qfalse;
 
-	// If server disabled frozen teammate visibility through walls or client disabled it
-	if (ci->isFrozenEnt && !CG_IsEnemy(ci))
-	{
-		if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN) || !cg_friendsWallhackFrozen.integer)
-		{
-			if (!CG_FriendVisible(cent))
-				return qfalse;
-		}
-	}
-
+	*outClientNum = clientNum;
+	*outIsFrozenEnt = isFrozenEnt;
+	*outFrozenEntity = frozenEntity;
 	return qtrue;
 }
 
@@ -3674,14 +3509,14 @@ static qboolean CG_HasActiveTeamTaskOverhead(int clientNum)
 		return qfalse;
 	}
 
-	if (cgs.be.teamMarkers.numTeamTaskMarks == 0)
+	if (cgs.teamMarkers.numTeamTaskMarks == 0)
 	{
 		return qfalse;
 	}
 
-	for (i = 0; i < cgs.be.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 	{
-		mark = &cgs.be.teamMarkers.teamTaskMarks[i];
+		mark = &cgs.teamMarkers.teamTaskMarks[i];
 
 		if (cg.time >= mark->endTime)
 		{

@@ -66,7 +66,7 @@ extern "C" {
 #define MAX_SELWHEEL_ELEMENTS 10
 
 #define MAX_VERTS_ON_POLY   10
-#define MAX_MARK_POLYS      10240
+#define MAX_MARK_POLYS      256
 
 #define STAT_MINUS          10  // num frame for '-' stats digit
 
@@ -527,6 +527,61 @@ typedef struct
 	int refillTime;     /* мс на 1 токен */
 	int lastTime;       /* cg.time последнего апдейта */
 } tokenBucket_t;
+
+typedef struct cgs_teamMarkers_s
+{
+	int         numTeamTaskMarks;
+	teamTaskMark_t  teamTaskMarks[MAX_TEAMTASK_MARKS];
+
+	/* anti-flood for sending team task commands - fast limit (1 per 150ms) */
+	tokenBucket_t sendCommandBucketFast;
+	/* anti-flood for sending team task commands - bucket limit (4 tokens, 800ms refill) */
+	tokenBucket_t sendCommandBucket;
+	/* anti-flood for sending team task commands - flood protection (13 tokens, 300ms refill) */
+	tokenBucket_t sendCommandBucketFlood;
+	/* cooldown for tHere command (1 token, 2000ms refill = 2 seconds) */
+	tokenBucket_t sendCommandBucketHere;
+	/* cooldown for tWarn command (1 token, 2000ms refill = 2 seconds) */
+	tokenBucket_t sendCommandBucketWarn;
+
+	/* ttwheel mark */
+	qboolean    ttwheelMarkActive;
+	float       ttwheelMarkX;
+	float       ttwheelMarkY;
+	int         lastCmdNum;
+	int         lastCmdAngles[3];
+	int         lastMovementTime;
+	int         ttwheelHoveredIcon; /* -1 = none, icon index (updated each frame) */
+	int         ttwheelSelectedIcon; /* -1 = none, icon index (fixed when hovered, used on release) */
+	int         ttwheelElementCount; /* Number of active elements */
+	qhandle_t   ttwheelElementShaders[MAX_SELWHEEL_ELEMENTS]; /* Shaders for each element */
+	void (*ttwheelElementActions[MAX_SELWHEEL_ELEMENTS])(void);        /* Action callbacks */
+	char        ttwheelElementCommands[MAX_SELWHEEL_ELEMENTS][MAX_STRING_CHARS]; /* Console commands for each element */
+	vec4_t      teamTaskThemeColor; /* Theme color for team task UI elements */
+
+	/* smart target memory (for wheel opening) */
+	int         smartTargetType; /* 1 = nothing, 2 = enemy, 3 = red armor, ... 16 = blue flag (CTF only) */
+	vec3_t      smartTargetPos;
+	int         smartTargetTime;
+	int         smartTargetEntityNum;
+
+	/* death position storage (for team task markers) */
+	vec3_t      deathPosition;
+	qboolean    deathPositionValid;
+
+	/* pickup items storage (for /tPickup command) */
+	int         pickupItemType; /* 0 = none, TEAMTASK_MEGAHEALTH, TEAMTASK_REDARMOR, TEAMTASK_YELLOWARMOR */
+	vec3_t      pickupItemPosition;
+	int         pickupItemTime;
+
+	/* sensitivity adjustment for wheel (bitmask & 8) */
+	qboolean    sensitivityAdjusted;
+	float       savedSensitivity;
+	float       savedWheelSensitivity;
+	float       adjustedWheelSensitivity;
+
+	qboolean    supportedServer; /* True if server supports team task (has "tt" field in player configstrings) */
+} cgs_teamMarkers_t;
 
 typedef struct
 {
@@ -1332,8 +1387,6 @@ typedef struct cgs_be_s
 	vec2_t playerIndicatorFontSize;
 	vec2_t accuracyFontSize;
 	customWeaponStats_t weaponStats[WP_NUM_WEAPONS];
-	newStatsInfo_t newStats;
-	newStatsInfo_t statsAll[MAX_CLIENTS];
 	globalBeStatsSettings_t settings;
 	globalBeScoreBoardSettings_t sbSettings;
 	qboolean supportedServer;
@@ -1346,61 +1399,6 @@ typedef struct cgs_be_s
 	team_t myTeam;  // отслеживание команды игрока для динамического обновления цветов T/E
 	qboolean customFreezeSound;
 	int lastTellSender;  // последний отправитель tell сообщения для команды reply
-	// team task markers
-	struct
-	{
-		int         numTeamTaskMarks;
-		teamTaskMark_t  teamTaskMarks[MAX_TEAMTASK_MARKS];
-
-		// anti-flood for sending team task commands - fast limit (1 per 150ms)
-		tokenBucket_t sendCommandBucketFast;
-		// anti-flood for sending team task commands - bucket limit (4 tokens, 800ms refill)
-		tokenBucket_t sendCommandBucket;
-		// anti-flood for sending team task commands - flood protection (13 tokens, 300ms refill)
-		tokenBucket_t sendCommandBucketFlood;
-		// cooldown for tHere command (1 token, 2000ms refill = 2 seconds)
-		tokenBucket_t sendCommandBucketHere;
-		// cooldown for tWarn command (1 token, 2000ms refill = 2 seconds)
-		tokenBucket_t sendCommandBucketWarn;
-
-		// ttwheel mark
-		qboolean    ttwheelMarkActive;
-		float       ttwheelMarkX;
-		float       ttwheelMarkY;
-		int         lastCmdNum;
-		int         lastCmdAngles[3];
-		int         lastMovementTime;
-		int         ttwheelHoveredIcon; // -1 = none, icon index (updated each frame)
-		int         ttwheelSelectedIcon; // -1 = none, icon index (fixed when hovered, used on release)
-		int         ttwheelElementCount; // Number of active elements
-		qhandle_t   ttwheelElementShaders[MAX_SELWHEEL_ELEMENTS]; // Shaders for each element
-		void (*ttwheelElementActions[MAX_SELWHEEL_ELEMENTS])(void);        // Action callbacks
-		char        ttwheelElementCommands[MAX_SELWHEEL_ELEMENTS][MAX_STRING_CHARS]; // Console commands for each element
-		vec4_t      teamTaskThemeColor; // Theme color for team task UI elements
-
-		// smart target memory (for wheel opening)
-		int         smartTargetType; // 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally, 6 = frozen enemy, 7 = quaddamage, 8 = regeneration, 9 = battlesuit, 10 = haste, 11 = yellow armor, 12 = health, 13 = red flag carrier, 14 = blue flag carrier, 15 = red flag, 16 = blue flag (CTF only)
-		vec3_t      smartTargetPos; // Position of target (enemy or item)
-		int         smartTargetTime; // Time when target was saved (for 500ms memory)
-		int         smartTargetEntityNum; // Entity number of enemy (if target is enemy)
-
-		// death position storage (for team task markers)
-		vec3_t      deathPosition; // Position where player died
-		qboolean    deathPositionValid; // True if death position is valid
-
-		// pickup items storage (for /tPickup command)
-		int         pickupItemType; // 0 = none, TEAMTASK_MEGAHEALTH, TEAMTASK_REDARMOR, TEAMTASK_YELLOWARMOR
-		vec3_t      pickupItemPosition; // Position where item was picked up
-		int         pickupItemTime; // Time when item was picked up (for 5 seconds memory)
-
-		// sensitivity adjustment for wheel (bitmask & 8)
-		qboolean    sensitivityAdjusted; // True if sensitivity was adjusted for wheel
-		float       savedSensitivity; // Saved sensitivity value before adjustment
-		float       savedWheelSensitivity; // Saved wheel sensitivity value before adjustment
-		float       adjustedWheelSensitivity; // Adjusted wheel sensitivity value
-
-		qboolean    supportedServer; // True if server supports team task (has "tt" field in player configstrings)
-	} teamMarkers;
 
 	struct
 	{
@@ -1668,6 +1666,9 @@ typedef struct
 	cgMedia_t       media;
 	cgs_osp_t osp;
 	cgs_be_t  be;
+	cgs_teamMarkers_t teamMarkers;
+	newStatsInfo_t newStats;
+	newStatsInfo_t statsAll[MAX_CLIENTS];
 } cgs_t;
 
 //==============================================================================
@@ -2051,8 +2052,6 @@ extern vmCvar_t         cg_teamIndicatorFade;
 extern vmCvar_t         cg_teamIndicatorFadeRadius;
 extern vmCvar_t         be_features;
 extern vmCvar_t         be_enabled;
-extern vmCvar_t         chud_file;
-extern vmCvar_t         cg_chud;
 extern vmCvar_t         cg_scoreboardTextSize;
 extern vmCvar_t         cg_scoreboardScale;
 extern vmCvar_t         cg_scoreboardWidth;
@@ -2192,7 +2191,6 @@ void CG_SetServerSettingsBE(void);
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);
 int CG_CountRealClients(void);
-void CG_CHUDLoadConfig(void);
 void CG_BEParseXStatsToStatsAll(void);
 void CG_SHUDEventTempAccuracy(int weapon, float accuracy);
 void CG_LoadMenus(const char* menuFile);
@@ -2213,7 +2211,6 @@ void CG_CvarResetToDefault(const char* name);
 qhandle_t CG_GetFragSound(void);
 
 void CG_PrintNewCommandsBE_f(void);
-void CG_CHUDMemoryDebug_f(void);
 //
 // cg_view.c
 //
@@ -2457,14 +2454,19 @@ void CG_LoadForcedSounds(void);
 void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
 
-qboolean CG_IsDead(void);
-qboolean CG_IsLocalClientSpectator(void);
-qboolean CG_IsLocalClientOnScreen(void);
+/* Inline macros to avoid per-frame function call overhead (C89 has no inline) */
+#define CG_IsDead() \
+	(cg.snap && (cg.snap->ps.pm_type == PM_DEAD || cg.snap->ps.pm_type == PM_SPINTERMISSION))
+#define CG_IsLocalClientSpectator() \
+	((cgs.gametype == GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
+#define CG_IsLocalClientOnScreen() \
+	(cg.snap && cg.snap->ps.clientNum == cg.clientNum)
+#define CG_IsEnemySimple(target) \
+	((target) != NULL && (target) != &cgs.clientinfo[cg.clientNum] && (CG_OSPIsGameTypeCA(cgs.gametype) ? ((target)->rt != cgs.clientinfo[cg.clientNum].rt) : ((target)->team != cgs.clientinfo[cg.clientNum].team)))
+#define CG_IsFrozenEntity(cent) \
+	((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && (cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS)
+
 qboolean CG_IsEnemy(const clientInfo_t* target);
-qboolean CG_IsEnemySimple(const clientInfo_t* target);
-qboolean CG_IsFrozenEntity(const centity_t* cent);
-qboolean CG_IsWarmup(void);
-qboolean CG_IsIntermission(void);
 
 //
 // cg_predict.c
@@ -2682,7 +2684,8 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
 void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam);
 qboolean CG_ExecCommandIfSet(vmCvar_t* cvar);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
-qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack);
+qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack,
+    int *outClientNum, qboolean *outIsFrozenEnt, int *outFrozenEntity);
 
 
 //
@@ -2948,7 +2951,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00v" // BE (Black Edition)
+#define OSP_VERSION "be-1.00v1" // BE (Black Edition)
 
 
 
@@ -3298,8 +3301,6 @@ void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
-void CG_LocalEventCvarChanged_chud_file(cvarTable_t* cvart);
-void CG_LocalEventCvarChanged_cg_chud(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart);

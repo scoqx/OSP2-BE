@@ -1,5 +1,8 @@
-29.01.2026 be v1.00v
-+ /reply (/tell reply)
+29.01.2026 be v1.00v1
+SuperHUD:
+  * configs title updated
+  * m1rQ4style, m1rQLstyle, AGENT, ChikiPiki, Elite, California updated
 * beconfigs/customConfig_%.cfg -> /get% (description in docs/client_info.txt)
-* SuperHUD configs title updated
++ /reply (/tell reply)
 * teamoverlay/teamoverlay2 register fix
+- CherryHUD removed
