@@ -3534,8 +3534,7 @@ They want to be under main hud
 */
 void CG_DrawBefore2D(void)
 {
-	// Update isHealthLow flag each frame
-	CG_UpdateHealthLowFlag();
+	/* isHealthLow updated in CG_UpdateHealthLowFlag when snapshot/playerState changes */
 
 	// Draw 2D before main 2D function
 	if (cg_draw2D.integer)

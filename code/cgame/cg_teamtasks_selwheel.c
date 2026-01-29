@@ -100,6 +100,7 @@ void CG_UpdateSelwheelMark(void)
 	float centerX;
 	float centerY;
 	float returnSpeed;
+	qboolean haveNewCmd;
 
 	if (!cgs.teamMarkers.ttwheelMarkActive)
 	{
@@ -108,19 +109,24 @@ void CG_UpdateSelwheelMark(void)
 
 	currentCmdNum = trap_GetCurrentCmdNumber();
 
-	// Get current command
-	if (!trap_GetUserCmd(currentCmdNum, &currentCmd))
+	/* Only fetch user cmd when command number changed (new input) — reduces trap calls per frame */
+	haveNewCmd = (currentCmdNum != cgs.teamMarkers.lastCmdNum);
+	if (haveNewCmd)
 	{
-		return;
+		if (!trap_GetUserCmd(currentCmdNum, &currentCmd))
+		{
+			return;
+		}
 	}
 
 	// ============================================
 	// STEP 1: Check for mouse movement FIRST
 	// This must be checked BEFORE any center return logic
 	// ============================================
-	// Compare current angles with saved angles
-	if (currentCmd.angles[PITCH] != cgs.teamMarkers.lastCmdAngles[PITCH] ||
-	        currentCmd.angles[YAW] != cgs.teamMarkers.lastCmdAngles[YAW])
+	// Compare current angles with saved angles (only when we have a new cmd)
+	if (haveNewCmd &&
+	        (currentCmd.angles[PITCH] != cgs.teamMarkers.lastCmdAngles[PITCH] ||
+	         currentCmd.angles[YAW] != cgs.teamMarkers.lastCmdAngles[YAW]))
 	{
 
 		// ============================================
@@ -517,14 +523,17 @@ void CG_DrawSelwheelIcons(void)
 	int font = CG_FontIndexFromCvar(&cg_teamTaskFont);
 	float scale;
 	qboolean isNotAlive;
+	qboolean isObservingOther;
 
 	if (!cgs.teamMarkers.ttwheelMarkActive)
 	{
 		return;
 	}
 
-	// Check if player is not alive (dead, spectator, or free float)
+	/* Check if player is not alive (dead, spectator, or free float) */
 	isNotAlive = CG_IsDead() || CG_IsLocalClientSpectator() || CG_IsClientFreeFloat();
+	/* When observing another player (local client not on screen), same icons unavailable as when dead */
+	isObservingOther = !CG_IsLocalClientOnScreen();
 
 	// Get scale value
 	scale = cg_teamTaskWheelScale.value;
@@ -731,8 +740,8 @@ void CG_DrawSelwheelIcons(void)
 			// If hovered or selected, draw background first
 			if (hoveredIcon == 0 || cgs.teamMarkers.ttwheelSelectedIcon == 0)
 			{
-				// Use dark gray background for unavailable commands when player is not alive
-				if (isNotAlive && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+				// Use dark gray background for unavailable commands (not alive or observing other)
+				if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
 				        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
 				        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tHere"))
 				{
@@ -769,11 +778,11 @@ void CG_DrawSelwheelIcons(void)
 				CG_ColorWhitenSmart(hereColor, NULL, 0.5f);
 				trap_R_SetColor(hereColor);
 			}
-			else if (isNotAlive && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+			else if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
 			         Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
 			         Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tHere"))
 			{
-				// Player is not alive and command is not tWarn or tHere - use dark gray (unavailable)
+				// Unavailable (not alive or observing other) and command is not tWarn or tHere - use dark gray
 				vec4_t darkGrayColor;
 				Vector4Set(darkGrayColor, 0.3f, 0.3f, 0.3f, 1.0f);
 				trap_R_SetColor(darkGrayColor);
@@ -807,8 +816,8 @@ void CG_DrawSelwheelIcons(void)
 			if (cgs.media.teamTasksSmart && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
 			        !Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tSmart"))
 			{
-				// If player is not alive and command is unavailable, use gray color
-				if (isNotAlive && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+				// If unavailable (not alive or observing other), use gray color
+				if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
 				        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
 				        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tHere"))
 				{
@@ -914,8 +923,8 @@ void CG_DrawSelwheelIcons(void)
 		if (hoveredIcon == i)
 		{
 			// Draw background icon
-			// Use dark gray background for unavailable commands when player is not alive
-			if (isNotAlive && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+			// Use dark gray background for unavailable commands (not alive or observing other)
+			if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
 			        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
 			        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tHere"))
 			{
@@ -952,11 +961,11 @@ void CG_DrawSelwheelIcons(void)
 			CG_ColorWhitenSmart(hereColor, NULL, 0.8f);
 			trap_R_SetColor(hereColor);
 		}
-		else if (isNotAlive && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+		else if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
 		         Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
 		         Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tHere"))
 		{
-			// Player is not alive and command is not tWarn or tHere - use dark gray (unavailable)
+			// Unavailable (not alive or observing other) and command is not tWarn or tHere - use dark gray
 			vec4_t darkGrayColor;
 			Vector4Set(darkGrayColor, 0.3f, 0.3f, 0.3f, 1.0f);
 			trap_R_SetColor(darkGrayColor);
@@ -999,8 +1008,8 @@ void CG_DrawSelwheelIcons(void)
 			smartIconXWheel = adjustedX + adjustedSize * 0.5f - smartIconSizeWheel * 0.5f;
 			smartIconYWheel = adjustedY - adjustedSize * 0.5f + smartIconSizeWheel * 0.5f;
 
-			// If player is not alive and command is unavailable, use gray color
-			if (isNotAlive && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+			// If unavailable (not alive or observing other), use gray color
+			if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
 			        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
 			        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tHere"))
 			{

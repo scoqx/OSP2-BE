@@ -14,7 +14,7 @@
 - [ ] **CG_ProcessSnapshots** — ограничить число trap_GetSnapshot/команд за кадр или размазать по кадрам
 - [ ] **CG_ExecuteNewServerCommands** — размазать обработку пачки команд по кадрам
 - [ ] **CG_UpdateCvars** — реже обновлять или уменьшить число trap_Cvar_Update за проход
-- [ ] **CG_UpdateSelwheelMark** — уменьшить trap-вызовы при активном ttwheel
+- [x] **CG_UpdateSelwheelMark** — уменьшить trap-вызовы при активном ttwheel
 - [ ] **Timescale fade** — не вызывать trap_Cvar_Set каждый кадр (тик по таймеру или по изменению)
 
 ### Подфризы
@@ -118,6 +118,8 @@
 
 **Вывод:** небольшой постоянный вклад в инпутлаг при открытом ttwheel.
 
+**Сделано:** **trap_GetUserCmd()** вызывается только при смене номера команды (`currentCmdNum != lastCmdNum`). Если за кадр не пришла новая команда ввода, второй trap не вызывается — один trap на кадр вместо двух в типичных случаях (частота ввода ≤ частота кадров).
+
 ---
 
 ### 2.5 Timescale fade (cg_view.c)
@@ -157,7 +159,7 @@
 
 ### 3.3 Отрисовка 2D: CG_DrawBefore2D / CG_Draw2D
 
-- **CG_DrawBefore2D:** CG_UpdateHealthLowFlag, при опциях — overlay/damage frame, ttwheel, **CG_DrawTeamTaskMarks()**, team indicator.
+- <!-- **CG_DrawBefore2D:** CG_UpdateHealthLowFlag, при опциях — overlay/damage frame, ttwheel, --> **CG_DrawTeamTaskMarks()**, team indicator.
 - **CG_DrawTeamTaskBorderHudMarkers()**: **CG_RemoveExpiredTeamTaskMarks()**, цикл по меткам, **CG_IsPointOutsideScreen**, **CG_DrawTeamTaskBorderMarker**.
 - **CG_DrawTeamTaskMarks():** второй проход по меткам; при своих метках над головой — ещё цикл.
 - **CG_Draw2D():** **strlen(cgs.osp.testFont)** каждый кадр; **CG_SHUDRoutine()** / **CG_OSPHUDRoutine()**; в **CG_SHUDRoutine()** — **CG_DrawCrosshair()** и цикл по элементам SuperHUD (каждый может делать трассу и т.д.).

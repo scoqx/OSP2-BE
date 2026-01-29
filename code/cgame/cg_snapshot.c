@@ -137,6 +137,8 @@ void CG_SetInitialSnapshot(snapshot_t* snap)
 	{
 		CG_OSPMoTD_f();
 	}
+
+	CG_UpdateHealthLowFlag();
 }
 
 
@@ -175,6 +177,8 @@ static void CG_TransitionSnapshot(void)
 	// move nextSnap to snap and do the transitions
 	oldFrame = cg.snap;
 	cg.snap = cg.nextSnap;
+
+	CG_UpdateHealthLowFlag();
 
 	BG_PlayerStateToEntityState(&cg.snap->ps, &cg_entities[ cg.snap->ps.clientNum ].currentState, qfalse);
 	cg_entities[ cg.snap->ps.clientNum ].interpolate = qfalse;

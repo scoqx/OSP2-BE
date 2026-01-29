@@ -1943,6 +1943,7 @@ void CG_GetColorForHealthVQ3(int health, int armor, vec4_t hcolor, char* ccolor)
 =================
 CG_UpdateHealthLowFlag
 =================
+Called when playerState (snap) is updated; result cached until health/armor/cvars change.
 */
 void CG_UpdateHealthLowFlag(void)
 {
@@ -1951,30 +1952,59 @@ void CG_UpdateHealthLowFlag(void)
 	int count;
 	int max;
 	int effectiveHealth;
+	int healthLow;
+	int healthColorLevels;
+	qboolean deadOrFreeFloat;
+	static int s_lastHealth = -999;
+	static int s_lastArmor = -999;
+	static int s_lastHealthLow = -999;
+	static int s_lastHealthColorLevels = -999;
+	static qboolean s_lastDeadOrFreeFloat = qtrue;
 
-	// Reset flag if player is dead or spectator
-	if (CG_IsDead() || CG_IsClientFreeFloat())
+	deadOrFreeFloat = CG_IsDead() || CG_IsClientFreeFloat();
+	healthColorLevels = cg_healthColorLevels.integer;
+	health = 0;
+	armor = 0;
+	if (cg.snap)
+	{
+		health = cg.snap->ps.stats[STAT_HEALTH];
+		armor = cg.snap->ps.stats[STAT_ARMOR];
+	}
+	healthLow = cg_healthLow.integer;
+
+	/* Skip recompute when inputs unchanged */
+	if (s_lastDeadOrFreeFloat == deadOrFreeFloat &&
+	    s_lastHealthColorLevels == healthColorLevels &&
+	    s_lastHealth == health && s_lastArmor == armor && s_lastHealthLow == healthLow)
+	{
+		return;
+	}
+	s_lastDeadOrFreeFloat = deadOrFreeFloat;
+	s_lastHealthColorLevels = healthColorLevels;
+	s_lastHealth = health;
+	s_lastArmor = armor;
+	s_lastHealthLow = healthLow;
+
+	/* Reset flag if player is dead or spectator */
+	if (deadOrFreeFloat)
 	{
 		cgs.be.isHealthLow = qfalse;
 		return;
 	}
 
-	// Check if health color levels are enabled
-	if (!cg_healthColorLevels.integer)
+	/* Check if health color levels are enabled */
+	if (!healthColorLevels)
 	{
 		cgs.be.isHealthLow = qfalse;
 		return;
 	}
 
-	// Get health and armor from playerstate
+	/* No valid snap */
 	if (!cg.snap)
 	{
 		cgs.be.isHealthLow = qfalse;
 		return;
 	}
-
-	health = cg.snap->ps.stats[STAT_HEALTH];
-	armor = cg.snap->ps.stats[STAT_ARMOR];
 
 	if (health <= 0)
 	{
@@ -1982,7 +2012,7 @@ void CG_UpdateHealthLowFlag(void)
 		return;
 	}
 
-	// Calculate effective health (same logic as CG_GetColorForHealth)
+	/* Calculate effective health (same logic as CG_GetColorForHealth) */
 	count = armor;
 	max = health * ARMOR_PROTECTION / (1.0 - ARMOR_PROTECTION);
 	if (max < count)
@@ -1991,8 +2021,7 @@ void CG_UpdateHealthLowFlag(void)
 	}
 	effectiveHealth = health + count;
 
-	// Update flag based on effective health
-	if (effectiveHealth <= cg_healthLow.integer)
+	if (effectiveHealth <= healthLow)
 	{
 		cgs.be.isHealthLow = qtrue;
 	}
