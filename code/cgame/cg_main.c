@@ -635,7 +635,6 @@ static cvarTable_t cvarTable[] =
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawTeamOverlay},
-	{ &teamoverlay, "teamoverlay", "1", CVAR_USERINFO | CVAR_ROM },
 	{ &cg_stats, "cg_stats", "0",  },
 	{ &cg_buildScript, "com_buildScript", "0",  },
 	{ &cg_paused, "cl_paused", "0", CVAR_ROM },
@@ -931,8 +930,8 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "1", CVAR_ARCHIVE },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE },
-	{ &be_features, "be_features", "", CVAR_USERINFO | CVAR_ROM  },
-	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventBeFeaturesChanged },
+	{ &be_features, "be_features", "", CVAR_ROM  },
+	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &chud_file, "chud_file", "default.cfg", CVAR_ARCHIVE, CG_LocalEventCvarChanged_chud_file },
 	{ &cg_chud, "cg_chud", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_chud },
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE },
@@ -943,7 +942,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_autoaction, "cg_bestats_autoaction", "1", CVAR_ARCHIVE },
 	{ &cg_zoomAutoReset, "cg_zoomAutoReset", "3", CVAR_ARCHIVE },
 	{ &cg_smoothDucking, "cg_smoothDucking", "1", CVAR_ARCHIVE },
-	{ &cg_respawnWeapon, "cg_respawnWeapon", "0", CVAR_ARCHIVE | CVAR_USERINFO },
+	{ &cg_respawnWeapon, "cg_respawnWeapon", "0", CVAR_ARCHIVE },
 	{ &cg_countdownTimer, "cg_countdownTimer", "0", CVAR_ARCHIVE },
 	{ &cg_exec_weapons, "cg_exec_weapons", "1", CVAR_ARCHIVE },
 	{ &cg_exec_mg, "cg_exec_mg", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
@@ -962,7 +961,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_exec_freeze, "cg_exec_freeze", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
-	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
+	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE },
 	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop},
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
@@ -2684,6 +2683,9 @@ void CG_InitTeamTaskMarkers(void)
 	cgs.be.teamMarkers.pickupItemType = 0;
 	VectorClear(cgs.be.teamMarkers.pickupItemPosition);
 	cgs.be.teamMarkers.pickupItemTime = 0;
+
+	/* Initialize last tell sender for reply command */
+	cgs.be.lastTellSender = -1;
 }
 
 /*

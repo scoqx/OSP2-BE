@@ -708,3 +708,9 @@ TEAMTASKS:
 * cg_drawRealHeads small fix
 * cg_teamIndicator HP/AP fade fix
 + sound/player/bitterman/drown.wav
+
+29.01.2026 be v1.00v
++ /reply (/tell reply)
+* beconfigs/customConfig_%.cfg -> /get% (description in docs/client_info.txt)
+* SuperHUD configs title updated
+* teamoverlay/teamoverlay2 register fix

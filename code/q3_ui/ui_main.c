@@ -99,6 +99,106 @@ static int cvarTableSize = sizeof(cvarTable) / sizeof(cvarTable[0]);
 
 /*
 =================
+UI_ScanCustomConfigFiles
+
+Scan beconfigs/ directory for CustomConfig_*.cfg files
+and set uc_shudBindsList cvar with space-separated list of config names
+=================
+*/
+static void UI_ScanCustomConfigFiles( void ) {
+	char		filelist[8192];
+	char		*fileptr;
+	int			numfiles;
+	int			len;
+	char		filename[MAX_QPATH];
+	char		bindsList[8192];
+	int			bindsListLen;
+	int			prefixLen;
+	int			suffixLen;
+	int			nameLen;
+	char		*ext;
+	int			i;
+	int			j;
+
+	bindsList[0] = '\0';
+	bindsListLen = 0;
+	prefixLen = 13; // length of "CustomConfig_"
+	suffixLen = 4;  // length of ".cfg"
+
+	numfiles = trap_FS_GetFileList( "beconfigs", ".cfg", filelist, sizeof( filelist ) );
+	if ( numfiles > 0 ) {
+		fileptr = filelist;
+		for ( i = 0; i < numfiles && bindsListLen < (int)sizeof(bindsList) - 64; i++ ) {
+			// Debug: check if we're processing files correctly
+			// Manual strlen for C89 compatibility
+			len = 0;
+			while ( fileptr[len] != '\0' ) {
+				len++;
+			}
+			
+			if ( len == 0 ) {
+				fileptr++;
+				continue;
+			}
+			
+			if ( len > 0 && len < MAX_QPATH ) {
+				Q_strncpyz( filename, fileptr, sizeof( filename ) );
+				
+				// Check if filename starts with "customConfig_" (case-insensitive)
+				if ( len >= prefixLen + suffixLen ) {
+					qboolean matchesPrefix;
+					char c1;
+					char c2;
+					matchesPrefix = qtrue;
+					for ( j = 0; j < prefixLen; j++ ) {
+						c1 = filename[j];
+						c2 = "customConfig_"[j];
+						// Convert to lowercase for comparison
+						if ( c1 >= 'A' && c1 <= 'Z' ) {
+							c1 = c1 + ('a' - 'A');
+						}
+						if ( c2 >= 'A' && c2 <= 'Z' ) {
+							c2 = c2 + ('a' - 'A');
+						}
+						if ( c1 != c2 ) {
+							matchesPrefix = qfalse;
+							break;
+						}
+					}
+					
+					// Check if filename ends with ".cfg"
+					if ( matchesPrefix ) {
+						ext = filename + len - suffixLen;
+						if ( ext[0] == '.' && ext[1] == 'c' && ext[2] == 'f' && ext[3] == 'g' ) {
+							// Extract the name part (between "customConfig_" and ".cfg")
+							nameLen = len - prefixLen - suffixLen;
+							if ( nameLen > 0 && nameLen <= 64 ) {
+								// Add to list (separated by spaces)
+								if ( bindsListLen > 0 ) {
+									bindsList[bindsListLen] = ' ';
+									bindsListLen++;
+								}
+								// Copy name part
+								for ( j = 0; j < nameLen; j++ ) {
+									bindsList[bindsListLen + j] = filename[prefixLen + j];
+								}
+								bindsListLen += nameLen;
+								bindsList[bindsListLen] = '\0';
+							}
+						}
+					}
+				}
+			}
+			
+			fileptr += len + 1;
+		}
+	}
+	
+	trap_Cvar_Set( "uc_shudBindsList", bindsList );
+}
+
+/*
+=================
 UI_RegisterCvars
 =================
 */
@@ -117,6 +217,9 @@ void UI_RegisterCvars( void ) {
 		sensitivityValue = 0.0f;
 	}
 	trap_Cvar_SetValue( "uc_sensitivity", sensitivityValue );
+
+	// Scan beconfigs/ directory for customConfig_*.cfg files
+	UI_ScanCustomConfigFiles();
 }
 
 /*

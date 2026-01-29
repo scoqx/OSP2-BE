@@ -73,6 +73,8 @@ UI_CVAR( ui_lastDemo, "ui_lastDemo", "", CVAR_NOTABCOMPLETE )
 
 UI_CVAR( uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE )
 
+UI_CVAR( uc_shudBindsList, "uc_shudBindsList", "", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE )
+
 UI_CVAR( ui_beCreditsFont, "ui_beCreditsFont", "2", CVAR_ARCHIVE )
 
 #undef UI_CVAR

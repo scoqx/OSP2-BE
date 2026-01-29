@@ -182,6 +182,12 @@ void CG_TeamTaskFilterLoadFile(const char* filename)
 		return;
 	}
 
+	if (rc == 0)
+	{
+		trap_FS_FCloseFile(filterFileHandle);
+		return;
+	}
+
 	fileContent = Z_Malloc(rc + 1);
 	OSP_MEMORY_CHECK(fileContent);
 
@@ -202,7 +208,10 @@ void CG_TeamTaskFilterLoadFile(const char* filename)
 	}
 	while (*ptr);
 
-	CG_Printf("^3>>> (%s):^5 %i name%s loaded.\n", path, namesCounter, namesCounter > 1 ? "s" : "");
+	if (namesCounter > 0)
+	{
+		CG_Printf("^3>>> (%s):^5 %i name%s loaded.\n", path, namesCounter, namesCounter > 1 ? "s" : "");
+	}
 
 	Z_Free(fileContent);
 }

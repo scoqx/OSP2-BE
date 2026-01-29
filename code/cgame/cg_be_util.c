@@ -599,3 +599,114 @@ void CG_SendGetStatsInfo(void)
 		trap_SendClientCommand("getstatsinfo");
 	}
 }
+
+/*
+=================
+CG_Get_f
+
+Dynamic command handler for /get% commands
+Reads beconfigs/customConfig_%.cfg file and sends its contents to console
+=================
+*/
+void CG_Get_f(void)
+{
+	const char* cmd;
+	char configName[65];
+	char filePath[MAX_QPATH];
+	fileHandle_t fileHandle;
+	int fileSize;
+	char* fileContent;
+	int i;
+	int cmdLen;
+	int prefixLen;
+
+	cmd = CG_Argv(0);
+	if (!cmd || !cmd[0])
+	{
+		return;
+	}
+
+	/* Check if command starts with "get" (case-insensitive) */
+	prefixLen = 3; /* length of "get" */
+	cmdLen = 0;
+	while (cmd[cmdLen] != '\0')
+	{
+		cmdLen++;
+	}
+
+	if (cmdLen <= prefixLen)
+	{
+		return;
+	}
+
+	/* Case-insensitive check for "get" prefix */
+	for (i = 0; i < prefixLen; i++)
+	{
+		char c1;
+		char c2;
+		c1 = cmd[i];
+		c2 = "get"[i];
+		if (c1 >= 'A' && c1 <= 'Z')
+		{
+			c1 = c1 + ('a' - 'A');
+		}
+		if (c2 >= 'A' && c2 <= 'Z')
+		{
+			c2 = c2 + ('a' - 'A');
+		}
+		if (c1 != c2)
+		{
+			return;
+		}
+	}
+
+	/* Extract config name (everything after "get") */
+	if (cmdLen - prefixLen > 64)
+	{
+		return;
+	}
+
+	for (i = 0; i < cmdLen - prefixLen; i++)
+	{
+		configName[i] = cmd[prefixLen + i];
+	}
+	configName[cmdLen - prefixLen] = '\0';
+
+	/* Build file path: beconfigs/customConfig_<name>.cfg (case-insensitive filesystem) */
+	Com_sprintf(filePath, sizeof(filePath), "beconfigs/customConfig_%s.cfg", configName);
+	fileSize = trap_FS_FOpenFile(filePath, &fileHandle, FS_READ);
+
+	if (fileSize <= 0 || !fileHandle)
+	{
+		CG_Printf("^1File not found: %s\n", filePath);
+		return;
+	}
+
+	/* Limit file size to prevent memory issues (max 64KB) */
+	if (fileSize > 65536)
+	{
+		CG_Printf("^1File too large: %s (%d bytes, max 65536)\n", filePath, fileSize);
+		trap_FS_FCloseFile(fileHandle);
+		return;
+	}
+
+	/* Allocate memory for file content */
+	fileContent = (char*)Z_Malloc(fileSize + 1);
+	if (!fileContent)
+	{
+		CG_Printf("^1Out of memory reading file: %s\n", filePath);
+		trap_FS_FCloseFile(fileHandle);
+		return;
+	}
+
+	/* Read file content */
+	trap_FS_Read(fileContent, fileSize, fileHandle);
+	trap_FS_FCloseFile(fileHandle);
+	fileContent[fileSize] = '\0';
+
+	/* Send file content to console */
+	trap_SendConsoleCommand(fileContent);
+
+	/* Free allocated memory */
+	Z_Free(fileContent);
+}

@@ -1877,6 +1877,13 @@ void CG_ScanForCrosshairEntity(void)
 	int content;
 	vec3_t l;
 
+	/* Cache result per frame: 3+ callers (crosshair names, target_status, target_name, OSPHUD) */
+	if (cg.crosshairScanTime == cg.time)
+	{
+		return;
+	}
+	cg.crosshairScanTime = cg.time;
+
 	VectorCopy(cg.refdef.vieworg, start);
 	VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
 

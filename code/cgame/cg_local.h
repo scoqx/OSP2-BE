@@ -651,6 +651,7 @@ typedef struct
 	// crosshair client ID
 	int         crosshairClientNum;
 	int         crosshairClientTime;
+	int         crosshairScanTime;   /* cg.time when CG_ScanForCrosshairEntity last ran (cache guard) */
 	qboolean    crosshairIgnoreFog;
 
 	// powerup active flashing
@@ -1344,6 +1345,7 @@ typedef struct cgs_be_s
 	vec3_t brightWeaponsColor[WP_NUM_WEAPONS];
 	team_t myTeam;  // отслеживание команды игрока для динамического обновления цветов T/E
 	qboolean customFreezeSound;
+	int lastTellSender;  // последний отправитель tell сообщения для команды reply
 	// team task markers
 	struct
 	{
@@ -2708,6 +2710,7 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength);
 void FPSC_IsUnfreezeServer(void);
 qboolean CG_isFPSClassicoServer(void);
 void CG_SendGetStatsInfo(void);
+void CG_Get_f(void);
 
 //
 //cg_be_stats
@@ -2945,7 +2948,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00u5" // BE (Black Edition)
+#define OSP_VERSION "be-1.00v" // BE (Black Edition)
 
 
 

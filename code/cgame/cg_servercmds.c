@@ -30,23 +30,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static int xstats1_received_count = 0;
 static int last_xstats1_sequence = -1;
+static qboolean teamoverlay_registered = qfalse;
 static qboolean teamoverlay2_registered = qfalse;
 
-static void CG_RegisterTeamOverlay2ForFPSClassicoServer(void)
+static void CG_RegisterTeamOverlayForServer(void)
 {
-	if (!CG_isFPSClassicoServer())
+	if (CG_isFPSClassicoServer())
 	{
-		return;
-	}
+		/* FPS Classico server - register teamoverlay2 */
+		if (!teamoverlay2_registered)
+		{
+			trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "1", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
+			teamoverlay2_registered = qtrue;
+		}
 
-	if (!teamoverlay2_registered)
+		trap_Cvar_Set("teamoverlay2", "1");
+		trap_Cvar_Update(&teamoverlay2);
+	}
+	else
 	{
-		trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "1", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
-		teamoverlay2_registered = qtrue;
-	}
+		/* Other servers - register standard teamoverlay */
+		if (!teamoverlay_registered)
+		{
+			trap_Cvar_Register(&teamoverlay, "teamoverlay", "1", CVAR_USERINFO | CVAR_ROM);
+			teamoverlay_registered = qtrue;
+		}
 
-	trap_Cvar_Set("teamoverlay2", "1");
-	trap_Cvar_Update(&teamoverlay2);
+		trap_Cvar_Set("teamoverlay", "1");
+		trap_Cvar_Update(&teamoverlay);
+	}
 }
 
 
@@ -206,8 +218,8 @@ void CG_ParseServerinfo(void)
 	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
 	CG_DefineServer(CS_SERVERINFO, info);
 
-	/* Register teamoverlay2 for FPS Classico server */
-	CG_RegisterTeamOverlay2ForFPSClassicoServer();
+	/* Register teamoverlay or teamoverlay2 based on server type */
+	CG_RegisterTeamOverlayForServer();
 
 	CG_SetServerSettingsBE();
 }
@@ -2037,6 +2049,12 @@ void CG_ServerCommand(void)
 				if (chatClientNum >= 0 && chatClientNum < MAX_CLIENTS)
 				{
 					CG_ReplacePlayerNameInChat(text, sizeof(text), chatClientNum);
+					
+					/* Save last tell sender for reply command */
+					if (isTellMessage && chatClientNum != cg.clientNum)
+					{
+						cgs.be.lastTellSender = chatClientNum;
+					}
 				}
 			}
 		}

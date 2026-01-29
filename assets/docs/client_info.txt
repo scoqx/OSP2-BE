@@ -18,3 +18,25 @@ Compilation "Name" Version "version"
 "Font name" "gfx/2d/file.cfg"
 "Another font name" "gfx/2d/file2.cfg"
 ===
+
+-= Кастомные конфиги (customConfig) =-
+
+Папка `beconfigs` в OSP позволяет добавить новую клиентскую команду без правки кода.
+
+Если в этой папке находится файл вида:
+customConfig_<имя>.cfg
+
+то в клиенте автоматически становится доступна команда:
+/get<имя>
+
+При её вызове выполняется содержимое соответствующего файла.
+
+Правила:
+- Имя файла: customConfig_<имя>.cfg
+- <имя> — латиница, без пробелов
+- Путь к файлу: beconfigs/customConfig_<имя>.cfg
+- Максимальный размер файла: 64 КБ
+
+Пример:
+Файл: customConfig_Elite.cfg
+Команда в клиенте: /getElite

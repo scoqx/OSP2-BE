@@ -3601,7 +3601,6 @@ static void CG_FriendHudMarker(centity_t* cent)
 
 	team = cgs.clientinfo[cent->currentState.clientNum].team;
 	if (cgs.gametype < GT_TEAM
-	        || !cg_teamIndicator.integer
 	        || cg.snap->ps.persistant[PERS_TEAM] != team
 	        || (cent->currentState.eFlags & EF_DEAD && !CG_IsFrozenEntity(cent))
 	        || cent->currentState.number == cg.snap->ps.clientNum

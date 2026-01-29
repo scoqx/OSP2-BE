@@ -321,6 +321,21 @@ static void CG_SHUDTeamTaskGetTaskName(int taskType, char* name, int maxlen, qbo
 			case TEAMTASK_YELLOWARMOR:
 				taskName = "Picked up Yellow Armor";
 				break;
+			case TEAMTASK_QUADDAMAGE:
+				taskName = "Picked up Quad Damage";
+				break;
+			case TEAMTASK_REGENERATION:
+				taskName = "Picked up Regeneration";
+				break;
+			case TEAMTASK_BATTLESUIT:
+				taskName = "Picked up Battle Suit";
+				break;
+			case TEAMTASK_HASTE:
+				taskName = "Picked up Haste";
+				break;
+			case TEAMTASK_HEALTH:
+				taskName = "Picked up Health";
+				break;
 			default:
 				taskName = "Picked up";
 				break;
@@ -363,6 +378,21 @@ static void CG_SHUDTeamTaskGetTaskName(int taskType, char* name, int maxlen, qbo
 			case TEAMTASK_YELLOWARMOR:
 				taskName = "Yellow Armor up";
 				break;
+			case TEAMTASK_QUADDAMAGE:
+				taskName = "Quad Damage up";
+				break;
+			case TEAMTASK_REGENERATION:
+				taskName = "Regeneration up";
+				break;
+			case TEAMTASK_BATTLESUIT:
+				taskName = "Battle Suit up";
+				break;
+			case TEAMTASK_HASTE:
+				taskName = "Haste up";
+				break;
+			case TEAMTASK_HEALTH:
+				taskName = "Health up";
+				break;
 			case TEAMTASK_MEDIC:
 				taskName = "Need health";
 				break;
@@ -378,11 +408,26 @@ static void CG_SHUDTeamTaskGetTaskName(int taskType, char* name, int maxlen, qbo
 			case TEAMTASK_HERE_DEAD:
 				taskName = "Here (dead)";
 				break;
+			case TEAMTASK_HERE_FLAG:
+				taskName = "I carry flag";
+				break;
 			case TEAMTASK_WARN_ALIVE:
 				taskName = "Caution";
 				break;
 			case TEAMTASK_WARN_DEAD:
 				taskName = "Caution (dead)";
+				break;
+			case TEAMTASK_REDFLAG:
+				taskName = "Red Flag";
+				break;
+			case TEAMTASK_BLUEFLAG:
+				taskName = "Blue Flag";
+				break;
+			case TEAMTASK_REDFLAG_CARRIER:
+				taskName = "Red Flag carrier";
+				break;
+			case TEAMTASK_BLUEFLAG_CARRIER:
+				taskName = "Blue Flag carrier";
 				break;
 			default:
 				taskName = "Unknown";

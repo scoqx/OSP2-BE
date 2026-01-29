@@ -229,6 +229,30 @@ static void CG_TellAttacker_f(void)
 	trap_SendClientCommand(command);
 }
 
+static void CG_Reply_f(void)
+{
+	int     clientNum;
+	char    command[128];
+	char    message[128];
+
+	if (cgs.be.lastTellSender < 0 || cgs.be.lastTellSender >= MAX_CLIENTS)
+	{
+		CG_Printf("No one to reply to.\n");
+		return;
+	}
+
+	clientNum = cgs.be.lastTellSender;
+	trap_Args(message, 128);
+	if (message[0] == '\0')
+	{
+		CG_Printf("Usage: /reply <message>\n");
+		return;
+	}
+
+	Com_sprintf(command, 128, "tell %i %s", clientNum, message);
+	trap_SendClientCommand(command);
+}
+
 /*
 ==================
 CG_StartOrbit_f
@@ -2236,6 +2260,7 @@ static consoleCommand_t commands[] =
 	{ "weapon", CG_Weapon_f },
 	{ "tell_target", CG_TellTarget_f },
 	{ "tell_attacker", CG_TellAttacker_f },
+	{ "reply", CG_Reply_f },
 	{ "tcmd", CG_TargetCommand_f },
 	{ "startOrbit", CG_StartOrbit_f },
 	{ "currenttime", CG_OSPPrintTime_f },
@@ -2342,6 +2367,11 @@ qboolean CG_ConsoleCommand(void)
 	const char* cmd = CG_Argv(0);
 	int i;
 
+	if (!cmd || !cmd[0])
+	{
+		return qfalse;
+	}
+
 	for (i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
 	{
 		if (!Q_stricmp(cmd, commands[i].cmd))
@@ -2351,10 +2381,90 @@ qboolean CG_ConsoleCommand(void)
 		}
 	}
 
+	/* Dynamic /get<name> commands (e.g. getElite) */
+	if (cmd[3] != '\0' && !Q_stricmpn(cmd, "get", 3))
+	{
+		CG_Get_f();
+		return qtrue;
+	}
+
 	return qfalse;
 }
 
+/*
+=================
+CG_RegisterDynamicGetCommands
 
+Register dynamic /get% commands based on uc_shudBindsList cvar
+Parses space-separated list of config names and registers commands for each
+=================
+*/
+void CG_RegisterDynamicGetCommands(void)
+{
+	char bindsList[8192];
+	char* listPtr;
+	char commandName[80];
+	int i;
+	int len;
+	int nameStart;
+	int nameEnd;
+	int j;
+
+	trap_Cvar_VariableStringBuffer("uc_shudBindsList", bindsList, sizeof(bindsList));
+
+	if (bindsList[0] == '\0')
+	{
+		return;
+	}
+
+	listPtr = bindsList;
+	i = 0;
+	while (listPtr[i] != '\0' && i < (int)sizeof(bindsList) - 1)
+	{
+		// Skip spaces
+		while (listPtr[i] == ' ' && listPtr[i] != '\0')
+		{
+			i++;
+		}
+
+		if (listPtr[i] == '\0')
+		{
+			break;
+		}
+
+		nameStart = i;
+
+		// Find end of name (space or null)
+		while (listPtr[i] != ' ' && listPtr[i] != '\0' && (i - nameStart) < 64)
+		{
+			i++;
+		}
+
+		nameEnd = i;
+
+		if (nameEnd > nameStart && nameEnd - nameStart <= 64)
+		{
+			// Build command name: get<name>
+			Com_sprintf(commandName, sizeof(commandName), "get");
+			len = 3; // length of "get"
+			if (len + (nameEnd - nameStart) < (int)sizeof(commandName))
+			{
+				for (j = nameStart; j < nameEnd; j++)
+				{
+					commandName[len + (j - nameStart)] = listPtr[j];
+				}
+				commandName[len + (nameEnd - nameStart)] = '\0';
+				trap_AddCommand(commandName);
+			}
+		}
+
+		// Skip to next token
+		if (listPtr[i] == ' ')
+		{
+			i++;
+		}
+	}
+}
 
 /*
 =================
@@ -2511,4 +2621,7 @@ void CG_InitConsoleCommands(void)
 	trap_AddCommand("decalrotcounter");
 	trap_AddCommand("testfont");
 	trap_AddCommand("builds");
+
+	// Register dynamic /get% commands from uc_shudBindsList cvar
+	CG_RegisterDynamicGetCommands();
 }
