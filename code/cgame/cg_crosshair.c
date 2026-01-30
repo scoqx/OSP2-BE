@@ -77,19 +77,21 @@ static qhandle_t CG_CrosshairGetShader(void)
 static float CG_GetCrosshairDistanceScale(void)
 {
 	float scale = 1.0f;
+	crosshairData_t *ch = &crosshairData;
+
 	if (ch_crosshairAutoScale.integer)
 	{
 		const float distance = 2000;
 		const float startFrom = 200;
 		const float scaleRange = 0.40f;
 
-		if (cgs.osp.crosshair.distance > startFrom)
+		if (ch->distance > startFrom)
 		{
 			float mult = 1.0f - scaleRange;
 
-			if (cgs.osp.crosshair.distance < startFrom + distance)
+			if (ch->distance < startFrom + distance)
 			{
-				float d = (cgs.osp.crosshair.distance - startFrom);
+				float d = (ch->distance - startFrom);
 				float s = scaleRange / distance;
 				mult = 1.0f - (d * s);
 			}
@@ -235,6 +237,8 @@ static void CG_CrosshairGetHitColor(const vec4_t base_color, const vec4_t hit_co
 
 static void CG_CrosshairGetColor(vec4_t hcolor)
 {
+	crosshairData_t *ch = &crosshairData;
+
 	if (cg_crosshairHealth.integer != 0)
 	{
 		CG_ColorForHealth(hcolor, NULL);
@@ -242,11 +246,11 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 	else if (BE_IsDamageInfoAllowed() && ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
 	{
 		CG_CrosshairPickDamageColor(
-		    cgs.osp.crosshair.color,
-		    cgs.osp.crosshair.actionColorLow,
-		    cgs.osp.crosshair.actionColorMid,
-		    cgs.osp.crosshair.actionColorHigh,
-		    cgs.osp.crosshair.actionColor, // VeryHigh
+		    ch->color,
+		    ch->actionColorLow,
+		    ch->actionColorMid,
+		    ch->actionColorHigh,
+		    ch->actionColor, /* VeryHigh */
 		    cgs.osp.lastHitDamage,
 		    ch_crosshairActionTime.integer,
 		    hcolor
@@ -254,11 +258,11 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 	}
 	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR || (!BE_IsDamageInfoAllowed() && ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE))
 	{
-		CG_CrosshairGetHitColor(cgs.osp.crosshair.color, cgs.osp.crosshair.actionColor, ch_crosshairActionTime.integer, hcolor);
+		CG_CrosshairGetHitColor(ch->color, ch->actionColor, ch_crosshairActionTime.integer, hcolor);
 	}
 	else
 	{
-		VectorCopy(cgs.osp.crosshair.color, hcolor);
+		VectorCopy(ch->color, hcolor);
 	}
 
 	hcolor[3] = CG_CrosshairGetOpaque();
@@ -267,14 +271,16 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 
 static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 {
+	crosshairData_t *ch = &crosshairData;
+
 	if (BE_IsDamageInfoAllowed() && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
 	{
 		CG_CrosshairPickDamageColor(
-		    cgs.osp.crosshair.decorColor,
-		    cgs.osp.crosshair.decorActionColorLow,
-		    cgs.osp.crosshair.decorActionColorMid,
-		    cgs.osp.crosshair.decorActionColorHigh,
-		    cgs.osp.crosshair.decorActionColor, // VeryHigh
+		    ch->decorColor,
+		    ch->decorActionColorLow,
+		    ch->decorActionColorMid,
+		    ch->decorActionColorHigh,
+		    ch->decorActionColor, /* VeryHigh */
 		    cgs.osp.lastHitDamage,
 		    ch_crosshairDecorActionTime.integer,
 		    hcolor
@@ -282,11 +288,11 @@ static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 	}
 	else if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR || (!BE_IsDamageInfoAllowed() && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE))
 	{
-		CG_CrosshairGetHitColor(cgs.osp.crosshair.decorColor, cgs.osp.crosshair.decorActionColor, ch_crosshairDecorActionTime.integer, hcolor);
+		CG_CrosshairGetHitColor(ch->decorColor, ch->decorActionColor, ch_crosshairDecorActionTime.integer, hcolor);
 	}
 	else
 	{
-		VectorCopy(cgs.osp.crosshair.decorColor, hcolor);
+		VectorCopy(ch->decorColor, hcolor);
 	}
 
 	hcolor[3] = CG_CrosshairDecorGetOpaque();

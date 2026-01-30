@@ -1859,13 +1859,15 @@ float* CG_TeamColor(int team)
 {
 	static vec4_t   other = {1, 1, 1, 1};
 	static vec4_t   spectator = {0.7f, 0.7f, 0.7f, 1};
+	cgs_be_t* be;
 
+	be = &cgs.be;
 	switch (team)
 	{
 		case TEAM_RED:
-			return cgs.be.redTeamColor;
+			return be->redTeamColor;
 		case TEAM_BLUE:
-			return cgs.be.blueTeamColor;
+			return be->blueTeamColor;
 		case TEAM_SPECTATOR:
 			return spectator;
 		default:

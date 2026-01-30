@@ -259,25 +259,31 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 
 	if (cg_teamRails.integer && cgs.gametype >= GT_TEAM)
 	{
+		cgs_be_t* be;
+		float* tc;
+
+		be = &cgs.be;
 		if (ci->team == TEAM_RED)
 		{
-			re->shaderRGBA[0] = cgs.be.redTeamColor[0] * 255;
-			re->shaderRGBA[1] = cgs.be.redTeamColor[1] * 255;
-			re->shaderRGBA[2] = cgs.be.redTeamColor[2] * 255;
+			tc = be->redTeamColor;
+			re->shaderRGBA[0] = tc[0] * 255;
+			re->shaderRGBA[1] = tc[1] * 255;
+			re->shaderRGBA[2] = tc[2] * 255;
 
-			le->color[0] = cgs.be.redTeamColor[0] * 0.75;
-			le->color[1] = cgs.be.redTeamColor[1] * 0.75;
-			le->color[2] = cgs.be.redTeamColor[2] * 0.75;
+			le->color[0] = tc[0] * 0.75;
+			le->color[1] = tc[1] * 0.75;
+			le->color[2] = tc[2] * 0.75;
 		}
 		else if (ci->team == TEAM_BLUE)
 		{
-			re->shaderRGBA[0] = cgs.be.blueTeamColor[0] * 255;
-			re->shaderRGBA[1] = cgs.be.blueTeamColor[1] * 255;
-			re->shaderRGBA[2] = cgs.be.blueTeamColor[2] * 255;
+			tc = be->blueTeamColor;
+			re->shaderRGBA[0] = tc[0] * 255;
+			re->shaderRGBA[1] = tc[1] * 255;
+			re->shaderRGBA[2] = tc[2] * 255;
 
-			le->color[0] = cgs.be.blueTeamColor[0] * 0.75;
-			le->color[1] = cgs.be.blueTeamColor[1] * 0.75;
-			le->color[2] = cgs.be.blueTeamColor[2] * 0.75;
+			le->color[0] = tc[0] * 0.75;
+			le->color[1] = tc[1] * 0.75;
+			le->color[2] = tc[2] * 0.75;
 		}
 	}
 	else
@@ -1704,16 +1710,20 @@ void CG_InitBrightWeaponsColors(void)
 void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum)
 {
 	float opacity;
+	float* color;
+	cgs_be_t* be;
 
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 	{
-		opacity = atof(cg_brightWeaponsOpaque.string);
+		be = &cgs.be;
+		color = be->brightWeaponsColor[weaponNum];
+		opacity = cg_brightWeaponsOpaque.value;
 		if (opacity < 0.0f) opacity = 0.0f;
 		if (opacity > 1.0f) opacity = 1.0f;
 
-		gun->shaderRGBA[0] = 255 * cgs.be.brightWeaponsColor[weaponNum][0];
-		gun->shaderRGBA[1] = 255 * cgs.be.brightWeaponsColor[weaponNum][1];
-		gun->shaderRGBA[2] = 255 * cgs.be.brightWeaponsColor[weaponNum][2];
+		gun->shaderRGBA[0] = 255 * color[0];
+		gun->shaderRGBA[1] = 255 * color[1];
+		gun->shaderRGBA[2] = 255 * color[2];
 		gun->shaderRGBA[3] = 255 * opacity;
 	}
 }
@@ -1724,7 +1734,7 @@ void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum)
 
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 	{
-		opacity = atof(cg_brightWeaponsOpaque.string);
+		opacity = cg_brightWeaponsOpaque.value;
 		if (opacity < 0.0f) opacity = 0.0f;
 		if (opacity > 1.0f) opacity = 1.0f;
 
@@ -2496,7 +2506,7 @@ static qboolean CG_IsDoubleShoot(weapon_t weap)
 			addTime = 900;
 			break;
 		case WP_MACHINEGUN:
-			addTime = CG_isFPSClassicoServer() ? 70 : 90; //-V1037
+			addTime = cgs.be.server.fpsclassico ? 70 : 90; //-V1037
 			break;
 		case WP_GRENADE_LAUNCHER:
 			addTime = modeGrenadeTime - 100; //-V1037

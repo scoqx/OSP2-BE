@@ -385,51 +385,51 @@ static void CG_LocalEventCvarParseColor(cvarTable_t* cvart, vec4_t color)
 
 void CG_LocalEventCvarChanged_ch_crosshairColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.color);
+	CG_LocalEventCvarParseColor(cvart, crosshairData.color);
 }
 
 void CG_LocalEventCvarChanged_ch_crosshairActionColor(cvarTable_t* cvart)
 {
 	if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColor") == 0)
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColor);
+		CG_LocalEventCvarParseColor(cvart, crosshairData.actionColor);
 	}
 	if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColorLow") == 0)
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColorLow);
+		CG_LocalEventCvarParseColor(cvart, crosshairData.actionColorLow);
 	}
 	if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColorMid") == 0)
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColorMid);
+		CG_LocalEventCvarParseColor(cvart, crosshairData.actionColorMid);
 	}
 	if (Q_stricmp(cvart->cvarName, "ch_crosshairActionColorHigh") == 0)
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.actionColorHigh);
+		CG_LocalEventCvarParseColor(cvart, crosshairData.actionColorHigh);
 	}
 }
 
 void CG_LocalEventCvarChanged_ch_crosshairDecorColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorColor);
+	CG_LocalEventCvarParseColor(cvart, crosshairData.decorColor);
 }
 
 void CG_LocalEventCvarChanged_ch_crosshairDecorActionColor(cvarTable_t* cvart)
 {
 	if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColor") == 0)
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColor);
+		CG_LocalEventCvarParseColor(cvart, crosshairData.decorActionColor);
 	}
 	if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColorLow") == 0)
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColorLow);
+		CG_LocalEventCvarParseColor(cvart, crosshairData.decorActionColorLow);
 	}
 	if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColorMid") == 0)
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColorMid);
+		CG_LocalEventCvarParseColor(cvart, crosshairData.decorActionColorMid);
 	}
 	if (Q_stricmp(cvart->cvarName, "ch_crosshairDecorActionColorHigh") == 0)
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.osp.crosshair.decorActionColorHigh);
+		CG_LocalEventCvarParseColor(cvart, crosshairData.decorActionColorHigh);
 	}
 }
 
@@ -638,7 +638,7 @@ void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_scoreboardFont", "2");
 	}
-	// CG_ScoreboardContext_Init();
+	CG_UpdateFontIndices();
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart)
 {
@@ -648,6 +648,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_teamIndicatorFont", "2");
 	}
+	CG_UpdateFontIndices();
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorFontSize(cvarTable_t* cvart)
 {
@@ -677,6 +678,7 @@ void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_teamTaskFont", "2");
 	}
+	CG_UpdateFontIndices();
 }
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
 {
@@ -686,6 +688,7 @@ void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_centerMessagesFont", "2");
 	}
+	CG_UpdateFontIndices();
 }
 void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart)
 {
@@ -695,6 +698,7 @@ void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_infoVersionFont", "2");
 	}
+	CG_UpdateFontIndices();
 }
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart)
 {
@@ -742,16 +746,19 @@ void CG_UpdateMyTeamColors(void)
 
 	vec4_t tempColor;
 	team_t currentTeam;
+	cgs_be_t* be;
+	qboolean colorsLoaded;
 
-	// Проверяем, инициализированы ли цвета (не равны нулю)
-	qboolean colorsLoaded = (cgs.be.redTeamColor[0] != 0 || cgs.be.redTeamColor[1] != 0 || cgs.be.redTeamColor[2] != 0) &&
-	                        (cgs.be.blueTeamColor[0] != 0 || cgs.be.blueTeamColor[1] != 0 || cgs.be.blueTeamColor[2] != 0);
+	be = &cgs.be;
+	/* Проверяем, инициализированы ли цвета (не равны нулю) */
+	colorsLoaded = (be->redTeamColor[0] != 0 || be->redTeamColor[1] != 0 || be->redTeamColor[2] != 0) &&
+	               (be->blueTeamColor[0] != 0 || be->blueTeamColor[1] != 0 || be->blueTeamColor[2] != 0);
 
 	// Сохраняем оригинальные цвета когда они загружены и не были свапнуты
 	if (colorsLoaded && !colorsSwapped)
 	{
-		Vector4Copy(cgs.be.redTeamColor, originalRedTeamColor);
-		Vector4Copy(cgs.be.blueTeamColor, originalBlueTeamColor);
+		Vector4Copy(be->redTeamColor, originalRedTeamColor);
+		Vector4Copy(be->blueTeamColor, originalBlueTeamColor);
 		Vector4Copy(scoreboard_rtColor, originalScoreboardRtColor);
 		Vector4Copy(scoreboard_btColor, originalScoreboardBtColor);
 		colorsInitialized = qtrue;
@@ -766,8 +773,8 @@ void CG_UpdateMyTeamColors(void)
 	// Восстанавливаем оригинальные цвета только если они были изменены
 	if (colorsSwapped)
 	{
-		Vector4Copy(originalRedTeamColor, cgs.be.redTeamColor);
-		Vector4Copy(originalBlueTeamColor, cgs.be.blueTeamColor);
+		Vector4Copy(originalRedTeamColor, be->redTeamColor);
+		Vector4Copy(originalBlueTeamColor, be->blueTeamColor);
 		Vector4Copy(originalScoreboardRtColor, scoreboard_rtColor);
 		Vector4Copy(originalScoreboardBtColor, scoreboard_btColor);
 		colorsSwapped = qfalse;
@@ -791,9 +798,9 @@ void CG_UpdateMyTeamColors(void)
 		if (currentTeam == TEAM_BLUE)
 		{
 			// Игрок за синих, но хочет красные цвета - меняем местами
-			Vector4Copy(cgs.be.redTeamColor, tempColor);
-			Vector4Copy(cgs.be.blueTeamColor, cgs.be.redTeamColor);
-			Vector4Copy(tempColor, cgs.be.blueTeamColor);
+			Vector4Copy(be->redTeamColor, tempColor);
+			Vector4Copy(be->blueTeamColor, be->redTeamColor);
+			Vector4Copy(tempColor, be->blueTeamColor);
 
 			// Также меняем цвета scoreboard
 			Vector4Copy(scoreboard_rtColor, tempColor);
@@ -810,9 +817,9 @@ void CG_UpdateMyTeamColors(void)
 		if (currentTeam == TEAM_RED)
 		{
 			// Игрок за красных, но хочет синие цвета - меняем местами
-			Vector4Copy(cgs.be.redTeamColor, tempColor);
-			Vector4Copy(cgs.be.blueTeamColor, cgs.be.redTeamColor);
-			Vector4Copy(tempColor, cgs.be.blueTeamColor);
+			Vector4Copy(be->redTeamColor, tempColor);
+			Vector4Copy(be->blueTeamColor, be->redTeamColor);
+			Vector4Copy(tempColor, be->blueTeamColor);
 
 			// Также меняем цвета scoreboard
 			Vector4Copy(scoreboard_rtColor, tempColor);
@@ -838,6 +845,7 @@ void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_accuracyFont", "0");
 	}
+	CG_UpdateFontIndices();
 }
 
 void CG_LocalEventCvarChanged_ReloadTeamTaskWheel(cvarTable_t* cvart)
@@ -1045,6 +1053,7 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_bestats_font", "0");
 	}
+	CG_UpdateFontIndices();
 }
 
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart)

@@ -77,6 +77,7 @@ int vmMain(int command, int arg0, int arg1, int arg2, int arg3, int arg4, int ar
 
 cg_t                cg;
 cgs_t               cgs;
+crosshairData_t     crosshairData;
 centity_t           cg_entities[MAX_GENTITIES];
 weaponInfo_t        cg_weapons[MAX_WEAPONS];
 itemInfo_t          cg_items[MAX_ITEMS];
@@ -559,6 +560,8 @@ vmCvar_t        cg_freezeSoundFix;
 vmCvar_t        cg_infoVersionFont;
 
 // vmCvar_t        cg_snow;
+
+cgFontIndices_t cgFontIndices;
 
 static cvarTable_t cvarTable[] =
 {
@@ -2730,7 +2733,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	//init variables
 	CG_InitCvars();
 
-	// set be_features
+	/* Update cached font indices and be_features */
+	CG_UpdateFontIndices();
 	CG_UpdateBeFeatures();
 
 	CG_InitConsoleCommands();
@@ -2839,13 +2843,16 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_OSPConfigMinTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MIN)));
 		CG_OSPConfigMaxTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MAX)));
 		CG_OSPConfigClanBaseTDMSet(atoi(CG_ConfigString(CS_OSP_CLAN_BASE_TEAM_DM)));
-		if (!CG_isFPSClassicoServer())
+		if (!cgs.be.server.fpsclassico)
 		{
 			CG_OSPConfigFreezeModeSet(atoi(CG_ConfigString(CS_OSP_FREEZE_GAME_TYPE)));
 		}
 		else
 		{
-			FPSC_IsUnfreezeServer();
+			if (strstr(CG_ConfigString(CS_SERVERINFO), "gamename\\unfreeze"))
+			{
+				cgs.osp.gameTypeFreeze = 1;
+			}
 		}
 		CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
 		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));

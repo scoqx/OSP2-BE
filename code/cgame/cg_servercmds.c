@@ -33,9 +33,13 @@ static int last_xstats1_sequence = -1;
 static qboolean teamoverlay_registered = qfalse;
 static qboolean teamoverlay2_registered = qfalse;
 
+/* Previous scores for round detection, used only in this file */
+static int s_prevScores1;
+static int s_prevScores2;
+
 static void CG_RegisterTeamOverlayForServer(void)
 {
-	if (CG_isFPSClassicoServer())
+	if (cgs.be.server.fpsclassico)
 	{
 		/* FPS Classico server - register teamoverlay2 */
 		if (!teamoverlay2_registered)
@@ -273,33 +277,30 @@ static void CG_ParseScoresUpdate(int teamNum, const char* str)
 	int newScore;
 	int* prevScore;
 	int* currentScore;
-	int* teamCount;
+	cgs_osp_t* osp;
 
-	if (teamNum == 1)
-	{
-		prevScore = &cg.prevScores1;
-		currentScore = &cgs.scores1;
-		teamCount = &cgs.osp.osp_teamcount1;
-	}
-	else
-	{
-		prevScore = &cg.prevScores2;
-		currentScore = &cgs.scores2;
-		teamCount = &cgs.osp.osp_teamcount2;
-	}
+	prevScore = (teamNum == 1) ? &s_prevScores1 : &s_prevScores2;
+	currentScore = (teamNum == 1) ? &cgs.scores1 : &cgs.scores2;
+	osp = &cgs.osp;
 
 	Q_sscanf(str, "%i", &newScore);
-	if (!CG_isFPSClassicoServer())
+	if (!cgs.be.server.fpsclassico)
 	{
-		*teamCount = -1;
-		Q_sscanf(str, "%i %i", &newScore, teamCount);
+		if (teamNum == 1)
+		{
+			osp->osp_teamcount1 = -1;
+			Q_sscanf(str, "%i %i", &newScore, &osp->osp_teamcount1);
+		}
+		else
+		{
+			osp->osp_teamcount2 = -1;
+			Q_sscanf(str, "%i %i", &newScore, &osp->osp_teamcount2);
+		}
 	}
 
 	/* Check if round changed before updating values */
 	if (cgs.gametype == GT_TEAM && CG_OSPIsGameTypeFreeze() && *prevScore != newScore)
-	{
 		CG_ClearRoundSpecificTeamTaskMarks();
-	}
 
 	*prevScore = *currentScore;
 	*currentScore = newScore;
@@ -318,8 +319,8 @@ void CG_SetConfigValues(void)
 
 	cgs.scores1 = atoi(CG_ConfigString(CS_SCORES1));
 	cgs.scores2 = atoi(CG_ConfigString(CS_SCORES2));
-	cg.prevScores1 = cgs.scores1;
-	cg.prevScores2 = cgs.scores2;
+	s_prevScores1 = cgs.scores1;
+	s_prevScores2 = cgs.scores2;
 	cgs.levelStartTime = atoi(CG_ConfigString(CS_LEVEL_START_TIME));
 	if (cgs.gametype == GT_CTF)
 	{
@@ -427,14 +428,14 @@ static void CG_ConfigStringModified(void)
 
 	else if (num == CS_REDPLAYERALIVE)
 	{
-		if (CG_isFPSClassicoServer())
+		if (cgs.be.server.fpsclassico)
 		{
 			cgs.osp.osp_teamcount1 = atoi(str);
 		}
 	}
 	else if (num == CS_BLUEPLAYERALIVE)
 	{
-		if (CG_isFPSClassicoServer())
+		if (cgs.be.server.fpsclassico)
 		{
 			cgs.osp.osp_teamcount2 = atoi(str);
 		}
@@ -1238,11 +1239,14 @@ void CG_BEParseStatsInfo(void)
 	int dmgReceived;
 	int wins;
 	int losses;
-	qboolean changed = qfalse;
-
-	newStatsInfo_t* ws = &cgs.newStats;
-
 	int totalArgs = trap_Argc();
+	qboolean changed = qfalse;
+	newStatsInfo_t* ws;
+	cgs_osp_t* osp;
+
+	ws = &cgs.newStats;
+	osp = &cgs.osp;
+
 
 	// Don't leave garbage; useful when totalArgs < OSP_STATS_NUM
 	memset(statsInfo, 0, sizeof(statsInfo));
@@ -1261,9 +1265,9 @@ void CG_BEParseStatsInfo(void)
 
 	memcpy(lastStatsInfo, statsInfo, sizeof(statsInfo));
 
-	if (cgs.osp.gameTypeFreeze)
+	if (osp->gameTypeFreeze)
 	{
-		statsInfo[OSP_STATS_LOSSES] &= cgs.osp.stats_mask;
+		statsInfo[OSP_STATS_LOSSES] &= osp->stats_mask;
 	}
 
 	if (statsInfo[OSP_STATS_WEAPON_MASK] == 0)
@@ -1323,8 +1327,8 @@ void CG_BEParseStatsInfo(void)
 	suicides = statsInfo[OSP_STATS_SUCIDES];
 	dmgGiven = statsInfo[OSP_STATS_DMG_GIVEN];
 	dmgReceived = statsInfo[OSP_STATS_DMG_RCVD];
-	wins = statsInfo[OSP_STATS_WINS] & cgs.osp.stats_mask;
-	losses = statsInfo[OSP_STATS_LOSSES] & cgs.osp.stats_mask;
+	wins = statsInfo[OSP_STATS_WINS] & osp->stats_mask;
+	losses = statsInfo[OSP_STATS_LOSSES] & osp->stats_mask;
 
 	// MH / Armor pickups
 	ws->megahealth = statsInfo[OSP_STATS_MH];
@@ -1332,8 +1336,8 @@ void CG_BEParseStatsInfo(void)
 	ws->ya         = statsInfo[OSP_STATS_YA];
 	ws->ra         = statsInfo[OSP_STATS_RA];
 
-	ws->armor  = statsInfo[OSP_STATS_WINS] >> cgs.osp.stats_shift;
-	ws->health = statsInfo[OSP_STATS_LOSSES] >> cgs.osp.stats_shift;
+	ws->armor  = statsInfo[OSP_STATS_WINS] >> osp->stats_shift;
+	ws->health = statsInfo[OSP_STATS_LOSSES] >> osp->stats_shift;
 
 	// K/D ratio
 	ws->kdratio = (killsTotal > 0 && (deathsTotal + suicides) == 0) ?

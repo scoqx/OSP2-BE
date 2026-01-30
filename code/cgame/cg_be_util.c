@@ -151,6 +151,56 @@ void CG_UpdateBeFeatures(void)
 	}
 }
 
+/*
+=================
+CG_UpdateFontIndices
+
+Recompute cached font indices from font cvars.
+Call when font cvars may have changed (local event) or at init.
+Only updates cache when computed value differs (like CG_UpdateBeFeatures).
+=================
+*/
+void CG_UpdateFontIndices(void)
+{
+	int newVal;
+
+	newVal = CG_FontIndexFromCvar(&cg_teamTaskFont);
+	if (newVal != cgFontIndices.teamTask)
+	{
+		cgFontIndices.teamTask = newVal;
+	}
+	newVal = CG_FontIndexFromCvar(&cg_scoreboardFont);
+	if (newVal != cgFontIndices.scoreboard)
+	{
+		cgFontIndices.scoreboard = newVal;
+	}
+	newVal = CG_FontIndexFromCvar(&cg_teamIndicatorFont);
+	if (newVal != cgFontIndices.teamIndicator)
+	{
+		cgFontIndices.teamIndicator = newVal;
+	}
+	newVal = CG_FontIndexFromCvar(&cg_accuracyFont);
+	if (newVal != cgFontIndices.accuracy)
+	{
+		cgFontIndices.accuracy = newVal;
+	}
+	newVal = CG_FontIndexFromCvar(&cg_centerMessagesFont);
+	if (newVal != cgFontIndices.centerMessages)
+	{
+		cgFontIndices.centerMessages = newVal;
+	}
+	newVal = CG_FontIndexFromCvar(&cg_infoVersionFont);
+	if (newVal != cgFontIndices.infoVersion)
+	{
+		cgFontIndices.infoVersion = newVal;
+	}
+	newVal = CG_FontIndexFromCvar(&cg_bestats_font);
+	if (newVal != cgFontIndices.bestats)
+	{
+		cgFontIndices.bestats = newVal;
+	}
+}
+
 void CG_PrintDisabledFeatures(qboolean request)
 {
 	int value = cgs.be.disableFeatures;
@@ -394,7 +444,7 @@ qboolean BE_IsDamageInfoAllowed(void)
 		return qtrue;
 	}
 	// Allow damage info if either BE_FEATURE_ENABLED or OSP_CUSTOM_CLIENT_2 allows it
-	else if (CG_isFPSClassicoServer())
+	else if (cgs.be.server.fpsclassico)
 	{
 		return qfalse;
 	}
@@ -537,25 +587,9 @@ void CG_DefineServer(int num, const char* str)
 	}
 }
 
-void FPSC_IsUnfreezeServer(void)
-{
-	if (CG_isFPSClassicoServer())
-	{
-		if (strstr(CG_ConfigString(CS_SERVERINFO), "gamename\\unfreeze"))
-		{
-			cgs.osp.gameTypeFreeze = 1;
-		}
-	}
-}
-
-qboolean CG_isFPSClassicoServer(void)
-{
-	return cgs.be.server.fpsclassico;
-}
-
 void CG_SendGetStatsInfo(void)
 {
-	if (!CG_isFPSClassicoServer())
+	if (!cgs.be.server.fpsclassico)
 	{
 		trap_SendClientCommand("getstatsinfo");
 	}

@@ -1131,7 +1131,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	cg.demoPlayback = demoPlayback;
 
 	// update cvars
-	if (cgs.osp.cvarsUpdateDelay++ > 5)
+	if (cgs.osp.cvarsUpdateDelay++ > 11)
 	{
 		CG_UpdateCvars();
 		cgs.osp.cvarsUpdateDelay = 0;
@@ -1162,6 +1162,9 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_DrawInformation();
 		return;
 	}
+
+	/* Process deferred clientinfo updates (e.g. after cg_enemyModel / cg_teamModel change) */
+	CG_ProcessPendingClientInfoUpdates();
 
 	// update tracked team for dynamic T/E color updates
 	CG_UpdateMyTeam();
@@ -1196,6 +1199,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	// build the render lists
 	if (!cg.hyperspace)
 	{
+		CG_UpdateIndicatorVisibilityCache();  /* shared visibility cache for indicator + CG_FriendHudMarker (4 slots/frame) */
 		CG_AddPacketEntities();         // adter calcViewValues, so predicted player state is correct
 		CG_AddMarks();
 		CG_AddParticles();

@@ -1724,6 +1724,7 @@ static float CG_OSPDrawTeamInfo(float y)
 	vec4_t hcolor;
 	float chatY;
 	int chatYOffset;
+	cgs_be_t* be;
 
 	if (cg_teamChatHeight.integer <= 0)
 	{
@@ -1752,14 +1753,15 @@ static float CG_OSPDrawTeamInfo(float y)
 
 		if (ch_TeamBackground.integer != 0)
 		{
+			be = &cgs.be;
 			if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED)
 			{
-				Vector4Copy(cgs.be.redTeamColor, hcolor);
+				Vector4Copy(be->redTeamColor, hcolor);
 				hcolor[3] = 0.33f;
 			}
 			else if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE)
 			{
-				Vector4Copy(cgs.be.blueTeamColor, hcolor);
+				Vector4Copy(be->blueTeamColor, hcolor);
 				hcolor[3] = 0.33f;
 			}
 			else
@@ -2017,7 +2019,7 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 	int offsetY;
 	int i;
 	vec4_t healthColor;
-
+	cgs_be_t* be;
 
 	persistantTeam = CG_OSPGetPresistantTeam();
 
@@ -2062,14 +2064,15 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 		teamOverlayPosY = (int)y;
 	}
 
+	be = &cgs.be;
 	if (persistantTeam == TEAM_RED)
 	{
-		Vector4Copy(cgs.be.redTeamColor, colorTeamOverlay);
+		Vector4Copy(be->redTeamColor, colorTeamOverlay);
 		colorTeamOverlay[3] = 0.33f;
 	}
 	else
 	{
-		Vector4Copy(cgs.be.blueTeamColor, colorTeamOverlay);
+		Vector4Copy(be->blueTeamColor, colorTeamOverlay);
 		colorTeamOverlay[3] = 0.33f;
 	}
 
@@ -2390,18 +2393,27 @@ static float CG_OSPHUDDrawScores(float y)
 	int w; //2c
 	//
 	int score;
+	cgs_be_t* be;
+	vec4_t redColor;
+	vec4_t blueColor;
 
 	vec4_t colorScores[3];
 
-	colorScores[1][0] = cgs.be.redTeamColor[0];
-	colorScores[1][1] = cgs.be.redTeamColor[1];
-	colorScores[1][2] = cgs.be.redTeamColor[2];
-	colorScores[1][3] = 0.33f;
+	be = &cgs.be;
+	Vector4Copy(be->redTeamColor, redColor);
+	Vector4Copy(be->blueTeamColor, blueColor);
+	redColor[3] = 0.33f;
+	blueColor[3] = 0.33f;
 
-	colorScores[0][0] = cgs.be.blueTeamColor[0];
-	colorScores[0][1] = cgs.be.blueTeamColor[1];
-	colorScores[0][2] = cgs.be.blueTeamColor[2];
-	colorScores[0][3] = 0.33f;
+	colorScores[1][0] = redColor[0];
+	colorScores[1][1] = redColor[1];
+	colorScores[1][2] = redColor[2];
+	colorScores[1][3] = redColor[3];
+
+	colorScores[0][0] = blueColor[0];
+	colorScores[0][1] = blueColor[1];
+	colorScores[0][2] = blueColor[2];
+	colorScores[0][3] = blueColor[3];
 
 	colorScores[2][0] = 1.0f;
 	colorScores[2][1] = 1.0f;
@@ -2742,10 +2754,7 @@ static float CG_OSPHUDDrawScores(float y)
 			w = len * fontScoresW + 8;
 			x -= w;
 
-			color[0] = cgs.be.redTeamColor[0];
-			color[1] = cgs.be.redTeamColor[1];
-			color[2] = cgs.be.redTeamColor[2];
-			color[3] = 0.33f;
+			Vector4Copy(redColor, color);
 
 			CG_OSPDrawPoly(x, y - 4.0f, w, fontScoresH + 8, color);
 			if (!spectator && (score == s2) && (score != s1))
@@ -2763,10 +2772,7 @@ static float CG_OSPHUDDrawScores(float y)
 			w = CG_DrawStrlen(s) * fontScoresW + 8;
 			x -= w;
 
-			color[0] = cgs.be.blueTeamColor[0];
-			color[1] = cgs.be.blueTeamColor[1];
-			color[2] = cgs.be.blueTeamColor[2];
-			color[3] = 0.33f;
+			Vector4Copy(blueColor, color);
 
 			CG_OSPDrawPoly(x, y - 4.0f, w, fontScoresH + 8, color);
 			if (!spectator && score == s1)

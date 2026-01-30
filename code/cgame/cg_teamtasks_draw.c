@@ -52,7 +52,9 @@ Returns qtrue if color was set, qfalse otherwise
 static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolean isAlly)
 {
 	int myRealTeam;
+	cgs_be_t* be;
 
+	be = &cgs.be;
 	myRealTeam = cgs.clientinfo[cg.clientNum].team;
 
 	/* Determine which team color to use and copy it */
@@ -61,11 +63,11 @@ static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolea
 		/* Use own team color */
 		if (myRealTeam == TEAM_RED)
 		{
-			VectorCopy(cgs.be.redTeamColor, color);
+			VectorCopy(be->redTeamColor, color);
 		}
 		else if (myRealTeam == TEAM_BLUE)
 		{
-			VectorCopy(cgs.be.blueTeamColor, color);
+			VectorCopy(be->blueTeamColor, color);
 		}
 		else
 		{
@@ -77,11 +79,11 @@ static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolea
 		/* Use enemy team color */
 		if (myRealTeam == TEAM_RED)
 		{
-			VectorCopy(cgs.be.blueTeamColor, color);
+			VectorCopy(be->blueTeamColor, color);
 		}
 		else if (myRealTeam == TEAM_BLUE)
 		{
-			VectorCopy(cgs.be.redTeamColor, color);
+			VectorCopy(be->redTeamColor, color);
 		}
 		else
 		{
@@ -132,148 +134,154 @@ Get shader pair (marker and world) for team task type
 */
 static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhandle_t* worldShader, qboolean isPickup)
 {
+	cgMedia_t* media;
+	cgs_osp_t* osp;
+
+	media = &cgs.media;
+	osp = &cgs.osp;
+
 	switch (markType)
 	{
 		case TEAMTASK_OFFENSE:
-			*markerShader = cgs.media.teamTasksAttack_marker;
-			*worldShader = cgs.media.teamTasksAttack;
+			*markerShader = media->teamTasksAttack_marker;
+			*worldShader = media->teamTasksAttack;
 			break;
 		case TEAMTASK_DEFENCE:
-			*markerShader = cgs.media.teamTasksDefence_marker;
-			*worldShader = cgs.media.teamTasksDefence;
+			*markerShader = media->teamTasksDefence_marker;
+			*worldShader = media->teamTasksDefence;
 			break;
 		case TEAMTASK_PATROL:
-			*markerShader = cgs.media.teamTasksWatch_marker;
-			*worldShader = cgs.media.teamTasksWatch;
+			*markerShader = media->teamTasksWatch_marker;
+			*worldShader = media->teamTasksWatch;
 			break;
 		case TEAMTASK_PLAYERDEAD:
-			*markerShader = cgs.media.teamTasksDead_marker;
-			*worldShader = cgs.media.teamTasksDead;
+			*markerShader = media->teamTasksDead_marker;
+			*worldShader = media->teamTasksDead;
 			break;
 		case TEAMTASK_YES:
-			*markerShader = cgs.media.teamTasksYes;
-			*worldShader = cgs.media.teamTasksYes;
+			*markerShader = media->teamTasksYes;
+			*worldShader = media->teamTasksYes;
 			break;
 		case TEAMTASK_NO:
-			*markerShader = cgs.media.teamTasksNo;
-			*worldShader = cgs.media.teamTasksNo;
+			*markerShader = media->teamTasksNo;
+			*worldShader = media->teamTasksNo;
 			break;
 		case TEAMTASK_LOCATION:
-			*markerShader = cgs.media.teamTasksLocation_marker;
-			*worldShader = cgs.media.teamTasksLocation;
+			*markerShader = media->teamTasksLocation_marker;
+			*worldShader = media->teamTasksLocation;
 			break;
 		case TEAMTASK_TARGET:
-			*markerShader = cgs.media.teamTasksTarget_marker;
-			*worldShader = cgs.media.teamTasksTarget;
+			*markerShader = media->teamTasksTarget_marker;
+			*worldShader = media->teamTasksTarget;
 			break;
 		case TEAMTASK_REDARMOR:
 			if (isPickup)
 			{
-				*markerShader = cgs.media.teamTasksRedarmorPickup_marker;
-				*worldShader = cgs.media.teamTasksRedarmorPickup;
+				*markerShader = media->teamTasksRedarmorPickup_marker;
+				*worldShader = media->teamTasksRedarmorPickup;
 			}
 			else
 			{
-				*markerShader = cgs.media.teamTasksRedarmor_marker;
-				*worldShader = cgs.media.teamTasksRedarmor;
+				*markerShader = media->teamTasksRedarmor_marker;
+				*worldShader = media->teamTasksRedarmor;
 			}
 			break;
 		case TEAMTASK_MEGAHEALTH:
 			if (isPickup)
 			{
-				*markerShader = cgs.media.teamTasksMegahealthPickup_marker;
-				*worldShader = cgs.media.teamTasksMegahealthPickup;
+				*markerShader = media->teamTasksMegahealthPickup_marker;
+				*worldShader = media->teamTasksMegahealthPickup;
 			}
 			else
 			{
-				*markerShader = cgs.media.teamTasksMegahealth_marker;
-				*worldShader = cgs.media.teamTasksMegahealth;
+				*markerShader = media->teamTasksMegahealth_marker;
+				*worldShader = media->teamTasksMegahealth;
 			}
 			break;
 		case TEAMTASK_MEDIC:
-			*markerShader = cgs.media.teamTasksMedic_marker;
-			*worldShader = cgs.media.teamTasksMedic;
+			*markerShader = media->teamTasksMedic_marker;
+			*worldShader = media->teamTasksMedic;
 			break;
 		case TEAMTASK_HERE_ALIVE:
-			*markerShader = cgs.media.teamTasksLocation_marker;
-			*worldShader = cgs.media.teamTasksLocation;
+			*markerShader = media->teamTasksLocation_marker;
+			*worldShader = media->teamTasksLocation;
 			break;
 		case TEAMTASK_HERE_FLAG:
-			*markerShader = cgs.media.teamTasksFlagcarrier_marker;
-			*worldShader = cgs.media.teamTasksFlagcarrier;
+			*markerShader = media->teamTasksFlagcarrier_marker;
+			*worldShader = media->teamTasksFlagcarrier;
 			break;
 		case TEAMTASK_HERE_DEAD:
 			/* Use frozen shader in freeze mode, otherwise use dead shader */
-			if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+			if (cgs.gametype == GT_TEAM && osp->gameTypeFreeze)
 			{
-				*markerShader = cgs.media.teamTasksFrozen_marker;
-				*worldShader = cgs.media.frozenFoeTagShader;
+				*markerShader = media->teamTasksFrozen_marker;
+				*worldShader = media->frozenFoeTagShader;
 			}
 			else
 			{
-				*markerShader = cgs.media.teamTasksDead_marker;
-				*worldShader = cgs.media.teamTasksDead;
+				*markerShader = media->teamTasksDead_marker;
+				*worldShader = media->teamTasksDead;
 			}
 			break;
 		case TEAMTASK_WARN_ALIVE:
-			*markerShader = cgs.media.teamTasksWarning_marker;
-			*worldShader = cgs.media.teamTasksWarning;
+			*markerShader = media->teamTasksWarning_marker;
+			*worldShader = media->teamTasksWarning;
 			break;
 		case TEAMTASK_WARN_DEAD:
 			/* Always use warning shader for WARN_DEAD */
-			*markerShader = cgs.media.teamTasksWarning_marker;
-			*worldShader = cgs.media.teamTasksWarning;
+			*markerShader = media->teamTasksWarning_marker;
+			*worldShader = media->teamTasksWarning;
 			break;
 		case TEAMTASK_FROZEN_ALLY:
 		case TEAMTASK_FROZEN_ENEMY:
-			*markerShader = cgs.media.teamTasksFrozen_marker;
-			*worldShader = cgs.media.frozenFoeTagShader;
+			*markerShader = media->teamTasksFrozen_marker;
+			*worldShader = media->frozenFoeTagShader;
 			break;
 		case TEAMTASK_QUADDAMAGE:
-			*markerShader = cgs.media.teamTasksQuad_marker;
-			*worldShader = cgs.media.teamTasksQuad;
+			*markerShader = media->teamTasksQuad_marker;
+			*worldShader = media->teamTasksQuad;
 			break;
 		case TEAMTASK_REGENERATION:
-			*markerShader = cgs.media.teamTasksRegen_marker;
-			*worldShader = cgs.media.teamTasksRegen;
+			*markerShader = media->teamTasksRegen_marker;
+			*worldShader = media->teamTasksRegen;
 			break;
 		case TEAMTASK_BATTLESUIT:
-			*markerShader = cgs.media.teamTasksBattlesuit_marker;
-			*worldShader = cgs.media.teamTasksBattlesuit;
+			*markerShader = media->teamTasksBattlesuit_marker;
+			*worldShader = media->teamTasksBattlesuit;
 			break;
 		case TEAMTASK_HASTE:
-			*markerShader = cgs.media.teamTasksHaste_marker;
-			*worldShader = cgs.media.teamTasksHaste;
+			*markerShader = media->teamTasksHaste_marker;
+			*worldShader = media->teamTasksHaste;
 			break;
 		case TEAMTASK_YELLOWARMOR:
 			if (isPickup)
 			{
-				*markerShader = cgs.media.teamTasksYellowarmorPickup_marker;
-				*worldShader = cgs.media.teamTasksYellowarmorPickup;
+				*markerShader = media->teamTasksYellowarmorPickup_marker;
+				*worldShader = media->teamTasksYellowarmorPickup;
 			}
 			else
 			{
-				*markerShader = cgs.media.teamTasksYellowarmor_marker;
-				*worldShader = cgs.media.teamTasksYellowarmor;
+				*markerShader = media->teamTasksYellowarmor_marker;
+				*worldShader = media->teamTasksYellowarmor;
 			}
 			break;
 		case TEAMTASK_HEALTH:
-			*markerShader = cgs.media.teamTasksHealth_marker;
-			*worldShader = cgs.media.teamTasksHealth;
+			*markerShader = media->teamTasksHealth_marker;
+			*worldShader = media->teamTasksHealth;
 			break;
 		case TEAMTASK_REDFLAG:
 		case TEAMTASK_BLUEFLAG:
-			*markerShader = cgs.media.teamTasksFlag_marker;
-			*worldShader = cgs.media.teamTasksFlag;
+			*markerShader = media->teamTasksFlag_marker;
+			*worldShader = media->teamTasksFlag;
 			break;
 		case TEAMTASK_REDFLAG_CARRIER:
 		case TEAMTASK_BLUEFLAG_CARRIER:
-			*markerShader = cgs.media.teamTasksFlagcarrier_marker;
-			*worldShader = cgs.media.teamTasksFlagcarrier;
+			*markerShader = media->teamTasksFlagcarrier_marker;
+			*worldShader = media->teamTasksFlagcarrier;
 			break;
 		default:
-			*markerShader = cgs.media.teamTasksUnknown;
-			*worldShader = cgs.media.teamTasksUnknown;
+			*markerShader = media->teamTasksUnknown;
+			*worldShader = media->teamTasksUnknown;
 			break;
 	}
 }
@@ -283,6 +291,9 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 	clientInfo_t* cl;
 	qhandle_t markerShader;
 	qhandle_t worldShader;
+	cgs_be_t* be;
+
+	be = &cgs.be;
 
 	/* Get shader pair for this mark type */
 	CG_GetTeamTaskShaderPair(markType, &markerShader, &worldShader, isPickup);
@@ -377,12 +388,12 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 						if (senderCi->team == TEAM_RED)
 						{
 							/* Sender is RED, carries BLUE flag */
-							VectorCopy(cgs.be.blueTeamColor, color);
+							VectorCopy(be->blueTeamColor, color);
 						}
 						else if (senderCi->team == TEAM_BLUE)
 						{
 							/* Sender is BLUE, carries RED flag */
-							VectorCopy(cgs.be.redTeamColor, color);
+							VectorCopy(be->redTeamColor, color);
 						}
 						else
 						{
@@ -410,7 +421,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			else
 			{
 				/* World marker color is red team color */
-				VectorCopy(cgs.be.redTeamColor, color);
+				VectorCopy(be->redTeamColor, color);
 				color[3] = 1.0f;
 			}
 			break;
@@ -423,7 +434,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			else
 			{
 				/* World marker color is blue team color */
-				VectorCopy(cgs.be.blueTeamColor, color);
+				VectorCopy(be->blueTeamColor, color);
 				color[3] = 1.0f;
 			}
 			break;
@@ -436,7 +447,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			else
 			{
 				/* World marker color is red team color */
-				VectorCopy(cgs.be.redTeamColor, color);
+				VectorCopy(be->redTeamColor, color);
 				color[3] = 1.0f;
 			}
 			break;
@@ -449,7 +460,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			else
 			{
 				/* World marker color is blue team color */
-				VectorCopy(cgs.be.blueTeamColor, color);
+				VectorCopy(be->blueTeamColor, color);
 				color[3] = 1.0f;
 			}
 			break;
@@ -471,71 +482,33 @@ static void CG_RemoveExpiredTeamTaskMarks(void)
 	int i;
 	int writeIndex;
 	teamTaskMark_t* mark;
+	cgs_teamMarkers_t* tm;
 
-	if (cgs.teamMarkers.numTeamTaskMarks == 0)
+	tm = &cgs.teamMarkers;
+	if (tm->numTeamTaskMarks == 0)
 	{
 		return;
 	}
 
 	/* Pack array: copy valid marks to the beginning */
 	writeIndex = 0;
-	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < tm->numTeamTaskMarks; i++)
 	{
-		mark = &cgs.teamMarkers.teamTaskMarks[i];
+		mark = &tm->teamTaskMarks[i];
 
 		/* Keep only non-expired marks */
 		if (cg.time < mark->endTime)
 		{
 			if (writeIndex != i)
 			{
-				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
+				tm->teamTaskMarks[writeIndex] = tm->teamTaskMarks[i];
 			}
 			writeIndex++;
 		}
 	}
 
 	/* Update count */
-	cgs.teamMarkers.numTeamTaskMarks = writeIndex;
-}
-
-/*
-=================
-CG_CanDrawTeamTaskMarks
-
-Common validation checks for team task marker drawing functions
-Returns qfalse if marks should not be drawn
-=================
-*/
-static qboolean CG_CanDrawTeamTaskMarks(qboolean checkTeamTaskCvar)
-{
-	/* Check teamTask cvar and feature flag if requested */
-	if (checkTeamTaskCvar)
-	{
-		if (!cg_teamTask.integer && !CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
-		{
-			return qfalse;
-		}
-	}
-
-	/* Check gametype */
-	if (cgs.gametype < GT_TEAM)
-	{
-		return qfalse;
-	}
-
-	/* Check if local player is spectator */
-	if (CG_IsLocalClientSpectator())
-	{
-		return qfalse;
-	}
-
-	/* Check if there are any marks */
-	if (cgs.teamMarkers.numTeamTaskMarks == 0)
-	{
-		return qfalse;
-	}
-
-	return qtrue;
+	tm->numTeamTaskMarks = writeIndex;
 }
 
 void CG_DrawTeamTaskBorderHudMarkers(void)
@@ -543,17 +516,22 @@ void CG_DrawTeamTaskBorderHudMarkers(void)
 	int i;
 	teamTaskMark_t* mark;
 	qboolean drawHudMarkers;
+	cgs_teamMarkers_t* tm;
 
-	/* Common validation checks */
-	if (!CG_CanDrawTeamTaskMarks(qtrue))
-	{
+	if (!cg_teamTask.integer && !CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
 		return;
-	}
+	if (cgs.gametype < GT_TEAM)
+		return;
+	if (CG_IsLocalClientSpectator())
+		return;
+	tm = &cgs.teamMarkers;
+	if (tm->numTeamTaskMarks == 0)
+		return;
 
 	/* Remove expired marks first (optimized pack array) */
 	CG_RemoveExpiredTeamTaskMarks();
 
-	if (cgs.teamMarkers.numTeamTaskMarks == 0)
+	if (tm->numTeamTaskMarks == 0)
 	{
 		return;
 	}
@@ -566,9 +544,9 @@ void CG_DrawTeamTaskBorderHudMarkers(void)
 		return;
 	}
 
-	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < tm->numTeamTaskMarks; i++)
 	{
-		mark = &cgs.teamMarkers.teamTaskMarks[i];
+		mark = &tm->teamTaskMarks[i];
 
 		/* Skip own overhead marks (YES, NO, MEDIC) - don't show in border markers */
 		/* Also skip own HERE_ALIVE and HERE_FLAG marks in first person (they're displayed as overhead) */
@@ -610,6 +588,13 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 	float pulseScale;
 	vec4_t pulseColor;
 	float endFade;
+	refdef_t* refdef;
+	cgs_be_t* be;
+	int maxDistInt;
+	float maxDistValue;
+	float maxScale;
+	float minScale;
+	float markerSize;
 
 	if (!mark)
 	{
@@ -623,21 +608,31 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		return;
 	}
 
+	/* Read cvars once at start (no static; we don't always draw) */
+	maxDistInt = cg_teamTaskHudMarkerMaxDist.integer;
+	maxDistValue = cg_teamTaskHudMarkerMaxDist.value;
+	maxScale = cg_teamTaskHudMarkerMaxScale.value;
+	minScale = cg_teamTaskHudMarkerMinScale.value;
+	markerSize = cg_teamTaskHudMarkerSize.value;
+
+	refdef = &cg.refdef;
+	be = &cgs.be;
+
 	distance = Distance(mark->origin, cg.predictedPlayerState.origin);
 
-	// Check maximum distance
-	if (cg_teamTaskHudMarkerMaxDist.integer > 0 && distance > cg_teamTaskHudMarkerMaxDist.value)
+	/* Check maximum distance */
+	if (maxDistInt > 0 && distance > maxDistValue)
 	{
 		return;
 	}
 
 	distance = MAX(distance, 1.0f);
-	hfov_x = cg.refdef.fov_x * M_PI / 360.0f;
+	hfov_x = refdef->fov_x * (float)M_PI / 360.0f;
 	size = 1.0f / tan(hfov_x) * 1000.0f / distance;
-	size = MIN(cg_teamTaskHudMarkerMaxScale.value, size);
-	size = MAX(cg_teamTaskHudMarkerMinScale.value, size);
+	size = MIN(maxScale, size);
+	size = MAX(minScale, size);
 
-	baseRadius = cg_teamTaskHudMarkerSize.value * size;
+	baseRadius = markerSize * size;
 
 	/* Calculate end fade effect (linear fade from 1.0 to 0.0 over TEAMTASK_MARK_FADE_TIME before endTime) */
 	endFade = CG_CalculateEndFade(mark->endTime, cg.time);
@@ -711,13 +706,13 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		else if (mark->markType == TEAMTASK_REDFLAG || mark->markType == TEAMTASK_REDFLAG_CARRIER)
 		{
 			/* For red flag and carrier, use red team color for pulsing circle */
-			VectorCopy(cgs.be.redTeamColor, pulseColor);
+			VectorCopy(be->redTeamColor, pulseColor);
 			pulseColor[3] = 0.25f * endFade;
 		}
 		else if (mark->markType == TEAMTASK_BLUEFLAG || mark->markType == TEAMTASK_BLUEFLAG_CARRIER)
 		{
 			/* For blue flag and carrier, use blue team color for pulsing circle */
-			VectorCopy(cgs.be.blueTeamColor, pulseColor);
+			VectorCopy(be->blueTeamColor, pulseColor);
 			pulseColor[3] = 0.25f * endFade;
 		}
 		else if (mark->markType == TEAMTASK_HERE_FLAG)
@@ -733,12 +728,12 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 					if (senderCi->team == TEAM_RED)
 					{
 						/* Sender is RED, carries BLUE flag */
-						VectorCopy(cgs.be.blueTeamColor, pulseColor);
+						VectorCopy(be->blueTeamColor, pulseColor);
 					}
 					else if (senderCi->team == TEAM_BLUE)
 					{
 						/* Sender is BLUE, carries RED flag */
-						VectorCopy(cgs.be.redTeamColor, pulseColor);
+						VectorCopy(be->redTeamColor, pulseColor);
 					}
 					else
 					{
@@ -769,13 +764,13 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		}
 
 		/* Use same positioning logic as CG_HudBorderMarker but with baseRadius for positioning */
-		hfov_y = cg.refdef.fov_y * M_PI / 360.0f;
-		hfov_x = cg.refdef.fov_x * M_PI / 360.0f;
+		hfov_y = refdef->fov_y * (float)M_PI / 360.0f;
+		hfov_x = refdef->fov_x * (float)M_PI / 360.0f;
 
-		VectorSubtract(mark->origin, cg.refdef.vieworg, dir);
-		front = DotProduct(dir, cg.refdef.viewaxis[0]);
-		left = DotProduct(dir, cg.refdef.viewaxis[1]);
-		up = DotProduct(dir, cg.refdef.viewaxis[2]);
+		VectorSubtract(mark->origin, refdef->vieworg, dir);
+		front = DotProduct(dir, refdef->viewaxis[0]);
+		left = DotProduct(dir, refdef->viewaxis[1]);
+		up = DotProduct(dir, refdef->viewaxis[2]);
 
 		flu[0] = front;
 		flu[1] = left;
@@ -822,7 +817,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		ratio = tan(hfov_y) / tan(hfov_x);
 
 		dist = 8;
-		VectorScale(cg.refdef.viewaxis[0], dist, middleOfPlane);
+		VectorScale(refdef->viewaxis[0], dist, middleOfPlane);
 
 		{
 			float cosHfovX = cos(hfov_x);
@@ -830,10 +825,10 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 			float baseRadiusForPos = 0.5 * baseRadius * tan(hfov_x);
 
 			r = dist / cosHfovX;
-			VectorScale(cg.refdef.viewaxis[1], r * sin(hfov_x) - baseRadiusForPos, planeAxis[0]);
+			VectorScale(refdef->viewaxis[1], r * sin(hfov_x) - baseRadiusForPos, planeAxis[0]);
 
 			r = dist / cosHfovY;
-			VectorScale(cg.refdef.viewaxis[2], -(r * sin(hfov_y) - baseRadiusForPos), planeAxis[1]);
+			VectorScale(refdef->viewaxis[2], -(r * sin(hfov_y) - baseRadiusForPos), planeAxis[1]);
 		}
 
 		circleSz = 100;
@@ -868,7 +863,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		}
 
 		VectorAdd(middleOfPlane, ent.origin, ent.origin);
-		VectorAdd(cg.refdef.vieworg, ent.origin, ent.origin);
+		VectorAdd(refdef->vieworg, ent.origin, ent.origin);
 
 		trap_R_AddRefEntityToScene(&ent);
 	}
@@ -885,6 +880,10 @@ typedef struct
 	float crosshairY;
 	qboolean useFade;
 	int font;
+	float scale;
+	float iconMinSize;
+	int teamTaskFlags;
+	float opaque;
 } teamTaskMarkConstants_t;
 
 typedef struct
@@ -914,13 +913,17 @@ static void CG_InitTeamTaskMarkConstants(teamTaskMarkConstants_t* constants)
 {
 	constants->distMin = 0.0f;
 	constants->distMax = 2500.0f;
-	constants->fadeStrength = cg_teamTaskFade.value; // 0.0 = no fade, 1.0 = full fade
+	constants->fadeStrength = cg_teamTaskFade.value; /* 0.0 = no fade, 1.0 = full fade */
 	constants->fadeRadius = cg_teamTaskFadeRadius.value;
 	constants->fadeRadiusSq = constants->fadeRadius * constants->fadeRadius;
 	constants->crosshairX = SCREEN_WIDTH * 0.5f;
 	constants->crosshairY = SCREEN_HEIGHT * 0.5f;
 	constants->useFade = (constants->fadeStrength > 0.0f);
-	constants->font = CG_FontIndexFromCvar(&cg_teamTaskFont);
+	constants->font = cgFontIndices.teamTask;
+	constants->scale = cg_teamTaskScale.value;
+	constants->iconMinSize = cg_teamTaskIconMinSize.value;
+	constants->teamTaskFlags = cg_teamTask.integer;
+	constants->opaque = cg_teamTaskOpaque.value;
 }
 
 /*
@@ -939,7 +942,7 @@ static void CG_ProcessOverheadMark(teamTaskMark_t* mark, const teamTaskMarkConst
 	renderData->y = 20.0f; /* Fixed position from top */
 
 	/* Fixed size for own overhead icons */
-	renderData->h = 10.0f * cg_teamTaskScale.value;
+	renderData->h = 10.0f * constants->scale;
 	renderData->w = renderData->h * 0.75f;
 	renderData->iconW = renderData->w * 4;
 	renderData->iconH = renderData->h * 4;
@@ -1254,22 +1257,22 @@ static void CG_ProcessCommonMarkData(teamTaskMark_t* mark, float t,
 		renderData->spawnIconH = renderData->iconH * (0.8f + spawnProgress * 1.5f);
 
 		/* Set spawn effect color with alpha */
-		if ((cg_teamTask.integer & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		if ((constants->teamTaskFlags & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			/* Use unique color for spawn effect */
 			VectorCopy(UNIQUE_COLOR(mark->clientNum), renderData->spawnColor);
-			renderData->spawnColor[3] = spawnAlpha * cg_teamTaskOpaque.value * renderData->fade;
+			renderData->spawnColor[3] = spawnAlpha * constants->opaque * renderData->fade;
 		}
 		else
 		{
 			Vector4Copy(mark->color, renderData->spawnColor);
-			renderData->spawnColor[3] *= spawnAlpha * cg_teamTaskOpaque.value * renderData->fade;
+			renderData->spawnColor[3] *= spawnAlpha * constants->opaque * renderData->fade;
 		}
 	}
 
 	/* Set color with alpha (apply spawn fade for fade-in effect) */
 	Vector4Copy(mark->color, renderData->color);
-	renderData->color[3] *= renderData->spawnFade * cg_teamTaskOpaque.value * renderData->fade;
+	renderData->color[3] *= renderData->spawnFade * constants->opaque * renderData->fade;
 
 	/* Calculate hover state and name fade based on distance to marker */
 	renderData->isHovering = (distToCrosshairSq < hoverRadiusSq && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS);
@@ -1334,6 +1337,9 @@ static qboolean CG_HasPickupMarkForItem(teamTaskMark_t* itemMark)
 	teamTaskMark_t* otherMark;
 	float dist;
 	float searchRadius;
+	cgs_teamMarkers_t* tm;
+
+	tm = &cgs.teamMarkers;
 
 	/* Only check for item marks (not pickup marks themselves) */
 	if (itemMark->isPickup)
@@ -1351,9 +1357,9 @@ static qboolean CG_HasPickupMarkForItem(teamTaskMark_t* itemMark)
 
 	/* Check if there is a pickup mark (from any player) with matching item type */
 	searchRadius = 64.0f;
-	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < tm->numTeamTaskMarks; i++)
 	{
-		otherMark = &cgs.teamMarkers.teamTaskMarks[i];
+		otherMark = &tm->teamTaskMarks[i];
 
 		/* Check if this is a pickup mark with matching item type */
 		if (otherMark->isPickup && otherMark->markType == itemMark->markType)
@@ -1378,9 +1384,14 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 	qboolean shouldDisplayAsOverhead;
 	qboolean isOwnHereDead;
 	qboolean isOutsideScreen;
+	refdef_t* refdef;
+	cg_t* cgP;
+
+	refdef = &cg.refdef;
+	cgP = &cg;
 
 	/* Skip death marks if CG_TEAMTASK_ONDEATH flag is not set */
-	if (mark->markType == TEAMTASK_PLAYERDEAD && !(cg_teamTask.integer & CG_TEAMTASK_ONDEATH))
+	if (mark->markType == TEAMTASK_PLAYERDEAD && !(constants->teamTaskFlags & CG_TEAMTASK_ONDEATH))
 	{
 		return qfalse;
 	}
@@ -1392,15 +1403,15 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 	}
 
 	/* Check if this is own HERE_ALIVE or HERE_FLAG mark that should be displayed as overhead in first person */
-	shouldDisplayAsOverhead = (mark->clientNum == cg.clientNum &&
+	shouldDisplayAsOverhead = (mark->clientNum == cgP->clientNum &&
 	                           (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG) &&
-	                           !cg.renderingThirdPerson);
+	                           !cgP->renderingThirdPerson);
 
 	/* ============================================
 	   CATEGORY 1: Overhead marks (YES, NO, MEDIC, HERE_ALIVE in first person)
 	   ============================================ */
 	/* WARN_ALIVE should never be displayed as overhead - always show in world */
-	if ((mark->isOverhead && mark->clientNum == cg.clientNum && !cg.renderingThirdPerson && mark->markType != TEAMTASK_WARN_ALIVE) || shouldDisplayAsOverhead)
+	if ((mark->isOverhead && mark->clientNum == cgP->clientNum && !cgP->renderingThirdPerson && mark->markType != TEAMTASK_WARN_ALIVE) || shouldDisplayAsOverhead)
 	{
 		CG_ProcessOverheadMark(mark, constants, renderData);
 		t = 0.0f; /* Fixed size for overhead marks */
@@ -1454,7 +1465,7 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		}
 
 		/* Calculate distance from camera to mark */
-		renderData->distance = Distance(mark->origin, cg.refdef.vieworg);
+		renderData->distance = Distance(mark->origin, refdef->vieworg);
 
 		/* Copy font from constants */
 		renderData->font = constants->font;
@@ -1475,14 +1486,14 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		renderData->w = renderData->h * 0.75f;
 
 		/* Apply scale */
-		renderData->h *= cg_teamTaskScale.value;
-		renderData->w *= cg_teamTaskScale.value;
+		renderData->h *= constants->scale;
+		renderData->w *= constants->scale;
 
 		/* Apply minimum text size limit - preserve aspect ratio (w/h = 0.75) */
 		{
 			float minSize;
 			float scaleFactor;
-			minSize = cg_teamTaskIconMinSize.value;
+			minSize = constants->iconMinSize;
 			/* Check if height is below minimum, scale both dimensions proportionally to maintain aspect ratio */
 			if (renderData->h < minSize)
 			{
@@ -1510,7 +1521,7 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		{
 			float minSize;
 			float scaleFactor;
-			minSize = cg_teamTaskIconMinSize.value;
+			minSize = constants->iconMinSize;
 			/* Check if icon height is below minimum, scale both dimensions proportionally to maintain aspect ratio */
 			if (renderData->iconH < minSize)
 			{
@@ -1523,7 +1534,7 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		}
 
 		/* Convert world to screen coordinates and check if mark is outside screen */
-		isOwnHereDead = (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD));
+		isOwnHereDead = (mark->clientNum == cgP->clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD));
 
 		/* Convert to screen coordinates */
 		isOutsideScreen = CG_IsPointOutsideScreen(mark->origin, &renderData->x, &renderData->y);
@@ -1552,7 +1563,8 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 	return qtrue;
 }
 
-static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRenderData_t* renderData)
+static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRenderData_t* renderData,
+                                  const teamTaskMarkConstants_t* constants)
 {
 	vec4_t nameColor;
 	vec4_t shadowColor;
@@ -1578,7 +1590,7 @@ static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRender
 	trap_R_SetColor(NULL);
 
 	/* Draw distance above mark when enabled */
-	if ((cg_teamTask.integer & CG_TEAMTASK_SHOWDISTANCE) && renderData->nameFade > 0.0f)
+	if ((constants->teamTaskFlags & CG_TEAMTASK_SHOWDISTANCE) && renderData->nameFade > 0.0f)
 	{
 		char distanceStr[16];
 		vec4_t distanceColor;
@@ -1610,7 +1622,7 @@ static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRender
 	}
 
 	/* Draw player name below mark when hovering */
-	if ((cg_teamTask.integer & CG_TEAMTASK_SHOWNAME) && renderData->nameFade > 0.0f && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+	if ((constants->teamTaskFlags & CG_TEAMTASK_SHOWNAME) && renderData->nameFade > 0.0f && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 	{
 		ci = &cgs.clientinfo[mark->clientNum];
 		if (ci->infoValid && ci->name[0])
@@ -1642,12 +1654,15 @@ void CG_DrawTeamTaskMarks(void)
 	teamTaskMarkConstants_t constants;
 	teamTaskMarkRenderData_t renderData;
 	teamTaskMark_t* mark;
+	cgs_teamMarkers_t* tm;
 
-	/* Common validation checks (don't check cvar here, it's already checked in CG_DrawTeamTaskBorderHudMarkers) */
-	if (!CG_CanDrawTeamTaskMarks(qfalse))
-	{
+	if (cgs.gametype < GT_TEAM)
 		return;
-	}
+	if (CG_IsLocalClientSpectator())
+		return;
+	tm = &cgs.teamMarkers;
+	if (tm->numTeamTaskMarks == 0)
+		return;
 
 	/* Note: expired marks are already removed in CG_DrawTeamTaskBorderHudMarkers */
 	/* (which is called before this function) */
@@ -1656,9 +1671,9 @@ void CG_DrawTeamTaskMarks(void)
 	CG_InitTeamTaskMarkConstants(&constants);
 
 	/* Process and render each mark */
-	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
+	for (i = 0; i < tm->numTeamTaskMarks; i++)
 	{
-		mark = &cgs.teamMarkers.teamTaskMarks[i];
+		mark = &tm->teamTaskMarks[i];
 
 		/* Process mark (calculate positions, fade, hover state) */
 		if (!CG_ProcessTeamTaskMark(mark, i, &constants, &renderData))
@@ -1668,7 +1683,7 @@ void CG_DrawTeamTaskMarks(void)
 		}
 
 		/* Render mark (draw sprite, spawn effect, player name) */
-		CG_RenderTeamTaskMark(mark, &renderData);
+		CG_RenderTeamTaskMark(mark, &renderData, &constants);
 	}
 
 	/* Draw own HERE_DEAD, WARN_DEAD, and PICKUP marks as overhead in first person (in addition to world rendering) */
@@ -1676,9 +1691,9 @@ void CG_DrawTeamTaskMarks(void)
 	/* Don't show overhead in free float mode (already shown in HUD marker) */
 	if (!cg.renderingThirdPerson && CG_IsLocalClientOnScreen() && !CG_IsClientFreeFloat())
 	{
-		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
+		for (i = 0; i < tm->numTeamTaskMarks; i++)
 		{
-			mark = &cgs.teamMarkers.teamTaskMarks[i];
+			mark = &tm->teamTaskMarks[i];
 
 			/* Check if this is own HERE_DEAD, WARN_DEAD, or PICKUP mark */
 			if (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD || mark->isPickup))
@@ -1688,7 +1703,7 @@ void CG_DrawTeamTaskMarks(void)
 				/* Set up overhead rendering data */
 				overheadRenderData.x = SCREEN_WIDTH * 0.5f;
 				overheadRenderData.y = 20.0f; /* Fixed position from top */
-				overheadRenderData.h = 10.0f * cg_teamTaskScale.value;
+				overheadRenderData.h = 10.0f * constants.scale;
 				overheadRenderData.w = overheadRenderData.h * 0.75f;
 				overheadRenderData.iconW = overheadRenderData.w * 4;
 				overheadRenderData.iconH = overheadRenderData.h * 4;
@@ -1704,10 +1719,10 @@ void CG_DrawTeamTaskMarks(void)
 
 				/* Set color with end fade */
 				Vector4Copy(mark->color, overheadRenderData.color);
-				overheadRenderData.color[3] *= cg_teamTaskOpaque.value * overheadRenderData.endFade;
+				overheadRenderData.color[3] *= constants.opaque * overheadRenderData.endFade;
 
 				/* Render overhead mark */
-				CG_RenderTeamTaskMark(mark, &overheadRenderData);
+				CG_RenderTeamTaskMark(mark, &overheadRenderData, &constants);
 			}
 		}
 	}

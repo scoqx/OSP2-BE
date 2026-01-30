@@ -520,7 +520,7 @@ void CG_DrawSelwheelIcons(void)
 	float adjustedBgSize;
 	int hoveredIcon;
 	int i;
-	int font = CG_FontIndexFromCvar(&cg_teamTaskFont);
+	int font = cgFontIndices.teamTask;
 	float scale;
 	qboolean isNotAlive;
 	qboolean isObservingOther;

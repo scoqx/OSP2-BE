@@ -77,7 +77,7 @@ void CG_OSPSetMode(int value)
 	modeMaxAmmoGrenade                 = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
 	modeMaxAmmoRocket                  = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
 	modeMaxAmmoRail                    = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
-	if (!CG_isFPSClassicoServer())
+	if (!cgs.be.server.fpsclassico)
 	{
 		modeGrenadeTime = OSP_SET_MODE_VARIANT(value, 800, 800, 700);//-V583
 		modeFinishWeaponChangeTime         = OSP_SET_MODE_VARIANT(value, 250, 250, 0);//-V583
@@ -97,7 +97,7 @@ void CG_OSPSetMode(int value)
 	modeUnknown2                       = value & OSP_SERVER_MODE_PROMODE_OPT1 ? 1 : 0;
 	modeUnknown3                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 200 : 0;
 	modeUnknown4                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 100 : 0;
-	modeFPSClassico                    = CG_isFPSClassicoServer() ? 1 : 0;
+	modeFPSClassico                    = cgs.be.server.fpsclassico ? 1 : 0;
 }
 
 

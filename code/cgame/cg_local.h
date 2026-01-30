@@ -583,6 +583,18 @@ typedef struct cgs_teamMarkers_s
 	qboolean    supportedServer; /* True if server supports team task (has "tt" field in player configstrings) */
 } cgs_teamMarkers_t;
 
+/* Cached font indices from font cvars; updated by CG_UpdateFontIndices (on cvar change and at init) */
+typedef struct cgFontIndices_s
+{
+	int teamTask;
+	int scoreboard;
+	int teamIndicator;
+	int accuracy;
+	int centerMessages;
+	int infoVersion;
+	int bestats;
+} cgFontIndices_t;
+
 typedef struct
 {
 	int         clientFrame;        // incremented each frame
@@ -733,10 +745,6 @@ typedef struct
 	// warmup countdown
 	int         warmup;
 	int         warmupCount;
-
-	// previous scores for round detection
-	int         prevScores1;
-	int         prevScores2;
 
 	//==========================
 
@@ -1510,24 +1518,6 @@ typedef struct cgs_osp_s
 	int lastHitDamage;
 	struct
 	{
-		vec4_t color;
-		vec4_t actionColor;
-
-		vec4_t actionColorLow;
-		vec4_t actionColorMid;
-		vec4_t actionColorHigh;
-
-		vec4_t decorColor;
-		vec4_t decorActionColor;
-
-		vec4_t decorActionColorLow;
-		vec4_t decorActionColorMid;
-		vec4_t decorActionColorHigh;
-
-		int distance;
-	} crosshair;
-	struct
-	{
 		qboolean forceChat;
 		qboolean key[8];
 	} shud;
@@ -1670,6 +1660,24 @@ typedef struct
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
 } cgs_t;
+
+/* Crosshair colors/distance: top-level global for QVM (one level of indirection) */
+typedef struct
+{
+	vec4_t color;
+	vec4_t actionColor;
+	vec4_t actionColorLow;
+	vec4_t actionColorMid;
+	vec4_t actionColorHigh;
+	vec4_t decorColor;
+	vec4_t decorActionColor;
+	vec4_t decorActionColorLow;
+	vec4_t decorActionColorMid;
+	vec4_t decorActionColorHigh;
+	int distance;
+} crosshairData_t;
+
+extern crosshairData_t crosshairData;
 
 //==============================================================================
 
@@ -2453,6 +2461,7 @@ sfxHandle_t CG_CustomSound(int clientNum, const char* soundName);
 void CG_LoadForcedSounds(void);
 void CG_UpdateOurClientInfo(void);
 void CG_UpdateAllClientsInfo(void);
+void CG_ProcessPendingClientInfoUpdates(void);
 
 /* Inline macros to avoid per-frame function call overhead (C89 has no inline) */
 #define CG_IsDead() \
@@ -2596,6 +2605,11 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
 void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle);
 void CG_TestSkullMarker(void);
 qboolean CG_IsPointOutsideScreen(vec3_t origin, float* outX, float* outY);
+void CG_UpdateIndicatorVisibilityCache(void);
+qboolean CG_GetIndicatorCacheVisible(int slot);
+int CG_GetIndicatorCacheClientNum(int slot);
+qboolean CG_GetIndicatorCacheIsFrozenEnt(int slot);
+int CG_GetIndicatorCacheFrozenEntity(int slot);
 void CG_DrawTeamTaskMarks(void);
 void CG_DrawTeamTaskBorderHudMarkers(void);
 void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark);
@@ -2704,14 +2718,14 @@ const char* CG_GetCTFLocation(int loc);
 //
 //cg_be_util.c
 //
+extern cgFontIndices_t cgFontIndices;
+void CG_UpdateFontIndices(void);
 void CG_UpdateBeFeatures(void);
 void CG_DefineServer(int num, const char* str);
 void cg_printsa_f(void);
 void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2);
 int CG_GetRemainingGameTimeMsec(qboolean forItemPickup);
 void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength);
-void FPSC_IsUnfreezeServer(void);
-qboolean CG_isFPSClassicoServer(void);
 void CG_SendGetStatsInfo(void);
 void CG_Get_f(void);
 
@@ -2951,7 +2965,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00v2" // BE (Black Edition)
+#define OSP_VERSION "be-1.00x2" // BE (Black Edition)
 
 
 

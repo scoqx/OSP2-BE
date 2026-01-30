@@ -259,7 +259,7 @@ static void CG_Obituary(entityState_t* ent)
 	ci = &cgs.clientinfo[target];
 
 	/* Handle team task marker for local client death */
-	if (!CG_isFPSClassicoServer())
+	if (!cgs.be.server.fpsclassico)
 	{
 		CG_HandlePlayerDeathTeamTask(target, isUnfreezeEvent);
 	}

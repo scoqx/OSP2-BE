@@ -1029,7 +1029,7 @@ void CG_BEStatsDrawWindow(BEStatToken_t tokens[32][12], int rows)
 	set->height = windowHeight;
 	windowWidth = set->width + set->padding * 2;
 
-	CG_FontSelect(CG_FontIndexFromCvar(&cg_bestats_font));
+	CG_FontSelect(cgFontIndices.bestats);
 	CG_BEStatsDrawWindowBackground(set->x, set->y, windowWidth, set->height);
 	CG_OSPDrawFrameAdjusted(set->x, set->y, windowWidth, set->height, defaultBorderSize, set->borderColor, 0);
 
@@ -1105,7 +1105,7 @@ void CG_BEStatsShowStatsInfo(void)
 	int row = 0;
 	int rowsAdded;
 
-	if (CG_isFPSClassicoServer())
+	if (cgs.be.server.fpsclassico)
 	{
 		return;
 	}
