@@ -3511,11 +3511,11 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	int shadowEnabled;
 	float shadowFade;
 	float shadowFadeValue;
-	vec4_t shadowCol;
+	vec4_t shadowCol = {0, 0, 0, 1};
 	vec4_t currentShadowColor;
 	vec4_t currentTextColor;
-	int shadowColorChanged;
-	int textColorChanged;
+	int shadowColorChanged = 0;
+	int textColorChanged = 0;
 	float mw;
 	float maxAlpha;
 	int pass; /* QVM: one outer loop over passes instead of two duplicate loops */

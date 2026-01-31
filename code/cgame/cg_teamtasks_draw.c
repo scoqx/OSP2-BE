@@ -1025,10 +1025,8 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 {
 	int j;
 	centity_t* cent;
-	qboolean playerFound;
 	qboolean frozenFound;
 
-	playerFound = qfalse;
 	frozenFound = qfalse;
 
 	/* Special case for local player - always check frozen entity first, then use death coordinates */
@@ -1083,7 +1081,6 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 				/* Live player - use position above head */
 				VectorCopy(cent->lerpOrigin, mark->origin);
 				mark->origin[2] += 48.0f;
-				playerFound = qtrue;
 				break;
 			}
 			if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze &&
