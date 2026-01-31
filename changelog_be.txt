@@ -718,5 +718,5 @@ SuperHUD:
 * teamoverlay/teamoverlay2 register fix
 - CherryHUD removed
 
-30.01.2026 be v1.00x3
+30.01.2026 be v1.00x4
 * Major performance optimization

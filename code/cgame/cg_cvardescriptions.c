@@ -348,7 +348,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_scoreboardScale", "Scale factor for the scoreboard size. ^21.0^7 - default size, higher values make it larger." },
 	{ "cg_centerMessagesFont", "Font selection for center messages\n  ^20^7 - ^210^7" },
 	{ "cg_drawCrosshairNames", "Display names when crosshair is on target\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - only allies\n  ^23^7 - only enemies" },
-	{ "cg_railCustomChamber", "Colorize rail chamber using custom colors. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - reloading using core color\n  ^22^7 - ready to fire using rings color" },
+	{ "cg_railCustomChamber", "Colorize rail chamber using custom colors. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - reloading uses railCore\n  ^22^7 - ready uses railRings\n  ^23^7 - both (1|2)" },
 	{ "cg_drawBrightWeapons", "Render weapons with a single bright color for better visibility. Bitmask:\n  ^21^7 - own\n  ^22^7 - teamamtes\n  ^24^7 - enemies\n  ^28^7 - world"},
 	{ "cg_altGrenades", "Alternative grenade appearance. Values:\n  ^20^7 - Disabled\n  ^21^7 - OSP style\n  ^22^7 - BE style (custom color)\n  ^23^7 - BE style (custom color, ignores cg_drawBrightWeapons)" },
 	{ "cg_altGrenadesColor", "Color for alternative grenades. Requires ^3cg_altGrenades^7 set to ^22^7 or ^23^7.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },

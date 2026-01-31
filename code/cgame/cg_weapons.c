@@ -1795,33 +1795,33 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	gun.shadowPlane = parent->shadowPlane;
 	gun.renderfx = parent->renderfx;
 
-	// set custom shading for railgun refire rate
-	if (ps)
-	{
-		if (cg.predictedPlayerState.weapon == WP_RAILGUN &&
-		        cg.predictedPlayerState.weaponstate == WEAPON_FIRING)
+		/* cg_railCustomChamber bitmask: 1 = reloading uses railCore, 2 = ready uses railRings */
+		if (ps)
 		{
-			float f = (float)cg.predictedPlayerState.weaponTime / 1500;
-
-			if (cg_railCustomChamber.integer)
+			if (cg.predictedPlayerState.weapon == WP_RAILGUN &&
+			        cg.predictedPlayerState.weaponstate == WEAPON_FIRING)
 			{
-				ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
+				float f = (float)cg.predictedPlayerState.weaponTime / 1500;
 
-				gun.shaderRGBA[0] = 255 * ci->colors.railCore[0] * (1.0f - f);
-				gun.shaderRGBA[1] = 255 * ci->colors.railCore[1] * (1.0f - f);
-				gun.shaderRGBA[2] = 255 * ci->colors.railCore[2] * (1.0f - f);
-				gun.shaderRGBA[3] = 255;
-			}
-			else
-			{
-				gun.shaderRGBA[1] = 0;
-				gun.shaderRGBA[0] = gun.shaderRGBA[2] = 255 * (1.0f - f);
-			}
+				if (cg_railCustomChamber.integer & 1)
+				{
+					ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
+
+					gun.shaderRGBA[0] = 255 * ci->colors.railCore[0] * (1.0f - f);
+					gun.shaderRGBA[1] = 255 * ci->colors.railCore[1] * (1.0f - f);
+					gun.shaderRGBA[2] = 255 * ci->colors.railCore[2] * (1.0f - f);
+					gun.shaderRGBA[3] = 255;
+				}
+				else
+				{
+					gun.shaderRGBA[1] = 0;
+					gun.shaderRGBA[0] = gun.shaderRGBA[2] = 255 * (1.0f - f);
+				}
 
 		}
 		else
 		{
-			if (cg_railCustomChamber.integer == 2)
+			if (cg_railCustomChamber.integer & 2)
 			{
 				ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
 
@@ -1842,7 +1842,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	{
 		if (cent->currentState.weapon == WP_RAILGUN)
 		{
-			if (cg_railCustomChamber.integer == 2)
+			if (cg_railCustomChamber.integer & 2)
 			{
 				ci = &cgs.clientinfo[cent->currentState.clientNum];
 

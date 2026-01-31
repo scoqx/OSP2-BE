@@ -513,7 +513,7 @@ static void CG_Item(centity_t* cent)
 	{
 		const float* color;
 
-		color = (cg_railCustomChamber.integer == 2) ? (const float*)cgs.osp.myColors.railRings : (const float*)colorWhite;
+		color = (cg_railCustomChamber.integer & 2) ? (const float*)cgs.osp.myColors.railRings : (const float*)colorWhite;
 		ent.shaderRGBA[0] = 255 * color[0];
 		ent.shaderRGBA[1] = 255 * color[1];
 		ent.shaderRGBA[2] = 255 * color[2];
