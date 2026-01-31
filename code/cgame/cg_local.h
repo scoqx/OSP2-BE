@@ -2502,7 +2502,8 @@ qboolean CG_IsFrozenEntity(const centity_t* cent);
 #define CG_IS_LOCAL_CLIENT_SPECTATOR() ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 #define CG_IS_LOCAL_CLIENT_ON_SCREEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
 #define CG_IS_FROZEN_ENTITY(cent) ((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && ((cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS))
-#define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team)))
+/* In non-team modes (FFA, Tournament, SP) everyone except self is enemy; else use team/rt */
+#define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype < GT_TEAM) ? 1 : ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team))))
 qboolean CG_IsWarmup(void);
 qboolean CG_IsIntermission(void);
 
