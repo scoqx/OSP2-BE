@@ -1540,7 +1540,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		shaft_type = LIGHTNING_DEFAULT_SHADER;
 	}
 
-	if (CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING) && (!isOurClient && cgs.osp.enemyColorsOverride.isLightningColorSet && CG_IsEnemy(target)))
+	if (CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING) && (!isOurClient && cgs.osp.enemyColorsOverride.isLightningColorSet && CG_IS_ENEMY_SIMPLE(target)))
 	{
 		beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
 		beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
@@ -1779,7 +1779,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	// Determine context
 	qboolean isOwnGun = (ps && cent->currentState.number == cg.clientNum);
 
-	qboolean isEnemy = CG_IsEnemy(&cgs.clientinfo[cent->currentState.number]);
+	qboolean isEnemy = CG_IS_ENEMY_SIMPLE(&cgs.clientinfo[cent->currentState.number]);
 	qboolean isTeammate = !isEnemy && (cent->currentState.number != cg.clientNum);
 	qboolean usedBrightColor = qfalse;
 	qboolean isSpectatingFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
@@ -2688,7 +2688,11 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 	int             duration;
 	vec3_t          sprOrg;
 	vec3_t          sprVel;
+	qboolean        allowExplosions;
+	qboolean        useAltPlasma;
 
+	allowExplosions = !cg_noExplosions.integer || (cg_noExplosions.integer && !CG_BE_FEATURE_ENABLED(CG_BE_NO_EXPLOSIONS));
+	useAltPlasma = CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN);
 	mark = 0;
 	radius = 32;
 	sfx = 0;
@@ -2763,7 +2767,7 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 			light = 300;
 			isSprite = qtrue;
 			duration = 1000;
-			if (!cg_noExplosions.integer || (cg_noExplosions.integer && !CG_BE_FEATURE_ENABLED(CG_BE_NO_EXPLOSIONS)))
+			if (allowExplosions)
 			{
 				if (cg_oldRocket.integer == 0)
 				{
@@ -2823,7 +2827,7 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 					mark = cgs.media.energyMarkNoPicMipShader;
 				}
 			}
-			else if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN) && cg_altPlasma.integer == 2)
+			else if (useAltPlasma && cg_altPlasma.integer == 2)
 			{
 				if ((cg_nomip.integer & 2) == 0)
 				{
@@ -2924,7 +2928,7 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 	//
 	// create the explosion
 	//
-	if (!cg_noExplosions.integer || (cg_noExplosions.integer && !CG_BE_FEATURE_ENABLED(CG_BE_NO_EXPLOSIONS)))
+	if (allowExplosions)
 	{
 		if (mod)
 		{

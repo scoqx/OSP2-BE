@@ -1659,6 +1659,28 @@ typedef struct
 	cgs_teamMarkers_t teamMarkers;
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
+
+	/* Cvar snapshots: filled in CG_UpdateCvars (every 12 frames); hot path only reads these, never vmCvar_t */
+	struct
+	{
+		int drawOutline;
+		int enemySize;
+		int teamSize;
+		int spectPOV;
+		int enemyColorUnique;
+	} outlineCvars;
+	struct
+	{
+		float fadeStrength;
+		float fadeRadius;
+		float fadeRadiusSq;
+		float bgOpaque;
+		float nameOpaque;
+		float offset;
+		float adjust;
+		int teamIndicator;
+		int maxLength;
+	} indicatorCvars;
 } cgs_t;
 
 /* Crosshair colors/distance: top-level global for QVM (one level of indirection) */
@@ -2453,6 +2475,7 @@ enum
 //
 // cg_player.c
 //
+void CG_PlayerFrameStart(void);
 void CG_Player(centity_t* cent);
 void CG_ResetPlayerEntity(centity_t* cent);
 void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int team);
@@ -2470,12 +2493,18 @@ void CG_ProcessPendingClientInfoUpdates(void);
 	((cgs.gametype == GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 #define CG_IsLocalClientOnScreen() \
 	(cg.snap && cg.snap->ps.clientNum == cg.clientNum)
-#define CG_IsEnemySimple(target) \
-	((target) != NULL && (target) != &cgs.clientinfo[cg.clientNum] && (CG_OSPIsGameTypeCA(cgs.gametype) ? ((target)->rt != cgs.clientinfo[cg.clientNum].rt) : ((target)->team != cgs.clientinfo[cg.clientNum].team)))
-#define CG_IsFrozenEntity(cent) \
-	((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && (cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS)
 
 qboolean CG_IsEnemy(const clientInfo_t* target);
+qboolean CG_IsEnemySimple(const clientInfo_t* target);
+qboolean CG_IsFrozenEntity(const centity_t* cent);
+/* QVM hot path: use macros instead of calls to avoid CALL/ENTER/LEAVE */
+#define CG_IS_DEAD() (cg.snap && (cg.snap->ps.pm_type == PM_DEAD || cg.snap->ps.pm_type == PM_SPINTERMISSION))
+#define CG_IS_LOCAL_CLIENT_SPECTATOR() ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
+#define CG_IS_LOCAL_CLIENT_ON_SCREEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
+#define CG_IS_FROZEN_ENTITY(cent) ((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && ((cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS))
+#define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team)))
+qboolean CG_IsWarmup(void);
+qboolean CG_IsIntermission(void);
 
 //
 // cg_predict.c
@@ -2605,11 +2634,6 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
 void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle);
 void CG_TestSkullMarker(void);
 qboolean CG_IsPointOutsideScreen(vec3_t origin, float* outX, float* outY);
-void CG_UpdateIndicatorVisibilityCache(void);
-qboolean CG_GetIndicatorCacheVisible(int slot);
-int CG_GetIndicatorCacheClientNum(int slot);
-qboolean CG_GetIndicatorCacheIsFrozenEnt(int slot);
-int CG_GetIndicatorCacheFrozenEntity(int slot);
 void CG_DrawTeamTaskMarks(void);
 void CG_DrawTeamTaskBorderHudMarkers(void);
 void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark);
@@ -2698,8 +2722,6 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
 void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam);
 qboolean CG_ExecCommandIfSet(vmCvar_t* cvar);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
-qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack,
-    int *outClientNum, qboolean *outIsFrozenEnt, int *outFrozenEntity);
 
 
 //
@@ -3023,7 +3045,7 @@ extern int statsInfo[24];
 qboolean BE_IsDamageInfoAllowed(void);
 
 void CG_OSPCvarsRestrictValues(void);
-qboolean CG_OSPIsGameTypeCA(int gametype);
+#define CG_OSPIsGameTypeCA(gt) ((gt) >= GT_CA)
 qboolean CG_OSPIsGameTypeFreeze(void);
 qboolean CG_OSPIsGameTypeTDM(void);
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup);

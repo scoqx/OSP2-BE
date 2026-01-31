@@ -28,9 +28,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 qboolean CG_IsEnemy(const clientInfo_t* target)
 {
-	/* Cache by (clientNum, cg.time): static local for QVM */
-	static int isEnemyCacheTime[MAX_CLIENTS];
-	static qboolean isEnemyCacheResult[MAX_CLIENTS];
 	const clientInfo_t* local;
 	const playerState_t* ps;
 	const clientInfo_t* followCi;
@@ -39,26 +36,14 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 	int enemyTeam;
 	int isCA;
 	int followClient;
-	int clientNum;
 	team_t ourPerspectiveTeam;
 	team_t targetTeam;
-	qboolean result;
-
-	clientNum = (int)(target - cgs.clientinfo);
-	if (clientNum >= 0 && clientNum < MAX_CLIENTS && isEnemyCacheTime[clientNum] == cg.time)
-		return isEnemyCacheResult[clientNum];
 
 	local = &cgs.clientinfo[cg.clientNum];
 	if (target == local)
-	{
-		result = qfalse;
-		goto cache_and_return;
-	}
+		return qfalse;
 	if (cgs.gametype <= GT_SINGLE_PLAYER)
-	{
-		result = qtrue;
-		goto cache_and_return;
-	}
+		return qtrue;
 
 	ps = &cg.snap->ps;
 	myStateTeam = ps->persistant[PERS_TEAM];
@@ -74,37 +59,20 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 			followCi = &cgs.clientinfo[followClient];
 			ourPerspectiveTeam = isCA ? followCi->rt : followCi->team;
 			targetTeam = isCA ? target->rt : target->team;
-			result = (ourPerspectiveTeam != targetTeam);
-			goto cache_and_return;
+			return (ourPerspectiveTeam != targetTeam);
 		}
 		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
-		{
-			result = (enemyTeam == TEAM_BLUE);
-			goto cache_and_return;
-		}
+			return (enemyTeam == TEAM_BLUE);
 		if (myRealTeam == TEAM_BLUE)
-		{
-			result = (enemyTeam == TEAM_RED);
-			goto cache_and_return;
-		}
-		result = qfalse;
-		goto cache_and_return;
+			return (enemyTeam == TEAM_RED);
+		return qfalse;
 	}
 
 	if (myStateTeam == TEAM_RED)
-		result = (enemyTeam == TEAM_BLUE);
-	else if (myStateTeam == TEAM_BLUE)
-		result = (enemyTeam == TEAM_RED);
-	else
-		result = qfalse;
-
-cache_and_return:
-	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
-	{
-		isEnemyCacheTime[clientNum] = cg.time;
-		isEnemyCacheResult[clientNum] = result;
-	}
-	return result;
+		return (enemyTeam == TEAM_BLUE);
+	if (myStateTeam == TEAM_BLUE)
+		return (enemyTeam == TEAM_RED);
+	return qfalse;
 }
 
 char*    cg_customSoundNames[MAX_CUSTOM_SOUNDS] =
@@ -991,13 +959,13 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	}
 
 	/* Spectators don't see teamtask marks */
-	if (CG_IsLocalClientSpectator())
+	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
 	{
 		return;
 	}
 
 	/* Check if sender is in our team - ignore teamtask from enemies */
-	if (CG_IsEnemySimple(newInfo))
+	if (CG_IS_ENEMY_SIMPLE(newInfo))
 	{
 		return;
 	}
@@ -1088,7 +1056,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 				{
 					clientInfo_t* targetCi;
 					targetCi = &cgs.clientinfo[cent->currentState.clientNum];
-					if (targetCi->infoValid && CG_IsEnemy(targetCi))
+					if (targetCi->infoValid && CG_IS_ENEMY_SIMPLE(targetCi))
 					{
 						/* Check if enemy is near received coordinates */
 						dist = Distance(cent->lerpOrigin, coord);
@@ -1135,7 +1103,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 			if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
 			{
 				/* Check if this is a frozen entity */
-				if (CG_IsFrozenEntity(cent))
+				if (CG_IS_FROZEN_ENTITY(cent))
 				{
 					frozenClientNum = cent->currentState.otherEntityNum;
 					if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS)
@@ -1147,7 +1115,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 							qboolean isEnemy;
 							qboolean matchesType;
 
-							isEnemy = CG_IsEnemy(frozenCi);
+							isEnemy = CG_IS_ENEMY_SIMPLE(frozenCi);
 							if (templateID == TEAMTASK_FROZEN_ALLY)
 							{
 								matchesType = !isEnemy;
@@ -2008,6 +1976,21 @@ static void CG_CheckSpectatorTargetChange(void)
 		if (cgs.gametype >= GT_TEAM || cg_spectPOV.integer)
 		{
 			CG_UpdateOtherClientsInfo();
+		}
+	}
+}
+
+/* Called once per frame from CG_AddPacketEntities; avoids spectator check in CG_Player hot path */
+void CG_PlayerFrameStart(void)
+{
+	if (cg_spectPOV.integer)
+	{
+		static int lastFrameTime = 0;
+
+		if (cg.time != lastFrameTime)
+		{
+			lastFrameTime = cg.time;
+			CG_CheckSpectatorTargetChange();
 		}
 	}
 }
@@ -3378,255 +3361,68 @@ static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color
 	trap_R_AddRefEntityToScene(&ent);
 }
 
-static qhandle_t CG_GetPlayerSpriteShader(centity_t* cent)
-{
-	if (CG_IsFrozenEntity(cent))
-	{
-		return cgs.media.frozenFoeTagShader;
-	}
-	return cgs.media.friendShader;
-}
-
-static qboolean CG_FriendVisible(centity_t* cent)
-{
-	/* Cache as static local (not in cg_t): in QVM, smaller offset = cheaper access */
-	static int friendVisibleCacheTime[MAX_GENTITIES];
-	static qboolean friendVisibleCacheResult[MAX_GENTITIES];
-	const playerState_t* ps;
-	int entityIndex;
-	vec3_t start, end;
-	trace_t trace;
-	qboolean visible;
-
-	entityIndex = (int)(cent - cg_entities);
-	if (entityIndex >= 0 && entityIndex < MAX_GENTITIES &&
-	    friendVisibleCacheTime[entityIndex] == cg.time)
-	{
-		return friendVisibleCacheResult[entityIndex];
-	}
-
-	ps = &cg.snap->ps;
-	VectorCopy(cg.refdef.vieworg, start);
-	VectorCopy(cent->lerpOrigin, end);
-	end[2] += 24.0f;
-	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
-	         ps->clientNum, CONTENTS_SOLID);
-
-	CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin,
-	         ps->clientNum,
-	         CONTENTS_SOLID);
-
-	visible = (trace.fraction == 1.0) ? qtrue : qfalse;
-	if (entityIndex >= 0 && entityIndex < MAX_GENTITIES)
-	{
-		friendVisibleCacheTime[entityIndex] = cg.time;
-		friendVisibleCacheResult[entityIndex] = visible;
-	}
-	return visible;
-}
-
-qboolean CG_IsPlayerValidAndVisible(int clientOrEntityNum, qboolean wallhack,
-    int *outClientNum, qboolean *outIsFrozenEnt, int *outFrozenEntity)
-{
-	centity_t* cent;
-	clientInfo_t* ci;
-	qboolean isEnemy;
-	qboolean isFrozenEnt;
-	qboolean needVis;
-	int clientNum;
-	int frozenEntity;
-	int freezeLimit = MAX_CLIENTS;
-
-	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
-		freezeLimit = MAX_GENTITIES;
-
-	if (clientOrEntityNum < 0 || clientOrEntityNum >= freezeLimit)
-		return qfalse;
-
-	cent = &cg_entities[clientOrEntityNum];
-	if (!cent->currentValid || cent->currentState.eType != ET_PLAYER)
-		return qfalse;
-
-	clientNum = clientOrEntityNum;
-	isFrozenEnt = qfalse;
-	frozenEntity = 0;
-
-	if (clientOrEntityNum >= MAX_CLIENTS && CG_IsFrozenEntity(cent))
-	{
-		clientNum = cent->currentState.otherEntityNum;
-		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-			return qfalse;
-
-		ci = &cgs.clientinfo[clientNum];
-		if (!ci->infoValid)
-			return qfalse;
-
-		isFrozenEnt = qtrue;
-		frozenEntity = clientOrEntityNum;
-		cent = &cg_entities[clientOrEntityNum];
-	}
-	else
-	{
-		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-			return qfalse;
-
-		ci = &cgs.clientinfo[clientNum];
-		if (!ci->infoValid)
-			return qfalse;
-	}
-
-	if (ci->team == TEAM_SPECTATOR)
-		return qfalse;
-
-	isEnemy = CG_IsEnemy(ci);
-	if (CG_IsLocalClientSpectator())
-	{
-		if (!(cg_teamIndicator.integer & PI_SPECTATOR) && isEnemy)
-			return qfalse;
-	}
-	else
-	{
-		if (isEnemy)
-			return qfalse;
-	}
-
-	needVis = (!wallhack) ||
-	    (isFrozenEnt && !isEnemy &&
-	     (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN) || !cg_friendsWallhackFrozen.integer));
-	if (needVis && !CG_FriendVisible(cent))
-		return qfalse;
-
-	*outClientNum = clientNum;
-	*outIsFrozenEnt = isFrozenEnt;
-	*outFrozenEntity = frozenEntity;
-	return qtrue;
-}
-
-
-#define CG_INDICATOR_BATCH_SIZE 2
-
-/* Batch visibility cache: static in this file (QVM); updated before CG_AddPacketEntities, used by indicator + CG_FriendHudMarker */
-static int indicatorStartIndex = 0;
-static qboolean indicatorCacheVisible[MAX_GENTITIES];
-static int indicatorCacheClientNum[MAX_GENTITIES];
-static qboolean indicatorCacheIsFrozenEnt[MAX_GENTITIES];
-static int indicatorCacheFrozenEntity[MAX_GENTITIES];
-
-void CG_UpdateIndicatorVisibilityCache(void)
-{
-	int scanRange = MAX_CLIENTS;
-	int useWallhack;
-	int outClientNum;
-	qboolean outIsFrozenEnt;
-	int outFrozenEntity;
-	qboolean gameModeNotSpectator;
-	int batchSize;
-	int n;
-	int i;
-	playerState_t* ps;
-	clientInfo_t* ci;
-
-	if (!cg.snap)
-		return;
-	if (!(CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) && cg_teamIndicator.integer) && !cg_drawHudMarkers.integer)
-		return;
-
-	if (cgs.osp.gameTypeFreeze && (cg_teamIndicator.integer & PI_FROZEN))
-		scanRange = MAX_GENTITIES;
-
-	batchSize = CG_INDICATOR_BATCH_SIZE;
-	if (batchSize > scanRange)
-		batchSize = scanRange;
-
-	ps = &cg.snap->ps;
-	useWallhack = (cg_friendsWallhack.integer & 2) ? 1 : 0;
-	gameModeNotSpectator = (ps->persistant[PERS_TEAM] != TEAM_SPECTATOR);
-
-	for (n = 0; n < batchSize; n++)
-	{
-		i = (indicatorStartIndex + n) % scanRange;
-
-		indicatorCacheVisible[i] = qfalse;
-
-		if (i == ps->clientNum)
-			continue;
-
-		if (i < MAX_CLIENTS)
-		{
-			ci = &cgs.clientinfo[i];
-			if (!ci->infoValid)
-				continue;
-			if (gameModeNotSpectator && CG_IsEnemy(ci))
-				continue;
-		}
-
-		if (!CG_IsPlayerValidAndVisible(i, useWallhack, &outClientNum, &outIsFrozenEnt, &outFrozenEntity))
-			continue;
-
-		indicatorCacheVisible[i] = qtrue;
-		indicatorCacheClientNum[i] = outClientNum;
-		indicatorCacheIsFrozenEnt[i] = outIsFrozenEnt;
-		indicatorCacheFrozenEntity[i] = outFrozenEntity;
-	}
-
-	indicatorStartIndex = (indicatorStartIndex + batchSize) % scanRange;
-}
-
-qboolean CG_GetIndicatorCacheVisible(int slot)
-{
-	return (slot >= 0 && slot < MAX_GENTITIES) ? indicatorCacheVisible[slot] : qfalse;
-}
-
-int CG_GetIndicatorCacheClientNum(int slot)
-{
-	return (slot >= 0 && slot < MAX_GENTITIES) ? indicatorCacheClientNum[slot] : 0;
-}
-
-qboolean CG_GetIndicatorCacheIsFrozenEnt(int slot)
-{
-	return (slot >= 0 && slot < MAX_GENTITIES) ? indicatorCacheIsFrozenEnt[slot] : qfalse;
-}
-
-int CG_GetIndicatorCacheFrozenEntity(int slot)
-{
-	return (slot >= 0 && slot < MAX_GENTITIES) ? indicatorCacheFrozenEntity[slot] : 0;
-}
-
-
 static void CG_FriendHudMarker(centity_t* cent)
 {
 	int team;
-	int entityIndex;
+	int useWallhack;
 	float distance;
 	float hfov_x;
 	float size;
 	vec4_t color;
 	clientInfo_t* cl;
-	qboolean visible;
+	qboolean isFrozen;
+	qboolean needVis;
+	qboolean friendVisible;
+	vec3_t start;
+	vec3_t end;
+	trace_t trace;
+	qboolean useTeamFrozen;
+	qboolean useTeamFoeWh;
+
+	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
+	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
+	isFrozen = CG_IS_FROZEN_ENTITY(cent);
 
 	team = cgs.clientinfo[cent->currentState.clientNum].team;
 	if (cgs.gametype < GT_TEAM
 	        || cg.snap->ps.persistant[PERS_TEAM] != team
-	        || (cent->currentState.eFlags & EF_DEAD && !CG_IsFrozenEntity(cent))
+	        || (cent->currentState.eFlags & EF_DEAD && !isFrozen)
 	        || cent->currentState.number == cg.snap->ps.clientNum
 	        || cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
 	{
 		return;
 	}
 
-	/* Use batch cache (same file, static); no CG_FriendVisible traces here */
-	entityIndex = (int)(cent - cg_entities);
-	visible = (entityIndex >= 0 && entityIndex < MAX_GENTITIES && indicatorCacheVisible[entityIndex]);
-	if (CG_IsFrozenEntity(cent) && !visible && (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN) || !cg_friendsWallhackFrozen.integer))
+	/* One pass: check visibility inline (no batch cache per QVM_LOGIC) */
+	useWallhack = (cg_friendsWallhack.integer & 2) ? 1 : 0;
+	needVis = (!useWallhack) ||
+	    (isFrozen && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer));
+	friendVisible = qtrue;
+	if (needVis)
+	{
+		VectorCopy(cg.refdef.vieworg, start);
+		VectorCopy(cent->lerpOrigin, end);
+		end[2] += 24.0f;
+		CG_Trace(&trace, start, vec3_origin, vec3_origin, end, cg.snap->ps.clientNum, CONTENTS_SOLID);
+		if (trace.fraction != 1.0f)
+		{
+			friendVisible = qfalse;
+		}
+		else
+		{
+			CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin, cg.snap->ps.clientNum, CONTENTS_SOLID);
+			friendVisible = (trace.fraction == 1.0f);
+		}
+	}
+	if (isFrozen && !friendVisible && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer))
 	{
 		return;
 	}
 
-	if ((!(cg_friendsWallhack.integer & 1) && !visible) || (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && !visible))
+	if ((!(cg_friendsWallhack.integer & 1) && !friendVisible) || (!useTeamFoeWh && !friendVisible))
 	{
 		return;
 	}
-
 
 	distance = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
 	if (cg_friendHudMarkerMaxDist.integer > 0 && distance > cg_friendHudMarkerMaxDist.value)
@@ -3654,7 +3450,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 	    cent->lerpOrigin,
 	    color,
 	    cg_friendHudMarkerSize.value * size,
-	    CG_GetPlayerSpriteShader(cent),
+	    isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader,
 	    270
 	);
 }
@@ -3711,6 +3507,11 @@ static void CG_PlayerSprites(centity_t* cent)
 {
 	clientInfo_t* cl;
 	int clientNum;
+	qboolean useTeamFrozen;
+	qboolean useTeamFoeWh;
+
+	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
+	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 
 	clientNum = cent->currentState.clientNum;
 
@@ -3790,9 +3591,9 @@ static void CG_PlayerSprites(centity_t* cent)
 				/* Only draw frozenFoeTagShader if there is no active team task mark */
 				if (!hasActiveMark)
 				{
-					if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN))
+					if (!useTeamFrozen)
 						shader = cgs.media.frozenFoeTagShader;
-					else if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && (cg_friendsWallhack.integer & 1))
+					else if (useTeamFoeWh && (cg_friendsWallhack.integer & 1))
 					{
 						if (cg_friendsWallhackFrozen.integer)
 						{
@@ -3821,7 +3622,7 @@ static void CG_PlayerSprites(centity_t* cent)
 				{
 					VectorCopy(colorWhite, color);
 				}
-				if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) && cg_friendsWallhack.integer & 1)
+				if (useTeamFoeWh && cg_friendsWallhack.integer & 1)
 					shader = cgs.media.friendShaderWallhack;
 				else
 					shader = cgs.media.friendShader;
@@ -3850,6 +3651,7 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	int         alt = cg_altShadow.integer;
 	qhandle_t shadowMarkShader;
 	vec4_t      color = { 1, 1, 1, 1 };
+	qboolean    useAltShadow;
 	*shadowPlane = 0;
 
 	if (cg_shadows.integer == 0)
@@ -3882,8 +3684,7 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 		return qtrue;
 	}
 
-
-
+	useAltShadow = CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW);
 
 	// bk0101022 - hack / FPE - bogus planes?
 	//assert( DotProduct( trace.plane.normal, trace.plane.normal ) != 0.0f )
@@ -3893,19 +3694,19 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	{
 		shadowMarkShader = cgs.media.shadowMarkShader;
 	}
-	else if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW) && alt < MAX_ALT_SHADERS)
+	else if (useAltShadow && alt < MAX_ALT_SHADERS)
 	{
 		shadowMarkShader = cgs.media.shadowMarkShaderNew[alt - 1];
 	}
 	else
 	{
-		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW))
+		if (useAltShadow)
 			shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
 		else
 			shadowMarkShader = cgs.media.shadowMarkShader;
 	}
 
-	if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW) && cg_altShadow.integer)
+	if (useAltShadow && cg_altShadow.integer)
 	{
 		color[0] = cgs.be.altShadowColor[0];
 		color[1] = cgs.be.altShadowColor[1];
@@ -4215,7 +4016,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	}
 
 	// if they don't exist, forget it
-	if (!CG_IsEnemy(ci))
+	if (!CG_IS_ENEMY_SIMPLE(ci))
 	{
 		return;
 	}
@@ -4366,12 +4167,10 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 }
 
-void CG_AddOutline(refEntity_t* ent, centity_t* cent)
+void CG_AddOutline(refEntity_t* ent, centity_t* cent, qboolean isSpectator, qboolean isEnemy)
 {
 	clientInfo_t* ci;
 	int clientNum, i;
-	qboolean isEnemy;
-	qboolean isSpectator = CG_IsLocalClientSpectator();
 
 	vec4_t color;
 
@@ -4383,27 +4182,12 @@ void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 
 	clientNum = cent->currentState.clientNum;
 
-	/* Cache outline cvars once per frame to reduce trap calls (QVM speed; 3 calls per player) */
-	{
-		static int cachedDrawOutline, cachedEnemySize, cachedTeamSize;
-		static int cachedSpectPOV, cachedEnemyColorUnique;
-		static int cachedOutlineTime;
-
-		if (cachedOutlineTime != cg.time)
-		{
-			cachedOutlineTime = cg.time;
-			cachedDrawOutline = cg_drawOutline.integer;
-			cachedEnemySize = cg_enemyOutlineSize.integer;
-			cachedTeamSize = cg_teamOutlineSize.integer;
-			cachedSpectPOV = cg_spectPOV.integer;
-			cachedEnemyColorUnique = cg_enemyOutlineColorUnique.integer;
-		}
-		drawOutline = cachedDrawOutline;
-		enemyOutlineSize = cachedEnemySize;
-		teamOutlineSize = cachedTeamSize;
-		spectPOV = cachedSpectPOV;
-		enemyOutlineColorUnique = cachedEnemyColorUnique;
-	}
+	/* Hot path: read only from cgs snapshot (filled in CG_UpdateCvars every 12 frames), no vmCvar_t */
+	drawOutline = cgs.outlineCvars.drawOutline;
+	enemyOutlineSize = cgs.outlineCvars.enemySize;
+	teamOutlineSize = cgs.outlineCvars.teamSize;
+	spectPOV = cgs.outlineCvars.spectPOV;
+	enemyOutlineColorUnique = cgs.outlineCvars.enemyColorUnique;
 
 	if (!drawOutline || clientNum < 0 || clientNum >= MAX_CLIENTS)
 		return;
@@ -4417,8 +4201,6 @@ void CG_AddOutline(refEntity_t* ent, centity_t* cent)
 	        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) ||
 	        (cent->currentState.powerups & (1 << PW_INVIS)))
 		return;
-
-	isEnemy = CG_IsEnemy(ci);
 
 	if (!((drawOutline == 1 && isEnemy) || (drawOutline == 2 && !isEnemy) || (drawOutline == 3)))
 		return;
@@ -4499,16 +4281,10 @@ void CG_Player(centity_t* cent)
 	float           shadowPlane;
 	qboolean        paintItBlack;
 	float           paintBlackLevel;
-
-	if (cg_spectPOV.integer)
-	{
-		static int lastFrameTime = 0;
-		if (cg.time != lastFrameTime)
-		{
-			lastFrameTime = cg.time;
-			CG_CheckSpectatorTargetChange();
-		}
-	}
+	qboolean        outlineIsSpec;
+	qboolean        outlineIsEnemy;
+	qboolean        useFullbright;
+	qboolean        useOutline;
 
 	if (cg.clientNum == cent->currentState.clientNum && (global_viewlistFirstOption || cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 	{
@@ -4532,6 +4308,10 @@ void CG_Player(centity_t* cent)
 	{
 		return;
 	}
+
+	/* QVM_LOGIC: compute feature flags once per player instead of 3x (legs/torso/head) */
+	useFullbright = (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)));
+	useOutline = CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cgs.outlineCvars.drawOutline;
 
 	renderfx = 0;
 
@@ -4620,7 +4400,7 @@ void CG_Player(centity_t* cent)
 	legs.renderfx = renderfx;
 	VectorCopy(legs.origin, legs.oldorigin);    // don't positionally lerp at all
 
-	if (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)))
+	if (useFullbright)
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -4664,8 +4444,67 @@ void CG_Player(centity_t* cent)
 
 	CG_AddRefEntityWithPowerups(&legs, &cent->currentState, ci->team);
 
-	if (CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer)
-		CG_AddOutline(&legs, cent);
+	if (useOutline)
+	{
+		const clientInfo_t* localCi;
+		team_t myStateTeam, myRealTeam, enemyTeam, ourPerspectiveTeam, targetTeam;
+
+		/* Inline CG_IsLocalClientSpectator: no call in hot path */
+		outlineIsSpec = (cgs.gametype >= GT_CA) ?
+		    (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) :
+		    (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
+
+		/* Inline CG_IsEnemy(ci): no call in hot path */
+		localCi = &cgs.clientinfo[cg.clientNum];
+		if (ci == localCi)
+		{
+			outlineIsEnemy = qfalse;
+		}
+		else
+		{
+			myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
+			myRealTeam = (cgs.gametype >= GT_CA) ? localCi->rt : localCi->team;
+			enemyTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
+			if (cgs.gametype <= GT_SINGLE_PLAYER)
+			{
+				outlineIsEnemy = qtrue;
+			}
+			else if (myStateTeam == TEAM_SPECTATOR)
+			{
+				if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+				        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+				{
+					ourPerspectiveTeam = (cgs.gametype >= GT_CA) ?
+					    cgs.clientinfo[cg.snap->ps.clientNum].rt :
+					    cgs.clientinfo[cg.snap->ps.clientNum].team;
+					targetTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
+					outlineIsEnemy = (ourPerspectiveTeam != targetTeam);
+				}
+				else
+				{
+					if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
+						outlineIsEnemy = (enemyTeam == TEAM_BLUE);
+					else if (myRealTeam == TEAM_BLUE)
+						outlineIsEnemy = (enemyTeam == TEAM_RED);
+					else
+						outlineIsEnemy = qfalse;
+				}
+			}
+			else if (myStateTeam == TEAM_RED)
+			{
+				outlineIsEnemy = (enemyTeam == TEAM_BLUE);
+			}
+			else if (myStateTeam == TEAM_BLUE)
+			{
+				outlineIsEnemy = (enemyTeam == TEAM_RED);
+			}
+			else
+			{
+				outlineIsEnemy = qfalse;
+			}
+		}
+		CG_AddOutline(&legs, cent, outlineIsSpec, outlineIsEnemy);
+	}
 
 	//
 	// add the torso
@@ -4677,7 +4516,7 @@ void CG_Player(centity_t* cent)
 	torso.shadowPlane = shadowPlane;
 	torso.renderfx = renderfx;
 
-	if (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)))
+	if (useFullbright)
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -4721,8 +4560,8 @@ void CG_Player(centity_t* cent)
 
 	CG_AddRefEntityWithPowerups(&torso, &cent->currentState, ci->team);
 
-	if (CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer)
-		CG_AddOutline(&torso, cent);
+	if (useOutline)
+		CG_AddOutline(&torso, cent, outlineIsSpec, outlineIsEnemy);
 
 	//
 	// add the head
@@ -4734,7 +4573,7 @@ void CG_Player(centity_t* cent)
 	head.shadowPlane = shadowPlane;
 	head.renderfx = renderfx;
 
-	if (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)))
+	if (useFullbright)
 	{
 		float tmpf;
 		const float maxf = (float)MAX_QINT;
@@ -4782,8 +4621,8 @@ void CG_Player(centity_t* cent)
 	}
 	CG_AddRefEntityWithPowerups(&head, &cent->currentState, ci->team);
 
-	if (CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer)
-		CG_AddOutline(&head, cent);
+	if (useOutline)
+		CG_AddOutline(&head, cent, outlineIsSpec, outlineIsEnemy);
 
 	CG_AddPlayerWeapon(&torso, NULL, cent, ci->team);
 

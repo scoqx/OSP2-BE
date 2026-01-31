@@ -1963,7 +1963,7 @@ void CG_UpdateHealthLowFlag(void)
 	static int s_lastHealthColorLevels = -999;
 	static qboolean s_lastDeadOrFreeFloat = qtrue;
 
-	deadOrFreeFloat = CG_IsDead() || CG_IsClientFreeFloat();
+	deadOrFreeFloat = CG_IS_DEAD() || CG_IsClientFreeFloat();
 	healthColorLevels = cg_healthColorLevels.integer;
 	health = 0;
 	armor = 0;
@@ -3508,18 +3508,17 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	text_command_t* curr;
 	float expectedLenght;
 
-	/* Объявления дополнительных переменных для однопроходного цикла */
 	int shadowEnabled;
 	float shadowFade;
 	float shadowFadeValue;
 	vec4_t shadowCol;
-	/* Optimize: cache current color state to avoid redundant trap_R_SetColor calls */
 	vec4_t currentShadowColor;
 	vec4_t currentTextColor;
 	int shadowColorChanged;
 	int textColorChanged;
 	float mw;
 	float maxAlpha;
+	int pass; /* QVM: one outer loop over passes instead of two duplicate loops */
 
 	if (!string)
 		return;
@@ -3596,9 +3595,19 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		trap_R_SetColor(colorWhite);
 	}
 
-	if (hasBorder)
+	/* Draw border inline (no CG_OSPDrawFrame call per QVM_LOGIC); outer frame like CG_OSPDrawFrame(..., 0) */
+	if (hasBorder && borderColor && (border[0] > 0.0f || border[1] > 0.0f || border[2] > 0.0f || border[3] > 0.0f))
 	{
-		CG_OSPDrawFrame(ax, ay, expectedLenght, ah, border, borderColor, 0);
+		trap_R_SetColor(borderColor);
+		if (border[0] > 0.0f)
+			trap_R_DrawStretchPic(ax - border[0], ay, border[0], ah, 0, 0, 0, 0, cgs.media.whiteShader);
+		if (border[1] > 0.0f)
+			trap_R_DrawStretchPic(ax - border[0], ay - border[1], expectedLenght + border[0] + border[2], border[1], 0, 0, 0, 0, cgs.media.whiteShader);
+		if (border[2] > 0.0f)
+			trap_R_DrawStretchPic(ax + expectedLenght, ay, border[2], ah, 0, 0, 0, 0, cgs.media.whiteShader);
+		if (border[3] > 0.0f)
+			trap_R_DrawStretchPic(ax - border[0], ay + ah, expectedLenght + border[0] + border[2], border[3], 0, 0, 0, 0, cgs.media.whiteShader);
+		trap_R_SetColor(NULL);
 	}
 
 	shadowEnabled = (flags & DS_SHADOW) && (shadowColor != NULL) && (shadowColor[3] != 0.0f);
@@ -3630,19 +3639,27 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		maxAlpha = 1.0f;
 	}
 
-	/* Optimize: two passes - first all shadows, then all text - reduces color changes */
+	/* QVM_LOGIC: one outer loop over passes (shadow, text), one inner loop + one switch = less bytecode */
+	xx = ax;
 
-	/* First pass: draw all shadows */
-	if (shadowEnabled)
+	for (pass = 0; pass < 2; pass++)
 	{
-		/* Reset shadow state */
-		shadowColorChanged = 1;
-		Vector4Copy(shadowCol, currentShadowColor);
-		shadowFadeValue = shadowFade;
-		fade = 1.0f;
-
-		/* Save starting position */
-		xx = ax;
+		if (pass == 0 && !shadowEnabled)
+			continue;
+		if (pass == 1)
+		{
+			ax = xx;
+			textColorChanged = 1;
+			Vector4Copy(color, currentTextColor);
+			fade = 1.0f;
+		}
+		else
+		{
+			shadowColorChanged = 1;
+			Vector4Copy(shadowCol, currentShadowColor);
+			shadowFadeValue = shadowFade;
+			fade = 1.0f;
+		}
 
 		for (i = 0; i < OSP_TEXT_CMD_MAX && text_commands[i].type != OSP_TEXT_CMD_STOP; i++)
 		{
@@ -3660,7 +3677,6 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 						index += 256;
 					fm = &metrics[(unsigned char)index];
 
-					/* Optimize: reduce branching - precompute common values */
 					if (proportional)
 					{
 						tc = fm->tc_prop;
@@ -3674,21 +3690,28 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 						spaceAdd = aw;
 					}
 
-					if (shadowColorChanged)
+					if (pass == 0)
 					{
-						trap_R_SetColor(currentShadowColor);
-						shadowColorChanged = 0;
+						if (shadowColorChanged)
+						{
+							trap_R_SetColor(currentShadowColor);
+							shadowColorChanged = 0;
+						}
+						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
 					}
-					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					else
+					{
+						if (textColorChanged)
+						{
+							trap_R_SetColor(currentTextColor);
+							textColorChanged = 0;
+						}
+						trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					}
 
-					/* Optimize: use precomputed spaceAdd */
 					ax += spaceAdd;
-
-					/* Early exit if outside screen */
 					if (ax >= cgs.glconfig.vidWidth)
-					{
 						break;
-					}
 				}
 				break;
 
@@ -3696,9 +3719,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 					VectorCopy(curr->value.color, shadowCol);
 					shadowCol[3] = shadowFadeValue;
 					if (shadowCol[3] > maxAlpha)
-					{
 						shadowCol[3] = maxAlpha;
-					}
 					Vector4Copy(shadowCol, currentShadowColor);
 					shadowColorChanged = 1;
 					break;
@@ -3707,22 +3728,34 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 					fade = curr->value.fade;
 					shadowCol[3] = fade;
 					if (shadowCol[3] > maxAlpha)
-					{
 						shadowCol[3] = maxAlpha;
-					}
 					Vector4Copy(shadowCol, currentShadowColor);
 					shadowColorChanged = 1;
+					if (pass == 1)
+					{
+						color[3] = fade;
+						if (color[3] > maxAlpha)
+							color[3] = maxAlpha;
+						Vector4Copy(color, currentTextColor);
+						textColorChanged = 1;
+					}
 					break;
 
 				case OSP_TEXT_CMD_TEXT_COLOR:
-					/* TEXT_COLOR can affect shadow alpha through fade */
-					if (fade != 1.0f)
+					if (pass == 1)
+					{
+						VectorCopy(curr->value.color, color);
+						color[3] = fade;
+						if (color[3] > maxAlpha)
+							color[3] = maxAlpha;
+						Vector4Copy(color, currentTextColor);
+						textColorChanged = 1;
+					}
+					else if (fade != 1.0f)
 					{
 						shadowCol[3] = fade;
 						if (shadowCol[3] > maxAlpha)
-						{
 							shadowCol[3] = maxAlpha;
-						}
 						Vector4Copy(shadowCol, currentShadowColor);
 						shadowColorChanged = 1;
 					}
@@ -3731,90 +3764,6 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 				case OSP_TEXT_CMD_STOP:
 					break;
 			}
-		}
-
-		/* Restore position for text pass */
-		ax = xx;
-	}
-
-	/* Second pass: draw all text */
-	textColorChanged = 1;
-	Vector4Copy(color, currentTextColor);
-	fade = 1.0f;
-
-	for (i = 0; i < OSP_TEXT_CMD_MAX && text_commands[i].type != OSP_TEXT_CMD_STOP; i++)
-	{
-		curr = &text_commands[i];
-
-		switch (curr->type)
-		{
-			case OSP_TEXT_CMD_CHAR:
-			{
-				int index;
-				float spaceAdd;
-
-				index = curr->value.character;
-				if (index < 0)
-					index += 256;
-				fm = &metrics[(unsigned char)index];
-
-				/* Optimize: reduce branching - precompute common values */
-				if (proportional)
-				{
-					tc = fm->tc_prop;
-					aw1 = fm->width * aw;
-					spaceAdd = (fm->space1 + fm->space2) * aw;
-				}
-				else
-				{
-					tc = fm->tc_mono;
-					aw1 = aw;
-					spaceAdd = aw;
-				}
-
-				if (textColorChanged)
-				{
-					trap_R_SetColor(currentTextColor);
-					textColorChanged = 0;
-				}
-				trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
-
-				/* Optimize: use precomputed spaceAdd */
-				ax += spaceAdd;
-
-				/* Early exit if outside screen */
-				if (ax >= cgs.glconfig.vidWidth)
-				{
-					break;
-				}
-			}
-			break;
-
-			case OSP_TEXT_CMD_TEXT_COLOR:
-				VectorCopy(curr->value.color, color);
-				color[3] = fade;
-				if (color[3] > maxAlpha)
-				{
-					color[3] = maxAlpha;
-				}
-				Vector4Copy(color, currentTextColor);
-				textColorChanged = 1;
-				break;
-
-			case OSP_TEXT_CMD_FADE:
-				fade = curr->value.fade;
-				color[3] = fade;
-				if (color[3] > maxAlpha)
-				{
-					color[3] = maxAlpha;
-				}
-				Vector4Copy(color, currentTextColor);
-				textColorChanged = 1;
-				break;
-
-			case OSP_TEXT_CMD_SHADOW_COLOR:
-			case OSP_TEXT_CMD_STOP:
-				break;
 		}
 	}
 

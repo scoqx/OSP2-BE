@@ -522,7 +522,7 @@ void CG_DrawTeamTaskBorderHudMarkers(void)
 		return;
 	if (cgs.gametype < GT_TEAM)
 		return;
-	if (CG_IsLocalClientSpectator())
+	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
 		return;
 	tm = &cgs.teamMarkers;
 	if (tm->numTeamTaskMarks == 0)
@@ -1044,7 +1044,7 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 				if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
 				{
 					/* Check if this is a frozen entity */
-					if (CG_IsFrozenEntity(cent))
+					if (CG_IS_FROZEN_ENTITY(cent))
 					{
 						int frozenClientNum;
 						frozenClientNum = cent->currentState.otherEntityNum;
@@ -1070,60 +1070,31 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 	}
 	else
 	{
-		/* For other players, try to find player entity and update position */
+		/* For other players: one pass - find player entity or frozen entity (QVM: one loop instead of two) */
 		for (j = 0; j < MAX_GENTITIES; j++)
 		{
 			cent = &cg_entities[j];
-			if (cent->currentState.eType == ET_PLAYER &&
-			        cent->currentState.clientNum == mark->clientNum &&
-			        cent->currentValid)
+			if (cent->currentState.eType != ET_PLAYER || !cent->currentValid)
 			{
-				/* Update position above player's head */
+				continue;
+			}
+			if (cent->currentState.clientNum == mark->clientNum)
+			{
+				/* Live player - use position above head */
 				VectorCopy(cent->lerpOrigin, mark->origin);
-				mark->origin[2] += 48.0f; /* Offset above head */
+				mark->origin[2] += 48.0f;
 				playerFound = qtrue;
 				break;
 			}
-		}
-
-		/* If player not found, check freeze mode */
-		if (!playerFound)
-		{
-			/* Try to find frozen entity in freeze mode */
-			if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+			if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze &&
+			        j >= MAX_CLIENTS && CG_IS_FROZEN_ENTITY(cent) &&
+			        cent->currentState.otherEntityNum == mark->clientNum)
 			{
-				/* Search for frozen entity in range MAX_CLIENTS..MAX_GENTITIES */
-				for (j = MAX_CLIENTS; j < MAX_GENTITIES; j++)
-				{
-					cent = &cg_entities[j];
-					if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
-					{
-						/* Check if this is a frozen entity */
-						if (CG_IsFrozenEntity(cent))
-						{
-							int frozenClientNum;
-							frozenClientNum = cent->currentState.otherEntityNum;
-							if (frozenClientNum == mark->clientNum)
-							{
-								/* Found frozen entity for this client - use its position above head */
-								VectorCopy(cent->lerpOrigin, mark->origin);
-								mark->origin[2] += 48.0f; /* Offset above head */
-								frozenFound = qtrue;
-								break;
-							}
-						}
-					}
-				}
-
-				/* If frozen entity not found, keep original death position */
-				if (!frozenFound)
-				{
-					/* Frozen entity not available, keep the death position that was set when mark was created */
-				}
-			}
-			else
-			{
-				/* Not freeze mode, keep the death position that was set when mark was created */
+				/* Frozen entity for this client */
+				VectorCopy(cent->lerpOrigin, mark->origin);
+				mark->origin[2] += 48.0f;
+				frozenFound = qtrue;
+				break;
 			}
 		}
 	}
@@ -1658,7 +1629,7 @@ void CG_DrawTeamTaskMarks(void)
 
 	if (cgs.gametype < GT_TEAM)
 		return;
-	if (CG_IsLocalClientSpectator())
+	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
 		return;
 	tm = &cgs.teamMarkers;
 	if (tm->numTeamTaskMarks == 0)
@@ -1689,7 +1660,7 @@ void CG_DrawTeamTaskMarks(void)
 	/* Draw own HERE_DEAD, WARN_DEAD, and PICKUP marks as overhead in first person (in addition to world rendering) */
 	/* Only show overhead if we're observing ourselves (not following another player) */
 	/* Don't show overhead in free float mode (already shown in HUD marker) */
-	if (!cg.renderingThirdPerson && CG_IsLocalClientOnScreen() && !CG_IsClientFreeFloat())
+	if (!cg.renderingThirdPerson && CG_IS_LOCAL_CLIENT_ON_SCREEN() && !CG_IsClientFreeFloat())
 	{
 		for (i = 0; i < tm->numTeamTaskMarks; i++)
 		{

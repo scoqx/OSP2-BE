@@ -41,7 +41,7 @@ qboolean CG_HasActiveFrozenAllyMark(centity_t* frozenCent)
 	int frozenClientNum;
 	clientInfo_t* frozenCi;
 
-	if (!frozenCent || !CG_IsFrozenEntity(frozenCent))
+	if (!frozenCent || !CG_IS_FROZEN_ENTITY(frozenCent))
 	{
 		return qfalse;
 	}
@@ -53,7 +53,7 @@ qboolean CG_HasActiveFrozenAllyMark(centity_t* frozenCent)
 	}
 
 	frozenCi = &cgs.clientinfo[frozenClientNum];
-	if (!frozenCi->infoValid || CG_IsEnemy(frozenCi))
+	if (!frozenCi->infoValid || CG_IS_ENEMY_SIMPLE(frozenCi))
 	{
 		/* Not an ally */
 		return qfalse;

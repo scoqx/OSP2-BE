@@ -1123,11 +1123,11 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	{
 		return;
 	}
-	if (!CG_IsLocalClientOnScreen())
+	if (!CG_IS_LOCAL_CLIENT_ON_SCREEN())
 	{
 		return;
 	}
-	if (CG_IsDead())
+	if (CG_IS_DEAD())
 	{
 		return;
 	}
@@ -1204,11 +1204,11 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	{
 		return;
 	}
-	if (!CG_IsLocalClientOnScreen())
+	if (!CG_IS_LOCAL_CLIENT_ON_SCREEN())
 	{
 		return;
 	}
-	if (CG_IsDead())
+	if (CG_IS_DEAD())
 	{
 		return;
 	}
@@ -1282,12 +1282,12 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 	}
 	if (!ignoreDead)
 	{
-		if (!CG_IsLocalClientOnScreen())
+		if (!CG_IS_LOCAL_CLIENT_ON_SCREEN())
 		{
 			return;
 		}
 	}
-	if (!ignoreDead && CG_IsDead())
+	if (!ignoreDead && CG_IS_DEAD())
 	{
 		return;
 	}
@@ -1376,7 +1376,7 @@ void CG_TeamTaskMarkHere(void)
 		if (cent->currentState.eType == ET_PLAYER &&
 		        cent->currentState.clientNum == cg.clientNum &&
 		        cent->currentValid &&
-		        CG_IsFrozenEntity(cent))
+		        CG_IS_FROZEN_ENTITY(cent))
 		{
 			/* Found our frozen entity - copy coordinates */
 			VectorCopy(cent->lerpOrigin, backupPosition);
@@ -1386,7 +1386,7 @@ void CG_TeamTaskMarkHere(void)
 		}
 	}
 
-	if (CG_IsDead() || !CG_IsLocalClientOnScreen())
+	if (CG_IS_DEAD() || !CG_IS_LOCAL_CLIENT_ON_SCREEN())
 	{
 		if (cgs.teamMarkers.deathPositionValid)
 		{
@@ -1406,7 +1406,7 @@ void CG_TeamTaskMarkHere(void)
 
 
 	/* Check if we're currently alive */
-	if (!CG_IsDead() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
+	if (!CG_IS_DEAD() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
 	{
 		/* Check if player has flag in CTF mode */
 		if (cgs.gametype == GT_CTF &&
@@ -1459,7 +1459,7 @@ void CG_TeamTaskMarkWarn(void)
 		if (cent->currentState.eType == ET_PLAYER &&
 		        cent->currentState.clientNum == cg.clientNum &&
 		        cent->currentValid &&
-		        CG_IsFrozenEntity(cent))
+		        CG_IS_FROZEN_ENTITY(cent))
 		{
 			/* Found our frozen entity - copy coordinates */
 			VectorCopy(cent->lerpOrigin, backupPosition);
@@ -1469,7 +1469,7 @@ void CG_TeamTaskMarkWarn(void)
 		}
 	}
 
-	if (CG_IsDead() || !CG_IsLocalClientOnScreen())
+	if (CG_IS_DEAD() || !CG_IS_LOCAL_CLIENT_ON_SCREEN())
 	{
 		/* Check cooldown for tWarn DEAD command (2 seconds) */
 		if (!TokenBucket_Consume(&cgs.teamMarkers.sendCommandBucketWarn, cg.time))
@@ -1495,7 +1495,7 @@ void CG_TeamTaskMarkWarn(void)
 	}
 
 	/* Check if we're currently alive */
-	if (!CG_IsDead() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
+	if (!CG_IS_DEAD() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
 	{
 		/* Player is alive - send WARN_ALIVE using view direction (like tAttack) */
 		CG_SendTeamTaskMark(0, TEAMTASK_WARN_ALIVE);
@@ -1538,7 +1538,7 @@ void CG_TeamTaskMarkPickup(void)
 	}
 
 	/* Check if we're observing ourselves (not spectating another player) */
-	if (!CG_IsLocalClientOnScreen())
+	if (!CG_IS_LOCAL_CLIENT_ON_SCREEN())
 	{
 		return;
 	}
@@ -1589,11 +1589,11 @@ void CG_TeamTaskMarkSend(void)
 	{
 		return;
 	}
-	if (!CG_IsLocalClientOnScreen())
+	if (!CG_IS_LOCAL_CLIENT_ON_SCREEN())
 	{
 		return;
 	}
-	if (CG_IsDead())
+	if (CG_IS_DEAD())
 	{
 		return;
 	}
@@ -2315,7 +2315,6 @@ static consoleCommand_t commands[] =
 	{ "decalrotclock", CG_OSPDecalRotClock_f },
 	{ "decalrotcounter", CG_OSPDecalRotCounter_f },
 	{ "reloadHUD", CG_ReloadHud_f },
-	// { "reloadCHUD", CG_ReloadCHUD_f },
 	{ "playersid", CG_PrintPlayerIDs_f },
 	{ "mute", CG_Mute_f },
 	{ "unmute", CG_UnMute_f },

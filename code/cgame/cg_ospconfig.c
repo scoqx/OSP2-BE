@@ -7,11 +7,6 @@
 extern qboolean localClient;
 
 
-qboolean CG_OSPIsGameTypeCA(int gametype)
-{
-	return gametype >= GT_CA ? qtrue : qfalse;
-}
-
 qboolean CG_OSPIsGameTypeFreeze()
 {
 	return (cgs.gametype == GT_TEAM || cgs.gametype == GT_CTF) && cgs.osp.gameTypeFreeze;

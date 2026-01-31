@@ -642,7 +642,7 @@ static void CG_TrackPickupItemForTeamTask(int itemNum)
 	}
 
 	// Only track if we're observing ourselves (not spectating another player)
-	if (!CG_IsLocalClientOnScreen())
+	if (!CG_IS_LOCAL_CLIENT_ON_SCREEN())
 	{
 		return;
 	}

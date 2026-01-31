@@ -99,15 +99,13 @@ static void SuperHUDConfig_LoadFiles( void ) {
 static void SuperHUDConfig_ApplyConfig( void ) {
 	int selected;
 	char configName[MAX_QPATH];
-	char command[256];
 
 	selected = s_superhudconfig.list.curvalue;
 	if ( selected >= 0 && selected < s_superhudconfig.numfiles ) {
 		Q_strncpyz( configName, s_superhudconfig.filenames[selected], sizeof( configName ) );
 		trap_Cvar_Set( "ch_file", configName );
 		trap_Cvar_Set( "cg_shud", "1" );
-		Com_sprintf( command, sizeof( command ), "reloadhud\n" );
-		trap_Cmd_ExecuteText( EXEC_APPEND, command );
+		/* ch_file and cg_shud change callbacks already trigger config load - no need for reloadhud */
 		/* Don't close menu after applying config */
 	}
 }
@@ -119,13 +117,10 @@ static void SuperHUDConfig_DblClick( void *ptr ) {
 static void SuperHUDConfig_DrawList( void *self );
 
 static void SuperHUDConfig_RestoreConfig( void ) {
-	char command[256];
-	
 	if ( s_superhudconfig.currentConfig[0] ) {
 		trap_Cvar_Set( "ch_file", s_superhudconfig.currentConfig );
 		trap_Cvar_Set( "cg_shud", "1" );
-		Com_sprintf( command, sizeof( command ), "reloadhud\n" );
-		trap_Cmd_ExecuteText( EXEC_APPEND, command );
+		/* ch_file and cg_shud change callbacks already trigger config load - no need for reloadhud */
 	}
 }
 

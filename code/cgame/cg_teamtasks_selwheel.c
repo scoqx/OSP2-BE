@@ -531,9 +531,9 @@ void CG_DrawSelwheelIcons(void)
 	}
 
 	/* Check if player is not alive (dead, spectator, or free float) */
-	isNotAlive = CG_IsDead() || CG_IsLocalClientSpectator() || CG_IsClientFreeFloat();
+	isNotAlive = CG_IS_DEAD() || CG_IS_LOCAL_CLIENT_SPECTATOR() || CG_IsClientFreeFloat();
 	/* When observing another player (local client not on screen), same icons unavailable as when dead */
-	isObservingOther = !CG_IsLocalClientOnScreen();
+	isObservingOther = !CG_IS_LOCAL_CLIENT_ON_SCREEN();
 
 	// Get scale value
 	scale = cg_teamTaskWheelScale.value;
@@ -1427,7 +1427,7 @@ void CG_SelwheelMarkStart(void)
 	//  return;
 	// }
 	/* Check if local player is spectator */
-	if (CG_IsLocalClientSpectator())
+	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
 	{
 		return;
 	}

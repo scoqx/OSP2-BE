@@ -1179,6 +1179,34 @@ void CG_RegisterCvars(void)
 
 /*
 =================
+CG_UpdateOutlineIndicatorCvarSnapshots
+
+Fill cgs.outlineCvars and cgs.indicatorCvars from vmCvar_t.
+Called from CG_UpdateCvars (every 12 frames) and CG_InitCvars (once at init).
+Hot path (CG_AddOutline, CG_DrawPlayerIndicator) only reads from cgs, never vmCvar_t.
+=================
+*/
+static void CG_UpdateOutlineIndicatorCvarSnapshots(void)
+{
+	cgs.outlineCvars.drawOutline = cg_drawOutline.integer;
+	cgs.outlineCvars.enemySize = cg_enemyOutlineSize.integer;
+	cgs.outlineCvars.teamSize = cg_teamOutlineSize.integer;
+	cgs.outlineCvars.spectPOV = cg_spectPOV.integer;
+	cgs.outlineCvars.enemyColorUnique = cg_enemyOutlineColorUnique.integer;
+
+	cgs.indicatorCvars.fadeStrength = cg_teamIndicatorFade.value;
+	cgs.indicatorCvars.fadeRadius = cg_teamIndicatorFadeRadius.value;
+	cgs.indicatorCvars.fadeRadiusSq = cgs.indicatorCvars.fadeRadius * cgs.indicatorCvars.fadeRadius;
+	cgs.indicatorCvars.bgOpaque = cg_teamIndicatorBgOpaque.value;
+	cgs.indicatorCvars.nameOpaque = cg_teamIndicatorOpaque.value;
+	cgs.indicatorCvars.offset = cg_teamIndicatorOffset.value;
+	cgs.indicatorCvars.adjust = cg_teamIndicatorAdjust.value;
+	cgs.indicatorCvars.teamIndicator = cg_teamIndicator.integer;
+	cgs.indicatorCvars.maxLength = cg_teamIndicatorMaxLength.integer;
+}
+
+/*
+=================
 CG_UpdateCvars
 =================
 */
@@ -1201,6 +1229,7 @@ void CG_UpdateCvars(void)
 		}
 	}
 
+	CG_UpdateOutlineIndicatorCvarSnapshots();
 
 	// check for modications here
 	if (cg.demoPlayback && cg.snap && cg.clientNum != cg.snap->ps.clientNum)
@@ -2450,6 +2479,7 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_brightWeaponsColorPG");
 	CG_CvarTouch("cg_brightWeaponsColorBFG");
 
+	CG_UpdateOutlineIndicatorCvarSnapshots();
 }
 
 /*

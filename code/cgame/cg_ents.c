@@ -378,7 +378,9 @@ static void CG_Item(centity_t* cent)
 	float           frac;
 	float           scale;
 	weaponInfo_t*    wi;
+	qboolean        useFullbrightWeapon;
 
+	useFullbrightWeapon = CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 8);
 	es = &cent->currentState;
 	if (es->modelindex >= bg_numItems)
 	{
@@ -499,31 +501,23 @@ static void CG_Item(centity_t* cent)
 		VectorScale(ent.axis[1], 1.5, ent.axis[1]);
 		VectorScale(ent.axis[2], 1.5, ent.axis[2]);
 		ent.nonNormalizedAxes = qtrue;
-		if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 8))
+		if (useFullbrightWeapon)
 		{
 			ent.customShader = CG_SelectBrightWeaponsShader();
 			CG_SetWeaponBrightColorWorld(&ent, item->giTag);
 		}
 	}
 
-	// set railgun color to client's rail rings color
-	if (item->giType == IT_WEAPON && item->giTag == WP_RAILGUN && ((CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && !(cg_drawBrightWeapons.integer & 8))))
+	// set railgun color on ground: two paths like u5 — (1) fullbright+bit8: color from CG_SetWeaponBrightColorWorld above; (2) else: railRings or white. Use myColors so local view shows our color. One pointer + one block for QVM (fewer branches).
+	if (item->giType == IT_WEAPON && item->giTag == WP_RAILGUN && !useFullbrightWeapon)
 	{
-		if (cg_railCustomChamber.integer == 2)
-		{
-			clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
-			ent.shaderRGBA[0] = 255 * ci->colors.railRings[0];
-			ent.shaderRGBA[1] = 255 * ci->colors.railRings[1];
-			ent.shaderRGBA[2] = 255 * ci->colors.railRings[2];
-			ent.shaderRGBA[3] = 255;
-		}
-		else
-		{
-			ent.shaderRGBA[0] = 255;
-			ent.shaderRGBA[1] = 255;
-			ent.shaderRGBA[2] = 255;
-			ent.shaderRGBA[3] = 255;
-		}
+		const float* color;
+
+		color = (cg_railCustomChamber.integer == 2) ? (const float*)cgs.osp.myColors.railRings : (const float*)colorWhite;
+		ent.shaderRGBA[0] = 255 * color[0];
+		ent.shaderRGBA[1] = 255 * color[1];
+		ent.shaderRGBA[2] = 255 * color[2];
+		ent.shaderRGBA[3] = 255;
 	}
 
 	// add to refresh list
@@ -573,8 +567,14 @@ static void CG_Missile(centity_t* cent)
 	refEntity_t         ent;
 	entityState_t*       s1;
 	const weaponInfo_t*      weapon;
+	qboolean useAltPlasma;
+	qboolean useAltGrenades;
+	qboolean useFullbright;
 //	int  col;
 
+	useAltPlasma = CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN);
+	useAltGrenades = CG_BE_FEATURE_ENABLED(CG_BE_ALT_GRENADES);
+	useFullbright = CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT);
 	s1 = &cent->currentState;
 	if (s1->weapon > WP_NUM_WEAPONS)
 	{
@@ -636,7 +636,7 @@ static void CG_Missile(centity_t* cent)
 		ent.rotation = 0;
 		ent.customShader = cgs.media.plasmaBallShader;
 
-		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN) && cg_altPlasma.integer == 2)
+		if (useAltPlasma && cg_altPlasma.integer == 2)
 		{
 			ent.customShader = cgs.media.plasmaOldBallShader;
 		}
@@ -675,7 +675,7 @@ static void CG_Missile(centity_t* cent)
 
 	if (cent->currentState.weapon == WP_GRENADE_LAUNCHER && cg_altGrenades.integer)
 	{
-		if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_GRENADES) && (cg_altGrenades.integer == 2 || cg_altGrenades.integer == 3))
+		if (useAltGrenades && (cg_altGrenades.integer == 2 || cg_altGrenades.integer == 3))
 		{
 			int owner = s1->otherEntityNum;
 
@@ -683,7 +683,7 @@ static void CG_Missile(centity_t* cent)
 			{
 				const clientInfo_t* ci = &cgs.clientinfo[owner];
 
-				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IsEnemy(ci) || cgs.gametype == GT_TOURNAMENT; // OSP не имеет данных otherEntityNum
+				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IS_ENEMY_SIMPLE(ci) || cgs.gametype == GT_TOURNAMENT; // OSP не имеет данных otherEntityNum
 
 				if (isAlly)
 				{
@@ -691,7 +691,7 @@ static void CG_Missile(centity_t* cent)
 					ent.shaderRGBA[1] = cgs.be.altGrenadesColor[1] * 255;
 					ent.shaderRGBA[2] = cgs.be.altGrenadesColor[2] * 255;
 
-					if (cg_altGrenades.integer == 2 && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && CG_SelectBrightWeaponsShader())
+					if (cg_altGrenades.integer == 2 && useFullbright && (cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && CG_SelectBrightWeaponsShader())
 					{
 						ent.customShader = CG_SelectBrightWeaponsShader();
 					}
@@ -1202,6 +1202,8 @@ void CG_AddPacketEntities(void)
 	int                 num;
 	centity_t*           cent;
 	playerState_t*       ps;
+
+	CG_PlayerFrameStart();
 
 	// set cg.frameInterpolation
 	if (cg.nextSnap)
