@@ -3396,7 +3396,7 @@ static void CG_FriendHudMarker(centity_t* cent)
 	/* One pass: check visibility inline (no batch cache per QVM_LOGIC) */
 	useWallhack = (cg_friendsWallhack.integer & 2) ? 1 : 0;
 	needVis = (!useWallhack) ||
-	    (isFrozen && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer));
+	          (isFrozen && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer));
 	friendVisible = qtrue;
 	if (needVis)
 	{
@@ -4451,8 +4451,8 @@ void CG_Player(centity_t* cent)
 
 		/* Inline CG_IsLocalClientSpectator: no call in hot path */
 		outlineIsSpec = (cgs.gametype >= GT_CA) ?
-		    (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) :
-		    (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
+		                (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) :
+		                (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
 
 		/* Inline CG_IsEnemy(ci): no call in hot path */
 		localCi = &cgs.clientinfo[cg.clientNum];
@@ -4475,8 +4475,8 @@ void CG_Player(centity_t* cent)
 				        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
 				{
 					ourPerspectiveTeam = (cgs.gametype >= GT_CA) ?
-					    cgs.clientinfo[cg.snap->ps.clientNum].rt :
-					    cgs.clientinfo[cg.snap->ps.clientNum].team;
+					                     cgs.clientinfo[cg.snap->ps.clientNum].rt :
+					                     cgs.clientinfo[cg.snap->ps.clientNum].team;
 					targetTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
 					outlineIsEnemy = (ourPerspectiveTeam != targetTeam);
 				}

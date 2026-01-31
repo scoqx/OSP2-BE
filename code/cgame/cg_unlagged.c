@@ -50,20 +50,20 @@ void CG_PredictWeaponEffects(centity_t* cent)
 		trace_t trace;
 		vec3_t endPoint;
 		vec3_t centerPoint;
-		
+
 		// get forward, right, and up vectors (always needed for trace direction)
 		AngleVectors(cg.predictedPlayerState.viewangles, forward, right, up);
-		
+
 		// Calculate center point for accurate trace (always from view center for correct endpoint)
 
 		VectorCopy(cg.predictedPlayerState.origin, centerPoint);
 		centerPoint[2] += cg.predictedPlayerState.viewheight;
 		VectorMA(centerPoint, 14, forward, centerPoint);
-		
+
 		// Trace from center point to get accurate endpoint (where crosshair points)
 		VectorMA(centerPoint, 8192, forward, endPoint);
 		CG_Trace(&trace, centerPoint, vec3_origin, vec3_origin, endPoint, cg.predictedPlayerState.clientNum, CONTENTS_SOLID);
-		
+
 		// If cg_railFix is enabled, use muzzle position from weapon model for trail start
 		if (cg_railFix.integer)
 		{

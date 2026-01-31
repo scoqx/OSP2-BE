@@ -226,7 +226,7 @@ static void CG_PermuteUnpackData(int packed, int scheme, int* toClient, int* tem
 }
 
 int CG_TeamTaskPack(int toClient, int templateID,
-                       int x, int y, int z)
+                    int x, int y, int z)
 {
 	int packed;
 	int cryptoKey;
@@ -268,7 +268,7 @@ int CG_TeamTaskPack(int toClient, int templateID,
 }
 
 void CG_TeamTaskUnpack(int packed, int senderClientID, int* toClient, int* templateID,
-                          int* x, int* y, int* z)
+                       int* x, int* y, int* z)
 {
 	int encrypted;
 	int senderIDPacked;

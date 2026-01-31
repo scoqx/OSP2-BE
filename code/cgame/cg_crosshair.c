@@ -77,7 +77,7 @@ static qhandle_t CG_CrosshairGetShader(void)
 static float CG_GetCrosshairDistanceScale(void)
 {
 	float scale = 1.0f;
-	crosshairData_t *ch = &crosshairData;
+	crosshairData_t* ch = &crosshairData;
 
 	if (ch_crosshairAutoScale.integer)
 	{
@@ -237,7 +237,7 @@ static void CG_CrosshairGetHitColor(const vec4_t base_color, const vec4_t hit_co
 
 static void CG_CrosshairGetColor(vec4_t hcolor)
 {
-	crosshairData_t *ch = &crosshairData;
+	crosshairData_t* ch = &crosshairData;
 
 	if (cg_crosshairHealth.integer != 0)
 	{
@@ -271,7 +271,7 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 
 static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 {
-	crosshairData_t *ch = &crosshairData;
+	crosshairData_t* ch = &crosshairData;
 
 	if (BE_IsDamageInfoAllowed() && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
 	{

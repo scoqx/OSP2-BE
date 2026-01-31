@@ -1095,7 +1095,7 @@ typedef struct
 	qhandle_t teamTasksMegahealthPickup;
 	qhandle_t teamTasksYellowarmorPickup;
 	/*====================
-	team tasks hud markers 
+	team tasks hud markers
 	====================*/
 	qhandle_t teamTasksAttack_marker;
 	qhandle_t teamTasksDefence_marker;
@@ -2488,11 +2488,11 @@ void CG_ProcessPendingClientInfoUpdates(void);
 
 /* Inline macros to avoid per-frame function call overhead (C89 has no inline) */
 #define CG_IsDead() \
-	(cg.snap && (cg.snap->ps.pm_type == PM_DEAD || cg.snap->ps.pm_type == PM_SPINTERMISSION))
+    (cg.snap && (cg.snap->ps.pm_type == PM_DEAD || cg.snap->ps.pm_type == PM_SPINTERMISSION))
 #define CG_IsLocalClientSpectator() \
-	((cgs.gametype == GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
+    ((cgs.gametype == GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 #define CG_IsLocalClientOnScreen() \
-	(cg.snap && cg.snap->ps.clientNum == cg.clientNum)
+    (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
 
 qboolean CG_IsEnemy(const clientInfo_t* target);
 qboolean CG_IsEnemySimple(const clientInfo_t* target);
@@ -2988,7 +2988,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.00x2" // BE (Black Edition)
+#define OSP_VERSION "be-1.00x3" // BE (Black Edition)
 
 
 

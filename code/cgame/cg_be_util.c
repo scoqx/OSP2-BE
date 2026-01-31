@@ -140,8 +140,8 @@ void CG_UpdateBeFeatures(void)
 		}
 		// if (cgs.be.customFreezeSound)
 		// {
-		// 	beFlags |= CG_BE_FREEZE_SOUND_FIX;
-		// 	changed = qtrue;
+		//  beFlags |= CG_BE_FREEZE_SOUND_FIX;
+		//  changed = qtrue;
 		// }
 	}
 
@@ -291,8 +291,8 @@ void CG_PrintDisabledFeatures(qboolean request)
 		}
 		// if (value & CG_BE_FREEZE_SOUND_FIX)
 		// {
-		// 	Q_strcat(buffer, sizeof(buffer), first ? "Freeze sound fix" : ", freeze sound fix");
-		// 	first = qfalse;
+		//  Q_strcat(buffer, sizeof(buffer), first ? "Freeze sound fix" : ", freeze sound fix");
+		//  first = qfalse;
 		// }
 		CG_Printf("%s\n", buffer);
 	}

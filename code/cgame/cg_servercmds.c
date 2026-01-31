@@ -2053,7 +2053,7 @@ void CG_ServerCommand(void)
 				if (chatClientNum >= 0 && chatClientNum < MAX_CLIENTS)
 				{
 					CG_ReplacePlayerNameInChat(text, sizeof(text), chatClientNum);
-					
+
 					/* Save last tell sender for reply command */
 					if (isTellMessage && chatClientNum != cg.clientNum)
 					{

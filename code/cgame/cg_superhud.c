@@ -511,7 +511,7 @@ void CG_SHUDRoutine(void)
 		currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
 
 		// Special check for fragmessage: also consider PM_SPECTATOR state
-		
+
 		if (last->element.name && Q_stricmp(last->element.name, "fragmessage") == 0)
 		{
 			is_spectator_for_element = is_spectator || cg.predictedPlayerState.pm_type == PM_SPECTATOR;

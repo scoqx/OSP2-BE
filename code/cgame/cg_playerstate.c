@@ -31,25 +31,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  * Inline weapon exec: no function call for QVM. Use _w and _c so macro body never
  * contains ps/ops; pass (ps->weapon, ps->clientNum) as (_w,_c) at call site.
  */
- #define CG_EXEC_WEAPON_SWITCH_INLINE(_w, _c) do { \
-	const char* _cmd; \
-	int _mode = cg_exec_weapons.integer; \
-	if (_mode == 0) break; \
-	if (_mode == 2 && (_c) != cg.clientNum) break; \
-	_cmd = NULL; \
-	switch (_w) { \
-		case WP_GAUNTLET: _cmd = cg_exec_gauntlet.string; break; \
-		case WP_MACHINEGUN: _cmd = cg_exec_mg.string; break; \
-		case WP_SHOTGUN: _cmd = cg_exec_sg.string; break; \
-		case WP_GRENADE_LAUNCHER: _cmd = cg_exec_gl.string; break; \
-		case WP_ROCKET_LAUNCHER: _cmd = cg_exec_rl.string; break; \
-		case WP_LIGHTNING: _cmd = cg_exec_lg.string; break; \
-		case WP_RAILGUN: _cmd = cg_exec_rg.string; break; \
-		case WP_PLASMAGUN: _cmd = cg_exec_pg.string; break; \
-		case WP_BFG: _cmd = cg_exec_bfg.string; break; \
-		default: break; \
-	} \
-	if (_cmd && _cmd[0]) trap_SendConsoleCommand(_cmd); \
+#define CG_EXEC_WEAPON_SWITCH_INLINE(_w, _c) do { \
+    const char* _cmd; \
+    int _mode = cg_exec_weapons.integer; \
+    if (_mode == 0) break; \
+    if (_mode == 2 && (_c) != cg.clientNum) break; \
+    _cmd = NULL; \
+    switch (_w) { \
+        case WP_GAUNTLET: _cmd = cg_exec_gauntlet.string; break; \
+        case WP_MACHINEGUN: _cmd = cg_exec_mg.string; break; \
+        case WP_SHOTGUN: _cmd = cg_exec_sg.string; break; \
+        case WP_GRENADE_LAUNCHER: _cmd = cg_exec_gl.string; break; \
+        case WP_ROCKET_LAUNCHER: _cmd = cg_exec_rl.string; break; \
+        case WP_LIGHTNING: _cmd = cg_exec_lg.string; break; \
+        case WP_RAILGUN: _cmd = cg_exec_rg.string; break; \
+        case WP_PLASMAGUN: _cmd = cg_exec_pg.string; break; \
+        case WP_BFG: _cmd = cg_exec_bfg.string; break; \
+        default: break; \
+    } \
+    if (_cmd && _cmd[0]) trap_SendConsoleCommand(_cmd); \
 } while (0)
 
 /*

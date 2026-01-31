@@ -3338,7 +3338,7 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 
 		friendVisible = qtrue;
 		needVis = (!useWallhack) ||
-		    (ci->isFrozenEnt && !isEnemy && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer));
+		          (ci->isFrozenEnt && !isEnemy && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer));
 		if (needVis)
 		{
 			VectorCopy(cg.refdef.vieworg, start);
@@ -3683,8 +3683,8 @@ void CG_DrawBefore2D(void)
 
 	/* Early exit when nothing from this block will be drawn */
 	if (!cg_draw2D.integer &&
-	    (!(cg_teamTaskWheel.integer & 4) || !cgs.teamMarkers.ttwheelMarkActive) &&
-	    !drawTeamTasks && !drawTeamIndicator)
+	        (!(cg_teamTaskWheel.integer & 4) || !cgs.teamMarkers.ttwheelMarkActive) &&
+	        !drawTeamTasks && !drawTeamIndicator)
 		return;
 
 	if (cg_draw2D.integer)

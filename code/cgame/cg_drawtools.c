@@ -1976,8 +1976,8 @@ void CG_UpdateHealthLowFlag(void)
 
 	/* Skip recompute when inputs unchanged */
 	if (s_lastDeadOrFreeFloat == deadOrFreeFloat &&
-	    s_lastHealthColorLevels == healthColorLevels &&
-	    s_lastHealth == health && s_lastArmor == armor && s_lastHealthLow == healthLow)
+	        s_lastHealthColorLevels == healthColorLevels &&
+	        s_lastHealth == health && s_lastArmor == armor && s_lastHealthLow == healthLow)
 	{
 		return;
 	}

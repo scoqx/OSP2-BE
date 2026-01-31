@@ -1214,7 +1214,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			else
 			{
 				vec3_t railStart;
-				
+
 				// If cg_railFix is enabled, use muzzle position from weapon model for first person view
 				if (cg_railFix.integer && es->clientNum == cg.predictedPlayerState.clientNum &&
 				        !cg.renderingThirdPerson && !cg.demoPlayback)
@@ -1231,7 +1231,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 					// Use original position from server (old logic)
 					VectorCopy(es->origin2, railStart);
 				}
-				
+
 				CG_RailTrail(ci, railStart, es->pos.trBase);
 				if (es->eventParm != 255)
 				{
