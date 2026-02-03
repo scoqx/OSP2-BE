@@ -32,7 +32,6 @@ void CG_SHUDElementTargetNameRoutine(void* context)
 	if (cg.renderingThirdPerson != 0) return;
 	if (global_viewlistFirstOption > 1) return;
 
-	CG_ScanForCrosshairEntity();
 	if (cg.crosshairClientTime == 0) return;
 
 	if (!CG_SHUDGetFadeColor(element->ctx.color_origin, element->ctx.color, &element->config, cg.crosshairClientTime))

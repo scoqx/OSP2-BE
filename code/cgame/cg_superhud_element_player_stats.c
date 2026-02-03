@@ -137,7 +137,10 @@ void CG_SHUDElementPlayerStatsRoutine(void* context)
 	        (cg.time - lastUpdateTime >= updateInterval))   // 2 sec interval
 	{
 		lastUpdateTime = cg.time;
-		CG_SendGetStatsInfo();
+		if (!cgs.fpsclassico)
+		{
+			trap_SendClientCommand("getstatsinfo");
+		}
 		lastClientNum = currentClientNum;
 	}
 

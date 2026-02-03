@@ -37,6 +37,42 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 
 #endif
 
+void UI_UpdateMenuBackgroundMode( void ) {
+	trap_Cvar_Update( &ui_menuHQ );
+	if ( uis.menuHQModCount == ui_menuHQ.modificationCount ) {
+		return;
+	}
+
+	uis.menuHQModCount = ui_menuHQ.modificationCount;
+	uis.menuHQMode = ui_menuHQ.integer;
+
+	if ( uis.menuHQMode < 0 || uis.menuHQMode > 2 ) {
+		uis.menuHQMode = 0;
+	}
+
+	if ( uis.menuHQMode == 2 ) {
+		int i;
+		for ( i = 0; i < 24; i++ ) {
+			if ( !uis.menuBackHQ24[i] ) {
+				trap_Print( "  ^3ui_menuHQ ^22^7^3 - menuback1..24 shaders missing, set to ^10\n" );
+				trap_Cvar_Set( "ui_menuHQ", "0" );
+				uis.menuHQMode = 0;
+				trap_Cvar_Update( &ui_menuHQ );
+				uis.menuHQModCount = ui_menuHQ.modificationCount;
+				break;
+			}
+		}
+	} else if ( uis.menuHQMode == 1 ) {
+		if ( !uis.menuBack1 || !uis.menuBack2 || !uis.menuBack3 || !uis.menuBack4 ) {
+			trap_Print( "  ^3ui_menuHQ ^21^3 - menuback_1..4 shaders missing, set to ^10\n" );
+			trap_Cvar_Set( "ui_menuHQ", "0" );
+			uis.menuHQMode = 0;
+			trap_Cvar_Update( &ui_menuHQ );
+			uis.menuHQModCount = ui_menuHQ.modificationCount;
+		}
+	}
+}
+
 /*
 =================
 UI_ClampCvar
@@ -88,7 +124,18 @@ void UI_PushMenu( menuframework_s *menu )
 
 	uis.activemenu = menu;
 
-	// default cursor position
+	if ( trap_Cvar_VariableValue( "ui_forceGamma" ) && ( uis.menusp == 1 ) ) {
+		{
+			float rg = trap_Cvar_VariableValue( "r_gamma" );
+			/* only save to uc_gamma if r_gamma looks like real value, not menu-forced 1 */
+			if ( rg < 0.99f || rg > 1.01f ) {
+				trap_Cvar_SetValue( "uc_gamma", rg );
+			}
+		}
+		trap_Cvar_SetValue( "r_gamma", 1.0f );
+	}
+
+	// /* default cursor position */
 	menu->cursor      = 0;
 	menu->cursor_prev = 0;
 
@@ -139,6 +186,9 @@ void UI_ForceMenuOff (void)
 	uis.menusp     = 0;
 	uis.activemenu = NULL;
 
+	if ( trap_Cvar_VariableValue( "ui_forceGamma" ) ) {
+		trap_Cvar_SetValue( "r_gamma", trap_Cvar_VariableValue( "uc_gamma" ) );
+	}
 	trap_Key_SetCatcher( trap_Key_GetCatcher() & ~KEYCATCH_UI );
 	trap_Key_ClearStates();
 	trap_Cvar_Set( "cl_paused", "0" );
@@ -335,6 +385,8 @@ static void UI_DrawBannerString2( int x, int y, const char* str, vec4_t color )
 	float	fwidth;
 	float	fheight;
 
+	// Com_Printf( "UI_DrawBannerString2: %s\n", str );
+	// Com_Printf( "UI_DrawBannerString2: %f %f %f %f\n", color[0], color[1], color[2], color[3] );
 	// draw the colored text
 	trap_R_SetColor( color );
 	
@@ -356,7 +408,7 @@ static void UI_DrawBannerString2( int x, int y, const char* str, vec4_t color )
 			fheight = (float)PROPB_HEIGHT / 256.0f;
 			aw = (float)propMapB[ch][2] * uis.scale;
 			ah = (float)PROPB_HEIGHT * uis.scale;
-			trap_R_DrawStretchPic( ax, ay, aw, ah, fcol, frow, fcol+fwidth, frow+fheight, uis.charsetPropB );
+			trap_R_DrawStretchPic( ax, ay, aw, ah, fcol, frow, fcol+fwidth, frow+fheight, uis.charsetPropBNew );
 			ax += (aw + (float)PROPB_GAP_WIDTH * uis.scale);
 		}
 		s++;
@@ -399,7 +451,8 @@ void UI_DrawBannerString( int x, int y, const char* str, int style, vec4_t color
 		default:
 			break;
 	}
-
+	// Com_Printf( "UI_DrawBannerString: %s\n", str );
+	// Com_Printf( "UI_DrawBannerString: %f %f %f %f\n", color[0], color[1], color[2], color[3] );
 	if ( style & UI_DROPSHADOW ) {
 		drawcolor[0] = drawcolor[1] = drawcolor[2] = 0;
 		drawcolor[3] = color[3];
@@ -1672,6 +1725,8 @@ UI_Init
 =================
 */
 void UI_Init( void ) {
+	int start = trap_Milliseconds();
+
 	UI_RegisterCvars();
 
 	UI_InitGameinfo();
@@ -1679,11 +1734,30 @@ void UI_Init( void ) {
 	// cache redundant calulations
 	UI_VideoCheck( -99999 );
 
+	uis.themeColorModCount = -1;
+	uis.themeColor2ModCount = -1;
+	uis.selectColorModCount = -1;
+	uis.menuHQMode = 0;
+	uis.menuHQModCount = -1;
+
+	/* Initialize theme colors with safe defaults to prevent garbage values */
+	Vector4Copy( color_red, uis.themeColor );
+	uis.themeColor2[0] = 1.0f;
+	uis.themeColor2[1] = 0.43f;
+	uis.themeColor2[2] = 0.0f;
+	uis.themeColor2[3] = 1.0f;
+	uis.selectColor[0] = 1.0f;
+	uis.selectColor[1] = 1.0f;
+	uis.selectColor[2] = 0.0f;
+	uis.selectColor[3] = 1.0f;
+
 	// initialize the menu system
 	Menu_Cache();
 
 	uis.activemenu = NULL;
 	uis.menusp     = 0;
+
+	trap_Print( va( "UI loaded in %d ms\n", trap_Milliseconds() - start ) );
 }
 
 
@@ -1761,7 +1835,8 @@ void UI_FillRect( float x, float y, float width, float height, const float *colo
 	trap_R_SetColor( color );
 
 	UI_AdjustFrom640( &x, &y, &width, &height );
-	trap_R_DrawStretchPic( x, y, width, height, 0, 0, 0, 0, uis.whiteShader );
+	if ( uis.whiteShader )
+		trap_R_DrawStretchPic( x, y, width, height, 0, 0, 0, 0, uis.whiteShader );
 
 	trap_R_SetColor( NULL );
 }
@@ -1774,6 +1849,9 @@ Coordinates are 640*480 virtual values
 =================
 */
 void UI_DrawRect( float x, float y, float width, float height, const float *color ) {
+	if ( !uis.whiteShader )
+		return;
+
 	trap_R_SetColor( color );
 
 	UI_AdjustFrom640( &x, &y, &width, &height );
@@ -1811,15 +1889,72 @@ void UI_Refresh( int realtime )
 	UI_UpdateCvars();
 
 	UI_VideoCheck( realtime );
-	
+
+	/* Ensure theme colors are always initialized before use */
+	/* Force re-initialization if colors were never set (modCount == -1) */
+	if ( uis.themeColorModCount == -1 || uis.themeColor2ModCount == -1 || uis.selectColorModCount == -1 ) {
+		UI_InitThemeColors();
+	}
+
+	/* Always refresh theme colors when UI has focus (before any menu draw) */
+	UI_GetThemeColor( uis.themeColor );
+	UI_GetThemeColor2( uis.themeColor2 );
+	UI_GetSelectColor( uis.selectColor );
+	Vector4Copy( uis.themeColor2, text_color_normal );
+	Vector4Copy( uis.themeColor2, color_orange );
+	Vector4Copy( uis.themeColor2, listbar_color );
+	listbar_color[3] = 0.30f;
+	Vector4Copy( uis.selectColor, text_color_highlight );
+
 	if ( uis.activemenu )
 	{
 		if (uis.activemenu->fullscreen)
 		{
-			// draw the background
-			trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
-			if ( uis.activemenu->showlogo ) {
-				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
+			/* draw the background */
+			UI_UpdateMenuBackgroundMode();
+
+			if ( uis.menuHQMode == 2 ) {
+				float cw = (float)uis.glconfig.vidWidth / 6.0f;
+				float ch = (float)uis.glconfig.vidHeight / 4.0f;
+				int i;
+				for ( i = 0; i < 24; i++ ) {
+					if ( uis.menuBackHQ24[i] ) {
+						float x = (float)( i % 6 ) * cw;
+						float y = (float)( i / 6 ) * ch;
+						trap_R_DrawStretchPic( x, y, cw, ch, 0, 0, 1, 1, uis.menuBackHQ24[i] );
+					}
+				}
+			} else if ( uis.menuHQMode == 1 ) {
+				float w2 = (float)uis.glconfig.vidWidth * 0.5f;
+				float h2 = (float)uis.glconfig.vidHeight * 0.5f;
+				if ( uis.menuBack1 )
+					trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBack1 );
+				if ( uis.menuBack2 )
+					trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBack2 );
+				if ( uis.menuBack3 )
+					trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBack3 );
+				if ( uis.menuBack4 )
+					trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBack4 );
+			} else {
+				if ( uis.menuBackNoLogoShader )
+					trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
+				if ( uis.activemenu->showlogo && uis.menuBackShader ) {
+					trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
+				}
+			}
+
+			{
+				float d = ui_menuDarken.value;
+				if ( d > 0.0f ) {
+					float darkenColor[4];
+					darkenColor[0] = 0.0f;
+					darkenColor[1] = 0.0f;
+					darkenColor[2] = 0.0f;
+					darkenColor[3] = ( d > 1.0f ) ? 1.0f : d;
+					trap_R_SetColor( darkenColor );
+					trap_R_DrawStretchPic( 0, 0, (float)uis.glconfig.vidWidth, (float)uis.glconfig.vidHeight, 0, 0, 1, 1, uis.whiteShader );
+					trap_R_SetColor( NULL );
+				}
 			}
 		}
 

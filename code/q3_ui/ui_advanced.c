@@ -153,7 +153,7 @@ static void Advanced_MenuInit( void ) {
 	s_advanced.banner.generic.x		= 320;
 	s_advanced.banner.generic.y		= 16;
 	s_advanced.banner.string		= "ADVANCED SETTINGS";
-	s_advanced.banner.color         = color_white;
+	s_advanced.banner.color         = uis.themeColor;
 	s_advanced.banner.style         = UI_CENTER;
 
 	s_advanced.framel.generic.type  = MTYPE_BITMAP;

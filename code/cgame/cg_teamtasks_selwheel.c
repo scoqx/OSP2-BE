@@ -278,9 +278,145 @@ void CG_UpdateSelwheelMark(void)
 
 /*
 =================
+CG_UpdateAndDrawSelwheelMark
+
+Update ttwheel mark position and draw it. Inlined (QVM: one call, no nested calls).
+=================
+*/
+void CG_UpdateAndDrawSelwheelMark(void)
+{
+	int currentCmdNum;
+	usercmd_t currentCmd;
+	float sensitivity;
+	float pitchDelta;
+	float yawDelta;
+	int timeSinceMovement;
+	float centerX;
+	float centerY;
+	float returnSpeed;
+	qboolean haveNewCmd;
+	float maxRadius;
+	float dx;
+	float dy;
+	float distFromCenter;
+	float angle;
+	float scale;
+	float drawX;
+	float drawY;
+	float drawSize;
+	qhandle_t shader;
+	vec4_t color;
+
+	if (!cgs.teamMarkers.ttwheelMarkActive)
+		return;
+
+	/* === Update: position from input === */
+	currentCmdNum = trap_GetCurrentCmdNumber();
+	haveNewCmd = (currentCmdNum != cgs.teamMarkers.lastCmdNum);
+	if (haveNewCmd)
+	{
+		if (!trap_GetUserCmd(currentCmdNum, &currentCmd))
+			return;
+	}
+
+	if (haveNewCmd &&
+	        (currentCmd.angles[PITCH] != cgs.teamMarkers.lastCmdAngles[PITCH] ||
+	         currentCmd.angles[YAW] != cgs.teamMarkers.lastCmdAngles[YAW]))
+	{
+		pitchDelta = (float)(SHORT2ANGLE(currentCmd.angles[PITCH]) - SHORT2ANGLE(cgs.teamMarkers.lastCmdAngles[PITCH]));
+		yawDelta = (float)(SHORT2ANGLE(currentCmd.angles[YAW]) - SHORT2ANGLE(cgs.teamMarkers.lastCmdAngles[YAW]));
+		if (pitchDelta > 180.0f)
+			pitchDelta -= 360.0f;
+		else if (pitchDelta < -180.0f)
+			pitchDelta += 360.0f;
+		if (yawDelta > 180.0f)
+			yawDelta -= 360.0f;
+		else if (yawDelta < -180.0f)
+			yawDelta += 360.0f;
+		if (m_pitch.value < 0.0f)
+			pitchDelta = -pitchDelta;
+		if (cgs.teamMarkers.sensitivityAdjusted)
+			sensitivity = cgs.teamMarkers.adjustedWheelSensitivity;
+		else
+			sensitivity = cg_teamTaskWheelSensitivity.value;
+		cgs.teamMarkers.ttwheelMarkX -= yawDelta * sensitivity;
+		cgs.teamMarkers.ttwheelMarkY += pitchDelta * sensitivity;
+		CG_GetScreenCenter(&centerX, &centerY);
+		scale = cg_teamTaskWheelScale.value;
+		if (scale <= 0.0f)
+			scale = 1.0f;
+		maxRadius = (SELWHEEL_ICON_RADIUS + SELWHEEL_MARK_MAX_RADIUS_OFFSET) * scale;
+		dx = cgs.teamMarkers.ttwheelMarkX - centerX;
+		dy = cgs.teamMarkers.ttwheelMarkY - centerY;
+		distFromCenter = sqrt(dx * dx + dy * dy);
+		if (distFromCenter > maxRadius)
+		{
+			angle = atan2(dy, dx);
+			cgs.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
+			cgs.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
+		}
+		cgs.teamMarkers.lastCmdAngles[PITCH] = currentCmd.angles[PITCH];
+		cgs.teamMarkers.lastCmdAngles[YAW] = currentCmd.angles[YAW];
+		cgs.teamMarkers.lastCmdAngles[ROLL] = currentCmd.angles[ROLL];
+		cgs.teamMarkers.lastMovementTime = cg.time;
+		cgs.teamMarkers.lastCmdNum = currentCmdNum;
+	}
+	else
+	{
+		timeSinceMovement = cg.time - cgs.teamMarkers.lastMovementTime;
+		if (timeSinceMovement > 500)
+		{
+			CG_GetScreenCenter(&centerX, &centerY);
+			scale = cg_teamTaskWheelScale.value;
+			if (scale <= 0.0f)
+				scale = 1.0f;
+			maxRadius = (SELWHEEL_ICON_RADIUS + SELWHEEL_RETURN_MAX_RADIUS_OFFSET) * scale;
+			returnSpeed = 0.15f;
+			cgs.teamMarkers.ttwheelMarkX += (centerX - cgs.teamMarkers.ttwheelMarkX) * returnSpeed;
+			cgs.teamMarkers.ttwheelMarkY += (centerY - cgs.teamMarkers.ttwheelMarkY) * returnSpeed;
+			dx = cgs.teamMarkers.ttwheelMarkX - centerX;
+			dy = cgs.teamMarkers.ttwheelMarkY - centerY;
+			distFromCenter = sqrt(dx * dx + dy * dy);
+			if (distFromCenter > maxRadius)
+			{
+				angle = atan2(dy, dx);
+				cgs.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
+				cgs.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
+			}
+			if (fabs(cgs.teamMarkers.ttwheelMarkX - centerX) < 1.0f && fabs(cgs.teamMarkers.ttwheelMarkY - centerY) < 1.0f)
+			{
+				cgs.teamMarkers.ttwheelMarkX = centerX;
+				cgs.teamMarkers.ttwheelMarkY = centerY;
+			}
+		}
+		cgs.teamMarkers.lastCmdNum = currentCmdNum;
+	}
+
+	/* === Draw: mark on screen === */
+	shader = cgs.media.whiteShader;
+	if (!shader)
+		return;
+	scale = cg_teamTaskWheelScale.value;
+	if (scale <= 0.0f)
+		scale = 1.0f;
+	Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, color);
+	CG_ColorWhitenSmart(color, NULL, -0.4f);
+	color[3] = 0.8f;
+	drawX = cgs.teamMarkers.ttwheelMarkX;
+	drawY = cgs.teamMarkers.ttwheelMarkY;
+	drawSize = 1.0f;
+	CG_AdjustFrom640_Old(&drawX, &drawY, &drawSize, &drawSize, qfalse);
+	drawSize = 4.0f * scale;
+	trap_R_SetColor(color);
+	trap_R_DrawStretchPic(drawX - drawSize * 0.5f, drawY - drawSize * 0.5f, drawSize, drawSize, 0, 0, 1, 1, shader);
+	trap_R_SetColor(NULL);
+}
+
+/*
+=================
 CG_DrawSelwheelMark
 
-Draw the ttwheel mark on screen
+Draw the ttwheel mark on screen (kept for other callers if any).
 =================
 */
 void CG_DrawSelwheelMark(void)
@@ -293,50 +429,23 @@ void CG_DrawSelwheelMark(void)
 	float scale;
 
 	if (!cgs.teamMarkers.ttwheelMarkActive)
-	{
 		return;
-	}
-
-	// Get scale value
 	scale = cg_teamTaskWheelScale.value;
 	if (scale <= 0.0f)
-	{
 		scale = 1.0f;
-	}
-
-	// Use white shader for the mark
 	shader = cgs.media.whiteShader;
 	if (!shader)
-	{
 		return;
-	}
 	size = 1.0f;
-
-	// Mark color (theme color with darkening -0.4)
 	Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, color);
 	CG_ColorWhitenSmart(color, NULL, -0.4f);
 	color[3] = 0.8f;
-
 	x = cgs.teamMarkers.ttwheelMarkX;
 	y = cgs.teamMarkers.ttwheelMarkY;
-
-	// Adjust coordinates from 640x480 to actual screen size
 	CG_AdjustFrom640_Old(&x, &y, &size, &size, qfalse);
-
 	size = 4.0f * scale;
-	// Draw the mark as a small square
 	trap_R_SetColor(color);
-	trap_R_DrawStretchPic(
-	    x - size * 0.5f,
-	    y - size * 0.5f,
-	    size,
-	    size,
-	    0,
-	    0,
-	    1,
-	    1,
-	    shader);
-
+	trap_R_DrawStretchPic(x - size * 0.5f, y - size * 0.5f, size, size, 0, 0, 1, 1, shader);
 	trap_R_SetColor(NULL);
 }
 
@@ -584,7 +693,6 @@ void CG_DrawSelwheelIcons(void)
 
 			/* Apply whitening to cooldown color with medium strength */
 			CG_ColorWhitenSmart(cooldownColor, NULL, 0.5f);
-			CG_FontSelect(font);
 			/* Draw cooldown text */
 			CG_OSPDrawStringNew(
 			    cooldownTextX, cooldownTextY,
@@ -594,6 +702,7 @@ void CG_DrawSelwheelIcons(void)
 			    charWidth, charHeight,
 			    SCREEN_WIDTH, /* max width for centering */
 			    DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW,
+			    font,
 			    NULL, NULL, NULL
 			);
 		}

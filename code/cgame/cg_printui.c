@@ -27,6 +27,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 /*
 =================
+CG_PrintUIRemoveFromActiveList
+
+Remove slot idx from active list (swap with last, decrement count).
+Called on deactivate so draw loop iterates only over active indices.
+=================
+*/
+void CG_PrintUIRemoveFromActiveList(int idx)
+{
+	int j;
+	int last;
+
+	for (j = 0; j < cgs.printuiActiveCount; j++)
+	{
+		if (cgs.printuiActiveIndices[j] == idx)
+		{
+			last = cgs.printuiActiveCount - 1;
+			if (j != last)
+			{
+				cgs.printuiActiveIndices[j] = cgs.printuiActiveIndices[last];
+			}
+			cgs.printuiActiveCount--;
+			return;
+		}
+	}
+}
+
+/*
+=================
 CG_IsValidNumber
 
 Check if string is a valid integer number
@@ -649,12 +677,13 @@ void CG_PrintUI_f(void)
 
 			for (i = 0; i < 32; i++)
 			{
-				if (cgs.osp.printui[i].active)
+				if (cgs.printui[i].active)
 				{
 					currentNum++;
 					if (currentNum == clearNum)
 					{
-						cgs.osp.printui[i].active = qfalse;
+						CG_PrintUIRemoveFromActiveList(i);
+						cgs.printui[i].active = qfalse;
 						CG_Printf("^2Printui: Cleared element %d\n", clearNum);
 						return;
 					}
@@ -669,9 +698,10 @@ void CG_PrintUI_f(void)
 			int cleared = 0;
 			for (i = 0; i < 32; i++)
 			{
-				if (cgs.osp.printui[i].active)
+				if (cgs.printui[i].active)
 				{
-					cgs.osp.printui[i].active = qfalse;
+					CG_PrintUIRemoveFromActiveList(i);
+					cgs.printui[i].active = qfalse;
 					cleared++;
 				}
 			}
@@ -688,15 +718,15 @@ void CG_PrintUI_f(void)
 
 		for (i = 0; i < 32; i++)
 		{
-			if (cgs.osp.printui[i].active)
+			if (cgs.printui[i].active)
 			{
 				currentNum++;
 				activeCount++;
 				CG_Printf("^3%d.^7 \"%s\"^7 at (%.0f, %.0f)\n",
 				          currentNum,
-				          cgs.osp.printui[i].text,
-				          cgs.osp.printui[i].x,
-				          cgs.osp.printui[i].y);
+				          cgs.printui[i].text,
+				          cgs.printui[i].x,
+				          cgs.printui[i].y);
 			}
 		}
 
@@ -1058,7 +1088,7 @@ void CG_PrintUI_f(void)
 	// Find free slot
 	for (i = 0; i < 32; i++)
 	{
-		if (!cgs.osp.printui[i].active)
+		if (!cgs.printui[i].active)
 		{
 			printuiIndex = i;
 			break;
@@ -1319,18 +1349,19 @@ void CG_PrintUI_f(void)
 
 		for (j = 0; j < 32; j++)
 		{
-			if (cgs.osp.printui[j].active)
+			if (cgs.printui[j].active)
 			{
 				// Check if position matches (with small epsilon for float comparison)
-				if (fabs(cgs.osp.printui[j].x - x) < 0.1f &&
-				        fabs(cgs.osp.printui[j].y - y) < 0.1f)
+				if (fabs(cgs.printui[j].x - x) < 0.1f &&
+				        fabs(cgs.printui[j].y - y) < 0.1f)
 				{
 					// Check if horizontal alignment matches
-					existingHAlign = cgs.osp.printui[j].flags & (DS_HLEFT | DS_HRIGHT | DS_HCENTER);
+					existingHAlign = cgs.printui[j].flags & (DS_HLEFT | DS_HRIGHT | DS_HCENTER);
 					if (existingHAlign == currentHAlign)
 					{
 						// Deactivate the existing element
-						cgs.osp.printui[j].active = qfalse;
+						CG_PrintUIRemoveFromActiveList(j);
+						cgs.printui[j].active = qfalse;
 					}
 				}
 			}
@@ -1338,38 +1369,39 @@ void CG_PrintUI_f(void)
 	}
 
 	// Store printui element
-	Q_strncpyz(cgs.osp.printui[printuiIndex].text, text, sizeof(cgs.osp.printui[printuiIndex].text));
-	cgs.osp.printui[printuiIndex].x = x;
-	cgs.osp.printui[printuiIndex].y = y;
-	Vector4Copy(textColor, cgs.osp.printui[printuiIndex].color);
-	Vector4Copy(shadowColor, cgs.osp.printui[printuiIndex].shadowColor);
-	cgs.osp.printui[printuiIndex].charWidth = charWidth;
-	cgs.osp.printui[printuiIndex].charHeight = charHeight;
-	cgs.osp.printui[printuiIndex].flags = flags;
-	cgs.osp.printui[printuiIndex].fontIndex = fontIndex;
-	cgs.osp.printui[printuiIndex].startTime = cg.time;
-	cgs.osp.printui[printuiIndex].duration = duration;
-	cgs.osp.printui[printuiIndex].fadeTime = fadeTime;
-	cgs.osp.printui[printuiIndex].active = qtrue;
+	Q_strncpyz(cgs.printui[printuiIndex].text, text, sizeof(cgs.printui[printuiIndex].text));
+	cgs.printui[printuiIndex].x = x;
+	cgs.printui[printuiIndex].y = y;
+	Vector4Copy(textColor, cgs.printui[printuiIndex].color);
+	Vector4Copy(shadowColor, cgs.printui[printuiIndex].shadowColor);
+	cgs.printui[printuiIndex].charWidth = charWidth;
+	cgs.printui[printuiIndex].charHeight = charHeight;
+	cgs.printui[printuiIndex].flags = flags;
+	cgs.printui[printuiIndex].fontIndex = fontIndex;
+	cgs.printui[printuiIndex].startTime = cg.time;
+	cgs.printui[printuiIndex].duration = duration;
+	cgs.printui[printuiIndex].fadeTime = fadeTime;
+	cgs.printui[printuiIndex].active = qtrue;
+	cgs.printuiActiveIndices[cgs.printuiActiveCount++] = printuiIndex;
 
 	if (hasBackground)
 	{
-		Vector4Copy(background, cgs.osp.printui[printuiIndex].background);
+		Vector4Copy(background, cgs.printui[printuiIndex].background);
 	}
 	else
 	{
-		Vector4Clear(cgs.osp.printui[printuiIndex].background);
+		Vector4Clear(cgs.printui[printuiIndex].background);
 	}
 
 	if (hasBorder)
 	{
-		Vector4Copy(border, cgs.osp.printui[printuiIndex].border);
-		Vector4Copy(borderColor, cgs.osp.printui[printuiIndex].borderColor);
+		Vector4Copy(border, cgs.printui[printuiIndex].border);
+		Vector4Copy(borderColor, cgs.printui[printuiIndex].borderColor);
 	}
 	else
 	{
-		Vector4Clear(cgs.osp.printui[printuiIndex].border);
-		Vector4Copy(borderColor, cgs.osp.printui[printuiIndex].borderColor);
+		Vector4Clear(cgs.printui[printuiIndex].border);
+		Vector4Copy(borderColor, cgs.printui[printuiIndex].borderColor);
 	}
 }
 
@@ -1398,12 +1430,12 @@ void CG_DrawPrintUI(void)
 
 	for (i = 0; i < 32; i++)
 	{
-		if (!cgs.osp.printui[i].active)
+		if (!cgs.printui[i].active)
 		{
 			continue;
 		}
 
-		elapsed = cg.time - cgs.osp.printui[i].startTime;
+		elapsed = cg.time - cgs.printui[i].startTime;
 
 		if (elapsed < 0)
 		{
@@ -1412,26 +1444,27 @@ void CG_DrawPrintUI(void)
 		}
 
 		// Check if expired (skip check if duration is -1 which means unlimited)
-		if (cgs.osp.printui[i].duration >= 0 && elapsed >= cgs.osp.printui[i].duration)
+		if (cgs.printui[i].duration >= 0 && elapsed >= cgs.printui[i].duration)
 		{
-			cgs.osp.printui[i].active = qfalse;
+			CG_PrintUIRemoveFromActiveList(i);
+			cgs.printui[i].active = qfalse;
 			continue;
 		}
 
 		// Calculate fade
-		if (cgs.osp.printui[i].fadeTime <= 0)
+		if (cgs.printui[i].fadeTime <= 0)
 		{
 			fade = 1.0f;
 		}
-		else if (elapsed < cgs.osp.printui[i].fadeTime)
+		else if (elapsed < cgs.printui[i].fadeTime)
 		{
 			// Fade in
-			fade = (float)elapsed / (float)cgs.osp.printui[i].fadeTime;
+			fade = (float)elapsed / (float)cgs.printui[i].fadeTime;
 		}
-		else if (cgs.osp.printui[i].duration >= 0 && elapsed > cgs.osp.printui[i].duration - cgs.osp.printui[i].fadeTime)
+		else if (cgs.printui[i].duration >= 0 && elapsed > cgs.printui[i].duration - cgs.printui[i].fadeTime)
 		{
 			// Fade out (only if not unlimited)
-			fade = (float)(cgs.osp.printui[i].duration - elapsed) / (float)cgs.osp.printui[i].fadeTime;
+			fade = (float)(cgs.printui[i].duration - elapsed) / (float)cgs.printui[i].fadeTime;
 		}
 		else
 		{
@@ -1439,54 +1472,44 @@ void CG_DrawPrintUI(void)
 		}
 
 		// Apply fade to colors
-		Vector4Copy(cgs.osp.printui[i].color, finalColor);
+		Vector4Copy(cgs.printui[i].color, finalColor);
 		finalColor[3] *= fade;
 
-		Vector4Copy(cgs.osp.printui[i].shadowColor, finalShadowColor);
+		Vector4Copy(cgs.printui[i].shadowColor, finalShadowColor);
 		finalShadowColor[3] *= fade;
 
 		// Background and border
-		if (cgs.osp.printui[i].background[3] > 0.0f)
+		if (cgs.printui[i].background[3] > 0.0f)
 		{
-			Vector4Copy(cgs.osp.printui[i].background, finalBackground);
+			Vector4Copy(cgs.printui[i].background, finalBackground);
 			finalBackground[3] *= fade;
 		}
 
-		if (cgs.osp.printui[i].border[0] > 0.0f ||
-		        cgs.osp.printui[i].border[1] > 0.0f ||
-		        cgs.osp.printui[i].border[2] > 0.0f ||
-		        cgs.osp.printui[i].border[3] > 0.0f
+		if (cgs.printui[i].border[0] > 0.0f ||
+		        cgs.printui[i].border[1] > 0.0f ||
+		        cgs.printui[i].border[2] > 0.0f ||
+		        cgs.printui[i].border[3] > 0.0f
 		   )
 		{
-			Vector4Copy(cgs.osp.printui[i].border, finalBorder);
-			Vector4Copy(cgs.osp.printui[i].borderColor, finalBorderColor);
-		}
-
-		// Set font
-		if (cgs.osp.printui[i].fontIndex >= 0 && cgs.osp.printui[i].fontIndex < CG_GetFontCount())
-		{
-			CG_FontSelect(cgs.osp.printui[i].fontIndex);
-		}
-		else
-		{
-			// Default to sansman (index 2)
-			CG_FontSelect(2);
+			Vector4Copy(cgs.printui[i].border, finalBorder);
+			Vector4Copy(cgs.printui[i].borderColor, finalBorderColor);
 		}
 
 		// Draw the text
 		CG_OSPDrawStringNew(
-		    cgs.osp.printui[i].x,
-		    cgs.osp.printui[i].y,
-		    cgs.osp.printui[i].text,
+		    cgs.printui[i].x,
+		    cgs.printui[i].y,
+		    cgs.printui[i].text,
 		    finalColor,
 		    finalShadowColor,
-		    cgs.osp.printui[i].charWidth,
-		    cgs.osp.printui[i].charHeight,
+		    cgs.printui[i].charWidth,
+		    cgs.printui[i].charHeight,
 		    SCREEN_WIDTH,
-		    cgs.osp.printui[i].flags,
-		    (cgs.osp.printui[i].background[3] > 0.0f) ? finalBackground : NULL,
-		    (cgs.osp.printui[i].border[3] > 0.0f) ? finalBorder : NULL,
-		    (cgs.osp.printui[i].border[3] > 0.0f) ? finalBorderColor : NULL
+		    cgs.printui[i].flags,
+		    (cgs.printui[i].fontIndex >= 0 && cgs.printui[i].fontIndex < CG_GetFontCount()) ? cgs.printui[i].fontIndex : 2,
+		    (cgs.printui[i].background[3] > 0.0f) ? finalBackground : NULL,
+		    (cgs.printui[i].border[3] > 0.0f) ? finalBorder : NULL,
+		    (cgs.printui[i].border[3] > 0.0f) ? finalBorderColor : NULL
 		);
 	}
 }

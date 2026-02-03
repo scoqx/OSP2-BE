@@ -1670,7 +1670,7 @@ static void Osp2Be_UpdateControls( void ) {
 			s_osp2be.labels[i].string = (char *)def->label;
 			s_osp2be.labels[i].generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
 			if ( s_osp2be.activeCategory == 3 && ( def->special == OSP2BE_SPECIAL_MODEL_HEAD || def->special == OSP2BE_SPECIAL_MODEL_TORSO || def->special == OSP2BE_SPECIAL_MODEL_LEGS ) ) {
-				s_osp2be.labels[i].color = color_white;
+				Vector4Copy( color_white, s_osp2be.labels[i].color );
 			}
 		}
 
@@ -2518,7 +2518,7 @@ void UI_Osp2BeMenu( void ) {
 		s_osp2be.apply.generic.y = osp2be_layout.design_height - 24;
 	s_osp2be.apply.string = "APPLY";
 	s_osp2be.apply.style = UI_CENTER|UI_SMALLFONT;
-	s_osp2be.apply.color = color_white;
+	Vector4Copy( color_white, s_osp2be.apply.color );
 	Menu_AddItem( &s_osp2be.menu, &s_osp2be.apply );
 
 	s_osp2be.reload.generic.type = MTYPE_PTEXT;
@@ -2529,7 +2529,7 @@ void UI_Osp2BeMenu( void ) {
 		s_osp2be.reload.generic.y = osp2be_layout.design_height - 24;
 	s_osp2be.reload.string = "RELOAD";
 	s_osp2be.reload.style = UI_CENTER|UI_SMALLFONT;
-	s_osp2be.reload.color = color_white;
+	Vector4Copy( color_white, s_osp2be.reload.color );
 	Menu_AddItem( &s_osp2be.menu, &s_osp2be.reload );
 
 	s_osp2be.close.generic.type = MTYPE_PTEXT;
@@ -2571,7 +2571,7 @@ void UI_Osp2BeMenu( void ) {
 		s_osp2be.labels[i].generic.x = s_osp2be.contentLeft;
 		s_osp2be.labels[i].generic.y = rowY;
 		s_osp2be.labels[i].style = UI_LEFT|UI_SMALLFONT;
-		s_osp2be.labels[i].color = color_white;
+		Vector4Copy( color_white, s_osp2be.labels[i].color );
 		Menu_AddItem( &s_osp2be.menu, &s_osp2be.labels[i] );
 
 		s_osp2be.fields[i].generic.type = MTYPE_FIELD;

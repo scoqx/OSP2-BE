@@ -21,7 +21,7 @@ void* CG_SHUDElementFragMessageCreate(const superhudConfig_t* config)
 		element->config.time.value = 2000;
 	}
 
-	gctx = CG_SHUDGetContext();
+	gctx = &superhudGlobalContext;
 	element->time = &gctx->fragmessage.time;
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);

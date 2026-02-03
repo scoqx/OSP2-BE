@@ -26,63 +26,6 @@ For details, refer to LICENSE_DIWOC.txt.
 
 /*
 =================
-CG_HasActiveFrozenAllyMark
-
-Check if there is an active TEAMTASK_FROZEN_ALLY mark near the frozen entity
-Returns qtrue if active mark found, qfalse otherwise
-=================
-*/
-qboolean CG_HasActiveFrozenAllyMark(centity_t* frozenCent)
-{
-	int i;
-	teamTaskMark_t* mark;
-	float dist;
-	float searchRadius;
-	int frozenClientNum;
-	clientInfo_t* frozenCi;
-
-	if (!frozenCent || !CG_IS_FROZEN_ENTITY(frozenCent))
-	{
-		return qfalse;
-	}
-
-	frozenClientNum = frozenCent->currentState.otherEntityNum;
-	if (frozenClientNum < 0 || frozenClientNum >= MAX_CLIENTS)
-	{
-		return qfalse;
-	}
-
-	frozenCi = &cgs.clientinfo[frozenClientNum];
-	if (!frozenCi->infoValid || CG_IS_ENEMY_SIMPLE(frozenCi))
-	{
-		/* Not an ally */
-		return qfalse;
-	}
-
-	searchRadius = 64.0f; /* Search radius for finding mark near frozen entity */
-
-	/* Check all active marks */
-	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
-	{
-		mark = &cgs.teamMarkers.teamTaskMarks[i];
-
-		/* Check if mark is active and of type TEAMTASK_FROZEN_ALLY */
-		if (mark->markType == TEAMTASK_FROZEN_ALLY && cg.time < mark->endTime)
-		{
-			/* Check if mark is near frozen entity */
-			dist = Distance(mark->origin, frozenCent->lerpOrigin);
-			if (dist <= searchRadius)
-			{
-				return qtrue;
-			}
-		}
-	}
-
-	return qfalse;
-}
-
-/*
-=================
 CG_HandlePlayerDeathTeamTask
 
 Handle team task marker when local player dies
@@ -94,31 +37,9 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent)
 	centity_t* cent;
 	vec3_t position;
 
-	/* Check conditions */
-	if (!cg_teamTask.integer)
-	{
+	/* Check conditions: single gate for teamtask + warmup/game/event */
+	if (!cgs.teamMarkers.teamTaskEnabled || cg.warmup || target != cg.clientNum || cgs.gametype < GT_TEAM || isUnfreezeEvent)
 		return;
-	}
-	if (cg.warmup)
-	{
-		return;
-	}
-	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
-	{
-		return;
-	}
-	if (target != cg.clientNum)
-	{
-		return;
-	}
-	if (cgs.gametype < GT_TEAM)
-	{
-		return;
-	}
-	if (isUnfreezeEvent)
-	{
-		return;
-	}
 
 	/* Get player entity */
 	cent = &cg_entities[target];
@@ -353,137 +274,29 @@ qboolean CG_IsTeamTaskSupported(void)
 CG_ClearRoundSpecificTeamTaskMarks
 
 Remove specific team task marks when round changes:
-- TEAMTASK_FROZEN_ALLY
-- TEAMTASK_FROZEN_ENEMY
-- TEAMTASK_HERE_DEAD
-- TEAMTASK_WARN_DEAD
-- TEAMTASK_PLAYERDEAD
-Uses pack array algorithm (O(n) instead of O(n²))
+FROZEN_ALLY, FROZEN_ENEMY, HERE_DEAD, WARN_DEAD, PLAYERDEAD.
+Removal is done in CG_TeamTaskUpdateFrame (single place).
 =================
 */
 void CG_ClearRoundSpecificTeamTaskMarks(void)
 {
-	int i;
-	int writeIndex;
-	teamTaskMark_t* mark;
-
-	if (cgs.teamMarkers.numTeamTaskMarks == 0)
-	{
-		return;
-	}
-
-	/* Pack array: copy valid marks to the beginning, excluding round-specific marks */
-	writeIndex = 0;
-	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
-	{
-		mark = &cgs.teamMarkers.teamTaskMarks[i];
-
-		/* Keep only marks that are NOT round-specific */
-		if (mark->markType != TEAMTASK_FROZEN_ALLY &&
-		        mark->markType != TEAMTASK_FROZEN_ENEMY &&
-		        mark->markType != TEAMTASK_HERE_DEAD &&
-		        mark->markType != TEAMTASK_WARN_DEAD &&
-		        mark->markType != TEAMTASK_PLAYERDEAD
-		   )
-		{
-			if (writeIndex != i)
-			{
-				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
-			}
-			writeIndex++;
-		}
-	}
-
-	/* Update count */
-	cgs.teamMarkers.numTeamTaskMarks = writeIndex;
-}
-
-/*
-=================
-CG_ClearPlayerDeathTeamTaskMarks
-
-Clears death-related team task marks for the current player after respawn
-Removes: TEAMTASK_PLAYERDEAD, TEAMTASK_HERE_DEAD, TEAMTASK_WARN_DEAD
-Uses pack array algorithm (O(n) instead of O(n²))
-=================
-*/
-void CG_ClearPlayerDeathTeamTaskMarks(void)
-{
-	int i;
-	int writeIndex;
-	teamTaskMark_t* mark;
-
-	if (cgs.teamMarkers.numTeamTaskMarks == 0)
-	{
-		return;
-	}
-
-	/* Pack array: copy valid marks to the beginning, excluding death marks for current player */
-	writeIndex = 0;
-	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
-	{
-		mark = &cgs.teamMarkers.teamTaskMarks[i];
-
-		/* Keep mark if it's not a death mark OR if it's not for current player */
-		if (!((mark->markType == TEAMTASK_PLAYERDEAD ||
-		        mark->markType == TEAMTASK_HERE_DEAD ||
-		        mark->markType == TEAMTASK_WARN_DEAD) &&
-		        mark->clientNum == cg.clientNum))
-		{
-			if (writeIndex != i)
-			{
-				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
-			}
-			writeIndex++;
-		}
-	}
-
-	/* Update count */
-	cgs.teamMarkers.numTeamTaskMarks = writeIndex;
+	cgs.teamMarkers.packRoundNextFrame = qtrue;
 }
 
 /*
 =================
 CG_ClearClientHereDeadMarks
 
-Clears HERE_DEAD team task marks for a specific client
-Used when player is unfrozen in freeze tag mode
-Uses pack array algorithm (O(n) instead of O(n²))
+Clears HERE_DEAD team task marks for a specific client (unfreeze).
+Removal is done in CG_TeamTaskUpdateFrame (single place).
 =================
 */
 void CG_ClearClientHereDeadMarks(int clientNum)
 {
-	int i;
-	int writeIndex;
-	teamTaskMark_t* mark;
-
-	if (cgs.teamMarkers.numTeamTaskMarks == 0)
-	{
-		return;
-	}
-
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-	{
 		return;
-	}
-
-	/* Pack array: copy valid marks to the beginning, excluding HERE_DEAD marks for specified client */
-	writeIndex = 0;
-	for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
-	{
-		mark = &cgs.teamMarkers.teamTaskMarks[i];
-
-		/* Keep mark if it's not HERE_DEAD OR if it's not for specified client */
-		if (!(mark->markType == TEAMTASK_HERE_DEAD && mark->clientNum == clientNum))
-		{
-			if (writeIndex != i)
-			{
-				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
-			}
-			writeIndex++;
-		}
-	}
-
-	/* Update count */
-	cgs.teamMarkers.numTeamTaskMarks = writeIndex;
+	if (clientNum < 32)
+		cgs.teamMarkers.packHereDeadClientMask0 |= (1 << clientNum);
+	else
+		cgs.teamMarkers.packHereDeadClientMask1 |= (1 << (clientNum - 32));
 }

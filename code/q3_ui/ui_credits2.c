@@ -166,7 +166,7 @@ UI_CreditMenu2_Draw
 #define BECHAR_SIZE_HEIGHT 18.0f
 
 #define DRAW_W(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, color_white, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER, NULL, NULL, NULL );
-#define DRAW_R(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, color_red, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER, NULL, NULL, NULL );
+#define DRAW_R(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, uis.themeColor, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER, NULL, NULL, NULL );
 #define DRAW_G(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, text_color_disabled, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER, NULL, NULL, NULL );
 #define DRAW_GTITLE(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, text_color_disabled, color_black, BECHAR_TITLE_SIZE_WIDTH, BECHAR_TITLE_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER, NULL, NULL, NULL );
 #define STEP_Y() y += BECHAR_SIZE_HEIGHT;
@@ -249,7 +249,7 @@ static void UI_CreditMenu2_Draw( void ) {
 
 	y += 345;
 
-	UI_DrawProportionalString( 320, y, "QUAKE III ARENA", UI_CENTER|UI_GIANTFONT|UI_PULSE, color_red );
+	UI_DrawProportionalString( 320, y, "QUAKE III ARENA", UI_CENTER|UI_GIANTFONT|UI_PULSE, uis.themeColor );
 }
 
 

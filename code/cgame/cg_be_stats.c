@@ -80,7 +80,7 @@ BEStatToken_t tokens[32][12];
 
 qboolean CG_BEStatsInitSettings(void)
 {
-	globalBeStatsSettings_t* inc = &cgs.be.settings;
+	globalBeStatsSettings_t* inc = &cgs.beSettings;
 
 	if (!inc) return qfalse;
 
@@ -133,11 +133,11 @@ qboolean CG_BEStatsInitColors(const vec4_t color)
 
 		if (team == TEAM_RED)
 		{
-			Vector4Copy(cgs.be.redTeamColor, set->teamColor);
+			Vector4Copy(cgs.beRedTeamColor, set->teamColor);
 		}
 		else if (team == TEAM_BLUE)
 		{
-			Vector4Copy(cgs.be.blueTeamColor, set->teamColor);
+			Vector4Copy(cgs.beBlueTeamColor, set->teamColor);
 		}
 		else
 		{
@@ -150,14 +150,14 @@ qboolean CG_BEStatsInitColors(const vec4_t color)
 	}
 
 	// Background color
-	if (!cgs.be.settings.bgColorIsSet)
+	if (!cgs.beSettings.bgColorIsSet)
 	{
 		CG_OSPAdjustTeamColorBEStats(set->teamColor, set->bgColor);
 		set->bgColor[3] = cg_bestats_bgOpaque.value;
 	}
 	else
 	{
-		Vector4Set(set->bgColor, cgs.be.settings.bgColor[0], cgs.be.settings.bgColor[1], cgs.be.settings.bgColor[2], cg_bestats_bgOpaque.value);
+		Vector4Set(set->bgColor, cgs.beSettings.bgColor[0], cgs.beSettings.bgColor[1], cgs.beSettings.bgColor[2], cg_bestats_bgOpaque.value);
 	}
 
 	Vector4Copy(colorBlack, set->borderColor);
@@ -1029,7 +1029,6 @@ void CG_BEStatsDrawWindow(BEStatToken_t tokens[32][12], int rows)
 	set->height = windowHeight;
 	windowWidth = set->width + set->padding * 2;
 
-	CG_FontSelect(cgFontIndices.bestats);
 	CG_BEStatsDrawWindowBackground(set->x, set->y, windowWidth, set->height);
 	CG_OSPDrawFrameAdjusted(set->x, set->y, windowWidth, set->height, defaultBorderSize, set->borderColor, 0);
 
@@ -1078,7 +1077,7 @@ void CG_BEStatsDrawWindow(BEStatToken_t tokens[32][12], int rows)
 						CG_OSPDrawStringNew(baseX + tokens[i][j].offset, baseY, "img?", beStatsSettings.colorR, colorBlack,
 						                    set->textWidth, set->textHeight,
 						                    SCREEN_WIDTH, textFlags | tokens[i][j].textFlags,
-						                    NULL, NULL, NULL);
+						                    cgFontIndices.bestats, NULL, NULL, NULL);
 					}
 
 					baseX += colWidth + set->colSpacing;
@@ -1092,7 +1091,7 @@ void CG_BEStatsDrawWindow(BEStatToken_t tokens[32][12], int rows)
 				                    tokens[i][j].color, colorBlack,
 				                    set->textWidth, set->textHeight,
 				                    SCREEN_WIDTH, textFlags | tokens[i][j].textFlags,
-				                    NULL, NULL, NULL);
+				                    cgFontIndices.bestats, NULL, NULL, NULL);
 			}
 
 			baseX += colWidth + set->colSpacing;
@@ -1105,7 +1104,7 @@ void CG_BEStatsShowStatsInfo(void)
 	int row = 0;
 	int rowsAdded;
 
-	if (cgs.be.server.fpsclassico)
+	if (cgs.fpsclassico)
 	{
 		return;
 	}
@@ -1120,7 +1119,10 @@ void CG_BEStatsShowStatsInfo(void)
 		if (cg.statsRequestTime + 1000 < cg.time)
 		{
 			cg.statsRequestTime = cg.time;
-			CG_SendGetStatsInfo();
+			if (!cgs.fpsclassico)
+			{
+				trap_SendClientCommand("getstatsinfo");
+			}
 		}
 	}
 	// General

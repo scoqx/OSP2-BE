@@ -166,7 +166,6 @@ void CG_ScoresDown_f(void)
 	if (!cg.demoPlayback && cg.scoresRequestTime < cg.time)
 	{
 		cg.scoresRequestTime = cg.time + 2000;
-		cg.realNumClients = CG_CountRealClients();
 		trap_SendClientCommand("score");
 		if (!cg.showScores)
 		{
@@ -177,7 +176,10 @@ void CG_ScoresDown_f(void)
 		if (!cg.demoPlayback && cg.statsRequestTime < cg.time)
 		{
 			cg.statsRequestTime = cg.time + 2250;
-			CG_SendGetStatsInfo();
+			if (!cgs.fpsclassico)
+			{
+				trap_SendClientCommand("getstatsinfo");
+			}
 		}
 	cg.showScores = qtrue;
 	cg.showAccuracy = qtrue;
@@ -235,13 +237,13 @@ static void CG_Reply_f(void)
 	char    command[128];
 	char    message[128];
 
-	if (cgs.be.lastTellSender < 0 || cgs.be.lastTellSender >= MAX_CLIENTS)
+	if (cg.beLastTellSender < 0 || cg.beLastTellSender >= MAX_CLIENTS)
 	{
 		CG_Printf("No one to reply to.\n");
 		return;
 	}
 
-	clientNum = cgs.be.lastTellSender;
+	clientNum = cg.beLastTellSender;
 	trap_Args(message, 128);
 	if (message[0] == '\0')
 	{
@@ -411,6 +413,7 @@ void CG_OSPServerVersion_f(void)
 	}
 }
 
+#if 0
 void CG_OSPHUDStyle_f(void)
 {
 }
@@ -422,6 +425,7 @@ void CG_OSPHUDNext_f(void)
 void CG_OSPHUDprev_f(void)
 {
 }
+#endif
 
 void CG_OSPClientVersion_f(void)
 {
@@ -458,21 +462,21 @@ void CG_OSPClientConfig_f(void)
 	CG_Printf("    ^3Timenudge maximum:           ^3%s\n", cgs.osp.serverConfigMaximumTimenudge ? va("%i", cgs.osp.serverConfigMaximumTimenudge) : "-");
 	CG_Printf("    ^3Maxpackets minimum:          ^3%s\n", cgs.osp.serverConfigMinimumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3Maxpackets maximum:          ^3%s\n", cgs.osp.serverConfigMaximumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
-	CG_Printf("    ^3OSP2-BE ^3Supported server:    %s\n", CG_YES_NO_STR(cgs.be.supportedServer));
+	// CG_Printf("    ^3OSP2-BE ^3Supported server:    %s\n", CG_YES_NO_STR(cgs.beSupportedServer));
 	CG_Printf("    ^3HitBox (XQ3E):               %s\n", CG_YES_NO_STR(cgs.osp.serverConfigXHitBox));
-	// CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.be.disableFeatures));
+	// CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.beDisableFeatures));
 
 }
 
 void CG_OSPDrawNewCredits_f(void)
 {
-	if (!cgs.be.showCredits)
+	if (!cgs.beShowCredits)
 	{
-		cgs.be.showCredits = qtrue;
+		cgs.beShowCredits = qtrue;
 	}
 	else
 	{
-		cgs.be.showCredits = qfalse;
+		cgs.beShowCredits = qfalse;
 	}
 }
 void CG_OSPMoTD_f(void)
@@ -502,7 +506,10 @@ void CG_OSPWStatsDown_f(void)
 	if (cg.statsRequestTime + 1000 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;
-		CG_SendGetStatsInfo();
+		if (!cgs.fpsclassico)
+		{
+			trap_SendClientCommand("getstatsinfo");
+		}
 	}
 	cgs.newStats.drawWindow = qtrue;
 
@@ -651,14 +658,13 @@ void CG_ChudScoreboardUp_f(void)
 	if (!cg.demoPlayback && cg.scoresRequestTime < cg.time)
 	{
 		cg.scoresRequestTime = cg.time + 2000;
-		cg.realNumClients = CG_CountRealClients();
 		trap_SendClientCommand("score");
 	}
 	if (!cg.demoPlayback && cg.statsAllRequestTime < cg.time)
 	{
 		cg.statsAllRequestTime = cg.time + 2100;
 		trap_SendClientCommand("statsall");
-		cgs.be.statsAllRequested = qtrue;
+		cg.beStatsAllRequested = qtrue;
 	}
 }
 
@@ -668,9 +674,9 @@ void CG_ChudScoreboardDown_f(void)
 	{
 		cgs.osp.chud.scoreboard = qfalse;
 	}
-	if ((cg.statsAllRequestTime + 500 < cg.time) && cgs.be.statsAllRequested)
+	if ((cg.statsAllRequestTime + 500 < cg.time) && cg.beStatsAllRequested)
 	{
-		cgs.be.statsAllRequested = qfalse;
+		cg.beStatsAllRequested = qfalse;
 	}
 }
 
@@ -825,6 +831,7 @@ void CG_OSPAddPos_f(void)
 	}
 }
 
+#if 0
 void CG_OSPDecalAdd_f(void)
 {
 }
@@ -876,6 +883,7 @@ void CG_OSPDecalRotClock_f(void)
 void CG_OSPDecalRotCounter_f(void)
 {
 }
+#endif
 
 void CG_OSPDynamicMem_f(void)
 {
@@ -1165,10 +1173,13 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
 	         cg.snap->ps.clientNum, CONTENTS_SOLID);
 
+	// x = Quantize(trace.endpos[0], cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+	// y = Quantize(trace.endpos[1], cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+	// z = Quantize(trace.endpos[2], cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+
 	x = Quantize(trace.endpos[0], -3000, 3000, 7);
 	y = Quantize(trace.endpos[1], -3000, 3000, 7);
 	z = Quantize(trace.endpos[2], -3000, 3000, 7);
-
 	/* Static mark at trace position */
 	packed = CG_TeamTaskPack(0, templateID, x, y, z);
 	trap_SendClientCommand(va("teamtask %i", packed));
@@ -1243,6 +1254,10 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	VectorCopy(cg.predictedPlayerState.origin, playerPos);
 	playerPos[2] += 48.0f; /* Offset above head */
 
+	// x = Quantize(playerPos[0], cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+	// y = Quantize(playerPos[1], cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+	// z = Quantize(playerPos[2], cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+
 	x = Quantize(playerPos[0], -3000, 3000, 7);
 	y = Quantize(playerPos[1], -3000, 3000, 7);
 	z = Quantize(playerPos[2], -3000, 3000, 7);
@@ -1307,6 +1322,10 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 		return; /* anti-flood: flood protection activated */
 	}
 
+	// x = Quantize(position[0], cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+	// y = Quantize(position[1], cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+	// z = Quantize(position[2], cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+
 	x = Quantize(position[0], -3000, 3000, 7);
 	y = Quantize(position[1], -3000, 3000, 7);
 	z = Quantize(position[2], -3000, 3000, 7);
@@ -1353,11 +1372,11 @@ void CG_TeamTaskMarkLocation(void)
 
 void CG_TeamTaskMarkHere(void)
 {
-	int i;
 	centity_t* cent;
 	vec3_t backupPosition;
 	qboolean backUpPositionValid;
 
+	backUpPositionValid = qfalse;
 	if (cgs.gametype < GT_TEAM)
 	{
 		CG_PrintOnce("^3There are no teams\n");
@@ -1369,20 +1388,15 @@ void CG_TeamTaskMarkHere(void)
 		return;
 	}
 
-	/* Find frozen entity that belongs to local player */
-	for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+	/* Use frozen entity from cache (set/clear in CG_Player) */
+	if (cgs.clientinfo[cg.clientNum].isFrozenEnt)
 	{
-		cent = &cg_entities[i];
-		if (cent->currentState.eType == ET_PLAYER &&
-		        cent->currentState.clientNum == cg.clientNum &&
-		        cent->currentValid &&
-		        CG_IS_FROZEN_ENTITY(cent))
+		cent = &cg_entities[cgs.clientinfo[cg.clientNum].frozenEntity];
+		if (cent->currentValid)
 		{
-			/* Found our frozen entity - copy coordinates */
 			VectorCopy(cent->lerpOrigin, backupPosition);
 			backupPosition[2] += 24.0f;
 			backUpPositionValid = qtrue;
-			break;
 		}
 	}
 
@@ -1441,31 +1455,26 @@ void CG_TeamTaskMarkHere(void)
 
 void CG_TeamTaskMarkWarn(void)
 {
-	int i;
 	centity_t* cent;
 	vec3_t backupPosition;
 	qboolean backUpPositionValid;
 
+	backUpPositionValid = qfalse;
 	if (cgs.gametype < GT_TEAM)
 	{
 		CG_PrintOnce("^3There are no teams\n");
 		return;
 	}
 
-	/* Find frozen entity that belongs to local player */
-	for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+	/* Use frozen entity from cache (set/clear in CG_Player) */
+	if (cgs.clientinfo[cg.clientNum].isFrozenEnt)
 	{
-		cent = &cg_entities[i];
-		if (cent->currentState.eType == ET_PLAYER &&
-		        cent->currentState.clientNum == cg.clientNum &&
-		        cent->currentValid &&
-		        CG_IS_FROZEN_ENTITY(cent))
+		cent = &cg_entities[cgs.clientinfo[cg.clientNum].frozenEntity];
+		if (cent->currentValid)
 		{
-			/* Found our frozen entity - copy coordinates */
 			VectorCopy(cent->lerpOrigin, backupPosition);
 			backupPosition[2] += 24.0f;
 			backUpPositionValid = qtrue;
-			break;
 		}
 	}
 
@@ -2055,11 +2064,11 @@ static void CG_BEHelp_PrintFeature(const char* cvarName, int featureFlag, const 
 
 	trap_Cvar_VariableStringBuffer(cvarName, currentValue, sizeof(currentValue));
 
-	if (!BE_ENABLED)
+	if (!cgs.beEnabled)
 	{
 		CG_Printf("  ^3%s ^7\"^9BE^7\" - %s\n", cvarName, description);
 	}
-	else if (cgs.be.disableFeatures & featureFlag)
+	else if (cgs.beDisableFeatures & featureFlag)
 	{
 		CG_Printf("  ^3%s ^7\"^1SRV^7\" - %s\n", cvarName, description);
 	}
@@ -2214,9 +2223,11 @@ typedef struct
 
 static consoleCommand_t commands[] =
 {
+#if 0
 	{ "hudstyle", CG_OSPHUDStyle_f },
 	{ "hudnext", CG_OSPHUDNext_f },
 	{ "hudprev", CG_OSPHUDprev_f },
+#endif
 	{ "addstr", CG_OSPAddStr_f },
 	{ "+vstr", CG_OSPVStrDown_f },
 	{ "-vstr", CG_OSPVStrUp_f },
@@ -2289,18 +2300,9 @@ static consoleCommand_t commands[] =
 	{ "-shudkey7", CG_ShudKey7Up_f },
 	{ "+shudkey8", CG_ShudKey8Down_f },
 	{ "-shudkey8", CG_ShudKey8Up_f },
-	{ "+chudkey1", CG_ChudKey1Down_f },
-	{ "-chudkey1", CG_ChudKey1Up_f },
-	{ "+chudkey2", CG_ChudKey2Down_f },
-	{ "-chudkey2", CG_ChudKey2Up_f },
-	{ "+chudkey3", CG_ChudKey3Down_f },
-	{ "-chudkey3", CG_ChudKey3Up_f },
-	{ "+chudkey4", CG_ChudKey4Down_f },
-	{ "-chudkey4", CG_ChudKey4Up_f },
-	{ "+chudscoreboard", CG_ChudScoreboardUp_f },
-	{ "-chudscoreboard", CG_ChudScoreboardDown_f },
 	{ "cg_dynamicmem", CG_OSPDynamicMem_f },
 	{ "addpos", CG_OSPAddPos_f },
+#if 0
 	{ "decaladd", CG_OSPDecalAdd_f },
 	{ "decaldec", CG_OSPDecalDec_f },
 	{ "decaldisable", CG_OSPDecalDisable_f },
@@ -2314,6 +2316,7 @@ static consoleCommand_t commands[] =
 	{ "decalprev", CG_OSPDcalPrev_f },
 	{ "decalrotclock", CG_OSPDecalRotClock_f },
 	{ "decalrotcounter", CG_OSPDecalRotCounter_f },
+#endif
 	{ "reloadHUD", CG_ReloadHud_f },
 	{ "playersid", CG_PrintPlayerIDs_f },
 	{ "mute", CG_Mute_f },
@@ -2358,8 +2361,10 @@ Cmd_Argc() / Cmd_Argv()
 */
 qboolean CG_ConsoleCommand(void)
 {
-	const char* cmd = CG_Argv(0);
+	const char* cmd;
 	int i;
+
+	cmd = CG_Argv(0);
 
 	if (!cmd || !cmd[0])
 	{
@@ -2376,12 +2381,7 @@ qboolean CG_ConsoleCommand(void)
 	}
 
 	/* Dynamic /get<name> commands (e.g. getElite): require at least "getX" (4 chars) */
-	i = 0;
-	while (cmd[i] != '\0' && i < 4)
-	{
-		i++;
-	}
-	if (i > 3 && !Q_stricmpn(cmd, "get", 3))
+	if (cmd[3] != '\0' && !Q_stricmpn(cmd, "get", 3))
 	{
 		CG_Get_f();
 		return qtrue;

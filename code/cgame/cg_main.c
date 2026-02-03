@@ -516,7 +516,7 @@ vmCvar_t        cg_exec_tdm;
 vmCvar_t        cg_exec_ca;
 vmCvar_t        cg_exec_ctf;
 vmCvar_t        cg_exec_freeze;
-vmCvar_t        cg_autoHop;
+/* vmCvar_t        cg_autoHop; */  /* autohop commented out */
 vmCvar_t        cg_damagePlums;
 vmCvar_t        cg_damagePlumSize;
 vmCvar_t        cg_damagePlumsWeapons;
@@ -556,6 +556,7 @@ vmCvar_t        cg_teleportEffect;
 vmCvar_t        cg_altRail;
 vmCvar_t        cg_railFix;
 vmCvar_t        cg_teamTaskNewSounds;
+vmCvar_t        cg_teamTaskVersion;
 vmCvar_t        cg_freezeSoundFix;
 vmCvar_t        cg_infoVersionFont;
 
@@ -563,7 +564,10 @@ vmCvar_t        cg_infoVersionFont;
 
 cgFontIndices_t cgFontIndices;
 
-static cvarTable_t cvarTable[] =
+static qboolean teamoverlay_registered = qfalse;
+static qboolean teamoverlay2_registered = qfalse;
+
+cvarTable_t cvarTable[] =
 {
 	{ &osp_client, "osp_client", "1008_OSP2_"OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
@@ -605,9 +609,9 @@ static cvarTable_t cvarTable[] =
 	{ &cg_addMarks, "cg_marks", "1", CVAR_ARCHIVE },
 	{ &cg_lagometer, "cg_lagometer", "1", CVAR_ARCHIVE },
 	{ &cg_railTrailTime, "cg_railTrailTime", "400", CVAR_ARCHIVE },
-	{ &cg_gun_x, "cg_gunX", "0", CVAR_ARCHIVE },
-	{ &cg_gun_y, "cg_gunY", "0", CVAR_ARCHIVE },
-	{ &cg_gun_z, "cg_gunZ", "0", CVAR_ARCHIVE },
+	{ &cg_gun_x, "cg_gunX", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_gunX },
+	{ &cg_gun_y, "cg_gunY", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_gunY },
+	{ &cg_gun_z, "cg_gunZ", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_gunZ },
 	{ &cg_centertime, "cg_centertime", "3", CVAR_CHEAT },
 	{ &cg_runpitch, "cg_runpitch", "0.000", CVAR_ARCHIVE },
 	{ &cg_runroll, "cg_runroll", "0.000", CVAR_ARCHIVE },
@@ -829,7 +833,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_dlightBFG,      "cg_dlightBFG",      "FFB2FF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightBFG },
 	{ &cg_gunColor,       "cg_gunColor",      "White", CVAR_ARCHIVE },
 	{ &cg_gunOpaque,      "cg_gunOpaque",      "0.15", CVAR_ARCHIVE },
-	{ &cg_drawBrightWeapons, "cg_drawBrightWeapons", "0", CVAR_ARCHIVE },
+	{ &cg_drawBrightWeapons, "cg_drawBrightWeapons", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_conObituaries,  "cg_conObituaries",   "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_conObituaries },
 	{ &cg_lightningHitsoundRateFix, "cg_lightningHitsoundRateFix",      "1", CVAR_ARCHIVE },
 	{ &cg_stackHitSounds,           "cg_stackHitSounds",   "1", CVAR_ARCHIVE },
@@ -849,7 +853,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_enemyOutlineSize, "cg_enemyOutlineSize", "1", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &cg_enemyOutlineColor, "cg_enemyOutlineColor", "00FF00", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyOutlineColor },
-	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE },
+	{ &cg_enemyOutlineColorUnique, "cg_enemyOutlineColorUnique", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teamOutlineSize, "cg_teamOutlineSize", "1", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &cg_teamOutlineColor, "cg_teamOutlineColor", "FFFFFF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamOutlineColor },
 	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
@@ -865,7 +869,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_railStaticRings, "cg_railStaticRings", "0", CVAR_ARCHIVE },
 	{ &cg_gunPos, "cg_gunPos", "1", CVAR_ARCHIVE  },
 	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_shadows},
-	{ &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE },
+	{ &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
 	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE },
 	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE },
@@ -888,7 +892,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE },
 	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE },
 	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE },
-	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE },
+	{ &cg_gibs, "cg_gibs", "2", CVAR_ARCHIVE },
 	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE },
 	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE },
 	{ &cg_healthColor, "cg_healthColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_healthColor },
@@ -929,12 +933,12 @@ static cvarTable_t cvarTable[] =
 	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.7", CVAR_ARCHIVE },
 	{ &cg_bestats_spacingAdjust, "cg_bestats_spacingAdjust", "1", CVAR_ARCHIVE },
 	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE },
-	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "1", CVAR_ARCHIVE },
-	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE },
+	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFade },
+	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFadeRadius },
 	{ &be_features, "be_features", "", CVAR_ROM | CVAR_USERINFO },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventBeFeaturesChanged },
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE },
-	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE },
+	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_drawRealHeads, "cg_drawRealHeads", "0", CVAR_ARCHIVE },
 	{ &cg_myTeam, "cg_myTeam", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_myTeam },
 	{ &cg_giveName, "cg_giveName", "0", CVAR_ARCHIVE },
@@ -943,7 +947,7 @@ static cvarTable_t cvarTable[] =
 	{ &cg_smoothDucking, "cg_smoothDucking", "1", CVAR_ARCHIVE },
 	{ &cg_respawnWeapon, "cg_respawnWeapon", "0", CVAR_ARCHIVE },
 	{ &cg_countdownTimer, "cg_countdownTimer", "0", CVAR_ARCHIVE },
-	{ &cg_exec_weapons, "cg_exec_weapons", "1", CVAR_ARCHIVE },
+	{ &cg_exec_weapons, "cg_exec_weapons", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
 	{ &cg_exec_mg, "cg_exec_mg", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
 	{ &cg_exec_sg, "cg_exec_sg", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
 	{ &cg_exec_gl, "cg_exec_gl", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_weapon },
@@ -961,11 +965,11 @@ static cvarTable_t cvarTable[] =
 	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
 	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
-	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop},
+	/* { &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop}, */  /* autohop commented out */
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
 	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "2800", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
-	{ &cg_teamTask, "cg_teamTask", "31", CVAR_ARCHIVE },
+	{ &cg_teamTask, "cg_teamTask", "31", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teamTaskScale, "cg_teamTaskScale", "1.0", CVAR_ARCHIVE },
 	{ &cg_teamTaskOpaque, "cg_teamTaskOpaque", "0.7", CVAR_ARCHIVE },
 	{ &cg_teamTaskFade, "cg_teamTaskFade", "0.5", CVAR_ARCHIVE },
@@ -1011,13 +1015,14 @@ static cvarTable_t cvarTable[] =
 	{ &cg_teamTaskIconMinSize, "cg_teamTaskIconMinSize", "3", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_hitSoundsQC, "cg_hitSoundsQC", "0", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
 	{ &cg_brightWeaponsShader, "cg_brightWeaponsShader", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_noExplosions, "cg_noExplosions", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_noExplosions, "cg_noExplosions", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	{ &cg_noItemUseSound, "cg_noItemUseSound", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_friendsWallhackFrozen, "cg_friendsWallhackFrozen", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_friendsWallhackFrozen, "cg_friendsWallhackFrozen", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teleportEffect, "cg_teleportEffect", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_altRail, "cg_altRail", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_railFix, "cg_railFix", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamTaskNewSounds, "cg_teamTaskNewSounds", "1", CVAR_ARCHIVE | CVAR_NEW },
+	// { &cg_teamTaskVersion, "cg_teamTaskVersion", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_freezeSoundFix, "cg_freezeSoundFix", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_infoVersionFont, "cg_infoVersionFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_infoVersionFont },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
@@ -1068,7 +1073,7 @@ static cvarTable_t cvarTable_temp[] =
 
 static  cvarTable_t* hashTable[CG_VARS_HASH_SIZE];
 
-static int  cvarTableSize = sizeof(cvarTable) / sizeof(cvarTable[0]);
+int cvarTableSize = sizeof(cvarTable) / sizeof(cvarTable[0]);
 
 /*
 =================
@@ -1179,64 +1184,16 @@ void CG_RegisterCvars(void)
 
 /*
 =================
-CG_UpdateOutlineIndicatorCvarSnapshots
+CG_UpdateIndicatorFadeRadiusSq
 
-Fill cgs.outlineCvars and cgs.indicatorCvars from vmCvar_t.
-Called from CG_UpdateCvars (every 12 frames) and CG_InitCvars (once at init).
-Hot path (CG_AddOutline, CG_DrawPlayerIndicator) only reads from cgs, never vmCvar_t.
+Cache squared fade radius (derived value); no point recalculating every frame.
+Called when cg_teamIndicatorFadeRadius changes and at init.
 =================
 */
-static void CG_UpdateOutlineIndicatorCvarSnapshots(void)
+void CG_UpdateIndicatorFadeRadiusSq(void)
 {
-	cgs.outlineCvars.drawOutline = cg_drawOutline.integer;
-	cgs.outlineCvars.enemySize = cg_enemyOutlineSize.integer;
-	cgs.outlineCvars.teamSize = cg_teamOutlineSize.integer;
-	cgs.outlineCvars.spectPOV = cg_spectPOV.integer;
-	cgs.outlineCvars.enemyColorUnique = cg_enemyOutlineColorUnique.integer;
-
-	cgs.indicatorCvars.fadeStrength = cg_teamIndicatorFade.value;
-	cgs.indicatorCvars.fadeRadius = cg_teamIndicatorFadeRadius.value;
-	cgs.indicatorCvars.fadeRadiusSq = cgs.indicatorCvars.fadeRadius * cgs.indicatorCvars.fadeRadius;
-	cgs.indicatorCvars.bgOpaque = cg_teamIndicatorBgOpaque.value;
-	cgs.indicatorCvars.nameOpaque = cg_teamIndicatorOpaque.value;
-	cgs.indicatorCvars.offset = cg_teamIndicatorOffset.value;
-	cgs.indicatorCvars.adjust = cg_teamIndicatorAdjust.value;
-	cgs.indicatorCvars.teamIndicator = cg_teamIndicator.integer;
-	cgs.indicatorCvars.maxLength = cg_teamIndicatorMaxLength.integer;
-}
-
-/*
-=================
-CG_UpdateCvars
-=================
-*/
-void CG_UpdateCvars(void)
-{
-	int         i;
-	cvarTable_t* cv;
-
-	for (i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++)
-	{
-		if (!cv->vmCvar) continue;
-		trap_Cvar_Update(cv->vmCvar);
-
-		if (cv->forceModelModificationCount == cv->vmCvar->modificationCount) continue;
-		cv->forceModelModificationCount = cv->vmCvar->modificationCount;
-
-		if (cv->onChanged)
-		{
-			cv->onChanged(cv);
-		}
-	}
-
-	CG_UpdateOutlineIndicatorCvarSnapshots();
-
-	// check for modications here
-	if (cg.demoPlayback && cg.snap && cg.clientNum != cg.snap->ps.clientNum)
-	{
-		cg.clientNum = cg.snap->ps.clientNum;
-		CG_UpdateAllClientsInfo();
-	}
+	float r = cg_teamIndicatorFadeRadius.value;
+	cgs.indicatorFadeRadiusSq = r * r;
 }
 
 int CG_CrosshairPlayer(void)
@@ -2271,7 +2228,7 @@ static void CG_RegisterClients(void)
 	const char*      clientInfo;
 
 	CG_LoadingClient(cg.clientNum);
-	CG_UpdateOurClientInfo();
+	CG_NewClientInfo(cg.clientNum);
 
 	/* Check if server supports team task by looking for "tt" field in our configstring */
 	clientInfo = CG_ConfigString(CS_PLAYERS + cg.clientNum);
@@ -2465,7 +2422,7 @@ void CG_InitCvars(void)
 
 	CG_CvarTouch("cg_accuracyFontSize");
 
-	CG_CvarTouch("cg_autoHop");
+	/* CG_CvarTouch("cg_autoHop"); */  /* autohop commented out */
 	CG_CvarTouch("cg_teamTaskFont");
 	CG_CvarTouch("cg_teamTaskThemeColor");
 
@@ -2479,7 +2436,12 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_brightWeaponsColorPG");
 	CG_CvarTouch("cg_brightWeaponsColorBFG");
 
-	CG_UpdateOutlineIndicatorCvarSnapshots();
+	CG_CvarTouch("cg_gunX");
+	CG_CvarTouch("cg_gunY");
+	CG_CvarTouch("cg_gunZ");
+
+	CG_UpdateIndicatorFadeRadiusSq();
+	cgs.lastExecSpectateClientNum = -1;
 }
 
 /*
@@ -2606,33 +2568,6 @@ void CG_ParseCompilationInfo(void)
 
 /*
 ================
-CG_ExecCommandIfSet
-
-Execute command from cvar if it's set (non-empty)
-Returns qtrue if command was executed, qfalse otherwise
-================
-*/
-qboolean CG_ExecCommandIfSet(vmCvar_t* cvar)
-{
-	const char* cmd;
-
-	if (!cvar)
-	{
-		return qfalse;
-	}
-
-	cmd = cvar->string;
-	if (cmd && cmd[0])
-	{
-		trap_SendConsoleCommand(cmd);
-		return qtrue;
-	}
-
-	return qfalse;
-}
-
-/*
-================
 CG_ExecGametypeCommand
 
 Execute commands when gametype is set
@@ -2690,8 +2625,15 @@ Initialize team task markers
 */
 void CG_InitTeamTaskMarkers(void)
 {
+	/* numTeamTaskMarks = 0: no iteration over array, memset not needed (QVM_LOGIC) */
 	cgs.teamMarkers.numTeamTaskMarks = 0;
-	memset(cgs.teamMarkers.teamTaskMarks, 0, sizeof(cgs.teamMarkers.teamTaskMarks));
+
+	cgs.teamMarkers.packRoundNextFrame = qfalse;
+	cgs.teamMarkers.packLocalDeathNextFrame = qfalse;
+	cgs.teamMarkers.packHereDeadClientMask0 = 0;
+	cgs.teamMarkers.packHereDeadClientMask1 = 0;
+
+	cgs.teamMarkers.markDurationMs = 2800; /* default; CG_TeamTaskUpdateFrame refreshes from cvar */
 
 	/* Initialize anti-flood token bucket for sending team task commands: fast limit (1 token, refill 1 token per 150ms) */
 	TokenBucket_Init(&cgs.teamMarkers.sendCommandBucketFast, 1, 150, cg.time);
@@ -2714,7 +2656,7 @@ void CG_InitTeamTaskMarkers(void)
 	cgs.teamMarkers.pickupItemTime = 0;
 
 	/* Initialize last tell sender for reply command */
-	cgs.be.lastTellSender = -1;
+	cg.beLastTellSender = -1;
 }
 
 /*
@@ -2753,6 +2695,12 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_RegisterCvars();
 	CG_RegisterCvarDescriptions();
+
+	{
+		char ucGammaStr[16];
+		trap_Cvar_VariableStringBuffer( "uc_gamma", ucGammaStr, sizeof(ucGammaStr) );
+		trap_Cvar_Set( "r_gamma", ( ucGammaStr[0] != '\0' ) ? ucGammaStr : "1" );
+	}
 
 	// Parse compilation info from 'cversion' file
 	CG_ParseCompilationInfo();
@@ -2829,6 +2777,40 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cgs.levelStartTime = atoi(s);
 
 	CG_ParseServerinfo();
+	/* fpsclassico, q3msk known at connect - inline, run once */
+	{
+		const char* serverStr;
+		serverStr = CG_ConfigString(CS_SERVERINFO);
+		if (strstr(serverStr, "administrator") || strstr(serverStr, "adminless"))
+		{
+			cgs.fpsclassico = qtrue;
+		}
+		if (strstr(serverStr, ".Admin/X"))
+		{
+			cgs.beServerQ3msk = qtrue;
+		}
+	}
+	/* teamoverlay - fpsclassico known at connect, run once */
+	if (cgs.fpsclassico)
+	{
+		if (!teamoverlay2_registered)
+		{
+			trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "1", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
+			teamoverlay2_registered = qtrue;
+		}
+		trap_Cvar_Set("teamoverlay2", "1");
+		trap_Cvar_Update(&teamoverlay2);
+	}
+	else
+	{
+		if (!teamoverlay_registered)
+		{
+			trap_Cvar_Register(&teamoverlay, "teamoverlay", "1", CVAR_USERINFO | CVAR_ROM);
+			teamoverlay_registered = qtrue;
+		}
+		trap_Cvar_Set("teamoverlay", "1");
+		trap_Cvar_Update(&teamoverlay);
+	}
 
 	CG_Printf("\n^7Loaded [^9OSP2-BE^7] client version: ^9%s\n", OSP_VERSION);
 
@@ -2873,7 +2855,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_OSPConfigMinTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MIN)));
 		CG_OSPConfigMaxTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MAX)));
 		CG_OSPConfigClanBaseTDMSet(atoi(CG_ConfigString(CS_OSP_CLAN_BASE_TEAM_DM)));
-		if (!cgs.be.server.fpsclassico)
+		if (!cgs.fpsclassico)
 		{
 			CG_OSPConfigFreezeModeSet(atoi(CG_ConfigString(CS_OSP_FREEZE_GAME_TYPE)));
 		}
@@ -2884,9 +2866,12 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 				cgs.osp.gameTypeFreeze = 1;
 			}
 		}
-		CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
+		// CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
 		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
 		CG_OSPConfigXHitBoxSet(atoi(CG_ConfigString(XQ3E_ALLOW_FEATURES)));
+
+		/* cache damageInfoAllowed - gametype, fpsclassico, custom_client_2, beDisableFeatures all known */
+		CG_UpdateDamageInfoAllowed();
 
 		/****/
 		CG_OSPCvarsRestrictValues();

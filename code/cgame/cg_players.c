@@ -25,55 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/l_crc.h"
 #include "tr_types.h"
 
-
-qboolean CG_IsEnemy(const clientInfo_t* target)
-{
-	const clientInfo_t* local;
-	const playerState_t* ps;
-	const clientInfo_t* followCi;
-	int myStateTeam;
-	int myRealTeam;
-	int enemyTeam;
-	int isCA;
-	int followClient;
-	team_t ourPerspectiveTeam;
-	team_t targetTeam;
-
-	local = &cgs.clientinfo[cg.clientNum];
-	if (target == local)
-		return qfalse;
-	if (cgs.gametype <= GT_SINGLE_PLAYER)
-		return qtrue;
-
-	ps = &cg.snap->ps;
-	myStateTeam = ps->persistant[PERS_TEAM];
-	isCA = CG_OSPIsGameTypeCA(cgs.gametype);
-	myRealTeam = isCA ? local->rt : local->team;
-	enemyTeam = isCA ? target->rt : target->team;
-
-	if (myStateTeam == TEAM_SPECTATOR)
-	{
-		followClient = ps->clientNum;
-		if (cg_spectPOV.integer && (ps->pm_flags & PMF_FOLLOW) && followClient >= 0 && followClient < MAX_CLIENTS)
-		{
-			followCi = &cgs.clientinfo[followClient];
-			ourPerspectiveTeam = isCA ? followCi->rt : followCi->team;
-			targetTeam = isCA ? target->rt : target->team;
-			return (ourPerspectiveTeam != targetTeam);
-		}
-		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
-			return (enemyTeam == TEAM_BLUE);
-		if (myRealTeam == TEAM_BLUE)
-			return (enemyTeam == TEAM_RED);
-		return qfalse;
-	}
-
-	if (myStateTeam == TEAM_RED)
-		return (enemyTeam == TEAM_BLUE);
-	if (myStateTeam == TEAM_BLUE)
-		return (enemyTeam == TEAM_RED);
-	return qfalse;
-}
+#define SHADOW_DISTANCE 128  /* base from ground to player for shadow trace */
 
 char*    cg_customSoundNames[MAX_CUSTOM_SOUNDS] =
 {
@@ -92,7 +44,6 @@ char*    cg_customSoundNames[MAX_CUSTOM_SOUNDS] =
 	"*taunt.wav"
 };
 
-void CG_UpdateOurClientInfo(void);
 static void CG_UpdateOtherClientsInfo(void);
 void CG_UpdateAllClientsInfo(void);
 static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new);
@@ -823,107 +774,26 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 
 	// reset any existing players and bodies, because they might be in bad
 	// frames for this new model
+	// Main player is at cg_entities[clientNum]; freeze body at cg_entities[ci->frozenEntity].
 	clientNum = ci - cgs.clientinfo;
-	for (i = 0 ; i < MAX_GENTITIES ; i++)
 	{
-		if (cg_entities[i].currentState.clientNum == clientNum
-		        && cg_entities[i].currentState.eType == ET_PLAYER)
+		centity_t* cent;
+
+		cent = &cg_entities[clientNum];
+		if (cent->currentState.clientNum == clientNum && cent->currentState.eType == ET_PLAYER)
 		{
-			CG_ResetPlayerEntity(&cg_entities[i]);
+			CG_ResetPlayerEntity(cent);
 		}
-	}
-}
-
-qboolean CG_IsPlayerAvailable(int clientNum)
-{
-	/* Cache by (clientNum, cg.time): static local for QVM; avoids MAX_GENTITIES loop when called often per frame */
-	static int isPlayerAvailableCacheTime[MAX_CLIENTS];
-	static qboolean isPlayerAvailableCacheResult[MAX_CLIENTS];
-	int i;
-	entityState_t es;
-	centity_t* cent;
-	qboolean found;
-
-	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-		return qfalse;
-
-	/* For local player, always consider available if not dead (no cache) */
-	if (clientNum == cg.clientNum)
-	{
-		if (cg.predictedPlayerState.pm_type != PM_DEAD && cg.predictedPlayerState.pm_type != PM_SPINTERMISSION)
-			return qtrue;
-		return qfalse;
-	}
-
-	if (isPlayerAvailableCacheTime[clientNum] == cg.time)
-		return isPlayerAvailableCacheResult[clientNum];
-
-	found = qfalse;
-	for (i = 0; i < MAX_GENTITIES; i++)
-	{
-		cent = &cg_entities[i];
-		es = cent->currentState;
-		if (es.eType == ET_PLAYER && es.clientNum == clientNum)
+		if ((cgs.gametype == GT_TEAM || cgs.gametype == GT_CTF) && cgs.osp.gameTypeFreeze
+		        && ci->frozenEntity >= 0 && ci->frozenEntity < MAX_GENTITIES)
 		{
-			if (!(es.eFlags & EF_DEAD) && cent->currentValid)
+			cent = &cg_entities[ci->frozenEntity];
+			if (cent->currentState.eType == ET_PLAYER && cent->currentState.otherEntityNum == clientNum)
 			{
-				found = qtrue;
-				break;
+				CG_ResetPlayerEntity(cent);
 			}
 		}
 	}
-
-	isPlayerAvailableCacheTime[clientNum] = cg.time;
-	isPlayerAvailableCacheResult[clientNum] = found;
-	return found;
-}
-
-vec3_t* CG_GetAimContactPoint(int clientNum)
-{
-	static vec3_t impactPoint;
-	int i;
-	entityState_t es;
-	centity_t* cent;
-	vec3_t axis[3];
-	vec3_t start;
-	vec3_t end;
-	trace_t trace;
-	float viewHeight;
-
-	/* For local player, use predicted player state and refdef */
-	if (clientNum == cg.clientNum)
-	{
-		viewHeight = cg.predictedPlayerState.viewheight;
-		VectorCopy(cg.refdef.vieworg, start);
-		/* Use viewaxis directly (already computed from refdefViewAngles) */
-		VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
-		CG_Trace(&trace, start, vec3_origin, vec3_origin, end, clientNum, CONTENTS_SOLID);
-
-		VectorCopy(trace.endpos, impactPoint);
-		return &impactPoint;
-	}
-
-	/* For other players, use entity state */
-	viewHeight = DEFAULT_VIEWHEIGHT;
-
-	for (i = 0; i < MAX_GENTITIES; i++)
-	{
-		cent = &cg_entities[i];
-		es = cent->currentState;
-		/* Check if entity is valid and player is available */
-		if (es.eType == ET_PLAYER && es.clientNum == clientNum && !(es.eFlags & EF_DEAD) && cent->currentValid)
-		{
-			AnglesToAxis(es.apos.trBase, axis);
-			VectorCopy(es.pos.trBase, start);
-			start[2] += viewHeight;
-			VectorMA(start, 131072, axis[0], end);
-			CG_Trace(&trace, start, vec3_origin, vec3_origin, end, clientNum, CONTENTS_SOLID);
-
-			VectorCopy(trace.endpos, impactPoint);
-			return &impactPoint;
-		}
-	}
-	return NULL;
 }
 
 void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
@@ -936,45 +806,13 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	int toClient;
 	vec3_t coord;
 
-	if (cgs.gametype < GT_TEAM)
-	{
+	if (cgs.gametype < GT_TEAM || !cgs.teamMarkers.teamTaskEnabled)
 		return;
-	}
-
-	if (!cg_teamTask.integer)
-	{
-		return;
-	}
-
-	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
-	{
-		return;
-	}
 
 	ci = &cgs.clientinfo[clientNum];
-
-	if (!newInfo || !ci->infoValid || !cg.nextSnap)
-	{
+	if (!newInfo || !ci->infoValid || !cg.nextSnap ||
+	    CG_IS_LOCAL_CLIENT_SPECTATOR() || CG_IS_ENEMY_SIMPLE(newInfo) || CG_TeamTaskFilterIsNameMuted(ci->name_original))
 		return;
-	}
-
-	/* Spectators don't see teamtask marks */
-	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
-	{
-		return;
-	}
-
-	/* Check if sender is in our team - ignore teamtask from enemies */
-	if (CG_IS_ENEMY_SIMPLE(newInfo))
-	{
-		return;
-	}
-
-	/* Check if sender is muted for team tasks */
-	if (CG_TeamTaskFilterIsNameMuted(ci->name_original))
-	{
-		return;
-	}
 
 
 	// {
@@ -1017,21 +855,28 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	/* Mark that player supports team task only if unpack was successful (templateID != 0) */
 	ci->supportsTeamTask = qtrue;
 
+	// coord[0] = Dequantize(qx, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+	// coord[1] = Dequantize(qy, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+	// coord[2] = Dequantize(qz, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
+
 	coord[0] = Dequantize(qx, -3000, 3000, 7);
 	coord[1] = Dequantize(qy, -3000, 3000, 7);
 	coord[2] = Dequantize(qz, -3000, 3000, 7);
 
-	/* Check if this is an overhead mark type (YES or NO) - if so, track player dynamically */
-	/* For TEAMTASK_TARGET, try to find enemy at received position, otherwise use received coordinates */
-	/* For other marks, try to use aim contact point for more accurate positioning */
-	/* clientNum is the sender's client number (always filled), toClient is the recipient (0 = all) */
-	if (CG_IsTeamTaskOverhead(templateID))
+	switch (templateID)
 	{
-		/* Overhead mark - will track player dynamically */
-		/* Pass sender's clientNum so mark tracks the sender's head */
+	case TEAMTASK_YES:
+	case TEAMTASK_NO:
+	case TEAMTASK_MEDIC:
+	case TEAMTASK_HERE_ALIVE:
 		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-	}
-	else if (templateID == TEAMTASK_TARGET) /* TARGET is auto-selected by smart mode */
+		return;
+	case TEAMTASK_PLAYERDEAD:
+	case TEAMTASK_HERE_DEAD:
+	case TEAMTASK_WARN_DEAD:
+		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+		return;
+	case TEAMTASK_TARGET:
 	{
 		/* For TARGET mark, try to find enemy player at the received position */
 		/* If found, use enemy's current position with +24 height, otherwise use received coordinates */
@@ -1045,8 +890,8 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 		foundEnemy = qfalse;
 		searchRadius = 128.0f; /* Search radius for finding enemy near received coordinates */
 
-		/* Try to find enemy player near received coordinates */
-		for (i = 0; i < MAX_GENTITIES; i++)
+		/* Try to find enemy player near received coordinates (players at 0..MAX_CLIENTS-1) */
+		for (i = 0; i < MAX_CLIENTS; i++)
 		{
 			cent = &cg_entities[i];
 			if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
@@ -1074,92 +919,78 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 			}
 		}
 
-		/* If enemy not found, use coordinates from message */
 		if (!foundEnemy)
 		{
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 		}
 	}
-	else if (templateID == TEAMTASK_FROZEN_ALLY || templateID == TEAMTASK_FROZEN_ENEMY) /* FROZEN_ALLY and FROZEN_ENEMY are auto-selected by smart mode */
+		return;
+	case TEAMTASK_FROZEN_ALLY:
+	case TEAMTASK_FROZEN_ENEMY:
 	{
-		/* For frozen bodies, try to find frozen entity at received position */
-		/* If found, use frozen entity's current position with +24 height, otherwise use received coordinates */
+		/* Use frozen entity cache (set/clear in CG_Player when we process each cent) */
 		int i;
 		centity_t* cent;
+		clientInfo_t* frozenCi;
 		vec3_t frozenPos;
 		qboolean foundFrozen;
 		float searchRadius;
 		float dist;
-		int frozenClientNum;
-		clientInfo_t* frozenCi;
+		qboolean isEnemy;
+		qboolean matchesType;
 
 		foundFrozen = qfalse;
-		searchRadius = 128.0f; /* Search radius for finding frozen entity near received coordinates */
+		searchRadius = 128.0f;
 
-		/* Try to find frozen entity near received coordinates */
-		for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+		for (i = 0; i < MAX_CLIENTS; i++)
 		{
-			cent = &cg_entities[i];
-			if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
-			{
-				/* Check if this is a frozen entity */
-				if (CG_IS_FROZEN_ENTITY(cent))
-				{
-					frozenClientNum = cent->currentState.otherEntityNum;
-					if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS)
-					{
-						frozenCi = &cgs.clientinfo[frozenClientNum];
-						if (frozenCi->infoValid)
-						{
-							/* Check if frozen body matches the expected type (ally or enemy) */
-							qboolean isEnemy;
-							qboolean matchesType;
-
-							isEnemy = CG_IS_ENEMY_SIMPLE(frozenCi);
-							if (templateID == TEAMTASK_FROZEN_ALLY)
-							{
-								matchesType = !isEnemy;
-							}
-							else /* TEAMTASK_FROZEN_ENEMY */
-							{
-								matchesType = isEnemy;
-							}
-
-							if (matchesType)
-							{
-								/* Check if frozen entity is near received coordinates */
-								dist = Distance(cent->lerpOrigin, coord);
-								if (dist <= searchRadius)
-								{
-									/* Found frozen entity - use its position with +24 height */
-									VectorCopy(cent->lerpOrigin, frozenPos);
-									frozenPos[2] += 24.0f;
-									CG_TeamTaskMark(frozenPos, templateID, clientNum, toClient);
-									foundFrozen = qtrue;
-									break;
-								}
-							}
-						}
-					}
-				}
-			}
+			if (!cgs.clientinfo[i].isFrozenEnt)
+				continue;
+			cent = &cg_entities[cgs.clientinfo[i].frozenEntity];
+			if (!cent->currentValid)
+				continue;
+			frozenCi = &cgs.clientinfo[i];
+			if (!frozenCi->infoValid)
+				continue;
+			isEnemy = CG_IS_ENEMY_SIMPLE(frozenCi);
+			matchesType = (templateID == TEAMTASK_FROZEN_ALLY) ? !isEnemy : isEnemy;
+			if (!matchesType)
+				continue;
+			dist = Distance(cent->lerpOrigin, coord);
+			if (dist > searchRadius)
+				continue;
+			VectorCopy(cent->lerpOrigin, frozenPos);
+			frozenPos[2] += 24.0f;
+			CG_TeamTaskMark(frozenPos, templateID, clientNum, toClient);
+			foundFrozen = qtrue;
+			break;
 		}
 
-		/* If frozen entity not found, use coordinates from message */
 		if (!foundFrozen)
-		{
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-		}
 	}
-	else if (templateID == TEAMTASK_REDARMOR || templateID == TEAMTASK_MEGAHEALTH ||
-	         templateID == TEAMTASK_QUADDAMAGE || templateID == TEAMTASK_REGENERATION ||
-	         templateID == TEAMTASK_BATTLESUIT || templateID == TEAMTASK_HASTE ||
-	         templateID == TEAMTASK_YELLOWARMOR || templateID == TEAMTASK_HEALTH ||
-	         (cgs.gametype == GT_CTF && (templateID == TEAMTASK_REDFLAG || templateID == TEAMTASK_BLUEFLAG))) /* Items auto-selected by smart mode */
+		return;
+	case TEAMTASK_REDFLAG:
+	case TEAMTASK_BLUEFLAG:
+		if (cgs.gametype != GT_CTF)
+		{
+			goto do_aim_point;
+		}
+	case TEAMTASK_REDARMOR:
+	case TEAMTASK_MEGAHEALTH:
+	case TEAMTASK_QUADDAMAGE:
+	case TEAMTASK_REGENERATION:
+	case TEAMTASK_BATTLESUIT:
+	case TEAMTASK_HASTE:
+	case TEAMTASK_YELLOWARMOR:
+	case TEAMTASK_HEALTH:
 	{
-		/* For items, find the item entity near received coordinates */
-		/* and use its actual position instead of trace coordinates */
+		/* Find item entity near coord; use lerpOrigin + 4 for mark. */
+		/* When itemEntityIndices filled: iterate only items, pick smallest ent index in range (same as full-scan order). */
 		int i;
+		int j;
+		int entIndex;
+		int bestEntIndex; /* among matches in range, the one with smallest entity index */
 		centity_t* cent;
 		gitem_t* item;
 		int itemIndex;
@@ -1168,77 +999,97 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 		float searchRadius;
 		float dist;
 		const char* targetClassname;
+		qboolean matches;
 
 		foundItem = qfalse;
-		searchRadius = 128.0f; /* Search radius for finding item near received coordinates */
+		searchRadius = 128.0f;
+		bestEntIndex = -1;
 
-		/* Determine which classname to search for */
-		if (templateID == TEAMTASK_REDARMOR)
+		switch (templateID)
 		{
-			targetClassname = "item_armor_body";
-		}
-		else if (templateID == TEAMTASK_MEGAHEALTH)
-		{
-			targetClassname = "item_health_mega";
-		}
-		else if (templateID == TEAMTASK_QUADDAMAGE)
-		{
-			targetClassname = "item_quad";
-		}
-		else if (templateID == TEAMTASK_REGENERATION)
-		{
-			targetClassname = "item_regen";
-		}
-		else if (templateID == TEAMTASK_BATTLESUIT)
-		{
-			targetClassname = "item_enviro";
-		}
-		else if (templateID == TEAMTASK_HASTE)
-		{
-			targetClassname = "item_haste";
-		}
-		else if (templateID == TEAMTASK_YELLOWARMOR)
-		{
-			targetClassname = "item_armor_combat";
-		}
-		else if (cgs.gametype == GT_CTF && templateID == TEAMTASK_REDFLAG)
-		{
-			targetClassname = "team_CTF_redflag";
-		}
-		else if (cgs.gametype == GT_CTF && templateID == TEAMTASK_BLUEFLAG)
-		{
-			targetClassname = "team_CTF_blueflag";
-		}
-		else /* TEAMTASK_HEALTH */
-		{
-			/* For health, we need to check both item_health and item_health_large */
-			/* This will be handled in the loop below */
-			targetClassname = NULL; /* Will check both */
+		case TEAMTASK_REDARMOR:       targetClassname = "item_armor_body"; break;
+		case TEAMTASK_MEGAHEALTH:     targetClassname = "item_health_mega"; break;
+		case TEAMTASK_QUADDAMAGE:     targetClassname = "item_quad"; break;
+		case TEAMTASK_REGENERATION:   targetClassname = "item_regen"; break;
+		case TEAMTASK_BATTLESUIT:     targetClassname = "item_enviro"; break;
+		case TEAMTASK_HASTE:          targetClassname = "item_haste"; break;
+		case TEAMTASK_YELLOWARMOR:    targetClassname = "item_armor_combat"; break;
+		case TEAMTASK_REDFLAG:        targetClassname = "team_CTF_redflag"; break;
+		case TEAMTASK_BLUEFLAG:       targetClassname = "team_CTF_blueflag"; break;
+		default:                      targetClassname = NULL; break; /* TEAMTASK_HEALTH: both item_health */
 		}
 
-		/* Try to find item entity near received coordinates */
-		for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+		if (cg.numItemEntityIndices > 0)
 		{
-			cent = &cg_entities[i];
-			if (cent->currentState.eType == ET_ITEM)
+			/* Iterate only item entities; pick match with smallest entity index (same as full-scan order). */
+			for (j = 0; j < cg.numItemEntityIndices; j++)
 			{
+				entIndex = cg.itemEntityIndices[j];
+				cent = &cg_entities[entIndex];
+				if (cent->currentState.eType != ET_ITEM)
+					continue;
 				itemIndex = cent->currentState.modelindex;
-				if (itemIndex >= 1 && itemIndex < bg_numItems)
+				if (itemIndex < 1 || itemIndex >= bg_numItems)
+					continue;
+				item = &bg_itemlist[itemIndex];
+				if (!item->classname)
+					continue;
+				if (templateID == TEAMTASK_HEALTH)
+					matches = (!Q_stricmp(item->classname, "item_health") || !Q_stricmp(item->classname, "item_health_large"));
+				else
+					matches = !Q_stricmp(item->classname, targetClassname);
+				if (!matches)
+					continue;
+				dist = Distance(cent->lerpOrigin, coord);
+				if (dist > searchRadius)
+					continue;
+				if (bestEntIndex < 0 || entIndex < bestEntIndex)
+					bestEntIndex = entIndex;
+			}
+			if (bestEntIndex >= 0)
+			{
+				cent = &cg_entities[bestEntIndex];
+				VectorCopy(cent->lerpOrigin, itemPos);
+				itemPos[2] += 4;
+				CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
+				foundItem = qtrue;
+			}
+		}
+		else
+		{
+			/* Fallback: itemEntityIndices not filled yet; full scan. */
+			for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+			{
+				cent = &cg_entities[i];
+				if (cent->currentState.eType == ET_ITEM)
 				{
-					item = &bg_itemlist[itemIndex];
-					if (item->classname)
+					itemIndex = cent->currentState.modelindex;
+					if (itemIndex >= 1 && itemIndex < bg_numItems)
 					{
-						/* For health, check both item_health and item_health_large */
-						if (templateID == TEAMTASK_HEALTH)
+						item = &bg_itemlist[itemIndex];
+						if (item->classname)
 						{
-							if (!Q_stricmp(item->classname, "item_health") ||
-							        !Q_stricmp(item->classname, "item_health_large"))
+							if (templateID == TEAMTASK_HEALTH)
 							{
-								/* Check if item is near received coordinates */
+								if (!Q_stricmp(item->classname, "item_health") ||
+								        !Q_stricmp(item->classname, "item_health_large"))
+								{
+									dist = Distance(cent->lerpOrigin, coord);
+									if (dist <= searchRadius)
+									{
+										VectorCopy(cent->lerpOrigin, itemPos);
+										itemPos[2] += 4;
+										CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
+										foundItem = qtrue;
+										break;
+									}
+								}
+							}
+							else if (!Q_stricmp(item->classname, targetClassname))
+							{
 								dist = Distance(cent->lerpOrigin, coord);
 								if (dist <= searchRadius)
 								{
-									/* Found item - use its actual position (original position before bob effect) */
 									VectorCopy(cent->lerpOrigin, itemPos);
 									itemPos[2] += 4;
 									CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
@@ -1247,69 +1098,45 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 								}
 							}
 						}
-						else if (!Q_stricmp(item->classname, targetClassname))
-						{
-							/* Check if item is near received coordinates */
-							dist = Distance(cent->lerpOrigin, coord);
-							if (dist <= searchRadius)
-							{
-								/* Found item - use its actual position (original position before bob effect) */
-								VectorCopy(cent->lerpOrigin, itemPos);
-								itemPos[2] += 4;
-								CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
-								foundItem = qtrue;
-								break;
-							}
-						}
 					}
 				}
 			}
 		}
 
-		/* If item not found, use coordinates from message */
 		if (!foundItem)
 		{
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 		}
+		return;
 	}
-	else if (cgs.gametype == GT_CTF && (templateID == TEAMTASK_REDFLAG_CARRIER || templateID == TEAMTASK_BLUEFLAG_CARRIER))
-	{
-		/* For flag carriers, try to find player with flag near received coordinates */
-		int i;
-		centity_t* cent;
-		vec3_t carrierPos;
-		qboolean foundCarrier;
-		float searchRadius;
-		float dist;
-		int powerupFlag;
-
-		foundCarrier = qfalse;
-		searchRadius = 256.0f; /* Search radius for finding flag carrier near received coordinates */
-
-		/* Determine which powerup to check for */
-		if (templateID == TEAMTASK_REDFLAG_CARRIER)
+	case TEAMTASK_REDFLAG_CARRIER:
+	case TEAMTASK_BLUEFLAG_CARRIER:
+		if (cgs.gametype != GT_CTF)
 		{
-			powerupFlag = PW_REDFLAG;
+			goto do_aim_point;
 		}
-		else /* TEAMTASK_BLUEFLAG_CARRIER */
 		{
-			powerupFlag = PW_BLUEFLAG;
-		}
+			int i;
+			centity_t* cent;
+			vec3_t carrierPos;
+			qboolean foundCarrier;
+			float searchRadius;
+			float dist;
+			int powerupFlag;
 
-		/* Try to find player with flag near received coordinates */
-		for (i = 0; i < MAX_CLIENTS; i++)
-		{
-			cent = &cg_entities[i];
-			if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
+			foundCarrier = qfalse;
+			searchRadius = 256.0f;
+			powerupFlag = (templateID == TEAMTASK_REDFLAG_CARRIER) ? PW_REDFLAG : PW_BLUEFLAG;
+
+			for (i = 0; i < MAX_CLIENTS; i++)
 			{
-				/* Check if player has the flag */
-				if (cent->currentState.powerups & (1 << powerupFlag))
+				cent = &cg_entities[i];
+				if (cent->currentState.eType == ET_PLAYER && cent->currentValid &&
+				    (cent->currentState.powerups & (1 << powerupFlag)))
 				{
-					/* Check if player is near received coordinates */
 					dist = Distance(cent->lerpOrigin, coord);
 					if (dist <= searchRadius)
 					{
-						/* Found flag carrier - use their position with +24 height */
 						VectorCopy(cent->lerpOrigin, carrierPos);
 						carrierPos[2] += 24.0f;
 						CG_TeamTaskMark(carrierPos, templateID, clientNum, toClient);
@@ -1318,75 +1145,62 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 					}
 				}
 			}
-		}
-
-		/* If flag carrier not found, use coordinates from message */
-		if (!foundCarrier)
-		{
-			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-		}
-	}
-	else if (templateID == TEAMTASK_PLAYERDEAD)
-	{
-		/* For death marks, use coordinates from message directly (position of death) */
-		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-	}
-	else if (templateID == TEAMTASK_HERE_DEAD || templateID == TEAMTASK_WARN_DEAD)
-	{
-		/* For HERE_DEAD and WARN_DEAD marks, use coordinates from message directly (death position) */
-		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-	}
-	else if (templateID == TEAMTASK_WARN_ALIVE)
-	{
-		/* For WARN_ALIVE, check if sender is available - if yes, use aim contact point, otherwise use coordinates from command */
-		vec3_t* aimPoint;
-		qboolean playerAvailable;
-
-		playerAvailable = CG_IsPlayerAvailable(clientNum);
-		if (playerAvailable)
-		{
-			aimPoint = CG_GetAimContactPoint(clientNum);
-			if (aimPoint != NULL)
+			if (!foundCarrier)
 			{
-				CG_TeamTaskMark(*aimPoint, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+				CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+			}
+		}
+		return;
+	default:
+	do_aim_point:
+		{
+			vec3_t aimPoint;
+			vec3_t start, end;
+			trace_t trace;
+			centity_t* cent;
+
+			/* Inline: aim point only when needed; use cg_entities[clientNum] directly (we know client) */
+			if (clientNum == cg.clientNum)
+			{
+				if (cg.predictedPlayerState.pm_type == PM_DEAD ||
+				    cg.predictedPlayerState.pm_type == PM_SPINTERMISSION)
+				{
+					CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+					break;
+				}
+				VectorCopy(cg.refdef.vieworg, start);
+				VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
+				CG_Trace(&trace, start, vec3_origin, vec3_origin, end, clientNum, CONTENTS_SOLID);
+				VectorCopy(trace.endpos, aimPoint);
+			}
+			else if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+			{
+				cent = &cg_entities[clientNum];
+				if (cent->currentState.eType != ET_PLAYER || cent->currentState.clientNum != clientNum ||
+				    (cent->currentState.eFlags & EF_DEAD) || !cent->currentValid)
+				{
+					CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+					break;
+				}
+				{
+					vec3_t axis[3];
+
+					AnglesToAxis(cent->currentState.apos.trBase, axis);
+					VectorCopy(cent->currentState.pos.trBase, start);
+					start[2] += DEFAULT_VIEWHEIGHT;
+					VectorMA(start, 131072, axis[0], end);
+					CG_Trace(&trace, start, vec3_origin, vec3_origin, end, clientNum, CONTENTS_SOLID);
+					VectorCopy(trace.endpos, aimPoint);
+				}
 			}
 			else
 			{
-				/* Fallback to coord if aimPoint calculation failed */
-				CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
+				CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+				break;
 			}
+			CG_TeamTaskMark(aimPoint, templateID, clientNum, toClient);
 		}
-		else
-		{
-			/* Sender not available - use coordinates from command */
-			CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
-		}
-	}
-	else
-	{
-		/* For other marks, check if sender is available - if yes, use aim contact point, otherwise use coordinates from command */
-		vec3_t* aimPoint;
-		qboolean playerAvailable;
-
-		playerAvailable = CG_IsPlayerAvailable(clientNum);
-		if (playerAvailable)
-		{
-			aimPoint = CG_GetAimContactPoint(clientNum);
-			if (aimPoint != NULL)
-			{
-				CG_TeamTaskMark(*aimPoint, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
-			}
-			else
-			{
-				/* Fallback to coord if aimPoint calculation failed */
-				CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
-			}
-		}
-		else
-		{
-			/* Sender not available - use coordinates from command */
-			CG_TeamTaskMark(coord, templateID, clientNum, toClient); /* Static mark, but clientNum always filled */
-		}
+		break;
 	}
 }
 
@@ -1465,17 +1279,15 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 
 	isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "pm") == 0)) ? qtrue : qfalse;
 
-	if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
+	if (nameSkin && (Q_stricmp(nameSkin, "fb") == 0))
 	{
-		isFbSkin = (nameSkin && (Q_stricmp(nameSkin, "fb") == 0)) ? qtrue : qfalse;
-	}
-	else
-	{
-		if (nameSkin && (Q_stricmp(nameSkin, "fb") == 0))
+		if ((cgs.beDisableFeatures & CG_BE_FULLBRIGHT) || !cgs.beEnabled)
 		{
+			nameSkin = "pm";
 			isPmSkin = qtrue;
 		}
-		nameSkin = "pm";
+		else
+			isFbSkin = qtrue;
 	}
 
 	if (isOurClient)
@@ -1691,6 +1503,7 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 	CG_UpdateModelFromString(&ci->headModelName[0], &ci->headSkinName[0], resultHModelString, isOurClient, ci->rt);
 	ci->isPmSkin = (Q_stricmp(ci->skinName, "pm") == 0) ? qtrue : qfalse;
 	ci->isFbSkin = (Q_stricmp(ci->skinName, "fb") == 0) ? qtrue : qfalse;
+	CG_UpdateBeFeatures();
 }
 
 /*
@@ -1948,53 +1761,6 @@ static void CG_PlayerXIDCalc(const char* cmd, clientInfo_t* ci)
 	ci->xidStr[4] = 0;
 }
 
-/* BE: Detect spectator target changes */
-static void CG_CheckSpectatorTargetChange(void)
-{
-	static int lastSpectatorTarget = -1;
-	int currentSpectatorTarget = -1;
-
-	/* Only check if we're spectating */
-	if (cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
-	{
-		lastSpectatorTarget = -1;
-		return;
-	}
-
-	/* Get current spectator target */
-	if (cg.snap->ps.pm_flags & PMF_FOLLOW &&
-	        cg.snap->ps.clientNum >= 0 &&
-	        cg.snap->ps.clientNum < MAX_CLIENTS)
-	{
-		currentSpectatorTarget = cg.snap->ps.clientNum;
-	}
-
-	/* If target changed, update all client models */
-	if (currentSpectatorTarget != lastSpectatorTarget)
-	{
-		lastSpectatorTarget = currentSpectatorTarget;
-		if (cgs.gametype >= GT_TEAM || cg_spectPOV.integer)
-		{
-			CG_UpdateOtherClientsInfo();
-		}
-	}
-}
-
-/* Called once per frame from CG_AddPacketEntities; avoids spectator check in CG_Player hot path */
-void CG_PlayerFrameStart(void)
-{
-	if (cg_spectPOV.integer)
-	{
-		static int lastFrameTime = 0;
-
-		if (cg.time != lastFrameTime)
-		{
-			lastFrameTime = cg.time;
-			CG_CheckSpectatorTargetChange();
-		}
-	}
-}
-
 /*
 ===================
 CG_PlayerNameCheckDuplicate
@@ -2234,55 +2000,6 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 }
 
 /*
-===================
-CG_IsOnlyTeamTaskChanged
-
-Check if only teamTask field changed in client info.
-Returns qtrue if only teamTask changed, qfalse otherwise.
-===================
-*/
-static qboolean CG_IsOnlyTeamTaskChanged(const clientInfo_t* ci, const clientInfo_t* newInfo, const char* configstring)
-{
-	int clientNum;
-	const char* oldConfigstring;
-	char newCS[MAX_STRING_CHARS];
-	char oldCS[MAX_STRING_CHARS];
-
-	if (!ci->infoValid)
-	{
-		return qfalse;
-	}
-
-	/* Get old configstring */
-	clientNum = ci - cgs.clientinfo;
-	oldConfigstring = CG_ConfigString(clientNum + CS_PLAYERS);
-
-	if (!oldConfigstring || !oldConfigstring[0])
-	{
-		return qfalse;
-	}
-
-	/* Copy configstrings and remove "tt" field from both */
-	Q_strncpyz(newCS, configstring, sizeof(newCS));
-	Q_strncpyz(oldCS, oldConfigstring, sizeof(oldCS));
-
-	Info_RemoveKey(newCS, "tt");
-	Info_RemoveKey(oldCS, "tt");
-
-	/* Compare configstrings without "tt" field */
-	if (Q_stricmp(newCS, oldCS) == 0)
-	{
-		/* All fields except teamTask match - check if teamTask actually changed */
-		if (newInfo->teamTask != ci->teamTask)
-		{
-			/* Only teamTask changed */
-			return qtrue;
-		}
-	}
-
-	return qfalse;
-}
-/*
 ==================
 CG_CheckTeamChangeCommands
 
@@ -2296,16 +2013,10 @@ void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam)
 	/* Handle first connection - when player first connects and joins a team */
 	if (prevTeam == -1)
 	{
-		/* If player immediately joined a game team (not spectator), execute join game command */
-		if (currentTeam != TEAM_SPECTATOR)
-		{
-			CG_ExecCommandIfSet(&cg_exec_joinGame);
-		}
-		/* If player immediately joined spectator team, execute join spec command */
-		else if (currentTeam == TEAM_SPECTATOR)
-		{
-			CG_ExecCommandIfSet(&cg_exec_joinSpec);
-		}
+		if (currentTeam != TEAM_SPECTATOR && cg_exec_joinGame.string[0])
+			trap_SendConsoleCommand(cg_exec_joinGame.string);
+		else if (currentTeam == TEAM_SPECTATOR && cg_exec_joinSpec.string[0])
+			trap_SendConsoleCommand(cg_exec_joinSpec.string);
 		return;
 	}
 
@@ -2315,17 +2026,10 @@ void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam)
 		return;
 	}
 
-	/* Execute join game command when leaving spectator team */
-	if (prevTeam == TEAM_SPECTATOR && currentTeam != TEAM_SPECTATOR)
-	{
-		CG_ExecCommandIfSet(&cg_exec_joinGame);
-	}
-
-	/* Execute join spec command when joining spectator team */
-	if (prevTeam != TEAM_SPECTATOR && currentTeam == TEAM_SPECTATOR)
-	{
-		CG_ExecCommandIfSet(&cg_exec_joinSpec);
-	}
+	if (prevTeam == TEAM_SPECTATOR && currentTeam != TEAM_SPECTATOR && cg_exec_joinGame.string[0])
+		trap_SendConsoleCommand(cg_exec_joinGame.string);
+	if (prevTeam != TEAM_SPECTATOR && currentTeam == TEAM_SPECTATOR && cg_exec_joinSpec.string[0])
+		trap_SendConsoleCommand(cg_exec_joinSpec.string);
 }
 /*
 ==================
@@ -2381,7 +2085,10 @@ void CG_NewClientInfo(int clientNum)
 	clientInfo_t* ci;
 	clientInfo_t newInfo;
 	const char*  configstring;
+	const char*  oldConfigstring;
 	const char*  v;
+	char newCS[MAX_STRING_CHARS];
+	char oldCS[MAX_STRING_CHARS];
 	const qboolean isOurClient = clientNum == cg.clientNum;
 	const qboolean isTeamGame = cgs.gametype >= GT_TEAM;
 
@@ -2399,8 +2106,6 @@ void CG_NewClientInfo(int clientNum)
 				cg.scoresRequestTime = cg.time;
 				trap_SendClientCommand("score");
 			}
-			cg.realNumClients = CG_CountRealClients();
-
 		}
 		return;     // player just left
 	}
@@ -2494,14 +2199,23 @@ void CG_NewClientInfo(int clientNum)
 		}
 	}
 
-	/* Check if only teamTask changed - if so, skip full reload */
-	if (CG_IsOnlyTeamTaskChanged(ci, &newInfo, configstring))
+	/* Check if only teamTask changed - if so, skip full reload (inline, early exit when tt unchanged) */
+	if (newInfo.teamTask != ci->teamTask && ci->infoValid)
 	{
-		/* Only teamTask changed - update it without full reload */
-		CG_ClientInfoUpdateTeamTask(&newInfo, clientNum);
-		ci->teamTask = newInfo.teamTask;
-		/* Don't reset team overlay, don't reload models, don't update other clients */
-		return;
+		oldConfigstring = CG_ConfigString(clientNum + CS_PLAYERS);
+		if (oldConfigstring && oldConfigstring[0])
+		{
+			Q_strncpyz(newCS, configstring, sizeof(newCS));
+			Q_strncpyz(oldCS, oldConfigstring, sizeof(oldCS));
+			Info_RemoveKey(newCS, "tt");
+			Info_RemoveKey(oldCS, "tt");
+			if (Q_stricmp(newCS, oldCS) == 0)
+			{
+				CG_ClientInfoUpdateTeamTask(&newInfo, clientNum);
+				ci->teamTask = newInfo.teamTask;
+				return;
+			}
+		}
 	}
 
 	/* Full reload needed - update everything */
@@ -2551,17 +2265,8 @@ void CG_NewClientInfo(int clientNum)
 		}
 	}
 
-	// Update real client count when client info changes (not in demo mode)
-	if (!cg.demoPlayback)
-	{
-		cg.realNumClients = CG_CountRealClients();
-	}
 }
 
-void CG_UpdateOurClientInfo(void)
-{
-	CG_NewClientInfo(cg.clientNum);
-}
 
 static void CG_UpdateOtherClientsInfo(void)
 {
@@ -2576,36 +2281,15 @@ static void CG_UpdateOtherClientsInfo(void)
 	}
 }
 
-/* Deferred clientinfo update: -1 = idle, 0..MAX_CLIENTS-1 = next index to process */
-static int updateAllPendingStartIndex = -1;
-
-#define CG_CLIENTINFO_BATCH_SIZE 2
-
 void CG_UpdateAllClientsInfo(void)
 {
-	/* Defer full update: process 2 clients per frame to avoid spike at 125/250 fps (see ANALYSIS_PERFORMANCE 3.5) */
-	updateAllPendingStartIndex = 0;
-}
-
-void CG_ProcessPendingClientInfoUpdates(void)
-{
 	int index;
-	int n;
-	int batchSize = CG_CLIENTINFO_BATCH_SIZE;
 
-	if (updateAllPendingStartIndex < 0)
-		return;
-
-	for (n = 0; n < batchSize && updateAllPendingStartIndex < MAX_CLIENTS; n++)
+	for (index = 0; index < MAX_CLIENTS; index++)
 	{
-		index = updateAllPendingStartIndex;
-		updateAllPendingStartIndex++;
 		if (CG_ConfigString(CS_PLAYERS + index))
 			CG_NewClientInfo(index);
 	}
-
-	if (updateAllPendingStartIndex >= MAX_CLIENTS)
-		updateAllPendingStartIndex = -1;
 }
 
 int CG_CountRealClients(void)
@@ -3182,7 +2866,7 @@ static void CG_BreathPuffs(centity_t* cent, refEntity_t* head)
 
 	ci = &cgs.clientinfo[ cent->currentState.clientNum ];
 
-	if (!cgs.be.server.enableBreath ||
+	if (!cgs.beServerEnableBreath ||
 	        !cg_enableBreath.integer)
 	{
 		return;
@@ -3360,475 +3044,6 @@ static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color
 	}
 	trap_R_AddRefEntityToScene(&ent);
 }
-
-static void CG_FriendHudMarker(centity_t* cent)
-{
-	int team;
-	int useWallhack;
-	float distance;
-	float hfov_x;
-	float size;
-	vec4_t color;
-	clientInfo_t* cl;
-	qboolean isFrozen;
-	qboolean needVis;
-	qboolean friendVisible;
-	vec3_t start;
-	vec3_t end;
-	trace_t trace;
-	qboolean useTeamFrozen;
-	qboolean useTeamFoeWh;
-
-	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
-	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
-	isFrozen = CG_IS_FROZEN_ENTITY(cent);
-
-	team = cgs.clientinfo[cent->currentState.clientNum].team;
-	if (cgs.gametype < GT_TEAM
-	        || cg.snap->ps.persistant[PERS_TEAM] != team
-	        || (cent->currentState.eFlags & EF_DEAD && !isFrozen)
-	        || cent->currentState.number == cg.snap->ps.clientNum
-	        || cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
-	{
-		return;
-	}
-
-	/* One pass: check visibility inline (no batch cache per QVM_LOGIC) */
-	useWallhack = (cg_friendsWallhack.integer & 2) ? 1 : 0;
-	needVis = (!useWallhack) ||
-	          (isFrozen && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer));
-	friendVisible = qtrue;
-	if (needVis)
-	{
-		VectorCopy(cg.refdef.vieworg, start);
-		VectorCopy(cent->lerpOrigin, end);
-		end[2] += 24.0f;
-		CG_Trace(&trace, start, vec3_origin, vec3_origin, end, cg.snap->ps.clientNum, CONTENTS_SOLID);
-		if (trace.fraction != 1.0f)
-		{
-			friendVisible = qfalse;
-		}
-		else
-		{
-			CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin, cg.snap->ps.clientNum, CONTENTS_SOLID);
-			friendVisible = (trace.fraction == 1.0f);
-		}
-	}
-	if (isFrozen && !friendVisible && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer))
-	{
-		return;
-	}
-
-	if ((!(cg_friendsWallhack.integer & 1) && !friendVisible) || (!useTeamFoeWh && !friendVisible))
-	{
-		return;
-	}
-
-	distance = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
-	if (cg_friendHudMarkerMaxDist.integer > 0 && distance > cg_friendHudMarkerMaxDist.value)
-	{
-		return;
-	}
-
-	distance = MAX(distance, 1.0);
-	hfov_x = cg.refdef.fov_x * M_PI / 360;
-	size = 1.0 / tan(hfov_x) * 150 / distance;
-	size = MIN(cg_friendHudMarkerMaxScale.value, size);
-	size = MAX(cg_friendHudMarkerMinScale.value, size);
-
-	cl = &cgs.clientinfo[cent->currentState.clientNum];
-	if (!(cg_healthColorLevels.integer & 2) && cl->health > 0)
-	{
-		CG_GetColorForHealth(cl->health, cl->armor, color, NULL);
-	}
-	else
-	{
-		Vector4Copy(colorWhite, color);
-	}
-
-	CG_HudBorderMarker(
-	    cent->lerpOrigin,
-	    color,
-	    cg_friendHudMarkerSize.value * size,
-	    isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader,
-	    270
-	);
-}
-
-
-/*
-===============
-CG_HasActiveTeamTaskOverhead
-
-Check if player has active team task mark above head.
-Uses set built once per frame (O(1) per player instead of O(marks)).
-===============
-*/
-static qboolean CG_HasActiveTeamTaskOverhead(int clientNum)
-{
-	static int overheadSetBuiltTime = -1;
-	static qboolean overheadClientSet[MAX_CLIENTS];
-	int i;
-	teamTaskMark_t* mark;
-
-	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-		return qfalse;
-
-	if (overheadSetBuiltTime != cg.time)
-	{
-		overheadSetBuiltTime = cg.time;
-		memset(overheadClientSet, 0, sizeof(overheadClientSet));
-
-		if ((cg_teamTask.integer || CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS)) &&
-		        cgs.gametype >= GT_TEAM &&
-		        cgs.teamMarkers.numTeamTaskMarks > 0)
-		{
-			for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
-			{
-				mark = &cgs.teamMarkers.teamTaskMarks[i];
-				if (cg.time < mark->endTime && mark->isOverhead &&
-				        mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
-					overheadClientSet[mark->clientNum] = qtrue;
-			}
-		}
-	}
-
-	return overheadClientSet[clientNum];
-}
-
-/*
-===============
-CG_PlayerSprites
-
-Float sprites over the player's head
-===============
-*/
-static void CG_PlayerSprites(centity_t* cent)
-{
-	clientInfo_t* cl;
-	int clientNum;
-	qboolean useTeamFrozen;
-	qboolean useTeamFoeWh;
-
-	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
-	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
-
-	clientNum = cent->currentState.clientNum;
-
-	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
-	{
-		if (CG_HasActiveTeamTaskOverhead(clientNum))
-		{
-			return;
-		}
-	}
-
-	if (cent->currentState.eFlags & EF_CONNECTION)
-	{
-		CG_PlayerFloatSprite(cent, cgs.media.connectionShader, NULL);
-		return;
-	}
-
-	if (cent->currentState.eFlags & EF_TALK)
-	{
-		CG_PlayerFloatSprite(cent, cgs.media.balloonShader, NULL);
-		return;
-	}
-
-	if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSPRITE))
-	{
-		if (cent->currentState.eFlags & EF_AWARD_IMPRESSIVE)
-		{
-			CG_PlayerFloatSprite(cent, cgs.media.medalImpressive, NULL);
-			return;
-		}
-
-		if (cent->currentState.eFlags & EF_AWARD_EXCELLENT)
-		{
-			CG_PlayerFloatSprite(cent, cgs.media.medalExcellent, NULL);
-			return;
-		}
-
-		if (cent->currentState.eFlags & EF_AWARD_GAUNTLET)
-		{
-			CG_PlayerFloatSprite(cent, cgs.media.medalGauntlet, NULL);
-			return;
-		}
-
-		if (cent->currentState.eFlags & EF_AWARD_DEFEND)
-		{
-			CG_PlayerFloatSprite(cent, cgs.media.medalDefend, NULL);
-			return;
-		}
-
-		if (cent->currentState.eFlags & EF_AWARD_ASSIST)
-		{
-			CG_PlayerFloatSprite(cent, cgs.media.medalAssist, NULL);
-			return;
-		}
-
-		if (cent->currentState.eFlags & EF_AWARD_CAP)
-		{
-			CG_PlayerFloatSprite(cent, cgs.media.medalCapture, NULL);
-			return;
-		}
-	}
-
-	cl = &cgs.clientinfo[ cent->currentState.clientNum ];
-
-	if (cg_drawFriend.integer)
-	{
-		if (!(cent->currentState.eFlags & EF_DEAD) && cg.snap->ps.persistant[PERS_TEAM] == cl->team && cgs.gametype >= GT_TEAM)
-		{
-			if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
-			{
-				/* Check if there is an active TEAMTASK_FROZEN_ALLY mark for this frozen ally */
-				qboolean hasActiveMark;
-				qhandle_t shader;
-
-				hasActiveMark = CG_HasActiveFrozenAllyMark(cent);
-
-				/* Only draw frozenFoeTagShader if there is no active team task mark */
-				if (!hasActiveMark)
-				{
-					if (!useTeamFrozen)
-						shader = cgs.media.frozenFoeTagShader;
-					else if (useTeamFoeWh && (cg_friendsWallhack.integer & 1))
-					{
-						if (cg_friendsWallhackFrozen.integer)
-						{
-							shader = cgs.media.frozenFoeTagShaderWallhack;
-						}
-						else
-						{
-							shader = cgs.media.frozenFoeTagShader;
-						}
-					}
-					else
-						shader = cgs.media.frozenFoeTagShader;
-					CG_PlayerFloatSprite(cent, shader, NULL);
-				}
-			}
-			else if (cg_drawFriend.integer != 2)
-			{
-				vec4_t color;
-				qhandle_t shader;
-				// Black color for low hp is transparent, skip it
-				if (!(cg_healthColorLevels.integer & 2) && cl->health > 0)
-				{
-					CG_GetColorForHealth(cl->health, cl->armor, color, NULL);
-				}
-				else
-				{
-					VectorCopy(colorWhite, color);
-				}
-				if (useTeamFoeWh && cg_friendsWallhack.integer & 1)
-					shader = cgs.media.friendShaderWallhack;
-				else
-					shader = cgs.media.friendShader;
-				CG_PlayerFloatSprite(cent, shader, color);
-			}
-			return;
-		}
-	}
-}
-
-/*
-===============
-CG_PlayerShadow
-
-Returns the Z component of the surface being shadowed
-
-  should it return a full plane instead of a Z?
-===============
-*/
-#define SHADOW_DISTANCE     128
-static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
-{
-	vec3_t      end, mins = {-15, -15, 0}, maxs = {15, 15, 2};
-	trace_t     trace;
-	float       yawAngle = cent->pe.legs.yawAngle;
-	int         alt = cg_altShadow.integer;
-	qhandle_t shadowMarkShader;
-	vec4_t      color = { 1, 1, 1, 1 };
-	qboolean    useAltShadow;
-	*shadowPlane = 0;
-
-	if (cg_shadows.integer == 0)
-	{
-		return qfalse;
-	}
-
-	// no shadows when invisible
-	if (cent->currentState.powerups & (1 << PW_INVIS))
-	{
-		return qfalse;
-	}
-
-	// send a trace down from the player to the ground
-	VectorCopy(cent->lerpOrigin, end);
-	end[2] -= SHADOW_DISTANCE;
-
-	trap_CM_BoxTrace(&trace, cent->lerpOrigin, end, mins, maxs, 0, MASK_PLAYERSOLID);
-
-	// no shadow if too high
-	if (trace.fraction == 1.0 || trace.startsolid || trace.allsolid)
-	{
-		return qfalse;
-	}
-
-	*shadowPlane = trace.endpos[2] + 1;
-
-	if (cg_shadows.integer != 1 && cg_shadows.integer != -1) // no mark for stencil or projection shadows
-	{
-		return qtrue;
-	}
-
-	useAltShadow = CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW);
-
-	// bk0101022 - hack / FPE - bogus planes?
-	//assert( DotProduct( trace.plane.normal, trace.plane.normal ) != 0.0f )
-
-	// use alternate shader
-	if (alt <= 0)
-	{
-		shadowMarkShader = cgs.media.shadowMarkShader;
-	}
-	else if (useAltShadow && alt < MAX_ALT_SHADERS)
-	{
-		shadowMarkShader = cgs.media.shadowMarkShaderNew[alt - 1];
-	}
-	else
-	{
-		if (useAltShadow)
-			shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
-		else
-			shadowMarkShader = cgs.media.shadowMarkShader;
-	}
-
-	if (useAltShadow && cg_altShadow.integer)
-	{
-		color[0] = cgs.be.altShadowColor[0];
-		color[1] = cgs.be.altShadowColor[1];
-		color[2] = cgs.be.altShadowColor[2];
-		trace.fraction = trace.fraction - 0.1875; // brightness fix for alt shadows
-		if (trace.fraction < 0)
-		{
-			trace.fraction = 0;
-		}
-	}
-	// fade the shadow out with height
-	color[0] = color[0] * (1.0f - trace.fraction);
-	color[1] = color[1] * (1.0f - trace.fraction);
-	color[2] = color[2] * (1.0f - trace.fraction);
-	// make shadow mark static
-	if (cg_shadows.integer == -1)
-	{
-		yawAngle = 0;
-	}
-
-	// add the mark as a temporary, so it goes directly to the renderer
-	// without taking a spot in the cg_marks array
-	CG_ImpactMark(shadowMarkShader, trace.endpos, trace.plane.normal,
-	              yawAngle, color[0], color[1], color[2], 1, qfalse, 24, qtrue, qtrue);
-
-	return qtrue;
-}
-
-
-/*
-===============
-CG_PlayerSplash
-
-Draw a mark at the water surface
-===============
-*/
-static void CG_PlayerSplash(centity_t* cent)
-{
-	vec3_t      start, end;
-	trace_t     trace;
-	int         contents;
-	polyVert_t  verts[4];
-
-	if (!cg_shadows.integer)
-	{
-		return;
-	}
-
-	VectorCopy(cent->lerpOrigin, end);
-	end[2] -= 24;
-
-	// if the feet aren't in liquid, don't make a mark
-	// this won't handle moving water brushes, but they wouldn't draw right anyway...
-	contents = trap_CM_PointContents(end, 0);
-	if (!(contents & (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA)))
-	{
-		return;
-	}
-
-	VectorCopy(cent->lerpOrigin, start);
-	start[2] += 32;
-
-	// if the head isn't out of liquid, don't make a mark
-	contents = trap_CM_PointContents(start, 0);
-	if (contents & (CONTENTS_SOLID | CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA))
-	{
-		return;
-	}
-
-	// trace down to find the surface
-	trap_CM_BoxTrace(&trace, start, end, NULL, NULL, 0, (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA));
-
-	if (trace.fraction == 1.0)
-	{
-		return;
-	}
-
-	// create a mark polygon
-	VectorCopy(trace.endpos, verts[0].xyz);
-	verts[0].xyz[0] -= 32;
-	verts[0].xyz[1] -= 32;
-	verts[0].st[0] = 0;
-	verts[0].st[1] = 0;
-	verts[0].modulate[0] = 255;
-	verts[0].modulate[1] = 255;
-	verts[0].modulate[2] = 255;
-	verts[0].modulate[3] = 255;
-
-	VectorCopy(trace.endpos, verts[1].xyz);
-	verts[1].xyz[0] -= 32;
-	verts[1].xyz[1] += 32;
-	verts[1].st[0] = 0;
-	verts[1].st[1] = 1;
-	verts[1].modulate[0] = 255;
-	verts[1].modulate[1] = 255;
-	verts[1].modulate[2] = 255;
-	verts[1].modulate[3] = 255;
-
-	VectorCopy(trace.endpos, verts[2].xyz);
-	verts[2].xyz[0] += 32;
-	verts[2].xyz[1] += 32;
-	verts[2].st[0] = 1;
-	verts[2].st[1] = 1;
-	verts[2].modulate[0] = 255;
-	verts[2].modulate[1] = 255;
-	verts[2].modulate[2] = 255;
-	verts[2].modulate[3] = 255;
-
-	VectorCopy(trace.endpos, verts[3].xyz);
-	verts[3].xyz[0] += 32;
-	verts[3].xyz[1] -= 32;
-	verts[3].st[0] = 1;
-	verts[3].st[1] = 0;
-	verts[3].modulate[0] = 255;
-	verts[3].modulate[1] = 255;
-	verts[3].modulate[2] = 255;
-	verts[3].modulate[3] = 255;
-
-	trap_R_AddPolyToScene(cgs.media.wakeMarkShader, 4, verts);
-}
-
-
 
 void CG_AddRefEntityFrozenPlayer(refEntity_t* ent, entityState_t* state, int team)
 {
@@ -4073,7 +3288,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		if (cg_hitBoxColor.integer || cg_hitBoxColor.string[0])
 		{
 			vec4_t color;
-			Vector4Copy(cgs.be.hitBoxColor, color);
+			Vector4Copy(cgs.beHitBoxColor, color);
 
 			color[0] = color[0] * 255;
 			color[1] = color[1] * 255;
@@ -4167,103 +3382,6 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 }
 
-void CG_AddOutline(refEntity_t* ent, centity_t* cent, qboolean isSpectator, qboolean isEnemy)
-{
-	clientInfo_t* ci;
-	int clientNum, i;
-
-	vec4_t color;
-
-	int drawOutline;
-	int enemyOutlineSize;
-	int teamOutlineSize;
-	int spectPOV;
-	int enemyOutlineColorUnique;
-
-	clientNum = cent->currentState.clientNum;
-
-	/* Hot path: read only from cgs snapshot (filled in CG_UpdateCvars every 12 frames), no vmCvar_t */
-	drawOutline = cgs.outlineCvars.drawOutline;
-	enemyOutlineSize = cgs.outlineCvars.enemySize;
-	teamOutlineSize = cgs.outlineCvars.teamSize;
-	spectPOV = cgs.outlineCvars.spectPOV;
-	enemyOutlineColorUnique = cgs.outlineCvars.enemyColorUnique;
-
-	if (!drawOutline || clientNum < 0 || clientNum >= MAX_CLIENTS)
-		return;
-
-	ci = &cgs.clientinfo[clientNum];
-	if (!ci->infoValid)
-		return;
-
-	if ((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
-	        (cent->currentState.eFlags & EF_DEAD) ||
-	        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) ||
-	        (cent->currentState.powerups & (1 << PW_INVIS)))
-		return;
-
-	if (!((drawOutline == 1 && isEnemy) || (drawOutline == 2 && !isEnemy) || (drawOutline == 3)))
-		return;
-	if (isEnemy && !enemyOutlineSize)
-		return;
-	if (!isEnemy && !teamOutlineSize)
-		return;
-
-	ent->customShader = isEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
-
-	{
-		cgs_be_t* be = &cgs.be;
-
-		if (isSpectator && !spectPOV)
-		{
-			if (ci->team == TEAM_RED)
-				Vector4Copy(be->teamOutlineColor, color);
-			else
-				Vector4Copy(be->enemyOutlineColor, color);
-		}
-		else if (isEnemy)
-		{
-			if (enemyOutlineColorUnique == 0)
-			{
-				Vector4Copy(be->enemyOutlineColor, color);
-			}
-			else
-			{
-				vec3_t uniqueColorVec;
-				vec4_t tmpColor;
-
-				VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
-				tmpColor[0] = uniqueColorVec[0];
-				tmpColor[1] = uniqueColorVec[1];
-				tmpColor[2] = uniqueColorVec[2];
-				tmpColor[3] = 1.0f;
-
-				for (i = 0; i < 3; i++)
-				{
-					if (enemyOutlineColorUnique & (1 << i))
-						color[i] = tmpColor[i];
-					else
-						color[i] = be->enemyOutlineColor[i];
-				}
-				color[3] = 1.0f;
-			}
-		}
-		else
-		{
-			if (CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE) && be->markedTeam[clientNum])
-				Vector4Copy(be->markedTeamColor, color);
-			else
-				Vector4Copy(be->teamOutlineColor, color);
-		}
-	}
-
-	for (i = 0; i < 4; i++)
-		ent->shaderRGBA[i] = (unsigned char)(color[i] * 255);
-
-	trap_R_AddRefEntityToScene(ent);
-}
-
-
 /*
 ===============
 CG_Player
@@ -4280,17 +3398,59 @@ void CG_Player(centity_t* cent)
 	qboolean        shadow;
 	float           shadowPlane;
 	qboolean        paintItBlack;
-	float           paintBlackLevel;
 	qboolean        outlineIsSpec;
 	qboolean        outlineIsEnemy;
 	qboolean        useFullbright;
 	qboolean        useOutline;
+	qboolean        drawOutlineThisPlayer = qfalse;
+	qboolean useAltShadow;
+	qboolean useMarkTeammate;
+	qboolean useTeamFrozen;
+	qboolean useTeamFoeWh;
+	vec4_t          outlineColor = {0, 0, 0, 0};
+	/* QVM_LOGIC: pre-computed outline values - avoid 3x ternary + 3x float->byte conversion */
+	qhandle_t       outlineShader = 0;
+	byte            outlineColorBytes[4] = {0, 0, 0, 0};
+	/* QVM_LOGIC: pre-computed paintBlack - avoid 3x branch + 3x triple-assign */
+	byte            paintBlackRGBA[4] = {0, 0, 0, 0xff};
+	/* QVM: one pointer for many accesses to same global slot - cheaper than repeated cgs.clientinfo[cg.clientNum] */
+	const clientInfo_t* localCi = &cgs.clientinfo[cg.clientNum];
 
-	if (cg.clientNum == cent->currentState.clientNum && (global_viewlistFirstOption || cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
+	/* QVM_LOGIC 2.1: explicit init for conditionally-set locals */
+	outlineIsSpec = qfalse;
+	outlineIsEnemy = qfalse;
+	
+	if (cg.clientNum == cent->currentState.clientNum && (global_viewlistFirstOption || localCi->team == TEAM_SPECTATOR))
 	{
 		return;
 	}
 
+	/* Frozen cache: set when we see frozen cent (valid), clear when we see live player (valid) */
+	if (cgs.osp.gameTypeFreeze)
+	{
+		if (CG_IS_FROZEN_ENTITY(cent))
+		{
+			int frozenClientNum;
+			frozenClientNum = cent->currentState.otherEntityNum;
+			if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS)
+			{
+				clientInfo_t* frozenCi = &cgs.clientinfo[frozenClientNum];
+				frozenCi->frozenEntity = (int)(cent - cg_entities);
+				frozenCi->isFrozenEnt = qtrue;
+			}
+		}
+		else
+		{
+			int cn;
+			cn = cent->currentState.clientNum;
+			if (cn >= 0 && cn < MAX_CLIENTS)
+			{
+				clientInfo_t* liveCi = &cgs.clientinfo[cn];
+				liveCi->isFrozenEnt = qfalse;
+				liveCi->frozenEntity = -1;
+			}
+		}
+	}
 
 	clientNum = cent->currentState.clientNum;
 
@@ -4309,9 +3469,13 @@ void CG_Player(centity_t* cent)
 		return;
 	}
 
-	/* QVM_LOGIC: compute feature flags once per player instead of 3x (legs/torso/head) */
+	/* QVM_LOGIC: compute feature flags once per player instead of multiple checks */
+	useAltShadow = CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW);
+	useMarkTeammate = CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE);
 	useFullbright = (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)));
-	useOutline = CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cgs.outlineCvars.drawOutline;
+	useOutline = CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer;
+	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
+	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 
 	renderfx = 0;
 
@@ -4335,18 +3499,253 @@ void CG_Player(centity_t* cent)
 
 	CG_PlayerAngles(cent, legs.axis, torso.axis, head.axis);
 	CG_PlayerAnimation(cent, &legs.oldframe, &legs.frame, &legs.backlerp, &torso.oldframe, &torso.frame, &torso.backlerp);
-	CG_PlayerPowerups(cent);
-	CG_PlayerSprites(cent);
-
-	// add the shadow
-	shadow = CG_PlayerShadow(cent, &shadowPlane);
-
-	// add a water splash if partially in and out of water
-	CG_PlayerSplash(cent);
-
-	if (cg_drawHudMarkers.integer)
+	/* QVM_LOGIC: skip call when no powerups and not spect glow - CG_PlayerPowerups returns immediately anyway */
+	if (cent->currentState.powerups ||
+	    (localCi->team == TEAM_SPECTATOR && cg_spectGlow.integer))
+		CG_PlayerPowerups(cent);
+	/* Player sprites: reward and cg_drawFriend arrow are mutually exclusive. */
 	{
-		CG_FriendHudMarker(cent);
+		qhandle_t     rewardShader = 0;
+		qhandle_t     friendShader = 0;
+		float*       friendColor = NULL;   /* vec4_t decays to float*; avoid vec4_t* for LCC */
+		qboolean      hasOverhead = cgs.teamMarkers.drawTeamTasks && cgs.teamMarkers.clientHasOverhead[clientNum];
+
+		if (!hasOverhead)
+		{
+			if (cent->currentState.eFlags & EF_CONNECTION)
+				rewardShader = cgs.media.connectionShader;
+			else if (cent->currentState.eFlags & EF_TALK)
+				rewardShader = cgs.media.balloonShader;
+			else if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSPRITE) &&
+			         (cent->currentState.eFlags & (EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_DEFEND | EF_AWARD_ASSIST | EF_AWARD_CAP)))
+			{
+				if (cent->currentState.eFlags & EF_AWARD_IMPRESSIVE)
+					rewardShader = cgs.media.medalImpressive;
+				else if (cent->currentState.eFlags & EF_AWARD_EXCELLENT)
+					rewardShader = cgs.media.medalExcellent;
+				else if (cent->currentState.eFlags & EF_AWARD_GAUNTLET)
+					rewardShader = cgs.media.medalGauntlet;
+				else if (cent->currentState.eFlags & EF_AWARD_DEFEND)
+					rewardShader = cgs.media.medalDefend;
+				else if (cent->currentState.eFlags & EF_AWARD_ASSIST)
+					rewardShader = cgs.media.medalAssist;
+				else if (cent->currentState.eFlags & EF_AWARD_CAP)
+					rewardShader = cgs.media.medalCapture;
+			}
+
+			if (cg_drawFriend.integer && !(cent->currentState.eFlags & EF_DEAD) && cg.snap->ps.persistant[PERS_TEAM] == ci->team && cgs.gametype >= GT_TEAM)
+			{
+				if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
+				{
+					int frozenClientNum = cent->currentState.otherEntityNum;
+					if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS && !cgs.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum])
+					{
+						if (!useTeamFrozen)
+							friendShader = cgs.media.frozenFoeTagShader;
+						else if (useTeamFoeWh && (cg_friendsWallhack.integer & 1))
+							friendShader = cg_friendsWallhackFrozen.integer ? cgs.media.frozenFoeTagShaderWallhack : cgs.media.frozenFoeTagShader;
+						else
+							friendShader = cgs.media.frozenFoeTagShader;
+					}
+				}
+				else if (cg_drawFriend.integer != 2)
+				{
+					friendShader = (useTeamFoeWh && (cg_friendsWallhack.integer & 1)) ? cgs.media.friendShaderWallhack : cgs.media.friendShader;
+					friendColor = ((cg_healthColorLevels.integer & 2) || ci->health <= 0) ? NULL : (float*)cgs.healthColorByClient[clientNum];
+				}
+			}
+		}
+		if (rewardShader)
+			CG_PlayerFloatSprite(cent, rewardShader, NULL);
+		else if (friendShader)
+			CG_PlayerFloatSprite(cent, friendShader, friendColor);
+	}
+
+	/* Shadow + water splash: one block, one cg_shadows gate (qvm-performance-guide: early exit, single pass) */
+	shadowPlane = 0;
+	shadow = qfalse;
+	if (cg_shadows.integer)
+	{
+		vec3_t      shadowEnd = {0, 0, 0};
+		vec3_t      shadowMins = {0, 0, 0};
+		vec3_t      shadowMaxs = {0, 0, 0};
+		vec3_t      splashStart;
+		vec3_t      splashEnd;
+		trace_t     shadowTrace;
+		trace_t     splashTrace;
+		float       shadowYawAngle = 0.0f;
+		int         shadowAlt = 0;
+		int         splashContents;
+		qhandle_t   shadowMarkShader = 0;
+		vec4_t      shadowColor = {0, 0, 0, 0};
+		polyVert_t  splashVerts[4];
+
+		if (cg_shadows.integer != 0 && !(cent->currentState.powerups & (1 << PW_INVIS)))
+		{
+			shadowMins[0] = -15;
+			shadowMins[1] = -15;
+			shadowMins[2] = 0;
+			shadowMaxs[0] = 15;
+			shadowMaxs[1] = 15;
+			shadowMaxs[2] = 2;
+			VectorCopy(cent->lerpOrigin, shadowEnd);
+			shadowEnd[2] -= SHADOW_DISTANCE;
+			trap_CM_BoxTrace(&shadowTrace, cent->lerpOrigin, shadowEnd, shadowMins, shadowMaxs, 0, MASK_PLAYERSOLID);
+
+			if (shadowTrace.fraction != 1.0 && !shadowTrace.startsolid && !shadowTrace.allsolid)
+			{
+				shadowPlane = shadowTrace.endpos[2] + 1;
+				shadow = qtrue;
+				if (cg_shadows.integer == 1 || cg_shadows.integer == -1)
+				{
+					shadowAlt = cg_altShadow.integer;
+					shadowMarkShader = cgs.media.shadowMarkShader;
+					if (useAltShadow && shadowAlt > 0)
+					{
+						if (shadowAlt < MAX_ALT_SHADERS)
+							shadowMarkShader = cgs.media.shadowMarkShaderNew[shadowAlt - 1];
+						else
+							shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
+					}
+					shadowColor[0] = 1.0f;
+					shadowColor[1] = 1.0f;
+					shadowColor[2] = 1.0f;
+					shadowColor[3] = 1.0f;
+					if (useAltShadow && shadowAlt)
+					{
+						shadowColor[0] = cgs.beAltShadowColor[0];
+						shadowColor[1] = cgs.beAltShadowColor[1];
+						shadowColor[2] = cgs.beAltShadowColor[2];
+						shadowTrace.fraction = shadowTrace.fraction - 0.1875f;
+						if (shadowTrace.fraction < 0.0f)
+							shadowTrace.fraction = 0.0f;
+					}
+					shadowColor[0] = shadowColor[0] * (1.0f - shadowTrace.fraction);
+					shadowColor[1] = shadowColor[1] * (1.0f - shadowTrace.fraction);
+					shadowColor[2] = shadowColor[2] * (1.0f - shadowTrace.fraction);
+					shadowYawAngle = (cg_shadows.integer == -1) ? 0.0f : cent->pe.legs.yawAngle;
+					CG_ImpactMark(shadowMarkShader, shadowTrace.endpos, shadowTrace.plane.normal,
+					              shadowYawAngle, shadowColor[0], shadowColor[1], shadowColor[2], 1, qfalse, 24, qtrue, qtrue);
+				}
+			}
+		}
+
+		/* Water splash: same cg_shadows gate */
+		VectorCopy(cent->lerpOrigin, splashEnd);
+		splashEnd[2] -= 24;
+		splashContents = trap_CM_PointContents(splashEnd, 0);
+		if (splashContents & (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA))
+		{
+			VectorCopy(cent->lerpOrigin, splashStart);
+			splashStart[2] += 32;
+			splashContents = trap_CM_PointContents(splashStart, 0);
+			if (!(splashContents & (CONTENTS_SOLID | CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA)))
+			{
+				trap_CM_BoxTrace(&splashTrace, splashStart, splashEnd, NULL, NULL, 0, (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA));
+				if (splashTrace.fraction != 1.0)
+				{
+					VectorCopy(splashTrace.endpos, splashVerts[0].xyz);
+					splashVerts[0].xyz[0] -= 32;
+					splashVerts[0].xyz[1] -= 32;
+					splashVerts[0].st[0] = 0;
+					splashVerts[0].st[1] = 0;
+					splashVerts[0].modulate[0] = 255;
+					splashVerts[0].modulate[1] = 255;
+					splashVerts[0].modulate[2] = 255;
+					splashVerts[0].modulate[3] = 255;
+
+					VectorCopy(splashTrace.endpos, splashVerts[1].xyz);
+					splashVerts[1].xyz[0] -= 32;
+					splashVerts[1].xyz[1] += 32;
+					splashVerts[1].st[0] = 0;
+					splashVerts[1].st[1] = 1;
+					splashVerts[1].modulate[0] = 255;
+					splashVerts[1].modulate[1] = 255;
+					splashVerts[1].modulate[2] = 255;
+					splashVerts[1].modulate[3] = 255;
+
+					VectorCopy(splashTrace.endpos, splashVerts[2].xyz);
+					splashVerts[2].xyz[0] += 32;
+					splashVerts[2].xyz[1] += 32;
+					splashVerts[2].st[0] = 1;
+					splashVerts[2].st[1] = 1;
+					splashVerts[2].modulate[0] = 255;
+					splashVerts[2].modulate[1] = 255;
+					splashVerts[2].modulate[2] = 255;
+					splashVerts[2].modulate[3] = 255;
+
+					VectorCopy(splashTrace.endpos, splashVerts[3].xyz);
+					splashVerts[3].xyz[0] += 32;
+					splashVerts[3].xyz[1] -= 32;
+					splashVerts[3].st[0] = 1;
+					splashVerts[3].st[1] = 0;
+					splashVerts[3].modulate[0] = 255;
+					splashVerts[3].modulate[1] = 255;
+					splashVerts[3].modulate[2] = 255;
+					splashVerts[3].modulate[3] = 255;
+
+					trap_R_AddPolyToScene(cgs.media.wakeMarkShader, 4, splashVerts);
+				}
+			}
+		}
+	}
+
+	if (cg_drawHudMarkers.integer && cgs.gametype >= GT_TEAM &&
+	    cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR &&
+	    cent->currentState.number != cg.snap->ps.clientNum &&
+	    ci->team == cg.snap->ps.persistant[PERS_TEAM])
+	{
+		qboolean isFrozen;
+		qboolean friendVisible;
+		vec3_t start;
+		vec3_t end;
+		trace_t trace;
+		float dist;
+
+		isFrozen = CG_IS_FROZEN_ENTITY(cent);
+		if ((cent->currentState.eFlags & EF_DEAD) && !isFrozen)
+			;
+		else
+		{
+				friendVisible = qtrue;
+			if (!(cg_friendsWallhack.integer & 2) || (isFrozen && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer)))
+			{
+				VectorCopy(cg.refdef.vieworg, start);
+				VectorCopy(cent->lerpOrigin, end);
+				end[2] += 24.0f;
+				CG_Trace(&trace, start, vec3_origin, vec3_origin, end, cg.snap->ps.clientNum, CONTENTS_SOLID);
+				friendVisible = (trace.fraction == 1.0f);
+				if (friendVisible)
+				{
+					CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin, cg.snap->ps.clientNum, CONTENTS_SOLID);
+					friendVisible = (trace.fraction == 1.0f);
+				}
+			}
+			if (friendVisible || ((cg_friendsWallhack.integer & 1) && useTeamFoeWh))
+			{
+				if (!(isFrozen && !friendVisible && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer)))
+				{
+					dist = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
+					if (cg_friendHudMarkerMaxDist.integer <= 0 || dist <= cg_friendHudMarkerMaxDist.value)
+					{
+						float hfov_x;
+						float sz;
+						vec4_t color;
+
+						dist = MAX(dist, 1.0f);
+						hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
+						sz = 1.0f / tan(hfov_x) * 150.0f / dist;
+						sz = MIN(cg_friendHudMarkerMaxScale.value, MAX(cg_friendHudMarkerMinScale.value, sz));
+						if ((cg_healthColorLevels.integer & 2) || ci->health <= 0)
+							Vector4Copy(colorWhite, color);
+						else
+							Vector4Copy(cgs.healthColorByClient[clientNum], color);
+						CG_HudBorderMarker(cent->lerpOrigin, color, cg_friendHudMarkerSize.value * sz,
+						                  isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader, 270);
+					}
+				}
+			}
+		}
 	}
 
 	if (cg_shadows.integer == 3 && shadow)
@@ -4359,20 +3758,99 @@ void CG_Player(centity_t* cent)
 	                   cent->currentState.eFlags & EF_DEAD || //dead
 	                   (cgs.osp.gameTypeFreeze && (cent->currentState.weapon == WP_NONE) && (cent->currentState.powerups & (1 << PW_BATTLESUIT)))// or frozen
 	               );
+	/* QVM_LOGIC: pre-compute paintBlack RGBA once, apply 3x via single int copy; lookup table avoids switch */
 	if (paintItBlack)
 	{
-		switch (cg_deadBodyBlack.integer)
+		static const byte paintLevels[] = {55, 165, 110, 55};
+		byte level = paintLevels[cg_deadBodyBlack.integer > 2 ? 3 : cg_deadBodyBlack.integer];
+		paintBlackRGBA[0] = level;
+		paintBlackRGBA[1] = level;
+		paintBlackRGBA[2] = level;
+		/* [3] already 0xff from init */
+	}
+
+	/* QVM_LOGIC: outline decision and color once per player, flat structure for branch prediction */
+	if (useOutline)
+	{
+		team_t myStateTeam, myRealTeam, enemyTeam, ourPerspectiveTeam, targetTeam;
+		vec3_t          uniqueColorVec = {0, 0, 0};
+
+		outlineIsSpec = (cgs.gametype >= GT_CA) ?
+		                (localCi->rt == TEAM_SPECTATOR) :
+		                (localCi->team == TEAM_SPECTATOR);
+
+		outlineIsEnemy = qfalse;
+		if (ci != localCi)
 		{
-			case 1:
-				paintBlackLevel = 165;
-				break;
-			case 2:
-				paintBlackLevel = 110;
-				break;
-			default:
-			case 3:
-				paintBlackLevel = 55;
-				break;
+			myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
+			myRealTeam = (cgs.gametype >= GT_CA) ? localCi->rt : localCi->team;
+			enemyTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
+			if (cgs.gametype <= GT_SINGLE_PLAYER)
+				outlineIsEnemy = qtrue;
+			else if (myStateTeam == TEAM_RED)
+				outlineIsEnemy = (enemyTeam == TEAM_BLUE);
+			else if (myStateTeam == TEAM_BLUE)
+				outlineIsEnemy = (enemyTeam == TEAM_RED);
+			else if (myStateTeam == TEAM_SPECTATOR)
+			{
+				if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+				        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+				{
+					ourPerspectiveTeam = (cgs.gametype >= GT_CA) ?
+					                     cgs.clientinfo[cg.snap->ps.clientNum].rt :
+					                     cgs.clientinfo[cg.snap->ps.clientNum].team;
+					targetTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
+					outlineIsEnemy = (ourPerspectiveTeam != targetTeam);
+				}
+				else if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
+					outlineIsEnemy = (enemyTeam == TEAM_BLUE);
+				else if (myRealTeam == TEAM_BLUE)
+					outlineIsEnemy = (enemyTeam == TEAM_RED);
+			}
+		}
+		if (cg_drawOutline.integer && clientNum >= 0 && clientNum < MAX_CLIENTS && ci->infoValid &&
+		    !((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
+		      (cent->currentState.eFlags & EF_DEAD) ||
+		      (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) ||
+		      (cent->currentState.powerups & (1 << PW_INVIS))) &&
+		    ((cg_drawOutline.integer == 1 && outlineIsEnemy) || (cg_drawOutline.integer == 2 && !outlineIsEnemy) || (cg_drawOutline.integer == 3)) &&
+		    (outlineIsEnemy ? cg_enemyOutlineSize.integer : cg_teamOutlineSize.integer))
+		{
+			drawOutlineThisPlayer = qtrue;
+			if (outlineIsSpec && !cg_spectPOV.integer)
+			{
+				if (ci->team == TEAM_RED)
+					Vector4Copy(cgs.beTeamOutlineColor, outlineColor);
+				else
+					Vector4Copy(cgs.beEnemyOutlineColor, outlineColor);
+			}
+			else if (outlineIsEnemy)
+			{
+				if (cg_enemyOutlineColorUnique.integer == 0)
+					Vector4Copy(cgs.beEnemyOutlineColor, outlineColor);
+				else
+				{
+					/* QVM_LOGIC: loop unrolled - avoid 3 iterations overhead */
+					VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
+					outlineColor[0] = (cg_enemyOutlineColorUnique.integer & 1) ? uniqueColorVec[0] : cgs.beEnemyOutlineColor[0];
+					outlineColor[1] = (cg_enemyOutlineColorUnique.integer & 2) ? uniqueColorVec[1] : cgs.beEnemyOutlineColor[1];
+					outlineColor[2] = (cg_enemyOutlineColorUnique.integer & 4) ? uniqueColorVec[2] : cgs.beEnemyOutlineColor[2];
+					outlineColor[3] = 1.0f;
+				}
+			}
+			else
+			{
+				if (useMarkTeammate && cgs.beMarkedTeam[clientNum])
+					Vector4Copy(cgs.beMarkedTeamColor, outlineColor);
+				else
+					Vector4Copy(cgs.beTeamOutlineColor, outlineColor);
+			}
+			/* QVM_LOGIC: pre-compute shader and byte color once, not 3x per body part */
+			outlineShader = outlineIsEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
+			outlineColorBytes[0] = (byte)(outlineColor[0] * 255);
+			outlineColorBytes[1] = (byte)(outlineColor[1] * 255);
+			outlineColorBytes[2] = (byte)(outlineColor[2] * 255);
+			outlineColorBytes[3] = (byte)(outlineColor[3] * 255);
 		}
 	}
 
@@ -4400,110 +3878,34 @@ void CG_Player(centity_t* cent)
 	legs.renderfx = renderfx;
 	VectorCopy(legs.origin, legs.oldorigin);    // don't positionally lerp at all
 
-	if (useFullbright)
-	{
-		float tmpf;
-		const float maxf = (float)MAX_QINT;
-
-		tmpf = 255.0 * ci->colors.legs[0];
-		if (tmpf >= maxf)
-		{
-			legs.shaderRGBA[0] = -1 * (tmpf - (float)MAX_QINT);
-		}
-		else
-		{
-			legs.shaderRGBA[0] = tmpf;
-		}
-
-		tmpf = 255.0 * ci->colors.legs[1];
-		if (tmpf >= maxf)
-		{
-			legs.shaderRGBA[1] = -1 * (tmpf - (float)MAX_QINT);
-		}
-		else
-		{
-			legs.shaderRGBA[1] = tmpf;
-		}
-
-		tmpf = 255.0 * ci->colors.legs[2];
-		if (tmpf >= maxf)
-		{
-			legs.shaderRGBA[2] = -1 * (tmpf - (float)MAX_QINT);
-		}
-		else
-		{
-			legs.shaderRGBA[2] = tmpf;
-		}
-		legs.shaderRGBA[3] = 0xff;
-	}
-
+	/* QVM_LOGIC: paintItBlack check first - skip useFullbright work if true */
 	if (paintItBlack)
 	{
-		legs.shaderRGBA[0] = legs.shaderRGBA[1] = legs.shaderRGBA[2] = paintBlackLevel;
+		*(int*)legs.shaderRGBA = *(int*)paintBlackRGBA;
+	}
+	else if (useFullbright)
+	{
+		float tmpf;
+
+		tmpf = 255.0f * ci->colors.legs[0];
+		legs.shaderRGBA[0] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+
+		tmpf = 255.0f * ci->colors.legs[1];
+		legs.shaderRGBA[1] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+
+		tmpf = 255.0f * ci->colors.legs[2];
+		legs.shaderRGBA[2] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+
+		legs.shaderRGBA[3] = 0xff;
 	}
 
 	CG_AddRefEntityWithPowerups(&legs, &cent->currentState, ci->team);
 
-	if (useOutline)
+	if (drawOutlineThisPlayer)
 	{
-		const clientInfo_t* localCi;
-		team_t myStateTeam, myRealTeam, enemyTeam, ourPerspectiveTeam, targetTeam;
-
-		/* Inline CG_IsLocalClientSpectator: no call in hot path */
-		outlineIsSpec = (cgs.gametype >= GT_CA) ?
-		                (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) :
-		                (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
-
-		/* Inline CG_IsEnemy(ci): no call in hot path */
-		localCi = &cgs.clientinfo[cg.clientNum];
-		if (ci == localCi)
-		{
-			outlineIsEnemy = qfalse;
-		}
-		else
-		{
-			myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
-			myRealTeam = (cgs.gametype >= GT_CA) ? localCi->rt : localCi->team;
-			enemyTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
-			if (cgs.gametype <= GT_SINGLE_PLAYER)
-			{
-				outlineIsEnemy = qtrue;
-			}
-			else if (myStateTeam == TEAM_SPECTATOR)
-			{
-				if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
-				        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
-				{
-					ourPerspectiveTeam = (cgs.gametype >= GT_CA) ?
-					                     cgs.clientinfo[cg.snap->ps.clientNum].rt :
-					                     cgs.clientinfo[cg.snap->ps.clientNum].team;
-					targetTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
-					outlineIsEnemy = (ourPerspectiveTeam != targetTeam);
-				}
-				else
-				{
-					if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
-						outlineIsEnemy = (enemyTeam == TEAM_BLUE);
-					else if (myRealTeam == TEAM_BLUE)
-						outlineIsEnemy = (enemyTeam == TEAM_RED);
-					else
-						outlineIsEnemy = qfalse;
-				}
-			}
-			else if (myStateTeam == TEAM_RED)
-			{
-				outlineIsEnemy = (enemyTeam == TEAM_BLUE);
-			}
-			else if (myStateTeam == TEAM_BLUE)
-			{
-				outlineIsEnemy = (enemyTeam == TEAM_RED);
-			}
-			else
-			{
-				outlineIsEnemy = qfalse;
-			}
-		}
-		CG_AddOutline(&legs, cent, outlineIsSpec, outlineIsEnemy);
+		legs.customShader = outlineShader;
+		*(int*)legs.shaderRGBA = *(int*)outlineColorBytes;
+		trap_R_AddRefEntityToScene(&legs);
 	}
 
 	//
@@ -4516,52 +3918,35 @@ void CG_Player(centity_t* cent)
 	torso.shadowPlane = shadowPlane;
 	torso.renderfx = renderfx;
 
-	if (useFullbright)
-	{
-		float tmpf;
-		const float maxf = (float)MAX_QINT;
-
-		tmpf = 255.0 * ci->colors.torso[0];
-		if (tmpf >= maxf)
-		{
-			torso.shaderRGBA[0] = -1 * (tmpf - (float)MAX_QINT);
-		}
-		else
-		{
-			torso.shaderRGBA[0] = tmpf;
-		}
-
-		tmpf = 255.0 * ci->colors.torso[1];
-		if (tmpf >= maxf)
-		{
-			torso.shaderRGBA[1] = -1 * (tmpf - (float)MAX_QINT);
-		}
-		else
-		{
-			torso.shaderRGBA[1] = tmpf;
-		}
-
-		tmpf = 255.0 * ci->colors.torso[2];
-		if (tmpf >= maxf)
-		{
-			torso.shaderRGBA[2] = -1 * (tmpf - (float)MAX_QINT);
-		}
-		else
-		{
-			torso.shaderRGBA[2] = tmpf;
-		}
-		torso.shaderRGBA[3] = 0xff;
-	}
-
+	/* QVM_LOGIC: paintItBlack check first - skip useFullbright work if true */
 	if (paintItBlack)
 	{
-		torso.shaderRGBA[0] = torso.shaderRGBA[1] = torso.shaderRGBA[2] = paintBlackLevel;
+		*(int*)torso.shaderRGBA = *(int*)paintBlackRGBA;
+	}
+	else if (useFullbright)
+	{
+		float tmpf;
+
+		tmpf = 255.0f * ci->colors.torso[0];
+		torso.shaderRGBA[0] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+
+		tmpf = 255.0f * ci->colors.torso[1];
+		torso.shaderRGBA[1] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+
+		tmpf = 255.0f * ci->colors.torso[2];
+		torso.shaderRGBA[2] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+
+		torso.shaderRGBA[3] = 0xff;
 	}
 
 	CG_AddRefEntityWithPowerups(&torso, &cent->currentState, ci->team);
 
-	if (useOutline)
-		CG_AddOutline(&torso, cent, outlineIsSpec, outlineIsEnemy);
+	if (drawOutlineThisPlayer)
+	{
+		torso.customShader = outlineShader;
+		*(int*)torso.shaderRGBA = *(int*)outlineColorBytes;
+		trap_R_AddRefEntityToScene(&torso);
+	}
 
 	//
 	// add the head
@@ -4573,56 +3958,41 @@ void CG_Player(centity_t* cent)
 	head.shadowPlane = shadowPlane;
 	head.renderfx = renderfx;
 
-	if (useFullbright)
+	/* QVM_LOGIC: paintItBlack check first - skip useFullbright work if true */
+	if (paintItBlack)
+	{
+		*(int*)head.shaderRGBA = *(int*)paintBlackRGBA;
+	}
+	else if (useFullbright)
 	{
 		float tmpf;
-		const float maxf = (float)MAX_QINT;
 
-		tmpf = 255.0 * ci->colors.head[0];
-		if (tmpf >= maxf)
-		{
-			head.shaderRGBA[0] = -1 * (tmpf - (float)MAX_QINT);
-		}
-		else
-		{
-			head.shaderRGBA[0] = tmpf;
-		}
+		tmpf = 255.0f * ci->colors.head[0];
+		head.shaderRGBA[0] = (byte)(tmpf > 255.0f ? 255 : tmpf);
 
-		tmpf = 255.0 * ci->colors.head[1];
-		if (tmpf >= maxf)
-		{
-			head.shaderRGBA[1] = -1 * (tmpf - (float)MAX_QINT);
-		}
-		else
-		{
-			head.shaderRGBA[1] = tmpf;
-		}
+		tmpf = 255.0f * ci->colors.head[1];
+		head.shaderRGBA[1] = (byte)(tmpf > 255.0f ? 255 : tmpf);
 
-		tmpf = 255.0 * ci->colors.head[2];
-		if (tmpf >= maxf)
-		{
-			head.shaderRGBA[2] = -1 * (tmpf - (float)MAX_QINT);
-		}
-		else
-		{
-			head.shaderRGBA[2] = tmpf;
-		}
+		tmpf = 255.0f * ci->colors.head[2];
+		head.shaderRGBA[2] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+
 		head.shaderRGBA[3] = 0xff;
 	}
 
-	if (paintItBlack)
-	{
-		head.shaderRGBA[0] = head.shaderRGBA[1] = head.shaderRGBA[2] = paintBlackLevel;
-	}
-
-	if (cgs.osp.gameTypeFreeze != 0)
+	if (cgs.osp.gameTypeFreeze != 0 &&
+	        cgs.beServerEnableBreath && cg_enableBreath.integer &&
+	        !(cent->currentState.eFlags & EF_DEAD))
 	{
 		CG_BreathPuffs(cent, &head);
 	}
 	CG_AddRefEntityWithPowerups(&head, &cent->currentState, ci->team);
 
-	if (useOutline)
-		CG_AddOutline(&head, cent, outlineIsSpec, outlineIsEnemy);
+	if (drawOutlineThisPlayer)
+	{
+		head.customShader = outlineShader;
+		*(int*)head.shaderRGBA = *(int*)outlineColorBytes;
+		trap_R_AddRefEntityToScene(&head);
+	}
 
 	CG_AddPlayerWeapon(&torso, NULL, cent, ci->team);
 

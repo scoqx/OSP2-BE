@@ -450,7 +450,7 @@ static void PlayerSettings_MenuInit( void ) {
 	s_playersettings.banner.generic.x     = 320;
 	s_playersettings.banner.generic.y     = 16;
 	s_playersettings.banner.string        = "PLAYER SETTINGS";
-	s_playersettings.banner.color         = color_white;
+	s_playersettings.banner.color         = uis.themeColor;
 	s_playersettings.banner.style         = UI_CENTER;
 
 	s_playersettings.framel.generic.type  = MTYPE_BITMAP;

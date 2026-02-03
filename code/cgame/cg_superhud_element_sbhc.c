@@ -42,7 +42,7 @@ void CG_SHUDElementSBHCRoutine(void* context)
 
 	element->ctx.text = va(element->config.text.value, hp > 0 ? hp : 0);
 
-	CG_ColorForHealth(element->config.color.value.rgba, NULL);
+	Vector4Copy(cgs.healthColorLocal, element->config.color.value.rgba);
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

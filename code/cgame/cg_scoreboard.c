@@ -342,8 +342,6 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 	iconx = SB_BOTICON_X + BIGCHAR_WIDTH;
 	headx = SB_HEAD_X + BIGCHAR_WIDTH;
 
-	CG_FontSelect(font);
-
 	if (ci->powerups & (1 << PW_NEUTRALFLAG) ||
 	        ci->powerups & (1 << PW_REDFLAG) ||
 	        ci->powerups & (1 << PW_BLUEFLAG))
@@ -386,9 +384,9 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 		{
 			Com_sprintf(string, sizeof(string), "%i", ci->handicap);
 			if (cgs.gametype == GT_TOURNAMENT)
-				CG_OSPDrawStringNew(iconx - 10, y + 1, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HCENTER | proportional, NULL, NULL, NULL);
+				CG_OSPDrawStringNew(iconx - 10, y + 1, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HCENTER | proportional, font, NULL, NULL, NULL);
 			else
-				CG_OSPDrawStringNew(iconx - 10, y + 1, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_SHADOW | proportional, NULL, NULL, NULL);
+				CG_OSPDrawStringNew(iconx - 10, y + 1, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_SHADOW | proportional, font, NULL, NULL, NULL);
 		}
 
 		if (cgs.gametype == GT_TOURNAMENT)
@@ -399,9 +397,9 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 
 			Com_sprintf(string, sizeof(string), "%i/%i", ci->wins, ci->losses);
 			if (ci->handicap < 100 && !ci->botSkill)
-				CG_OSPDrawStringNew(score_x, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_SHADOW | DS_HCENTER | proportional, NULL, NULL, NULL);
+				CG_OSPDrawStringNew(score_x, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_SHADOW | DS_HCENTER | proportional, font, NULL, NULL, NULL);
 			else
-				CG_OSPDrawStringNew(score_x, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_SHADOW | proportional, NULL, NULL, NULL);
+				CG_OSPDrawStringNew(score_x, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_SHADOW | proportional, font, NULL, NULL, NULL);
 		}
 	}
 
@@ -489,18 +487,18 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 		char playerID[MAX_QPATH];
 		Com_sprintf(playerID, sizeof(playerID), "%i", score->client);
 		CG_OSPDrawStringNew(idX, y + 2, playerID, color, colorBlack, bWidth - 2, bHeight - 2, SCREEN_WIDTH,
-		                    DS_SHADOW | DS_HRIGHT | proportional, NULL, NULL, NULL);
+		                    DS_SHADOW | DS_HRIGHT | proportional, font, NULL, NULL, NULL);
 	}
 
 	CG_OSPDrawStringNew(206, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH,
-	                    DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+	                    DS_HRIGHT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 	CG_OSPDrawStringNew(286, y, string2, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH,
-	                    DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+	                    DS_HRIGHT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 	CG_OSPDrawStringNew(366, y, string3, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH,
-	                    DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+	                    DS_HRIGHT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 
 	CG_OSPDrawStringNew(128 + 4 + 16 * 16, y, ci->name, color, colorBlack, bWidth, bHeight, 256,
-	                    DS_SHADOW | proportional, NULL, NULL, NULL);
+	                    DS_SHADOW | proportional, font, NULL, NULL, NULL);
 
 
 	if (cg.warmup != 0 || cg.predictedPlayerState.pm_type == PM_INTERMISSION)
@@ -509,7 +507,7 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 		{
 			const vec4_t readyColor = { 0.5f, 0.5f, 0.5f, 0.5f };
 			CG_OSPDrawStringNew(iconx, y, "^3READY", readyColor, colorBlack, bWidth, bHeight, 256,
-			                    DS_SHADOW | proportional, NULL, NULL, NULL);
+			                    DS_SHADOW | proportional, font, NULL, NULL, NULL);
 		}
 	}
 }
@@ -814,13 +812,15 @@ void CG_DrawOldTourneyScoreboard(void)
 		if (!cg.demoPlayback)
 		{
 			trap_SendClientCommand("score");
-			cg.realNumClients = CG_CountRealClients();
 		}
 	}
 	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;
-		CG_SendGetStatsInfo();
+		if (!cgs.fpsclassico)
+		{
+			trap_SendClientCommand("getstatsinfo");
+		}
 	}
 
 	color[0] = 1;
@@ -1156,11 +1156,10 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 		proportional = DS_PROPORTIONAL;
 	}
 
-	CG_FontSelect(font);
 	if (cg_scoreboardShowId.integer)
 	{
 		Com_sprintf(string, 1024, "%i", score->client);
-		CG_OSPDrawStringNew(x + 20, y + 4, string, colorWhite, colorBlack, lWidth, lHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(x + 20, y + 4, string, colorWhite, colorBlack, lWidth, lHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	}
 	VectorClear(headAngles);
 	headAngles[1] = 180.0f;
@@ -1174,7 +1173,7 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 	if (score->ping == -1)
 	{
 		Com_sprintf(string, 1024, " ^2connecting^7      %s", ci->name);
-		CG_OSPDrawStringNew(x + 34, y + 2, string, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(x + 34, y + 2, string, colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	}
 	else
 	{
@@ -1200,7 +1199,7 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 			pingColor = 6;
 		}
 		Com_sprintf(string, 1024, "%3i", score->score);
-		CG_OSPDrawStringNew(x + 80, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(x + 80, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 		if (cgs.gametype == GT_TEAM)
 		{
 			if (cgs.osp.gameTypeFreeze)
@@ -1211,27 +1210,27 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 			{
 				Com_sprintf(string, 1024, "^%i%3i", score->scoreFlags < 0 ? 3 : 7, score->scoreFlags);
 			}
-			CG_OSPDrawStringNew(x + 112, y + 4, string, color, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(x + 112, y + 4, string, color, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 		}
 		else
 		{
-			CG_OSPDrawStringNew(x + 112, y + 4, "0", color, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+			CG_OSPDrawStringNew(x + 112, y + 4, "0", color, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 		}
 		Com_sprintf(string, 1024, "^%i%3i", pingColor, score->ping);
-		CG_OSPDrawStringNew(x + 152, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(x + 152, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 
 		Com_sprintf(string, 1024, "%i", score->time);
-		CG_OSPDrawStringNew(x + 184, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(x + 184, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 
 		Com_sprintf(string, 1024, "%s", &ci->name);
-		CG_OSPDrawStringNew(x + 202, y + 4, string, color, colorBlack, mWidth, mHeight, 102, DS_HLEFT | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(x + 202, y + 4, string, color, colorBlack, mWidth, mHeight, 102, DS_HLEFT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 
 	}
 	if (cgs.clientinfo[score->client].st)
 	{
 		char* tmp;
 		tmp = va(" ^B%sCoach", cgs.clientinfo[0].st == TEAM_RED ? "^1" : "^4");
-		CG_OSPDrawStringNew(x, y, tmp, color, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(x, y, tmp, color, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	}
 	if (!cg.warmup && cg.predictedPlayerState.pm_type != PM_INTERMISSION)
 	{
@@ -1239,7 +1238,7 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 	}
 	if (cg.snap->ps.stats[ STAT_CLIENTS_READY ] & (1 << score->client))
 	{
-		CG_OSPDrawStringNew(x + 30, y, "^B^3READY", colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HCENTER | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(x + 30, y, "^B^3READY", colorWhite, colorBlack, mWidth, mHeight, SCREEN_WIDTH, DS_HCENTER | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	}
 	return;
 }
@@ -1649,7 +1648,8 @@ static void CG_OSPDrawTeamSummary(
     int sumScores,
     int sumThaws,
     int sumPing,
-    const vec4_t titleColor)
+    const vec4_t titleColor,
+    int font)
 {
 	const char* labels[3];
 	char values[3][128];
@@ -1728,16 +1728,16 @@ static void CG_OSPDrawTeamSummary(
 
 		CG_OSPDrawStringNew(baseX + posX[i], row1Y, labels[i], curColor, colorBlack,
 		                    mWidth2, mHeight2, SCREEN_WIDTH,
-		                    DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+		                    DS_HRIGHT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 
 		CG_OSPDrawStringNew(baseX + posX[i], row2Y, values[i], colorWhite, colorBlack,
 		                    bWidth2, bHeight2, SCREEN_WIDTH,
-		                    DS_HRIGHT | DS_SHADOW | proportional, NULL, NULL, NULL);
+		                    DS_HRIGHT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 	}
 }
 
 
-void CG_OSPDrawScoreHeader(float baseX, float y, vec4_t colorBody, vec4_t colorBlack, int mWidth, int mHeight, int screenWidth, int proportional)
+void CG_OSPDrawScoreHeader(float baseX, float y, vec4_t colorBody, vec4_t colorBlack, int mWidth, int mHeight, int screenWidth, int proportional, int font)
 {
 	const char* label1 = "Score";
 	const char* label2 = (cgs.gametype == GT_TEAM)
@@ -1775,15 +1775,15 @@ void CG_OSPDrawScoreHeader(float baseX, float y, vec4_t colorBody, vec4_t colorB
 	}
 
 	CG_OSPDrawStringNew(baseX + pos1X, y, label1, headerColor1, colorBlack, mWidth, mHeight, screenWidth,
-	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+	                    DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	CG_OSPDrawStringNew(baseX + pos2X, y, label2, headerColor2, colorBlack, mWidth, mHeight, screenWidth,
-	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+	                    DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	CG_OSPDrawStringNew(baseX + pos3X, y, label3, headerColor3, colorBlack, mWidth, mHeight, screenWidth,
-	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+	                    DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	CG_OSPDrawStringNew(baseX + pos4X, y, label4, headerColor4, colorBlack, mWidth, mHeight, screenWidth,
-	                    DS_HRIGHT | proportional | DS_SHADOW, NULL, NULL, NULL);
+	                    DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	CG_OSPDrawStringNew(baseX + pos5X, y, label5, headerColor5, colorBlack, mWidth, mHeight, screenWidth,
-	                    DS_HLEFT | proportional | DS_SHADOW, NULL, NULL, NULL);
+	                    DS_HLEFT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 }
 
 
@@ -1852,15 +1852,13 @@ qboolean CG_BEDrawTeamScoretable(void)
 		proportional = 0;
 	}
 
-	CG_FontSelect(font);
-
 	if (cg.demoPlayback)
 	{
-		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f, y, "^3Demo Playback", *color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HCENTER | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f, y, "^3Demo Playback", *color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HCENTER | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	}
 	else if (cg.killerName[0])
 	{
-		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f, y, va("Fragged by %s", cg.killerName), *color, colorBlack, mWidth, bHeight, SCREEN_WIDTH, DS_HCENTER | proportional | DS_SHADOW, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f, y, va("Fragged by %s", cg.killerName), *color, colorBlack, mWidth, bHeight, SCREEN_WIDTH, DS_HCENTER | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	}
 
 	SetScoreboardColors(&rtColorHeader, &rtColorBody, &btColorHeader, &btColorBody);
@@ -1886,14 +1884,14 @@ qboolean CG_BEDrawTeamScoretable(void)
 	}
 	else
 	{
-		CG_OSPDrawStringNew(leftX - 32, 87, va("%d", cg.teamScores[0]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
-		CG_OSPDrawStringNew(rightX - 32, 87, va("%d", cg.teamScores[1]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(leftX - 32, 87, va("%d", cg.teamScores[0]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, font, NULL, NULL, NULL);
+		CG_OSPDrawStringNew(rightX - 32, 87, va("%d", cg.teamScores[1]), colorWhite, colorBlack, 42, 60, SCREEN_WIDTH, DS_HLEFT | proportional | DS_SHADOW | DS_VCENTER, font, NULL, NULL, NULL);
 	}
 
 	y = 116;
 	// Header text
-	CG_OSPDrawScoreHeader(leftX, y, (customScoreboardColorIsSet_red & 2) ? scoreboard_rtColorTitle : rtColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional);
-	CG_OSPDrawScoreHeader(rightX, y, (customScoreboardColorIsSet_blue & 2) ? scoreboard_btColorTitle : btColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional);
+	CG_OSPDrawScoreHeader(leftX, y, (customScoreboardColorIsSet_red & 2) ? scoreboard_rtColorTitle : rtColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional, font);
+	CG_OSPDrawScoreHeader(rightX, y, (customScoreboardColorIsSet_blue & 2) ? scoreboard_btColorTitle : btColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional, font);
 
 	y = 140;
 	// Team score lines
@@ -1905,7 +1903,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		float baseX = (cgs.gametype >= GT_CTF) ? (leftX + 76) :
 		              (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) ? (leftX + 64) :
 		              (CG_OSPIsGameTypeFreeze()) ? (leftX + 40) : leftX;
-		CG_OSPDrawTeamSummary(baseX, drewRed, sumScoresRed, sumThawsRed, sumPingRed, (customScoreboardColorIsSet_red & 2) ? scoreboard_rtColorTitle : rtColorHeader);
+		CG_OSPDrawTeamSummary(baseX, drewRed, sumScoresRed, sumThawsRed, sumPingRed, (customScoreboardColorIsSet_red & 2) ? scoreboard_rtColorTitle : rtColorHeader, font);
 	}
 
 	if (drewBlue)
@@ -1913,7 +1911,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		float baseX = (cgs.gametype >= GT_CTF) ? (rightX + 76) :
 		              (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) ? (rightX + 64) :
 		              (CG_OSPIsGameTypeFreeze()) ? (rightX + 40) : rightX;
-		CG_OSPDrawTeamSummary(baseX, drewBlue, sumScoresBlue, sumThawsBlue, sumPingBlue, (customScoreboardColorIsSet_blue & 2) ? scoreboard_btColorTitle : btColorHeader);
+		CG_OSPDrawTeamSummary(baseX, drewBlue, sumScoresBlue, sumThawsBlue, sumPingBlue, (customScoreboardColorIsSet_blue & 2) ? scoreboard_btColorTitle : btColorHeader, font);
 	}
 
 	{
@@ -1934,22 +1932,22 @@ qboolean CG_BEDrawTeamScoretable(void)
 		{
 			label1 = "Red";
 			CG_OSPDrawStringNew(leftX + 20, y - 14, label1, rtColorHeader, colorBlack,
-			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(leftX + 60, y - 14, label2, colorWhite, colorBlack,
-			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(leftX + 100, y - 14, label3, colorWhite, colorBlack,
-			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 		}
 
 		if (drewBlue)
 		{
 			label1 = "Blue";
 			CG_OSPDrawStringNew(rightX + 20, y - 14, label1, btColorHeader, colorBlack,
-			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(rightX + 60, y - 14, label2, colorWhite, colorBlack,
-			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 			CG_OSPDrawStringNew(rightX + 100, y - 14, label3, colorWhite, colorBlack,
-			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, NULL, NULL, NULL);
+			                    mWidth, mHeight, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW | proportional, font, NULL, NULL, NULL);
 		}
 	}
 
@@ -1996,7 +1994,10 @@ qboolean CG_BEDrawTeamScoretable(void)
 	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
 	{
 		cg.statsRequestTime = cg.time;
-		CG_SendGetStatsInfo();
+		if (!cgs.fpsclassico)
+		{
+			trap_SendClientCommand("getstatsinfo");
+		}
 	}
 
 	return qtrue;

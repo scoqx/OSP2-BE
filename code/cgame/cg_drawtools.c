@@ -799,6 +799,11 @@ static int fonts_num = 19;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
 
+int CG_GetFontCount(void)
+{
+	return fonts_num;
+}
+
 static void CG_InitFontNames(void)
 {
 	fonts[0].name = "id";
@@ -835,13 +840,8 @@ qboolean CG_FontAvailable(int index)
 
 void CG_FontSelect(int index)
 {
-	if (CG_FontAvailable(index))
+	if (index >= 0 && index < fonts_num)
 	{
-		if (index < 0 || index >= fonts_num)
-		{
-			CG_Error("Requested nonexistent font number: %d\n", index);
-		}
-
 		font = &fonts[index];
 		metrics = &font->metrics[0];
 	}
@@ -1012,11 +1012,6 @@ int CG_FontIndexFromCvar(vmCvar_t* cvar)
 	{
 		return CG_FontIndexFromString(str);
 	}
-}
-
-int CG_GetFontCount(void)
-{
-	return fonts_num;
 }
 
 const char* CG_GetFontName(int index)
@@ -1580,7 +1575,7 @@ void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, 
 
 	if (flags & DS_VCENTER)
 	{
-		ay -= ah / 2;
+		ay -= ah * 0.5f;
 	}
 	else if (flags & DS_VTOP)
 	{
@@ -1859,15 +1854,13 @@ float* CG_TeamColor(int team)
 {
 	static vec4_t   other = {1, 1, 1, 1};
 	static vec4_t   spectator = {0.7f, 0.7f, 0.7f, 1};
-	cgs_be_t* be;
 
-	be = &cgs.be;
 	switch (team)
 	{
 		case TEAM_RED:
-			return be->redTeamColor;
+			return cgs.beRedTeamColor;
 		case TEAM_BLUE:
-			return be->blueTeamColor;
+			return cgs.beBlueTeamColor;
 		case TEAM_SPECTATOR:
 			return spectator;
 		default:
@@ -1990,27 +1983,27 @@ void CG_UpdateHealthLowFlag(void)
 	/* Reset flag if player is dead or spectator */
 	if (deadOrFreeFloat)
 	{
-		cgs.be.isHealthLow = qfalse;
+		cg.beIsHealthLow = qfalse;
 		return;
 	}
 
 	/* Check if health color levels are enabled */
 	if (!healthColorLevels)
 	{
-		cgs.be.isHealthLow = qfalse;
+		cg.beIsHealthLow = qfalse;
 		return;
 	}
 
 	/* No valid snap */
 	if (!cg.snap)
 	{
-		cgs.be.isHealthLow = qfalse;
+		cg.beIsHealthLow = qfalse;
 		return;
 	}
 
 	if (health <= 0)
 	{
-		cgs.be.isHealthLow = qfalse;
+		cg.beIsHealthLow = qfalse;
 		return;
 	}
 
@@ -2025,11 +2018,11 @@ void CG_UpdateHealthLowFlag(void)
 
 	if (effectiveHealth <= healthLow)
 	{
-		cgs.be.isHealthLow = qtrue;
+		cg.beIsHealthLow = qtrue;
 	}
 	else
 	{
-		cgs.be.isHealthLow = qfalse;
+		cg.beIsHealthLow = qfalse;
 	}
 }
 
@@ -2075,7 +2068,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 	{
 		if (hcolor)
 		{
-			VectorCopy(cgs.be.healthLowColor, hcolor);
+			VectorCopy(cgs.beHealthLowColor, hcolor);
 		}
 		if (ccolor)
 		{
@@ -2086,7 +2079,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 	{
 		if (hcolor)
 		{
-			VectorCopy(cgs.be.healthMidColor, hcolor);
+			VectorCopy(cgs.beHealthMidColor, hcolor);
 		}
 		if (ccolor)
 		{
@@ -2097,7 +2090,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 	{
 		if (hcolor)
 		{
-			VectorCopy(cgs.be.healthColor, hcolor);
+			VectorCopy(cgs.beHealthColor, hcolor);
 		}
 		if (ccolor)
 		{
@@ -2123,8 +2116,6 @@ void CG_ColorForHealth(vec4_t hcolor, char* color)
 	CG_GetColorForHealth(cg.snap->ps.stats[STAT_HEALTH],
 	                     cg.snap->ps.stats[STAT_ARMOR], hcolor, color);
 }
-
-
 
 void CG_OSPDrawPoly(float x, float y, float w, float h, vec4_t color)
 {
@@ -2370,7 +2361,7 @@ void UI_DrawBannerString(int x, int y, const char* str, int style, vec4_t color)
 	switch (style & UI_FORMATMASK)
 	{
 		case UI_CENTER:
-			x -= width / 2;
+			x -= width * 0.5f;
 			break;
 
 		case UI_RIGHT:
@@ -2500,7 +2491,7 @@ void UI_DrawProportionalString(int x, int y, const char* str, int style, vec4_t 
 	{
 		case UI_CENTER:
 			width = UI_ProportionalStringWidth(str) * sizeScale;
-			x -= width / 2;
+			x -= width * 0.5f;
 			break;
 
 		case UI_RIGHT:
@@ -3078,7 +3069,7 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 
 	if (flags & DS_VCENTER)
 	{
-		ay -= ah / 2;
+		ay -= ah * 0.5f;
 	}
 	else if (flags & DS_VTOP)
 	{
@@ -3493,6 +3484,7 @@ Set DS_MAX_WIDTH_IS_CHARS to enable character count restriction
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor,
                          vec4_t shadowColor,
                          float charWidth, float charHeight, int maxWidth, int flags,
+                         int fontIndex,
                          vec4_t background, vec4_t border, vec4_t borderColor)
 {
 	const font_metric_t* fm;
@@ -3528,6 +3520,12 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		return;
 
 	CG_AdjustFrom640(&x, &y, &charWidth, &charHeight);
+
+	if (fontIndex >= 0 && fontIndex < fonts_num)
+	{
+		font = &fonts[fontIndex];
+		metrics = &font->metrics[0];
+	}
 
 	ax = x;
 	ay = y;
@@ -3570,7 +3568,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 
 	if (flags & DS_VCENTER)
 	{
-		ay -= ah / 2;
+		ay -= ah * 0.5f;
 	}
 	else if (flags & DS_VTOP)
 	{
@@ -3887,34 +3885,35 @@ void CG_OSPDrawGradientFrame(float x, float y, float width, float height,
 }
 
 /*
-===
-From world to screen
-===
-*/
+ * From world to screen.
+ */
 qboolean CG_WorldToScreen(const vec3_t world, float* x, float* y)
 {
 	vec3_t trans;
+	float px, py, z;
+	float hfov_x, hfov_y;
+	float tanX, tanY;
+	float invZ;
 	float xc, yc;
-	float px, py;
-	float z;
 
 	VectorSubtract(world, cg.refdef.vieworg, trans);
-
-	px = DotProduct(trans, cg.refdef.viewaxis[1]);   // right
-	py = DotProduct(trans, cg.refdef.viewaxis[2]);   // up
-	z  = DotProduct(trans, cg.refdef.viewaxis[0]);   // forward
+	px = DotProduct(trans, cg.refdef.viewaxis[1]);
+	py = DotProduct(trans, cg.refdef.viewaxis[2]);
+	z = DotProduct(trans, cg.refdef.viewaxis[0]);
 
 	if (z <= 0.001f)
-	{
 		return qfalse;
-	}
 
-	xc = SCREEN_WIDTH / 2;
-	yc = SCREEN_HEIGHT / 2;
+	hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
+	hfov_y = cg.refdef.fov_y * (float)M_PI / 360.0f;
+	tanX = tan(hfov_x);
+	tanY = tan(hfov_y);
+	xc = (float)SCREEN_WIDTH * 0.5f;
+	yc = (float)SCREEN_HEIGHT * 0.5f;
+	invZ = 1.0f / z;
 
-	*x = xc - px * (xc / tan(cg.refdef.fov_x * M_PI / 360.0f)) / z;
-	*y = yc - py * (yc / tan(cg.refdef.fov_y * M_PI / 360.0f)) / z;
-
+	*x = xc - px * (xc / tanX) * invZ;
+	*y = yc - py * (yc / tanY) * invZ;
 	return qtrue;
 }
 

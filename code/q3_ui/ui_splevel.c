@@ -585,7 +585,7 @@ static void UI_SPLevelMenu_MenuDraw( void ) {
 	}
 
 	if ( selectedArenaSet > currentSet ) {
-		UI_DrawProportionalString( 320, 216, "ACCESS DENIED", UI_CENTER|UI_BIGFONT, color_red );
+		UI_DrawProportionalString( 320, 216, "ACCESS DENIED", UI_CENTER|UI_BIGFONT, uis.themeColor );
 		return;
 	}
 
@@ -713,7 +713,7 @@ static void UI_SPLevelMenu_Init( void ) {
 	levelMenuInfo.item_banner.generic.x				= 320;
 	levelMenuInfo.item_banner.generic.y				= 16;
 	levelMenuInfo.item_banner.string				= "CHOOSE LEVEL";
-	levelMenuInfo.item_banner.color					= color_red;
+	levelMenuInfo.item_banner.color					= uis.themeColor;
 	levelMenuInfo.item_banner.style					= UI_CENTER;
 
 	levelMenuInfo.item_leftarrow.generic.type		= MTYPE_BITMAP;

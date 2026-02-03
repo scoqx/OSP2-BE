@@ -1665,7 +1665,7 @@ static void ArenaServers_MenuInit( void ) {
 	g_arenaservers.banner.generic.y	    = 16;
 	g_arenaservers.banner.string  		= "ARENA SERVERS";
 	g_arenaservers.banner.style  	    = UI_CENTER;
-	g_arenaservers.banner.color  	    = color_white;
+	g_arenaservers.banner.color  	    = uis.themeColor;
 
 	y = 80;
 	g_arenaservers.master.generic.type			= MTYPE_SPINCONTROL;

@@ -166,7 +166,7 @@ static void UI_SetupMenu_Init( void ) {
 	setupMenuInfo.banner.generic.x					= 320;
 	setupMenuInfo.banner.generic.y					= 16;
 	setupMenuInfo.banner.string						= "SETUP";
-	setupMenuInfo.banner.color						= color_white;
+	setupMenuInfo.banner.color						= uis.themeColor;
 	setupMenuInfo.banner.style						= UI_CENTER;
 
 	setupMenuInfo.framel.generic.type				= MTYPE_BITMAP;
@@ -206,7 +206,7 @@ static void UI_SetupMenu_Init( void ) {
 	setupMenuInfo.setupplayer.generic.id			= ID_CUSTOMIZEPLAYER;
 	setupMenuInfo.setupplayer.generic.callback		= UI_SetupMenu_Event; 
 	setupMenuInfo.setupplayer.string				= "PLAYER";
-	setupMenuInfo.setupplayer.color					= color_red;
+	setupMenuInfo.setupplayer.color					= uis.themeColor;
 	setupMenuInfo.setupplayer.style					= UI_CENTER;
 
 	y += SETUP_MENU_VERTICAL_SPACING;
@@ -217,7 +217,7 @@ static void UI_SetupMenu_Init( void ) {
 	setupMenuInfo.setupcontrols.generic.id			= ID_CUSTOMIZECONTROLS;
 	setupMenuInfo.setupcontrols.generic.callback	= UI_SetupMenu_Event; 
 	setupMenuInfo.setupcontrols.string				= "CONTROLS";
-	setupMenuInfo.setupcontrols.color				= color_red;
+	setupMenuInfo.setupcontrols.color				= uis.themeColor;
 	setupMenuInfo.setupcontrols.style				= UI_CENTER;
 
 	y += SETUP_MENU_VERTICAL_SPACING;
@@ -228,7 +228,7 @@ static void UI_SetupMenu_Init( void ) {
 	setupMenuInfo.setupsystem.generic.id			= ID_SYSTEMCONFIG;
 	setupMenuInfo.setupsystem.generic.callback		= UI_SetupMenu_Event; 
 	setupMenuInfo.setupsystem.string				= "SYSTEM";
-	setupMenuInfo.setupsystem.color					= color_red;
+	setupMenuInfo.setupsystem.color					= uis.themeColor;
 	setupMenuInfo.setupsystem.style					= UI_CENTER;
 
 	y += SETUP_MENU_VERTICAL_SPACING;
@@ -239,7 +239,7 @@ static void UI_SetupMenu_Init( void ) {
 	setupMenuInfo.game.generic.id					= ID_GAME;
 	setupMenuInfo.game.generic.callback				= UI_SetupMenu_Event; 
 	setupMenuInfo.game.string						= "GAME OPTIONS";
-	setupMenuInfo.game.color						= color_red;
+	setupMenuInfo.game.color						= uis.themeColor;
 	setupMenuInfo.game.style						= UI_CENTER;
 
 	y += SETUP_MENU_VERTICAL_SPACING;
@@ -250,7 +250,7 @@ static void UI_SetupMenu_Init( void ) {
 	setupMenuInfo.other.generic.id					= ID_OTHER;
 	setupMenuInfo.other.generic.callback			= UI_SetupMenu_Event; 
 	setupMenuInfo.other.string						= "OTHER";
-	setupMenuInfo.other.color						= color_red;
+	setupMenuInfo.other.color						= uis.themeColor;
 	setupMenuInfo.other.style						= UI_CENTER;
 
 //	y += SETUP_MENU_VERTICAL_SPACING;
@@ -297,7 +297,7 @@ static void UI_SetupMenu_Init( void ) {
 		setupMenuInfo.defaults.generic.id				= ID_DEFAULTS;
 		setupMenuInfo.defaults.generic.callback			= UI_SetupMenu_Event; 
 		setupMenuInfo.defaults.string					= "DEFAULTS";
-		setupMenuInfo.defaults.color					= color_red;
+		setupMenuInfo.defaults.color					= uis.themeColor;
 		setupMenuInfo.defaults.style					= UI_CENTER;
 	}
 
@@ -398,7 +398,7 @@ static void UI_OtherMenu_Init( void ) {
 	otherMenuInfo.banner.generic.x					= 320;
 	otherMenuInfo.banner.generic.y					= 16;
 	otherMenuInfo.banner.string						= "OTHER";
-	otherMenuInfo.banner.color						= color_white;
+	otherMenuInfo.banner.color						= uis.themeColor;
 	otherMenuInfo.banner.style						= UI_CENTER;
 
 	otherMenuInfo.framel.generic.type				= MTYPE_BITMAP;
@@ -435,7 +435,7 @@ static void UI_OtherMenu_Init( void ) {
 	otherMenuInfo.cdkey.generic.id					= ID_OTHER_CDKEY;
 	otherMenuInfo.cdkey.generic.callback			= UI_OtherMenu_Event; 
 	otherMenuInfo.cdkey.string						= "CD Key";
-	otherMenuInfo.cdkey.color						= color_red;
+	otherMenuInfo.cdkey.color						= uis.themeColor;
 	otherMenuInfo.cdkey.style						= UI_CENTER;
 
 	y += SETUP_MENU_VERTICAL_SPACING;
@@ -446,7 +446,7 @@ static void UI_OtherMenu_Init( void ) {
 	otherMenuInfo.credits.generic.id				= ID_OTHER_CREDITS;
 	otherMenuInfo.credits.generic.callback			= UI_OtherMenu_Event;
 	otherMenuInfo.credits.string					= "CREDITS";
-	otherMenuInfo.credits.color						= color_red;
+	otherMenuInfo.credits.color						= uis.themeColor;
 	otherMenuInfo.credits.style						= UI_CENTER;
 
 	otherMenuInfo.back.generic.type					= MTYPE_BITMAP;

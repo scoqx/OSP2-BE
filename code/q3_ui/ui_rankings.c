@@ -309,7 +309,7 @@ void Rankings_MenuInit( void ) {
 	s_rankings.login.generic.y			= y;
 	s_rankings.login.string				= "LOGIN";
 	s_rankings.login.style				= UI_CENTER|UI_SMALLFONT;
-	s_rankings.login.color				= colorRed;
+	s_rankings.login.color				= uis.themeColor;
 	y += 20;
 
 	s_rankings.logout.generic.type		= MTYPE_PTEXT;
@@ -320,7 +320,7 @@ void Rankings_MenuInit( void ) {
 	s_rankings.logout.generic.y			= y;
 	s_rankings.logout.string				= "LOGOUT";
 	s_rankings.logout.style				= UI_CENTER|UI_SMALLFONT;
-	s_rankings.logout.color				= colorRed;
+	s_rankings.logout.color				= uis.themeColor;
 
 	s_rankings.create.generic.type		= MTYPE_PTEXT;
 	s_rankings.create.generic.flags		= QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
@@ -330,7 +330,7 @@ void Rankings_MenuInit( void ) {
 	s_rankings.create.generic.y			= y;
 	s_rankings.create.string			= "SIGN UP";
 	s_rankings.create.style				= UI_CENTER|UI_SMALLFONT;
-	s_rankings.create.color				= colorRed;
+	s_rankings.create.color				= uis.themeColor;
 	y += 20;
 
 	s_rankings.spectate.generic.type		= MTYPE_PTEXT;
@@ -341,7 +341,7 @@ void Rankings_MenuInit( void ) {
 	s_rankings.spectate.generic.y			= y;
 	s_rankings.spectate.string				= "SPECTATE";
 	s_rankings.spectate.style				= UI_CENTER|UI_SMALLFONT;
-	s_rankings.spectate.color				= colorRed;
+	s_rankings.spectate.color				= uis.themeColor;
 	y += 20;
 
 	s_rankings.setup.generic.type		= MTYPE_PTEXT;
@@ -352,7 +352,7 @@ void Rankings_MenuInit( void ) {
 	s_rankings.setup.generic.y			= y;
 	s_rankings.setup.string				= "SETUP";
 	s_rankings.setup.style				= UI_CENTER|UI_SMALLFONT;
-	s_rankings.setup.color				= colorRed;
+	s_rankings.setup.color				= uis.themeColor;
 	y += 20;
 
 	s_rankings.leave.generic.type		= MTYPE_PTEXT;
@@ -363,7 +363,7 @@ void Rankings_MenuInit( void ) {
 	s_rankings.leave.generic.y			= y;
 	s_rankings.leave.string				= "LEAVE ARENA";
 	s_rankings.leave.style				= UI_CENTER|UI_SMALLFONT;
-	s_rankings.leave.color				= colorRed;
+	s_rankings.leave.color				= uis.themeColor;
 	y += 20;
 
 	status = (grank_status_t)trap_Cvar_VariableValue("client_status");

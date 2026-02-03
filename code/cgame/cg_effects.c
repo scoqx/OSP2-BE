@@ -500,7 +500,7 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 		return;
 	}
 
-	cgs.be.clientDamagePrinted = qfalse;
+	cg.beClientDamagePrinted = qfalse;
 
 	foundHit = qfalse;
 	targetClientNum = -1;
@@ -733,7 +733,7 @@ void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops)
 		re->renderfx = RF_FIRST_PERSON;
 		re->radius = 11;
 
-		cgs.be.clientDamagePrinted = qtrue;
+		cg.beClientDamagePrinted = qtrue;
 
 		if (be_run.integer == 1)
 		{
@@ -849,7 +849,7 @@ void CG_Bleed(vec3_t origin, int entityNum)
 		else
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[0];
 
-		Vector4Copy(cgs.be.altBloodColor, bloodColor);
+		Vector4Copy(cgs.beAltBloodColor, bloodColor);
 
 		ex->refEntity.shaderRGBA[0] = bloodColor[0] * 255;
 		ex->refEntity.shaderRGBA[1] = bloodColor[1] * 255;
@@ -1083,7 +1083,7 @@ void CG_BigExplode(vec3_t playerOrigin)
 }
 
 /*
- * Draw an indicator at the screen border
+ * Draw an indicator at the screen border.
  */
 void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle)
 {
@@ -1091,128 +1091,96 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 	float front, left, up;
 	vec3_t flu;
 	float r, inc, az;
-	// half FOV
-	float hfov_y = cg.refdef.fov_y * M_PI / 360;
-	float hfov_x = cg.refdef.fov_x * M_PI / 360;
+	float hfov_x, hfov_y;
+	float tanX, tanY, cosX, cosY, sinX, sinY;
+	float phi, cosPhi, sinPhi;
+	float dist, ratio, circleSz;
+	float rX, rY;
+	float h1, h2, len;
+	refEntity_t ent;
+	vec3_t middleOfPlane;
+	vec3_t planeAxis[2];
 
 	if (!shader)
-	{
 		return;
-	}
 
 	VectorSubtract(origin, cg.refdef.vieworg, dir);
-
 	front = DotProduct(dir, cg.refdef.viewaxis[0]);
 	left = DotProduct(dir, cg.refdef.viewaxis[1]);
 	up = DotProduct(dir, cg.refdef.viewaxis[2]);
-
 	flu[0] = front;
 	flu[1] = left;
 	flu[2] = up;
 
 	r = VectorLength(flu);
 	if (r < 0.001f)
-	{
 		return;
-	}
 
+	hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
+	hfov_y = cg.refdef.fov_y * (float)M_PI / 360.0f;
 	az = atan2(flu[1], flu[0]);
 	inc = acos(flu[2] / r);
-	inc = M_PI / 2.0 - inc;
+	inc = (float)M_PI * 0.5f - inc;
 
-	/* Only skip drawing if point is in front of camera AND inside FOV */
 	if (front > 0.0f && fabs(az) < hfov_x && fabs(inc) < hfov_y)
-	{
-		// inside fov, no need to draw marker
-		// Note: this isn't entirely accurate
 		return;
-	}
 
-	{
-		refEntity_t ent;
-		float phi;
-		float dist = 8;
-		vec3_t middleOfPlane;
-		vec3_t planeAxis[2];
-		float ratio;
-		float circleSz = 100;
-		float r;
-		float h1, h2;
+	/* Precompute hfov trig once (QVM: avoid repeated cos/sin/tan in block) */
+	tanX = tan(hfov_x);
+	tanY = tan(hfov_y);
+	cosX = cos(hfov_x);
+	cosY = cos(hfov_y);
+	sinX = sin(hfov_x);
+	sinY = sin(hfov_y);
 
-		memset(&ent, 0, sizeof(ent));
-		ent.reType = RT_SPRITE;
-		ent.renderfx = RF_FIRST_PERSON;
+	dist = 8.0f;
+	circleSz = 100.0f;
+	ratio = tanY / tanX;
 
-		phi = atan2(-flu[2], flu[1]);
-		ent.rotation = phi / M_PI * 180;
-		ent.rotation += baseAngle;
+	memset(&ent, 0, sizeof(ent));
+	ent.reType = RT_SPRITE;
+	ent.renderfx = RF_FIRST_PERSON;
+	phi = atan2(-flu[2], flu[1]);
+	ent.rotation = phi / (float)M_PI * 180.0f + baseAngle;
+	ent.radius = 0.5f * radius * tanX;
+	if (ent.radius < 0.1f)
+		ent.radius = 0.1f;
+	ent.customShader = shader;
+	ent.shaderRGBA[0] = (byte)(color[0] * 255.0f);
+	ent.shaderRGBA[1] = (byte)(color[1] * 255.0f);
+	ent.shaderRGBA[2] = (byte)(color[2] * 255.0f);
+	ent.shaderRGBA[3] = (byte)(color[3] * 168.0f);
 
-		// make sure it stays the same size regardless of fov
-		ent.radius =  0.5 * radius * tan(hfov_x);
-		ent.customShader = shader;
+	VectorScale(cg.refdef.viewaxis[0], dist, middleOfPlane);
+	rX = dist / cosX;
+	rY = dist / cosY;
+	VectorScale(cg.refdef.viewaxis[1], rX * sinX - ent.radius, planeAxis[0]);
+	VectorScale(cg.refdef.viewaxis[2], -(rY * sinY - ent.radius), planeAxis[1]);
 
-		if (ent.radius < 0.1f)
-		{
-			ent.radius = 0.1f;
-		}
+	cosPhi = cos(phi);
+	sinPhi = sin(phi);
+	if (fabs(cosPhi) < 0.001f)
+		cosPhi = (cosPhi >= 0.0f) ? 0.001f : -0.001f;
+	if (fabs(sinPhi) < 0.001f)
+		sinPhi = (sinPhi >= 0.0f) ? 0.001f : -0.001f;
 
-		ent.shaderRGBA[0] = color[0] * 255;
-		ent.shaderRGBA[1] = color[1] * 255;
-		ent.shaderRGBA[2] = color[2] * 255;
-		ent.shaderRGBA[3] = color[3] * 168;
+	r = cosPhi * circleSz;
+	VectorScale(planeAxis[0], r, ent.origin);
+	r = sinPhi * circleSz / ratio;
+	VectorMA(ent.origin, r, planeAxis[1], ent.origin);
 
-		ratio = tan(hfov_y) / tan(hfov_x);
+	/* viewaxis are unit: length(planeAxis) = fabs(scale) */
+	h1 = fabs(rX * sinX - ent.radius) / fabs(cosPhi);
+	h2 = fabs(rY * sinY - ent.radius) / fabs(sinPhi);
+	if (h2 < h1)
+		h1 = h2;
+	len = VectorLength(ent.origin);
+	if (len > h1)
+		VectorScale(ent.origin, h1 / len, ent.origin);
 
-		VectorScale(cg.refdef.viewaxis[0], dist, middleOfPlane);
-
-		{
-			float cosHfovX = cos(hfov_x);
-			float cosHfovY = cos(hfov_y);
-
-			r = dist / cosHfovX;
-			VectorScale(cg.refdef.viewaxis[1], r * sin(hfov_x) - ent.radius, planeAxis[0]);
-
-			r = dist / cosHfovY;
-			VectorScale(cg.refdef.viewaxis[2], -(r * sin(hfov_y) - ent.radius), planeAxis[1]);
-		}
-
-		r = cos(phi) * circleSz;
-		VectorScale(planeAxis[0], r, ent.origin);
-
-		r = sin(phi) * circleSz * 1.0 / ratio;
-		VectorMA(ent.origin, r, planeAxis[1], ent.origin);
-
-		{
-			float cosPhi = cos(phi);
-			float sinPhi = sin(phi);
-
-			if (fabs(cosPhi) < 0.001f)
-			{
-				cosPhi = (cosPhi >= 0) ? 0.001f : -0.001f;
-			}
-			if (fabs(sinPhi) < 0.001f)
-			{
-				sinPhi = (sinPhi >= 0) ? 0.001f : -0.001f;
-			}
-
-			h1 = fabs(VectorLength(planeAxis[0]) / cosPhi);
-			h2 = fabs(VectorLength(planeAxis[1]) / sinPhi);
-			if (h2 < h1)
-			{
-				h1 = h2;
-			}
-			if (VectorLength(ent.origin) > h1)
-			{
-				VectorNormalize(ent.origin);
-				VectorScale(ent.origin, h1, ent.origin);
-			}
-		}
-
-		VectorAdd(middleOfPlane, ent.origin, ent.origin);
-		VectorAdd(cg.refdef.vieworg, ent.origin, ent.origin);
-
-		trap_R_AddRefEntityToScene(&ent);
-	}
+	VectorAdd(middleOfPlane, ent.origin, ent.origin);
+	VectorAdd(cg.refdef.vieworg, ent.origin, ent.origin);
+	trap_R_AddRefEntityToScene(&ent);
 }
 
 qboolean CG_IsPointOutsideScreen(vec3_t origin, float* outX, float* outY)
@@ -1268,101 +1236,41 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	teamTaskMark_t* mark;
 	vec3_t center;
 	int i;
+	int writeIndex;
 	centity_t* cent;
 	qboolean playerAvailable;
+	qboolean isOverheadMark;
+	qboolean isHereWarnDead;
 
-	if (!cg_teamTask.integer)
-	{
+	if (!cgs.teamMarkers.teamTaskEnabled || !markType)
 		return;
-	}
 
-	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	/* One pack pass: remove marks to be replaced before adding new (QVM_LOGIC: O(n) not O(n²)) */
+	isOverheadMark = (markType == TEAMTASK_YES || markType == TEAMTASK_NO ||
+	                  markType == TEAMTASK_MEDIC || markType == TEAMTASK_HERE_ALIVE);
+	isHereWarnDead = (markType == TEAMTASK_HERE_DEAD || markType == TEAMTASK_WARN_DEAD);
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS && cgs.teamMarkers.numTeamTaskMarks > 0)
 	{
-		return;
-	}
-
-	if (!markType)
-	{
-		return;
-	}
-
-
-	/* Anti-spam: remove old markers of the same type from the same client */
-	/* Show only the last marker of each type from each client */
-	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
-	{
+		writeIndex = 0;
 		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
 		{
-			if (cgs.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
-			        cgs.teamMarkers.teamTaskMarks[i].markType == markType)
+			mark = &cgs.teamMarkers.teamTaskMarks[i];
+			/* Remove: same client+type, same client+overhead (if adding overhead), same client+PLAYERDEAD (if adding HERE/WARN_DEAD), same client+HERE/WARN_DEAD (if adding) */
+			if (mark->clientNum == clientNum &&
+			    (mark->markType == markType ||
+			     (isOverheadMark && mark->isOverhead) ||
+			     (isHereWarnDead && mark->markType == TEAMTASK_PLAYERDEAD) ||
+			     (isHereWarnDead && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))))
 			{
-				/* Remove this mark by shifting all subsequent marks */
-				for (; i < cgs.teamMarkers.numTeamTaskMarks - 1; i++)
-				{
-					cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
-				}
-				cgs.teamMarkers.numTeamTaskMarks--;
-				i--; /* Adjust index after removal */
+				continue;
 			}
-		}
-	}
-
-	/* If this is an overhead mark (YES, NO, or MEDIC), remove any existing overhead mark from the same player */
-	if (CG_IsTeamTaskOverhead(markType) && clientNum >= 0 && clientNum < MAX_CLIENTS)
-	{
-		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
-		{
-			if (cgs.teamMarkers.teamTaskMarks[i].clientNum == clientNum && cgs.teamMarkers.teamTaskMarks[i].isOverhead)
+			if (writeIndex != i)
 			{
-				/* Remove this mark by shifting all subsequent marks */
-				for (; i < cgs.teamMarkers.numTeamTaskMarks - 1; i++)
-				{
-					cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
-				}
-				cgs.teamMarkers.numTeamTaskMarks--;
-				break;
+				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
 			}
+			writeIndex++;
 		}
-	}
-
-	/* If this is a HERE_DEAD or WARN_DEAD mark, remove any existing PLAYERDEAD mark from the same player */
-	if ((markType == TEAMTASK_HERE_DEAD || markType == TEAMTASK_WARN_DEAD) && clientNum >= 0 && clientNum < MAX_CLIENTS)
-	{
-		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
-		{
-			if (cgs.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
-			        cgs.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_PLAYERDEAD)
-			{
-				/* Remove this mark by shifting all subsequent marks */
-				for (; i < cgs.teamMarkers.numTeamTaskMarks - 1; i++)
-				{
-					cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
-				}
-				cgs.teamMarkers.numTeamTaskMarks--;
-				break;
-			}
-		}
-	}
-
-	/* If this is a HERE_DEAD or WARN_DEAD mark, remove any existing HERE_DEAD or WARN_DEAD mark from the same player */
-	/* This ensures that only one of these marks exists per player at a time */
-	if ((markType == TEAMTASK_HERE_DEAD || markType == TEAMTASK_WARN_DEAD) && clientNum >= 0 && clientNum < MAX_CLIENTS)
-	{
-		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
-		{
-			if (cgs.teamMarkers.teamTaskMarks[i].clientNum == clientNum &&
-			        (cgs.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_HERE_DEAD ||
-			         cgs.teamMarkers.teamTaskMarks[i].markType == TEAMTASK_WARN_DEAD))
-			{
-				/* Remove this mark by shifting all subsequent marks */
-				for (; i < cgs.teamMarkers.numTeamTaskMarks - 1; i++)
-				{
-					cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
-				}
-				cgs.teamMarkers.numTeamTaskMarks--;
-				break;
-			}
-		}
+		cgs.teamMarkers.numTeamTaskMarks = writeIndex;
 	}
 
 	/* Check if we have space for new mark */
@@ -1385,7 +1293,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	/* Check if this is an overhead mark type (YES, NO, MEDIC, or HERE_ALIVE) - if so, track player dynamically */
 	/* Also check for pickup marks (isPickup=true) - they should track player if available */
 	playerAvailable = qfalse;
-	if ((CG_IsTeamTaskOverhead(markType) || (toClient == 1)) && clientNum >= 0 && clientNum < MAX_CLIENTS)
+	if ((isOverheadMark || (toClient == 1)) && clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
 		/* Special case for local player - use predicted player entity */
 		if (clientNum == cg.clientNum)
@@ -1417,7 +1325,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	}
 
 	/* If player not available or not an overhead/pickup mark, use coordinates from message */
-	/* Note: WARN_ALIVE coordinates are already set via CG_GetAimContactPoint in cg_players.c */
+	/* Note: WARN_ALIVE coordinates are set inline in CG_ClientInfoUpdateTeamTask do_aim_point (cg_players.c) */
 	if (!playerAvailable)
 	{
 		VectorCopy(coord, center);
@@ -1425,14 +1333,15 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	}
 
 	mark->startTime = cg.time;
-	mark->endTime = cg.time + cg_teamTaskMarkTime.value;
+	mark->endTime = cg.time + cgs.teamMarkers.markDurationMs;
 	mark->clientNum = clientNum; /* Always store sender's clientNum (whose mark it is) */
-	mark->isOverhead = CG_IsTeamTaskOverhead(markType);
+	mark->isOverhead = isOverheadMark;
 	mark->isPickup = (toClient == 1); /* True if this is a pickup mark (toClient=1) */
 
 
 
 	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &mark->shader, mark->color, qfalse, mark->clientNum, mark->isPickup);
+	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &mark->markerShader, mark->markerColor, qtrue, mark->clientNum, mark->isPickup);
 
 	/* Register team task event for SuperHUD */
 	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
@@ -1441,7 +1350,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	}
 
 	/* Play sound when mark appears */
-	if (cg_teamTask.integer & CG_TEAMTASK_MARKSOUND)
+	if (cgs.teamMarkers.teamTaskFlags & CG_TEAMTASK_MARKSOUND)
 	{
 		sfxHandle_t soundToPlay;
 		soundToPlay = 0;

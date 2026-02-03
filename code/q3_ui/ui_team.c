@@ -98,7 +98,7 @@ void TeamMain_MenuInit( void ) {
 	s_teammain.joinred.generic.y        = y;
 	s_teammain.joinred.string           = "JOIN RED";
 	s_teammain.joinred.style            = UI_CENTER|UI_SMALLFONT;
-	s_teammain.joinred.color            = colorRed;
+	s_teammain.joinred.color            = uis.themeColor;
 	y += INGAME_TEAM_VERTICAL_SPACING;
 
 	s_teammain.joinblue.generic.type     = MTYPE_PTEXT;
@@ -109,7 +109,7 @@ void TeamMain_MenuInit( void ) {
 	s_teammain.joinblue.generic.y        = y;
 	s_teammain.joinblue.string           = "JOIN BLUE";
 	s_teammain.joinblue.style            = UI_CENTER|UI_SMALLFONT;
-	s_teammain.joinblue.color            = colorRed;
+	s_teammain.joinblue.color            = uis.themeColor;
 	y += INGAME_TEAM_VERTICAL_SPACING;
 
 	s_teammain.joingame.generic.type     = MTYPE_PTEXT;
@@ -120,7 +120,7 @@ void TeamMain_MenuInit( void ) {
 	s_teammain.joingame.generic.y        = y;
 	s_teammain.joingame.string           = "JOIN GAME";
 	s_teammain.joingame.style            = UI_CENTER|UI_SMALLFONT;
-	s_teammain.joingame.color            = colorRed;
+	s_teammain.joingame.color            = uis.themeColor;
 	y += INGAME_TEAM_VERTICAL_SPACING;
 
 	s_teammain.spectate.generic.type     = MTYPE_PTEXT;
@@ -131,7 +131,7 @@ void TeamMain_MenuInit( void ) {
 	s_teammain.spectate.generic.y        = y;
 	s_teammain.spectate.string           = "SPECTATE";
 	s_teammain.spectate.style            = UI_CENTER|UI_SMALLFONT;
-	s_teammain.spectate.color            = colorRed;
+	s_teammain.spectate.color            = uis.themeColor;
 	y += INGAME_TEAM_VERTICAL_SPACING;
 
 	trap_GetConfigString( CS_SERVERINFO, info, sizeof( info ) );

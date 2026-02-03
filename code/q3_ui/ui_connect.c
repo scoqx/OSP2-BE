@@ -177,14 +177,48 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 
 	Menu_Cache();
 
+	UI_UpdateCvars();
+
 	if ( !overlay ) {
-		// draw the dialog background
+		/* draw the dialog background */
 		UI_SetColor( color_white );
-		// fill whole screen, not just 640x480 virtual rectangle
-		trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
+		UI_UpdateMenuBackgroundMode();
+		if ( uis.menuHQMode == 2 ) {
+			float cw = (float)uis.glconfig.vidWidth / 6.0f;
+			float ch = (float)uis.glconfig.vidHeight / 4.0f;
+			int i;
+			for ( i = 0; i < 24; i++ ) {
+				float x = (float)( i % 6 ) * cw;
+				float y = (float)( i / 6 ) * ch;
+				trap_R_DrawStretchPic( x, y, cw, ch, 0, 0, 1, 1, uis.menuBackHQ24[i] );
+			}
+		} else if ( uis.menuHQMode == 1 ) {
+			float w2 = (float)uis.glconfig.vidWidth * 0.5f;
+			float h2 = (float)uis.glconfig.vidHeight * 0.5f;
+			trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBack1 );
+			trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBack2 );
+			trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBack3 );
+			trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBack4 );
+		} else {
+			trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
+		}
+
+		{
+			float d = ui_menuDarken.value;
+			if ( d > 0.0f ) {
+				float darkenColor[4];
+				darkenColor[0] = 0.0f;
+				darkenColor[1] = 0.0f;
+				darkenColor[2] = 0.0f;
+				darkenColor[3] = ( d > 1.0f ) ? 1.0f : d;
+				trap_R_SetColor( darkenColor );
+				trap_R_DrawStretchPic( 0, 0, (float)uis.glconfig.vidWidth, (float)uis.glconfig.vidHeight, 0, 0, 1, 1, uis.whiteShader );
+				trap_R_SetColor( NULL );
+			}
+		}
 	}
 
-	// see what information we should display
+	/* see what information we should display */
 	trap_GetClientState( &cstate );
 
 	info[0] = '\0';

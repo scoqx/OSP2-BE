@@ -381,7 +381,7 @@ static void PlayerModel_DrawPlayer( void *self )
 	b = (menubitmap_s*) self;
 
 	if( trap_MemoryRemaining() <= LOW_MEMORY ) {
-		UI_DrawProportionalString( b->generic.x, b->generic.y + b->height / 2, "LOW MEMORY", UI_LEFT, color_red );
+		UI_DrawProportionalString( b->generic.x, b->generic.y + b->height / 2, "LOW MEMORY", UI_LEFT, uis.themeColor );
 		return;
 	}
 
@@ -555,7 +555,7 @@ static void PlayerModel_MenuInit( void )
 	s_playermodel.banner.generic.x     = 320;
 	s_playermodel.banner.generic.y     = 16;
 	s_playermodel.banner.string        = "PLAYER MODEL";
-	s_playermodel.banner.color         = color_white;
+	s_playermodel.banner.color         = uis.themeColor;
 	s_playermodel.banner.style         = UI_CENTER;
 
 	s_playermodel.framel.generic.type  = MTYPE_BITMAP;
@@ -595,7 +595,7 @@ static void PlayerModel_MenuInit( void )
 			s_playermodel.pics[k].width  		   = 64;
 			s_playermodel.pics[k].height  		   = 64;
 			s_playermodel.pics[k].focuspic         = MODEL_SELECTED;
-			s_playermodel.pics[k].focuscolor       = colorRed;
+			s_playermodel.pics[k].focuscolor       = uis.themeColor;
 
 			s_playermodel.picbuttons[k].generic.type	 = MTYPE_BITMAP;
 			s_playermodel.picbuttons[k].generic.flags    = QMF_LEFT_JUSTIFY|QMF_NODEFAULTINIT|QMF_PULSEIFFOCUS;
@@ -610,7 +610,7 @@ static void PlayerModel_MenuInit( void )
 			s_playermodel.picbuttons[k].width  		     = 128;
 			s_playermodel.picbuttons[k].height  		 = 128;
 			s_playermodel.picbuttons[k].focuspic  		 = MODEL_SELECT;
-			s_playermodel.picbuttons[k].focuscolor  	 = colorRed;
+			s_playermodel.picbuttons[k].focuscolor  	 = uis.themeColor;
 
 			x += 64+6;
 		}

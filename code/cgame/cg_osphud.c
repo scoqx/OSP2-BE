@@ -247,7 +247,7 @@ static float CG_OSPDrawStatusBar(float arg)
 
 	// stretch the health up when taking damage
 	CG_OSPDrawStatusBarString((((320 - ((12 * fontW) / 2)) + offsetW) + (5 * fontW)), (int)arg, 3, fontW, fontH, value);
-	CG_ColorForHealth(hcolor, NULL);
+	Vector4Copy(cgs.healthColorLocal, hcolor);
 	trap_R_SetColor(hcolor);
 
 	//
@@ -566,7 +566,7 @@ static void CG_OSPDrawCPMStatusbar0(void)
 	}
 
 	CG_DrawField(185, 432, 3, health, 32, 48);
-	CG_ColorForHealth(color, NULL);
+	Vector4Copy(cgs.healthColorLocal, color);
 	trap_R_SetColor(color);
 
 	armor = ps->stats[STAT_ARMOR];
@@ -1659,7 +1659,7 @@ static void CG_OSPDrawQ3CompStatusbar(void)
 		}
 
 		CG_DrawField(354 - w_tmp, 476 - h, 3, health, w, h);
-		CG_ColorForHealth(colorForHealth, NULL);
+		Vector4Copy(cgs.healthColorLocal, colorForHealth);
 		trap_R_SetColor(colorForHealth);
 	}
 	//--
@@ -1724,7 +1724,6 @@ static float CG_OSPDrawTeamInfo(float y)
 	vec4_t hcolor;
 	float chatY;
 	int chatYOffset;
-	cgs_be_t* be;
 
 	if (cg_teamChatHeight.integer <= 0)
 	{
@@ -1753,15 +1752,14 @@ static float CG_OSPDrawTeamInfo(float y)
 
 		if (ch_TeamBackground.integer != 0)
 		{
-			be = &cgs.be;
 			if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED)
 			{
-				Vector4Copy(be->redTeamColor, hcolor);
+				Vector4Copy(cgs.beRedTeamColor, hcolor);
 				hcolor[3] = 0.33f;
 			}
 			else if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE)
 			{
-				Vector4Copy(be->blueTeamColor, hcolor);
+				Vector4Copy(cgs.beBlueTeamColor, hcolor);
 				hcolor[3] = 0.33f;
 			}
 			else
@@ -2019,7 +2017,6 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 	int offsetY;
 	int i;
 	vec4_t healthColor;
-	cgs_be_t* be;
 
 	persistantTeam = CG_OSPGetPresistantTeam();
 
@@ -2064,15 +2061,14 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 		teamOverlayPosY = (int)y;
 	}
 
-	be = &cgs.be;
 	if (persistantTeam == TEAM_RED)
 	{
-		Vector4Copy(be->redTeamColor, colorTeamOverlay);
+		Vector4Copy(cgs.beRedTeamColor, colorTeamOverlay);
 		colorTeamOverlay[3] = 0.33f;
 	}
 	else
 	{
-		Vector4Copy(be->blueTeamColor, colorTeamOverlay);
+		Vector4Copy(cgs.beBlueTeamColor, colorTeamOverlay);
 		colorTeamOverlay[3] = 0.33f;
 	}
 
@@ -2097,7 +2093,7 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 
 			if (teamOverlay.healthOffsetChar || teamOverlay.armorOffsetChar)
 			{
-				CG_GetColorForHealth(ci->health, ci->armor, healthColor, NULL);
+				Vector4Copy(cgs.healthColorByClient[sortedTeamPlayers[i]], healthColor);
 			}
 
 			if (teamOverlay.healthOffsetChar)
@@ -2234,16 +2230,13 @@ static float CG_OSPDrawWeaponBarOld(float pos_y)
 	{
 		if (weapons & (1 << weaponNum))
 		{
-			CG_RegisterWeapon(weaponNum);
+			if (!cg_weapons[weaponNum].registered)
+				CG_RegisterWeapon(weaponNum);
 			CG_DrawPicOld(x, y, w, h, cg_weapons[weaponNum].weaponIcon);
 			if (weaponNum == cg.weaponSelect)
-			{
 				CG_DrawPicOld(x - 2, y - 2, w + 4, h + 4, cgs.media.selectShader);
-			}
 			if (cg.snap->ps.ammo[weaponNum] == 0)
-			{
 				CG_DrawPicOld((float)x, (float)y, (float)w, (float)h, cgs.media.noammoShader);
-			}
 			x += w + 4;
 		}
 	}
@@ -2316,23 +2309,17 @@ static void CG_OSPDrawWeaponBar_4_5(float pos_y)
 	{
 		if (statWeapons & (1 << weaponNum))
 		{
-			CG_RegisterWeapon(weaponNum);
+			if (!cg_weapons[weaponNum].registered)
+				CG_RegisterWeapon(weaponNum);
 			CG_DrawPicOld(x, y, (float)w, (float)h, cg_weapons[weaponNum].weaponIcon);
 			if (weaponNum == cg.weaponSelect)
-			{
 				CG_DrawPicOld(x - 4.0f, y - 4.0f, w + 8, h + 8, cgs.media.selectShader);
-			}
 			if (cg.snap->ps.ammo[weaponNum] == 0)
-			{
 				CG_DrawPicOld(x, y, (float)w, (float)h, cgs.media.noammoShader);
-			}
-			if (ch_Weaponswitch.integer == 5)
+			if (ch_Weaponswitch.integer == 5 && cg.snap->ps.ammo[weaponNum] != -1)
 			{
-				if (cg.snap->ps.ammo[weaponNum] != -1)
-				{
-					str = va("%3i", cg.snap->ps.ammo[weaponNum]);
-					CG_OSPDrawStringOld(x + w + 8, y + ((h + 8) / 2 - 8), str, 8, 8, NULL, 0, 0);
-				}
+				str = va("%3i", cg.snap->ps.ammo[weaponNum]);
+				CG_OSPDrawStringOld(x + w + 8, y + ((h + 8) / 2 - 8), str, 8, 8, NULL, 0, 0);
 			}
 			y += h + 8;
 		}
@@ -2393,15 +2380,13 @@ static float CG_OSPHUDDrawScores(float y)
 	int w; //2c
 	//
 	int score;
-	cgs_be_t* be;
 	vec4_t redColor;
 	vec4_t blueColor;
 
 	vec4_t colorScores[3];
 
-	be = &cgs.be;
-	Vector4Copy(be->redTeamColor, redColor);
-	Vector4Copy(be->blueTeamColor, blueColor);
+	Vector4Copy(cgs.beRedTeamColor, redColor);
+	Vector4Copy(cgs.beBlueTeamColor, blueColor);
 	redColor[3] = 0.33f;
 	blueColor[3] = 0.33f;
 
@@ -2936,16 +2921,13 @@ static float CG_OSPDrawWeaponSelect(float x, float y, const float* color)
 	{
 		if (statWeapons & (1 << weaponNum))
 		{
-			CG_RegisterWeapon(weaponNum);
+			if (!cg_weapons[weaponNum].registered)
+				CG_RegisterWeapon(weaponNum);
 			CG_DrawPicOld(x, y, w, h, cg_weapons[weaponNum].weaponIcon);
 			if (weaponNum == cg.weaponSelect)
-			{
 				CG_DrawPicOld(x - 2, y - 2, w + 4, w + 4, cgs.media.selectShader);
-			}
 			if (cg.snap->ps.ammo[weaponNum] == 0)
-			{
 				CG_DrawPicOld(x, y, (float)w, (float)h, cgs.media.noammoShader);
-			}
 			y += h + 2.0f;
 		}
 	}
@@ -3755,8 +3737,6 @@ static void CG_OSPDrawCrosshairNames(void)
 	if (cg.renderingThirdPerson != 0) return;
 	if (global_viewlistFirstOption > 1) return;
 
-	CG_ScanForCrosshairEntity();
-
 	color = CG_FadeColor(cg.crosshairClientTime, 1000);
 	if (color == NULL)
 	{
@@ -3793,7 +3773,7 @@ static void CG_OSPDrawCrosshairNames(void)
 				vec4_t color2;
 
 				CG_OSPGetClientFontSize(&cf_TeamCrosshairHealth, &w2, &h2);
-				CG_GetColorForHealth(ci->health, ci->armor, color2, NULL);
+				Vector4Copy(cgs.healthColorByClient[cg.crosshairClientNum], color2);
 				Com_sprintf(str2, 64, "%i/%i", ci->health, ci->armor);
 				len2 = CG_DrawStrlen(str2);
 				color2[3] = color[3];
@@ -3843,7 +3823,7 @@ static void CG_OSPDrawCrosshairNames(void)
 					x_health = 0;
 				}
 				CG_OSPDrawStringOld(x_name, y, ci->name, w, h, color, 0, 0);
-				CG_GetColorForHealth(ci->health, ci->armor, color2, NULL);
+				Vector4Copy(cgs.healthColorByClient[cg.crosshairClientNum], color2);
 				color2[3] = 0.5f * color[3];
 				CG_OSPDrawStringOld(x_health, y + h, str2, w2, h2, color2, 0, 0);
 			}

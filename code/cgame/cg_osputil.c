@@ -374,8 +374,8 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 		team_t myTeam;
 		char originalChar;
 
-		// Use tracked team from cgs.be.myTeam (updated every frame)
-		myTeam = cgs.be.myTeam;
+		// Use tracked team from cgs.beMyTeam (updated every frame)
+		myTeam = cgs.beMyTeam;
 		originalChar = str[0];
 
 		// Return team or enemy color based on my team
@@ -384,15 +384,15 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 			// Team color - color of my team
 			if (myTeam == TEAM_RED)
 			{
-				Vector4Copy(cgs.be.redTeamColor, out);
+				Vector4Copy(cgs.beRedTeamColor, out);
 			}
 			else if (myTeam == TEAM_BLUE)
 			{
-				Vector4Copy(cgs.be.blueTeamColor, out);
+				Vector4Copy(cgs.beBlueTeamColor, out);
 			}
 			else
 			{
-				Vector4Copy(cgs.be.redTeamColor, out);
+				Vector4Copy(cgs.beRedTeamColor, out);
 			}
 		}
 		else
@@ -400,15 +400,15 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 			// Enemy color - color of enemy team
 			if (myTeam == TEAM_RED)
 			{
-				Vector4Copy(cgs.be.blueTeamColor, out);
+				Vector4Copy(cgs.beBlueTeamColor, out);
 			}
 			else if (myTeam == TEAM_BLUE)
 			{
-				Vector4Copy(cgs.be.redTeamColor, out);
+				Vector4Copy(cgs.beRedTeamColor, out);
 			}
 			else
 			{
-				Vector4Copy(cgs.be.blueTeamColor, out);
+				Vector4Copy(cgs.beBlueTeamColor, out);
 			}
 		}
 		return qtrue;
@@ -509,7 +509,7 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 =================
 CG_UpdateMyTeam
 
-Отслеживает команду игрока каждый кадр и обновляет cgs.be.myTeam
+Отслеживает команду игрока каждый кадр и обновляет cgs.beMyTeam
 для динамического обновления цветов T/E
 =================
 */
@@ -521,7 +521,7 @@ void CG_UpdateMyTeam(void)
 	/* Safety check */
 	if (cg.clientNum < 0 || cg.clientNum >= MAX_CLIENTS)
 	{
-		cgs.be.myTeam = TEAM_RED;
+		cgs.beMyTeam = TEAM_RED;
 		return;
 	}
 
@@ -576,7 +576,7 @@ void CG_UpdateMyTeam(void)
 	}
 
 	/* Update tracked team */
-	cgs.be.myTeam = currentTeam;
+	cgs.beMyTeam = currentTeam;
 	CG_ReloadColors();
 }
 

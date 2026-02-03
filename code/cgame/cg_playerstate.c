@@ -27,28 +27,30 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 
+/* Map weapon index -> exec cvar; no cgs copy, read cvar.string at use */
+static const vmCvar_t* const execWeaponCvars[WP_NUM_WEAPONS] =
+{
+	NULL,
+	&cg_exec_gauntlet,
+	&cg_exec_mg,
+	&cg_exec_sg,
+	&cg_exec_gl,
+	&cg_exec_rl,
+	&cg_exec_lg,
+	&cg_exec_rg,
+	&cg_exec_pg,
+	&cg_exec_bfg,
+	NULL,
+};
+
 /*
- * Inline weapon exec: no function call for QVM. Use _w and _c so macro body never
- * contains ps/ops; pass (ps->weapon, ps->clientNum) as (_w,_c) at call site.
+ * Inline weapon exec: no function call. cg_exec_weapons.integer and cvar.string read directly (no cgs copy).
+ * _w weapon index, _c clientNum.
  */
 #define CG_EXEC_WEAPON_SWITCH_INLINE(_w, _c) do { \
     const char* _cmd; \
-    int _mode = cg_exec_weapons.integer; \
-    if (_mode == 0) break; \
-    if (_mode == 2 && (_c) != cg.clientNum) break; \
-    _cmd = NULL; \
-    switch (_w) { \
-        case WP_GAUNTLET: _cmd = cg_exec_gauntlet.string; break; \
-        case WP_MACHINEGUN: _cmd = cg_exec_mg.string; break; \
-        case WP_SHOTGUN: _cmd = cg_exec_sg.string; break; \
-        case WP_GRENADE_LAUNCHER: _cmd = cg_exec_gl.string; break; \
-        case WP_ROCKET_LAUNCHER: _cmd = cg_exec_rl.string; break; \
-        case WP_LIGHTNING: _cmd = cg_exec_lg.string; break; \
-        case WP_RAILGUN: _cmd = cg_exec_rg.string; break; \
-        case WP_PLASMAGUN: _cmd = cg_exec_pg.string; break; \
-        case WP_BFG: _cmd = cg_exec_bfg.string; break; \
-        default: break; \
-    } \
+    if (!cg_exec_weapons.integer || (cg_exec_weapons.integer == 2 && (_c) != cg.clientNum)) break; \
+    _cmd = (unsigned)(_w) < (unsigned)WP_NUM_WEAPONS && execWeaponCvars[_w] ? execWeaponCvars[_w]->string : NULL; \
     if (_cmd && _cmd[0]) trap_SendConsoleCommand(_cmd); \
 } while (0)
 
@@ -75,422 +77,37 @@ static int lowAmmoThresholds[WP_NUM_WEAPONS] =
 	/* WP_GRAPPLING_HOOK */  0
 };
 
-void CG_CheckAmmo(void)
-{
-	int weapon;
-	int ammo;
-	int threshold;
-	int i;
-	int weapons;
-	int total;
-	int previous;
-	int currentWarning;
+/* CG_CheckAmmo state: file scope so inlined body in CG_TransitionPlayerState can use it */
+static int lowAmmoWarningPrev[WP_NUM_WEAPONS] = {0};
+static int lastWeapon = WP_NONE;
+static int prevWeaponState = WEAPON_READY;
+static int prevAmmo = 0;
 
-	static int lowAmmoWarningPrev[WP_NUM_WEAPONS] = {0};
-	static int lastWeapon = WP_NONE;
+/* Lightning weapon tracking state (was CG_UpdateWeaponTracking), file scope for inlined body */
+static int lastHitsValueLightning = 0;
 
-	static int prevWeaponState = WEAPON_READY;
-	static int prevAmmo = 0;
-	static int prevTotal = 0;
-
-	if (cg.snap->ps.weapon == WP_NONE || !cg_drawAmmoWarning.integer)
-	{
-		cg.lowAmmoWarning = 0;
-		prevWeaponState = WEAPON_READY;
-		prevAmmo = 0;
-		return;
-	}
-
-	// no ammo sounds when trying to shot without ammo
-	weapon = cg.snap->ps.weapon;
-	ammo = cg.snap->ps.ammo[weapon];
-	{
-		int currentWeaponState = cg.snap->ps.weaponstate;
-
-		if (currentWeaponState == WEAPON_FIRING && ammo == 0 &&
-		        !(prevWeaponState == WEAPON_FIRING && prevAmmo == 0))
-		{
-			trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
-		}
-
-		prevWeaponState = currentWeaponState;
-		prevAmmo = ammo;
-	}
-
-	if (cg_drawAmmoWarning.integer == 1)
-	{
-		threshold = lowAmmoThresholds[weapon];
-		if (ammo > prevAmmo)
-		{
-			cg.lowAmmoWarning = 0;
-			lowAmmoWarningPrev[weapon] = 0;
-		}
-		currentWarning = 0;
-		if (ammo == 0)
-			currentWarning = 2;
-		else if (threshold > 0 && ammo <= threshold)
-			currentWarning = 1;
-
-		cg.lowAmmoWarning = currentWarning;
-
-		if (currentWarning != lowAmmoWarningPrev[weapon] || (currentWarning != 0 && weapon != lastWeapon))
-		{
-			if (currentWarning == 1)
-			{
-				trap_S_StartLocalSound(cgs.media.lowAmmoSound, CHAN_LOCAL_SOUND);
-			}
-			else if (currentWarning == 2)
-			{
-				trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
-			}
-		}
-
-		lastWeapon = weapon;
-		lowAmmoWarningPrev[weapon] = currentWarning;
-
-		return;
-	}
-	// default osp
-	if (cg_drawAmmoWarning.integer == 2)
-	{
-		weapons = cg.snap->ps.stats[STAT_WEAPONS];
-		total = 0;
-
-		for (i = WP_MACHINEGUN; i < WP_NUM_WEAPONS; i++)
-		{
-			if (!(weapons & (1 << i)))
-			{
-				continue;
-			}
-			switch (i)
-			{
-				case WP_ROCKET_LAUNCHER:
-				case WP_GRENADE_LAUNCHER:
-				case WP_RAILGUN:
-				case WP_SHOTGUN:
-					total += cg.snap->ps.ammo[i] * 1000;
-					break;
-				default:
-					total += cg.snap->ps.ammo[i] * 200;
-					break;
-			}
-			if (total >= 5000)
-			{
-				cg.lowAmmoWarning = 0;
-				return;
-			}
-		}
-
-		if (total > prevTotal) cg.lowAmmoWarning = 0;
-		previous = cg.lowAmmoWarning;
-
-		if (total == 0)
-		{
-			cg.lowAmmoWarning = 2;
-		}
-		else
-		{
-			cg.lowAmmoWarning = 1;
-		}
-
-		if (cg.lowAmmoWarning != previous)
-		{
-			trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
-		}
-
-		prevTotal = total;
-		return;
-	}
-
-	cg.lowAmmoWarning = 0;
-}
-
-
-/*
-==============
-CG_DamageFeedback
-==============
-*/
-void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
-{
-	float       left, front, up;
-	float       kick;
-	int         health;
-	float       scale;
-	vec3_t      dir;
-	vec3_t      angles;
-	float       dist;
-	float       yaw, pitch;
-
-	// show the attacking player's head and name in corner
-	cg.attackerTime = cg.time;
-
-	// the lower on health you are, the greater the view kick will be
-	health = cg.snap->ps.stats[STAT_HEALTH];
-	if (health < 40)
-	{
-		scale = 1;
-	}
-	else
-	{
-		scale = 40.0 / health;
-	}
-	kick = damage * scale;
-
-	if (kick < 5)
-		kick = 5;
-	if (kick > 10)
-		kick = 10;
-
-	// if yaw and pitch are both 255, make the damage always centered (falling, etc)
-	if (yawByte == 255 && pitchByte == 255)
-	{
-		cg.damageX = 0;
-		cg.damageY = 0;
-		cg.v_dmg_roll = 0;
-		cg.v_dmg_pitch = -kick;
-	}
-	else
-	{
-		// positional
-		pitch = pitchByte / 255.0 * 360;
-		yaw = yawByte / 255.0 * 360;
-
-		angles[PITCH] = pitch;
-		angles[YAW] = yaw;
-		angles[ROLL] = 0;
-
-		AngleVectors(angles, dir, NULL, NULL);
-		VectorSubtract(vec3_origin, dir, dir);
-
-		front = DotProduct(dir, cg.refdef.viewaxis[0]);
-		left = DotProduct(dir, cg.refdef.viewaxis[1]);
-		up = DotProduct(dir, cg.refdef.viewaxis[2]);
-
-		dir[0] = front;
-		dir[1] = left;
-		dir[2] = 0;
-		dist = VectorLength(dir);
-		if (dist < 0.1)
-		{
-			dist = 0.1f;
-		}
-
-		cg.v_dmg_roll = kick * left;
-		cg.v_dmg_pitch = -kick * front;
-
-		if (front <= 0.1)
-		{
-			front = 0.1f;
-		}
-		cg.damageX = -left / front;
-		cg.damageY = up / dist;
-	}
-
-	// clamp the position
-	if (cg.damageX > 1.0)
-	{
-		cg.damageX = 1.0;
-	}
-	if (cg.damageX < - 1.0)
-	{
-		cg.damageX = -1.0;
-	}
-
-	if (cg.damageY > 1.0)
-	{
-		cg.damageY = 1.0;
-	}
-	if (cg.damageY < - 1.0)
-	{
-		cg.damageY = -1.0;
-	}
-
-	// don't let the screen flashes vary as much
-	if (kick > 10)
-	{
-		kick = 10;
-	}
-	cg.damageValue = kick;
-	cg.v_dmg_time = cg.time + DAMAGE_TIME;
-	cg.damageTime = cg.snap->serverTime;
-}
-
-
-
-void CG_UpdateWeaponTracking(int weapon)
-{
-	static int lastHitsValue = 0;
-	int currentAmmo, hitsDelta;
-	int atta;
-	int currentDamage, actualHits;
-	customWeaponStats_t* ws = &cgs.be.weaponStats[weapon];
-	playerState_t* ps = &cg.snap->ps;
-
-	// Сброс статистики, если игрок умер или сменил оружие
-	if (ps->weapon != weapon || ps->stats[STAT_HEALTH] <= 0)
-	{
-		ws->onTrack = qfalse;
-		ws->hitsStart = 0;
-		ws->hitsCurrent = 0;
-		ws->shotsStart = 0;
-		ws->lastAmmo = 0;
-		lastHitsValue = 0;
-		return;
-	}
-
-	// Сброс, если прошло больше 1 секунды без атак
-	if (ws->onTrack && (cg.time - ws->lastAttackTime > 1000))
-	{
-		ws->onTrack = qfalse;
-		ws->hitsStart = 0;
-		ws->hitsCurrent = 0;
-		ws->shotsStart = 0;
-		ws->lastAmmo = 0;
-		lastHitsValue = 0;
-		return;
-	}
-
-	// Получаем текущее количество патронов и вычисляем разность попаданий
-	currentAmmo = ps->ammo[weapon];
-	hitsDelta = ps->persistant[PERS_HITS] - lastHitsValue;
-
-	// Calculate real damage from PERS_ATTACKEE_ARMOR (same logic as CG_HitDamage)
-	atta = ps->persistant[PERS_ATTACKEE_ARMOR];
-
-	// Проверяем режим OSP для определения метода подсчета попаданий и урона
-	if (atta == 0) // OSP режим - в PERS_HITS хранится урон, количество попаданий = 1
-	{
-		actualHits = (hitsDelta > 0) ? 1 : 0; // В OSP режиме каждое изменение = 1 попадание
-		currentDamage = hitsDelta; // Урон равен разности
-	}
-	else // Другие режимы - в PERS_HITS хранится количество попаданий
-	{
-		actualHits = hitsDelta; // Количество попаданий равно разности
-		currentDamage = atta & 0x00FF; // Урон извлекается из PERS_ATTACKEE_ARMOR
-	}
-
-	// Обновляем значение для следующего вызова
-	lastHitsValue = ps->persistant[PERS_HITS];
-
-	// Если оружие уже "на треке", обновляем данные
-	if (ws->onTrack)
-	{
-		// Только если сейчас атака — обновляем lastAttackTime
-		if (ps->weaponstate == WEAPON_FIRING)
-		{
-			ws->lastAttackTime = cg.time;
-		}
-
-		ws->hitsCurrent += actualHits; // Добавляем новые попадания
-		ws->damageFixed += currentDamage; // Добавляем новый урон
-		ws->lastAmmo = currentAmmo;
-		return;
-	}
-
-	// Начало нового "трека" (первая атака)
-	ws->hitsStart = actualHits;
-	ws->hitsCurrent = actualHits;
-	ws->damageFixed = currentDamage;
-	ws->shotsStart = currentAmmo;
-	ws->lastAmmo = currentAmmo;
-	ws->lastAttackTime = cg.time;
-	ws->onTrack = qtrue;
-
-	// Инициализация для Lightning
-	if (ps->weapon == weapon)
-	{
-		// actualHits calculated above
-	}
-}
-
-
-
-
-
-/*
-================
-CG_ForceExecOnSpectateStart
-
-Force exec weapon command when starting to spectate a player
-================
-*/
-static void CG_ForceExecOnSpectateStart(playerState_t* ps)
-{
-	static int lastSnapClientNum = -1;
-	int currentSnapClientNum;
-	qboolean isFollowing;
-
-	if (!cg.snap)
-	{
-		lastSnapClientNum = -1;
-		return;
-	}
-
-	isFollowing = (cg.snap->ps.pm_flags & PMF_FOLLOW) ? qtrue : qfalse;
-	if (isFollowing && cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
-	{
-		currentSnapClientNum = cg.snap->ps.clientNum;
-	}
-	else
-	{
-		currentSnapClientNum = -1;
-	}
-
-	/* Early exit when weapon exec disabled: still update lastSnapClientNum */
-	if (cg_exec_weapons.integer == 0)
-	{
-		lastSnapClientNum = currentSnapClientNum;
-		return;
-	}
-
-	/* If we started following a different player, force exec */
-	if (isFollowing && currentSnapClientNum != lastSnapClientNum &&
-	        currentSnapClientNum != -1 && ps->weapon != WP_NONE)
-	{
-		int _w = ps->weapon;
-		int _c = ps->clientNum;
-		CG_EXEC_WEAPON_SWITCH_INLINE(_w, _c);
-	}
-
-	lastSnapClientNum = currentSnapClientNum;
-}
+/* CG_ForceExecOnSpectateStart inlined in CG_TransitionPlayerState */
 
 /*
 ================
 CG_Respawn
 
-A respawn happened this snapshot
+A respawn happened this snapshot. Reads from cgs (respawnWeapon, zoomAutoReset), not vmCvar.
 ================
 */
 void CG_Respawn(void)
 {
-	// no error decay on player movement
 	cg.thisFrameTeleport = qtrue;
-
-	// display weapons available
 	cg.weaponSelectTime = cg.time;
-
-
-	// select the weapon the server says we are using
-	if (!cg_respawnWeapon.integer)
-	{
-		cg.weaponSelect = cg.snap->ps.weapon;
-	}
-	else
-	{
-		cg.weaponSelect = cg_respawnWeapon.integer;
-	}
-
-	// reset zoom toggle on respawn
+	cg.weaponSelect = cg_respawnWeapon.integer ? cg_respawnWeapon.integer : cg.snap->ps.weapon;
 	if ((cg_zoomAutoReset.integer & 2) && cg.zoomed)
 	{
 		cg.zoomed = qfalse;
 		cg.zoomTime = cg.time;
 	}
 
-	// clear death-related team task marks after respawn
-	CG_ClearPlayerDeathTeamTaskMarks();
+	/* Removal is done in CG_TeamTaskUpdateFrame (single place) */
+	cgs.teamMarkers.packLocalDeathNextFrame = qtrue;
 }
 
 extern char* eventnames[];
@@ -502,8 +119,8 @@ CG_CheckPlayerstateEvents
 */
 void CG_CheckPlayerstateEvents(playerState_t* ps, playerState_t* ops)
 {
-	int         i;
-	int         event;
+	int         i = 0;
+	int         event = 0;
 	centity_t*   cent;
 
 	if (ps->externalEvent && ps->externalEvent != ops->externalEvent)
@@ -544,210 +161,41 @@ CG_CheckChangedPredictableEvents
 */
 void CG_CheckChangedPredictableEvents(playerState_t* ps)
 {
-	int i;
-	int event;
-	centity_t*   cent;
+	int i, m = MAX_PS_EVENTS - 1, pm = MAX_PREDICTED_EVENTS - 1;
+	centity_t* cent = &cg.predictedPlayerEntity;
 
-	cent = &cg.predictedPlayerEntity;
-	for (i = ps->eventSequence - MAX_PS_EVENTS ; i < ps->eventSequence ; i++)
+	for (i = ps->eventSequence - MAX_PS_EVENTS; i < ps->eventSequence; i++)
 	{
-		//
-		if (i >= cg.eventSequence)
-		{
-			continue;
-		}
-		// if this event is not further back in than the maximum predictable events we remember
-		if (i > cg.eventSequence - MAX_PREDICTED_EVENTS)
-		{
-			// if the new playerstate event is different from a previously predicted one
-			if (ps->events[i & (MAX_PS_EVENTS - 1)] != cg.predictableEvents[i & (MAX_PREDICTED_EVENTS - 1) ])
-			{
+		if (i >= cg.eventSequence) continue;
+		if (i <= cg.eventSequence - MAX_PREDICTED_EVENTS) continue;
+		if (ps->events[i & m] == cg.predictableEvents[i & pm]) continue;
 
-				event = ps->events[ i & (MAX_PS_EVENTS - 1) ];
-				cent->currentState.event = event;
-				cent->currentState.eventParm = ps->eventParms[ i & (MAX_PS_EVENTS - 1) ];
-				CG_EntityEvent(cent, cent->lerpOrigin);
-
-				cg.predictableEvents[ i & (MAX_PREDICTED_EVENTS - 1) ] = event;
-
-				if (cg_showmiss.integer)
-				{
-					CG_Printf("WARNING: changed predicted event\n");
-				}
-			}
-		}
+		cent->currentState.event = ps->events[i & m];
+		cent->currentState.eventParm = ps->eventParms[i & m];
+		CG_EntityEvent(cent, cent->lerpOrigin);
+		cg.predictableEvents[i & pm] = cent->currentState.event;
+		if (cg_showmiss.integer)
+			CG_Printf("WARNING: changed predicted event\n");
 	}
 }
 
-/*
-==================
-pushReward
-==================
-*/
-static void pushReward(sfxHandle_t sfx, qhandle_t shader, int rewardCount)
-{
-	if (cg.rewardStack < (MAX_REWARDSTACK - 1))
-	{
-		cg.rewardStack++;
-		cg.rewardSound[cg.rewardStack] = sfx;
-		cg.rewardShader[cg.rewardStack] = shader;
-		cg.rewardCount[cg.rewardStack] = rewardCount;
-	}
-}
-/*
-==================
-CG_CheckLocalSounds
-==================
-*/
-static void CG_PlayHitSound(sfxHandle_t sound, playerState_t* ps, playerState_t* ops)
-{
-	if (cg_lightningSilent.integer && ops->weapon == WP_LIGHTNING)
-	{
-		return;
-	}
-	if (cg_hitSounds.integer < 0)
-	{
-		return;
-	}
+#define PUSH_REWARD(sfx, shader, count) do { \
+	if (cg.rewardStack < (MAX_REWARDSTACK - 1)) { \
+		cg.rewardStack++; \
+		cg.rewardSound[cg.rewardStack] = (sfx); \
+		cg.rewardShader[cg.rewardStack] = (shader); \
+		cg.rewardCount[cg.rewardStack] = (count); \
+	} \
+} while(0)
+#define PLAY_HIT_SOUND(snd, ops) \
+	do { if (!(cg_lightningSilent.integer && (ops)->weapon == WP_LIGHTNING) && cg_hitSounds.integer >= 0) trap_S_StartLocalSound((snd), CHAN_LOCAL_SOUND); } while(0)
 
-	trap_S_StartLocalSound(sound, CHAN_LOCAL_SOUND);
-}
-
-// for DamageSound
-int hit_hp;
-int hit_ar;
-int hit_sum;
-
-void CG_DamageSound(playerState_t* ps, playerState_t* ops)
-{
-	hit_hp = ps->stats[STAT_HEALTH] - ops->stats[STAT_HEALTH];
-	hit_ar = ps->stats[STAT_ARMOR] - ops->stats[STAT_ARMOR];
-
-	if (cg_damageSound.integer && cg.attackerTime != 0)
-	{
-		hit_sum = hit_hp + hit_ar;
-
-		if (hit_sum <= -3)
-		{
-			int soundIndex = (hit_sum >= -25) ? 0 :
-			                 (hit_sum >= -50) ? 1 :
-			                 (hit_sum >= -75) ? 2 : 3;
-
-			trap_S_StartLocalSound(cgs.media.gotDamageSounds[soundIndex], CHAN_LOCAL_SOUND);
-		}
-	}
-}
-
-void CG_HitDamage(playerState_t* ps, playerState_t* ops)
-{
-	int atta, hits, damage;
-
-	// // Early return if damage info is not allowed and not in promode/cq3
-	// if (!(BE_IsDamageInfoAllowed()) && !(cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE) && !(cgs.osp.server_mode == OSP_SERVER_MODE_CQ3))
-	// {
-	//  return;
-	// }
-
-	hits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
-	if (hits < 0)
-	{
-		// Friendly fire
-		// cgs.osp.lastHitTime = cg.time;
-		cgs.osp.lastHitDamage = 0;
-		return;
-	}
-
-	if (hits == 0)
-	{
-		return;
-	}
-
-	atta = ps->persistant[PERS_ATTACKEE_ARMOR];
-	damage = (atta == 0) ? hits : (atta & 0x00FF);
-
-	// cgs.osp.lastHitTime = cg.time;
-	cgs.osp.lastHitDamage = damage;
-}
+/* CG_HitDamage inlined in CG_TransitionPlayerState */
 
 
-void CG_HitSound(playerState_t* ps, playerState_t* ops)
-{
-	static int delayedDmg = 0;
-	static int stackedDmg = 0;
-
-	int deltaTime  = cg.time - cgs.osp.lastHitTime;
-	int hits    = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
-	int lgcd    = ops->powerups[PW_HASTE] ? 25 : 50; //lg ms cooldown, do we really need 25ms for haste?
-
-	if (!hits && !delayedDmg)
-	{
-		return;
-	}
-
-	if (hits < 0)
-	{
-		//frendly fire
-		cgs.osp.lastHitTime = cg.time;
-		CG_PlayHitSound(cgs.media.hitTeamSound, ps, ops);
-		return;
-	}
-
-	//hits > 0 here
-	{
-		const int atta = ps->persistant[PERS_ATTACKEE_ARMOR];
-		int damage;
-
-		if (atta == 0) // osp if zero
-		{
-			damage = hits;
-		}
-		else
-		{
-			damage = atta & 0x00FF;
-		}
-
-		if (cg_lightningHitsoundRateFix.integer && ops->weapon == WP_LIGHTNING && deltaTime < lgcd) //no need lg collisions < cooldown ms
-		{
-			delayedDmg += hits ? damage : 0; // if hit then transfer him to the future
-			return;
-		}
-
-		if ((BE_IsDamageInfoAllowed()) && (cg_stackHitSounds.integer && deltaTime < cg_stackHitSoundsTimeout.integer))
-		{
-			stackedDmg += damage;
-			damage = stackedDmg + delayedDmg;
-		}
-		else
-		{
-			stackedDmg = 0;
-			damage += delayedDmg;
-		}
-		delayedDmg = 0;
-
-		cgs.osp.lastHitTime = cg.time;
-		// TODO we need some solution when we take quad cuz sometimes with LG dmg + delayedDMG > 25
-		//damage = ops->powerups[PW_QUAD] ? 26 : damage; // for a homogeneous sound with quad
-
-		if (((BE_IsDamageInfoAllowed()) && cg_hitSounds.integer))
-		{
-			int index;
-
-			if (damage > 75) index = 3;
-			else if (damage > 50) index = 2;
-			else if (damage > 25) index = 1;
-			else index = 0;
-
-			if (cg_hitSounds.integer > 1)   // reversed: higher damage - higher tone
-				index = 3 - index;
-
-			CG_PlayHitSound(cgs.media.hitSounds[index], ps, ops);
-		}
-		else
-		{
-			CG_PlayHitSound(cgs.media.hitSound, ps, ops);
-		}
-	}
-}
+/* CG_HitSound inlined in CG_CheckLocalSounds; state for delayed/stacked LG */
+static int clsDelayedDmg = 0;
+static int clsStackedDmg = 0;
 
 /*
 ==================
@@ -759,70 +207,105 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 	int         highScore, reward;
 	sfxHandle_t sfx;
 
-	// don't play the sounds if the player just changed teams
 	if (ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM])
-	{
 		return;
-	}
+	if (cg.intermissionStarted)
+		return;
 
-	// incoming damage changes
-	CG_DamageSound(ps, ops);
-
-	// hit changes
-	CG_HitSound(ps, ops);
-
-	// health changes of more than -1 should make pain sounds
-	if (ps->stats[STAT_HEALTH] < ops->stats[STAT_HEALTH] - 1)
+	/* DamageSound inlined */
 	{
-		if (ps->stats[STAT_HEALTH] > 0)
+		int hp = ps->stats[STAT_HEALTH] - ops->stats[STAT_HEALTH];
+		int ar = ps->stats[STAT_ARMOR] - ops->stats[STAT_ARMOR];
+		if (cg_damageSound.integer && cg.attackerTime != 0)
 		{
-			CG_PainEvent(&cg.predictedPlayerEntity, ps->stats[STAT_HEALTH]);
+			int sum = hp + ar;
+			if (sum <= -3)
+			{
+				int si = (sum >= -25) ? 0 : (sum >= -50) ? 1 : (sum >= -75) ? 2 : 3;
+				trap_S_StartLocalSound(cgs.media.gotDamageSounds[si], CHAN_LOCAL_SOUND);
+			}
 		}
 	}
 
-	// if we are going into the intermission, don't start any voices
-	if (cg.intermissionStarted)
+	/* HitSound inlined */
 	{
-		return;
+		int dt = cg.time - cgs.osp.lastHitTime;
+		int hits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
+		int lgcd = ops->powerups[PW_HASTE] ? 25 : 50;
+		if (hits || clsDelayedDmg)
+		{
+			if (hits < 0)
+			{
+				cgs.osp.lastHitTime = cg.time;
+				PLAY_HIT_SOUND(cgs.media.hitTeamSound, ops);
+			}
+			else
+			{
+				int atta = ps->persistant[PERS_ATTACKEE_ARMOR];
+				int damage = (atta == 0) ? hits : (atta & 0x00FF);
+				if (cg_lightningHitsoundRateFix.integer && ops->weapon == WP_LIGHTNING && dt < lgcd)
+					clsDelayedDmg += hits ? damage : 0;
+				else
+				{
+					int dmgInfo = cgs.damageInfoAllowed;
+					if (dmgInfo && cg_stackHitSounds.integer && dt < cg_stackHitSoundsTimeout.integer)
+						{ clsStackedDmg += damage; damage = clsStackedDmg + clsDelayedDmg; }
+					else
+						{ clsStackedDmg = 0; damage += clsDelayedDmg; }
+					clsDelayedDmg = 0;
+					cgs.osp.lastHitTime = cg.time;
+					if (dmgInfo && cg_hitSounds.integer)
+					{
+						int idx = (damage > 75) ? 3 : (damage > 50) ? 2 : (damage > 25) ? 1 : 0;
+						if (cg_hitSounds.integer > 1) idx = 3 - idx;
+						PLAY_HIT_SOUND(cgs.media.hitSounds[idx], ops);
+					}
+					else
+						PLAY_HIT_SOUND(cgs.media.hitSound, ops);
+				}
+			}
+		}
 	}
 
-	// reward sounds
+	if (ps->stats[STAT_HEALTH] < ops->stats[STAT_HEALTH] - 1 && ps->stats[STAT_HEALTH] > 0)
+		CG_PainEvent(&cg.predictedPlayerEntity, ps->stats[STAT_HEALTH]);
+
 	reward = qfalse;
 	if (ps->persistant[PERS_CAPTURES] != ops->persistant[PERS_CAPTURES])
 	{
-		pushReward(cgs.media.captureAwardSound, cgs.media.medalCapture, ps->persistant[PERS_CAPTURES]);
+		PUSH_REWARD(cgs.media.captureAwardSound, cgs.media.medalCapture, ps->persistant[PERS_CAPTURES]);
 		reward = qtrue;
 		//Com_Printf("capture\n");
 	}
 	if (ps->persistant[PERS_IMPRESSIVE_COUNT] != ops->persistant[PERS_IMPRESSIVE_COUNT])
 	{
 		sfx = cgs.media.impressiveSound;
-		pushReward(sfx, cgs.media.medalImpressive, ps->persistant[PERS_IMPRESSIVE_COUNT]);
+		PUSH_REWARD(sfx, cgs.media.medalImpressive, ps->persistant[PERS_IMPRESSIVE_COUNT]);
 		reward = qtrue;
 	}
 	if (ps->persistant[PERS_EXCELLENT_COUNT] != ops->persistant[PERS_EXCELLENT_COUNT])
 	{
 		sfx = cgs.media.excellentSound;
-		pushReward(sfx, cgs.media.medalExcellent, ps->persistant[PERS_EXCELLENT_COUNT]);
+		PUSH_REWARD(sfx, cgs.media.medalExcellent, ps->persistant[PERS_EXCELLENT_COUNT]);
 		reward = qtrue;
 		//Com_Printf("excellent\n");
 	}
 	if (ps->persistant[PERS_GAUNTLET_FRAG_COUNT] != ops->persistant[PERS_GAUNTLET_FRAG_COUNT])
 	{
 		sfx = cgs.media.humiliationSound;
-		pushReward(sfx, cgs.media.medalGauntlet, ps->persistant[PERS_GAUNTLET_FRAG_COUNT]);
+		PUSH_REWARD(sfx, cgs.media.medalGauntlet, ps->persistant[PERS_GAUNTLET_FRAG_COUNT]);
 		reward = qtrue;
 		//Com_Printf("guantlet frag\n");
 	}
 	if (ps->persistant[PERS_DEFEND_COUNT] != ops->persistant[PERS_DEFEND_COUNT])
 	{
-		pushReward(cgs.media.defendSound, cgs.media.medalDefend, ps->persistant[PERS_DEFEND_COUNT]);
+		PUSH_REWARD(cgs.media.defendSound, cgs.media.medalDefend, ps->persistant[PERS_DEFEND_COUNT]);
 		reward = qtrue;
 		//Com_Printf("defend\n");
 	}
 	if (ps->persistant[PERS_ASSIST_COUNT] != ops->persistant[PERS_ASSIST_COUNT])
 	{
-		pushReward(cgs.media.assistSound, cgs.media.medalAssist, ps->persistant[PERS_ASSIST_COUNT]);
+		PUSH_REWARD(cgs.media.assistSound, cgs.media.medalAssist, ps->persistant[PERS_ASSIST_COUNT]);
 		reward = qtrue;
 		//Com_Printf("assist\n");
 	}
@@ -858,32 +341,16 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 		}
 	}
 
-	// lead changes
-	if (!reward)
+	if (!reward && !cg.warmup && ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK] && cgs.gametype < GT_TEAM && !cg_noLeadSounds.integer)
 	{
-		//
-		if (!cg.warmup)
-		{
-			// never play lead changes during warmup
-			if (ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK])
-			{
-				if (cgs.gametype < GT_TEAM && !cg_noLeadSounds.integer)
-				{
-					if (ps->persistant[PERS_RANK] == 0)
-					{
-						CG_AddBufferedSound(cgs.media.takenLeadSound);
-					}
-					else if (ps->persistant[PERS_RANK] == RANK_TIED_FLAG)
-					{
-						CG_AddBufferedSound(cgs.media.tiedLeadSound);
-					}
-					else if ((ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG) == 0)
-					{
-						CG_AddBufferedSound(cgs.media.lostLeadSound);
-					}
-				}
-			}
-		}
+		int r = ps->persistant[PERS_RANK];
+		int or = ops->persistant[PERS_RANK];
+		if (r == 0)
+			CG_AddBufferedSound(cgs.media.takenLeadSound);
+		else if (r == RANK_TIED_FLAG)
+			CG_AddBufferedSound(cgs.media.tiedLeadSound);
+		else if ((or & ~RANK_TIED_FLAG) == 0)
+			CG_AddBufferedSound(cgs.media.lostLeadSound);
 	}
 
 	// timelimit warnings
@@ -941,11 +408,14 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 ===============
 CG_TransitionPlayerState
 
+One pass over playerstate changes: damage, respawn, zoom, exec (weapon/onDeath),
+spectate exec, ammo, events, duck. QVM_LOGIC: change-driven, no per-frame vmCvar
+reads in hot path (exec uses cgs snapshot).
 ===============
 */
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 {
-	// check for changing follow mode
+	/* check for changing follow mode */
 	if (ps->clientNum != ops->clientNum)
 	{
 		cg.thisFrameTeleport = qtrue;
@@ -953,10 +423,70 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 		*ops = *ps;
 	}
 
-	// damage events (player is getting wounded)
+	/* damage feedback: inline, linear (QVM_LOGIC), no call */
 	if (ps->damageEvent != ops->damageEvent && ps->damageCount)
 	{
-		CG_DamageFeedback(ps->damageYaw, ps->damagePitch, ps->damageCount);
+		float       left, front, up;
+		float       kick;
+		int         health;
+		float       scale;
+		vec3_t      dir;
+		vec3_t      angles;
+		float       dist;
+		float       yaw, pitch;
+		int         yawByte, pitchByte;
+
+		cg.attackerTime = cg.time;
+		yawByte = ps->damageYaw;
+		pitchByte = ps->damagePitch;
+		health = cg.snap->ps.stats[STAT_HEALTH];
+		scale = (health < 40) ? 1.0f : (40.0f / (float)health);
+		kick = (float)ps->damageCount * scale;
+		if (kick < 5.0f)
+			kick = 5.0f;
+		if (kick > 10.0f)
+			kick = 10.0f;
+
+		cg.damageX = 0.0f;
+		cg.damageY = 0.0f;
+		cg.v_dmg_roll = 0.0f;
+		cg.v_dmg_pitch = -kick;
+		if (yawByte != 255 || pitchByte != 255)
+		{
+			pitch = (float)pitchByte / 255.0f * 360.0f;
+			yaw = (float)yawByte / 255.0f * 360.0f;
+			angles[PITCH] = pitch;
+			angles[YAW] = yaw;
+			angles[ROLL] = 0.0f;
+			AngleVectors(angles, dir, NULL, NULL);
+			VectorSubtract(vec3_origin, dir, dir);
+			front = DotProduct(dir, cg.refdef.viewaxis[0]);
+			left = DotProduct(dir, cg.refdef.viewaxis[1]);
+			up = DotProduct(dir, cg.refdef.viewaxis[2]);
+			dir[0] = front;
+			dir[1] = left;
+			dir[2] = 0.0f;
+			dist = VectorLength(dir);
+			if (dist < 0.1f)
+				dist = 0.1f;
+			cg.v_dmg_roll = kick * left;
+			cg.v_dmg_pitch = -kick * front;
+			if (front <= 0.1f)
+				front = 0.1f;
+			cg.damageX = -left / front;
+			cg.damageY = up / dist;
+		}
+		if (cg.damageX > 1.0f)
+			cg.damageX = 1.0f;
+		else if (cg.damageX < -1.0f)
+			cg.damageX = -1.0f;
+		if (cg.damageY > 1.0f)
+			cg.damageY = 1.0f;
+		else if (cg.damageY < -1.0f)
+			cg.damageY = -1.0f;
+		cg.damageValue = kick;
+		cg.v_dmg_time = cg.time + DAMAGE_TIME;
+		cg.damageTime = cg.snap->serverTime;
 	}
 
 	// respawning
@@ -975,53 +505,165 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	        && ps->persistant[PERS_TEAM] != TEAM_SPECTATOR)
 	{
 		CG_CheckLocalSounds(ps, ops);
-		CG_HitDamage(ps, ops);
-
-		// Client-side damage prediction (bit 1 = 2)
-		// DISABLED: Client-side damage plums are temporarily disabled
-		// if (cg_damagePlums.integer & 2)
-		if (0) // Disabled: client-side damage plums
+		/* CG_HitDamage inlined */
 		{
-			CG_ParseClientDamagePlum(ps, ops);
+			int hdHits = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
+			if (hdHits > 0)
+			{
+				int hdAtta = ps->persistant[PERS_ATTACKEE_ARMOR];
+				cgs.osp.lastHitDamage = (hdAtta == 0) ? hdHits : (hdAtta & 0x00FF);
+			}
+			else if (hdHits < 0)
+				cgs.osp.lastHitDamage = 0;
 		}
 	}
 
 	if (cg.zoomed &&
-	        // reset zoom on death
 	        (((cg_zoomAutoReset.integer & 1) && ops->stats[STAT_HEALTH] > 0 && ps->stats[STAT_HEALTH] <= 0 && cg.snap->ps.stats[STAT_HEALTH] <= 0) ||
-	         // or weapon change
 	         ((cg_zoomAutoReset.integer & 4) && ps->weapon != ops->weapon)))
 	{
 		cg.zoomed = qfalse;
 		cg.zoomTime = cg.time;
 	}
 
-	// check for death and execute death command
 	if (ops->stats[STAT_HEALTH] > 0 && ps->stats[STAT_HEALTH] <= 0)
 	{
-		CG_ExecCommandIfSet(&cg_exec_onDeath);
+		const char* execOnDeath = cg_exec_onDeath.string;
+		if (execOnDeath && execOnDeath[0])
+			trap_SendConsoleCommand(execOnDeath);
 	}
 
-	// execute weapon command on weapon change
-	if (ps->weapon != ops->weapon && ps->weapon != WP_NONE)
+	/* force exec when starting to spectate (inlined) */
+	if (cg.snap && (cg.snap->ps.pm_flags & PMF_FOLLOW))
 	{
-		int _w = ps->weapon;
-		int _c = ps->clientNum;
-		CG_EXEC_WEAPON_SWITCH_INLINE(_w, _c);
+		int snapCl = (cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS) ? cg.snap->ps.clientNum : -1;
+		if (cg_exec_weapons.integer && snapCl != cgs.lastExecSpectateClientNum && snapCl != -1 && ps->weapon != WP_NONE)
+			CG_EXEC_WEAPON_SWITCH_INLINE(ps->weapon, ps->clientNum);
+		cgs.lastExecSpectateClientNum = snapCl; /* set in both paths */
 	}
+	else if (cg.snap)
+		cgs.lastExecSpectateClientNum = -1;
 
-	// force exec when starting to spectate (only at the beginning)
-	CG_ForceExecOnSpectateStart(ps);
+	/* weapon once: Lightning tracking (when cg_shud.integer), exec on change, ammo (ps->weapon read once, QVM_LOGIC) */
+	{
+		int             weapon;
+		int             ammo, threshold, currentWarning, prevAmmoSaved;
+		int             wtAmmo, wtHitsDelta, wtAtta, wtDamage, wtActualHits;
+		customWeaponStats_t* ws;
 
-	if (cg_shud.integer)
-		CG_UpdateWeaponTracking(WP_LIGHTNING);
-	// check for going low on ammo
-	CG_CheckAmmo();
+		weapon = ps->weapon;
+
+		if (cg_shud.integer)
+		{
+			ws = &cgs.beWeaponStats[WP_LIGHTNING];
+			if (ps->weapon != WP_LIGHTNING || ps->stats[STAT_HEALTH] <= 0)
+			{
+				ws->onTrack = qfalse;
+				ws->hitsStart = 0;
+				ws->hitsCurrent = 0;
+				ws->shotsStart = 0;
+				ws->lastAmmo = 0;
+				lastHitsValueLightning = 0;
+			}
+			else if (ws->onTrack && (cg.time - ws->lastAttackTime > 1000))
+			{
+				ws->onTrack = qfalse;
+				ws->hitsStart = 0;
+				ws->hitsCurrent = 0;
+				ws->shotsStart = 0;
+				ws->lastAmmo = 0;
+				lastHitsValueLightning = 0;
+			}
+			else
+			{
+				wtAmmo = ps->ammo[WP_LIGHTNING];
+				wtHitsDelta = ps->persistant[PERS_HITS] - lastHitsValueLightning;
+				wtAtta = ps->persistant[PERS_ATTACKEE_ARMOR];
+				if (wtAtta == 0)
+				{
+					wtActualHits = (wtHitsDelta > 0) ? 1 : 0;
+					wtDamage = wtHitsDelta;
+				}
+				else
+				{
+					wtActualHits = wtHitsDelta;
+					wtDamage = wtAtta & 0x00FF;
+				}
+				lastHitsValueLightning = ps->persistant[PERS_HITS];
+				if (ws->onTrack)
+				{
+					if (ps->weaponstate == WEAPON_FIRING)
+						ws->lastAttackTime = cg.time;
+					ws->hitsCurrent += wtActualHits;
+					ws->damageFixed += wtDamage;
+					ws->lastAmmo = wtAmmo;
+				}
+				else
+				{
+					ws->hitsStart = wtActualHits;
+					ws->hitsCurrent = wtActualHits;
+					ws->damageFixed = wtDamage;
+					ws->shotsStart = wtAmmo;
+					ws->lastAmmo = wtAmmo;
+					ws->lastAttackTime = cg.time;
+					ws->onTrack = qtrue;
+				}
+			}
+		}
+
+		if (weapon != ops->weapon && weapon != WP_NONE)
+			CG_EXEC_WEAPON_SWITCH_INLINE(weapon, ps->clientNum);
+
+		if (weapon == WP_NONE || !cg_drawAmmoWarning.integer)
+		{
+			cg.lowAmmoWarning = 0;
+			prevWeaponState = WEAPON_READY;
+			prevAmmo = 0;
+		}
+		else
+		{
+			ammo = ps->ammo[weapon];
+			prevAmmoSaved = prevAmmo;
+
+			if (ps->weaponstate == WEAPON_FIRING && ammo == 0 &&
+			    !(prevWeaponState == WEAPON_FIRING && prevAmmo == 0))
+			{
+				trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
+			}
+			prevWeaponState = ps->weaponstate;
+			prevAmmo = ammo;
+
+			if (cg_drawAmmoWarning.integer != 1)
+			{
+				cg.lowAmmoWarning = 0;
+			}
+			else
+			{
+				threshold = lowAmmoThresholds[weapon];
+				if (ammo > prevAmmoSaved)
+				{
+					cg.lowAmmoWarning = 0;
+					lowAmmoWarningPrev[weapon] = 0;
+				}
+				currentWarning = (ammo == 0) ? 2 : ((threshold > 0 && ammo <= threshold) ? 1 : 0);
+				cg.lowAmmoWarning = currentWarning;
+				if (currentWarning != lowAmmoWarningPrev[weapon] || (currentWarning != 0 && weapon != lastWeapon))
+				{
+					if (currentWarning == 1)
+						trap_S_StartLocalSound(cgs.media.lowAmmoSound, CHAN_LOCAL_SOUND);
+					else if (currentWarning == 2)
+						trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
+				}
+				lastWeapon = weapon;
+				lowAmmoWarningPrev[weapon] = currentWarning;
+			}
+		}
+	}
 
 	// run events
 	CG_CheckPlayerstateEvents(ps, ops);
 
-	// smooth the ducking viewheight change
+	/* smooth ducking viewheight: read from cgs snapshot, not vmCvar */
 	if (cg_smoothDucking.integer && ps->viewheight != ops->viewheight)
 	{
 		cg.duckChange = ps->viewheight - ops->viewheight;

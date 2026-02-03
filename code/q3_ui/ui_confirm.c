@@ -106,7 +106,7 @@ static void MessageMenu_Draw( void ) {
 	y = 188;
 	for(i=0; s_confirm.lines[i]; i++)
 	{
-		UI_DrawProportionalString( 320, y, s_confirm.lines[i], s_confirm.style, color_red );
+		UI_DrawProportionalString( 320, y, s_confirm.lines[i], s_confirm.style, uis.themeColor );
 		y += 18;
 	}
 
@@ -124,8 +124,8 @@ ConfirmMenu_Draw
 */
 static void ConfirmMenu_Draw( void ) {
 	UI_DrawNamedPic( 142, 118, 359, 256, ART_CONFIRM_FRAME );
-	UI_DrawProportionalString( 320, 204, s_confirm.question, s_confirm.style, color_red );
-	UI_DrawProportionalString( s_confirm.slashX, 265, "/", UI_LEFT|UI_INVERSE, color_red );
+	UI_DrawProportionalString( 320, 204, s_confirm.question, s_confirm.style, uis.themeColor );
+	UI_DrawProportionalString( s_confirm.slashX, 265, "/", UI_LEFT|UI_INVERSE, uis.themeColor );
 
 	Menu_Draw( &s_confirm.menu );
 
@@ -192,7 +192,7 @@ void UI_ConfirmMenu_Style( const char *question, int style, void (*draw)( void )
 	s_confirm.yes.generic.x			= l1;
 	s_confirm.yes.generic.y			= 264;
 	s_confirm.yes.string			= "YES";
-	s_confirm.yes.color				= color_red;
+	s_confirm.yes.color				= uis.themeColor;
 	s_confirm.yes.style				= UI_LEFT;
 
 	s_confirm.no.generic.type		= MTYPE_PTEXT;      
@@ -202,7 +202,7 @@ void UI_ConfirmMenu_Style( const char *question, int style, void (*draw)( void )
 	s_confirm.no.generic.x		    = l3;
 	s_confirm.no.generic.y		    = 264;
 	s_confirm.no.string				= "NO";
-	s_confirm.no.color			    = color_red;
+	s_confirm.no.color			    = uis.themeColor;
 	s_confirm.no.style			    = UI_LEFT;
 
 	Menu_AddItem( &s_confirm.menu,	&s_confirm.yes );             
@@ -262,7 +262,7 @@ void UI_Message( const char **lines ) {
 	s_confirm.yes.generic.x			= l1;
 	s_confirm.yes.generic.y			= 280;
 	s_confirm.yes.string			= "OK";
-	s_confirm.yes.color				= color_red;
+	s_confirm.yes.color				= uis.themeColor;
 	s_confirm.yes.style				= UI_LEFT;
 
 	Menu_AddItem( &s_confirm.menu,	&s_confirm.yes );

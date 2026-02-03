@@ -26,9 +26,6 @@ For details, refer to LICENSE_DIWOC.txt.
 
 #define TEAMTASK_MARK_FADE_TIME 800 /* Fade duration in milliseconds (0.8 seconds) */
 
-/* Forward declarations */
-static qboolean CG_HasPickupMarkForItem(teamTaskMark_t* itemMark);
-
 /*
 =================
 CG_SetWhiteColor
@@ -52,9 +49,7 @@ Returns qtrue if color was set, qfalse otherwise
 static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolean isAlly)
 {
 	int myRealTeam;
-	cgs_be_t* be;
 
-	be = &cgs.be;
 	myRealTeam = cgs.clientinfo[cg.clientNum].team;
 
 	/* Determine which team color to use and copy it */
@@ -63,11 +58,11 @@ static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolea
 		/* Use own team color */
 		if (myRealTeam == TEAM_RED)
 		{
-			VectorCopy(be->redTeamColor, color);
+			VectorCopy(cgs.beRedTeamColor, color);
 		}
 		else if (myRealTeam == TEAM_BLUE)
 		{
-			VectorCopy(be->blueTeamColor, color);
+			VectorCopy(cgs.beBlueTeamColor, color);
 		}
 		else
 		{
@@ -79,11 +74,11 @@ static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolea
 		/* Use enemy team color */
 		if (myRealTeam == TEAM_RED)
 		{
-			VectorCopy(be->blueTeamColor, color);
+			VectorCopy(cgs.beBlueTeamColor, color);
 		}
 		else if (myRealTeam == TEAM_BLUE)
 		{
-			VectorCopy(be->redTeamColor, color);
+			VectorCopy(cgs.beRedTeamColor, color);
 		}
 		else
 		{
@@ -92,7 +87,7 @@ static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolea
 	}
 
 	/* Apply whitening (called once for all valid cases) */
-	CG_ColorWhitenSmart(color, NULL, 0.6f);
+	CG_ColorWhitenSmart(color, NULL, 0.4f);
 	return qtrue;
 }
 
@@ -291,9 +286,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 	clientInfo_t* cl;
 	qhandle_t markerShader;
 	qhandle_t worldShader;
-	cgs_be_t* be;
 
-	be = &cgs.be;
 
 	/* Get shader pair for this mark type */
 	CG_GetTeamTaskShaderPair(markType, &markerShader, &worldShader, isPickup);
@@ -317,7 +310,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 				cl = &cgs.clientinfo[clientNum];
 				if (!(cg_healthColorLevels.integer & 2) && cl->health > 0)
 				{
-					CG_GetColorForHealth(cl->health, cl->armor, color, NULL);
+					Vector4Copy(cgs.healthColorByClient[clientNum], color);
 				}
 			}
 			break;
@@ -388,12 +381,12 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 						if (senderCi->team == TEAM_RED)
 						{
 							/* Sender is RED, carries BLUE flag */
-							VectorCopy(be->blueTeamColor, color);
+							VectorCopy(cgs.beBlueTeamColor, color);
 						}
 						else if (senderCi->team == TEAM_BLUE)
 						{
 							/* Sender is BLUE, carries RED flag */
-							VectorCopy(be->redTeamColor, color);
+							VectorCopy(cgs.beRedTeamColor, color);
 						}
 						else
 						{
@@ -420,8 +413,9 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			}
 			else
 			{
-				/* World marker color is red team color */
-				VectorCopy(be->redTeamColor, color);
+				/* World marker color is red team color, lightened like frozen marks */
+				VectorCopy(cgs.beRedTeamColor, color);
+				CG_ColorWhitenSmart(color, NULL, 0.4f);
 				color[3] = 1.0f;
 			}
 			break;
@@ -433,8 +427,9 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			}
 			else
 			{
-				/* World marker color is blue team color */
-				VectorCopy(be->blueTeamColor, color);
+				/* World marker: blue team color, stronger lighten so blue becomes pastel (0.6 leaves B=1 too saturated) */
+				VectorCopy(cgs.beBlueTeamColor, color);
+				CG_ColorWhitenSmart(color, NULL, 0.4f);
 				color[3] = 1.0f;
 			}
 			break;
@@ -446,8 +441,9 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			}
 			else
 			{
-				/* World marker color is red team color */
-				VectorCopy(be->redTeamColor, color);
+				/* World marker color is red team color, lightened like frozen marks */
+				VectorCopy(cgs.beRedTeamColor, color);
+				CG_ColorWhitenSmart(color, NULL, 0.4f);
 				color[3] = 1.0f;
 			}
 			break;
@@ -459,8 +455,9 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			}
 			else
 			{
-				/* World marker color is blue team color */
-				VectorCopy(be->blueTeamColor, color);
+				/* World marker: blue team color, stronger lighten so blue becomes pastel (0.6 leaves B=1 too saturated) */
+				VectorCopy(cgs.beBlueTeamColor, color);
+				CG_ColorWhitenSmart(color, NULL, 0.4f);
 				color[3] = 1.0f;
 			}
 			break;
@@ -472,103 +469,190 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 
 /*
 =================
-CG_RemoveExpiredTeamTaskMarks
+CG_TeamTaskUpdateFrame
 
-Remove expired marks using pack array algorithm (O(n) instead of O(n²))
+Single place per frame: pack (expired + event flags), then all per-frame caches for hot paths.
+- drawTeamTasks, teamTaskFlags, clientHasOverhead, markHasPickupNear, numFrozenAllyMarks, clientHasFrozenAllyMarkNear
+- markDurationMs (cvar clamp 500–5000)
+- Draw constants: teamTaskFade, teamTaskFadeRadius, teamTaskScale, teamTaskIconMinSize, teamTaskOpaque
+  (CG_InitTeamTaskMarkConstants uses these; avoids 5 cvar reads per frame in draw path)
+- HUD border marker: hudMarkerMaxDistInt/Value, hudMarkerMaxScale/MinScale, hudMarkerSize
+  (CG_DrawTeamTaskBorderMarker uses these; avoids 5 cvar reads per mark)
+Registration (add) is only in CG_TeamTaskMark; removal is only here. Hot paths only read cached fields.
 =================
 */
-static void CG_RemoveExpiredTeamTaskMarks(void)
+void CG_TeamTaskUpdateFrame(void)
 {
 	int i;
-	int writeIndex;
+	int j;
+	int w;
 	teamTaskMark_t* mark;
+	teamTaskMark_t* other;
 	cgs_teamMarkers_t* tm;
+	qboolean roundMark;
+	qboolean localDeathMark;
+	qboolean hereDeadRemove;
 
 	tm = &cgs.teamMarkers;
-	if (tm->numTeamTaskMarks == 0)
-	{
-		return;
-	}
 
-	/* Pack array: copy valid marks to the beginning */
-	writeIndex = 0;
+	/* Lifetime: single place — refresh from cvar so CG_TeamTaskMark uses cache (no cvar read in add path) */
+	tm->markDurationMs = cg_teamTaskMarkTime.integer;
+	if (tm->markDurationMs < 500)
+		tm->markDurationMs = 500;
+	if (tm->markDurationMs > 5000)
+		tm->markDurationMs = 5000;
+
+	/* One combined pack: expired + round + local death + HERE_DEAD for mask */
+	if (tm->numTeamTaskMarks > 0)
+	{
+		w = 0;
+		for (i = 0; i < tm->numTeamTaskMarks; i++)
+		{
+			mark = &tm->teamTaskMarks[i];
+			if (cg.time >= mark->endTime)
+			{
+				continue;
+			}
+			roundMark = (mark->markType == TEAMTASK_FROZEN_ALLY ||
+			             mark->markType == TEAMTASK_FROZEN_ENEMY ||
+			             mark->markType == TEAMTASK_HERE_DEAD ||
+			             mark->markType == TEAMTASK_WARN_DEAD ||
+			             mark->markType == TEAMTASK_PLAYERDEAD);
+			localDeathMark = (mark->clientNum == cg.clientNum &&
+			                  (mark->markType == TEAMTASK_PLAYERDEAD ||
+			                   mark->markType == TEAMTASK_HERE_DEAD ||
+			                   mark->markType == TEAMTASK_WARN_DEAD));
+			hereDeadRemove = (mark->markType == TEAMTASK_HERE_DEAD &&
+			                  mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS &&
+			                  ((mark->clientNum < 32 && (tm->packHereDeadClientMask0 & (1 << mark->clientNum))) ||
+			                   (mark->clientNum >= 32 && (tm->packHereDeadClientMask1 & (1 << (mark->clientNum - 32))))));
+			if ((tm->packRoundNextFrame && roundMark) ||
+			    (tm->packLocalDeathNextFrame && localDeathMark) || hereDeadRemove)
+				continue;
+			if (w != i)
+				tm->teamTaskMarks[w] = tm->teamTaskMarks[i];
+			w++;
+		}
+		tm->numTeamTaskMarks = w;
+	}
+	tm->packRoundNextFrame = qfalse;
+	tm->packLocalDeathNextFrame = qfalse;
+	tm->packHereDeadClientMask1 = 0;
+	tm->packHereDeadClientMask0 = 0;
+
+	tm->teamTaskFlags = cg_teamTask.integer;
+	tm->teamTaskEnabled = (tm->teamTaskFlags != 0 || CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS));
+	tm->drawTeamTasks = tm->teamTaskEnabled && cgs.gametype >= GT_TEAM && !CG_IS_LOCAL_CLIENT_SPECTATOR();
+
+	/* Cached draw/hud cvars: one read per frame here; hot paths (CG_InitTeamTaskMarkConstants, CG_DrawTeamTaskBorderMarker) use cache */
+	tm->teamTaskFade = cg_teamTaskFade.value;
+	tm->teamTaskFadeRadius = cg_teamTaskFadeRadius.value;
+	tm->teamTaskScale = cg_teamTaskScale.value;
+	tm->teamTaskIconMinSize = cg_teamTaskIconMinSize.value;
+	tm->teamTaskOpaque = cg_teamTaskOpaque.value;
+	tm->hudMarkerMaxDistInt = cg_teamTaskHudMarkerMaxDist.integer;
+	tm->hudMarkerMaxDistValue = cg_teamTaskHudMarkerMaxDist.value;
+	tm->hudMarkerMaxScale = cg_teamTaskHudMarkerMaxScale.value;
+	tm->hudMarkerMinScale = cg_teamTaskHudMarkerMinScale.value;
+	tm->hudMarkerSize = cg_teamTaskHudMarkerSize.value;
+
+	/* One pass: clientHasOverhead + markHasPickupNear (no separate loops) */
+	memset(tm->clientHasOverhead, 0, sizeof(tm->clientHasOverhead));
 	for (i = 0; i < tm->numTeamTaskMarks; i++)
 	{
 		mark = &tm->teamTaskMarks[i];
-
-		/* Keep only non-expired marks */
-		if (cg.time < mark->endTime)
+		if (mark->isOverhead && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+			tm->clientHasOverhead[mark->clientNum] = qtrue;
+		tm->markHasPickupNear[i] = qfalse;
+		if (!mark->isPickup &&
+		    (mark->markType == TEAMTASK_REDARMOR || mark->markType == TEAMTASK_MEGAHEALTH || mark->markType == TEAMTASK_YELLOWARMOR))
 		{
-			if (writeIndex != i)
+			for (j = 0; j < tm->numTeamTaskMarks; j++)
 			{
-				tm->teamTaskMarks[writeIndex] = tm->teamTaskMarks[i];
+				other = &tm->teamTaskMarks[j];
+				if (other->isPickup && other->markType == mark->markType &&
+				    Distance(mark->origin, other->origin) <= 64.0f)
+				{
+					tm->markHasPickupNear[i] = qtrue;
+					break;
+				}
 			}
-			writeIndex++;
 		}
 	}
 
-	/* Update count */
-	tm->numTeamTaskMarks = writeIndex;
+	/* Frozen ally: positions and per-client "has mark near" (hot path only reads clientHasFrozenAllyMarkNear) */
+	tm->numFrozenAllyMarks = 0;
+	for (i = 0; i < tm->numTeamTaskMarks; i++)
+	{
+		mark = &tm->teamTaskMarks[i];
+		if (mark->markType == TEAMTASK_FROZEN_ALLY && cg.time < mark->endTime)
+		{
+			if (tm->numFrozenAllyMarks < MAX_TEAMTASK_MARKS)
+			{
+				VectorCopy(mark->origin, tm->frozenAllyMarkOrigin[tm->numFrozenAllyMarks]);
+				tm->numFrozenAllyMarks++;
+			}
+		}
+	}
+
+	memset(tm->clientHasFrozenAllyMarkNear, 0, sizeof(tm->clientHasFrozenAllyMarkNear));
+	if (tm->numFrozenAllyMarks > 0 && cgs.osp.gameTypeFreeze)
+	{
+		centity_t* cent;
+		int clientNum;
+
+		for (clientNum = 0; clientNum < MAX_CLIENTS; clientNum++)
+		{
+			if (!cgs.clientinfo[clientNum].isFrozenEnt)
+				continue;
+			if (!cgs.clientinfo[clientNum].infoValid || CG_IS_ENEMY_SIMPLE(&cgs.clientinfo[clientNum]))
+				continue;
+			cent = &cg_entities[cgs.clientinfo[clientNum].frozenEntity];
+			if (!cent->currentValid)
+				continue;
+			for (i = 0; i < tm->numFrozenAllyMarks; i++)
+			{
+				if (Distance(tm->frozenAllyMarkOrigin[i], cent->lerpOrigin) <= 64.0f)
+				{
+					tm->clientHasFrozenAllyMarkNear[clientNum] = qtrue;
+					break;
+				}
+			}
+		}
+	}
 }
 
 void CG_DrawTeamTaskBorderHudMarkers(void)
 {
 	int i;
 	teamTaskMark_t* mark;
-	qboolean drawHudMarkers;
 	cgs_teamMarkers_t* tm;
+	float x;
+	float y;
 
-	if (!cg_teamTask.integer && !CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
-		return;
-	if (cgs.gametype < GT_TEAM)
-		return;
-	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
-		return;
 	tm = &cgs.teamMarkers;
-	if (tm->numTeamTaskMarks == 0)
+	if (!tm->drawTeamTasks || tm->numTeamTaskMarks == 0 || !(tm->teamTaskFlags & CG_TEAMTASK_HUDMARKER))
 		return;
-
-	/* Remove expired marks first (optimized pack array) */
-	CG_RemoveExpiredTeamTaskMarks();
-
-	if (tm->numTeamTaskMarks == 0)
-	{
-		return;
-	}
-
-	/* Check HUD marker flag once before loop */
-	drawHudMarkers = (cg_teamTask.integer & CG_TEAMTASK_HUDMARKER) ? qtrue : qfalse;
-
-	if (!drawHudMarkers)
-	{
-		return;
-	}
 
 	for (i = 0; i < tm->numTeamTaskMarks; i++)
 	{
 		mark = &tm->teamTaskMarks[i];
 
-		/* Skip own overhead marks (YES, NO, MEDIC) - don't show in border markers */
-		/* Also skip own HERE_ALIVE and HERE_FLAG marks in first person (they're displayed as overhead) */
-		/* HERE_DEAD always shows in world, so don't skip it in border markers */
-		/* Skip own pickup marks - they're displayed as overhead in center of screen */
-		if ((mark->isOverhead && mark->clientNum == cg.clientNum) ||
-		        (mark->clientNum == cg.clientNum &&
-		         (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG) &&
-		         !cg.renderingThirdPerson) ||
-		        (mark->isPickup && mark->clientNum == cg.clientNum))
+		/* Skip own marks: overhead, pickup, or HERE_ALIVE/HERE_FLAG in first person */
+		if (mark->clientNum == cg.clientNum &&
+		        (mark->isOverhead || mark->isPickup ||
+		         ((mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG) && !cg.renderingThirdPerson)))
 		{
 			continue;
 		}
 
-		/* Skip item marks if there is a pickup mark from the same player with close coordinates */
-		if (CG_HasPickupMarkForItem(mark))
-		{
+		/* Skip item marks that have pickup nearby (precomputed in CG_TeamTaskUpdateFrame) */
+		if (tm->markHasPickupNear[i])
 			continue;
-		}
 
-		/* Check if mark is outside screen - if yes, draw border marker */
-		if (CG_IsPointOutsideScreen(mark->origin, NULL, NULL))
+		/* Inline CG_IsPointOutsideScreen(origin, NULL, NULL) */
+		if (!CG_WorldToScreen(mark->origin, &x, &y) ||
+		        x < 0.0f || x >= SCREEN_WIDTH || y < 0.0f || y >= SCREEN_HEIGHT)
 		{
 			CG_DrawTeamTaskBorderMarker(mark);
 		}
@@ -581,7 +665,6 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 	float distance;
 	float hfov_x;
 	float size;
-	qhandle_t shader;
 	float baseRadius;
 	float pulseTime;
 	float pulseProgress;
@@ -589,34 +672,25 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 	vec4_t pulseColor;
 	float endFade;
 	refdef_t* refdef;
-	cgs_be_t* be;
 	int maxDistInt;
 	float maxDistValue;
 	float maxScale;
 	float minScale;
 	float markerSize;
 
-	if (!mark)
-	{
+	if (!mark || !mark->markerShader)
 		return;
-	}
 
-	CG_GetTeamTaskMarkerShaderAndColor(mark->markType, &shader, color, qtrue, mark->clientNum, mark->isPickup);
+	Vector4Copy(mark->markerColor, color);
 
-	if (!shader)
-	{
-		return;
-	}
-
-	/* Read cvars once at start (no static; we don't always draw) */
-	maxDistInt = cg_teamTaskHudMarkerMaxDist.integer;
-	maxDistValue = cg_teamTaskHudMarkerMaxDist.value;
-	maxScale = cg_teamTaskHudMarkerMaxScale.value;
-	minScale = cg_teamTaskHudMarkerMinScale.value;
-	markerSize = cg_teamTaskHudMarkerSize.value;
+	/* Use per-frame cache (set in CG_TeamTaskUpdateFrame); avoids 5 cvar reads per mark */
+	maxDistInt = cgs.teamMarkers.hudMarkerMaxDistInt;
+	maxDistValue = cgs.teamMarkers.hudMarkerMaxDistValue;
+	maxScale = cgs.teamMarkers.hudMarkerMaxScale;
+	minScale = cgs.teamMarkers.hudMarkerMinScale;
+	markerSize = cgs.teamMarkers.hudMarkerSize;
 
 	refdef = &cg.refdef;
-	be = &cgs.be;
 
 	distance = Distance(mark->origin, cg.predictedPlayerState.origin);
 
@@ -642,7 +716,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		vec4_t fadedColor;
 		Vector4Copy(color, fadedColor);
 		fadedColor[3] *= endFade;
-		CG_HudBorderMarker(mark->origin, fadedColor, baseRadius, shader, 0);
+		CG_HudBorderMarker(mark->origin, fadedColor, baseRadius, mark->markerShader, 0);
 	}
 
 	/* Draw pulsing circle effect */
@@ -706,13 +780,13 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 		else if (mark->markType == TEAMTASK_REDFLAG || mark->markType == TEAMTASK_REDFLAG_CARRIER)
 		{
 			/* For red flag and carrier, use red team color for pulsing circle */
-			VectorCopy(be->redTeamColor, pulseColor);
+			VectorCopy(cgs.beRedTeamColor, pulseColor);
 			pulseColor[3] = 0.25f * endFade;
 		}
 		else if (mark->markType == TEAMTASK_BLUEFLAG || mark->markType == TEAMTASK_BLUEFLAG_CARRIER)
 		{
 			/* For blue flag and carrier, use blue team color for pulsing circle */
-			VectorCopy(be->blueTeamColor, pulseColor);
+			VectorCopy(cgs.beBlueTeamColor, pulseColor);
 			pulseColor[3] = 0.25f * endFade;
 		}
 		else if (mark->markType == TEAMTASK_HERE_FLAG)
@@ -728,12 +802,12 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 					if (senderCi->team == TEAM_RED)
 					{
 						/* Sender is RED, carries BLUE flag */
-						VectorCopy(be->blueTeamColor, pulseColor);
+						VectorCopy(cgs.beBlueTeamColor, pulseColor);
 					}
 					else if (senderCi->team == TEAM_BLUE)
 					{
 						/* Sender is BLUE, carries RED flag */
-						VectorCopy(be->redTeamColor, pulseColor);
+						VectorCopy(cgs.beRedTeamColor, pulseColor);
 					}
 					else
 					{
@@ -751,7 +825,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 			}
 			pulseColor[3] = 0.25f * endFade;
 		}
-		else if ((cg_teamTask.integer & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		else if ((cgs.teamMarkers.teamTaskFlags & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			/* Use unique color for pulsing circle */
 			VectorCopy(UNIQUE_COLOR(mark->clientNum), pulseColor);
@@ -784,7 +858,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 
 		az = atan2(flu[1], flu[0]);
 		inc = acos(flu[2] / r);
-		inc = M_PI / 2.0 - inc;
+		inc = M_PI * 0.5 - inc;
 
 		/* Only skip drawing if point is in front of camera AND inside FOV */
 		if (front > 0.0f && fabs(az) < hfov_x && fabs(inc) < hfov_y)
@@ -911,27 +985,29 @@ typedef struct
 
 static void CG_InitTeamTaskMarkConstants(teamTaskMarkConstants_t* constants)
 {
+	const cgs_teamMarkers_t* tm = &cgs.teamMarkers;
+
 	constants->distMin = 0.0f;
 	constants->distMax = 2500.0f;
-	constants->fadeStrength = cg_teamTaskFade.value; /* 0.0 = no fade, 1.0 = full fade */
-	constants->fadeRadius = cg_teamTaskFadeRadius.value;
-	constants->fadeRadiusSq = constants->fadeRadius * constants->fadeRadius;
+	constants->fadeStrength = tm->teamTaskFade;
+	constants->fadeRadius = tm->teamTaskFadeRadius;
+	constants->fadeRadiusSq = tm->teamTaskFadeRadius * tm->teamTaskFadeRadius;
 	constants->crosshairX = SCREEN_WIDTH * 0.5f;
 	constants->crosshairY = SCREEN_HEIGHT * 0.5f;
-	constants->useFade = (constants->fadeStrength > 0.0f);
+	constants->useFade = (tm->teamTaskFade > 0.0f);
 	constants->font = cgFontIndices.teamTask;
-	constants->scale = cg_teamTaskScale.value;
-	constants->iconMinSize = cg_teamTaskIconMinSize.value;
-	constants->teamTaskFlags = cg_teamTask.integer;
-	constants->opaque = cg_teamTaskOpaque.value;
+	constants->scale = tm->teamTaskScale;
+	constants->iconMinSize = tm->teamTaskIconMinSize;
+	constants->teamTaskFlags = tm->teamTaskFlags;
+	constants->opaque = tm->teamTaskOpaque;
 }
 
 /*
 =================
 CG_ProcessOverheadMark
 
-Process overhead marks (YES, NO, MEDIC, HERE_ALIVE in first person)
-Fixed position at top center of screen
+Process overhead marks (YES, NO, MEDIC, HERE_ALIVE, item/pickup in first person)
+Fixed position at top center of screen — 2D HUD only, no world render
 =================
 */
 static void CG_ProcessOverheadMark(teamTaskMark_t* mark, const teamTaskMarkConstants_t* constants,
@@ -1029,69 +1105,48 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 
 	frozenFound = qfalse;
 
-	/* Special case for local player - always check frozen entity first, then use death coordinates */
+	/* Special case for local player - use frozen entity from cache (set/clear in CG_Player) */
 	if (mark->clientNum == cg.clientNum)
 	{
-		/* For own HERE_DEAD/WARN_DEAD marks, first try to find frozen entity */
-		if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+		if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze &&
+		        cgs.clientinfo[cg.clientNum].isFrozenEnt)
 		{
-			/* Search for frozen entity in range MAX_CLIENTS..MAX_GENTITIES */
-			for (j = MAX_CLIENTS; j < MAX_GENTITIES; j++)
+			cent = &cg_entities[cgs.clientinfo[cg.clientNum].frozenEntity];
+			if (cent->currentValid)
 			{
-				cent = &cg_entities[j];
-				if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
-				{
-					/* Check if this is a frozen entity */
-					if (CG_IS_FROZEN_ENTITY(cent))
-					{
-						int frozenClientNum;
-						frozenClientNum = cent->currentState.otherEntityNum;
-						if (frozenClientNum == mark->clientNum)
-						{
-							/* Found frozen entity for own client - use its position above head */
-							VectorCopy(cent->lerpOrigin, mark->origin);
-							mark->origin[2] += 48.0f; /* Offset above head */
-							frozenFound = qtrue;
-							break;
-						}
-					}
-				}
+				VectorCopy(cent->lerpOrigin, mark->origin);
+				mark->origin[2] += 48.0f;
+				frozenFound = qtrue;
 			}
-		}
-
-		/* If frozen entity not found, keep original death position from message */
-		if (!frozenFound)
-		{
-			/* Use death coordinates that were set when mark was created (from message) */
-			/* Don't update position - keep original death position */
 		}
 	}
 	else
 	{
-		/* For other players: one pass - find player entity or frozen entity (QVM: one loop instead of two) */
-		for (j = 0; j < MAX_GENTITIES; j++)
+		/* For other players: frozen from cache first, else find live player entity */
+		if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze &&
+		        cgs.clientinfo[mark->clientNum].isFrozenEnt)
 		{
-			cent = &cg_entities[j];
-			if (cent->currentState.eType != ET_PLAYER || !cent->currentValid)
+			cent = &cg_entities[cgs.clientinfo[mark->clientNum].frozenEntity];
+			if (cent->currentValid)
 			{
-				continue;
-			}
-			if (cent->currentState.clientNum == mark->clientNum)
-			{
-				/* Live player - use position above head */
-				VectorCopy(cent->lerpOrigin, mark->origin);
-				mark->origin[2] += 48.0f;
-				break;
-			}
-			if (cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze &&
-			        j >= MAX_CLIENTS && CG_IS_FROZEN_ENTITY(cent) &&
-			        cent->currentState.otherEntityNum == mark->clientNum)
-			{
-				/* Frozen entity for this client */
 				VectorCopy(cent->lerpOrigin, mark->origin);
 				mark->origin[2] += 48.0f;
 				frozenFound = qtrue;
-				break;
+			}
+		}
+		if (!frozenFound)
+		{
+			for (j = 0; j < MAX_GENTITIES; j++)
+			{
+				cent = &cg_entities[j];
+				if (cent->currentState.eType != ET_PLAYER || !cent->currentValid)
+					continue;
+				if (cent->currentState.clientNum == mark->clientNum)
+				{
+					VectorCopy(cent->lerpOrigin, mark->origin);
+					mark->origin[2] += 48.0f;
+					break;
+				}
 			}
 		}
 	}
@@ -1291,59 +1346,6 @@ static void CG_ProcessCommonMarkData(teamTaskMark_t* mark, float t,
 	}
 }
 
-/*
-=================
-CG_HasPickupMarkForItem
-
-Check if there is a pickup mark (from any player) for this item mark
-(with coordinates within 64 units radius and matching item type)
-=================
-*/
-static qboolean CG_HasPickupMarkForItem(teamTaskMark_t* itemMark)
-{
-	int i;
-	teamTaskMark_t* otherMark;
-	float dist;
-	float searchRadius;
-	cgs_teamMarkers_t* tm;
-
-	tm = &cgs.teamMarkers;
-
-	/* Only check for item marks (not pickup marks themselves) */
-	if (itemMark->isPickup)
-	{
-		return qfalse;
-	}
-
-	/* Only check for specific item types */
-	if (itemMark->markType != TEAMTASK_REDARMOR &&
-	        itemMark->markType != TEAMTASK_MEGAHEALTH &&
-	        itemMark->markType != TEAMTASK_YELLOWARMOR)
-	{
-		return qfalse;
-	}
-
-	/* Check if there is a pickup mark (from any player) with matching item type */
-	searchRadius = 64.0f;
-	for (i = 0; i < tm->numTeamTaskMarks; i++)
-	{
-		otherMark = &tm->teamTaskMarks[i];
-
-		/* Check if this is a pickup mark with matching item type */
-		if (otherMark->isPickup && otherMark->markType == itemMark->markType)
-		{
-			/* Check if coordinates are within search radius */
-			dist = Distance(itemMark->origin, otherMark->origin);
-			if (dist <= searchRadius)
-			{
-				return qtrue;
-			}
-		}
-	}
-
-	return qfalse;
-}
-
 static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
                                        const teamTaskMarkConstants_t* constants,
                                        teamTaskMarkRenderData_t* renderData)
@@ -1364,19 +1366,17 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		return qfalse;
 	}
 
-	/* Skip item marks if there is a pickup mark from the same player with close coordinates */
-	if (CG_HasPickupMarkForItem(mark))
-	{
+	/* Skip item marks that have pickup nearby (precomputed in CG_TeamTaskUpdateFrame) */
+	if (cgs.teamMarkers.markHasPickupNear[markIndex])
 		return qfalse;
-	}
 
-	/* Check if this is own HERE_ALIVE or HERE_FLAG mark that should be displayed as overhead in first person */
+	/* Check if this is own HERE_ALIVE, HERE_FLAG, or item (pickup) mark that should be displayed as overhead in first person (2D only, like tHere) */
 	shouldDisplayAsOverhead = (mark->clientNum == cgP->clientNum &&
-	                           (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG) &&
+	                           (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG || mark->isPickup) &&
 	                           !cgP->renderingThirdPerson);
 
 	/* ============================================
-	   CATEGORY 1: Overhead marks (YES, NO, MEDIC, HERE_ALIVE in first person)
+	   CATEGORY 1: Overhead marks (YES, NO, MEDIC, HERE_ALIVE, item/pickup in first person) — 2D only, like tHere
 	   ============================================ */
 	/* WARN_ALIVE should never be displayed as overhead - always show in world */
 	if ((mark->isOverhead && mark->clientNum == cgP->clientNum && !cgP->renderingThirdPerson && mark->markType != TEAMTASK_WARN_ALIVE) || shouldDisplayAsOverhead)
@@ -1574,7 +1574,6 @@ static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRender
 
 		/* Position distance above mark */
 		distanceY = (-2) + renderData->y - renderData->iconH * 0.5f - renderData->h * 0.5f;
-		CG_FontSelect(renderData->font);
 
 		/* Draw distance */
 		CG_OSPDrawStringNew(
@@ -1585,6 +1584,7 @@ static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRender
 		    renderData->w, renderData->h,
 		    0, /* no max width limit */
 		    DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW,
+		    renderData->font,
 		    NULL, NULL, NULL
 		);
 	}
@@ -1600,7 +1600,6 @@ static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRender
 			Vector4Set(shadowColor, 0.0f, 0.0f, 0.0f, renderData->color[3] * renderData->nameFade);
 			/* Position name below mark */
 			nameY = renderData->y + renderData->iconH * 0.5f + renderData->h * 0.5f;
-			CG_FontSelect(renderData->font);
 			/* Draw player name */
 			CG_OSPDrawStringNew(
 			    renderData->x, nameY,
@@ -1610,6 +1609,7 @@ static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRender
 			    renderData->w, renderData->h,
 			    0, /* no max width limit */
 			    DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW,
+			    renderData->font,
 			    NULL, NULL, NULL
 			);
 		}
@@ -1624,74 +1624,49 @@ void CG_DrawTeamTaskMarks(void)
 	teamTaskMark_t* mark;
 	cgs_teamMarkers_t* tm;
 
-	if (cgs.gametype < GT_TEAM)
-		return;
-	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
-		return;
 	tm = &cgs.teamMarkers;
-	if (tm->numTeamTaskMarks == 0)
+	if (!tm->drawTeamTasks || tm->numTeamTaskMarks == 0)
 		return;
 
-	/* Note: expired marks are already removed in CG_DrawTeamTaskBorderHudMarkers */
-	/* (which is called before this function) */
+	/* Expired marks are already removed in CG_TeamTaskUpdateFrame (one place per frame). */
 
 	/* Initialize constants */
 	CG_InitTeamTaskMarkConstants(&constants);
 
-	/* Process and render each mark */
+	/* One loop: world process+render and own HERE_DEAD/WARN_DEAD/PICKUP overhead in first person */
 	for (i = 0; i < tm->numTeamTaskMarks; i++)
 	{
 		mark = &tm->teamTaskMarks[i];
 
-		/* Process mark (calculate positions, fade, hover state) */
 		if (!CG_ProcessTeamTaskMark(mark, i, &constants, &renderData))
-		{
-			/* Mark is outside screen, skip rendering */
 			continue;
-		}
-
-		/* Render mark (draw sprite, spawn effect, player name) */
 		CG_RenderTeamTaskMark(mark, &renderData, &constants);
-	}
 
-	/* Draw own HERE_DEAD, WARN_DEAD, and PICKUP marks as overhead in first person (in addition to world rendering) */
-	/* Only show overhead if we're observing ourselves (not following another player) */
-	/* Don't show overhead in free float mode (already shown in HUD marker) */
-	if (!cg.renderingThirdPerson && CG_IS_LOCAL_CLIENT_ON_SCREEN() && !CG_IsClientFreeFloat())
-	{
-		for (i = 0; i < tm->numTeamTaskMarks; i++)
+			/* Own HERE_DEAD/WARN_DEAD as overhead in first person (pickup/item uses CATEGORY 1 overhead path above, no second draw) */
+		if (!cg.renderingThirdPerson && CG_IS_LOCAL_CLIENT_ON_SCREEN() && !CG_IsClientFreeFloat() &&
+		    mark->clientNum == cg.clientNum &&
+		    (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))
 		{
-			mark = &tm->teamTaskMarks[i];
+			teamTaskMarkRenderData_t overheadRenderData;
 
-			/* Check if this is own HERE_DEAD, WARN_DEAD, or PICKUP mark */
-			if (mark->clientNum == cg.clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD || mark->isPickup))
-			{
-				teamTaskMarkRenderData_t overheadRenderData;
-
-				/* Set up overhead rendering data */
-				overheadRenderData.x = SCREEN_WIDTH * 0.5f;
-				overheadRenderData.y = 20.0f; /* Fixed position from top */
-				overheadRenderData.h = 10.0f * constants.scale;
-				overheadRenderData.w = overheadRenderData.h * 0.75f;
-				overheadRenderData.iconW = overheadRenderData.w * 4;
-				overheadRenderData.iconH = overheadRenderData.h * 4;
-				overheadRenderData.font = constants.font;
-				overheadRenderData.distance = 100.0f;
-				overheadRenderData.fade = 1.0f;
-				overheadRenderData.endFade = CG_CalculateEndFade(mark->endTime, cg.time);
-				overheadRenderData.nameFade = 0.0f; /* Don't show name for overhead */
-				overheadRenderData.showSpawnEffect = qfalse; /* No spawn effect for overhead */
-				overheadRenderData.spawnFade = 1.0f;
-				overheadRenderData.spawnScale = 1.0f;
-				overheadRenderData.isHovering = qfalse;
-
-				/* Set color with end fade */
-				Vector4Copy(mark->color, overheadRenderData.color);
-				overheadRenderData.color[3] *= constants.opaque * overheadRenderData.endFade;
-
-				/* Render overhead mark */
-				CG_RenderTeamTaskMark(mark, &overheadRenderData, &constants);
-			}
+			overheadRenderData.x = SCREEN_WIDTH * 0.5f;
+			overheadRenderData.y = 20.0f;
+			overheadRenderData.h = 10.0f * constants.scale;
+			overheadRenderData.w = overheadRenderData.h * 0.75f;
+			overheadRenderData.iconW = overheadRenderData.w * 4;
+			overheadRenderData.iconH = overheadRenderData.h * 4;
+			overheadRenderData.font = constants.font;
+			overheadRenderData.distance = 100.0f;
+			overheadRenderData.fade = 1.0f;
+			overheadRenderData.endFade = CG_CalculateEndFade(mark->endTime, cg.time);
+			overheadRenderData.nameFade = 0.0f;
+			overheadRenderData.showSpawnEffect = qfalse;
+			overheadRenderData.spawnFade = 1.0f;
+			overheadRenderData.spawnScale = 1.0f;
+			overheadRenderData.isHovering = qfalse;
+			Vector4Copy(mark->color, overheadRenderData.color);
+			overheadRenderData.color[3] *= constants.opaque * overheadRenderData.endFade;
+			CG_RenderTeamTaskMark(mark, &overheadRenderData, &constants);
 		}
 	}
 }

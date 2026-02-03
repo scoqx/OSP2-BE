@@ -309,56 +309,30 @@ static snapshot_t* CG_ReadNextSnapshot(void)
 
 	while (cgs.processedSnapshotNum < cg.latestSnapshotNum)
 	{
-		// decide which of the two slots to load it into
-		if (cg.snap == &cg.activeSnapshots[0])
-		{
-			dest = &cg.activeSnapshots[1];
-		}
-		else
-		{
-			dest = &cg.activeSnapshots[0];
-		}
+		dest = (cg.snap == &cg.activeSnapshots[0]) ? &cg.activeSnapshots[1] : &cg.activeSnapshots[0];
 
-		// try to read the snapshot from the client system
 		cgs.processedSnapshotNum++;
 		r = trap_GetSnapshot(cgs.processedSnapshotNum, dest);
 
-		// FIXME: why would trap_GetSnapshot return a snapshot with the same server time
-		if (cg.snap && r && dest->serverTime == cg.snap->serverTime)
-		{
-			//continue;
-		}
-
-		if (cgs.osp.pingCount > 0)
-		{
-			cgs.osp.pingMs *= cgs.osp.pingCount - 1;
-		}
-		if (cgs.osp.pingCount < 50)
-		{
-			++cgs.osp.pingCount;
-		}
-		cgs.osp.pingMs += dest->ping;
-
-		cgs.osp.pingMs /= cgs.osp.pingCount;
-
-
-		// if it succeeded, return
 		if (r)
 		{
-			CG_AddLagometerSnapshotInfo(dest);
+			// OSP ping average: only when we have a valid snapshot
+			if (cgs.osp.pingCount > 0)
+				cgs.osp.pingMs *= cgs.osp.pingCount - 1;
+			if (cgs.osp.pingCount < 50)
+				++cgs.osp.pingCount;
+			cgs.osp.pingMs += dest->ping;
+			cgs.osp.pingMs /= cgs.osp.pingCount;
+
+			lagometer.snapshotSamples[lagometer.snapshotCount & (LAG_SAMPLES - 1)] = dest->ping;
+			lagometer.snapshotFlags[lagometer.snapshotCount & (LAG_SAMPLES - 1)] = dest->snapFlags;
+			lagometer.snapshotCount++;
 			return dest;
 		}
 
-		// a GetSnapshot will return failure if the snapshot
-		// never arrived, or  is so old that its entities
-		// have been shoved off the end of the circular
-		// buffer in the client system.
-
-		// record as a dropped packet
-		CG_AddLagometerSnapshotInfo(NULL);
-
-		// If there are additional snapshots, continue trying to
-		// read them.
+		// dropped packet: snapshot never arrived or too old
+		lagometer.snapshotSamples[lagometer.snapshotCount & (LAG_SAMPLES - 1)] = -1;
+		lagometer.snapshotCount++;
 	}
 
 	// nothing left to read
@@ -389,18 +363,14 @@ void CG_ProcessSnapshots(void)
 {
 	snapshot_t*      snap;
 	int             n;
+	static int      last_spect_player = -1;
 
 	// see what the latest snapshot the client system has is
 	trap_GetCurrentSnapshotNumber(&n, &cg.latestSnapshotTime);
+	if (n < cg.latestSnapshotNum)
+		CG_Error("CG_ProcessSnapshots: n < cg.latestSnapshotNum");
 	if (n != cg.latestSnapshotNum)
-	{
-		if (n < cg.latestSnapshotNum)
-		{
-			// this should never happen
-			CG_Error("CG_ProcessSnapshots: n < cg.latestSnapshotNum");
-		}
 		cg.latestSnapshotNum = n;
-	}
 
 	// If we have yet to receive a snapshot, check for it.
 	// Once we have gotten the first snapshot, cg.snap will
@@ -450,10 +420,8 @@ void CG_ProcessSnapshots(void)
 		}
 
 		// if our time is < nextFrame's, we have a nice interpolating state
-		if (cg.time >= cg.snap->serverTime && cg.time < cg.nextSnap->serverTime)
-		{
+		if (cg.nextSnap && cg.time >= cg.snap->serverTime && cg.time < cg.nextSnap->serverTime)
 			break;
-		}
 
 		// we have passed the transition from nextFrame to frame
 		CG_TransitionSnapshot();
@@ -475,16 +443,11 @@ void CG_ProcessSnapshots(void)
 		CG_Error("CG_ProcessSnapshots: cg.nextSnap->serverTime <= cg.time");
 	}
 
-	if (cg_spectOrigModel.integer)
+	// spectOrigModel: refresh client info when spectated player changes
+	if (cg_spectOrigModel.integer && last_spect_player != cg.snap->ps.clientNum)
 	{
-		static int last_player = -1;
-		if (last_player != cg.snap->ps.clientNum)
-		{
-			last_player = cg.snap->ps.clientNum;
-			CG_UpdateAllClientsInfo();
-		}
-
+		last_spect_player = cg.snap->ps.clientNum;
+		CG_UpdateAllClientsInfo();
 	}
-
 }
 

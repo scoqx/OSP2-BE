@@ -222,6 +222,14 @@ void UI_RegisterCvars( void ) {
 	}
 	trap_Cvar_SetValue( "uc_sensitivity", sensitivityValue );
 
+	/* uc_gamma: init from r_gamma only when r_gamma looks like config value (not menu-forced 1) */
+	{
+		float rg = trap_Cvar_VariableValue( "r_gamma" );
+		if ( rg < 0.99f || rg > 1.01f ) {
+			trap_Cvar_SetValue( "uc_gamma", rg );
+		}
+	}
+
 	// Scan beconfigs/ directory for customConfig_*.cfg files
 	UI_ScanCustomConfigFiles();
 }

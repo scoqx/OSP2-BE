@@ -31,7 +31,6 @@ typedef struct
 
 static login_t	s_login;
 
-static vec4_t s_login_color_prompt  = {1.00, 0.43, 0.00, 1.00};
 
 /*
 ===============
@@ -99,7 +98,7 @@ void Login_MenuInit( void ) {
 	s_login.name.generic.y				= y;
 	s_login.name.string					= "NAME";
 	s_login.name.style					= UI_RIGHT|UI_SMALLFONT;
-	s_login.name.color					= s_login_color_prompt;
+	s_login.name.color					= uis.themeColor2;
 
 	s_login.name_box.generic.type		= MTYPE_FIELD;
 	s_login.name_box.generic.ownerdraw	= Rankings_DrawName;
@@ -118,7 +117,7 @@ void Login_MenuInit( void ) {
 	s_login.password.generic.y			= y;
 	s_login.password.string				= "PASSWORD";
 	s_login.password.style				= UI_RIGHT|UI_SMALLFONT;
-	s_login.password.color				= s_login_color_prompt;
+	s_login.password.color				= uis.themeColor2;
 
 	s_login.password_box.generic.type		= MTYPE_FIELD;
 	s_login.password_box.generic.ownerdraw	= Rankings_DrawPassword;
@@ -138,7 +137,7 @@ void Login_MenuInit( void ) {
 	s_login.login.generic.y					= y;
 	s_login.login.string					= "LOGIN";
 	s_login.login.style						= UI_RIGHT|UI_SMALLFONT;
-	s_login.login.color						= colorRed;
+	s_login.login.color						= uis.themeColor;
 
 	s_login.cancel.generic.type				= MTYPE_PTEXT;
 	s_login.cancel.generic.flags			= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
@@ -148,7 +147,7 @@ void Login_MenuInit( void ) {
 	s_login.cancel.generic.y				= y;
 	s_login.cancel.string					= "CANCEL";
 	s_login.cancel.style					= UI_LEFT|UI_SMALLFONT;
-	s_login.cancel.color					= colorRed;
+	s_login.cancel.color					= uis.themeColor;
 	y += 20;
 
 	Menu_AddItem( &s_login.menu, (void*) &s_login.frame );

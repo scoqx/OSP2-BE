@@ -231,7 +231,7 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 void CG_SHUDElementPwRoutine(void* context)
 {
 	shudElementPowerupContext* element = (shudElementPowerupContext*)context;
-	struct superhudPowerupsCache_t* pw = &CG_SHUDGetContext()->powerupsCache;
+	struct superhudPowerupsCache_t* pw = &superhudGlobalContext.powerupsCache;
 	struct superhudPowerupElement_t* pwElement;
 
 	if (cg.time - pw->lastUpdateTime > SUPERHUD_UPDATE_TIME)

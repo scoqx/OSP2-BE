@@ -30,7 +30,6 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 	if (cg.renderingThirdPerson != 0) return;
 	if (global_viewlistFirstOption > 1) return;
 
-	CG_ScanForCrosshairEntity();
 	if (cg.crosshairClientTime == 0) return;
 
 
@@ -49,7 +48,7 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 			vec4_t hcolor;
 			char s[1024];
 
-			CG_GetColorForHealth(ci->health, ci->armor, hcolor, NULL);
+			Vector4Copy(cgs.healthColorByClient[cg.crosshairClientNum], hcolor);
 
 			Com_sprintf(s, sizeof(s), "[%i/%i]", ci->health, ci->armor);
 

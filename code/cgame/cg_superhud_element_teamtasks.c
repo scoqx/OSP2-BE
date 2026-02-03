@@ -22,7 +22,7 @@ static void* CG_SHUDElementTeamTasksCreate(const superhudConfig_t* config, int l
 	superhudConfig_t lcfg;
 
 	SHUD_ELEMENT_INIT(element, config);
-	element->gctx = CG_SHUDGetContext();
+	element->gctx = &superhudGlobalContext;
 	element->index = line;
 
 	memcpy(&lcfg, config, sizeof(superhudConfig_t));

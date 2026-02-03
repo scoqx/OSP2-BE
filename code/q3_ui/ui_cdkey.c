@@ -156,7 +156,7 @@ static void UI_CDKeyMenu_DrawKey( void *self ) {
 		UI_DrawProportionalString( 320, 376, "The CD Key appears to be valid, thank you", UI_CENTER|UI_SMALLFONT, color_white );
 	}
 	else {
-		UI_DrawProportionalString( 320, 376, "The CD Key is not valid", UI_CENTER|UI_SMALLFONT, color_red );
+		UI_DrawProportionalString( 320, 376, "The CD Key is not valid", UI_CENTER|UI_SMALLFONT, uis.themeColor );
 	}
 }
 
@@ -179,7 +179,7 @@ static void UI_CDKeyMenu_Init( void ) {
 	cdkeyMenuInfo.banner.generic.x					= 320;
 	cdkeyMenuInfo.banner.generic.y					= 16;
 	cdkeyMenuInfo.banner.string						= "CD KEY";
-	cdkeyMenuInfo.banner.color						= color_white;
+	cdkeyMenuInfo.banner.color						= menu_text_color;
 	cdkeyMenuInfo.banner.style						= UI_CENTER;
 
 	cdkeyMenuInfo.frame.generic.type				= MTYPE_BITMAP;

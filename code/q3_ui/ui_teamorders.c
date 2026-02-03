@@ -335,7 +335,7 @@ static void UI_TeamOrdersMenu_Init( void ) {
 	teamOrdersMenuInfo.banner.generic.x			= 320;
 	teamOrdersMenuInfo.banner.generic.y			= 16;
 	teamOrdersMenuInfo.banner.string			= "TEAM ORDERS";
-	teamOrdersMenuInfo.banner.color				= color_white;
+	teamOrdersMenuInfo.banner.color				= uis.themeColor;
 	teamOrdersMenuInfo.banner.style				= UI_CENTER;
 
 	teamOrdersMenuInfo.frame.generic.type		= MTYPE_BITMAP;

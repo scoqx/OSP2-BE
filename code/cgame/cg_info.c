@@ -324,12 +324,11 @@ void CG_DrawInformation(void)
 		versionPtr += 3; // Skip "be-" prefix
 	}
 	Com_sprintf(versionStr, sizeof(versionStr), "OSP2-BE(%s)", versionPtr);
-	CG_FontSelect(cgFontIndices.infoVersion);
 	CG_OSPDrawStringNew(640.0f, 467.0f, versionStr,
 	                    colorWhite, colorBlack,
 	                    8.0f, 12.0f,
 	                    SCREEN_WIDTH,
 	                    DS_HRIGHT | DS_PROPORTIONAL | DS_SHADOW,
-	                    NULL, NULL, NULL);
+	                    cgFontIndices.infoVersion, NULL, NULL, NULL);
 }
 

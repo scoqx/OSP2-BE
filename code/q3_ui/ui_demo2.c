@@ -721,8 +721,7 @@ static void Demos_MenuInit( void ) {
 	s_demos.banner.generic.x		= 320;
 	s_demos.banner.generic.y		= 28;
 	s_demos.banner.string			= dir;
-	//s_demos.banner.color			= color_white;
-	s_demos.banner.color			= text_color_normal;
+		s_demos.banner.color			= uis.themeColor;
 	s_demos.banner.style			= UI_CENTER;
 
 	s_demos.arrows.generic.type		= MTYPE_BITMAP;

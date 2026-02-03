@@ -207,10 +207,9 @@ void CG_SHUDElementTeamRoutine(void* context)
 	CG_SHUDTextPrint(&element->config, &element->ctxName);
 
 	// draw health and armor
-	CG_GetColorForHealth(ci->health, ci->armor, element->ctxHealthArmor.color, NULL);
+	Vector4Copy(cgs.healthColorByClient[sortedTeamPlayers[index]], element->ctxHealthArmor.color);
 	element->ctxHealthArmor.text = va("%3i/%i", ci->health, ci->armor);
 
-	CG_FontSelect(element->ctxHealthArmor.fontIndex);
 	CG_OSPDrawStringNew(element->ctxHealthArmor.coord.named.x,
 	                    element->ctxHealthArmor.coord.named.y,
 	                    element->ctxHealthArmor.text,
@@ -220,6 +219,7 @@ void CG_SHUDElementTeamRoutine(void* context)
 	                    element->ctxHealthArmor.coord.named.h,
 	                    SCREEN_WIDTH,
 	                    element->ctxHealthArmor.flags,
+	                    element->ctxHealthArmor.fontIndex,
 	                    NULL, NULL, NULL);
 
 	// draw weapon

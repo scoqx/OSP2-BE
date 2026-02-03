@@ -382,7 +382,7 @@ static void StartServer_MenuInit( void ) {
 	s_startserver.banner.generic.x	   = 320;
 	s_startserver.banner.generic.y	   = 16;
 	s_startserver.banner.string        = "GAME SERVER";
-	s_startserver.banner.color         = color_white;
+	s_startserver.banner.color         = uis.themeColor;
 	s_startserver.banner.style         = UI_CENTER;
 
 	s_startserver.framel.generic.type  = MTYPE_BITMAP;
@@ -1228,7 +1228,7 @@ static void ServerOptions_MenuInit( qboolean multiplayer ) {
 	s_serveroptions.banner.generic.x			= 320;
 	s_serveroptions.banner.generic.y			= 16;
 	s_serveroptions.banner.string  				= "GAME SERVER";
-	s_serveroptions.banner.color  				= color_white;
+	s_serveroptions.banner.color  				= uis.themeColor;
 	s_serveroptions.banner.style  				= UI_CENTER;
 
 	s_serveroptions.mappic.generic.type			= MTYPE_BITMAP;
@@ -1628,7 +1628,7 @@ static void UI_BotSelectMenu_UpdateGrid( void ) {
 			Q_CleanStr( botSelectInfo.botnames[i] );
  			botSelectInfo.pics[i].generic.name = botSelectInfo.boticons[i];
 			if( BotAlreadySelected( botSelectInfo.botnames[i] ) ) {
-				botSelectInfo.picnames[i].color = color_red;
+				botSelectInfo.picnames[i].color = uis.themeColor;
 			}
 			else {
 				botSelectInfo.picnames[i].color = color_orange;
@@ -1832,7 +1832,7 @@ static void UI_BotSelectMenu_Init( char *bot ) {
 	botSelectInfo.banner.generic.x		= 320;
 	botSelectInfo.banner.generic.y		= 16;
 	botSelectInfo.banner.string			= "SELECT BOT";
-	botSelectInfo.banner.color			= color_white;
+	botSelectInfo.banner.color			= uis.themeColor;
 	botSelectInfo.banner.style			= UI_CENTER;
 
 	y =	80;
@@ -1847,7 +1847,7 @@ static void UI_BotSelectMenu_Init( char *bot ) {
 			botSelectInfo.pics[k].width						= 64;
 			botSelectInfo.pics[k].height					= 64;
 			botSelectInfo.pics[k].focuspic					= BOTSELECT_SELECTED;
-			botSelectInfo.pics[k].focuscolor				= colorRed;
+			botSelectInfo.pics[k].focuscolor				= uis.themeColor;
 
 			botSelectInfo.picbuttons[k].generic.type		= MTYPE_BITMAP;
 			botSelectInfo.picbuttons[k].generic.flags		= QMF_LEFT_JUSTIFY|QMF_NODEFAULTINIT|QMF_PULSEIFFOCUS;
@@ -1862,7 +1862,7 @@ static void UI_BotSelectMenu_Init( char *bot ) {
 			botSelectInfo.picbuttons[k].width				= 128;
 			botSelectInfo.picbuttons[k].height				= 128;
 			botSelectInfo.picbuttons[k].focuspic			= BOTSELECT_SELECT;
-			botSelectInfo.picbuttons[k].focuscolor			= colorRed;
+			botSelectInfo.picbuttons[k].focuscolor			= uis.themeColor;
 
 			botSelectInfo.picnames[k].generic.type			= MTYPE_TEXT;
 			botSelectInfo.picnames[k].generic.flags			= QMF_SMALLFONT;

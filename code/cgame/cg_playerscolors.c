@@ -17,22 +17,22 @@ static qboolean CG_GetColorFromETCode(char code, vec3_t out)
 		return qfalse;
 	}
 
-	myTeam = cgs.be.myTeam;
+	myTeam = cgs.beMyTeam;
 
 	if (code == 'T')
 	{
 		// Team color - color of my team
 		if (myTeam == TEAM_RED)
 		{
-			VectorCopy(cgs.be.redTeamColor, out);
+			VectorCopy(cgs.beRedTeamColor, out);
 		}
 		else if (myTeam == TEAM_BLUE)
 		{
-			VectorCopy(cgs.be.blueTeamColor, out);
+			VectorCopy(cgs.beBlueTeamColor, out);
 		}
 		else
 		{
-			VectorCopy(cgs.be.redTeamColor, out);
+			VectorCopy(cgs.beRedTeamColor, out);
 		}
 	}
 	else
@@ -40,15 +40,15 @@ static qboolean CG_GetColorFromETCode(char code, vec3_t out)
 		// Enemy color - color of enemy team
 		if (myTeam == TEAM_RED)
 		{
-			VectorCopy(cgs.be.blueTeamColor, out);
+			VectorCopy(cgs.beBlueTeamColor, out);
 		}
 		else if (myTeam == TEAM_BLUE)
 		{
-			VectorCopy(cgs.be.redTeamColor, out);
+			VectorCopy(cgs.beRedTeamColor, out);
 		}
 		else
 		{
-			VectorCopy(cgs.be.blueTeamColor, out);
+			VectorCopy(cgs.beBlueTeamColor, out);
 		}
 	}
 

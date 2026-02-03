@@ -156,6 +156,8 @@ $(PK3): vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_cha
 	@echo "Creating package with version files..."
 	@echo "Version: $$(cat ../../assets/version.txt)"
 	@$(7Z) $@ vm/*.qvm vm/*.jts ../../assets/*
+# @$(7Z) $@ vm/*.qvm vm/*.map ../../assets/*
+
 
 cc = cd vm/$1 && $(Q3LCC) $2 -o $(notdir $@).tmp ../../$< && mv $(notdir $@).tmp $(notdir $@)
 qa_cc = $(call cc,game,$(QA_CFLAGS))

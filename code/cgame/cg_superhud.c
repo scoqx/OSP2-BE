@@ -380,7 +380,7 @@ void CG_SHUDChatRestore(void)
 	char index_str[MAX_QPATH];
 	int i;
 	int index;
-	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 
 	trap_Cvar_VariableStringBuffer("cg_shud_chatindex", index_str, sizeof(index_str));
 	ctx->chat.index = atoi(index_str);
@@ -415,131 +415,97 @@ void CG_SHUDLoadConfig(void)
 	}
 }
 
-/*
-================
-CG_SHUDCheckWeaponFlags
-
-Check if element should be skipped based on weapon flags.
-Returns qtrue if element should be skipped (weapon flags are set but current weapon doesn't match).
-================
-*/
-static qboolean CG_SHUDCheckWeaponFlags(int vflags, int currentWeapon)
-{
-	int weaponFlags;
-	qboolean hasWeaponFlags;
-	qboolean weaponMatches;
-
-	weaponFlags = (vflags & (SE_WEAPON_GAUNTLET | SE_WEAPON_MACHINEGUN | SE_WEAPON_SHOTGUN |
-	                         SE_WEAPON_GRENADE_LAUNCHER | SE_WEAPON_ROCKET_LAUNCHER |
-	                         SE_WEAPON_LIGHTNING | SE_WEAPON_RAILGUN | SE_WEAPON_PLASMAGUN | SE_WEAPON_BFG));
-	hasWeaponFlags = (weaponFlags != 0);
-	weaponMatches = qfalse;
-
-	if (hasWeaponFlags)
-	{
-		if ((vflags & SE_WEAPON_GAUNTLET) && currentWeapon == WP_GAUNTLET)
-		{
-			weaponMatches = qtrue;
-		}
-		else if ((vflags & SE_WEAPON_MACHINEGUN) && currentWeapon == WP_MACHINEGUN)
-		{
-			weaponMatches = qtrue;
-		}
-		else if ((vflags & SE_WEAPON_SHOTGUN) && currentWeapon == WP_SHOTGUN)
-		{
-			weaponMatches = qtrue;
-		}
-		else if ((vflags & SE_WEAPON_GRENADE_LAUNCHER) && currentWeapon == WP_GRENADE_LAUNCHER)
-		{
-			weaponMatches = qtrue;
-		}
-		else if ((vflags & SE_WEAPON_ROCKET_LAUNCHER) && currentWeapon == WP_ROCKET_LAUNCHER)
-		{
-			weaponMatches = qtrue;
-		}
-		else if ((vflags & SE_WEAPON_LIGHTNING) && currentWeapon == WP_LIGHTNING)
-		{
-			weaponMatches = qtrue;
-		}
-		else if ((vflags & SE_WEAPON_RAILGUN) && currentWeapon == WP_RAILGUN)
-		{
-			weaponMatches = qtrue;
-		}
-		else if ((vflags & SE_WEAPON_PLASMAGUN) && currentWeapon == WP_PLASMAGUN)
-		{
-			weaponMatches = qtrue;
-		}
-		else if ((vflags & SE_WEAPON_BFG) && currentWeapon == WP_BFG)
-		{
-			weaponMatches = qtrue;
-		}
-	}
-
-	return (hasWeaponFlags && !weaponMatches);
-}
+#define SE_WEAPON_ANY (SE_WEAPON_GAUNTLET | SE_WEAPON_MACHINEGUN | SE_WEAPON_SHOTGUN | \
+	SE_WEAPON_GRENADE_LAUNCHER | SE_WEAPON_ROCKET_LAUNCHER | SE_WEAPON_LIGHTNING | \
+	SE_WEAPON_RAILGUN | SE_WEAPON_PLASMAGUN | SE_WEAPON_BFG)
 
 void CG_SHUDRoutine(void)
 {
 	superhudElement_t* last = elementsHead;
-	int vflags;
-	qboolean skip;
-	const qboolean is_dead = cg.predictedPlayerState.pm_type == PM_DEAD || cg.predictedPlayerState.pm_type == PM_FREEZE;
-	const qboolean is_intermission = cg.predictedPlayerState.pm_type == PM_INTERMISSION;
-	const qboolean is_team_game = cgs.gametype >= GT_TEAM;
-	const qboolean is_spectator = CG_IsSpectatorOnScreen();
-	const qboolean is_scores = cg.showScores || cgs.osp.chud.scoreboard ? qtrue : qfalse;
-	const qboolean is_gt_ffa = cgs.gametype == GT_FFA;
-	const qboolean is_gt_tourney = cgs.gametype == GT_TOURNAMENT;
-	const qboolean is_gt_tdm = CG_OSPIsGameTypeTDM();
-	const qboolean is_gt_ctf = cgs.gametype == GT_CTF;
-	const qboolean is_gt_ft = CG_OSPIsGameTypeFreeze();
-	const qboolean is_gt_ca = CG_OSPIsGameTypeCA(cgs.gametype);
 	int currentWeapon;
-	qboolean is_spectator_for_element = is_spectator;
+	int pm_type;
+	int gt;
+	qboolean is_dead;
+	qboolean is_intermission;
+	qboolean is_team_game;
+	qboolean is_spectator;
+	qboolean is_scores;
+	qboolean is_gt_ffa;
+	qboolean is_gt_tourney;
+	qboolean is_gt_tdm;
+	qboolean is_gt_ctf;
+	qboolean is_gt_ft;
+	qboolean is_gt_ca;
+
+	/* Used in every iteration of the loop — read once (QVM: avoid N reads for N elements). */
+	pm_type = cg.predictedPlayerState.pm_type;
+	gt = cgs.gametype;
+	is_dead = (pm_type == PM_DEAD || pm_type == PM_FREEZE);
+	is_intermission = (pm_type == PM_INTERMISSION);
+	is_team_game = (gt >= GT_TEAM);
+	is_spectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+	is_scores = (cg.showScores || cgs.osp.chud.scoreboard) ? qtrue : qfalse;
+	is_gt_ffa = (gt == GT_FFA);
+	is_gt_tourney = (gt == GT_TOURNAMENT);
+	is_gt_tdm = (gt == GT_TEAM && !cgs.osp.gameTypeFreeze);
+	is_gt_ctf = (gt == GT_CTF);
+	is_gt_ft = ((gt == GT_TEAM || gt == GT_CTF) && cgs.osp.gameTypeFreeze);
+	is_gt_ca = (gt >= GT_CA);
 
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
 	{
 		CG_OSPDrawCenterString();
 	}
+	currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
+
 	while (last)
 	{
-		// check visibility
-		vflags = last->config.visiblity.isSet ? last->config.visiblity.value : last->element.visibility;
-
-		// Get current weapon (same logic as CG_ExecWeaponCommand)
-		currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
-
-		// Special check for fragmessage: also consider PM_SPECTATOR state
+		int vflags = last->config.visiblity.isSet ? last->config.visiblity.value : last->element.visibility;
+		qboolean is_spectator_for_element = is_spectator;
+		int wf;
+		qboolean weapon_skip;
+		qboolean skip;
 
 		if (last->element.name && Q_stricmp(last->element.name, "fragmessage") == 0)
 		{
-			is_spectator_for_element = is_spectator || cg.predictedPlayerState.pm_type == PM_SPECTATOR;
+			is_spectator_for_element = is_spectator || (pm_type == PM_SPECTATOR);
 		}
 
+		wf = (vflags & SE_WEAPON_ANY);
+		weapon_skip = (wf != 0) && !(
+			((vflags & SE_WEAPON_GAUNTLET) && currentWeapon == WP_GAUNTLET) ||
+			((vflags & SE_WEAPON_MACHINEGUN) && currentWeapon == WP_MACHINEGUN) ||
+			((vflags & SE_WEAPON_SHOTGUN) && currentWeapon == WP_SHOTGUN) ||
+			((vflags & SE_WEAPON_GRENADE_LAUNCHER) && currentWeapon == WP_GRENADE_LAUNCHER) ||
+			((vflags & SE_WEAPON_ROCKET_LAUNCHER) && currentWeapon == WP_ROCKET_LAUNCHER) ||
+			((vflags & SE_WEAPON_LIGHTNING) && currentWeapon == WP_LIGHTNING) ||
+			((vflags & SE_WEAPON_RAILGUN) && currentWeapon == WP_RAILGUN) ||
+			((vflags & SE_WEAPON_PLASMAGUN) && currentWeapon == WP_PLASMAGUN) ||
+			((vflags & SE_WEAPON_BFG) && currentWeapon == WP_BFG));
+
 		skip = (!(vflags & SE_IM) && is_intermission) ||
-		       ((vflags & SE_TEAM_ONLY) && (!is_team_game)) ||
-		       (!(vflags & SE_DEAD) && is_dead) ||
-		       (!(vflags & SE_SPECT) && is_spectator_for_element) ||
-		       ((vflags & SE_SCORES_HIDE) && is_scores) ||
-		       ((vflags & SE_DEMO_HIDE) && cg.demoPlayback) ||
-		       ((vflags & SE_KEY1_SHOW) && !cgs.osp.shud.key[0]) ||
-		       ((vflags & SE_KEY2_SHOW) && !cgs.osp.shud.key[1]) ||
-		       ((vflags & SE_KEY3_SHOW) && !cgs.osp.shud.key[2]) ||
-		       ((vflags & SE_KEY4_SHOW) && !cgs.osp.shud.key[3]) ||
-		       ((vflags & SE_KEY5_SHOW) && !cgs.osp.shud.key[4]) ||
-		       ((vflags & SE_KEY6_SHOW) && !cgs.osp.shud.key[5]) ||
-		       ((vflags & SE_KEY7_SHOW) && !cgs.osp.shud.key[6]) ||
-		       ((vflags & SE_KEY8_SHOW) && !cgs.osp.shud.key[7]) ||
-		       ((vflags & SE_GT_FFA) && is_gt_ffa) ||
-		       ((vflags & SE_GT_TDM) && is_gt_tdm) ||
-		       ((vflags & SE_GT_CTF) && is_gt_ctf) ||
-		       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
-		       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
-		       ((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
-		       ((vflags & SE_HEALTH_LOW) && !cgs.be.isHealthLow) ||
-		       CG_SHUDCheckWeaponFlags(vflags, currentWeapon)
-		       ;
+			((vflags & SE_TEAM_ONLY) && !is_team_game) ||
+			(!(vflags & SE_DEAD) && is_dead) ||
+			(!(vflags & SE_SPECT) && is_spectator_for_element) ||
+			((vflags & SE_SCORES_HIDE) && is_scores) ||
+			((vflags & SE_DEMO_HIDE) && cg.demoPlayback) ||
+			((vflags & SE_KEY1_SHOW) && !cgs.osp.shud.key[0]) ||
+			((vflags & SE_KEY2_SHOW) && !cgs.osp.shud.key[1]) ||
+			((vflags & SE_KEY3_SHOW) && !cgs.osp.shud.key[2]) ||
+			((vflags & SE_KEY4_SHOW) && !cgs.osp.shud.key[3]) ||
+			((vflags & SE_KEY5_SHOW) && !cgs.osp.shud.key[4]) ||
+			((vflags & SE_KEY6_SHOW) && !cgs.osp.shud.key[5]) ||
+			((vflags & SE_KEY7_SHOW) && !cgs.osp.shud.key[6]) ||
+			((vflags & SE_KEY8_SHOW) && !cgs.osp.shud.key[7]) ||
+			((vflags & SE_GT_FFA) && is_gt_ffa) ||
+			((vflags & SE_GT_TDM) && is_gt_tdm) ||
+			((vflags & SE_GT_CTF) && is_gt_ctf) ||
+			((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
+			((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
+			((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
+			((vflags & SE_HEALTH_LOW) && !cg.beIsHealthLow) ||
+			weapon_skip;
 
 		if (!skip && last->element.routine)
 		{
@@ -555,17 +521,100 @@ void CG_SHUDRoutine(void)
 	{
 		CG_DrawSelwheelIcons();
 	}
-
-	if (cg_printui.integer)
+	if (!cg_printui.integer || cgs.printuiActiveCount == 0)
 	{
-		CG_DrawPrintUI();
+		/* early exit: skip printui block */
 	}
+	else
+	{
+		int n;
+		int idx;
+		int last;
+		int elapsed;
+		float fade;
+		qboolean hasBg;
+		qboolean hasBorder;
+		vec4_t finalColor;
+		vec4_t finalShadowColor;
+		vec4_t finalBackground;
+		vec4_t finalBorder;
+		vec4_t finalBorderColor;
 
+		for (n = 0; n < cgs.printuiActiveCount; n++)
+		{
+			idx = cgs.printuiActiveIndices[n];
+			elapsed = cg.time - cgs.printui[idx].startTime;
+			if (elapsed < 0)
+			{
+				continue;
+			}
+			if (cgs.printui[idx].duration >= 0 && elapsed >= cgs.printui[idx].duration)
+			{
+				last = cgs.printuiActiveCount - 1;
+				if (n != last)
+				{
+					cgs.printuiActiveIndices[n] = cgs.printuiActiveIndices[last];
+				}
+				cgs.printuiActiveCount--;
+				cgs.printui[idx].active = qfalse;
+				n--;
+				continue;
+			}
+			if (cgs.printui[idx].fadeTime <= 0)
+			{
+				fade = 1.0f;
+			}
+			else if (elapsed < cgs.printui[idx].fadeTime)
+			{
+				fade = (float)elapsed / (float)cgs.printui[idx].fadeTime;
+			}
+			else if (cgs.printui[idx].duration >= 0 && elapsed > cgs.printui[idx].duration - cgs.printui[idx].fadeTime)
+			{
+				fade = (float)(cgs.printui[idx].duration - elapsed) / (float)cgs.printui[idx].fadeTime;
+			}
+			else
+			{
+				fade = 1.0f;
+			}
+			Vector4Copy(cgs.printui[idx].color, finalColor);
+			finalColor[3] *= fade;
+			Vector4Copy(cgs.printui[idx].shadowColor, finalShadowColor);
+			finalShadowColor[3] *= fade;
+			hasBg = (cgs.printui[idx].background[3] > 0.0f);
+			if (hasBg)
+			{
+				Vector4Copy(cgs.printui[idx].background, finalBackground);
+				finalBackground[3] *= fade;
+			}
+			hasBorder = (cgs.printui[idx].border[0] > 0.0f || cgs.printui[idx].border[1] > 0.0f ||
+			             cgs.printui[idx].border[2] > 0.0f || cgs.printui[idx].border[3] > 0.0f);
+			if (hasBorder)
+			{
+				Vector4Copy(cgs.printui[idx].border, finalBorder);
+				Vector4Copy(cgs.printui[idx].borderColor, finalBorderColor);
+			}
+			CG_OSPDrawStringNew(
+			    cgs.printui[idx].x,
+			    cgs.printui[idx].y,
+			    cgs.printui[idx].text,
+			    finalColor,
+			    finalShadowColor,
+			    cgs.printui[idx].charWidth,
+			    cgs.printui[idx].charHeight,
+			    SCREEN_WIDTH,
+			    cgs.printui[idx].flags,
+			    (cgs.printui[idx].fontIndex >= 0 && cgs.printui[idx].fontIndex < CG_GetFontCount()) ? cgs.printui[idx].fontIndex : 2,
+			    hasBg ? finalBackground : NULL,
+			    hasBorder ? finalBorder : NULL,
+			    hasBorder ? finalBorderColor : NULL
+			);
+		}
+	}
 }
 
 void CG_SHUDEventFrag(const char* message)
 {
-	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 	Q_strncpyz(ctx->fragmessage.message, message, sizeof(ctx->fragmessage.message));
 	ctx->fragmessage.time = cg.time;
 
@@ -595,7 +644,7 @@ static void CG_SHUDChatIndexSave(int index)
 
 void CG_SHUDEventChat(const char* message)
 {
-	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 	int index;
 
 	index = ctx->chat.index % SHUD_MAX_CHAT_LINES;
@@ -614,7 +663,7 @@ void CG_SHUDEventTeamChat(const char* message)
 	char* p;
 	int size = 1024;
 	int index;
-	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 
 	if (customLocationsEnabled != 0)
 	{
@@ -687,7 +736,7 @@ void CG_SHUDEventTeamChat(const char* message)
 
 void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen)
 {
-	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 	superhudObituariesEntry_t* entry = &ctx->obituaries.line[ctx->obituaries.index % SHUD_MAX_OBITUARIES_LINES];
 
 	memset(entry, 0, sizeof(*entry));
@@ -706,7 +755,7 @@ void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen
 
 void CG_SHUDEventTeamTask(int sender, int taskType, qboolean isPickup)
 {
-	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 	superhudTeamTasksEntry_t* entry;
 	int gameTime;
 	int i;
@@ -759,7 +808,7 @@ void CG_SHUDEventTeamTask(int sender, int taskType, qboolean isPickup)
 
 void CG_SHUDEventTempAccuracy(int weapon, float accuracy)
 {
-	superhudGlobalContext_t* ctx = CG_SHUDGetContext();
+	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 	superhudTempAccEntry_t* entry = &ctx->tempAcc.weapon[weapon];
 
 

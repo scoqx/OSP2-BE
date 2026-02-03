@@ -169,19 +169,21 @@ void CG_LocalEventCvarChanged_cg_autoAction(cvarTable_t* cvart)
 	}
 }
 
+/* autohop commented out
 void CG_LocalEventCvarChanged_cg_autoHop(cvarTable_t* cvart)
 {
-	if (cgs.be.autohop == 0)
+	if (cgs.beAutohop == 0)
 	{
 		CG_PrintOnce("^1Auto-hop not supported\n");
 		trap_Cvar_Set("cg_autoHop", "0");
 	}
-	else if (cgs.be.autohop == 1)
+	else if (cgs.beAutohop == 1)
 	{
 		CG_PrintOnce("^3Auto-hop controlled by server\n");
 		trap_Cvar_Set("cg_autoHop", "1");
 	}
 }
+*/
 void CG_LocalEventCvarChanged_snaps(cvarTable_t* cvart)
 {
 	if (cgs.osp.nextCvarsUpdateTime)
@@ -291,7 +293,7 @@ void CG_LocalEventCvarChanged_pmove_fixed(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_hitSounds(cvarTable_t* cvart)
 {
-	if (!(BE_IsDamageInfoAllowed()) && cg_hitSounds.integer)
+	if (!cgs.damageInfoAllowed && cg_hitSounds.integer)
 	{
 		CG_Printf("^3Damage info has been disabled on this server.\n");
 		// trap_Cvar_Set("cg_hitSounds", "0");
@@ -541,7 +543,7 @@ void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_hitBoxColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.hitBoxColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beHitBoxColor);
 }
 
 void CG_LocalEventCvarChanged_cg_damageFrameSize(cvarTable_t* cvart)
@@ -566,17 +568,17 @@ void CG_LocalEventCvarChanged_cg_damageDrawFrame(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_enemyOutlineColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.enemyOutlineColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beEnemyOutlineColor);
 }
 
 void CG_LocalEventCvarChanged_cg_teamOutlineColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.teamOutlineColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beTeamOutlineColor);
 }
 
 void CG_LocalEventCvarChanged_cg_altBloodColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.altBloodColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beAltBloodColor);
 }
 
 void CG_LocalEventCvarChanged_cg_railRingsRadius(cvarTable_t* cvart)
@@ -600,7 +602,7 @@ void CG_LocalEventCvarChanged_cg_railRingsSize(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_altShadowColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.altShadowColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beAltShadowColor);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart)
 {
@@ -608,7 +610,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.playerIndicatorColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.bePlayerIndicatorColor);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart)
 {
@@ -616,12 +618,27 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.playerIndicatorBgColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.bePlayerIndicatorBgColor);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
 }
+void CG_LocalEventCvarChanged_cg_gunX(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(-100, 100, cvart->vmCvar->value);
+}
+
+void CG_LocalEventCvarChanged_cg_gunY(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(-100, 100, cvart->vmCvar->value);
+}
+
+void CG_LocalEventCvarChanged_cg_gunZ(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(-100, 100, cvart->vmCvar->value);
+}
+
 void CG_LocalEventCvarChanged_cg_teamIndicatorOffset(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(-16, 32, cvart->vmCvar->value);
@@ -629,6 +646,16 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorOffset(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart)
 {
 	cvart->vmCvar->integer = Com_Clamp(1, MAX_QPATH, cvart->vmCvar->integer);
+}
+
+void CG_LocalEventCvarChanged_cg_teamIndicatorFade(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
+}
+
+void CG_LocalEventCvarChanged_cg_teamIndicatorFadeRadius(cvarTable_t* cvart)
+{
+	CG_UpdateIndicatorFadeRadiusSq();
 }
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart)
 {
@@ -654,21 +681,21 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFontSize(cvarTable_t* cvart)
 {
 	if (!cvart || !cvart->vmCvar || cvart->vmCvar->string[0] == '\0')
 	{
-		cgs.be.playerIndicatorFontSize[0] = 0.0f;
-		cgs.be.playerIndicatorFontSize[1] = 0.0f;
+		cgs.bePlayerIndicatorFontSize[0] = 0.0f;
+		cgs.bePlayerIndicatorFontSize[1] = 0.0f;
 		return;
 	}
-	CG_ParseCvarTwoFloats(cvart, &cgs.be.playerIndicatorFontSize[0], &cgs.be.playerIndicatorFontSize[1]);
+	CG_ParseCvarTwoFloats(cvart, &cgs.bePlayerIndicatorFontSize[0], &cgs.bePlayerIndicatorFontSize[1]);
 }
 void CG_LocalEventCvarChanged_cg_accuracyFontSize(cvarTable_t* cvart)
 {
 	if (!cvart || !cvart->vmCvar || cvart->vmCvar->string[0] == '\0')
 	{
-		cgs.be.accuracyFontSize[0] = 0.0f;
-		cgs.be.accuracyFontSize[1] = 0.0f;
+		cgs.beAccuracyFontSize[0] = 0.0f;
+		cgs.beAccuracyFontSize[1] = 0.0f;
 		return;
 	}
-	CG_ParseCvarTwoFloats(cvart, &cgs.be.accuracyFontSize[0], &cgs.be.accuracyFontSize[1]);
+	CG_ParseCvarTwoFloats(cvart, &cgs.beAccuracyFontSize[0], &cgs.beAccuracyFontSize[1]);
 }
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart)
 {
@@ -702,34 +729,34 @@ void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.altGrenadesColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beAltGrenadesColor);
 }
 void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.enemyGrenadesColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beEnemyGrenadesColor);
 }
 void CG_LocalEventCvarChanged_cg_healthColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.healthColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beHealthColor);
 }
 void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.healthLowColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beHealthLowColor);
 }
 void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.healthMidColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beHealthMidColor);
 }
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.redTeamColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beRedTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_rtColor);
 
 	CG_UpdateMyTeamColors();
 }
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.blueTeamColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beBlueTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_btColor);
 
 	CG_UpdateMyTeamColors();
@@ -746,19 +773,17 @@ void CG_UpdateMyTeamColors(void)
 
 	vec4_t tempColor;
 	team_t currentTeam;
-	cgs_be_t* be;
 	qboolean colorsLoaded;
 
-	be = &cgs.be;
 	/* Проверяем, инициализированы ли цвета (не равны нулю) */
-	colorsLoaded = (be->redTeamColor[0] != 0 || be->redTeamColor[1] != 0 || be->redTeamColor[2] != 0) &&
-	               (be->blueTeamColor[0] != 0 || be->blueTeamColor[1] != 0 || be->blueTeamColor[2] != 0);
+	colorsLoaded = (cgs.beRedTeamColor[0] != 0 || cgs.beRedTeamColor[1] != 0 || cgs.beRedTeamColor[2] != 0) &&
+	               (cgs.beBlueTeamColor[0] != 0 || cgs.beBlueTeamColor[1] != 0 || cgs.beBlueTeamColor[2] != 0);
 
 	// Сохраняем оригинальные цвета когда они загружены и не были свапнуты
 	if (colorsLoaded && !colorsSwapped)
 	{
-		Vector4Copy(be->redTeamColor, originalRedTeamColor);
-		Vector4Copy(be->blueTeamColor, originalBlueTeamColor);
+		Vector4Copy(cgs.beRedTeamColor, originalRedTeamColor);
+		Vector4Copy(cgs.beBlueTeamColor, originalBlueTeamColor);
 		Vector4Copy(scoreboard_rtColor, originalScoreboardRtColor);
 		Vector4Copy(scoreboard_btColor, originalScoreboardBtColor);
 		colorsInitialized = qtrue;
@@ -773,8 +798,8 @@ void CG_UpdateMyTeamColors(void)
 	// Восстанавливаем оригинальные цвета только если они были изменены
 	if (colorsSwapped)
 	{
-		Vector4Copy(originalRedTeamColor, be->redTeamColor);
-		Vector4Copy(originalBlueTeamColor, be->blueTeamColor);
+		Vector4Copy(originalRedTeamColor, cgs.beRedTeamColor);
+		Vector4Copy(originalBlueTeamColor, cgs.beBlueTeamColor);
 		Vector4Copy(originalScoreboardRtColor, scoreboard_rtColor);
 		Vector4Copy(originalScoreboardBtColor, scoreboard_btColor);
 		colorsSwapped = qfalse;
@@ -798,9 +823,9 @@ void CG_UpdateMyTeamColors(void)
 		if (currentTeam == TEAM_BLUE)
 		{
 			// Игрок за синих, но хочет красные цвета - меняем местами
-			Vector4Copy(be->redTeamColor, tempColor);
-			Vector4Copy(be->blueTeamColor, be->redTeamColor);
-			Vector4Copy(tempColor, be->blueTeamColor);
+			Vector4Copy(cgs.beRedTeamColor, tempColor);
+			Vector4Copy(cgs.beBlueTeamColor, cgs.beRedTeamColor);
+			Vector4Copy(tempColor, cgs.beBlueTeamColor);
 
 			// Также меняем цвета scoreboard
 			Vector4Copy(scoreboard_rtColor, tempColor);
@@ -817,9 +842,9 @@ void CG_UpdateMyTeamColors(void)
 		if (currentTeam == TEAM_RED)
 		{
 			// Игрок за красных, но хочет синие цвета - меняем местами
-			Vector4Copy(be->redTeamColor, tempColor);
-			Vector4Copy(be->blueTeamColor, be->redTeamColor);
-			Vector4Copy(tempColor, be->blueTeamColor);
+			Vector4Copy(cgs.beRedTeamColor, tempColor);
+			Vector4Copy(cgs.beBlueTeamColor, cgs.beRedTeamColor);
+			Vector4Copy(tempColor, cgs.beBlueTeamColor);
 
 			// Также меняем цвета scoreboard
 			Vector4Copy(scoreboard_rtColor, tempColor);
@@ -862,9 +887,10 @@ void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
 	int clientNum;
 	const char* str = cvart->vmCvar->string;
 
+	CG_UpdateBeFeatures();
 	if (CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE) && cg_markTeam.integer != 1)
 	{
-		memset(cgs.be.markedTeam, qfalse, sizeof(cgs.be.markedTeam));
+		memset(cgs.beMarkedTeam, qfalse, sizeof(cgs.beMarkedTeam));
 
 		if (Q_stricmp(str, "-1") == 0)
 		{
@@ -885,7 +911,7 @@ void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
 
 			if (clientNum >= 0 && clientNum < MAX_CLIENTS)
 			{
-				cgs.be.markedTeam[clientNum] = qtrue;
+				cgs.beMarkedTeam[clientNum] = qtrue;
 			}
 			else
 			{
@@ -907,7 +933,7 @@ void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.be.markedTeamColor);
+	CG_LocalEventCvarParseColor(cvart, cgs.beMarkedTeamColor);
 }
 
 void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart)
@@ -1058,24 +1084,24 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart)
 {
-	CG_ParseCvarTwoFloats(cvart, &cgs.be.settings.x, &cgs.be.settings.y);
+	CG_ParseCvarTwoFloats(cvart, &cgs.beSettings.x, &cgs.beSettings.y);
 }
 
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart)
 {
-	CG_ParseCvarTwoFloats(cvart, &cgs.be.settings.textSize[0], &cgs.be.settings.textSize[1]);
+	CG_ParseCvarTwoFloats(cvart, &cgs.beSettings.textSize[0], &cgs.beSettings.textSize[1]);
 }
 
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0])
 	{
-		cgs.be.settings.bgColorIsSet = qfalse;
+		cgs.beSettings.bgColorIsSet = qfalse;
 	}
 	else
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.be.settings.bgColor);
-		cgs.be.settings.bgColorIsSet = qtrue;
+		CG_LocalEventCvarParseColor(cvart, cgs.beSettings.bgColor);
+		cgs.beSettings.bgColorIsSet = qtrue;
 	}
 }
 
@@ -1146,7 +1172,7 @@ void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart)
 	{
 		if (CG_ParseColorStr(cvart->vmCvar->string, color))
 		{
-			VectorCopy(color, cgs.be.brightWeaponsColor[weapon]);
+			VectorCopy(color, cgs.beBrightWeaponsColor[weapon]);
 		}
 	}
 }
@@ -1160,9 +1186,10 @@ void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart)
 		int cleared = 0;
 		for (i = 0; i < 32; i++)
 		{
-			if (cgs.osp.printui[i].active)
+			if (cgs.printui[i].active)
 			{
-				cgs.osp.printui[i].active = qfalse;
+				CG_PrintUIRemoveFromActiveList(i);
+				cgs.printui[i].active = qfalse;
 				cleared++;
 			}
 		}
@@ -1201,6 +1228,7 @@ void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart)
 		trap_Cvar_Set(cvart->cvarName, va("%d", newValue));
 		CG_PrintOnce("^3cg_teamTaskMarkTime^7 is out of range, set to ^2%d^7\n", newValue);
 	}
+	/* markDurationMs refreshed once per frame in CG_TeamTaskUpdateFrame */
 }
 
 void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart)

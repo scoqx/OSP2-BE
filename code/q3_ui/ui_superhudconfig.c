@@ -359,7 +359,7 @@ static void SuperHUDConfig_MenuInit( void ) {
 	s_superhudconfig.restore.generic.x = 320;
 	s_superhudconfig.restore.generic.y = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2 + SUPERHUD_CONFIG_MENU_HEIGHT - 50;
 	s_superhudconfig.restore.string = "RESTORE";
-	s_superhudconfig.restore.color = color_red;
+	s_superhudconfig.restore.color = uis.themeColor;
 	s_superhudconfig.restore.style = UI_CENTER|UI_SMALLFONT;
 
 	s_superhudconfig.back.generic.type = MTYPE_PTEXT;
@@ -369,7 +369,7 @@ static void SuperHUDConfig_MenuInit( void ) {
 	s_superhudconfig.back.generic.x = 320;
 	s_superhudconfig.back.generic.y = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2 + SUPERHUD_CONFIG_MENU_HEIGHT - 30;
 	s_superhudconfig.back.string = "BACK";
-	s_superhudconfig.back.color = color_red;
+	s_superhudconfig.back.color = uis.themeColor;
 	s_superhudconfig.back.style = UI_CENTER|UI_SMALLFONT;
 
 	/* List is drawn manually, don't add to menu */

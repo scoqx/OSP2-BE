@@ -372,47 +372,43 @@ CG_Item
 static void CG_Item(centity_t* cent)
 {
 	refEntity_t     ent;
-	entityState_t*   es;
-	gitem_t*         item;
-	int             msec;
+	entityState_t*  es;
+	gitem_t*        item;
+	int             itemFx;
+	int             gitype;
 	float           frac;
-	float           scale;
-	weaponInfo_t*    wi;
-	qboolean        useFullbrightWeapon;
 
-	useFullbrightWeapon = CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 8);
 	es = &cent->currentState;
-	if (es->modelindex >= bg_numItems)
-	{
-		CG_Error("Bad item index %i on entity", es->modelindex);
-	}
-
-	// if set to invisible, skip
 	if (!es->modelindex || (es->eFlags & EF_NODRAW))
-	{
 		return;
-	}
+	if (cg.numItemEntityIndices < MAX_GENTITIES)
+		cg.itemEntityIndices[cg.numItemEntityIndices++] = (int)(cent - cg_entities);
+	if (es->modelindex >= bg_numItems)
+		CG_Error("Bad item index %i on entity", es->modelindex);
 
-	item = &bg_itemlist[ es->modelindex ];
-	if (cg_simpleItems.integer && item->giType != IT_TEAM)
+	item = &bg_itemlist[es->modelindex];
+	itemFx = cg_itemFx.integer;
+	gitype = item->giType;
+
+	if (cg_simpleItems.integer && gitype != IT_TEAM)
 	{
 		CG_AddSimpleItem(cent);
 		return;
 	}
 
-	// items bob up and down continuously
-	if (cg_itemFx.integer & 1)
+	memset(&ent, 0, sizeof(ent));
+	frac = 1.0f;
+
+	if (itemFx & 1)
 	{
-		scale = 0.005 + cent->currentState.number * 0.00001;
-		cent->lerpOrigin[2] += 4 + cos((cg.time + 1000) * scale) * 4;
+		float scale;
+		scale = 0.005f + cent->currentState.number * 0.00001f;
+		cent->lerpOrigin[2] += 4.0f + cos((cg.time + 1000) * scale) * 4.0f;
 	}
 
-	memset(&ent, 0, sizeof(ent));
-
-	// autorotate at one of two speeds
-	if (cg_itemFx.integer & 2)
+	if (itemFx & 2)
 	{
-		if (item->giType == IT_HEALTH)
+		if (gitype == IT_HEALTH)
 		{
 			VectorCopy(cg.autoAnglesFast, cent->lerpAngles);
 			AxisCopy(cg.autoAxisFast, ent.axis);
@@ -432,125 +428,96 @@ static void CG_Item(centity_t* cent)
 		ent.axis[2][2] = 1;
 	}
 
-
-
-	wi = NULL;
-	// the weapons have their origin where they attatch to player
-	// models, so we need to offset them or they will rotate
-	// eccentricly
-	if (item->giType == IT_WEAPON)
+	if (gitype == IT_WEAPON)
 	{
+		weaponInfo_t* wi;
 		wi = &cg_weapons[item->giTag];
-		cent->lerpOrigin[0] -=
-		    wi->weaponMidpoint[0] * ent.axis[0][0] +
-		    wi->weaponMidpoint[1] * ent.axis[1][0] +
-		    wi->weaponMidpoint[2] * ent.axis[2][0];
-		cent->lerpOrigin[1] -=
-		    wi->weaponMidpoint[0] * ent.axis[0][1] +
-		    wi->weaponMidpoint[1] * ent.axis[1][1] +
-		    wi->weaponMidpoint[2] * ent.axis[2][1];
-		cent->lerpOrigin[2] -=
-		    wi->weaponMidpoint[0] * ent.axis[0][2] +
-		    wi->weaponMidpoint[1] * ent.axis[1][2] +
-		    wi->weaponMidpoint[2] * ent.axis[2][2];
-
-		cent->lerpOrigin[2] += 8;   // an extra height boost
+		cent->lerpOrigin[0] -= wi->weaponMidpoint[0] * ent.axis[0][0] + wi->weaponMidpoint[1] * ent.axis[1][0] + wi->weaponMidpoint[2] * ent.axis[2][0];
+		cent->lerpOrigin[1] -= wi->weaponMidpoint[0] * ent.axis[0][1] + wi->weaponMidpoint[1] * ent.axis[1][1] + wi->weaponMidpoint[2] * ent.axis[2][1];
+		cent->lerpOrigin[2] -= wi->weaponMidpoint[0] * ent.axis[0][2] + wi->weaponMidpoint[1] * ent.axis[1][2] + wi->weaponMidpoint[2] * ent.axis[2][2];
+		cent->lerpOrigin[2] += 8;
 	}
 
 	ent.hModel = cg_items[es->modelindex].models[0];
-
 	VectorCopy(cent->lerpOrigin, ent.origin);
 	VectorCopy(cent->lerpOrigin, ent.oldorigin);
-
 	ent.nonNormalizedAxes = qfalse;
 
-	// if just respawned, slowly scale up
-	if (cg_itemFx.integer & 4)
+	if (itemFx & 4)
 	{
+		int msec;
 		msec = cg.time - cent->miscTime;
-		if (msec >= 0 && msec < ITEM_SCALEUP_TIME)
+		frac = (msec >= 0 && msec < ITEM_SCALEUP_TIME) ? (float)msec / ITEM_SCALEUP_TIME : 1.0f;
+		if (frac != 1.0f)
 		{
-			frac = (float)msec / ITEM_SCALEUP_TIME;
 			VectorScale(ent.axis[0], frac, ent.axis[0]);
 			VectorScale(ent.axis[1], frac, ent.axis[1]);
 			VectorScale(ent.axis[2], frac, ent.axis[2]);
 			ent.nonNormalizedAxes = qtrue;
 		}
-		else
-		{
-			frac = 1.0;
-		}
-	}
-	else
-	{
-		frac = 1.0;
 	}
 
-	// items without glow textures need to keep a minimum light value
-	// so they are always visible
-	if ((item->giType == IT_WEAPON) ||
-	        (item->giType == IT_ARMOR))
-	{
+	if (gitype == IT_WEAPON || gitype == IT_ARMOR)
 		ent.renderfx |= RF_MINLIGHT;
-	}
 
-	// increase the size of the weapons when they are presented as items
-	if (item->giType == IT_WEAPON)
+	if (gitype == IT_WEAPON)
 	{
-		VectorScale(ent.axis[0], 1.5, ent.axis[0]);
-		VectorScale(ent.axis[1], 1.5, ent.axis[1]);
-		VectorScale(ent.axis[2], 1.5, ent.axis[2]);
+		VectorScale(ent.axis[0], 1.5f, ent.axis[0]);
+		VectorScale(ent.axis[1], 1.5f, ent.axis[1]);
+		VectorScale(ent.axis[2], 1.5f, ent.axis[2]);
 		ent.nonNormalizedAxes = qtrue;
-		if (useFullbrightWeapon)
+		if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 8))
 		{
-			ent.customShader = CG_SelectBrightWeaponsShader();
-			CG_SetWeaponBrightColorWorld(&ent, item->giTag);
+			int w;
+			float* bc;
+			float op;
+			w = item->giTag;
+			ent.customShader = (cg_brightWeaponsShader.integer == 2) ? cgs.media.altFullBrightShader : cgs.media.firstPersonGun;
+			if (w > WP_NONE && w < WP_NUM_WEAPONS)
+			{
+				bc = cgs.beBrightWeaponsColor[w];
+				op = cg_brightWeaponsOpaque.value;
+				if (op < 0.0f) op = 0.0f;
+				if (op > 1.0f) op = 1.0f;
+				ent.shaderRGBA[0] = 255 * bc[0];
+				ent.shaderRGBA[1] = 255 * bc[1];
+				ent.shaderRGBA[2] = 255 * bc[2];
+				ent.shaderRGBA[3] = 255 * op;
+			}
+		}
+		else if (item->giTag == WP_RAILGUN)
+		{
+			const float* color;
+			color = (cg_railCustomChamber.integer & 2) ? (const float*)cgs.osp.myColors.railRings : (const float*)colorWhite;
+			ent.shaderRGBA[0] = 255 * color[0];
+			ent.shaderRGBA[1] = 255 * color[1];
+			ent.shaderRGBA[2] = 255 * color[2];
+			ent.shaderRGBA[3] = 255;
 		}
 	}
 
-	// set railgun color on ground: two paths like u5 — (1) fullbright+bit8: color from CG_SetWeaponBrightColorWorld above; (2) else: railRings or white. Use myColors so local view shows our color. One pointer + one block for QVM (fewer branches).
-	if (item->giType == IT_WEAPON && item->giTag == WP_RAILGUN && !useFullbrightWeapon)
-	{
-		const float* color;
-
-		color = (cg_railCustomChamber.integer & 2) ? (const float*)cgs.osp.myColors.railRings : (const float*)colorWhite;
-		ent.shaderRGBA[0] = 255 * color[0];
-		ent.shaderRGBA[1] = 255 * color[1];
-		ent.shaderRGBA[2] = 255 * color[2];
-		ent.shaderRGBA[3] = 255;
-	}
-
-	// add to refresh list
 	trap_R_AddRefEntityToScene(&ent);
 
-	// accompanying rings / spheres for powerups
-	if (!cg_simpleItems.integer)
+	if (!cg_simpleItems.integer && (gitype == IT_HEALTH || gitype == IT_POWERUP))
 	{
-		vec3_t spinAngles;
-
-		VectorClear(spinAngles);
-
-		if (item->giType == IT_HEALTH || item->giType == IT_POWERUP)
+		if ((ent.hModel = cg_items[es->modelindex].models[1]) != 0)
 		{
-			if ((ent.hModel = cg_items[es->modelindex].models[1]) != 0)
+			vec3_t spinAngles;
+			VectorClear(spinAngles);
+			if (gitype == IT_POWERUP)
 			{
-				if (item->giType == IT_POWERUP)
-				{
-					ent.origin[2] += 12;
-					spinAngles[1] = (cg.time & 1023) * 360 / -1024.0f;
-				}
-				AnglesToAxis(spinAngles, ent.axis);
-
-				// scale up if respawning
-				if (frac != 1.0)
-				{
-					VectorScale(ent.axis[0], frac, ent.axis[0]);
-					VectorScale(ent.axis[1], frac, ent.axis[1]);
-					VectorScale(ent.axis[2], frac, ent.axis[2]);
-					ent.nonNormalizedAxes = qtrue;
-				}
-				trap_R_AddRefEntityToScene(&ent);
+				ent.origin[2] += 12;
+				spinAngles[1] = (cg.time & 1023) * 360.0f / -1024.0f;
 			}
+			AnglesToAxis(spinAngles, ent.axis);
+			if (frac != 1.0f)
+			{
+				VectorScale(ent.axis[0], frac, ent.axis[0]);
+				VectorScale(ent.axis[1], frac, ent.axis[1]);
+				VectorScale(ent.axis[2], frac, ent.axis[2]);
+				ent.nonNormalizedAxes = qtrue;
+			}
+			trap_R_AddRefEntityToScene(&ent);
 		}
 	}
 }
@@ -567,14 +534,14 @@ static void CG_Missile(centity_t* cent)
 	refEntity_t         ent;
 	entityState_t*       s1;
 	const weaponInfo_t*      weapon;
-	qboolean useAltPlasma;
 	qboolean useAltGrenades;
 	qboolean useFullbright;
+	qboolean useAltPlasma2;
 //	int  col;
 
-	useAltPlasma = CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN);
 	useAltGrenades = CG_BE_FEATURE_ENABLED(CG_BE_ALT_GRENADES);
 	useFullbright = CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT);
+	useAltPlasma2 = CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN);
 	s1 = &cent->currentState;
 	if (s1->weapon > WP_NUM_WEAPONS)
 	{
@@ -631,16 +598,19 @@ static void CG_Missile(centity_t* cent)
 
 	if (cent->currentState.weapon == WP_PLASMAGUN)
 	{
+		int altPlasma;
+
 		ent.reType = RT_SPRITE;
 		ent.radius = 16;
 		ent.rotation = 0;
 		ent.customShader = cgs.media.plasmaBallShader;
+		altPlasma = cg_altPlasma.integer;
 
-		if (useAltPlasma && cg_altPlasma.integer == 2)
+		if (useAltPlasma2 && altPlasma == 2)
 		{
 			ent.customShader = cgs.media.plasmaOldBallShader;
 		}
-		else if (cg_oldPlasma.integer || !cg_altPlasma.integer || !(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG))
+		else if (cg_oldPlasma.integer || !altPlasma || !(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG) || (altPlasma == 2 && !useAltPlasma2))
 		{
 			if ((cg_nomip.integer & 2) == 0)
 			{
@@ -687,9 +657,9 @@ static void CG_Missile(centity_t* cent)
 
 				if (isAlly)
 				{
-					ent.shaderRGBA[0] = cgs.be.altGrenadesColor[0] * 255;
-					ent.shaderRGBA[1] = cgs.be.altGrenadesColor[1] * 255;
-					ent.shaderRGBA[2] = cgs.be.altGrenadesColor[2] * 255;
+					ent.shaderRGBA[0] = cgs.beAltGrenadesColor[0] * 255;
+					ent.shaderRGBA[1] = cgs.beAltGrenadesColor[1] * 255;
+					ent.shaderRGBA[2] = cgs.beAltGrenadesColor[2] * 255;
 
 					if (cg_altGrenades.integer == 2 && useFullbright && (cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && CG_SelectBrightWeaponsShader())
 					{
@@ -702,9 +672,9 @@ static void CG_Missile(centity_t* cent)
 				}
 				else
 				{
-					ent.shaderRGBA[0] = cgs.be.enemyGrenadesColor[0] * 255;
-					ent.shaderRGBA[1] = cgs.be.enemyGrenadesColor[1] * 255;
-					ent.shaderRGBA[2] = cgs.be.enemyGrenadesColor[2] * 255;
+					ent.shaderRGBA[0] = cgs.beEnemyGrenadesColor[0] * 255;
+					ent.shaderRGBA[1] = cgs.beEnemyGrenadesColor[1] * 255;
+					ent.shaderRGBA[2] = cgs.beEnemyGrenadesColor[2] * 255;
 
 					if (cg_altGrenades.integer == 2 && cg_drawBrightWeapons.integer & 4 && CG_SelectBrightWeaponsShader())
 					{
@@ -1200,77 +1170,89 @@ CG_AddPacketEntities
 void CG_AddPacketEntities(void)
 {
 	int                 num;
+	int                 delta;
 	centity_t*           cent;
 	playerState_t*       ps;
+	static int          lastFrameTime = 0;
+	static int          lastSpectatorTarget = -1;
+	int                 currentSpectatorTarget;
 
-	CG_PlayerFrameStart();
-
-	// set cg.frameInterpolation
-	if (cg.nextSnap)
+	/* Spectator target change: only when cg_spectPOV and new frame */
+	if (cg_spectPOV.integer && cg.time != lastFrameTime)
 	{
-		int     delta;
-
-		delta = (cg.nextSnap->serverTime - cg.snap->serverTime);
-		if (delta == 0)
-		{
-			cg.frameInterpolation = 0;
-		}
+		lastFrameTime = cg.time;
+		if (cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
+			lastSpectatorTarget = -1;
 		else
 		{
-			cg.frameInterpolation = (float)(cg.time - cg.snap->serverTime) / delta;
-		}
-	}
-	else
-	{
-		cg.frameInterpolation = 0;  // actually, it should never be used, because
-		// no entities should be marked as interpolating
-	}
-
-	// the auto-rotating items will all have the same axis
-	cg.autoAngles[0] = 0;
-	cg.autoAngles[1] = (cg.time & 2047) * 360 / 2048.0;
-	cg.autoAngles[2] = 0;
-
-	cg.autoAnglesFast[0] = 0;
-	cg.autoAnglesFast[1] = (cg.time & 1023) * 360 / 1024.0f;
-	cg.autoAnglesFast[2] = 0;
-
-	AnglesToAxis(cg.autoAngles, cg.autoAxis);
-	AnglesToAxis(cg.autoAnglesFast, cg.autoAxisFast);
-
-	// generate and add the entity from the playerstate
-	ps = &cg.predictedPlayerState;
-	BG_PlayerStateToEntityState(ps, &cg.predictedPlayerEntity.currentState, qfalse);
-	CG_AddCEntity(&cg.predictedPlayerEntity);
-
-	// lerp the non-predicted value for lightning gun origins
-	CG_CalcEntityLerpPositions(&cg_entities[ cg.snap->ps.clientNum ]);
-
-	if (cg.nextSnap)
-	{
-		// pre-add some of the entities sent over by the server
-		// we have data for them and they don't need to interpolate
-		for (num = 0 ; num < cg.nextSnap->numEntities ; num++)
-		{
-			cent = &cg_entities[ cg.nextSnap->entities[ num ].number ];
-			if (cent->nextState.eType == ET_MISSILE || cent->nextState.eType == ET_GENERAL)
+			currentSpectatorTarget = (cg.snap->ps.pm_flags & PMF_FOLLOW &&
+			        cg.snap->ps.clientNum >= 0 &&
+			        cg.snap->ps.clientNum < MAX_CLIENTS)
+			        ? cg.snap->ps.clientNum : -1;
+			if (currentSpectatorTarget != lastSpectatorTarget)
 			{
-				// transition it immediately and add it
-				CG_TransitionEntity(cent);
-				cent->interpolate = qtrue;
-				CG_AddCEntity(cent);
+				lastSpectatorTarget = currentSpectatorTarget;
+				if (cgs.gametype >= GT_TEAM || cg_spectPOV.integer)
+				{
+					int index;
+
+					for (index = 0; index < MAX_CLIENTS; ++index)
+					{
+						if (index != cg.clientNum && CG_ConfigString(CS_PLAYERS + index))
+						{
+							CG_NewClientInfo(index);
+						}
+					}
+				}
+				
 			}
 		}
 	}
 
-	// add each entity sent over by the server
+	/* frameInterpolation: one branch, delta at top */
+	if (!cg.nextSnap)
+		cg.frameInterpolation = 0;
+	else
+	{
+		delta = cg.nextSnap->serverTime - cg.snap->serverTime;
+		cg.frameInterpolation = (delta == 0) ? 0 : (float)(cg.time - cg.snap->serverTime) / delta;
+	}
+
+	/* auto-rotating items */
+	cg.autoAngles[0] = 0;
+	cg.autoAngles[1] = (cg.time & 2047) * 360 / 2048.0;
+	cg.autoAngles[2] = 0;
+	cg.autoAnglesFast[0] = 0;
+	cg.autoAnglesFast[1] = (cg.time & 1023) * 360 / 1024.0f;
+	cg.autoAnglesFast[2] = 0;
+	AnglesToAxis(cg.autoAngles, cg.autoAxis);
+	AnglesToAxis(cg.autoAnglesFast, cg.autoAxisFast);
+
+	/* predicted player entity */
+	ps = &cg.predictedPlayerState;
+	BG_PlayerStateToEntityState(ps, &cg.predictedPlayerEntity.currentState, qfalse);
+	CG_AddCEntity(&cg.predictedPlayerEntity);
+	CG_CalcEntityLerpPositions(&cg_entities[ cg.snap->ps.clientNum ]);
+
+	/* pre-add nextSnap entities that need no interpolation */
+	if (cg.nextSnap)
+		for (num = 0 ; num < cg.nextSnap->numEntities ; num++)
+		{
+			cent = &cg_entities[ cg.nextSnap->entities[ num ].number ];
+			if (cent->nextState.eType != ET_MISSILE && cent->nextState.eType != ET_GENERAL)
+				continue;
+			CG_TransitionEntity(cent);
+			cent->interpolate = qtrue;
+			CG_AddCEntity(cent);
+		}
+
+	/* add snap entities (skip if already added from nextSnap) */
 	for (num = 0 ; num < cg.snap->numEntities ; num++)
 	{
 		cent = &cg_entities[ cg.snap->entities[ num ].number ];
-		if (!cg.nextSnap || (cent->nextState.eType != ET_MISSILE && cent->nextState.eType != ET_GENERAL))
-		{
-			CG_AddCEntity(cent);
-		}
+		if (cg.nextSnap && (cent->nextState.eType == ET_MISSILE || cent->nextState.eType == ET_GENERAL))
+			continue;
+		CG_AddCEntity(cent);
 	}
 }
 

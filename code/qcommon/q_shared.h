@@ -596,8 +596,11 @@ extern  vec3_t  bytedirs[NUMVERTEXNORMALS];
 
 // all drawing is done to a 640*480 virtual screen size
 // and will be automatically scaled to the real resolution
+#define SCREEN_START		0
 #define SCREEN_WIDTH        640
 #define SCREEN_HEIGHT       480
+#define HALF_SCREEN_W       ((float)(SCREEN_WIDTH) * 0.5f)
+#define HALF_SCREEN_H       ((float)(SCREEN_HEIGHT) * 0.5f)
 
 #define TINYCHAR_WIDTH      (SMALLCHAR_WIDTH)
 #define TINYCHAR_HEIGHT     (SMALLCHAR_HEIGHT/2)

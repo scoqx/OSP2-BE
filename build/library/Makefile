@@ -405,7 +405,6 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_sbhi.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_score.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_specmessage.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_spectators.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_speed.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_target_name.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_target_status.o \
@@ -500,6 +499,7 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_atoms.o \
   $(B)/$(MOD)/ui/ui_cdkey.o \
   $(B)/$(MOD)/ui/ui_cinematics.o \
+  $(B)/$(MOD)/ui/ui_colorparse.o \
   $(B)/$(MOD)/ui/ui_confirm.o \
   $(B)/$(MOD)/ui/ui_connect.o \
   $(B)/$(MOD)/ui/ui_controls2.o \

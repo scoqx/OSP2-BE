@@ -35,7 +35,6 @@ static menuaction_s		s_rankstatus_ok;
 static grank_status_t	s_status = 0;
 static char*			s_rankstatus_message = NULL;
 
-static vec4_t s_rankingstatus_color_prompt  = {1.00, 0.43, 0.00, 1.00};
 
 /*
 ===============
@@ -117,7 +116,7 @@ void RankStatus_MenuInit( void ) {
 	s_rankstatus.message.generic.y				= y;
 	s_rankstatus.message.string					= s_rankstatus_message;
 	s_rankstatus.message.style					= UI_CENTER|UI_SMALLFONT;
-	s_rankstatus.message.color					= s_rankingstatus_color_prompt;
+	s_rankstatus.message.color					= uis.themeColor2;
 	y += 40;
 
 	s_rankstatus.ok.generic.type				= MTYPE_PTEXT;
@@ -128,7 +127,7 @@ void RankStatus_MenuInit( void ) {
 	s_rankstatus.ok.generic.y					= y;
 	s_rankstatus.ok.string						= "OK";
 	s_rankstatus.ok.style						= UI_CENTER|UI_SMALLFONT;
-	s_rankstatus.ok.color						= colorRed;
+	s_rankstatus.ok.color						= uis.themeColor;
 
 	Menu_AddItem( &s_rankstatus.menu, (void*) &s_rankstatus.frame );
 	Menu_AddItem( &s_rankstatus.menu, (void*) &s_rankstatus.message );

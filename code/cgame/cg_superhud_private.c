@@ -1,7 +1,7 @@
 #include "cg_superhud_private.h"
 #include "../qcommon/qcommon.h"
 
-static superhudGlobalContext_t superhudGlobalContext;
+superhudGlobalContext_t superhudGlobalContext;
 
 static superHUDConfigElement_t superHUDConfigItemElements[] =
 {
@@ -89,7 +89,6 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "score_nme", 0, CG_SHUDElementScoreNMECreate, CG_SHUDElementScoreRoutine, CG_SHUDElementScoreDestroy },
 	{ "score_own", 0, CG_SHUDElementScoreOWNCreate, CG_SHUDElementScoreRoutine, CG_SHUDElementScoreDestroy },
 	{ "specmessage", SE_SPECT, CG_SHUDElementSpecMessageCreate, CG_SHUDElementSpecMessageRoutine, CG_SHUDElementSpecMessageDestroy },
-	{ "spectators", SE_IM, CG_SHUDElementSpectatorsCreate, CG_SHUDElementSpectatorsRoutine, CG_SHUDElementSpectatorsDestroy },
 	{ "statusbar_ammobar", 0, CG_SHUDElementSBAmBCreate, CG_SHUDElementSBAmBRoutine, CG_SHUDElementSBAmBDestroy },
 	{ "statusbar_ammoicon", 0, CG_SHUDElementSBAmICreate, CG_SHUDElementSBAmIRoutine, CG_SHUDElementSBAmIDestroy },
 	{ "statusbar_ammocount", 0, CG_SHUDElementSBAmCCreate, CG_SHUDElementSBAmCRoutine, CG_SHUDElementSBAmCDestroy },
@@ -494,7 +493,3 @@ qboolean CG_SHUDVarGetString(const char* name, char* value, int maxlen)
 	return qfalse;
 }
 
-superhudGlobalContext_t* CG_SHUDGetContext(void)
-{
-	return &superhudGlobalContext;
-}

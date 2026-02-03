@@ -44,111 +44,79 @@ qboolean CG_BE_Timer(int msec)
 	return qfalse;
 }
 
-void CG_UpdateBeFeatures(void)
+	void CG_UpdateBeFeatures(void)
 {
-
+	static qboolean inUpdateAllClientsInfo = qfalse;
+	static int lastBeEnabled = -1;
 	qboolean changed = qfalse;
+	qboolean doRefresh;
+	qboolean needRebuild;
 	int i = 0;
 	int beFlags = 0;
 	clientInfo_t* otherCi = &cgs.clientinfo[i];
-
 	qboolean isFbSkin = qfalse;
+
+	cgs.beEnabled = be_enabled.integer;
 
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
-		if (i == cg.clientNum) continue; // Skip self
-		if (otherCi->infoValid && Q_stricmp(otherCi->skinName, "fb") == 0)
+		if (otherCi->infoValid && otherCi->isFbSkin)
 		{
 			isFbSkin = qtrue;
 			break;
 		}
+		otherCi++;
 	}
 
-	if (!BE_ENABLED)
+	doRefresh = !inUpdateAllClientsInfo && (!cgs.beEnabled || lastBeEnabled == 0);
+	needRebuild = !cgs.beEnabled;
+	if (doRefresh)
 	{
-		beFlags = 0;
-		changed = qtrue;
+		inUpdateAllClientsInfo = qtrue;
+		if (needRebuild)
 		CG_RebuildPlayerColors();
 		CG_UpdateAllClientsInfo();
+		inUpdateAllClientsInfo = qfalse;
 	}
+	lastBeEnabled = cgs.beEnabled ? 1 : 0;
+
+	if (!cgs.beEnabled)
+		beFlags = 0, changed = qtrue;
 	else
 	{
 		if (cg_friendsWallhack.integer)
-		{
-			beFlags |= CG_BE_TEAM_FOE_WH;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_TEAM_FOE_WH, changed = qtrue;
 		if (cg_altGrenades.integer == 2 || cg_altGrenades.integer == 3)
-		{
-			beFlags |= CG_BE_ALT_GRENADES;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_ALT_GRENADES, changed = qtrue;
 		if (cg_drawOutline.integer)
-		{
-			beFlags |= CG_BE_OUTLINE;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_OUTLINE, changed = qtrue;
 		if (cgs.customModelSound)
-		{
-			beFlags |= CG_BE_MODELSOUND;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_MODELSOUND, changed = qtrue;
 		if (cg_markTeam.integer >= 0)
-		{
-			beFlags |= CG_BE_MARK_TEAMMATE;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_MARK_TEAMMATE, changed = qtrue;
 		if (cg_teamIndicator.integer)
-		{
-			beFlags |= CG_BE_TEAM_INDICATOR;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_TEAM_INDICATOR, changed = qtrue;
 		if (cg_altShadow.integer)
-		{
-			beFlags |= CG_BE_ALT_SHADOW;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_ALT_SHADOW, changed = qtrue;
 		if (cg_altBlood.integer)
-		{
-			beFlags |= CG_BE_ALT_BLOOD;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_ALT_BLOOD, changed = qtrue;
+		if (cg_altPlasma.integer == 2)
+			beFlags |= CG_BE_ALT_PLASMAGUN, changed = qtrue;
 		if (cgs.osp.enemyColorsOverride.isLightningColorSet)
-		{
-			beFlags |= CG_BE_ENEMYLIGHTNING;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_ENEMYLIGHTNING, changed = qtrue;
 		if (isFbSkin || cg_drawBrightWeapons.integer)
-		{
-			beFlags |= CG_BE_FULLBRIGHT;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_FULLBRIGHT, changed = qtrue;
 		if (cg_teamTask.integer)
-		{
-			beFlags |= CG_BE_TEAMTASKS;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_TEAMTASKS, changed = qtrue;
 		if (cg_noExplosions.integer)
-		{
-			beFlags |= CG_BE_NO_EXPLOSIONS;
-			changed = qtrue;
-		}
+			beFlags |= CG_BE_NO_EXPLOSIONS, changed = qtrue;
 		if (cg_friendsWallhackFrozen.integer)
-		{
-			beFlags |= CG_BE_TEAM_FROZEN;
-			changed = qtrue;
-		}
-		// if (cgs.be.customFreezeSound)
-		// {
-		//  beFlags |= CG_BE_FREEZE_SOUND_FIX;
-		//  changed = qtrue;
-		// }
+			beFlags |= CG_BE_TEAM_FROZEN, changed = qtrue;
 	}
 
+	cgs.beFeaturesEnabled = beFlags & ~cgs.beDisableFeatures;
 	if (changed)
-	{
 		trap_Cvar_Set("be_features", va("%d", beFlags));
-	}
 }
 
 /*
@@ -158,6 +126,7 @@ CG_UpdateFontIndices
 Recompute cached font indices from font cvars.
 Call when font cvars may have changed (local event) or at init.
 Only updates cache when computed value differs (like CG_UpdateBeFeatures).
+Direct field access = minimum ops (no table, no index).
 =================
 */
 void CG_UpdateFontIndices(void)
@@ -166,44 +135,30 @@ void CG_UpdateFontIndices(void)
 
 	newVal = CG_FontIndexFromCvar(&cg_teamTaskFont);
 	if (newVal != cgFontIndices.teamTask)
-	{
 		cgFontIndices.teamTask = newVal;
-	}
 	newVal = CG_FontIndexFromCvar(&cg_scoreboardFont);
 	if (newVal != cgFontIndices.scoreboard)
-	{
 		cgFontIndices.scoreboard = newVal;
-	}
 	newVal = CG_FontIndexFromCvar(&cg_teamIndicatorFont);
 	if (newVal != cgFontIndices.teamIndicator)
-	{
 		cgFontIndices.teamIndicator = newVal;
-	}
 	newVal = CG_FontIndexFromCvar(&cg_accuracyFont);
 	if (newVal != cgFontIndices.accuracy)
-	{
 		cgFontIndices.accuracy = newVal;
-	}
 	newVal = CG_FontIndexFromCvar(&cg_centerMessagesFont);
 	if (newVal != cgFontIndices.centerMessages)
-	{
 		cgFontIndices.centerMessages = newVal;
-	}
 	newVal = CG_FontIndexFromCvar(&cg_infoVersionFont);
 	if (newVal != cgFontIndices.infoVersion)
-	{
 		cgFontIndices.infoVersion = newVal;
-	}
 	newVal = CG_FontIndexFromCvar(&cg_bestats_font);
 	if (newVal != cgFontIndices.bestats)
-	{
 		cgFontIndices.bestats = newVal;
-	}
 }
 
 void CG_PrintDisabledFeatures(qboolean request)
 {
-	int value = cgs.be.disableFeatures;
+	int value = cgs.beDisableFeatures;
 	if (value == 0)
 	{
 		if (request)
@@ -252,6 +207,11 @@ void CG_PrintDisabledFeatures(qboolean request)
 		if (value & CG_BE_ALT_BLOOD)
 		{
 			Q_strcat(buffer, sizeof(buffer), first ? "Alt blood" : ", alt blood");
+			first = qfalse;
+		}
+		if (value & CG_BE_ALT_PLASMAGUN)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Alt plasma 2" : ", alt plasma 2");
 			first = qfalse;
 		}
 		if (value & CG_BE_OUTLINE)
@@ -437,20 +397,36 @@ void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
 	CG_ParseColorStr(token2, out2);
 }
 
-qboolean BE_IsDamageInfoAllowed(void)
+/*
+=================
+CG_UpdateDamageInfoAllowed
+
+Recalculate cached cgs.damageInfoAllowed.
+Call when:
+  - CG_UpdateBeFeatures() runs (beFeaturesEnabled changed)
+  - CS_OSP_CUSTOM_CLIENT2 configstring changes
+  - At init (via CG_UpdateBeFeatures)
+
+Inputs (all stable or updated via specific handlers):
+  - cgs.gametype       (set at init, never changes)
+  - cgs.fpsclassico    (set at init, never changes)
+  - cgs.beFeaturesEnabled (updated via CG_UpdateBeFeatures)
+  - cgs.osp.custom_client_2 (updated via CS_OSP_CUSTOM_CLIENT2)
+=================
+*/
+void CG_UpdateDamageInfoAllowed(void)
 {
 	if (CG_OSPIsGameTypeCA(cgs.gametype))
 	{
-		return qtrue;
+		cgs.damageInfoAllowed = qtrue;
 	}
-	// Allow damage info if either BE_FEATURE_ENABLED or OSP_CUSTOM_CLIENT_2 allows it
-	else if (cgs.be.server.fpsclassico)
+	else if (cgs.fpsclassico)
 	{
-		return qfalse;
+		cgs.damageInfoAllowed = qfalse;
 	}
 	else
 	{
-		return (CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO) || OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED());
+		cgs.damageInfoAllowed = (CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO) || OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED());
 	}
 }
 
@@ -564,36 +540,6 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 	}
 }
 
-
-/*
-=====================
-CG_DefineServer
-
-Define server-specific features based on config string.
-=====================
-*/
-void CG_DefineServer(int num, const char* str)
-{
-	if (num == 0)
-	{
-		if (strstr(str, "administrator") || strstr(str, "adminless"))
-		{
-			cgs.be.server.fpsclassico = qtrue;
-		}
-		if (strstr(str, ".Admin/X")) // not working da i pohuy poka
-		{
-			cgs.be.server.q3msk = qtrue;
-		}
-	}
-}
-
-void CG_SendGetStatsInfo(void)
-{
-	if (!cgs.be.server.fpsclassico)
-	{
-		trap_SendClientCommand("getstatsinfo");
-	}
-}
 
 /*
 =================

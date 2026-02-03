@@ -71,10 +71,19 @@ UI_CVAR( ui_cdkeychecked, "ui_cdkeychecked", "1", CVAR_ROM )
 
 UI_CVAR( ui_lastDemo, "ui_lastDemo", "", CVAR_NOTABCOMPLETE )
 
-UI_CVAR( uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE )
 
+// UC - UI -> CGAME 
+UI_CVAR( uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE )
 UI_CVAR( uc_shudBindsList, "uc_shudBindsList", "", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE )
 
 UI_CVAR( ui_beCreditsFont, "ui_beCreditsFont", "2", CVAR_ARCHIVE )
+
+UI_CVAR( ui_menuHQ, "ui_menuHQ", "0", CVAR_ARCHIVE )
+UI_CVAR( ui_menuDarken, "ui_menuDarken", "0", CVAR_ARCHIVE )
+UI_CVAR( ui_forceGamma, "ui_forceGamma", "1", CVAR_ARCHIVE )
+UI_CVAR( uc_gamma, "uc_gamma", "1", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE )
+UI_CVAR( ui_themeColor, "ui_themeColor", "red", CVAR_ARCHIVE )
+UI_CVAR( ui_themeColor2, "ui_themeColor2", "orange", CVAR_ARCHIVE )
+UI_CVAR( ui_selectionColor, "ui_selectionColor", "yellow", CVAR_ARCHIVE )
 
 #undef UI_CVAR

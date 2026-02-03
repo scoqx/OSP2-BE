@@ -178,12 +178,12 @@ static void CG_SHUDConfigPickColorGeneric(
 
 		case SUPERHUD_COLOR_T:
 			team = CG_SHUDGetOurActiveTeam();
-			target = (team == TEAM_BLUE) ? cgs.be.blueTeamColor : cgs.be.redTeamColor;
+			target = (team == TEAM_BLUE) ? cgs.beBlueTeamColor : cgs.beRedTeamColor;
 			break;
 
 		case SUPERHUD_COLOR_E:
 			team = CG_SHUDGetOurActiveTeam();
-			target = (team == TEAM_BLUE) ? cgs.be.redTeamColor : cgs.be.blueTeamColor;
+			target = (team == TEAM_BLUE) ? cgs.beRedTeamColor : cgs.beBlueTeamColor;
 			break;
 
 		case SUPERHUD_COLOR_I:
@@ -645,7 +645,6 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 
 	CG_SHUDConfigPickColor(cfg, ctx->color, qfalse);
 
-	CG_FontSelect(ctx->fontIndex);
 	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                    ctx->coord.named.y,
 	                    ctx->text,
@@ -655,6 +654,7 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 	                    ctx->coord.named.h,
 	                    ctx->width,
 	                    ctx->flags,
+	                    ctx->fontIndex,
 	                    ctx->background,
 	                    ctx->border,
 	                    ctx->borderColor);
@@ -669,7 +669,6 @@ void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* ctx
 	if (colorOverride)
 		CG_SHUDConfigPickColor(cfg, ctx->color, qfalse);
 
-	CG_FontSelect(ctx->fontIndex);
 	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                    ctx->coord.named.y,
 	                    ctx->text,
@@ -679,6 +678,7 @@ void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* ctx
 	                    ctx->coord.named.h,
 	                    ctx->width,
 	                    ctx->flags,
+	                    ctx->fontIndex,
 	                    ctx->background,
 	                    ctx->border,
 	                    ctx->borderColor);

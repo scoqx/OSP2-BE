@@ -140,7 +140,7 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	soundOptionsInfo.banner.generic.x			= 320;
 	soundOptionsInfo.banner.generic.y			= 16;
 	soundOptionsInfo.banner.string				= "SYSTEM SETUP";
-	soundOptionsInfo.banner.color				= color_white;
+	soundOptionsInfo.banner.color				= uis.themeColor;
 	soundOptionsInfo.banner.style				= UI_CENTER;
 
 	soundOptionsInfo.framel.generic.type		= MTYPE_BITMAP;
@@ -167,7 +167,7 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	soundOptionsInfo.graphics.generic.y			= 240 - 2 * PROP_HEIGHT;
 	soundOptionsInfo.graphics.string			= "GRAPHICS";
 	soundOptionsInfo.graphics.style				= UI_RIGHT;
-	soundOptionsInfo.graphics.color				= color_red;
+	soundOptionsInfo.graphics.color				= uis.themeColor;
 
 	soundOptionsInfo.display.generic.type		= MTYPE_PTEXT;
 	soundOptionsInfo.display.generic.flags		= QMF_RIGHT_JUSTIFY|QMF_PULSEIFFOCUS;
@@ -177,7 +177,7 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	soundOptionsInfo.display.generic.y			= 240 - PROP_HEIGHT;
 	soundOptionsInfo.display.string				= "DISPLAY";
 	soundOptionsInfo.display.style				= UI_RIGHT;
-	soundOptionsInfo.display.color				= color_red;
+	soundOptionsInfo.display.color				= uis.themeColor;
 
 	soundOptionsInfo.sound.generic.type			= MTYPE_PTEXT;
 	soundOptionsInfo.sound.generic.flags		= QMF_RIGHT_JUSTIFY;
@@ -187,7 +187,7 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	soundOptionsInfo.sound.generic.y			= 240;
 	soundOptionsInfo.sound.string				= "SOUND";
 	soundOptionsInfo.sound.style				= UI_RIGHT;
-	soundOptionsInfo.sound.color				= color_red;
+	soundOptionsInfo.sound.color				= uis.themeColor;
 
 	soundOptionsInfo.network.generic.type		= MTYPE_PTEXT;
 	soundOptionsInfo.network.generic.flags		= QMF_RIGHT_JUSTIFY|QMF_PULSEIFFOCUS;
@@ -197,7 +197,7 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	soundOptionsInfo.network.generic.y			= 240 + PROP_HEIGHT;
 	soundOptionsInfo.network.string				= "NETWORK";
 	soundOptionsInfo.network.style				= UI_RIGHT;
-	soundOptionsInfo.network.color				= color_red;
+	soundOptionsInfo.network.color				= uis.themeColor;
 
 	y = 240 - 1.5 * (BIGCHAR_HEIGHT + 2);
 	soundOptionsInfo.sfxvolume.generic.type		= MTYPE_SLIDER;

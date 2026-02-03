@@ -241,9 +241,9 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 
 	if (cg_crosshairHealth.integer != 0)
 	{
-		CG_ColorForHealth(hcolor, NULL);
+		Vector4Copy(cgs.healthColorLocal, hcolor);
 	}
-	else if (BE_IsDamageInfoAllowed() && ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
+	else if (cgs.damageInfoAllowed && ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
 	{
 		CG_CrosshairPickDamageColor(
 		    ch->color,
@@ -256,7 +256,7 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 		    hcolor
 		);
 	}
-	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR || (!BE_IsDamageInfoAllowed() && ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE))
+	else if (ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR || (!cgs.damageInfoAllowed && ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE))
 	{
 		CG_CrosshairGetHitColor(ch->color, ch->actionColor, ch_crosshairActionTime.integer, hcolor);
 	}
@@ -273,7 +273,7 @@ static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 {
 	crosshairData_t* ch = &crosshairData;
 
-	if (BE_IsDamageInfoAllowed() && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
+	if (cgs.damageInfoAllowed && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
 	{
 		CG_CrosshairPickDamageColor(
 		    ch->decorColor,
@@ -286,7 +286,7 @@ static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 		    hcolor
 		);
 	}
-	else if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR || (!BE_IsDamageInfoAllowed() && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE))
+	else if (ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR || (!cgs.damageInfoAllowed && ch_crosshairDecorAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE))
 	{
 		CG_CrosshairGetHitColor(ch->decorColor, ch->decorActionColor, ch_crosshairDecorActionTime.integer, hcolor);
 	}
@@ -300,24 +300,13 @@ static void CG_CrosshairDecorGetColor(vec4_t hcolor)
 
 void CG_DrawCrosshair(void)
 {
-	float x, y, w, h;
-	qhandle_t crosshairShader;
-	vec4_t crosshairColor;
-	qhandle_t decorShader;
-	vec4_t decorColor;
+	qhandle_t crosshairShader = 0;
+	qhandle_t decorShader = 0;
+	qboolean aspectFix = qfalse;
 
-
-	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
-	{
-		return;
-	}
-
-	if (cg.renderingThirdPerson)
-	{
-		return;
-	}
-
-	if (global_viewlistFirstOption > 1)
+	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ||
+	    cg.renderingThirdPerson ||
+	    global_viewlistFirstOption > 1)
 	{
 		return;
 	}
@@ -327,53 +316,40 @@ void CG_DrawCrosshair(void)
 		CG_DrawCrosshairSpeed();
 	}
 
+	aspectFix = cg_crosshairAspectRatioFix.integer != 0;
 
-	//Draw decor
 	if (ch_crosshairDecor.integer && (decorShader = CG_GetCrosshairDecorShader()))
 	{
+		float x = 0.0f, y = 0.0f, w = 0.0f, h = 0.0f;
+		vec4_t decorColor = {0.0f, 0.0f, 0.0f, 0.0f};
+
 		CG_CrosshairDecorGetColor(decorColor);
 		CG_CrosshairDecorGetSize(&w, &h);
 		x = (float)cg_crosshairX.integer;
 		y = (float)cg_crosshairY.integer;
-		CG_AdjustFrom640_Old(&x, &y, &w, &h, cg_crosshairAspectRatioFix.integer != 0);
-
-
+		CG_AdjustFrom640_Old(&x, &y, &w, &h, aspectFix);
 		trap_R_SetColor(decorColor);
 		trap_R_DrawStretchPic(
 		    x + (float)cg.refdef.x + (0.5f * ((float)cg.refdef.width - w)),
 		    y + (float)cg.refdef.y + (0.5f * ((float)cg.refdef.height - h)),
-		    w,
-		    h,
-		    0,
-		    0,
-		    1,
-		    1,
-		    decorShader);
+		    w, h, 0, 0, 1, 1, decorShader);
 	}
 
-
-	//Draw crosshair
 	if (cg_drawCrosshair.integer && (crosshairShader = CG_CrosshairGetShader()))
 	{
+		float x = 0.0f, y = 0.0f, w = 0.0f, h = 0.0f;
+		vec4_t crosshairColor = {0.0f, 0.0f, 0.0f, 0.0f};
+
 		CG_CrosshairGetColor(crosshairColor);
 		CG_CrosshairGetSize(&w, &h);
-
 		x = (float)cg_crosshairX.integer;
 		y = (float)cg_crosshairY.integer;
-		CG_AdjustFrom640_Old(&x, &y, &w, &h, cg_crosshairAspectRatioFix.integer != 0);
-
-
+		CG_AdjustFrom640_Old(&x, &y, &w, &h, aspectFix);
 		trap_R_SetColor(crosshairColor);
 		trap_R_DrawStretchPic(
 		    x + (float)cg.refdef.x + (0.5f * ((float)cg.refdef.width - w)),
 		    y + (float)cg.refdef.y + (0.5f * ((float)cg.refdef.height - h)),
-		    w,
-		    h,
-		    0,
-		    0,
-		    1,
-		    1,
-		    crosshairShader);
+		    w, h, 0, 0, 1, 1, crosshairShader);
 	}
 
 	trap_R_SetColor(0);

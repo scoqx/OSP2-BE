@@ -23,7 +23,7 @@ void* CG_SHUDElementRankMessageCreate(const superhudConfig_t* config)
 		element->config.time.value = 2000;
 	}
 
-	gctx = CG_SHUDGetContext();
+	gctx = &superhudGlobalContext;
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);

@@ -71,7 +71,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_fov", "Field of view - degrees" },
 	{ "cg_viewsize", "Size of the game view - percentage" },
 	{ "cg_stereoSeparation", "3D stereo separation level" },
-	{ "cg_gibs", "Sets the display of animated explosions and flying body parts. Set ^20^7 to disable gibs.\n  ^21^7 - enabled" },
+	{ "cg_gibs", "Sets the display of animated explosions and flying body parts. Set ^20^7 to disable gibs.\n  ^21^7 - enabled\n  ^22^7 - more gibs and blood (more blood marks per bounce)" },
 	{ "cg_draw2D", "Displays 2D HUD elements. Set ^20^7 to disable." },
 	{ "cg_drawStatus", "Show player status information. Set ^20^7 to hide." },
 	{ "cg_drawTimer", "Show match timer\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - draw in center" },
@@ -80,7 +80,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_draw3dIcons", "Display 3D icons on the HUD. Set ^20^7 to disable." },
 	{ "cg_drawIcons", "Draw icons on the HUD. Set ^20^7 to disable." },
 	{ "cg_ammoCheck", "Disables the ability to switch to a weapon that doesn't have any ammo (^6?^7)" }, // not sure
-	{ "cg_drawAmmoWarning", "Show ammo warning indicator. Set ^20^7 to hide.\n  ^21^7 - new counting system\n  ^22^7 - old(default)" },
+	{ "cg_drawAmmoWarning", "Show ammo warning indicator. Set ^20^7 to disable, ^21^7 to enable." },
 	{ "cg_drawAttacker", "Display last attacker information. Set ^20^7 to hide." },
 	{ "cg_drawCrosshair", "Select crosshair\n  ^20^7 - none\n  ^21^7, ^22^7, ^23^7... - different crosshairs." },
 	{ "cg_drawCrosshairGauntlet", "Select crosshair for Gauntlet\n  ^20^7 - none\n  ^21^7, ^22^7, ^23^7... - different crosshairs." },
@@ -348,7 +348,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_scoreboardScale", "Scale factor for the scoreboard size. ^21.0^7 - default size, higher values make it larger." },
 	{ "cg_centerMessagesFont", "Font selection for center messages\n  ^20^7 - ^210^7" },
 	{ "cg_drawCrosshairNames", "Display names when crosshair is on target\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - only allies\n  ^23^7 - only enemies" },
-	{ "cg_railCustomChamber", "Colorize rail chamber using custom colors. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - reloading uses railCore\n  ^22^7 - ready uses railRings\n  ^23^7 - both (1|2)" },
+	{ "cg_railCustomChamber", "Colorize rail chamber using custom colors. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - reloading using core color\n  ^22^7 - ready to fire using rings color" },
 	{ "cg_drawBrightWeapons", "Render weapons with a single bright color for better visibility. Bitmask:\n  ^21^7 - own\n  ^22^7 - teamamtes\n  ^24^7 - enemies\n  ^28^7 - world"},
 	{ "cg_altGrenades", "Alternative grenade appearance. Values:\n  ^20^7 - Disabled\n  ^21^7 - OSP style\n  ^22^7 - BE style (custom color)\n  ^23^7 - BE style (custom color, ignores cg_drawBrightWeapons)" },
 	{ "cg_altGrenadesColor", "Color for alternative grenades. Requires ^3cg_altGrenades^7 set to ^22^7 or ^23^7.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
@@ -422,7 +422,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamTaskHudMarkerSize", "Base size for team task HUD markers." },
 	{ "cg_teamTaskHudMarkerMaxScale", "Maximum scale for team task HUD markers." },
 	{ "cg_teamTaskHudMarkerMinScale", "Minimum scale for team task HUD markers." },
-	{ "cg_autoHop", "Enable automatic bunny hopping. ^9Requires server support.^7\n  ^20^7 - disabled\n  ^21^7 - enabled (server controlled)" },
+	/* { "cg_autoHop", "Enable automatic bunny hopping. ^9Requires server support.^7\n  ^20^7 - disabled\n  ^21^7 - enabled (server controlled)" }, */  /* autohop commented out */
 	{ "cg_damagePlums", "Show damage plums (floating damage numbers). ^9Requires server support.^7\n  ^20^7 - disabled\n  ^21^7 - normal mode\n  ^22^7 - stacking mode" },
 	{ "cg_damagePlumSize", "Size of damage plums." },
 	{ "cg_damagePlumsWeapons", "Weapon filter for damage plums. Bitmask:\n  ^21^7 - Gauntlet\n  ^22^7 - Machine Gun\n  ^24^7 - Shotgun\n  ^28^7 - Grenade Launcher\n  ^216^7 - Rocket Launcher\n  ^232^7 - Lightning Gun\n  ^264^7 - Railgun\n  ^2128^7 - Plasma Gun\n  ^2256^7 - BFG" },
@@ -445,6 +445,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teleportEffect", "Show teleport effect for local player. Set ^20^7 to disable." },
 	{ "cg_altRail", "Alternative railgun trail rendering. Set ^20^7 to use default trail, ^21^7 for alternative. Spiral radius can be adjusted with ^3cg_railRingsRadius^7." },
 	{ "cg_teamTaskNewSounds", "New team task sounds. Bitmask:\n  ^21^7 - default sound\n  ^22^7 - accept sound\n  ^24^7 - deny sound" },
+	{ "cg_teamTaskVersion", "Team task coordinate range. ^20^7 - old bounds ±3000 (compat with old clients)\n  ^21^7 - new bounds ±4096 (fixes offset on large maps). All clients on server must use same value." },
 	{ "cg_railFix", "Fix rail trail start point. Set ^20^7 to disable." },
 	{ "cg_freezeSoundFix", "Replace freeze sound with alternative sound. Set ^20^7 to disable." },
 };

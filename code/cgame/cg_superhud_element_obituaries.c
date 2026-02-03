@@ -22,7 +22,7 @@ static void* CG_SHUDElementObituariesCreate(const superhudConfig_t* config, int 
 	shudElementObituaries_t* element;
 	superhudConfig_t lcfg;
 	SHUD_ELEMENT_INIT(element, config);
-	element->gctx = CG_SHUDGetContext();
+	element->gctx = &superhudGlobalContext;
 	element->index = line;
 
 	memcpy(&lcfg, config, sizeof(superhudConfig_t));
@@ -370,10 +370,10 @@ static void CG_SHUDObituarySetTeamColor(vec4_t color, int team)
 	switch (team)
 	{
 		case TEAM_RED:
-			VectorCopy(cgs.be.redTeamColor, color);
+			VectorCopy(cgs.beRedTeamColor, color);
 			break;
 		case TEAM_BLUE:
-			VectorCopy(cgs.be.blueTeamColor, color);
+			VectorCopy(cgs.beBlueTeamColor, color);
 			break;
 		default:
 			VectorCopy(colorWhite, color);

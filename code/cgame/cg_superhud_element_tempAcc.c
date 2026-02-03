@@ -29,7 +29,7 @@ void* CG_SHUDElementTempAccCreate(const superhudConfig_t* config, shudElementTem
 
 	element->type = type;
 
-	element->gctx = CG_SHUDGetContext();
+	element->gctx = &superhudGlobalContext;
 	if (element->type == SHUD_ELEMENT_TEMPACC_TEXT)
 	{
 		CG_SHUDTextMakeContext(&element->config, &element->textCtx);

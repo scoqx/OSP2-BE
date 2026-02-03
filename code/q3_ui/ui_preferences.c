@@ -212,7 +212,7 @@ static void Preferences_MenuInit( void ) {
 	s_preferences.banner.generic.x	   = 320;
 	s_preferences.banner.generic.y	   = 16;
 	s_preferences.banner.string		   = "GAME OPTIONS";
-	s_preferences.banner.color         = color_white;
+	s_preferences.banner.color		   = uis.themeColor;
 	s_preferences.banner.style         = UI_CENTER;
 
 	s_preferences.framel.generic.type  = MTYPE_BITMAP;

@@ -89,7 +89,7 @@ static void UI_SaveConfigMenu_SavenameDraw( void *self ) {
 	}
 	else {
 		style = UI_LEFT|UI_SMALLFONT;
-		color = colorRed;
+		color = uis.themeColor;
 	}
 
 	UI_DrawProportionalString( 320, 192, "Enter filename:", UI_CENTER|UI_SMALLFONT, color_orange );
@@ -114,7 +114,7 @@ static void UI_SaveConfigMenu_Init( void ) {
 	saveConfig.banner.generic.x			= 320;
 	saveConfig.banner.generic.y			= 16;
 	saveConfig.banner.string			= "SAVE CONFIG";
-	saveConfig.banner.color				= color_white;
+	saveConfig.banner.color				= uis.themeColor;
 	saveConfig.banner.style				= UI_CENTER;
 
 	saveConfig.background.generic.type		= MTYPE_BITMAP;

@@ -267,6 +267,12 @@ extern sfxHandle_t	MenuField_Key( menufield_s* m, int* key );
 //
 extern void MainMenu_Cache( void );
 extern void UI_MainMenu(void);
+extern void UI_GetThemeColor( vec4_t out );
+extern void UI_GetThemeColor2( vec4_t out );
+extern void UI_GetSelectColor( vec4_t out );
+extern void UI_InitThemeColors( void );
+extern void UI_UpdateMenuBackgroundMode( void );
+extern qboolean UI_ParseColorStr( const char *str, vec4_t out );
 extern void UI_RegisterCvars( void );
 extern void UI_UpdateCvars( void );
 
@@ -581,10 +587,16 @@ typedef struct {
 	qhandle_t			whiteShader;
 	qhandle_t			menuBackShader;
 	qhandle_t			menuBackNoLogoShader;
+	qhandle_t			menuBack1;
+	qhandle_t			menuBack2;
+	qhandle_t			menuBack3;
+	qhandle_t			menuBack4;
+	qhandle_t			menuBackHQ24[24];
 	qhandle_t			charset;
 	qhandle_t			charsetProp;
 	qhandle_t			charsetPropGlow;
-	qhandle_t			charsetPropB;
+	// qhandle_t			charsetPropB; // Red can't be colored. Vanilla
+	qhandle_t			charsetPropBNew; // White can be colored
 	qhandle_t			cursor;
 	qhandle_t			rb_on;
 	qhandle_t			rb_off;
@@ -604,6 +616,15 @@ typedef struct {
 	qboolean			demoversion;
 	qboolean			firstdraw;
 	int					lastVideoCheck;
+
+	vec4_t				themeColor;
+	vec4_t				themeColor2;
+	vec4_t				selectColor;
+	int					themeColorModCount;
+	int					themeColor2ModCount;
+	int					selectColorModCount;
+	int					menuHQMode;
+	int					menuHQModCount;
 } uiStatic_t;
 
 extern void			UI_Init( void );

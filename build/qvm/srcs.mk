@@ -45,7 +45,6 @@ CG_SRC = \
  cg_superhud_element_warmupinfo cg_superhud_element_gametype cg_superhud_element_location \
  cg_superhud_element_tempAcc \
  cg_superhud_element_weapon_stats cg_superhud_element_player_stats cg_superhud_element_player_name \
- cg_superhud_element_spectators \
  cg_superhud_element_grid \
  cg_superhud_element_teamtasks \
  l_crc \
@@ -54,7 +53,7 @@ CG_SRC = \
 
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \
-ui_gameinfo ui_atoms ui_cinematics ui_connect ui_controls2 ui_demo2 \
+ui_gameinfo ui_atoms ui_colorparse ui_cinematics ui_connect ui_controls2 ui_demo2 \
 ui_mfield ui_credits ui_credits2 ui_menu ui_ingame ui_confirm ui_setup ui_options \
 ui_display ui_sound ui_network ui_playermodel ui_players ui_playersettings \
 ui_preferences ui_qmenu ui_serverinfo ui_servers2 ui_sparena ui_osp2be ui_colorpicker \

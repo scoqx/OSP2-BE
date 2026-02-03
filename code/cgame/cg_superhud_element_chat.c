@@ -16,7 +16,7 @@ static void* CG_SHUDElementChatCreate(const superhudConfig_t* config, int line)
 
 	SHUD_ELEMENT_INIT(element, config);
 
-	element->gctx = CG_SHUDGetContext();
+	element->gctx = &superhudGlobalContext;
 	element->index = line;
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);

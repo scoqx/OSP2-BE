@@ -72,7 +72,7 @@ void CG_OSPSetMode(int value)
 	modeMaxAmmoGrenade                 = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
 	modeMaxAmmoRocket                  = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
 	modeMaxAmmoRail                    = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
-	if (!cgs.be.server.fpsclassico)
+	if (!cgs.fpsclassico)
 	{
 		modeGrenadeTime = OSP_SET_MODE_VARIANT(value, 800, 800, 700);//-V583
 		modeFinishWeaponChangeTime         = OSP_SET_MODE_VARIANT(value, 250, 250, 0);//-V583
@@ -92,7 +92,7 @@ void CG_OSPSetMode(int value)
 	modeUnknown2                       = value & OSP_SERVER_MODE_PROMODE_OPT1 ? 1 : 0;
 	modeUnknown3                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 200 : 0;
 	modeUnknown4                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 100 : 0;
-	modeFPSClassico                    = cgs.be.server.fpsclassico ? 1 : 0;
+	modeFPSClassico                    = cgs.fpsclassico ? 1 : 0;
 }
 
 
@@ -259,21 +259,17 @@ void CG_OSPConfigXHitBoxSet(int value)
 }
 
 // Supported OSP2-BE server
-void CG_OSPSupportedBEServer(qboolean value)
-{
-	cgs.be.supportedServer = value;
-}
-
-qboolean BE_isSupportedServer(void)
-{
-	return cgs.be.supportedServer;
-}
+// void CG_OSPSupportedBEServer(qboolean value)
+// {
+// 	cgs.beSupportedServer = value;
+// }
 
 // Disable be features
 void CG_OSPConfigDisableBEFeatures(int value)
 {
-	cgs.be.disableFeatures = value;
+	cgs.beDisableFeatures = value;
 	CG_PrintDisabledFeatures(qfalse);
+	CG_UpdateBeFeatures();
 }
 /*
  * Unknown cs 0x368
@@ -377,58 +373,3 @@ qboolean CG_IsFollowing(void)
 	return qtrue;
 }
 
-/*
-================
-CG_UpdateAutoHopFromSystemInfo
-
-Reads pmove_autohop from systeminfo and updates cgs.be.autohop.
-================
-*/
-void CG_UpdateAutoHopFromSystemInfo(void)
-{
-	const char* sysInfo;
-	const char* value;
-	int autohop;
-
-	sysInfo = CG_ConfigString(CS_SYSTEMINFO);
-
-	value = Info_ValueForKey(sysInfo, "pmove_autohop");
-	if (!value || !value[0])
-	{
-		cgs.be.autohop = 0;
-		return;
-	}
-
-	autohop = atoi(value);
-	if (autohop == 0)
-	{
-		cgs.be.autohop = 1;
-		return;
-	}
-
-	if (autohop == 1)
-	{
-		cgs.be.autohop = 1;
-		return;
-	}
-
-	if (autohop == 2)
-	{
-		cgs.be.autohop = 2;
-		return;
-	}
-
-	cgs.be.autohop = 1;
-}
-
-void CG_SetServerSettingsBE(void)
-{
-	const char* sysInfo;
-	const char* value;
-
-	sysInfo = CG_ConfigString(CS_SYSTEMINFO);
-
-	value = Info_ValueForKey(sysInfo, "g_enableBreath");
-
-	cgs.be.server.enableBreath = (value[0] == '\0' || Q_stricmp(value, "0") != 0) ? 1 : 0;
-}

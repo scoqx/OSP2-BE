@@ -259,7 +259,7 @@ static void CG_Obituary(entityState_t* ent)
 	ci = &cgs.clientinfo[target];
 
 	/* Handle team task marker for local client death */
-	if (!cgs.be.server.fpsclassico)
+	if (!cgs.fpsclassico)
 	{
 		CG_HandlePlayerDeathTeamTask(target, isUnfreezeEvent);
 	}
@@ -754,11 +754,11 @@ static sfxHandle_t CG_GetFreezeSoundReplacement(const char* soundName, int event
 	{
 		if (cg_freezeSoundFix.integer == 1 && cgs.media.freezeSoundReplacement)
 		{
-			cgs.be.customFreezeSound = qtrue;
+			cgs.beCustomFreezeSound = qtrue;
 			return cgs.media.freezeSoundReplacement;
 		}
 	}
-	cgs.be.customFreezeSound = qfalse;
+	cgs.beCustomFreezeSound = qfalse;
 	return 0;
 }
 
@@ -1204,33 +1204,18 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 		case EV_RAILTRAIL:
 			DEBUGNAME("EV_RAILTRAIL");
 			cent->currentState.weapon = WP_RAILGUN;
-			// if the end was on a nomark surface, don't make an explosion
+			/* Early exit: already predicted with delag */
 			if (es->clientNum == cg.predictedPlayerState.clientNum &&
-			        (cg_delag.integer & 1 || cg_delag.integer & 4) && !cg.demoPlayback)
-			{
-				// do nothing, because it was already predicted
-				//Com_Printf("Ignoring rail trail event\n");
-			}
-			else
+			    (cg_delag.integer & 1 || cg_delag.integer & 4) && !cg.demoPlayback)
+				break;
 			{
 				vec3_t railStart;
 
-				// If cg_railFix is enabled, use muzzle position from weapon model for first person view
+				/* Default: server position; override if railFix succeeds */
+				VectorCopy(es->origin2, railStart);
 				if (cg_railFix.integer && es->clientNum == cg.predictedPlayerState.clientNum &&
-				        !cg.renderingThirdPerson && !cg.demoPlayback)
-				{
-					// Calculate muzzle position from weapon model tag
-					if (!CG_GetFirstPersonRailgunMuzzlePoint(railStart))
-					{
-						// Fallback to original position if model tag lookup fails
-						VectorCopy(es->origin2, railStart);
-					}
-				}
-				else
-				{
-					// Use original position from server (old logic)
-					VectorCopy(es->origin2, railStart);
-				}
+				    !cg.renderingThirdPerson && !cg.demoPlayback)
+					CG_GetFirstPersonRailgunMuzzlePoint(railStart);
 
 				CG_RailTrail(ci, railStart, es->pos.trBase);
 				if (es->eventParm != 255)

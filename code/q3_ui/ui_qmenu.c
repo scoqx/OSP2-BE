@@ -30,6 +30,91 @@ vec4_t color_red	    = {1.00f, 0.00f, 0.00f, 1.00f};
 vec4_t color_darkred    = {0.15f, 0.00f, 0.00f, 1.00f};
 vec4_t color_dim	    = {0.00f, 0.00f, 0.00f, 0.25f};
 
+void UI_GetThemeColor( vec4_t out ) {
+	trap_Cvar_Update( &ui_themeColor );
+	if ( uis.themeColorModCount != ui_themeColor.modificationCount ) {
+		const char *str = ui_themeColor.string;
+		if ( !str || !str[0] || !UI_ParseColorStr( str, uis.themeColor ) ) {
+			Vector4Copy( color_red, uis.themeColor );
+		}
+		uis.themeColorModCount = ui_themeColor.modificationCount;
+	}
+	Vector4Copy( uis.themeColor, out );
+}
+
+void UI_GetThemeColor2( vec4_t out ) {
+	trap_Cvar_Update( &ui_themeColor2 );
+	if ( uis.themeColor2ModCount != ui_themeColor2.modificationCount ) {
+		const char *str = ui_themeColor2.string;
+		if ( !str || !str[0] || !UI_ParseColorStr( str, uis.themeColor2 ) ) {
+			uis.themeColor2[0] = 1.0f;
+			uis.themeColor2[1] = 0.43f;
+			uis.themeColor2[2] = 0.0f;
+			uis.themeColor2[3] = 1.0f;
+		}
+		uis.themeColor2ModCount = ui_themeColor2.modificationCount;
+	}
+	Vector4Copy( uis.themeColor2, out );
+}
+
+void UI_GetSelectColor( vec4_t out ) {
+	trap_Cvar_Update( &ui_selectionColor );
+	if ( uis.selectColorModCount != ui_selectionColor.modificationCount ) {
+		const char *str = ui_selectionColor.string;
+		if ( !str || !str[0] || !UI_ParseColorStr( str, uis.selectColor ) ) {
+			uis.selectColor[0] = 1.0f;
+			uis.selectColor[1] = 1.0f;
+			uis.selectColor[2] = 0.0f;
+			uis.selectColor[3] = 1.0f;
+		}
+		uis.selectColorModCount = ui_selectionColor.modificationCount;
+	}
+	Vector4Copy( uis.selectColor, out );
+}
+
+/*
+=================
+UI_InitThemeColors
+
+Force initialization of theme colors from cvars. This ensures colors
+are always valid before any menu code tries to use them. Called from
+UI_Refresh to guarantee initialization on every frame if needed.
+=================
+*/
+void UI_InitThemeColors( void ) {
+	const char *str;
+
+	// Force cvar updates
+	trap_Cvar_Update( &ui_themeColor );
+	trap_Cvar_Update( &ui_themeColor2 );
+	trap_Cvar_Update( &ui_selectionColor );
+
+	// Parse and cache the colors
+	str = ui_themeColor.string;
+	if ( !str || !str[0] || !UI_ParseColorStr( str, uis.themeColor ) ) {
+		Vector4Copy( color_red, uis.themeColor );
+	}
+	uis.themeColorModCount = ui_themeColor.modificationCount;
+
+	str = ui_themeColor2.string;
+	if ( !str || !str[0] || !UI_ParseColorStr( str, uis.themeColor2 ) ) {
+		uis.themeColor2[0] = 1.0f;
+		uis.themeColor2[1] = 0.43f;
+		uis.themeColor2[2] = 0.0f;
+		uis.themeColor2[3] = 1.0f;
+	}
+	uis.themeColor2ModCount = ui_themeColor2.modificationCount;
+
+	str = ui_selectionColor.string;
+	if ( !str || !str[0] || !UI_ParseColorStr( str, uis.selectColor ) ) {
+		uis.selectColor[0] = 1.0f;
+		uis.selectColor[1] = 1.0f;
+		uis.selectColor[2] = 0.0f;
+		uis.selectColor[3] = 1.0f;
+	}
+	uis.selectColorModCount = ui_selectionColor.modificationCount;
+}
+
 // current color scheme
 vec4_t pulse_color          = {1.00f, 1.00f, 1.00f, 1.00f};
 vec4_t text_color_disabled  = {0.50f, 0.50f, 0.50f, 1.00f};	// light gray
@@ -135,15 +220,15 @@ static void BText_Draw( menutext_s *t )
 {
 	int		x;
 	int		y;
-	float*	color;
+	vec4_t	color;
 
 	x = t->generic.x;
 	y = t->generic.y;
 
 	if (t->generic.flags & QMF_GRAYED)
-		color = text_color_disabled;
+		Vector4Copy( text_color_disabled, color );
 	else
-		color = t->color;
+		Vector4Copy( uis.themeColor, color );
 
 	UI_DrawBannerString( x, y, t->string, t->style, color );
 }
@@ -1768,7 +1853,8 @@ void Menu_Cache( void )
 	uis.charset			= trap_R_RegisterShaderNoMip( "gfx/2d/bigchars" );
 	uis.charsetProp		= trap_R_RegisterShaderNoMip( "menu/art/font1_prop.tga" );
 	uis.charsetPropGlow	= trap_R_RegisterShaderNoMip( "menu/art/font1_prop_glo.tga" );
-	uis.charsetPropB	= trap_R_RegisterShaderNoMip( "menu/art/font2_prop.tga" );
+	// uis.charsetPropB	= trap_R_RegisterShaderNoMip( "menu/art/font2_prop.tga" );
+	uis.charsetPropBNew	= trap_R_RegisterShaderNoMip( "menu/art/font2_propNew.tga" );
 	uis.cursor          = trap_R_RegisterShaderNoMip( "menu/art/3_cursor2" );
 	uis.rb_on           = trap_R_RegisterShaderNoMip( "menu/art/switch_on" );
 	uis.rb_off          = trap_R_RegisterShaderNoMip( "menu/art/switch_off" );
@@ -1781,6 +1867,20 @@ void Menu_Cache( void )
 		uis.menuBackShader	= trap_R_RegisterShaderNoMip( "menuback" );
 	}
 	uis.menuBackNoLogoShader = trap_R_RegisterShaderNoMip( "menubacknologo" );
+	/* HQ mode 1: 2x2 tiles, shaders menuback_1 .. menuback_4 */
+	uis.menuBack1 = trap_R_RegisterShaderNoMip( "menuback_1" );
+	uis.menuBack2 = trap_R_RegisterShaderNoMip( "menuback_2" );
+	uis.menuBack3 = trap_R_RegisterShaderNoMip( "menuback_3" );
+	uis.menuBack4 = trap_R_RegisterShaderNoMip( "menuback_4" );
+	/* HQ mode 2: 6x4 tiles, shaders menuback1 .. menuback24 */
+	{
+		int i;
+		for ( i = 0; i < 24; i++ ) {
+			uis.menuBackHQ24[i] = trap_R_RegisterShaderNoMip( va( "menuback%i", i + 1 ) );
+		}
+	}
+
+	UI_UpdateMenuBackgroundMode();
 
 	menu_in_sound	= trap_S_RegisterSound( "sound/misc/menu1.wav", qfalse );
 	menu_move_sound	= trap_S_RegisterSound( "sound/misc/menu2.wav", qfalse );
