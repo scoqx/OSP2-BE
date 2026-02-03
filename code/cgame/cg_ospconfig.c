@@ -261,7 +261,7 @@ void CG_OSPConfigXHitBoxSet(int value)
 // Supported OSP2-BE server
 // void CG_OSPSupportedBEServer(qboolean value)
 // {
-// 	cgs.beSupportedServer = value;
+//  cgs.beSupportedServer = value;
 // }
 
 // Disable be features

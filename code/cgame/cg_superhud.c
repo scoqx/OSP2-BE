@@ -416,8 +416,8 @@ void CG_SHUDLoadConfig(void)
 }
 
 #define SE_WEAPON_ANY (SE_WEAPON_GAUNTLET | SE_WEAPON_MACHINEGUN | SE_WEAPON_SHOTGUN | \
-	SE_WEAPON_GRENADE_LAUNCHER | SE_WEAPON_ROCKET_LAUNCHER | SE_WEAPON_LIGHTNING | \
-	SE_WEAPON_RAILGUN | SE_WEAPON_PLASMAGUN | SE_WEAPON_BFG)
+    SE_WEAPON_GRENADE_LAUNCHER | SE_WEAPON_ROCKET_LAUNCHER | SE_WEAPON_LIGHTNING | \
+    SE_WEAPON_RAILGUN | SE_WEAPON_PLASMAGUN | SE_WEAPON_BFG)
 
 void CG_SHUDRoutine(void)
 {
@@ -474,38 +474,38 @@ void CG_SHUDRoutine(void)
 
 		wf = (vflags & SE_WEAPON_ANY);
 		weapon_skip = (wf != 0) && !(
-			((vflags & SE_WEAPON_GAUNTLET) && currentWeapon == WP_GAUNTLET) ||
-			((vflags & SE_WEAPON_MACHINEGUN) && currentWeapon == WP_MACHINEGUN) ||
-			((vflags & SE_WEAPON_SHOTGUN) && currentWeapon == WP_SHOTGUN) ||
-			((vflags & SE_WEAPON_GRENADE_LAUNCHER) && currentWeapon == WP_GRENADE_LAUNCHER) ||
-			((vflags & SE_WEAPON_ROCKET_LAUNCHER) && currentWeapon == WP_ROCKET_LAUNCHER) ||
-			((vflags & SE_WEAPON_LIGHTNING) && currentWeapon == WP_LIGHTNING) ||
-			((vflags & SE_WEAPON_RAILGUN) && currentWeapon == WP_RAILGUN) ||
-			((vflags & SE_WEAPON_PLASMAGUN) && currentWeapon == WP_PLASMAGUN) ||
-			((vflags & SE_WEAPON_BFG) && currentWeapon == WP_BFG));
+		                  ((vflags & SE_WEAPON_GAUNTLET) && currentWeapon == WP_GAUNTLET) ||
+		                  ((vflags & SE_WEAPON_MACHINEGUN) && currentWeapon == WP_MACHINEGUN) ||
+		                  ((vflags & SE_WEAPON_SHOTGUN) && currentWeapon == WP_SHOTGUN) ||
+		                  ((vflags & SE_WEAPON_GRENADE_LAUNCHER) && currentWeapon == WP_GRENADE_LAUNCHER) ||
+		                  ((vflags & SE_WEAPON_ROCKET_LAUNCHER) && currentWeapon == WP_ROCKET_LAUNCHER) ||
+		                  ((vflags & SE_WEAPON_LIGHTNING) && currentWeapon == WP_LIGHTNING) ||
+		                  ((vflags & SE_WEAPON_RAILGUN) && currentWeapon == WP_RAILGUN) ||
+		                  ((vflags & SE_WEAPON_PLASMAGUN) && currentWeapon == WP_PLASMAGUN) ||
+		                  ((vflags & SE_WEAPON_BFG) && currentWeapon == WP_BFG));
 
 		skip = (!(vflags & SE_IM) && is_intermission) ||
-			((vflags & SE_TEAM_ONLY) && !is_team_game) ||
-			(!(vflags & SE_DEAD) && is_dead) ||
-			(!(vflags & SE_SPECT) && is_spectator_for_element) ||
-			((vflags & SE_SCORES_HIDE) && is_scores) ||
-			((vflags & SE_DEMO_HIDE) && cg.demoPlayback) ||
-			((vflags & SE_KEY1_SHOW) && !cgs.osp.shud.key[0]) ||
-			((vflags & SE_KEY2_SHOW) && !cgs.osp.shud.key[1]) ||
-			((vflags & SE_KEY3_SHOW) && !cgs.osp.shud.key[2]) ||
-			((vflags & SE_KEY4_SHOW) && !cgs.osp.shud.key[3]) ||
-			((vflags & SE_KEY5_SHOW) && !cgs.osp.shud.key[4]) ||
-			((vflags & SE_KEY6_SHOW) && !cgs.osp.shud.key[5]) ||
-			((vflags & SE_KEY7_SHOW) && !cgs.osp.shud.key[6]) ||
-			((vflags & SE_KEY8_SHOW) && !cgs.osp.shud.key[7]) ||
-			((vflags & SE_GT_FFA) && is_gt_ffa) ||
-			((vflags & SE_GT_TDM) && is_gt_tdm) ||
-			((vflags & SE_GT_CTF) && is_gt_ctf) ||
-			((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
-			((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
-			((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
-			((vflags & SE_HEALTH_LOW) && !cg.beIsHealthLow) ||
-			weapon_skip;
+		       ((vflags & SE_TEAM_ONLY) && !is_team_game) ||
+		       (!(vflags & SE_DEAD) && is_dead) ||
+		       (!(vflags & SE_SPECT) && is_spectator_for_element) ||
+		       ((vflags & SE_SCORES_HIDE) && is_scores) ||
+		       ((vflags & SE_DEMO_HIDE) && cg.demoPlayback) ||
+		       ((vflags & SE_KEY1_SHOW) && !cgs.osp.shud.key[0]) ||
+		       ((vflags & SE_KEY2_SHOW) && !cgs.osp.shud.key[1]) ||
+		       ((vflags & SE_KEY3_SHOW) && !cgs.osp.shud.key[2]) ||
+		       ((vflags & SE_KEY4_SHOW) && !cgs.osp.shud.key[3]) ||
+		       ((vflags & SE_KEY5_SHOW) && !cgs.osp.shud.key[4]) ||
+		       ((vflags & SE_KEY6_SHOW) && !cgs.osp.shud.key[5]) ||
+		       ((vflags & SE_KEY7_SHOW) && !cgs.osp.shud.key[6]) ||
+		       ((vflags & SE_KEY8_SHOW) && !cgs.osp.shud.key[7]) ||
+		       ((vflags & SE_GT_FFA) && is_gt_ffa) ||
+		       ((vflags & SE_GT_TDM) && is_gt_tdm) ||
+		       ((vflags & SE_GT_CTF) && is_gt_ctf) ||
+		       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
+		       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
+		       ((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
+		       ((vflags & SE_HEALTH_LOW) && !cg.beIsHealthLow) ||
+		       weapon_skip;
 
 		if (!skip && last->element.routine)
 		{

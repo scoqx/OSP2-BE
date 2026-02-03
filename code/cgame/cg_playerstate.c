@@ -180,15 +180,15 @@ void CG_CheckChangedPredictableEvents(playerState_t* ps)
 }
 
 #define PUSH_REWARD(sfx, shader, count) do { \
-	if (cg.rewardStack < (MAX_REWARDSTACK - 1)) { \
-		cg.rewardStack++; \
-		cg.rewardSound[cg.rewardStack] = (sfx); \
-		cg.rewardShader[cg.rewardStack] = (shader); \
-		cg.rewardCount[cg.rewardStack] = (count); \
-	} \
+    if (cg.rewardStack < (MAX_REWARDSTACK - 1)) { \
+        cg.rewardStack++; \
+        cg.rewardSound[cg.rewardStack] = (sfx); \
+        cg.rewardShader[cg.rewardStack] = (shader); \
+        cg.rewardCount[cg.rewardStack] = (count); \
+    } \
 } while(0)
 #define PLAY_HIT_SOUND(snd, ops) \
-	do { if (!(cg_lightningSilent.integer && (ops)->weapon == WP_LIGHTNING) && cg_hitSounds.integer >= 0) trap_S_StartLocalSound((snd), CHAN_LOCAL_SOUND); } while(0)
+    do { if (!(cg_lightningSilent.integer && (ops)->weapon == WP_LIGHTNING) && cg_hitSounds.integer >= 0) trap_S_StartLocalSound((snd), CHAN_LOCAL_SOUND); } while(0)
 
 /* CG_HitDamage inlined in CG_TransitionPlayerState */
 
@@ -249,9 +249,15 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 				{
 					int dmgInfo = cgs.damageInfoAllowed;
 					if (dmgInfo && cg_stackHitSounds.integer && dt < cg_stackHitSoundsTimeout.integer)
-						{ clsStackedDmg += damage; damage = clsStackedDmg + clsDelayedDmg; }
+					{
+						clsStackedDmg += damage;
+						damage = clsStackedDmg + clsDelayedDmg;
+					}
 					else
-						{ clsStackedDmg = 0; damage += clsDelayedDmg; }
+					{
+						clsStackedDmg = 0;
+						damage += clsDelayedDmg;
+					}
 					clsDelayedDmg = 0;
 					cgs.osp.lastHitTime = cg.time;
 					if (dmgInfo && cg_hitSounds.integer)
@@ -349,7 +355,7 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 			CG_AddBufferedSound(cgs.media.takenLeadSound);
 		else if (r == RANK_TIED_FLAG)
 			CG_AddBufferedSound(cgs.media.tiedLeadSound);
-		else if ((or & ~RANK_TIED_FLAG) == 0)
+		else if (( or & ~RANK_TIED_FLAG) == 0)
 			CG_AddBufferedSound(cgs.media.lostLeadSound);
 	}
 
@@ -626,7 +632,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 			prevAmmoSaved = prevAmmo;
 
 			if (ps->weaponstate == WEAPON_FIRING && ammo == 0 &&
-			    !(prevWeaponState == WEAPON_FIRING && prevAmmo == 0))
+			        !(prevWeaponState == WEAPON_FIRING && prevAmmo == 0))
 			{
 				trap_S_StartLocalSound(cgs.media.noAmmoSound, CHAN_LOCAL_SOUND);
 			}

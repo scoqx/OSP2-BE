@@ -1119,23 +1119,23 @@ Check for changes in player stats and print them to console
 
 /* Health→color for client cache (file scope; cvars passed so loop never touches cvars). */
 #define CG_VIEW_HEALTH_COLOR_ONE(healthVal, armorVal, hcolorOut, levelsCached, lowCached, midCached) do { \
-	int _h = (healthVal); \
-	int _a = (armorVal); \
-	int _cnt, _max; \
-	if (_h <= 0) { VectorClear(hcolorOut); (hcolorOut)[3] = 1; } \
-	else { \
-		_cnt = _a; _max = _h * ARMOR_PROTECTION / (1.0 - ARMOR_PROTECTION); if (_max < _cnt) _cnt = _max; _h += _cnt; \
-		if (!(levelsCached)) { \
-			(hcolorOut)[0] = 1.0f; (hcolorOut)[3] = 1.0f; \
-			if (_h >= 100) (hcolorOut)[2] = 1.0f; else if (_h < 66) (hcolorOut)[2] = 0; else (hcolorOut)[2] = (float)(_h - 66) / 33.0f; \
-			if (_h > 60) (hcolorOut)[1] = 1.0f; else if (_h < 30) (hcolorOut)[1] = 0; else (hcolorOut)[1] = (float)(_h - 30) / 30.0f; \
-		} else { \
-			if (_h <= (lowCached)) VectorCopy(cgs.beHealthLowColor, hcolorOut); \
-			else if (_h >= (midCached)) VectorCopy(cgs.beHealthMidColor, hcolorOut); \
-			else VectorCopy(cgs.beHealthColor, hcolorOut); \
-			(hcolorOut)[3] = 1.0f; \
-		} \
-	} \
+    int _h = (healthVal); \
+    int _a = (armorVal); \
+    int _cnt, _max; \
+    if (_h <= 0) { VectorClear(hcolorOut); (hcolorOut)[3] = 1; } \
+    else { \
+        _cnt = _a; _max = _h * ARMOR_PROTECTION / (1.0 - ARMOR_PROTECTION); if (_max < _cnt) _cnt = _max; _h += _cnt; \
+        if (!(levelsCached)) { \
+            (hcolorOut)[0] = 1.0f; (hcolorOut)[3] = 1.0f; \
+            if (_h >= 100) (hcolorOut)[2] = 1.0f; else if (_h < 66) (hcolorOut)[2] = 0; else (hcolorOut)[2] = (float)(_h - 66) / 33.0f; \
+            if (_h > 60) (hcolorOut)[1] = 1.0f; else if (_h < 30) (hcolorOut)[1] = 0; else (hcolorOut)[1] = (float)(_h - 30) / 30.0f; \
+        } else { \
+            if (_h <= (lowCached)) VectorCopy(cgs.beHealthLowColor, hcolorOut); \
+            else if (_h >= (midCached)) VectorCopy(cgs.beHealthMidColor, hcolorOut); \
+            else VectorCopy(cgs.beHealthColor, hcolorOut); \
+            (hcolorOut)[3] = 1.0f; \
+        } \
+    } \
 } while (0)
 
 /*

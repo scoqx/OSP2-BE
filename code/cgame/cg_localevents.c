@@ -172,16 +172,16 @@ void CG_LocalEventCvarChanged_cg_autoAction(cvarTable_t* cvart)
 /* autohop commented out
 void CG_LocalEventCvarChanged_cg_autoHop(cvarTable_t* cvart)
 {
-	if (cgs.beAutohop == 0)
-	{
-		CG_PrintOnce("^1Auto-hop not supported\n");
-		trap_Cvar_Set("cg_autoHop", "0");
-	}
-	else if (cgs.beAutohop == 1)
-	{
-		CG_PrintOnce("^3Auto-hop controlled by server\n");
-		trap_Cvar_Set("cg_autoHop", "1");
-	}
+    if (cgs.beAutohop == 0)
+    {
+        CG_PrintOnce("^1Auto-hop not supported\n");
+        trap_Cvar_Set("cg_autoHop", "0");
+    }
+    else if (cgs.beAutohop == 1)
+    {
+        CG_PrintOnce("^3Auto-hop controlled by server\n");
+        trap_Cvar_Set("cg_autoHop", "1");
+    }
 }
 */
 void CG_LocalEventCvarChanged_snaps(cvarTable_t* cvart)

@@ -1206,7 +1206,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			cent->currentState.weapon = WP_RAILGUN;
 			/* Early exit: already predicted with delag */
 			if (es->clientNum == cg.predictedPlayerState.clientNum &&
-			    (cg_delag.integer & 1 || cg_delag.integer & 4) && !cg.demoPlayback)
+			        (cg_delag.integer & 1 || cg_delag.integer & 4) && !cg.demoPlayback)
 				break;
 			{
 				vec3_t railStart;
@@ -1214,7 +1214,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 				/* Default: server position; override if railFix succeeds */
 				VectorCopy(es->origin2, railStart);
 				if (cg_railFix.integer && es->clientNum == cg.predictedPlayerState.clientNum &&
-				    !cg.renderingThirdPerson && !cg.demoPlayback)
+				        !cg.renderingThirdPerson && !cg.demoPlayback)
 					CG_GetFirstPersonRailgunMuzzlePoint(railStart);
 
 				CG_RailTrail(ci, railStart, es->pos.trBase);

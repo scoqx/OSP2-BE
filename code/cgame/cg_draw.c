@@ -2067,106 +2067,111 @@ int CG_CrosshairTarget(vec3_t itemPos)
 			checkItemIndex = checkCent->currentState.modelindex;
 			if (checkItemIndex >= 1 && checkItemIndex < bg_numItems)
 			{
-					checkItem = &bg_itemlist[checkItemIndex];
-					if (checkItem->classname && (
-					            !Q_stricmp(checkItem->classname, "item_armor_body") ||
-					            !Q_stricmp(checkItem->classname, "item_health_mega") ||
-					            !Q_stricmp(checkItem->classname, "item_quad") ||
-					            !Q_stricmp(checkItem->classname, "item_regen") ||
-					            !Q_stricmp(checkItem->classname, "item_enviro") ||
-					            !Q_stricmp(checkItem->classname, "item_haste") ||
-					            !Q_stricmp(checkItem->classname, "item_armor_combat") ||
-					            !Q_stricmp(checkItem->classname, "item_health") ||
-					            !Q_stricmp(checkItem->classname, "item_health_large") ||
-					            (cgs.gametype == GT_CTF && (
-					                 !Q_stricmp(checkItem->classname, "team_CTF_redflag") ||
-					                 !Q_stricmp(checkItem->classname, "team_CTF_blueflag")))))
+				checkItem = &bg_itemlist[checkItemIndex];
+				if (checkItem->classname && (
+				            !Q_stricmp(checkItem->classname, "item_armor_body") ||
+				            !Q_stricmp(checkItem->classname, "item_health_mega") ||
+				            !Q_stricmp(checkItem->classname, "item_quad") ||
+				            !Q_stricmp(checkItem->classname, "item_regen") ||
+				            !Q_stricmp(checkItem->classname, "item_enviro") ||
+				            !Q_stricmp(checkItem->classname, "item_haste") ||
+				            !Q_stricmp(checkItem->classname, "item_armor_combat") ||
+				            !Q_stricmp(checkItem->classname, "item_health") ||
+				            !Q_stricmp(checkItem->classname, "item_health_large") ||
+				            (cgs.gametype == GT_CTF && (
+				                 !Q_stricmp(checkItem->classname, "team_CTF_redflag") ||
+				                 !Q_stricmp(checkItem->classname, "team_CTF_blueflag")))))
+				{
+					/* Get item position (before bob), used for hitbox trace and visibility */
+					VectorCopy(checkCent->lerpOrigin, itemOrigin);
+					if (cg_itemFx.integer & 1)
 					{
-						/* Get item position (before bob), used for hitbox trace and visibility */
-						VectorCopy(checkCent->lerpOrigin, itemOrigin);
-						if (cg_itemFx.integer & 1)
-						{
-							float scale = 0.005f + checkCent->currentState.number * 0.00001f;
-							float bobOffset = 4.0f + cos((cg.time + 1000) * scale) * 4.0f;
-							itemOrigin[2] -= bobOffset;
-						}
+						float scale = 0.005f + checkCent->currentState.number * 0.00001f;
+						float bobOffset = 4.0f + cos((cg.time + 1000) * scale) * 4.0f;
+						itemOrigin[2] -= bobOffset;
+					}
 
-						/* Hitbox parameters (same as CG_AddItemHitBox); flags use giTag (no Q_stricmp) */
-						if (cg_simpleItems.integer == 1)
-						{
-							r = cg_simpleItemsRadius.integer;
-							if (r > 24) r = 24;
-							if (r < 8) r = 8;
-							hbox_size_xy = (float)r;
-							lift = (r > 14) ? (float)(r - 14) * 1.5f : 0.0f;
-							half_h = (float)r * 0.5f + 2.0f;
-							mins[0] = -hbox_size_xy;
-							mins[1] = -hbox_size_xy;
-							mins[2] = -half_h;
-							maxs[0] = hbox_size_xy;
-							maxs[1] = hbox_size_xy;
-							maxs[2] = lift + half_h + 4.0f;
-						}
+					/* Hitbox parameters (same as CG_AddItemHitBox); flags use giTag (no Q_stricmp) */
+					if (cg_simpleItems.integer == 1)
+					{
+						r = cg_simpleItemsRadius.integer;
+						if (r > 24) r = 24;
+						if (r < 8) r = 8;
+						hbox_size_xy = (float)r;
+						lift = (r > 14) ? (float)(r - 14) * 1.5f : 0.0f;
+						half_h = (float)r * 0.5f + 2.0f;
+						mins[0] = -hbox_size_xy;
+						mins[1] = -hbox_size_xy;
+						mins[2] = -half_h;
+						maxs[0] = hbox_size_xy;
+						maxs[1] = hbox_size_xy;
+						maxs[2] = lift + half_h + 4.0f;
+					}
+					else
+					{
+						hbox_size_xy = 16.0f;
+						mins[0] = mins[1] = -hbox_size_xy;
+						mins[2] = -8.0f;
+						maxs[0] = maxs[1] = hbox_size_xy;
+						/* Flags (giTag) have higher hitbox than other items */
+						if (cgs.gametype == GT_CTF && checkItem->giType == IT_TEAM &&
+						        (checkItem->giTag == PW_REDFLAG || checkItem->giTag == PW_BLUEFLAG))
+							hbox_height = 60.0f;
 						else
+							hbox_height = 40.0f;
+						maxs[2] = hbox_height;
+					}
+
+					cmodel = trap_CM_TempBoxModel(mins, maxs);
+					trap_CM_TransformedBoxTrace(&hboxTrace, start, end,
+					                            vec3_origin, vec3_origin, cmodel,
+					                            MASK_SHOT, itemOrigin, vec3_origin);
+
+					if (hboxTrace.fraction < 1.0f)
+					{
+						/* Check visibility - trace from camera to item to make sure there's no wall */
+						CG_Trace(&visibilityTrace, start, vec3_origin, vec3_origin, itemOrigin,
+						         cg.snap->ps.clientNum, CONTENTS_SOLID);
+
+						if (visibilityTrace.fraction >= 0.99f)
 						{
-							hbox_size_xy = 16.0f;
-							mins[0] = mins[1] = -hbox_size_xy;
-							mins[2] = -8.0f;
-							maxs[0] = maxs[1] = hbox_size_xy;
-							/* Flags (giTag) have higher hitbox than other items */
-							if (cgs.gametype == GT_CTF && checkItem->giType == IT_TEAM &&
-							    (checkItem->giTag == PW_REDFLAG || checkItem->giTag == PW_BLUEFLAG))
-								hbox_height = 60.0f;
-							else
-								hbox_height = 40.0f;
-							maxs[2] = hbox_height;
-						}
+							VectorCopy(itemOrigin, itemPos);
 
-						cmodel = trap_CM_TempBoxModel(mins, maxs);
-						trap_CM_TransformedBoxTrace(&hboxTrace, start, end,
-							vec3_origin, vec3_origin, cmodel,
-							MASK_SHOT, itemOrigin, vec3_origin);
-
-						if (hboxTrace.fraction < 1.0f)
-						{
-							/* Check visibility - trace from camera to item to make sure there's no wall */
-							CG_Trace(&visibilityTrace, start, vec3_origin, vec3_origin, itemOrigin,
-								cg.snap->ps.clientNum, CONTENTS_SOLID);
-
-							if (visibilityTrace.fraction >= 0.99f)
+							/* Use giType/giTag/quantity instead of Q_stricmp */
+							if (checkItem->giType == IT_POWERUP)
 							{
-								VectorCopy(itemOrigin, itemPos);
-
-								/* Use giType/giTag/quantity instead of Q_stricmp */
-								if (checkItem->giType == IT_POWERUP)
+								switch (checkItem->giTag)
 								{
-									switch (checkItem->giTag)
-									{
-										case PW_QUAD:       return 7;   /* quaddamage */
-										case PW_REGEN:      return 8;   /* regeneration */
-										case PW_BATTLESUIT: return 9;   /* battlesuit */
-										case PW_HASTE:      return 10;  /* haste */
-										default: break;
-									}
+									case PW_QUAD:
+										return 7;   /* quaddamage */
+									case PW_REGEN:
+										return 8;   /* regeneration */
+									case PW_BATTLESUIT:
+										return 9;   /* battlesuit */
+									case PW_HASTE:
+										return 10;  /* haste */
+									default:
+										break;
 								}
-								else if (checkItem->giType == IT_TEAM && cgs.gametype == GT_CTF)
-								{
-									if (checkItem->giTag == PW_REDFLAG)  return 15;  /* red flag */
-									if (checkItem->giTag == PW_BLUEFLAG) return 16;  /* blue flag */
-								}
-								else if (checkItem->giType == IT_ARMOR)
-								{
-									if (checkItem->quantity >= 100) return 3;   /* red armor */
-									if (checkItem->quantity >= 50)  return 11;  /* yellow armor */
-								}
-								else if (checkItem->giType == IT_HEALTH)
-								{
-									if (checkItem->quantity >= 100) return 4;  /* megahealth */
-									return 12;  /* health 25 and 50 */
-								}
+							}
+							else if (checkItem->giType == IT_TEAM && cgs.gametype == GT_CTF)
+							{
+								if (checkItem->giTag == PW_REDFLAG)  return 15;  /* red flag */
+								if (checkItem->giTag == PW_BLUEFLAG) return 16;  /* blue flag */
+							}
+							else if (checkItem->giType == IT_ARMOR)
+							{
+								if (checkItem->quantity >= 100) return 3;   /* red armor */
+								if (checkItem->quantity >= 50)  return 11;  /* yellow armor */
+							}
+							else if (checkItem->giType == IT_HEALTH)
+							{
+								if (checkItem->quantity >= 100) return 4;  /* megahealth */
+								return 12;  /* health 25 and 50 */
 							}
 						}
 					}
+				}
 			}
 		}
 	}
@@ -2629,23 +2634,23 @@ void CG_DrawWarmupShud(void)
 
 // static void CG_DrawTestFont(const char* font)
 // {
-// 	const int offs_x = (SCREEN_WIDTH - 320) / 2;
-// 	const int offs_y = (SCREEN_HEIGHT - 320) / 2;
-// 	int x, y;
-// 	char to_print[2];
-// 	unsigned char c = 0;
-// 	to_print[1] = 0;
-// 	CG_FontSelect(CG_FontIndexFromName(font));
-// 	for (y = 0; y < 16; ++y)
-// 	{
-// 		for (x = 0; x < 16; ++x)
-// 		{
-// 			to_print[0] = (char)c;
-// 			c++;
-// 			if (to_print[0] == 0) to_print[0] = ' ';
-// 			CG_OSPDrawString(offs_x + x * 20, offs_y + y * 20, to_print, colorWhite, 16, 16, 4 * 16, DS_HCENTER | DS_PROPORTIONAL, NULL);
-// 		}
-// 	}
+//  const int offs_x = (SCREEN_WIDTH - 320) / 2;
+//  const int offs_y = (SCREEN_HEIGHT - 320) / 2;
+//  int x, y;
+//  char to_print[2];
+//  unsigned char c = 0;
+//  to_print[1] = 0;
+//  CG_FontSelect(CG_FontIndexFromName(font));
+//  for (y = 0; y < 16; ++y)
+//  {
+//      for (x = 0; x < 16; ++x)
+//      {
+//          to_print[0] = (char)c;
+//          c++;
+//          if (to_print[0] == 0) to_print[0] = ' ';
+//          CG_OSPDrawString(offs_x + x * 20, offs_y + y * 20, to_print, colorWhite, 16, 16, 4 * 16, DS_HCENTER | DS_PROPORTIONAL, NULL);
+//      }
+//  }
 
 // }
 
@@ -3048,7 +3053,7 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 					fc = &cg_entities[ci->frozenEntity];
 					frozenClientNum = (fc->currentValid && CG_IS_FROZEN_ENTITY(fc)) ? fc->currentState.otherEntityNum : -1;
 					hasActiveMark = (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS &&
-					                cgs.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum]);
+					                 cgs.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum]);
 					if (!hasActiveMark)
 					{
 						vec4_t color;
@@ -3195,7 +3200,7 @@ void CG_DrawWeaponStats(shudWeaponStatsPos_t position, float iconSize)
 				trap_R_SetColor(NULL);
 			}
 		}
-			CG_OSPDrawStringNew(textX, textY, accStr, colorWhite, colorBlack, charWidth, charHeight,
+		CG_OSPDrawStringNew(textX, textY, accStr, colorWhite, colorBlack, charWidth, charHeight,
 		                    SCREEN_WIDTH, textFlags, font, NULL, NULL, NULL);
 
 		if (!iconBeforeText)
@@ -3268,15 +3273,15 @@ static void CG_Draw2D(void)
 	drawTeamIndicator = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) && cg_teamIndicator.integer;
 
 	if (cg_draw2D.integer ||
-	    ((cg_teamTaskWheel.integer & 4) && cgs.teamMarkers.ttwheelMarkActive) ||
-	    cgs.teamMarkers.drawTeamTasks ||
-	    drawTeamIndicator)
+	        ((cg_teamTaskWheel.integer & 4) && cgs.teamMarkers.ttwheelMarkActive) ||
+	        cgs.teamMarkers.drawTeamTasks ||
+	        drawTeamIndicator)
 	{
 		if (cg_draw2D.integer)
 		{
 			if (((cg_damageDrawFrame.integer & 4) && cg.beIsHealthLow) ||
-			    ((cg_damageDrawFrame.integer & 3) != 0 && cg.damageValue &&
-			     cg.time - cg.damageTime > 0 && cg.time - cg.damageTime < DAMAGE_TIME))
+			        ((cg_damageDrawFrame.integer & 3) != 0 && cg.damageValue &&
+			         cg.time - cg.damageTime > 0 && cg.time - cg.damageTime < DAMAGE_TIME))
 			{
 				vec4_t damageColor, damageRed, borderSizeOriginal;
 
@@ -3288,7 +3293,7 @@ static void CG_Draw2D(void)
 					CG_OSPDrawBlurFrame(SCREEN_START, SCREEN_START, SCREEN_SCALED_W, SCREEN_SCALED_H, 128, damageColor);
 				}
 				if ((cg_damageDrawFrame.integer & 3) != 0 && cg.damageValue &&
-				    cg.time - cg.damageTime > 0 && cg.time - cg.damageTime < DAMAGE_TIME)
+				        cg.time - cg.damageTime > 0 && cg.time - cg.damageTime < DAMAGE_TIME)
 				{
 					Vector4Set(damageRed, 1.0f, 0.0f, 0.0f, cg_damageFrameOpaque.value);
 					if ((cg_damageDrawFrame.integer & 3) == 3)
@@ -3438,7 +3443,7 @@ void CG_DrawActive(stereoFrame_t stereoView)
 
 	/* Clear around sized-down viewport only (QVM: skip call when fullscreen) */
 	if (cg.refdef.x != 0 || cg.refdef.y != 0 ||
-	    cg.refdef.width != cgs.glconfig.vidWidth || cg.refdef.height != cgs.glconfig.vidHeight)
+	        cg.refdef.width != cgs.glconfig.vidWidth || cg.refdef.height != cgs.glconfig.vidHeight)
 	{
 		CG_TileClear();
 	}

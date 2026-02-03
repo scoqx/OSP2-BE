@@ -2698,8 +2698,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	{
 		char ucGammaStr[16];
-		trap_Cvar_VariableStringBuffer( "uc_gamma", ucGammaStr, sizeof(ucGammaStr) );
-		trap_Cvar_Set( "r_gamma", ( ucGammaStr[0] != '\0' ) ? ucGammaStr : "1" );
+		trap_Cvar_VariableStringBuffer("uc_gamma", ucGammaStr, sizeof(ucGammaStr));
+		trap_Cvar_Set("r_gamma", (ucGammaStr[0] != '\0') ? ucGammaStr : "1");
 	}
 
 	// Parse compilation info from 'cversion' file

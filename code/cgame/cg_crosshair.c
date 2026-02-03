@@ -305,8 +305,8 @@ void CG_DrawCrosshair(void)
 	qboolean aspectFix = qfalse;
 
 	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ||
-	    cg.renderingThirdPerson ||
-	    global_viewlistFirstOption > 1)
+	        cg.renderingThirdPerson ||
+	        global_viewlistFirstOption > 1)
 	{
 		return;
 	}

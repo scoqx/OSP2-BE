@@ -44,7 +44,7 @@ qboolean CG_BE_Timer(int msec)
 	return qfalse;
 }
 
-	void CG_UpdateBeFeatures(void)
+void CG_UpdateBeFeatures(void)
 {
 	static qboolean inUpdateAllClientsInfo = qfalse;
 	static int lastBeEnabled = -1;
@@ -74,7 +74,7 @@ qboolean CG_BE_Timer(int msec)
 	{
 		inUpdateAllClientsInfo = qtrue;
 		if (needRebuild)
-		CG_RebuildPlayerColors();
+			CG_RebuildPlayerColors();
 		CG_UpdateAllClientsInfo();
 		inUpdateAllClientsInfo = qfalse;
 	}

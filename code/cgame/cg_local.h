@@ -66,7 +66,7 @@ extern "C" {
 #define MAX_SELWHEEL_ELEMENTS 10
 
 #define MAX_VERTS_ON_POLY   10
-#define MAX_MARK_POLYS      10240		// x20 for cg_gibs 2
+#define MAX_MARK_POLYS      10240       // x20 for cg_gibs 2
 
 #define STAT_MINUS          10  // num frame for '-' stats digit
 
@@ -1682,7 +1682,7 @@ typedef struct
 	/* Hot path: exec weapon/onDeath read cvar.string at use (no cgs copy) */
 	int         lastExecSpectateClientNum;
 
-		struct
+	struct
 	{
 		char text[MAX_STRING_CHARS];
 		float x;

@@ -1257,10 +1257,10 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 			mark = &cgs.teamMarkers.teamTaskMarks[i];
 			/* Remove: same client+type, same client+overhead (if adding overhead), same client+PLAYERDEAD (if adding HERE/WARN_DEAD), same client+HERE/WARN_DEAD (if adding) */
 			if (mark->clientNum == clientNum &&
-			    (mark->markType == markType ||
-			     (isOverheadMark && mark->isOverhead) ||
-			     (isHereWarnDead && mark->markType == TEAMTASK_PLAYERDEAD) ||
-			     (isHereWarnDead && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))))
+			        (mark->markType == markType ||
+			         (isOverheadMark && mark->isOverhead) ||
+			         (isHereWarnDead && mark->markType == TEAMTASK_PLAYERDEAD) ||
+			         (isHereWarnDead && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))))
 			{
 				continue;
 			}

@@ -1655,7 +1655,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	{
 		cent->pe.lightningFiring = qfalse;
 		if ((cent->currentState.eFlags & EF_FIRING) && weapon->firingSound &&
-		    (cent->currentState.number != cg.clientNum || cg.snap->ps.weaponstate == WEAPON_READY || cg.snap->ps.weaponstate == WEAPON_FIRING))
+		        (cent->currentState.number != cg.clientNum || cg.snap->ps.weaponstate == WEAPON_READY || cg.snap->ps.weaponstate == WEAPON_FIRING))
 		{
 			trap_S_AddLoopingSound(cent->currentState.number, cent->lerpOrigin, vec3_origin, weapon->firingSound);
 			cent->pe.lightningFiring = qtrue;
@@ -1717,12 +1717,12 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 
 	{
 		qboolean wantBright =
-		CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) &&
-		(
-			((cg_drawBrightWeapons.integer & 1) && (isOwnGun || isSpectatingFollow)) ||
-			((cg_drawBrightWeapons.integer & 2) && isTeammate) ||
-			((cg_drawBrightWeapons.integer & 4) && isEnemy)
-		);
+		    CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) &&
+		    (
+		        ((cg_drawBrightWeapons.integer & 1) && (isOwnGun || isSpectatingFollow)) ||
+		        ((cg_drawBrightWeapons.integer & 2) && isTeammate) ||
+		        ((cg_drawBrightWeapons.integer & 4) && isEnemy)
+		    );
 
 		if (wantBright && weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 		{
@@ -1790,7 +1790,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			}
 		}
 
-			/* spinning barrel */
+		/* spinning barrel */
 		if (weapon->barrelModel)
 		{
 			float brlAngle;
@@ -2468,44 +2468,44 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 			radius = 24;
 			break;
 		case WP_PLASMAGUN:
+		{
+			int altPlasma;
+
+			mod = cgs.media.ringFlashModel;
+			sfx = cgs.media.sfx_plasmaexp;
+			shader = cgs.media.plasmaExplosionShader;
+			mark = cgs.media.energyMarkShader;
+			altPlasma = cg_altPlasma.integer;
+			if (altPlasma == 2 && !CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN))
+				altPlasma = 0;
+
+			if (altPlasma == 0)
 			{
-				int altPlasma;
-
-				mod = cgs.media.ringFlashModel;
-				sfx = cgs.media.sfx_plasmaexp;
-				shader = cgs.media.plasmaExplosionShader;
-				mark = cgs.media.energyMarkShader;
-				altPlasma = cg_altPlasma.integer;
-				if (altPlasma == 2 && !CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN))
-					altPlasma = 0;
-
-				if (altPlasma == 0)
+				if ((cg_nomip.integer & 2) == 0)
 				{
-					if ((cg_nomip.integer & 2) == 0)
-					{
-						shader = cgs.media.plasmaExplosionShader;
-						mark = cgs.media.energyMarkShader;
-					}
-					else
-					{
-						shader = cgs.media.plasmaExplosionShaderNoPicMip;
-						mark = cgs.media.energyMarkNoPicMipShader;
-					}
+					shader = cgs.media.plasmaExplosionShader;
+					mark = cgs.media.energyMarkShader;
 				}
-				else if (altPlasma == 1)
+				else
 				{
-					if ((cg_nomip.integer & 2) == 0)
-					{
-						shader = cgs.media.plasmaNewExplosionShader;
-						mark = cgs.media.energyMarkShader;
-					}
-					else
-					{
-						shader = cgs.media.plasmaNewExplosionShaderNoPicMip;
-						mark = cgs.media.energyMarkNoPicMipShader;
-					}
+					shader = cgs.media.plasmaExplosionShaderNoPicMip;
+					mark = cgs.media.energyMarkNoPicMipShader;
 				}
-				else if (altPlasma == 2)
+			}
+			else if (altPlasma == 1)
+			{
+				if ((cg_nomip.integer & 2) == 0)
+				{
+					shader = cgs.media.plasmaNewExplosionShader;
+					mark = cgs.media.energyMarkShader;
+				}
+				else
+				{
+					shader = cgs.media.plasmaNewExplosionShaderNoPicMip;
+					mark = cgs.media.energyMarkNoPicMipShader;
+				}
+			}
+			else if (altPlasma == 2)
 			{
 				if ((cg_nomip.integer & 2) == 0)
 				{
@@ -2530,9 +2530,9 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 					mark = cgs.media.energyMarkNoPicMipShader;
 				}
 			}
-			}
-			radius = 16;
-			break;
+		}
+		radius = 16;
+		break;
 
 		case WP_BFG:
 			mod = cgs.media.dishFlashModel;

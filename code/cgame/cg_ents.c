@@ -1186,9 +1186,9 @@ void CG_AddPacketEntities(void)
 		else
 		{
 			currentSpectatorTarget = (cg.snap->ps.pm_flags & PMF_FOLLOW &&
-			        cg.snap->ps.clientNum >= 0 &&
-			        cg.snap->ps.clientNum < MAX_CLIENTS)
-			        ? cg.snap->ps.clientNum : -1;
+			                          cg.snap->ps.clientNum >= 0 &&
+			                          cg.snap->ps.clientNum < MAX_CLIENTS)
+			                         ? cg.snap->ps.clientNum : -1;
 			if (currentSpectatorTarget != lastSpectatorTarget)
 			{
 				lastSpectatorTarget = currentSpectatorTarget;
@@ -1204,7 +1204,7 @@ void CG_AddPacketEntities(void)
 						}
 					}
 				}
-				
+
 			}
 		}
 	}

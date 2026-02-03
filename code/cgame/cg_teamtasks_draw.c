@@ -527,7 +527,7 @@ void CG_TeamTaskUpdateFrame(void)
 			                  ((mark->clientNum < 32 && (tm->packHereDeadClientMask0 & (1 << mark->clientNum))) ||
 			                   (mark->clientNum >= 32 && (tm->packHereDeadClientMask1 & (1 << (mark->clientNum - 32))))));
 			if ((tm->packRoundNextFrame && roundMark) ||
-			    (tm->packLocalDeathNextFrame && localDeathMark) || hereDeadRemove)
+			        (tm->packLocalDeathNextFrame && localDeathMark) || hereDeadRemove)
 				continue;
 			if (w != i)
 				tm->teamTaskMarks[w] = tm->teamTaskMarks[i];
@@ -565,13 +565,13 @@ void CG_TeamTaskUpdateFrame(void)
 			tm->clientHasOverhead[mark->clientNum] = qtrue;
 		tm->markHasPickupNear[i] = qfalse;
 		if (!mark->isPickup &&
-		    (mark->markType == TEAMTASK_REDARMOR || mark->markType == TEAMTASK_MEGAHEALTH || mark->markType == TEAMTASK_YELLOWARMOR))
+		        (mark->markType == TEAMTASK_REDARMOR || mark->markType == TEAMTASK_MEGAHEALTH || mark->markType == TEAMTASK_YELLOWARMOR))
 		{
 			for (j = 0; j < tm->numTeamTaskMarks; j++)
 			{
 				other = &tm->teamTaskMarks[j];
 				if (other->isPickup && other->markType == mark->markType &&
-				    Distance(mark->origin, other->origin) <= 64.0f)
+				        Distance(mark->origin, other->origin) <= 64.0f)
 				{
 					tm->markHasPickupNear[i] = qtrue;
 					break;
@@ -1642,10 +1642,10 @@ void CG_DrawTeamTaskMarks(void)
 			continue;
 		CG_RenderTeamTaskMark(mark, &renderData, &constants);
 
-			/* Own HERE_DEAD/WARN_DEAD as overhead in first person (pickup/item uses CATEGORY 1 overhead path above, no second draw) */
+		/* Own HERE_DEAD/WARN_DEAD as overhead in first person (pickup/item uses CATEGORY 1 overhead path above, no second draw) */
 		if (!cg.renderingThirdPerson && CG_IS_LOCAL_CLIENT_ON_SCREEN() && !CG_IsClientFreeFloat() &&
-		    mark->clientNum == cg.clientNum &&
-		    (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))
+		        mark->clientNum == cg.clientNum &&
+		        (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))
 		{
 			teamTaskMarkRenderData_t overheadRenderData;
 

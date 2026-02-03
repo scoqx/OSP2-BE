@@ -811,7 +811,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 
 	ci = &cgs.clientinfo[clientNum];
 	if (!newInfo || !ci->infoValid || !cg.nextSnap ||
-	    CG_IS_LOCAL_CLIENT_SPECTATOR() || CG_IS_ENEMY_SIMPLE(newInfo) || CG_TeamTaskFilterIsNameMuted(ci->name_original))
+	        CG_IS_LOCAL_CLIENT_SPECTATOR() || CG_IS_ENEMY_SIMPLE(newInfo) || CG_TeamTaskFilterIsNameMuted(ci->name_original))
 		return;
 
 
@@ -865,214 +865,247 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 
 	switch (templateID)
 	{
-	case TEAMTASK_YES:
-	case TEAMTASK_NO:
-	case TEAMTASK_MEDIC:
-	case TEAMTASK_HERE_ALIVE:
-		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-		return;
-	case TEAMTASK_PLAYERDEAD:
-	case TEAMTASK_HERE_DEAD:
-	case TEAMTASK_WARN_DEAD:
-		CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-		return;
-	case TEAMTASK_TARGET:
-	{
-		/* For TARGET mark, try to find enemy player at the received position */
-		/* If found, use enemy's current position with +24 height, otherwise use received coordinates */
-		int i;
-		centity_t* cent;
-		vec3_t enemyPos;
-		qboolean foundEnemy;
-		float searchRadius;
-		float dist;
-
-		foundEnemy = qfalse;
-		searchRadius = 128.0f; /* Search radius for finding enemy near received coordinates */
-
-		/* Try to find enemy player near received coordinates (players at 0..MAX_CLIENTS-1) */
-		for (i = 0; i < MAX_CLIENTS; i++)
+		case TEAMTASK_YES:
+		case TEAMTASK_NO:
+		case TEAMTASK_MEDIC:
+		case TEAMTASK_HERE_ALIVE:
+			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+			return;
+		case TEAMTASK_PLAYERDEAD:
+		case TEAMTASK_HERE_DEAD:
+		case TEAMTASK_WARN_DEAD:
+			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+			return;
+		case TEAMTASK_TARGET:
 		{
-			cent = &cg_entities[i];
-			if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
+			/* For TARGET mark, try to find enemy player at the received position */
+			/* If found, use enemy's current position with +24 height, otherwise use received coordinates */
+			int i;
+			centity_t* cent;
+			vec3_t enemyPos;
+			qboolean foundEnemy;
+			float searchRadius;
+			float dist;
+
+			foundEnemy = qfalse;
+			searchRadius = 128.0f; /* Search radius for finding enemy near received coordinates */
+
+			/* Try to find enemy player near received coordinates (players at 0..MAX_CLIENTS-1) */
+			for (i = 0; i < MAX_CLIENTS; i++)
 			{
-				/* Check if this is an enemy */
-				if (cent->currentState.clientNum >= 0 && cent->currentState.clientNum < MAX_CLIENTS)
+				cent = &cg_entities[i];
+				if (cent->currentState.eType == ET_PLAYER && cent->currentValid)
 				{
-					clientInfo_t* targetCi;
-					targetCi = &cgs.clientinfo[cent->currentState.clientNum];
-					if (targetCi->infoValid && CG_IS_ENEMY_SIMPLE(targetCi))
+					/* Check if this is an enemy */
+					if (cent->currentState.clientNum >= 0 && cent->currentState.clientNum < MAX_CLIENTS)
 					{
-						/* Check if enemy is near received coordinates */
-						dist = Distance(cent->lerpOrigin, coord);
-						if (dist <= searchRadius)
+						clientInfo_t* targetCi;
+						targetCi = &cgs.clientinfo[cent->currentState.clientNum];
+						if (targetCi->infoValid && CG_IS_ENEMY_SIMPLE(targetCi))
 						{
-							/* Found enemy - use their position with +24 height */
-							VectorCopy(cent->lerpOrigin, enemyPos);
-							enemyPos[2] += 24.0f;
-							CG_TeamTaskMark(enemyPos, templateID, clientNum, toClient);
-							foundEnemy = qtrue;
-							break;
+							/* Check if enemy is near received coordinates */
+							dist = Distance(cent->lerpOrigin, coord);
+							if (dist <= searchRadius)
+							{
+								/* Found enemy - use their position with +24 height */
+								VectorCopy(cent->lerpOrigin, enemyPos);
+								enemyPos[2] += 24.0f;
+								CG_TeamTaskMark(enemyPos, templateID, clientNum, toClient);
+								foundEnemy = qtrue;
+								break;
+							}
 						}
 					}
 				}
 			}
-		}
 
-		if (!foundEnemy)
-		{
-			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-		}
-	}
-		return;
-	case TEAMTASK_FROZEN_ALLY:
-	case TEAMTASK_FROZEN_ENEMY:
-	{
-		/* Use frozen entity cache (set/clear in CG_Player when we process each cent) */
-		int i;
-		centity_t* cent;
-		clientInfo_t* frozenCi;
-		vec3_t frozenPos;
-		qboolean foundFrozen;
-		float searchRadius;
-		float dist;
-		qboolean isEnemy;
-		qboolean matchesType;
-
-		foundFrozen = qfalse;
-		searchRadius = 128.0f;
-
-		for (i = 0; i < MAX_CLIENTS; i++)
-		{
-			if (!cgs.clientinfo[i].isFrozenEnt)
-				continue;
-			cent = &cg_entities[cgs.clientinfo[i].frozenEntity];
-			if (!cent->currentValid)
-				continue;
-			frozenCi = &cgs.clientinfo[i];
-			if (!frozenCi->infoValid)
-				continue;
-			isEnemy = CG_IS_ENEMY_SIMPLE(frozenCi);
-			matchesType = (templateID == TEAMTASK_FROZEN_ALLY) ? !isEnemy : isEnemy;
-			if (!matchesType)
-				continue;
-			dist = Distance(cent->lerpOrigin, coord);
-			if (dist > searchRadius)
-				continue;
-			VectorCopy(cent->lerpOrigin, frozenPos);
-			frozenPos[2] += 24.0f;
-			CG_TeamTaskMark(frozenPos, templateID, clientNum, toClient);
-			foundFrozen = qtrue;
-			break;
-		}
-
-		if (!foundFrozen)
-			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-	}
-		return;
-	case TEAMTASK_REDFLAG:
-	case TEAMTASK_BLUEFLAG:
-		if (cgs.gametype != GT_CTF)
-		{
-			goto do_aim_point;
-		}
-	case TEAMTASK_REDARMOR:
-	case TEAMTASK_MEGAHEALTH:
-	case TEAMTASK_QUADDAMAGE:
-	case TEAMTASK_REGENERATION:
-	case TEAMTASK_BATTLESUIT:
-	case TEAMTASK_HASTE:
-	case TEAMTASK_YELLOWARMOR:
-	case TEAMTASK_HEALTH:
-	{
-		/* Find item entity near coord; use lerpOrigin + 4 for mark. */
-		/* When itemEntityIndices filled: iterate only items, pick smallest ent index in range (same as full-scan order). */
-		int i;
-		int j;
-		int entIndex;
-		int bestEntIndex; /* among matches in range, the one with smallest entity index */
-		centity_t* cent;
-		gitem_t* item;
-		int itemIndex;
-		vec3_t itemPos;
-		qboolean foundItem;
-		float searchRadius;
-		float dist;
-		const char* targetClassname;
-		qboolean matches;
-
-		foundItem = qfalse;
-		searchRadius = 128.0f;
-		bestEntIndex = -1;
-
-		switch (templateID)
-		{
-		case TEAMTASK_REDARMOR:       targetClassname = "item_armor_body"; break;
-		case TEAMTASK_MEGAHEALTH:     targetClassname = "item_health_mega"; break;
-		case TEAMTASK_QUADDAMAGE:     targetClassname = "item_quad"; break;
-		case TEAMTASK_REGENERATION:   targetClassname = "item_regen"; break;
-		case TEAMTASK_BATTLESUIT:     targetClassname = "item_enviro"; break;
-		case TEAMTASK_HASTE:          targetClassname = "item_haste"; break;
-		case TEAMTASK_YELLOWARMOR:    targetClassname = "item_armor_combat"; break;
-		case TEAMTASK_REDFLAG:        targetClassname = "team_CTF_redflag"; break;
-		case TEAMTASK_BLUEFLAG:       targetClassname = "team_CTF_blueflag"; break;
-		default:                      targetClassname = NULL; break; /* TEAMTASK_HEALTH: both item_health */
-		}
-
-		if (cg.numItemEntityIndices > 0)
-		{
-			/* Iterate only item entities; pick match with smallest entity index (same as full-scan order). */
-			for (j = 0; j < cg.numItemEntityIndices; j++)
+			if (!foundEnemy)
 			{
-				entIndex = cg.itemEntityIndices[j];
-				cent = &cg_entities[entIndex];
-				if (cent->currentState.eType != ET_ITEM)
+				CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+			}
+		}
+		return;
+		case TEAMTASK_FROZEN_ALLY:
+		case TEAMTASK_FROZEN_ENEMY:
+		{
+			/* Use frozen entity cache (set/clear in CG_Player when we process each cent) */
+			int i;
+			centity_t* cent;
+			clientInfo_t* frozenCi;
+			vec3_t frozenPos;
+			qboolean foundFrozen;
+			float searchRadius;
+			float dist;
+			qboolean isEnemy;
+			qboolean matchesType;
+
+			foundFrozen = qfalse;
+			searchRadius = 128.0f;
+
+			for (i = 0; i < MAX_CLIENTS; i++)
+			{
+				if (!cgs.clientinfo[i].isFrozenEnt)
 					continue;
-				itemIndex = cent->currentState.modelindex;
-				if (itemIndex < 1 || itemIndex >= bg_numItems)
+				cent = &cg_entities[cgs.clientinfo[i].frozenEntity];
+				if (!cent->currentValid)
 					continue;
-				item = &bg_itemlist[itemIndex];
-				if (!item->classname)
+				frozenCi = &cgs.clientinfo[i];
+				if (!frozenCi->infoValid)
 					continue;
-				if (templateID == TEAMTASK_HEALTH)
-					matches = (!Q_stricmp(item->classname, "item_health") || !Q_stricmp(item->classname, "item_health_large"));
-				else
-					matches = !Q_stricmp(item->classname, targetClassname);
-				if (!matches)
+				isEnemy = CG_IS_ENEMY_SIMPLE(frozenCi);
+				matchesType = (templateID == TEAMTASK_FROZEN_ALLY) ? !isEnemy : isEnemy;
+				if (!matchesType)
 					continue;
 				dist = Distance(cent->lerpOrigin, coord);
 				if (dist > searchRadius)
 					continue;
-				if (bestEntIndex < 0 || entIndex < bestEntIndex)
-					bestEntIndex = entIndex;
+				VectorCopy(cent->lerpOrigin, frozenPos);
+				frozenPos[2] += 24.0f;
+				CG_TeamTaskMark(frozenPos, templateID, clientNum, toClient);
+				foundFrozen = qtrue;
+				break;
 			}
-			if (bestEntIndex >= 0)
-			{
-				cent = &cg_entities[bestEntIndex];
-				VectorCopy(cent->lerpOrigin, itemPos);
-				itemPos[2] += 4;
-				CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
-				foundItem = qtrue;
-			}
+
+			if (!foundFrozen)
+				CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 		}
-		else
-		{
-			/* Fallback: itemEntityIndices not filled yet; full scan. */
-			for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+		return;
+		case TEAMTASK_REDFLAG:
+		case TEAMTASK_BLUEFLAG:
+			if (cgs.gametype != GT_CTF)
 			{
-				cent = &cg_entities[i];
-				if (cent->currentState.eType == ET_ITEM)
+				goto do_aim_point;
+			}
+		case TEAMTASK_REDARMOR:
+		case TEAMTASK_MEGAHEALTH:
+		case TEAMTASK_QUADDAMAGE:
+		case TEAMTASK_REGENERATION:
+		case TEAMTASK_BATTLESUIT:
+		case TEAMTASK_HASTE:
+		case TEAMTASK_YELLOWARMOR:
+		case TEAMTASK_HEALTH:
+		{
+			/* Find item entity near coord; use lerpOrigin + 4 for mark. */
+			/* When itemEntityIndices filled: iterate only items, pick smallest ent index in range (same as full-scan order). */
+			int i;
+			int j;
+			int entIndex;
+			int bestEntIndex; /* among matches in range, the one with smallest entity index */
+			centity_t* cent;
+			gitem_t* item;
+			int itemIndex;
+			vec3_t itemPos;
+			qboolean foundItem;
+			float searchRadius;
+			float dist;
+			const char* targetClassname;
+			qboolean matches;
+
+			foundItem = qfalse;
+			searchRadius = 128.0f;
+			bestEntIndex = -1;
+
+			switch (templateID)
+			{
+				case TEAMTASK_REDARMOR:
+					targetClassname = "item_armor_body";
+					break;
+				case TEAMTASK_MEGAHEALTH:
+					targetClassname = "item_health_mega";
+					break;
+				case TEAMTASK_QUADDAMAGE:
+					targetClassname = "item_quad";
+					break;
+				case TEAMTASK_REGENERATION:
+					targetClassname = "item_regen";
+					break;
+				case TEAMTASK_BATTLESUIT:
+					targetClassname = "item_enviro";
+					break;
+				case TEAMTASK_HASTE:
+					targetClassname = "item_haste";
+					break;
+				case TEAMTASK_YELLOWARMOR:
+					targetClassname = "item_armor_combat";
+					break;
+				case TEAMTASK_REDFLAG:
+					targetClassname = "team_CTF_redflag";
+					break;
+				case TEAMTASK_BLUEFLAG:
+					targetClassname = "team_CTF_blueflag";
+					break;
+				default:
+					targetClassname = NULL;
+					break; /* TEAMTASK_HEALTH: both item_health */
+			}
+
+			if (cg.numItemEntityIndices > 0)
+			{
+				/* Iterate only item entities; pick match with smallest entity index (same as full-scan order). */
+				for (j = 0; j < cg.numItemEntityIndices; j++)
 				{
+					entIndex = cg.itemEntityIndices[j];
+					cent = &cg_entities[entIndex];
+					if (cent->currentState.eType != ET_ITEM)
+						continue;
 					itemIndex = cent->currentState.modelindex;
-					if (itemIndex >= 1 && itemIndex < bg_numItems)
+					if (itemIndex < 1 || itemIndex >= bg_numItems)
+						continue;
+					item = &bg_itemlist[itemIndex];
+					if (!item->classname)
+						continue;
+					if (templateID == TEAMTASK_HEALTH)
+						matches = (!Q_stricmp(item->classname, "item_health") || !Q_stricmp(item->classname, "item_health_large"));
+					else
+						matches = !Q_stricmp(item->classname, targetClassname);
+					if (!matches)
+						continue;
+					dist = Distance(cent->lerpOrigin, coord);
+					if (dist > searchRadius)
+						continue;
+					if (bestEntIndex < 0 || entIndex < bestEntIndex)
+						bestEntIndex = entIndex;
+				}
+				if (bestEntIndex >= 0)
+				{
+					cent = &cg_entities[bestEntIndex];
+					VectorCopy(cent->lerpOrigin, itemPos);
+					itemPos[2] += 4;
+					CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
+					foundItem = qtrue;
+				}
+			}
+			else
+			{
+				/* Fallback: itemEntityIndices not filled yet; full scan. */
+				for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++)
+				{
+					cent = &cg_entities[i];
+					if (cent->currentState.eType == ET_ITEM)
 					{
-						item = &bg_itemlist[itemIndex];
-						if (item->classname)
+						itemIndex = cent->currentState.modelindex;
+						if (itemIndex >= 1 && itemIndex < bg_numItems)
 						{
-							if (templateID == TEAMTASK_HEALTH)
+							item = &bg_itemlist[itemIndex];
+							if (item->classname)
 							{
-								if (!Q_stricmp(item->classname, "item_health") ||
-								        !Q_stricmp(item->classname, "item_health_large"))
+								if (templateID == TEAMTASK_HEALTH)
+								{
+									if (!Q_stricmp(item->classname, "item_health") ||
+									        !Q_stricmp(item->classname, "item_health_large"))
+									{
+										dist = Distance(cent->lerpOrigin, coord);
+										if (dist <= searchRadius)
+										{
+											VectorCopy(cent->lerpOrigin, itemPos);
+											itemPos[2] += 4;
+											CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
+											foundItem = qtrue;
+											break;
+										}
+									}
+								}
+								else if (!Q_stricmp(item->classname, targetClassname))
 								{
 									dist = Distance(cent->lerpOrigin, coord);
 									if (dist <= searchRadius)
@@ -1085,122 +1118,109 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 									}
 								}
 							}
-							else if (!Q_stricmp(item->classname, targetClassname))
-							{
-								dist = Distance(cent->lerpOrigin, coord);
-								if (dist <= searchRadius)
-								{
-									VectorCopy(cent->lerpOrigin, itemPos);
-									itemPos[2] += 4;
-									CG_TeamTaskMark(itemPos, templateID, clientNum, toClient);
-									foundItem = qtrue;
-									break;
-								}
-							}
 						}
 					}
 				}
 			}
-		}
 
-		if (!foundItem)
-		{
-			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-		}
-		return;
-	}
-	case TEAMTASK_REDFLAG_CARRIER:
-	case TEAMTASK_BLUEFLAG_CARRIER:
-		if (cgs.gametype != GT_CTF)
-		{
-			goto do_aim_point;
-		}
-		{
-			int i;
-			centity_t* cent;
-			vec3_t carrierPos;
-			qboolean foundCarrier;
-			float searchRadius;
-			float dist;
-			int powerupFlag;
-
-			foundCarrier = qfalse;
-			searchRadius = 256.0f;
-			powerupFlag = (templateID == TEAMTASK_REDFLAG_CARRIER) ? PW_REDFLAG : PW_BLUEFLAG;
-
-			for (i = 0; i < MAX_CLIENTS; i++)
-			{
-				cent = &cg_entities[i];
-				if (cent->currentState.eType == ET_PLAYER && cent->currentValid &&
-				    (cent->currentState.powerups & (1 << powerupFlag)))
-				{
-					dist = Distance(cent->lerpOrigin, coord);
-					if (dist <= searchRadius)
-					{
-						VectorCopy(cent->lerpOrigin, carrierPos);
-						carrierPos[2] += 24.0f;
-						CG_TeamTaskMark(carrierPos, templateID, clientNum, toClient);
-						foundCarrier = qtrue;
-						break;
-					}
-				}
-			}
-			if (!foundCarrier)
+			if (!foundItem)
 			{
 				CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 			}
+			return;
 		}
-		return;
-	default:
-	do_aim_point:
-		{
-			vec3_t aimPoint;
-			vec3_t start, end;
-			trace_t trace;
-			centity_t* cent;
-
-			/* Inline: aim point only when needed; use cg_entities[clientNum] directly (we know client) */
-			if (clientNum == cg.clientNum)
+		case TEAMTASK_REDFLAG_CARRIER:
+		case TEAMTASK_BLUEFLAG_CARRIER:
+			if (cgs.gametype != GT_CTF)
 			{
-				if (cg.predictedPlayerState.pm_type == PM_DEAD ||
-				    cg.predictedPlayerState.pm_type == PM_SPINTERMISSION)
-				{
-					CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-					break;
-				}
-				VectorCopy(cg.refdef.vieworg, start);
-				VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
-				CG_Trace(&trace, start, vec3_origin, vec3_origin, end, clientNum, CONTENTS_SOLID);
-				VectorCopy(trace.endpos, aimPoint);
+				goto do_aim_point;
 			}
-			else if (clientNum >= 0 && clientNum < MAX_CLIENTS)
 			{
-				cent = &cg_entities[clientNum];
-				if (cent->currentState.eType != ET_PLAYER || cent->currentState.clientNum != clientNum ||
-				    (cent->currentState.eFlags & EF_DEAD) || !cent->currentValid)
+				int i;
+				centity_t* cent;
+				vec3_t carrierPos;
+				qboolean foundCarrier;
+				float searchRadius;
+				float dist;
+				int powerupFlag;
+
+				foundCarrier = qfalse;
+				searchRadius = 256.0f;
+				powerupFlag = (templateID == TEAMTASK_REDFLAG_CARRIER) ? PW_REDFLAG : PW_BLUEFLAG;
+
+				for (i = 0; i < MAX_CLIENTS; i++)
+				{
+					cent = &cg_entities[i];
+					if (cent->currentState.eType == ET_PLAYER && cent->currentValid &&
+					        (cent->currentState.powerups & (1 << powerupFlag)))
+					{
+						dist = Distance(cent->lerpOrigin, coord);
+						if (dist <= searchRadius)
+						{
+							VectorCopy(cent->lerpOrigin, carrierPos);
+							carrierPos[2] += 24.0f;
+							CG_TeamTaskMark(carrierPos, templateID, clientNum, toClient);
+							foundCarrier = qtrue;
+							break;
+						}
+					}
+				}
+				if (!foundCarrier)
 				{
 					CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-					break;
 				}
-				{
-					vec3_t axis[3];
+			}
+			return;
+		default:
+do_aim_point:
+			{
+				vec3_t aimPoint;
+				vec3_t start, end;
+				trace_t trace;
+				centity_t* cent;
 
-					AnglesToAxis(cent->currentState.apos.trBase, axis);
-					VectorCopy(cent->currentState.pos.trBase, start);
-					start[2] += DEFAULT_VIEWHEIGHT;
-					VectorMA(start, 131072, axis[0], end);
+				/* Inline: aim point only when needed; use cg_entities[clientNum] directly (we know client) */
+				if (clientNum == cg.clientNum)
+				{
+					if (cg.predictedPlayerState.pm_type == PM_DEAD ||
+					        cg.predictedPlayerState.pm_type == PM_SPINTERMISSION)
+					{
+						CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+						break;
+					}
+					VectorCopy(cg.refdef.vieworg, start);
+					VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
 					CG_Trace(&trace, start, vec3_origin, vec3_origin, end, clientNum, CONTENTS_SOLID);
 					VectorCopy(trace.endpos, aimPoint);
 				}
+				else if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+				{
+					cent = &cg_entities[clientNum];
+					if (cent->currentState.eType != ET_PLAYER || cent->currentState.clientNum != clientNum ||
+					        (cent->currentState.eFlags & EF_DEAD) || !cent->currentValid)
+					{
+						CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+						break;
+					}
+					{
+						vec3_t axis[3];
+
+						AnglesToAxis(cent->currentState.apos.trBase, axis);
+						VectorCopy(cent->currentState.pos.trBase, start);
+						start[2] += DEFAULT_VIEWHEIGHT;
+						VectorMA(start, 131072, axis[0], end);
+						CG_Trace(&trace, start, vec3_origin, vec3_origin, end, clientNum, CONTENTS_SOLID);
+						VectorCopy(trace.endpos, aimPoint);
+					}
+				}
+				else
+				{
+					CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+					break;
+				}
+				CG_TeamTaskMark(aimPoint, templateID, clientNum, toClient);
 			}
-			else
-			{
-				CG_TeamTaskMark(coord, templateID, clientNum, toClient);
-				break;
-			}
-			CG_TeamTaskMark(aimPoint, templateID, clientNum, toClient);
-		}
-		break;
+			break;
 	}
 }
 
@@ -3419,7 +3439,7 @@ void CG_Player(centity_t* cent)
 	/* QVM_LOGIC 2.1: explicit init for conditionally-set locals */
 	outlineIsSpec = qfalse;
 	outlineIsEnemy = qfalse;
-	
+
 	if (cg.clientNum == cent->currentState.clientNum && (global_viewlistFirstOption || localCi->team == TEAM_SPECTATOR))
 	{
 		return;
@@ -3501,7 +3521,7 @@ void CG_Player(centity_t* cent)
 	CG_PlayerAnimation(cent, &legs.oldframe, &legs.frame, &legs.backlerp, &torso.oldframe, &torso.frame, &torso.backlerp);
 	/* QVM_LOGIC: skip call when no powerups and not spect glow - CG_PlayerPowerups returns immediately anyway */
 	if (cent->currentState.powerups ||
-	    (localCi->team == TEAM_SPECTATOR && cg_spectGlow.integer))
+	        (localCi->team == TEAM_SPECTATOR && cg_spectGlow.integer))
 		CG_PlayerPowerups(cent);
 	/* Player sprites: reward and cg_drawFriend arrow are mutually exclusive. */
 	{
@@ -3691,9 +3711,9 @@ void CG_Player(centity_t* cent)
 	}
 
 	if (cg_drawHudMarkers.integer && cgs.gametype >= GT_TEAM &&
-	    cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR &&
-	    cent->currentState.number != cg.snap->ps.clientNum &&
-	    ci->team == cg.snap->ps.persistant[PERS_TEAM])
+	        cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR &&
+	        cent->currentState.number != cg.snap->ps.clientNum &&
+	        ci->team == cg.snap->ps.persistant[PERS_TEAM])
 	{
 		qboolean isFrozen;
 		qboolean friendVisible;
@@ -3707,7 +3727,7 @@ void CG_Player(centity_t* cent)
 			;
 		else
 		{
-				friendVisible = qtrue;
+			friendVisible = qtrue;
 			if (!(cg_friendsWallhack.integer & 2) || (isFrozen && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer)))
 			{
 				VectorCopy(cg.refdef.vieworg, start);
@@ -3741,7 +3761,7 @@ void CG_Player(centity_t* cent)
 						else
 							Vector4Copy(cgs.healthColorByClient[clientNum], color);
 						CG_HudBorderMarker(cent->lerpOrigin, color, cg_friendHudMarkerSize.value * sz,
-						                  isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader, 270);
+						                   isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader, 270);
 					}
 				}
 			}
@@ -3809,12 +3829,12 @@ void CG_Player(centity_t* cent)
 			}
 		}
 		if (cg_drawOutline.integer && clientNum >= 0 && clientNum < MAX_CLIENTS && ci->infoValid &&
-		    !((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
-		      (cent->currentState.eFlags & EF_DEAD) ||
-		      (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) ||
-		      (cent->currentState.powerups & (1 << PW_INVIS))) &&
-		    ((cg_drawOutline.integer == 1 && outlineIsEnemy) || (cg_drawOutline.integer == 2 && !outlineIsEnemy) || (cg_drawOutline.integer == 3)) &&
-		    (outlineIsEnemy ? cg_enemyOutlineSize.integer : cg_teamOutlineSize.integer))
+		        !((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
+		          (cent->currentState.eFlags & EF_DEAD) ||
+		          (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) ||
+		          (cent->currentState.powerups & (1 << PW_INVIS))) &&
+		        ((cg_drawOutline.integer == 1 && outlineIsEnemy) || (cg_drawOutline.integer == 2 && !outlineIsEnemy) || (cg_drawOutline.integer == 3)) &&
+		        (outlineIsEnemy ? cg_enemyOutlineSize.integer : cg_teamOutlineSize.integer))
 		{
 			drawOutlineThisPlayer = qtrue;
 			if (outlineIsSpec && !cg_spectPOV.integer)

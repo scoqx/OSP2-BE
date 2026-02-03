@@ -303,15 +303,15 @@ static void CG_ConfigStringModified(void)
 		case CS_SERVERINFO:
 			CG_ParseServerinfo();
 			break;
-		// case CS_SYSTEMINFO:
-		// {
-		// 	/* autohop logic commented out
-		// 	const char* value;
+			// case CS_SYSTEMINFO:
+			// {
+			//  /* autohop logic commented out
+			//  const char* value;
 
-		// 	value = Info_ValueForKey(str, "pmove_autohop");
-		// 	cgs.beAutohop = (!value || !value[0]) ? 0 : (atoi(value) == 2 ? 2 : 1);
-		// 	*/
-		// }
+			//  value = Info_ValueForKey(str, "pmove_autohop");
+			//  cgs.beAutohop = (!value || !value[0]) ? 0 : (atoi(value) == 2 ? 2 : 1);
+			//  */
+			// }
 			break;
 		case CS_WARMUP:
 		{
@@ -332,7 +332,7 @@ static void CG_ConfigStringModified(void)
 			}
 			cg.warmup = warmup;
 		}
-			break;
+		break;
 		case CS_SCORES1:
 		case CS_SCORES2:
 		{
@@ -368,7 +368,7 @@ static void CG_ConfigStringModified(void)
 			*prevScore = *currentScore;
 			*currentScore = newScore;
 		}
-			break;
+		break;
 		case CS_REDPLAYERALIVE:
 			if (cgs.fpsclassico)
 			{
@@ -428,7 +428,7 @@ static void CG_ConfigStringModified(void)
 			if (!prevIntermissionStarted && cg.intermissionStarted && cg_exec_intermission.string[0])
 				trap_SendConsoleCommand(cg_exec_intermission.string);
 		}
-			break;
+		break;
 		case CS_FLAGSTATUS:
 			if (cgs.gametype == GT_CTF)
 			{
@@ -482,13 +482,13 @@ static void CG_ConfigStringModified(void)
 			value = atoi(str);
 			cgs.osp.gameTypeFreeze = (value == 2) ? 2 : (value != 0);
 		}
-			break;
+		break;
 		case CS_SHADERSTATE:
 			CG_ShaderStateChanged();
 			break;
 		// case CS_OSP2BE_SUPPORTED:
-		// 	cgs.beSupportedServer = atoi(str);
-		// 	break;
+		//  cgs.beSupportedServer = atoi(str);
+		//  break;
 		case CS_OSP2BE_DISABLED_FEATURES:
 			cgs.beDisableFeatures = atoi(str);
 			CG_PrintDisabledFeatures(qfalse);
@@ -1793,7 +1793,7 @@ void CG_ServerCommand(void)
 			/* print - check first (common, real work) */
 			if (cmd[1] == 'r' && cmd[2] == 'i' && cmd[3] == 'n' && cmd[4] == 't' && cmd[5] == '\0')
 			{
-				const char *had_pos;
+				const char* had_pos;
 
 				Q_strncpyz(text, CG_Argv(1), sizeof(text));
 				CG_RemoveChatEscapeChar(text);
@@ -1941,7 +1941,7 @@ void CG_ServerCommand(void)
 				return;
 			}
 			if (cmd[1] == 's' && cmd[2] == 'c' && cmd[3] == 'r' && cmd[4] == 'e' && cmd[5] == 'e' &&
-			    cmd[6] == 'n' && cmd[7] == 's' && cmd[8] == 'h' && cmd[9] == 'o' && cmd[10] == 'o' && cmd[11] == 't' && cmd[12] == '\0')
+			        cmd[6] == 'n' && cmd[7] == 's' && cmd[8] == 'h' && cmd[9] == 'o' && cmd[10] == 'o' && cmd[11] == 't' && cmd[12] == '\0')
 			{
 				return;
 			}
@@ -2050,7 +2050,7 @@ void CG_ServerCommand(void)
 			}
 			/* statsinfo */
 			if (cmd[1] == 't' && cmd[2] == 'a' && cmd[3] == 't' && cmd[4] == 's' && cmd[5] == 'i' &&
-			    cmd[6] == 'n' && cmd[7] == 'f' && cmd[8] == 'o' && cmd[9] == '\0')
+			        cmd[6] == 'n' && cmd[7] == 'f' && cmd[8] == 'o' && cmd[9] == '\0')
 			{
 				CG_BEParseStatsInfo();
 				return;
@@ -2131,7 +2131,7 @@ void CG_ServerCommand(void)
 			}
 			/* specsinfo */
 			if (cmd[1] == 'p' && cmd[2] == 'e' && cmd[3] == 'c' && cmd[4] == 's' && cmd[5] == 'i' &&
-			    cmd[6] == 'n' && cmd[7] == 'f' && cmd[8] == 'o' && cmd[9] == '\0')
+			        cmd[6] == 'n' && cmd[7] == 'f' && cmd[8] == 'o' && cmd[9] == '\0')
 			{
 				CG_ParseSpecsInfo();
 				return;
@@ -2178,7 +2178,7 @@ void CG_ServerCommand(void)
 		case 'm':
 			/* map_restart */
 			if (cmd[1] == 'a' && cmd[2] == 'p' && cmd[3] == '_' && cmd[4] == 'r' && cmd[5] == 'e' &&
-			    cmd[6] == 's' && cmd[7] == 't' && cmd[8] == 'a' && cmd[9] == 'r' && cmd[10] == 't' && cmd[11] == '\0')
+			        cmd[6] == 's' && cmd[7] == 't' && cmd[8] == 'a' && cmd[9] == 'r' && cmd[10] == 't' && cmd[11] == '\0')
 			{
 				CG_MapRestart();
 				return;
@@ -2204,14 +2204,14 @@ void CG_ServerCommand(void)
 		case 'v':
 			/* viewactive - does something, check first */
 			if (cmd[1] == 'i' && cmd[2] == 'e' && cmd[3] == 'w' && cmd[4] == 'a' && cmd[5] == 'c' &&
-			    cmd[6] == 't' && cmd[7] == 'i' && cmd[8] == 'v' && cmd[9] == 'e' && cmd[10] == '\0')
+			        cmd[6] == 't' && cmd[7] == 'i' && cmd[8] == 'v' && cmd[9] == 'e' && cmd[10] == '\0')
 			{
 				CG_Printf("viewactive is not implimented\n");
 				return;
 			}
 			/* viewlist - no-op, check last */
 			if (cmd[1] == 'i' && cmd[2] == 'e' && cmd[3] == 'w' && cmd[4] == 'l' && cmd[5] == 'i' &&
-			    cmd[6] == 's' && cmd[7] == 't' && cmd[8] == '\0')
+			        cmd[6] == 's' && cmd[7] == 't' && cmd[8] == '\0')
 			{
 				return;
 			}
@@ -2220,7 +2220,7 @@ void CG_ServerCommand(void)
 		case 'd':
 			/* dmgplum_proj - damage plum for projectile weapons (GL/RL) via server command */
 			if (cmd[1] == 'm' && cmd[2] == 'g' && cmd[3] == 'p' && cmd[4] == 'l' && cmd[5] == 'u' &&
-			    cmd[6] == 'm' && cmd[7] == '_' && cmd[8] == 'p' && cmd[9] == 'r' && cmd[10] == 'o' && cmd[11] == 'j' && cmd[12] == '\0')
+			        cmd[6] == 'm' && cmd[7] == '_' && cmd[8] == 'p' && cmd[9] == 'r' && cmd[10] == 'o' && cmd[11] == 'j' && cmd[12] == '\0')
 			{
 				int damage;
 				int argc;
@@ -2249,7 +2249,7 @@ void CG_ServerCommand(void)
 		case 'x':
 			/* xstats1 */
 			if (cmd[1] == 's' && cmd[2] == 't' && cmd[3] == 'a' && cmd[4] == 't' && cmd[5] == 's' &&
-			    cmd[6] == '1' && cmd[7] == '\0')
+			        cmd[6] == '1' && cmd[7] == '\0')
 			{
 				if (cg.beStatsAllRequested)
 				{
@@ -2275,7 +2275,7 @@ void CG_ServerCommand(void)
 			}
 			/* astatsb - no-op, check last */
 			if (cmd[1] == 's' && cmd[2] == 't' && cmd[3] == 'a' && cmd[4] == 't' && cmd[5] == 's' &&
-			    cmd[6] == 'b' && cmd[7] == '\0')
+			        cmd[6] == 'b' && cmd[7] == '\0')
 			{
 				return;
 			}
@@ -2290,7 +2290,7 @@ void CG_ServerCommand(void)
 			}
 			/* bstatsb - no-op, check last */
 			if (cmd[1] == 's' && cmd[2] == 't' && cmd[3] == 'a' && cmd[4] == 't' && cmd[5] == 's' &&
-			    cmd[6] == 'b' && cmd[7] == '\0')
+			        cmd[6] == 'b' && cmd[7] == '\0')
 			{
 				return;
 			}
