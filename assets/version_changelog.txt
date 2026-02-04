@@ -1,2 +1,9 @@
-00.02.2026 be v1.01-beta
+03.02.2026 be v1.01-beta3
+* Major perfomance optimization
 - cg_drawAmmoWarning: 2 (legacy OSP) removed
++ ui_menuHQ
++ ui_forceGamma
++ ui_themeColor
++ ui_themeColor2
++ ui_selectionColor
++ menu/art/menu/art/font2_propNew.tga
