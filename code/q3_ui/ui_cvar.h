@@ -85,5 +85,6 @@ UI_CVAR( uc_gamma, "uc_gamma", "1", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE )
 UI_CVAR( ui_themeColor, "ui_themeColor", "red", CVAR_ARCHIVE )
 UI_CVAR( ui_themeColor2, "ui_themeColor2", "orange", CVAR_ARCHIVE )
 UI_CVAR( ui_selectionColor, "ui_selectionColor", "yellow", CVAR_ARCHIVE )
+UI_CVAR( ui_serverNameThemeColor, "ui_serverNameThemeColor", "0", CVAR_ARCHIVE | CVAR_LATCH )
 
 #undef UI_CVAR

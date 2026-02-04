@@ -220,6 +220,30 @@ static int UI_BuildHostnameColumn( char *dst, int size, const char *src, int fie
 static void ArenaServers_DrawList( void *self );
 
 
+static int UI_ParseColorCode( const char *src ) {
+    // ^<digit>
+    if ( src[0] == '^' && src[1] >= '0' && src[1] <= '9' ) {
+        return 2;
+    }
+
+    // ^Xrrggbb / ^xrrggbb
+    if ( src[0] == '^' && (src[1] == 'X' || src[1] == 'x') ) {
+        int i;
+        for ( i = 2; i < 8; i++ ) {
+            char c = src[i];
+            if ( !((c >= '0' && c <= '9') ||
+                   (c >= 'a' && c <= 'f') ||
+                   (c >= 'A' && c <= 'F')) ) {
+                return 0;
+            }
+        }
+        return 8;
+    }
+
+    return 0;
+}
+
+
 /*
 =================
 ArenaServers_DrawFilter
@@ -751,62 +775,59 @@ static void ArenaServers_Remove( void )
 
 static void UI_CopyHostnameWithColors( char *dst, int size, const char *src )
 {
-	char	*end;
-	int		c;
-	char	controlChar;
+    char *end = dst + size - 1;
+    int first_color_code = 1;
+    int ignore_colors = ui_serverNameThemeColor.integer;
 
-	end = dst + size - 1;
+    while ( *src && dst < end ) {
+        int len;
+        const char *code_start;
+        int code_len;
+        int is_digit_code;
 
-	while ( *src && dst < end ) {
-		if ( Q_IsColorString( src ) ) {
-			controlChar = *(src + 1);
-			if ( controlChar == 'X' || controlChar == 'x' ) {
-				/* Check for ^Xrrggbb or ^xrrggbb format */
-				if ( src[2] != '\0' && src[3] != '\0' && src[4] != '\0' &&
-				     src[5] != '\0' && src[6] != '\0' && src[7] != '\0' ) {
-					/* Check if all 6 characters are hex */
-					if (((src[2] >= '0' && src[2] <= '9') || (src[2] >= 'a' && src[2] <= 'f') || (src[2] >= 'A' && src[2] <= 'F')) &&
-					    ((src[3] >= '0' && src[3] <= '9') || (src[3] >= 'a' && src[3] <= 'f') || (src[3] >= 'A' && src[3] <= 'F')) &&
-					    ((src[4] >= '0' && src[4] <= '9') || (src[4] >= 'a' && src[4] <= 'f') || (src[4] >= 'A' && src[4] <= 'F')) &&
-					    ((src[5] >= '0' && src[5] <= '9') || (src[5] >= 'a' && src[5] <= 'f') || (src[5] >= 'A' && src[5] <= 'F')) &&
-					    ((src[6] >= '0' && src[6] <= '9') || (src[6] >= 'a' && src[6] <= 'f') || (src[6] >= 'A' && src[6] <= 'F')) &&
-					    ((src[7] >= '0' && src[7] <= '9') || (src[7] >= 'a' && src[7] <= 'f') || (src[7] >= 'A' && src[7] <= 'F'))) {
-						/* Valid ^Xrrggbb format, copy all 8 characters */
-						if ( dst + 8 > end ) {
-							break;
-						}
-						*dst++ = *src++;
-						*dst++ = *src++;
-						*dst++ = *src++;
-						*dst++ = *src++;
-						*dst++ = *src++;
-						*dst++ = *src++;
-						*dst++ = *src++;
-						*dst++ = *src++;
-						continue;
-					}
-				}
-			}
-			/* Other color codes (^0-9, ^n, ^f, ^F, ^B, ^b, etc.) */
-			if ( dst + 2 > end ) {
-				break;
-			}
-			*dst++ = *src++;
-			*dst++ = *src++;
-			continue;
-		}
+        len = UI_ParseColorCode( src );
+        if ( len > 0 ) {
+            code_start = src;
+            code_len = len;
+            is_digit_code = (code_start[0] == '^' && code_start[1] >= '0' && code_start[1] <= '9');
+            
+            src += len;
+            
+            if ( first_color_code && is_digit_code ) {
+                if ( *src >= '0' && *src <= '9' ) {
+                    src++;
+                }
+                first_color_code = 0;
+            }
+            
+            if ( !ignore_colors ) {
+                if ( dst + code_len > end ) {
+                    break;
+                }
+                while ( code_len-- ) {
+                    *dst++ = *code_start++;
+                }
+            }
+            
+            continue;
+        }
 
-		c = (unsigned char)*src;
-		if ( c < ' ' || c > '~' ) {
-			src++;
-			continue;
-		}
+        if ( *src == '^' ) {
+            src++;
+            continue;
+        }
 
-		*dst++ = *src++;
-	}
+        if ( *src >= ' ' && *src <= '~' ) {
+            *dst++ = *src++;
+            continue;
+        }
 
-	*dst = '\0';
+        src++;
+    }
+
+    *dst = '\0';
 }
+
 
 
 static int UI_BuildHostnameColumn( char *dst, int size, const char *src, int fieldWidth )
@@ -982,8 +1003,7 @@ static void ArenaServers_Insert( const char *adrstr, const char *info, int pingt
 	Q_strncpyz( servernodeptr->adrstr, adrstr, sizeof( servernodeptr->adrstr ) );
 
 	hostnameValue = Info_ValueForKey( info, "hostname" );
-	UI_CopyHostnameWithColors( servernodeptr->hostnameColored, sizeof( servernodeptr->hostnameColored ), hostnameValue );
-
+	UI_CopyHostnameWithColors( servernodeptr->hostnameColored, sizeof( servernodeptr->hostnameColored ), hostnameValue );	
 	if ( UI_CleanStr( servernodeptr->hostname, sizeof( servernodeptr->hostname ), servernodeptr->hostnameColored ) ) {
 		// some servers abusing color sequences - lets filter them until completely cleaned
 		while ( UI_CleanStr( servernodeptr->hostname, sizeof( servernodeptr->hostname ), servernodeptr->hostname ) )

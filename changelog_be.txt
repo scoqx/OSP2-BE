@@ -730,3 +730,4 @@ SuperHUD:
 + ui_themeColor2
 + ui_selectionColor
 + menu/art/menu/art/font2_propNew.tga
++ ui_serverNameThemeColor
