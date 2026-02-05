@@ -198,7 +198,7 @@ void CG_SHUDElementTeamRoutine(void* context)
 		return;
 	}
 	CG_SHUDFill(&element->config);
-
+	CG_SHUDDrawBorder(&element->config);
 	//get player
 	ci = &cgs.clientinfo[sortedTeamPlayers[index]];
 
