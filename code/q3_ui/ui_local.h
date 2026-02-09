@@ -899,4 +899,9 @@ void UI_RankStatusMenu( void );
 #define FRAME_L_Y_OPTIONS (ui_framesFullscreen.integer ? 0 : 76)
 #define FRAME_L_W_OPTIONS (ui_framesFullscreen.integer ? 640 : 256)
 #define FRAME_L_H_OPTIONS (ui_framesFullscreen.integer ? 480 : 334)
+
+#define FRAME_INGAME_X (ui_framesFullscreen.integer ? 0 : 87)   /* 320-233 */
+#define FRAME_INGAME_Y (ui_framesFullscreen.integer ? 0 : 74)   /* 240-166 */
+#define FRAME_INGAME_W (ui_framesFullscreen.integer ? 640 : 466)
+#define FRAME_INGAME_H (ui_framesFullscreen.integer ? 480 : 332)
 #endif

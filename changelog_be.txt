@@ -750,6 +750,7 @@ UI:
 + /reconnect fix (vid_restart does not reset it)
 + cg_footsteps unlocked + 2 - disable metal surface sound
 + cg_altPlasma 3 - QL-like
++ cg_infoDetail
 * cg_mySound/cg_teamSound/cg_enemySound restore + footstep fix
 * +wstats delay fix
 - cg_myTeam

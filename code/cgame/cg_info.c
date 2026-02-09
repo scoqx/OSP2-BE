@@ -186,9 +186,12 @@ void CG_DrawInformation(void)
 	trap_R_SetColor(NULL);
 	CG_DrawPicOld(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, levelshot);
 
-	// blend a detail texture over it
+	// blend a detail texture over it (cg_infoDetail 2 = one image full screen, else tiled)
 	detail = trap_R_RegisterShader("levelShotDetail");
-	trap_R_DrawStretchPic(0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, 0, 0, 2.5, 2, detail);
+	if (cg_infoDetail.integer == 2)
+		trap_R_DrawStretchPic(0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, 0, 0, 1, 1, detail);
+	else
+		trap_R_DrawStretchPic(0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, 0, 0, 2.5, 2, detail);
 
 	// draw the icons of things as they are loaded
 	CG_DrawLoadingIcons();

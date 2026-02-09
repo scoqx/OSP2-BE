@@ -2230,6 +2230,7 @@ extern vmCvar_t           cg_infoVersionFont;
 // extern vmCvar_t			cl_yawspeed;
 // extern vmCvar_t			cl_pitchspeed;
 extern vmCvar_t			cl_reconnectArgs;
+extern vmCvar_t           cg_infoDetail;
 extern vmCvar_t         be_run;
 //
 // cg_main.c

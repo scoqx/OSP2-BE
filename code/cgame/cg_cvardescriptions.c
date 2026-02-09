@@ -445,6 +445,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamTaskVersion", "Team task coordinate range. ^20^7 - old bounds ±3000 (compat with old clients)\n  ^21^7 - new bounds ±4096 (fixes offset on large maps). All clients on server must use same value." },
 	{ "cg_railFix", "Fix rail trail start point. Set ^20^7 to disable." },
 	{ "cg_freezeSoundFix", "Replace freeze sound with alternative sound. Set ^20^7 to disable." },
+	{ "cg_infoDetail", "Detail shader draw type\n  ^21^7 - default\n  ^22^7 - fullscreen" },
 };
 
 

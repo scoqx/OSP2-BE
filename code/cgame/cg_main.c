@@ -560,6 +560,7 @@ vmCvar_t        cg_infoVersionFont;
 // vmCvar_t		cl_pitchspeed;
 // vmCvar_t		cl_yawspeed;
 vmCvar_t		cl_reconnectArgs;
+vmCvar_t           cg_infoDetail;
 // vmCvar_t        cg_snow;
 
 cgFontIndices_t cgFontIndices;
@@ -1025,6 +1026,7 @@ cvarTable_t cvarTable[] =
 	// { &cl_pitchspeed, "cl_pitchspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_pitchspeed },
 	// { &cl_yawspeed, "cl_yawspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_yawSpeed },
 	{ &cl_reconnectArgs, "cl_reconnectArgs", "", CVAR_ARCHIVE_ND | CVAR_NOTABCOMPLETE | CVAR_NORESTART, },
+	{ &cg_infoDetail, "cg_infoDetail", "1", CVAR_ARCHIVE },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
