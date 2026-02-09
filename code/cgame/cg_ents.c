@@ -658,7 +658,7 @@ static void CG_Missile(centity_t* cent)
 				const clientInfo_t* ci = &cgs.clientinfo[owner];
 
 				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IsEnemy(ci)
-					|| (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */); // OSP: all ally when tournament + ospauth
+				                  || (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */); // OSP: all ally when tournament + ospauth
 
 				if (isAlly)
 				{

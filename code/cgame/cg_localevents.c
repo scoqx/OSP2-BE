@@ -1155,16 +1155,16 @@ void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart)
 //{
 //	if ( )
 //	{
-//  	CG_PrintOnce("  ^9cl_pitchspeed^7 is locked in Tourney game.\n");
-//  	trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+//      CG_PrintOnce("  ^9cl_pitchspeed^7 is locked in Tourney game.\n");
+//      trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
 //	}
 //}
 
 // void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart)
 // {
-// 	if ( )
-// 	{
-// 		CG_PrintOnce("  ^9cl_yawSpeed^7 is locked in Tourney game.\n");
-// 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
-// 	}
+//  if ( )
+//  {
+//      CG_PrintOnce("  ^9cl_yawSpeed^7 is locked in Tourney game.\n");
+//      trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+//  }
 // }

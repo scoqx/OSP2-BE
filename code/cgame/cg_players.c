@@ -2825,7 +2825,7 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 	}
 
 	if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSPRITE) &&
-	    (cent->currentState.eFlags & (EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_DEFEND | EF_AWARD_ASSIST | EF_AWARD_CAP)))
+	        (cent->currentState.eFlags & (EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_DEFEND | EF_AWARD_ASSIST | EF_AWARD_CAP)))
 	{
 		if (cent->currentState.eFlags & EF_AWARD_IMPRESSIVE)
 			rewardShader = cgs.media.medalImpressive;
@@ -2842,7 +2842,7 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 	}
 
 	if (!rewardShader && cg_drawFriend.integer && !(cent->currentState.eFlags & EF_DEAD) &&
-	    cg.snap->ps.persistant[PERS_TEAM] == ci->team && cgs.gametype >= GT_TEAM)
+	        cg.snap->ps.persistant[PERS_TEAM] == ci->team && cgs.gametype >= GT_TEAM)
 	{
 		if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
 		{
@@ -3407,8 +3407,8 @@ static void CG_PlayerOutline(centity_t* cent, qboolean useOutline, qboolean useM
 			ci = &cgs.clientinfo[clientNum];
 			localCi = &cgs.clientinfo[cg.clientNum];
 			outlineIsSpec = (cgs.gametype >= GT_CA) ?
-			    (localCi->rt == TEAM_SPECTATOR) :
-			    (localCi->team == TEAM_SPECTATOR);
+			                (localCi->rt == TEAM_SPECTATOR) :
+			                (localCi->team == TEAM_SPECTATOR);
 
 			outlineIsEnemy = qfalse;
 			if (ci != localCi)
@@ -3425,27 +3425,27 @@ static void CG_PlayerOutline(centity_t* cent, qboolean useOutline, qboolean useM
 				else if (myStateTeam == TEAM_SPECTATOR)
 				{
 					if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
-					    cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+					        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
 					{
 						ourPerspectiveTeam = (cgs.gametype >= GT_CA) ?
-						    cgs.clientinfo[cg.snap->ps.clientNum].rt :
-						    cgs.clientinfo[cg.snap->ps.clientNum].team;
+						                     cgs.clientinfo[cg.snap->ps.clientNum].rt :
+						                     cgs.clientinfo[cg.snap->ps.clientNum].team;
 						targetTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
 						outlineIsEnemy = (ourPerspectiveTeam != targetTeam);
 					}
 					else
 						outlineIsEnemy = (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR) ?
-						    (enemyTeam == TEAM_BLUE) : (enemyTeam == TEAM_RED);
+						                 (enemyTeam == TEAM_BLUE) : (enemyTeam == TEAM_RED);
 				}
 			}
 
 			if (cg_drawOutline.integer && ci->infoValid &&
-			    !(cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) &&
-			    !(cent->currentState.eFlags & EF_DEAD) &&
-			    !(cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) &&
-			    !(cent->currentState.powerups & (1 << PW_INVIS)) &&
-			    ((cg_drawOutline.integer == 1 && outlineIsEnemy) || (cg_drawOutline.integer == 2 && !outlineIsEnemy) || (cg_drawOutline.integer == 3)) &&
-			    (outlineIsEnemy ? cg_enemyOutlineSize.integer : cg_teamOutlineSize.integer))
+			        !(cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) &&
+			        !(cent->currentState.eFlags & EF_DEAD) &&
+			        !(cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) &&
+			        !(cent->currentState.powerups & (1 << PW_INVIS)) &&
+			        ((cg_drawOutline.integer == 1 && outlineIsEnemy) || (cg_drawOutline.integer == 2 && !outlineIsEnemy) || (cg_drawOutline.integer == 3)) &&
+			        (outlineIsEnemy ? cg_enemyOutlineSize.integer : cg_teamOutlineSize.integer))
 			{
 				cachedDraw = qtrue;
 

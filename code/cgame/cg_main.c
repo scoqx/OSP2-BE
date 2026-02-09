@@ -557,9 +557,9 @@ vmCvar_t        cg_teamTaskNewSounds;
 vmCvar_t        cg_teamTaskVersion;
 vmCvar_t        cg_freezeSoundFix;
 vmCvar_t        cg_infoVersionFont;
-// vmCvar_t		cl_pitchspeed;
-// vmCvar_t		cl_yawspeed;
-vmCvar_t		cl_reconnectArgs;
+// vmCvar_t     cl_pitchspeed;
+// vmCvar_t     cl_yawspeed;
+vmCvar_t        cl_reconnectArgs;
 vmCvar_t           cg_infoDetail;
 // vmCvar_t        cg_snow;
 

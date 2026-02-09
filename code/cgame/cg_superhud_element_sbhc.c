@@ -18,9 +18,9 @@ void* CG_SHUDElementSBHCCreate(const superhudConfig_t* config)
 	// //load defaults
 	// if (!element->config.color.isSet)
 	// {
-	// 	element->config.color.isSet = qtrue;
-	// 	element->config.color.value.type = SUPERHUD_COLOR_RGBA;
-	// 	Vector4Set(element->config.color.value.rgba, 1, 0.7, 0, 1);
+	//  element->config.color.isSet = qtrue;
+	//  element->config.color.value.type = SUPERHUD_COLOR_RGBA;
+	//  Vector4Set(element->config.color.value.rgba, 1, 0.7, 0, 1);
 	// }
 	if (!element->config.text.isSet)
 	{

@@ -595,7 +595,7 @@ void CG_TeamTaskUpdateFrame(void)
 	{
 		mark = &tm->teamTaskMarks[i];
 		if ((mark->isOverhead || mark->markType == TEAMTASK_HERE_FLAG || mark->isPickup) &&
-		    mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		        mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 			tm->clientHasOverhead[mark->clientNum] = qtrue;
 		tm->markHasPickupNear[i] = qfalse;
 		if (!mark->isPickup &&
@@ -1425,7 +1425,7 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 	}
 	/* check origin sanity (NaN or insanely large) */
 	if (mark->origin[0] != mark->origin[0] || mark->origin[1] != mark->origin[1] || mark->origin[2] != mark->origin[2] ||
-		mark->origin[0] > 1e6f || mark->origin[0] < -1e6f || mark->origin[1] > 1e6f || mark->origin[1] < -1e6f || mark->origin[2] > 1e6f || mark->origin[2] < -1e6f)
+	        mark->origin[0] > 1e6f || mark->origin[0] < -1e6f || mark->origin[1] > 1e6f || mark->origin[1] < -1e6f || mark->origin[2] > 1e6f || mark->origin[2] < -1e6f)
 	{
 		CG_Printf("^1CG_ProcessTeamTaskMark: invalid origin for mark index %d client %d type %d: %f %f %f\n", markIndex, mark->clientNum, mark->markType, mark->origin[0], mark->origin[1], mark->origin[2]);
 		return qfalse;
@@ -1506,7 +1506,7 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 
 		/* Any overhead-style mark on another player: drawn as 3D sprite in CG_AddTeamTaskOverheadSprites (before RenderScene); skip 2D here */
 		if (mark->clientNum != cgP->clientNum && overheadPlayerFound &&
-		    (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG || mark->isPickup || mark->isOverhead))
+		        (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG || mark->isPickup || mark->isOverhead))
 			return qfalse;
 
 		/* Calculate distance from camera to mark */
@@ -1581,18 +1581,21 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		/* Convert world to screen coordinates and check if mark is outside screen */
 		isOwnHereDead = (mark->clientNum == cgP->clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD));
 
-		if (!CG_WorldToScreen(mark->origin, &x, &y)) {
+		if (!CG_WorldToScreen(mark->origin, &x, &y))
+		{
 			// за камерой — считаем вне экрана
 			isOutsideScreen = qtrue;
 			renderData->x = 0.0f;
 			renderData->y = 0.0f;
-		} else {
+		}
+		else
+		{
 			renderData->x = x;
 			renderData->y = y;
 
 			isOutsideScreen =
-				(x < 0.0f || x >= SCREEN_WIDTH ||
-				y < 0.0f || y >= SCREEN_HEIGHT);
+			    (x < 0.0f || x >= SCREEN_WIDTH ||
+			     y < 0.0f || y >= SCREEN_HEIGHT);
 		}
 
 		if (isOutsideScreen)
@@ -1731,7 +1734,7 @@ void CG_AddTeamTaskOverheadSprites(void)
 		if (mark->clientNum == cg.clientNum || mark->clientNum < 0 || mark->clientNum >= MAX_CLIENTS)
 			continue;
 		if (mark->markType != TEAMTASK_HERE_ALIVE && mark->markType != TEAMTASK_HERE_FLAG &&
-		    !mark->isPickup && !mark->isOverhead)
+		        !mark->isPickup && !mark->isOverhead)
 			continue;
 
 		playerFound = CG_ProcessHereAliveMark(mark);

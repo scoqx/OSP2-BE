@@ -82,7 +82,7 @@ CG_UpdateLightningTracking
 Update lightning weapon stats for HUD when cg_shud is enabled. Caller passes current
 player state and pointer to lightning weapon stats; lastHits is updated in place.
 */
-static void CG_UpdateLightningTracking(const playerState_t *ps, customWeaponStats_t *ws, int *lastHits)
+static void CG_UpdateLightningTracking(const playerState_t* ps, customWeaponStats_t* ws, int* lastHits)
 {
 	int wtAmmo, wtHitsDelta, wtAtta, wtDamage, wtActualHits;
 
@@ -149,7 +149,7 @@ CG_CheckAmmo
 */
 static void CG_CheckAmmo(void)
 {
-	const playerState_t *ps = &cg.snap->ps;
+	const playerState_t* ps = &cg.snap->ps;
 	int weapon = ps->weapon;
 	int ammo, threshold, currentWarning, prevAmmoSaved;
 
@@ -758,10 +758,10 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	// Exec on weapon
 	if (cg_exec_weapons.integer && (ps->weapon != ops->weapon && ps->weapon != WP_NONE))
 	{
-		const char *cmd;
+		const char* cmd;
 		cmd = ps->weapon < WP_NUM_WEAPONS && execWeaponCvars[ps->weapon] ? execWeaponCvars[ps->weapon]->string : NULL;
-			if (cmd && cmd[0])
-		trap_SendConsoleCommand(cmd);
+		if (cmd && cmd[0])
+			trap_SendConsoleCommand(cmd);
 	}
 	// Lightning gun temporal accuracy (cg_shud)
 	if (ps->weapon == WP_LIGHTNING)

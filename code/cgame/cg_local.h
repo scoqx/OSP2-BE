@@ -1451,8 +1451,8 @@ typedef struct
 #define CG_BE_TEAMTASKS         (1 << 12) // 4096
 #define CG_BE_NO_EXPLOSIONS     (1 << 13) // 8192
 #define CG_BE_TEAM_FROZEN       (1 << 14) // 16384
-#define CG_BE_HUD_MARKERS  		(1 << 15) // 32768
-#define CG_BE_METAL_FOOTSTEPS  	(1 << 16) // 65536
+#define CG_BE_HUD_MARKERS       (1 << 15) // 32768
+#define CG_BE_METAL_FOOTSTEPS   (1 << 16) // 65536
 
 // Team task flags (bitmask for cg_teamTask)
 #define CG_TEAMTASK_ENABLED        (1 << 0)  // 1 - Enable team task markers
@@ -2227,9 +2227,9 @@ extern vmCvar_t           cg_railFix;
 extern vmCvar_t           cg_freezeSoundFix;
 extern vmCvar_t           cg_infoVersionFont;
 // extern vmCvar_t          cg_snow;
-// extern vmCvar_t			cl_yawspeed;
-// extern vmCvar_t			cl_pitchspeed;
-extern vmCvar_t			cl_reconnectArgs;
+// extern vmCvar_t          cl_yawspeed;
+// extern vmCvar_t          cl_pitchspeed;
+extern vmCvar_t         cl_reconnectArgs;
 extern vmCvar_t           cg_infoDetail;
 extern vmCvar_t         be_run;
 //
