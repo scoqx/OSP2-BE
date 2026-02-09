@@ -721,7 +721,7 @@ SuperHUD:
 30.01.2026 be v1.00x4
 * Major performance optimization
 
-03.02.2026 be v1.01-beta3
+03.02.2026 be v1.01beta3
 * Major perfomance optimization
 - cg_drawAmmoWarning: 2 (legacy OSP) removed
 + ui_menuHQ
@@ -733,7 +733,7 @@ SuperHUD:
 + ui_serverNameThemeColor
 + ui_menuDarken
 
-09.02.2026 be v1.01
+09.02.2026 be v1.01с
 TEAMTASKS:
   + missing hudMarkers icons
   * overHead icons now are sprites
