@@ -146,18 +146,18 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	soundOptionsInfo.framel.generic.type		= MTYPE_BITMAP;
 	soundOptionsInfo.framel.generic.name		= ART_FRAMEL;
 	soundOptionsInfo.framel.generic.flags		= QMF_INACTIVE;
-	soundOptionsInfo.framel.generic.x			= 0;  
-	soundOptionsInfo.framel.generic.y			= 78;
-	soundOptionsInfo.framel.width				= 256;
-	soundOptionsInfo.framel.height				= 329;
+	soundOptionsInfo.framel.generic.x			= FRAME_L_X;
+	soundOptionsInfo.framel.generic.y			= FRAME_L_Y;
+	soundOptionsInfo.framel.width				= FRAME_L_W;
+	soundOptionsInfo.framel.height				= FRAME_L_H;
 
 	soundOptionsInfo.framer.generic.type		= MTYPE_BITMAP;
 	soundOptionsInfo.framer.generic.name		= ART_FRAMER;
 	soundOptionsInfo.framer.generic.flags		= QMF_INACTIVE;
-	soundOptionsInfo.framer.generic.x			= 376;
-	soundOptionsInfo.framer.generic.y			= 76;
-	soundOptionsInfo.framer.width				= 256;
-	soundOptionsInfo.framer.height				= 334;
+	soundOptionsInfo.framer.generic.x			= FRAME_R_X;
+	soundOptionsInfo.framer.generic.y			= FRAME_R_Y;
+	soundOptionsInfo.framer.width				= FRAME_R_W;
+	soundOptionsInfo.framer.height				= FRAME_R_H;
 
 	soundOptionsInfo.graphics.generic.type		= MTYPE_PTEXT;
 	soundOptionsInfo.graphics.generic.flags		= QMF_RIGHT_JUSTIFY|QMF_PULSEIFFOCUS;

@@ -218,18 +218,18 @@ static void Preferences_MenuInit( void ) {
 	s_preferences.framel.generic.type  = MTYPE_BITMAP;
 	s_preferences.framel.generic.name  = ART_FRAMEL;
 	s_preferences.framel.generic.flags = QMF_INACTIVE;
-	s_preferences.framel.generic.x	   = 0;
-	s_preferences.framel.generic.y	   = 78;
-	s_preferences.framel.width  	   = 256;
-	s_preferences.framel.height  	   = 329;
+	s_preferences.framel.generic.x	   = FRAME_L_X;
+	s_preferences.framel.generic.y	   = FRAME_L_Y;
+	s_preferences.framel.width  	   = FRAME_L_W;
+	s_preferences.framel.height  	   = FRAME_L_H;
 
 	s_preferences.framer.generic.type  = MTYPE_BITMAP;
 	s_preferences.framer.generic.name  = ART_FRAMER;
 	s_preferences.framer.generic.flags = QMF_INACTIVE;
-	s_preferences.framer.generic.x	   = 376;
-	s_preferences.framer.generic.y	   = 76;
-	s_preferences.framer.width  	   = 256;
-	s_preferences.framer.height  	   = 334;
+	s_preferences.framer.generic.x	   = FRAME_R_X;
+	s_preferences.framer.generic.y	   = FRAME_R_Y;
+	s_preferences.framer.width  	   = FRAME_R_W;
+	s_preferences.framer.height  	   = FRAME_R_H;
 
 	y = 144;
 	s_preferences.crosshair.generic.type		= MTYPE_TEXT;

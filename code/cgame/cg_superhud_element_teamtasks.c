@@ -299,7 +299,7 @@ static qhandle_t CG_SHUDTeamTaskGetTaskIcon(int taskType, qboolean isPickup)
 	qhandle_t shader;
 	vec4_t color;
 
-	CG_GetTeamTaskMarkerShaderAndColor(taskType, &shader, color, qfalse, -1, isPickup);
+	CG_GetTeamTaskMarkerShaderAndColor(taskType, &shader, color, qfalse, -1, isPickup, NULL);
 	return shader;
 }
 
@@ -351,7 +351,7 @@ static void CG_SHUDTeamTaskGetTaskName(int taskType, char* name, int maxlen, qbo
 			case TEAMTASK_DEFENCE:
 				taskName = "Defence";
 				break;
-			case TEAMTASK_PATROL:
+			case TEAMTASK_WATCH:
 				taskName = "Watching";
 				break;
 			case TEAMTASK_PLAYERDEAD:

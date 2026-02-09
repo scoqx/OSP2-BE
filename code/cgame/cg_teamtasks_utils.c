@@ -71,7 +71,7 @@ teamTaskCommand_t teamTaskCommands[] =
 {
 	{ "attack", NULL, TEAMTASK_OFFENSE, qfalse, qtrue, CG_TeamTaskMarkOffense, "tAttack" },
 	{ "defence", NULL, TEAMTASK_DEFENCE, qfalse, qtrue, CG_TeamTaskMarkDefence, "tDefence" },
-	{ "watch", NULL, TEAMTASK_PATROL, qfalse, qtrue, CG_TeamTaskMarkWatch, "tWatch" },
+	{ "watch", NULL, TEAMTASK_WATCH, qfalse, qtrue, CG_TeamTaskMarkWatch, "tWatch" },
 	{ "yes", NULL, TEAMTASK_YES, qtrue, qfalse, CG_TeamTaskMarkYes, "tYes" },
 	{ "no", NULL, TEAMTASK_NO, qtrue, qfalse, CG_TeamTaskMarkNo, "tNo" },
 	{ "location", "position", TEAMTASK_LOCATION, qfalse, qtrue, CG_TeamTaskMarkLocation, "tLocation" },
@@ -150,7 +150,7 @@ qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType)
 			return cgs.media.teamTasksAttack;
 		case TEAMTASK_DEFENCE:
 			return cgs.media.teamTasksDefence;
-		case TEAMTASK_PATROL:
+		case TEAMTASK_WATCH:
 			return cgs.media.teamTasksWatch;
 		case TEAMTASK_YES:
 			return cgs.media.teamTasksYes;

@@ -524,7 +524,7 @@ static void ArenaServers_UpdateList( void )
 	int				k;
 	servernode_t*	servernodeptr;
 	table_t*		tableptr;
-	const char		*pingColor;
+	const char		*pingColor = S_COLOR_RED;
 
 	// build list box strings - apply culling filters
 	servernodeptr = g_arenaservers.serverlist;
@@ -580,18 +580,24 @@ static void ArenaServers_UpdateList( void )
 		}
 
 		if ( servernodeptr->pingtime < servernodeptr->minPing ) {
-			pingColor = S_COLOR_BLUE;
-		}
-		else if ( servernodeptr->maxPing && servernodeptr->pingtime > servernodeptr->maxPing ) {
-			pingColor = S_COLOR_BLUE;
-		}
-		else if ( servernodeptr->pingtime < 200 ) {
 			pingColor = S_COLOR_GREEN;
 		}
-		else if( servernodeptr->pingtime < 400 ) {
+		else if ( servernodeptr->maxPing && servernodeptr->pingtime > servernodeptr->maxPing ) {
+			pingColor = S_COLOR_RED;
+		}
+		else if ( servernodeptr->pingtime < 40 ) {
+			pingColor = S_COLOR_GREEN;
+		}
+		else if ( servernodeptr->pingtime < 70 ) {
 			pingColor = S_COLOR_YELLOW;
 		}
-		else {
+		else if ( servernodeptr->pingtime < 100 ) {
+			pingColor = S_COLOR_CYAN;
+		}
+		else if ( servernodeptr->pingtime < 200 ) {
+			pingColor = S_COLOR_MAGENTA;
+		}
+		else if ( servernodeptr->pingtime < 400 ) {
 			pingColor = S_COLOR_RED;
 		}
 

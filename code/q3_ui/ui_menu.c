@@ -22,6 +22,7 @@ MAIN MENU
 #define ID_EXIT					17
 
 #define MAIN_BANNER_MODEL				"models/mapobjects/banner/banner5.md3"
+#define MAIN_BANNER_MODEL_NEW			"models/mapobjects/banner/bannerNew.md3"
 #define MAIN_MENU_VERTICAL_SPACING		34
 
 
@@ -37,7 +38,8 @@ typedef struct {
 	menutext_s		mods;
 	menutext_s		exit;
 
-	qhandle_t		bannerModel;
+	qhandle_t		bannerModel;     /* standard banner (ui_banner != 2) */
+	qhandle_t		bannerModelNew;  /* new banner (ui_banner == 2) */
 } mainmenu_t;
 
 
@@ -154,6 +156,7 @@ MainMenu_Cache
 */
 void MainMenu_Cache( void ) {
 	s_main.bannerModel = trap_R_RegisterModel( MAIN_BANNER_MODEL );
+	s_main.bannerModelNew = trap_R_RegisterModel( MAIN_BANNER_MODEL_NEW );
 }
 
 sfxHandle_t ErrorMessage_Key(int key)
@@ -178,7 +181,7 @@ static void Main_MenuDraw( void ) {
 	float			adjust;
 	float			x, y, w, h;
 	vec4_t			color;
-	vec4_t			colorBE = {0.4f, 0.4f, 0.4f, 0.15f};
+	vec4_t			colorBE = {0.25f, 0.25f, 0.25f, 0.1f};
 
 	Vector4Copy( uis.themeColor, color );
 
@@ -212,23 +215,32 @@ static void Main_MenuDraw( void ) {
 
 	trap_R_ClearScene();
 
-	// add the model
-
+	// ui_banner == 2: new banner; any other value: standard banner
 	memset( &ent, 0, sizeof(ent) );
 
 	adjust = 5.0 * sin( (float)uis.realtime / 5000 );
 	VectorSet( angles, 0, 180 + adjust, 0 );
 	AnglesToAxis( angles, ent.axis );
-	ent.hModel = s_main.bannerModel;
+	ent.hModel = (ui_banner.integer == 2) ? s_main.bannerModelNew : s_main.bannerModel;
 	VectorCopy( origin, ent.origin );
 	VectorCopy( origin, ent.lightingOrigin );
 	ent.renderfx = RF_LIGHTING_ORIGIN | RF_NOSHADOW;
+
+	if (ui_banner.integer == 2)
+	{
+		ent.shaderRGBA[0] = uis.bannerColor[0] * 255;
+		ent.shaderRGBA[1] = uis.bannerColor[1] * 255;
+		ent.shaderRGBA[2] = uis.bannerColor[2] * 255;
+		ent.shaderRGBA[3] = uis.bannerColor[3] * 255;
+	}
+
 	VectorCopy( ent.origin, ent.oldorigin );
 
 	trap_R_AddRefEntityToScene( &ent );
+	
 
 	trap_R_RenderScene( &refdef );
-	
+
 	if (strlen(s_errorMessage.errorMessage))
 	{
 		UI_DrawProportionalString_AutoWrapped( 320, 192, 600, 20, s_errorMessage.errorMessage, UI_CENTER|UI_SMALLFONT|UI_DROPSHADOW, menu_text_color );

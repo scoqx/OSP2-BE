@@ -112,6 +112,10 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_NO_EXPLOSIONS, changed = qtrue;
 		if (cg_friendsWallhackFrozen.integer)
 			beFlags |= CG_BE_TEAM_FROZEN, changed = qtrue;
+		if (cg_drawHudMarkers.integer)
+			beFlags |= CG_BE_HUD_MARKERS, changed = qtrue;
+		if (cg_footsteps.integer == 2)
+			beFlags |= CG_BE_METAL_FOOTSTEPS, changed = qtrue;
 	}
 
 	cgs.beFeaturesEnabled = beFlags & ~cgs.beDisableFeatures;
@@ -166,13 +170,13 @@ void CG_PrintDisabledFeatures(qboolean request)
 			CG_Printf("   [^9OSP2-BE^7] All features enabled.\n");
 		}
 	}
-	else if (value == 32767) // all bits set (15 bits: 0-14)
+	else if (value == 131071) // all 16 bits set (0xFFFF, bits 0-15)
 	{
-		CG_Printf("   [^9OSP2-BE^7] All features disabled.\n");
+		CG_Printf("   [^9OSP2-BE^7] All features ^1disabled^7.\n");
 	}
 	else
 	{
-		char buffer[1024] = "   [^9OSP2-BE^7] Disabled features: ";
+		char buffer[1024] = "   [^9OSP2-BE^7] ^1Disabled^7 features: ";
 		qboolean first = qtrue;
 		if (value & CG_BE_TEAM_FOE_WH)
 		{
@@ -246,7 +250,17 @@ void CG_PrintDisabledFeatures(qboolean request)
 		}
 		if (value & CG_BE_TEAM_FROZEN)
 		{
-			Q_strcat(buffer, sizeof(buffer), first ? "Team frozen" : ", team frozen");
+			Q_strcat(buffer, sizeof(buffer), first ? "Team frozen wh" : ", team frozen wh");
+			first = qfalse;
+		}
+		if (value & CG_BE_HUD_MARKERS)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "HUD markers" : ", hud markers");
+			first = qfalse;
+		}
+		if (value & CG_BE_METAL_FOOTSTEPS)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Metal footsteps" : ", metal footsteps");
 			first = qfalse;
 		}
 		// if (value & CG_BE_FREEZE_SOUND_FIX)

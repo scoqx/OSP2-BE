@@ -133,18 +133,18 @@ static void UI_NetworkOptionsMenu_Init( void ) {
 	networkOptionsInfo.framel.generic.type		= MTYPE_BITMAP;
 	networkOptionsInfo.framel.generic.name		= ART_FRAMEL;
 	networkOptionsInfo.framel.generic.flags		= QMF_INACTIVE;
-	networkOptionsInfo.framel.generic.x			= 0;  
-	networkOptionsInfo.framel.generic.y			= 78;
-	networkOptionsInfo.framel.width				= 256;
-	networkOptionsInfo.framel.height			= 329;
+	networkOptionsInfo.framel.generic.x			= FRAME_L_X;
+	networkOptionsInfo.framel.generic.y			= FRAME_L_Y;
+	networkOptionsInfo.framel.width				= FRAME_L_W;
+	networkOptionsInfo.framel.height			= FRAME_L_H;
 
 	networkOptionsInfo.framer.generic.type		= MTYPE_BITMAP;
 	networkOptionsInfo.framer.generic.name		= ART_FRAMER;
 	networkOptionsInfo.framer.generic.flags		= QMF_INACTIVE;
-	networkOptionsInfo.framer.generic.x			= 376;
-	networkOptionsInfo.framer.generic.y			= 76;
-	networkOptionsInfo.framer.width				= 256;
-	networkOptionsInfo.framer.height			= 334;
+	networkOptionsInfo.framer.generic.x			= FRAME_R_X;
+	networkOptionsInfo.framer.generic.y			= FRAME_R_Y;
+	networkOptionsInfo.framer.width				= FRAME_R_W;
+	networkOptionsInfo.framer.height			= FRAME_R_H;
 
 	networkOptionsInfo.graphics.generic.type		= MTYPE_PTEXT;
 	networkOptionsInfo.graphics.generic.flags		= QMF_RIGHT_JUSTIFY|QMF_PULSEIFFOCUS;

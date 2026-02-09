@@ -1365,18 +1365,18 @@ static void Controls_MenuInit( void )
 	s_controls.framel.generic.type  = MTYPE_BITMAP;
 	s_controls.framel.generic.name  = ART_FRAMEL;
 	s_controls.framel.generic.flags = QMF_LEFT_JUSTIFY|QMF_INACTIVE;
-	s_controls.framel.generic.x     = 0;
-	s_controls.framel.generic.y     = 78;
-	s_controls.framel.width  	    = 256;
-	s_controls.framel.height  	    = 329;
+	s_controls.framel.generic.x     = FRAME_L_X;
+	s_controls.framel.generic.y     = FRAME_L_Y;
+	s_controls.framel.width  	    = FRAME_L_W;
+	s_controls.framel.height  	    = FRAME_L_H;
 
 	s_controls.framer.generic.type  = MTYPE_BITMAP;
 	s_controls.framer.generic.name  = ART_FRAMER;
 	s_controls.framer.generic.flags = QMF_LEFT_JUSTIFY|QMF_INACTIVE;
-	s_controls.framer.generic.x     = 376;
-	s_controls.framer.generic.y     = 76;
-	s_controls.framer.width  	    = 256;
-	s_controls.framer.height  	    = 334;
+	s_controls.framer.generic.x     = FRAME_R_X;
+	s_controls.framer.generic.y     = FRAME_R_Y;
+	s_controls.framer.width  	    = FRAME_R_W;
+	s_controls.framer.height  	    = FRAME_R_H;
 
 	s_controls.looking.generic.type     = MTYPE_PTEXT;
 	s_controls.looking.generic.flags    = QMF_RIGHT_JUSTIFY|QMF_PULSEIFFOCUS;

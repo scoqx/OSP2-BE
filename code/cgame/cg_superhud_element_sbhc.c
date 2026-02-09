@@ -15,13 +15,13 @@ void* CG_SHUDElementSBHCCreate(const superhudConfig_t* config)
 
 	SHUD_ELEMENT_INIT(element, config);
 
-	//load defaults
-	if (!element->config.color.isSet)
-	{
-		element->config.color.isSet = qtrue;
-		element->config.color.value.type = SUPERHUD_COLOR_RGBA;
-		Vector4Set(element->config.color.value.rgba, 1, 0.7, 0, 1);
-	}
+	// //load defaults
+	// if (!element->config.color.isSet)
+	// {
+	// 	element->config.color.isSet = qtrue;
+	// 	element->config.color.value.type = SUPERHUD_COLOR_RGBA;
+	// 	Vector4Set(element->config.color.value.rgba, 1, 0.7, 0, 1);
+	// }
 	if (!element->config.text.isSet)
 	{
 		element->config.text.isSet = qtrue;
@@ -42,8 +42,11 @@ void CG_SHUDElementSBHCRoutine(void* context)
 
 	element->ctx.text = va(element->config.text.value, hp > 0 ? hp : 0);
 
-	Vector4Copy(cgs.healthColorLocal, element->config.color.value.rgba);
-	CG_SHUDTextPrint(&element->config, &element->ctx);
+	if (hp <= 0 && element->config.color.isSet)
+		Vector4Copy(element->config.color.value.rgba, element->ctx.color);
+	else
+		Vector4Copy(cgs.healthColorLocal, element->ctx.color);
+	CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);
 }
 
 void CG_SHUDElementSBHCDestroy(void* context)

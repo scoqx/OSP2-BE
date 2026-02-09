@@ -625,7 +625,7 @@ typedef enum
 	TEAMTASK_NONE,              // 0 LOL?
 	TEAMTASK_OFFENSE,           // 1
 	TEAMTASK_DEFENCE,           // 2
-	TEAMTASK_PATROL,            // 3 NOT USED
+	TEAMTASK_WATCH,            // 3
 	TEAMTASK_PLAYERDEAD,        // 4
 	TEAMTASK_YES,               // 5
 	TEAMTASK_NO,                // 6

@@ -146,18 +146,18 @@ static void UI_Mods_MenuInit( void ) {
 	s_mods.framel.generic.type		= MTYPE_BITMAP;
 	s_mods.framel.generic.name		= ART_FRAMEL;
 	s_mods.framel.generic.flags		= QMF_INACTIVE;
-	s_mods.framel.generic.x			= 0;  
-	s_mods.framel.generic.y			= 78;
-	s_mods.framel.width				= 256;
-	s_mods.framel.height			= 329;
+	s_mods.framel.generic.x			= FRAME_L_X;
+	s_mods.framel.generic.y			= FRAME_L_Y;
+	s_mods.framel.width				= FRAME_L_W;
+	s_mods.framel.height			= FRAME_L_H;
 
 	s_mods.framer.generic.type		= MTYPE_BITMAP;
 	s_mods.framer.generic.name		= ART_FRAMER;
 	s_mods.framer.generic.flags		= QMF_INACTIVE;
-	s_mods.framer.generic.x			= 376;
-	s_mods.framer.generic.y			= 76;
-	s_mods.framer.width				= 256;
-	s_mods.framer.height			= 334;
+	s_mods.framer.generic.x			= FRAME_R_X;
+	s_mods.framer.generic.y			= FRAME_R_Y;
+	s_mods.framer.width				= FRAME_R_W;
+	s_mods.framer.height			= FRAME_R_H;
 
 	s_mods.back.generic.type		= MTYPE_BITMAP;
 	s_mods.back.generic.name		= ART_BACK0;

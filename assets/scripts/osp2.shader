@@ -396,6 +396,8 @@ outlineThin
 	}
 }
 
+// cg_altPlasma
+// 2 (BE)
 plasmaExplosion_old
 {
 	nopicmip
@@ -435,6 +437,33 @@ gfx/damage/plasma_mrk_be
 	}
 }
 
+// 3 (QL-like)
+sprites/plasmaQL
+{
+	nopicmip
+  	nomipmaps
+	cull disable
+	{
+		clampmap sprites/plasmaQL.jpg
+		blendfunc add
+                tcMod rotate 931
+	}
+}
+
+plasmaExplosionQL
+{
+	nopicmip
+	cull disable
+	{
+		clampmap models/weaphits/plasmaboom_ql.jpg
+		blendfunc add
+                tcMod stretch triangle .6 0.1 0 8
+                tcmod rotate 999
+                rgbGen wave inversesawtooth 0 1 0 1.5
+	}
+}
+
+// cg_altBlood
 bloodExplosionNew
 {
 	nopicmip
@@ -678,3 +707,39 @@ altFullBrightShader
 	    alphaGen entity
     }
 }
+
+models/weapons2/grapple2/ball
+{
+	//novlcollapse
+	nopicmip
+	{
+		map models/weapons2/grapple2/ball.jpg
+		blendFunc GL_ONE GL_ZERO
+		tcGen environment
+		rgbGen lightingDiffuse
+	}
+}
+
+models/weapons2/grapple2/spikes
+{
+	//novlcollapse
+	nopicmip
+	{
+		map models/weapons2/grapple2/spikes.jpg
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		tcGen environment
+		rgbGen lightingDiffuse
+	}
+}
+
+grappleRope
+{
+	//novlcollapse
+	nopicmip
+	cull none
+	{
+		map models/weapons2/grapple2/grapplerope.tga
+		blendfunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+

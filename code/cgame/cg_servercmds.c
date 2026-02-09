@@ -193,6 +193,7 @@ void CG_ParseServerinfo(void)
 	val = Info_ValueForKey(info, "g_blueTeam");
 	Q_strncpyz(cgs.blueTeam, val, sizeof(cgs.blueTeam));
 	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
+	cgs.isOspServer = (Info_ValueForKey(info, "g_unlagged")[0] != '\0') ? qfalse : qtrue;
 
 	/* CG_SetServerSettingsBE inlined - enableBreath from CS_SYSTEMINFO */
 	/* QVM_LOGIC: avoid Q_stricmp - use char comparison */
@@ -1537,235 +1538,6 @@ static void CG_WrapPlayerNameInParentheses(char* text, int textSize)
 
 /*
 =================
-CG_ReplacePlayerNameInChat
-
-Replace player name in chat message with replacement name if cg_giveName is enabled.
-=================
-*/
-static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
-{
-	const char* colonPos;
-	const clientInfo_t* ci;
-	const char* replacementName;
-
-	if (!cg_giveName.integer)
-	{
-		return;
-	}
-
-	/* Validate clientNum */
-	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-	{
-		return;
-	}
-
-	/* Never replace name for local player */
-	if (clientNum == cg.clientNum)
-	{
-		return;
-	}
-
-	ci = &cgs.clientinfo[clientNum];
-	if (!ci->infoValid)
-	{
-		return;
-	}
-
-	/* Find colon position */
-	colonPos = strchr(text, ':');
-	if (!colonPos)
-	{
-		return;
-	}
-
-	/* Check if this player has a replacement name */
-	/* Replacement names end with '*' character in name_clean */
-	{
-		int nameCleanLen;
-		char replacementNameClean[MAX_QPATH];
-		char tempName[MAX_QPATH];
-		const char* nameInCiName;
-		const char* nameStart;
-		const char* nameEnd;
-		int nameWithColorLen;
-
-		nameCleanLen = strlen(ci->name_clean);
-
-		/* Check if name_clean ends with '*' (replacement marker) */
-		if (nameCleanLen == 0 || ci->name_clean[nameCleanLen - 1] != '*')
-		{
-			return;
-		}
-
-		/* Player has replacement name */
-		/* Extract replacement name from name_clean (without the '*' marker) */
-		Q_strncpyz(replacementNameClean, ci->name_clean, sizeof(replacementNameClean));
-		if (nameCleanLen > 0 && replacementNameClean[nameCleanLen - 1] == '*')
-		{
-			replacementNameClean[nameCleanLen - 1] = 0; /* Remove '*' */
-		}
-
-		/* Check if ci->name starts with replacement name (no ID/XID prefixes) */
-		/* If it does, we can use it directly (it should be in format ^Xname^0*) */
-		if (strstr(ci->name, replacementNameClean) == ci->name ||
-		        (ci->name[0] == '^' && strstr(ci->name + 2, replacementNameClean) == ci->name + 2))
-		{
-			/* ci->name contains replacement name directly, extract it without ^0* */
-			nameEnd = strstr(ci->name, "^0*");
-			if (nameEnd)
-			{
-				/* Extract name up to (but not including) "^0*" to preserve color code */
-				nameWithColorLen = nameEnd - ci->name;
-				if (nameWithColorLen > 0 && nameWithColorLen < sizeof(tempName) - 3)
-				{
-					memcpy(tempName, ci->name, nameWithColorLen);
-					tempName[nameWithColorLen] = 0;
-					/* Add ^7 at the end for chat to reset color */
-					Q_strcat(tempName, sizeof(tempName), "^7");
-					replacementName = tempName;
-				}
-				else
-				{
-					/* Fallback: use replacementNameClean with default color */
-					Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
-					replacementName = tempName;
-				}
-			}
-			else
-			{
-				/* Fallback: use replacementNameClean with default color */
-				Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
-				replacementName = tempName;
-			}
-		}
-		else
-		{
-			/* ci->name has ID/XID prefixes, find the replacement name in it */
-			nameInCiName = strstr(ci->name, replacementNameClean);
-			if (nameInCiName)
-			{
-				/* Find the start of the name (go back to find color code) */
-				nameStart = nameInCiName;
-				/* Go back to find the color code (^X where X is 0-9) */
-				while (nameStart > ci->name && nameStart[-1] != '^' && nameStart[-1] != ':' && nameStart[-1] != ']' && nameStart[-1] != '[')
-				{
-					nameStart--;
-				}
-				/* If we found '^', verify it's a color code and include it */
-				if (nameStart > ci->name && nameStart[-1] == '^' && nameStart[0] >= '0' && nameStart[0] <= '9')
-				{
-					nameStart--; /* Include the '^' (color digit is already at nameStart[0]) */
-				}
-
-				/* Find where the name ends (before '^0*' sequence) */
-				nameEnd = strstr(nameInCiName, "^0*");
-				if (nameEnd)
-				{
-					/* Extract name up to (but not including) "^0*" to preserve color code */
-					nameWithColorLen = nameEnd - nameStart;
-					if (nameWithColorLen > 0 && nameWithColorLen < sizeof(tempName) - 3)
-					{
-						memcpy(tempName, nameStart, nameWithColorLen);
-						tempName[nameWithColorLen] = 0;
-						/* Add ^7 at the end for chat to reset color */
-						Q_strcat(tempName, sizeof(tempName), "^7");
-						replacementName = tempName;
-					}
-					else
-					{
-						/* Fallback: use replacementNameClean with default color */
-						Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
-						replacementName = tempName;
-					}
-				}
-				else
-				{
-					/* Fallback: use replacementNameClean with default color */
-					Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
-					replacementName = tempName;
-				}
-			}
-			else
-			{
-				/* Fallback: use replacementNameClean with default color */
-				Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
-				replacementName = tempName;
-			}
-		}
-
-		/* Build new message: preserve prefix + replacement name + colon + rest of message */
-		{
-			char newText[1024];
-			int replacementLen;
-			int restLen;
-			const char* restOfMessage;
-			const char* nameStartInText;
-			int prefixLen;
-
-			restOfMessage = colonPos + 1; /* Skip colon */
-			restLen = strlen(restOfMessage);
-			replacementLen = strlen(replacementName);
-
-			/* Check if there's a prefix like "(team) " at the start */
-			nameStartInText = NULL;
-			if (text[0] == '(')
-			{
-				/* Find the closing parenthesis and space after it */
-				nameStartInText = strchr(text, ')');
-				if (nameStartInText && nameStartInText[1] == ' ')
-				{
-					prefixLen = nameStartInText - text + 2; /* Include ") " */
-				}
-				else
-				{
-					prefixLen = 0;
-				}
-			}
-			else
-			{
-				prefixLen = 0;
-			}
-
-			/* Copy prefix if present, then add replacement name */
-			if (prefixLen > 0 && prefixLen < sizeof(newText) - 1)
-			{
-				/* Copy prefix to newText */
-				memcpy(newText, text, prefixLen);
-				newText[prefixLen] = 0;
-
-				/* Append replacement name, colon, and rest of message */
-				if (prefixLen + replacementLen + 1 + restLen < sizeof(newText))
-				{
-					Com_sprintf(newText + prefixLen, sizeof(newText) - prefixLen, "%s:%s", replacementName, restOfMessage);
-					Q_strncpyz(text, newText, textSize);
-				}
-			}
-			else
-			{
-				/* No prefix, just replace name */
-				if (replacementLen + 1 + restLen < sizeof(newText))
-				{
-					/* Copy tell prefix if present (special case for tell messages) */
-					if (text[0] == 25 && (text[1] == '(' || text[1] == '['))
-					{
-						newText[0] = text[0];
-						newText[1] = text[1];
-						Com_sprintf(newText + 2, sizeof(newText) - 2, "%s:%s", replacementName, restOfMessage);
-					}
-					else
-					{
-						Com_sprintf(newText, sizeof(newText), "%s:%s", replacementName, restOfMessage);
-					}
-
-					Q_strncpyz(text, newText, textSize);
-				}
-			}
-		}
-	}
-}
-
-/*
-=================
 CG_ServerCommand
 
 The string has been tokenized and can be retrieved with
@@ -1790,7 +1562,7 @@ void CG_ServerCommand(void)
 	switch (cmd[0])
 	{
 		case 'p':
-			/* print - check first (common, real work) */
+			/* "print" - check first (common, real work) */
 			if (cmd[1] == 'r' && cmd[2] == 'i' && cmd[3] == 'n' && cmd[4] == 't' && cmd[5] == '\0')
 			{
 				const char* had_pos;
@@ -1805,6 +1577,10 @@ void CG_ServerCommand(void)
 						return;
 				}
 				if ((ignoreMask & 2) && strstr(text, "chat fragged") != NULL)
+				{
+					return;
+				}
+				if ((ignoreMask & 8) && strstr(text, "Backpack") != NULL)
 				{
 					return;
 				}
@@ -1863,7 +1639,6 @@ void CG_ServerCommand(void)
 					return;
 				}
 
-				/* Replace player name with replacement name if cg_giveName is enabled */
 				/* Get clientNum from command (CG_Argv(2) if available) */
 				argc = trap_Argc();
 				if (argc >= 3)
@@ -1871,8 +1646,6 @@ void CG_ServerCommand(void)
 					chatClientNum = atoi(CG_Argv(2));
 					if (chatClientNum >= 0 && chatClientNum < MAX_CLIENTS)
 					{
-						CG_ReplacePlayerNameInChat(text, sizeof(text), chatClientNum);
-
 						/* Save last tell sender for reply command */
 						if (isTellMessage && chatClientNum != cg.clientNum)
 						{
@@ -1901,10 +1674,10 @@ void CG_ServerCommand(void)
 					/* Insert magenta color (^6) for tell messages */
 					CG_InsertChatColor(text, 1024, '6');
 				}
-				else
+				else if (ma == MESSAGE_ALLOWED_PLAYER)
 				{
-					/* Insert default chat color at the beginning of message text (after colon) */
-					/* This replaces any server-provided color with our default color */
+					/* Insert default chat color only for player messages (with ID) */
+					/* Server messages (MESSAGE_ALLOWED_OTHER) keep their original color */
 					/* Support both digits (0-9) and letters (a-z, A-Z) */
 					if (cg_chatColor.string[0] != '\0')
 					{
@@ -1954,8 +1727,6 @@ void CG_ServerCommand(void)
 				messageAllowed_t ma;
 				qboolean isVanilaChatEnabled;
 				qboolean isShudChatEnabled;
-				int chatClientNum;
-				int argc;
 
 				Q_strncpyz(text, CG_Argv(1), 1024);
 				ma = CG_ChatCheckMessageAllowed(text);
@@ -1967,18 +1738,6 @@ void CG_ServerCommand(void)
 				if ((ma != MESSAGE_ALLOWED_PLAYER) && (ma != MESSAGE_NOTALLOWED) && (ignoreMask & 4))
 				{
 					return;
-				}
-
-				/* Replace player name with replacement name if cg_giveName is enabled */
-				/* Get clientNum from command (CG_Argv(2) if available) */
-				argc = trap_Argc();
-				if (argc >= 3)
-				{
-					chatClientNum = atoi(CG_Argv(2));
-					if (chatClientNum >= 0 && chatClientNum < MAX_CLIENTS)
-					{
-						CG_ReplacePlayerNameInChat(text, sizeof(text), chatClientNum);
-					}
 				}
 
 				isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_TEAM_ENABLED;
@@ -2032,7 +1791,7 @@ void CG_ServerCommand(void)
 
 				return;
 			}
-			/* tinfo */
+			/* "tinfo" */
 			if (cmd[1] == 'i' && cmd[2] == 'n' && cmd[3] == 'f' && cmd[4] == 'o' && cmd[5] == '\0')
 			{
 				CG_ParseTeamInfo();
@@ -2042,20 +1801,20 @@ void CG_ServerCommand(void)
 
 		case 's':
 			/* sset, scmds - char comparison (no Q_stricmp) */
-			/* scores */
+			/* "scores" */
 			if (cmd[1] == 'c' && cmd[2] == 'o' && cmd[3] == 'r' && cmd[4] == 'e' && cmd[5] == 's' && cmd[6] == '\0')
 			{
 				CG_ParseScores();
 				return;
 			}
-			/* statsinfo */
+			/* "statsinfo" */
 			if (cmd[1] == 't' && cmd[2] == 'a' && cmd[3] == 't' && cmd[4] == 's' && cmd[5] == 'i' &&
 			        cmd[6] == 'n' && cmd[7] == 'f' && cmd[8] == 'o' && cmd[9] == '\0')
 			{
 				CG_BEParseStatsInfo();
 				return;
 			}
-			/* sset */
+			/* "sset" */
 			if (cmd[1] == 's' && cmd[2] == 'e' && cmd[3] == 't' && cmd[4] == '\0')
 			{
 				int i;
@@ -2085,7 +1844,7 @@ void CG_ServerCommand(void)
 				}
 				return;
 			}
-			/* stuff */
+			/* "stuff" */
 			if (cmd[1] == 't' && cmd[2] == 'u' && cmd[3] == 'f' && cmd[4] == 'f' && cmd[5] == '\0')
 			{
 				char command[1024];
@@ -2129,14 +1888,14 @@ void CG_ServerCommand(void)
 				}
 				return;
 			}
-			/* specsinfo */
+			/* "specsinfo" */
 			if (cmd[1] == 'p' && cmd[2] == 'e' && cmd[3] == 'c' && cmd[4] == 's' && cmd[5] == 'i' &&
 			        cmd[6] == 'n' && cmd[7] == 'f' && cmd[8] == 'o' && cmd[9] == '\0')
 			{
 				CG_ParseSpecsInfo();
 				return;
 			}
-			/* scmds */
+			/* "scmds" */
 			if (cmd[1] == 'c' && cmd[2] == 'm' && cmd[3] == 'd' && cmd[4] == 's' && cmd[5] == '\0')
 			{
 				const char* part;
@@ -2176,7 +1935,7 @@ void CG_ServerCommand(void)
 			break;
 
 		case 'm':
-			/* map_restart */
+			/* "map_restart" */
 			if (cmd[1] == 'a' && cmd[2] == 'p' && cmd[3] == '_' && cmd[4] == 'r' && cmd[5] == 'e' &&
 			        cmd[6] == 's' && cmd[7] == 't' && cmd[8] == 'a' && cmd[9] == 'r' && cmd[10] == 't' && cmd[11] == '\0')
 			{
@@ -2202,7 +1961,7 @@ void CG_ServerCommand(void)
 			break;
 
 		case 'v':
-			/* viewactive - does something, check first */
+			/* "viewactive" - does something, check first */
 			if (cmd[1] == 'i' && cmd[2] == 'e' && cmd[3] == 'w' && cmd[4] == 'a' && cmd[5] == 'c' &&
 			        cmd[6] == 't' && cmd[7] == 'i' && cmd[8] == 'v' && cmd[9] == 'e' && cmd[10] == '\0')
 			{

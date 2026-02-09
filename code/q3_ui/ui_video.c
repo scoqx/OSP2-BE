@@ -141,18 +141,18 @@ static void UI_DriverInfo_Menu( void )
 	s_driverinfo.framel.generic.type  = MTYPE_BITMAP;
 	s_driverinfo.framel.generic.name  = DRIVERINFO_FRAMEL;
 	s_driverinfo.framel.generic.flags = QMF_INACTIVE;
-	s_driverinfo.framel.generic.x	  = 0;
-	s_driverinfo.framel.generic.y	  = 78;
-	s_driverinfo.framel.width  	      = 256;
-	s_driverinfo.framel.height  	  = 329;
+	s_driverinfo.framel.generic.x	  = FRAME_L_X;
+	s_driverinfo.framel.generic.y	  = FRAME_L_Y;
+	s_driverinfo.framel.width  	      = FRAME_L_W;
+	s_driverinfo.framel.height  	  = FRAME_L_H;
 
 	s_driverinfo.framer.generic.type  = MTYPE_BITMAP;
 	s_driverinfo.framer.generic.name  = DRIVERINFO_FRAMER;
 	s_driverinfo.framer.generic.flags = QMF_INACTIVE;
-	s_driverinfo.framer.generic.x	  = 376;
-	s_driverinfo.framer.generic.y	  = 76;
-	s_driverinfo.framer.width  	      = 256;
-	s_driverinfo.framer.height  	  = 334;
+	s_driverinfo.framer.generic.x	  = FRAME_R_X;
+	s_driverinfo.framer.generic.y	  = FRAME_R_Y;
+	s_driverinfo.framer.width  	      = FRAME_R_W;
+	s_driverinfo.framer.height  	  = FRAME_R_H;
 
 	s_driverinfo.back.generic.type	   = MTYPE_BITMAP;
 	s_driverinfo.back.generic.name     = DRIVERINFO_BACK0;
@@ -751,18 +751,18 @@ void GraphicsOptions_MenuInit( void )
 	s_graphicsoptions.framel.generic.type  = MTYPE_BITMAP;
 	s_graphicsoptions.framel.generic.name  = GRAPHICSOPTIONS_FRAMEL;
 	s_graphicsoptions.framel.generic.flags = QMF_INACTIVE;
-	s_graphicsoptions.framel.generic.x	   = 0;
-	s_graphicsoptions.framel.generic.y	   = 78;
-	s_graphicsoptions.framel.width  	   = 256;
-	s_graphicsoptions.framel.height  	   = 329;
+	s_graphicsoptions.framel.generic.x	   = FRAME_L_X;
+	s_graphicsoptions.framel.generic.y	   = FRAME_L_Y;
+	s_graphicsoptions.framel.width  	   = FRAME_L_W;
+	s_graphicsoptions.framel.height  	   = FRAME_L_H;
 
 	s_graphicsoptions.framer.generic.type  = MTYPE_BITMAP;
 	s_graphicsoptions.framer.generic.name  = GRAPHICSOPTIONS_FRAMER;
 	s_graphicsoptions.framer.generic.flags = QMF_INACTIVE;
-	s_graphicsoptions.framer.generic.x	   = 376;
-	s_graphicsoptions.framer.generic.y	   = 76;
-	s_graphicsoptions.framer.width  	   = 256;
-	s_graphicsoptions.framer.height  	   = 334;
+	s_graphicsoptions.framer.generic.x	   = FRAME_R_X;
+	s_graphicsoptions.framer.generic.y	   = FRAME_R_Y;
+	s_graphicsoptions.framer.width  	   = FRAME_R_W;
+	s_graphicsoptions.framer.height  	   = FRAME_R_H;
 
 	s_graphicsoptions.graphics.generic.type		= MTYPE_PTEXT;
 	s_graphicsoptions.graphics.generic.flags	= QMF_RIGHT_JUSTIFY;

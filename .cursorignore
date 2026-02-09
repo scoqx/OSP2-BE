@@ -1,0 +1,20 @@
+# Игнорировать всё в корне (и файлы, и папки)
+/*
+
+# Но оставить эти директории индексируемыми
+!/code/
+!/build/
+!/.cursor/
+!/assets/
+!.cursorignore
+
+# В assets видеть только два конфига, подпапки и остальное — игнор
+assets/*
+!/assets/OSP2.cfg
+!/assets/OSP2English.cfg
+
+# При этом внутри build по‑прежнему игнорировать тяжёлые артефакты
+build/qvm/vm/
+build/qvm/zz-osp-pak8be.pk3
+build/library/build/
+build/tests/build/

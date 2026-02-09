@@ -456,18 +456,18 @@ static void PlayerSettings_MenuInit( void ) {
 	s_playersettings.framel.generic.type  = MTYPE_BITMAP;
 	s_playersettings.framel.generic.name  = ART_FRAMEL;
 	s_playersettings.framel.generic.flags = QMF_LEFT_JUSTIFY|QMF_INACTIVE;
-	s_playersettings.framel.generic.x     = 0;
-	s_playersettings.framel.generic.y     = 78;
-	s_playersettings.framel.width         = 256;
-	s_playersettings.framel.height        = 329;
+	s_playersettings.framel.generic.x     = FRAME_L_X;
+	s_playersettings.framel.generic.y     = FRAME_L_Y;
+	s_playersettings.framel.width         = FRAME_L_W;
+	s_playersettings.framel.height        = FRAME_L_H;
 
 	s_playersettings.framer.generic.type  = MTYPE_BITMAP;
 	s_playersettings.framer.generic.name  = ART_FRAMER;
 	s_playersettings.framer.generic.flags = QMF_LEFT_JUSTIFY|QMF_INACTIVE;
-	s_playersettings.framer.generic.x     = 376;
-	s_playersettings.framer.generic.y     = 76;
-	s_playersettings.framer.width         = 256;
-	s_playersettings.framer.height        = 334;
+	s_playersettings.framer.generic.x     = FRAME_R_X;
+	s_playersettings.framer.generic.y     = FRAME_R_Y;
+	s_playersettings.framer.width         = FRAME_R_W;
+	s_playersettings.framer.height        = FRAME_R_H;
 
 	y = 144;
 	s_playersettings.name.generic.type			= MTYPE_FIELD;

@@ -113,18 +113,18 @@ static void LoadConfig_MenuInit( void ) {
 	s_configs.framel.generic.type	= MTYPE_BITMAP;
 	s_configs.framel.generic.name	= ART_FRAMEL;
 	s_configs.framel.generic.flags	= QMF_INACTIVE;
-	s_configs.framel.generic.x		= 0;  
-	s_configs.framel.generic.y		= 78;
-	s_configs.framel.width			= 256;
-	s_configs.framel.height			= 329;
+	s_configs.framel.generic.x		= FRAME_L_X;
+	s_configs.framel.generic.y		= FRAME_L_Y;
+	s_configs.framel.width			= FRAME_L_W;
+	s_configs.framel.height			= FRAME_L_H;
 
 	s_configs.framer.generic.type	= MTYPE_BITMAP;
 	s_configs.framer.generic.name	= ART_FRAMER;
 	s_configs.framer.generic.flags	= QMF_INACTIVE;
-	s_configs.framer.generic.x		= 376;
-	s_configs.framer.generic.y		= 76;
-	s_configs.framer.width			= 256;
-	s_configs.framer.height			= 334;
+	s_configs.framer.generic.x		= FRAME_R_X;
+	s_configs.framer.generic.y		= FRAME_R_Y;
+	s_configs.framer.width			= FRAME_R_W;
+	s_configs.framer.height			= FRAME_R_H;
 
 	s_configs.arrows.generic.type	= MTYPE_BITMAP;
 	s_configs.arrows.generic.name	= ART_ARROWS;

@@ -115,18 +115,18 @@ static void UI_DisplayOptionsMenu_Init( void ) {
 	displayOptionsInfo.framel.generic.type		= MTYPE_BITMAP;
 	displayOptionsInfo.framel.generic.name		= ART_FRAMEL;
 	displayOptionsInfo.framel.generic.flags		= QMF_INACTIVE;
-	displayOptionsInfo.framel.generic.x			= 0;  
-	displayOptionsInfo.framel.generic.y			= 78;
-	displayOptionsInfo.framel.width				= 256;
-	displayOptionsInfo.framel.height			= 329;
+	displayOptionsInfo.framel.generic.x			= FRAME_L_X;
+	displayOptionsInfo.framel.generic.y			= FRAME_L_Y;
+	displayOptionsInfo.framel.width				= FRAME_L_W;
+	displayOptionsInfo.framel.height			= FRAME_L_H;
 
 	displayOptionsInfo.framer.generic.type		= MTYPE_BITMAP;
 	displayOptionsInfo.framer.generic.name		= ART_FRAMER;
 	displayOptionsInfo.framer.generic.flags		= QMF_INACTIVE;
-	displayOptionsInfo.framer.generic.x			= 376;
-	displayOptionsInfo.framer.generic.y			= 76;
-	displayOptionsInfo.framer.width				= 256;
-	displayOptionsInfo.framer.height			= 334;
+	displayOptionsInfo.framer.generic.x			= FRAME_R_X;
+	displayOptionsInfo.framer.generic.y			= FRAME_R_Y;
+	displayOptionsInfo.framer.width				= FRAME_R_W;
+	displayOptionsInfo.framer.height			= FRAME_R_H;
 
 	displayOptionsInfo.graphics.generic.type		= MTYPE_PTEXT;
 	displayOptionsInfo.graphics.generic.flags		= QMF_RIGHT_JUSTIFY|QMF_PULSEIFFOCUS;

@@ -561,18 +561,18 @@ static void PlayerModel_MenuInit( void )
 	s_playermodel.framel.generic.type  = MTYPE_BITMAP;
 	s_playermodel.framel.generic.name  = MODEL_FRAMEL;
 	s_playermodel.framel.generic.flags = QMF_LEFT_JUSTIFY|QMF_INACTIVE;
-	s_playermodel.framel.generic.x     = 0;
-	s_playermodel.framel.generic.y     = 78;
-	s_playermodel.framel.width         = 256;
-	s_playermodel.framel.height        = 329;
+	s_playermodel.framel.generic.x     = FRAME_L_X;
+	s_playermodel.framel.generic.y     = FRAME_L_Y;
+	s_playermodel.framel.width         = FRAME_L_W;
+	s_playermodel.framel.height        = FRAME_L_H;
 
 	s_playermodel.framer.generic.type  = MTYPE_BITMAP;
 	s_playermodel.framer.generic.name  = MODEL_FRAMER;
 	s_playermodel.framer.generic.flags = QMF_LEFT_JUSTIFY|QMF_INACTIVE;
-	s_playermodel.framer.generic.x     = 376;
-	s_playermodel.framer.generic.y     = 76;
-	s_playermodel.framer.width         = 256;
-	s_playermodel.framer.height        = 334;
+	s_playermodel.framer.generic.x     = FRAME_R_X;
+	s_playermodel.framer.generic.y     = FRAME_R_Y;
+	s_playermodel.framer.width         = FRAME_R_W;
+	s_playermodel.framer.height        = FRAME_R_H;
 
 	s_playermodel.ports.generic.type  = MTYPE_BITMAP;
 	s_playermodel.ports.generic.name  = MODEL_PORTS;

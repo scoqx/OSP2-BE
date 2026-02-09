@@ -114,18 +114,18 @@ static void UI_CinematicsMenu_Init( void ) {
 	cinematicsMenuInfo.framel.generic.type		= MTYPE_BITMAP;
 	cinematicsMenuInfo.framel.generic.name		= ART_FRAMEL;
 	cinematicsMenuInfo.framel.generic.flags		= QMF_INACTIVE;
-	cinematicsMenuInfo.framel.generic.x			= 0;  
-	cinematicsMenuInfo.framel.generic.y			= 78;
-	cinematicsMenuInfo.framel.width  			= 256;
-	cinematicsMenuInfo.framel.height  			= 329;
+	cinematicsMenuInfo.framel.generic.x			= FRAME_L_X;
+	cinematicsMenuInfo.framel.generic.y			= FRAME_L_Y;
+	cinematicsMenuInfo.framel.width  			= FRAME_L_W;
+	cinematicsMenuInfo.framel.height  			= FRAME_L_H;
 
 	cinematicsMenuInfo.framer.generic.type		= MTYPE_BITMAP;
 	cinematicsMenuInfo.framer.generic.name		= ART_FRAMER;
 	cinematicsMenuInfo.framer.generic.flags		= QMF_INACTIVE;
-	cinematicsMenuInfo.framer.generic.x			= 376;
-	cinematicsMenuInfo.framer.generic.y			= 76;
-	cinematicsMenuInfo.framer.width  			= 256;
-	cinematicsMenuInfo.framer.height  			= 334;
+	cinematicsMenuInfo.framer.generic.x			= FRAME_R_X;
+	cinematicsMenuInfo.framer.generic.y			= FRAME_R_Y;
+	cinematicsMenuInfo.framer.width  			= FRAME_R_W;
+	cinematicsMenuInfo.framer.height  			= FRAME_R_H;
 
 	y = 100;
 	cinematicsMenuInfo.cin_idlogo.generic.type		= MTYPE_PTEXT;

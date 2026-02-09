@@ -402,50 +402,11 @@ void CG_UpdateAndDrawSelwheelMark(void)
 	Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, color);
 	CG_ColorWhitenSmart(color, NULL, -0.4f);
 	color[3] = 0.8f;
-	drawX = cgs.teamMarkers.ttwheelMarkX;
-	drawY = cgs.teamMarkers.ttwheelMarkY;
-	drawSize = 1.0f;
-	CG_AdjustFrom640_Old(&drawX, &drawY, &drawSize, &drawSize, qfalse);
-	drawSize = 4.0f * scale;
+	drawX = cgs.teamMarkers.ttwheelMarkX * cgs.screenXScale_Old;
+	drawY = cgs.teamMarkers.ttwheelMarkY * cgs.screenYScale_Old;
+	drawSize = 2.0f * scale * cgs.screenXScale_Old;
 	trap_R_SetColor(color);
 	trap_R_DrawStretchPic(drawX - drawSize * 0.5f, drawY - drawSize * 0.5f, drawSize, drawSize, 0, 0, 1, 1, shader);
-	trap_R_SetColor(NULL);
-}
-
-/*
-=================
-CG_DrawSelwheelMark
-
-Draw the ttwheel mark on screen (kept for other callers if any).
-=================
-*/
-void CG_DrawSelwheelMark(void)
-{
-	float x;
-	float y;
-	float size;
-	qhandle_t shader;
-	vec4_t color;
-	float scale;
-
-	if (!cgs.teamMarkers.ttwheelMarkActive)
-		return;
-	scale = cg_teamTaskWheelScale.value;
-	if (scale <= 0.0f)
-		scale = 1.0f;
-	shader = cgs.media.whiteShader;
-	if (!shader)
-		return;
-	size = 1.0f;
-	Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, color);
-	CG_ColorWhitenSmart(color, NULL, -0.4f);
-	color[3] = 0.8f;
-	x = cgs.teamMarkers.ttwheelMarkX;
-	y = cgs.teamMarkers.ttwheelMarkY;
-	CG_AdjustFrom640_Old(&x, &y, &size, &size, qfalse);
-	size = 4.0f * scale;
-	trap_R_SetColor(color);
-	trap_R_DrawStretchPic(x - size * 0.5f, y - size * 0.5f, size, size, 0, 0, 1, 1, shader);
 	trap_R_SetColor(NULL);
 }
 

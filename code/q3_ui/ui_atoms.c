@@ -75,6 +75,136 @@ void UI_UpdateMenuBackgroundMode( void ) {
 
 /*
 =================
+UI_GetMenuBgStyle
+
+Returns current ui_menuBgStyle (1 or 2), cached in uiStatic_t.
+1 - first picture only on first page (main menu), everywhere else second picture.
+2 - first picture everywhere (main menu and all other full-screen menus/dialogs).
+=================
+*/
+static int UI_GetMenuBgStyle( void ) {
+	int style;
+
+	trap_Cvar_Update( &ui_menuBgStyle );
+
+	if ( uis.menuBgStyleModCount != ui_menuBgStyle.modificationCount ) {
+		uis.menuBgStyleModCount = ui_menuBgStyle.modificationCount;
+		uis.menuBgStyle = ui_menuBgStyle.integer;
+
+		/* Clamp to supported range */
+		if ( uis.menuBgStyle < 1 || uis.menuBgStyle > 2 ) {
+			uis.menuBgStyle = 1;
+		}
+	}
+
+	style = uis.menuBgStyle;
+	if ( style < 1 || style > 2 ) {
+		style = 1;
+	}
+
+	return style;
+}
+
+/*
+=================
+UI_DrawMenuBackground
+
+Draws either the "primary" or "secondary" menu background, taking into account
+ui_menuHQ (grid modes) and optional HQ variants for the no-logo background.
+
+usePrimaryPicture:
+ - qtrue  - "first" background (with logo), equivalent to old behaviour.
+ - qfalse - "second" background (no-logo), used for non-main pages when style=1.
+=================
+*/
+void UI_DrawMenuBackground( qboolean usePrimaryPicture ) {
+	UI_UpdateMenuBackgroundMode();
+
+	if ( uis.menuHQMode == 2 ) {
+		/* 6x4 grid */
+		float cw = (float)uis.glconfig.vidWidth / 6.0f;
+		float ch = (float)uis.glconfig.vidHeight / 4.0f;
+		int i;
+
+		for ( i = 0; i < 24; i++ ) {
+			qhandle_t h;
+			float x;
+			float y;
+
+			if ( usePrimaryPicture ) {
+				h = uis.menuBackHQ24[i];
+			} else {
+				/* Try no-logo HQ tile first, fall back to primary if missing */
+				h = uis.menuBackNoLogoHQ24[i];
+				if ( !h ) {
+					h = uis.menuBackHQ24[i];
+				}
+			}
+
+			if ( !h ) {
+				continue;
+			}
+
+			x = (float)( i % 6 ) * cw;
+			y = (float)( i / 6 ) * ch;
+			trap_R_DrawStretchPic( x, y, cw, ch, 0, 0, 1, 1, h );
+		}
+	} else if ( uis.menuHQMode == 1 ) {
+		/* 2x2 grid */
+		float w2 = (float)uis.glconfig.vidWidth * 0.5f;
+		float h2 = (float)uis.glconfig.vidHeight * 0.5f;
+
+		if ( usePrimaryPicture ) {
+			if ( uis.menuBack1 )
+				trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBack1 );
+			if ( uis.menuBack2 )
+				trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBack2 );
+			if ( uis.menuBack3 )
+				trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBack3 );
+			if ( uis.menuBack4 )
+				trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBack4 );
+		} else {
+			/* Secondary HQ 2x2 tiles, fall back to primary when missing */
+			if ( uis.menuBackNoLogo1 )
+				trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBackNoLogo1 );
+			else if ( uis.menuBack1 )
+				trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBack1 );
+
+			if ( uis.menuBackNoLogo2 )
+				trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBackNoLogo2 );
+			else if ( uis.menuBack2 )
+				trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBack2 );
+
+			if ( uis.menuBackNoLogo3 )
+				trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBackNoLogo3 );
+			else if ( uis.menuBack3 )
+				trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBack3 );
+
+			if ( uis.menuBackNoLogo4 )
+				trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBackNoLogo4 );
+			else if ( uis.menuBack4 )
+				trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBack4 );
+		}
+	} else {
+		/* ui_menuHQ == 0 : original single-image behaviour */
+		if ( usePrimaryPicture ) {
+			/* Old behaviour: no-logo underlay + logo overlay */
+			if ( uis.menuBackNoLogoShader )
+				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
+			if ( uis.menuBackShader )
+				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
+		} else {
+			/* Second picture: only no-logo; fall back to logo if needed */
+			if ( uis.menuBackNoLogoShader )
+				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
+			else if ( uis.menuBackShader )
+				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
+		}
+	}
+}
+
+/*
+=================
 UI_ClampCvar
 =================
 */
@@ -131,8 +261,8 @@ void UI_PushMenu( menuframework_s *menu )
 			if ( rg < 0.99f || rg > 1.01f ) {
 				trap_Cvar_SetValue( "uc_gamma", rg );
 			}
+			trap_Cvar_SetValue( "r_gamma", 1.0f );
 		}
-		trap_Cvar_SetValue( "r_gamma", 1.0f );
 	}
 
 	// /* default cursor position */
@@ -749,19 +879,38 @@ void UI_DrawProportionalString( int x, int y, const char* str, int style, vec4_t
 	}
 	
 	if ( style & UI_PULSE_2 ) {
-		float pulseAlpha;
+		float pulseAmount;
+		float targetR, targetG, targetB;
 		
-		drawcolor[0] = color[0] * 0.25;
-		drawcolor[1] = color[1] * 0.25;
-		drawcolor[2] = color[2] * 0.25;
-		drawcolor[3] = color[3];
-		UI_DrawProportionalString2( x, y, str, drawcolor, sizeScale, uis.charsetProp );
+		// Определяем направление пульсации для каждого канала
+		// Если цвет ближе к 1, идём к 0. Если ближе к 0, идём к 1.
+		if ( color[0] > 0.5 ) {
+			targetR = 0.0; // светлый -> тёмный
+		} else {
+			targetR = 1.0; // тёмный -> светлый
+		}
+		
+		if ( color[1] > 0.5 ) {
+			targetG = 0.0;
+		} else {
+			targetG = 1.0;
+		}
+		
+		if ( color[2] > 0.5 ) {
+			targetB = 0.0;
+		} else {
+			targetB = 1.0;
+		}
 
-		drawcolor[0] = color[0];
-		drawcolor[1] = color[1];
-		drawcolor[2] = color[2];
-		pulseAlpha = 0.5 + 0.5 * cos( 2.0 * 3.14159265358979323846 * ( uis.realtime % 1000 ) / 1000.0 );
-		drawcolor[3] = color[3] * pulseAlpha;
+		// Пульсация от 0 до 1 и обратно
+		pulseAmount = 0.5 + 0.5 * cos( 2.0 * 3.14159265358979323846 * ( uis.realtime % 1000 ) / 1000.0 );
+
+		// Интерполяция между исходным цветом и целевым
+		drawcolor[0] = color[0] + (targetR - color[0]) * pulseAmount;
+		drawcolor[1] = color[1] + (targetG - color[1]) * pulseAmount;
+		drawcolor[2] = color[2] + (targetB - color[2]) * pulseAmount;
+		drawcolor[3] = color[3]; // альфа остаётся как есть
+		
 		UI_DrawProportionalString2( x, y, str, drawcolor, sizeScale, uis.charsetPropGlow );
 		return;
 	}
@@ -1232,8 +1381,6 @@ static void UI_DrawStringCommon( int x, int y, const char* str, int style, vec4_
 	vec4_t	dropcolor;
 	double	pulse;
 	int		visibleWidth;
-	float	pulseAlpha;
-	vec4_t	baseColor;
 	vec4_t	pulseColor;
 
 	if ( !str ) {
@@ -1314,25 +1461,43 @@ static void UI_DrawStringCommon( int x, int y, const char* str, int style, vec4_
 
 	if ( style & UI_PULSE_2 )
 	{
-		baseColor[0] = color[0] * 0.15f;
-		baseColor[1] = color[1] * 0.15f;
-		baseColor[2] = color[2] * 0.15f;
-		baseColor[3] = color[3];
+		float pulseAmount;
+		float targetR, targetG, targetB;
+		
+		// Определяем направление пульсации для каждого канала
+		if ( color[0] > 0.5 ) {
+			targetR = 0.0f;
+		} else {
+			targetR = 1.0f;
+		}
+		
+		if ( color[1] > 0.5 ) {
+			targetG = 0.0f;
+		} else {
+			targetG = 1.0f;
+		}
+		
+		if ( color[2] > 0.5 ) {
+			targetB = 0.0f;
+		} else {
+			targetB = 1.0f;
+		}
+		
+		// Пульсация от 0 до 1 и обратно
+		pulseAmount = 0.5f + 0.5f * (float)cos( 2.0f * 3.14159265358979323846f * ( uis.realtime % 1000 ) / 1000.0f );
+		
+		// Интерполяция между исходным цветом и целевым
+		pulseColor[0] = color[0] + (targetR - color[0]) * pulseAmount;
+		pulseColor[1] = color[1] + (targetG - color[1]) * pulseAmount;
+		pulseColor[2] = color[2] + (targetB - color[2]) * pulseAmount;
+		pulseColor[3] = color[3];
 		
 		if ( style & UI_DROPSHADOW )
 		{
 			dropcolor[0] = dropcolor[1] = dropcolor[2] = 0.0f;
-			dropcolor[3] = baseColor[3];
+			dropcolor[3] = pulseColor[3];
 			UI_DrawString2( x + 2, y + 2, str, dropcolor, charw, charh, parseColorCodes, qtrue, convertBlackToWhite );
 		}
-		
-		UI_DrawString2( x, y, str, baseColor, charw, charh, parseColorCodes, qfalse, convertBlackToWhite );
-		
-		pulseAlpha = 0.5f + 0.5f * (float)cos( 2.0f * 3.14159265358979323846f * ( uis.realtime % 1000 ) / 1000.0f );
-		pulseColor[0] = color[0];
-		pulseColor[1] = color[1];
-		pulseColor[2] = color[2];
-		pulseColor[3] = color[3] * pulseAlpha;
 		
 		UI_DrawString2( x, y, str, pulseColor, charw, charh, parseColorCodes, qfalse, convertBlackToWhite );
 		return;
@@ -1734,13 +1899,12 @@ void UI_Init( void ) {
 	// cache redundant calulations
 	UI_VideoCheck( -99999 );
 
-	uis.themeColorModCount = -1;
-	uis.themeColor2ModCount = -1;
-	uis.selectColorModCount = -1;
 	uis.menuHQMode = 0;
 	uis.menuHQModCount = -1;
+	uis.menuBgStyle = 1;
+	uis.menuBgStyleModCount = -1;
 
-	/* Initialize theme colors with safe defaults to prevent garbage values */
+	/* Theme colors: defaults then load from cvars once */
 	Vector4Copy( color_red, uis.themeColor );
 	uis.themeColor2[0] = 1.0f;
 	uis.themeColor2[1] = 0.43f;
@@ -1750,6 +1914,11 @@ void UI_Init( void ) {
 	uis.selectColor[1] = 1.0f;
 	uis.selectColor[2] = 0.0f;
 	uis.selectColor[3] = 1.0f;
+	uis.bannerColor[0] = 1.0f;
+	uis.bannerColor[1] = 1.0f;
+	uis.bannerColor[2] = 1.0f;
+	uis.bannerColor[3] = 1.0f;
+	UI_InitThemeColors();
 
 	// initialize the menu system
 	Menu_Cache();
@@ -1835,8 +2004,7 @@ void UI_FillRect( float x, float y, float width, float height, const float *colo
 	trap_R_SetColor( color );
 
 	UI_AdjustFrom640( &x, &y, &width, &height );
-	if ( uis.whiteShader )
-		trap_R_DrawStretchPic( x, y, width, height, 0, 0, 0, 0, uis.whiteShader );
+	trap_R_DrawStretchPic( x, y, width, height, 0, 0, 0, 0, uis.whiteShader );
 
 	trap_R_SetColor( NULL );
 }
@@ -1849,9 +2017,6 @@ Coordinates are 640*480 virtual values
 =================
 */
 void UI_DrawRect( float x, float y, float width, float height, const float *color ) {
-	if ( !uis.whiteShader )
-		return;
-
 	trap_R_SetColor( color );
 
 	UI_AdjustFrom640( &x, &y, &width, &height );
@@ -1887,19 +2052,9 @@ void UI_Refresh( int realtime )
 	}
 
 	UI_UpdateCvars();
-
+	UI_InitThemeColors();
 	UI_VideoCheck( realtime );
 
-	/* Ensure theme colors are always initialized before use */
-	/* Force re-initialization if colors were never set (modCount == -1) */
-	if ( uis.themeColorModCount == -1 || uis.themeColor2ModCount == -1 || uis.selectColorModCount == -1 ) {
-		UI_InitThemeColors();
-	}
-
-	/* Always refresh theme colors when UI has focus (before any menu draw) */
-	UI_GetThemeColor( uis.themeColor );
-	UI_GetThemeColor2( uis.themeColor2 );
-	UI_GetSelectColor( uis.selectColor );
 	Vector4Copy( uis.themeColor2, text_color_normal );
 	Vector4Copy( uis.themeColor2, color_orange );
 	Vector4Copy( uis.themeColor2, listbar_color );
@@ -1911,36 +2066,19 @@ void UI_Refresh( int realtime )
 		if (uis.activemenu->fullscreen)
 		{
 			/* draw the background */
-			UI_UpdateMenuBackgroundMode();
+			{
+				int bgStyle = UI_GetMenuBgStyle();
+				qboolean usePrimaryPicture;
 
-			if ( uis.menuHQMode == 2 ) {
-				float cw = (float)uis.glconfig.vidWidth / 6.0f;
-				float ch = (float)uis.glconfig.vidHeight / 4.0f;
-				int i;
-				for ( i = 0; i < 24; i++ ) {
-					if ( uis.menuBackHQ24[i] ) {
-						float x = (float)( i % 6 ) * cw;
-						float y = (float)( i / 6 ) * ch;
-						trap_R_DrawStretchPic( x, y, cw, ch, 0, 0, 1, 1, uis.menuBackHQ24[i] );
-					}
+				if ( bgStyle == 2 ) {
+					/* Style 2: use first picture everywhere */
+					usePrimaryPicture = qtrue;
+				} else {
+					/* Style 1: first picture only on main page (menus with showlogo), others use second */
+					usePrimaryPicture = ( uis.activemenu->showlogo ? qtrue : qfalse );
 				}
-			} else if ( uis.menuHQMode == 1 ) {
-				float w2 = (float)uis.glconfig.vidWidth * 0.5f;
-				float h2 = (float)uis.glconfig.vidHeight * 0.5f;
-				if ( uis.menuBack1 )
-					trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBack1 );
-				if ( uis.menuBack2 )
-					trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBack2 );
-				if ( uis.menuBack3 )
-					trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBack3 );
-				if ( uis.menuBack4 )
-					trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBack4 );
-			} else {
-				if ( uis.menuBackNoLogoShader )
-					trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
-				if ( uis.activemenu->showlogo && uis.menuBackShader ) {
-					trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
-				}
+
+				UI_DrawMenuBackground( usePrimaryPicture );
 			}
 
 			{

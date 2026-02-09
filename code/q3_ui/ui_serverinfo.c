@@ -162,18 +162,18 @@ void UI_ServerInfoMenu( void )
 	s_serverinfo.framel.generic.type  = MTYPE_BITMAP;
 	s_serverinfo.framel.generic.name  = SERVERINFO_FRAMEL;
 	s_serverinfo.framel.generic.flags = QMF_INACTIVE;
-	s_serverinfo.framel.generic.x	  = 0;  
-	s_serverinfo.framel.generic.y	  = 78;
-	s_serverinfo.framel.width  	      = 256;
-	s_serverinfo.framel.height  	  = 329;
+	s_serverinfo.framel.generic.x	  = FRAME_L_X;
+	s_serverinfo.framel.generic.y	  = FRAME_L_Y;
+	s_serverinfo.framel.width  	      = FRAME_L_W;
+	s_serverinfo.framel.height  	  = FRAME_L_H;
 
 	s_serverinfo.framer.generic.type  = MTYPE_BITMAP;
 	s_serverinfo.framer.generic.name  = SERVERINFO_FRAMER;
 	s_serverinfo.framer.generic.flags = QMF_INACTIVE;
-	s_serverinfo.framer.generic.x	  = 376;
-	s_serverinfo.framer.generic.y	  = 76;
-	s_serverinfo.framer.width  	      = 256;
-	s_serverinfo.framer.height  	  = 334;
+	s_serverinfo.framer.generic.x	  = FRAME_R_X;
+	s_serverinfo.framer.generic.y	  = FRAME_R_Y;
+	s_serverinfo.framer.width  	      = FRAME_R_W;
+	s_serverinfo.framer.height  	  = FRAME_R_H;
 
 	s_serverinfo.add.generic.type	  = MTYPE_PTEXT;
 	s_serverinfo.add.generic.flags    = QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;

@@ -1,28 +1,43 @@
 #include "ui_local.h"
 #include "ui_osp2be_shared.h"
 
-#define SUPERHUD_CONFIG_LIST_WIDTH 25
-#define SUPERHUD_CONFIG_LIST_HEIGHT 17
-#define SUPERHUD_CONFIG_MAX_FILES 256
-#define SUPERHUD_CONFIG_MENU_WIDTH 200
-#define SUPERHUD_CONFIG_MENU_HEIGHT 340
+#define ART_BACK0					"menu/art/back_0"
+#define ART_BACK1					"menu/art/back_1"
+#define ART_BACKGROUND				"menu/art/addbotframe"
+#define ART_ARROWS					"menu/art/arrows_vert_0"
+#define ART_ARROWUP					"menu/art/arrows_vert_top"
+#define ART_ARROWDOWN				"menu/art/arrows_vert_bot"
 
-#define ID_SUPERHUD_LIST 10
+#define SUPERHUD_CONFIG_LIST_WIDTH 26
+#define SUPERHUD_CONFIG_LIST_HEIGHT 14
+#define SUPERHUD_CONFIG_MAX_FILES 256
+#define SUPERHUD_CONFIG_MENU_WIDTH 466
+#define SUPERHUD_CONFIG_MENU_HEIGHT 332
+
+#define ID_SUPERHUD_LIST   10
 #define ID_SUPERHUD_RESTORE 11
-#define ID_SUPERHUD_BACK 12
+#define ID_SUPERHUD_BACK   12
+#define ID_SUPERHUD_UP     13
+#define ID_SUPERHUD_DOWN   14
 
 typedef struct {
 	menuframework_s menu;
 	menulist_s list;
 	menutext_s restore;
-	menutext_s back;
+	menubitmap_s back;
+	menubitmap_s arrows;
+	menubitmap_s up;
+	menubitmap_s down;
 	char *itemnames[SUPERHUD_CONFIG_MAX_FILES];
 	char filenames[SUPERHUD_CONFIG_MAX_FILES][MAX_QPATH];
+	int font;
 	int numfiles;
 	char currentConfig[MAX_QPATH];
 } superhudConfigMenu_t;
 
 static superhudConfigMenu_t s_superhudconfig;
+
+static void SuperHUDConfig_DrawList( void *self );
 
 static void SuperHUDConfig_LoadFiles( void ) {
 	char filelist[8192];
@@ -110,12 +125,6 @@ static void SuperHUDConfig_ApplyConfig( void ) {
 	}
 }
 
-static void SuperHUDConfig_DblClick( void *ptr ) {
-	SuperHUDConfig_ApplyConfig();
-}
-
-static void SuperHUDConfig_DrawList( void *self );
-
 static void SuperHUDConfig_RestoreConfig( void ) {
 	if ( s_superhudconfig.currentConfig[0] ) {
 		trap_Cvar_Set( "ch_file", s_superhudconfig.currentConfig );
@@ -126,6 +135,26 @@ static void SuperHUDConfig_RestoreConfig( void ) {
 
 static void SuperHUDConfig_Event( void *ptr, int event ) {
 	if ( event != QM_ACTIVATED ) {
+		return;
+	}
+
+	if ( ((menucommon_s*)ptr)->id == ID_SUPERHUD_UP ) {
+		if ( s_superhudconfig.list.top > 0 ) {
+			s_superhudconfig.list.top--;
+			if ( s_superhudconfig.list.curvalue < s_superhudconfig.list.top ) {
+				s_superhudconfig.list.curvalue = s_superhudconfig.list.top;
+			}
+		}
+		return;
+	}
+
+	if ( ((menucommon_s*)ptr)->id == ID_SUPERHUD_DOWN ) {
+		if ( s_superhudconfig.list.top + s_superhudconfig.list.height < s_superhudconfig.list.numitems ) {
+			s_superhudconfig.list.top++;
+			if ( s_superhudconfig.list.curvalue >= s_superhudconfig.list.top + s_superhudconfig.list.height ) {
+				s_superhudconfig.list.curvalue = s_superhudconfig.list.top + s_superhudconfig.list.height - 1;
+			}
+		}
 		return;
 	}
 
@@ -140,102 +169,70 @@ static void SuperHUDConfig_Event( void *ptr, int event ) {
 	}
 
 	if ( ((menucommon_s*)ptr)->id == ID_SUPERHUD_LIST ) {
-		/* Handle clicks on list items */
-		menulist_s *l;
-		int clickedIndex;
-		int itemY;
-		int itemH;
-		
-		l = &s_superhudconfig.list;
-		if ( l->generic.flags & QMF_HASMOUSEFOCUS ) {
-			itemY = l->generic.y;
-			itemH = SMALLCHAR_HEIGHT;
-			clickedIndex = ( uis.cursory - itemY ) / itemH;
-			if ( clickedIndex >= 0 && clickedIndex < l->numitems ) {
-				clickedIndex += l->top;
-				if ( clickedIndex >= 0 && clickedIndex < l->numitems ) {
-					l->curvalue = clickedIndex;
-					/* Update top to keep clicked item visible */
-					if ( clickedIndex < l->top ) {
-						l->top = clickedIndex;
-					} else if ( clickedIndex >= l->top + l->height ) {
-						l->top = clickedIndex - l->height + 1;
-						if ( l->top < 0 ) {
-							l->top = 0;
-						}
-					}
-				}
-			}
-		}
+		/* Apply currently selected config on activation */
+		SuperHUDConfig_ApplyConfig();
 		return;
 	}
 }
 
 static sfxHandle_t SuperHUDConfig_Key( int key ) {
 	menulist_s *l;
-	int clickedIndex;
-	int itemY;
-	int itemH;
-	int itemX;
-	int itemW;
-	
-	if ( key == K_ESCAPE || key == K_MOUSE2 ) {
-		UI_PopMenu();
-		return menu_out_sound;
-	}
-	
-	/* Handle mouse clicks on list items */
-	if ( key == K_MOUSE1 ) {
-		int menuX;
-		int menuY;
-		int menuWidth;
-		int maxVisibleY;
-		
-		l = &s_superhudconfig.list;
-		if ( l->generic.flags & QMF_HASMOUSEFOCUS ) {
-			menuX = ( 640 - SUPERHUD_CONFIG_MENU_WIDTH ) / 2;
-			menuY = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2;
-			menuWidth = SUPERHUD_CONFIG_MENU_WIDTH;
-			maxVisibleY = menuY + SUPERHUD_CONFIG_MENU_HEIGHT - 50;
-			
-			itemX = menuX + 10;
-			itemY = l->generic.y;
-			itemW = menuWidth - 20;
-			itemH = SMALLCHAR_HEIGHT;
-			
-			if ( UI_CursorInRect( itemX, itemY, itemW, l->height * itemH ) && uis.cursory < maxVisibleY ) {
-				clickedIndex = ( uis.cursory - itemY ) / itemH;
-				if ( clickedIndex >= 0 && clickedIndex < l->height ) {
-					clickedIndex += l->top;
-					if ( clickedIndex >= 0 && clickedIndex < l->numitems ) {
-						/* If clicking on already selected item, apply config */
-						if ( clickedIndex == l->curvalue ) {
-							SuperHUDConfig_ApplyConfig();
-							return menu_move_sound;
-						}
-						l->curvalue = clickedIndex;
-						/* Update top to keep clicked item visible */
-						if ( clickedIndex < l->top ) {
-							l->top = clickedIndex;
-						} else if ( clickedIndex >= l->top + l->height ) {
-							l->top = clickedIndex - l->height + 1;
-							if ( l->top < 0 ) {
-								l->top = 0;
-							}
-						}
-						return menu_move_sound;
-					}
-				}
+
+	if ( key == K_UPARROW || key == K_KP_UPARROW ) {
+		if ( s_superhudconfig.list.curvalue > 0 ) {
+			s_superhudconfig.list.curvalue--;
+			if ( s_superhudconfig.list.curvalue < s_superhudconfig.list.top ) {
+				s_superhudconfig.list.top = s_superhudconfig.list.curvalue;
 			}
+			return menu_move_sound;
 		}
 	}
-	
+
+	if ( key == K_DOWNARROW || key == K_KP_DOWNARROW ) {
+		if ( s_superhudconfig.list.curvalue + 1 < s_superhudconfig.list.numitems ) {
+			s_superhudconfig.list.curvalue++;
+			if ( s_superhudconfig.list.curvalue >= s_superhudconfig.list.top + s_superhudconfig.list.height ) {
+				s_superhudconfig.list.top = s_superhudconfig.list.curvalue - s_superhudconfig.list.height + 1;
+			}
+			return menu_move_sound;
+		}
+	}
+
 	if ( key == K_ENTER || key == K_KP_ENTER ) {
-		if ( s_superhudconfig.menu.cursor == 0 && s_superhudconfig.numfiles > 0 ) {
+		if ( s_superhudconfig.list.numitems > 0 ) {
 			SuperHUDConfig_ApplyConfig();
 			return menu_move_sound;
 		}
 	}
+
+	/* Handle mouse click on the list: click on already selected item applies config */
+	if ( key == K_MOUSE1 ) {
+		int itemY;
+		int itemH;
+		int clickedIndex;
+		int prevCur;
+
+		l = &s_superhudconfig.list;
+		if ( l->generic.flags & QMF_HASMOUSEFOCUS ) {
+			itemY = l->generic.y;
+			itemH = SMALLCHAR_HEIGHT;
+
+			if ( UI_CursorInRect( l->generic.left, itemY,
+			                      l->generic.right - l->generic.left,
+			                      l->height * itemH ) ) {
+				clickedIndex = ( uis.cursory - itemY ) / itemH + l->top;
+				if ( clickedIndex >= 0 && clickedIndex < l->numitems ) {
+					prevCur = l->curvalue;
+					l->curvalue = clickedIndex;
+					if ( clickedIndex == prevCur ) {
+						SuperHUDConfig_ApplyConfig();
+					}
+					return menu_move_sound;
+				}
+			}
+		}
+	}
+
 	return Menu_DefaultKey( &s_superhudconfig.menu, key );
 }
 
@@ -260,29 +257,10 @@ static void SuperHUDConfig_MenuInit( void ) {
 	}
 	Q_strncpyz( s_superhudconfig.currentConfig, currentConfig, sizeof( s_superhudconfig.currentConfig ) );
 
-	/* Initialize fonts */
-	UI_LoadFonts();
-	
-	/* Initialize font cvar and select font */
-	{
-		static vmCvar_t ui_be_font;
-		int fontIndex;
-		
-		trap_Cvar_Register( &ui_be_font, "ui_be_font", "0", CVAR_ARCHIVE );
-		trap_Cvar_Update( &ui_be_font );
-		
-		fontIndex = UI_FontIndexFromCvar( &ui_be_font );
-		if ( !UI_FontAvailable( fontIndex ) ) {
-			fontIndex = 0;
-			trap_Cvar_Set( "ui_be_font", "0" );
-		}
-		UI_FontSelect( fontIndex );
-		osp2be_font.index = fontIndex;
-		osp2be_font.flags = DS_PROPORTIONAL;
-	}
-
 	SuperHUDConfig_LoadFiles();
 
+	/* Initialize fonts for list drawing */
+	UI_LoadFonts();
 	s_superhudconfig.menu.wrapAround = qtrue;
 	s_superhudconfig.menu.fullscreen = qfalse;
 	s_superhudconfig.menu.key = SuperHUDConfig_Key;
@@ -297,33 +275,71 @@ static void SuperHUDConfig_MenuInit( void ) {
 	}
 	s_superhudconfig.list.generic.callback = SuperHUDConfig_Event;
 	s_superhudconfig.list.generic.id = ID_SUPERHUD_LIST;
-	s_superhudconfig.list.generic.x = ( 640 - SUPERHUD_CONFIG_MENU_WIDTH ) / 2 + 10;
-	s_superhudconfig.list.generic.y = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2 + 10;
-	s_superhudconfig.list.width = ( SUPERHUD_CONFIG_MENU_WIDTH - 20 ) / SMALLCHAR_WIDTH; /* Fit within menu width */
+	s_superhudconfig.list.generic.y = 96;
+	s_superhudconfig.list.width = SUPERHUD_CONFIG_LIST_WIDTH;
 	s_superhudconfig.list.height = SUPERHUD_CONFIG_LIST_HEIGHT;
 	s_superhudconfig.list.columns = 1;
 	s_superhudconfig.list.scroll = 1;
-	s_superhudconfig.list.generic.dblclick = SuperHUDConfig_DblClick;
+	s_superhudconfig.list.generic.ownerdraw = SuperHUDConfig_DrawList;
 	s_superhudconfig.list.itemnames = (const char **)s_superhudconfig.itemnames;
 	if ( s_superhudconfig.numfiles > 0 ) {
 		s_superhudconfig.list.numitems = s_superhudconfig.numfiles;
 	}
-	s_superhudconfig.list.generic.ownerdraw = SuperHUDConfig_DrawList;
-	
-	/* Set clickable area for list */
 	{
-		int menuX;
-		int menuWidth;
-		menuX = ( 640 - SUPERHUD_CONFIG_MENU_WIDTH ) / 2;
-		menuWidth = SUPERHUD_CONFIG_MENU_WIDTH;
-		s_superhudconfig.list.generic.left = menuX + 10;
-		s_superhudconfig.list.generic.right = menuX + menuWidth - 10;
+		int frameX;
+		int barWidth;
+		int leftMargin;
+		int u;
+
+		frameX = 320 - SUPERHUD_CONFIG_MENU_WIDTH / 2;
+		barWidth = SUPERHUD_CONFIG_LIST_WIDTH * SMALLCHAR_WIDTH;
+		leftMargin = ( SUPERHUD_CONFIG_MENU_WIDTH - barWidth ) / 2;
+
+		/* Center bar between frame edges so левый/правый отступы равны */
+		s_superhudconfig.list.generic.x = frameX + leftMargin + 2;
+
+		/* Hitbox совпадает с прямоугольником выделения */
+		u = s_superhudconfig.list.generic.x - 2;
+		s_superhudconfig.list.generic.left = u;
+		s_superhudconfig.list.generic.right = u + barWidth;
 		s_superhudconfig.list.generic.top = s_superhudconfig.list.generic.y;
 		s_superhudconfig.list.generic.bottom = s_superhudconfig.list.generic.y + s_superhudconfig.list.height * SMALLCHAR_HEIGHT;
+
+		/* Arrow “slider” на тех же координатах, что в ADD BOTS */
+		s_superhudconfig.arrows.generic.type  = MTYPE_BITMAP;
+		s_superhudconfig.arrows.generic.name  = ART_ARROWS;
+		s_superhudconfig.arrows.generic.flags = QMF_INACTIVE;
+		s_superhudconfig.arrows.generic.x     = 156;
+		s_superhudconfig.arrows.generic.y     = 176;
+		s_superhudconfig.arrows.width         = 64;
+		s_superhudconfig.arrows.height        = 128;
+
+		s_superhudconfig.up.generic.type      = MTYPE_BITMAP;
+		s_superhudconfig.up.generic.flags     = QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
+		s_superhudconfig.up.generic.id        = ID_SUPERHUD_UP;
+		s_superhudconfig.up.generic.callback  = SuperHUDConfig_Event;
+		s_superhudconfig.up.generic.x         = 156;
+		s_superhudconfig.up.generic.y         = 176;
+		s_superhudconfig.up.width             = 64;
+		s_superhudconfig.up.height            = 64;
+		s_superhudconfig.up.focuspic          = ART_ARROWUP;
+
+		s_superhudconfig.down.generic.type     = MTYPE_BITMAP;
+		s_superhudconfig.down.generic.flags    = QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
+		s_superhudconfig.down.generic.id       = ID_SUPERHUD_DOWN;
+		s_superhudconfig.down.generic.callback = SuperHUDConfig_Event;
+		s_superhudconfig.down.generic.x        = 156;
+		s_superhudconfig.down.generic.y        = 176 + 64;
+		s_superhudconfig.down.width            = 64;
+		s_superhudconfig.down.height           = 64;
+		s_superhudconfig.down.focuspic         = ART_ARROWDOWN;
 	}
 	
 	/* Add list to menu so it can receive focus */
 	Menu_AddItem( &s_superhudconfig.menu, &s_superhudconfig.list );
+	Menu_AddItem( &s_superhudconfig.menu, &s_superhudconfig.arrows );
+	Menu_AddItem( &s_superhudconfig.menu, &s_superhudconfig.up );
+	Menu_AddItem( &s_superhudconfig.menu, &s_superhudconfig.down );
 
 	currentIndex = 0;
 	if ( s_superhudconfig.numfiles > 0 ) {
@@ -356,308 +372,135 @@ static void SuperHUDConfig_MenuInit( void ) {
 	s_superhudconfig.restore.generic.flags = QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
 	s_superhudconfig.restore.generic.callback = SuperHUDConfig_Event;
 	s_superhudconfig.restore.generic.id = ID_SUPERHUD_RESTORE;
-	s_superhudconfig.restore.generic.x = 320;
-	s_superhudconfig.restore.generic.y = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2 + SUPERHUD_CONFIG_MENU_HEIGHT - 50;
+	/* Справа от BACK, по вертикали по центру кнопки */
+	s_superhudconfig.restore.generic.x = 320 + 40; /* правее правого края BACK (320) */
+	s_superhudconfig.restore.generic.y = ( 256 + 128 - 64 ) + ( 64 / 2 ) - ( SMALLCHAR_HEIGHT / 2 );
 	s_superhudconfig.restore.string = "RESTORE";
 	s_superhudconfig.restore.color = uis.themeColor;
 	s_superhudconfig.restore.style = UI_CENTER|UI_SMALLFONT;
 
-	s_superhudconfig.back.generic.type = MTYPE_PTEXT;
-	s_superhudconfig.back.generic.flags = QMF_CENTER_JUSTIFY|QMF_PULSEIFFOCUS;
+	s_superhudconfig.back.generic.type = MTYPE_BITMAP;
+	s_superhudconfig.back.generic.name = ART_BACK0;
+	s_superhudconfig.back.generic.flags = QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	s_superhudconfig.back.generic.callback = SuperHUDConfig_Event;
 	s_superhudconfig.back.generic.id = ID_SUPERHUD_BACK;
-	s_superhudconfig.back.generic.x = 320;
-	s_superhudconfig.back.generic.y = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2 + SUPERHUD_CONFIG_MENU_HEIGHT - 30;
-	s_superhudconfig.back.string = "BACK";
-	s_superhudconfig.back.color = uis.themeColor;
-	s_superhudconfig.back.style = UI_CENTER|UI_SMALLFONT;
+	s_superhudconfig.back.generic.x = 320 - 128;
+	s_superhudconfig.back.generic.y = 256 + 128 - 64;
+	s_superhudconfig.back.width = 128;
+	s_superhudconfig.back.height = 64;
+	s_superhudconfig.back.focuspic = ART_BACK1;
 
-	/* List is drawn manually, don't add to menu */
 	Menu_AddItem( &s_superhudconfig.menu, &s_superhudconfig.restore );
 	Menu_AddItem( &s_superhudconfig.menu, &s_superhudconfig.back );
 }
 
+static void SuperHUDConfig_UpdateFont( void ) {
+	trap_Cvar_Update( &ui_shudListFont );
+
+	s_superhudconfig.font = UI_FontIndexFromCvar( &ui_shudListFont );
+	if ( !UI_FontAvailable( s_superhudconfig.font ) ) {
+		s_superhudconfig.font = 2;
+		trap_Cvar_Set( "ui_shudListFont", "2" );
+	}
+}
+
 static void SuperHUDConfig_DrawList( void *self ) {
 	menulist_s *l;
-#ifdef __GNUC__
-	__attribute__((unused))
-#endif
 	int x;
 	int y;
-	int base;
 	int i;
-	int itemX;
-	int itemY;
-	int itemW;
-	int itemH;
-	vec4_t borderColor;
-	vec4_t backgroundColor;
+	int base;
+	int barWidth;
+	int u;
+
 	vec4_t textColor;
 	vec4_t shadowColor;
-	const char *itemText;
+	vec4_t bgColor;
 	int flags;
-	int hoverIndex;
-	int checkX;
-	int checkY;
-	int checkW;
-	int checkH;
-#ifdef __GNUC__
-	__attribute__((unused))
-#endif
-	int itemStartX;
-#ifdef __GNUC__
-	__attribute__((unused))
-#endif
-	int itemEndX;
 
 	l = (menulist_s *)self;
-	if ( !l ) {
+	if ( !l || l->numitems <= 0 ) {
 		return;
 	}
 
-	hoverIndex = -1;
-	if ( l->generic.flags & QMF_HASMOUSEFOCUS ) {
-#ifdef __GNUC__
-		__attribute__((unused))
-#endif
-		int menuX;
-		int menuY;
-		int menuWidth;
-		int maxVisibleY;
-#ifdef __GNUC__
-		__attribute__((unused))
-#endif
-		int visibleItemY;
-		int visibleItemIndex;
-		
-		menuX = ( 640 - SUPERHUD_CONFIG_MENU_WIDTH ) / 2;
-		menuY = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2;
-		menuWidth = SUPERHUD_CONFIG_MENU_WIDTH;
-		maxVisibleY = menuY + SUPERHUD_CONFIG_MENU_HEIGHT - 50;
-		
-		checkX = l->generic.x;
-		checkY = l->generic.y;
-		checkW = menuWidth - 20; /* Leave padding on both sides */
-		checkH = l->height * SMALLCHAR_HEIGHT;
-
-		if ( UI_CursorInRect( checkX, checkY, checkW, checkH ) && uis.cursory < maxVisibleY ) {
-			visibleItemIndex = ( uis.cursory - checkY ) / SMALLCHAR_HEIGHT;
-			if ( visibleItemIndex >= 0 && visibleItemIndex < l->height ) {
-				visibleItemIndex += l->top;
-				if ( visibleItemIndex >= 0 && visibleItemIndex < l->numitems ) {
-					hoverIndex = visibleItemIndex;
-				}
-			}
-		}
-	}
+	SuperHUDConfig_UpdateFont();
 
 	x = l->generic.x;
 	y = l->generic.y;
 	base = l->top;
-
+	barWidth = l->width * SMALLCHAR_WIDTH;
+	u = x - 2;
 
 	shadowColor[0] = 0.0f;
 	shadowColor[1] = 0.0f;
 	shadowColor[2] = 0.0f;
 	shadowColor[3] = 1.0f;
 
-	/* Calculate max visible items based on menu height */
-	{
-		int menuY;
-		int menuHeight;
-		int maxVisibleY;
-#ifdef __GNUC__
-		__attribute__((unused))
-#endif
-		int itemsDrawn;
-		int maxItemsToDraw;
-		
-		menuY = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2;
-		menuHeight = SUPERHUD_CONFIG_MENU_HEIGHT;
-		maxVisibleY = menuY + menuHeight - 50; /* Leave space for restore and back buttons */
-		itemsDrawn = 0;
-		
-		/* Calculate how many items can fit in the visible area */
-		maxItemsToDraw = ( maxVisibleY - y ) / SMALLCHAR_HEIGHT;
-		if ( maxItemsToDraw > l->height ) {
-			maxItemsToDraw = l->height;
+	flags = DS_PROPORTIONAL | DS_HLEFT | DS_SHADOW;
+
+	for ( i = base; i < base + l->height && i < l->numitems; i++ ) {
+		const char *itemText;
+
+		if ( i == l->curvalue ) {
+			/* Selected item background */
+			bgColor[0] = 1.0f;
+			bgColor[1] = 1.0f;
+			bgColor[2] = 1.0f;
+			bgColor[3] = 0.25f;
+			UI_FillRect( u, y, barWidth, SMALLCHAR_HEIGHT, bgColor );
+
+			textColor[0] = 0.0f;
+			textColor[1] = 0.0f;
+			textColor[2] = 0.0f;
+			textColor[3] = 1.0f;
+		} else {
+			textColor[0] = uis.themeColor2[0];
+			textColor[1] = uis.themeColor2[1];
+			textColor[2] = uis.themeColor2[2];
+			textColor[3] = 1.0f;
 		}
-		/* Limit by how many items are available starting from base */
-		if ( maxItemsToDraw > l->numitems - base ) {
-			maxItemsToDraw = l->numitems - base;
+
+		if ( l->itemnames && l->itemnames[i] ) {
+			itemText = l->itemnames[i];
+		} else {
+			itemText = "";
 		}
-		
-		
-		for ( i = base; i < l->numitems && i < base + maxItemsToDraw; i++ ) {
-			int menuX;
-			int menuWidth;
-			
-			menuX = ( 640 - SUPERHUD_CONFIG_MENU_WIDTH ) / 2;
-			menuWidth = SUPERHUD_CONFIG_MENU_WIDTH;
-			
-			itemW = menuWidth - 20; /* Leave padding on both sides */
-			itemH = SMALLCHAR_HEIGHT;
-			itemX = menuX + 10; /* Center with padding */
-			itemY = y;
 
-			if ( i == l->curvalue ) {
-				/* Selected: white background, black text */
-				backgroundColor[0] = 1.0f;
-				backgroundColor[1] = 1.0f;
-				backgroundColor[2] = 1.0f;
-				backgroundColor[3] = 0.4f;
-				borderColor[0] = 1.0f;
-				borderColor[1] = 1.0f;
-				borderColor[2] = 1.0f;
-				borderColor[3] = 1.0f;
-				textColor[0] = 0.0f;
-				textColor[1] = 0.0f;
-				textColor[2] = 0.0f;
-				textColor[3] = 1.0f;
-			} else if ( i == hoverIndex ) {
-				/* Hover: gray background, white text */
-				backgroundColor[0] = 0.5f;
-				backgroundColor[1] = 0.5f;
-				backgroundColor[2] = 0.5f;
-				backgroundColor[3] = 0.4f;
-				borderColor[0] = 1.0f;
-				borderColor[1] = 1.0f;
-				borderColor[2] = 1.0f;
-				borderColor[3] = 1.0f;
-				textColor[0] = 1.0f;
-				textColor[1] = 1.0f;
-				textColor[2] = 1.0f;
-				textColor[3] = 1.0f;
-			} else {
-				/* Normal: black background, white text */
-				backgroundColor[0] = 0.0f;
-				backgroundColor[1] = 0.0f;
-				backgroundColor[2] = 0.0f;
-				backgroundColor[3] = 0.4f;
-				borderColor[0] = 0.5f;
-				borderColor[1] = 0.5f;
-				borderColor[2] = 0.5f;
-				borderColor[3] = 1.0f;
-				textColor[0] = 1.0f;
-				textColor[1] = 1.0f;
-				textColor[2] = 1.0f;
-				textColor[3] = 1.0f;
-			}
+		UI_FontSelect(s_superhudconfig.font);
 
-			UI_FillRect( itemX, itemY, itemW, itemH, backgroundColor );
-			UI_DrawRect( itemX, itemY, itemW, itemH, borderColor );
+		UI_OSPDrawStringNew( (float)x, (float)y, itemText, textColor, shadowColor,
+		                     (float)SMALLCHAR_WIDTH, (float)SMALLCHAR_HEIGHT,
+		                     SCREEN_WIDTH, flags, NULL, NULL, NULL );
 
-			if ( l->itemnames && l->itemnames[i] ) {
-				itemText = l->itemnames[i];
-			} else {
-				itemText = "";
-			}
-
-			flags = osp2be_font.flags | DS_HCENTER | DS_SHADOW;
-			UI_OSPDrawStringNew( (float)itemX + (float)itemW / 2.0f, (float)y, itemText, textColor, shadowColor,
-			                     (float)SMALLCHAR_WIDTH, (float)SMALLCHAR_HEIGHT, SCREEN_WIDTH, flags, NULL, NULL, NULL );
-
-			y += SMALLCHAR_HEIGHT;
-		}
-		
+		y += SMALLCHAR_HEIGHT;
 	}
 }
 
 static void SuperHUDConfig_MenuDraw( void ) {
-	int menuX;
-	int menuY;
-	vec4_t backgroundColor;
-	vec4_t borderColor;
+	int frameX;
+	int frameY;
 
-	menuX = ( 640 - SUPERHUD_CONFIG_MENU_WIDTH ) / 2;
-	menuY = ( 480 - SUPERHUD_CONFIG_MENU_HEIGHT ) / 2;
+	frameX = 320 - SUPERHUD_CONFIG_MENU_WIDTH / 2;
+	frameY = 240 - SUPERHUD_CONFIG_MENU_HEIGHT / 2;
 
-	backgroundColor[0] = 0.0f;
-	backgroundColor[1] = 0.0f;
-	backgroundColor[2] = 0.0f;
-	backgroundColor[3] = 0.4f;
+	UI_DrawBannerString( 320, 16, "SUPERHUD", UI_CENTER, uis.themeColor );
+	UI_DrawNamedPic( frameX, frameY, SUPERHUD_CONFIG_MENU_WIDTH, SUPERHUD_CONFIG_MENU_HEIGHT, ART_BACKGROUND );
 
-	borderColor[0] = 1.0f;
-	borderColor[1] = 1.0f;
-	borderColor[2] = 1.0f;
-	borderColor[3] = 1.0f;
+	/* Draw menu (list via ownerdraw, buttons, arrows, etc.) */
+	Menu_Draw( &s_superhudconfig.menu );
+}
 
-	UI_FillRect( menuX, menuY, SUPERHUD_CONFIG_MENU_WIDTH, SUPERHUD_CONFIG_MENU_HEIGHT, backgroundColor );
-	UI_DrawRect( menuX, menuY, SUPERHUD_CONFIG_MENU_WIDTH, SUPERHUD_CONFIG_MENU_HEIGHT, borderColor );
-
-	/* Draw list manually with new function */
-	SuperHUDConfig_DrawList( &s_superhudconfig.list );
-
-	/* Draw restore button with new function */
-	{
-		vec4_t textColor;
-		vec4_t shadowColor;
-		int flags;
-		int textX;
-		int textY;
-
-		textX = s_superhudconfig.restore.generic.x;
-		textY = s_superhudconfig.restore.generic.y;
-		textColor[0] = 1.0f;
-		textColor[1] = 1.0f;
-		textColor[2] = 1.0f;
-		textColor[3] = 1.0f;
-		shadowColor[0] = 0.0f;
-		shadowColor[1] = 0.0f;
-		shadowColor[2] = 0.0f;
-		shadowColor[3] = 1.0f;
-		flags = osp2be_font.flags | DS_HCENTER | DS_SHADOW;
-
-		if ( s_superhudconfig.restore.generic.flags & QMF_HASMOUSEFOCUS ) {
-			textColor[0] = 1.0f;
-			textColor[1] = 1.0f;
-			textColor[2] = 1.0f;
-		} else {
-			textColor[0] = 0.5f;
-			textColor[1] = 0.5f;
-			textColor[2] = 0.5f;
-		}
-
-		UI_OSPDrawStringNew( (float)textX, (float)textY, s_superhudconfig.restore.string, textColor, shadowColor,
-		                     (float)SMALLCHAR_WIDTH, (float)SMALLCHAR_HEIGHT, SCREEN_WIDTH, flags, NULL, NULL, NULL );
-	}
-
-	/* Draw back button with new function */
-	{
-		vec4_t textColor;
-		vec4_t shadowColor;
-		int flags;
-		int textX;
-		int textY;
-
-		textX = s_superhudconfig.back.generic.x;
-		textY = s_superhudconfig.back.generic.y;
-		textColor[0] = 1.0f;
-		textColor[1] = 1.0f;
-		textColor[2] = 1.0f;
-		textColor[3] = 1.0f;
-		shadowColor[0] = 0.0f;
-		shadowColor[1] = 0.0f;
-		shadowColor[2] = 0.0f;
-		shadowColor[3] = 1.0f;
-		flags = osp2be_font.flags | DS_HCENTER | DS_SHADOW;
-
-		if ( s_superhudconfig.back.generic.flags & QMF_HASMOUSEFOCUS ) {
-			textColor[0] = 1.0f;
-			textColor[1] = 1.0f;
-			textColor[2] = 1.0f;
-		} else {
-			textColor[0] = 0.5f;
-			textColor[1] = 0.5f;
-			textColor[2] = 0.5f;
-		}
-
-		UI_OSPDrawStringNew( (float)textX, (float)textY, s_superhudconfig.back.string, textColor, shadowColor,
-		                     (float)SMALLCHAR_WIDTH, (float)SMALLCHAR_HEIGHT, SCREEN_WIDTH, flags, NULL, NULL, NULL );
-	}
+static void SuperHUDConfig_Cache( void ) {
+	trap_R_RegisterShaderNoMip( ART_BACK0 );
+	trap_R_RegisterShaderNoMip( ART_BACK1 );
+	trap_R_RegisterShaderNoMip( ART_BACKGROUND );
+	trap_R_RegisterShaderNoMip( ART_ARROWS );
+	trap_R_RegisterShaderNoMip( ART_ARROWUP );
+	trap_R_RegisterShaderNoMip( ART_ARROWDOWN );
 }
 
 void UI_SuperHUDConfigMenu( void ) {
+	SuperHUDConfig_Cache();
 	SuperHUDConfig_MenuInit();
 	s_superhudconfig.menu.draw = SuperHUDConfig_MenuDraw;
 	UI_PushMenu( &s_superhudconfig.menu );

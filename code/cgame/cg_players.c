@@ -113,7 +113,55 @@ sfxHandle_t CG_CustomSound(int clientNum, const char* soundName)
 	return 0;
 }
 
+/*
+ * Footsteps type to use for a client: from cg_mySound/cg_teamSound/cg_enemySound model if set, else from ci->footsteps.
+ */
+footstep_t CG_EffectiveFootsteps(int clientNum)
+{
+	clientInfo_t* ci;
+	int myteam;
+	clientInfo_t* myself;
 
+	if (!cgs.customModelSound || !cg.snap)
+		goto use_model;
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+		clientNum = 0;
+	ci = &cgs.clientinfo[clientNum];
+	{
+		const playerState_t* ps = &cg.snap->ps;
+		if (ps->pm_flags & PMF_FOLLOW && ps->persistant[PERS_TEAM] == TEAM_SPECTATOR)
+		{
+			myself = &cgs.clientinfo[ps->clientNum];
+			myteam = myself->team;
+		}
+		else
+		{
+			myteam = ps->persistant[PERS_TEAM];
+			myself = &cgs.clientinfo[cg.clientNum];
+		}
+	}
+	if (ci == myself && cg_mySound.string[0])
+	{
+		if (cgs.myFootsteps < FOOTSTEP_TOTAL)
+			return cgs.myFootsteps;
+		goto use_model;
+	}
+	if (myteam != TEAM_FREE && ci->team == myteam && ci != myself && cg_teamSound.string[0])
+	{
+		if (cgs.teamFootsteps < FOOTSTEP_TOTAL)
+			return cgs.teamFootsteps;
+		goto use_model;
+	}
+	if ((ci->team != myteam || (myteam == TEAM_FREE && ci != myself)) && cg_enemySound.string[0])
+	{
+		if (cgs.enemyFootsteps < FOOTSTEP_TOTAL)
+			return cgs.enemyFootsteps;
+		goto use_model;
+	}
+use_model:
+	ci = &cgs.clientinfo[clientNum];
+	return ci->footsteps;
+}
 
 /*
 =============================================================================
@@ -578,16 +626,13 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	char* skinPtr;
 	char headModelName[MAX_QPATH];
 	char headSkinName[MAX_QPATH];
-	team_t team;
 
 	ci->originalHeadModelHandle = 0;
 	ci->originalHeadSkinHandle = 0;
 	ci->originalModelIcon = 0;
 
 	if (ci->originalHeadModel[0] == '\0')
-	{
 		return;
-	}
 
 	/* Parse model/skin from hmodel string */
 	Q_strncpyz(headModelName, ci->originalHeadModel, sizeof(headModelName));
@@ -598,15 +643,12 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 		Q_strncpyz(headSkinName, skinPtr + 1, sizeof(headSkinName));
 	}
 	else
-	{
 		Q_strncpyz(headSkinName, "default", sizeof(headSkinName));
-	}
 
 	/* Register head model */
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/head.md3", headModelName);
 	ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
 
-	/* If model not found, use sarge as default and reset skin to default */
 	if (ci->originalHeadModelHandle == 0)
 	{
 		Q_strncpyz(headModelName, "sarge", sizeof(headModelName));
@@ -615,30 +657,68 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 		ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
 	}
 
-	/* Determine team color skin if default skin and team game */
-	if (Q_stricmp(headSkinName, "default") == 0)
+	/* Team color skin when default skin and team game */
+	if (Q_stricmp(headSkinName, "default") == 0 && cgs.gametype >= GT_TEAM)
 	{
-		if (cgs.gametype >= GT_TEAM)
-		{
-			team = ci->team;
-			if (team == TEAM_BLUE)
-			{
-				Q_strncpyz(headSkinName, cg_swapSkins.integer ? "red" : "blue", sizeof(headSkinName));
-			}
-			else if (team == TEAM_RED)
-			{
-				Q_strncpyz(headSkinName, cg_swapSkins.integer ? "blue" : "red", sizeof(headSkinName));
-			}
-		}
+		if (ci->team == TEAM_BLUE)
+			Q_strncpyz(headSkinName, cg_swapSkins.integer ? "red" : "blue", sizeof(headSkinName));
+		else if (ci->team == TEAM_RED)
+			Q_strncpyz(headSkinName, cg_swapSkins.integer ? "blue" : "red", sizeof(headSkinName));
 	}
 
-	/* Register head skin */
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/head_%s.skin", headModelName, headSkinName);
 	ci->originalHeadSkinHandle = trap_R_RegisterSkin(filename);
-
-	/* Register head icon */
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/icon_%s.tga", headModelName, headSkinName);
 	ci->originalModelIcon = trap_R_RegisterShaderNoMip(filename);
+}
+
+/*
+ * Parse footsteps type from a sound model's animation.cfg (for cg_mySound / cg_teamSound / cg_enemySound).
+ * Returns FOOTSTEP_TOTAL if file not found or "footsteps" not present (caller should use model footsteps).
+ */
+static footstep_t CG_GetFootstepsForSoundModel(const char* modelName)
+{
+	char filename[MAX_QPATH];
+	char text[4096];
+	char* text_p;
+	char* token;
+	int len;
+	fileHandle_t f;
+
+	if (!modelName || !modelName[0])
+		return FOOTSTEP_TOTAL;
+	Com_sprintf(filename, sizeof(filename), "models/players/%s/animation.cfg", modelName);
+	len = trap_FS_FOpenFile(filename, &f, FS_READ);
+	if (len <= 0 || len >= (int)sizeof(text) - 1)
+		return FOOTSTEP_TOTAL;
+	trap_FS_Read(text, len, f);
+	text[len] = 0;
+	trap_FS_FCloseFile(f);
+	text_p = text;
+	while (1)
+	{
+		token = COM_Parse(&text_p);
+		if (!token || !token[0])
+			break;
+		if (!Q_stricmp(token, "footsteps"))
+		{
+			token = COM_Parse(&text_p);
+			if (!token || !token[0])
+				return FOOTSTEP_TOTAL;
+			if (!Q_stricmp(token, "default") || !Q_stricmp(token, "normal"))
+				return FOOTSTEP_NORMAL;
+			if (!Q_stricmp(token, "boot"))
+				return FOOTSTEP_BOOT;
+			if (!Q_stricmp(token, "flesh"))
+				return FOOTSTEP_FLESH;
+			if (!Q_stricmp(token, "mech"))
+				return FOOTSTEP_MECH;
+			if (!Q_stricmp(token, "energy"))
+				return FOOTSTEP_ENERGY;
+			return FOOTSTEP_NORMAL;
+		}
+	}
+	return FOOTSTEP_TOTAL;
 }
 
 void CG_LoadForcedSounds(void)
@@ -685,6 +765,19 @@ void CG_LoadForcedSounds(void)
 			cgs.enemySounds[i] = trap_S_RegisterSound(va("sound/player/%s/%s", enemySoundModel, s + 1), qfalse);
 		}
 	}
+
+	if (mySoundModel[0])
+		cgs.myFootsteps = CG_GetFootstepsForSoundModel(mySoundModel);
+	else
+		cgs.myFootsteps = FOOTSTEP_TOTAL;
+	if (teamSoundModel[0])
+		cgs.teamFootsteps = CG_GetFootstepsForSoundModel(teamSoundModel);
+	else
+		cgs.teamFootsteps = FOOTSTEP_TOTAL;
+	if (enemySoundModel[0])
+		cgs.enemyFootsteps = CG_GetFootstepsForSoundModel(enemySoundModel);
+	else
+		cgs.enemyFootsteps = FOOTSTEP_TOTAL;
 }
 
 /*
@@ -814,14 +907,6 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	        CG_IS_LOCAL_CLIENT_SPECTATOR() || CG_IS_ENEMY_SIMPLE(newInfo) || CG_TeamTaskFilterIsNameMuted(ci->name_original))
 		return;
 
-
-	// {
-	//  /* Non-team game: only process teamtask from ourselves */
-	//  if (clientNum != cg.clientNum)
-	//  {
-	//      return;
-	//  }
-	// }
 
 	/* Skip if teamTask hasn't changed */
 	if (newInfo->teamTask == ci->teamTask)
@@ -1544,193 +1629,6 @@ static qboolean CG_PlayerNameIsInvisible(clientInfo_t* ci)
 	return qtrue;
 }
 
-/*
- * Generate replacement name for noname/invisible/duplicate players
- * Mix: 33% animals, 33% funny names, 34% thematic (space/demonic/sci-fi)
- */
-static const char* replacementNames[] =
-{
-	"Darth Sumrak", "Amongus", "JustNamed", "Tiger", "Eagle", "Hawkeye", "Falcon Punch", "Shark",
-	"Fox", "Lynx-Lynx", "Panther", "Jaguar^0V12", "Coyote", "Grand_Hyena", "Asteri^0xXx", "Wolverine",
-	"Raven", "Owl", "Crow", "Vulture", "Condor", "Albatross", "PopCitizen_AUX07", "Heron",
-	"Potato", "T0mat0^1Ju1c3", "PickleRobot", "Noodle", "Waffle", "Pancake", "Donut", "HelloRazer",
-	"Chicken", "Duck", "Gosuvity", "Sakla_Norez", "Sloth", "KeeKee", "Panda", "Raccoon",
-	"Toaster", "KNWR(5)", "Blender", "senoB-suonimuL", "Vacuum", "Dishwasher", "WashingMachine", "Kettle",
-	"Fiend", "Hellhound", "PFE-12", "Scrag", "Spawn", "Revenant", "Archvile", "Titan",
-	"Daedalus", "Core", "Unsaint", "^X00FFFFQuantum", "Nanite", "WinstonSon", "Neural", "Hologram",
-	"Starfighter", "Destroyer", "Cruiser", "Frigate", "XWING", "Dreadnought", "Carrier", "Fleet",
-	"Da^3em^1on", "Hellfire", "Oh Man", "Chaos Knight", "Torment", "Inferno", "Abyss", "Johny^3Br^0a^3v^0o",
-	"DroneX", "Botoed", "Mech", "^XFF00FFPrizrak", "Golem", "Automaton", "Construct", "Lol",
-	"BladeON", "^XFFFFFFScyth3666", "Claw", "Fang", "Thorn", "SpikeOS", "Barb", "Stinger",
-	"Bobo", "Predator", "Skaarj", "Protoss", "Umieko", "Collector", "Vorcha", "Krogan"
-};
-
-#define REPLACEMENT_NAMES_COUNT (sizeof(replacementNames) / sizeof(replacementNames[0]))
-
-/*
- * Check if a replacement name is already used by any client (comparison without colors)
- */
-static qboolean CG_IsReplacementNameUsed(const char* candidateName)
-{
-	int p;
-	char cleanCandidate[MAX_QPATH];
-	char otherClean[MAX_QPATH];
-
-	Q_strncpyz(cleanCandidate, candidateName, sizeof(cleanCandidate));
-	CG_RemoveChatEscapeCharAll(cleanCandidate);
-
-	for (p = 0; p < MAX_CLIENTS; ++p)
-	{
-		if (!cgs.clientinfo[p].infoValid)
-		{
-			continue;
-		}
-
-		Q_strncpyz(otherClean, cgs.clientinfo[p].name_clean, sizeof(otherClean));
-		CG_RemoveChatEscapeCharAll(otherClean);
-
-		if (!otherClean[0])
-		{
-			continue;
-		}
-
-		if (Q_stricmp(cleanCandidate, otherClean) == 0)
-		{
-			return qtrue;
-		}
-	}
-
-	return qfalse;
-}
-
-/*
- * Extract first color code from name (format: ^digit where digit is 0-9)
- * Returns -1 if no color code found, otherwise returns the digit (0-9)
- */
-static int CG_ExtractFirstColorCode(const char* name)
-{
-	int i;
-
-	if (!name || !name[0])
-	{
-		return -1;
-	}
-
-	for (i = 0; name[i]; i++)
-	{
-		if (name[i] == '^' && name[i + 1] >= '0' && name[i + 1] <= '9')
-		{
-			return name[i + 1] - '0';
-		}
-	}
-
-	return -1;
-}
-
-static void CG_GenerateReplacementName(unsigned short xid, const char* originalName, int clientNum, char* outName, int outSize)
-{
-	unsigned short hash;
-	char xidStr[16];
-	char clientNumStr[16];
-	int nameIndex;
-	int colorIndex;
-	int originalColorCode;
-	const char* selectedName;
-	int attempt;
-	char tmpName[MAX_QPATH];
-
-	/* Initialize hash */
-	CRC_Init(&hash);
-
-	/* Add XID to hash */
-	Com_sprintf(xidStr, sizeof(xidStr), "%hu", xid);
-	CRC_ContinueProcessString(&hash, xidStr, strlen(xidStr));
-
-	/* Add original name to hash */
-	if (originalName && originalName[0])
-	{
-		CRC_ContinueProcessString(&hash, originalName, strlen(originalName));
-	}
-
-	/* Add clientNum to hash for uniqueness even with same XID and name */
-	Com_sprintf(clientNumStr, sizeof(clientNumStr), "%d", clientNum);
-	CRC_ContinueProcessString(&hash, clientNumStr, strlen(clientNumStr));
-
-	/* Select replacement name based on hash */
-	nameIndex = hash % REPLACEMENT_NAMES_COUNT;
-	colorIndex = (hash >> 8) % 10; /* 0-9 for ^0-^9 */
-
-	/* Try to extract color code from original name */
-	originalColorCode = CG_ExtractFirstColorCode(originalName);
-	if (originalColorCode >= 0)
-	{
-		/* Use color from original name if found */
-		colorIndex = originalColorCode;
-	}
-
-	selectedName = replacementNames[nameIndex];
-	Com_sprintf(outName, outSize, "^%d%s^0*", colorIndex, selectedName);
-
-	if (CG_IsReplacementNameUsed(outName))
-	{
-		for (attempt = 0; attempt < REPLACEMENT_NAMES_COUNT; ++attempt)
-		{
-			nameIndex = (nameIndex + 1) % REPLACEMENT_NAMES_COUNT;
-			selectedName = replacementNames[nameIndex];
-			Com_sprintf(tmpName, sizeof(tmpName), "^%d%s^0*", colorIndex, selectedName);
-			if (!CG_IsReplacementNameUsed(tmpName))
-			{
-				Q_strncpyz(outName, tmpName, outSize);
-				break;
-			}
-		}
-	}
-}
-
-/*
- * Check if name should be replaced with replacement name
- */
-static qboolean CG_ShouldReplaceWithReplacementName(int clientNum, qboolean nameIsInvisible, qboolean is_exists, const char* name_original)
-{
-	if (!cg_giveName.integer)
-	{
-		return qfalse;
-	}
-
-	/* Never replace name for local player - always keep original name */
-	if (clientNum == cg.clientNum)
-	{
-		return qfalse;
-	}
-
-	/* For value 1: replace names for all players except local player */
-	if (cg_giveName.integer == 1)
-	{
-		return qtrue;
-	}
-
-	/* For value 2: replace names only for duplicates, invisible, and NONAME */
-	if (cg_giveName.integer == 2)
-	{
-		if (nameIsInvisible)
-		{
-			return qtrue;
-		}
-
-		if (is_exists)
-		{
-			return qtrue;
-		}
-
-		if (strcmp(name_original, "^1NONAME") == 0)
-		{
-			return qtrue;
-		}
-	}
-
-	return qfalse;
-}
-
 #define NUM_TO_HEX_CHAR(III) (((III&0x0f) < 10) ? ('0' + (III&0x0f)) : ('a' + ((III&0x0f) - 10)))
 static void CG_PlayerXIDCalc(const char* cmd, clientInfo_t* ci)
 {
@@ -1783,214 +1681,9 @@ static void CG_PlayerXIDCalc(const char* cmd, clientInfo_t* ci)
 
 /*
 ===================
-CG_PlayerNameCheckDuplicate
-
-Check if a player name already exists among other clients.
-Returns qtrue if duplicate found, qfalse otherwise.
-===================
-*/
-static qboolean CG_PlayerNameCheckDuplicate(int clientNum, const char* nameClean)
-{
-	int p;
-	char otherOriginalClean[MAX_QPATH];
-
-	for (p = 0; p < MAX_CLIENTS; ++p)
-	{
-		if (p == clientNum)
-		{
-			continue;
-		}
-		if (!cgs.clientinfo[p].infoValid)
-		{
-			continue;
-		}
-
-		/* Only check non-invisible names for duplicates */
-		/* Compare using original names, not name_clean which may be already replaced */
-		if (!cgs.clientinfo[p].nameIsInvisible)
-		{
-			Q_strncpyz(otherOriginalClean, cgs.clientinfo[p].name_original, sizeof(otherOriginalClean));
-			CG_RemoveChatEscapeCharAll(otherOriginalClean);
-			if (strcmp(nameClean, otherOriginalClean) == 0)
-			{
-				return qtrue;
-			}
-		}
-	}
-	return qfalse;
-}
-
-/*
-===================
-CG_PlayerNameBuild
-
-Build player name with specified ID and XID display rules.
-showID: 0 = never, 1 = always, 2 = only when duplicate exists
-showXID: 0 = never, 1 = always, 2 = only when duplicate exists
-===================
-*/
-static void CG_PlayerNameBuild(clientInfo_t* ci, int clientNum, qboolean is_exists, int showID, int showXID)
-{
-	qboolean useID;
-	qboolean useXID;
-	qboolean needShowID;
-	qboolean needShowXID;
-	qboolean willGetReplacementName;
-	char replacementName[MAX_QPATH];
-	qboolean useReplacement;
-	const char* displayName;
-	qboolean isNoname;
-
-	isNoname = (strcmp(ci->name_original, "^1NONAME") == 0);
-	willGetReplacementName = CG_ShouldReplaceWithReplacementName(clientNum, ci->nameIsInvisible, is_exists, ci->name_original);
-
-	/* For value 1: always show, for value 2: show only if duplicate/NONAME/invisible */
-	/* If cg_giveName is enabled and duplicate exists, don't show ID/XID for value 2 */
-	/* (both original and duplicate players should not show ID/XID when cg_giveName handles duplicates) */
-	if (showID == 1)
-	{
-		needShowID = qtrue;
-	}
-	else if (showID == 2)
-	{
-		needShowID = (is_exists || isNoname || ci->nameIsInvisible);
-		/* If cg_giveName is enabled and duplicate exists, don't show ID/XID */
-		/* This applies to both original (who keeps name) and duplicates (who get replacement) */
-		if (cg_giveName.integer == 2 && is_exists)
-		{
-			needShowID = qfalse;
-		}
-		else if (cg_giveName.integer && willGetReplacementName)
-		{
-			needShowID = qfalse;
-		}
-	}
-	else
-	{
-		needShowID = qfalse;
-	}
-
-	if (showXID == 1)
-	{
-		needShowXID = qtrue;
-	}
-	else if (showXID == 2)
-	{
-		needShowXID = (is_exists || isNoname || ci->nameIsInvisible);
-		/* If cg_giveName is enabled and duplicate exists, don't show ID/XID */
-		/* This applies to both original (who keeps name) and duplicates (who get replacement) */
-		if (cg_giveName.integer == 2 && is_exists)
-		{
-			needShowXID = qfalse;
-		}
-		else if (cg_giveName.integer && willGetReplacementName)
-		{
-			needShowXID = qfalse;
-		}
-	}
-	else
-	{
-		needShowXID = qfalse;
-	}
-
-	useID = needShowID;
-	useXID = needShowXID;
-	/* Always use replacement name if willGetReplacementName is true, regardless of ID/XID settings */
-	useReplacement = willGetReplacementName;
-
-	if (useReplacement)
-	{
-		/* Extract color from ci->name if it exists and contains color code (already processed name) */
-		/* Otherwise use name_original */
-		const char* nameForColor = ci->name_original;
-		if (ci->name[0] && CG_ExtractFirstColorCode(ci->name) >= 0)
-		{
-			nameForColor = ci->name;
-		}
-		CG_GenerateReplacementName(ci->xid, nameForColor, clientNum, replacementName, sizeof(replacementName));
-		Q_strncpyz(ci->name_clean, replacementName, sizeof(ci->name_clean));
-		CG_RemoveChatEscapeCharAll(ci->name_clean);
-		displayName = replacementName;
-	}
-	else
-	{
-		displayName = ci->nameIsInvisible ? ci->name_codes : ci->name_original;
-	}
-
-	if (useID && useXID)
-	{
-		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ?
-		            "[%d]^8%s^7:\'%s^7\'" : "[%d]^8%s^7:%s",
-		            clientNum, ci->xidStr, displayName);
-	}
-	else if (useXID)
-	{
-		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ?
-		            "^8%s^7:\'%s^7\'" : "^8%s^7:%s",
-		            ci->xidStr, displayName);
-	}
-	else if (useID)
-	{
-		Com_sprintf(ci->name, sizeof(ci->name), ci->nameIsInvisible && !useReplacement ?
-		            "[%d]\'%s\'" : "[%d]%s",
-		            clientNum, displayName);
-	}
-	else
-	{
-		if (useReplacement)
-		{
-			Q_strncpyz(ci->name, replacementName, sizeof(ci->name));
-		}
-		else
-		{
-			Q_strncpyz(ci->name, ci->name_original, sizeof(ci->name));
-		}
-	}
-}
-
-/*
-===================
-CG_PlayerNameFindAndUpdateExisting
-
-Update existing player's name when duplicate is detected.
-===================
-*/
-static void CG_PlayerNameFindAndUpdateExisting(int clientNum, const char* nameClean, int showID, int showXID)
-{
-	int p;
-	char otherOriginalClean[MAX_QPATH];
-
-	/* Update all players with this name (including original) */
-	/* Compare using original names, not name_clean which may be already replaced */
-	for (p = 0; p < MAX_CLIENTS; ++p)
-	{
-		if (p == clientNum)
-		{
-			continue;
-		}
-		if (!cgs.clientinfo[p].infoValid)
-		{
-			continue;
-		}
-
-		/* Compare with original name (clean version) */
-		Q_strncpyz(otherOriginalClean, cgs.clientinfo[p].name_original, sizeof(otherOriginalClean));
-		CG_RemoveChatEscapeCharAll(otherOriginalClean);
-
-		if (!cgs.clientinfo[p].nameIsInvisible &&
-		        strcmp(nameClean, otherOriginalClean) == 0)
-		{
-			/* Mark as duplicate so all players get replacement names if cg_giveName is enabled */
-			CG_PlayerNameBuild(&cgs.clientinfo[p], p, qtrue, showID, showXID);
-		}
-	}
-}
-
-/*
-===================
 CG_PlayerNameBuildFinal
 
-Build final player name with ID/XID prefix based on cvar settings.
+OSP2-style: 0 = no ID/XID, 1 = always, 2 = only if duplicate/noname/invisible.
 ===================
 */
 static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
@@ -1999,24 +1692,79 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 	int showXID;
 	qboolean is_exists;
 	char originalClean[MAX_QPATH];
+	int p;
+	char otherClean[MAX_QPATH];
+	clientInfo_t* other;
+	qboolean useID;
+	qboolean useXID;
 
 	showID = cg_playersID.integer;
 	showXID = cg_playersXID.integer;
 
-	/* Check for duplicates using original name (before replacement) */
-	/* Create clean version of original name for comparison */
-	Q_strncpyz(originalClean, ci->name_original, sizeof(originalClean));
-	CG_RemoveChatEscapeCharAll(originalClean);
-	is_exists = CG_PlayerNameCheckDuplicate(clientNum, originalClean);
-
-	/* If duplicate found, update all existing players with this name (including original) */
-	/* Use original name for finding duplicates */
-	if (is_exists)
+	if (showID == 0 && showXID == 0)
 	{
-		CG_PlayerNameFindAndUpdateExisting(clientNum, originalClean, showID, showXID);
+		Q_strncpyz(ci->name, ci->name_original, sizeof(ci->name));
+		return;
 	}
 
-	CG_PlayerNameBuild(ci, clientNum, is_exists, showID, showXID);
+	is_exists = qfalse;
+	if (showID == 2 || showXID == 2)
+	{
+		Q_strncpyz(originalClean, ci->name_original, sizeof(originalClean));
+		CG_RemoveChatEscapeCharAll(originalClean);
+		for (p = 0; p < MAX_CLIENTS; ++p)
+		{
+			if (p == clientNum || !cgs.clientinfo[p].infoValid || cgs.clientinfo[p].nameIsInvisible)
+				continue;
+			Q_strncpyz(otherClean, cgs.clientinfo[p].name_original, sizeof(otherClean));
+			CG_RemoveChatEscapeCharAll(otherClean);
+			if (strcmp(originalClean, otherClean) != 0)
+				continue;
+			is_exists = qtrue;
+			/* Add ID/XID to other client if not yet (like OSP2) */
+			other = &cgs.clientinfo[p];
+			if (strcmp(other->name_original, other->name) == 0)
+			{
+				useID = (showID != 0);
+				useXID = (showXID != 0);
+				if (useID && useXID)
+					Com_sprintf(other->name, sizeof(other->name), other->nameIsInvisible ?
+					            "[%d]^8%s^7:\'%s^7\'" : "[%d]^8%s^7:%s",
+					            p, other->xidStr, other->nameIsInvisible ? other->name_codes : other->name_original);
+				else if (useXID)
+					Com_sprintf(other->name, sizeof(other->name), other->nameIsInvisible ?
+					            "^8%s^7:\'%s^7\'" : "^8%s^7:%s",
+					            other->xidStr, other->nameIsInvisible ? other->name_codes : other->name_original);
+				else if (useID)
+					Com_sprintf(other->name, sizeof(other->name), other->nameIsInvisible ?
+					            "[%d]\'%s\'" : "[%d]%s",
+					            p, other->nameIsInvisible ? other->name_codes : other->name_original);
+			}
+		}
+	}
+
+	useID = (showID == 1) || (showID == 2 && (is_exists || (strcmp(ci->name_original, "^1NONAME") == 0) || ci->nameIsInvisible));
+	useXID = (showXID == 1) || (showXID == 2 && (is_exists || (strcmp(ci->name_original, "^1NONAME") == 0) || ci->nameIsInvisible));
+
+	if (ci->nameIsInvisible)
+	{
+		if (useID && useXID)
+			Com_sprintf(ci->name, sizeof(ci->name), "[%d]^8%s^7:\'%s^7\'", clientNum, ci->xidStr, ci->name_codes);
+		else if (useXID)
+			Com_sprintf(ci->name, sizeof(ci->name), "^8%s^7:\'%s^7\'", ci->xidStr, ci->name_codes);
+		else if (useID)
+			Com_sprintf(ci->name, sizeof(ci->name), "[%d]\'%s\'", clientNum, ci->name_codes);
+		else
+			Q_strncpyz(ci->name, ci->name_codes, sizeof(ci->name));
+	}
+	else if (useID && useXID)
+		Com_sprintf(ci->name, sizeof(ci->name), "[%d]^8%s^7:%s", clientNum, ci->xidStr, ci->name_original);
+	else if (useXID)
+		Com_sprintf(ci->name, sizeof(ci->name), "^8%s^7:%s", ci->xidStr, ci->name_original);
+	else if (useID)
+		Com_sprintf(ci->name, sizeof(ci->name), "[%d]%s", clientNum, ci->name_original);
+	else
+		Q_strncpyz(ci->name, ci->name_original, sizeof(ci->name));
 }
 
 /*
@@ -2105,13 +1853,9 @@ void CG_NewClientInfo(int clientNum)
 	clientInfo_t* ci;
 	clientInfo_t newInfo;
 	const char*  configstring;
-	const char*  oldConfigstring;
 	const char*  v;
-	char newCS[MAX_STRING_CHARS];
-	char oldCS[MAX_STRING_CHARS];
 	const qboolean isOurClient = clientNum == cg.clientNum;
 	const qboolean isTeamGame = cgs.gametype >= GT_TEAM;
-
 
 	ci = &cgs.clientinfo[clientNum];
 
@@ -2219,23 +1963,12 @@ void CG_NewClientInfo(int clientNum)
 		}
 	}
 
-	/* Check if only teamTask changed - if so, skip full reload (inline, early exit when tt unchanged) */
+	/* If only teamTask changed and we already had valid info, skip full reload (no old configstring available to compare, so we rely on server sending tt updates separately when appropriate) */
 	if (newInfo.teamTask != ci->teamTask && ci->infoValid)
 	{
-		oldConfigstring = CG_ConfigString(clientNum + CS_PLAYERS);
-		if (oldConfigstring && oldConfigstring[0])
-		{
-			Q_strncpyz(newCS, configstring, sizeof(newCS));
-			Q_strncpyz(oldCS, oldConfigstring, sizeof(oldCS));
-			Info_RemoveKey(newCS, "tt");
-			Info_RemoveKey(oldCS, "tt");
-			if (Q_stricmp(newCS, oldCS) == 0)
-			{
-				CG_ClientInfoUpdateTeamTask(&newInfo, clientNum);
-				ci->teamTask = newInfo.teamTask;
-				return;
-			}
-		}
+		CG_ClientInfoUpdateTeamTask(&newInfo, clientNum);
+		ci->teamTask = newInfo.teamTask;
+		return;
 	}
 
 	/* Full reload needed - update everything */
@@ -2252,35 +1985,23 @@ void CG_NewClientInfo(int clientNum)
 
 	CG_ForceNewClientInfo(ci, &newInfo);
 
-	/* If we changed team, update models & colors */
+	/* If we changed team/client/spectator, refresh other clients' info once */
 	if (isOurClient)
 	{
 		static team_t ourTeam = -1;
 		static int ourClientNum = -1;
 		static qboolean wasSpectator = qtrue;
+		qboolean needRefresh;
 		qboolean isSpectator;
-		qboolean spectatorStateChanged;
-		const qboolean isTeamChanged = cgs.clientinfo[cg.clientNum].rt != ourTeam;
-		const qboolean isClientIdChanged = ourClientNum != cg.clientNum;
-		numSortedTeamPlayers = 0; //reset team overlay
-		if (isTeamGame && isTeamChanged)
-		{
-			ourTeam = cgs.clientinfo[cg.clientNum].rt;
-			CG_UpdateMyTeamColors();
-			CG_UpdateOtherClientsInfo();
-		}
 
-		if (isTeamGame && isClientIdChanged)
+		isSpectator = (ci->team == TEAM_SPECTATOR || ci->rt == TEAM_SPECTATOR);
+		needRefresh = (isTeamGame && (ci->rt != ourTeam || ourClientNum != cg.clientNum)) || (wasSpectator != isSpectator);
+		if (needRefresh)
 		{
+			ourTeam = ci->rt;
 			ourClientNum = cg.clientNum;
-			CG_UpdateOtherClientsInfo();
-		}
-
-		isSpectator = (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR || cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR);
-		spectatorStateChanged = (wasSpectator != isSpectator);
-		if (spectatorStateChanged)
-		{
 			wasSpectator = isSpectator;
+			numSortedTeamPlayers = 0;
 			CG_UpdateOtherClientsInfo();
 		}
 	}
@@ -2294,10 +2015,15 @@ static void CG_UpdateOtherClientsInfo(void)
 
 	for (index = 0; index < MAX_CLIENTS; ++index)
 	{
-		if (index != cg.clientNum && CG_ConfigString(CS_PLAYERS + index))
-		{
-			CG_NewClientInfo(index);
-		}
+		/* Skip local client */
+		if (index == cg.clientNum)
+			continue;
+
+		/* Only update slots with valid clientinfo; avoids extra CG_ConfigString calls */
+		if (!cgs.clientinfo[index].infoValid)
+			continue;
+
+		CG_NewClientInfo(index);
 	}
 }
 
@@ -2307,8 +2033,11 @@ void CG_UpdateAllClientsInfo(void)
 
 	for (index = 0; index < MAX_CLIENTS; index++)
 	{
-		if (CG_ConfigString(CS_PLAYERS + index))
-			CG_NewClientInfo(index);
+		/* Only update slots with valid clientinfo; avoids extra CG_ConfigString calls */
+		if (!cgs.clientinfo[index].infoValid)
+			continue;
+
+		CG_NewClientInfo(index);
 	}
 }
 
@@ -3065,6 +2794,82 @@ static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color
 	trap_R_AddRefEntityToScene(&ent);
 }
 
+/*
+===============
+CG_PlayerSprites
+
+Float sprites over the player's head (connection, talk, medals, friend/frozen tag).
+Reward and cg_drawFriend arrow are mutually exclusive. TeamTask overhead hides both.
+===============
+*/
+static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int clientNum, qboolean useTeamFrozen, qboolean useTeamFoeWh)
+{
+	qhandle_t     rewardShader = 0;
+	qhandle_t     friendShader = 0;
+	float*       friendColor = NULL;   /* vec4_t decays to float*; avoid vec4_t* for LCC */
+	qboolean     hasOverhead = cgs.teamMarkers.drawTeamTasks && cgs.teamMarkers.clientHasOverhead[clientNum];
+
+	if (hasOverhead)
+		return;
+
+	if (cent->currentState.eFlags & EF_CONNECTION)
+	{
+		CG_PlayerFloatSprite(cent, cgs.media.connectionShader, NULL);
+		return;
+	}
+
+	if (cent->currentState.eFlags & EF_TALK)
+	{
+		CG_PlayerFloatSprite(cent, cgs.media.balloonShader, NULL);
+		return;
+	}
+
+	if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSPRITE) &&
+	    (cent->currentState.eFlags & (EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_DEFEND | EF_AWARD_ASSIST | EF_AWARD_CAP)))
+	{
+		if (cent->currentState.eFlags & EF_AWARD_IMPRESSIVE)
+			rewardShader = cgs.media.medalImpressive;
+		else if (cent->currentState.eFlags & EF_AWARD_EXCELLENT)
+			rewardShader = cgs.media.medalExcellent;
+		else if (cent->currentState.eFlags & EF_AWARD_GAUNTLET)
+			rewardShader = cgs.media.medalGauntlet;
+		else if (cent->currentState.eFlags & EF_AWARD_DEFEND)
+			rewardShader = cgs.media.medalDefend;
+		else if (cent->currentState.eFlags & EF_AWARD_ASSIST)
+			rewardShader = cgs.media.medalAssist;
+		else if (cent->currentState.eFlags & EF_AWARD_CAP)
+			rewardShader = cgs.media.medalCapture;
+	}
+
+	if (!rewardShader && cg_drawFriend.integer && !(cent->currentState.eFlags & EF_DEAD) &&
+	    cg.snap->ps.persistant[PERS_TEAM] == ci->team && cgs.gametype >= GT_TEAM)
+	{
+		if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
+		{
+			int frozenClientNum = cent->currentState.otherEntityNum;
+			if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS && !cgs.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum])
+			{
+				if (!useTeamFrozen)
+					friendShader = cgs.media.frozenFoeTagShader;
+				else if (useTeamFoeWh && (cg_friendsWallhack.integer & 1) && cg_friendsWallhackFrozen.integer && useTeamFrozen)
+					friendShader = cg_friendsWallhackFrozen.integer ? cgs.media.frozenFoeTagShaderWallhack : cgs.media.frozenFoeTagShader;
+				else
+					friendShader = cgs.media.frozenFoeTagShader;
+			}
+		}
+		else if (cg_drawFriend.integer != 2)
+		{
+			friendShader = (useTeamFoeWh && (cg_friendsWallhack.integer & 1)) ? cgs.media.friendShaderWallhack : cgs.media.friendShader;
+			friendColor = ((cg_healthColorLevels.integer & 2) || ci->health <= 0) ? NULL : (float*)cgs.healthColorByClient[clientNum];
+		}
+	}
+
+	if (rewardShader)
+		CG_PlayerFloatSprite(cent, rewardShader, NULL);
+	else if (friendShader)
+		CG_PlayerFloatSprite(cent, friendShader, friendColor);
+}
+
 void CG_AddRefEntityFrozenPlayer(refEntity_t* ent, entityState_t* state, int team)
 {
 	const clientInfo_t* ci;
@@ -3251,7 +3056,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	}
 
 	// if they don't exist, forget it
-	if (!CG_IS_ENEMY_SIMPLE(ci))
+	if (!CG_IsEnemy(ci))
 	{
 		return;
 	}
@@ -3404,6 +3209,283 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 
 /*
 ===============
+CG_PlayerShadow
+
+Add the shadow (extended: alt shadow shaders, BE color, cg_shadows -1 no yaw).
+===============
+*/
+static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
+{
+	vec3_t      shadowEnd = {0, 0, 0};
+	vec3_t      shadowMins = {-15, -15, 0};
+	vec3_t      shadowMaxs = {15, 15, 2};
+	trace_t     shadowTrace;
+	float       shadowYawAngle;
+	int         shadowAlt;
+	qhandle_t   shadowMarkShader;
+	vec4_t      shadowColor = {1.0f, 1.0f, 1.0f, 1.0f};
+	qboolean    useAltShadow;
+
+	*shadowPlane = 0;
+
+	if (cg_shadows.integer == 0)
+	{
+		return qfalse;
+	}
+
+	if (cent->currentState.powerups & (1 << PW_INVIS))
+	{
+		return qfalse;
+	}
+
+	VectorCopy(cent->lerpOrigin, shadowEnd);
+	shadowEnd[2] -= SHADOW_DISTANCE;
+	trap_CM_BoxTrace(&shadowTrace, cent->lerpOrigin, shadowEnd, shadowMins, shadowMaxs, 0, MASK_PLAYERSOLID);
+
+	if (shadowTrace.fraction == 1.0f || shadowTrace.startsolid || shadowTrace.allsolid)
+	{
+		return qfalse;
+	}
+
+	*shadowPlane = shadowTrace.endpos[2] + 1;
+
+	if (cg_shadows.integer != 1 && cg_shadows.integer != -1)
+	{
+		return qtrue;
+	}
+
+	useAltShadow = CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW);
+	shadowAlt = cg_altShadow.integer;
+	shadowMarkShader = cgs.media.shadowMarkShader;
+	if (useAltShadow && shadowAlt > 0)
+	{
+		if (shadowAlt < MAX_ALT_SHADERS)
+			shadowMarkShader = cgs.media.shadowMarkShaderNew[shadowAlt - 1];
+		else
+			shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
+	}
+	if (useAltShadow && shadowAlt)
+	{
+		shadowColor[0] = cgs.beAltShadowColor[0];
+		shadowColor[1] = cgs.beAltShadowColor[1];
+		shadowColor[2] = cgs.beAltShadowColor[2];
+		shadowTrace.fraction = shadowTrace.fraction - 0.1875f;
+		if (shadowTrace.fraction < 0.0f)
+			shadowTrace.fraction = 0.0f;
+	}
+	shadowColor[0] = shadowColor[0] * (1.0f - shadowTrace.fraction);
+	shadowColor[1] = shadowColor[1] * (1.0f - shadowTrace.fraction);
+	shadowColor[2] = shadowColor[2] * (1.0f - shadowTrace.fraction);
+	shadowYawAngle = (cg_shadows.integer == -1) ? 0.0f : cent->pe.legs.yawAngle;
+	CG_ImpactMark(shadowMarkShader, shadowTrace.endpos, shadowTrace.plane.normal,
+	              shadowYawAngle, shadowColor[0], shadowColor[1], shadowColor[2], 1, qfalse, 24, qtrue, qtrue);
+	return qtrue;
+}
+
+/*
+===============
+CG_PlayerSplash
+
+Draw a mark at the water surface (same cg_shadows gate as shadow).
+===============
+*/
+static void CG_PlayerSplash(centity_t* cent)
+{
+	vec3_t      splashStart;
+	vec3_t      splashEnd;
+	trace_t     splashTrace;
+	int         splashContents;
+	polyVert_t  splashVerts[4];
+
+	if (!cg_shadows.integer)
+	{
+		return;
+	}
+
+	VectorCopy(cent->lerpOrigin, splashEnd);
+	splashEnd[2] -= 24;
+	splashContents = trap_CM_PointContents(splashEnd, 0);
+	if (!(splashContents & (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA)))
+	{
+		return;
+	}
+
+	VectorCopy(cent->lerpOrigin, splashStart);
+	splashStart[2] += 32;
+	splashContents = trap_CM_PointContents(splashStart, 0);
+	if (splashContents & (CONTENTS_SOLID | CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA))
+	{
+		return;
+	}
+
+	trap_CM_BoxTrace(&splashTrace, splashStart, splashEnd, NULL, NULL, 0, (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA));
+	if (splashTrace.fraction == 1.0f)
+	{
+		return;
+	}
+
+	VectorCopy(splashTrace.endpos, splashVerts[0].xyz);
+	splashVerts[0].xyz[0] -= 32;
+	splashVerts[0].xyz[1] -= 32;
+	splashVerts[0].st[0] = 0;
+	splashVerts[0].st[1] = 0;
+	splashVerts[0].modulate[0] = 255;
+	splashVerts[0].modulate[1] = 255;
+	splashVerts[0].modulate[2] = 255;
+	splashVerts[0].modulate[3] = 255;
+
+	VectorCopy(splashTrace.endpos, splashVerts[1].xyz);
+	splashVerts[1].xyz[0] -= 32;
+	splashVerts[1].xyz[1] += 32;
+	splashVerts[1].st[0] = 0;
+	splashVerts[1].st[1] = 1;
+	splashVerts[1].modulate[0] = 255;
+	splashVerts[1].modulate[1] = 255;
+	splashVerts[1].modulate[2] = 255;
+	splashVerts[1].modulate[3] = 255;
+
+	VectorCopy(splashTrace.endpos, splashVerts[2].xyz);
+	splashVerts[2].xyz[0] += 32;
+	splashVerts[2].xyz[1] += 32;
+	splashVerts[2].st[0] = 1;
+	splashVerts[2].st[1] = 1;
+	splashVerts[2].modulate[0] = 255;
+	splashVerts[2].modulate[1] = 255;
+	splashVerts[2].modulate[2] = 255;
+	splashVerts[2].modulate[3] = 255;
+
+	VectorCopy(splashTrace.endpos, splashVerts[3].xyz);
+	splashVerts[3].xyz[0] += 32;
+	splashVerts[3].xyz[1] -= 32;
+	splashVerts[3].st[0] = 1;
+	splashVerts[3].st[1] = 0;
+	splashVerts[3].modulate[0] = 255;
+	splashVerts[3].modulate[1] = 255;
+	splashVerts[3].modulate[2] = 255;
+	splashVerts[3].modulate[3] = 255;
+
+	trap_R_AddPolyToScene(cgs.media.wakeMarkShader, 4, splashVerts);
+}
+
+/*
+===============
+CG_PlayerOutline
+Compute outline for this player (once per cent, cached) and add outline pass for the given refentity.
+Uses only cent and local player — no loop over clients. Call once per body part (legs, torso, head).
+===============
+*/
+static void CG_PlayerOutline(centity_t* cent, qboolean useOutline, qboolean useMarkTeammate, refEntity_t* ent)
+{
+	static centity_t* lastOutlineCent;
+	static qboolean cachedDraw;
+	static qhandle_t cachedShader;
+	static byte cachedColorBytes[4];
+
+	int clientNum;
+	const clientInfo_t* ci;
+	const clientInfo_t* localCi;
+	qboolean outlineIsSpec;
+	qboolean outlineIsEnemy;
+	vec4_t outlineColor = {0, 0, 0, 0};
+	team_t myStateTeam, myRealTeam, enemyTeam, ourPerspectiveTeam, targetTeam;
+	vec3_t uniqueColorVec = {0, 0, 0};
+
+	/* Recompute only when player entity changes (first of 3 calls per player: legs/torso/head) */
+	if (cent != lastOutlineCent)
+	{
+		lastOutlineCent = cent;
+		cachedDraw = qfalse;
+		cachedShader = 0;
+		cachedColorBytes[0] = 0;
+		cachedColorBytes[1] = 0;
+		cachedColorBytes[2] = 0;
+		cachedColorBytes[3] = 0;
+
+		clientNum = cent->currentState.clientNum;
+		if (useOutline && clientNum >= 0 && clientNum < MAX_CLIENTS)
+		{
+			ci = &cgs.clientinfo[clientNum];
+			localCi = &cgs.clientinfo[cg.clientNum];
+			outlineIsSpec = (cgs.gametype >= GT_CA) ?
+			    (localCi->rt == TEAM_SPECTATOR) :
+			    (localCi->team == TEAM_SPECTATOR);
+
+			outlineIsEnemy = qfalse;
+			if (ci != localCi)
+			{
+				myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
+				myRealTeam = (cgs.gametype >= GT_CA) ? localCi->rt : localCi->team;
+				enemyTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
+				if (cgs.gametype <= GT_SINGLE_PLAYER)
+					outlineIsEnemy = qtrue;
+				else if (myStateTeam == TEAM_RED)
+					outlineIsEnemy = (enemyTeam == TEAM_BLUE);
+				else if (myStateTeam == TEAM_BLUE)
+					outlineIsEnemy = (enemyTeam == TEAM_RED);
+				else if (myStateTeam == TEAM_SPECTATOR)
+				{
+					if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+					    cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+					{
+						ourPerspectiveTeam = (cgs.gametype >= GT_CA) ?
+						    cgs.clientinfo[cg.snap->ps.clientNum].rt :
+						    cgs.clientinfo[cg.snap->ps.clientNum].team;
+						targetTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
+						outlineIsEnemy = (ourPerspectiveTeam != targetTeam);
+					}
+					else
+						outlineIsEnemy = (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR) ?
+						    (enemyTeam == TEAM_BLUE) : (enemyTeam == TEAM_RED);
+				}
+			}
+
+			if (cg_drawOutline.integer && ci->infoValid &&
+			    !(cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) &&
+			    !(cent->currentState.eFlags & EF_DEAD) &&
+			    !(cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) &&
+			    !(cent->currentState.powerups & (1 << PW_INVIS)) &&
+			    ((cg_drawOutline.integer == 1 && outlineIsEnemy) || (cg_drawOutline.integer == 2 && !outlineIsEnemy) || (cg_drawOutline.integer == 3)) &&
+			    (outlineIsEnemy ? cg_enemyOutlineSize.integer : cg_teamOutlineSize.integer))
+			{
+				cachedDraw = qtrue;
+
+				/* One level: pick outline color by case */
+				if (outlineIsSpec && !cg_spectPOV.integer)
+					Vector4Copy(ci->team == TEAM_RED ? cgs.beTeamOutlineColor : cgs.beEnemyOutlineColor, outlineColor);
+				else if (outlineIsEnemy && cg_enemyOutlineColorUnique.integer == 0)
+					Vector4Copy(cgs.beEnemyOutlineColor, outlineColor);
+				else if (outlineIsEnemy)
+				{
+					VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
+					outlineColor[0] = (cg_enemyOutlineColorUnique.integer & 1) ? uniqueColorVec[0] : cgs.beEnemyOutlineColor[0];
+					outlineColor[1] = (cg_enemyOutlineColorUnique.integer & 2) ? uniqueColorVec[1] : cgs.beEnemyOutlineColor[1];
+					outlineColor[2] = (cg_enemyOutlineColorUnique.integer & 4) ? uniqueColorVec[2] : cgs.beEnemyOutlineColor[2];
+					outlineColor[3] = 1.0f;
+				}
+				else if (useMarkTeammate && cgs.beMarkedTeam[clientNum])
+					Vector4Copy(cgs.beMarkedTeamColor, outlineColor);
+				else
+					Vector4Copy(cgs.beTeamOutlineColor, outlineColor);
+
+				cachedShader = outlineIsEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
+				cachedColorBytes[0] = (byte)(outlineColor[0] * 255);
+				cachedColorBytes[1] = (byte)(outlineColor[1] * 255);
+				cachedColorBytes[2] = (byte)(outlineColor[2] * 255);
+				cachedColorBytes[3] = (byte)(outlineColor[3] * 255);
+			}
+		}
+	}
+
+	if (cachedDraw && ent != NULL)
+	{
+		ent->customShader = cachedShader;
+		*(int*)ent->shaderRGBA = *(int*)cachedColorBytes;
+		trap_R_AddRefEntityToScene(ent);
+	}
+}
+
+/*
+===============
 CG_Player
 ===============
 */
@@ -3418,27 +3500,14 @@ void CG_Player(centity_t* cent)
 	qboolean        shadow;
 	float           shadowPlane;
 	qboolean        paintItBlack;
-	qboolean        outlineIsSpec;
-	qboolean        outlineIsEnemy;
-	qboolean        useFullbright;
 	qboolean        useOutline;
-	qboolean        drawOutlineThisPlayer = qfalse;
-	qboolean useAltShadow;
 	qboolean useMarkTeammate;
 	qboolean useTeamFrozen;
 	qboolean useTeamFoeWh;
-	vec4_t          outlineColor = {0, 0, 0, 0};
-	/* QVM_LOGIC: pre-computed outline values - avoid 3x ternary + 3x float->byte conversion */
-	qhandle_t       outlineShader = 0;
-	byte            outlineColorBytes[4] = {0, 0, 0, 0};
 	/* QVM_LOGIC: pre-computed paintBlack - avoid 3x branch + 3x triple-assign */
 	byte            paintBlackRGBA[4] = {0, 0, 0, 0xff};
 	/* QVM: one pointer for many accesses to same global slot - cheaper than repeated cgs.clientinfo[cg.clientNum] */
 	const clientInfo_t* localCi = &cgs.clientinfo[cg.clientNum];
-
-	/* QVM_LOGIC 2.1: explicit init for conditionally-set locals */
-	outlineIsSpec = qfalse;
-	outlineIsEnemy = qfalse;
 
 	if (cg.clientNum == cent->currentState.clientNum && (global_viewlistFirstOption || localCi->team == TEAM_SPECTATOR))
 	{
@@ -3490,9 +3559,7 @@ void CG_Player(centity_t* cent)
 	}
 
 	/* QVM_LOGIC: compute feature flags once per player instead of multiple checks */
-	useAltShadow = CG_BE_FEATURE_ENABLED(CG_BE_ALT_SHADOW);
 	useMarkTeammate = CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE);
-	useFullbright = (ci->isPmSkin || (ci->isFbSkin && CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT)));
 	useOutline = CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer;
 	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
 	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
@@ -3523,194 +3590,15 @@ void CG_Player(centity_t* cent)
 	if (cent->currentState.powerups ||
 	        (localCi->team == TEAM_SPECTATOR && cg_spectGlow.integer))
 		CG_PlayerPowerups(cent);
-	/* Player sprites: reward and cg_drawFriend arrow are mutually exclusive. */
-	{
-		qhandle_t     rewardShader = 0;
-		qhandle_t     friendShader = 0;
-		float*       friendColor = NULL;   /* vec4_t decays to float*; avoid vec4_t* for LCC */
-		qboolean      hasOverhead = cgs.teamMarkers.drawTeamTasks && cgs.teamMarkers.clientHasOverhead[clientNum];
+	CG_PlayerSprites(cent, ci, clientNum, useTeamFrozen, useTeamFoeWh);
 
-		if (!hasOverhead)
-		{
-			if (cent->currentState.eFlags & EF_CONNECTION)
-				rewardShader = cgs.media.connectionShader;
-			else if (cent->currentState.eFlags & EF_TALK)
-				rewardShader = cgs.media.balloonShader;
-			else if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSPRITE) &&
-			         (cent->currentState.eFlags & (EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_DEFEND | EF_AWARD_ASSIST | EF_AWARD_CAP)))
-			{
-				if (cent->currentState.eFlags & EF_AWARD_IMPRESSIVE)
-					rewardShader = cgs.media.medalImpressive;
-				else if (cent->currentState.eFlags & EF_AWARD_EXCELLENT)
-					rewardShader = cgs.media.medalExcellent;
-				else if (cent->currentState.eFlags & EF_AWARD_GAUNTLET)
-					rewardShader = cgs.media.medalGauntlet;
-				else if (cent->currentState.eFlags & EF_AWARD_DEFEND)
-					rewardShader = cgs.media.medalDefend;
-				else if (cent->currentState.eFlags & EF_AWARD_ASSIST)
-					rewardShader = cgs.media.medalAssist;
-				else if (cent->currentState.eFlags & EF_AWARD_CAP)
-					rewardShader = cgs.media.medalCapture;
-			}
+	// add the shadow
+	shadow = CG_PlayerShadow(cent, &shadowPlane);
 
-			if (cg_drawFriend.integer && !(cent->currentState.eFlags & EF_DEAD) && cg.snap->ps.persistant[PERS_TEAM] == ci->team && cgs.gametype >= GT_TEAM)
-			{
-				if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
-				{
-					int frozenClientNum = cent->currentState.otherEntityNum;
-					if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS && !cgs.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum])
-					{
-						if (!useTeamFrozen)
-							friendShader = cgs.media.frozenFoeTagShader;
-						else if (useTeamFoeWh && (cg_friendsWallhack.integer & 1))
-							friendShader = cg_friendsWallhackFrozen.integer ? cgs.media.frozenFoeTagShaderWallhack : cgs.media.frozenFoeTagShader;
-						else
-							friendShader = cgs.media.frozenFoeTagShader;
-					}
-				}
-				else if (cg_drawFriend.integer != 2)
-				{
-					friendShader = (useTeamFoeWh && (cg_friendsWallhack.integer & 1)) ? cgs.media.friendShaderWallhack : cgs.media.friendShader;
-					friendColor = ((cg_healthColorLevels.integer & 2) || ci->health <= 0) ? NULL : (float*)cgs.healthColorByClient[clientNum];
-				}
-			}
-		}
-		if (rewardShader)
-			CG_PlayerFloatSprite(cent, rewardShader, NULL);
-		else if (friendShader)
-			CG_PlayerFloatSprite(cent, friendShader, friendColor);
-	}
+	// add a water splash if partially in and out of water
+	CG_PlayerSplash(cent);
 
-	/* Shadow + water splash: one block, one cg_shadows gate (qvm-performance-guide: early exit, single pass) */
-	shadowPlane = 0;
-	shadow = qfalse;
-	if (cg_shadows.integer)
-	{
-		vec3_t      shadowEnd = {0, 0, 0};
-		vec3_t      shadowMins = {0, 0, 0};
-		vec3_t      shadowMaxs = {0, 0, 0};
-		vec3_t      splashStart;
-		vec3_t      splashEnd;
-		trace_t     shadowTrace;
-		trace_t     splashTrace;
-		float       shadowYawAngle = 0.0f;
-		int         shadowAlt = 0;
-		int         splashContents;
-		qhandle_t   shadowMarkShader = 0;
-		vec4_t      shadowColor = {0, 0, 0, 0};
-		polyVert_t  splashVerts[4];
-
-		if (cg_shadows.integer != 0 && !(cent->currentState.powerups & (1 << PW_INVIS)))
-		{
-			shadowMins[0] = -15;
-			shadowMins[1] = -15;
-			shadowMins[2] = 0;
-			shadowMaxs[0] = 15;
-			shadowMaxs[1] = 15;
-			shadowMaxs[2] = 2;
-			VectorCopy(cent->lerpOrigin, shadowEnd);
-			shadowEnd[2] -= SHADOW_DISTANCE;
-			trap_CM_BoxTrace(&shadowTrace, cent->lerpOrigin, shadowEnd, shadowMins, shadowMaxs, 0, MASK_PLAYERSOLID);
-
-			if (shadowTrace.fraction != 1.0 && !shadowTrace.startsolid && !shadowTrace.allsolid)
-			{
-				shadowPlane = shadowTrace.endpos[2] + 1;
-				shadow = qtrue;
-				if (cg_shadows.integer == 1 || cg_shadows.integer == -1)
-				{
-					shadowAlt = cg_altShadow.integer;
-					shadowMarkShader = cgs.media.shadowMarkShader;
-					if (useAltShadow && shadowAlt > 0)
-					{
-						if (shadowAlt < MAX_ALT_SHADERS)
-							shadowMarkShader = cgs.media.shadowMarkShaderNew[shadowAlt - 1];
-						else
-							shadowMarkShader = cgs.media.shadowMarkShaderNew[0];
-					}
-					shadowColor[0] = 1.0f;
-					shadowColor[1] = 1.0f;
-					shadowColor[2] = 1.0f;
-					shadowColor[3] = 1.0f;
-					if (useAltShadow && shadowAlt)
-					{
-						shadowColor[0] = cgs.beAltShadowColor[0];
-						shadowColor[1] = cgs.beAltShadowColor[1];
-						shadowColor[2] = cgs.beAltShadowColor[2];
-						shadowTrace.fraction = shadowTrace.fraction - 0.1875f;
-						if (shadowTrace.fraction < 0.0f)
-							shadowTrace.fraction = 0.0f;
-					}
-					shadowColor[0] = shadowColor[0] * (1.0f - shadowTrace.fraction);
-					shadowColor[1] = shadowColor[1] * (1.0f - shadowTrace.fraction);
-					shadowColor[2] = shadowColor[2] * (1.0f - shadowTrace.fraction);
-					shadowYawAngle = (cg_shadows.integer == -1) ? 0.0f : cent->pe.legs.yawAngle;
-					CG_ImpactMark(shadowMarkShader, shadowTrace.endpos, shadowTrace.plane.normal,
-					              shadowYawAngle, shadowColor[0], shadowColor[1], shadowColor[2], 1, qfalse, 24, qtrue, qtrue);
-				}
-			}
-		}
-
-		/* Water splash: same cg_shadows gate */
-		VectorCopy(cent->lerpOrigin, splashEnd);
-		splashEnd[2] -= 24;
-		splashContents = trap_CM_PointContents(splashEnd, 0);
-		if (splashContents & (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA))
-		{
-			VectorCopy(cent->lerpOrigin, splashStart);
-			splashStart[2] += 32;
-			splashContents = trap_CM_PointContents(splashStart, 0);
-			if (!(splashContents & (CONTENTS_SOLID | CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA)))
-			{
-				trap_CM_BoxTrace(&splashTrace, splashStart, splashEnd, NULL, NULL, 0, (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA));
-				if (splashTrace.fraction != 1.0)
-				{
-					VectorCopy(splashTrace.endpos, splashVerts[0].xyz);
-					splashVerts[0].xyz[0] -= 32;
-					splashVerts[0].xyz[1] -= 32;
-					splashVerts[0].st[0] = 0;
-					splashVerts[0].st[1] = 0;
-					splashVerts[0].modulate[0] = 255;
-					splashVerts[0].modulate[1] = 255;
-					splashVerts[0].modulate[2] = 255;
-					splashVerts[0].modulate[3] = 255;
-
-					VectorCopy(splashTrace.endpos, splashVerts[1].xyz);
-					splashVerts[1].xyz[0] -= 32;
-					splashVerts[1].xyz[1] += 32;
-					splashVerts[1].st[0] = 0;
-					splashVerts[1].st[1] = 1;
-					splashVerts[1].modulate[0] = 255;
-					splashVerts[1].modulate[1] = 255;
-					splashVerts[1].modulate[2] = 255;
-					splashVerts[1].modulate[3] = 255;
-
-					VectorCopy(splashTrace.endpos, splashVerts[2].xyz);
-					splashVerts[2].xyz[0] += 32;
-					splashVerts[2].xyz[1] += 32;
-					splashVerts[2].st[0] = 1;
-					splashVerts[2].st[1] = 1;
-					splashVerts[2].modulate[0] = 255;
-					splashVerts[2].modulate[1] = 255;
-					splashVerts[2].modulate[2] = 255;
-					splashVerts[2].modulate[3] = 255;
-
-					VectorCopy(splashTrace.endpos, splashVerts[3].xyz);
-					splashVerts[3].xyz[0] += 32;
-					splashVerts[3].xyz[1] -= 32;
-					splashVerts[3].st[0] = 1;
-					splashVerts[3].st[1] = 0;
-					splashVerts[3].modulate[0] = 255;
-					splashVerts[3].modulate[1] = 255;
-					splashVerts[3].modulate[2] = 255;
-					splashVerts[3].modulate[3] = 255;
-
-					trap_R_AddPolyToScene(cgs.media.wakeMarkShader, 4, splashVerts);
-				}
-			}
-		}
-	}
-
-	if (cg_drawHudMarkers.integer && cgs.gametype >= GT_TEAM &&
+	if (cg_drawHudMarkers.integer && CG_BE_FEATURE_ENABLED(CG_BE_HUD_MARKERS) && cgs.gametype >= GT_TEAM &&
 	        cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR &&
 	        cent->currentState.number != cg.snap->ps.clientNum &&
 	        ci->team == cg.snap->ps.persistant[PERS_TEAM])
@@ -3728,7 +3616,7 @@ void CG_Player(centity_t* cent)
 		else
 		{
 			friendVisible = qtrue;
-			if (!(cg_friendsWallhack.integer & 2) || (isFrozen && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer)))
+			if (!(cg_friendsWallhack.integer & 2) || (isFrozen && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen)))
 			{
 				VectorCopy(cg.refdef.vieworg, start);
 				VectorCopy(cent->lerpOrigin, end);
@@ -3741,9 +3629,9 @@ void CG_Player(centity_t* cent)
 					friendVisible = (trace.fraction == 1.0f);
 				}
 			}
-			if (friendVisible || ((cg_friendsWallhack.integer & 1) && useTeamFoeWh))
+			if (friendVisible || ((useTeamFoeWh && (isFrozen ? ((cg_friendsWallhack.integer & 1) && cg_friendsWallhackFrozen.integer && useTeamFrozen) : (cg_friendsWallhack.integer & 1)) && (!isFrozen || (useTeamFrozen && cg_friendsWallhackFrozen.integer)))))
 			{
-				if (!(isFrozen && !friendVisible && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer)))
+				if (!(isFrozen && !friendVisible && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen)))
 				{
 					dist = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
 					if (cg_friendHudMarkerMaxDist.integer <= 0 || dist <= cg_friendHudMarkerMaxDist.value)
@@ -3789,91 +3677,6 @@ void CG_Player(centity_t* cent)
 		/* [3] already 0xff from init */
 	}
 
-	/* QVM_LOGIC: outline decision and color once per player, flat structure for branch prediction */
-	if (useOutline)
-	{
-		team_t myStateTeam, myRealTeam, enemyTeam, ourPerspectiveTeam, targetTeam;
-		vec3_t          uniqueColorVec = {0, 0, 0};
-
-		outlineIsSpec = (cgs.gametype >= GT_CA) ?
-		                (localCi->rt == TEAM_SPECTATOR) :
-		                (localCi->team == TEAM_SPECTATOR);
-
-		outlineIsEnemy = qfalse;
-		if (ci != localCi)
-		{
-			myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
-			myRealTeam = (cgs.gametype >= GT_CA) ? localCi->rt : localCi->team;
-			enemyTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
-			if (cgs.gametype <= GT_SINGLE_PLAYER)
-				outlineIsEnemy = qtrue;
-			else if (myStateTeam == TEAM_RED)
-				outlineIsEnemy = (enemyTeam == TEAM_BLUE);
-			else if (myStateTeam == TEAM_BLUE)
-				outlineIsEnemy = (enemyTeam == TEAM_RED);
-			else if (myStateTeam == TEAM_SPECTATOR)
-			{
-				if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
-				        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
-				{
-					ourPerspectiveTeam = (cgs.gametype >= GT_CA) ?
-					                     cgs.clientinfo[cg.snap->ps.clientNum].rt :
-					                     cgs.clientinfo[cg.snap->ps.clientNum].team;
-					targetTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
-					outlineIsEnemy = (ourPerspectiveTeam != targetTeam);
-				}
-				else if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
-					outlineIsEnemy = (enemyTeam == TEAM_BLUE);
-				else if (myRealTeam == TEAM_BLUE)
-					outlineIsEnemy = (enemyTeam == TEAM_RED);
-			}
-		}
-		if (cg_drawOutline.integer && clientNum >= 0 && clientNum < MAX_CLIENTS && ci->infoValid &&
-		        !((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
-		          (cent->currentState.eFlags & EF_DEAD) ||
-		          (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) ||
-		          (cent->currentState.powerups & (1 << PW_INVIS))) &&
-		        ((cg_drawOutline.integer == 1 && outlineIsEnemy) || (cg_drawOutline.integer == 2 && !outlineIsEnemy) || (cg_drawOutline.integer == 3)) &&
-		        (outlineIsEnemy ? cg_enemyOutlineSize.integer : cg_teamOutlineSize.integer))
-		{
-			drawOutlineThisPlayer = qtrue;
-			if (outlineIsSpec && !cg_spectPOV.integer)
-			{
-				if (ci->team == TEAM_RED)
-					Vector4Copy(cgs.beTeamOutlineColor, outlineColor);
-				else
-					Vector4Copy(cgs.beEnemyOutlineColor, outlineColor);
-			}
-			else if (outlineIsEnemy)
-			{
-				if (cg_enemyOutlineColorUnique.integer == 0)
-					Vector4Copy(cgs.beEnemyOutlineColor, outlineColor);
-				else
-				{
-					/* QVM_LOGIC: loop unrolled - avoid 3 iterations overhead */
-					VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
-					outlineColor[0] = (cg_enemyOutlineColorUnique.integer & 1) ? uniqueColorVec[0] : cgs.beEnemyOutlineColor[0];
-					outlineColor[1] = (cg_enemyOutlineColorUnique.integer & 2) ? uniqueColorVec[1] : cgs.beEnemyOutlineColor[1];
-					outlineColor[2] = (cg_enemyOutlineColorUnique.integer & 4) ? uniqueColorVec[2] : cgs.beEnemyOutlineColor[2];
-					outlineColor[3] = 1.0f;
-				}
-			}
-			else
-			{
-				if (useMarkTeammate && cgs.beMarkedTeam[clientNum])
-					Vector4Copy(cgs.beMarkedTeamColor, outlineColor);
-				else
-					Vector4Copy(cgs.beTeamOutlineColor, outlineColor);
-			}
-			/* QVM_LOGIC: pre-compute shader and byte color once, not 3x per body part */
-			outlineShader = outlineIsEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
-			outlineColorBytes[0] = (byte)(outlineColor[0] * 255);
-			outlineColorBytes[1] = (byte)(outlineColor[1] * 255);
-			outlineColorBytes[2] = (byte)(outlineColor[2] * 255);
-			outlineColorBytes[3] = (byte)(outlineColor[3] * 255);
-		}
-	}
-
 	if ((cent->currentState.eFlags & EF_DEAD) && cg_deadBodyInvisible.integer)
 	{
 		if (cent->currentState.weapon == WP_NONE)   // show player model with weapon during intermission vote - don't make it invisible
@@ -3898,12 +3701,12 @@ void CG_Player(centity_t* cent)
 	legs.renderfx = renderfx;
 	VectorCopy(legs.origin, legs.oldorigin);    // don't positionally lerp at all
 
-	/* QVM_LOGIC: paintItBlack check first - skip useFullbright work if true */
+	/* Always set shaderRGBA: paintItBlack override, else use ci->colors (was only when useFullbright - left legs/torso/head black otherwise) */
 	if (paintItBlack)
 	{
 		*(int*)legs.shaderRGBA = *(int*)paintBlackRGBA;
 	}
-	else if (useFullbright)
+	else
 	{
 		float tmpf;
 
@@ -3920,13 +3723,7 @@ void CG_Player(centity_t* cent)
 	}
 
 	CG_AddRefEntityWithPowerups(&legs, &cent->currentState, ci->team);
-
-	if (drawOutlineThisPlayer)
-	{
-		legs.customShader = outlineShader;
-		*(int*)legs.shaderRGBA = *(int*)outlineColorBytes;
-		trap_R_AddRefEntityToScene(&legs);
-	}
+	CG_PlayerOutline(cent, useOutline, useMarkTeammate, &legs);
 
 	//
 	// add the torso
@@ -3938,12 +3735,12 @@ void CG_Player(centity_t* cent)
 	torso.shadowPlane = shadowPlane;
 	torso.renderfx = renderfx;
 
-	/* QVM_LOGIC: paintItBlack check first - skip useFullbright work if true */
+	/* Always set shaderRGBA: paintItBlack override, else use ci->colors */
 	if (paintItBlack)
 	{
 		*(int*)torso.shaderRGBA = *(int*)paintBlackRGBA;
 	}
-	else if (useFullbright)
+	else
 	{
 		float tmpf;
 
@@ -3960,13 +3757,7 @@ void CG_Player(centity_t* cent)
 	}
 
 	CG_AddRefEntityWithPowerups(&torso, &cent->currentState, ci->team);
-
-	if (drawOutlineThisPlayer)
-	{
-		torso.customShader = outlineShader;
-		*(int*)torso.shaderRGBA = *(int*)outlineColorBytes;
-		trap_R_AddRefEntityToScene(&torso);
-	}
+	CG_PlayerOutline(cent, useOutline, useMarkTeammate, &torso);
 
 	//
 	// add the head
@@ -3978,12 +3769,12 @@ void CG_Player(centity_t* cent)
 	head.shadowPlane = shadowPlane;
 	head.renderfx = renderfx;
 
-	/* QVM_LOGIC: paintItBlack check first - skip useFullbright work if true */
+	/* Always set shaderRGBA: paintItBlack override, else use ci->colors */
 	if (paintItBlack)
 	{
 		*(int*)head.shaderRGBA = *(int*)paintBlackRGBA;
 	}
-	else if (useFullbright)
+	else
 	{
 		float tmpf;
 
@@ -3999,25 +3790,16 @@ void CG_Player(centity_t* cent)
 		head.shaderRGBA[3] = 0xff;
 	}
 
-	if (cgs.osp.gameTypeFreeze != 0 &&
-	        cgs.beServerEnableBreath && cg_enableBreath.integer &&
-	        !(cent->currentState.eFlags & EF_DEAD))
+	if (cgs.osp.gameTypeFreeze != 0)
 	{
 		CG_BreathPuffs(cent, &head);
 	}
 	CG_AddRefEntityWithPowerups(&head, &cent->currentState, ci->team);
-
-	if (drawOutlineThisPlayer)
-	{
-		head.customShader = outlineShader;
-		*(int*)head.shaderRGBA = *(int*)outlineColorBytes;
-		trap_R_AddRefEntityToScene(&head);
-	}
+	CG_PlayerOutline(cent, useOutline, useMarkTeammate, &head);
 
 	CG_AddPlayerWeapon(&torso, NULL, cent, ci->team);
 
-	if (cg_drawHitBox.integer)
-		CG_AddHitBox(cent, ci->team);
+	CG_AddHitBox(cent, ci->team);
 }
 
 

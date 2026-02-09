@@ -267,9 +267,6 @@ extern sfxHandle_t	MenuField_Key( menufield_s* m, int* key );
 //
 extern void MainMenu_Cache( void );
 extern void UI_MainMenu(void);
-extern void UI_GetThemeColor( vec4_t out );
-extern void UI_GetThemeColor2( vec4_t out );
-extern void UI_GetSelectColor( vec4_t out );
 extern void UI_InitThemeColors( void );
 extern void UI_UpdateMenuBackgroundMode( void );
 extern qboolean UI_ParseColorStr( const char *str, vec4_t out );
@@ -620,11 +617,16 @@ typedef struct {
 	vec4_t				themeColor;
 	vec4_t				themeColor2;
 	vec4_t				selectColor;
-	int					themeColorModCount;
-	int					themeColor2ModCount;
-	int					selectColorModCount;
+	vec4_t				bannerColor;
 	int					menuHQMode;
 	int					menuHQModCount;
+	int					menuBgStyle;
+	int					menuBgStyleModCount;
+	qhandle_t			menuBackNoLogo1;
+	qhandle_t			menuBackNoLogo2;
+	qhandle_t			menuBackNoLogo3;
+	qhandle_t			menuBackNoLogo4;
+	qhandle_t			menuBackNoLogoHQ24[24];
 } uiStatic_t;
 
 extern void			UI_Init( void );
@@ -658,6 +660,7 @@ extern void			UI_SetActiveMenu( uiMenuCommand_t menu );
 extern void			UI_PushMenu ( menuframework_s *menu );
 extern void			UI_PopMenu (void);
 extern void			UI_ForceMenuOff (void);
+extern void			UI_DrawMenuBackground( qboolean usePrimaryPicture );
 extern char			*UI_Argv( int arg );
 extern char			*UI_Cvar_VariableString( const char *var_name );
 extern void			UI_Refresh( int time );
@@ -880,4 +883,20 @@ void UI_SignupMenu( void );
 void RankStatus_Cache( void );
 void UI_RankStatusMenu( void );
 
+//
+// ui_framesFullscreen
+//
+#define FRAME_L_X (ui_framesFullscreen.integer ? 0 : 0)
+#define FRAME_L_Y (ui_framesFullscreen.integer ? 0 : 78)
+#define FRAME_L_W (ui_framesFullscreen.integer ? 640 : 256)
+#define FRAME_L_H (ui_framesFullscreen.integer ? 480 : 329)
+#define FRAME_R_X (ui_framesFullscreen.integer ? 0 : 376)
+#define FRAME_R_Y (ui_framesFullscreen.integer ? 0 : 76)
+#define FRAME_R_W (ui_framesFullscreen.integer ? 640 : 256)
+#define FRAME_R_H (ui_framesFullscreen.integer ? 480 : 334)
+
+#define FRAME_L_X_OPTIONS (ui_framesFullscreen.integer ? 0 : 8)
+#define FRAME_L_Y_OPTIONS (ui_framesFullscreen.integer ? 0 : 76)
+#define FRAME_L_W_OPTIONS (ui_framesFullscreen.integer ? 640 : 256)
+#define FRAME_L_H_OPTIONS (ui_framesFullscreen.integer ? 480 : 334)
 #endif

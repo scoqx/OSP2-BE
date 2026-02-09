@@ -100,18 +100,18 @@ void SpecifyServer_MenuInit( void )
 	s_specifyserver.framel.generic.type  = MTYPE_BITMAP;
 	s_specifyserver.framel.generic.name  = SPECIFYSERVER_FRAMEL;
 	s_specifyserver.framel.generic.flags = QMF_INACTIVE;
-	s_specifyserver.framel.generic.x	 = 0;  
-	s_specifyserver.framel.generic.y	 = 78;
-	s_specifyserver.framel.width  	     = 256;
-	s_specifyserver.framel.height  	     = 329;
+	s_specifyserver.framel.generic.x	 = FRAME_L_X;
+	s_specifyserver.framel.generic.y	 = FRAME_L_Y;
+	s_specifyserver.framel.width  	     = FRAME_L_W;
+	s_specifyserver.framel.height  	     = FRAME_L_H;
 
 	s_specifyserver.framer.generic.type  = MTYPE_BITMAP;
 	s_specifyserver.framer.generic.name  = SPECIFYSERVER_FRAMER;
 	s_specifyserver.framer.generic.flags = QMF_INACTIVE;
-	s_specifyserver.framer.generic.x	 = 376;
-	s_specifyserver.framer.generic.y	 = 76;
-	s_specifyserver.framer.width  	     = 256;
-	s_specifyserver.framer.height  	     = 334;
+	s_specifyserver.framer.generic.x	 = FRAME_R_X;
+	s_specifyserver.framer.generic.y	 = FRAME_R_Y;
+	s_specifyserver.framer.width  	     = FRAME_R_W;
+	s_specifyserver.framer.height  	     = FRAME_R_H;
 
 	s_specifyserver.domain.generic.type       = MTYPE_FIELD;
 	s_specifyserver.domain.generic.name       = "Address:";

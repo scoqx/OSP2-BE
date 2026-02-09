@@ -504,10 +504,11 @@ typedef struct
 	int markType;
 	int startTime;
 	int endTime;
-	qhandle_t shader;
+	qhandle_t shader; /* 2D in world (player unavailable) */
 	vec4_t color;
 	qhandle_t markerShader; /* for HUD border draw; set at add, no per-frame call */
 	vec4_t markerColor;
+	qhandle_t worldSpriteShader; /* 3D sprite in world (player available); 0 if same as shader */
 	int clientNum; /* Always filled: sender's client number (whose mark it is) */
 	qboolean isOverhead; /* True if mark should track player's head dynamically */
 	qboolean isPickup; /* True if this is a pickup mark (toClient=1) */
@@ -714,6 +715,10 @@ typedef struct
 	int         scoresRequestTime;
 	int         statsRequestTime;
 	int         statsAllRequestTime;
+	/* Token bucket for getstatsinfo (BE stats + OSPWStatsDown): 5 tokens, 1.0/sec refill, refill every frame */
+	float       statsRequestTokens;
+	int         statsRequestTokenTime;
+	int         statsRequestLastSendTime;  /* last time we sent getstatsinfo (for 1/sec refresh when window open, target unchanged) */
 	int         numScores;
 	int         selectedScore;
 	int         teamScores[2];
@@ -753,7 +758,6 @@ typedef struct
 	// crosshair client ID
 	int         crosshairClientNum;
 	int         crosshairClientTime;
-	int         crosshairScanTime;   /* cg.time when CG_ScanForCrosshairEntity last ran (cache guard) */
 	qboolean    crosshairIgnoreFog;
 	/* Item entity indices this frame (filled in CG_Item; used e.g. for crosshair target) */
 	int         itemEntityIndices[MAX_GENTITIES];
@@ -825,7 +829,7 @@ typedef struct
 
 
 	// development tool
-	refEntity_t     testModelEntity;
+	// refEntity_t     testModelEntity;
 	char            testModelName[MAX_QPATH];
 	qboolean        testGun;
 
@@ -925,6 +929,7 @@ typedef struct
 	qhandle_t   railCoreShaderNoPicMip;
 
 	qhandle_t   lightningShader; //probably removed
+	qhandle_t   grappleRopeShader;
 	qhandle_t   firstPersonGun;
 	qhandle_t   altFullBrightShader;
 
@@ -1057,6 +1062,8 @@ typedef struct
 	qhandle_t   plasmaOldBallNoPicMipShader;
 	qhandle_t   plasmaOldExplosionShader;
 	qhandle_t   plasmaOldExplosionNoPicMipShader;
+	qhandle_t   plasmaQLBallShader;
+	qhandle_t   plasmaExplosionQLShader;
 
 	// special effects models
 	qhandle_t   teleportEffectModel;
@@ -1139,6 +1146,16 @@ typedef struct
 	qhandle_t teamTasksRedarmorPickup;
 	qhandle_t teamTasksMegahealthPickup;
 	qhandle_t teamTasksYellowarmorPickup;
+	// team tasks overhead sprites (world only)
+	qhandle_t teamTasksYesSprite;
+	qhandle_t teamTasksNoSprite;
+	qhandle_t teamTasksLocationSprite;
+	qhandle_t teamTasksMedicSprite;
+	qhandle_t teamTasksWarningSprite;
+	qhandle_t teamTasksFlagcarrierSprite;
+	qhandle_t teamTasksRedarmorPickupSprite;
+	qhandle_t teamTasksMegahealthPickupSprite;
+	qhandle_t teamTasksYellowarmorPickupSprite;
 	/*====================
 	team tasks hud markers
 	====================*/
@@ -1146,6 +1163,8 @@ typedef struct
 	qhandle_t teamTasksDefence_marker;
 	qhandle_t teamTasksWatch_marker;
 	qhandle_t teamTasksDead_marker;
+	qhandle_t teamTasksYes_marker;
+	qhandle_t teamTasksNo_marker;
 	qhandle_t teamTasksLocation_marker;
 	qhandle_t teamTasksTarget_marker;
 	qhandle_t teamTasksRedarmor_marker;
@@ -1432,7 +1451,8 @@ typedef struct
 #define CG_BE_TEAMTASKS         (1 << 12) // 4096
 #define CG_BE_NO_EXPLOSIONS     (1 << 13) // 8192
 #define CG_BE_TEAM_FROZEN       (1 << 14) // 16384
-// #define CG_BE_FREEZE_SOUND_FIX  (1 << 15) // 32768
+#define CG_BE_HUD_MARKERS  		(1 << 15) // 32768
+#define CG_BE_METAL_FOOTSTEPS  	(1 << 16) // 65536
 
 // Team task flags (bitmask for cg_teamTask)
 #define CG_TEAMTASK_ENABLED        (1 << 0)  // 1 - Enable team task markers
@@ -1568,6 +1588,7 @@ typedef struct
 	char            mapname[MAX_QPATH];
 	char            redTeam[MAX_QPATH];
 	char            blueTeam[MAX_QPATH];
+	qboolean        isOspServer;            // g_unlagged is not osp
 
 	int             voteTime;
 	int             voteYes;
@@ -1629,6 +1650,9 @@ typedef struct
 	sfxHandle_t     mySounds[MAX_CUSTOM_SOUNDS];
 	sfxHandle_t     teamSounds[MAX_CUSTOM_SOUNDS];
 	sfxHandle_t     enemySounds[MAX_CUSTOM_SOUNDS];
+	footstep_t      myFootsteps;
+	footstep_t      teamFootsteps;
+	footstep_t      enemyFootsteps;
 
 	// media
 	cgMedia_t       media;
@@ -1676,11 +1700,6 @@ typedef struct
 	vec4_t          healthColorByClient[MAX_CLIENTS]; /* per client: cgs.clientinfo[i].health/armor */
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
-
-	/* Derived value: squared fade radius (no point recalculating every frame); updated when cvar changes */
-	float       indicatorFadeRadiusSq;
-	/* Hot path: exec weapon/onDeath read cvar.string at use (no cgs copy) */
-	int         lastExecSpectateClientNum;
 
 	struct
 	{
@@ -1821,8 +1840,8 @@ extern vmCvar_t           com_blood;
 extern vmCvar_t           cg_synchronousClients;
 extern vmCvar_t           cg_cameraOrbit;
 extern vmCvar_t           cg_cameraOrbitDelay;
-extern vmCvar_t           cg_timescaleFadeEnd;
-extern vmCvar_t           cg_timescaleFadeSpeed;
+// extern vmCvar_t           cg_timescaleFadeEnd;
+// extern vmCvar_t           cg_timescaleFadeSpeed;
 extern vmCvar_t           cg_timescale;
 extern vmCvar_t           cg_scorePlums;
 extern vmCvar_t           cg_smoothClients;
@@ -2115,9 +2134,6 @@ extern vmCvar_t         cg_scoreboardColors;
 extern vmCvar_t         cg_clearOnLevelLoad;
 extern vmCvar_t         cg_spectPOV;
 extern vmCvar_t         cg_drawRealHeads;
-
-extern vmCvar_t         cg_myTeam;
-extern vmCvar_t         cg_giveName;
 extern vmCvar_t         cg_bestats_autoaction;
 extern vmCvar_t         cg_zoomAutoReset;
 extern vmCvar_t         cg_smoothDucking;
@@ -2169,7 +2185,6 @@ extern vmCvar_t         cg_exec_intermission;
 extern vmCvar_t         cg_exec_warmupEnded;
 extern vmCvar_t         cg_exec_joinGame;
 extern vmCvar_t         cg_exec_joinSpec;
-extern vmCvar_t         cg_exec_onDeath;
 extern vmCvar_t         cg_exec_gauntlet;
 extern vmCvar_t         cg_exec_bfg;
 extern vmCvar_t         cg_exec_shud;
@@ -2212,6 +2227,9 @@ extern vmCvar_t           cg_railFix;
 extern vmCvar_t           cg_freezeSoundFix;
 extern vmCvar_t           cg_infoVersionFont;
 // extern vmCvar_t          cg_snow;
+// extern vmCvar_t			cl_yawspeed;
+// extern vmCvar_t			cl_pitchspeed;
+extern vmCvar_t			cl_reconnectArgs;
 extern vmCvar_t         be_run;
 //
 // cg_main.c
@@ -2243,7 +2261,8 @@ void QDECL CG_PrintOnce(const char* msg, ...);
 
 void CG_StartMusic(void);
 
-void CG_UpdateIndicatorFadeRadiusSq(void);
+void CG_UpdateCvars(void);
+
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);
 int CG_CountRealClients(void);
@@ -2270,12 +2289,12 @@ void CG_PrintNewCommandsBE_f(void);
 //
 // cg_view.c
 //
-void CG_TestModel_f(void);
-void CG_TestGun_f(void);
-void CG_TestModelNextFrame_f(void);
-void CG_TestModelPrevFrame_f(void);
-void CG_TestModelNextSkin_f(void);
-void CG_TestModelPrevSkin_f(void);
+// void CG_TestModel_f(void);
+// void CG_TestGun_f(void);
+// void CG_TestModelNextFrame_f(void);
+// void CG_TestModelPrevFrame_f(void);
+// void CG_TestModelNextSkin_f(void);
+// void CG_TestModelPrevSkin_f(void);
 void CG_ZoomDown_f(void);
 void CG_ZoomUp_f(void);
 void CG_ZoomToggle_f(void);
@@ -2505,6 +2524,7 @@ void CG_ResetPlayerEntity(centity_t* cent);
 void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int team);
 void CG_NewClientInfo(int clientNum);
 sfxHandle_t CG_CustomSound(int clientNum, const char* soundName);
+footstep_t CG_EffectiveFootsteps(int clientNum);
 void CG_LoadForcedSounds(void);
 void CG_UpdateAllClientsInfo(void);
 
@@ -2522,6 +2542,8 @@ void CG_UpdateAllClientsInfo(void);
 #define CG_IS_FROZEN_ENTITY(cent) ((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && ((cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS))
 /* In non-team modes (FFA, Tournament, SP) everyone except self is enemy; else use team/rt */
 #define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype < GT_TEAM) ? 1 : ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team))))
+/* Enemy from current view: uses PERS_TEAM (spectator/follow), cg_spectPOV when spectating */
+qboolean CG_IsEnemy(const clientInfo_t* target);
 qboolean CG_IsWarmup(void);
 qboolean CG_IsIntermission(void);
 
@@ -2652,8 +2674,8 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
 
 void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle);
 void CG_TestSkullMarker(void);
-qboolean CG_IsPointOutsideScreen(vec3_t origin, float* outX, float* outY);
 void CG_TeamTaskUpdateFrame(void);
+void CG_AddTeamTaskOverheadSprites(void);
 void CG_DrawTeamTaskMarks(void);
 void CG_DrawTeamTaskBorderHudMarkers(void);
 void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark);
@@ -2662,7 +2684,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark);
 void TokenBucket_Init(tokenBucket_t* b, int maxTokens, int refillTime, int now);
 qboolean TokenBucket_Consume(tokenBucket_t* b, int now);
 int TokenBucket_TimeToNext(tokenBucket_t* b, int now);
-void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum, qboolean isPickup);
+void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum, qboolean isPickup, qhandle_t* worldSpriteShaderOut);
 
 
 //
@@ -2685,6 +2707,8 @@ void CG_DrawInformation(void);
 qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
 void CG_BEStatsShowStatsInfo(void);
+void CG_RefillStatsRequestTokens(void);
+qboolean CG_TrySendStatsRequest(void);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
 
@@ -3202,7 +3226,6 @@ void CG_SelwheelMarkStop(void);
 void CG_SelwheelMarkClose(void);
 void CG_UpdateSelwheelMark(void);
 void CG_UpdateAndDrawSelwheelMark(void);
-void CG_DrawSelwheelMark(void);
 void CG_DrawSelwheelIcons(void);
 void CG_DrawSelwheelPointers(void);
 
@@ -3228,7 +3251,6 @@ void CG_SelwheelParseTeamTaskWheel(void);
 //
 // cg_localevents.c
 //
-void CG_UpdateMyTeamColors(void);
 void CG_UpdateMyTeam(void);
 
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart);
@@ -3327,7 +3349,6 @@ void CG_LocalEventCvarChanged_cg_gunZ(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorOffset(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFade(cvarTable_t* cvart);
-void CG_LocalEventCvarChanged_cg_teamIndicatorFadeRadius(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFontSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
@@ -3343,7 +3364,6 @@ void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart);
-void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_accuracyFontSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
@@ -3363,6 +3383,8 @@ void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart);
+// void CG_LocalEventCvarChanged_cl_pitchspeed(cvarTable_t* cvart);
+// void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

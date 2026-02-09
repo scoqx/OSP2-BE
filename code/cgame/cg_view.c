@@ -68,123 +68,123 @@ Creates an entity in front of the current position, which
 can then be moved around
 =================
 */
-void CG_TestModel_f(void)
-{
-	vec3_t      angles;
+// void CG_TestModel_f(void)
+// {
+// 	vec3_t      angles;
 
-	memset(&cg.testModelEntity, 0, sizeof(cg.testModelEntity));
-	if (trap_Argc() < 2)
-	{
-		return;
-	}
+// 	memset(&cg.testModelEntity, 0, sizeof(cg.testModelEntity));
+// 	if (trap_Argc() < 2)
+// 	{
+// 		return;
+// 	}
 
-	Q_strncpyz(cg.testModelName, CG_Argv(1), MAX_QPATH);
-	cg.testModelEntity.hModel = trap_R_RegisterModel(cg.testModelName);
+// 	Q_strncpyz(cg.testModelName, CG_Argv(1), MAX_QPATH);
+// 	cg.testModelEntity.hModel = trap_R_RegisterModel(cg.testModelName);
 
-	if (trap_Argc() == 3)
-	{
-		cg.testModelEntity.backlerp = atof(CG_Argv(2));
-		cg.testModelEntity.frame = 1;
-		cg.testModelEntity.oldframe = 0;
-	}
-	if (! cg.testModelEntity.hModel)
-	{
-		CG_Printf("Can't register model\n");
-		return;
-	}
+// 	if (trap_Argc() == 3)
+// 	{
+// 		cg.testModelEntity.backlerp = atof(CG_Argv(2));
+// 		cg.testModelEntity.frame = 1;
+// 		cg.testModelEntity.oldframe = 0;
+// 	}
+// 	if (! cg.testModelEntity.hModel)
+// 	{
+// 		CG_Printf("Can't register model\n");
+// 		return;
+// 	}
 
-	VectorMA(cg.refdef.vieworg, 100, cg.refdef.viewaxis[0], cg.testModelEntity.origin);
+// 	VectorMA(cg.refdef.vieworg, 100, cg.refdef.viewaxis[0], cg.testModelEntity.origin);
 
-	angles[PITCH] = 0;
-	angles[YAW] = 180 + cg.refdefViewAngles[1];
-	angles[ROLL] = 0;
+// 	angles[PITCH] = 0;
+// 	angles[YAW] = 180 + cg.refdefViewAngles[1];
+// 	angles[ROLL] = 0;
 
-	AnglesToAxis(angles, cg.testModelEntity.axis);
-	cg.testGun = qfalse;
-}
+// 	AnglesToAxis(angles, cg.testModelEntity.axis);
+// 	cg.testGun = qfalse;
+// }
 
-/*
-=================
-CG_TestGun_f
+// /*
+// =================
+// CG_TestGun_f
 
-Replaces the current view weapon with the given model
-=================
-*/
-void CG_TestGun_f(void)
-{
-	CG_TestModel_f();
-	cg.testGun = qtrue;
-	cg.testModelEntity.renderfx = RF_MINLIGHT | RF_DEPTHHACK | RF_FIRST_PERSON;
-}
-
-
-void CG_TestModelNextFrame_f(void)
-{
-	cg.testModelEntity.frame++;
-	CG_Printf("frame %i\n", cg.testModelEntity.frame);
-}
-
-void CG_TestModelPrevFrame_f(void)
-{
-	cg.testModelEntity.frame--;
-	if (cg.testModelEntity.frame < 0)
-	{
-		cg.testModelEntity.frame = 0;
-	}
-	CG_Printf("frame %i\n", cg.testModelEntity.frame);
-}
-
-void CG_TestModelNextSkin_f(void)
-{
-	cg.testModelEntity.skinNum++;
-	CG_Printf("skin %i\n", cg.testModelEntity.skinNum);
-}
-
-void CG_TestModelPrevSkin_f(void)
-{
-	cg.testModelEntity.skinNum--;
-	if (cg.testModelEntity.skinNum < 0)
-	{
-		cg.testModelEntity.skinNum = 0;
-	}
-	CG_Printf("skin %i\n", cg.testModelEntity.skinNum);
-}
-
-static void CG_AddTestModel(void)
-{
-	int     i;
-
-	// re-register the model, because the level may have changed
-	cg.testModelEntity.hModel = trap_R_RegisterModel(cg.testModelName);
-	if (! cg.testModelEntity.hModel)
-	{
-		CG_Printf("Can't register model\n");
-		return;
-	}
-
-	// if testing a gun, set the origin reletive to the view origin
-	if (cg.testGun)
-	{
-		VectorCopy(cg.refdef.vieworg, cg.testModelEntity.origin);
-		VectorCopy(cg.refdef.viewaxis[0], cg.testModelEntity.axis[0]);
-		VectorCopy(cg.refdef.viewaxis[1], cg.testModelEntity.axis[1]);
-		VectorCopy(cg.refdef.viewaxis[2], cg.testModelEntity.axis[2]);
-
-		// allow the position to be adjusted
-		for (i = 0 ; i < 3 ; i++)
-		{
-			cg.testModelEntity.origin[i] += cg.refdef.viewaxis[0][i] * cg_gun_x.value;
-			cg.testModelEntity.origin[i] += cg.refdef.viewaxis[1][i] * cg_gun_y.value;
-			cg.testModelEntity.origin[i] += cg.refdef.viewaxis[2][i] * cg_gun_z.value;
-		}
-	}
-
-	trap_R_AddRefEntityToScene(&cg.testModelEntity);
-}
+// Replaces the current view weapon with the given model
+// =================
+// */
+// void CG_TestGun_f(void)
+// {
+// 	CG_TestModel_f();
+// 	cg.testGun = qtrue;
+// 	cg.testModelEntity.renderfx = RF_MINLIGHT | RF_DEPTHHACK | RF_FIRST_PERSON;
+// }
 
 
+// void CG_TestModelNextFrame_f(void)
+// {
+// 	cg.testModelEntity.frame++;
+// 	CG_Printf("frame %i\n", cg.testModelEntity.frame);
+// }
 
-//============================================================================
+// void CG_TestModelPrevFrame_f(void)
+// {
+// 	cg.testModelEntity.frame--;
+// 	if (cg.testModelEntity.frame < 0)
+// 	{
+// 		cg.testModelEntity.frame = 0;
+// 	}
+// 	CG_Printf("frame %i\n", cg.testModelEntity.frame);
+// }
+
+// void CG_TestModelNextSkin_f(void)
+// {
+// 	cg.testModelEntity.skinNum++;
+// 	CG_Printf("skin %i\n", cg.testModelEntity.skinNum);
+// }
+
+// void CG_TestModelPrevSkin_f(void)
+// {
+// 	cg.testModelEntity.skinNum--;
+// 	if (cg.testModelEntity.skinNum < 0)
+// 	{
+// 		cg.testModelEntity.skinNum = 0;
+// 	}
+// 	CG_Printf("skin %i\n", cg.testModelEntity.skinNum);
+// }
+
+// static void CG_AddTestModel(void)
+// {
+// 	int     i;
+
+// 	// re-register the model, because the level may have changed
+// 	cg.testModelEntity.hModel = trap_R_RegisterModel(cg.testModelName);
+// 	if (! cg.testModelEntity.hModel)
+// 	{
+// 		CG_Printf("Can't register model\n");
+// 		return;
+// 	}
+
+// 	// if testing a gun, set the origin reletive to the view origin
+// 	if (cg.testGun)
+// 	{
+// 		VectorCopy(cg.refdef.vieworg, cg.testModelEntity.origin);
+// 		VectorCopy(cg.refdef.viewaxis[0], cg.testModelEntity.axis[0]);
+// 		VectorCopy(cg.refdef.viewaxis[1], cg.testModelEntity.axis[1]);
+// 		VectorCopy(cg.refdef.viewaxis[2], cg.testModelEntity.axis[2]);
+
+// 		// allow the position to be adjusted
+// 		for (i = 0 ; i < 3 ; i++)
+// 		{
+// 			cg.testModelEntity.origin[i] += cg.refdef.viewaxis[0][i] * cg_gun_x.value;
+// 			cg.testModelEntity.origin[i] += cg.refdef.viewaxis[1][i] * cg_gun_y.value;
+// 			cg.testModelEntity.origin[i] += cg.refdef.viewaxis[2][i] * cg_gun_z.value;
+// 		}
+// 	}
+
+// 	trap_R_AddRefEntityToScene(&cg.testModelEntity);
+// }
+
+
+
+// //============================================================================
 
 
 /*
@@ -1146,29 +1146,67 @@ Per-frame: crosshair entity, health color cache, realNumClients. Local to view (
 */
 static void CG_ClientInfoUpdateFrame(void)
 {
-	int i;
-	int levels, low, mid;
+    int i;
+    int levels, low, mid;
+    int count;
+    qboolean teamMode;
 
-	if (!cg.snap)
-		return;
-	CG_ScanForCrosshairEntity();
+    if (!cg.snap)
+        return;
 
-	levels = cg_healthColorLevels.integer;
-	low = cg_healthLow.integer;
-	mid = cg_healthMid.integer;
-	CG_VIEW_HEALTH_COLOR_ONE(cg.snap->ps.stats[STAT_HEALTH], cg.snap->ps.stats[STAT_ARMOR], cgs.healthColorLocal, levels, low, mid);
-	cg.realNumClients = 0;
-	for (i = 0; i < MAX_CLIENTS; i++)
-	{
-		if (!cgs.clientinfo[i].infoValid)
-		{
-			VectorClear(cgs.healthColorByClient[i]);
-			cgs.healthColorByClient[i][3] = 1;
-			continue;
-		}
-		cg.realNumClients++;
-		CG_VIEW_HEALTH_COLOR_ONE(cgs.clientinfo[i].health, cgs.clientinfo[i].armor, cgs.healthColorByClient[i], levels, low, mid);
-	}
+    levels = cg_healthColorLevels.integer;
+    low    = cg_healthLow.integer;
+    mid    = cg_healthMid.integer;
+
+    // локальный цвет всегда обновляется
+    CG_VIEW_HEALTH_COLOR_ONE(
+        cg.snap->ps.stats[STAT_HEALTH],
+        cg.snap->ps.stats[STAT_ARMOR],
+        cgs.healthColorLocal,
+        levels, low, mid
+    );
+
+    teamMode = (cgs.gametype >= GT_TEAM);
+    count = 0;
+
+    // -------------------------
+    // FFA: только считаем игроков
+    // -------------------------
+    if (!teamMode)
+    {
+        for (i = 0; i < MAX_CLIENTS; i++)
+        {
+            if (cgs.clientinfo[i].infoValid)
+                count++;
+        }
+
+        cg.realNumClients = count;
+        return;
+    }
+
+    // -------------------------
+    // TEAM: считаем + обновляем цвета
+    // -------------------------
+    for (i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (!cgs.clientinfo[i].infoValid)
+        {
+            VectorClear(cgs.healthColorByClient[i]);
+            cgs.healthColorByClient[i][3] = 1;
+            continue;
+        }
+
+        count++;
+
+        CG_VIEW_HEALTH_COLOR_ONE(
+            cgs.clientinfo[i].health,
+            cgs.clientinfo[i].armor,
+            cgs.healthColorByClient[i],
+            levels, low, mid
+        );
+    }
+
+    cg.realNumClients = count;
 }
 
 /*
@@ -1185,25 +1223,11 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	cg.time = serverTime;
 	cg.demoPlayback = demoPlayback;
 
-	/* Inlined CG_UpdateCvars: ~40–50 cycles saved per frame (no call/return). */
+	// update cvars
+	if (cgs.osp.cvarsUpdateDelay++ > 5)
 	{
-		cvarTable_t* cv;
-		const cvarTable_t* end;
-
-		end = cvarTable + cvarTableSize;
-		for (cv = cvarTable; cv != end; cv++)
-		{
-			if (!cv->vmCvar) continue;
-			trap_Cvar_Update(cv->vmCvar);
-
-			if (cv->forceModelModificationCount == cv->vmCvar->modificationCount) continue;
-			cv->forceModelModificationCount = cv->vmCvar->modificationCount;
-
-			if (cv->onChanged)
-			{
-				cv->onChanged(cv);
-			}
-		}
+		CG_UpdateCvars();
+		cgs.osp.cvarsUpdateDelay = 0;
 	}
 
 	// if we are only updating the screen as a loading
@@ -1270,8 +1294,14 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_AddLocalEntities();
 	}
 	/* Single place per frame: pack team task marks (after AddPacketEntities so frozen cache is filled in CG_Player) */
+	if (cgs.gametype >= GT_TEAM ||
+		cg_teamTask.integer ||
+		CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS) ||
+		cgs.teamMarkers.supportedServer)
 	CG_TeamTaskUpdateFrame();
 	/* Single place per frame: crosshair entity, health color cache, realNumClients */
+	
+	CG_ScanForCrosshairEntity();
 	CG_ClientInfoUpdateFrame();
 
 	CG_AddViewWeapon(&cg.predictedPlayerState);
@@ -1279,12 +1309,11 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	// add buffered sounds
 	CG_PlayBufferedSounds();
 
-
-	// finish up the rest of the refdef
-	if (cg.testModelEntity.hModel)
-	{
-		CG_AddTestModel();
-	}
+	// // finish up the rest of the refdef
+	// if (cg.testModelEntity.hModel)
+	// {
+	// 	CG_AddTestModel();
+	// }
 	cg.refdef.time = cg.time;
 	memcpy(cg.refdef.areamask, cg.snap->areamask, sizeof(cg.refdef.areamask));
 
@@ -1297,33 +1326,38 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	// make sure the lagometerSample and frame timing isn't done twice when in stereo
 	if (stereoView != STEREO_RIGHT)
 	{
+		int         offset;
 		cg.frametime = cg.time - cg.oldTime;
 		if (cg.frametime < 0)
 		{
 			cg.frametime = 0;
 		}
 		cg.oldTime = cg.time;
-		CG_AddLagometerFrameInfo();
+		offset = cg.time - cg.latestSnapshotTime;
+		lagometer.frameSamples[ lagometer.frameCount & (LAG_SAMPLES - 1) ] = offset;
+		lagometer.frameCount++;
+
 	}
-	if (cg_timescale.value != cg_timescaleFadeEnd.value)
-	{
-		if (cg_timescale.value < cg_timescaleFadeEnd.value)
-		{
-			cg_timescale.value += cg_timescaleFadeSpeed.value * ((float)cg.frametime) / 1000;
-			if (cg_timescale.value > cg_timescaleFadeEnd.value)
-				cg_timescale.value = cg_timescaleFadeEnd.value;
-		}
-		else
-		{
-			cg_timescale.value -= cg_timescaleFadeSpeed.value * ((float)cg.frametime) / 1000;
-			if (cg_timescale.value < cg_timescaleFadeEnd.value)
-				cg_timescale.value = cg_timescaleFadeEnd.value;
-		}
-		if (cg_timescaleFadeSpeed.value)
-		{
-			trap_Cvar_Set("timescale", va("%f", cg_timescale.value));
-		}
-	}
+	
+	// if (cg_timescale.value != cg_timescaleFadeEnd.value)
+	// {
+	// 	if (cg_timescale.value < cg_timescaleFadeEnd.value)
+	// 	{
+	// 		cg_timescale.value += cg_timescaleFadeSpeed.value * ((float)cg.frametime) / 1000;
+	// 		if (cg_timescale.value > cg_timescaleFadeEnd.value)
+	// 			cg_timescale.value = cg_timescaleFadeEnd.value;
+	// 	}
+	// 	else
+	// 	{
+	// 		cg_timescale.value -= cg_timescaleFadeSpeed.value * ((float)cg.frametime) / 1000;
+	// 		if (cg_timescale.value < cg_timescaleFadeEnd.value)
+	// 			cg_timescale.value = cg_timescaleFadeEnd.value;
+	// 	}
+	// 	if (cg_timescaleFadeSpeed.value)
+	// 	{
+	// 		trap_Cvar_Set("timescale", va("%f", cg_timescale.value));
+	// 	}
+	// }
 
 	// actually issue the rendering calls
 	CG_DrawActive(stereoView);

@@ -388,18 +388,18 @@ static void StartServer_MenuInit( void ) {
 	s_startserver.framel.generic.type  = MTYPE_BITMAP;
 	s_startserver.framel.generic.name  = GAMESERVER_FRAMEL;
 	s_startserver.framel.generic.flags = QMF_INACTIVE;
-	s_startserver.framel.generic.x	   = 0;  
-	s_startserver.framel.generic.y	   = 78;
-	s_startserver.framel.width  	   = 256;
-	s_startserver.framel.height  	   = 329;
+	s_startserver.framel.generic.x	   = FRAME_L_X;
+	s_startserver.framel.generic.y	   = FRAME_L_Y;
+	s_startserver.framel.width  	   = FRAME_L_W;
+	s_startserver.framel.height  	   = FRAME_L_H;
 
 	s_startserver.framer.generic.type  = MTYPE_BITMAP;
 	s_startserver.framer.generic.name  = GAMESERVER_FRAMER;
 	s_startserver.framer.generic.flags = QMF_INACTIVE;
-	s_startserver.framer.generic.x	   = 376;
-	s_startserver.framer.generic.y	   = 76;
-	s_startserver.framer.width  	   = 256;
-	s_startserver.framer.height  	   = 334;
+	s_startserver.framer.generic.x	   = FRAME_R_X;
+	s_startserver.framer.generic.y	   = FRAME_R_Y;
+	s_startserver.framer.width  	   = FRAME_R_W;
+	s_startserver.framer.height  	   = FRAME_R_H;
 
 	s_startserver.gametype.generic.type		= MTYPE_SPINCONTROL;
 	s_startserver.gametype.generic.name		= "Game Type:";

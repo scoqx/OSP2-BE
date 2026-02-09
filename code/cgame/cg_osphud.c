@@ -4200,7 +4200,11 @@ void CG_OSPHUDRoutine(void)
 		}
 	}
 
-	if (cg_printui.integer)
+	if (!cg_printui.integer || cgs.printuiActiveCount == 0)
+	{
+		/* early exit: skip printui block */
+	}
+	else
 	{
 		CG_DrawPrintUI();
 	}

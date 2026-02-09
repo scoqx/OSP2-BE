@@ -469,6 +469,28 @@ teamTasks_frozen_m
 	}
 }
 
+teamTasks_yes_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/yes_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_no_m
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/no_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
 // Item Pickup Markers
 teamTasks_redarmor_pickup_m
 {

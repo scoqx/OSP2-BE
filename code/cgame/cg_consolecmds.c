@@ -503,16 +503,8 @@ void CG_OSPMyName_f(void)
 
 void CG_OSPWStatsDown_f(void)
 {
-	if (cg.statsRequestTime + 1000 < cg.time)
-	{
-		cg.statsRequestTime = cg.time;
-		if (!cgs.fpsclassico)
-		{
-			trap_SendClientCommand("getstatsinfo");
-		}
-	}
+	/* Request is sent from snapshot when window opens (last_stats_observed == -1) and on target change / 1 sec refresh */
 	cgs.newStats.drawWindow = qtrue;
-
 }
 void CG_OSPWStatsUp_f(void)
 {
@@ -1347,7 +1339,7 @@ void CG_TeamTaskMarkDefence(void)
 
 void CG_TeamTaskMarkWatch(void)
 {
-	CG_SendTeamTaskMark(0, TEAMTASK_PATROL); /* TEAMTASK_PATROL is used for watch */
+	CG_SendTeamTaskMark(0, TEAMTASK_WATCH);
 }
 
 void CG_TeamTaskMarkYes(void)
@@ -2066,7 +2058,7 @@ static void CG_BEHelp_PrintFeature(const char* cvarName, int featureFlag, const 
 
 	if (!cgs.beEnabled)
 	{
-		CG_Printf("  ^3%s ^7\"^9BE^7\" - %s\n", cvarName, description);
+		CG_Printf("  ^3%s ^7\"^9OFF^7\" - %s\n", cvarName, description);
 	}
 	else if (cgs.beDisableFeatures & featureFlag)
 	{
@@ -2114,6 +2106,7 @@ void CG_BEHelp_f(void)
 		CG_Printf("^3Available BE Features:\n\n");
 
 		CG_BEHelp_PrintFeature("cg_friendsWallhack", CG_BE_TEAM_FOE_WH, "Show teammate markers through walls", 0);
+		CG_BEHelp_PrintFeature("cg_drawHudMarkers", CG_BE_HUD_MARKERS, "Display teammate markers on the HUD", 0);
 		CG_BEHelp_PrintFeature("cg_friendsWallhackFrozen", CG_BE_TEAM_FROZEN, "Show frozen teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);
 		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color for enemies", 0);
@@ -2127,6 +2120,7 @@ void CG_BEHelp_f(void)
 		CG_BEHelp_PrintFeature("cg_drawBrightWeapons", CG_BE_FULLBRIGHT, "Render weapons with a single bright color", 0);
 		CG_BEHelp_PrintFeature("cg_teamTask", CG_BE_TEAMTASKS, "Team task markers", 0);
 		CG_BEHelp_PrintFeature("cg_noExplosions", CG_BE_NO_EXPLOSIONS, "Disable all projectile and weapon impact explosions", 0);
+		CG_BEHelp_PrintFeature("cg_footsteps", CG_BE_METAL_FOOTSTEPS, "Metal surface footsteps (2 = force normal footsteps)", 0);
 
 		return;
 	}
@@ -2240,12 +2234,14 @@ static consoleCommand_t commands[] =
 	{ "motd", CG_OSPMoTD_f },
 	{ "myname", CG_OSPMyName_f },
 	{ "serverversion", CG_OSPServerVersion_f },
+#if 0
 	{ "testgun", CG_TestGun_f },
 	{ "testmodel", CG_TestModel_f },
 	{ "nextframe", CG_TestModelNextFrame_f },
 	{ "prevframe", CG_TestModelPrevFrame_f },
 	{ "nextskin", CG_TestModelNextSkin_f },
 	{ "prevskin", CG_TestModelPrevSkin_f },
+#endif
 	{ "viewpos", CG_Viewpos_f },
 	{ "+scores", CG_ScoresDown_f },
 	{ "-scores", CG_ScoresUp_f },

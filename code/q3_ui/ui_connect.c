@@ -182,25 +182,10 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 	if ( !overlay ) {
 		/* draw the dialog background */
 		UI_SetColor( color_white );
-		UI_UpdateMenuBackgroundMode();
-		if ( uis.menuHQMode == 2 ) {
-			float cw = (float)uis.glconfig.vidWidth / 6.0f;
-			float ch = (float)uis.glconfig.vidHeight / 4.0f;
-			int i;
-			for ( i = 0; i < 24; i++ ) {
-				float x = (float)( i % 6 ) * cw;
-				float y = (float)( i / 6 ) * ch;
-				trap_R_DrawStretchPic( x, y, cw, ch, 0, 0, 1, 1, uis.menuBackHQ24[i] );
-			}
-		} else if ( uis.menuHQMode == 1 ) {
-			float w2 = (float)uis.glconfig.vidWidth * 0.5f;
-			float h2 = (float)uis.glconfig.vidHeight * 0.5f;
-			trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBack1 );
-			trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBack2 );
-			trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBack3 );
-			trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBack4 );
-		} else {
-			trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
+		{
+			/* Connect screen: always draw logo (primary picture), regardless of ui_menuBgStyle. */
+			trap_Cvar_Update( &ui_menuBgStyle );
+			UI_DrawMenuBackground( qtrue );
 		}
 
 		{

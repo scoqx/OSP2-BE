@@ -42,6 +42,59 @@ const char* dayOfWeekName[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 
 /*
 ==============
+CG_IsEnemy
+Enemy from current view: uses PERS_TEAM (spectator/follow). When spectator and cg_spectPOV+following,
+uses followed player's team; else red=ally blue=enemy. Without snap uses clientinfo team.
+==============
+*/
+qboolean CG_IsEnemy(const clientInfo_t* target)
+{
+	const clientInfo_t* local;
+	int myRealTeam, enemyTeam, myStateTeam, followNum;
+	qboolean isCA;
+
+	if (!target)
+		return qfalse;
+
+	local = &cgs.clientinfo[cg.clientNum];
+	if (target == local)
+		return qfalse;
+
+	isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+	myRealTeam = isCA ? local->rt : local->team;
+	enemyTeam = isCA ? target->rt : target->team;
+
+	if (cgs.gametype <= GT_SINGLE_PLAYER)
+		return qtrue;
+
+	if (!cg.snap)
+		return (qboolean)(myRealTeam != enemyTeam);
+
+	myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
+
+	if (myStateTeam == TEAM_SPECTATOR)
+	{
+		followNum = cg.snap->ps.clientNum;
+		/* Non-team modes: observed player is not enemy (e.g. grenade color) */
+		if (cgs.gametype < GT_TEAM && (cg.snap->ps.pm_flags & PMF_FOLLOW) && followNum >= 0 && followNum < MAX_CLIENTS && target == &cgs.clientinfo[followNum])
+			return qfalse;
+		if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) && followNum >= 0 && followNum < MAX_CLIENTS)
+			return (qboolean)((isCA ? cgs.clientinfo[followNum].rt : cgs.clientinfo[followNum].team) != enemyTeam);
+		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
+			return (qboolean)(enemyTeam == TEAM_BLUE);
+		if (myRealTeam == TEAM_BLUE)
+			return (qboolean)(enemyTeam == TEAM_RED);
+		return qfalse;
+	}
+
+	if (myStateTeam == TEAM_RED || myStateTeam == TEAM_BLUE)
+		return (qboolean)(myStateTeam != enemyTeam);
+
+	return qfalse;
+}
+
+/*
+==============
 CG_DrawField
 
 Draws large numbers for status bar and powerups
@@ -227,7 +280,7 @@ void CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headA
 				// Local player - use my colors
 				VectorCopy(cgs.osp.myColors.head, headColor);
 			}
-			else if (CG_IS_ENEMY_SIMPLE(ci))
+			else if (CG_IsEnemy(ci))
 			{
 				// Enemy player - use enemy colors
 				VectorCopy(cgs.osp.enemyColors.head, headColor);
@@ -1860,13 +1913,6 @@ void CG_ScanForCrosshairEntity(void)
 	int content;
 	vec3_t l;
 
-	/* Cache result per frame: 3+ callers (crosshair names, target_status, target_name, OSPHUD) */
-	if (cg.crosshairScanTime == cg.time)
-	{
-		return;
-	}
-	cg.crosshairScanTime = cg.time;
-
 	VectorCopy(cg.refdef.vieworg, start);
 	VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
 
@@ -1986,7 +2032,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 				{
 					VectorCopy(cent->lerpOrigin, itemPos);
 					itemPos[2] += 24.0f; /* Offset above frozen body */
-					if (CG_IS_ENEMY_SIMPLE(ci))
+					if (CG_IsEnemy(ci))
 					{
 						return 6;  // frozen enemy
 					}
@@ -2034,7 +2080,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 			}
 		}
 
-		if (CG_IS_ENEMY_SIMPLE(ci))
+		if (CG_IsEnemy(ci))
 		{
 			return 2;  // enemy
 		}
@@ -2668,7 +2714,7 @@ void CG_OSPDrawNewCredits(void)
 	float x = 100.0f;
 	float y = 100.0f;
 	float w = 440.0f;
-	float h = 260.0f;
+	float h = 280.0f;
 	float charHeight = 14, charWidth = 8;
 	float textX = (w / 2) + x;
 	float textY = y + 2.0f;
@@ -2694,6 +2740,7 @@ void CG_OSPDrawNewCredits(void)
 		"Special thanks to:",
 		"Snems, Kr3m, Mirage, Mus1n",
 		"MrX, Zenx, Tuborg, Meta",
+		"enq3, John Coffey, Maked"
 		"",
 		"Based on source codes:",
 		"OSP   ^Bhttps://www.orangesmoothie.org",
@@ -2796,6 +2843,7 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 	qboolean hasStats;
 	qboolean hasIcon;
 	float invFadeRadius;
+	int indicatorFadeRadiusSq;
 	int i;
 
 	if (!cg.snap)
@@ -2816,7 +2864,11 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 	hasSpectator = (cg_teamIndicator.integer & PI_SPECTATOR) != 0;
 	hasStats = (cg_teamIndicator.integer & PI_STATS) != 0;
 	hasIcon = (cg_teamIndicator.integer & PI_ICON) != 0;
+	/* PI_SPECTATOR (32) is only a modifier: need at least one content bit (name/stats/icon) to draw */
+	if (!hasName && !hasStats && !hasIcon)
+		return;
 	invFadeRadius = (cg_teamIndicatorFadeRadius.value > 0.0f) ? (1.0f / cg_teamIndicatorFadeRadius.value) : 0.0f;
+	indicatorFadeRadiusSq = (cg_teamIndicatorFadeRadius.value > 0.0f) ? (cg_teamIndicatorFadeRadius.value * cg_teamIndicatorFadeRadius.value) : 0;
 
 	/* One pass over clients only (MAX_CLIENTS); frozen cent from cache filled in CG_Player */
 	for (i = 0; i < MAX_CLIENTS; i++)
@@ -2832,11 +2884,20 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 			continue;
 
 		ci = &cgs.clientinfo[i];
-		if (!ci->infoValid || (gameModeNotSpectator && CG_IS_ENEMY_SIMPLE(ci)))
+		if (!ci->infoValid || (gameModeNotSpectator && CG_IsEnemy(ci)))
 			continue;
 
 		if (ci->isFrozenEnt)
+		{
 			cent = &cg_entities[ci->frozenEntity];
+			/* Stale cache: entity reused or client no longer frozen; must match this client */
+			if (!cent->currentValid || !CG_IS_FROZEN_ENTITY(cent) || cent->currentState.otherEntityNum != i)
+			{
+				ci->isFrozenEnt = qfalse;
+				ci->frozenEntity = -1;
+				cent = &cg_entities[i];
+			}
+		}
 		else
 			cent = &cg_entities[i];
 		if (!cent->currentValid || cent->currentState.eType != ET_PLAYER)
@@ -2847,13 +2908,13 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 		if (ci->team == TEAM_SPECTATOR)
 			continue;
 
-		isEnemy = (ci->isFrozenEnt || !gameModeNotSpectator) ? CG_IS_ENEMY_SIMPLE(ci) : qfalse;
+		isEnemy = (ci->isFrozenEnt || !gameModeNotSpectator) ? CG_IsEnemy(ci) : qfalse;
 		if (isEnemy && (!isSpec || !(cg_teamIndicator.integer & PI_SPECTATOR)))
 			continue;
 
 		friendVisible = qtrue;
 		needVis = ((cg_friendsWallhack.integer & 2) == 0) ||
-		          (ci->isFrozenEnt && !isEnemy && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer));
+		          (ci->isFrozenEnt && !isEnemy && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen));
 		if (needVis)
 		{
 			vec3_t start;
@@ -2874,7 +2935,7 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 				friendVisible = (trace.fraction == 1.0f);
 			}
 		}
-		if (!friendVisible && ((cg_friendsWallhack.integer & 2) == 0 || (ci->isFrozenEnt && !isEnemy && (!useTeamFrozen || !cg_friendsWallhackFrozen.integer))))
+		if (!friendVisible && ((cg_friendsWallhack.integer & 2) == 0 || (ci->isFrozenEnt && !isEnemy && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen))))
 			continue;
 
 		/* Draw indicator above this visible teammate */
@@ -2893,7 +2954,6 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 			vec4_t bgColor;
 			float fade;
 			float* pLift;
-
 			VectorSubtract(cent->lerpOrigin, cg.refdef.vieworg, toTarget);
 			dist = VectorLength(toTarget);
 
@@ -2933,7 +2993,7 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 				float dy = (headY + (cgs.bePlayerIndicatorFontSize[1] * 0.5f)) - HALF_SCREEN_H;
 				float distSq = dx * dx + dy * dy;
 
-				if (distSq < cgs.indicatorFadeRadiusSq)
+				if (distSq < indicatorFadeRadiusSq)
 				{
 					float coreFade = SQRTFAST(distSq) * invFadeRadius;
 					if (coreFade < 0.0f)
@@ -3255,69 +3315,71 @@ void CG_DrawWeaponStatsWrapper(void)
 
 /*
 =================
-CG_Draw2D
+CG_DrawDamageFrame
 
-Unified 2D draw: "before 2D" (team tasks, ttwheel, indicator, damage overlay)
-and main HUD. Single entry, cvar/state cached once per frame, flat branches,
-hot path first (QVM: fewer calls, fewer branches, no strlen).
+Draws both health low overlay and damage frame based on cvars and game state.
+=================
+*/
+static void CG_DrawDamageFrame(void)
+{
+	vec4_t damageColor, damageRed, borderSizeOriginal;
+
+	// Health low overlay (pulsing red frame)
+	if ((cg_damageDrawFrame.integer & 4) && cg.beIsHealthLow)
+	{
+		float damagePulse = sin((float)cg.time * 2.0f * M_PI / 2000.0f) * 0.2f + 0.4f;
+		Vector4Copy(colorRed, damageColor);
+		damageColor[3] = damagePulse;
+		CG_OSPDrawBlurFrame(SCREEN_START, SCREEN_START, SCREEN_SCALED_W, SCREEN_SCALED_H, 128, damageColor);
+	}
+
+	// Damage frame
+	if ((cg_damageDrawFrame.integer & 3) != 0 && cg.damageValue &&
+	        cg.time - cg.damageTime > 0 && cg.time - cg.damageTime < DAMAGE_TIME)
+	{
+		Vector4Set(damageRed, 1.0f, 0.0f, 0.0f, cg_damageFrameOpaque.value);
+		if ((cg_damageDrawFrame.integer & 3) == 3)
+			CG_OSPDrawBlurFrame(SCREEN_START, SCREEN_START, SCREEN_SCALED_W, SCREEN_SCALED_H, cg_damageFrameSize.value, damageRed);
+		else if (cg_damageDrawFrame.integer & 2)
+		{
+			Vector4Set(borderSizeOriginal, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value);
+			CG_OSPDrawFrame(SCREEN_START, SCREEN_START, SCREEN_SCALED_W, SCREEN_SCALED_H, borderSizeOriginal, damageRed, qtrue);
+		}
+		else if (cg_damageDrawFrame.integer & 1)
+			CG_OSPDrawBlurFrame(SCREEN_START, SCREEN_START, SCREEN_SCALED_W, SCREEN_SCALED_H, cg_damageFrameSize.value, damageRed);
+	}
+}
+
+/*
+=================
+CG_Draw2D
 =================
 */
 static void CG_Draw2D(void)
 {
-	qboolean drawTeamIndicator;
-
 	if (cg.levelShot)
 		return;
 
-	/* Only what we need for the first branch (QVM: no work on early cg.levelShot return) */
-	drawTeamIndicator = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) && cg_teamIndicator.integer;
-
-	if (cg_draw2D.integer ||
-	        ((cg_teamTaskWheel.integer & 4) && cgs.teamMarkers.ttwheelMarkActive) ||
-	        cgs.teamMarkers.drawTeamTasks ||
-	        drawTeamIndicator)
-	{
-		if (cg_draw2D.integer)
-		{
-			if (((cg_damageDrawFrame.integer & 4) && cg.beIsHealthLow) ||
-			        ((cg_damageDrawFrame.integer & 3) != 0 && cg.damageValue &&
-			         cg.time - cg.damageTime > 0 && cg.time - cg.damageTime < DAMAGE_TIME))
-			{
-				vec4_t damageColor, damageRed, borderSizeOriginal;
-
-				if ((cg_damageDrawFrame.integer & 4) && cg.beIsHealthLow)
-				{
-					float damagePulse = sin((float)cg.time * 2.0f * M_PI / 2000.0f) * 0.4f + 0.6f;
-					Vector4Copy(colorRed, damageColor);
-					damageColor[3] = damagePulse;
-					CG_OSPDrawBlurFrame(SCREEN_START, SCREEN_START, SCREEN_SCALED_W, SCREEN_SCALED_H, 128, damageColor);
-				}
-				if ((cg_damageDrawFrame.integer & 3) != 0 && cg.damageValue &&
-				        cg.time - cg.damageTime > 0 && cg.time - cg.damageTime < DAMAGE_TIME)
-				{
-					Vector4Set(damageRed, 1.0f, 0.0f, 0.0f, cg_damageFrameOpaque.value);
-					if ((cg_damageDrawFrame.integer & 3) == 3)
-						CG_OSPDrawBlurFrame(SCREEN_START, SCREEN_START, SCREEN_SCALED_W, SCREEN_SCALED_H, cg_damageFrameSize.value, damageRed);
-					else if (cg_damageDrawFrame.integer & 2)
-					{
-						Vector4Set(borderSizeOriginal, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value, cg_damageFrameSize.value);
-						CG_OSPDrawFrame(SCREEN_START, SCREEN_START, SCREEN_SCALED_W, SCREEN_SCALED_H, borderSizeOriginal, damageRed, qtrue);
-					}
-					else if (cg_damageDrawFrame.integer & 1)
-						CG_OSPDrawBlurFrame(SCREEN_START, SCREEN_START, SCREEN_SCALED_W, SCREEN_SCALED_H, cg_damageFrameSize.value, damageRed);
-				}
-			}
-		}
-		if ((cg_teamTaskWheel.integer & 4) && cgs.teamMarkers.ttwheelMarkActive)
-			CG_UpdateAndDrawSelwheelMark();
-		if (cgs.teamMarkers.drawTeamTasks)
-			CG_DrawTeamTaskMarks();
-		if (drawTeamIndicator)
-			CG_DrawPlayerIndicatorOnScreen();
-	}
-
 	if (!cg_draw2D.integer)
 		return;
+
+	CG_DrawDamageFrame();
+
+	// Team task wheel marker
+	if ((cg_teamTaskWheel.integer & 4) && cgs.teamMarkers.ttwheelMarkActive)
+	{
+		CG_UpdateAndDrawSelwheelMark();
+	}
+
+	// Team task marks
+	if (cgs.teamMarkers.drawTeamTasks)
+	{
+		CG_DrawTeamTaskMarks();
+	}
+
+	// Team indicator
+	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) && cg_teamIndicator.integer)
+		CG_DrawPlayerIndicatorOnScreen();
 
 	if (cgs.beShowCredits)
 	{
@@ -3455,11 +3517,14 @@ void CG_DrawActive(stereoFrame_t stereoView)
 		VectorMA(cg.refdef.vieworg, -separation, cg.refdef.viewaxis[1], cg.refdef.vieworg);
 	}
 
-	/* Pre-scene refEntities: border markers + selwheel pointers (single guard, flat flow) */
+	/* Pre-scene refEntities: border markers + selwheel pointers + overhead 3D sprites (single guard, flat flow) */
 	{
 		qboolean doSelwheel = (cg_teamTaskWheel.integer & 8) && cgs.teamMarkers.ttwheelMarkActive;
 		if (cgs.teamMarkers.drawTeamTasks)
+		{
 			CG_DrawTeamTaskBorderHudMarkers();
+			CG_AddTeamTaskOverheadSprites();
+		}
 		if (doSelwheel)
 			CG_DrawSelwheelPointers();
 	}

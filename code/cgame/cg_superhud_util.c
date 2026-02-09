@@ -212,13 +212,6 @@ static void CG_SHUDConfigPickColorGeneric(
 		color[3] = finalAlpha;
 	}
 }
-void CG_SHUDConfigPickColor(const superhudConfig_t* config, float* color, qboolean alphaOverride)
-{
-	CG_SHUDConfigPickColorGeneric(&config->color.isSet, &config->color.value,
-	                              &config->color2.isSet, &config->color2.value,
-	                              color, alphaOverride);
-}
-
 void CG_SHUDConfigPickBgColor(const superhudConfig_t* config, float* color, qboolean alphaOverride)
 {
 	CG_SHUDConfigPickColorGeneric(&config->bgcolor.isSet, &config->bgcolor.value,
@@ -233,7 +226,48 @@ void CG_SHUDConfigPickBorderColor(const superhudConfig_t* config, float* color, 
 	                              color, alphaOverride);
 }
 
+/*
+=================
+CG_SHUDConfigPickColor_Init
 
+Static initialization - sets full RGBA color (including alpha)
+Used during context creation to establish baseline color
+=================
+*/
+void CG_SHUDConfigPickColor_Init(const superhudConfig_t* config, vec4_t color)
+{
+	CG_SHUDConfigPickColorGeneric(&config->color.isSet, &config->color.value,
+	                              &config->color2.isSet, &config->color2.value,
+	                              color, qtrue);
+}
+
+/*
+=================
+CG_SHUDConfigPickColor_Runtime
+
+Dynamic rendering - updates only RGB channels, preserves alpha for Fade animations
+Used during frame rendering to pick color without disrupting fade transitions
+=================
+*/
+void CG_SHUDConfigPickColor_Runtime(const superhudConfig_t* config, vec4_t color)
+{
+	vec4_t temp;
+	float preservedAlpha;
+
+	/* Save current alpha for restoration */
+	preservedAlpha = color[3];
+
+	/* Compute full color including alpha */
+	CG_SHUDConfigPickColorGeneric(&config->color.isSet, &config->color.value,
+	                              &config->color2.isSet, &config->color2.value,
+	                              temp, qtrue);
+
+	/* Copy RGB only, preserve alpha for fade animations */
+	color[0] = temp[0];
+	color[1] = temp[1];
+	color[2] = temp[2];
+	color[3] = preservedAlpha;
+}
 
 static void CG_SHUDConfigDefaultsCheck(superhudConfig_t* config)
 {
@@ -403,7 +437,7 @@ void CG_SHUDTextMakeContext(const superhudConfig_t* in, superhudTextContext_t* o
 	out->width = SCREEN_WIDTH;
 
 
-	CG_SHUDConfigPickColor(&config, out->color, qtrue);
+	CG_SHUDConfigPickColor_Init(&config, out->color);
 	Vector4Copy(out->color, out->color_origin);
 }
 
@@ -426,7 +460,7 @@ void CG_SHUDDrawMakeContext(const superhudConfig_t* in, superhudDrawContext_t* o
 	out->coordPicture.named.w = 1.0f;
 	out->coordPicture.named.h = 1.0f;
 
-	CG_SHUDConfigPickColor(&config, out->color, qtrue);
+	CG_SHUDConfigPickColor_Init(&config, out->color);
 	Vector4Copy(out->color, out->color_origin);
 }
 
@@ -546,7 +580,7 @@ void CG_SHUDBarMakeContext(const superhudConfig_t* in, superhudBarContext_t* out
 		out->koeff = out->max / max;
 	}
 
-	CG_SHUDConfigPickColor(&config, out->color_top, qtrue);
+	CG_SHUDConfigPickColor_Init(&config, out->color_top);
 	if (config.bgcolor.isSet)
 	{
 		Vector4Copy(config.bgcolor.value.rgba, out->color_back);
@@ -643,7 +677,7 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 		return;
 	}
 
-	CG_SHUDConfigPickColor(cfg, ctx->color, qfalse);
+	CG_SHUDConfigPickColor_Runtime(cfg, ctx->color);
 
 	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                    ctx->coord.named.y,
@@ -667,7 +701,7 @@ void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* ctx
 		return;
 	}
 	if (colorOverride)
-		CG_SHUDConfigPickColor(cfg, ctx->color, qfalse);
+		CG_SHUDConfigPickColor_Runtime(cfg, ctx->color);
 
 	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                    ctx->coord.named.y,
@@ -1099,7 +1133,7 @@ qboolean CG_SHUDFill(const superhudConfig_t* cfg)
 			return qfalse;
 		}
 
-		CG_SHUDConfigPickColor(cfg, color, qfalse);
+		CG_SHUDConfigPickColor_Runtime(cfg, color);
 
 		trap_R_SetColor(color);
 		trap_R_DrawStretchPic(x, y, w, h, 0, 0, 1, 1, image);
@@ -1238,7 +1272,7 @@ void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ct
 void CG_SHUDDrawStretchPicCtx(const superhudConfig_t* cfg, superhudDrawContext_t* ctx)
 {
 	// we have to pick color again, because team could changed
-	CG_SHUDConfigPickColor(cfg, ctx->color, qfalse);
+	CG_SHUDConfigPickColor_Runtime(cfg, ctx->color);
 	CG_SHUDDrawStretchPic(ctx->coord, ctx->coordPicture, ctx->color, ctx->image);
 }
 

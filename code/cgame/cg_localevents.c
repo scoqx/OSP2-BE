@@ -653,10 +653,6 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFade(cvarTable_t* cvart)
 	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
 }
 
-void CG_LocalEventCvarChanged_cg_teamIndicatorFadeRadius(cvarTable_t* cvart)
-{
-	CG_UpdateIndicatorFadeRadiusSq();
-}
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart)
 {
 	int fontIndex;
@@ -751,116 +747,14 @@ void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.beRedTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_rtColor);
-
-	CG_UpdateMyTeamColors();
 }
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.beBlueTeamColor);
 	CG_LocalEventCvarParseColor(cvart, scoreboard_btColor);
-
-	CG_UpdateMyTeamColors();
 }
 
-void CG_UpdateMyTeamColors(void)
-{
-	static vec4_t originalRedTeamColor = {0, 0, 0, 0};
-	static vec4_t originalBlueTeamColor = {0, 0, 0, 0};
-	static vec4_t originalScoreboardRtColor = {0, 0, 0, 0};
-	static vec4_t originalScoreboardBtColor = {0, 0, 0, 0};
-	static qboolean colorsInitialized = qfalse;
-	static qboolean colorsSwapped = qfalse;
 
-	vec4_t tempColor;
-	team_t currentTeam;
-	qboolean colorsLoaded;
-
-	/* Проверяем, инициализированы ли цвета (не равны нулю) */
-	colorsLoaded = (cgs.beRedTeamColor[0] != 0 || cgs.beRedTeamColor[1] != 0 || cgs.beRedTeamColor[2] != 0) &&
-	               (cgs.beBlueTeamColor[0] != 0 || cgs.beBlueTeamColor[1] != 0 || cgs.beBlueTeamColor[2] != 0);
-
-	// Сохраняем оригинальные цвета когда они загружены и не были свапнуты
-	if (colorsLoaded && !colorsSwapped)
-	{
-		Vector4Copy(cgs.beRedTeamColor, originalRedTeamColor);
-		Vector4Copy(cgs.beBlueTeamColor, originalBlueTeamColor);
-		Vector4Copy(scoreboard_rtColor, originalScoreboardRtColor);
-		Vector4Copy(scoreboard_btColor, originalScoreboardBtColor);
-		colorsInitialized = qtrue;
-	}
-
-	// Если цвета еще не инициализированы, ничего не делаем
-	if (!colorsInitialized)
-	{
-		return;
-	}
-
-	// Восстанавливаем оригинальные цвета только если они были изменены
-	if (colorsSwapped)
-	{
-		Vector4Copy(originalRedTeamColor, cgs.beRedTeamColor);
-		Vector4Copy(originalBlueTeamColor, cgs.beBlueTeamColor);
-		Vector4Copy(originalScoreboardRtColor, scoreboard_rtColor);
-		Vector4Copy(originalScoreboardBtColor, scoreboard_btColor);
-		colorsSwapped = qfalse;
-	}
-
-	// Определяем текущую команду игрока
-	if (cg.snap && cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR)
-	{
-		currentTeam = cg.snap->ps.persistant[PERS_TEAM];
-	}
-	else
-	{
-		// Если в спеке, используем команду из clientinfo
-		currentTeam = cgs.clientinfo[cg.clientNum].team;
-	}
-
-	// Проверяем, хочет ли игрок красные цвета для своей команды
-	if (cg_myTeam.integer == 1 || Q_stricmp(cg_myTeam.string, "red") == 0)
-	{
-		// Игрок хочет красные цвета для своей команды
-		if (currentTeam == TEAM_BLUE)
-		{
-			// Игрок за синих, но хочет красные цвета - меняем местами
-			Vector4Copy(cgs.beRedTeamColor, tempColor);
-			Vector4Copy(cgs.beBlueTeamColor, cgs.beRedTeamColor);
-			Vector4Copy(tempColor, cgs.beBlueTeamColor);
-
-			// Также меняем цвета scoreboard
-			Vector4Copy(scoreboard_rtColor, tempColor);
-			Vector4Copy(scoreboard_btColor, scoreboard_rtColor);
-			Vector4Copy(tempColor, scoreboard_btColor);
-
-			colorsSwapped = qtrue;
-		}
-		// Если игрок за красных, ничего не меняем
-	}
-	else if (cg_myTeam.integer == 2 || Q_stricmp(cg_myTeam.string, "blue") == 0)
-	{
-		// Игрок хочет синие цвета для своей команды
-		if (currentTeam == TEAM_RED)
-		{
-			// Игрок за красных, но хочет синие цвета - меняем местами
-			Vector4Copy(cgs.beRedTeamColor, tempColor);
-			Vector4Copy(cgs.beBlueTeamColor, cgs.beRedTeamColor);
-			Vector4Copy(tempColor, cgs.beBlueTeamColor);
-
-			// Также меняем цвета scoreboard
-			Vector4Copy(scoreboard_rtColor, tempColor);
-			Vector4Copy(scoreboard_btColor, scoreboard_rtColor);
-			Vector4Copy(tempColor, scoreboard_btColor);
-
-			colorsSwapped = qtrue;
-		}
-		// Если игрок за синих, ничего не меняем
-	}
-}
-
-void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart)
-{
-	CG_UpdateMyTeamColors();
-}
 
 void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
 {
@@ -927,7 +821,9 @@ void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
 	else
 	{
 		trap_Cvar_Set("cg_markTeam", "-1");
-		CG_Printf("^2cg_markTeam^7 ^1disabled^7 on this server!\n");
+		/* Only say "disabled on this server" when server actually forbids it; not when feature is off due to cvar -1 or be_enabled */
+		if (cgs.beDisableFeatures & CG_BE_MARK_TEAMMATE)
+			CG_PrintOnce("^2cg_markTeam^7 ^1disabled^7 on this server!\n");
 	}
 }
 
@@ -938,13 +834,25 @@ void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart)
 {
+	char mySoundModel[MAX_QPATH];
+	char teamSoundModel[MAX_QPATH];
+	char enemySoundModel[MAX_QPATH];
+
+	/* Sync cgs.customModelSound from cvars so CG_UpdateBeFeatures sees current "wants custom sound" state */
+	trap_Cvar_VariableStringBuffer("cg_mySound", mySoundModel, sizeof(mySoundModel));
+	trap_Cvar_VariableStringBuffer("cg_teamSound", teamSoundModel, sizeof(teamSoundModel));
+	trap_Cvar_VariableStringBuffer("cg_enemySound", enemySoundModel, sizeof(enemySoundModel));
+	cgs.customModelSound = (mySoundModel[0] != '\0' || teamSoundModel[0] != '\0' || enemySoundModel[0] != '\0') ? qtrue : qfalse;
+
+	CG_UpdateBeFeatures();
+
 	if (CG_BE_FEATURE_ENABLED(CG_BE_MODELSOUND))
 	{
 		CG_LoadForcedSounds();
 	}
-	else
+	if (cgs.beDisableFeatures & CG_BE_MODELSOUND)
 	{
-		CG_Printf("^7Cusom sound ^1disabled ^7on this server!");
+		CG_PrintOnce("^7Custom sound ^1disabled ^7on this server!");
 	}
 }
 
@@ -1116,7 +1024,6 @@ void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart)
 	if (cg_exec_weapons.integer == 0 && cvart->vmCvar->string[0])
 	{
 		trap_Cvar_Set("cg_exec_weapons", "1");
-		CG_PrintOnce(" ^3cg_exec_weapons^7 enabled!\n");
 	}
 }
 
@@ -1126,7 +1033,6 @@ void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart)
 	if (cg_exec_gametypes.integer == 0 && cvart->vmCvar->string[0])
 	{
 		trap_Cvar_Set("cg_exec_gametypes", "1");
-		CG_PrintOnce(" ^3cg_exec_gametypes^7 enabled!\n");
 	}
 }
 
@@ -1244,3 +1150,21 @@ void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart)
 		CG_PrintOnce("^3cg_simpleItemsRadius^7 is out of range, set to ^224^7\n");
 	}
 }
+
+// void CG_LocalEventCvarChanged_cl_pitchspeed(cvarTable_t* cvart)
+//{
+//	if ( )
+//	{
+//  	CG_PrintOnce("  ^9cl_pitchspeed^7 is locked in Tourney game.\n");
+//  	trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+//	}
+//}
+
+// void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart)
+// {
+// 	if ( )
+// 	{
+// 		CG_PrintOnce("  ^9cl_yawSpeed^7 is locked in Tourney game.\n");
+// 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+// 	}
+// }

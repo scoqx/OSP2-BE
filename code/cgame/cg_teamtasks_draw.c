@@ -124,10 +124,11 @@ static float CG_CalculateEndFade(int endTime, int currentTime)
 =================
 CG_GetTeamTaskShaderPair
 
-Get shader pair (marker and world) for team task type
+Get shader pair (marker, world 2D, world sprite) for team task type.
+worldShader = 2D in world (player unavailable). worldSpriteShader = 3D sprite (player available); 0 if same as worldShader.
 =================
 */
-static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhandle_t* worldShader, qboolean isPickup)
+static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhandle_t* worldShader, qhandle_t* worldSpriteShader, qboolean isPickup)
 {
 	cgMedia_t* media;
 	cgs_osp_t* osp;
@@ -140,45 +141,55 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 		case TEAMTASK_OFFENSE:
 			*markerShader = media->teamTasksAttack_marker;
 			*worldShader = media->teamTasksAttack;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_DEFENCE:
 			*markerShader = media->teamTasksDefence_marker;
 			*worldShader = media->teamTasksDefence;
+			*worldSpriteShader = 0;
 			break;
-		case TEAMTASK_PATROL:
+		case TEAMTASK_WATCH:
 			*markerShader = media->teamTasksWatch_marker;
 			*worldShader = media->teamTasksWatch;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_PLAYERDEAD:
 			*markerShader = media->teamTasksDead_marker;
 			*worldShader = media->teamTasksDead;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_YES:
-			*markerShader = media->teamTasksYes;
+			*markerShader = media->teamTasksYes_marker;
 			*worldShader = media->teamTasksYes;
+			*worldSpriteShader = media->teamTasksYesSprite;
 			break;
 		case TEAMTASK_NO:
-			*markerShader = media->teamTasksNo;
+			*markerShader = media->teamTasksNo_marker;
 			*worldShader = media->teamTasksNo;
+			*worldSpriteShader = media->teamTasksNoSprite;
 			break;
 		case TEAMTASK_LOCATION:
 			*markerShader = media->teamTasksLocation_marker;
 			*worldShader = media->teamTasksLocation;
+			*worldSpriteShader = media->teamTasksLocationSprite;
 			break;
 		case TEAMTASK_TARGET:
 			*markerShader = media->teamTasksTarget_marker;
 			*worldShader = media->teamTasksTarget;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_REDARMOR:
 			if (isPickup)
 			{
 				*markerShader = media->teamTasksRedarmorPickup_marker;
 				*worldShader = media->teamTasksRedarmorPickup;
+				*worldSpriteShader = media->teamTasksRedarmorPickupSprite;
 			}
 			else
 			{
 				*markerShader = media->teamTasksRedarmor_marker;
 				*worldShader = media->teamTasksRedarmor;
+				*worldSpriteShader = 0;
 			}
 			break;
 		case TEAMTASK_MEGAHEALTH:
@@ -186,24 +197,29 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 			{
 				*markerShader = media->teamTasksMegahealthPickup_marker;
 				*worldShader = media->teamTasksMegahealthPickup;
+				*worldSpriteShader = media->teamTasksMegahealthPickupSprite;
 			}
 			else
 			{
 				*markerShader = media->teamTasksMegahealth_marker;
 				*worldShader = media->teamTasksMegahealth;
+				*worldSpriteShader = 0;
 			}
 			break;
 		case TEAMTASK_MEDIC:
 			*markerShader = media->teamTasksMedic_marker;
 			*worldShader = media->teamTasksMedic;
+			*worldSpriteShader = media->teamTasksMedicSprite;
 			break;
 		case TEAMTASK_HERE_ALIVE:
 			*markerShader = media->teamTasksLocation_marker;
 			*worldShader = media->teamTasksLocation;
+			*worldSpriteShader = media->teamTasksLocationSprite;
 			break;
 		case TEAMTASK_HERE_FLAG:
 			*markerShader = media->teamTasksFlagcarrier_marker;
 			*worldShader = media->teamTasksFlagcarrier;
+			*worldSpriteShader = media->teamTasksFlagcarrierSprite;
 			break;
 		case TEAMTASK_HERE_DEAD:
 			/* Use frozen shader in freeze mode, otherwise use dead shader */
@@ -211,86 +227,102 @@ static void CG_GetTeamTaskShaderPair(int markType, qhandle_t* markerShader, qhan
 			{
 				*markerShader = media->teamTasksFrozen_marker;
 				*worldShader = media->frozenFoeTagShader;
+				*worldSpriteShader = 0;
 			}
 			else
 			{
 				*markerShader = media->teamTasksDead_marker;
 				*worldShader = media->teamTasksDead;
+				*worldSpriteShader = 0;
 			}
 			break;
 		case TEAMTASK_WARN_ALIVE:
 			*markerShader = media->teamTasksWarning_marker;
 			*worldShader = media->teamTasksWarning;
+			*worldSpriteShader = media->teamTasksWarningSprite;
 			break;
 		case TEAMTASK_WARN_DEAD:
-			/* Always use warning shader for WARN_DEAD */
 			*markerShader = media->teamTasksWarning_marker;
 			*worldShader = media->teamTasksWarning;
+			*worldSpriteShader = media->teamTasksWarningSprite;
 			break;
 		case TEAMTASK_FROZEN_ALLY:
 		case TEAMTASK_FROZEN_ENEMY:
 			*markerShader = media->teamTasksFrozen_marker;
 			*worldShader = media->frozenFoeTagShader;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_QUADDAMAGE:
 			*markerShader = media->teamTasksQuad_marker;
 			*worldShader = media->teamTasksQuad;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_REGENERATION:
 			*markerShader = media->teamTasksRegen_marker;
 			*worldShader = media->teamTasksRegen;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_BATTLESUIT:
 			*markerShader = media->teamTasksBattlesuit_marker;
 			*worldShader = media->teamTasksBattlesuit;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_HASTE:
 			*markerShader = media->teamTasksHaste_marker;
 			*worldShader = media->teamTasksHaste;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_YELLOWARMOR:
 			if (isPickup)
 			{
 				*markerShader = media->teamTasksYellowarmorPickup_marker;
 				*worldShader = media->teamTasksYellowarmorPickup;
+				*worldSpriteShader = media->teamTasksYellowarmorPickupSprite;
 			}
 			else
 			{
 				*markerShader = media->teamTasksYellowarmor_marker;
 				*worldShader = media->teamTasksYellowarmor;
+				*worldSpriteShader = 0;
 			}
 			break;
 		case TEAMTASK_HEALTH:
 			*markerShader = media->teamTasksHealth_marker;
 			*worldShader = media->teamTasksHealth;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_REDFLAG:
 		case TEAMTASK_BLUEFLAG:
 			*markerShader = media->teamTasksFlag_marker;
 			*worldShader = media->teamTasksFlag;
+			*worldSpriteShader = 0;
 			break;
 		case TEAMTASK_REDFLAG_CARRIER:
 		case TEAMTASK_BLUEFLAG_CARRIER:
 			*markerShader = media->teamTasksFlagcarrier_marker;
 			*worldShader = media->teamTasksFlagcarrier;
+			*worldSpriteShader = media->teamTasksFlagcarrierSprite;
 			break;
 		default:
 			*markerShader = media->teamTasksUnknown;
 			*worldShader = media->teamTasksUnknown;
+			*worldSpriteShader = 0;
 			break;
 	}
 }
 
-void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum, qboolean isPickup)
+void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t color, qboolean useMarkerShader, int clientNum, qboolean isPickup, qhandle_t* worldSpriteShaderOut)
 {
 	clientInfo_t* cl;
 	qhandle_t markerShader;
 	qhandle_t worldShader;
-
+	qhandle_t worldSpriteShader;
 
 	/* Get shader pair for this mark type */
-	CG_GetTeamTaskShaderPair(markType, &markerShader, &worldShader, isPickup);
+	CG_GetTeamTaskShaderPair(markType, &markerShader, &worldShader, &worldSpriteShader, isPickup);
 	*shader = useMarkerShader ? markerShader : worldShader;
+	if (worldSpriteShaderOut)
+		*worldSpriteShaderOut = useMarkerShader ? 0 : worldSpriteShader;
 
 	/* Set color based on mark type */
 	switch (markType)
@@ -557,11 +589,13 @@ void CG_TeamTaskUpdateFrame(void)
 	tm->hudMarkerSize = cg_teamTaskHudMarkerSize.value;
 
 	/* One pass: clientHasOverhead + markHasPickupNear (no separate loops) */
+	/* Any mark above player's head (YES/NO/MEDIC, HERE_ALIVE, HERE_FLAG, pickup) hides foe arrow for that client */
 	memset(tm->clientHasOverhead, 0, sizeof(tm->clientHasOverhead));
 	for (i = 0; i < tm->numTeamTaskMarks; i++)
 	{
 		mark = &tm->teamTaskMarks[i];
-		if (mark->isOverhead && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		if ((mark->isOverhead || mark->markType == TEAMTASK_HERE_FLAG || mark->isPickup) &&
+		    mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 			tm->clientHasOverhead[mark->clientNum] = qtrue;
 		tm->markHasPickupNear[i] = qfalse;
 		if (!mark->isPickup &&
@@ -603,13 +637,20 @@ void CG_TeamTaskUpdateFrame(void)
 
 		for (clientNum = 0; clientNum < MAX_CLIENTS; clientNum++)
 		{
+			clientInfo_t* fci;
+
 			if (!cgs.clientinfo[clientNum].isFrozenEnt)
 				continue;
-			if (!cgs.clientinfo[clientNum].infoValid || CG_IS_ENEMY_SIMPLE(&cgs.clientinfo[clientNum]))
+			if (!cgs.clientinfo[clientNum].infoValid || CG_IsEnemy(&cgs.clientinfo[clientNum]))
 				continue;
-			cent = &cg_entities[cgs.clientinfo[clientNum].frozenEntity];
-			if (!cent->currentValid)
+			fci = &cgs.clientinfo[clientNum];
+			cent = &cg_entities[fci->frozenEntity];
+			if (!cent->currentValid || !CG_IS_FROZEN_ENTITY(cent) || cent->currentState.otherEntityNum != clientNum)
+			{
+				fci->isFrozenEnt = qfalse;
+				fci->frozenEntity = -1;
 				continue;
+			}
 			for (i = 0; i < tm->numFrozenAllyMarks; i++)
 			{
 				if (Distance(tm->frozenAllyMarkOrigin[i], cent->lerpOrigin) <= 64.0f)
@@ -1034,10 +1075,11 @@ static void CG_ProcessOverheadMark(teamTaskMark_t* mark, const teamTaskMarkConst
 =================
 CG_ProcessHereAliveMark
 
-Process HERE_ALIVE marks - update position above player's head
+Process HERE_ALIVE marks - update position above player's head.
+Returns qtrue if player entity was found (position is valid for 3D sprite).
 =================
 */
-static void CG_ProcessHereAliveMark(teamTaskMark_t* mark)
+static qboolean CG_ProcessHereAliveMark(teamTaskMark_t* mark)
 {
 	int j;
 	centity_t* cent;
@@ -1084,10 +1126,7 @@ static void CG_ProcessHereAliveMark(teamTaskMark_t* mark)
 	}
 
 	/* If player not found, keep the position that was set when mark was created */
-	if (!playerFound)
-	{
-		/* Player not available, keep the position that was set when mark was created */
-	}
+	return playerFound;
 }
 
 /*
@@ -1112,11 +1151,16 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 		        cgs.clientinfo[cg.clientNum].isFrozenEnt)
 		{
 			cent = &cg_entities[cgs.clientinfo[cg.clientNum].frozenEntity];
-			if (cent->currentValid)
+			if (cent->currentValid && CG_IS_FROZEN_ENTITY(cent) && cent->currentState.otherEntityNum == cg.clientNum)
 			{
 				VectorCopy(cent->lerpOrigin, mark->origin);
 				mark->origin[2] += 48.0f;
 				frozenFound = qtrue;
+			}
+			else
+			{
+				cgs.clientinfo[cg.clientNum].isFrozenEnt = qfalse;
+				cgs.clientinfo[cg.clientNum].frozenEntity = -1;
 			}
 		}
 	}
@@ -1127,11 +1171,16 @@ static void CG_ProcessHereDeadMark(teamTaskMark_t* mark)
 		        cgs.clientinfo[mark->clientNum].isFrozenEnt)
 		{
 			cent = &cg_entities[cgs.clientinfo[mark->clientNum].frozenEntity];
-			if (cent->currentValid)
+			if (cent->currentValid && CG_IS_FROZEN_ENTITY(cent) && cent->currentState.otherEntityNum == mark->clientNum)
 			{
 				VectorCopy(cent->lerpOrigin, mark->origin);
 				mark->origin[2] += 48.0f;
 				frozenFound = qtrue;
+			}
+			else
+			{
+				cgs.clientinfo[mark->clientNum].isFrozenEnt = qfalse;
+				cgs.clientinfo[mark->clientNum].frozenEntity = -1;
 			}
 		}
 		if (!frozenFound)
@@ -1351,14 +1400,36 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
                                        teamTaskMarkRenderData_t* renderData)
 {
 	float t;
+	float x;
+	float y;
 	qboolean shouldDisplayAsOverhead;
 	qboolean isOwnHereDead;
 	qboolean isOutsideScreen;
+	qboolean overheadPlayerFound;
 	refdef_t* refdef;
 	cg_t* cgP;
 
 	refdef = &cg.refdef;
 	cgP = &cg;
+
+	/* Defensive checks to catch rare invalid marks (helpful for debugging rare crashes) */
+	if (!mark)
+	{
+		CG_Printf("^1CG_ProcessTeamTaskMark: null mark at index %d\n", markIndex);
+		return qfalse;
+	}
+	if (mark->clientNum < -1 || mark->clientNum >= MAX_CLIENTS)
+	{
+		CG_Printf("^1CG_ProcessTeamTaskMark: invalid clientNum %d for mark index %d type %d\n", mark->clientNum, markIndex, mark->markType);
+		mark->clientNum = -1;
+	}
+	/* check origin sanity (NaN or insanely large) */
+	if (mark->origin[0] != mark->origin[0] || mark->origin[1] != mark->origin[1] || mark->origin[2] != mark->origin[2] ||
+		mark->origin[0] > 1e6f || mark->origin[0] < -1e6f || mark->origin[1] > 1e6f || mark->origin[1] < -1e6f || mark->origin[2] > 1e6f || mark->origin[2] < -1e6f)
+	{
+		CG_Printf("^1CG_ProcessTeamTaskMark: invalid origin for mark index %d client %d type %d: %f %f %f\n", markIndex, mark->clientNum, mark->markType, mark->origin[0], mark->origin[1], mark->origin[2]);
+		return qfalse;
+	}
 
 	/* Skip death marks if CG_TEAMTASK_ONDEATH flag is not set */
 	if (mark->markType == TEAMTASK_PLAYERDEAD && !(constants->teamTaskFlags & CG_TEAMTASK_ONDEATH))
@@ -1389,16 +1460,17 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 	   ============================================ */
 	else
 	{
+		overheadPlayerFound = qfalse;
 		/* Process mark position based on type */
 		if (mark->markType == TEAMTASK_HERE_ALIVE && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			/* HERE_ALIVE: Update position above player's head */
-			CG_ProcessHereAliveMark(mark);
+			overheadPlayerFound = CG_ProcessHereAliveMark(mark);
 		}
 		else if (mark->markType == TEAMTASK_HERE_FLAG && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			/* HERE_FLAG: Update position above player's head (same as HERE_ALIVE, but player has flag) */
-			CG_ProcessHereAliveMark(mark);
+			overheadPlayerFound = CG_ProcessHereAliveMark(mark);
 		}
 		else if (mark->markType == TEAMTASK_HERE_DEAD && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
@@ -1419,18 +1491,23 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		else if (mark->isPickup && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			/* Pickup marks: Update position above player's head if player is available, otherwise use static coordinates */
-			CG_ProcessHereAliveMark(mark); /* Same logic as HERE_ALIVE */
+			overheadPlayerFound = CG_ProcessHereAliveMark(mark);
 		}
 		else if (mark->isOverhead && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
-			/* Other overhead marks (YES, NO, MEDIC) in third person: Update position above player's head */
-			CG_ProcessHereAliveMark(mark); /* Same logic as HERE_ALIVE */
+			/* Overhead marks (YES, NO, MEDIC): update position above player's head */
+			overheadPlayerFound = CG_ProcessHereAliveMark(mark);
 		}
 		else
 		{
 			/* Standard marks: Use static coordinates */
 			CG_ProcessStandardMark(mark);
 		}
+
+		/* Any overhead-style mark on another player: drawn as 3D sprite in CG_AddTeamTaskOverheadSprites (before RenderScene); skip 2D here */
+		if (mark->clientNum != cgP->clientNum && overheadPlayerFound &&
+		    (mark->markType == TEAMTASK_HERE_ALIVE || mark->markType == TEAMTASK_HERE_FLAG || mark->isPickup || mark->isOverhead))
+			return qfalse;
 
 		/* Calculate distance from camera to mark */
 		renderData->distance = Distance(mark->origin, refdef->vieworg);
@@ -1504,8 +1581,19 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		/* Convert world to screen coordinates and check if mark is outside screen */
 		isOwnHereDead = (mark->clientNum == cgP->clientNum && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD));
 
-		/* Convert to screen coordinates */
-		isOutsideScreen = CG_IsPointOutsideScreen(mark->origin, &renderData->x, &renderData->y);
+		if (!CG_WorldToScreen(mark->origin, &x, &y)) {
+			// за камерой — считаем вне экрана
+			isOutsideScreen = qtrue;
+			renderData->x = 0.0f;
+			renderData->y = 0.0f;
+		} else {
+			renderData->x = x;
+			renderData->y = y;
+
+			isOutsideScreen =
+				(x < 0.0f || x >= SCREEN_WIDTH ||
+				y < 0.0f || y >= SCREEN_HEIGHT);
+		}
 
 		if (isOutsideScreen)
 		{
@@ -1612,6 +1700,121 @@ static void CG_RenderTeamTaskMark(teamTaskMark_t* mark, const teamTaskMarkRender
 			    renderData->font,
 			    NULL, NULL, NULL
 			);
+		}
+	}
+}
+/*
+=================
+CG_AddTeamTaskOverheadSprites
+
+Add 3D sprites for overhead marks (YES/NO/MEDIC, HERE_ALIVE, HERE_FLAG, pickup) on other players when they are available.
+Must be called BEFORE trap_R_RenderScene so sprites appear in the 3D scene.
+=================
+*/
+void CG_AddTeamTaskOverheadSprites(void)
+{
+	int i;
+	teamTaskMark_t* mark;
+	cgs_teamMarkers_t* tm;
+	float opaque;
+	qboolean playerFound;
+
+	tm = &cgs.teamMarkers;
+	if (!tm->drawTeamTasks || tm->numTeamTaskMarks == 0)
+		return;
+
+	opaque = tm->teamTaskOpaque;
+
+	for (i = 0; i < tm->numTeamTaskMarks; i++)
+	{
+		mark = &tm->teamTaskMarks[i];
+		if (mark->clientNum == cg.clientNum || mark->clientNum < 0 || mark->clientNum >= MAX_CLIENTS)
+			continue;
+		if (mark->markType != TEAMTASK_HERE_ALIVE && mark->markType != TEAMTASK_HERE_FLAG &&
+		    !mark->isPickup && !mark->isOverhead)
+			continue;
+
+		playerFound = CG_ProcessHereAliveMark(mark);
+		if (!playerFound)
+			continue;
+
+		{
+			refEntity_t ent;
+			float endFade;
+			float spawnFade;
+			float spawnScale;
+			float spawnProgress;
+			float spawnAlpha;
+			int timeSinceStart;
+			int alpha;
+			qboolean showSpawnEffect;
+			qhandle_t spriteShader;
+			const int appearanceDuration = 350;
+			const int spawnEffectDuration = 1000;
+			/* Fixed size for overhead sprites; cg_teamTaskScale does not apply here */
+			const float baseRadius = 10.0f;
+
+			/* Use sprite shader for 3D overhead when available, else 2D shader */
+			spriteShader = mark->worldSpriteShader ? mark->worldSpriteShader : mark->shader;
+
+			endFade = CG_CalculateEndFade(mark->endTime, cg.time);
+			timeSinceStart = cg.time - mark->startTime;
+
+			/* Spawn effect: second sprite — expands 0.8→2.3 and fades out over 1 s (same as 2D) */
+			showSpawnEffect = (timeSinceStart >= 0 && timeSinceStart < spawnEffectDuration);
+			if (showSpawnEffect)
+			{
+				spawnProgress = (float)timeSinceStart / (float)spawnEffectDuration;
+				spawnAlpha = 1.0f - spawnProgress;
+				memset(&ent, 0, sizeof(ent));
+				VectorCopy(mark->origin, ent.origin);
+				ent.reType = RT_SPRITE;
+				ent.customShader = spriteShader;
+				ent.radius = baseRadius * (0.8f + spawnProgress * 1.5f);
+				ent.renderfx = 0;
+				alpha = (int)(mark->color[3] * opaque * endFade * spawnAlpha * 255.0f);
+				if (alpha > 255)
+					alpha = 255;
+				else if (alpha < 0)
+					alpha = 0;
+				MAKERGBA(ent.shaderRGBA,
+				         (byte)(mark->color[0] * 255.0f),
+				         (byte)(mark->color[1] * 255.0f),
+				         (byte)(mark->color[2] * 255.0f),
+				         (byte)alpha);
+				trap_R_AddRefEntityToScene(&ent);
+			}
+
+			/* Main sprite: default size with fade-in and scale 0.25→1.0 over 350 ms */
+			if (timeSinceStart >= 0 && timeSinceStart < appearanceDuration)
+			{
+				float appearanceProgress = (float)timeSinceStart / (float)appearanceDuration;
+				spawnFade = appearanceProgress;
+				spawnScale = 0.25f + appearanceProgress * 0.75f;
+			}
+			else
+			{
+				spawnFade = 1.0f;
+				spawnScale = 1.0f;
+			}
+
+			memset(&ent, 0, sizeof(ent));
+			VectorCopy(mark->origin, ent.origin);
+			ent.reType = RT_SPRITE;
+			ent.customShader = spriteShader;
+			ent.radius = baseRadius * spawnScale;
+			ent.renderfx = 0;
+			alpha = (int)(mark->color[3] * opaque * endFade * spawnFade * 255.0f);
+			if (alpha > 255)
+				alpha = 255;
+			else if (alpha < 0)
+				alpha = 0;
+			MAKERGBA(ent.shaderRGBA,
+			         (byte)(mark->color[0] * 255.0f),
+			         (byte)(mark->color[1] * 255.0f),
+			         (byte)(mark->color[2] * 255.0f),
+			         (byte)alpha);
+			trap_R_AddRefEntityToScene(&ent);
 		}
 	}
 }

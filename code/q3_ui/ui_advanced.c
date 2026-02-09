@@ -159,18 +159,18 @@ static void Advanced_MenuInit( void ) {
 	s_advanced.framel.generic.type  = MTYPE_BITMAP;
 	s_advanced.framel.generic.name  = ART_FRAMEL;
 	s_advanced.framel.generic.flags = QMF_INACTIVE;
-	s_advanced.framel.generic.x	   = 0;
-	s_advanced.framel.generic.y	   = 78;
-	s_advanced.framel.width  	   = 256;
-	s_advanced.framel.height  	   = 329;
+	s_advanced.framel.generic.x	   = FRAME_L_X;
+	s_advanced.framel.generic.y	   = FRAME_L_Y;
+	s_advanced.framel.width  	   = FRAME_L_W;
+	s_advanced.framel.height  	   = FRAME_L_H;
 
 	s_advanced.framer.generic.type  = MTYPE_BITMAP;
 	s_advanced.framer.generic.name  = ART_FRAMER;
 	s_advanced.framer.generic.flags = QMF_INACTIVE;
-	s_advanced.framer.generic.x	   = 376;
-	s_advanced.framer.generic.y	   = 76;
-	s_advanced.framer.width  	   = 256;
-	s_advanced.framer.height  	   = 334;
+	s_advanced.framer.generic.x	   = FRAME_R_X;
+	s_advanced.framer.generic.y	   = FRAME_R_Y;
+	s_advanced.framer.width  	   = FRAME_R_W;
+	s_advanced.framer.height  	   = FRAME_R_H;
 
 	ystart = 144 - BIGCHAR_HEIGHT * 3;
 	y = ystart;

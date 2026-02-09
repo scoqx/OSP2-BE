@@ -811,15 +811,17 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			if (cg_footsteps.integer)
 			{
 				trap_S_StartSound(NULL, es->number, CHAN_BODY,
-				                  cgs.media.footsteps[ ci->footsteps ][rand() & 3]);
+				                  cgs.media.footsteps[ CG_EffectiveFootsteps(clientNum) ][rand() & 3]);
 			}
 			break;
 		case EV_FOOTSTEP_METAL:
 			DEBUGNAME("EV_FOOTSTEP_METAL");
 			if (cg_footsteps.integer)
 			{
+				/* Replace metal with normal step only if client set cg_footsteps 2 and server allows (CG_BE_METAL_FOOTSTEPS; when be_enabled 0 feature is off) */
+				footstep_t stepType = (cg_footsteps.integer == 2 && CG_BE_FEATURE_ENABLED(CG_BE_METAL_FOOTSTEPS)) ? CG_EffectiveFootsteps(clientNum) : FOOTSTEP_METAL;
 				trap_S_StartSound(NULL, es->number, CHAN_BODY,
-				                  cgs.media.footsteps[ FOOTSTEP_METAL ][rand() & 3]);
+				                  cgs.media.footsteps[ stepType ][rand() & 3]);
 			}
 			break;
 		case EV_FOOTSPLASH:
@@ -1204,18 +1206,33 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 		case EV_RAILTRAIL:
 			DEBUGNAME("EV_RAILTRAIL");
 			cent->currentState.weapon = WP_RAILGUN;
-			/* Early exit: already predicted with delag */
+			// if the end was on a nomark surface, don't make an explosion
 			if (es->clientNum == cg.predictedPlayerState.clientNum &&
 			        (cg_delag.integer & 1 || cg_delag.integer & 4) && !cg.demoPlayback)
-				break;
+			{
+				// do nothing, because it was already predicted
+				//Com_Printf("Ignoring rail trail event\n");
+			}
+			else
 			{
 				vec3_t railStart;
 
-				/* Default: server position; override if railFix succeeds */
-				VectorCopy(es->origin2, railStart);
+				// If cg_railFix is enabled, use muzzle position from weapon model for first person view
 				if (cg_railFix.integer && es->clientNum == cg.predictedPlayerState.clientNum &&
 				        !cg.renderingThirdPerson && !cg.demoPlayback)
-					CG_GetFirstPersonRailgunMuzzlePoint(railStart);
+				{
+					// Calculate muzzle position from weapon model tag
+					if (!CG_GetFirstPersonRailgunMuzzlePoint(railStart))
+					{
+						// Fallback to original position if model tag lookup fails
+						VectorCopy(es->origin2, railStart);
+					}
+				}
+				else
+				{
+					// Use original position from server (old logic)
+					VectorCopy(es->origin2, railStart);
+				}
 
 				CG_RailTrail(ci, railStart, es->pos.trBase);
 				if (es->eventParm != 255)

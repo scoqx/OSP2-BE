@@ -731,3 +731,34 @@ SuperHUD:
 + ui_selectionColor
 + menu/art/menu/art/font2_propNew.tga
 + ui_serverNameThemeColor
++ ui_menuDarken
+
+09.02.2026 be v1.01
+TEAMTASKS:
+  + missing hudMarkers icons
+  * overHead icons now are sprites
+UI:
+  + Music in OSP2-BE Credits
+  + ui_menuBgStyle  
+  + ui_shudListFont
+  + ui_banner 2
+  + ui_bannerColor
+  + ui_framesFullscreen (not for players)
++ Grappling hook shaders (offhand)
++ SuperHUD teamoverlay border/bordercolor
++ cg_ignoreServerMessages bitmask 8 - hide Backpack messages
++ /reconnect fix (vid_restart does not reset it)
++ cg_footsteps unlocked + 2 - disable metal surface sound
++ cg_altPlasma 3 - QL-like
+* cg_mySound/cg_teamSound/cg_enemySound restore + footstep fix
+* +wstats delay fix
+- cg_myTeam
+- cg_giveName
+- cg_exec_onDeath
+- cg_exec_weapons for only local player.
+- /testgun
+- /testmodel
+- /nextframe
+- /prevframe
+- /nextskin
+- /prevskin

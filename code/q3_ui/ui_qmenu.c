@@ -30,89 +30,68 @@ vec4_t color_red	    = {1.00f, 0.00f, 0.00f, 1.00f};
 vec4_t color_darkred    = {0.15f, 0.00f, 0.00f, 1.00f};
 vec4_t color_dim	    = {0.00f, 0.00f, 0.00f, 0.25f};
 
-void UI_GetThemeColor( vec4_t out ) {
+/*
+=================
+UI_InitThemeColors
+
+Sync theme colors from cvars into uis. Called from UI_Init and every frame in UI_Refresh.
+Re-parses only when cvar string content changed (compare with Q_stricmp so values update in real time).
+=================
+*/
+#define UI_THEME_LASTSTR_SIZE 64
+
+void UI_InitThemeColors( void ) {
+	static char lastTheme[UI_THEME_LASTSTR_SIZE];
+	static char lastTheme2[UI_THEME_LASTSTR_SIZE];
+	static char lastSelect[UI_THEME_LASTSTR_SIZE];
+	static char lastBanner[UI_THEME_LASTSTR_SIZE];
+	const char *str;
+
 	trap_Cvar_Update( &ui_themeColor );
-	if ( uis.themeColorModCount != ui_themeColor.modificationCount ) {
-		const char *str = ui_themeColor.string;
+	trap_Cvar_Update( &ui_themeColor2 );
+	trap_Cvar_Update( &ui_selectionColor );
+	trap_Cvar_Update( &ui_bannerColor );
+
+	str = ui_themeColor.string;
+	if ( !str || Q_stricmp( str, lastTheme ) != 0 ) {
+		Q_strncpyz( lastTheme, str ? str : "", sizeof(lastTheme) );
 		if ( !str || !str[0] || !UI_ParseColorStr( str, uis.themeColor ) ) {
 			Vector4Copy( color_red, uis.themeColor );
 		}
-		uis.themeColorModCount = ui_themeColor.modificationCount;
 	}
-	Vector4Copy( uis.themeColor, out );
-}
 
-void UI_GetThemeColor2( vec4_t out ) {
-	trap_Cvar_Update( &ui_themeColor2 );
-	if ( uis.themeColor2ModCount != ui_themeColor2.modificationCount ) {
-		const char *str = ui_themeColor2.string;
+	str = ui_themeColor2.string;
+	if ( !str || Q_stricmp( str, lastTheme2 ) != 0 ) {
+		Q_strncpyz( lastTheme2, str ? str : "", sizeof(lastTheme2) );
 		if ( !str || !str[0] || !UI_ParseColorStr( str, uis.themeColor2 ) ) {
 			uis.themeColor2[0] = 1.0f;
 			uis.themeColor2[1] = 0.43f;
 			uis.themeColor2[2] = 0.0f;
 			uis.themeColor2[3] = 1.0f;
 		}
-		uis.themeColor2ModCount = ui_themeColor2.modificationCount;
 	}
-	Vector4Copy( uis.themeColor2, out );
-}
 
-void UI_GetSelectColor( vec4_t out ) {
-	trap_Cvar_Update( &ui_selectionColor );
-	if ( uis.selectColorModCount != ui_selectionColor.modificationCount ) {
-		const char *str = ui_selectionColor.string;
+	str = ui_selectionColor.string;
+	if ( !str || Q_stricmp( str, lastSelect ) != 0 ) {
+		Q_strncpyz( lastSelect, str ? str : "", sizeof(lastSelect) );
 		if ( !str || !str[0] || !UI_ParseColorStr( str, uis.selectColor ) ) {
 			uis.selectColor[0] = 1.0f;
 			uis.selectColor[1] = 1.0f;
 			uis.selectColor[2] = 0.0f;
 			uis.selectColor[3] = 1.0f;
 		}
-		uis.selectColorModCount = ui_selectionColor.modificationCount;
 	}
-	Vector4Copy( uis.selectColor, out );
-}
 
-/*
-=================
-UI_InitThemeColors
-
-Force initialization of theme colors from cvars. This ensures colors
-are always valid before any menu code tries to use them. Called from
-UI_Refresh to guarantee initialization on every frame if needed.
-=================
-*/
-void UI_InitThemeColors( void ) {
-	const char *str;
-
-	// Force cvar updates
-	trap_Cvar_Update( &ui_themeColor );
-	trap_Cvar_Update( &ui_themeColor2 );
-	trap_Cvar_Update( &ui_selectionColor );
-
-	// Parse and cache the colors
-	str = ui_themeColor.string;
-	if ( !str || !str[0] || !UI_ParseColorStr( str, uis.themeColor ) ) {
-		Vector4Copy( color_red, uis.themeColor );
+	str = ui_bannerColor.string;
+	if ( !str || Q_stricmp( str, lastBanner ) != 0 ) {
+		Q_strncpyz( lastBanner, str ? str : "", sizeof(lastBanner) );
+		if ( !str || !str[0] || !UI_ParseColorStr( str, uis.bannerColor ) ) {
+			uis.bannerColor[0] = 1.0f;
+			uis.bannerColor[1] = 1.0f;
+			uis.bannerColor[2] = 1.0f;
+			uis.bannerColor[3] = 1.0f;
+		}
 	}
-	uis.themeColorModCount = ui_themeColor.modificationCount;
-
-	str = ui_themeColor2.string;
-	if ( !str || !str[0] || !UI_ParseColorStr( str, uis.themeColor2 ) ) {
-		uis.themeColor2[0] = 1.0f;
-		uis.themeColor2[1] = 0.43f;
-		uis.themeColor2[2] = 0.0f;
-		uis.themeColor2[3] = 1.0f;
-	}
-	uis.themeColor2ModCount = ui_themeColor2.modificationCount;
-
-	str = ui_selectionColor.string;
-	if ( !str || !str[0] || !UI_ParseColorStr( str, uis.selectColor ) ) {
-		uis.selectColor[0] = 1.0f;
-		uis.selectColor[1] = 1.0f;
-		uis.selectColor[2] = 0.0f;
-		uis.selectColor[3] = 1.0f;
-	}
-	uis.selectColorModCount = ui_selectionColor.modificationCount;
 }
 
 // current color scheme
@@ -1877,6 +1856,22 @@ void Menu_Cache( void )
 		int i;
 		for ( i = 0; i < 24; i++ ) {
 			uis.menuBackHQ24[i] = trap_R_RegisterShaderNoMip( va( "menuback%i", i + 1 ) );
+		}
+	}
+
+	/* Secondary background (no-logo) HQ variants:
+	 * - HQ mode 1: 2x2 tiles, shaders menubacknologo_1 .. menubacknologo_4
+	 * - HQ mode 2: 6x4 tiles, shaders menubacknologo1 .. menubacknologo24
+	 * These are optional; if missing, code will gracefully fall back to non-HQ no-logo background.
+	 */
+	uis.menuBackNoLogo1 = trap_R_RegisterShaderNoMip( "menubacknologo_1" );
+	uis.menuBackNoLogo2 = trap_R_RegisterShaderNoMip( "menubacknologo_2" );
+	uis.menuBackNoLogo3 = trap_R_RegisterShaderNoMip( "menubacknologo_3" );
+	uis.menuBackNoLogo4 = trap_R_RegisterShaderNoMip( "menubacknologo_4" );
+	{
+		int i;
+		for ( i = 0; i < 24; i++ ) {
+			uis.menuBackNoLogoHQ24[i] = trap_R_RegisterShaderNoMip( va( "menubacknologo%i", i + 1 ) );
 		}
 	}
 

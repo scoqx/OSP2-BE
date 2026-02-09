@@ -420,6 +420,7 @@ vmCvar_t        cg_centerMessagesFont;
 vmCvar_t        cg_railCustomChamber;
 vmCvar_t        cg_altGrenadesColor;
 vmCvar_t        cg_enemyGrenadesColor;
+vmCvar_t        cg_drawGrenadeOwner;
 vmCvar_t        cg_altBattleSuit;
 vmCvar_t        cg_itemFx;
 vmCvar_t        cg_bubbleTrail;
@@ -475,8 +476,6 @@ vmCvar_t        cg_scoreboardColors;
 vmCvar_t        cg_clearOnLevelLoad;
 vmCvar_t        cg_spectPOV;
 vmCvar_t        cg_drawRealHeads;
-vmCvar_t        cg_myTeam;
-vmCvar_t        cg_giveName;
 vmCvar_t        cg_bestats_autoaction;
 vmCvar_t        be_run;
 vmCvar_t        cg_teamTask;
@@ -537,7 +536,6 @@ vmCvar_t        cg_exec_intermission;
 vmCvar_t        cg_exec_warmupEnded;
 vmCvar_t        cg_exec_joinGame;
 vmCvar_t        cg_exec_joinSpec;
-vmCvar_t        cg_exec_onDeath;
 vmCvar_t        cg_exec_gauntlet;
 vmCvar_t        cg_exec_bfg;
 vmCvar_t        cg_exec_shud;
@@ -559,7 +557,9 @@ vmCvar_t        cg_teamTaskNewSounds;
 vmCvar_t        cg_teamTaskVersion;
 vmCvar_t        cg_freezeSoundFix;
 vmCvar_t        cg_infoVersionFont;
-
+// vmCvar_t		cl_pitchspeed;
+// vmCvar_t		cl_yawspeed;
+vmCvar_t		cl_reconnectArgs;
 // vmCvar_t        cg_snow;
 
 cgFontIndices_t cgFontIndices;
@@ -627,7 +627,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_nopredict, "cg_nopredict", "0",  },
 	{ &cg_noPlayerAnims, "cg_noplayeranims", "0", CVAR_CHEAT },
 	{ &cg_showmiss, "cg_showmiss", "0",  },
-	{ &cg_footsteps, "cg_footsteps", "1", CVAR_CHEAT },
+	{ &cg_footsteps, "cg_footsteps", "1", CVAR_ARCHIVE | CVAR_LATCH, CG_LocalEventBeFeaturesChanged },
 	{ &cg_tracerChance, "cg_tracerchance", "0.4", CVAR_CHEAT },
 	{ &cg_tracerWidth, "cg_tracerwidth", "1", CVAR_CHEAT },
 	{ &cg_tracerLength, "cg_tracerlength", "100", CVAR_CHEAT },
@@ -647,8 +647,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_synchronousClients, "g_synchronousClients", "0",  },
 	{ &cg_cameraOrbit, "cg_cameraOrbit", "0", CVAR_CHEAT },
 	{ &cg_cameraOrbitDelay, "cg_cameraOrbitDelay", "50", CVAR_ARCHIVE },
-	{ &cg_timescaleFadeEnd, "cg_timescaleFadeEnd", "1",  },
-	{ &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0",  },
+	// { &cg_timescaleFadeEnd, "cg_timescaleFadeEnd", "1",  },
+	// { &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0",  },
 	{ &cg_timescale, "timescale", "1",  },
 	{ &cg_scorePlums, "cg_scorePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_ARCHIVE | CVAR_USERINFO },
@@ -932,16 +932,14 @@ cvarTable_t cvarTable[] =
 	{ &cg_bestats_bgColor, "cg_bestats_bgColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_bgColor },
 	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.7", CVAR_ARCHIVE },
 	{ &cg_bestats_spacingAdjust, "cg_bestats_spacingAdjust", "1", CVAR_ARCHIVE },
-	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "2", CVAR_ARCHIVE },
+	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "0", CVAR_ARCHIVE },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFade },
-	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFadeRadius },
+	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE, },
 	{ &be_features, "be_features", "", CVAR_ROM | CVAR_USERINFO },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventBeFeaturesChanged },
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE },
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_drawRealHeads, "cg_drawRealHeads", "0", CVAR_ARCHIVE },
-	{ &cg_myTeam, "cg_myTeam", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_myTeam },
-	{ &cg_giveName, "cg_giveName", "0", CVAR_ARCHIVE },
 	{ &cg_bestats_autoaction, "cg_bestats_autoaction", "1", CVAR_ARCHIVE },
 	{ &cg_zoomAutoReset, "cg_zoomAutoReset", "3", CVAR_ARCHIVE },
 	{ &cg_smoothDucking, "cg_smoothDucking", "1", CVAR_ARCHIVE },
@@ -1004,19 +1002,18 @@ cvarTable_t cvarTable[] =
 	{ &cg_exec_warmupEnded, "cg_exec_warmupEnded", "", CVAR_ARCHIVE },
 	{ &cg_exec_joinGame, "cg_exec_joinGame", "", CVAR_ARCHIVE },
 	{ &cg_exec_joinSpec, "cg_exec_joinSpec", "", CVAR_ARCHIVE },
-	{ &cg_exec_onDeath, "cg_exec_onDeath", "", CVAR_ARCHIVE },
 	{ &cg_exec_gauntlet, "cg_exec_gauntlet", "", CVAR_ARCHIVE },
 	{ &cg_exec_bfg, "cg_exec_bfg", "", CVAR_ARCHIVE },
 	{ &cg_exec_shud, "cg_exec_shud", "1", CVAR_ARCHIVE },
-	{ &cg_simpleItemsRadius, "cg_simpleItemsRadius", "14", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_simpleItemsRadius },
+	{ &cg_simpleItemsRadius, "cg_simpleItemsRadius", "14", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_simpleItemsRadius },
 	{ &cg_simpleItemsBob, "cg_simpleItemsBob", "0", CVAR_ARCHIVE },
-	{ &cg_brightWeaponsOpaque, "cg_brightWeaponsOpaque", "1.0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE | CVAR_NEW },
-	{ &cg_teamTaskIconMinSize, "cg_teamTaskIconMinSize", "3", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_hitSoundsQC, "cg_hitSoundsQC", "0", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
-	{ &cg_brightWeaponsShader, "cg_brightWeaponsShader", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_noExplosions, "cg_noExplosions", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
-	{ &cg_noItemUseSound, "cg_noItemUseSound", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_brightWeaponsOpaque, "cg_brightWeaponsOpaque", "1.0", CVAR_ARCHIVE },
+	{ &uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE },
+	{ &cg_teamTaskIconMinSize, "cg_teamTaskIconMinSize", "3", CVAR_ARCHIVE },
+	{ &cg_hitSoundsQC, "cg_hitSoundsQC", "0", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &cg_brightWeaponsShader, "cg_brightWeaponsShader", "1", CVAR_ARCHIVE },
+	{ &cg_noExplosions, "cg_noExplosions", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
+	{ &cg_noItemUseSound, "cg_noItemUseSound", "0", CVAR_ARCHIVE },
 	{ &cg_friendsWallhackFrozen, "cg_friendsWallhackFrozen", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teleportEffect, "cg_teleportEffect", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_altRail, "cg_altRail", "0", CVAR_ARCHIVE | CVAR_NEW },
@@ -1025,6 +1022,9 @@ cvarTable_t cvarTable[] =
 	// { &cg_teamTaskVersion, "cg_teamTaskVersion", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_freezeSoundFix, "cg_freezeSoundFix", "", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_infoVersionFont, "cg_infoVersionFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_infoVersionFont },
+	// { &cl_pitchspeed, "cl_pitchspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_pitchspeed },
+	// { &cl_yawspeed, "cl_yawspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_yawSpeed },
+	{ &cl_reconnectArgs, "cl_reconnectArgs", "", CVAR_ARCHIVE_ND | CVAR_NOTABCOMPLETE | CVAR_NORESTART, },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1181,20 +1181,34 @@ void CG_RegisterCvars(void)
 	CG_OSPCvarsRestrictValues();
 }
 
-
-/*
-=================
-CG_UpdateIndicatorFadeRadiusSq
-
-Cache squared fade radius (derived value); no point recalculating every frame.
-Called when cg_teamIndicatorFadeRadius changes and at init.
-=================
-*/
-void CG_UpdateIndicatorFadeRadiusSq(void)
+void CG_UpdateCvars(void)
 {
-	float r = cg_teamIndicatorFadeRadius.value;
-	cgs.indicatorFadeRadiusSq = r * r;
+	int         i;
+	cvarTable_t* cv;
+
+	for (i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++)
+	{
+		if (!cv->vmCvar) continue;
+		trap_Cvar_Update(cv->vmCvar);
+
+		if (cv->forceModelModificationCount == cv->vmCvar->modificationCount) continue;
+		cv->forceModelModificationCount = cv->vmCvar->modificationCount;
+
+		if (cv->onChanged)
+		{
+			cv->onChanged(cv);
+		}
+	}
+
+
+	// check for modications here
+	if (cg.demoPlayback && cg.snap && cg.clientNum != cg.snap->ps.clientNum)
+	{
+		cg.clientNum = cg.snap->ps.clientNum;
+		CG_UpdateAllClientsInfo();
+	}
 }
+
 
 int CG_CrosshairPlayer(void)
 {
@@ -1764,7 +1778,9 @@ static void CG_RegisterGraphics(void)
 	cgs.media.plasmaOldBallShader = trap_R_RegisterShader("sprites/plasma_old");
 	cgs.media.plasmaOldBallNoPicMipShader = cgs.media.plasmaOldBallShader;
 
-
+	cgs.media.plasmaQLBallShader = trap_R_RegisterShader("sprites/plasmaQL");
+	if (!cgs.media.plasmaQLBallShader)
+		cgs.media.plasmaQLBallShader = cgs.media.plasmaBallShader;
 
 	cgs.media.grenadeCPMANoPicMipShader = trap_R_RegisterShaderNoMip("grenadeCPMA_NPM");
 	cgs.media.grenadeCPMANoPicMipShaderNew = trap_R_RegisterShaderNoMip("grenadeCPMANew");
@@ -1842,6 +1858,16 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksRedarmorPickup = trap_R_RegisterShader("teamTasks_redarmor_pickup");
 	cgs.media.teamTasksMegahealthPickup = trap_R_RegisterShader("teamTasks_megahealth_pickup");
 	cgs.media.teamTasksYellowarmorPickup = trap_R_RegisterShader("teamTasks_yellowarmor_pickup");
+	/* team tasks overhead sprites (world only) */
+	cgs.media.teamTasksYesSprite = trap_R_RegisterShader("sprites/teamTasks/yes");
+	cgs.media.teamTasksNoSprite = trap_R_RegisterShader("sprites/teamTasks/no");
+	cgs.media.teamTasksLocationSprite = trap_R_RegisterShader("sprites/teamTasks/location");
+	cgs.media.teamTasksMedicSprite = trap_R_RegisterShader("sprites/teamTasks/medic");
+	cgs.media.teamTasksWarningSprite = trap_R_RegisterShader("sprites/teamTasks/warning");
+	cgs.media.teamTasksFlagcarrierSprite = trap_R_RegisterShader("sprites/teamTasks/flagcarrier");
+	cgs.media.teamTasksRedarmorPickupSprite = trap_R_RegisterShader("sprites/teamTasks/item_redarmor_pickup");
+	cgs.media.teamTasksMegahealthPickupSprite = trap_R_RegisterShader("sprites/teamTasks/item_megahealth_pickup");
+	cgs.media.teamTasksYellowarmorPickupSprite = trap_R_RegisterShader("sprites/teamTasks/item_yellowarmor_pickup");
 	/*====================
 	team tasks hud markers
 	====================*/
@@ -1849,6 +1875,8 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksDefence_marker = trap_R_RegisterShader("teamTasks_defence_m");
 	cgs.media.teamTasksWatch_marker = trap_R_RegisterShader("teamTasks_watch_m");
 	cgs.media.teamTasksDead_marker = trap_R_RegisterShader("teamTasks_skull_m");
+	cgs.media.teamTasksYes_marker = trap_R_RegisterShader("teamTasks_yes_m");
+	cgs.media.teamTasksNo_marker = trap_R_RegisterShader("teamTasks_no_m");
 	cgs.media.teamTasksLocation_marker = trap_R_RegisterShader("teamTasks_location_m");
 	cgs.media.teamTasksTarget_marker = trap_R_RegisterShader("teamTasks_target_m");
 	cgs.media.teamTasksRedarmor_marker = trap_R_RegisterShader("teamTasks_redarmor_m");
@@ -2404,7 +2432,6 @@ void CG_InitCvars(void)
 
 	CG_CvarTouch("cg_redTeamColor");
 	CG_CvarTouch("cg_blueTeamColor");
-	CG_CvarTouch("cg_myTeam");
 
 	CG_CvarTouch("cg_markTeam");
 	CG_CvarTouch("cg_markTeamColor");
@@ -2439,76 +2466,31 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_gunX");
 	CG_CvarTouch("cg_gunY");
 	CG_CvarTouch("cg_gunZ");
-
-	CG_UpdateIndicatorFadeRadiusSq();
-	cgs.lastExecSpectateClientNum = -1;
+	CG_CvarTouch("cg_mySound");
+	CG_CvarTouch("cg_enemySound");
+	CG_CvarTouch("cg_teamSound");
+	// CG_CvarTouch("cl_pitchspeed");
+	// CG_CvarTouch("cl_yawspeed");
 }
 
 /*
 =================
 CG_InitPlayerColors
 
-Force update player colors if color cvars contain 'T' or 'E'
-This is needed because CG_CvarTouch doesn't trigger callbacks
-if the cvar was already loaded from config
+Rebuild my/team/enemy colors and refresh all client infos after map load.
+Required so that in non-team modes (e.g. GT_TOURNAMENT) cgs.osp.enemyColors
+is set and other players do not render black.
 =================
 */
 static void CG_InitPlayerColors(void)
 {
-	static const char* playerColorCvars[] =
-	{
-		"cg_enemyModelColors",
-		"cg_enemyRailColors",
-		"cg_enemyFrozenColor",
-		"cg_teamModelColors",
-		"cg_teamRailColors",
-		"cg_teamFrozenColor",
-		"cg_playerModelColors",
-		"cg_playerRailColors",
-		"cg_playerFrozenColor",
-		"cg_enemyColors",
-		"cg_teamColors",
-		NULL
-	};
-
-	const char** cvarName;
-	char cvarValue[MAX_CVAR_VALUE_STRING];
-	int i;
-	qboolean needsUpdate;
-
-	needsUpdate = qfalse;
-	cvarName = &playerColorCvars[0];
-	while (*cvarName)
-	{
-		// Get cvar value
-		trap_Cvar_VariableStringBuffer(*cvarName, cvarValue, sizeof(cvarValue));
-
-		// Check if value contains 'E' or 'T' (uppercase only)
-		for (i = 0; cvarValue[i]; ++i)
-		{
-			if (cvarValue[i] == 'E' || cvarValue[i] == 'T')
-			{
-				needsUpdate = qtrue;
-				break;
-			}
-		}
-
-		if (needsUpdate)
-		{
-			break;
-		}
-
-		++cvarName;
-	}
-
-	// If any player color cvar contains 'T' or 'E', force update
-	if (needsUpdate)
-	{
-		// Update team info first so T/E colors are interpreted correctly
-		CG_UpdateMyTeam();
-		CG_RebuildPlayerColors();
-		CG_UpdateAllClientsInfo();
-	}
+	// Always rebuild and refresh: in non-team modes (e.g. GT_TOURNAMENT) enemy
+	// colors come from cgs.osp.enemyColors; if we never call CG_RebuildPlayerColors
+	// (e.g. when no cvar contains 'E' or 'T'), enemyColors stay zero and other
+	// players render black until user manually reloads colors.
+	CG_UpdateMyTeam();
+	CG_RebuildPlayerColors();
+	CG_UpdateAllClientsInfo();
 }
 
 /*
@@ -2930,7 +2912,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 
 		CG_RebuildPlayerColors();
-		CG_UpdateMyTeamColors();
 	}
 
 	// load the new map

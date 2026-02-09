@@ -43,7 +43,7 @@ UI_CreditMenu2_Key
 */
 static sfxHandle_t UI_CreditMenu2_Key( int key ) {
 	if( key == K_MOUSE2 || key == K_ESCAPE || key == K_SPACE || key == K_ENTER) {
-		trap_Cmd_ExecuteText(EXEC_APPEND, va("s_musicvolume %s; stopsound;", oldMusicVolume));
+		trap_Cmd_ExecuteText(EXEC_APPEND, va("s_musicvolume %s; stopmusic;", oldMusicVolume));
 
 		UI_PopMenu();
 		return 0;
@@ -165,10 +165,10 @@ UI_CreditMenu2_Draw
 #define BECHAR_SIZE_WIDTH  12.0f
 #define BECHAR_SIZE_HEIGHT 18.0f
 
-#define DRAW_W(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, color_white, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER, NULL, NULL, NULL );
-#define DRAW_R(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, uis.themeColor, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER, NULL, NULL, NULL );
-#define DRAW_G(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, text_color_disabled, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER, NULL, NULL, NULL );
-#define DRAW_GTITLE(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, text_color_disabled, color_black, BECHAR_TITLE_SIZE_WIDTH, BECHAR_TITLE_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER, NULL, NULL, NULL );
+#define DRAW_W(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, color_white, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER|DS_SHADOW, NULL, NULL, NULL );
+#define DRAW_R(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, uis.themeColor, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER|DS_SHADOW, NULL, NULL, NULL );
+#define DRAW_G(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, text_color_disabled, color_black, BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER|DS_SHADOW, NULL, NULL, NULL );
+#define DRAW_GTITLE(x) UI_OSPDrawStringNew( 320.0f, (float)y, x, text_color_disabled, color_black, BECHAR_TITLE_SIZE_WIDTH, BECHAR_TITLE_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER|DS_SHADOW, NULL, NULL, NULL );
 #define STEP_Y() y += BECHAR_SIZE_HEIGHT;
 #define STEP_Y1() y += 1.65f * BECHAR_SIZE_HEIGHT;
 
@@ -215,7 +215,9 @@ static void UI_CreditMenu2_Draw( void ) {
 	DRAW_WSTEP1("written by Snems")
 	DRAW_WSTEP1("https://github.com/snems/OSP2")
 	DRAW_WSTEP1("")
-	DRAW_WSTEP1("Special thanks to:")
+	DRAW_GTITLESTEP("Special thanks to:")
+	// 1st block
+	DRAW_WSTEP1("-=Friends & Contributors=-")
 	DRAW_WSTEP1("Snems")
 	DRAW_WSTEP1("Kr3m")
 	DRAW_WSTEP1("Mirage")
@@ -224,6 +226,12 @@ static void UI_CreditMenu2_Draw( void ) {
 	DRAW_WSTEP1("Zenx")
 	DRAW_WSTEP1("Tuborg")
 	DRAW_WSTEP1("Meta")
+	// 2nd block
+	DRAW_WSTEP1("-=Financial Backers=-")
+	DRAW_WSTEP1("enq3")
+	DRAW_WSTEP1("John Coffey")
+	DRAW_WSTEP1("Maked")
+	DRAW_WSTEP1("Anonymous player #1")
 	DRAW_WSTEP1("")
 	DRAW_WSTEP1("Based on source codes:")
 	DRAW_WSTEP1("OSP")
@@ -241,6 +249,9 @@ static void UI_CreditMenu2_Draw( void ) {
 	DRAW_WSTEP1("Ratmod")
 	DRAW_WSTEP1("https://github.com/rdntcntrl/ratoa_gamecode")
 	DRAW_WSTEP1("")
+	DRAW_WSTEP1("")
+	DRAW_WSTEP1("Music:")
+	DRAW_WSTEP1("TZ-Inc. - Free Song")
 	DRAW_WSTEP1("")
 	DRAW_WSTEP1("")
 	DRAW_RSTEP1("Quake III Arena")
@@ -298,9 +309,9 @@ void UI_CreditMenu2( void ) {
 	trap_Cvar_VariableStringBuffer( "s_musicvolume", oldMusicVolume, sizeof( oldMusicVolume ) );
 	// set a little music volume if it's off and restore it on menu pop
 	if (!trap_Cvar_VariableValue("s_musicvolume"))
-		trap_Cmd_ExecuteText(EXEC_APPEND, "s_musicvolume 0.25;");
+		trap_Cmd_ExecuteText(EXEC_APPEND, "s_musicvolume 0.2;");
 
-	// Music placeholder - заглушка
-	// trap_Cmd_ExecuteText(EXEC_APPEND, "music music/sonic1;");
+	// Music placeholder
+	trap_Cmd_ExecuteText(EXEC_APPEND, "music music/TZ_Inc_Free_Song.ogg");
 
 }

@@ -171,18 +171,18 @@ void SpecifyLeague_MenuInit( void )
 	s_specifyleague.framel.generic.type  = MTYPE_BITMAP;
 	s_specifyleague.framel.generic.name  = SPECIFYLEAGUE_FRAMEL;
 	s_specifyleague.framel.generic.flags = QMF_INACTIVE;
-	s_specifyleague.framel.generic.x	 = 0;  
-	s_specifyleague.framel.generic.y	 = 78;
-	s_specifyleague.framel.width  	     = 256;
-	s_specifyleague.framel.height  	     = 334;
+	s_specifyleague.framel.generic.x	 = FRAME_L_X;
+	s_specifyleague.framel.generic.y	 = FRAME_L_Y;
+	s_specifyleague.framel.width  	     = FRAME_L_W;
+	s_specifyleague.framel.height  	     = FRAME_L_H;
 
 	s_specifyleague.framer.generic.type  = MTYPE_BITMAP;
 	s_specifyleague.framer.generic.name  = SPECIFYLEAGUE_FRAMER;
 	s_specifyleague.framer.generic.flags = QMF_INACTIVE;
-	s_specifyleague.framer.generic.x	 = 376;
-	s_specifyleague.framer.generic.y	 = 76;
-	s_specifyleague.framer.width  	     = 256;
-	s_specifyleague.framer.height  	     = 334;
+	s_specifyleague.framer.generic.x	 = FRAME_R_X;
+	s_specifyleague.framer.generic.y	 = FRAME_R_Y;
+	s_specifyleague.framer.width  	     = FRAME_R_W;
+	s_specifyleague.framer.height  	     = FRAME_R_H;
 
 	s_specifyleague.grlogo.generic.type  = MTYPE_BITMAP;
 	s_specifyleague.grlogo.generic.name  = GLOBALRANKINGS_LOGO;

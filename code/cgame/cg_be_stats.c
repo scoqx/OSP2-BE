@@ -1099,6 +1099,44 @@ void CG_BEStatsDrawWindow(BEStatToken_t tokens[32][12], int rows)
 	}
 }
 
+/*
+ * Token bucket for getstatsinfo: 5 tokens, 1.0/sec refill.
+ * Refill runs every frame in snapshot so tokens recover even when window is closed.
+ */
+#define STATS_REQUEST_REFILL_PER_SEC 1.0f
+void CG_RefillStatsRequestTokens(void)
+{
+	float elapsed;
+
+	if (cg.statsRequestTokenTime == 0)
+	{
+		cg.statsRequestTokens = 5.0f;
+		cg.statsRequestTokenTime = cg.time;
+		return;
+	}
+	elapsed = (float)(cg.time - cg.statsRequestTokenTime) / 1000.0f;
+	cg.statsRequestTokenTime = cg.time;
+	cg.statsRequestTokens += STATS_REQUEST_REFILL_PER_SEC * elapsed;
+	if (cg.statsRequestTokens > 5.0f)
+		cg.statsRequestTokens = 5.0f;
+}
+
+qboolean CG_TrySendStatsRequest(void)
+{
+	if (cgs.fpsclassico)
+		return qfalse;
+
+	CG_RefillStatsRequestTokens();
+
+	if (cg.statsRequestTokens < 1.0f)
+		return qfalse;
+
+	cg.statsRequestTokens -= 1.0f;
+	cg.statsRequestLastSendTime = cg.time;
+	trap_SendClientCommand("getstatsinfo");
+	return qtrue;
+}
+
 void CG_BEStatsShowStatsInfo(void)
 {
 	int row = 0;
@@ -1113,18 +1151,7 @@ void CG_BEStatsShowStatsInfo(void)
 	memset(tokens, 0, sizeof(tokens));
 	// Init
 	CG_BEStatsInit();
-	// Request Stats without pressing button
-	if (!cgs.newStats.drawWindow)
-	{
-		if (cg.statsRequestTime + 1000 < cg.time)
-		{
-			cg.statsRequestTime = cg.time;
-			if (!cgs.fpsclassico)
-			{
-				trap_SendClientCommand("getstatsinfo");
-			}
-		}
-	}
+	// Request only on observer target change (cg_snapshot) or +wstats (CG_OSPWStatsDown_f)
 	// General
 	CG_BEStatsBuildGeneral(tokens, row, &rowsAdded, NULL);
 	row += rowsAdded;

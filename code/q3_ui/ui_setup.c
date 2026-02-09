@@ -172,18 +172,18 @@ static void UI_SetupMenu_Init( void ) {
 	setupMenuInfo.framel.generic.type				= MTYPE_BITMAP;
 	setupMenuInfo.framel.generic.name				= ART_FRAMEL;
 	setupMenuInfo.framel.generic.flags				= QMF_INACTIVE;
-	setupMenuInfo.framel.generic.x					= 0;  
-	setupMenuInfo.framel.generic.y					= 78;
-	setupMenuInfo.framel.width  					= 256;
-	setupMenuInfo.framel.height  					= 329;
+	setupMenuInfo.framel.generic.x					= FRAME_L_X;
+	setupMenuInfo.framel.generic.y					= FRAME_L_Y;
+	setupMenuInfo.framel.width  					= FRAME_L_W;
+	setupMenuInfo.framel.height  					= FRAME_L_H;
 
 	setupMenuInfo.framer.generic.type				= MTYPE_BITMAP;
 	setupMenuInfo.framer.generic.name				= ART_FRAMER;
 	setupMenuInfo.framer.generic.flags				= QMF_INACTIVE;
-	setupMenuInfo.framer.generic.x					= 376;
-	setupMenuInfo.framer.generic.y					= 76;
-	setupMenuInfo.framer.width  					= 256;
-	setupMenuInfo.framer.height  					= 334;
+	setupMenuInfo.framer.generic.x					= FRAME_R_X;
+	setupMenuInfo.framer.generic.y					= FRAME_R_Y;
+	setupMenuInfo.framer.width  					= FRAME_R_W;
+	setupMenuInfo.framer.height  					= FRAME_R_H;
 
 	/* Calculate menu height and center it vertically */
 	{
@@ -404,18 +404,18 @@ static void UI_OtherMenu_Init( void ) {
 	otherMenuInfo.framel.generic.type				= MTYPE_BITMAP;
 	otherMenuInfo.framel.generic.name				= ART_FRAMEL;
 	otherMenuInfo.framel.generic.flags				= QMF_INACTIVE;
-	otherMenuInfo.framel.generic.x					= 0;  
-	otherMenuInfo.framel.generic.y					= 78;
-	otherMenuInfo.framel.width  					= 256;
-	otherMenuInfo.framel.height  					= 329;
+	otherMenuInfo.framel.generic.x					= FRAME_L_X;
+	otherMenuInfo.framel.generic.y					= FRAME_L_Y;
+	otherMenuInfo.framel.width  					= FRAME_L_W;
+	otherMenuInfo.framel.height  					= FRAME_L_H;
 
 	otherMenuInfo.framer.generic.type				= MTYPE_BITMAP;
 	otherMenuInfo.framer.generic.name				= ART_FRAMER;
 	otherMenuInfo.framer.generic.flags				= QMF_INACTIVE;
-	otherMenuInfo.framer.generic.x					= 376;
-	otherMenuInfo.framer.generic.y					= 76;
-	otherMenuInfo.framer.width  					= 256;
-	otherMenuInfo.framer.height  					= 334;
+	otherMenuInfo.framer.generic.x					= FRAME_R_X;
+	otherMenuInfo.framer.generic.y					= FRAME_R_Y;
+	otherMenuInfo.framer.width  					= FRAME_R_W;
+	otherMenuInfo.framer.height  					= FRAME_R_H;
 
 	/* Calculate menu height and center it vertically */
 	{

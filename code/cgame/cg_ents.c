@@ -606,7 +606,11 @@ static void CG_Missile(centity_t* cent)
 		ent.customShader = cgs.media.plasmaBallShader;
 		altPlasma = cg_altPlasma.integer;
 
-		if (useAltPlasma2 && altPlasma == 2)
+		if (altPlasma == 3)
+		{
+			ent.customShader = cgs.media.plasmaQLBallShader;
+		}
+		else if (useAltPlasma2 && altPlasma == 2)
 		{
 			ent.customShader = cgs.media.plasmaOldBallShader;
 		}
@@ -653,7 +657,8 @@ static void CG_Missile(centity_t* cent)
 			{
 				const clientInfo_t* ci = &cgs.clientinfo[owner];
 
-				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IS_ENEMY_SIMPLE(ci) || cgs.gametype == GT_TOURNAMENT; // OSP не имеет данных otherEntityNum
+				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IsEnemy(ci)
+					|| (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */); // OSP: all ally when tournament + ospauth
 
 				if (isAlly)
 				{

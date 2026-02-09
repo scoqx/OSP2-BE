@@ -118,18 +118,18 @@ void Options_MenuInit( void ) {
 	s_options.framel.generic.type  = MTYPE_BITMAP;
 	s_options.framel.generic.name  = ART_FRAMEL;
 	s_options.framel.generic.flags = QMF_INACTIVE;
-	s_options.framel.generic.x	   = 8;  
-	s_options.framel.generic.y	   = 76;
-	s_options.framel.width  	   = 256;
-	s_options.framel.height  	   = 334;
+	s_options.framel.generic.x	   = FRAME_L_X_OPTIONS;
+	s_options.framel.generic.y	   = FRAME_L_Y_OPTIONS;
+	s_options.framel.width  	   = FRAME_L_W_OPTIONS;
+	s_options.framel.height  	   = FRAME_L_H_OPTIONS;
 
 	s_options.framer.generic.type  = MTYPE_BITMAP;
 	s_options.framer.generic.name  = ART_FRAMER;
 	s_options.framer.generic.flags = QMF_INACTIVE;
-	s_options.framer.generic.x	   = 376;
-	s_options.framer.generic.y	   = 76;
-	s_options.framer.width  	   = 256;
-	s_options.framer.height  	   = 334;
+	s_options.framer.generic.x	   = FRAME_R_X;
+	s_options.framer.generic.y	   = FRAME_R_Y;
+	s_options.framer.width  	   = FRAME_R_W;
+	s_options.framer.height  	   = FRAME_R_H;
 
 	y = 168;
 	s_options.graphics.generic.type		= MTYPE_PTEXT;

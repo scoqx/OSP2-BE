@@ -796,7 +796,7 @@ void CG_GrappleTrail(centity_t* ent, const weaponInfo_t* wi)
 		return; // Don't draw if close
 
 	beam.reType = RT_LIGHTNING;
-	beam.customShader = cgs.media.lightningShader;
+	beam.customShader = cgs.media.grappleRopeShader ? cgs.media.grappleRopeShader : cgs.media.lightningShader;
 
 	AxisClear(beam.axis);
 	beam.shaderRGBA[0] = 0xff;
@@ -1009,7 +1009,7 @@ void CG_RegisterWeapon(int weaponNum)
 
 		case WP_GRAPPLING_HOOK:
 			MAKERGB(weaponInfo->flashDlightColor, 0.6f, 0.6f, 1.0f);
-			weaponInfo->missileModel = trap_R_RegisterModel("models/ammo/rocket/rocket.md3");
+			weaponInfo->missileModel = trap_R_RegisterModel("models/weapons2/grapple2/grapple_grip.md3");
 			weaponInfo->missileTrailFunc = CG_GrappleTrail;
 			weaponInfo->missileDlight = 200;
 			weaponInfo->wiTrailTime = 2000;
@@ -1017,6 +1017,9 @@ void CG_RegisterWeapon(int weaponNum)
 			MAKERGB(weaponInfo->missileDlightColor, 1, 0.75f, 0);
 			weaponInfo->readySound = trap_S_RegisterSound("sound/weapons/melee/fsthum.wav", qfalse);
 			weaponInfo->firingSound = trap_S_RegisterSound("sound/weapons/melee/fstrun.wav", qfalse);
+			trap_R_RegisterShader("models/weapons2/grapple2/ball");
+			trap_R_RegisterShader("models/weapons2/grapple2/spikes");
+			cgs.media.grappleRopeShader = trap_R_RegisterShader("grappleRope");
 			break;
 
 		case WP_MACHINEGUN:
@@ -1106,6 +1109,10 @@ void CG_RegisterWeapon(int weaponNum)
 			{
 				cgs.media.plasmaOldExplosionShader = cgs.media.plasmaOldExplosionShader;
 			}
+
+			cgs.media.plasmaExplosionQLShader = trap_R_RegisterShader("plasmaExplosionQL");
+			if (!cgs.media.plasmaExplosionQLShader)
+				cgs.media.plasmaExplosionQLShader = cgs.media.plasmaExplosionShader;
 
 			cgs.media.railRingsShader = trap_R_RegisterShader("railDisc");
 			cgs.media.railRingsShaderNoPicMip = trap_R_RegisterShader("railDiscNoPicMip");
@@ -1423,7 +1430,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		{
 			qboolean useEnemyShader;
 
-			useEnemyShader = CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING) && !isOurClient && cgs.osp.enemyColorsOverride.isLightningColorSet && CG_IS_ENEMY_SIMPLE(target);
+			useEnemyShader = CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING) && !isOurClient && cgs.osp.enemyColorsOverride.isLightningColorSet && CG_IsEnemy(target);
 			if (useEnemyShader)
 			{
 				beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
@@ -1579,7 +1586,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 
 	/* Determine context */
 	isOwnGun = ps && cent->currentState.number == cg.clientNum;
-	isEnemy = CG_IS_ENEMY_SIMPLE(&cgs.clientinfo[cent->currentState.number]);
+	isEnemy = CG_IsEnemy(&cgs.clientinfo[cent->currentState.number]);
 	isTeammate = !isEnemy && (cent->currentState.number != cg.clientNum);
 	usedBrightColor = qfalse;
 	isSpectatingFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) && (cent->currentState.number == cg.snap->ps.clientNum);
@@ -2529,6 +2536,11 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 					}
 					mark = cgs.media.energyMarkNoPicMipShader;
 				}
+			}
+			else if (altPlasma == 3)
+			{
+				shader = cgs.media.plasmaExplosionQLShader;
+				mark = (cg_nomip.integer & 2) ? cgs.media.energyMarkNoPicMipShader : cgs.media.energyMarkShader;
 			}
 		}
 		radius = 16;
