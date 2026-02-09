@@ -904,4 +904,9 @@ void UI_RankStatusMenu( void );
 #define FRAME_INGAME_Y (ui_framesFullscreen.integer ? 0 : 74)   /* 240-166 */
 #define FRAME_INGAME_W (ui_framesFullscreen.integer ? 640 : 466)
 #define FRAME_INGAME_H (ui_framesFullscreen.integer ? 480 : 332)
+
+#define FRAME_CONFIRM_X (ui_framesFullscreen.integer ? 0 : 142)
+#define FRAME_CONFIRM_Y (ui_framesFullscreen.integer ? 0 : 118)
+#define FRAME_CONFIRM_W (ui_framesFullscreen.integer ? 640 : 359)
+#define FRAME_CONFIRM_H (ui_framesFullscreen.integer ? 480 : 256)
 #endif

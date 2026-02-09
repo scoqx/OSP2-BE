@@ -11,8 +11,6 @@
 #define SUPERHUD_CONFIG_LIST_WIDTH 26
 #define SUPERHUD_CONFIG_LIST_HEIGHT 14
 #define SUPERHUD_CONFIG_MAX_FILES 256
-#define SUPERHUD_CONFIG_MENU_WIDTH 466
-#define SUPERHUD_CONFIG_MENU_HEIGHT 332
 
 #define ID_SUPERHUD_LIST   10
 #define ID_SUPERHUD_RESTORE 11
@@ -291,9 +289,9 @@ static void SuperHUDConfig_MenuInit( void ) {
 		int leftMargin;
 		int u;
 
-		frameX = 320 - SUPERHUD_CONFIG_MENU_WIDTH / 2;
+		frameX = FRAME_INGAME_X;
 		barWidth = SUPERHUD_CONFIG_LIST_WIDTH * SMALLCHAR_WIDTH;
-		leftMargin = ( SUPERHUD_CONFIG_MENU_WIDTH - barWidth ) / 2;
+		leftMargin = ( FRAME_INGAME_W - barWidth ) / 2;
 
 		/* Center bar between frame edges so левый/правый отступы равны */
 		s_superhudconfig.list.generic.x = frameX + leftMargin + 2;
@@ -477,14 +475,8 @@ static void SuperHUDConfig_DrawList( void *self ) {
 }
 
 static void SuperHUDConfig_MenuDraw( void ) {
-	int frameX;
-	int frameY;
-
-	frameX = 320 - SUPERHUD_CONFIG_MENU_WIDTH / 2;
-	frameY = 240 - SUPERHUD_CONFIG_MENU_HEIGHT / 2;
-
 	UI_DrawBannerString( 320, 16, "SUPERHUD", UI_CENTER, uis.themeColor );
-	UI_DrawNamedPic( frameX, frameY, SUPERHUD_CONFIG_MENU_WIDTH, SUPERHUD_CONFIG_MENU_HEIGHT, ART_BACKGROUND );
+	UI_DrawNamedPic( FRAME_INGAME_X, FRAME_INGAME_Y, FRAME_INGAME_W, FRAME_INGAME_H, ART_BACKGROUND );
 
 	/* Draw menu (list via ownerdraw, buttons, arrows, etc.) */
 	Menu_Draw( &s_superhudconfig.menu );

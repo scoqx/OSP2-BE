@@ -227,10 +227,10 @@ static void UI_RemoveBotsMenu_Init( void ) {
 	removeBotsMenuInfo.background.generic.type	= MTYPE_BITMAP;
 	removeBotsMenuInfo.background.generic.name	= ART_BACKGROUND;
 	removeBotsMenuInfo.background.generic.flags	= QMF_INACTIVE;
-	removeBotsMenuInfo.background.generic.x		= 320-233;
-	removeBotsMenuInfo.background.generic.y		= 240-166;
-	removeBotsMenuInfo.background.width			= 466;
-	removeBotsMenuInfo.background.height		= 332;
+	removeBotsMenuInfo.background.generic.x		= FRAME_INGAME_X;
+	removeBotsMenuInfo.background.generic.y		= FRAME_INGAME_Y;
+	removeBotsMenuInfo.background.width			= FRAME_INGAME_W;
+	removeBotsMenuInfo.background.height		= FRAME_INGAME_H;
 
 	removeBotsMenuInfo.arrows.generic.type		= MTYPE_BITMAP;
 	removeBotsMenuInfo.arrows.generic.name		= ART_ARROWS;
