@@ -1846,36 +1846,6 @@ void Menu_Cache( void )
 		uis.menuBackShader	= trap_R_RegisterShaderNoMip( "menuback" );
 	}
 	uis.menuBackNoLogoShader = trap_R_RegisterShaderNoMip( "menubacknologo" );
-	/* HQ mode 1: 2x2 tiles, shaders menuback_1 .. menuback_4 */
-	uis.menuBack1 = trap_R_RegisterShaderNoMip( "menuback_1" );
-	uis.menuBack2 = trap_R_RegisterShaderNoMip( "menuback_2" );
-	uis.menuBack3 = trap_R_RegisterShaderNoMip( "menuback_3" );
-	uis.menuBack4 = trap_R_RegisterShaderNoMip( "menuback_4" );
-	/* HQ mode 2: 6x4 tiles, shaders menuback1 .. menuback24 */
-	{
-		int i;
-		for ( i = 0; i < 24; i++ ) {
-			uis.menuBackHQ24[i] = trap_R_RegisterShaderNoMip( va( "menuback%i", i + 1 ) );
-		}
-	}
-
-	/* Secondary background (no-logo) HQ variants:
-	 * - HQ mode 1: 2x2 tiles, shaders menubacknologo_1 .. menubacknologo_4
-	 * - HQ mode 2: 6x4 tiles, shaders menubacknologo1 .. menubacknologo24
-	 * These are optional; if missing, code will gracefully fall back to non-HQ no-logo background.
-	 */
-	uis.menuBackNoLogo1 = trap_R_RegisterShaderNoMip( "menubacknologo_1" );
-	uis.menuBackNoLogo2 = trap_R_RegisterShaderNoMip( "menubacknologo_2" );
-	uis.menuBackNoLogo3 = trap_R_RegisterShaderNoMip( "menubacknologo_3" );
-	uis.menuBackNoLogo4 = trap_R_RegisterShaderNoMip( "menubacknologo_4" );
-	{
-		int i;
-		for ( i = 0; i < 24; i++ ) {
-			uis.menuBackNoLogoHQ24[i] = trap_R_RegisterShaderNoMip( va( "menubacknologo%i", i + 1 ) );
-		}
-	}
-
-	UI_UpdateMenuBackgroundMode();
 
 	menu_in_sound	= trap_S_RegisterSound( "sound/misc/menu1.wav", qfalse );
 	menu_move_sound	= trap_S_RegisterSound( "sound/misc/menu2.wav", qfalse );

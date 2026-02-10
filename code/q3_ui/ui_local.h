@@ -268,7 +268,6 @@ extern sfxHandle_t	MenuField_Key( menufield_s* m, int* key );
 extern void MainMenu_Cache( void );
 extern void UI_MainMenu(void);
 extern void UI_InitThemeColors( void );
-extern void UI_UpdateMenuBackgroundMode( void );
 extern qboolean UI_ParseColorStr( const char *str, vec4_t out );
 extern void UI_RegisterCvars( void );
 extern void UI_UpdateCvars( void );
@@ -584,11 +583,6 @@ typedef struct {
 	qhandle_t			whiteShader;
 	qhandle_t			menuBackShader;
 	qhandle_t			menuBackNoLogoShader;
-	qhandle_t			menuBack1;
-	qhandle_t			menuBack2;
-	qhandle_t			menuBack3;
-	qhandle_t			menuBack4;
-	qhandle_t			menuBackHQ24[24];
 	qhandle_t			charset;
 	qhandle_t			charsetProp;
 	qhandle_t			charsetPropGlow;
@@ -618,15 +612,8 @@ typedef struct {
 	vec4_t				themeColor2;
 	vec4_t				selectColor;
 	vec4_t				bannerColor;
-	int					menuHQMode;
-	int					menuHQModCount;
 	int					menuBgStyle;
 	int					menuBgStyleModCount;
-	qhandle_t			menuBackNoLogo1;
-	qhandle_t			menuBackNoLogo2;
-	qhandle_t			menuBackNoLogo3;
-	qhandle_t			menuBackNoLogo4;
-	qhandle_t			menuBackNoLogoHQ24[24];
 } uiStatic_t;
 
 extern void			UI_Init( void );

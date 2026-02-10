@@ -37,42 +37,6 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 
 #endif
 
-void UI_UpdateMenuBackgroundMode( void ) {
-	trap_Cvar_Update( &ui_menuHQ );
-	if ( uis.menuHQModCount == ui_menuHQ.modificationCount ) {
-		return;
-	}
-
-	uis.menuHQModCount = ui_menuHQ.modificationCount;
-	uis.menuHQMode = ui_menuHQ.integer;
-
-	if ( uis.menuHQMode < 0 || uis.menuHQMode > 2 ) {
-		uis.menuHQMode = 0;
-	}
-
-	if ( uis.menuHQMode == 2 ) {
-		int i;
-		for ( i = 0; i < 24; i++ ) {
-			if ( !uis.menuBackHQ24[i] ) {
-				trap_Print( "  ^3ui_menuHQ ^22^7^3 - menuback1..24 shaders missing, set to ^10\n" );
-				trap_Cvar_Set( "ui_menuHQ", "0" );
-				uis.menuHQMode = 0;
-				trap_Cvar_Update( &ui_menuHQ );
-				uis.menuHQModCount = ui_menuHQ.modificationCount;
-				break;
-			}
-		}
-	} else if ( uis.menuHQMode == 1 ) {
-		if ( !uis.menuBack1 || !uis.menuBack2 || !uis.menuBack3 || !uis.menuBack4 ) {
-			trap_Print( "  ^3ui_menuHQ ^21^3 - menuback_1..4 shaders missing, set to ^10\n" );
-			trap_Cvar_Set( "ui_menuHQ", "0" );
-			uis.menuHQMode = 0;
-			trap_Cvar_Update( &ui_menuHQ );
-			uis.menuHQModCount = ui_menuHQ.modificationCount;
-		}
-	}
-}
-
 /*
 =================
 UI_GetMenuBgStyle
@@ -109,8 +73,7 @@ static int UI_GetMenuBgStyle( void ) {
 =================
 UI_DrawMenuBackground
 
-Draws either the "primary" or "secondary" menu background, taking into account
-ui_menuHQ (grid modes) and optional HQ variants for the no-logo background.
+Draws either the "primary" or "secondary" menu background.
 
 usePrimaryPicture:
  - qtrue  - "first" background (with logo), equivalent to old behaviour.
@@ -118,88 +81,18 @@ usePrimaryPicture:
 =================
 */
 void UI_DrawMenuBackground( qboolean usePrimaryPicture ) {
-	UI_UpdateMenuBackgroundMode();
-
-	if ( uis.menuHQMode == 2 ) {
-		/* 6x4 grid */
-		float cw = (float)uis.glconfig.vidWidth / 6.0f;
-		float ch = (float)uis.glconfig.vidHeight / 4.0f;
-		int i;
-
-		for ( i = 0; i < 24; i++ ) {
-			qhandle_t h;
-			float x;
-			float y;
-
-			if ( usePrimaryPicture ) {
-				h = uis.menuBackHQ24[i];
-			} else {
-				/* Try no-logo HQ tile first, fall back to primary if missing */
-				h = uis.menuBackNoLogoHQ24[i];
-				if ( !h ) {
-					h = uis.menuBackHQ24[i];
-				}
-			}
-
-			if ( !h ) {
-				continue;
-			}
-
-			x = (float)( i % 6 ) * cw;
-			y = (float)( i / 6 ) * ch;
-			trap_R_DrawStretchPic( x, y, cw, ch, 0, 0, 1, 1, h );
-		}
-	} else if ( uis.menuHQMode == 1 ) {
-		/* 2x2 grid */
-		float w2 = (float)uis.glconfig.vidWidth * 0.5f;
-		float h2 = (float)uis.glconfig.vidHeight * 0.5f;
-
-		if ( usePrimaryPicture ) {
-			if ( uis.menuBack1 )
-				trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBack1 );
-			if ( uis.menuBack2 )
-				trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBack2 );
-			if ( uis.menuBack3 )
-				trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBack3 );
-			if ( uis.menuBack4 )
-				trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBack4 );
-		} else {
-			/* Secondary HQ 2x2 tiles, fall back to primary when missing */
-			if ( uis.menuBackNoLogo1 )
-				trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBackNoLogo1 );
-			else if ( uis.menuBack1 )
-				trap_R_DrawStretchPic( 0, 0, w2, h2, 0, 0, 1, 1, uis.menuBack1 );
-
-			if ( uis.menuBackNoLogo2 )
-				trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBackNoLogo2 );
-			else if ( uis.menuBack2 )
-				trap_R_DrawStretchPic( w2, 0, w2, h2, 0, 0, 1, 1, uis.menuBack2 );
-
-			if ( uis.menuBackNoLogo3 )
-				trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBackNoLogo3 );
-			else if ( uis.menuBack3 )
-				trap_R_DrawStretchPic( 0, h2, w2, h2, 0, 0, 1, 1, uis.menuBack3 );
-
-			if ( uis.menuBackNoLogo4 )
-				trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBackNoLogo4 );
-			else if ( uis.menuBack4 )
-				trap_R_DrawStretchPic( w2, h2, w2, h2, 0, 0, 1, 1, uis.menuBack4 );
-		}
+	if ( usePrimaryPicture ) {
+		/* no-logo underlay + logo overlay */
+		if ( uis.menuBackNoLogoShader )
+			trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
+		if ( uis.menuBackShader )
+			trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
 	} else {
-		/* ui_menuHQ == 0 : original single-image behaviour */
-		if ( usePrimaryPicture ) {
-			/* Old behaviour: no-logo underlay + logo overlay */
-			if ( uis.menuBackNoLogoShader )
-				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
-			if ( uis.menuBackShader )
-				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
-		} else {
-			/* Second picture: only no-logo; fall back to logo if needed */
-			if ( uis.menuBackNoLogoShader )
-				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
-			else if ( uis.menuBackShader )
-				trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
-		}
+		/* Second picture: only no-logo; fall back to logo if needed */
+		if ( uis.menuBackNoLogoShader )
+			trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackNoLogoShader );
+		else if ( uis.menuBackShader )
+			trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 1, 1, uis.menuBackShader );
 	}
 }
 
@@ -1899,8 +1792,6 @@ void UI_Init( void ) {
 	// cache redundant calulations
 	UI_VideoCheck( -99999 );
 
-	uis.menuHQMode = 0;
-	uis.menuHQModCount = -1;
 	uis.menuBgStyle = 1;
 	uis.menuBgStyleModCount = -1;
 

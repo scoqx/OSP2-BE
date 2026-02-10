@@ -79,7 +79,6 @@ UI_CVAR( uc_shudBindsList, "uc_shudBindsList", "", CVAR_ARCHIVE | CVAR_NOTABCOMP
 
 UI_CVAR( ui_beCreditsFont, "ui_beCreditsFont", "2", CVAR_ARCHIVE )
 
-UI_CVAR( ui_menuHQ, "ui_menuHQ", "0", CVAR_ARCHIVE )
 UI_CVAR( ui_menuBgStyle, "ui_menuBgStyle", "1", CVAR_ARCHIVE )
 UI_CVAR( ui_menuDarken, "ui_menuDarken", "0", CVAR_ARCHIVE )
 UI_CVAR( ui_forceGamma, "ui_forceGamma", "1", CVAR_ARCHIVE )
