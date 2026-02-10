@@ -733,7 +733,7 @@ SuperHUD:
 + ui_serverNameThemeColor
 + ui_menuDarken
 
-09.02.2026 be v1.01с
+09.02.2026 be v1.01c
 TEAMTASKS:
   + missing hudMarkers icons
   * overHead icons now are sprites
@@ -763,3 +763,6 @@ UI:
 - /prevframe
 - /nextskin
 - /prevskin
+
+10.02.2026 be v1.01d
++ alt lightnings 4-11
