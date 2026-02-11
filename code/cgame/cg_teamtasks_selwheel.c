@@ -392,22 +392,26 @@ void CG_UpdateAndDrawSelwheelMark(void)
 		cgs.teamMarkers.lastCmdNum = currentCmdNum;
 	}
 
-	/* === Draw: mark on screen === */
-	shader = cgs.media.whiteShader;
-	if (!shader)
-		return;
-	scale = cg_teamTaskWheelScale.value;
-	if (scale <= 0.0f)
-		scale = 1.0f;
-	Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, color);
-	CG_ColorWhitenSmart(color, NULL, -0.4f);
-	color[3] = 0.8f;
-	drawX = cgs.teamMarkers.ttwheelMarkX * cgs.screenXScale_Old;
-	drawY = cgs.teamMarkers.ttwheelMarkY * cgs.screenYScale_Old;
-	drawSize = 2.0f * scale * cgs.screenXScale_Old;
-	trap_R_SetColor(color);
-	trap_R_DrawStretchPic(drawX - drawSize * 0.5f, drawY - drawSize * 0.5f, drawSize, drawSize, 0, 0, 1, 1, shader);
-	trap_R_SetColor(NULL);
+	/* === Draw: mark (cursor) on screen only when bit 4 set; selection logic works either way === */
+	if (cg_teamTaskWheel.integer & 4)
+	{
+		shader = cgs.media.whiteShader;
+		if (shader)
+		{
+			scale = cg_teamTaskWheelScale.value;
+			if (scale <= 0.0f)
+				scale = 1.0f;
+			Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, color);
+			CG_ColorWhitenSmart(color, NULL, -0.4f);
+			color[3] = 0.8f;
+			drawX = cgs.teamMarkers.ttwheelMarkX * cgs.screenXScale_Old;
+			drawY = cgs.teamMarkers.ttwheelMarkY * cgs.screenYScale_Old;
+			drawSize = 2.0f * scale * cgs.screenXScale_Old;
+			trap_R_SetColor(color);
+			trap_R_DrawStretchPic(drawX - drawSize * 0.5f, drawY - drawSize * 0.5f, drawSize, drawSize, 0, 0, 1, 1, shader);
+			trap_R_SetColor(NULL);
+		}
+	}
 }
 
 /*

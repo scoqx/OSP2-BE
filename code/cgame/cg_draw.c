@@ -3365,8 +3365,8 @@ static void CG_Draw2D(void)
 
 	CG_DrawDamageFrame();
 
-	// Team task wheel marker
-	if ((cg_teamTaskWheel.integer & 4) && cgs.teamMarkers.ttwheelMarkActive)
+	// Team task wheel marker: always update (selection logic); draw cursor only when bit 4 set
+	if (cgs.teamMarkers.ttwheelMarkActive)
 	{
 		CG_UpdateAndDrawSelwheelMark();
 	}

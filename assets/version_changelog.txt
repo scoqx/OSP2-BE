@@ -1,2 +1,2 @@
-10.02.2026 be v1.01d
-+ alt lightnings 4-11
+11.02.2026 be v1.01e
+* +ttWheel cursor fix

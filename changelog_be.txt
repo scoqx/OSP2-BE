@@ -767,3 +767,6 @@ UI:
 10.02.2026 be v1.01d1
 + alt lightnings 4-11
 - ui_menuHQ
+
+11.02.2026 be v1.01e
+* +ttWheel cursor fix
