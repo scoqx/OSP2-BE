@@ -21,6 +21,7 @@ static void* CG_SHUDElementChatCreate(const superhudConfig_t* config, int line)
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 	element->ctx.width = (int)config->rect.value[2];
+	element->ctx.flags |= DS_EMOJI;
 
 	return element;
 }

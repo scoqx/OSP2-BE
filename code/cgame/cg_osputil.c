@@ -318,7 +318,6 @@ static void CG_ParseColorStr12Bit(const char* str, vec4_t out)
 
 	Q_strncpyz(&hexstr[3 - len], str, len + 1);
 
-
 	out[0] = CG_FloatColorFromHex4bit(hexstr[0]);
 	out[1] = CG_FloatColorFromHex4bit(hexstr[1]);
 	out[2] = CG_FloatColorFromHex4bit(hexstr[2]);

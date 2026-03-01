@@ -304,7 +304,7 @@ unsigned ColorBytes3(float r, float g, float b)
 
 unsigned ColorBytes4(float r, float g, float b, float a)
 {
-	unsigned    i;
+	unsigned    i = 0;
 
 	((byte*)&i)[0] = r * 255;
 	((byte*)&i)[1] = g * 255;
@@ -635,6 +635,7 @@ float Q_fabs(float f)
 	tmp &= 0x7FFFFFFF;
 	return * (float*) &tmp;
 }
+
 #endif
 
 //============================================================

@@ -1302,8 +1302,6 @@ void Info_RemoveKey(char* s, const char* key)
 		o = value;
 		while (*s != '\\' && *s)
 		{
-			if (!*s)
-				return;
 			*o++ = *s++;
 		}
 		*o = 0;
@@ -1360,8 +1358,6 @@ void Info_RemoveKey_Big(char* s, const char* key)
 		o = value;
 		while (*s != '\\' && *s)
 		{
-			if (!*s)
-				return;
 			*o++ = *s++;
 		}
 		*o = 0;

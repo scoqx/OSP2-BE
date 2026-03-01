@@ -20,6 +20,8 @@ void CG_SHUDEventTempAccuracy(int weapon, float accuracy);
 
 void CG_SHUDChatRestore(void);
 
+void CG_SHUDChatRestore(void);
+
 #ifdef __cplusplus
 }
 #endif
