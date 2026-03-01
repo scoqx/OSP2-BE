@@ -66,6 +66,7 @@ beStatsSettings_t beStatsSettings;
 beStatsSettings_t* set = &beStatsSettings;
 
 static qboolean beStatsInitialized = qfalse;
+static int      beStatsLastObservedClient = -1;
 
 typedef struct
 {
@@ -80,7 +81,7 @@ BEStatToken_t tokens[32][12];
 
 qboolean CG_BEStatsInitSettings(void)
 {
-	globalBeStatsSettings_t* inc = &cgs.beSettings;
+	globalBeStatsSettings_t* inc = &cg.beSettings;
 
 	if (!inc) return qfalse;
 
@@ -150,14 +151,14 @@ qboolean CG_BEStatsInitColors(const vec4_t color)
 	}
 
 	// Background color
-	if (!cgs.beSettings.bgColorIsSet)
+	if (!cg.beSettings.bgColorIsSet)
 	{
 		CG_OSPAdjustTeamColorBEStats(set->teamColor, set->bgColor);
 		set->bgColor[3] = cg_bestats_bgOpaque.value;
 	}
 	else
 	{
-		Vector4Set(set->bgColor, cgs.beSettings.bgColor[0], cgs.beSettings.bgColor[1], cgs.beSettings.bgColor[2], cg_bestats_bgOpaque.value);
+		Vector4Set(set->bgColor, cg.beSettings.bgColor[0], cg.beSettings.bgColor[1], cg.beSettings.bgColor[2], cg_bestats_bgOpaque.value);
 	}
 
 	Vector4Copy(colorBlack, set->borderColor);
@@ -205,6 +206,8 @@ void CG_BEStatsInit(void)
 void CG_BEStatsResetInit(void)
 {
 	beStatsInitialized = qfalse;
+	beStatsLastObservedClient = -1;
+	cg.statsRequestLastSendTime = 0;
 }
 
 void CG_BEStatsSetTokenLabel(BEStatToken_t tokens[32][12], int row, int col, const char* label, const vec4_t color)
@@ -1100,10 +1103,10 @@ void CG_BEStatsDrawWindow(BEStatToken_t tokens[32][12], int rows)
 }
 
 /*
- * Token bucket for getstatsinfo: 5 tokens, 1.0/sec refill.
- * Refill runs every frame in snapshot so tokens recover even when window is closed.
+ * Token bucket for getstatsinfo: 5 tokens, ~3.33/sec refill (1 token / 300 ms).
+ * Refill is done lazily when we attempt to send a request.
  */
-#define STATS_REQUEST_REFILL_PER_SEC 1.0f
+#define STATS_REQUEST_REFILL_PER_SEC (1000.0f / 300.0f)
 void CG_RefillStatsRequestTokens(void)
 {
 	float elapsed;
@@ -1125,6 +1128,8 @@ qboolean CG_TrySendStatsRequest(void)
 {
 	if (cgs.fpsclassico)
 		return qfalse;
+	if (cg.intermissionStarted)
+		return qfalse;
 
 	CG_RefillStatsRequestTokens();
 
@@ -1137,21 +1142,112 @@ qboolean CG_TrySendStatsRequest(void)
 	return qtrue;
 }
 
+void CG_AddStatsRequestToken(void)
+{
+	cg.statsRequestTokens += 1.0f;
+	if (cg.statsRequestTokens > 5.0f)
+		cg.statsRequestTokens = 5.0f;
+}
+
+/*
+ * Token bucket for getdstatus: 5 tokens, 1.0/sec refill (same as original getstatsinfo).
+ * Refill is done lazily when we attempt to send a request. Not sent during intermission (table opens once, one send is enough).
+ */
+#define DSTATUS_REQUEST_REFILL_PER_SEC 1.0f
+void CG_RefillDstatusRequestTokens(void)
+{
+	float elapsed;
+
+	if (cg.dstatusRequestTokenTime == 0)
+	{
+		cg.dstatusRequestTokens = 5.0f;
+		cg.dstatusRequestTokenTime = cg.time;
+		return;
+	}
+	elapsed = (float)(cg.time - cg.dstatusRequestTokenTime) / 1000.0f;
+	cg.dstatusRequestTokenTime = cg.time;
+	cg.dstatusRequestTokens += DSTATUS_REQUEST_REFILL_PER_SEC * elapsed;
+	if (cg.dstatusRequestTokens > 5.0f)
+		cg.dstatusRequestTokens = 5.0f;
+}
+
+#define DSTATUS_REQUEST_INTERVAL_MS        800
+#define DSTATUS_REQUEST_INTERVAL_DEAD_MS 1500  /* when dead (e.g. warmup) not in freeze: same idea as frozen — throttle to 1.5s */
+
+qboolean CG_TrySendDstatusRequest(void)
+{
+	int intervalMs;
+
+	if (cg.intermissionStarted)
+		return qfalse;
+	if (!cgs.q3msk || (cgs.gametype != GT_TEAM && cgs.gametype != GT_CTF) || !cgs.osp.gameTypeFreeze)
+		return qfalse;
+
+	CG_RefillDstatusRequestTokens();
+
+	if (cg.dstatusRequestTokens < 1.0f)
+		return qfalse;
+	/* When dead but not in freeze (e.g. warmup), throttle like when frozen — once per 1.5s to avoid spam */
+	intervalMs = CG_IS_DEAD() ? DSTATUS_REQUEST_INTERVAL_DEAD_MS : DSTATUS_REQUEST_INTERVAL_MS;
+	if (cg.dstatusRequestTime + intervalMs >= cg.time)
+		return qfalse;
+
+	cg.dstatusRequestTokens -= 1.0f;
+	cg.dstatusRequestTime = cg.time;
+	trap_SendClientCommand("getdstatus");
+	return qtrue;
+}
+
+qboolean CG_GetDeadInFreeze(int clientNum)
+{
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+		return qfalse;
+	if (cg.predictedDeadInFreeze[clientNum] >= 0)
+		return (qboolean)cg.predictedDeadInFreeze[clientNum];
+	return cgs.deadInFreeze[clientNum];
+}
+
+#define STATS_REQUEST_PERIODIC_MS 1500
+
 void CG_BEStatsShowStatsInfo(void)
 {
 	int row = 0;
 	int rowsAdded;
+	int             current_target;
+	qboolean        viewing_other;
+	qboolean        target_changed;
+	qboolean        periodic_send;
 
 	if (cgs.fpsclassico)
 	{
 		return;
 	}
 
+	if (!cg.showWStats)
+		return;
+
+	if (cg.snap)
+	{
+		viewing_other = (cg.snap->ps.clientNum != cg.clientNum);
+		current_target = viewing_other ? cg.snap->ps.clientNum : cg.clientNum;
+		target_changed = (beStatsLastObservedClient != current_target);
+		periodic_send = (cg.statsRequestLastSendTime == 0 ||
+		                 cg.time - cg.statsRequestLastSendTime >= STATS_REQUEST_PERIODIC_MS);
+
+		if (target_changed)
+			beStatsLastObservedClient = current_target;
+		if (target_changed && (viewing_other || !CG_GetDeadInFreeze(cg.clientNum)))
+			CG_AddStatsRequestToken();
+		/* When dead and not observing anyone: send only once. When dead and observing someone, or alive: allow periodic send. */
+		if (target_changed || (periodic_send && (viewing_other || !CG_IS_DEAD())))
+			CG_TrySendStatsRequest();
+	}
+
 	// Clear table here
 	memset(tokens, 0, sizeof(tokens));
 	// Init
 	CG_BEStatsInit();
-	// Request only on observer target change (cg_snapshot) or +wstats (CG_OSPWStatsDown_f)
+	// Request via CG_TrySendStatsRequest (token bucket): observer target change (cg_snapshot), +wstats window, scoreboard with cg_drawAccuracy
 	// General
 	CG_BEStatsBuildGeneral(tokens, row, &rowsAdded, NULL);
 	row += rowsAdded;

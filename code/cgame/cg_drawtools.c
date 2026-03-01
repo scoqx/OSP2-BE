@@ -245,48 +245,36 @@ void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSi
 		return;
 	}
 	CG_AdjustFrom640(&x, &y, &w, &h);
-	trap_R_SetColor(color);
-
-	// Если требуется нарисовать внутреннюю рамку (inner)
-	if (inner)
 	{
-		if (borderSize[0] > 0.0f)   // Left
+		float b0 = borderSize[0] * cgs.screenXScale_Old;
+		float b1 = borderSize[1] * cgs.screenYScale_Old;
+		float b2 = borderSize[2] * cgs.screenXScale_Old;
+		float b3 = borderSize[3] * cgs.screenYScale_Old;
+		trap_R_SetColor(color);
+		if (inner)
 		{
-			trap_R_DrawStretchPic(x, y + borderSize[1], borderSize[0], h - borderSize[1] - borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
+			if (b0 > 0.0f)
+				trap_R_DrawStretchPic(x, y + b1, b0, h - b1 - b3, 0, 0, 0, 0, cgs.media.whiteShader);
+			if (b1 > 0.0f)
+				trap_R_DrawStretchPic(x, y, w, b1, 0, 0, 0, 0, cgs.media.whiteShader);
+			if (b2 > 0.0f)
+				trap_R_DrawStretchPic(x + w - b2, y + b1, b2, h - b1 - b3, 0, 0, 0, 0, cgs.media.whiteShader);
+			if (b3 > 0.0f)
+				trap_R_DrawStretchPic(x, y + h - b3, w, b3, 0, 0, 0, 0, cgs.media.whiteShader);
 		}
-		if (borderSize[1] > 0.0f)   // Top
+		else
 		{
-			trap_R_DrawStretchPic(x, y, w, borderSize[1], 0, 0, 0, 0, cgs.media.whiteShader);
+			if (b0 > 0.0f)
+				trap_R_DrawStretchPic(x - b0, y, b0, h, 0, 0, 0, 0, cgs.media.whiteShader);
+			if (b1 > 0.0f)
+				trap_R_DrawStretchPic(x - b0, y - b1, w + b0 + b2, b1, 0, 0, 0, 0, cgs.media.whiteShader);
+			if (b2 > 0.0f)
+				trap_R_DrawStretchPic(x + w, y, b2, h, 0, 0, 0, 0, cgs.media.whiteShader);
+			if (b3 > 0.0f)
+				trap_R_DrawStretchPic(x - b0, y + h, w + b0 + b2, b3, 0, 0, 0, 0, cgs.media.whiteShader);
 		}
-		if (borderSize[2] > 0.0f)   // Right
-		{
-			trap_R_DrawStretchPic(x + w - borderSize[2], y + borderSize[1], borderSize[2], h - borderSize[1] - borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
-		}
-		if (borderSize[3] > 0.0f)   // Bottom
-		{
-			trap_R_DrawStretchPic(x, y + h - borderSize[3], w, borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
-		}
+		trap_R_SetColor(NULL);
 	}
-	else // Если рисуем внешнюю рамку (outer)
-	{
-		if (borderSize[0] > 0.0f)   // Left
-		{
-			trap_R_DrawStretchPic(x - borderSize[0], y, borderSize[0], h, 0, 0, 0, 0, cgs.media.whiteShader);
-		}
-		if (borderSize[1] > 0.0f)   // Top
-		{
-			trap_R_DrawStretchPic(x - borderSize[0], y - borderSize[1], w + borderSize[0] + borderSize[2], borderSize[1], 0, 0, 0, 0, cgs.media.whiteShader);
-		}
-		if (borderSize[2] > 0.0f)   // Right
-		{
-			trap_R_DrawStretchPic(x + w, y, borderSize[2], h, 0, 0, 0, 0, cgs.media.whiteShader);
-		}
-		if (borderSize[3] > 0.0f)   // Bottom
-		{
-			trap_R_DrawStretchPic(x - borderSize[0], y + h, w + borderSize[0] + borderSize[2], borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
-		}
-	}
-	trap_R_SetColor(NULL);
 }
 /*
 ================
@@ -794,8 +782,8 @@ typedef struct
 
 #define MAX_FONTS 32
 static font_t fonts[MAX_FONTS];
-static char customFontNames[MAX_FONTS - 19][MAX_QPATH];
-static int fonts_num = 19;
+static char customFontNames[MAX_FONTS - 21][MAX_QPATH];
+static int fonts_num = 21;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
 
@@ -825,6 +813,8 @@ static void CG_InitFontNames(void)
 	fonts[16].name = "eliteorbitron";
 	fonts[17].name = "q4snumbers";
 	fonts[18].name = "q4mnumbers";
+	fonts[19].name = "conthrax";
+	fonts[20].name = "qlhandelgothichud";
 }
 
 qboolean CG_FontAvailable(int index)
@@ -859,7 +849,7 @@ int CG_FontIndexFromName(const char* name)
 	/* Handle "default" as alias for "sansman" */
 	if (Q_stricmp(name, "default") == 0)
 	{
-		name = "sansman";
+		name = "id";
 	}
 
 	for (index = 0; index < fonts_num; ++index)
@@ -1347,7 +1337,7 @@ static void CG_LoadCustomFonts(void)
 			continue;
 		}
 
-		if (customFontIndex >= (MAX_FONTS - 19))
+		if (customFontIndex >= (MAX_FONTS - 21))
 		{
 			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: maximum number of custom fonts reached, skipping '%s'\n", fontName);
 			continue;
@@ -1427,6 +1417,8 @@ void CG_LoadFonts(void)
 	CG_LoadFont(&fonts[16], "gfx/2d/EliteOrbitron.cfg");
 	CG_LoadFont(&fonts[17], "gfx/2d/q4snumbers.cfg");
 	CG_LoadFont(&fonts[18], "gfx/2d/q4mnumbers.cfg");
+	CG_LoadFont(&fonts[19], "gfx/2d/conthrax.cfg");
+	CG_LoadFont(&fonts[20], "gfx/2d/qlhandelgothichud.cfg");
 	CG_LoadCustomFonts();
 }
 
@@ -2028,6 +2020,27 @@ void CG_UpdateHealthLowFlag(void)
 
 /*
 =================
+CG_GetTotalHitPoints
+=================
+Calculates the total effective hit points (health + armor contribution) for bar display.
+*/
+int CG_GetTotalHitPoints(int health, int armor)
+{
+	int count;
+	int max;
+
+	if (health <= 0)
+		return 0;
+
+	count = armor;
+	max = health * ARMOR_PROTECTION / (1.0 - ARMOR_PROTECTION);
+	if (max < count)
+		count = max;
+	return health + count;
+}
+
+/*
+=================
 CG_GetColorForHealth
 =================
 */
@@ -2068,7 +2081,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 	{
 		if (hcolor)
 		{
-			VectorCopy(cgs.beHealthLowColor, hcolor);
+			VectorCopy(cg.beHealthLowColor, hcolor);
 		}
 		if (ccolor)
 		{
@@ -2079,7 +2092,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 	{
 		if (hcolor)
 		{
-			VectorCopy(cgs.beHealthMidColor, hcolor);
+			VectorCopy(cg.beHealthMidColor, hcolor);
 		}
 		if (ccolor)
 		{
@@ -2090,7 +2103,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor)
 	{
 		if (hcolor)
 		{
-			VectorCopy(cgs.beHealthColor, hcolor);
+			VectorCopy(cg.beHealthColor, hcolor);
 		}
 		if (ccolor)
 		{
@@ -3511,6 +3524,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	float mw;
 	float maxAlpha;
 	int pass; /* QVM: one outer loop over passes instead of two duplicate loops */
+	float vidWidth; /* cache for hot loop */
 
 	if (!string)
 		return;
@@ -3639,6 +3653,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 
 	/* QVM_LOGIC: one outer loop over passes (shadow, text), one inner loop + one switch = less bytecode */
 	xx = ax;
+	vidWidth = (float)cgs.glconfig.vidWidth;
 
 	for (pass = 0; pass < 2; pass++)
 	{
@@ -3674,19 +3689,9 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 					if (index < 0)
 						index += 256;
 					fm = &metrics[(unsigned char)index];
-
-					if (proportional)
-					{
-						tc = fm->tc_prop;
-						aw1 = fm->width * aw;
-						spaceAdd = (fm->space1 + fm->space2) * aw;
-					}
-					else
-					{
-						tc = fm->tc_mono;
-						aw1 = aw;
-						spaceAdd = aw;
-					}
+					tc = proportional ? fm->tc_prop : fm->tc_mono;
+					aw1 = proportional ? (fm->width * aw) : aw;
+					spaceAdd = proportional ? ((fm->space1 + fm->space2) * aw) : aw;
 
 					if (pass == 0)
 					{
@@ -3697,7 +3702,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 						}
 						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
 					}
-					else
+					if (pass == 1)
 					{
 						if (textColorChanged)
 						{
@@ -3708,27 +3713,33 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 					}
 
 					ax += spaceAdd;
-					if (ax >= cgs.glconfig.vidWidth)
+					if (ax >= vidWidth)
 						break;
 				}
 				break;
 
 				case OSP_TEXT_CMD_SHADOW_COLOR:
-					VectorCopy(curr->value.color, shadowCol);
-					shadowCol[3] = shadowFadeValue;
-					if (shadowCol[3] > maxAlpha)
-						shadowCol[3] = maxAlpha;
-					Vector4Copy(shadowCol, currentShadowColor);
-					shadowColorChanged = 1;
+					if (pass == 0)
+					{
+						VectorCopy(curr->value.color, shadowCol);
+						shadowCol[3] = shadowFadeValue;
+						if (shadowCol[3] > maxAlpha)
+							shadowCol[3] = maxAlpha;
+						Vector4Copy(shadowCol, currentShadowColor);
+						shadowColorChanged = 1;
+					}
 					break;
 
 				case OSP_TEXT_CMD_FADE:
 					fade = curr->value.fade;
-					shadowCol[3] = fade;
-					if (shadowCol[3] > maxAlpha)
-						shadowCol[3] = maxAlpha;
-					Vector4Copy(shadowCol, currentShadowColor);
-					shadowColorChanged = 1;
+					if (pass == 0)
+					{
+						shadowCol[3] = fade;
+						if (shadowCol[3] > maxAlpha)
+							shadowCol[3] = maxAlpha;
+						Vector4Copy(shadowCol, currentShadowColor);
+						shadowColorChanged = 1;
+					}
 					if (pass == 1)
 					{
 						color[3] = fade;
@@ -3749,7 +3760,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 						Vector4Copy(color, currentTextColor);
 						textColorChanged = 1;
 					}
-					else if (fade != 1.0f)
+					if (pass == 0 && fade != 1.0f)
 					{
 						shadowCol[3] = fade;
 						if (shadowCol[3] > maxAlpha)

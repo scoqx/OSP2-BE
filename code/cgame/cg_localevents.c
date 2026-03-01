@@ -473,6 +473,11 @@ void CG_LocalEventCvarChanged_cg_damageIndicatorOpaque(cvarTable_t* cvart)
 	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
 }
 
+void CG_LocalEventCvarChanged_cg_bobup(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0, 0.02, cvart->vmCvar->value);
+}
+
 void CG_LocalEventCvarChanged_cg_dlightGauntlet(cvarTable_t* cvart)
 {
 	CG_UpdateWeaponDlightColor(WP_GAUNTLET);
@@ -543,7 +548,7 @@ void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_hitBoxColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beHitBoxColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beHitBoxColor);
 }
 
 void CG_LocalEventCvarChanged_cg_damageFrameSize(cvarTable_t* cvart)
@@ -568,22 +573,22 @@ void CG_LocalEventCvarChanged_cg_damageDrawFrame(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_enemyOutlineColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beEnemyOutlineColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beEnemyOutlineColor);
 }
 
 void CG_LocalEventCvarChanged_cg_teamOutlineColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beTeamOutlineColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beTeamOutlineColor);
 }
 
 void CG_LocalEventCvarChanged_cg_altBloodColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beAltBloodColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beAltBloodColor);
 }
 
 void CG_LocalEventCvarChanged_cg_railRingsRadius(cvarTable_t* cvart)
 {
-	cvart->vmCvar->value = Com_Clamp(0.05f, 16, cvart->vmCvar->value);
+	cvart->vmCvar->value = Com_Clamp(0, 16, cvart->vmCvar->value);
 }
 
 void CG_LocalEventCvarChanged_cg_railRingsRotation(cvarTable_t* cvart)
@@ -598,11 +603,11 @@ void CG_LocalEventCvarChanged_cg_railRingsSpacing(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_railRingsSize(cvarTable_t* cvart)
 {
-	cvart->vmCvar->value = Com_Clamp(0.05f, 4, cvart->vmCvar->value);
+	cvart->vmCvar->value = Com_Clamp(0, 4, cvart->vmCvar->value);
 }
 void CG_LocalEventCvarChanged_cg_altShadowColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beAltShadowColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beAltShadowColor);
 }
 void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart)
 {
@@ -725,33 +730,112 @@ void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beAltGrenadesColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beAltGrenadesColor);
 }
 void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beEnemyGrenadesColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beEnemyGrenadesColor);
 }
 void CG_LocalEventCvarChanged_cg_healthColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beHealthColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beHealthColor);
 }
 void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beHealthLowColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beHealthLowColor);
 }
 void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beHealthMidColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beHealthMidColor);
 }
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beRedTeamColor);
-	CG_LocalEventCvarParseColor(cvart, scoreboard_rtColor);
+	team_t realTeam;
+	/* Store raw red team color from cvar */
+	CG_LocalEventCvarParseColor(cvart, cgs.baseRedTeamColor);
+	CG_InvalidateVisualTeamColorsCache();
+	/* Recompute effective colors with cg_myTeam mapping */
+	/* Determine real team from clientInfo (most reliable source) */
+	if (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
+	{
+		const clientInfo_t* ourClient = &cgs.clientinfo[cg.clientNum];
+		
+		if (CG_OSPIsGameTypeCA(cgs.gametype))
+		{
+			realTeam = ourClient->rt;
+		}
+		else
+		{
+			realTeam = ourClient->team;
+		}
+	}
+	else
+	{
+		realTeam = TEAM_RED;
+	}
+	CG_UpdateVisualTeamColors(realTeam);
 }
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beBlueTeamColor);
-	CG_LocalEventCvarParseColor(cvart, scoreboard_btColor);
+	team_t realTeam;
+	/* Store raw blue team color from cvar */
+	CG_LocalEventCvarParseColor(cvart, cgs.baseBlueTeamColor);
+	CG_InvalidateVisualTeamColorsCache();
+	/* Recompute effective colors with cg_myTeam mapping */
+	/* Determine real team from clientInfo (most reliable source) */
+	if (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
+	{
+		const clientInfo_t* ourClient = &cgs.clientinfo[cg.clientNum];
+		
+		if (CG_OSPIsGameTypeCA(cgs.gametype))
+		{
+			realTeam = ourClient->rt;
+		}
+		else
+		{
+			realTeam = ourClient->team;
+		}
+	}
+	else
+	{
+		realTeam = TEAM_RED;
+	}
+	CG_UpdateVisualTeamColors(realTeam);
+}
+void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart)
+{
+	const char *str;
+	team_t realTeam;
+
+	/* Accept Red/Blue as aliases for 1/2 */
+	str = cvart->vmCvar->string;
+	if (Q_stricmp(str, "Red") == 0)
+		trap_Cvar_Set("cg_myTeam", "1");
+	else if (Q_stricmp(str, "Blue") == 0)
+		trap_Cvar_Set("cg_myTeam", "2");
+
+	/* Recompute effective colors when cg_myTeam changes */
+	/* Determine real team from clientInfo (most reliable source) */
+	if (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
+	{
+		const clientInfo_t* ourClient = &cgs.clientinfo[cg.clientNum];
+		
+		if (CG_OSPIsGameTypeCA(cgs.gametype))
+		{
+			realTeam = ourClient->rt;
+		}
+		else
+		{
+			realTeam = ourClient->team;
+		}
+	}
+	else
+	{
+		realTeam = TEAM_RED;
+	}
+	
+	CG_UpdateVisualTeamColors(realTeam);
+	CG_ReloadColors();
 }
 
 
@@ -770,7 +854,7 @@ void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_ReloadTeamTaskWheel(cvarTable_t* cvart)
 {
 	/* Reset ttwheel elements count to force re-initialization */
-	cgs.teamMarkers.ttwheelElementCount = 0;
+	cg.teamMarkers.ttwheelElementCount = 0;
 	/* Parse and set elements from cvar */
 	CG_SelwheelParseTeamTaskWheel();
 }
@@ -829,7 +913,7 @@ void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart)
 {
-	CG_LocalEventCvarParseColor(cvart, cgs.beMarkedTeamColor);
+	CG_LocalEventCvarParseColor(cvart, cg.beMarkedTeamColor);
 }
 
 void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart)
@@ -888,6 +972,7 @@ void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart)
 		return;
 	}
 
+	/* Parse colors - CG_ParseColorStr already handles T/E codes using cgs.beRedTeamColor/beBlueTeamColor */
 	CG_ParseColorStr(token1, scoreboard_rtColorHeader);
 	CG_ParseColorStr(token2, scoreboard_rtColorBody);
 	customScoreboardColorIsSet_red = 1;
@@ -930,6 +1015,7 @@ void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
 		return;
 	}
 
+	/* Parse colors - CG_ParseColorStr already handles T/E codes using cgs.beRedTeamColor/beBlueTeamColor */
 	CG_ParseColorStr(token1, scoreboard_btColorHeader);
 	CG_ParseColorStr(token2, scoreboard_btColorBody);
 	customScoreboardColorIsSet_blue = 1;
@@ -937,6 +1023,64 @@ void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart)
 	{
 		CG_ParseColorStr(token3, scoreboard_btColorTitle);
 		customScoreboardColorIsSet_blue |= 2;
+	}
+}
+
+/*
+ * Re-parse cg_scoreboardRtColors/BtColors so T/E resolve to current beRedTeamColor/beBlueTeamColor (cg_myTeam).
+ * Call before drawing scoreboard so column colors follow cg_myTeam and viewed team.
+ */
+void CG_RefreshScoreboardTeamColors(void)
+{
+	char buffer[MAX_CVAR_VALUE_STRING];
+	char* token1;
+	char* token2;
+	char* token3;
+
+	trap_Cvar_VariableStringBuffer("cg_scoreboardRtColors", buffer, sizeof(buffer));
+	if (buffer[0] == '\0')
+	{
+		customScoreboardColorIsSet_red = 0;
+	}
+	else
+	{
+		token1 = Q_strtok(buffer, " \t");
+		token2 = Q_strtok(NULL, " \t");
+		token3 = Q_strtok(NULL, " \t");
+		if (token1 && token2)
+		{
+			CG_ParseColorStr(token1, scoreboard_rtColorHeader);
+			CG_ParseColorStr(token2, scoreboard_rtColorBody);
+			customScoreboardColorIsSet_red = 1;
+			if (token3)
+			{
+				CG_ParseColorStr(token3, scoreboard_rtColorTitle);
+				customScoreboardColorIsSet_red |= 2;
+			}
+		}
+	}
+
+	trap_Cvar_VariableStringBuffer("cg_scoreboardBtColors", buffer, sizeof(buffer));
+	if (buffer[0] == '\0')
+	{
+		customScoreboardColorIsSet_blue = 0;
+	}
+	else
+	{
+		token1 = Q_strtok(buffer, " \t");
+		token2 = Q_strtok(NULL, " \t");
+		token3 = Q_strtok(NULL, " \t");
+		if (token1 && token2)
+		{
+			CG_ParseColorStr(token1, scoreboard_btColorHeader);
+			CG_ParseColorStr(token2, scoreboard_btColorBody);
+			customScoreboardColorIsSet_blue = 1;
+			if (token3)
+			{
+				CG_ParseColorStr(token3, scoreboard_btColorTitle);
+				customScoreboardColorIsSet_blue |= 2;
+			}
+		}
 	}
 }
 
@@ -992,30 +1136,33 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart)
 {
-	CG_ParseCvarTwoFloats(cvart, &cgs.beSettings.x, &cgs.beSettings.y);
+	CG_ParseCvarTwoFloats(cvart, &cg.beSettings.x, &cg.beSettings.y);
 }
 
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart)
 {
-	CG_ParseCvarTwoFloats(cvart, &cgs.beSettings.textSize[0], &cgs.beSettings.textSize[1]);
+	CG_ParseCvarTwoFloats(cvart, &cg.beSettings.textSize[0], &cg.beSettings.textSize[1]);
 }
 
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0])
 	{
-		cgs.beSettings.bgColorIsSet = qfalse;
+		cg.beSettings.bgColorIsSet = qfalse;
 	}
 	else
 	{
-		CG_LocalEventCvarParseColor(cvart, cgs.beSettings.bgColor);
-		cgs.beSettings.bgColorIsSet = qtrue;
+		CG_LocalEventCvarParseColor(cvart, cg.beSettings.bgColor);
+		cg.beSettings.bgColorIsSet = qtrue;
 	}
 }
 
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart)
 {
 	CG_UpdateBeFeatures();
+	/* When cg_spectPOV changes, refresh all client info so models and teams update for spectator POV */
+	if (cvart->vmCvar == &cg_spectPOV)
+		CG_UpdateAllClientsInfo();
 }
 
 void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart)
@@ -1034,6 +1181,11 @@ void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart)
 	{
 		trap_Cvar_Set("cg_exec_gametypes", "1");
 	}
+}
+
+void CG_LocalEventCvarChanged_cg_brightWeaponsOpaque(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
 }
 
 void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart)
@@ -1092,10 +1244,10 @@ void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart)
 		int cleared = 0;
 		for (i = 0; i < 32; i++)
 		{
-			if (cgs.printui[i].active)
+			if (cg.printui[i].active)
 			{
 				CG_PrintUIRemoveFromActiveList(i);
-				cgs.printui[i].active = qfalse;
+				cg.printui[i].active = qfalse;
 				cleared++;
 			}
 		}
@@ -1107,15 +1259,15 @@ void CG_LocalEventCvarChanged_cg_teamTaskThemeColor(cvarTable_t* cvart)
 	vec4_t color;
 	if (CG_ParseColorStr(cvart->vmCvar->string, color))
 	{
-		Vector4Copy(color, cgs.teamMarkers.teamTaskThemeColor);
+		Vector4Copy(color, cg.teamMarkers.teamTaskThemeColor);
 	}
 	else
 	{
 		/* Default to cyan if parsing fails */
-		cgs.teamMarkers.teamTaskThemeColor[0] = 0.0f;
-		cgs.teamMarkers.teamTaskThemeColor[1] = 1.0f;
-		cgs.teamMarkers.teamTaskThemeColor[2] = 1.0f;
-		cgs.teamMarkers.teamTaskThemeColor[3] = 1.0f;
+		cg.teamMarkers.teamTaskThemeColor[0] = 0.0f;
+		cg.teamMarkers.teamTaskThemeColor[1] = 1.0f;
+		cg.teamMarkers.teamTaskThemeColor[2] = 1.0f;
+		cg.teamMarkers.teamTaskThemeColor[3] = 1.0f;
 	}
 }
 
@@ -1168,3 +1320,8 @@ void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart)
 //      trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
 //  }
 // }
+
+void CG_LocalEventCvarChanged_cg_entityOverpolate(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(-1.0f, 1.0f, cvart->vmCvar->value);
+}

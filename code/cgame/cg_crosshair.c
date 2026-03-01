@@ -241,7 +241,7 @@ static void CG_CrosshairGetColor(vec4_t hcolor)
 
 	if (cg_crosshairHealth.integer != 0)
 	{
-		Vector4Copy(cgs.healthColorLocal, hcolor);
+		Vector4Copy(cg.healthColorLocal, hcolor);
 	}
 	else if (cgs.damageInfoAllowed && ch_crosshairAction.integer & CG_CROSSHAIR_DECOR_COLOR_BY_DAMAGE)
 	{

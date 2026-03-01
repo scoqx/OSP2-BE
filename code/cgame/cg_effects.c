@@ -471,7 +471,7 @@ void CG_Bleed(vec3_t origin, int entityNum)
 		else
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[0];
 
-		Vector4Copy(cgs.beAltBloodColor, bloodColor);
+		Vector4Copy(cg.beAltBloodColor, bloodColor);
 
 		ex->refEntity.shaderRGBA[0] = bloodColor[0] * 255;
 		ex->refEntity.shaderRGBA[1] = bloodColor[1] * 255;
@@ -816,19 +816,19 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	qboolean isOverheadMark;
 	qboolean isHereWarnDead;
 
-	if (!cgs.teamMarkers.teamTaskEnabled || !markType)
+	if (!cg.teamMarkers.teamTaskEnabled || !markType)
 		return;
 
 	/* One pack pass: remove marks to be replaced before adding new (QVM_LOGIC: O(n) not O(n²)) */
 	isOverheadMark = (markType == TEAMTASK_YES || markType == TEAMTASK_NO ||
 	                  markType == TEAMTASK_MEDIC || markType == TEAMTASK_HERE_ALIVE);
 	isHereWarnDead = (markType == TEAMTASK_HERE_DEAD || markType == TEAMTASK_WARN_DEAD);
-	if (clientNum >= 0 && clientNum < MAX_CLIENTS && cgs.teamMarkers.numTeamTaskMarks > 0)
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS && cg.teamMarkers.numTeamTaskMarks > 0)
 	{
 		writeIndex = 0;
-		for (i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++)
+		for (i = 0; i < cg.teamMarkers.numTeamTaskMarks; i++)
 		{
-			mark = &cgs.teamMarkers.teamTaskMarks[i];
+			mark = &cg.teamMarkers.teamTaskMarks[i];
 			/* Remove: same client+type, same client+overhead (if adding overhead), same client+PLAYERDEAD (if adding HERE/WARN_DEAD), same client+HERE/WARN_DEAD (if adding) */
 			if (mark->clientNum == clientNum &&
 			        (mark->markType == markType ||
@@ -840,26 +840,26 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 			}
 			if (writeIndex != i)
 			{
-				cgs.teamMarkers.teamTaskMarks[writeIndex] = cgs.teamMarkers.teamTaskMarks[i];
+				cg.teamMarkers.teamTaskMarks[writeIndex] = cg.teamMarkers.teamTaskMarks[i];
 			}
 			writeIndex++;
 		}
-		cgs.teamMarkers.numTeamTaskMarks = writeIndex;
+		cg.teamMarkers.numTeamTaskMarks = writeIndex;
 	}
 
 	/* Check if we have space for new mark */
-	if (cgs.teamMarkers.numTeamTaskMarks >= MAX_TEAMTASK_MARKS)
+	if (cg.teamMarkers.numTeamTaskMarks >= MAX_TEAMTASK_MARKS)
 	{
 		/* Remove oldest mark */
 		for (i = 0; i < MAX_TEAMTASK_MARKS - 1; i++)
 		{
-			cgs.teamMarkers.teamTaskMarks[i] = cgs.teamMarkers.teamTaskMarks[i + 1];
+			cg.teamMarkers.teamTaskMarks[i] = cg.teamMarkers.teamTaskMarks[i + 1];
 		}
-		cgs.teamMarkers.numTeamTaskMarks = MAX_TEAMTASK_MARKS - 1;
+		cg.teamMarkers.numTeamTaskMarks = MAX_TEAMTASK_MARKS - 1;
 	}
 
-	mark = &cgs.teamMarkers.teamTaskMarks[cgs.teamMarkers.numTeamTaskMarks];
-	cgs.teamMarkers.numTeamTaskMarks++;
+	mark = &cg.teamMarkers.teamTaskMarks[cg.teamMarkers.numTeamTaskMarks];
+	cg.teamMarkers.numTeamTaskMarks++;
 
 	/* Store markType directly (no overhead flag anymore) */
 	mark->markType = markType;
@@ -907,7 +907,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	}
 
 	mark->startTime = cg.time;
-	mark->endTime = cg.time + cgs.teamMarkers.markDurationMs;
+	mark->endTime = cg.time + cg.teamMarkers.markDurationMs;
 	mark->clientNum = clientNum; /* Always store sender's clientNum (whose mark it is) */
 	mark->isOverhead = isOverheadMark;
 	mark->isPickup = (toClient == 1); /* True if this is a pickup mark (toClient=1) */
@@ -924,7 +924,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	}
 
 	/* Play sound when mark appears */
-	if (cgs.teamMarkers.teamTaskFlags & CG_TEAMTASK_MARKSOUND)
+	if (cg.teamMarkers.teamTaskFlags & CG_TEAMTASK_MARKSOUND)
 	{
 		sfxHandle_t soundToPlay;
 		soundToPlay = 0;

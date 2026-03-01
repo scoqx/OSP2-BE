@@ -61,6 +61,7 @@ static teamTaskFilterTableNode_t* CG_TeamTaskFilterFindName(const char* name)
 void CG_TeamTaskFilterDump(void)
 {
 	int p;
+	char nameCodesBuf[MAX_QPATH * 2];
 
 	CG_Printf("^7| ^1%2s ^7| ^5%5s | ^5%32s | ^5%s\n", "ID", "Muted", "Player name", "Player name raw");
 	CG_Printf("^7------------------------------------------------------------------------------\n");
@@ -68,9 +69,10 @@ void CG_TeamTaskFilterDump(void)
 	{
 		if (cgs.clientinfo[p].infoValid)
 		{
+			CG_StringMakeEscapeCharRAW(cgs.clientinfo[p].name_original, nameCodesBuf, sizeof(nameCodesBuf));
 			CG_Printf("^7| ^1%2d ^7|  %s  ^7| %32s | %s\n", p,
 			          CG_TeamTaskFilterIsNameMuted(cgs.clientinfo[p].name_original) ? "^1Yes" : "^2No ",
-			          cgs.clientinfo[p].name_clean, cgs.clientinfo[p].name_codes);
+			          cgs.clientinfo[p].name_clean, nameCodesBuf);
 		}
 	}
 }

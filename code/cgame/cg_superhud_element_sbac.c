@@ -48,7 +48,7 @@ void CG_SHUDElementSBACRoutine(void* context)
 	if (ap <= 0 && element->config.color.isSet)
 		Vector4Copy(element->config.color.value.rgba, element->ctx.color);
 	else
-		Vector4Copy(cgs.healthColorLocal, element->ctx.color);
+		Vector4Copy(cg.healthColorLocal, element->ctx.color);
 	CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);
 }
 

@@ -18,11 +18,15 @@ typedef struct
 
 static void* CG_SHUDElementTeamCreate(const superhudConfig_t* config, int line)
 {
+	
 	shudTeamOverlay_t teamOverlay;
 
 	superhudConfig_t lcfg;
-
+	
 	shudElementTeam_t* element;
+	
+	float nameWidthPix;
+	float nameDelta;
 
 	SHUD_ELEMENT_INIT(element, config);
 
@@ -36,9 +40,24 @@ static void* CG_SHUDElementTeamCreate(const superhudConfig_t* config, int line)
 	element->config.alignV.isSet = qtrue;
 	element->config.alignV.value = SUPERHUD_ALIGNV_CENTER;
 
-	CG_SHUDElementCompileTeamOverlayConfig(config->fontsize.value[0], &teamOverlay);
+	CG_SHUDElementCompileTeamOverlayConfig(config->fontsize.value[0],
+		(config->style.isSet && config->style.value == 1) ? 1 : 0, &teamOverlay);
+
+	nameWidthPix = teamOverlay.nameLenPix;
+
+	if (!element->config.color.isSet)
+	{
+		element->config.color.isSet = qtrue;
+		element->config.color.value.type = SUPERHUD_COLOR_RGBA;
+		Vector4Set(element->config.color.value.rgba, 1, 1, 1, 1);
+	}
 
 	memcpy(&lcfg, &element->config, sizeof(element->config));
+
+	/* rect W (value[2]) > 0 = width in pixels for nickname; 0 = use overlay default */
+	if (config->rect.value[2] > 0)
+		nameWidthPix = config->rect.value[2];
+	nameDelta = nameWidthPix - teamOverlay.nameLenPix;
 
 	// setup powerup
 	lcfg.rect.value[0] = config->rect.value[0] + teamOverlay.powerupOffsetPix;
@@ -47,30 +66,30 @@ static void* CG_SHUDElementTeamCreate(const superhudConfig_t* config, int line)
 
 	// setup name
 	lcfg.rect.value[0] = config->rect.value[0] + teamOverlay.nameOffsetPix;
-	lcfg.rect.value[2] = teamOverlay.nameLenPix;
+	lcfg.rect.value[2] = nameWidthPix;
 	CG_SHUDTextMakeContext(&lcfg, &element->ctxName);
-	element->ctxName.width = teamOverlay.nameLenPix;
+	element->ctxName.width = nameWidthPix;
 
 	// setup health and armor
-	lcfg.rect.value[0] = config->rect.value[0] + teamOverlay.healthAndArmorOffsetPix;
+	lcfg.rect.value[0] = config->rect.value[0] + teamOverlay.healthAndArmorOffsetPix + nameDelta;
 	lcfg.rect.value[2] = teamOverlay.healthAndArmorLenPix;
 	CG_SHUDTextMakeContext(&lcfg, &element->ctxHealthArmor);
 	element->ctxHealthArmor.width = teamOverlay.healthAndArmorLenPix;
 	element->ctxHealthArmor.flags |= DS_FORCE_COLOR;
 
 	// setup weapon
-	lcfg.rect.value[0] = config->rect.value[0] + teamOverlay.weaponOffsetPix;
+	lcfg.rect.value[0] = config->rect.value[0] + teamOverlay.weaponOffsetPix + nameDelta;
 	lcfg.rect.value[2] = teamOverlay.weaponLenPix;
 	CG_SHUDDrawMakeContext(&lcfg, &element->ctxWeapon);
 
 	// setup location
-	lcfg.rect.value[0] = config->rect.value[0] + teamOverlay.locationOffsetPix;
+	lcfg.rect.value[0] = config->rect.value[0] + teamOverlay.locationOffsetPix + nameDelta;
 	lcfg.rect.value[2] = teamOverlay.locationLenPix;
 	CG_SHUDTextMakeContext(&lcfg, &element->ctxLocation);
 	element->ctxLocation.width = teamOverlay.locationLenPix;
 
 	// setup width of element
-	element->config.rect.value[2] = teamOverlay.overlayWidthPix;
+	element->config.rect.value[2] = teamOverlay.overlayWidthPix + nameDelta;
 
 	return element;
 }
@@ -207,74 +226,119 @@ void CG_SHUDElementTeamRoutine(void* context)
 	CG_SHUDTextPrint(&element->config, &element->ctxName);
 
 	// draw health and armor
-	Vector4Copy(cgs.healthColorByClient[sortedTeamPlayers[index]], element->ctxHealthArmor.color);
-	element->ctxHealthArmor.text = va("%3i/%i", ci->health, ci->armor);
-
-	CG_OSPDrawStringNew(element->ctxHealthArmor.coord.named.x,
-	                    element->ctxHealthArmor.coord.named.y,
-	                    element->ctxHealthArmor.text,
-	                    element->ctxHealthArmor.color,
-	                    element->ctxHealthArmor.shadowColor,
-	                    element->ctxHealthArmor.coord.named.w,
-	                    element->ctxHealthArmor.coord.named.h,
-	                    SCREEN_WIDTH,
-	                    element->ctxHealthArmor.flags,
-	                    element->ctxHealthArmor.fontIndex,
-	                    NULL, NULL, NULL);
-
-	// draw weapon
-	element->ctxWeapon.image = cg_weapons[ci->curWeapon].ammoIcon ?  cg_weapons[ci->curWeapon].ammoIcon : cgs.media.deferShader;
-	CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxWeapon);
-
-	// draw powerup
+	if (cg_teamHealthBar.integer >= 1)
 	{
-		int k = 0;
-		gitem_t* gi;
+		CG_DrawHealthBar(element->ctxHealthArmor.coord.named.x,
+		    element->config.rect.value[1],
+		    (float)element->ctxHealthArmor.width,
+		    element->config.rect.value[3],
+		    ci->health, ci->armor, element->config.color.value.rgba[3],
+		    (cg_teamHealthBar.integer == 2) ? element->ctxHealthArmor.fontIndex : -1, qfalse);
+	}
+	else
+	{
+		Vector4Copy(cg.healthColorByClient[sortedTeamPlayers[index]], element->ctxHealthArmor.color);
+		element->ctxHealthArmor.text = va("%3i/%i", ci->health, ci->armor);
 
-		do
-		{
-			if (cgs.osp.gameTypeFreeze && ci->health <= 0)
-			{
-				element->ctxPowerup.image = cgs.media.noammoShader;
-				CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxPowerup);
-				break;
-			}
-			else if (ci->powerups & (1 << k))
-			{
-				gi = BG_FindItemForPowerup(k);
-				if (gi)
-				{
-					element->ctxPowerup.image = trap_R_RegisterShader(gi->icon);
-					CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxPowerup);
-				}
-			}
-		}
-		while (++k < 16);
+		CG_OSPDrawStringNew(element->ctxHealthArmor.coord.named.x,
+		                    element->ctxHealthArmor.coord.named.y,
+		                    element->ctxHealthArmor.text,
+		                    element->ctxHealthArmor.color,
+		                    element->ctxHealthArmor.shadowColor,
+		                    element->ctxHealthArmor.coord.named.w,
+		                    element->ctxHealthArmor.coord.named.h,
+		                    SCREEN_WIDTH,
+		                    element->ctxHealthArmor.flags,
+		                    element->ctxHealthArmor.fontIndex,
+		                    NULL, NULL, NULL);
 	}
 
-	// draw location
+	if (element->config.style.isSet && element->config.style.value == 1)
 	{
-		if (customLocationsEnabled != 0)
+		// style 1: one icon left of name — dead status (red) or powerup if any
+		if (cgs.osp.gameTypeFreeze && ci->health <= 0)
 		{
-			element->ctxLocation.text = CG_CustomLocationsGetName(ci->customLocation);
+			vec4_t redColor;
+			Vector4Set(redColor, 1.0f, 0.0f, 0.0f, 1.0f);
+			element->ctxPowerup.image = cgs.media.noammoShader;
+			CG_SHUDDrawStretchPic(element->ctxPowerup.coord, element->ctxPowerup.coordPicture, redColor, element->ctxPowerup.image);
 		}
 		else
 		{
-			if (ch_ColorLocations.integer != 0 && cgs.gametype == GT_CTF)
+			int k = 0;
+			gitem_t* gi;
+
+			do
 			{
-				element->ctxLocation.text = CG_GetCTFLocation(ci->location);
+				if (ci->powerups & (1 << k))
+				{
+					gi = BG_FindItemForPowerup(k);
+					if (gi)
+					{
+						element->ctxPowerup.image = trap_R_RegisterShader(gi->icon);
+						CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxPowerup);
+					}
+				}
+			}
+			while (++k < 16);
+		}
+	}
+	else
+	{
+		// draw weapon
+		element->ctxWeapon.image = cg_weapons[ci->curWeapon].ammoIcon ?  cg_weapons[ci->curWeapon].ammoIcon : cgs.media.deferShader;
+		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxWeapon);
+
+		// draw powerup
+		{
+			int k = 0;
+			gitem_t* gi;
+
+			do
+			{
+				if (cgs.osp.gameTypeFreeze && ci->health <= 0)
+				{
+					element->ctxPowerup.image = cgs.media.noammoShader;
+					CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxPowerup);
+					break;
+				}
+				else if (ci->powerups & (1 << k))
+				{
+					gi = BG_FindItemForPowerup(k);
+					if (gi)
+					{
+						element->ctxPowerup.image = trap_R_RegisterShader(gi->icon);
+						CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxPowerup);
+					}
+				}
+			}
+			while (++k < 16);
+		}
+
+		// draw location
+		{
+			if (customLocationsEnabled != 0)
+			{
+				element->ctxLocation.text = CG_CustomLocationsGetName(ci->customLocation);
 			}
 			else
 			{
-				element->ctxLocation.text = CG_ConfigString(CS_LOCATIONS + ci->location);
+				if (ch_ColorLocations.integer != 0 && cgs.gametype == GT_CTF)
+				{
+					element->ctxLocation.text = CG_GetCTFLocation(ci->location);
+				}
+				else
+				{
+					element->ctxLocation.text = CG_ConfigString(CS_LOCATIONS + ci->location);
+				}
 			}
-		}
-		if (!element->ctxLocation.text || *element->ctxLocation.text == 0)
-		{
-			element->ctxLocation.text = "unknown";
-		}
+			if (!element->ctxLocation.text || *element->ctxLocation.text == 0)
+			{
+				element->ctxLocation.text = "unknown";
+			}
 
-		CG_SHUDTextPrint(&element->config, &element->ctxLocation);
+			CG_SHUDTextPrint(&element->config, &element->ctxLocation);
+		}
 	}
 }
 

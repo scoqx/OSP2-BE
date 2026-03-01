@@ -38,7 +38,7 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent)
 	vec3_t position;
 
 	/* Check conditions: single gate for teamtask + warmup/game/event */
-	if (!cgs.teamMarkers.teamTaskEnabled || cg.warmup || target != cg.clientNum || cgs.gametype < GT_TEAM || isUnfreezeEvent)
+	if (!cg.teamMarkers.teamTaskEnabled || cg.warmup || target != cg.clientNum || cgs.gametype < GT_TEAM || isUnfreezeEvent)
 		return;
 
 	/* Get player entity */
@@ -53,8 +53,8 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent)
 	position[2] += 6.0f;
 
 	/* Save death coordinates */
-	VectorCopy(position, cgs.teamMarkers.deathPosition);
-	cgs.teamMarkers.deathPositionValid = qtrue;
+	VectorCopy(position, cg.teamMarkers.deathPosition);
+	cg.teamMarkers.deathPositionValid = qtrue;
 
 	/* Send team task mark */
 	CG_SendTeamTaskMarkAtPosition(0, TEAMTASK_PLAYERDEAD, position, qtrue);
@@ -114,18 +114,18 @@ qhandle_t CG_GetPickupShader(void)
 	int itemType;
 
 	/* Check if we have a valid pickup item (within 5 seconds) */
-	if (cgs.teamMarkers.pickupItemType == 0)
+	if (cg.teamMarkers.pickupItemType == 0)
 	{
 		return cgs.media.teamTasksPickupEmpty;
 	}
 
 	/* Check if pickup item is still valid (5 seconds = 5000ms) */
-	if ((cg.time - cgs.teamMarkers.pickupItemTime) > 5000)
+	if ((cg.time - cg.teamMarkers.pickupItemTime) > 5000)
 	{
 		return cgs.media.teamTasksPickupEmpty;
 	}
 
-	itemType = cgs.teamMarkers.pickupItemType;
+	itemType = cg.teamMarkers.pickupItemType;
 	if (itemType == TEAMTASK_MEGAHEALTH)
 	{
 		return cgs.media.teamTasksMegahealthPickup;
@@ -266,7 +266,7 @@ Check if server supports team task
 */
 qboolean CG_IsTeamTaskSupported(void)
 {
-	return cgs.teamMarkers.supportedServer;
+	return cg.teamMarkers.supportedServer;
 }
 
 /*
@@ -280,7 +280,7 @@ Removal is done in CG_TeamTaskUpdateFrame (single place).
 */
 void CG_ClearRoundSpecificTeamTaskMarks(void)
 {
-	cgs.teamMarkers.packRoundNextFrame = qtrue;
+	cg.teamMarkers.packRoundNextFrame = qtrue;
 }
 
 /*
@@ -296,7 +296,7 @@ void CG_ClearClientHereDeadMarks(int clientNum)
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
 		return;
 	if (clientNum < 32)
-		cgs.teamMarkers.packHereDeadClientMask0 |= (1 << clientNum);
+		cg.teamMarkers.packHereDeadClientMask0 |= (1 << clientNum);
 	else
-		cgs.teamMarkers.packHereDeadClientMask1 |= (1 << (clientNum - 32));
+		cg.teamMarkers.packHereDeadClientMask1 |= (1 << (clientNum - 32));
 }

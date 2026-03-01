@@ -1,2 +1,15 @@
-11.02.2026 be v1.01e
-* +ttWheel cursor fix
+15.02.2026 be v1.01f
+
++ cg_altRail 2-5 (devotion)
++ cg_altRailBeefy
++ cg_enhancedInterpolation
++ cg_entityOverpolate
++ cg_teamOverlayBars
++ cg_healthBarStyle
+* SuperHUD configs: 
+  * AGENT, m1rqlstyle, m1rQ4style updated
+  + kon, kon_demo
+* MiniScores (shud/osphud) fix
+* Q3MSK FREEZE: Compatibility update for improved server logic
+  (dead player states are now always displayed correctly in the scoreboard)
+* various fixes

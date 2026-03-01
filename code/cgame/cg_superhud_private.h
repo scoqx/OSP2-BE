@@ -372,6 +372,7 @@ typedef struct superHUDConfigElement_s
 	void (*destroy)(void* context);
 	void* context;
 	int order;
+	qboolean isFragmessage;
 } superHUDConfigElement_t;
 
 typedef struct superhudElementDictMember_s
@@ -810,7 +811,7 @@ qboolean CG_SHUDFill(const superhudConfig_t* cfg);
 team_t CG_SHUDGetOurActiveTeam(void);
 qboolean CG_SHUDGetFadeColor(const vec4_t from_color, vec4_t out, const superhudConfig_t* cfg, int startTime);
 void CG_SHUDFillWithColor(const superhudCoord_t* coord, const float* color);
-void CG_SHUDElementCompileTeamOverlayConfig(int fontWidth, shudTeamOverlay_t* configOut);
+void CG_SHUDElementCompileTeamOverlayConfig(int fontWidth, int style, shudTeamOverlay_t* configOut);
 void CG_SHUDConfigPickBgColor(const superhudConfig_t* config, float* color, qboolean alphaOverride);
 
 

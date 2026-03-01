@@ -452,6 +452,17 @@ void CG_SHUDRoutine(void)
 	is_gt_ft = ((gt == GT_TEAM || gt == GT_CTF) && cgs.osp.gameTypeFreeze);
 	is_gt_ca = (gt >= GT_CA);
 
+	{
+		int k0 = cgs.osp.shud.key[0];
+		int k1 = cgs.osp.shud.key[1];
+		int k2 = cgs.osp.shud.key[2];
+		int k3 = cgs.osp.shud.key[3];
+		int k4 = cgs.osp.shud.key[4];
+		int k5 = cgs.osp.shud.key[5];
+		int k6 = cgs.osp.shud.key[6];
+		int k7 = cgs.osp.shud.key[7];
+		qboolean be_health_low = cg.beIsHealthLow;
+
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
 	{
@@ -467,7 +478,7 @@ void CG_SHUDRoutine(void)
 		qboolean weapon_skip;
 		qboolean skip;
 
-		if (last->element.name && Q_stricmp(last->element.name, "fragmessage") == 0)
+		if (last->element.isFragmessage)
 		{
 			is_spectator_for_element = is_spectator || (pm_type == PM_SPECTATOR);
 		}
@@ -490,21 +501,21 @@ void CG_SHUDRoutine(void)
 		       (!(vflags & SE_SPECT) && is_spectator_for_element) ||
 		       ((vflags & SE_SCORES_HIDE) && is_scores) ||
 		       ((vflags & SE_DEMO_HIDE) && cg.demoPlayback) ||
-		       ((vflags & SE_KEY1_SHOW) && !cgs.osp.shud.key[0]) ||
-		       ((vflags & SE_KEY2_SHOW) && !cgs.osp.shud.key[1]) ||
-		       ((vflags & SE_KEY3_SHOW) && !cgs.osp.shud.key[2]) ||
-		       ((vflags & SE_KEY4_SHOW) && !cgs.osp.shud.key[3]) ||
-		       ((vflags & SE_KEY5_SHOW) && !cgs.osp.shud.key[4]) ||
-		       ((vflags & SE_KEY6_SHOW) && !cgs.osp.shud.key[5]) ||
-		       ((vflags & SE_KEY7_SHOW) && !cgs.osp.shud.key[6]) ||
-		       ((vflags & SE_KEY8_SHOW) && !cgs.osp.shud.key[7]) ||
+		       ((vflags & SE_KEY1_SHOW) && !k0) ||
+		       ((vflags & SE_KEY2_SHOW) && !k1) ||
+		       ((vflags & SE_KEY3_SHOW) && !k2) ||
+		       ((vflags & SE_KEY4_SHOW) && !k3) ||
+		       ((vflags & SE_KEY5_SHOW) && !k4) ||
+		       ((vflags & SE_KEY6_SHOW) && !k5) ||
+		       ((vflags & SE_KEY7_SHOW) && !k6) ||
+		       ((vflags & SE_KEY8_SHOW) && !k7) ||
 		       ((vflags & SE_GT_FFA) && is_gt_ffa) ||
 		       ((vflags & SE_GT_TDM) && is_gt_tdm) ||
 		       ((vflags & SE_GT_CTF) && is_gt_ctf) ||
 		       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
 		       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
 		       ((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
-		       ((vflags & SE_HEALTH_LOW) && !cg.beIsHealthLow) ||
+		       ((vflags & SE_HEALTH_LOW) && !be_health_low) ||
 		       weapon_skip;
 
 		if (!skip && last->element.routine)
@@ -513,15 +524,16 @@ void CG_SHUDRoutine(void)
 		}
 		last = last->next;
 	}
-	if (cgs.newStats.drawWindow)
+	}
+	if (cg.showWStats)
 	{
 		CG_BEStatsShowStatsInfo();
 	}
-	if (cgs.teamMarkers.ttwheelMarkActive)
+	if (cg.ttwheelMarkActive)
 	{
 		CG_DrawSelwheelIcons();
 	}
-	if (!cg_printui.integer || cgs.printuiActiveCount == 0)
+	if (!cg_printui.integer || cg.printuiActiveCount == 0)
 	{
 		/* early exit: skip printui block */
 	}

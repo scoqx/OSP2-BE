@@ -769,8 +769,10 @@ void CG_PredictPlayerState(void)
 			else
 			{
 				vec3_t  adjusted;
+				vec3_t  adjustedAngles;
 				CG_AdjustPositionForMover(cg.predictedPlayerState.origin,
-				                          cg.predictedPlayerState.groundEntityNum, cg.physicsTime, cg.oldTime, adjusted);
+				                          cg.predictedPlayerState.groundEntityNum, cg.physicsTime, cg.oldTime, adjusted,
+				                          cg.predictedPlayerState.viewangles, adjustedAngles);
 
 				if (cg_showmiss.integer)
 				{
@@ -852,7 +854,8 @@ void CG_PredictPlayerState(void)
 	// adjust for the movement of the groundentity
 	CG_AdjustPositionForMover(cg.predictedPlayerState.origin,
 	                          cg.predictedPlayerState.groundEntityNum,
-	                          cg.physicsTime, cg.time, cg.predictedPlayerState.origin);
+	                          cg.physicsTime, cg.time, cg.predictedPlayerState.origin,
+	                          cg.predictedPlayerState.viewangles, cg.predictedPlayerState.viewangles);
 
 	if (cg_showmiss.integer)
 	{

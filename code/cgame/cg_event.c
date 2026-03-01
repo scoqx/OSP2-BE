@@ -653,21 +653,21 @@ static void CG_TrackPickupItemForTeamTask(int itemNum)
 		classname = item->classname;
 		if (!Q_stricmp(classname, "item_health_mega"))
 		{
-			cgs.teamMarkers.pickupItemType = TEAMTASK_MEGAHEALTH;
-			VectorCopy(cg.predictedPlayerState.origin, cgs.teamMarkers.pickupItemPosition);
-			cgs.teamMarkers.pickupItemTime = cg.time;
+			cg.teamMarkers.pickupItemType = TEAMTASK_MEGAHEALTH;
+			VectorCopy(cg.predictedPlayerState.origin, cg.teamMarkers.pickupItemPosition);
+			cg.teamMarkers.pickupItemTime = cg.time;
 		}
 		else if (!Q_stricmp(classname, "item_armor_body"))
 		{
-			cgs.teamMarkers.pickupItemType = TEAMTASK_REDARMOR;
-			VectorCopy(cg.predictedPlayerState.origin, cgs.teamMarkers.pickupItemPosition);
-			cgs.teamMarkers.pickupItemTime = cg.time;
+			cg.teamMarkers.pickupItemType = TEAMTASK_REDARMOR;
+			VectorCopy(cg.predictedPlayerState.origin, cg.teamMarkers.pickupItemPosition);
+			cg.teamMarkers.pickupItemTime = cg.time;
 		}
 		else if (!Q_stricmp(classname, "item_armor_combat"))
 		{
-			cgs.teamMarkers.pickupItemType = TEAMTASK_YELLOWARMOR;
-			VectorCopy(cg.predictedPlayerState.origin, cgs.teamMarkers.pickupItemPosition);
-			cgs.teamMarkers.pickupItemTime = cg.time;
+			cg.teamMarkers.pickupItemType = TEAMTASK_YELLOWARMOR;
+			VectorCopy(cg.predictedPlayerState.origin, cg.teamMarkers.pickupItemPosition);
+			cg.teamMarkers.pickupItemTime = cg.time;
 		}
 	}
 }
@@ -754,11 +754,9 @@ static sfxHandle_t CG_GetFreezeSoundReplacement(const char* soundName, int event
 	{
 		if (cg_freezeSoundFix.integer == 1 && cgs.media.freezeSoundReplacement)
 		{
-			cgs.beCustomFreezeSound = qtrue;
 			return cgs.media.freezeSoundReplacement;
 		}
 	}
-	cgs.beCustomFreezeSound = qfalse;
 	return 0;
 }
 

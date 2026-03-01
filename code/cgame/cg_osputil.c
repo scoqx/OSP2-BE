@@ -509,75 +509,158 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 =================
 CG_UpdateMyTeam
 
-Отслеживает команду игрока каждый кадр и обновляет cgs.beMyTeam
-для динамического обновления цветов T/E
+Команда для цветов T/E = команда игрока, за которым мы смотрим в snapshot.
+Играем за собой — это наша команда; наблюдаем за кем-то — команда того, за кем смотрим.
 =================
 */
+/* Cache for early-out when POV/team unchanged (QVM: avoid per-frame work when nothing changed) */
+static int s_lastViewClientNum = -1;
+static team_t s_lastViewedTeam = TEAM_FREE;
+static team_t s_lastRealTeam = TEAM_FREE;
+
 void CG_UpdateMyTeam(void)
 {
-	team_t currentTeam;
-	const clientInfo_t* ourClient;
+	team_t viewedTeam;   /* Team of who we see (for E/T: always this; free spec = RED) */
+	team_t realTeam;     /* For cg_myTeam 1/2: only viewed team when spectPOV 1 or we're in a team */
+	team_t oldBeMyTeam;
+	int viewClientNum;
 
-	/* Safety check */
-	if (cg.clientNum < 0 || cg.clientNum >= MAX_CLIENTS)
+	if (!cg.snap || cg.snap->ps.clientNum < 0 || cg.snap->ps.clientNum >= MAX_CLIENTS)
 	{
 		cgs.beMyTeam = TEAM_RED;
+		s_lastViewClientNum = -1;
 		return;
 	}
 
-	ourClient = &cgs.clientinfo[cg.clientNum];
-
-	/* Determine team with spectPOV logic */
-	if (cg_spectPOV.integer && ourClient->team == TEAM_SPECTATOR)
-	{
-		if (cg.snap && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
-		        cg.snap->ps.clientNum >= 0 &&
-		        cg.snap->ps.clientNum < MAX_CLIENTS)
-		{
-			if (CG_OSPIsGameTypeCA(cgs.gametype))
-			{
-				currentTeam = cgs.clientinfo[cg.snap->ps.clientNum].rt;
-			}
-			else
-			{
-				currentTeam = cgs.clientinfo[cg.snap->ps.clientNum].team;
-			}
-		}
-		else
-		{
-			/* Not following anyone - red team is ally */
-			currentTeam = TEAM_RED;
-		}
-	}
+	viewClientNum = cg.snap->ps.clientNum;
+	if (CG_OSPIsGameTypeCA(cgs.gametype))
+		viewedTeam = cgs.clientinfo[viewClientNum].rt;
 	else
+		viewedTeam = cgs.clientinfo[viewClientNum].team;
+
+	if (viewedTeam == TEAM_SPECTATOR)
+		viewedTeam = TEAM_RED;  /* Free spec: red = "our" team for E/T */
+
+	/* cg_myTeam 1/2: only apply when spectPOV 1 (or we're in a team). spectPOV 0 = "look at ourselves", no swap */
+	realTeam = viewedTeam;
+	if (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
 	{
-		/* Not in spectator or spectPOV disabled */
-		if (cg.snap && cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR)
-		{
-			currentTeam = cg.snap->ps.persistant[PERS_TEAM];
-		}
-		else
-		{
-			if (CG_OSPIsGameTypeCA(cgs.gametype))
-			{
-				currentTeam = ourClient->rt;
-			}
-			else
-			{
-				currentTeam = ourClient->team;
-			}
-		}
+		const team_t ourTeam = CG_OSPIsGameTypeCA(cgs.gametype)
+			? cgs.clientinfo[cg.clientNum].rt
+			: cgs.clientinfo[cg.clientNum].team;
+		if (ourTeam == TEAM_SPECTATOR && !cg_spectPOV.integer)
+			realTeam = TEAM_SPECTATOR;
 	}
 
-	/* If still in spectator and not following, use red as ally */
-	if (currentTeam == TEAM_SPECTATOR)
+	/* Early-out: same view client and teams as last frame — skip UpdateVisualTeamColors and ReloadColors path */
+	if (viewClientNum == s_lastViewClientNum && viewedTeam == s_lastViewedTeam && realTeam == s_lastRealTeam)
 	{
-		currentTeam = TEAM_RED;
+		cgs.beMyTeam = viewedTeam;
+		return;
+	}
+	s_lastViewClientNum = viewClientNum;
+	s_lastViewedTeam = viewedTeam;
+	s_lastRealTeam = realTeam;
+
+	oldBeMyTeam = cgs.beMyTeam;
+	cgs.beMyTeam = viewedTeam;
+
+	/* Always refresh be/scoreboard from base when in team game */
+	if (cgs.gametype >= GT_TEAM)
+		CG_UpdateVisualTeamColors(realTeam);
+
+	if (viewedTeam != oldBeMyTeam)
+		CG_ReloadColors();
+}
+
+/* Cache for CG_UpdateVisualTeamColors: skip recompute when realTeam and cg_myTeam unchanged */
+static team_t s_lastVisualRealTeam = TEAM_FREE;
+static int s_lastVisualCgMyTeam = -1;
+
+void CG_InvalidateVisualTeamColorsCache(void)
+{
+	s_lastVisualRealTeam = TEAM_FREE;
+	s_lastVisualCgMyTeam = -1;
+	s_lastViewClientNum = -1;  /* force CG_UpdateMyTeam full run next frame */
+}
+
+/*
+=================
+CG_UpdateVisualTeamColors
+
+Пересчитывает эффективные командные цвета (cgs.beRedTeamColor / cgs.beBlueTeamColor)
+из базовых цветов и текущих настроек cg_myTeam. В неккомандных режимах и для
+наблюдателя цвета остаются базовыми.
+
+realTeam - реальная команда игрока (TEAM_RED, TEAM_BLUE, или другая)
+=================
+*/
+void CG_UpdateVisualTeamColors(team_t realTeam)
+{
+	/* Non-team gametypes: use base colors as-is */
+	if (cgs.gametype < GT_TEAM)
+	{
+		Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
+		Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+		return;
 	}
 
-	/* Update tracked team */
-	cgs.beMyTeam = currentTeam;
-	CG_ReloadColors();
+	/* Spectator or unknown team: keep base colors */
+	if (realTeam != TEAM_RED && realTeam != TEAM_BLUE)
+	{
+		Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
+		Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+		return;
+	}
+
+	/* Skip if same inputs as last time (avoids per-frame work when nothing changed) */
+	if (realTeam == s_lastVisualRealTeam && cg_myTeam.integer == s_lastVisualCgMyTeam)
+		return;
+	s_lastVisualRealTeam = realTeam;
+	s_lastVisualCgMyTeam = cg_myTeam.integer;
+
+	/* Apply cg_myTeam mapping */
+	switch (cg_myTeam.integer)
+	{
+	default:
+	case 0:
+		/* Default behavior: no remapping */
+		Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
+		Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+		break;
+
+	case 1: /* Force "my team" to use red color scheme */
+		if (realTeam == TEAM_RED)
+		{
+			Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
+			Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+		}
+		else /* realTeam == TEAM_BLUE */
+		{
+			/* Swap red/blue effective colors */
+			Vector4Copy(cgs.baseBlueTeamColor, cgs.beRedTeamColor);
+			Vector4Copy(cgs.baseRedTeamColor,  cgs.beBlueTeamColor);
+		}
+		break;
+
+	case 2: /* Force "my team" to use blue color scheme */
+		if (realTeam == TEAM_BLUE)
+		{
+			Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
+			Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+		}
+		else /* realTeam == TEAM_RED */
+		{
+			/* Swap red/blue effective colors */
+			Vector4Copy(cgs.baseBlueTeamColor, cgs.beRedTeamColor);
+			Vector4Copy(cgs.baseRedTeamColor,  cgs.beBlueTeamColor);
+		}
+		break;
+	}
+	
+	/* Also update scoreboard base colors (they follow beRedTeamColor/beBlueTeamColor) */
+	Vector4Copy(cgs.beRedTeamColor, scoreboard_rtColor);
+	Vector4Copy(cgs.beBlueTeamColor, scoreboard_btColor);
 }
 
 /*
@@ -656,7 +739,6 @@ void CG_ReloadColors(void)
 			}
 		}
 
-		// If contains 'E' or 'T', update the cvar
 		if (needsUpdate)
 		{
 			CG_CvarTouch(*cvarName);

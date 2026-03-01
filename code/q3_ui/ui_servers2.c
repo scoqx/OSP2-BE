@@ -407,7 +407,16 @@ static int QDECL ArenaServers_Compare( const void *arg1, const void *arg2 ) {
 
 	switch( g_sortkey ) {
 	case SORT_HOST:
-		return Q_stricmp( t1->hostname, t2->hostname );
+		result = Q_stricmp( t1->hostname, t2->hostname );
+		if ( !result ) {
+			if( t1->pingtime < t2->pingtime ) {
+				return -1;
+			}
+			if( t1->pingtime > t2->pingtime ) {
+				return 1;
+			}
+		}
+		return result;
 
 	case SORT_MAP:
 		result = Q_stricmp( t1->mapname, t2->mapname );

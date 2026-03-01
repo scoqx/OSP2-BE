@@ -54,15 +54,15 @@ void CG_UpdateBeFeatures(void)
 	int i = 0;
 	int beFlags = 0;
 	clientInfo_t* otherCi = &cgs.clientinfo[i];
-	qboolean isFbSkin = qfalse;
+	qboolean anyFbSkin = qfalse;
 
 	cgs.beEnabled = be_enabled.integer;
 
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
-		if (otherCi->infoValid && otherCi->isFbSkin)
+		if (otherCi->infoValid && otherCi->skinType == SKIN_TYPE_FB)
 		{
-			isFbSkin = qtrue;
+			anyFbSkin = qtrue;
 			break;
 		}
 		otherCi++;
@@ -72,6 +72,7 @@ void CG_UpdateBeFeatures(void)
 	needRebuild = !cgs.beEnabled;
 	if (doRefresh)
 	{
+		CG_LoadForcedSounds();
 		inUpdateAllClientsInfo = qtrue;
 		if (needRebuild)
 			CG_RebuildPlayerColors();
@@ -104,7 +105,7 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_ALT_PLASMAGUN, changed = qtrue;
 		if (cgs.osp.enemyColorsOverride.isLightningColorSet)
 			beFlags |= CG_BE_ENEMYLIGHTNING, changed = qtrue;
-		if (isFbSkin || cg_drawBrightWeapons.integer)
+		if (anyFbSkin || cg_drawBrightWeapons.integer)
 			beFlags |= CG_BE_FULLBRIGHT, changed = qtrue;
 		if (cg_teamTask.integer)
 			beFlags |= CG_BE_TEAMTASKS, changed = qtrue;
@@ -116,11 +117,14 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_HUD_MARKERS, changed = qtrue;
 		if (cg_footsteps.integer == 2)
 			beFlags |= CG_BE_METAL_FOOTSTEPS, changed = qtrue;
+		beFlags |= CG_BE_AUTOJUMP, changed = qtrue;
 	}
 
 	cgs.beFeaturesEnabled = beFlags & ~cgs.beDisableFeatures;
 	if (changed)
 		trap_Cvar_Set("be_features", va("%d", beFlags));
+	if (!cgs.beEnabled || (cgs.beDisableFeatures & CG_BE_MODELSOUND))
+		CG_ClearForcedSounds();
 }
 
 /*
@@ -261,6 +265,11 @@ void CG_PrintDisabledFeatures(qboolean request)
 		if (value & CG_BE_METAL_FOOTSTEPS)
 		{
 			Q_strcat(buffer, sizeof(buffer), first ? "Metal footsteps" : ", metal footsteps");
+			first = qfalse;
+		}
+		if (value & CG_BE_AUTOJUMP)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Autojump" : ", autojump");
 			first = qfalse;
 		}
 		// if (value & CG_BE_FREEZE_SOUND_FIX)

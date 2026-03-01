@@ -628,6 +628,9 @@ qboolean CG_DrawOldScoreboard(void)
 		fade = *fadeColor;
 	}
 
+	Vector4Copy(cgs.beRedTeamColor, scoreboard_rtColor);
+	Vector4Copy(cgs.beBlueTeamColor, scoreboard_btColor);
+
 	if (cg.demoPlayback != 0)
 	{
 		CG_DrawBigString(SCREEN_WIDTH / 2.0f, 40, "^3Demo Playback", fade, DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW, font);
@@ -810,16 +813,23 @@ void CG_DrawOldTourneyScoreboard(void)
 	{
 		cg.scoresRequestTime = cg.time;
 		if (!cg.demoPlayback)
-		{
 			trap_SendClientCommand("score");
-		}
 	}
-	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
+	// getdstatus (dead in freeze, q3msk only) when we did not send score this frame — same 2s cycle; 600 ms min; not during intermission
+	else if (!cg.demoPlayback && !cg.intermissionStarted)
+		CG_TrySendDstatusRequest();
+	/* Request getstatsinfo when scoreboard with accuracy is visible — same logic as wstats: periodic when alive or observing. */
+	if (cg_drawAccuracy.integer && (cg.showScores || cg.predictedPlayerState.pm_type == PM_DEAD || cg.predictedPlayerState.pm_type == PM_INTERMISSION))
 	{
-		cg.statsRequestTime = cg.time;
-		if (!cgs.fpsclassico)
+		if (cg.intermissionStarted)
 		{
-			trap_SendClientCommand("getstatsinfo");
+			if (!cg.statsRequestSentInIntermission && CG_TrySendStatsRequest())
+				cg.statsRequestSentInIntermission = qtrue;
+		}
+		else if ((!CG_IS_DEAD() || (cg.snap && cg.snap->ps.clientNum != cg.clientNum)) && cg.statsRequestTime + 2500 < cg.time)
+		{
+			cg.statsRequestTime = cg.time;
+			CG_TrySendStatsRequest();
 		}
 	}
 
@@ -1165,9 +1175,23 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 	headAngles[1] = 180.0f;
 	CG_DrawHead(x + 22, y, 16.0f, 16.0f, score->client, headAngles);
 
-	if (!cg.warmup && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze && cg.snap->ps.stats[ STAT_CLIENTS_READY ] & (1 << score->client))
+	if (!cg.warmup && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
 	{
-		CG_OSPDrawPic(x + 22, y, 16.0f, 16.0f, cgs.media.frozenFoeTagShader);
+		qboolean isFrozen;
+
+		if (cgs.q3msk)
+		{
+			isFrozen = CG_GetDeadInFreeze(score->client);
+		}
+		else
+		{
+			isFrozen = (cg.snap->ps.stats[STAT_CLIENTS_READY] & (1 << score->client)) != 0;
+		}
+
+		if (isFrozen)
+		{
+			CG_OSPDrawPic(x + 22, y, 16.0f, 16.0f, cgs.media.frozenFoeTagShader);
+		}
 	}
 
 	if (score->ping == -1)
@@ -1312,7 +1336,22 @@ int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScores)
 		else
 		{
 			qboolean isReady;
-			isReady = cg.snap->ps.stats[STAT_CLIENTS_READY] & (1 << score->client);
+			if (!cg.warmup && cg.predictedPlayerState.pm_type != PM_INTERMISSION &&
+			    cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+			{
+				if (cgs.q3msk)
+				{
+					isReady = CG_GetDeadInFreeze(score->client);
+				}
+				else
+				{
+					isReady = (cg.snap->ps.stats[STAT_CLIENTS_READY] & (1 << score->client)) != 0; 
+				}
+			}
+			else
+			{
+				isReady = (cg.snap->ps.stats[STAT_CLIENTS_READY] & (1 << score->client)) != 0;
+			}
 
 			if (!isCAGame)
 			{
@@ -1404,6 +1443,10 @@ qboolean CG_OSPDrawScoretable(void)
 		cg.killerName[0] = 0;
 		return qfalse;
 	}
+
+	Vector4Copy(cgs.beRedTeamColor, scoreboard_rtColor);
+	Vector4Copy(cgs.beBlueTeamColor, scoreboard_btColor);
+
 	y = 40;
 	if (cg.demoPlayback)
 	{
@@ -1600,29 +1643,65 @@ qboolean CG_OSPDrawScoretable(void)
 
 void SetScoreboardColors(vec4_t* rtColorHeader, vec4_t* rtColorBody, vec4_t* btColorHeader, vec4_t* btColorBody)
 {
-	// Fix bitwise check for red
-	if ((customScoreboardColorIsSet_red & 1) == 0)
+	/* Base is effective team colors (scoreboard_rtColor/btColor = beRed/beBlue).
+	   If cg_scoreboardRtColors/BtColors are set, they override header/body.
+	   cg_myTeam remapping is already applied when filling cgs.beRedTeamColor / cgs.beBlueTeamColor.
+
+	   Here we only decide, for SCOREBOARD COLUMNS, куда вешать Rt/Bt оверлеи:
+	   - без cg_myTeam: Rt -> левая колонка (RED), Bt -> правая (BLUE)
+	   - cg_myTeam 1/2: Rt/Bt могут "следовать за моей командой" и меняться местами. */
+
+	vec4_t leftHeader, leftBody;
+	vec4_t rightHeader, rightBody;
+	const clientInfo_t* localCi = (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
+		? &cgs.clientinfo[cg.clientNum]
+		: NULL;
+	const qboolean isFreeSpectator =
+		(localCi != NULL && localCi->team == TEAM_SPECTATOR && !cg_spectPOV.integer);
+	const qboolean swapOverlays = !isFreeSpectator &&
+	    ((cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
+	     (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED));
+
+	/* База: текущие эффективные командные цвета по колонкам: слева RED, справа BLUE */
+	Vector4Copy(scoreboard_rtColor, leftHeader);
+	Vector4Copy(scoreboard_rtColor, leftBody);
+	Vector4Copy(scoreboard_btColor, rightHeader);
+	Vector4Copy(scoreboard_btColor, rightBody);
+
+	if (!swapOverlays)
 	{
-		Vector4Copy(scoreboard_rtColor, *rtColorHeader);
-		Vector4Copy(scoreboard_rtColor, *rtColorBody);
+		/* Обычный случай: Rt-оверлей для левой (RED), Bt — для правой (BLUE) */
+		if ((customScoreboardColorIsSet_red & 1) != 0)
+		{
+			Vector4Copy(scoreboard_rtColorHeader, leftHeader);
+			Vector4Copy(scoreboard_rtColorBody, leftBody);
+		}
+		if ((customScoreboardColorIsSet_blue & 1) != 0)
+		{
+			Vector4Copy(scoreboard_btColorHeader, rightHeader);
+			Vector4Copy(scoreboard_btColorBody, rightBody);
+		}
 	}
 	else
 	{
-		Vector4Copy(scoreboard_rtColorHeader, *rtColorHeader);
-		Vector4Copy(scoreboard_rtColorBody, *rtColorBody);
+		/* cg_myTeam 1/2: Rt-оверлей "следует за моей командой" и может оказаться справа,
+		   Bt-оверлей при этом переезжает на противоположную колонку. */
+		if ((customScoreboardColorIsSet_red & 1) != 0)
+		{
+			Vector4Copy(scoreboard_rtColorHeader, rightHeader);
+			Vector4Copy(scoreboard_rtColorBody, rightBody);
+		}
+		if ((customScoreboardColorIsSet_blue & 1) != 0)
+		{
+			Vector4Copy(scoreboard_btColorHeader, leftHeader);
+			Vector4Copy(scoreboard_btColorBody, leftBody);
+		}
 	}
 
-	// Fix bitwise check for blue
-	if ((customScoreboardColorIsSet_blue & 1) == 0)
-	{
-		Vector4Copy(scoreboard_btColor, *btColorHeader);
-		Vector4Copy(scoreboard_btColor, *btColorBody);
-	}
-	else
-	{
-		Vector4Copy(scoreboard_btColorHeader, *btColorHeader);
-		Vector4Copy(scoreboard_btColorBody, *btColorBody);
-	}
+	Vector4Copy(leftHeader, *rtColorHeader);
+	Vector4Copy(leftBody, *rtColorBody);
+	Vector4Copy(rightHeader, *btColorHeader);
+	Vector4Copy(rightBody, *btColorBody);
 }
 
 int proportional = 0;
@@ -1793,6 +1872,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 	vec4_t colorRect;
 	vec4_t rtColorHeader, rtColorBody;
 	vec4_t btColorHeader, btColorBody;
+	vec4_t leftTitleColor, rightTitleColor;
 	int drewRed;
 	int drewBlue;
 	int drewSpect;
@@ -1861,7 +1941,47 @@ qboolean CG_BEDrawTeamScoretable(void)
 		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f, y, va("Fragged by %s", cg.killerName), *color, colorBlack, mWidth, bHeight, SCREEN_WIDTH, DS_HCENTER | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	}
 
+	Vector4Copy(cgs.beRedTeamColor, scoreboard_rtColor);
+	Vector4Copy(cgs.beBlueTeamColor, scoreboard_btColor);
+	CG_RefreshScoreboardTeamColors();
+
 	SetScoreboardColors(&rtColorHeader, &rtColorBody, &btColorHeader, &btColorBody);
+
+	/* Title colors: per-team overrides if set, otherwise follow COLUMN body color.
+	   Rt/Bt title-оверлеи тоже должны следовать за моей командой при cg_myTeam 1/2. */
+	{
+		const qboolean swapOverlays =
+		    (cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
+		    (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED);
+
+		if (!swapOverlays)
+		{
+			/* Rt‑title на левой колонке, Bt‑title на правой */
+			if ((customScoreboardColorIsSet_red & 2) != 0)
+				Vector4Copy(scoreboard_rtColorTitle, leftTitleColor);
+			else
+				Vector4Copy(rtColorBody, leftTitleColor);
+
+			if ((customScoreboardColorIsSet_blue & 2) != 0)
+				Vector4Copy(scoreboard_btColorTitle, rightTitleColor);
+			else
+				Vector4Copy(btColorBody, rightTitleColor);
+		}
+		else
+		{
+			/* cg_myTeam 1/2: Rt‑title уезжает на колонку моей команды,
+			   Bt‑title — на противоположную, фоллбек всё равно от тела колонки. */
+			if ((customScoreboardColorIsSet_blue & 2) != 0)
+				Vector4Copy(scoreboard_btColorTitle, leftTitleColor);
+			else
+				Vector4Copy(rtColorBody, leftTitleColor);
+
+			if ((customScoreboardColorIsSet_red & 2) != 0)
+				Vector4Copy(scoreboard_rtColorTitle, rightTitleColor);
+			else
+				Vector4Copy(btColorBody, rightTitleColor);
+		}
+	}
 
 	// Header background
 	y = 64;
@@ -1890,8 +2010,8 @@ qboolean CG_BEDrawTeamScoretable(void)
 
 	y = 116;
 	// Header text
-	CG_OSPDrawScoreHeader(leftX, y, (customScoreboardColorIsSet_red & 2) ? scoreboard_rtColorTitle : rtColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional, font);
-	CG_OSPDrawScoreHeader(rightX, y, (customScoreboardColorIsSet_blue & 2) ? scoreboard_btColorTitle : btColorBody, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional, font);
+	CG_OSPDrawScoreHeader(leftX, y, leftTitleColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional, font);
+	CG_OSPDrawScoreHeader(rightX, y, rightTitleColor, colorBlack, mWidth, mHeight, SCREEN_WIDTH, proportional, font);
 
 	y = 140;
 	// Team score lines
@@ -1903,7 +2023,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		float baseX = (cgs.gametype >= GT_CTF) ? (leftX + 76) :
 		              (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) ? (leftX + 64) :
 		              (CG_OSPIsGameTypeFreeze()) ? (leftX + 40) : leftX;
-		CG_OSPDrawTeamSummary(baseX, drewRed, sumScoresRed, sumThawsRed, sumPingRed, (customScoreboardColorIsSet_red & 2) ? scoreboard_rtColorTitle : rtColorHeader, font);
+		CG_OSPDrawTeamSummary(baseX, drewRed, sumScoresRed, sumThawsRed, sumPingRed, leftTitleColor, font);
 	}
 
 	if (drewBlue)
@@ -1911,7 +2031,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		float baseX = (cgs.gametype >= GT_CTF) ? (rightX + 76) :
 		              (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) ? (rightX + 64) :
 		              (CG_OSPIsGameTypeFreeze()) ? (rightX + 40) : rightX;
-		CG_OSPDrawTeamSummary(baseX, drewBlue, sumScoresBlue, sumThawsBlue, sumPingBlue, (customScoreboardColorIsSet_blue & 2) ? scoreboard_btColorTitle : btColorHeader, font);
+		CG_OSPDrawTeamSummary(baseX, drewBlue, sumScoresBlue, sumThawsBlue, sumPingBlue, rightTitleColor, font);
 	}
 
 	{
@@ -1991,12 +2111,18 @@ qboolean CG_BEDrawTeamScoretable(void)
 	}
 
 
-	if (cg_drawAccuracy.integer && !cg.showAccuracy && cg.statsRequestTime + 2500 < cg.time)
+	/* Request getstatsinfo when scoreboard with accuracy is visible — same logic as wstats: periodic when alive or observing. */
+	if (cg_drawAccuracy.integer && (cg.showScores || cg.predictedPlayerState.pm_type == PM_DEAD || cg.predictedPlayerState.pm_type == PM_INTERMISSION))
 	{
-		cg.statsRequestTime = cg.time;
-		if (!cgs.fpsclassico)
+		if (cg.intermissionStarted)
 		{
-			trap_SendClientCommand("getstatsinfo");
+			if (!cg.statsRequestSentInIntermission && CG_TrySendStatsRequest())
+				cg.statsRequestSentInIntermission = qtrue;
+		}
+		else if ((!CG_IS_DEAD() || (cg.snap && cg.snap->ps.clientNum != cg.clientNum)) && cg.statsRequestTime + 2500 < cg.time)
+		{
+			cg.statsRequestTime = cg.time;
+			CG_TrySendStatsRequest();
 		}
 	}
 

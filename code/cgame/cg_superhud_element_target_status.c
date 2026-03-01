@@ -48,7 +48,7 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 			vec4_t hcolor;
 			char s[1024];
 
-			Vector4Copy(cgs.healthColorByClient[cg.crosshairClientNum], hcolor);
+			Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], hcolor);
 
 			Com_sprintf(s, sizeof(s), "[%i/%i]", ci->health, ci->armor);
 

@@ -102,7 +102,7 @@ void CG_UpdateSelwheelMark(void)
 	float returnSpeed;
 	qboolean haveNewCmd;
 
-	if (!cgs.teamMarkers.ttwheelMarkActive)
+	if (!cg.ttwheelMarkActive)
 	{
 		return;
 	}
@@ -110,7 +110,7 @@ void CG_UpdateSelwheelMark(void)
 	currentCmdNum = trap_GetCurrentCmdNumber();
 
 	/* Only fetch user cmd when command number changed (new input) — reduces trap calls per frame */
-	haveNewCmd = (currentCmdNum != cgs.teamMarkers.lastCmdNum);
+	haveNewCmd = (currentCmdNum != cg.teamMarkers.lastCmdNum);
 	if (haveNewCmd)
 	{
 		if (!trap_GetUserCmd(currentCmdNum, &currentCmd))
@@ -125,16 +125,16 @@ void CG_UpdateSelwheelMark(void)
 	// ============================================
 	// Compare current angles with saved angles (only when we have a new cmd)
 	if (haveNewCmd &&
-	        (currentCmd.angles[PITCH] != cgs.teamMarkers.lastCmdAngles[PITCH] ||
-	         currentCmd.angles[YAW] != cgs.teamMarkers.lastCmdAngles[YAW]))
+	        (currentCmd.angles[PITCH] != cg.teamMarkers.lastCmdAngles[PITCH] ||
+	         currentCmd.angles[YAW] != cg.teamMarkers.lastCmdAngles[YAW]))
 	{
 
 		// ============================================
 		// STEP 2: Movement detected - update mark position
 		// ============================================
 		// Calculate angle differences (angles are in 16-bit short format)
-		pitchDelta = (float)(SHORT2ANGLE(currentCmd.angles[PITCH]) - SHORT2ANGLE(cgs.teamMarkers.lastCmdAngles[PITCH]));
-		yawDelta = (float)(SHORT2ANGLE(currentCmd.angles[YAW]) - SHORT2ANGLE(cgs.teamMarkers.lastCmdAngles[YAW]));
+		pitchDelta = (float)(SHORT2ANGLE(currentCmd.angles[PITCH]) - SHORT2ANGLE(cg.teamMarkers.lastCmdAngles[PITCH]));
+		yawDelta = (float)(SHORT2ANGLE(currentCmd.angles[YAW]) - SHORT2ANGLE(cg.teamMarkers.lastCmdAngles[YAW]));
 
 		// Normalize angles to -180..180 range
 		if (pitchDelta > 180.0f)
@@ -162,16 +162,16 @@ void CG_UpdateSelwheelMark(void)
 
 		// Update position based on movement
 		// Use adjusted wheel sensitivity if bitmask & 8 is set
-		if (cgs.teamMarkers.sensitivityAdjusted)
+		if (cg.teamMarkers.sensitivityAdjusted)
 		{
-			sensitivity = cgs.teamMarkers.adjustedWheelSensitivity;
+			sensitivity = cg.teamMarkers.adjustedWheelSensitivity;
 		}
 		else
 		{
 			sensitivity = cg_teamTaskWheelSensitivity.value; // Use cvar to control mark movement speed
 		}
-		cgs.teamMarkers.ttwheelMarkX -= yawDelta * sensitivity; // Inverted: right mouse = right mark
-		cgs.teamMarkers.ttwheelMarkY += pitchDelta * sensitivity;
+		cg.teamMarkers.ttwheelMarkX -= yawDelta * sensitivity; // Inverted: right mouse = right mark
+		cg.teamMarkers.ttwheelMarkY += pitchDelta * sensitivity;
 
 		// Clamp to circular boundary (radius slightly larger than icon position)
 		{
@@ -191,8 +191,8 @@ void CG_UpdateSelwheelMark(void)
 			maxRadius = (SELWHEEL_ICON_RADIUS + SELWHEEL_MARK_MAX_RADIUS_OFFSET) * scale;
 
 			// Calculate distance from center (all in 640x480 coordinates)
-			dx = cgs.teamMarkers.ttwheelMarkX - centerX;
-			dy = cgs.teamMarkers.ttwheelMarkY - centerY;
+			dx = cg.teamMarkers.ttwheelMarkX - centerX;
+			dy = cg.teamMarkers.ttwheelMarkY - centerY;
 			distFromCenter = sqrt(dx * dx + dy * dy);
 
 			// If cursor is outside max radius, clamp it to the circle boundary
@@ -202,28 +202,28 @@ void CG_UpdateSelwheelMark(void)
 				angle = atan2(dy, dx);
 
 				// Set position to max radius at this angle
-				cgs.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
-				cgs.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
+				cg.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
+				cg.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
 			}
 		}
 
 		// Update saved angles immediately - ONLY when movement detected
-		cgs.teamMarkers.lastCmdAngles[PITCH] = currentCmd.angles[PITCH];
-		cgs.teamMarkers.lastCmdAngles[YAW] = currentCmd.angles[YAW];
-		cgs.teamMarkers.lastCmdAngles[ROLL] = currentCmd.angles[ROLL];
+		cg.teamMarkers.lastCmdAngles[PITCH] = currentCmd.angles[PITCH];
+		cg.teamMarkers.lastCmdAngles[YAW] = currentCmd.angles[YAW];
+		cg.teamMarkers.lastCmdAngles[ROLL] = currentCmd.angles[ROLL];
 
 		// Reset movement timer - movement detected
-		cgs.teamMarkers.lastMovementTime = cg.time;
+		cg.teamMarkers.lastMovementTime = cg.time;
 
 		// Update last command number and RETURN - movement detected, no center return
-		cgs.teamMarkers.lastCmdNum = currentCmdNum;
+		cg.teamMarkers.lastCmdNum = currentCmdNum;
 		return;
 	}
 
 	// ============================================
 	// STEP 3: No movement detected - check for return to center
 	// ============================================
-	timeSinceMovement = cg.time - cgs.teamMarkers.lastMovementTime;
+	timeSinceMovement = cg.time - cg.teamMarkers.lastMovementTime;
 
 	// Return to center if no movement for 0.5 seconds (500ms)
 	if (timeSinceMovement > 500)
@@ -246,12 +246,12 @@ void CG_UpdateSelwheelMark(void)
 		// Smooth return to center (all in 640x480 coordinates)
 		returnSpeed = 0.15f; // Adjust this value to control return speed (0.0 = instant, 1.0 = very slow)
 
-		cgs.teamMarkers.ttwheelMarkX += (centerX - cgs.teamMarkers.ttwheelMarkX) * returnSpeed;
-		cgs.teamMarkers.ttwheelMarkY += (centerY - cgs.teamMarkers.ttwheelMarkY) * returnSpeed;
+		cg.teamMarkers.ttwheelMarkX += (centerX - cg.teamMarkers.ttwheelMarkX) * returnSpeed;
+		cg.teamMarkers.ttwheelMarkY += (centerY - cg.teamMarkers.ttwheelMarkY) * returnSpeed;
 
 		// Clamp to circular boundary after return movement
-		dx = cgs.teamMarkers.ttwheelMarkX - centerX;
-		dy = cgs.teamMarkers.ttwheelMarkY - centerY;
+		dx = cg.teamMarkers.ttwheelMarkX - centerX;
+		dy = cg.teamMarkers.ttwheelMarkY - centerY;
 		distFromCenter = sqrt(dx * dx + dy * dy);
 
 		if (distFromCenter > maxRadius)
@@ -260,20 +260,20 @@ void CG_UpdateSelwheelMark(void)
 			angle = atan2(dy, dx);
 
 			// Set position to max radius at this angle
-			cgs.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
-			cgs.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
+			cg.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
+			cg.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
 		}
 
 		// If very close to center, snap to exact center
-		if (fabs(cgs.teamMarkers.ttwheelMarkX - centerX) < 1.0f && fabs(cgs.teamMarkers.ttwheelMarkY - centerY) < 1.0f)
+		if (fabs(cg.teamMarkers.ttwheelMarkX - centerX) < 1.0f && fabs(cg.teamMarkers.ttwheelMarkY - centerY) < 1.0f)
 		{
-			cgs.teamMarkers.ttwheelMarkX = centerX;
-			cgs.teamMarkers.ttwheelMarkY = centerY;
+			cg.teamMarkers.ttwheelMarkX = centerX;
+			cg.teamMarkers.ttwheelMarkY = centerY;
 		}
 	}
 
 	// Update last command number for next frame
-	cgs.teamMarkers.lastCmdNum = currentCmdNum;
+	cg.teamMarkers.lastCmdNum = currentCmdNum;
 }
 
 /*
@@ -307,12 +307,12 @@ void CG_UpdateAndDrawSelwheelMark(void)
 	qhandle_t shader;
 	vec4_t color;
 
-	if (!cgs.teamMarkers.ttwheelMarkActive)
+	if (!cg.ttwheelMarkActive)
 		return;
 
 	/* === Update: position from input === */
 	currentCmdNum = trap_GetCurrentCmdNumber();
-	haveNewCmd = (currentCmdNum != cgs.teamMarkers.lastCmdNum);
+	haveNewCmd = (currentCmdNum != cg.teamMarkers.lastCmdNum);
 	if (haveNewCmd)
 	{
 		if (!trap_GetUserCmd(currentCmdNum, &currentCmd))
@@ -320,11 +320,11 @@ void CG_UpdateAndDrawSelwheelMark(void)
 	}
 
 	if (haveNewCmd &&
-	        (currentCmd.angles[PITCH] != cgs.teamMarkers.lastCmdAngles[PITCH] ||
-	         currentCmd.angles[YAW] != cgs.teamMarkers.lastCmdAngles[YAW]))
+	        (currentCmd.angles[PITCH] != cg.teamMarkers.lastCmdAngles[PITCH] ||
+	         currentCmd.angles[YAW] != cg.teamMarkers.lastCmdAngles[YAW]))
 	{
-		pitchDelta = (float)(SHORT2ANGLE(currentCmd.angles[PITCH]) - SHORT2ANGLE(cgs.teamMarkers.lastCmdAngles[PITCH]));
-		yawDelta = (float)(SHORT2ANGLE(currentCmd.angles[YAW]) - SHORT2ANGLE(cgs.teamMarkers.lastCmdAngles[YAW]));
+		pitchDelta = (float)(SHORT2ANGLE(currentCmd.angles[PITCH]) - SHORT2ANGLE(cg.teamMarkers.lastCmdAngles[PITCH]));
+		yawDelta = (float)(SHORT2ANGLE(currentCmd.angles[YAW]) - SHORT2ANGLE(cg.teamMarkers.lastCmdAngles[YAW]));
 		if (pitchDelta > 180.0f)
 			pitchDelta -= 360.0f;
 		else if (pitchDelta < -180.0f)
@@ -335,35 +335,35 @@ void CG_UpdateAndDrawSelwheelMark(void)
 			yawDelta += 360.0f;
 		if (m_pitch.value < 0.0f)
 			pitchDelta = -pitchDelta;
-		if (cgs.teamMarkers.sensitivityAdjusted)
-			sensitivity = cgs.teamMarkers.adjustedWheelSensitivity;
+		if (cg.teamMarkers.sensitivityAdjusted)
+			sensitivity = cg.teamMarkers.adjustedWheelSensitivity;
 		else
 			sensitivity = cg_teamTaskWheelSensitivity.value;
-		cgs.teamMarkers.ttwheelMarkX -= yawDelta * sensitivity;
-		cgs.teamMarkers.ttwheelMarkY += pitchDelta * sensitivity;
+		cg.teamMarkers.ttwheelMarkX -= yawDelta * sensitivity;
+		cg.teamMarkers.ttwheelMarkY += pitchDelta * sensitivity;
 		CG_GetScreenCenter(&centerX, &centerY);
 		scale = cg_teamTaskWheelScale.value;
 		if (scale <= 0.0f)
 			scale = 1.0f;
 		maxRadius = (SELWHEEL_ICON_RADIUS + SELWHEEL_MARK_MAX_RADIUS_OFFSET) * scale;
-		dx = cgs.teamMarkers.ttwheelMarkX - centerX;
-		dy = cgs.teamMarkers.ttwheelMarkY - centerY;
+		dx = cg.teamMarkers.ttwheelMarkX - centerX;
+		dy = cg.teamMarkers.ttwheelMarkY - centerY;
 		distFromCenter = sqrt(dx * dx + dy * dy);
 		if (distFromCenter > maxRadius)
 		{
 			angle = atan2(dy, dx);
-			cgs.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
-			cgs.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
+			cg.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
+			cg.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
 		}
-		cgs.teamMarkers.lastCmdAngles[PITCH] = currentCmd.angles[PITCH];
-		cgs.teamMarkers.lastCmdAngles[YAW] = currentCmd.angles[YAW];
-		cgs.teamMarkers.lastCmdAngles[ROLL] = currentCmd.angles[ROLL];
-		cgs.teamMarkers.lastMovementTime = cg.time;
-		cgs.teamMarkers.lastCmdNum = currentCmdNum;
+		cg.teamMarkers.lastCmdAngles[PITCH] = currentCmd.angles[PITCH];
+		cg.teamMarkers.lastCmdAngles[YAW] = currentCmd.angles[YAW];
+		cg.teamMarkers.lastCmdAngles[ROLL] = currentCmd.angles[ROLL];
+		cg.teamMarkers.lastMovementTime = cg.time;
+		cg.teamMarkers.lastCmdNum = currentCmdNum;
 	}
 	else
 	{
-		timeSinceMovement = cg.time - cgs.teamMarkers.lastMovementTime;
+		timeSinceMovement = cg.time - cg.teamMarkers.lastMovementTime;
 		if (timeSinceMovement > 500)
 		{
 			CG_GetScreenCenter(&centerX, &centerY);
@@ -372,24 +372,24 @@ void CG_UpdateAndDrawSelwheelMark(void)
 				scale = 1.0f;
 			maxRadius = (SELWHEEL_ICON_RADIUS + SELWHEEL_RETURN_MAX_RADIUS_OFFSET) * scale;
 			returnSpeed = 0.15f;
-			cgs.teamMarkers.ttwheelMarkX += (centerX - cgs.teamMarkers.ttwheelMarkX) * returnSpeed;
-			cgs.teamMarkers.ttwheelMarkY += (centerY - cgs.teamMarkers.ttwheelMarkY) * returnSpeed;
-			dx = cgs.teamMarkers.ttwheelMarkX - centerX;
-			dy = cgs.teamMarkers.ttwheelMarkY - centerY;
+			cg.teamMarkers.ttwheelMarkX += (centerX - cg.teamMarkers.ttwheelMarkX) * returnSpeed;
+			cg.teamMarkers.ttwheelMarkY += (centerY - cg.teamMarkers.ttwheelMarkY) * returnSpeed;
+			dx = cg.teamMarkers.ttwheelMarkX - centerX;
+			dy = cg.teamMarkers.ttwheelMarkY - centerY;
 			distFromCenter = sqrt(dx * dx + dy * dy);
 			if (distFromCenter > maxRadius)
 			{
 				angle = atan2(dy, dx);
-				cgs.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
-				cgs.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
+				cg.teamMarkers.ttwheelMarkX = centerX + cos(angle) * maxRadius;
+				cg.teamMarkers.ttwheelMarkY = centerY + sin(angle) * maxRadius;
 			}
-			if (fabs(cgs.teamMarkers.ttwheelMarkX - centerX) < 1.0f && fabs(cgs.teamMarkers.ttwheelMarkY - centerY) < 1.0f)
+			if (fabs(cg.teamMarkers.ttwheelMarkX - centerX) < 1.0f && fabs(cg.teamMarkers.ttwheelMarkY - centerY) < 1.0f)
 			{
-				cgs.teamMarkers.ttwheelMarkX = centerX;
-				cgs.teamMarkers.ttwheelMarkY = centerY;
+				cg.teamMarkers.ttwheelMarkX = centerX;
+				cg.teamMarkers.ttwheelMarkY = centerY;
 			}
 		}
-		cgs.teamMarkers.lastCmdNum = currentCmdNum;
+		cg.teamMarkers.lastCmdNum = currentCmdNum;
 	}
 
 	/* === Draw: mark (cursor) on screen only when bit 4 set; selection logic works either way === */
@@ -401,11 +401,11 @@ void CG_UpdateAndDrawSelwheelMark(void)
 			scale = cg_teamTaskWheelScale.value;
 			if (scale <= 0.0f)
 				scale = 1.0f;
-			Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, color);
+			Vector4Copy(cg.teamMarkers.teamTaskThemeColor, color);
 			CG_ColorWhitenSmart(color, NULL, -0.4f);
 			color[3] = 0.8f;
-			drawX = cgs.teamMarkers.ttwheelMarkX * cgs.screenXScale_Old;
-			drawY = cgs.teamMarkers.ttwheelMarkY * cgs.screenYScale_Old;
+			drawX = cg.teamMarkers.ttwheelMarkX * cgs.screenXScale_Old;
+			drawY = cg.teamMarkers.ttwheelMarkY * cgs.screenYScale_Old;
 			drawSize = 2.0f * scale * cgs.screenXScale_Old;
 			trap_R_SetColor(color);
 			trap_R_DrawStretchPic(drawX - drawSize * 0.5f, drawY - drawSize * 0.5f, drawSize, drawSize, 0, 0, 1, 1, shader);
@@ -438,12 +438,12 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 	int i;
 	int elementCount;
 
-	if (!cgs.teamMarkers.ttwheelMarkActive)
+	if (!cg.ttwheelMarkActive)
 	{
 		return -1;
 	}
 
-	elementCount = cgs.teamMarkers.ttwheelElementCount;
+	elementCount = cg.teamMarkers.ttwheelElementCount;
 	if (elementCount <= 0)
 	{
 		return -1;
@@ -540,7 +540,7 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 	}
 
 	// Check each element's sector (elements start from i)
-	for (; i < cgs.teamMarkers.ttwheelElementCount; i++)
+	for (; i < cg.teamMarkers.ttwheelElementCount; i++)
 	{
 		// Calculate element angle
 		iconAngle = CG_GetSelwheelIconAngle(i, elementCount, (cg_teamTaskWheel.integer & 2) ? qtrue : qfalse);
@@ -599,7 +599,7 @@ void CG_DrawSelwheelIcons(void)
 	qboolean isNotAlive;
 	qboolean isObservingOther;
 
-	if (!cgs.teamMarkers.ttwheelMarkActive)
+	if (!cg.ttwheelMarkActive)
 	{
 		return;
 	}
@@ -634,7 +634,7 @@ void CG_DrawSelwheelIcons(void)
 		vec4_t cooldownColor;
 		char cooldownText[64];
 
-		timeRemaining = TokenBucket_TimeToNext(&cgs.teamMarkers.sendCommandBucket, cg.time);
+		timeRemaining = TokenBucket_TimeToNext(&cg.teamMarkers.sendCommandBucket, cg.time);
 
 		/* Only show cooldown if there's actually a cooldown active */
 		if (timeRemaining > 0)
@@ -654,7 +654,7 @@ void CG_DrawSelwheelIcons(void)
 			charHeight = 12.0f;
 
 			/* Use theme color */
-			Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, cooldownColor);
+			Vector4Copy(cg.teamMarkers.teamTaskThemeColor, cooldownColor);
 
 			/* Apply whitening to cooldown color with medium strength */
 			CG_ColorWhitenSmart(cooldownColor, NULL, 0.5f);
@@ -680,9 +680,9 @@ void CG_DrawSelwheelIcons(void)
 	iconColor[3] = 1.0f;
 
 	// Background color (use theme color with alpha 0.3)
-	backgroundColor[0] = cgs.teamMarkers.teamTaskThemeColor[0];
-	backgroundColor[1] = cgs.teamMarkers.teamTaskThemeColor[1];
-	backgroundColor[2] = cgs.teamMarkers.teamTaskThemeColor[2];
+	backgroundColor[0] = cg.teamMarkers.teamTaskThemeColor[0];
+	backgroundColor[1] = cg.teamMarkers.teamTaskThemeColor[1];
+	backgroundColor[2] = cg.teamMarkers.teamTaskThemeColor[2];
 	backgroundColor[3] = 0.3f;
 
 	// Draw center wheel background (size slightly smaller than icon radius)
@@ -722,13 +722,13 @@ void CG_DrawSelwheelIcons(void)
 	}
 
 	// Check which icon is hovered
-	hoveredIcon = CG_GetSelwheelIconAtPosition(cgs.teamMarkers.ttwheelMarkX, cgs.teamMarkers.ttwheelMarkY);
-	cgs.teamMarkers.ttwheelHoveredIcon = hoveredIcon;
+	hoveredIcon = CG_GetSelwheelIconAtPosition(cg.teamMarkers.ttwheelMarkX, cg.teamMarkers.ttwheelMarkY);
+	cg.teamMarkers.ttwheelHoveredIcon = hoveredIcon;
 
 	// Fix selected icon when hovered (will be used on release)
-	if (hoveredIcon >= 0 && hoveredIcon < cgs.teamMarkers.ttwheelElementCount)
+	if (hoveredIcon >= 0 && hoveredIcon < cg.teamMarkers.ttwheelElementCount)
 	{
-		cgs.teamMarkers.ttwheelSelectedIcon = hoveredIcon;
+		cg.teamMarkers.ttwheelSelectedIcon = hoveredIcon;
 	}
 	else
 	{
@@ -745,8 +745,8 @@ void CG_DrawSelwheelIcons(void)
 			float tempH;
 
 			CG_GetScreenCenter(&centerXCheck, &centerYCheck);
-			markXCheck = cgs.teamMarkers.ttwheelMarkX;
-			markYCheck = cgs.teamMarkers.ttwheelMarkY;
+			markXCheck = cg.teamMarkers.ttwheelMarkX;
+			markYCheck = cg.teamMarkers.ttwheelMarkY;
 			minRadiusCheck = SELWHEEL_MIN_RADIUS * scale;
 
 			CG_AdjustFrom640_Old(&centerXCheck, &centerYCheck, NULL, NULL, qfalse);
@@ -763,27 +763,27 @@ void CG_DrawSelwheelIcons(void)
 			// Only reset if cursor is in center zone and no center element
 			if (distFromCenter < minRadiusCheck)
 			{
-				cgs.teamMarkers.ttwheelSelectedIcon = -1;
+				cg.teamMarkers.ttwheelSelectedIcon = -1;
 			}
 			// Otherwise keep previous selection (don't reset when in empty area)
 		}
 	}
 
 	// Draw center element first (if bitmask & 2 is set)
-	if ((cg_teamTaskWheel.integer & 2) && cgs.teamMarkers.ttwheelElementCount > 0)
+	if ((cg_teamTaskWheel.integer & 2) && cg.teamMarkers.ttwheelElementCount > 0)
 	{
 		qhandle_t centerShader;
 
 		/* Update pickup icon in real-time if this is pickup command */
-		if (cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-		        !Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tPickup"))
+		if (cg.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+		        !Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tPickup"))
 		{
 			/* Update shader in real-time based on current pickup state */
 			centerShader = CG_GetPickupShader();
 		}
 		else
 		{
-			centerShader = cgs.teamMarkers.ttwheelElementShaders[0];
+			centerShader = cg.teamMarkers.ttwheelElementShaders[0];
 		}
 
 		if (centerShader)
@@ -812,12 +812,12 @@ void CG_DrawSelwheelIcons(void)
 			smartIconY = centerIconY - centerIconSize * 0.5f + smartIconSize * 0.5f;
 
 			// If hovered or selected, draw background first
-			if (hoveredIcon == 0 || cgs.teamMarkers.ttwheelSelectedIcon == 0)
+			if (hoveredIcon == 0 || cg.teamMarkers.ttwheelSelectedIcon == 0)
 			{
 				// Use dark gray background for unavailable commands (not alive or observing other)
-				if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-				        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
-				        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tHere"))
+				if ((isNotAlive || isObservingOther) && cg.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+				        Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
+				        Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tHere"))
 				{
 					vec4_t darkGrayBg;
 					Vector4Set(darkGrayBg, 0.1f, 0.1f, 0.1f, 1.0f);
@@ -843,25 +843,25 @@ void CG_DrawSelwheelIcons(void)
 			// Use gray color for non-selected element, white for selected
 			// Special handling for tHere: use theme color with whitening 0.8
 			// If player is not alive, make unavailable commands gray (except tWarn and tHere)
-			if (cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-			        !Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tHere"))
+			if (cg.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+			        !Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tHere"))
 			{
 				// tHere element - use theme color with whitening 0.8
 				vec4_t hereColor;
-				Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, hereColor);
+				Vector4Copy(cg.teamMarkers.teamTaskThemeColor, hereColor);
 				CG_ColorWhitenSmart(hereColor, NULL, 0.5f);
 				trap_R_SetColor(hereColor);
 			}
-			else if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-			         Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
-			         Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tHere"))
+			else if ((isNotAlive || isObservingOther) && cg.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+			         Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
+			         Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tHere"))
 			{
 				// Unavailable (not alive or observing other) and command is not tWarn or tHere - use dark gray
 				vec4_t darkGrayColor;
 				Vector4Set(darkGrayColor, 0.3f, 0.3f, 0.3f, 1.0f);
 				trap_R_SetColor(darkGrayColor);
 			}
-			else if (hoveredIcon == 0 || cgs.teamMarkers.ttwheelSelectedIcon == 0)
+			else if (hoveredIcon == 0 || cg.teamMarkers.ttwheelSelectedIcon == 0)
 			{
 				// Element is selected - use white color
 				trap_R_SetColor(iconColor);
@@ -887,21 +887,21 @@ void CG_DrawSelwheelIcons(void)
 
 			// Draw smart icon in right top corner of center icon (always, if command is tSmart)
 			// Draw after main icon so it appears on top
-			if (cgs.media.teamTasksSmart && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-			        !Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tSmart"))
+			if (cgs.media.teamTasksSmart && cg.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+			        !Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tSmart"))
 			{
 				// If unavailable (not alive or observing other), use gray color
-				if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-				        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
-				        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[0], "tHere"))
+				if ((isNotAlive || isObservingOther) && cg.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
+				        Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
+				        Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tHere"))
 				{
 					// Command is unavailable - use gray color
 					Vector4Set(smartIconColor, 0.3f, 0.3f, 0.3f, 1.0f);
 				}
-				else if (hoveredIcon == 0 || cgs.teamMarkers.ttwheelSelectedIcon == 0)
+				else if (hoveredIcon == 0 || cg.teamMarkers.ttwheelSelectedIcon == 0)
 				{
 					// Element is selected - use theme color
-					Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, smartIconColor);
+					Vector4Copy(cg.teamMarkers.teamTaskThemeColor, smartIconColor);
 					CG_ColorWhitenSmart(smartIconColor, NULL, -0.4f);
 				}
 				else
@@ -934,13 +934,13 @@ void CG_DrawSelwheelIcons(void)
 	}
 
 	// Draw icons around circle
-	for (; i < cgs.teamMarkers.ttwheelElementCount; i++)
+	for (; i < cg.teamMarkers.ttwheelElementCount; i++)
 	{
 		qhandle_t currentShader;
 
 		/* Update pickup icon in real-time if this is pickup command */
-		if (cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-		        !Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tPickup"))
+		if (cg.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+		        !Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tPickup"))
 		{
 			/* Update shader in real-time based on current pickup state */
 			currentShader = CG_GetPickupShader();
@@ -951,7 +951,7 @@ void CG_DrawSelwheelIcons(void)
 		}
 		else
 		{
-			currentShader = cgs.teamMarkers.ttwheelElementShaders[i];
+			currentShader = cg.teamMarkers.ttwheelElementShaders[i];
 			if (!currentShader)
 			{
 				continue;
@@ -975,7 +975,7 @@ void CG_DrawSelwheelIcons(void)
 			CG_AdjustFrom640_Old(NULL, NULL, &iconRadiusIcon, NULL, qfalse);
 
 			// Calculate icon angle (same as in CG_GetSelwheelIconAtPosition)
-			iconAngleIcon = CG_GetSelwheelIconAngle(i, cgs.teamMarkers.ttwheelElementCount, (cg_teamTaskWheel.integer & 2) ? qtrue : qfalse);
+			iconAngleIcon = CG_GetSelwheelIconAngle(i, cg.teamMarkers.ttwheelElementCount, (cg_teamTaskWheel.integer & 2) ? qtrue : qfalse);
 
 			// Calculate icon position (same as in CG_GetSelwheelIconAtPosition)
 			// These coordinates are already scaled
@@ -998,9 +998,9 @@ void CG_DrawSelwheelIcons(void)
 		{
 			// Draw background icon
 			// Use dark gray background for unavailable commands (not alive or observing other)
-			if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-			        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
-			        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tHere"))
+			if ((isNotAlive || isObservingOther) && cg.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+			        Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
+			        Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tHere"))
 			{
 				vec4_t darkGrayBg;
 				Vector4Set(darkGrayBg, 0.1f, 0.1f, 0.1f, 1.0f);
@@ -1026,25 +1026,25 @@ void CG_DrawSelwheelIcons(void)
 		// Use gray color for non-selected elements, white for selected
 		// Special handling for tHere: use theme color with whitening 0.8
 		// If player is not alive, make unavailable commands gray (except tWarn and tHere)
-		if (cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-		        !Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tHere"))
+		if (cg.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+		        !Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tHere"))
 		{
 			// tHere element - use theme color with whitening 0.8
 			vec4_t hereColor;
-			Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, hereColor);
+			Vector4Copy(cg.teamMarkers.teamTaskThemeColor, hereColor);
 			CG_ColorWhitenSmart(hereColor, NULL, 0.8f);
 			trap_R_SetColor(hereColor);
 		}
-		else if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-		         Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
-		         Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tHere"))
+		else if ((isNotAlive || isObservingOther) && cg.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+		         Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
+		         Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tHere"))
 		{
 			// Unavailable (not alive or observing other) and command is not tWarn or tHere - use dark gray
 			vec4_t darkGrayColor;
 			Vector4Set(darkGrayColor, 0.3f, 0.3f, 0.3f, 1.0f);
 			trap_R_SetColor(darkGrayColor);
 		}
-		else if (hoveredIcon == i || cgs.teamMarkers.ttwheelSelectedIcon == i)
+		else if (hoveredIcon == i || cg.teamMarkers.ttwheelSelectedIcon == i)
 		{
 			// Element is selected - use white color
 			trap_R_SetColor(iconColor);
@@ -1068,8 +1068,8 @@ void CG_DrawSelwheelIcons(void)
 		    currentShader);
 
 		// Draw smart icon in right top corner of icon (always, if command is tSmart)
-		if (cgs.media.teamTasksSmart && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-		        !Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tSmart"))
+		if (cgs.media.teamTasksSmart && cg.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+		        !Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tSmart"))
 		{
 			float smartIconSizeWheel;
 			float smartIconXWheel;
@@ -1083,17 +1083,17 @@ void CG_DrawSelwheelIcons(void)
 			smartIconYWheel = adjustedY - adjustedSize * 0.5f + smartIconSizeWheel * 0.5f;
 
 			// If unavailable (not alive or observing other), use gray color
-			if ((isNotAlive || isObservingOther) && cgs.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-			        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
-			        Q_stricmp(cgs.teamMarkers.ttwheelElementCommands[i], "tHere"))
+			if ((isNotAlive || isObservingOther) && cg.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
+			        Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
+			        Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tHere"))
 			{
 				// Command is unavailable - use gray color
 				Vector4Set(smartIconColorWheel, 0.3f, 0.3f, 0.3f, 1.0f);
 			}
-			else if (hoveredIcon == i || cgs.teamMarkers.ttwheelSelectedIcon == i)
+			else if (hoveredIcon == i || cg.teamMarkers.ttwheelSelectedIcon == i)
 			{
 				// Element is selected - use theme color
-				Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, smartIconColorWheel);
+				Vector4Copy(cg.teamMarkers.teamTaskThemeColor, smartIconColorWheel);
 				CG_ColorWhitenSmart(smartIconColorWheel, NULL, -0.4f);
 			}
 			else
@@ -1161,16 +1161,16 @@ void CG_DrawSelwheelIcons(void)
 
 		//  // Start angle: 9 o'clock = 270 degrees = 3π/2 radians
 		//  startAngleDebug = M_PI * 1.5f;
-		//  if ((cg_teamTaskWheel.integer == 2) && cgs.teamMarkers.ttwheelElementCount > 1)
+		//  if ((cg_teamTaskWheel.integer == 2) && cg.teamMarkers.ttwheelElementCount > 1)
 		//  {
 		//      // Center element exists, calculate angles for elements around circle (i-1)
-		//      angleStepDebug = 2.0f * M_PI / (float)(cgs.teamMarkers.ttwheelElementCount - 1);
+		//      angleStepDebug = 2.0f * M_PI / (float)(cg.teamMarkers.ttwheelElementCount - 1);
 		//      iconAngleDebug = startAngleDebug + angleStepDebug * (float)(i - 1);
 		//  }
 		//  else
 		//  {
 		//      // No center element, calculate angles for all elements
-		//  angleStepDebug = 2.0f * M_PI / (float)cgs.teamMarkers.ttwheelElementCount;
+		//  angleStepDebug = 2.0f * M_PI / (float)cg.teamMarkers.ttwheelElementCount;
 		//  iconAngleDebug = startAngleDebug + angleStepDebug * (float)i;
 		//  }
 		//  sectorStartAngle = iconAngleDebug - angleStepDebug * 0.5f;
@@ -1270,7 +1270,7 @@ void CG_DrawSelwheelPointers(void)
 		return;
 	}
 
-	if (!cgs.teamMarkers.ttwheelMarkActive)
+	if (!cg.ttwheelMarkActive)
 	{
 		return;
 	}
@@ -1286,13 +1286,13 @@ void CG_DrawSelwheelPointers(void)
 		// Will use whiteShader below
 	}
 
-	elementCount = cgs.teamMarkers.ttwheelElementCount;
+	elementCount = cg.teamMarkers.ttwheelElementCount;
 	if (elementCount <= 0)
 	{
 		return;
 	}
 
-	selectedIcon = cgs.teamMarkers.ttwheelSelectedIcon;
+	selectedIcon = cg.teamMarkers.ttwheelSelectedIcon;
 
 	// Get scale value
 	{
@@ -1310,7 +1310,7 @@ void CG_DrawSelwheelPointers(void)
 		pointerSize = 8.0f * scale; // Size of pointer arrow (increased for visibility)
 	}
 
-	Vector4Copy(cgs.teamMarkers.teamTaskThemeColor, activeColor);
+	Vector4Copy(cg.teamMarkers.teamTaskThemeColor, activeColor);
 	CG_ColorWhitenSmart(activeColor, NULL, 0.2f);
 	// Active color (white) for selected element
 
@@ -1432,7 +1432,7 @@ static void CG_SelwheelRestoreSensitivity(void)
 	float storedSensitivity;
 	char sensitivityStr[32];
 
-	if (cgs.teamMarkers.sensitivityAdjusted)
+	if (cg.teamMarkers.sensitivityAdjusted)
 	{
 		// Update cvar to get latest value
 		trap_Cvar_Update(&cg_storedSensitivity);
@@ -1448,7 +1448,7 @@ static void CG_SelwheelRestoreSensitivity(void)
 		Com_sprintf(sensitivityStr, sizeof(sensitivityStr), "%f", storedSensitivity);
 		trap_Cvar_Set("sensitivity", sensitivityStr);
 
-		cgs.teamMarkers.sensitivityAdjusted = qfalse;
+		cg.teamMarkers.sensitivityAdjusted = qfalse;
 	}
 }
 
@@ -1507,22 +1507,22 @@ void CG_SelwheelMarkStart(void)
 	}
 
 	// If already active, don't reset position - just update angles
-	if (cgs.teamMarkers.ttwheelMarkActive)
+	if (cg.ttwheelMarkActive)
 	{
 		currentCmdNum = trap_GetCurrentCmdNumber();
 		if (trap_GetUserCmd(currentCmdNum, &currentCmd))
 		{
-			cgs.teamMarkers.lastCmdAngles[PITCH] = currentCmd.angles[PITCH];
-			cgs.teamMarkers.lastCmdAngles[YAW] = currentCmd.angles[YAW];
-			cgs.teamMarkers.lastCmdAngles[ROLL] = currentCmd.angles[ROLL];
+			cg.teamMarkers.lastCmdAngles[PITCH] = currentCmd.angles[PITCH];
+			cg.teamMarkers.lastCmdAngles[YAW] = currentCmd.angles[YAW];
+			cg.teamMarkers.lastCmdAngles[ROLL] = currentCmd.angles[ROLL];
 		}
 		return;
 	}
 
 	// First time activation - initialize position to center
-	cgs.teamMarkers.ttwheelMarkActive = qtrue;
-	CG_GetScreenCenter(&cgs.teamMarkers.ttwheelMarkX, &cgs.teamMarkers.ttwheelMarkY);
-	cgs.teamMarkers.ttwheelHoveredIcon = -1;
+	cg.ttwheelMarkActive = qtrue;
+	CG_GetScreenCenter(&cg.teamMarkers.ttwheelMarkX, &cg.teamMarkers.ttwheelMarkY);
+	cg.teamMarkers.ttwheelHoveredIcon = -1;
 
 	// If smart mode is enabled (bitmask & 2), save target at wheel opening
 	if (cg_teamTaskWheel.integer & 2)
@@ -1535,12 +1535,12 @@ void CG_SelwheelMarkStart(void)
 		centity_t* cent;
 
 		// Check what we're aiming at using CG_CrosshairTarget
-		cgs.teamMarkers.smartTargetType = CG_CrosshairTarget(itemPos);
-		cgs.teamMarkers.smartTargetTime = cg.time;
-		cgs.teamMarkers.smartTargetEntityNum = -1;
+		cg.teamMarkers.smartTargetType = CG_CrosshairTarget(itemPos);
+		cg.teamMarkers.smartTargetTime = cg.time;
+		cg.teamMarkers.smartTargetEntityNum = -1;
 
 		// Save target position and entity number
-		if (cgs.teamMarkers.smartTargetType == 2)
+		if (cg.teamMarkers.smartTargetType == 2)
 		{
 			// Enemy - get their position and entity number
 			VectorCopy(cg.refdef.vieworg, start);
@@ -1551,7 +1551,7 @@ void CG_SelwheelMarkStart(void)
 
 			if (trace.entityNum >= 0 && trace.entityNum < MAX_CLIENTS)
 			{
-				cgs.teamMarkers.smartTargetEntityNum = trace.entityNum;
+				cg.teamMarkers.smartTargetEntityNum = trace.entityNum;
 				// Find player entity and get their position
 				for (i = 0; i < MAX_GENTITIES; i++)
 				{
@@ -1560,93 +1560,93 @@ void CG_SelwheelMarkStart(void)
 					        cent->currentState.clientNum == trace.entityNum &&
 					        cent->currentValid)
 					{
-						VectorCopy(cent->lerpOrigin, cgs.teamMarkers.smartTargetPos);
-						cgs.teamMarkers.smartTargetPos[2] += 24.0f;
+						VectorCopy(cent->lerpOrigin, cg.teamMarkers.smartTargetPos);
+						cg.teamMarkers.smartTargetPos[2] += 24.0f;
 						break;
 					}
 				}
 				// Fallback: if enemy entity not found, use trace endpos
 				if (i >= MAX_GENTITIES)
 				{
-					VectorCopy(trace.endpos, cgs.teamMarkers.smartTargetPos);
-					cgs.teamMarkers.smartTargetPos[2] += 24.0f;
+					VectorCopy(trace.endpos, cg.teamMarkers.smartTargetPos);
+					cg.teamMarkers.smartTargetPos[2] += 24.0f;
 				}
 			}
 			else
 			{
 				// Fallback: use trace endpos
-				VectorCopy(trace.endpos, cgs.teamMarkers.smartTargetPos);
-				cgs.teamMarkers.smartTargetPos[2] += 24.0f;
+				VectorCopy(trace.endpos, cg.teamMarkers.smartTargetPos);
+				cg.teamMarkers.smartTargetPos[2] += 24.0f;
 			}
 		}
-		else if (cgs.teamMarkers.smartTargetType == 3 || cgs.teamMarkers.smartTargetType == 4 ||
-		         cgs.teamMarkers.smartTargetType == 7 || cgs.teamMarkers.smartTargetType == 8 ||
-		         cgs.teamMarkers.smartTargetType == 9 || cgs.teamMarkers.smartTargetType == 10 ||
-		         cgs.teamMarkers.smartTargetType == 11 || cgs.teamMarkers.smartTargetType == 12 ||
-		         cgs.teamMarkers.smartTargetType == 15 || cgs.teamMarkers.smartTargetType == 16)
+		else if (cg.teamMarkers.smartTargetType == 3 || cg.teamMarkers.smartTargetType == 4 ||
+		         cg.teamMarkers.smartTargetType == 7 || cg.teamMarkers.smartTargetType == 8 ||
+		         cg.teamMarkers.smartTargetType == 9 || cg.teamMarkers.smartTargetType == 10 ||
+		         cg.teamMarkers.smartTargetType == 11 || cg.teamMarkers.smartTargetType == 12 ||
+		         cg.teamMarkers.smartTargetType == 15 || cg.teamMarkers.smartTargetType == 16)
 		{
 			// Item (red armor, megahealth, quaddamage, regeneration, battlesuit, haste, yellow armor, health, flags) - use item center position
-			VectorCopy(itemPos, cgs.teamMarkers.smartTargetPos);
+			VectorCopy(itemPos, cg.teamMarkers.smartTargetPos);
 		}
-		else if (cgs.teamMarkers.smartTargetType == 13 || cgs.teamMarkers.smartTargetType == 14)
+		else if (cg.teamMarkers.smartTargetType == 13 || cg.teamMarkers.smartTargetType == 14)
 		{
 			// Flag carrier - use player position
-			VectorCopy(itemPos, cgs.teamMarkers.smartTargetPos);
+			VectorCopy(itemPos, cg.teamMarkers.smartTargetPos);
 		}
-		else if (cgs.teamMarkers.smartTargetType == 5 || cgs.teamMarkers.smartTargetType == 6)
+		else if (cg.teamMarkers.smartTargetType == 5 || cg.teamMarkers.smartTargetType == 6)
 		{
 			// Frozen body (ally or enemy) - use frozen body position
-			VectorCopy(itemPos, cgs.teamMarkers.smartTargetPos);
+			VectorCopy(itemPos, cg.teamMarkers.smartTargetPos);
 		}
 		else
 		{
 			// Nothing - clear target
-			cgs.teamMarkers.smartTargetType = 1;
-			VectorClear(cgs.teamMarkers.smartTargetPos);
+			cg.teamMarkers.smartTargetType = 1;
+			VectorClear(cg.teamMarkers.smartTargetPos);
 		}
 	}
 	else
 	{
 		// Not smart mode - clear saved target
-		cgs.teamMarkers.smartTargetType = 1;
-		VectorClear(cgs.teamMarkers.smartTargetPos);
-		cgs.teamMarkers.smartTargetTime = 0;
-		cgs.teamMarkers.smartTargetEntityNum = -1;
+		cg.teamMarkers.smartTargetType = 1;
+		VectorClear(cg.teamMarkers.smartTargetPos);
+		cg.teamMarkers.smartTargetTime = 0;
+		cg.teamMarkers.smartTargetEntityNum = -1;
 	}
 
 	// Initialize default elements if not set
-	if (cgs.teamMarkers.ttwheelElementCount == 0)
+	if (cg.teamMarkers.ttwheelElementCount == 0)
 	{
 		CG_SelwheelParseTeamTaskWheel();
 	}
 
 	// If bitmask & 2 is set, select center element (index 0) by default
-	if ((cg_teamTaskWheel.integer & 2) && cgs.teamMarkers.ttwheelElementCount > 0)
+	if ((cg_teamTaskWheel.integer & 2) && cg.teamMarkers.ttwheelElementCount > 0)
 	{
-		cgs.teamMarkers.ttwheelSelectedIcon = 0;
+		cg.teamMarkers.ttwheelSelectedIcon = 0;
 	}
 	else
 	{
-		cgs.teamMarkers.ttwheelSelectedIcon = -1;
+		cg.teamMarkers.ttwheelSelectedIcon = -1;
 	}
 
 	currentCmdNum = trap_GetCurrentCmdNumber();
 	if (trap_GetUserCmd(currentCmdNum, &currentCmd))
 	{
-		cgs.teamMarkers.lastCmdNum = currentCmdNum;
-		cgs.teamMarkers.lastCmdAngles[PITCH] = currentCmd.angles[PITCH];
-		cgs.teamMarkers.lastCmdAngles[YAW] = currentCmd.angles[YAW];
-		cgs.teamMarkers.lastCmdAngles[ROLL] = currentCmd.angles[ROLL];
+		cg.teamMarkers.lastCmdNum = currentCmdNum;
+		cg.teamMarkers.lastCmdAngles[PITCH] = currentCmd.angles[PITCH];
+		cg.teamMarkers.lastCmdAngles[YAW] = currentCmd.angles[YAW];
+		cg.teamMarkers.lastCmdAngles[ROLL] = currentCmd.angles[ROLL];
 	}
 	else
 	{
-		cgs.teamMarkers.lastCmdNum = 0;
-		cgs.teamMarkers.lastCmdAngles[PITCH] = 0;
-		cgs.teamMarkers.lastCmdAngles[YAW] = 0;
-		cgs.teamMarkers.lastCmdAngles[ROLL] = 0;
+		cg.teamMarkers.lastCmdNum = 0;
+		cg.teamMarkers.lastCmdAngles[PITCH] = 0;
+		cg.teamMarkers.lastCmdAngles[YAW] = 0;
+		cg.teamMarkers.lastCmdAngles[ROLL] = 0;
 	}
 
-	cgs.teamMarkers.lastMovementTime = cg.time;
+	cg.teamMarkers.lastMovementTime = cg.time;
 
 	// Adjust sensitivity by default, unless bitmask & 16 is set (disable aim lock)
 	if (!(cg_teamTaskWheel.integer & 16))
@@ -1670,8 +1670,8 @@ void CG_SelwheelMarkStart(void)
 		currentWheelSensitivity = cg_teamTaskWheelSensitivity.value;
 
 		// Save values
-		cgs.teamMarkers.savedSensitivity = currentSensitivity;
-		cgs.teamMarkers.savedWheelSensitivity = currentWheelSensitivity;
+		cg.teamMarkers.savedSensitivity = currentSensitivity;
+		cg.teamMarkers.savedWheelSensitivity = currentWheelSensitivity;
 
 		// Store original sensitivity value directly in cvar (float, preserves precision)
 		Com_sprintf(sensitivityStr, sizeof(sensitivityStr), "%f", currentSensitivity);
@@ -1690,15 +1690,15 @@ void CG_SelwheelMarkStart(void)
 			newWheelSensitivity = currentWheelSensitivity;
 		}
 
-		cgs.teamMarkers.adjustedWheelSensitivity = newWheelSensitivity;
-		cgs.teamMarkers.sensitivityAdjusted = qtrue;
+		cg.teamMarkers.adjustedWheelSensitivity = newWheelSensitivity;
+		cg.teamMarkers.sensitivityAdjusted = qtrue;
 
 		// Set sensitivity to 0.001 (use precise string to avoid float precision loss)
 		trap_Cvar_Set("sensitivity", "0.002");
 	}
 	else
 	{
-		cgs.teamMarkers.sensitivityAdjusted = qfalse;
+		cg.teamMarkers.sensitivityAdjusted = qfalse;
 	}
 }
 
@@ -1715,16 +1715,16 @@ void CG_SelwheelMarkStop(void)
 	char commandStr[MAX_STRING_CHARS];
 
 	// Use fixed selected icon (was set when cursor hovered over icon)
-	selectedIcon = cgs.teamMarkers.ttwheelSelectedIcon;
+	selectedIcon = cg.teamMarkers.ttwheelSelectedIcon;
 
 	// Send command based on selected icon
-	if (selectedIcon >= 0 && selectedIcon < cgs.teamMarkers.ttwheelElementCount)
+	if (selectedIcon >= 0 && selectedIcon < cg.teamMarkers.ttwheelElementCount)
 	{
 		// Send console command first (add semicolon if not present)
-		if (cgs.teamMarkers.ttwheelElementCommands[selectedIcon][0] != '\0')
+		if (cg.teamMarkers.ttwheelElementCommands[selectedIcon][0] != '\0')
 		{
 			int cmdLen;
-			Q_strncpyz(commandStr, cgs.teamMarkers.ttwheelElementCommands[selectedIcon], sizeof(commandStr));
+			Q_strncpyz(commandStr, cg.teamMarkers.ttwheelElementCommands[selectedIcon], sizeof(commandStr));
 			// Ensure command ends with semicolon
 			cmdLen = strlen(commandStr);
 			if (cmdLen > 0 && commandStr[cmdLen - 1] != ';')
@@ -1736,9 +1736,9 @@ void CG_SelwheelMarkStop(void)
 		}
 
 		// Call the action callback for this element
-		if (cgs.teamMarkers.ttwheelElementActions[selectedIcon])
+		if (cg.teamMarkers.ttwheelElementActions[selectedIcon])
 		{
-			cgs.teamMarkers.ttwheelElementActions[selectedIcon]();
+			cg.teamMarkers.ttwheelElementActions[selectedIcon]();
 		}
 	}
 
@@ -1746,15 +1746,15 @@ void CG_SelwheelMarkStop(void)
 	CG_SelwheelRestoreSensitivity();
 
 	// Deactivate ttwheel AFTER sending command
-	cgs.teamMarkers.ttwheelMarkActive = qfalse;
-	cgs.teamMarkers.ttwheelHoveredIcon = -1;
-	cgs.teamMarkers.ttwheelSelectedIcon = -1;
+	cg.ttwheelMarkActive = qfalse;
+	cg.teamMarkers.ttwheelHoveredIcon = -1;
+	cg.teamMarkers.ttwheelSelectedIcon = -1;
 
 	// Clear saved smart target
-	cgs.teamMarkers.smartTargetType = 1;
-	VectorClear(cgs.teamMarkers.smartTargetPos);
-	cgs.teamMarkers.smartTargetTime = 0;
-	cgs.teamMarkers.smartTargetEntityNum = -1;
+	cg.teamMarkers.smartTargetType = 1;
+	VectorClear(cg.teamMarkers.smartTargetPos);
+	cg.teamMarkers.smartTargetTime = 0;
+	cg.teamMarkers.smartTargetEntityNum = -1;
 }
 
 /*
@@ -1770,15 +1770,15 @@ void CG_SelwheelMarkClose(void)
 	CG_SelwheelRestoreSensitivity();
 
 	/* Deactivate ttwheel without sending command or executing action */
-	cgs.teamMarkers.ttwheelMarkActive = qfalse;
-	cgs.teamMarkers.ttwheelHoveredIcon = -1;
-	cgs.teamMarkers.ttwheelSelectedIcon = -1;
+	cg.ttwheelMarkActive = qfalse;
+	cg.teamMarkers.ttwheelHoveredIcon = -1;
+	cg.teamMarkers.ttwheelSelectedIcon = -1;
 
 	/* Clear saved smart target */
-	cgs.teamMarkers.smartTargetType = 1;
-	VectorClear(cgs.teamMarkers.smartTargetPos);
-	cgs.teamMarkers.smartTargetTime = 0;
-	cgs.teamMarkers.smartTargetEntityNum = -1;
+	cg.teamMarkers.smartTargetType = 1;
+	VectorClear(cg.teamMarkers.smartTargetPos);
+	cg.teamMarkers.smartTargetTime = 0;
+	cg.teamMarkers.smartTargetEntityNum = -1;
 }
 
 /*
@@ -1801,44 +1801,44 @@ void CG_SelwheelSetElements(int count, qhandle_t* shaders, void (**actions)(void
 		count = 0;
 	}
 
-	cgs.teamMarkers.ttwheelElementCount = count;
+	cg.teamMarkers.ttwheelElementCount = count;
 
 	for (i = 0; i < count; i++)
 	{
 		if (shaders)
 		{
-			cgs.teamMarkers.ttwheelElementShaders[i] = shaders[i];
+			cg.teamMarkers.ttwheelElementShaders[i] = shaders[i];
 		}
 		else
 		{
-			cgs.teamMarkers.ttwheelElementShaders[i] = 0;
+			cg.teamMarkers.ttwheelElementShaders[i] = 0;
 		}
 
 		if (actions)
 		{
-			cgs.teamMarkers.ttwheelElementActions[i] = actions[i];
+			cg.teamMarkers.ttwheelElementActions[i] = actions[i];
 		}
 		else
 		{
-			cgs.teamMarkers.ttwheelElementActions[i] = NULL;
+			cg.teamMarkers.ttwheelElementActions[i] = NULL;
 		}
 
 		if (commands && commands[i])
 		{
-			Q_strncpyz(cgs.teamMarkers.ttwheelElementCommands[i], commands[i], sizeof(cgs.teamMarkers.ttwheelElementCommands[i]));
+			Q_strncpyz(cg.teamMarkers.ttwheelElementCommands[i], commands[i], sizeof(cg.teamMarkers.ttwheelElementCommands[i]));
 		}
 		else
 		{
-			cgs.teamMarkers.ttwheelElementCommands[i][0] = '\0';
+			cg.teamMarkers.ttwheelElementCommands[i][0] = '\0';
 		}
 	}
 
 	// Clear remaining slots
 	for (i = count; i < MAX_SELWHEEL_ELEMENTS; i++)
 	{
-		cgs.teamMarkers.ttwheelElementShaders[i] = 0;
-		cgs.teamMarkers.ttwheelElementActions[i] = NULL;
-		cgs.teamMarkers.ttwheelElementCommands[i][0] = '\0';
+		cg.teamMarkers.ttwheelElementShaders[i] = 0;
+		cg.teamMarkers.ttwheelElementActions[i] = NULL;
+		cg.teamMarkers.ttwheelElementCommands[i][0] = '\0';
 	}
 }
 

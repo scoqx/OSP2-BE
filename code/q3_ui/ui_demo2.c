@@ -421,8 +421,11 @@ UI_DemosMenu_Key
 */
 static sfxHandle_t UI_DemosMenu_Key( int key ) {
 	menucommon_s	*item;
+	sfxHandle_t		ret;
+	qboolean		ctrl_wheel;
 
 	item = Menu_ItemAtCursor( &s_demos.menu );
+	ctrl_wheel = qfalse;
 
 	if ( item == (menucommon_s *)&s_demos.list ) {
 		if ( key == K_ENTER || key == K_KP_ENTER ) {
@@ -442,9 +445,17 @@ static sfxHandle_t UI_DemosMenu_Key( int key ) {
 			s_demos.filter.field.skipKey = qtrue;
 			return menu_in_sound;
 		}
+		/* CTRL + wheel: scroll by multiple lines; otherwise scroll by 1 */
+		if ( ( key == K_MWHEELUP || key == K_MWHEELDOWN ) && trap_Key_IsDown( K_CTRL ) ) {
+			s_demos.list.scroll = 6;
+			ctrl_wheel = qtrue;
+		}
 	}
 
-	return Menu_DefaultKey( &s_demos.menu, key );
+	ret = Menu_DefaultKey( &s_demos.menu, key );
+	if ( ctrl_wheel )
+		s_demos.list.scroll = 1;
+	return ret;
 }
 
 
@@ -840,7 +851,7 @@ static void Demos_MenuInit( void ) {
 	s_demos.list.width				= UI_DEMO_LENGTH;
 	s_demos.list.height				= UI_MAX_ITEMS;
 	s_demos.list.columns			= 1;
-	s_demos.list.scroll				= 4;
+	s_demos.list.scroll				= 1;
 	s_demos.list.generic.dblclick	= UI_DemosDblclick;
 
 	s_demos.list.itemnames			= (const char **)s_demos.itemname;

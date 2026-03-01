@@ -222,8 +222,8 @@ void UI_RegisterCvars( void ) {
 	}
 	trap_Cvar_SetValue( "uc_sensitivity", sensitivityValue );
 
-	/* uc_gamma: init from r_gamma only when r_gamma looks like config value (not menu-forced 1) */
-	{
+	/* uc_gamma: when ui_forceGamma 1, save r_gamma at UI start; when 0 we don't write */
+	if ( trap_Cvar_VariableValue( "ui_forceGamma" ) ) {
 		float rg = trap_Cvar_VariableValue( "r_gamma" );
 		if ( rg < 0.99f || rg > 1.01f ) {
 			trap_Cvar_SetValue( "uc_gamma", rg );

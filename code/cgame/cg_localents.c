@@ -439,6 +439,53 @@ void CG_AddFadeRGB(localEntity_t* le)
 }
 
 /*
+====================
+CG_AddFadeRGBSin - rail overlay (cosine fade)
+====================
+*/
+void CG_AddFadeRGBSin(localEntity_t* le)
+{
+	refEntity_t* re;
+	float c;
+
+	re = &le->refEntity;
+	c = 1.0f - (float)(le->endTime - cg.time) / (float)(le->endTime - le->startTime);
+	c = (cos(c * (float)M_PI) + 1.0f) * 0.5f;
+	c *= 0xff;
+	re->shaderRGBA[0] = (byte)(le->color[0] * c);
+	re->shaderRGBA[1] = (byte)(le->color[1] * c);
+	re->shaderRGBA[2] = (byte)(le->color[2] * c);
+	re->shaderRGBA[3] = (byte)(le->color[3] * c);
+	trap_R_AddRefEntityToScene(re);
+}
+
+#define RAIL3_EXPAND_DIAMETER 12
+/*
+====================
+CG_AddRailtube - rail spiral tubes (altRail 3)
+====================
+*/
+void CG_AddRailtube(localEntity_t* le)
+{
+	refEntity_t* re;
+	float f, c;
+
+	re = &le->refEntity;
+	f = (le->endTime - cg.time) * le->lifeRate;
+	c = f * 0xff;
+	re->shaderRGBA[0] = (byte)(le->color[0] * c);
+	re->shaderRGBA[1] = (byte)(le->color[1] * c);
+	re->shaderRGBA[2] = (byte)(le->color[2] * c);
+	re->shaderRGBA[3] = (byte)(le->color[3] * c);
+	VectorNormalize(re->axis[1]);
+	VectorNormalize(re->axis[2]);
+	f = 1.0f - f;
+	VectorScale(re->axis[1], f * RAIL3_EXPAND_DIAMETER + cg_railRingsRadius.value * 2, re->axis[1]);
+	VectorScale(re->axis[2], f * RAIL3_EXPAND_DIAMETER + cg_railRingsRadius.value * 2, re->axis[2]);
+	trap_R_AddRefEntityToScene(re);
+}
+
+/*
 ==================
 CG_AddMoveScaleFade
 ==================
@@ -465,12 +512,21 @@ static void CG_AddMoveScaleFade(localEntity_t* le)
 
 	re->shaderRGBA[3] = 0xff * c * le->color[3];
 
+	if (le->leFlags & LEF_FADE_RGB)
+	{
+		re->shaderRGBA[0] = (byte)(0xff * c * le->color[0]);
+		re->shaderRGBA[1] = (byte)(0xff * c * le->color[1]);
+		re->shaderRGBA[2] = (byte)(0xff * c * le->color[2]);
+	}
+
 	if (!(le->leFlags & LEF_PUFF_DONT_SCALE))
 	{
 		re->radius = le->radius * (1.0 - c) + 8;
 	}
 
 	BG_EvaluateTrajectory(&le->pos, cg.time, re->origin);
+	if (le->leFlags & LEF_MOVE_OLDORIGIN)
+		BG_EvaluateTrajectory(&le->pos2, cg.time, re->oldorigin);
 
 	// if the view would be "inside" the sprite, kill the sprite
 	// so it doesn't add too much overdraw
@@ -893,6 +949,14 @@ void CG_AddLocalEntities(void)
 
 			case LE_FADE_RGB:               // teleporters, railtrails
 				CG_AddFadeRGB(le);
+				break;
+
+			case LE_FADE_RGB_SIN:           // rail overlay
+				CG_AddFadeRGBSin(le);
+				break;
+
+			case LE_RAILTUBE:               // rail spiral tubes (altRail 3)
+				CG_AddRailtube(le);
 				break;
 
 			case LE_FALL_SCALE_FADE: // gib blood trails

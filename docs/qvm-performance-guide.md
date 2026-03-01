@@ -776,9 +776,9 @@ void CG_Player(centity_t* cent) {
 ```c
 // ❌ Медленно: много мелких функций
 void CG_ClearDeadMarks(int clientNum) {
-    for (int i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++) {
-        if (IsDeadMark(&cgs.teamMarkers.teamTaskMarks[i]) &&  // Call 1
-            GetMarkClient(&cgs.teamMarkers.teamTaskMarks[i]) == clientNum) {  // Call 2
+    for (int i = 0; i < cg.teamMarkers.numTeamTaskMarks; i++) {
+        if (IsDeadMark(&cg.teamMarkers.teamTaskMarks[i]) &&  // Call 1
+            GetMarkClient(&cg.teamMarkers.teamTaskMarks[i]) == clientNum) {  // Call 2
             RemoveMarkAtIndex(i);  // Call 3
             i--;  // Adjust после удаления
         }
@@ -797,11 +797,11 @@ int GetMarkClient(teamTaskMark_t* mark) {
 
 void RemoveMarkAtIndex(int index) {
     // Shift все marks влево (O(n))
-    for (int i = index; i < cgs.teamMarkers.numTeamTaskMarks - 1; i++) {
-        cgs.teamMarkers.teamTaskMarks[i] = 
-            cgs.teamMarkers.teamTaskMarks[i + 1];
+    for (int i = index; i < cg.teamMarkers.numTeamTaskMarks - 1; i++) {
+        cg.teamMarkers.teamTaskMarks[i] = 
+            cg.teamMarkers.teamTaskMarks[i + 1];
     }
-    cgs.teamMarkers.numTeamTaskMarks--;
+    cg.teamMarkers.numTeamTaskMarks--;
 }
 
 // 64 marks * 3 calls = 192 function call overhead
@@ -815,8 +815,8 @@ void RemoveMarkAtIndex(int index) {
 void CG_ClearDeadMarks(int clientNum) {
     int w = 0;  // Write index
     
-    for (int i = 0; i < cgs.teamMarkers.numTeamTaskMarks; i++) {
-        teamTaskMark_t* mark = &cgs.teamMarkers.teamTaskMarks[i];
+    for (int i = 0; i < cg.teamMarkers.numTeamTaskMarks; i++) {
+        teamTaskMark_t* mark = &cg.teamMarkers.teamTaskMarks[i];
         
         // Inline check (no function call)
         qboolean isDead = (mark->taskType == TT_PLAYERDEAD ||
@@ -828,13 +828,13 @@ void CG_ClearDeadMarks(int clientNum) {
         if (keep) {
             if (w != i) {
                 // Copy (only if needed)
-                cgs.teamMarkers.teamTaskMarks[w] = *mark;
+                cg.teamMarkers.teamTaskMarks[w] = *mark;
             }
             w++;
         }
     }
     
-    cgs.teamMarkers.numTeamTaskMarks = w;
+    cg.teamMarkers.numTeamTaskMarks = w;
 }
 
 // 0 function calls

@@ -206,6 +206,242 @@ static void CG_ShotgunEjectBrass(centity_t* cent)
 
 /*
 ==========================
+CG_RailSpiral - spiral rings (altRail 4,5)
+==========================
+*/
+static void CG_RailSpiral(clientInfo_t* ci, vec3_t start, vec3_t end)
+{
+	vec3_t axis[36], move, move2, vec, temp;
+	float  len;
+	int    i, j, skip, spacingVal, rotationStep;
+	localEntity_t* le;
+	refEntity_t*   re;
+
+	if (cg_railRingsSize.value <= 0.0f)
+		return; /* no ring sprites when size 0 */
+	spacingVal = cg_railRingsSpacing.integer > 0 ? cg_railRingsSpacing.integer : 5;
+	rotationStep = cg_railRingsRotation.integer;
+
+	VectorCopy(start, move);
+	VectorSubtract(end, start, vec);
+	len = VectorNormalize(vec);
+	PerpendicularVector(temp, vec);
+	for (i = 0; i < 36; i++)
+		RotatePointAroundVector(axis[i], vec, temp, i * 10);
+
+	VectorMA(move, 20, vec, move);
+	VectorScale(vec, (float)spacingVal, vec);
+	skip = -1;
+	j = 18;
+	for (i = 0; i < len; i += spacingVal)
+	{
+		if (i != skip)
+		{
+			skip = i + spacingVal;
+			le = CG_AllocLocalEntity();
+			re = &le->refEntity;
+			le->leFlags = LEF_PUFF_DONT_SCALE;
+			le->leType = LE_MOVE_SCALE_FADE;
+			le->startTime = cg.time;
+			le->endTime = cg.time + (i >> 1) + 600;
+			le->lifeRate = 1.0f / (le->endTime - le->startTime);
+			re->shaderTime = cg.time / 1000.0f;
+			re->reType = RT_SPRITE;
+			re->radius = cg_railRingsSize.value;
+			re->customShader = (cg_nomip.integer & 0x20) ? cgs.media.railRingsShaderNoPicMip : cgs.media.railRingsShader;
+			re->shaderRGBA[0] = (byte)(ci->colors.railRings[0] * 255);
+			re->shaderRGBA[1] = (byte)(ci->colors.railRings[1] * 255);
+			re->shaderRGBA[2] = (byte)(ci->colors.railRings[2] * 255);
+			re->shaderRGBA[3] = 255;
+			le->color[0] = ci->colors.railRings[0] * 0.75f;
+			le->color[1] = ci->colors.railRings[1] * 0.75f;
+			le->color[2] = ci->colors.railRings[2] * 0.75f;
+			le->color[3] = 1.0f;
+			le->pos.trType = TR_LINEAR;
+			le->pos.trTime = cg.time;
+			if (rotationStep)
+			{
+				VectorCopy(move, move2);
+				VectorMA(move2, cg_railRingsRadius.value, axis[j], move2);
+				VectorCopy(move2, le->pos.trBase);
+				le->pos.trDelta[0] = axis[j][0] * 4;
+				le->pos.trDelta[1] = axis[j][1] * 4;
+				le->pos.trDelta[2] = axis[j][2] * 4;
+			}
+			else
+			{
+				/* rotation 0 = rings on the beam (like cg_altRail 0), no offset */
+				VectorCopy(move, le->pos.trBase);
+				le->pos.trDelta[0] = 0;
+				le->pos.trDelta[1] = 0;
+				le->pos.trDelta[2] = 0;
+			}
+		}
+		VectorAdd(move, vec, move);
+		if (rotationStep)
+			j = (j + rotationStep + 36) % 36;
+	}
+}
+
+/*
+==========================
+CG_RailSpiral2 - lightning segments (altRail 2)
+==========================
+*/
+static void CG_RailSpiral2(clientInfo_t* ci, vec3_t start, vec3_t end)
+{
+	vec3_t axis[36], move, move2, vec, temp, last;
+	trajectory_t lastTraj;
+	float  len;
+	int    i, j, skip, k;
+	localEntity_t* le;
+	refEntity_t*   re;
+#define RAIL2_ROTATION 1
+#define RAIL2_SPACING  5
+
+	VectorCopy(start, move);
+	VectorSubtract(end, start, vec);
+	len = VectorNormalize(vec);
+	PerpendicularVector(temp, vec);
+	for (i = 0; i < 36; i++)
+		RotatePointAroundVector(axis[i], vec, temp, i * 10);
+	VectorMA(move, 20, vec, move);
+	VectorScale(vec, RAIL2_SPACING, vec);
+	skip = -1;
+	j = 18;
+	VectorCopy(start, last);
+	memset(&lastTraj, 0, sizeof(lastTraj));
+	k = 0;
+	for (i = 0; i < len; i += RAIL2_SPACING)
+	{
+		if (i != skip)
+		{
+			trajectory_t traj;
+			skip = i + RAIL2_SPACING;
+			VectorCopy(move, move2);
+			VectorMA(move2, cg_railRingsRadius.value, axis[j], move2);
+			traj.trType = TR_LINEAR;
+			traj.trTime = cg.time;
+			VectorCopy(move2, traj.trBase);
+			traj.trDelta[0] = axis[j][0] * 6;
+			traj.trDelta[1] = axis[j][1] * 6;
+			traj.trDelta[2] = axis[j][2] * 6;
+			if (i <= RAIL2_SPACING)
+			{
+				VectorCopy(move2, last);
+				memcpy(&lastTraj, &traj, sizeof(lastTraj));
+				goto next2;
+			}
+			le = CG_AllocLocalEntity();
+			re = &le->refEntity;
+			le->leType = LE_FADE_RGB;
+			le->startTime = cg.time;
+			le->endTime = cg.time + 800;
+			le->lifeRate = 1.0f / (le->endTime - le->startTime);
+			re->shaderTime = cg.time / 1000.0f;
+			re->reType = cg_altRailBeefy.integer ? RT_LIGHTNING : RT_RAIL_CORE;
+			re->customShader = cgs.media.ratRailSpiralShaders[(k++) % NUM_RAILSPIRALSHADERS];
+			re->shaderRGBA[0] = (byte)(ci->colors.railRings[0] * 255);
+			re->shaderRGBA[1] = (byte)(ci->colors.railRings[1] * 255);
+			re->shaderRGBA[2] = (byte)(ci->colors.railRings[2] * 255);
+			re->shaderRGBA[3] = 255;
+			le->color[0] = ci->colors.railRings[0] * 0.75f;
+			le->color[1] = ci->colors.railRings[1] * 0.75f;
+			le->color[2] = ci->colors.railRings[2] * 0.75f;
+			le->color[3] = 1.0f;
+			AxisClear(re->axis);
+			if (cg_altRailBeefy.integer)
+			{
+				VectorCopy(move2, re->oldorigin);
+				VectorCopy(last, re->origin);
+				memcpy(&le->pos2, &traj, sizeof(le->pos2));
+				memcpy(&le->pos, &lastTraj, sizeof(le->pos));
+			}
+			else
+			{
+				VectorCopy(move2, re->origin);
+				VectorCopy(last, re->oldorigin);
+				memcpy(&le->pos, &traj, sizeof(le->pos));
+				memcpy(&le->pos2, &lastTraj, sizeof(le->pos2));
+			}
+			VectorCopy(move2, last);
+			memcpy(&lastTraj, &traj, sizeof(lastTraj));
+			le->leFlags = LEF_PUFF_DONT_SCALE | LEF_FADE_RGB | LEF_MOVE_OLDORIGIN;
+			le->leType = LE_MOVE_SCALE_FADE;
+		}
+next2:
+		VectorAdd(move, vec, move);
+		j = (j + RAIL2_ROTATION) % 36;
+	}
+}
+
+#define RAIL3_SPIRALLENGTH 180
+#define RAIL3_NUMROT 6
+/*
+==========================
+CG_RailSpiral3 - tubes (altRail 3)
+==========================
+*/
+static void CG_RailSpiral3(clientInfo_t* ci, vec3_t start, vec3_t end)
+{
+	vec3_t rotaxis[RAIL3_NUMROT], rotaxis2[RAIL3_NUMROT], second, direction, s;
+	localEntity_t* le;
+	refEntity_t*   re;
+	float l, len, remaining, tubelength;
+	int i, numTubes;
+
+	VectorSubtract(end, start, direction);
+	len = VectorNormalize(direction);
+	PerpendicularVector(second, direction);
+	for (i = 0; i < RAIL3_NUMROT; i++)
+	{
+		RotatePointAroundVector(rotaxis[i], direction, second, (float)(i * 360) / RAIL3_NUMROT);
+		CrossProduct(direction, rotaxis[i], rotaxis2[i]);
+		VectorScale(rotaxis[i], 10, rotaxis[i]);
+		VectorScale(rotaxis2[i], 10, rotaxis2[i]);
+	}
+	numTubes = (int)(len / RAIL3_SPIRALLENGTH);
+	if (numTubes < 1)
+		numTubes = 1;
+	tubelength = len / (float)numTubes;
+	VectorScale(direction, tubelength, direction);
+	VectorCopy(start, s);
+	for (l = 0, i = 0; l < len; l += tubelength, i++)
+	{
+		remaining = (len - l) / (float)RAIL3_SPIRALLENGTH;
+		if (remaining < 0.1f)
+			return;
+		le = CG_AllocLocalEntity();
+		re = &le->refEntity;
+		le->leType = LE_RAILTUBE;
+		le->startTime = cg.time;
+		le->endTime = cg.time + 800;
+		le->lifeRate = 1.0f / (le->endTime - le->startTime);
+		re->shaderTime = cg.time / 1000.0f;
+		re->shaderRGBA[0] = (byte)(ci->colors.railRings[0] * 255);
+		re->shaderRGBA[1] = (byte)(ci->colors.railRings[1] * 255);
+		re->shaderRGBA[2] = (byte)(ci->colors.railRings[2] * 255);
+		re->shaderRGBA[3] = 255;
+		le->color[0] = ci->colors.railRings[0] * 0.75f;
+		le->color[1] = ci->colors.railRings[1] * 0.75f;
+		le->color[2] = ci->colors.railRings[2] * 0.75f;
+		le->color[3] = 1.0f;
+		re->nonNormalizedAxes = qtrue;
+		VectorCopy(direction, re->axis[0]);
+		VectorCopy(rotaxis[i % RAIL3_NUMROT], re->axis[1]);
+		VectorCopy(rotaxis2[i % RAIL3_NUMROT], re->axis[2]);
+		re->customShader = remaining < 0.5f ? cgs.media.ratRailTubeShader50 : cgs.media.ratRailTubeShader100;
+		re->reType = RT_MODEL;
+		re->rotation = 0;
+		re->hModel = cgs.media.ratRailSpiralModel;
+		re->renderfx = RF_NOSHADOW;
+		VectorCopy(s, re->origin);
+		VectorAdd(s, direction, s);
+	}
+}
+
+/*
+==========================
 CG_RailTrail
 ==========================
 */
@@ -217,10 +453,67 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 	localEntity_t* le;
 	refEntity_t*   re;
 
-	// Check for alternate rail effect
-	if (cg_altRail.integer)
+	if (cg_altRail.integer == 1)
 	{
 		CG_RailTrail2(ci, start, end);
+		return;
+	}
+	if (cg_altRail.integer >= 2)
+	{
+		float railTrailTime = (cg_railTrailTime.value < 300) ? 300 : cg_railTrailTime.value;
+		start[2] -= 4;
+		/* cg_railRingsRadius 0 = only beam (core), no spiral/rings */
+		if (cg_railRingsRadius.value > 0.0f)
+		{
+			switch (cg_altRail.integer)
+			{
+				case 2:
+					CG_RailSpiral2(ci, start, end);
+					break;
+				case 3:
+					CG_RailSpiral3(ci, start, end);
+					break;
+				default:
+					CG_RailSpiral(ci, start, end);
+					break;
+			}
+		}
+		le = CG_AllocLocalEntity();
+		re = &le->refEntity;
+		le->leType = LE_FADE_RGB;
+		le->startTime = cg.time;
+		le->endTime = cg.time + (int)railTrailTime;
+		le->lifeRate = 1.0f / (le->endTime - le->startTime);
+		re->shaderTime = cg.time / 1000.0f;
+		re->reType = cg_altRailBeefy.integer ? RT_LIGHTNING : RT_RAIL_CORE;
+		re->customShader = (cg_altRail.integer == 4 && cgs.media.ratRailCoreShaderFat) ? cgs.media.ratRailCoreShaderFat : cgs.media.ratRailCoreShader;
+		VectorCopy(start, re->origin);
+		VectorCopy(end, re->oldorigin);
+		re->shaderRGBA[0] = (byte)(ci->colors.railCore[0] * 255);
+		re->shaderRGBA[1] = (byte)(ci->colors.railCore[1] * 255);
+		re->shaderRGBA[2] = (byte)(ci->colors.railCore[2] * 255);
+		re->shaderRGBA[3] = 255;
+		le->color[0] = ci->colors.railCore[0] * 0.75f;
+		le->color[1] = ci->colors.railCore[1] * 0.75f;
+		le->color[2] = ci->colors.railCore[2] * 0.75f;
+		le->color[3] = 1.0f;
+		AxisClear(re->axis);
+		/* overlay for altRail 2-5 */
+		le = CG_AllocLocalEntity();
+		re = &le->refEntity;
+		le->leType = LE_FADE_RGB_SIN;
+		le->startTime = cg.time;
+		le->endTime = cg.time + (int)((railTrailTime < 1200 ? railTrailTime : 1200) / 2.0f);
+		le->lifeRate = 1.0f / (le->endTime - le->startTime);
+		re->shaderTime = cg.time / 1000.0f;
+		re->reType = cg_altRailBeefy.integer ? RT_LIGHTNING : RT_RAIL_CORE;
+		re->customShader = (cg_altRail.integer == 4 && cgs.media.ratRailCoreShaderOverlayFat) ? cgs.media.ratRailCoreShaderOverlayFat : cgs.media.ratRailCoreShaderOverlay;
+		VectorCopy(start, re->origin);
+		VectorCopy(end, re->oldorigin);
+		re->shaderRGBA[0] = re->shaderRGBA[1] = re->shaderRGBA[2] = re->shaderRGBA[3] = 255;
+		le->color[0] = le->color[1] = le->color[2] = 1.0f;
+		le->color[3] = 1.0f;
+		AxisClear(re->axis);
 		return;
 	}
 	// Default rail trail (cg_altRail.integer == 0)
@@ -309,37 +602,40 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 
 	if (cg_oldRail.integer != 0)
 	{
-
-		le = CG_AllocLocalEntity();
-		re = &le->refEntity;
-		le->leType = LE_FADE_RGB;
-		le->startTime = cg.time;
-		le->endTime = cg.time + cg_railTrailTime.value;
-		le->lifeRate = 1.0 / (le->endTime - le->startTime);
-
-		re->shaderTime = cg.time / 1000.0f;
-		re->reType = RT_RAIL_RINGS;
-		re->radius = cg_railRingsSize.value;
-		if (cg_nomip.integer & 0x20)
+		if (cg_railRingsSize.value > 0.0f)
 		{
-			re->customShader = cgs.media.railRingsShaderNoPicMip;
+			le = CG_AllocLocalEntity();
+			re = &le->refEntity;
+			le->leType = LE_FADE_RGB;
+			le->startTime = cg.time;
+			le->endTime = cg.time + cg_railTrailTime.value;
+			le->lifeRate = 1.0 / (le->endTime - le->startTime);
+
+			re->shaderTime = cg.time / 1000.0f;
+			re->reType = RT_RAIL_RINGS;
+			re->radius = cg_railRingsSize.value;
+			if (cg_nomip.integer & 0x20)
+			{
+				re->customShader = cgs.media.railRingsShaderNoPicMip;
+			}
+			else
+			{
+				re->customShader = cgs.media.railRingsShader;
+			}
+			VectorCopy(start, re->origin);
+			VectorCopy(end, re->oldorigin);
+
+			le->color[0] = ci->colors.railRings[0] * 0.75;
+			le->color[1] = ci->colors.railRings[1] * 0.75;
+			le->color[2] = ci->colors.railRings[2] * 0.75;
+			le->color[3] = 1.0f;
+
+			AxisClear(re->axis);
 		}
-		else
-		{
-			re->customShader = cgs.media.railRingsShader;
-		}
-		VectorCopy(start, re->origin);
-		VectorCopy(end, re->oldorigin);
-
-		le->color[0] = ci->colors.railRings[0] * 0.75;
-		le->color[1] = ci->colors.railRings[1] * 0.75;
-		le->color[2] = ci->colors.railRings[2] * 0.75;
-		le->color[3] = 1.0f;
-
-		AxisClear(re->axis);
-
 		return;
 	}
+	if (cg_railRingsSize.value <= 0.0f)
+		goto rail_trail_done_rings; /* no ring sprites when size 0 */
 	skip = -1;
 
 	j = 18;
@@ -411,6 +707,8 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 				j = j + rotationStep < 36 ? j + rotationStep : (j + rotationStep) % 36;
 		}
 	}
+rail_trail_done_rings:
+	;
 }
 
 /*
@@ -1147,6 +1445,21 @@ void CG_RegisterWeapon(int weaponNum)
 			{
 				cgs.media.railCoreShaderNoPicMip = cgs.media.railCoreShader;
 			}
+			/* altRail 2,3,4,5: register all shaders once so no vid_restart needed */
+			cgs.media.ratRailCoreShader = trap_R_RegisterShader("ratRailCore");
+			cgs.media.ratRailCoreShaderOverlay = trap_R_RegisterShader("ratRailCoreOverlay");
+			cgs.media.ratRailCoreShaderFat = trap_R_RegisterShader("ratRailCoreFat");
+			cgs.media.ratRailCoreShaderOverlayFat = trap_R_RegisterShader("ratRailCoreOverlayFat");
+			cgs.media.ratRailSpiralModel = trap_R_RegisterModel("models/ammo/rail/railTube.md3");
+			cgs.media.ratRailTubeShader100 = trap_R_RegisterShader("railTube100");
+			cgs.media.ratRailTubeShader50 = trap_R_RegisterShader("railTube50");
+			{
+				int ri;
+				for (ri = 0; ri < NUM_RAILSPIRALSHADERS; ri++)
+				{
+					cgs.media.ratRailSpiralShaders[ri] = trap_R_RegisterShader(va("ratRailSpiralLightning%i", ri));
+				}
+			}
 			break;
 
 		case WP_BFG:
@@ -1358,9 +1671,11 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	{
 		if (cg.snap->ps.weapon != WP_LIGHTNING || cg_lightningHide.integer)
 			return;
-		if (cg.snap->ps.weaponstate != WEAPON_READY && cg.snap->ps.weaponstate != WEAPON_FIRING)
+		if (cg.snap->ps.weaponstate != WEAPON_FIRING || !(cg.snap->ps.eFlags & EF_FIRING))
 			return;
 	}
+	else if (!(cent->currentState.eFlags & EF_FIRING))
+		return;
 
 	{
 		refEntity_t beam;
@@ -1508,8 +1823,6 @@ void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum)
 	{
 		color = cgs.beBrightWeaponsColor[weaponNum];
 		opacity = cg_brightWeaponsOpaque.value;
-		if (opacity < 0.0f) opacity = 0.0f;
-		if (opacity > 1.0f) opacity = 1.0f;
 
 		gun->shaderRGBA[0] = 255 * color[0];
 		gun->shaderRGBA[1] = 255 * color[1];
@@ -1525,8 +1838,6 @@ void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum)
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 	{
 		opacity = cg_brightWeaponsOpaque.value;
-		if (opacity < 0.0f) opacity = 0.0f;
-		if (opacity > 1.0f) opacity = 1.0f;
 
 		ent->shaderRGBA[0] = 255 * cgs.beBrightWeaponsColor[weaponNum][0];
 		ent->shaderRGBA[1] = 255 * cgs.beBrightWeaponsColor[weaponNum][1];
@@ -1550,9 +1861,8 @@ qhandle_t CG_SelectBrightWeaponsShader(void)
 =============
 CG_AddPlayerWeapon
 
-Used for both the view weapon (ps is valid) and the world modelother character models (ps is NULL)
-The main player will have this called for BOTH cases, so effects like light and
-sound should only be done on the world model case.
+Used for both the view weapon (ps is valid) and the world model / other character models (ps is NULL).
+The main player has this called for BOTH cases; effects like light and sound are done only for world model.
 =============
 */
 void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent, int team)
@@ -1578,13 +1888,13 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	int brightWeaponsShaderType;
 	float brightWeaponsOpacity;
 
-	/* Cache cvar reads (hot path: 64 players * 60 FPS) */
+	/* --- cvars (hot path: 64 players * 60 FPS) --- */
 	drawGunFlags = cg_drawGun.integer;
 	railChamberFlags = cg_railCustomChamber.integer;
 	brightWeaponsShaderType = cg_brightWeaponsShader.integer;
 	brightWeaponsOpacity = cg_brightWeaponsOpaque.value;
 
-	/* Determine context */
+	/* --- who we're drawing: own gun, enemy, teammate, spectate follow --- */
 	isOwnGun = ps && cent->currentState.number == cg.clientNum;
 	isEnemy = CG_IsEnemy(&cgs.clientinfo[cent->currentState.number]);
 	isTeammate = !isEnemy && (cent->currentState.number != cg.clientNum);
@@ -1595,69 +1905,55 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	if (!cg_weapons[weaponNum].registered)
 		CG_RegisterWeapon(weaponNum);
 	weapon = &cg_weapons[weaponNum];
+	ci = &cgs.clientinfo[ps ? cg.predictedPlayerState.clientNum : cent->currentState.clientNum];
 
-	// add the weapon
+	/* --- base gun refEntity (default white; rail overrides below when applicable) --- */
 	memset(&gun, 0, sizeof(gun));
 	VectorCopy(parent->lightingOrigin, gun.lightingOrigin);
 	gun.shadowPlane = parent->shadowPlane;
 	gun.renderfx = parent->renderfx;
+	gun.shaderRGBA[0] = gun.shaderRGBA[1] = gun.shaderRGBA[2] = gun.shaderRGBA[3] = 255;
 
-	/* cg_railCustomChamber bitmask: 1 = reloading uses railCore, 2 = ready uses railRings */
-	if (ps)
+	/* --- rail chamber color: cg_railCustomChamber bitmask 1=reload railCore, 2=ready railRings --- */
+	if (weaponNum == WP_RAILGUN && railChamberFlags)
 	{
-		if (cg.predictedPlayerState.weapon == WP_RAILGUN &&
-		        cg.predictedPlayerState.weaponstate == WEAPON_FIRING)
+		if (ps)
 		{
-			float f = (float)cg.predictedPlayerState.weaponTime / 1500;
-
-			if (railChamberFlags & 1)
+			if (cg.predictedPlayerState.weaponstate == WEAPON_FIRING)
 			{
-				ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
-				gun.shaderRGBA[0] = 255 * ci->colors.railCore[0] * (1.0f - f);
-				gun.shaderRGBA[1] = 255 * ci->colors.railCore[1] * (1.0f - f);
-				gun.shaderRGBA[2] = 255 * ci->colors.railCore[2] * (1.0f - f);
-				gun.shaderRGBA[3] = 255;
+				float f = (float)cg.predictedPlayerState.weaponTime / 1500.0f;
+				if (railChamberFlags & 1)
+				{
+					gun.shaderRGBA[0] = 255 * ci->colors.railCore[0] * (1.0f - f);
+					gun.shaderRGBA[1] = 255 * ci->colors.railCore[1] * (1.0f - f);
+					gun.shaderRGBA[2] = 255 * ci->colors.railCore[2] * (1.0f - f);
+				}
+				else
+				{
+					gun.shaderRGBA[1] = 0;
+					gun.shaderRGBA[0] = gun.shaderRGBA[2] = (byte)(255 * (1.0f - f));
+				}
 			}
-			else
+			else if (railChamberFlags & 2)
 			{
-				gun.shaderRGBA[1] = 0;
-				gun.shaderRGBA[0] = gun.shaderRGBA[2] = 255 * (1.0f - f);
+				gun.shaderRGBA[0] = (byte)(255 * ci->colors.railRings[0]);
+				gun.shaderRGBA[1] = (byte)(255 * ci->colors.railRings[1]);
+				gun.shaderRGBA[2] = (byte)(255 * ci->colors.railRings[2]);
 			}
 		}
 		else if (railChamberFlags & 2)
 		{
-			ci = &cgs.clientinfo[cg.predictedPlayerState.clientNum];
-			gun.shaderRGBA[0] = 255 * ci->colors.railRings[0];
-			gun.shaderRGBA[1] = 255 * ci->colors.railRings[1];
-			gun.shaderRGBA[2] = 255 * ci->colors.railRings[2];
-			gun.shaderRGBA[3] = 255;
-		}
-		else
-		{
-			gun.shaderRGBA[0] = gun.shaderRGBA[1] = gun.shaderRGBA[2] = gun.shaderRGBA[3] = 255;
+			gun.shaderRGBA[0] = (byte)(255 * ci->colors.railRings[0]);
+			gun.shaderRGBA[1] = (byte)(255 * ci->colors.railRings[1]);
+			gun.shaderRGBA[2] = (byte)(255 * ci->colors.railRings[2]);
 		}
 	}
-	else if (cent->currentState.weapon == WP_RAILGUN)
-	{
-		if (railChamberFlags & 2)
-		{
-			ci = &cgs.clientinfo[cent->currentState.clientNum];
-			gun.shaderRGBA[0] = 255 * ci->colors.railRings[0];
-			gun.shaderRGBA[1] = 255 * ci->colors.railRings[1];
-			gun.shaderRGBA[2] = 255 * ci->colors.railRings[2];
-			gun.shaderRGBA[3] = 255;
-		}
-		else
-		{
-			gun.shaderRGBA[0] = gun.shaderRGBA[1] = gun.shaderRGBA[2] = gun.shaderRGBA[3] = 255;
-		}
-	}
-
 
 	gun.hModel = weapon->weaponModel;
 	if (!gun.hModel)
 		return;
 
+	/* --- world model only: looping weapon sounds (LG etc.) --- */
 	if (!ps)
 	{
 		cent->pe.lightningFiring = qfalse;
@@ -1671,44 +1967,26 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			trap_S_AddLoopingSound(cent->currentState.number, cent->lerpOrigin, vec3_origin, weapon->readySound);
 	}
 
-	/*
-	    // Make weapon appear left-handed for 2 and centered for 3
-	*/
+	/* --- gun position/orient from tag_weapon + cg_gunPos (left/center/right) --- */
 	trap_R_LerpTag(&lerped, parent->hModel, parent->oldframe, parent->frame,
 	               1.0f - parent->backlerp, "tag_weapon");
 	VectorCopy(parent->origin, gun.origin);
 	VectorMA(gun.origin, lerped.origin[0], parent->axis[0], gun.origin);
 
-	/* offset for each weapon to center (magic numbers; md3 fix would be better) */
+	/* offset for each weapon to center (magic numbers; md3 fix would be better) + cg_gunPos (left/center/right) */
 	if (ps)
 	{
 		static const float gunOffsetY[WP_NUM_WEAPONS] = {0, 0, 0.275f, 0.05f, 0.275f, 0.4f, 0.425f, 0.45f, 0, 0.225f};
 		weapon_t w = cg.predictedPlayerState.weapon;
 		if (w > WP_NONE && w < WP_NUM_WEAPONS && gunOffsetY[w] != 0.0f)
-		{
 			VectorMA(gun.origin, gunOffsetY[w], parent->axis[1], gun.origin);
-		}
-	}
-
-	if (ps)
-	{
 		if (cg_gunPos.integer == 2)
-		{
 			VectorMA(gun.origin, -lerped.origin[1], parent->axis[1], gun.origin);
-		}
-		else if (cg_gunPos.integer == 3)
-		{
-			// centered by default
-		}
-		else
-		{
+		else if (cg_gunPos.integer != 3)
 			VectorMA(gun.origin, lerped.origin[1], parent->axis[1], gun.origin);
-		}
 	}
 	else
-	{
 		VectorMA(gun.origin, lerped.origin[1], parent->axis[1], gun.origin);
-	}
 
 
 	VectorMA(gun.origin, lerped.origin[2], parent->axis[2], gun.origin);
@@ -1722,6 +2000,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	}
 	gun.backlerp = parent->backlerp;
 
+	/* --- bright weapons (BE fullbright + cg_drawBrightWeapons bits) --- */
 	{
 		qboolean wantBright =
 		    CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) &&
@@ -1734,19 +2013,17 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		if (wantBright && weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 		{
 			float* bc = cgs.beBrightWeaponsColor[weaponNum];
-			float op = brightWeaponsOpacity;
-			if (op < 0.0f) op = 0.0f;
-			if (op > 1.0f) op = 1.0f;
-			gun.shaderRGBA[0] = 255 * bc[0];
-			gun.shaderRGBA[1] = 255 * bc[1];
-			gun.shaderRGBA[2] = 255 * bc[2];
-			gun.shaderRGBA[3] = 255 * op;
+			gun.shaderRGBA[0] = (byte)(255 * bc[0]);
+			gun.shaderRGBA[1] = (byte)(255 * bc[1]);
+			gun.shaderRGBA[2] = (byte)(255 * bc[2]);
+			gun.shaderRGBA[3] = (byte)(255 * brightWeaponsOpacity);
 			usedBrightColor = qtrue;
 			gun.customShader = (brightWeaponsShaderType == 2) ? cgs.media.altFullBrightShader : cgs.media.firstPersonGun;
 		}
 	}
+	/* --- ghost gun (cg_gunColor / cg_gunOpaque) --- */
 	{
-		ghostGun = ((drawGunFlags & DRAW_GUN_GHOST) || drawGunFlags == 3) && (gun.renderfx & RF_FIRST_PERSON);
+		ghostGun = ((drawGunFlags & DRAW_GUN_GHOST) || drawGunFlags == 3) && (parent->renderfx & RF_FIRST_PERSON);
 		if (ghostGun)
 		{
 			if (!CG_ParseColorStr(cg_gunColor.string, gunColor))
@@ -1764,11 +2041,10 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			gun.customShader = cgs.media.firstPersonGun;
 		}
 	}
-	if ((gun.renderfx & RF_FIRST_PERSON) && cg_drawGunForceAspect.integer)
-	{
+	if ((parent->renderfx & RF_FIRST_PERSON) && cg_drawGunForceAspect.integer)
 		VectorScale(gun.axis[1], 0.75f, gun.axis[1]);
-	}
-	/* add gun + barrel with powerups (precompute common values) */
+
+	/* --- draw gun + spinning barrel (invis/battle/quad) --- */
 	{
 		int pw = cent->currentState.powerups;
 		qboolean pwInvis = pw & (1 << PW_INVIS);
@@ -1838,13 +2114,10 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			if (usedBrightColor && weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 			{
 				float* bc = cgs.beBrightWeaponsColor[weaponNum];
-				float op = brightWeaponsOpacity;
-				if (op < 0.0f) op = 0.0f;
-				if (op > 1.0f) op = 1.0f;
-				barrel.shaderRGBA[0] = 255 * bc[0];
-				barrel.shaderRGBA[1] = 255 * bc[1];
-				barrel.shaderRGBA[2] = 255 * bc[2];
-				barrel.shaderRGBA[3] = 255 * op;
+				barrel.shaderRGBA[0] = (byte)(255 * bc[0]);
+				barrel.shaderRGBA[1] = (byte)(255 * bc[1]);
+				barrel.shaderRGBA[2] = (byte)(255 * bc[2]);
+				barrel.shaderRGBA[3] = (byte)(255 * brightWeaponsOpacity);
 				barrel.customShader = (brightWeaponsShaderType == 2) ? cgs.media.altFullBrightShader : cgs.media.firstPersonGun;
 			}
 			else if (ghostGun)
@@ -1855,7 +2128,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 				barrel.shaderRGBA[3] = (byte)(255 * gunColor[3]);
 				barrel.customShader = cgs.media.firstPersonGun;
 			}
-			if ((barrel.renderfx & RF_FIRST_PERSON) && cg_drawGunForceAspect.integer)
+			if ((parent->renderfx & RF_FIRST_PERSON) && cg_drawGunForceAspect.integer)
 				VectorScale(barrel.axis[1], 0.75f, barrel.axis[1]);
 			if (pwInvis)
 			{
@@ -1879,26 +2152,16 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		}
 	}
 
-	// make sure we aren't looking at cg.predictedPlayerEntity for LG
+	/* --- muzzle flash: skip impulse weapons when flash too old (avoid building flash/nonPredictedCent) --- */
+	if (weaponNum != WP_LIGHTNING && weaponNum != WP_GAUNTLET && weaponNum != WP_GRAPPLING_HOOK)
+	{
+		if (cg.time - cent->muzzleFlashTime > MUZZLE_FLASH_TIME && !cent->pe.railgunFlash)
+			return;
+	}
+
 	nonPredictedCent = &cg_entities[cent->currentState.clientNum];
 	if ((nonPredictedCent - cg_entities) != cent->currentState.clientNum)
-	{
 		nonPredictedCent = cent;
-	}
-	// add the flash
-	if ((weaponNum == WP_LIGHTNING || weaponNum == WP_GAUNTLET || weaponNum == WP_GRAPPLING_HOOK)
-	        && (nonPredictedCent->currentState.eFlags & EF_FIRING))
-	{
-		// continuous flash
-	}
-	else
-	{
-		// impulse flash
-		if (cg.time - cent->muzzleFlashTime > MUZZLE_FLASH_TIME && !cent->pe.railgunFlash)
-		{
-			return;
-		}
-	}
 
 	memset(&flash, 0, sizeof(flash));
 	VectorCopy(parent->lightingOrigin, flash.lightingOrigin);
@@ -1909,39 +2172,49 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	{
 		return;
 	}
-	angles[YAW] = 0;
-	angles[PITCH] = 0;
+	angles[YAW] = angles[PITCH] = 0;
 	angles[ROLL] = crandom() * 10;
 	AnglesToAxis(angles, flash.axis);
-
-	// colorize the railgun blast
+	flash.shaderRGBA[0] = flash.shaderRGBA[1] = flash.shaderRGBA[2] = flash.shaderRGBA[3] = 255;
 	if (weaponNum == WP_RAILGUN)
 	{
-		clientInfo_t* ci = &cgs.clientinfo[cent->currentState.clientNum];
-		flash.shaderRGBA[0] = 255 * ci->colors.railCore[0];
-		flash.shaderRGBA[1] = 255 * ci->colors.railCore[1];
-		flash.shaderRGBA[2] = 255 * ci->colors.railCore[2];
+		flash.shaderRGBA[0] = (byte)(255 * ci->colors.railCore[0]);
+		flash.shaderRGBA[1] = (byte)(255 * ci->colors.railCore[1]);
+		flash.shaderRGBA[2] = (byte)(255 * ci->colors.railCore[2]);
 	}
-
 	CG_PositionRotatedEntityOnTag(&flash, &gun, weapon->weaponModel, "tag_flash");
-	if (cg_muzzleFlash.integer || cent->currentState.clientNum != cg.clientNum)
+	/* continuous (LG/gauntlet/hook): show flash and effects only when actually firing */
+	if (weaponNum == WP_LIGHTNING || weaponNum == WP_GAUNTLET || weaponNum == WP_GRAPPLING_HOOK)
 	{
-		trap_R_AddRefEntityToScene(&flash);
-	}
-
-	if (ps || cg.renderingThirdPerson ||
-	        cent->currentState.number != cg.predictedPlayerState.clientNum)
-	{
-		if (weaponNum == WP_LIGHTNING)
-			CG_LightningBolt(nonPredictedCent, flash.origin);
-		if (weaponNum == WP_RAILGUN)
-			CG_SpawnRailTrail(cent, flash.origin);
-		if (weapon->flashDlightColor[0] || weapon->flashDlightColor[1] || weapon->flashDlightColor[2])
+		if (nonPredictedCent->currentState.eFlags & EF_FIRING)
 		{
-			trap_R_AddLightToScene(flash.origin, 300 + (rand() & 31),
-			                       weapon->flashDlightColor[0],
-			                       weapon->flashDlightColor[1],
-			                       weapon->flashDlightColor[2]);
+			if (cg_muzzleFlash.integer || cent->currentState.clientNum != cg.clientNum)
+				trap_R_AddRefEntityToScene(&flash);
+			if (ps || cg.renderingThirdPerson || cent->currentState.number != cg.predictedPlayerState.clientNum)
+			{
+				if (weaponNum == WP_LIGHTNING)
+					CG_LightningBolt(nonPredictedCent, flash.origin);
+				if (weapon->flashDlightColor[0] || weapon->flashDlightColor[1] || weapon->flashDlightColor[2])
+					trap_R_AddLightToScene(flash.origin, 300 + (rand() & 31),
+					                       weapon->flashDlightColor[0],
+					                       weapon->flashDlightColor[1],
+					                       weapon->flashDlightColor[2]);
+			}
+		}
+	}
+	else
+	{
+		if (cg_muzzleFlash.integer || cent->currentState.clientNum != cg.clientNum)
+			trap_R_AddRefEntityToScene(&flash);
+		if (ps || cg.renderingThirdPerson || cent->currentState.number != cg.predictedPlayerState.clientNum)
+		{
+			if (weaponNum == WP_RAILGUN)
+				CG_SpawnRailTrail(cent, flash.origin);
+			if (weapon->flashDlightColor[0] || weapon->flashDlightColor[1] || weapon->flashDlightColor[2])
+				trap_R_AddLightToScene(flash.origin, 300 + (rand() & 31),
+				                       weapon->flashDlightColor[0],
+				                       weapon->flashDlightColor[1],
+				                       weapon->flashDlightColor[2]);
 		}
 	}
 }
@@ -1978,8 +2251,8 @@ void CG_AddViewWeapon(playerState_t* ps)
 		return;
 	}
 
-	if (cg.testGun)
-		return;
+	// if (cg.testGun)
+	// 	return;
 
 	// drop gun lower at higher fov
 	if (cg_fov.integer > 90)
@@ -2008,24 +2281,10 @@ void CG_AddViewWeapon(playerState_t* ps)
 	AnglesToAxis(angles, hand.axis);
 
 	// map torso animations to weapon animations
-	if (cg_gun_frame.integer)
-	{
-		hand.frame = hand.oldframe = cg_gun_frame.integer;
-		hand.backlerp = 0;
-	}
-	else
-	{
-		int dropFirst, attackFirst, attack2First, frame;
-		ci = &cgs.clientinfo[cent->currentState.clientNum];
-		dropFirst = ci->animations[TORSO_DROP].firstFrame;
-		attackFirst = ci->animations[TORSO_ATTACK].firstFrame;
-		attack2First = ci->animations[TORSO_ATTACK2].firstFrame;
-		frame = cent->pe.torso.frame;
-		hand.frame = (frame >= dropFirst && frame < dropFirst + 9) ? ((cg_drawGun.integer & DRAW_GUN_NO_SWITCH_ANIMATION) ? 0 : (frame - dropFirst + 6)) : (frame >= attackFirst && frame < attackFirst + 6) ? ((cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION) ? 0 : (1 + frame - attackFirst)) : (frame >= attack2First && frame < attack2First + 6) ? ((cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION) ? 0 : (1 + frame - attack2First)) : 0;
-		frame = cent->pe.torso.oldFrame;
-		hand.oldframe = (frame >= dropFirst && frame < dropFirst + 9) ? ((cg_drawGun.integer & DRAW_GUN_NO_SWITCH_ANIMATION) ? 0 : (frame - dropFirst + 6)) : (frame >= attackFirst && frame < attackFirst + 6) ? ((cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION) ? 0 : (1 + frame - attackFirst)) : (frame >= attack2First && frame < attack2First + 6) ? ((cg_drawGun.integer & DRAW_GUN_NO_FIRE_ANIMATION) ? 0 : (1 + frame - attack2First)) : 0;
-		hand.backlerp = cent->pe.torso.backlerp;
-	}
+	ci = &cgs.clientinfo[cent->currentState.clientNum];
+	hand.frame = CG_MapTorsoToWeaponFrame(ci, cent->pe.torso.frame);
+	hand.oldframe = CG_MapTorsoToWeaponFrame(ci, cent->pe.torso.oldFrame);
+	hand.backlerp = cent->pe.torso.backlerp;
 
 	hand.hModel = weapon->handsModel;
 	hand.renderfx = RF_DEPTHHACK | RF_FIRST_PERSON | RF_MINLIGHT;

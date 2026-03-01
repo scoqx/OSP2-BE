@@ -30,7 +30,7 @@ void CG_SHUDElementSBABRoutine(void* context)
 	switch (element->config.style.value)
 	{
 		case 1:
-			Vector4Copy(cgs.healthColorLocal, element->ctx.color_top);
+			Vector4Copy(cg.healthColorLocal, element->ctx.color_top);
 			break;
 
 		case 2:
@@ -51,7 +51,7 @@ void CG_SHUDElementSBABRoutine(void* context)
 		case 3:
 			if (cg.beIsHealthLow)
 			{
-				Vector4Copy(cgs.healthColorLocal, element->ctx.color_top);
+				Vector4Copy(cg.healthColorLocal, element->ctx.color_top);
 				element->ctx.color_top[3] = element->config.color.value.rgba[3];
 
 				if (!element->config.color2.isSet)
@@ -61,7 +61,7 @@ void CG_SHUDElementSBABRoutine(void* context)
 				}
 				else
 				{
-					Vector4Copy(cgs.healthColorLocal, element->ctx.color2_top);
+					Vector4Copy(cg.healthColorLocal, element->ctx.color2_top);
 					element->ctx.color2_top[3] = element->config.color2.value.rgba[3];
 				}
 			}
@@ -83,7 +83,7 @@ void CG_SHUDElementSBABRoutine(void* context)
 
 		default:
 			/* Unknown style, use default (style 1) */
-			Vector4Copy(cgs.healthColorLocal, element->ctx.color_top);
+			Vector4Copy(cg.healthColorLocal, element->ctx.color_top);
 			break;
 	}
 

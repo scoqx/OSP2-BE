@@ -326,7 +326,7 @@ void CG_Respawn(void)
 	}
 
 	/* Removal is done in CG_TeamTaskUpdateFrame (single place) */
-	cgs.teamMarkers.packLocalDeathNextFrame = qtrue;
+	cg.teamMarkers.packLocalDeathNextFrame = qtrue;
 }
 
 extern char* eventnames[];

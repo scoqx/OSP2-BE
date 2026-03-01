@@ -247,7 +247,7 @@ static float CG_OSPDrawStatusBar(float arg)
 
 	// stretch the health up when taking damage
 	CG_OSPDrawStatusBarString((((320 - ((12 * fontW) / 2)) + offsetW) + (5 * fontW)), (int)arg, 3, fontW, fontH, value);
-	Vector4Copy(cgs.healthColorLocal, hcolor);
+	Vector4Copy(cg.healthColorLocal, hcolor);
 	trap_R_SetColor(hcolor);
 
 	//
@@ -566,7 +566,7 @@ static void CG_OSPDrawCPMStatusbar0(void)
 	}
 
 	CG_DrawField(185, 432, 3, health, 32, 48);
-	Vector4Copy(cgs.healthColorLocal, color);
+	Vector4Copy(cg.healthColorLocal, color);
 	trap_R_SetColor(color);
 
 	armor = ps->stats[STAT_ARMOR];
@@ -1659,7 +1659,7 @@ static void CG_OSPDrawQ3CompStatusbar(void)
 		}
 
 		CG_DrawField(354 - w_tmp, 476 - h, 3, health, w, h);
-		Vector4Copy(cgs.healthColorLocal, colorForHealth);
+		Vector4Copy(cg.healthColorLocal, colorForHealth);
 		trap_R_SetColor(colorForHealth);
 	}
 	//--
@@ -2091,21 +2091,47 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 				CG_OSPDrawStringOld(teamOverlay.nameOffsetChar, (int)y, ci->name, w, h, NULL, teamOverlay.nameLenChar, 0);
 			}
 
-			if (teamOverlay.healthOffsetChar || teamOverlay.armorOffsetChar)
+			if ((cg_teamHealthBar.integer >= 1) && (teamOverlay.healthOffsetChar || teamOverlay.armorOffsetChar))
 			{
-				Vector4Copy(cgs.healthColorByClient[sortedTeamPlayers[i]], healthColor);
+				float barX = (float)(teamOverlay.healthOffsetChar ? teamOverlay.healthOffsetChar : teamOverlay.armorOffsetChar);
+				float barW = (teamOverlay.healthOffsetChar && teamOverlay.armorOffsetChar) ? (6.0f * (float)w) : (3.0f * (float)w);
+				if (teamOverlay.healthOffsetChar && teamOverlay.armorOffsetChar && teamOverlay.armorOffsetChar < teamOverlay.healthOffsetChar)
+				{
+					barX = (float)teamOverlay.armorOffsetChar;
+				}
+				CG_DrawHealthBar(barX, y, barW, (float)h, ci->health, ci->armor, 1.0f,
+					(cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue);
 			}
-
-			if (teamOverlay.healthOffsetChar)
+			else
 			{
-				Com_sprintf(buf, 16, "%3i", ci->health);
-				CG_OSPDrawStringOld(teamOverlay.healthOffsetChar, (int)y, buf, w, h, healthColor, 0, 0);
-			}
+				if (teamOverlay.healthOffsetChar || teamOverlay.armorOffsetChar)
+				{
+					Vector4Copy(cg.healthColorByClient[sortedTeamPlayers[i]], healthColor);
+				}
 
-			if (teamOverlay.armorOffsetChar)
-			{
-				Com_sprintf(buf, 16, "%3i", ci->armor);
-				CG_OSPDrawStringOld(teamOverlay.armorOffsetChar, (int)y, buf, w, h, healthColor, 0, 0);
+				if (teamOverlay.healthOffsetChar)
+				{
+					Com_sprintf(buf, 16, "%3i", ci->health);
+					{
+						vec4_t textColor;
+
+						Vector4Copy(healthColor, textColor);
+						textColor[3] = 1.0f; /* standard overlay: values fully opaque */
+						CG_OSPDrawStringOld(teamOverlay.healthOffsetChar, (int)y, buf, w, h, textColor, 0, qfalse);
+					}
+				}
+
+				if (teamOverlay.armorOffsetChar)
+				{
+					Com_sprintf(buf, 16, "%3i", ci->armor);
+					{
+						vec4_t textColor;
+
+						Vector4Copy(healthColor, textColor);
+						textColor[3] = 1.0f; /* standard overlay: values fully opaque */
+						CG_OSPDrawStringOld(teamOverlay.armorOffsetChar, (int)y, buf, w, h, textColor, 0, qfalse);
+					}
+				}
 			}
 			if (teamOverlay.strX)
 			{
@@ -2453,9 +2479,10 @@ static float CG_OSPHUDDrawScores(float y)
 	if (cgs.gametype >= GT_TEAM)
 	{
 		qboolean haveFlag = qfalse;
+		float xBlue; // Сохраняем x для синего блока, чтобы использовать для красного когда блоки друг над другом
 
 		s = NULL;
-		if (cgs.osp.gameTypeFreeze == 0)
+		if (cgs.osp.gameTypeFreeze == 0 && !CG_OSPIsGameTypeCA(cgs.gametype))
 		{
 			s =  va("%2i", s2);
 		}
@@ -2467,8 +2494,9 @@ static float CG_OSPHUDDrawScores(float y)
 		len = CG_DrawStrlen(s);
 		w = len * fontScoresW + 8;
 		x -=  w + 2;
+		xBlue = x; // Сохраняем позицию синего блока
 
-		if (cgs.osp.gameTypeFreeze != 0)
+		if (cgs.osp.gameTypeFreeze != 0 || CG_OSPIsGameTypeCA(cgs.gametype))
 		{
 			if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_BLUE)
 			{
@@ -2477,7 +2505,7 @@ static float CG_OSPHUDDrawScores(float y)
 		}
 		CG_OSPDrawPoly(x, y - 4.0f, w, fontScoresH + 8, colorScores[0]);
 
-		if (cgs.osp.gameTypeFreeze == 0)
+		if (cgs.osp.gameTypeFreeze == 0 && !CG_OSPIsGameTypeCA(cgs.gametype))
 		{
 			if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE)
 			{
@@ -2488,16 +2516,27 @@ static float CG_OSPHUDDrawScores(float y)
 		if (cgs.gametype == GT_CTF)
 		{
 			gitem_t* item;
+			float flagW;
 
 			item = BG_FindItemForPowerup(PW_BLUEFLAG);
 			if (item)
 			{
+				// В Freeze Tag используем ширину только для счета, без формата с количеством игроков
+				if (CG_OSPIsGameTypeFreeze() || CG_OSPIsGameTypeCA(cgs.gametype))
+				{
+					len = CG_DrawStrlen(va("%2i", s2));
+					flagW = len * fontScoresW + 8;
+				}
+				else
+				{
+					flagW = w;
+				}
 				y1 = y - (float)fontScoresH - 8.0f;
 				if ((cgs.blueflag >= 0) && (cgs.blueflag <= 2))
 				{
 					if (!ch_drawFlagNames.integer)
 					{
-						CG_DrawPicOld(x, y1 - 4.0f, w, fontScoresH + 8, cgs.media.blueFlagShader[cgs.blueflag]);
+						CG_DrawPicOld(x, y1 - 4.0f, flagW, fontScoresH + 8, cgs.media.blueFlagShader[cgs.blueflag]);
 					}
 					else
 					{
@@ -2505,7 +2544,7 @@ static float CG_OSPHUDDrawScores(float y)
 						if (ch_drawFlagNames.integer == 2 || ch_drawFlagNames.integer == 4)
 						{
 							x -= (fontScoresW << 1) + 8;
-							CG_DrawPicOld(x, y - 4.0f, w, fontScoresH + 8, cgs.media.blueFlagShader[cgs.blueflag]);
+							CG_DrawPicOld(x, y - 4.0f, flagW, fontScoresH + 8, cgs.media.blueFlagShader[cgs.blueflag]);
 						}
 
 						switch (cgs.blueflag)
@@ -2561,7 +2600,7 @@ static float CG_OSPHUDDrawScores(float y)
 			}
 		}
 
-		if (cgs.osp.gameTypeFreeze == 0)
+		if (cgs.osp.gameTypeFreeze == 0 && !CG_OSPIsGameTypeCA(cgs.gametype))
 		{
 			s =  va("%2i", s1);
 		}
@@ -2575,26 +2614,31 @@ static float CG_OSPHUDDrawScores(float y)
 
 		if ((cgs.gametype == GT_CTF) && (ch_drawFlagNames.integer == 0))
 		{
-			x -= w;
+			// В CTF без имен флагов - блоки друг над другом, используем тот же x что и для синего
+			x = xBlue;
+			y -= fontScoresH + 8;
 		}
 		else if (cgs.gametype == GT_CTF && (ch_drawFlagNames.integer == 2 || ch_drawFlagNames.integer == 4))
 		{
-			x += w;
+			// В CTF с именами флагов - блоки друг над другом, используем тот же x что и для синего
+			x = xBlue;
 			y -= fontScoresH + 8;
 		}
 		else
 		{
 			if (ch_StatusbarFormat.integer <= 9 && cgs.gametype != GT_CTF)
 			{
-				x -= w;
+				x -= w + 2;
 			}
 			else
 			{
+				// Блоки друг над другом - используем тот же x что и для синего
+				x = xBlue;
 				y -= fontScoresH + 8;
 			}
 		}
 
-		if (cgs.osp.gameTypeFreeze)
+		if (cgs.osp.gameTypeFreeze || CG_OSPIsGameTypeCA(cgs.gametype))
 		{
 			if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_RED)
 			{
@@ -2603,7 +2647,7 @@ static float CG_OSPHUDDrawScores(float y)
 		}
 
 		CG_OSPDrawPoly(x, y - 4.0f, w, fontScoresH + 8, colorScores[1]);
-		if (cgs.osp.gameTypeFreeze == 0)
+		if (cgs.osp.gameTypeFreeze == 0 && !CG_OSPIsGameTypeCA(cgs.gametype))
 		{
 			if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED)
 			{
@@ -2616,23 +2660,35 @@ static float CG_OSPHUDDrawScores(float y)
 		if (cgs.gametype == GT_CTF)
 		{
 			gitem_t* item;//60
+			float flagW;
+
 			item = BG_FindItemForPowerup(PW_REDFLAG);
 
 			if (item)
 			{
+				// В Freeze Tag используем ширину только для счета, без формата с количеством игроков
+				if (CG_OSPIsGameTypeFreeze() || CG_OSPIsGameTypeCA(cgs.gametype))
+				{
+					len = CG_DrawStrlen(va("%2i", s1));
+					flagW = len * fontScoresW + 8;
+				}
+				else
+				{
+					flagW = w;
+				}
 				y1 = y - fontScoresH - 8.0f;
 				if ((cgs.redflag >= 0) && (cgs.redflag <= 2))
 				{
 					if (!ch_drawFlagNames.integer)
 					{
-						CG_DrawPicOld(x, y1 - 4.0f, w, fontScoresH + 8, cgs.media.redFlagShader[cgs.redflag]);
+						CG_DrawPicOld(x, y1 - 4.0f, flagW, fontScoresH + 8, cgs.media.redFlagShader[cgs.redflag]);
 					}
 					else
 					{
 						if (ch_drawFlagNames.integer == 2 || ch_drawFlagNames.integer == 4)
 						{
 							x -= (fontScoresW << 1) + 8;
-							CG_DrawPicOld(x, y - 4.0f, w, fontScoresH + 8, cgs.media.redFlagShader[cgs.redflag]);
+							CG_DrawPicOld(x, y - 4.0f, flagW, fontScoresH + 8, cgs.media.redFlagShader[cgs.redflag]);
 						}
 
 						switch (cgs.redflag)
@@ -3773,7 +3829,7 @@ static void CG_OSPDrawCrosshairNames(void)
 				vec4_t color2;
 
 				CG_OSPGetClientFontSize(&cf_TeamCrosshairHealth, &w2, &h2);
-				Vector4Copy(cgs.healthColorByClient[cg.crosshairClientNum], color2);
+				Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], color2);
 				Com_sprintf(str2, 64, "%i/%i", ci->health, ci->armor);
 				len2 = CG_DrawStrlen(str2);
 				color2[3] = color[3];
@@ -3823,7 +3879,7 @@ static void CG_OSPDrawCrosshairNames(void)
 					x_health = 0;
 				}
 				CG_OSPDrawStringOld(x_name, y, ci->name, w, h, color, 0, 0);
-				Vector4Copy(cgs.healthColorByClient[cg.crosshairClientNum], color2);
+				Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], color2);
 				color2[3] = 0.5f * color[3];
 				CG_OSPDrawStringOld(x_health, y + h, str2, w2, h2, color2, 0, 0);
 			}
@@ -4089,13 +4145,9 @@ void CG_OSPHUDRoutine(void)
 			CG_OSPDrawWeaponBar_2_3(pos);
 		}
 		pos = 0;
-		if (isTeamGame)
+		if (isTeamGame && cg_drawTeamOverlay.integer == 1 && CG_OSPGetPresistantTeam() != TEAM_SPECTATOR)
 		{
-			if (cg_drawTeamOverlay.integer == 1 && isAlive &&
-			        ((CG_OSPIsGameTypeCA(cgs.gametype) || cgs.osp.gameTypeFreeze) && CG_OSPGetPresistantTeam() != TEAM_SPECTATOR))
-			{
-				pos = CG_OSPDrawTeamOverlay(pos, 1, 1);
-			}
+			pos = CG_OSPDrawTeamOverlay(pos, 1, 1);
 		}
 		if (cg_drawSnapshot.integer != 0)
 		{
@@ -4190,17 +4242,17 @@ void CG_OSPHUDRoutine(void)
 		{
 			CG_OSPDrawCenterString();
 		}
-		if (cgs.newStats.drawWindow)
+		if (cg.showWStats)
 		{
 			CG_BEStatsShowStatsInfo();
 		}
-		if (cgs.teamMarkers.ttwheelMarkActive)
+		if (cg.ttwheelMarkActive)
 		{
 			CG_DrawSelwheelIcons();
 		}
 	}
 
-	if (!cg_printui.integer || cgs.printuiActiveCount == 0)
+	if (!cg_printui.integer || cg.printuiActiveCount == 0)
 	{
 		/* early exit: skip printui block */
 	}

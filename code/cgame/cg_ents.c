@@ -24,6 +24,66 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 
+/*
+ * Entity position interpolation state (per-client, for interpolated entities).
+ * Holding previous state in centity_t was unsafe; use these globals instead.
+ */
+static trajectory_t  currStates[MAX_GENTITIES];
+static trajectory_t  prevStates[MAX_GENTITIES];
+static int           timeStates[MAX_GENTITIES];
+static int           prevTimes[MAX_GENTITIES];
+
+typedef struct timepos_s {
+	float time;
+	vec3_t pos;
+} timepos_t;
+
+static vec_t VectorDistance(vec3_t a, vec3_t b)
+{
+	return (vec_t)sqrt((a[0] - b[0]) * (a[0] - b[0]) +
+	                   (a[1] - b[1]) * (a[1] - b[1]) +
+	                   (a[2] - b[2]) * (a[2] - b[2]));
+}
+
+static void CG_LinearInterpolation(timepos_t *positions, vec3_t out, float f)
+{
+	int i;
+	for (i = 0; i < 3; ++i)
+		out[i] = positions[0].pos[i] + (positions[1].pos[i] - positions[0].pos[i]) * f;
+}
+
+static void CG_LagrangeInterpolation(timepos_t *positions, int count, vec3_t out, float time)
+{
+	int i, j;
+	vec_t coefficient;
+
+	out[0] = out[1] = out[2] = 0.0f;
+	for (i = 0; i < count; ++i) {
+		coefficient = 1.0f;
+		for (j = 0; j < count; ++j) {
+			if (i == j)
+				continue;
+			coefficient *= (time - positions[j].time) / (positions[i].time - positions[j].time);
+		}
+		VectorMA(out, coefficient, positions[i].pos, out);
+	}
+}
+
+static void CG_PolyBasePredictPosition(timepos_t *positions, vec3_t out, float f)
+{
+	const vec_t bias = 0.366f;   /* Chebyshev node */
+	const vec_t threshold = 200.0f;
+	const float time = positions[1].time + (positions[2].time - positions[1].time) * f;
+
+	/* Teleportation/respawn invalidates oldest position */
+	if (VectorDistance(positions[0].pos, positions[1].pos) >= threshold) {
+		CG_LinearInterpolation(&positions[1], out, f);
+		return;
+	}
+	positions[4].time = positions[3].time + (positions[3].time - positions[2].time) * bias;
+	CG_LinearInterpolation(&positions[1], positions[3].pos, 1.0f + bias);
+	CG_LagrangeInterpolation(positions, 4, out, time);
+}
 
 /*
 ======================
@@ -662,9 +722,9 @@ static void CG_Missile(centity_t* cent)
 
 				if (isAlly)
 				{
-					ent.shaderRGBA[0] = cgs.beAltGrenadesColor[0] * 255;
-					ent.shaderRGBA[1] = cgs.beAltGrenadesColor[1] * 255;
-					ent.shaderRGBA[2] = cgs.beAltGrenadesColor[2] * 255;
+					ent.shaderRGBA[0] = cg.beAltGrenadesColor[0] * 255;
+					ent.shaderRGBA[1] = cg.beAltGrenadesColor[1] * 255;
+					ent.shaderRGBA[2] = cg.beAltGrenadesColor[2] * 255;
 
 					if (cg_altGrenades.integer == 2 && useFullbright && (cg_drawBrightWeapons.integer & 1 || cg_drawBrightWeapons.integer & 2) && CG_SelectBrightWeaponsShader())
 					{
@@ -677,9 +737,9 @@ static void CG_Missile(centity_t* cent)
 				}
 				else
 				{
-					ent.shaderRGBA[0] = cgs.beEnemyGrenadesColor[0] * 255;
-					ent.shaderRGBA[1] = cgs.beEnemyGrenadesColor[1] * 255;
-					ent.shaderRGBA[2] = cgs.beEnemyGrenadesColor[2] * 255;
+					ent.shaderRGBA[0] = cg.beEnemyGrenadesColor[0] * 255;
+					ent.shaderRGBA[1] = cg.beEnemyGrenadesColor[1] * 255;
+					ent.shaderRGBA[2] = cg.beEnemyGrenadesColor[2] * 255;
 
 					if (cg_altGrenades.integer == 2 && cg_drawBrightWeapons.integer & 4 && CG_SelectBrightWeaponsShader())
 					{
@@ -902,36 +962,35 @@ CG_AdjustPositionForMover
 Also called by client movement prediction code
 =========================
 */
-void CG_AdjustPositionForMover(const vec3_t in, int moverNum, int fromTime, int toTime, vec3_t out)
+void CG_AdjustPositionForMover(const vec3_t in, int moverNum, int fromTime, int toTime, vec3_t out, vec3_t angles_in, vec3_t angles_out)
 {
 	centity_t*   cent;
-	vec3_t  oldOrigin, origin, deltaOrigin;
-	vec3_t  oldAngles, angles;
+	vec3_t       oldOrigin, origin, deltaOrigin;
+	vec3_t       oldAngles, angles, deltaAngles;
 
-	if (moverNum <= 0 || moverNum >= ENTITYNUM_MAX_NORMAL)
-	{
+	if (moverNum <= 0 || moverNum >= ENTITYNUM_MAX_NORMAL) {
 		VectorCopy(in, out);
+		VectorCopy(angles_in, angles_out);
 		return;
 	}
 
-	cent = &cg_entities[ moverNum ];
-	if (cent->currentState.eType != ET_MOVER)
-	{
+	cent = &cg_entities[moverNum];
+	if (cent->currentState.eType != ET_MOVER) {
 		VectorCopy(in, out);
+		VectorCopy(angles_in, angles_out);
 		return;
 	}
 
 	BG_EvaluateTrajectory(&cent->currentState.pos, fromTime, oldOrigin);
 	BG_EvaluateTrajectory(&cent->currentState.apos, fromTime, oldAngles);
-
 	BG_EvaluateTrajectory(&cent->currentState.pos, toTime, origin);
 	BG_EvaluateTrajectory(&cent->currentState.apos, toTime, angles);
 
 	VectorSubtract(origin, oldOrigin, deltaOrigin);
-
 	VectorAdd(in, deltaOrigin, out);
 
-	// FIXME: origin change when on a rotating object
+	VectorSubtract(angles, oldAngles, deltaAngles);
+	VectorAdd(angles_in, deltaAngles, angles_out);
 }
 
 
@@ -942,26 +1001,41 @@ CG_InterpolateEntityPosition
 */
 static void CG_InterpolateEntityPosition(centity_t* cent)
 {
-	vec3_t      current, next;
-	float       f;
+	vec3_t       current, next;
+	float        f;
+	int          client;
+	timepos_t    positions[5];
 
-	// it would be an internal error to find an entity that interpolates without
-	// a snapshot ahead of the current one
 	if (cg.nextSnap == NULL)
-	{
 		CG_Error("CG_InterpoateEntityPosition: cg.nextSnap == NULL");
+
+	client = cent->currentState.clientNum;
+	if (timeStates[client] != cg.snap->serverTime) {
+		prevTimes[client] = timeStates[client];
+		timeStates[client] = cg.snap->serverTime;
+		prevStates[client] = currStates[client];
+		currStates[client] = cent->currentState.pos;
 	}
 
-	f = cg.frameInterpolation;
+	f = cg.frameInterpolation + cg_entityOverpolate.value;
 
-	// this will linearize a sine or parabolic curve, but it is important
-	// to not extrapolate player positions if more recent data is available
-	BG_EvaluateTrajectory(&cent->currentState.pos, cg.snap->serverTime, current);
-	BG_EvaluateTrajectory(&cent->nextState.pos, cg.nextSnap->serverTime, next);
+	BG_EvaluateTrajectory(&cent->currentState.pos, cg.snap->serverTime, positions[1].pos);
+	BG_EvaluateTrajectory(&cent->nextState.pos, cg.nextSnap->serverTime, positions[2].pos);
+	BG_EvaluateTrajectory(&prevStates[client], prevTimes[client], positions[0].pos);
 
-	cent->lerpOrigin[0] = current[0] + f * (next[0] - current[0]);
-	cent->lerpOrigin[1] = current[1] + f * (next[1] - current[1]);
-	cent->lerpOrigin[2] = current[2] + f * (next[2] - current[2]);
+	positions[0].time = (float)prevTimes[client];
+	positions[1].time = (float)cg.snap->serverTime;
+	positions[2].time = (float)cg.nextSnap->serverTime;
+	positions[3].time = positions[2].time + (positions[2].time - positions[1].time);
+
+	if (cg_enhancedInterpolation.integer) {
+		CG_PolyBasePredictPosition(positions, current, f);
+		VectorCopy(current, cent->lerpOrigin);
+	} else {
+		cent->lerpOrigin[0] = positions[1].pos[0] + f * (positions[2].pos[0] - positions[1].pos[0]);
+		cent->lerpOrigin[1] = positions[1].pos[1] + f * (positions[2].pos[1] - positions[1].pos[1]);
+		cent->lerpOrigin[2] = positions[1].pos[2] + f * (positions[2].pos[2] - positions[1].pos[2]);
+	}
 
 	BG_EvaluateTrajectory(&cent->currentState.apos, cg.snap->serverTime, current);
 	BG_EvaluateTrajectory(&cent->nextState.apos, cg.nextSnap->serverTime, next);
@@ -969,7 +1043,6 @@ static void CG_InterpolateEntityPosition(centity_t* cent)
 	cent->lerpAngles[0] = LerpAngle(current[0], next[0], f);
 	cent->lerpAngles[1] = LerpAngle(current[1], next[1], f);
 	cent->lerpAngles[2] = LerpAngle(current[2], next[2], f);
-
 }
 
 /*
@@ -1060,7 +1133,8 @@ static void CG_CalcEntityLerpPositions(centity_t* cent)
 	if (cent != &cg.predictedPlayerEntity)
 	{
 		CG_AdjustPositionForMover(cent->lerpOrigin, cent->currentState.groundEntityNum,
-		                          cg.snap->serverTime, cg.time, cent->lerpOrigin);
+		                          cg.snap->serverTime, cg.time, cent->lerpOrigin,
+		                          cent->lerpAngles, cent->lerpAngles);
 	}
 }
 

@@ -226,6 +226,7 @@ static void UI_CreditMenu2_Draw( void ) {
 	DRAW_WSTEP1("Zenx")
 	DRAW_WSTEP1("Tuborg")
 	DRAW_WSTEP1("Meta")
+	DRAW_WSTEP1("Konstalker")
 	// 2nd block
 	DRAW_WSTEP1("-=Financial Backers=-")
 	DRAW_WSTEP1("enq3")
@@ -307,9 +308,14 @@ void UI_CreditMenu2( void ) {
 		y_step = 125.0f / fps * DEFAULT_YSTEP;
 	
 	trap_Cvar_VariableStringBuffer( "s_musicvolume", oldMusicVolume, sizeof( oldMusicVolume ) );
-	// set a little music volume if it's off and restore it on menu pop
-	if (!trap_Cvar_VariableValue("s_musicvolume"))
-		trap_Cmd_ExecuteText(EXEC_APPEND, "s_musicvolume 0.2;");
+	/* set to 10% of s_volume if music is off, only when that would be > 0 */
+	{
+		float totalVol, musicVol;
+		totalVol = trap_Cvar_VariableValue( "s_volume" );
+		musicVol = totalVol * 0.25f;
+		if ( !trap_Cvar_VariableValue( "s_musicvolume" ) && musicVol > 0.0f )
+			trap_Cvar_SetValue( "s_musicvolume", musicVol );
+	}
 
 	// Music placeholder
 	trap_Cmd_ExecuteText(EXEC_APPEND, "music music/TZ_Inc_Free_Song.ogg");

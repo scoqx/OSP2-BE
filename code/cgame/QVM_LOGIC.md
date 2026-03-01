@@ -220,7 +220,7 @@ The system uses cached bitmasks for maximum efficiency:
 
 ## 6.1 Team task marks (clearing / packing)
 
-Team task marks live in a single array `cgs.teamMarkers.teamTaskMarks` with count `numTeamTaskMarks`. There is no dynamic allocation, so "removing" marks is done by **packing**: one pass over the array, copying "keep" entries to the front and updating the count.
+Team task marks live in a single array `cg.teamMarkers.teamTaskMarks` with count `numTeamTaskMarks`. There is no dynamic allocation, so "removing" marks is done by **packing**: one pass over the array, copying "keep" entries to the front and updating the count.
 
 - **One pack pass** (O(n)) is better than multiple "remove one, shift tail" loops (O(n²) in worst case). Use a single loop: `for (i = 0; i < numTeamTaskMarks; i++) { if (keep(mark)) { if (w != i) copy; w++; } } numTeamTaskMarks = w;`
 - **Avoid extra functions for a single use.** If the only caller of a "clear marks" function is one place (e.g. respawn), inline the pack loop there. That removes one CALL/ENTER/LEAVE in QVM and keeps the action obvious at the call site.

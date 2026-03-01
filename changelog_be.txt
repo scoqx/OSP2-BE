@@ -770,3 +770,32 @@ UI:
 
 11.02.2026 be v1.01e
 * +ttWheel cursor fix
+
+15.02.2026 be v1.01f
+
++ cg_altRail 2-5 (devotion)
++ cg_altRailBeefy
++ cg_enhancedInterpolation
++ cg_entityOverpolate
++ cg_teamHealthBar
++ cg_healthBarStyle
++ cg_teamIndicator 64 - health bars
+* cg_drawTeamOverlay 1 fix
+* SuperHUD: 
+  + Mirage: QuakeRaiders.cfg, cYpHeR.cfg. Updated: AGENT, m1rqlstyle, m1rQ4style
+  + KONSTALKER: kon, kon_demo
+  + Sib Vassek: SV_hud2.cfg
+  * zoti.cfg updated
+  * Team1-16. Style 1 - compact. Name block width is now configurable via 'rect' (w).
+* MiniScores (shud/osphud) fix
+* Q3MSK FREEZE: Compatibility update for improved server logic
+  (dead player states are now always displayed correctly in the scoreboard)
+* various fixes
+* cg_exec* commands fix
+*UI:
+  + ui_infoDetail
+  + server17-32
+  + Map search in the map selection menu
+  * New map grid
+  * Updated scrolling in Demo list: default — 1 line, Ctrl + mouse wheel — 6 lines
+  * Visual fixes

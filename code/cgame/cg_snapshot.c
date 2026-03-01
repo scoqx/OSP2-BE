@@ -364,7 +364,6 @@ void CG_ProcessSnapshots(void)
 	snapshot_t*      snap;
 	int             n;
 	static int      last_spect_player = -1;
-	static int      last_stats_observed = -1;
 
 	// see what the latest snapshot the client system has is
 	trap_GetCurrentSnapshotNumber(&n, &cg.latestSnapshotTime);
@@ -445,37 +444,15 @@ void CG_ProcessSnapshots(void)
 	}
 
 	// spectOrigModel: refresh client info when spectated player changes
-	if (cg_spectOrigModel.integer && last_spect_player != cg.snap->ps.clientNum)
+	// refresh client info when viewed player changes (spect orig model or demo POV switch)
+	if ((cg.demoPlayback && cg.clientNum != cg.snap->ps.clientNum) ||
+	    (cg_spectOrigModel.integer && last_spect_player != cg.snap->ps.clientNum))
 	{
-		last_spect_player = cg.snap->ps.clientNum;
+		if (cg.demoPlayback)
+			cg.clientNum = cg.snap->ps.clientNum;
+		if (cg_spectOrigModel.integer)
+			last_spect_player = cg.snap->ps.clientNum;
 		CG_UpdateAllClientsInfo();
 	}
-
-	// getstatsinfo token bucket: refill every frame so tokens recover even when window is closed (reopen = have tokens)
-	CG_RefillStatsRequestTokens();
-	if (cgs.newStats.drawWindow)
-	{
-		if (cg.snap->ps.clientNum != cg.clientNum)
-		{
-			// viewing another player: send on target change (instant) or once per second when target unchanged
-			qboolean target_changed = (last_stats_observed != cg.snap->ps.clientNum);
-			qboolean periodic_refresh = (!target_changed && cg.statsRequestLastSendTime != 0 && cg.time - cg.statsRequestLastSendTime >= 1000);
-			if (target_changed)
-			{
-				last_stats_observed = cg.snap->ps.clientNum;
-				CG_TrySendStatsRequest();
-			}
-			else if (periodic_refresh)
-				CG_TrySendStatsRequest();
-		}
-		else
-		{
-			// viewing local player (not spectating): send on first open, then periodic refresh once per second
-			if (cg.statsRequestLastSendTime == 0 || cg.time - cg.statsRequestLastSendTime >= 1000)
-				CG_TrySendStatsRequest();
-		}
-	}
-	else
-		last_stats_observed = -1;
 }
 

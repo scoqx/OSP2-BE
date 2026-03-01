@@ -122,6 +122,42 @@ static void CG_ParseScores(void)
 
 /*
 =================
+CG_ParseDstatus
+
+Server response to getdstatus: "dstatus id id id ..." — client IDs that are dead in freeze (ctf/tdm unfreeze).
+If the first argument is -1, all are alive (no one dead).
+=================
+*/
+static void CG_ParseDstatus(void)
+{
+	int i, argc, id;
+
+	argc = trap_Argc();
+	if (argc >= 2 && atoi(CG_Argv(1)) == -1)
+	{
+		/* -1 = all alive */
+		for (i = 0; i < MAX_CLIENTS; i++)
+			cgs.deadInFreeze[i] = qfalse;
+		for (i = 0; i < MAX_CLIENTS; i++)
+			cg.predictedDeadInFreeze[i] = -1;
+		return;
+	}
+	/* List of dead IDs: clear all, then set only those in the list (revived players become alive) */
+	for (i = 0; i < MAX_CLIENTS; i++)
+		cgs.deadInFreeze[i] = qfalse;
+	for (i = 1; i < argc; i++)
+	{
+		id = atoi(CG_Argv(i));
+		if (id >= 0 && id < MAX_CLIENTS)
+			cgs.deadInFreeze[id] = qtrue;
+	}
+	/* Clear predictions: server state is authoritative */
+	for (i = 0; i < MAX_CLIENTS; i++)
+		cg.predictedDeadInFreeze[i] = -1;
+}
+
+/*
+=================
 CG_ParseTeamInfo
 
 =================
@@ -193,7 +229,7 @@ void CG_ParseServerinfo(void)
 	val = Info_ValueForKey(info, "g_blueTeam");
 	Q_strncpyz(cgs.blueTeam, val, sizeof(cgs.blueTeam));
 	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
-	cgs.isOspServer = (Info_ValueForKey(info, "g_unlagged")[0] != '\0') ? qfalse : qtrue;
+	// cgs.isOspServer = (Info_ValueForKey(info, "g_unlagged")[0] != '\0') ? qfalse : qtrue;
 
 	/* CG_SetServerSettingsBE inlined - enableBreath from CS_SYSTEMINFO */
 	/* QVM_LOGIC: avoid Q_stricmp - use char comparison */
@@ -212,10 +248,30 @@ void CG_SetConfigValues(void)
 {
 	const char* s;
 
-	cgs.scores1 = atoi(CG_ConfigString(CS_SCORES1));
-	cgs.scores2 = atoi(CG_ConfigString(CS_SCORES2));
+	s = CG_ConfigString(CS_SCORES1);
+	cgs.scores1 = atoi(s);
+	if (!cgs.fpsclassico)
+	{
+		cgs.osp.osp_teamcount1 = -1;
+		Q_sscanf(s, "%i %i", &cgs.scores1, &cgs.osp.osp_teamcount1);
+	}
 	s_prevScores1 = cgs.scores1;
+
+	s = CG_ConfigString(CS_SCORES2);
+	cgs.scores2 = atoi(s);
+	if (!cgs.fpsclassico)
+	{
+		cgs.osp.osp_teamcount2 = -1;
+		Q_sscanf(s, "%i %i", &cgs.scores2, &cgs.osp.osp_teamcount2);
+	}
 	s_prevScores2 = cgs.scores2;
+
+	if (cgs.fpsclassico)
+	{
+		cgs.osp.osp_teamcount1 = atoi(CG_ConfigString(CS_REDPLAYERALIVE));
+		cgs.osp.osp_teamcount2 = atoi(CG_ConfigString(CS_BLUEPLAYERALIVE));
+	}
+
 	cgs.levelStartTime = atoi(CG_ConfigString(CS_LEVEL_START_TIME));
 	if (cgs.gametype == GT_CTF)
 	{
@@ -304,15 +360,7 @@ static void CG_ConfigStringModified(void)
 		case CS_SERVERINFO:
 			CG_ParseServerinfo();
 			break;
-			// case CS_SYSTEMINFO:
-			// {
-			//  /* autohop logic commented out
-			//  const char* value;
-
-			//  value = Info_ValueForKey(str, "pmove_autohop");
-			//  cgs.beAutohop = (!value || !value[0]) ? 0 : (atoi(value) == 2 ? 2 : 1);
-			//  */
-			// }
+		case CS_SYSTEMINFO:
 			break;
 		case CS_WARMUP:
 		{
@@ -414,15 +462,13 @@ static void CG_ConfigStringModified(void)
 			}
 			if (cg_bestats_autoaction.integer)
 			{
-				if (cg.statsRequestTime + 1000 < cg.time)
+				cg.showWStats = qtrue;
+				/* send getstatsinfo only once when intermission starts, not every second */
+				if (!prevIntermissionStarted && cg.intermissionStarted && !cgs.fpsclassico)
 				{
-					cg.statsRequestTime = cg.time;
-					if (!cgs.fpsclassico)
-					{
-						trap_SendClientCommand("getstatsinfo");
-					}
+					trap_SendClientCommand("getstatsinfo");
+					cg.statsRequestSentInIntermission = qtrue;
 				}
-				cgs.newStats.drawWindow = qtrue;
 			}
 			CG_ScoresDown_f();
 
@@ -656,6 +702,7 @@ static void CG_MapRestart(void)
 	cg.timelimitWarnings = 0;
 
 	cg.intermissionStarted = qfalse;
+	cg.statsRequestSentInIntermission = qfalse;
 
 	cgs.voteTime = 0;
 
@@ -1548,10 +1595,12 @@ Cmd_Argc() / Cmd_Argv()
 void CG_ServerCommand(void)
 {
 	const char* cmd;
+	char        cmdBuf[64];   /* CG_Argv uses single static buffer; save argv(0) before reading argv(1) */
 	char        text[1024];
 	int         ignoreMask;
 
-	cmd = CG_Argv(0);
+	Q_strncpyz(cmdBuf, CG_Argv(0), sizeof(cmdBuf));
+	cmd = cmdBuf;
 	if (!cmd || !cmd[0])
 	{
 		return;
@@ -1642,17 +1691,9 @@ void CG_ServerCommand(void)
 				/* Get clientNum from command (CG_Argv(2) if available) */
 				argc = trap_Argc();
 				if (argc >= 3)
-				{
 					chatClientNum = atoi(CG_Argv(2));
-					if (chatClientNum >= 0 && chatClientNum < MAX_CLIENTS)
-					{
-						/* Save last tell sender for reply command */
-						if (isTellMessage && chatClientNum != cg.clientNum)
-						{
-							cg.beLastTellSender = chatClientNum;
-						}
-					}
-				}
+				if (argc >= 3 && chatClientNum >= 0 && chatClientNum < MAX_CLIENTS && isTellMessage && chatClientNum != cg.clientNum)
+					cg.beLastTellSender = chatClientNum;
 
 				isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_COMMMON_ENABLED;
 				isShudChatEnabled = cg_shudChatEnable.integer & CG_CHAT_COMMMON_ENABLED && ma == MESSAGE_ALLOWED_PLAYER;
@@ -1977,6 +2018,13 @@ void CG_ServerCommand(void)
 			break;
 
 		case 'd':
+			/* dstatus - dead clients in freeze (response to getdstatus) */
+			if (cmd[1] == 's' && cmd[2] == 't' && cmd[3] == 'a' && cmd[4] == 't' && cmd[5] == 'u' &&
+			        cmd[6] == 's' && cmd[7] == '\0')
+			{
+				CG_ParseDstatus();
+				return;
+			}
 			/* dmgplum_proj - damage plum for projectile weapons (GL/RL) via server command */
 			if (cmd[1] == 'm' && cmd[2] == 'g' && cmd[3] == 'p' && cmd[4] == 'l' && cmd[5] == 'u' &&
 			        cmd[6] == 'm' && cmd[7] == '_' && cmd[8] == 'p' && cmd[9] == 'r' && cmd[10] == 'o' && cmd[11] == 'j' && cmd[12] == '\0')

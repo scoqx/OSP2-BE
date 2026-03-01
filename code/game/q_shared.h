@@ -241,6 +241,7 @@ typedef enum
 #define UI_INVERSE      0x00002000
 #define UI_PULSE        0x00004000
 #define UI_PULSE_2      0x00008000
+#define UI_SMALLERFONT  0x00010000  /* small font at ~80% size (e.g. map names) */
 
 #if defined(_DEBUG) && !defined(BSPC)
 #define HUNK_DEBUG
@@ -305,6 +306,9 @@ extern  vec3_t  bytedirs[NUMVERTEXNORMALS];
 
 #define SMALLCHAR_WIDTH     8
 #define SMALLCHAR_HEIGHT    16
+/* ~80% of SMALLCHAR for map names etc. */
+#define SMALLERCHAR_WIDTH   6
+#define SMALLERCHAR_HEIGHT  10
 
 #define BIGCHAR_WIDTH       16
 #define BIGCHAR_HEIGHT      16

@@ -1146,8 +1146,42 @@ qboolean CG_SHUDFill(const superhudConfig_t* cfg)
 
 
 
-void CG_SHUDElementCompileTeamOverlayConfig(int fontWidth, shudTeamOverlay_t* configOut)
+void CG_SHUDElementCompileTeamOverlayConfig(int fontWidth, int style, shudTeamOverlay_t* configOut)
 {
+	if (style == 1)
+	{
+		/* style 1: name + HP/AP only, narrower row; 1 char slot left of name for dead status (red noammoShader) or powerup */
+		configOut->powerupOffsetChar = 0;
+		configOut->powerupOffsetPix = 0.0f;
+		configOut->powerupLenChar = 1;
+		configOut->powerupLenPix = configOut->powerupLenChar * fontWidth;
+
+		configOut->nameOffsetChar = 1;
+		configOut->nameOffsetPix = configOut->nameOffsetChar * fontWidth;
+		configOut->nameLenChar = 10;
+		configOut->nameLenPix = configOut->nameLenChar * fontWidth;
+
+		configOut->healthAndArmorOffsetChar = 12;
+		configOut->healthAndArmorOffsetPix = configOut->healthAndArmorOffsetChar * fontWidth;
+		configOut->healthAndArmorLenChar = 7;
+		configOut->healthAndArmorLenPix = configOut->healthAndArmorLenChar * fontWidth;
+
+		configOut->weaponOffsetChar = 0;
+		configOut->weaponOffsetPix = 0.0f;
+		configOut->weaponLenChar = 0;
+		configOut->weaponLenPix = 0.0f;
+
+		configOut->locationOffsetChar = 0;
+		configOut->locationOffsetPix = 0.0f;
+		configOut->locationLenChar = 0;
+		configOut->locationLenPix = 0.0f;
+
+		configOut->overlayWidthChar = 19;
+		configOut->overlayWidthPix = configOut->overlayWidthChar * fontWidth;
+		return;
+	}
+
+	/* style 0 (default): full overlay */
 	configOut->powerupOffsetChar = 0;
 	configOut->powerupOffsetPix = configOut->powerupOffsetChar * fontWidth;
 	configOut->powerupLenChar = 1;

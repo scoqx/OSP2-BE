@@ -48,6 +48,12 @@ static void CG_UpdateOtherClientsInfo(void);
 void CG_UpdateAllClientsInfo(void);
 static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new);
 
+/* QVM: outline cache at file scope so CG_Player can inline the add after each body part (saves 2 function calls per player) */
+static centity_t* lastOutlineCent;
+static qboolean outlineCachedDraw;
+static qhandle_t outlineCachedShader;
+static byte outlineCachedColorBytes[4];
+
 //unknown variable
 int global_viewlistFirstOption = 0;
 /*
@@ -615,26 +621,75 @@ static qboolean CG_RegisterClientModelname(clientInfo_t* ci, const char* modelNa
 	return qtrue;
 }
 
+#define CG_ORIGINAL_HEAD_CACHE_SIZE 32
+typedef struct
+{
+	char            key[MAX_QPATH + 16];
+	qhandle_t       model;
+	qhandle_t       skin;
+	qhandle_t       icon;
+} originalHeadCacheEntry_t;
+static originalHeadCacheEntry_t cg_originalHeadCache[CG_ORIGINAL_HEAD_CACHE_SIZE];
+static int cg_originalHeadCacheNext;
+
+/* One bit per client: has sent at least one valid teamTask (64 bits = 8 bytes) */
+static unsigned int cg_supportsTeamTaskBits[2];
+
+static void CG_SetSupportsTeamTask(int clientNum)
+{
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+		cg_supportsTeamTaskBits[clientNum >> 5] |= (1U << (clientNum & 31));
+}
+
+static void CG_ClearSupportsTeamTask(int clientNum)
+{
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+		cg_supportsTeamTaskBits[clientNum >> 5] &= ~(1U << (clientNum & 31));
+}
+
+qboolean CG_ClientSupportsTeamTask(int clientNum)
+{
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+		return qfalse;
+	return (cg_supportsTeamTaskBits[clientNum >> 5] & (1U << (clientNum & 31))) ? qtrue : qfalse;
+}
+
 /*
 ==========================
-CG_RegisterOriginalHeadModel
+CG_GetOriginalHeadHandles
 ==========================
 */
-static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
+void CG_GetOriginalHeadHandles(const clientInfo_t* ci, qhandle_t* outModel, qhandle_t* outSkin, qhandle_t* outIcon)
 {
 	char filename[MAX_QPATH];
 	char* skinPtr;
 	char headModelName[MAX_QPATH];
 	char headSkinName[MAX_QPATH];
+	char key[sizeof(cg_originalHeadCache[0].key)];
+	int i;
+	qhandle_t m, s, icon;
 
-	ci->originalHeadModelHandle = 0;
-	ci->originalHeadSkinHandle = 0;
-	ci->originalModelIcon = 0;
-
+	*outModel = 0;
+	*outSkin = 0;
+	*outIcon = 0;
+	if (!cg_drawRealHeads.integer)
+		return;
 	if (ci->originalHeadModel[0] == '\0')
 		return;
 
-	/* Parse model/skin from hmodel string */
+	Com_sprintf(key, sizeof(key), "%s %d %d %d", ci->originalHeadModel, (int)ci->team, cg_swapSkins.integer, (int)cgs.gametype);
+	for (i = 0; i < CG_ORIGINAL_HEAD_CACHE_SIZE; i++)
+	{
+		if (strcmp(cg_originalHeadCache[i].key, key) == 0)
+		{
+			*outModel = cg_originalHeadCache[i].model;
+			*outSkin = cg_originalHeadCache[i].skin;
+			*outIcon = cg_originalHeadCache[i].icon;
+			return;
+		}
+	}
+
+	/* Cache miss: register and store */
 	Q_strncpyz(headModelName, ci->originalHeadModel, sizeof(headModelName));
 	skinPtr = strchr(headModelName, '/');
 	if (skinPtr)
@@ -645,19 +700,16 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	else
 		Q_strncpyz(headSkinName, "default", sizeof(headSkinName));
 
-	/* Register head model */
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/head.md3", headModelName);
-	ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
-
-	if (ci->originalHeadModelHandle == 0)
+	m = trap_R_RegisterModel(filename);
+	if (m == 0)
 	{
 		Q_strncpyz(headModelName, "sarge", sizeof(headModelName));
 		Q_strncpyz(headSkinName, "default", sizeof(headSkinName));
 		Com_sprintf(filename, sizeof(filename), "models/players/%s/head.md3", headModelName);
-		ci->originalHeadModelHandle = trap_R_RegisterModel(filename);
+		m = trap_R_RegisterModel(filename);
 	}
 
-	/* Team color skin when default skin and team game */
 	if (Q_stricmp(headSkinName, "default") == 0 && cgs.gametype >= GT_TEAM)
 	{
 		if (ci->team == TEAM_BLUE)
@@ -667,9 +719,20 @@ static void CG_RegisterOriginalHeadModel(clientInfo_t* ci)
 	}
 
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/head_%s.skin", headModelName, headSkinName);
-	ci->originalHeadSkinHandle = trap_R_RegisterSkin(filename);
+	s = trap_R_RegisterSkin(filename);
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/icon_%s.tga", headModelName, headSkinName);
-	ci->originalModelIcon = trap_R_RegisterShaderNoMip(filename);
+	icon = trap_R_RegisterShaderNoMip(filename);
+
+	i = cg_originalHeadCacheNext % CG_ORIGINAL_HEAD_CACHE_SIZE;
+	cg_originalHeadCacheNext++;
+	Q_strncpyz(cg_originalHeadCache[i].key, key, sizeof(cg_originalHeadCache[i].key));
+	cg_originalHeadCache[i].model = m;
+	cg_originalHeadCache[i].skin = s;
+	cg_originalHeadCache[i].icon = icon;
+
+	*outModel = m;
+	*outSkin = s;
+	*outIcon = icon;
 }
 
 /*
@@ -719,6 +782,22 @@ static footstep_t CG_GetFootstepsForSoundModel(const char* modelName)
 		}
 	}
 	return FOOTSTEP_TOTAL;
+}
+
+void CG_ClearForcedSounds(void)
+{
+	int i;
+
+	cgs.customModelSound = qfalse;
+	for (i = 0; i < MAX_CUSTOM_SOUNDS; i++)
+	{
+		cgs.mySounds[i] = 0;
+		cgs.teamSounds[i] = 0;
+		cgs.enemySounds[i] = 0;
+	}
+	cgs.myFootsteps = FOOTSTEP_TOTAL;
+	cgs.teamFootsteps = FOOTSTEP_TOTAL;
+	cgs.enemyFootsteps = FOOTSTEP_TOTAL;
 }
 
 void CG_LoadForcedSounds(void)
@@ -899,7 +978,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	int toClient;
 	vec3_t coord;
 
-	if (cgs.gametype < GT_TEAM || !cgs.teamMarkers.teamTaskEnabled)
+	if (cgs.gametype < GT_TEAM || !cg.teamMarkers.teamTaskEnabled)
 		return;
 
 	ci = &cgs.clientinfo[clientNum];
@@ -938,7 +1017,7 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 	}
 
 	/* Mark that player supports team task only if unpack was successful (templateID != 0) */
-	ci->supportsTeamTask = qtrue;
+	CG_SetSupportsTeamTask(clientNum);
 
 	// coord[0] = Dequantize(qx, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
 	// coord[1] = Dequantize(qy, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MIN : -3000, cg_teamTaskVersion.integer == 1 ? TEAMTASK_COORD_MAX : 3000, 7);
@@ -1311,6 +1390,56 @@ do_aim_point:
 
 static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new)
 {
+	qboolean modelUnchanged;
+
+	/* Skip heavy model/skin/sounds load when model and skin names did not change (e.g. refresh of other clients in CG_UpdateOtherClientsInfo). */
+	modelUnchanged = old->infoValid &&
+	    Q_stricmp(old->modelName, new->modelName) == 0 &&
+	    Q_stricmp(old->skinName, new->skinName) == 0 &&
+	    Q_stricmp(old->headModelName, new->headModelName) == 0 &&
+	    Q_stricmp(old->headSkinName, new->headSkinName) == 0;
+
+	if (modelUnchanged)
+	{
+		/* Preserve model-related handles and data; copy the rest from new to old. */
+		clientInfo_t saved;
+		saved.legsModel = old->legsModel;
+		saved.legsSkin = old->legsSkin;
+		saved.torsoModel = old->torsoModel;
+		saved.torsoSkin = old->torsoSkin;
+		saved.headModel = old->headModel;
+		saved.headSkin = old->headSkin;
+		saved.modelIcon = old->modelIcon;
+		saved.newAnims = old->newAnims;
+		saved.fixedlegs = old->fixedlegs;
+		saved.fixedtorso = old->fixedtorso;
+		saved.footsteps = old->footsteps;
+		saved.gender = old->gender;
+		memcpy(saved.animations, old->animations, sizeof(saved.animations));
+		memcpy(saved.sounds, old->sounds, sizeof(saved.sounds));
+		memcpy(saved.headOffset, old->headOffset, sizeof(saved.headOffset));
+
+		memcpy(old, new, sizeof(clientInfo_t));
+
+		old->legsModel = saved.legsModel;
+		old->legsSkin = saved.legsSkin;
+		old->torsoModel = saved.torsoModel;
+		old->torsoSkin = saved.torsoSkin;
+		old->headModel = saved.headModel;
+		old->headSkin = saved.headSkin;
+		old->modelIcon = saved.modelIcon;
+		old->newAnims = saved.newAnims;
+		old->fixedlegs = saved.fixedlegs;
+		old->fixedtorso = saved.fixedtorso;
+		old->footsteps = saved.footsteps;
+		old->gender = saved.gender;
+		memcpy(old->animations, saved.animations, sizeof(old->animations));
+		memcpy(old->sounds, saved.sounds, sizeof(old->sounds));
+		memcpy(old->headOffset, saved.headOffset, sizeof(old->headOffset));
+		old->infoValid = qtrue;
+		return;
+	}
+
 	CG_LoadClientInfo(new);
 
 	new->infoValid = qtrue;
@@ -1366,8 +1495,7 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 {
 	const char* nameModel;
 	const char* nameSkin = NULL;
-	qboolean isPmSkin = qfalse;
-	qboolean isFbSkin = qfalse;
+	int skinType = SKIN_TYPE_DEFAULT;
 	char* ptr;
 
 	char tmpStr[MAX_QPATH];
@@ -1382,23 +1510,24 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 		nameSkin = ++ptr;
 	}
 
-	isPmSkin = (nameSkin && (Q_stricmp(nameSkin, "pm") == 0)) ? qtrue : qfalse;
+	if (nameSkin && Q_stricmp(nameSkin, "pm") == 0)
+		skinType = SKIN_TYPE_PM;
 
-	if (nameSkin && (Q_stricmp(nameSkin, "fb") == 0))
+	if (nameSkin && Q_stricmp(nameSkin, "fb") == 0)
 	{
 		if ((cgs.beDisableFeatures & CG_BE_FULLBRIGHT) || !cgs.beEnabled)
 		{
 			nameSkin = "pm";
-			isPmSkin = qtrue;
+			skinType = SKIN_TYPE_PM;
 		}
 		else
-			isFbSkin = qtrue;
+			skinType = SKIN_TYPE_FB;
 	}
 
 	if (isOurClient)
 	{
 		// our player only pm or default
-		if (qfalse && !isPmSkin && !isFbSkin)
+		if (qfalse && skinType == SKIN_TYPE_DEFAULT)
 		{
 			nameSkin = "default";
 		}
@@ -1406,7 +1535,7 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 	else if (cgs.gametype >= GT_TEAM)
 	{
 		// in team games users able to set pm skin only
-		if (!nameSkin || (!isPmSkin && !isFbSkin))
+		if (!nameSkin || skinType == SKIN_TYPE_DEFAULT)
 		{
 			if (team == TEAM_BLUE)
 			{
@@ -1422,7 +1551,7 @@ static void CG_UpdateModelFromString(char* modelName, char* skinName, const char
 			}
 		}
 	}
-	else if (!(isPmSkin || isFbSkin))
+	else if (skinType == SKIN_TYPE_DEFAULT)
 	{
 		/* In non-team modes, check if the custom skin exists before falling back to default */
 		if (nameSkin && CG_SkinExists(nameModel, nameSkin))
@@ -1606,8 +1735,7 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 	}
 	CG_UpdateModelFromString(&ci->modelName[0], &ci->skinName[0], resultModelString, isOurClient, ci->rt);
 	CG_UpdateModelFromString(&ci->headModelName[0], &ci->headSkinName[0], resultHModelString, isOurClient, ci->rt);
-	ci->isPmSkin = (Q_stricmp(ci->skinName, "pm") == 0) ? qtrue : qfalse;
-	ci->isFbSkin = (Q_stricmp(ci->skinName, "fb") == 0) ? qtrue : qfalse;
+	ci->skinType = (Q_stricmp(ci->skinName, "pm") == 0) ? SKIN_TYPE_PM : (Q_stricmp(ci->skinName, "fb") == 0) ? SKIN_TYPE_FB : SKIN_TYPE_DEFAULT;
 	CG_UpdateBeFeatures();
 }
 
@@ -1694,6 +1822,7 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 	char originalClean[MAX_QPATH];
 	int p;
 	char otherClean[MAX_QPATH];
+	char nameCodesBuf[MAX_QPATH * 2];
 	clientInfo_t* other;
 	qboolean useID;
 	qboolean useXID;
@@ -1727,18 +1856,20 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 			{
 				useID = (showID != 0);
 				useXID = (showXID != 0);
+				if (other->nameIsInvisible)
+					CG_StringMakeEscapeCharRAW(other->name_original, nameCodesBuf, sizeof(nameCodesBuf));
 				if (useID && useXID)
 					Com_sprintf(other->name, sizeof(other->name), other->nameIsInvisible ?
 					            "[%d]^8%s^7:\'%s^7\'" : "[%d]^8%s^7:%s",
-					            p, other->xidStr, other->nameIsInvisible ? other->name_codes : other->name_original);
+					            p, other->xidStr, other->nameIsInvisible ? nameCodesBuf : other->name_original);
 				else if (useXID)
 					Com_sprintf(other->name, sizeof(other->name), other->nameIsInvisible ?
 					            "^8%s^7:\'%s^7\'" : "^8%s^7:%s",
-					            other->xidStr, other->nameIsInvisible ? other->name_codes : other->name_original);
+					            other->xidStr, other->nameIsInvisible ? nameCodesBuf : other->name_original);
 				else if (useID)
 					Com_sprintf(other->name, sizeof(other->name), other->nameIsInvisible ?
 					            "[%d]\'%s\'" : "[%d]%s",
-					            p, other->nameIsInvisible ? other->name_codes : other->name_original);
+					            p, other->nameIsInvisible ? nameCodesBuf : other->name_original);
 			}
 		}
 	}
@@ -1748,14 +1879,15 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 
 	if (ci->nameIsInvisible)
 	{
+		CG_StringMakeEscapeCharRAW(ci->name_original, nameCodesBuf, sizeof(nameCodesBuf));
 		if (useID && useXID)
-			Com_sprintf(ci->name, sizeof(ci->name), "[%d]^8%s^7:\'%s^7\'", clientNum, ci->xidStr, ci->name_codes);
+			Com_sprintf(ci->name, sizeof(ci->name), "[%d]^8%s^7:\'%s^7\'", clientNum, ci->xidStr, nameCodesBuf);
 		else if (useXID)
-			Com_sprintf(ci->name, sizeof(ci->name), "^8%s^7:\'%s^7\'", ci->xidStr, ci->name_codes);
+			Com_sprintf(ci->name, sizeof(ci->name), "^8%s^7:\'%s^7\'", ci->xidStr, nameCodesBuf);
 		else if (useID)
-			Com_sprintf(ci->name, sizeof(ci->name), "[%d]\'%s\'", clientNum, ci->name_codes);
+			Com_sprintf(ci->name, sizeof(ci->name), "[%d]\'%s\'", clientNum, nameCodesBuf);
 		else
-			Q_strncpyz(ci->name, ci->name_codes, sizeof(ci->name));
+			Q_strncpyz(ci->name, nameCodesBuf, sizeof(ci->name));
 	}
 	else if (useID && useXID)
 		Com_sprintf(ci->name, sizeof(ci->name), "[%d]^8%s^7:%s", clientNum, ci->xidStr, ci->name_original);
@@ -1870,6 +2002,8 @@ void CG_NewClientInfo(int clientNum)
 				cg.scoresRequestTime = cg.time;
 				trap_SendClientCommand("score");
 			}
+			else if (!cg.intermissionStarted)
+				CG_TrySendDstatusRequest();
 		}
 		return;     // player just left
 	}
@@ -1888,8 +2022,6 @@ void CG_NewClientInfo(int clientNum)
 	Q_strncpyz(newInfo.name_clean, v, sizeof(newInfo.name));
 	CG_RemoveChatEscapeCharAll(newInfo.name_clean);
 	newInfo.nameIsInvisible = CG_PlayerNameIsInvisible(&newInfo);
-
-	CG_StringMakeEscapeCharRAW(newInfo.name_original, newInfo.name_codes, sizeof(newInfo.name_codes));
 
 	CG_PlayerNameBuildFinal(&newInfo, clientNum);
 
@@ -1924,9 +2056,6 @@ void CG_NewClientInfo(int clientNum)
 	// hmodel - save original BEFORE any modifications
 	v = Info_ValueForKey(configstring, "hmodel");
 	Q_strncpyz(newInfo.originalHeadModel, v, sizeof(newInfo.originalHeadModel));
-
-	/* register original head model BEFORE team skin is applied */
-	CG_RegisterOriginalHeadModel(&newInfo);
 
 	// rt
 	v = Info_ValueForKey(configstring, "rt");
@@ -1984,10 +2113,13 @@ void CG_NewClientInfo(int clientNum)
 	}
 
 	CG_ForceNewClientInfo(ci, &newInfo);
+	CG_ClearSupportsTeamTask(clientNum);
 
 	/* If we changed team/client/spectator, refresh other clients' info once */
 	if (isOurClient)
 	{
+		/* Update tracked team from config string (most reliable source) */
+		
 		static team_t ourTeam = -1;
 		static int ourClientNum = -1;
 		static qboolean wasSpectator = qtrue;
@@ -2807,7 +2939,7 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 	qhandle_t     rewardShader = 0;
 	qhandle_t     friendShader = 0;
 	float*       friendColor = NULL;   /* vec4_t decays to float*; avoid vec4_t* for LCC */
-	qboolean     hasOverhead = cgs.teamMarkers.drawTeamTasks && cgs.teamMarkers.clientHasOverhead[clientNum];
+	qboolean     hasOverhead = cg.teamMarkers.drawTeamTasks && cg.teamMarkers.clientHasOverhead[clientNum];
 
 	if (hasOverhead)
 		return;
@@ -2847,7 +2979,7 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 		if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
 		{
 			int frozenClientNum = cent->currentState.otherEntityNum;
-			if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS && !cgs.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum])
+			if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS && !cg.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum])
 			{
 				if (!useTeamFrozen)
 					friendShader = cgs.media.frozenFoeTagShader;
@@ -2860,7 +2992,7 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 		else if (cg_drawFriend.integer != 2)
 		{
 			friendShader = (useTeamFoeWh && (cg_friendsWallhack.integer & 1)) ? cgs.media.friendShaderWallhack : cgs.media.friendShader;
-			friendColor = ((cg_healthColorLevels.integer & 2) || ci->health <= 0) ? NULL : (float*)cgs.healthColorByClient[clientNum];
+			friendColor = ((cg_healthColorLevels.integer & 2) || ci->health <= 0) ? NULL : (float*)cg.healthColorByClient[clientNum];
 		}
 	}
 
@@ -3113,7 +3245,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		if (cg_hitBoxColor.integer || cg_hitBoxColor.string[0])
 		{
 			vec4_t color;
-			Vector4Copy(cgs.beHitBoxColor, color);
+			Vector4Copy(cg.beHitBoxColor, color);
 
 			color[0] = color[0] * 255;
 			color[1] = color[1] * 255;
@@ -3266,9 +3398,9 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	}
 	if (useAltShadow && shadowAlt)
 	{
-		shadowColor[0] = cgs.beAltShadowColor[0];
-		shadowColor[1] = cgs.beAltShadowColor[1];
-		shadowColor[2] = cgs.beAltShadowColor[2];
+		shadowColor[0] = cg.beAltShadowColor[0];
+		shadowColor[1] = cg.beAltShadowColor[1];
+		shadowColor[2] = cg.beAltShadowColor[2];
 		shadowTrace.fraction = shadowTrace.fraction - 0.1875f;
 		if (shadowTrace.fraction < 0.0f)
 			shadowTrace.fraction = 0.0f;
@@ -3369,18 +3501,14 @@ static void CG_PlayerSplash(centity_t* cent)
 
 /*
 ===============
-CG_PlayerOutline
-Compute outline for this player (once per cent, cached) and add outline pass for the given refentity.
-Uses only cent and local player — no loop over clients. Call once per body part (legs, torso, head).
+CG_PlayerOutlineBegin
+Compute outline state for this player (once per cent). Result is stored in file-scope cache;
+caller adds outline pass by setting ent->customShader, ent->shaderRGBA from cache and trap_R_AddRefEntityToScene(ent).
+Saves 2 function calls per player (was CG_PlayerOutline called 3x; now 1x Begin + inline add at 3 sites).
 ===============
 */
-static void CG_PlayerOutline(centity_t* cent, qboolean useOutline, qboolean useMarkTeammate, refEntity_t* ent)
+static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean useMarkTeammate)
 {
-	static centity_t* lastOutlineCent;
-	static qboolean cachedDraw;
-	static qhandle_t cachedShader;
-	static byte cachedColorBytes[4];
-
 	int clientNum;
 	const clientInfo_t* ci;
 	const clientInfo_t* localCi;
@@ -3390,16 +3518,15 @@ static void CG_PlayerOutline(centity_t* cent, qboolean useOutline, qboolean useM
 	team_t myStateTeam, myRealTeam, enemyTeam, ourPerspectiveTeam, targetTeam;
 	vec3_t uniqueColorVec = {0, 0, 0};
 
-	/* Recompute only when player entity changes (first of 3 calls per player: legs/torso/head) */
 	if (cent != lastOutlineCent)
 	{
 		lastOutlineCent = cent;
-		cachedDraw = qfalse;
-		cachedShader = 0;
-		cachedColorBytes[0] = 0;
-		cachedColorBytes[1] = 0;
-		cachedColorBytes[2] = 0;
-		cachedColorBytes[3] = 0;
+		outlineCachedDraw = qfalse;
+		outlineCachedShader = 0;
+		outlineCachedColorBytes[0] = 0;
+		outlineCachedColorBytes[1] = 0;
+		outlineCachedColorBytes[2] = 0;
+		outlineCachedColorBytes[3] = 0;
 
 		clientNum = cent->currentState.clientNum;
 		if (useOutline && clientNum >= 0 && clientNum < MAX_CLIENTS)
@@ -3447,40 +3574,105 @@ static void CG_PlayerOutline(centity_t* cent, qboolean useOutline, qboolean useM
 			        ((cg_drawOutline.integer == 1 && outlineIsEnemy) || (cg_drawOutline.integer == 2 && !outlineIsEnemy) || (cg_drawOutline.integer == 3)) &&
 			        (outlineIsEnemy ? cg_enemyOutlineSize.integer : cg_teamOutlineSize.integer))
 			{
-				cachedDraw = qtrue;
+				outlineCachedDraw = qtrue;
 
-				/* One level: pick outline color by case */
 				if (outlineIsSpec && !cg_spectPOV.integer)
-					Vector4Copy(ci->team == TEAM_RED ? cgs.beTeamOutlineColor : cgs.beEnemyOutlineColor, outlineColor);
+					Vector4Copy(ci->team == TEAM_RED ? cg.beTeamOutlineColor : cg.beEnemyOutlineColor, outlineColor);
 				else if (outlineIsEnemy && cg_enemyOutlineColorUnique.integer == 0)
-					Vector4Copy(cgs.beEnemyOutlineColor, outlineColor);
+					Vector4Copy(cg.beEnemyOutlineColor, outlineColor);
 				else if (outlineIsEnemy)
 				{
 					VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
-					outlineColor[0] = (cg_enemyOutlineColorUnique.integer & 1) ? uniqueColorVec[0] : cgs.beEnemyOutlineColor[0];
-					outlineColor[1] = (cg_enemyOutlineColorUnique.integer & 2) ? uniqueColorVec[1] : cgs.beEnemyOutlineColor[1];
-					outlineColor[2] = (cg_enemyOutlineColorUnique.integer & 4) ? uniqueColorVec[2] : cgs.beEnemyOutlineColor[2];
+					outlineColor[0] = (cg_enemyOutlineColorUnique.integer & 1) ? uniqueColorVec[0] : cg.beEnemyOutlineColor[0];
+					outlineColor[1] = (cg_enemyOutlineColorUnique.integer & 2) ? uniqueColorVec[1] : cg.beEnemyOutlineColor[1];
+					outlineColor[2] = (cg_enemyOutlineColorUnique.integer & 4) ? uniqueColorVec[2] : cg.beEnemyOutlineColor[2];
 					outlineColor[3] = 1.0f;
 				}
 				else if (useMarkTeammate && cgs.beMarkedTeam[clientNum])
-					Vector4Copy(cgs.beMarkedTeamColor, outlineColor);
+					Vector4Copy(cg.beMarkedTeamColor, outlineColor);
 				else
-					Vector4Copy(cgs.beTeamOutlineColor, outlineColor);
+					Vector4Copy(cg.beTeamOutlineColor, outlineColor);
 
-				cachedShader = outlineIsEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
-				cachedColorBytes[0] = (byte)(outlineColor[0] * 255);
-				cachedColorBytes[1] = (byte)(outlineColor[1] * 255);
-				cachedColorBytes[2] = (byte)(outlineColor[2] * 255);
-				cachedColorBytes[3] = (byte)(outlineColor[3] * 255);
+				outlineCachedShader = outlineIsEnemy ? cgs.media.outlineShader : cgs.media.teamOutlineShader;
+				outlineCachedColorBytes[0] = (byte)(outlineColor[0] * 255);
+				outlineCachedColorBytes[1] = (byte)(outlineColor[1] * 255);
+				outlineCachedColorBytes[2] = (byte)(outlineColor[2] * 255);
+				outlineCachedColorBytes[3] = (byte)(outlineColor[3] * 255);
 			}
 		}
 	}
+}
 
-	if (cachedDraw && ent != NULL)
+/*
+===============
+CG_FriendHudMarker
+
+Draw HUD marker for a teammate (distance, traces, wallhack, frozen, health color).
+Early returns when markers disabled, not team game, spectator, self, or not ally.
+===============
+*/
+static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clientNum, qboolean useTeamFrozen, qboolean useTeamFoeWh)
+{
+	qboolean isFrozen;
+	qboolean friendVisible;
+	vec3_t start;
+	vec3_t end;
+	trace_t trace;
+	float dist;
+
+	if (!cg_drawHudMarkers.integer || !CG_BE_FEATURE_ENABLED(CG_BE_HUD_MARKERS))
+		return;
+	if (cgs.gametype < GT_TEAM)
+		return;
+	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+		return;
+	if (cent->currentState.number == cg.snap->ps.clientNum)
+		return;
+	if (ci->team != cg.snap->ps.persistant[PERS_TEAM])
+		return;
+
+	isFrozen = CG_IS_FROZEN_ENTITY(cent);
+	if ((cent->currentState.eFlags & EF_DEAD) && !isFrozen)
+		return;
+
+	friendVisible = qtrue;
+	if (!(cg_friendsWallhack.integer & 2) || (isFrozen && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen)))
 	{
-		ent->customShader = cachedShader;
-		*(int*)ent->shaderRGBA = *(int*)cachedColorBytes;
-		trap_R_AddRefEntityToScene(ent);
+		VectorCopy(cg.refdef.vieworg, start);
+		VectorCopy(cent->lerpOrigin, end);
+		end[2] += 24.0f;
+		CG_Trace(&trace, start, vec3_origin, vec3_origin, end, cg.snap->ps.clientNum, CONTENTS_SOLID);
+		friendVisible = (trace.fraction == 1.0f);
+		if (friendVisible)
+		{
+			CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin, cg.snap->ps.clientNum, CONTENTS_SOLID);
+			friendVisible = (trace.fraction == 1.0f);
+		}
+	}
+	if (!friendVisible && !(useTeamFoeWh && (isFrozen ? ((cg_friendsWallhack.integer & 1) && cg_friendsWallhackFrozen.integer && useTeamFrozen) : (cg_friendsWallhack.integer & 1)) && (!isFrozen || (useTeamFrozen && cg_friendsWallhackFrozen.integer))))
+		return;
+	if (isFrozen && !friendVisible && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen))
+		return;
+
+	dist = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
+	if (cg_friendHudMarkerMaxDist.integer > 0 && dist > cg_friendHudMarkerMaxDist.value)
+		return;
+
+	{
+		float hfov_x;
+		float sz;
+		vec4_t color;
+
+		dist = MAX(dist, 1.0f);
+		hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
+		sz = 1.0f / tan(hfov_x) * 150.0f / dist;
+		sz = MIN(cg_friendHudMarkerMaxScale.value, MAX(cg_friendHudMarkerMinScale.value, sz));
+		if ((cg_healthColorLevels.integer & 2) || ci->health <= 0)
+			Vector4Copy(colorWhite, color);
+		else
+			Vector4Copy(cg.healthColorByClient[clientNum], color);
+		CG_HudBorderMarker(cent->lerpOrigin, color, cg_friendHudMarkerSize.value * sz,
+		                   isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader, 270);
 	}
 }
 
@@ -3564,6 +3756,9 @@ void CG_Player(centity_t* cent)
 	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
 	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 
+	/* QVM: one outline cache update per player; outline add inlined after each body part (saves 2 calls) */
+	CG_PlayerOutlineBegin(cent, useOutline, useMarkTeammate);
+
 	renderfx = 0;
 
 	if (cent->currentState.number == cg.snap->ps.clientNum)
@@ -3598,63 +3793,7 @@ void CG_Player(centity_t* cent)
 	// add a water splash if partially in and out of water
 	CG_PlayerSplash(cent);
 
-	if (cg_drawHudMarkers.integer && CG_BE_FEATURE_ENABLED(CG_BE_HUD_MARKERS) && cgs.gametype >= GT_TEAM &&
-	        cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR &&
-	        cent->currentState.number != cg.snap->ps.clientNum &&
-	        ci->team == cg.snap->ps.persistant[PERS_TEAM])
-	{
-		qboolean isFrozen;
-		qboolean friendVisible;
-		vec3_t start;
-		vec3_t end;
-		trace_t trace;
-		float dist;
-
-		isFrozen = CG_IS_FROZEN_ENTITY(cent);
-		if ((cent->currentState.eFlags & EF_DEAD) && !isFrozen)
-			;
-		else
-		{
-			friendVisible = qtrue;
-			if (!(cg_friendsWallhack.integer & 2) || (isFrozen && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen)))
-			{
-				VectorCopy(cg.refdef.vieworg, start);
-				VectorCopy(cent->lerpOrigin, end);
-				end[2] += 24.0f;
-				CG_Trace(&trace, start, vec3_origin, vec3_origin, end, cg.snap->ps.clientNum, CONTENTS_SOLID);
-				friendVisible = (trace.fraction == 1.0f);
-				if (friendVisible)
-				{
-					CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin, cg.snap->ps.clientNum, CONTENTS_SOLID);
-					friendVisible = (trace.fraction == 1.0f);
-				}
-			}
-			if (friendVisible || ((useTeamFoeWh && (isFrozen ? ((cg_friendsWallhack.integer & 1) && cg_friendsWallhackFrozen.integer && useTeamFrozen) : (cg_friendsWallhack.integer & 1)) && (!isFrozen || (useTeamFrozen && cg_friendsWallhackFrozen.integer)))))
-			{
-				if (!(isFrozen && !friendVisible && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen)))
-				{
-					dist = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
-					if (cg_friendHudMarkerMaxDist.integer <= 0 || dist <= cg_friendHudMarkerMaxDist.value)
-					{
-						float hfov_x;
-						float sz;
-						vec4_t color;
-
-						dist = MAX(dist, 1.0f);
-						hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
-						sz = 1.0f / tan(hfov_x) * 150.0f / dist;
-						sz = MIN(cg_friendHudMarkerMaxScale.value, MAX(cg_friendHudMarkerMinScale.value, sz));
-						if ((cg_healthColorLevels.integer & 2) || ci->health <= 0)
-							Vector4Copy(colorWhite, color);
-						else
-							Vector4Copy(cgs.healthColorByClient[clientNum], color);
-						CG_HudBorderMarker(cent->lerpOrigin, color, cg_friendHudMarkerSize.value * sz,
-						                   isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader, 270);
-					}
-				}
-			}
-		}
-	}
+	CG_FriendHudMarker(cent, ci, clientNum, useTeamFrozen, useTeamFoeWh);
 
 	if (cg_shadows.integer == 3 && shadow)
 	{
@@ -3723,7 +3862,17 @@ void CG_Player(centity_t* cent)
 	}
 
 	CG_AddRefEntityWithPowerups(&legs, &cent->currentState, ci->team);
-	CG_PlayerOutline(cent, useOutline, useMarkTeammate, &legs);
+	if (outlineCachedDraw)
+	{
+		legs.customShader = outlineCachedShader;
+		*(int*)legs.shaderRGBA = *(int*)outlineCachedColorBytes;
+		trap_R_AddRefEntityToScene(&legs);
+	}
+
+	if (!ci->legsModel)
+	{
+		return;
+	}
 
 	//
 	// add the torso
@@ -3732,6 +3881,7 @@ void CG_Player(centity_t* cent)
 	torso.customSkin = ci->torsoSkin;
 	VectorCopy(cent->lerpOrigin, torso.lightingOrigin);
 	CG_PositionRotatedEntityOnTag(&torso, &legs, ci->legsModel, "tag_torso");
+	VectorCopy(torso.origin, torso.oldorigin);   // no positional lerp — matches outline, avoids shake
 	torso.shadowPlane = shadowPlane;
 	torso.renderfx = renderfx;
 
@@ -3757,7 +3907,17 @@ void CG_Player(centity_t* cent)
 	}
 
 	CG_AddRefEntityWithPowerups(&torso, &cent->currentState, ci->team);
-	CG_PlayerOutline(cent, useOutline, useMarkTeammate, &torso);
+	if (outlineCachedDraw)
+	{
+		torso.customShader = outlineCachedShader;
+		*(int*)torso.shaderRGBA = *(int*)outlineCachedColorBytes;
+		trap_R_AddRefEntityToScene(&torso);
+	}
+
+	if (!ci->torsoModel)
+	{
+		return;
+	}
 
 	//
 	// add the head
@@ -3766,6 +3926,7 @@ void CG_Player(centity_t* cent)
 	head.customSkin = ci->headSkin;
 	VectorCopy(cent->lerpOrigin, head.lightingOrigin);
 	CG_PositionRotatedEntityOnTag(&head, &torso, ci->torsoModel, "tag_head");
+	VectorCopy(head.origin, head.oldorigin);      // no positional lerp — matches outline, avoids shake
 	head.shadowPlane = shadowPlane;
 	head.renderfx = renderfx;
 
@@ -3795,7 +3956,12 @@ void CG_Player(centity_t* cent)
 		CG_BreathPuffs(cent, &head);
 	}
 	CG_AddRefEntityWithPowerups(&head, &cent->currentState, ci->team);
-	CG_PlayerOutline(cent, useOutline, useMarkTeammate, &head);
+	if (outlineCachedDraw)
+	{
+		head.customShader = outlineCachedShader;
+		*(int*)head.shaderRGBA = *(int*)outlineCachedColorBytes;
+		trap_R_AddRefEntityToScene(&head);
+	}
 
 	CG_AddPlayerWeapon(&torso, NULL, cent, ci->team);
 

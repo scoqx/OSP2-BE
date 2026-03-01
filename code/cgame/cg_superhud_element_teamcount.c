@@ -53,7 +53,7 @@ void CG_SHUDElementTeamCountRoutine(void* context)
 	int count;
 	team_t team;
 
-	if (!CG_OSPIsGameTypeFreeze())
+	if (!CG_OSPIsGameTypeFreeze() && !CG_OSPIsGameTypeCA(cgs.gametype))
 	{
 		return;
 	}

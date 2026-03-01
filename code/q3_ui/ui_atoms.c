@@ -1285,7 +1285,12 @@ static void UI_DrawStringCommon( int x, int y, const char* str, int style, vec4_
 		return;
 	}
 
-	if ( style & UI_SMALLFONT )
+	if ( style & UI_SMALLERFONT )
+	{
+		charw = SMALLERCHAR_WIDTH;
+		charh = SMALLERCHAR_HEIGHT;
+	}
+	else if ( style & UI_SMALLFONT )
 	{
 		charw = SMALLCHAR_WIDTH;
 		charh = SMALLCHAR_HEIGHT;

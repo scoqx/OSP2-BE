@@ -28,8 +28,8 @@ START SERVER MENU *****
 #define GAMESERVER_ARROWSR		"menu/art/gs_arrows_r"
 
 #define MAX_MAPROWS		2
-#define MAX_MAPCOLS		2
-#define MAX_MAPSPERPAGE	4
+#define MAX_MAPCOLS		4
+#define MAX_MAPSPERPAGE	8
 
 #define MAX_NAMELENGTH	16
 
@@ -39,6 +39,10 @@ START SERVER MENU *****
 #define ID_NEXTPAGE				16
 #define ID_STARTSERVERBACK		17
 #define ID_STARTSERVERNEXT		18
+#define ID_MAPFILTER			19
+
+#define MAPFILTER_CAPTION_CHARS	7  /* "Search:" */
+#define MAPFILTER_FIELD_CHARS	24
 
 typedef struct {
 	menuframework_s	menu;
@@ -48,6 +52,7 @@ typedef struct {
 	menubitmap_s	framer;
 
 	menulist_s		gametype;
+	menufield_s		mapfilter;
 	menubitmap_s	mappics[MAX_MAPSPERPAGE];
 	menubitmap_s	mapbuttons[MAX_MAPSPERPAGE];
 	menubitmap_s	arrows;
@@ -64,7 +69,9 @@ typedef struct {
 	int				nummaps;
 	int				page;
 	int				maxpages;
-	int 			maplist[MAX_ARENAS];
+	int				full_nummaps;
+	int				maplist[MAX_ARENAS];
+	int				full_maplist[MAX_ARENAS];
 } startserver_t;
 
 static startserver_t s_startserver;
@@ -223,6 +230,90 @@ static void StartServer_MapEvent( void* ptr, int event ) {
 
 /*
 =================
+StartServer_ApplyMapFilter
+=================
+*/
+static void StartServer_ApplyMapFilter( void ) {
+	int			i;
+	char		mapname[MAX_NAMELENGTH];
+	const char	*info;
+	const char	*filter;
+
+	filter = s_startserver.mapfilter.field.buffer;
+	s_startserver.nummaps = 0;
+	for ( i = 0; i < s_startserver.full_nummaps; i++ ) {
+		info = UI_GetArenaInfoByNumber( s_startserver.full_maplist[i] );
+		Q_strncpyz( mapname, Info_ValueForKey( info, "map" ), MAX_NAMELENGTH );
+		Q_strupr( mapname );
+		if ( !filter[0] || Q_stristr( mapname, filter ) ) {
+			s_startserver.maplist[s_startserver.nummaps] = s_startserver.full_maplist[i];
+			s_startserver.nummaps++;
+		}
+	}
+	s_startserver.maxpages = ( s_startserver.nummaps + MAX_MAPSPERPAGE - 1 ) / MAX_MAPSPERPAGE;
+	if ( s_startserver.maxpages < 1 ) {
+		s_startserver.maxpages = 1;
+	}
+	s_startserver.page = 0;
+	s_startserver.currentmap = 0;
+	StartServer_Update();
+}
+
+
+/*
+=================
+StartServer_DrawMapFilter
+=================
+*/
+static void StartServer_DrawMapFilter( void *self ) {
+	menufield_s		*f;
+	qboolean		focus;
+	int				style;
+	char			*txt;
+	char			c;
+	float			*color;
+	int				basex, x, y;
+	static char		last_filter[MAPFILTER_FIELD_CHARS + 1];
+
+	f = (menufield_s *)self;
+	basex = f->generic.x;
+	y = f->generic.y;
+	focus = ( f->generic.parent->cursor == f->generic.menuPosition );
+
+	style = UI_LEFT | UI_SMALLFONT;
+	color = text_color_normal;
+	if ( focus ) {
+		style |= UI_PULSE;
+		color = text_color_highlight;
+	}
+
+	UI_DrawString( basex, y, "Search:", style, color );
+
+	basex += MAPFILTER_CAPTION_CHARS * SMALLCHAR_WIDTH;
+	txt = f->field.buffer;
+	x = basex;
+
+	if ( strcmp( last_filter, f->field.buffer ) ) {
+		Q_strncpyz( last_filter, f->field.buffer, sizeof(last_filter) );
+		StartServer_ApplyMapFilter();
+	}
+
+	while ( ( c = *txt ) != '\0' ) {
+		UI_DrawChar( x, y, c, style, color );
+		x += SMALLCHAR_WIDTH;
+		txt++;
+	}
+
+	if ( focus ) {
+		c = trap_Key_GetOverstrikeMode() ? 11 : 10;
+		style = ( style & ~UI_PULSE ) | UI_BLINK;
+		UI_DrawChar( basex + f->field.cursor * SMALLCHAR_WIDTH, y, c, style, color );
+	}
+}
+
+
+/*
+=================
 StartServer_GametypeEvent
 =================
 */
@@ -238,7 +329,7 @@ static void StartServer_GametypeEvent( void* ptr, int event ) {
 	}
 
 	count = UI_GetNumArenas();
-	s_startserver.nummaps = 0;
+	s_startserver.full_nummaps = 0;
 	matchbits = 1 << gametype_remap[s_startserver.gametype.curvalue];
 	if( gametype_remap[s_startserver.gametype.curvalue] == GT_FFA ) {
 		matchbits |= ( 1 << GT_SINGLE_PLAYER );
@@ -251,14 +342,10 @@ static void StartServer_GametypeEvent( void* ptr, int event ) {
 			continue;
 		}
 
-		s_startserver.maplist[ s_startserver.nummaps ] = i;
-		s_startserver.nummaps++;
+		s_startserver.full_maplist[s_startserver.full_nummaps] = i;
+		s_startserver.full_nummaps++;
 	}
-	s_startserver.maxpages = (s_startserver.nummaps + MAX_MAPSPERPAGE-1)/MAX_MAPSPERPAGE;
-	s_startserver.page = 0;
-	s_startserver.currentmap = 0;
-
-	StartServer_Update();
+	StartServer_ApplyMapFilter();
 }
 
 
@@ -340,19 +427,19 @@ static void StartServer_LevelshotDraw( void *self ) {
 
 	x = b->generic.x;
 	y = b->generic.y + b->height;
-	UI_FillRect( x, y, b->width, 28, colorBlack );
+	UI_FillRect( x, y, b->width, 16, colorBlack );
 
 	x += b->width / 2;
-	y += 4;
+	y += 2;
 	n = s_startserver.page * MAX_MAPSPERPAGE + b->generic.id - ID_PICTURES;
 
 	info = UI_GetArenaInfoByNumber( s_startserver.maplist[ n ]);
-	UI_DrawString( x, y, Info_ValueForKey( info, "map" ), UI_CENTER|UI_SMALLFONT, color_orange );
+	UI_DrawString( x, y, Info_ValueForKey( info, "map" ), UI_CENTER|UI_SMALLERFONT, color_orange );
 
 	x = b->generic.x;
 	y = b->generic.y;
 	w = b->width;
-	h =	b->height + 28;
+	h =	b->height + 16;
 	if( b->generic.flags & QMF_HIGHLIGHT ) {	
 		UI_DrawHandlePic( x, y, w, h, b->focusshader );
 	}
@@ -410,35 +497,59 @@ static void StartServer_MenuInit( void ) {
 	s_startserver.gametype.generic.y		= 368;
 	s_startserver.gametype.itemnames		= gametype_items;
 
-	for (i=0; i<MAX_MAPSPERPAGE; i++)
 	{
-		x =	(i % MAX_MAPCOLS) * (128+8) + 188;
-		y = (i / MAX_MAPROWS) * (128+8) + 96;
+		int grid_w = MAX_MAPCOLS * 100 + (MAX_MAPCOLS - 1) * 4;
+		int grid_h = MAX_MAPROWS * (75 + 16 + 4) - 4;
+		/* 320 = screen center (640/2) */
+		int grid_start_x = 320 - grid_w / 2;
+		int grid_start_y = (FRAME_L_Y + FRAME_L_H / 2) - grid_h / 2;
+		int filter_total_width = ( MAPFILTER_CAPTION_CHARS + MAPFILTER_FIELD_CHARS ) * SMALLCHAR_WIDTH;
+
+		s_startserver.mapfilter.generic.type		= MTYPE_FIELD;
+		s_startserver.mapfilter.generic.flags		= QMF_NODEFAULTINIT;
+		s_startserver.mapfilter.generic.ownerdraw	= StartServer_DrawMapFilter;
+		s_startserver.mapfilter.generic.id			= ID_MAPFILTER;
+		s_startserver.mapfilter.generic.x			= 320 - filter_total_width / 2;
+		s_startserver.mapfilter.generic.y			= grid_start_y - SMALLCHAR_HEIGHT - 4;
+		s_startserver.mapfilter.field.widthInChars	= MAPFILTER_FIELD_CHARS;
+		s_startserver.mapfilter.field.maxchars		= MAPFILTER_FIELD_CHARS;
+		s_startserver.mapfilter.generic.left		= s_startserver.mapfilter.generic.x;
+		s_startserver.mapfilter.generic.right		= s_startserver.mapfilter.generic.x + filter_total_width + 1;
+		s_startserver.mapfilter.generic.top			= s_startserver.mapfilter.generic.y;
+		s_startserver.mapfilter.generic.bottom		= s_startserver.mapfilter.generic.y + SMALLCHAR_HEIGHT;
+
+		for (i=0; i<MAX_MAPSPERPAGE; i++)
+		{
+			x = grid_start_x + (i % MAX_MAPCOLS) * (100+4);
+			y = grid_start_y + (i / MAX_MAPCOLS) * (75 + 16 + 4);
 
 		s_startserver.mappics[i].generic.type   = MTYPE_BITMAP;
 		s_startserver.mappics[i].generic.flags  = QMF_LEFT_JUSTIFY|QMF_INACTIVE;
 		s_startserver.mappics[i].generic.x	    = x;
 		s_startserver.mappics[i].generic.y	    = y;
 		s_startserver.mappics[i].generic.id		= ID_PICTURES+i;
-		s_startserver.mappics[i].width  		= 128;
-		s_startserver.mappics[i].height  	    = 96;
+		s_startserver.mappics[i].width  		= 100;
+		s_startserver.mappics[i].height  	    = 75;
 		s_startserver.mappics[i].focuspic       = GAMESERVER_SELECTED;
 		s_startserver.mappics[i].errorpic       = GAMESERVER_UNKNOWNMAP;
 		s_startserver.mappics[i].generic.ownerdraw = StartServer_LevelshotDraw;
 
+		/* Hover frame: same logic as before (x-30, y-32, 256x248 for 128x128 content),
+		   scaled to new cell 100 x (75+16). Content offset in art: (30,32), content size in art 128x128. */
 		s_startserver.mapbuttons[i].generic.type     = MTYPE_BITMAP;
 		s_startserver.mapbuttons[i].generic.flags    = QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS|QMF_NODEFAULTINIT;
 		s_startserver.mapbuttons[i].generic.id       = ID_PICTURES+i;
 		s_startserver.mapbuttons[i].generic.callback = StartServer_MapEvent;
-		s_startserver.mapbuttons[i].generic.x	     = x - 30;
-		s_startserver.mapbuttons[i].generic.y	     = y - 32;
-		s_startserver.mapbuttons[i].width  		     = 256;
-		s_startserver.mapbuttons[i].height  	     = 248;
+		s_startserver.mapbuttons[i].generic.x	     = x - 30 * 100 / 128;
+		s_startserver.mapbuttons[i].generic.y	     = y - 32 * (75 + 16) / 128;
+		s_startserver.mapbuttons[i].width  		     = 256 * 100 / 128;
+		s_startserver.mapbuttons[i].height  	     = 248 * (75 + 16) / 128;
 		s_startserver.mapbuttons[i].generic.left     = x;
 		s_startserver.mapbuttons[i].generic.top  	 = y;
-		s_startserver.mapbuttons[i].generic.right    = x + 128;
-		s_startserver.mapbuttons[i].generic.bottom   = y + 128;
+		s_startserver.mapbuttons[i].generic.right    = x + 100;
+		s_startserver.mapbuttons[i].generic.bottom   = y + 75 + 16;
 		s_startserver.mapbuttons[i].focuspic         = GAMESERVER_SELECT;
+		}
 	}
 
 	s_startserver.arrows.generic.type  = MTYPE_BITMAP;
@@ -511,6 +622,7 @@ static void StartServer_MenuInit( void ) {
 	Menu_AddItem( &s_startserver.menu, &s_startserver.framer );
 
 	Menu_AddItem( &s_startserver.menu, &s_startserver.gametype );
+	Menu_AddItem( &s_startserver.menu, &s_startserver.mapfilter );
 	for (i=0; i<MAX_MAPSPERPAGE; i++)
 	{
 		Menu_AddItem( &s_startserver.menu, &s_startserver.mappics[i] );

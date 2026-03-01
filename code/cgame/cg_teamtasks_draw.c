@@ -342,7 +342,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 				cl = &cgs.clientinfo[clientNum];
 				if (!(cg_healthColorLevels.integer & 2) && cl->health > 0)
 				{
-					Vector4Copy(cgs.healthColorByClient[clientNum], color);
+					Vector4Copy(cg.healthColorByClient[clientNum], color);
 				}
 			}
 			break;
@@ -525,7 +525,7 @@ void CG_TeamTaskUpdateFrame(void)
 	qboolean localDeathMark;
 	qboolean hereDeadRemove;
 
-	tm = &cgs.teamMarkers;
+	tm = &cg.teamMarkers;
 
 	/* Lifetime: single place — refresh from cvar so CG_TeamTaskMark uses cache (no cvar read in add path) */
 	tm->markDurationMs = cg_teamTaskMarkTime.integer;
@@ -573,7 +573,8 @@ void CG_TeamTaskUpdateFrame(void)
 	tm->packHereDeadClientMask0 = 0;
 
 	tm->teamTaskFlags = cg_teamTask.integer;
-	tm->teamTaskEnabled = (tm->teamTaskFlags != 0 || CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS));
+	/* One gate: be_enabled + cg_teamTask via cgs.beFeaturesEnabled (CG_UpdateBeFeatures) */
+	tm->teamTaskEnabled = CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS);
 	tm->drawTeamTasks = tm->teamTaskEnabled && cgs.gametype >= GT_TEAM && !CG_IS_LOCAL_CLIENT_SPECTATOR();
 
 	/* Cached draw/hud cvars: one read per frame here; hot paths (CG_InitTeamTaskMarkConstants, CG_DrawTeamTaskBorderMarker) use cache */
@@ -671,7 +672,7 @@ void CG_DrawTeamTaskBorderHudMarkers(void)
 	float x;
 	float y;
 
-	tm = &cgs.teamMarkers;
+	tm = &cg.teamMarkers;
 	if (!tm->drawTeamTasks || tm->numTeamTaskMarks == 0 || !(tm->teamTaskFlags & CG_TEAMTASK_HUDMARKER))
 		return;
 
@@ -725,11 +726,11 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 	Vector4Copy(mark->markerColor, color);
 
 	/* Use per-frame cache (set in CG_TeamTaskUpdateFrame); avoids 5 cvar reads per mark */
-	maxDistInt = cgs.teamMarkers.hudMarkerMaxDistInt;
-	maxDistValue = cgs.teamMarkers.hudMarkerMaxDistValue;
-	maxScale = cgs.teamMarkers.hudMarkerMaxScale;
-	minScale = cgs.teamMarkers.hudMarkerMinScale;
-	markerSize = cgs.teamMarkers.hudMarkerSize;
+	maxDistInt = cg.teamMarkers.hudMarkerMaxDistInt;
+	maxDistValue = cg.teamMarkers.hudMarkerMaxDistValue;
+	maxScale = cg.teamMarkers.hudMarkerMaxScale;
+	minScale = cg.teamMarkers.hudMarkerMinScale;
+	markerSize = cg.teamMarkers.hudMarkerSize;
 
 	refdef = &cg.refdef;
 
@@ -866,7 +867,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 			}
 			pulseColor[3] = 0.25f * endFade;
 		}
-		else if ((cgs.teamMarkers.teamTaskFlags & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		else if ((cg.teamMarkers.teamTaskFlags & CG_TEAMTASK_UNIQUECOLORS) && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			/* Use unique color for pulsing circle */
 			VectorCopy(UNIQUE_COLOR(mark->clientNum), pulseColor);
@@ -1026,7 +1027,7 @@ typedef struct
 
 static void CG_InitTeamTaskMarkConstants(teamTaskMarkConstants_t* constants)
 {
-	const cgs_teamMarkers_t* tm = &cgs.teamMarkers;
+	const cgs_teamMarkers_t* tm = &cg.teamMarkers;
 
 	constants->distMin = 0.0f;
 	constants->distMax = 2500.0f;
@@ -1438,7 +1439,7 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 	}
 
 	/* Skip item marks that have pickup nearby (precomputed in CG_TeamTaskUpdateFrame) */
-	if (cgs.teamMarkers.markHasPickupNear[markIndex])
+	if (cg.teamMarkers.markHasPickupNear[markIndex])
 		return qfalse;
 
 	/* Check if this is own HERE_ALIVE, HERE_FLAG, or item (pickup) mark that should be displayed as overhead in first person (2D only, like tHere) */
@@ -1722,7 +1723,7 @@ void CG_AddTeamTaskOverheadSprites(void)
 	float opaque;
 	qboolean playerFound;
 
-	tm = &cgs.teamMarkers;
+	tm = &cg.teamMarkers;
 	if (!tm->drawTeamTasks || tm->numTeamTaskMarks == 0)
 		return;
 
@@ -1830,7 +1831,7 @@ void CG_DrawTeamTaskMarks(void)
 	teamTaskMark_t* mark;
 	cgs_teamMarkers_t* tm;
 
-	tm = &cgs.teamMarkers;
+	tm = &cg.teamMarkers;
 	if (!tm->drawTeamTasks || tm->numTeamTaskMarks == 0)
 		return;
 

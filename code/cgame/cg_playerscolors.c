@@ -352,11 +352,14 @@ static void CG_PlayerColorsLoadOverrides(playerColors_t* colors,
 	if (frozenColor)
 	{
 		int len = strlen(frozenColor->string);
-		// one number per color format
+		// one char: E/T (team/enemy) or colorcharlist
 		if (len == 1)
 		{
 			if (override) override->isFrozenColorSet = qtrue;
-			CG_OSPColorFromChar(frozenColor->string[0], colors->frozen);
+			if (!CG_GetColorFromETCode(frozenColor->string[0], colors->frozen))
+			{
+				CG_OSPColorFromChar(frozenColor->string[0], colors->frozen);
+			}
 		}
 
 		// 8bit hex format: rrggbb

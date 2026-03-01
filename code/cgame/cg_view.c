@@ -1130,9 +1130,9 @@ Check for changes in player stats and print them to console
             if (_h >= 100) (hcolorOut)[2] = 1.0f; else if (_h < 66) (hcolorOut)[2] = 0; else (hcolorOut)[2] = (float)(_h - 66) / 33.0f; \
             if (_h > 60) (hcolorOut)[1] = 1.0f; else if (_h < 30) (hcolorOut)[1] = 0; else (hcolorOut)[1] = (float)(_h - 30) / 30.0f; \
         } else { \
-            if (_h <= (lowCached)) VectorCopy(cgs.beHealthLowColor, hcolorOut); \
-            else if (_h >= (midCached)) VectorCopy(cgs.beHealthMidColor, hcolorOut); \
-            else VectorCopy(cgs.beHealthColor, hcolorOut); \
+            if (_h <= (lowCached)) VectorCopy(cg.beHealthLowColor, hcolorOut); \
+            else if (_h >= (midCached)) VectorCopy(cg.beHealthMidColor, hcolorOut); \
+            else VectorCopy(cg.beHealthColor, hcolorOut); \
             (hcolorOut)[3] = 1.0f; \
         } \
     } \
@@ -1162,12 +1162,16 @@ static void CG_ClientInfoUpdateFrame(void)
 	CG_VIEW_HEALTH_COLOR_ONE(
 	    cg.snap->ps.stats[STAT_HEALTH],
 	    cg.snap->ps.stats[STAT_ARMOR],
-	    cgs.healthColorLocal,
+	    cg.healthColorLocal,
 	    levels, low, mid
 	);
 
 	teamMode = (cgs.gametype >= GT_TEAM);
 	count = 0;
+
+	/* T/E colors = team of the player we're viewing (snap); single place per frame with team client loop */
+	if (teamMode)
+		CG_UpdateMyTeam();
 
 	// -------------------------
 	// FFA: только считаем игроков
@@ -1191,8 +1195,8 @@ static void CG_ClientInfoUpdateFrame(void)
 	{
 		if (!cgs.clientinfo[i].infoValid)
 		{
-			VectorClear(cgs.healthColorByClient[i]);
-			cgs.healthColorByClient[i][3] = 1;
+			VectorClear(cg.healthColorByClient[i]);
+			cg.healthColorByClient[i][3] = 1;
 			continue;
 		}
 
@@ -1201,7 +1205,7 @@ static void CG_ClientInfoUpdateFrame(void)
 		CG_VIEW_HEALTH_COLOR_ONE(
 		    cgs.clientinfo[i].health,
 		    cgs.clientinfo[i].armor,
-		    cgs.healthColorByClient[i],
+		    cg.healthColorByClient[i],
 		    levels, low, mid
 		);
 	}
@@ -1223,12 +1227,12 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	cg.time = serverTime;
 	cg.demoPlayback = demoPlayback;
 
-	// update cvars
-	if (cgs.osp.cvarsUpdateDelay++ > 5)
-	{
-		CG_UpdateCvars();
-		cgs.osp.cvarsUpdateDelay = 0;
-	}
+	// // update cvars
+	// if (cgs.osp.cvarsUpdateDelay++ > 5)
+	// {
+	CG_UpdateCvars();
+	// 	cgs.osp.cvarsUpdateDelay = 0;
+	// }
 
 	// if we are only updating the screen as a loading
 	// pacifier, don't even try to read snapshots
@@ -1257,9 +1261,6 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	}
 
 	cg.numItemEntityIndices = 0;
-
-	// update tracked team for dynamic T/E color updates
-	// CG_UpdateMyTeam();
 
 	// let the client system know what our weapon and zoom settings are
 	trap_SetUserCmdValue(cg.weaponSelect, cg.zoomSensitivity);
@@ -1297,10 +1298,10 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	if (cgs.gametype >= GT_TEAM ||
 	        cg_teamTask.integer ||
 	        CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS) ||
-	        cgs.teamMarkers.supportedServer)
+	        cg.teamMarkers.supportedServer)
 		CG_TeamTaskUpdateFrame();
 	/* Single place per frame: crosshair entity, health color cache, realNumClients */
-
+	
 	CG_ScanForCrosshairEntity();
 	CG_ClientInfoUpdateFrame();
 
@@ -1358,7 +1359,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	//      trap_Cvar_Set("timescale", va("%f", cg_timescale.value));
 	//  }
 	// }
-
+	
 	// actually issue the rendering calls
 	CG_DrawActive(stereoView);
 
@@ -1370,6 +1371,15 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	if (cgs.osp.isOSPv1 && cgs.osp.nextCvarsUpdateTime && cgs.osp.nextCvarsUpdateTime < cg.time)
 	{
 		CG_OSPUpdateUserInfo(qfalse);
+	}
+
+	/* +autojump held: alternate +moveup/-moveup every frame; only when BE feature autojump enabled */
+	if (cg.turboupHeld && CG_BE_FEATURE_ENABLED(CG_BE_AUTOJUMP))
+	{
+		if (cg.clientFrame & 1)
+			trap_SendConsoleCommand("+moveup");
+		else
+			trap_SendConsoleCommand("-moveup");
 	}
 }
 

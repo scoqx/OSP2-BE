@@ -244,7 +244,9 @@ typedef enum
 	LE_SCALE_FADE,
 	LE_SCOREPLUM,
 	LE_DAMAGEPLUM,
-	LE_RAIL_EFFECT
+	LE_RAIL_EFFECT,
+	LE_FADE_RGB_SIN,    // rail overlay fade (cosine)
+	LE_RAILTUBE         // rail spiral tubes (altRail 3)
 } leType_t;
 
 typedef enum
@@ -252,7 +254,9 @@ typedef enum
 	LEF_PUFF_DONT_SCALE  = 0x0001,          // do not scale size over time
 	LEF_TUMBLE           = 0x0002,          // tumble over time, used for ejecting shells
 	LEF_SOUND1           = 0x0004,          // sound 1 for kamikaze
-	LEF_SOUND2           = 0x0008           // sound 2 for kamikaze
+	LEF_SOUND2           = 0x0008,          // sound 2 for kamikaze
+	LEF_FADE_RGB         = 0x0010,          // fade all channels, not just alpha
+	LEF_MOVE_OLDORIGIN   = 0x0020           // move oldorigin as well (rail spiral2)
 } leFlag_t;
 
 typedef enum
@@ -282,6 +286,7 @@ typedef struct localEntity_s
 	float           lifeRate;           // 1.0 / (endTime - startTime)
 
 	trajectory_t    pos;
+	trajectory_t    pos2;   // for oldorigin (rail spiral2)
 	trajectory_t    angles;
 
 	float           bounceFactor;       // 0.0 = no bounce, 1.0 = perfect
@@ -341,6 +346,9 @@ typedef struct playerColors_s
 // this is regenerated each time a client's configstring changes,
 // usually as a result of a userinfo (name, model, etc) change
 #define MAX_CUSTOM_SOUNDS   32
+#define SKIN_TYPE_DEFAULT   0
+#define SKIN_TYPE_PM        1
+#define SKIN_TYPE_FB        2
 
 typedef struct
 {
@@ -348,7 +356,6 @@ typedef struct
 
 	char            name_original[MAX_QPATH];
 	char            name_clean[MAX_QPATH];
-	char            name_codes[MAX_QPATH * 2];
 	char            name[MAX_QPATH];
 	qboolean        nameIsInvisible;
 	team_t          team; // best
@@ -365,52 +372,46 @@ typedef struct
 	int             health;         // you only get this info about your teammates
 	int             armor;
 	int             curWeapon;
-	int             unknown;
+	// int             respawnTime;
 	int             handicap;
 	int             wins, losses;   // in tourney mode
 
 	int             teamTask;       // task in teamplay (offence/defence)
 	int             teamTaskEvent;  // pending team task event to process (0 = no event)
-	qboolean        supportsTeamTask; // true if player has sent at least one teamTask
-	qboolean        teamLeader;     // true when this is a team leader
+	// qboolean        teamLeader;     // true when this is a team leader
 
 	int             powerups;       // so can display quad/flag status
 
-	int             medkitUsageTime;
-	int             invulnerabilityStartTime;
-	int             invulnerabilityStopTime;
+	// int             invulnerabilityStartTime;
+	// int             invulnerabilityStopTime;
 
 	int             breathPuffTime;
 
 	char            modelName[MAX_QPATH];
 	char            skinName[MAX_QPATH];
-	qboolean        isPmSkin;
-	qboolean        isFbSkin;
+	int             skinType;       /* SKIN_TYPE_DEFAULT / SKIN_TYPE_PM / SKIN_TYPE_FB */
 	char            headModelName[MAX_QPATH];
 	char            headSkinName[MAX_QPATH];
 	char            redTeam[MAX_TEAMNAME];
 	char            blueTeam[MAX_TEAMNAME];
 	char            originalHeadModel[MAX_QPATH];
-
+	
 	qboolean        newAnims;       // true if using the new mission pack animations
 	qboolean        fixedlegs;      // true if legs yaw is always the same as torso yaw
 	qboolean        fixedtorso;     // true if torso never changes yaw
-
+	
 	vec3_t          headOffset;     // move head in icon views
 	footstep_t      footsteps;
 	gender_t        gender;         // from model
-
+	
 	qhandle_t       legsModel;
 	qhandle_t       legsSkin;
-
+	
 	qhandle_t       torsoModel;
 	qhandle_t       torsoSkin;
-
+	
 	qhandle_t       headModel;
 	qhandle_t       headSkin;
-	qhandle_t       originalHeadModelHandle;
-	qhandle_t       originalHeadSkinHandle;
-	qhandle_t       originalModelIcon;
 
 	qhandle_t       modelIcon;
 
@@ -422,6 +423,8 @@ typedef struct
 	team_t          st; // 1 for coach
 	qboolean        isFrozenEnt; // from cent
 	int             frozenEntity; // entity num
+	
+	int             medkitUsageTime;
 } clientInfo_t;
 
 
@@ -485,13 +488,13 @@ typedef struct
 } powerupInfo_t;
 
 
-#define MAX_SKULLTRAIL      10
+// #define MAX_SKULLTRAIL      10
 
-typedef struct
-{
-	vec3_t positions[MAX_SKULLTRAIL];
-	int numpositions;
-} skulltrail_t;
+// typedef struct
+// {
+// 	vec3_t positions[MAX_SKULLTRAIL];
+// 	int numpositions;
+// } skulltrail_t;
 
 #define MAX_TEAMTASK_MARKS  32
 /* Quantization range for teamtask position (7 bits per axis); must fit typical map bounds */
@@ -551,7 +554,6 @@ typedef struct cgs_teamMarkers_s
 	tokenBucket_t sendCommandBucketWarn;
 
 	/* ttwheel mark */
-	qboolean    ttwheelMarkActive;
 	float       ttwheelMarkX;
 	float       ttwheelMarkY;
 	int         lastCmdNum;
@@ -631,6 +633,41 @@ typedef struct cgFontIndices_s
 	int bestats;
 } cgFontIndices_t;
 
+/* Runtime printui entry: startTime = cg.time, duration/fade, active; updated every frame */
+#define CG_PRINTUI_MAX 32
+typedef struct cg_printui_entry_s
+{
+	char     text[MAX_STRING_CHARS];
+	float    x, y;
+	vec4_t   color;
+	vec4_t   shadowColor;
+	float    charWidth;
+	float    charHeight;
+	int      flags;
+	vec4_t   background;
+	vec4_t   border;
+	vec4_t   borderColor;
+	int      fontIndex;
+	int      startTime;
+	int      duration;
+	int      fadeTime;
+	qboolean active;
+} printUI_t;
+
+typedef struct
+{
+	float x, y;
+	vec2_t textSize;
+	vec4_t bgColor;
+	qboolean bgColorIsSet;
+	float bgOpaque;
+} globalBeStatsSettings_t;
+
+/*
+ * cg_t — текущее состояние кадра и предсказания.
+ * Меняется каждый кадр. При рестарте турнира по сути пересоздаётся вместе с cgame.
+ * Примеры: cg.time, cg.snap, predictedPlayerState, зум, табло.
+ */
 typedef struct
 {
 	int         clientFrame;        // incremented each frame
@@ -692,7 +729,7 @@ typedef struct
 
 	// input state sent to server
 	int         weaponSelect;
-
+	
 	// auto rotating items
 	vec3_t      autoAngles;
 	vec3_t      autoAxis[3];
@@ -711,20 +748,29 @@ typedef struct
 	// information screen text during loading
 	char        infoScreenText[MAX_STRING_CHARS];
 
+	int         realNumClients;
+
 	// scoreboard
 	int         scoresRequestTime;
+	int         dstatusRequestTime;  /* last time we sent getdstatus (600 ms min interval, same 2s cycle as score; q3msk only) */
+	/* Token bucket for getdstatus: 5 tokens, 1.0/sec refill, refill every frame (like getstatsinfo) */
+	float       dstatusRequestTokens;
+	int         dstatusRequestTokenTime;
+	char        predictedDeadInFreeze[MAX_CLIENTS];  /* -1 no prediction, 0 predicted alive, 1 predicted dead; applied on kill/unfreeze event, cleared when dstatus arrives */
 	int         statsRequestTime;
 	int         statsAllRequestTime;
 	/* Token bucket for getstatsinfo (BE stats + OSPWStatsDown): 5 tokens, 1.0/sec refill, refill every frame */
 	float       statsRequestTokens;
 	int         statsRequestTokenTime;
 	int         statsRequestLastSendTime;  /* last time we sent getstatsinfo (for 1/sec refresh when window open, target unchanged) */
+	qboolean    statsRequestSentInIntermission;  /* getstatsinfo sent once per intermission when stats table is shown */
 	int         numScores;
-	int         selectedScore;
+	// int         selectedScore;
 	int         teamScores[2];
 	score_t     scores[MAX_CLIENTS];
 	qboolean    showScores;
 	qboolean    showAccuracy;
+	qboolean	showWStats;
 	qboolean    scoreBoardShowing;
 	int         scoreFadeTime;
 	char        killerName[MAX_NAME_LENGTH];
@@ -737,10 +783,9 @@ typedef struct
 	int         spectatorOffset;                                        // current offset from start
 	int         spectatorPaintLen;                                  // current offset from start
 
-	int         realNumClients;
 
 	// skull trails
-	skulltrail_t    skulltrails[MAX_CLIENTS];
+	// skulltrail_t    skulltrails[MAX_CLIENTS];
 
 	// centerprinting
 	int         centerPrintTime;
@@ -830,8 +875,8 @@ typedef struct
 
 	// development tool
 	// refEntity_t     testModelEntity;
-	char            testModelName[MAX_QPATH];
-	qboolean        testGun;
+	// char            testModelName[MAX_QPATH];
+	// qboolean        testGun;
 
 	int         lastPredictedCommand;
 	int         lastServerTime;
@@ -844,7 +889,33 @@ typedef struct
 	qboolean    beStatsAllRequested;
 	qboolean    beIsHealthLow;
 	qboolean    beClientDamagePrinted;
+	globalBeStatsSettings_t beSettings;
+	qboolean    ttwheelMarkActive; /* team task wheel open (was teamMarkers.ttwheelMarkActive) */
+	qboolean    turboupHeld;       /* +turboup held: alternate +moveup/-moveup every frame */
+	cgs_teamMarkers_t teamMarkers;
 
+	/* BE colors (from cvars, parsed in CG_LocalEventCvarParseColor) */
+	vec4_t      beMarkedTeamColor;
+	vec4_t      beHitBoxColor;
+	vec4_t      beEnemyOutlineColor;
+	vec4_t      beTeamOutlineColor;
+	vec4_t      beAltBloodColor;
+	vec4_t      beAltShadowColor;
+	vec4_t      beAltGrenadesColor;
+	vec4_t      beEnemyGrenadesColor;
+	vec4_t      beHealthColor;
+	vec4_t      beHealthLowColor;
+	vec4_t      beHealthMidColor;
+	qboolean    beShowCredits;
+
+	/* Per-frame health color cache: filled in CG_ClientInfoUpdateFrame; local=stats, byClient=clientinfo (QVM: avoid repeated CG_GetColorForHealth) */
+	vec4_t      healthColorLocal;       /* local player: cg.snap->ps.stats[STAT_HEALTH/ARMOR] */
+	vec4_t      healthColorByClient[MAX_CLIENTS]; /* per client: cgs.clientinfo[i].health/armor */
+
+	/* PrintUI: session UI state; drawn/updated every frame (startTime uses cg.time) */
+	printUI_t   printui[CG_PRINTUI_MAX];
+	int         printuiActiveCount;
+	int         printuiActiveIndices[CG_PRINTUI_MAX];
 } cg_t;
 
 
@@ -927,6 +998,15 @@ typedef struct
 	qhandle_t   railRingsShaderNoPicMip;
 	qhandle_t   railCoreShader;
 	qhandle_t   railCoreShaderNoPicMip;
+#define NUM_RAILSPIRALSHADERS 10
+	qhandle_t   ratRailCoreShader;
+	qhandle_t   ratRailCoreShaderOverlay;
+	qhandle_t   ratRailCoreShaderFat;
+	qhandle_t   ratRailCoreShaderOverlayFat;
+	qhandle_t   ratRailSpiralShaders[NUM_RAILSPIRALSHADERS];
+	qhandle_t   ratRailSpiralModel;
+	qhandle_t   ratRailTubeShader100;
+	qhandle_t   ratRailTubeShader50;
 
 	qhandle_t   lightningShader; //probably removed
 	qhandle_t   grappleRopeShader;
@@ -1373,31 +1453,12 @@ typedef struct
 
 typedef struct
 {
-	float x, y;
-	vec2_t textSize;
-	vec4_t bgColor;
-	qboolean bgColorIsSet;
-	float bgOpaque;
-} globalBeStatsSettings_t;
-
-typedef struct
-{
 	// == text colors ==
 	vec4_t title;
 	// == bg colors ==
 	vec4_t headerBg;
 	vec4_t bodyBg;
 } scoreboardColors_t;
-
-typedef struct
-{
-	vec2_t textSize;
-	// == colors ==
-	scoreboardColors_t ffaColors;
-	scoreboardColors_t redColors;
-	scoreboardColors_t blueColors;
-	scoreboardColors_t specColors;
-} globalBeScoreBoardSettings_t;
 
 typedef struct
 {
@@ -1426,7 +1487,6 @@ typedef struct
 	int ya;
 	int ga;
 
-	qboolean drawWindow;
 	int statsLastRequestTime;
 	weaponStats_t stats[WP_NUM_WEAPONS];
 } newStatsInfo_t;
@@ -1453,6 +1513,7 @@ typedef struct
 #define CG_BE_TEAM_FROZEN       (1 << 14) // 16384
 #define CG_BE_HUD_MARKERS       (1 << 15) // 32768
 #define CG_BE_METAL_FOOTSTEPS   (1 << 16) // 65536
+#define CG_BE_AUTOJUMP         (1 << 17) // 131072
 
 // Team task flags (bitmask for cg_teamTask)
 #define CG_TEAMTASK_ENABLED        (1 << 0)  // 1 - Enable team task markers
@@ -1490,7 +1551,7 @@ typedef struct cgs_osp_s
 	int serverConfigMaximumMaxpackets;
 	int serverConfigXHitBox;
 	int nextCvarsUpdateTime;
-	int cvarsUpdateDelay;
+	// int cvarsUpdateDelay;
 	qboolean isOSPv1;
 	int stats_mask;
 	int stats_shift;
@@ -1546,10 +1607,11 @@ typedef struct cgs_osp_s
 } cgs_osp_t;
 
 
-// The client game static (cgs) structure hold everything
-// loaded or calculated from the gamestate.  It will NOT
-// be cleared when a tournement restart is done, allowing
-// all clients to begin playing instantly
+/*
+ * cgs_t — данные, загруженные из геймстейта (configstrings, медиа, правила).
+ * Меняется при смене карты/геймстейта, конфигстрингов. При рестарте турнира не очищается.
+ * Примеры: cgs.gametype, cgs.media, cgs.clientinfo, cgs.mapname.
+ */
 typedef struct
 {
 	gameState_t     gameState;          // gamestate from server
@@ -1588,7 +1650,7 @@ typedef struct
 	char            mapname[MAX_QPATH];
 	char            redTeam[MAX_QPATH];
 	char            blueTeam[MAX_QPATH];
-	qboolean        isOspServer;            // g_unlagged is not osp
+	// qboolean        isOspServer;            // g_unlagged is not osp
 
 	int             voteTime;
 	int             voteYes;
@@ -1605,13 +1667,10 @@ typedef struct
 	int             levelStartTime;
 
 	int             scores1, scores2;       // from configstrings
+	qboolean        deadInFreeze[MAX_CLIENTS];  /* clients dead in freeze (ctf/tdm unfreeze), from getdstatus */
 	int             redflag, blueflag;      // flag status from configstrings
 	int             flagStatus;
-
-	qboolean  newHud;
-
-	qboolean  shudWstatsCalled;
-
+	
 	//
 	// locally derived information from gamestate
 	//
@@ -1630,21 +1689,13 @@ typedef struct
 	int             teamChatPos;
 	int             teamLastChatPos;
 
-	int cursorX;
-	int cursorY;
-	qboolean eventHandling;
-	qboolean mouseCaptured;
-	qboolean sizingHud;
-	void* capturedItem;
-	qhandle_t activeCursor;
-
-	// orders
-	int currentOrder;
-	qboolean orderPending;
-	int orderTime;
-	int acceptOrderTime;
-	int acceptTask;
-	int acceptLeader;
+	// // orders
+	// int currentOrder;
+	// qboolean orderPending;
+	// int orderTime;
+	// int acceptOrderTime;
+	// int acceptTask;
+	// int acceptLeader;
 
 	qboolean        customModelSound;
 	sfxHandle_t     mySounds[MAX_CUSTOM_SOUNDS];
@@ -1664,18 +1715,11 @@ typedef struct
 	int             beFeaturesEnabled;    /* final bitmask: enabled features */
 	qboolean        damageInfoAllowed;    /* cached: CA=true, fpsclassico=false, else BE|OSP */
 	qboolean        beMarkedTeam[MAX_CLIENTS];
-	vec4_t          beMarkedTeamColor;
-	vec4_t          beHitBoxColor;
-	vec4_t          beEnemyOutlineColor;
-	vec4_t          beTeamOutlineColor;
-	vec4_t          beAltBloodColor;
-	vec4_t          beAltShadowColor;
-	vec4_t          beAltGrenadesColor;
-	vec4_t          beEnemyGrenadesColor;
-	qboolean        beShowCredits;
-	vec4_t          beHealthColor;
-	vec4_t          beHealthLowColor;
-	vec4_t          beHealthMidColor;
+	/* Base team colors from cvars (before cg_myTeam remapping) */
+	vec4_t          baseRedTeamColor;
+	vec4_t          baseBlueTeamColor;
+
+	/* Effective team colors used for rendering after cg_myTeam remapping */
 	vec4_t          beRedTeamColor;
 	vec4_t          beBlueTeamColor;
 	vec4_t          bePlayerIndicatorColor;
@@ -1683,45 +1727,16 @@ typedef struct
 	vec2_t          bePlayerIndicatorFontSize;
 	vec2_t          beAccuracyFontSize;
 	customWeaponStats_t beWeaponStats[WP_NUM_WEAPONS];
-	globalBeStatsSettings_t beSettings;
-	globalBeScoreBoardSettings_t beSbSettings;
 	// qboolean        beSupportedServer;
 	vec3_t          beBrightWeaponsColor[WP_NUM_WEAPONS];
 	team_t          beMyTeam;
-	qboolean        beCustomFreezeSound;
-	qboolean        beServerQ3msk;
 	int             beServerEnableBreath;
-	int             beAutohop;  /* 0=нет pmove_autohop в cs, 1=есть и нельзя управлять, 2=можно управлять */
+	// int             beAutohop;  /* 0=нет pmove_autohop в cs, 1=есть и нельзя управлять, 2=можно управлять */
 
-	qboolean fpsclassico;  /* server fpsclassico mode */
-	cgs_teamMarkers_t teamMarkers;
-	/* Per-frame health color cache: filled in CG_ClientInfoUpdateFrame; local=stats, byClient=clientinfo (QVM: avoid repeated CG_GetColorForHealth) */
-	vec4_t          healthColorLocal;       /* local player: cg.snap->ps.stats[STAT_HEALTH/ARMOR] */
-	vec4_t          healthColorByClient[MAX_CLIENTS]; /* per client: cgs.clientinfo[i].health/armor */
+	qboolean        q3msk;		  // Q3msk.net
+	qboolean 		fpsclassico;  // fpsclasico.com
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
-
-	struct
-	{
-		char text[MAX_STRING_CHARS];
-		float x;
-		float y;
-		vec4_t color;
-		vec4_t shadowColor;
-		float charWidth;
-		float charHeight;
-		int flags;
-		vec4_t background;
-		vec4_t border;
-		vec4_t borderColor;
-		int fontIndex;
-		int startTime;
-		int duration;
-		int fadeTime;
-		qboolean active;
-	} printui[32];
-	int printuiActiveCount;
-	int printuiActiveIndices[32];
 } cgs_t;
 
 /* Crosshair colors/distance: top-level global for QVM (one level of indirection) */
@@ -1964,7 +1979,6 @@ extern vmCvar_t           r_znear;
 extern vmCvar_t           handicap;
 extern vmCvar_t           m_pitch;
 extern vmCvar_t           com_maxfps;
-extern vmCvar_t           cg_gun_frame;
 extern vmCvar_t           cg_noLeadSounds;
 extern vmCvar_t           cg_fragSound;
 extern vmCvar_t           cg_lightningHide;
@@ -2088,8 +2102,9 @@ extern vmCvar_t         cg_ignoreServerMessages;
 extern vmCvar_t         cg_healthColor;
 extern vmCvar_t         cg_healthLowColor;
 extern vmCvar_t         cg_healthMidColor;
-extern vmCvar_t        cg_redTeamColor;
-extern vmCvar_t        cg_blueTeamColor;
+extern vmCvar_t         cg_redTeamColor;
+extern vmCvar_t         cg_blueTeamColor;
+extern vmCvar_t         cg_myTeam;
 extern vmCvar_t        cg_friendHudMarkerMaxDist;
 extern vmCvar_t        cg_friendHudMarkerSize;
 extern vmCvar_t        cg_friendHudMarkerMaxScale;
@@ -2202,7 +2217,20 @@ extern vmCvar_t        cg_friendsWallhackFrozen;
 extern vmCvar_t        cg_teleportEffect;
 extern vmCvar_t        cg_teamTaskNewSounds;
 extern vmCvar_t        cg_teamTaskVersion;
-
+extern vmCvar_t           cg_altRail;
+extern vmCvar_t           cg_railFix;
+extern vmCvar_t           cg_freezeSoundFix;
+extern vmCvar_t           cg_infoVersionFont;
+// extern vmCvar_t          cg_snow;
+// extern vmCvar_t          cl_yawspeed;
+// extern vmCvar_t          cl_pitchspeed;
+extern vmCvar_t         cl_reconnectArgs;
+extern vmCvar_t           cg_infoDetail;
+extern vmCvar_t           cg_altRailBeefy;
+extern vmCvar_t        cg_enhancedInterpolation;
+extern vmCvar_t        cg_entityOverpolate;
+extern vmCvar_t           cg_teamHealthBar;
+extern vmCvar_t        cg_healthBarStyle;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2222,15 +2250,8 @@ extern vmCvar_t           cg_shud_chatmsg12;
 extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
-extern vmCvar_t           cg_altRail;
-extern vmCvar_t           cg_railFix;
-extern vmCvar_t           cg_freezeSoundFix;
-extern vmCvar_t           cg_infoVersionFont;
-// extern vmCvar_t          cg_snow;
-// extern vmCvar_t          cl_yawspeed;
-// extern vmCvar_t          cl_pitchspeed;
-extern vmCvar_t         cl_reconnectArgs;
-extern vmCvar_t           cg_infoDetail;
+
+
 extern vmCvar_t         be_run;
 //
 // cg_main.c
@@ -2267,15 +2288,16 @@ void CG_UpdateCvars(void);
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);
 int CG_CountRealClients(void);
+qboolean CG_AdminNameEqualsRateX7(const char *s);
 void CG_BEParseXStatsToStatsAll(void);
 void CG_SHUDEventTempAccuracy(int weapon, float accuracy);
 void CG_LoadMenus(const char* menuFile);
 void CG_KeyEvent(int key, qboolean down);
 void CG_MouseEvent(int x, int y);
 void CG_EventHandling(int type);
-void CG_RankRunFrame(void);
+void CG_RankRunFrame(void); // wtf?
 void CG_SetScoreSelection(void* menu);
-score_t* CG_GetSelectedScore(void);
+// score_t* CG_GetSelectedScore(void);
 void CG_BuildSpectatorString(void);
 
 char* CG_OSPGetCvarName(vmCvar_t* cvar) ;
@@ -2328,6 +2350,7 @@ typedef struct
 void CG_AdjustFrom640(float* x, float* y, float* w, float* h);
 void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean correctWide);
 void CG_FillRect(float x, float y, float width, float height, const float* color);
+void CG_DrawHealthBar(float x, float y, float width, float height, int health, int armor, float alpha, int fontIndex, qboolean useCvarTextStyle);
 void CG_DrawPicOld(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader);
@@ -2412,6 +2435,7 @@ float*   CG_FadeColor(int startMsec, int totalMsec);
 float* CG_TeamColor(int team);
 void CG_TileClear(void);
 void CG_ColorForHealth(vec4_t hcolor, char* color);
+int CG_GetTotalHitPoints(int health, int armor);
 void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor);
 void CG_UpdateHealthLowFlag(void);
 
@@ -2514,7 +2538,8 @@ enum
 	PI_FROZEN      = 8,
 	PI_ICON      = 16,
 	PI_SPECTATOR = 32,
-	PI_WEAPON = 64
+	PI_STATS_BARS = 64
+	// PI_WEAPON = 128
 };
 
 //
@@ -2526,6 +2551,7 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 void CG_NewClientInfo(int clientNum);
 sfxHandle_t CG_CustomSound(int clientNum, const char* soundName);
 footstep_t CG_EffectiveFootsteps(int clientNum);
+void CG_ClearForcedSounds(void);
 void CG_LoadForcedSounds(void);
 void CG_UpdateAllClientsInfo(void);
 
@@ -2573,7 +2599,7 @@ void CG_PainEvent(centity_t* cent, int health);
 void CG_SetEntitySoundPosition(centity_t* cent);
 void CG_AddPacketEntities(void);
 void CG_Beam(centity_t* cent);
-void CG_AdjustPositionForMover(const vec3_t in, int moverNum, int fromTime, int toTime, vec3_t out);
+void CG_AdjustPositionForMover( const vec3_t in, int moverNum, int fromTime, int toTime, vec3_t out, vec3_t angles_in, vec3_t angles_out );
 
 void CG_PositionEntityOnTag(refEntity_t* entity, const refEntity_t* parent,
                             qhandle_t parentModel, char* tagName);
@@ -2586,11 +2612,13 @@ void CG_PositionRotatedEntityOnTag(refEntity_t* entity, const refEntity_t* paren
 // cg_weapons.c
 //
 
-#define DRAW_GUN_SHOW               1  // 000001
-#define DRAW_GUN_NO_MOVE_ANIMATION  2  // 000010
-#define DRAW_GUN_NO_SWITCH_ANIMATION 4  // 001000
-#define DRAW_GUN_NO_FIRE_ANIMATION  8 // 010000
-#define DRAW_GUN_GHOST              16  // 000100
+enum {
+	DRAW_GUN_SHOW               = 1,   /* 000001 */
+	DRAW_GUN_NO_MOVE_ANIMATION  = 2,   /* 000010 */
+	DRAW_GUN_NO_SWITCH_ANIMATION = 4,  /* 001000 */
+	DRAW_GUN_NO_FIRE_ANIMATION  = 8,   /* 010000 */
+	DRAW_GUN_GHOST              = 16   /* 000100 */
+};
 
 void CG_NextWeapon_f(void);
 void CG_PrevWeapon_f(void);
@@ -2710,6 +2738,10 @@ void CG_DrawOldTourneyScoreboard(void);
 void CG_BEStatsShowStatsInfo(void);
 void CG_RefillStatsRequestTokens(void);
 qboolean CG_TrySendStatsRequest(void);
+void CG_AddStatsRequestToken(void);
+void CG_RefillDstatusRequestTokens(void);
+qboolean CG_TrySendDstatusRequest(void);
+qboolean CG_GetDeadInFreeze(int clientNum);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
 
@@ -2758,6 +2790,8 @@ void CG_ShaderStateChanged(void);
 void CG_RemoveChatEscapeChar(char* text);
 void CG_RemoveChatEscapeCharAll(char* text);
 void CG_StringMakeEscapeCharRAW(const char* in, char* out, int max);
+void CG_GetOriginalHeadHandles(const clientInfo_t* ci, qhandle_t* outModel, qhandle_t* outSkin, qhandle_t* outIcon);
+qboolean CG_ClientSupportsTeamTask(int clientNum);
 //
 // cg_playerstate.c
 //
@@ -3028,7 +3062,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.01e" // BE (Black Edition)
+#define OSP_VERSION "be-1.01f-alpha4" // BE (Black Edition)
 
 
 
@@ -3253,6 +3287,8 @@ void CG_SelwheelParseTeamTaskWheel(void);
 // cg_localevents.c
 //
 void CG_UpdateMyTeam(void);
+void CG_UpdateVisualTeamColors(team_t realTeam);
+void CG_InvalidateVisualTeamColorsCache(void);
 
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cl_maxpackets(cvarTable_t* cvart);
@@ -3313,6 +3349,7 @@ void CG_LocalEventCvarChanged_ch_crosshairDecorActionScale(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ch_crosshairActionTime(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ch_crosshairDecorActionTime(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_damageIndicatorOpaque(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_bobup(cvarTable_t* cvart);
 
 void CG_LocalEventCvarChanged_cg_dlightGauntlet(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_dlightMG(cvarTable_t* cvart);
@@ -3365,6 +3402,7 @@ void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_accuracyFontSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
@@ -3372,6 +3410,7 @@ void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_customSound(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardRtColors(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardBtColors(cvarTable_t* cvart);
+void CG_RefreshScoreboardTeamColors(void);
 void CG_LocalEventCvarChanged_cg_scoreboardSpecColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
@@ -3380,12 +3419,14 @@ void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_brightWeaponsOpaque(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart);
 // void CG_LocalEventCvarChanged_cl_pitchspeed(cvarTable_t* cvart);
 // void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_entityOverpolate(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }
