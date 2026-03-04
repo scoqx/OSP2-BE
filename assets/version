@@ -1,13 +1,1 @@
-be-1.00u6
-+ UI BE Credits
-+ ui_beCreditsFont
-+ Loading screen version
-+ cg_infoVersionFont
-+ cg_railFix (test)
-+ cg_freezeSoundFix
-+ docs/teamTaskHelp_RU.txt
-* FPSClassico small fix
-* cg_drawRealHeads small fix
-* cg_teamIndicator HP/AP fade fix
-+ sound/player/bitterman/drown.wav
-+ lolkektest
+be-1.02

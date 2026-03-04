@@ -771,8 +771,8 @@ UI:
 11.02.2026 be v1.01e
 * +ttWheel cursor fix
 
-15.02.2026 be v1.01f
-
+04.03.2026 be v1.02
++ Emoji (OSP2)
 + cg_altRail 2-5 (devotion)
 + cg_altRailBeefy
 + cg_enhancedInterpolation
@@ -782,7 +782,7 @@ UI:
 + cg_teamIndicator 64 - health bars
 * cg_drawTeamOverlay 1 fix
 * SuperHUD: 
-  + Mirage: QuakeRaiders.cfg, cYpHeR.cfg. Updated: AGENT, m1rqlstyle, m1rQ4style
+  + Mirage: QuakeRaiders.cfg, cYpHeR.cfg, serious.cfg, spectator,cfg, SV. Updated: AGENT, m1rqlstyle, m1rQ4style
   + KONSTALKER: kon, kon_demo
   + Sib Vassek: SV_hud2.cfg
   * zoti.cfg updated
