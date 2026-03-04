@@ -773,6 +773,7 @@ UI:
 
 04.03.2026 be v1.02
 + Emoji (OSP2)
++ +autojump
 + cg_altRail 2-5 (devotion)
 + cg_altRailBeefy
 + cg_enhancedInterpolation
