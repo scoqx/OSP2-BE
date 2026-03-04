@@ -2383,6 +2383,7 @@ typedef struct
 	qhandle_t shader;
 } emoji_t;
 const emoji_t* CG_OSPGetEmoji(const char* name);
+void CG_OSPLoadEmoji(void);
 
 #define OSP_TEXT_CMD_MAX 2048
 
