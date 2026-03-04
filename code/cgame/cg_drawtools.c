@@ -3796,7 +3796,14 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 							trap_R_SetColor(currentTextColor);
 							textColorChanged = 0;
 						}
+						{
+							vec4_t tmp_color;
+							Vector4Copy(colorWhite, tmp_color);
+							tmp_color[3] = currentTextColor[3];
+							trap_R_SetColor(tmp_color);
+						}
 						trap_R_DrawStretchPic(ax, ay, aw1, ah, 0, 0, 1, 1, curr->value.shader);
+						trap_R_SetColor(currentTextColor);
 					}
 					ax += aw1;
 					if (ax >= vidWidth)
