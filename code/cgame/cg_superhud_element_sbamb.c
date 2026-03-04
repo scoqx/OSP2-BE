@@ -67,7 +67,6 @@ void CG_SHUDElementSBAmBRoutine(void* context)
 	if (wp == WP_NONE || wp == WP_GAUNTLET) return;
 
 	ammo = CG_SHUDGetAmmo(wp);
-	ammoOverflow = ammo > element->maxammo[wp];
 
 	/* Get the maximum ammo for current weapon - must be exactly what we set */
 	{

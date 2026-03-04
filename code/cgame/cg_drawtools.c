@@ -582,7 +582,7 @@ void CG_OSPDrawStringPrepare(const char* from, char* to, int size)
 }
 
 
-text_command_t* CG_CompileText(const char* in)
+text_command_t* CG_CompileText(const char* in, int flags)
 {
 	int b;
 	text_command_t* commands;
@@ -596,6 +596,7 @@ text_command_t* CG_CompileText(const char* in)
 	qboolean top_color_was_set = qfalse;
 	float rc, gc, bc;
 	unsigned int color_index;
+	const emoji_t* em;
 
 	if (!in || *in == 0)
 	{
@@ -731,6 +732,18 @@ text_command_t* CG_CompileText(const char* in)
 		}
 		else
 		{
+			if ((flags & DS_EMOJI) && (unsigned char)text[0] == (unsigned char)EMOJI_CHAR)
+			{
+				em = CG_OSPGetEmoji(text);
+				if (em != NULL)
+				{
+					commands[i].type = OSP_TEXT_CMD_SHADER;
+					commands[i].value.shader = em->shader;
+					++i;
+					text += em->len;
+					continue;
+				}
+			}
 			commands[i].type = OSP_TEXT_CMD_CHAR;
 			commands[i].value.character = text[0];
 			++i;
@@ -1501,6 +1514,15 @@ static float DrawCompiledStringLength(const text_command_t* cmd, float aw, int p
 			{
 				x_end = ax + aw;
 			}
+
+			if (x_end >= cgs.glconfig.vidWidth)
+				break;
+
+			ax = x_end;
+		}
+		else if (curr->type == OSP_TEXT_CMD_SHADER)
+		{
+			x_end = ax + aw;
 
 			if (x_end >= cgs.glconfig.vidWidth)
 				break;
@@ -2911,6 +2933,16 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 
 			ax = x_end;
 		}
+		else if (curr->type == OSP_TEXT_CMD_SHADER)
+		{
+			ax += charWidth;
+
+			if (ax >= toWidth)
+			{
+				restricted = qtrue;
+				break;
+			}
+		}
 		else if (curr->type == OSP_TEXT_CMD_STOP)
 		{
 			break;
@@ -2922,7 +2954,7 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 		while (i > 0)
 		{
 			float dotSize = GetSymbolSize('.', proportional, charWidth);
-			float prevSize = GetSymbolSize(cmd[i - 1].value.character, proportional, charWidth);
+			float prevSize = (cmd[i - 1].type == OSP_TEXT_CMD_SHADER) ? charWidth : GetSymbolSize(cmd[i - 1].value.character, proportional, charWidth);
 
 			if ((ax - prevSize + dotSize) <= toWidth)
 			{
@@ -2964,7 +2996,7 @@ static float RestrictCompiledStringChars(text_command_t* cmd, int maxChars)
 	{
 		curr = &cmd[i];
 
-		if (curr->type == OSP_TEXT_CMD_CHAR)
+		if (curr->type == OSP_TEXT_CMD_CHAR || curr->type == OSP_TEXT_CMD_SHADER)
 		{
 			chars++;
 			if (chars >= maxChars)
@@ -2984,6 +3016,11 @@ static float RestrictCompiledStringChars(text_command_t* cmd, int maxChars)
 		curr = &cmd[i];
 		if (curr->type == OSP_TEXT_CMD_CHAR)
 		{
+			curr->value.character = '.';
+		}
+		else if (curr->type == OSP_TEXT_CMD_SHADER)
+		{
+			curr->type = OSP_TEXT_CMD_CHAR;
 			curr->value.character = '.';
 		}
 
@@ -3006,7 +3043,7 @@ int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int t
 		return 0;
 	}
 
-	text_commands = CG_CompileText(string);
+	text_commands = CG_CompileText(string, flags);
 	if (!text_commands)
 	{
 		return 0;
@@ -3040,7 +3077,7 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 		return;
 
 
-	text_commands = CG_CompileText(string);
+	text_commands = CG_CompileText(string, flags);
 	if (!text_commands)
 	{
 		return;
@@ -3155,6 +3192,14 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 					}
 					trap_R_SetColor(color);
 					break;
+				case OSP_TEXT_CMD_SHADER:
+					aw1 = ah;
+					x_end = ax + ah;
+					if (ax >= cgs.glconfig.vidWidth)
+						break;
+					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, 0, 0, 1, 1, curr->value.shader);
+					ax = x_end;
+					break;
 				case OSP_TEXT_CMD_FADE:
 					fade = curr->value.fade;
 					color[3] = fade;
@@ -3221,6 +3266,21 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 					color[3] = setColor[3];
 				}
 				trap_R_SetColor(color);
+				break;
+			case OSP_TEXT_CMD_SHADER:
+				aw1 = ah;
+				x_end = ax + ah;
+				if (ax >= cgs.glconfig.vidWidth)
+					break;
+				{
+					vec4_t tmp_color;
+					Vector4Copy(colorWhite, tmp_color);
+					tmp_color[3] = color[3];
+					trap_R_SetColor(tmp_color);
+				}
+				trap_R_DrawStretchPic(ax, ay, aw1, ah, 0, 0, 1, 1, curr->value.shader);
+				trap_R_SetColor(color);
+				ax = x_end;
 				break;
 			case OSP_TEXT_CMD_FADE:
 				fade = curr->value.fade;
@@ -3529,7 +3589,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	if (!string)
 		return;
 
-	text_commands = CG_CompileText(string);
+	text_commands = CG_CompileText(string, flags);
 	if (!text_commands)
 		return;
 
@@ -3717,6 +3777,31 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 						break;
 				}
 				break;
+
+				case OSP_TEXT_CMD_SHADER:
+					aw1 = ah;
+					if (pass == 0)
+					{
+						if (shadowColorChanged)
+						{
+							trap_R_SetColor(currentShadowColor);
+							shadowColorChanged = 0;
+						}
+						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, 0, 0, 1, 1, curr->value.shader);
+					}
+					if (pass == 1)
+					{
+						if (textColorChanged)
+						{
+							trap_R_SetColor(currentTextColor);
+							textColorChanged = 0;
+						}
+						trap_R_DrawStretchPic(ax, ay, aw1, ah, 0, 0, 1, 1, curr->value.shader);
+					}
+					ax += aw1;
+					if (ax >= vidWidth)
+						break;
+					break;
 
 				case OSP_TEXT_CMD_SHADOW_COLOR:
 					if (pass == 0)

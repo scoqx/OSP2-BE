@@ -50,7 +50,7 @@ CG_SRC = \
  l_crc \
  cg_chatfilter cg_teamtaskfilter cg_crosshair \
  cg_be_util cg_be_stats \
- cg_emoji \
+ cg_emoji
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \
 ui_gameinfo ui_atoms ui_colorparse ui_cinematics ui_connect ui_controls2 ui_demo2 \

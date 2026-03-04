@@ -2375,7 +2375,14 @@ qboolean CG_WorldToScreen(const vec3_t world, float* x, float* y);
 void CG_OSPAdjustTeamColor(const vec4_t inColor, vec4_t outColor);
 void CG_OSPAdjustTeamColorBEStats(const vec4_t inColor, vec4_t outColor);
 
-
+#define EMOJI_CHAR ':'
+typedef struct
+{
+	int len;
+	char name[MAX_NAME_LENGTH];
+	qhandle_t shader;
+} emoji_t;
+const emoji_t* CG_OSPGetEmoji(const char* name);
 
 #define OSP_TEXT_CMD_MAX 2048
 
@@ -2386,6 +2393,7 @@ typedef enum
 	OSP_TEXT_CMD_FADE,
 	OSP_TEXT_CMD_TEXT_COLOR,
 	OSP_TEXT_CMD_SHADOW_COLOR,
+	OSP_TEXT_CMD_SHADER,
 } text_command_type_t;
 
 typedef struct
@@ -2396,10 +2404,11 @@ typedef struct
 		char character;
 		float fade;
 		vec4_t color;
+		qhandle_t shader;
 	} value;
 } text_command_t;
 
-text_command_t* CG_CompileText(const char* text);
+text_command_t* CG_CompileText(const char* text, int flags);
 void CG_CompiledTextDestroy(text_command_t* root);
 void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale, int colored);
 
@@ -2418,6 +2427,7 @@ enum
 	DS_VTOP         = 0x20,// vertical top
 	DS_VCENTER      = 0x40,// vertical center
 	DS_MAX_WIDTH_IS_CHARS = 0x80,// flag for calculation
+	DS_EMOJI        = 0x160,// allow emoji
 };
 void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxChars, int flags);
 
@@ -3062,7 +3072,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.01f-alpha4" // BE (Black Edition)
+#define OSP_VERSION "be-1.02" // BE (Black Edition)
 
 
 

@@ -205,8 +205,8 @@ static void CG_AutoJumpDown_f(void)
 		trap_SendConsoleCommand("+moveup");
 		return;
 	}
-	/* when crouching, don't turbo-jump: behave like normal +moveup (no per-frame alternation) */
-	if (cg.predictedPlayerState.pm_flags & PMF_DUCKED)
+	/* if predicted player is not us or we are crouching, don't turbo-jump: behave like normal +moveup (no per-frame alternation) */
+	if (cg.predictedPlayerState.clientNum != cg.clientNum || (cg.predictedPlayerState.pm_flags & PMF_DUCKED))
 	{
 		trap_SendConsoleCommand("+moveup");
 		return;

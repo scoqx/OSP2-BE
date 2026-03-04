@@ -364,7 +364,19 @@ void CG_CheckPlayerstateEvents(playerState_t* ps, playerState_t* ops)
 			event = ps->events[ i & (MAX_PS_EVENTS - 1) ];
 			cent->currentState.event = event;
 			cent->currentState.eventParm = ps->eventParms[ i & (MAX_PS_EVENTS - 1) ];
-			CG_EntityEvent(cent, cent->lerpOrigin);
+
+			/* Predict path: throttle own jump sound when autojump is active (~10/s) */
+			if (event == EV_JUMP && CG_BE_FEATURE_ENABLED(CG_BE_AUTOJUMP))
+			{
+				static int lastPredictedJumpSoundTime = 0;
+				if (cg.time - lastPredictedJumpSoundTime >= 100)
+				{
+					lastPredictedJumpSoundTime = cg.time;
+					CG_EntityEvent(cent, cent->lerpOrigin);
+				}
+			}
+			else
+				CG_EntityEvent(cent, cent->lerpOrigin);
 
 			cg.predictableEvents[ i & (MAX_PREDICTED_EVENTS - 1) ] = event;
 
