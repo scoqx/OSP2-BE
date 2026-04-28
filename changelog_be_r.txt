@@ -1,3 +1,119 @@
+28.04.2026 be v1.03
++ /emojilist (2/3/..)
++ printUI emoji support
++ cg_scoreboardBE bitmask 16 - hide team score
+* cg_drawHitBox: no longer requires server permission; works unless explicitly disabled
+* SuperHUD: 
+  + element 'recordingdemo' 
+  * M1rage: all config updated
+  + zoti hud updated
++ Rounded squares images square11.tga, square12.tga, square13.tga, square14.tga, square21.tga, square31.tga, square41.tga
+
+04.03.2026 be v1.02
++ Emoji (OSP2)
++ +autojump
++ cg_altRail 2-5 (devotion)
++ cg_altRailBeefy
++ cg_enhancedInterpolation
++ cg_entityOverpolate
++ cg_teamHealthBar
++ cg_healthBarStyle
++ cg_teamIndicator 64 - health bars
+* cg_drawTeamOverlay 1 fix
+* SuperHUD: 
+  + Mirage: QuakeRaiders.cfg, cYpHeR.cfg, serious.cfg, spectator,cfg, SV. Updated: AGENT, m1rqlstyle, m1rQ4style
+  + KONSTALKER: kon, kon_demo
+  + Sib Vassek: SV_hud2.cfg
+  * zoti.cfg updated
+  * Team1-16. Style 1 - compact. Name block width is now configurable via 'rect' (w).
+* MiniScores (shud/osphud) fix
+* Q3MSK FREEZE: Compatibility update for improved server logic
+  (dead player states are now always displayed correctly in the scoreboard)
+* various fixes
+* cg_exec* commands fix
+*UI:
+  + ui_infoDetail
+  + server17-32
+  + Map search in the map selection menu
+  * New map grid
+  * Updated scrolling in Demo list: default — 1 line, Ctrl + mouse wheel — 6 lines
+  * Visual fixes
+
+11.02.2026 be v1.01e
+* +ttWheel cursor fix
+
+10.02.2026 be v1.01d1
++ alt lightnings 4-11
+- ui_menuHQ
+
+09.02.2026 be v1.01c
+TEAMTASKS:
+  + missing hudMarkers icons
+  * overHead icons now are sprites
+UI:
+  + Music in OSP2-BE Credits
+  + ui_menuBgStyle  
+  + ui_shudListFont
+  + ui_banner 2
+  + ui_bannerColor
+  + ui_framesFullscreen (not for players)
++ Grappling hook shaders (offhand)
++ SuperHUD teamoverlay border/bordercolor
++ cg_ignoreServerMessages bitmask 8 - hide Backpack messages
++ /reconnect fix (vid_restart does not reset it)
++ cg_footsteps unlocked + 2 - disable metal surface sound
++ cg_altPlasma 3 - QL-like
++ cg_infoDetail
+* cg_mySound/cg_teamSound/cg_enemySound restore + footstep fix
+* +wstats delay fix
+- cg_myTeam
+- cg_giveName
+- cg_exec_onDeath
+- cg_exec_weapons for only local player.
+- /testgun
+- /testmodel
+- /nextframe
+- /prevframe
+- /nextskin
+- /prevskin
+
+03.02.2026 be v1.01beta3
+* Major perfomance optimization
+- cg_drawAmmoWarning: 2 (legacy OSP) removed
++ ui_menuHQ
++ ui_forceGamma
++ ui_themeColor
++ ui_themeColor2
++ ui_selectionColor
++ menu/art/menu/art/font2_propNew.tga
++ ui_serverNameThemeColor
++ ui_menuDarken
+
+30.01.2026 be v1.00x4
+* Major performance optimization
+
+29.01.2026 be v1.00v1
+SuperHUD:
+  * configs title updated
+  * m1rQ4style, m1rQLstyle, AGENT, ChikiPiki, Elite, California updated
+* beconfigs/customConfig_%.cfg -> /get% (description in docs/client_info.txt)
++ /reply (/tell reply)
+* teamoverlay/teamoverlay2 register fix
+- CherryHUD removed
+
+26.01.2025 be v1.00u5
++ UI BE Credits
++ ui_beCreditsFont
++ Loading screen version
++ cg_infoVersionFont
++ cg_railFix (test)
++ cg_freezeSoundFix
++ docs/teamTaskHelp_RU.txt
+* FPSClassico small fix
+* cg_drawRealHeads small fix
+* cg_teamIndicator HP/AP fade fix
++ sound/player/bitterman/drown.wav
+
 23.01.2025 be v1.00t5
 TEAMTASKS:
   * IMPORTANT FIX FOR COMMON TASKS (Attack, Defence, Watch, Location)
@@ -678,7 +794,7 @@ SHUD:
 
 + various fixes
 
-27.05.2025 be v 0.01
+27.05.2025 be v0.01
 + cg_itemsRespawnAnimation
 + cg_drawDamage (3/4)
 + cg_enemyLightningColor

@@ -2857,7 +2857,7 @@ void CG_OSPDrawNewCredits(void)
 		"Special thanks to:",
 		"Snems, Kr3m, Mirage, Mus1n",
 		"MrX, Zenx, Tuborg, Meta, Konstalker",
-		"enq3, John Coffey, Maked"
+		"enq3, John Coffey, Maked, Roskoshny"
 		"",
 		"Based on source codes:",
 		"OSP   ^Bhttps://www.orangesmoothie.org",
