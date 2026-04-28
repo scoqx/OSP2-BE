@@ -631,6 +631,7 @@ typedef struct cgFontIndices_s
 	int centerMessages;
 	int infoVersion;
 	int bestats;
+	int emojiList;
 } cgFontIndices_t;
 
 /* Runtime printui entry: startTime = cg.time, duration/fade, active; updated every frame */
@@ -1513,7 +1514,8 @@ typedef struct
 #define CG_BE_TEAM_FROZEN       (1 << 14) // 16384
 #define CG_BE_HUD_MARKERS       (1 << 15) // 32768
 #define CG_BE_METAL_FOOTSTEPS   (1 << 16) // 65536
-#define CG_BE_AUTOJUMP         (1 << 17) // 131072
+#define CG_BE_AUTOJUMP          (1 << 17) // 131072
+#define CG_BE_HITBOX            (1 << 18) // 262144
 
 // Team task flags (bitmask for cg_teamTask)
 #define CG_TEAMTASK_ENABLED        (1 << 0)  // 1 - Enable team task markers
@@ -1549,7 +1551,6 @@ typedef struct cgs_osp_s
 	int serverConfigMaximumTimenudge;
 	int serverConfigMinimumMaxpackets;
 	int serverConfigMaximumMaxpackets;
-	int serverConfigXHitBox;
 	int nextCvarsUpdateTime;
 	// int cvarsUpdateDelay;
 	qboolean isOSPv1;
@@ -2231,6 +2232,7 @@ extern vmCvar_t        cg_enhancedInterpolation;
 extern vmCvar_t        cg_entityOverpolate;
 extern vmCvar_t           cg_teamHealthBar;
 extern vmCvar_t        cg_healthBarStyle;
+extern vmCvar_t        cg_emojiListFont;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2326,6 +2328,7 @@ void CG_AddBufferedSound(sfxHandle_t sfx);
 void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoPlayback);
 float CG_DrawLagometer(float pos);
 void CG_SetCvarDescription(const char* name, const char* description);
+qboolean CG_IsRecordingDemo(void);
 
 
 //
@@ -2384,6 +2387,8 @@ typedef struct
 } emoji_t;
 const emoji_t* CG_OSPGetEmoji(const char* name);
 void CG_OSPLoadEmoji(void);
+void CG_OSPEmojiList_f(void);
+void CG_OSPDrawEmojiListOverlay(void);
 
 #define OSP_TEXT_CMD_MAX 2048
 
@@ -2871,6 +2876,7 @@ void        trap_Print(const char* fmt);
 // Use them as wrappers, pass acquired function address to `cmd` to make actual call.
 int     trap_CG_GetValue_Q3E(int cmd, char* value, int valueSize, const char* key);
 int     trap_CG_SetDescription_Q3E(int cmd, const char* name, const char* description);
+int     trap_IsRecordingDemo_Q3E(int cmd);
 
 #endif
 
@@ -3073,7 +3079,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.02" // BE (Black Edition)
+#define OSP_VERSION "be-1.03" // BE (Black Edition)
 
 
 
@@ -3148,7 +3154,6 @@ void CG_OSPConfigCustomClientSet(int value);
 void CG_OSPConfigCustomClient2Set(int value);
 void CG_OSPConfigModeSet(int value);
 void CG_OSPConfigFreezeModeSet(int value);
-void CG_OSPConfigXHitBoxSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
 // void CG_OSPSupportedBEServer(qboolean value);
 void CG_PrintDisabledFeatures(qboolean request);
@@ -3373,7 +3378,6 @@ void CG_LocalEventCvarChanged_cg_dlightPG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_dlightBFG(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_conObituaries(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart);
-void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_hitBoxColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_damageDrawFrame(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_damageFrameSize(cvarTable_t* cvart);
@@ -3403,6 +3407,7 @@ void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_emojiListFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ReloadTeamTaskWheel(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskThemeColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart);

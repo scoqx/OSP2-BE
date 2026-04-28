@@ -233,31 +233,6 @@ void CG_OSPConfigMaxTimenudgeSet(int value)
 	CG_CvarTouch("cl_timenudge");
 }
 
-void CG_OSPConfigXHitBoxSet(int value)
-{
-	const char* config;
-	const char* hitboxStr;
-
-	config = CG_ConfigString(XQ3E_ALLOW_FEATURES);
-	hitboxStr = Info_ValueForKey(config, "x_hck_ps_enemy_hitbox");
-
-	if (hitboxStr && atoi(hitboxStr) == 1)
-	{
-		value = atoi(hitboxStr);
-	}
-	else
-	{
-		value = 0;
-	}
-
-	// ignore x_hck if cheats are enabled/server is local
-	if (cgs.cheatsEnabled || cgs.localServer)
-	{
-		value = 1;
-	}
-	cgs.osp.serverConfigXHitBox = value;
-}
-
 // Supported OSP2-BE server
 // void CG_OSPSupportedBEServer(qboolean value)
 // {

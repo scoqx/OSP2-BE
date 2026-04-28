@@ -97,7 +97,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | playerStats_DR_icon           | Иконка для количества полученного урона                      |
 | playerStats_damage_ratio      | Коэфициент урона                                             |
 | player_name                   | Имя игрока                                                   |
-| spectators                    | Наблюдатели, только на поддерживаемых серверах               |
+| recordingdemo                 | Индикатор записи демо (REC).                                 |
 
 ## Команды
 
@@ -353,6 +353,12 @@ fps {
 
 - Style 1 - ММ.ДД.ГГГГ (MM.DD.YYYY)
 
+## recordingdemo
+
+- Style 1 - мигающий режим (элемент периодически скрывается/показывается).
+- Можно задать своё изображение через `image "image/shader path"`.
+- Можно задать текст через `text "text"`.
+
 ## FPS
 
 - Style 1 - число FPS без суффикса "fps"
@@ -362,5 +368,5 @@ fps {
 - style 2 - убрать надпись "Spectators:"
 
 ## team1-16 (team overlay)
-- style 1 - компактный режим, выводится только ник и здоровье
+- Style 1 - компактный режим, выводится только ник и здоровье
 - rect x y w h - аргумент w задаёт ширину области, в пределах которой отображается ник

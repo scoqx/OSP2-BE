@@ -542,9 +542,6 @@ static void CG_ConfigStringModified(void)
 			CG_UpdateBeFeatures();
 			CG_UpdateDamageInfoAllowed();
 			break;
-		case XQ3E_ALLOW_FEATURES:
-			CG_OSPConfigXHitBoxSet(atoi(str));
-			break;
 		default:
 			if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 			{

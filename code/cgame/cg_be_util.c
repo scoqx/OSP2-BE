@@ -107,6 +107,8 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_ENEMYLIGHTNING, changed = qtrue;
 		if (anyFbSkin || cg_drawBrightWeapons.integer)
 			beFlags |= CG_BE_FULLBRIGHT, changed = qtrue;
+		if (cg_drawHitBox.integer)
+			beFlags |= CG_BE_HITBOX, changed = qtrue;
 		if (cg_teamTask.integer)
 			beFlags |= CG_BE_TEAMTASKS, changed = qtrue;
 		if (cg_noExplosions.integer)
@@ -162,6 +164,9 @@ void CG_UpdateFontIndices(void)
 	newVal = CG_FontIndexFromCvar(&cg_bestats_font);
 	if (newVal != cgFontIndices.bestats)
 		cgFontIndices.bestats = newVal;
+	newVal = CG_FontIndexFromCvar(&cg_emojiListFont);
+	if (newVal != cgFontIndices.emojiList)
+		cgFontIndices.emojiList = newVal;
 }
 
 void CG_PrintDisabledFeatures(qboolean request)

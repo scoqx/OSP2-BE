@@ -551,6 +551,10 @@ void* CG_SHUDElementSpecMessageCreate(const superhudConfig_t* config);
 void CG_SHUDElementSpecMessageRoutine(void* context);
 void CG_SHUDElementSpecMessageDestroy(void* context);
 
+void* CG_SHUDElementRecordMessageCreate(const superhudConfig_t* config);
+void CG_SHUDElementRecordMessageRoutine(void* context);
+void CG_SHUDElementRecordMessageDestroy(void* context);
+
 void* CG_SHUDElementFollowMessageCreate(const superhudConfig_t* config);
 void CG_SHUDElementFollowMessageRoutine(void* context);
 void CG_SHUDElementFollowMessageDestroy(void* context);

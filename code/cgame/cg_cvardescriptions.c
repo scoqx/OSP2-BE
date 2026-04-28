@@ -306,7 +306,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_damageFrameSize", "Thickness for ^3cg_damageDrawFrame^7\n  ^21^7 - ^2512^7" },
 	{ "cg_damageFrameOpaque", "Opacity for ^3cg_damageDrawFrame^7\n  ^20^7 - ^21^7" },
 	{ "cg_shud_currentWeapons", "Weapon selection for the SHUD element. Bitmask:\n  ^21^7 - Gauntlet\n  ^22^7 - Machine Gun\n  ^24^7 - Shotgun\n  ^28^7 - Grenade Launcher\n  ^216^7 - Rocket Launcher\n  ^232^7 - Lightning Gun\n  ^264^7 - Railgun\n  ^2128^7 - Plasma Gun" },
-	{ "cg_drawHitBox", "Draw hitboxes. Server permission required\n  ^20^7 - disabled\n  ^21^7 - bounding edges\n  ^22^7 -solid color++\n  ^23^7 - solid color" },
+	{ "cg_drawHitBox", "Draw hitboxes.\n  ^20^7 - disabled\n  ^21^7 - bounding edges\n  ^22^7 -solid color++\n  ^23^7 - solid color" },
 	{ "cg_hitBoxColor", "Set color for ^3cg_drawHitBox ^2\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_drawGunForceAspect", "Fix weapon stretching when using 4:3 aspect ratio on widescreen. Set ^20^7 to disable." },
 	{ "cg_drawOutline", "Set player outline rendering mode. Use ^3cg_enemyOutline*^7 and ^3cg_teamOutline*^7 to change colors and style.\n  ^20^7 - disabled\n  ^21^7 - enemies only\n  ^22^7 - teammates only\n  ^23^7 - all players" },
@@ -342,7 +342,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamIndicatorMaxLength", "Maximum allowed length of the player name in the indicator" },
 	{ "cg_teamIndicatorFontSize", "Team indicator font size. One number - width and height are the same, two numbers - width and height separately.\n  ^2W^7 or ^2W H^7" },
 	{ "cg_teamIndicatorFont", "Font selection for team indicator\n  ^20^7 - ^210^7" },
-	{ "cg_scoreboardBE", "Enable alternative OSP scoreboard. Set 20^7 to use default scoreboard.\n ^21^7 - proportional font\n  ^22^7 - old style team scores\n  ^24^7 - white colored titles\n  ^28^7 - team colored titles" },
+	{ "cg_scoreboardBE", "Enable alternative OSP scoreboard. Set ^20^7 to use default scoreboard.\n  ^21^7 - proportional font\n  ^22^7 - old style team scores\n  ^24^7 - white colored titles\n  ^28^7 - team colored titles\n  ^216^7 - hide large team score numbers" },
 	{ "cg_scoreboardFont", "Font selection for alternative scoreboard\n  ^20^7 - ^210^7" },
 	{ "cg_scoreboardScale", "Scale factor for the scoreboard size. ^21.0^7 - default size, higher values make it larger." },
 	{ "cg_centerMessagesFont", "Font selection for center messages\n  ^20^7 - ^210^7" },
@@ -450,6 +450,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_entityOverpolate", "Interpolation offset when ^3cg_enhancedInterpolation^7 is ^21^7. Range ^2-1^7 to ^21^7 (slight forward extrapolation). Set ^20^7 for default." },
 	{ "cg_healthBarStyle", "Health bar style, bitmask. Frame applies everywhere; text color and shadow only for standard overlay and teamIndicator (not SuperHUD).\n  ^20^7 - no modifiers\n  ^21^7 - white frame\n  ^22^7 - black frame\n  ^24^7 - black text\n  ^28^7 - text shadow" },
 	{ "cg_teamHealthBar", "Health/armor bar in team overlay only.\n  ^20^7 - values only\n  ^21^7 - bar only\n  ^22^7 - bar and values" },
+	{ "cg_emojiListFont", "Font for on-screen emoji list. Values:\n  ^20^7 - ^210^7" },
 };
 
 

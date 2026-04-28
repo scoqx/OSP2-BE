@@ -535,17 +535,6 @@ void CG_LocalEventCvarChanged_cg_enemyLightningColor(cvarTable_t* cvart)
 	CG_UpdateAllClientsInfo();
 }
 
-void CG_LocalEventCvarChanged_cg_drawHitBox(cvarTable_t* cvart)
-{
-	if (cgs.osp.serverConfigXHitBox != 1 && cg_drawHitBox.integer)
-	{
-		if (!cg.demoPlayback)
-		{
-			CG_Printf("^3HitBox is disabled on this server.\n");
-		}
-	}
-}
-
 void CG_LocalEventCvarChanged_cg_hitBoxColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cg.beHitBoxColor);
@@ -725,6 +714,16 @@ void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart)
 	if (!CG_FontAvailable(fontIndex))
 	{
 		trap_Cvar_Set("cg_infoVersionFont", "2");
+	}
+	CG_UpdateFontIndices();
+}
+void CG_LocalEventCvarChanged_cg_emojiListFont(cvarTable_t* cvart)
+{
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
+	{
+		trap_Cvar_Set("cg_emojiListFont", "2");
 	}
 	CG_UpdateFontIndices();
 }

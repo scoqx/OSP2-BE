@@ -27,3 +27,13 @@
   * New map grid
   * Updated scrolling in Demo list: default — 1 line, Ctrl + mouse wheel — 6 lines
   * Visual fixes
+
+28.04.2026 be v1.03
++ /emojilist (2/3/..)
++ printUI emoji support
++ cg_scoreboardBE bitmask 16 (hide team score)
+* cg_drawHitBox: no longer requires server permission; works unless explicitly disabled
+* SuperHUD: 
+  + element 'recordingdemo' 
+  * M1rage: all config updated
++ Rounded squares images square11.tga, square12.tga, square13.tga, square14.tga, square21.tga, square31.tga, square41.tga

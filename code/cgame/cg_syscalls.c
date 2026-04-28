@@ -59,6 +59,11 @@ int     trap_CG_SetDescription_Q3E(int cmd, const char* name, const char* descri
 	return syscall(cmd, name, description);
 }
 
+int     trap_IsRecordingDemo_Q3E(int cmd)
+{
+	return syscall(cmd);
+}
+
 #endif
 
 void    trap_Print(const char* fmt)

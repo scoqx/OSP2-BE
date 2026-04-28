@@ -3155,17 +3155,9 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	// (KONSTALKER) hitbox offset for not render through map
 	const float hbox_offset = 1.0f;
 
-	if (!cg_drawHitBox.integer)
+	if (!cg_drawHitBox.integer || !CG_BE_FEATURE_ENABLED(CG_BE_HITBOX))
 	{
 		return;
-	}
-
-	if (!cg.demoPlayback)
-	{
-		if (!cgs.osp.serverConfigXHitBox)
-		{
-			return;
-		}
 	}
 
 	// get the player's client info

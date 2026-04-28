@@ -82,7 +82,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "powerup7_time", 0, CG_SHUDElementPwTime7Create, CG_SHUDElementPwRoutine, CG_SHUDElementPwDestroy },
 	{ "powerup8_time", 0, CG_SHUDElementPwTime8Create, CG_SHUDElementPwRoutine, CG_SHUDElementPwDestroy },
 	{ "rankmessage", 0, CG_SHUDElementRankMessageCreate, CG_SHUDElementRankMessageRoutine, CG_SHUDElementRankMessageDestroy},
-	{ "recordingdemo", 0, },
+	{ "recordingdemo", 0, CG_SHUDElementRecordMessageCreate, CG_SHUDElementRecordMessageRoutine, CG_SHUDElementRecordMessageDestroy },
 	{ "execute", 0, },
 	{ "exec", 0, },
 	{ "score_limit", 0, CG_SHUDElementScoreMAXCreate, CG_SHUDElementScoreRoutine, CG_SHUDElementScoreDestroy },

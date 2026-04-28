@@ -487,7 +487,7 @@ void CG_OSPClientConfig_f(void)
 	CG_Printf("    ^3Maxpackets minimum:          ^3%s\n", cgs.osp.serverConfigMinimumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	CG_Printf("    ^3Maxpackets maximum:          ^3%s\n", cgs.osp.serverConfigMaximumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
 	// CG_Printf("    ^3OSP2-BE ^3Supported server:    %s\n", CG_YES_NO_STR(cgs.beSupportedServer));
-	CG_Printf("    ^3HitBox (XQ3E):               %s\n", CG_YES_NO_STR(cgs.osp.serverConfigXHitBox));
+	CG_Printf("    ^3HitBox (BE):                 %s\n", CG_YES_NO_STR(CG_BE_FEATURE_ENABLED(CG_BE_HITBOX)));
 	// CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.beDisableFeatures));
 
 }
@@ -2114,6 +2114,7 @@ void CG_BEHelp_f(void)
 
 		CG_BEHelp_PrintFeature("cg_friendsWallhack", CG_BE_TEAM_FOE_WH, "Show teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_drawHudMarkers", CG_BE_HUD_MARKERS, "Display teammate markers on the HUD", 0);
+		CG_BEHelp_PrintFeature("cg_drawHitBox", CG_BE_HITBOX, "Draw enemy hitboxes", 0);
 		CG_BEHelp_PrintFeature("cg_friendsWallhackFrozen", CG_BE_TEAM_FROZEN, "Show frozen teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);
 		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color for enemies", 0);
@@ -2224,6 +2225,18 @@ static void CG_ColorCharList_f(void)
 	CG_Printf("\n");
 }
 
+static void CG_TestDemo_f(void)
+{
+	if (CG_IsRecordingDemo())
+	{
+		CG_Printf("^1Demo is Recording\n");
+	}
+	else
+	{
+		CG_Printf("^2Demo is not Recording\n");
+	}
+}
+
 typedef struct
 {
 	char*    cmd;
@@ -2249,6 +2262,7 @@ static consoleCommand_t commands[] =
 	{ "motd", CG_OSPMoTD_f },
 	{ "myname", CG_OSPMyName_f },
 	{ "serverversion", CG_OSPServerVersion_f },
+	{ "testdemo", CG_TestDemo_f },
 #if 0
 	{ "testgun", CG_TestGun_f },
 	{ "testmodel", CG_TestModel_f },
@@ -2342,6 +2356,7 @@ static consoleCommand_t commands[] =
 	// { "salist", cg_printsa_f },
 	{ "allowedfeatures", CG_BEdisabledFeatures_f },
 	{ "fonts", CG_Fonts_f },
+	{ "emojilist", CG_OSPEmojiList_f },
 	{ "printui", CG_PrintUI_f },
 	{ "tAttack", CG_TeamTaskMarkOffense },
 	{ "tDefence", CG_TeamTaskMarkDefence },

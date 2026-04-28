@@ -3202,7 +3202,12 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 					float h2 = barH * 0.8f;
 					float w2;
 					int hbStyle = cg_healthBarStyle.integer;
-					int statsFlags = ((hbStyle & HBAR_STYLE_SHADOW) ? DS_SHADOW : 0) | DS_PROPORTIONAL | DS_HCENTER | DS_VCENTER;
+					int statsFlags = DS_PROPORTIONAL | DS_HCENTER | DS_VCENTER;
+
+					if (hbStyle & HBAR_STYLE_SHADOW)
+					{
+						statsFlags |= DS_SHADOW;
+					}
 
 					if (h2 < 4.0f) h2 = 4.0f;
 					w2 = h2 * 0.8f;
@@ -3235,7 +3240,12 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 				float h2 = h - 2.0f;
 				float w2;
 				int hbStyle = cg_healthBarStyle.integer;
-				int statsFlags = ((hbStyle & HBAR_STYLE_SHADOW) ? DS_SHADOW : 0) | DS_PROPORTIONAL | DS_HCENTER;
+				int statsFlags = DS_PROPORTIONAL | DS_HCENTER;
+
+				if (hbStyle & HBAR_STYLE_SHADOW)
+				{
+					statsFlags |= DS_SHADOW;
+				}
 
 				if (h2 < 4.0f) h2 = 4.0f;
 				w2 = h2 * 0.8f;
@@ -3717,6 +3727,7 @@ void CG_DrawActive(stereoFrame_t stereoView)
 
 	/* Unified 2D: before-2D + main HUD (single entry, cached cvars, flat branches) */
 	CG_Draw2D();
+	CG_OSPDrawEmojiListOverlay();
 
 }
 

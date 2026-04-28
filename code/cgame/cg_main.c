@@ -568,6 +568,7 @@ vmCvar_t        cg_entityOverpolate;
 
 vmCvar_t           cg_teamHealthBar;
 vmCvar_t        cg_healthBarStyle;
+vmCvar_t        cg_emojiListFont;
 
 cgFontIndices_t cgFontIndices;
 
@@ -853,7 +854,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_damageFrameSize, "cg_damageFrameSize", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageFrameSize },
 	{ &cg_damageFrameOpaque, "cg_damageFrameOpaque", "0.65", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageFrameOpaque },
 	{ &cg_shud_currentWeapons, "cg_shud_currentWeapons", "226",  CVAR_ARCHIVE },
-	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawHitBox },
+	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_hitBoxColor, "cg_hitBoxColor", "004444", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_hitBoxColor },
 	{ &cg_drawGunForceAspect, "cg_drawGunForceAspect", "0", CVAR_ARCHIVE },
 	{ &cg_drawOutline, "cg_drawOutline", "3", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
@@ -942,7 +943,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "0", CVAR_ARCHIVE },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFade },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE, },
-	{ &be_features, "be_features", "", CVAR_ROM },
+	{ &be_features, "be_features", "", CVAR_ROM | CVAR_USERINFO },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE /* | CVAR_USERINFO */, CG_LocalEventBeFeaturesChanged },
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE },
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
@@ -1038,6 +1039,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_entityOverpolate, "cg_entityOverpolate", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_entityOverpolate },
 	{ &cg_teamHealthBar, "cg_teamHealthBar", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_healthBarStyle, "cg_healthBarStyle", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_emojiListFont, "cg_emojiListFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListFont },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -2923,7 +2925,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		}
 		// CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
 		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
-		CG_OSPConfigXHitBoxSet(atoi(CG_ConfigString(XQ3E_ALLOW_FEATURES)));
 
 		/* cache damageInfoAllowed - gametype, fpsclassico, custom_client_2, beDisableFeatures all known */
 		CG_UpdateDamageInfoAllowed();
@@ -3325,6 +3326,7 @@ static void trap_Cvar_SetDescription_local(const char* name, const char* descrip
 }
 typedef void (setCvarDescription_t)(const char* name, const char* description);
 typedef qboolean(trap_GetValue_t)(char* value, int valueSize, const char* key);
+typedef qboolean(trap_IsRecordingDemo_t)(void);
 
 
 // [meta]:
@@ -3406,3 +3408,68 @@ void CG_SetCvarDescription(const char* name, const char* description)
 }
 
 #endif
+
+
+qboolean CG_IsRecordingDemo(void)
+{
+#ifdef Q3_VM
+	static trap_IsRecordingDemo_t* isRecordingDemo = NULL;
+
+	if (!isRecordingDemo)
+	{
+		int addr;
+		char value[MAX_CVAR_VALUE_STRING];
+		trap_GetValue_t* trap_GetValue;
+
+		trap_Cvar_VariableStringBuffer("//trap_GetValue", value, sizeof(value));
+
+		if (value[0])
+		{
+			addr = atoi(value);
+			addr = ~addr;
+			trap_GetValue = (trap_GetValue_t*)(addr);
+
+			if (trap_GetValue(value, sizeof(value), "trap_IsRecordingDemo"))
+			{
+				addr = atoi(value);
+				addr = ~addr;
+				isRecordingDemo = (trap_IsRecordingDemo_t*)addr;
+			}
+		}
+	}
+
+	if (!isRecordingDemo)
+	{
+		return qfalse;
+	}
+
+	return isRecordingDemo();
+#else
+	static int isRecordingDemoFuncId = 0;
+	int getValueFuncId;
+	char value[MAX_CVAR_VALUE_STRING];
+
+	if (!isRecordingDemoFuncId)
+	{
+		isRecordingDemoFuncId = -1;
+		trap_Cvar_VariableStringBuffer("//trap_GetValue", value, sizeof(value));
+
+		if (value[0])
+		{
+			getValueFuncId = atoi(value);
+
+			if (trap_CG_GetValue_Q3E(getValueFuncId, value, sizeof(value), "trap_IsRecordingDemo"))
+			{
+				isRecordingDemoFuncId = atoi(value);
+			}
+		}
+	}
+
+	if (isRecordingDemoFuncId == -1)
+	{
+		return qfalse;
+	}
+
+	return (qboolean)trap_IsRecordingDemo_Q3E(isRecordingDemoFuncId);
+#endif
+}

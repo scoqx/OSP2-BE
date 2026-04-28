@@ -394,6 +394,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_powerup.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_pred.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_rankmessage.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_recordmessage.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_reward.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_sbab.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_sbac.o \
