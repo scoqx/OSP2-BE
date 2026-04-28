@@ -804,7 +804,7 @@ UI:
 28.04.2026 be v1.03
 + /emojilist (2/3/..)
 + printUI emoji support
-+ cg_scoreboardTeamScores 0/1
++ cg_scoreboardBE bitmask 16 - hide team score
 * cg_drawHitBox: no longer requires server permission; works unless explicitly disabled
 * SuperHUD: 
   + element 'recordingdemo' 
