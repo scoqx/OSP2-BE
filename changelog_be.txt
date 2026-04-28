@@ -801,7 +801,7 @@ UI:
   * Updated scrolling in Demo list: default — 1 line, Ctrl + mouse wheel — 6 lines
   * Visual fixes
 
-##.04.2026 be v1.03
+28.04.2026 be v1.03
 + /emojilist (2/3/..)
 + printUI emoji support
 + cg_scoreboardTeamScores 0/1
