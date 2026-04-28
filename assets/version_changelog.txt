@@ -6,4 +6,5 @@
 * SuperHUD: 
   + element 'recordingdemo' 
   * M1rage: all config updated
+  + zoti hud updated
 + Rounded squares images square11.tga, square12.tga, square13.tga, square14.tga, square21.tga, square31.tga, square41.tga
