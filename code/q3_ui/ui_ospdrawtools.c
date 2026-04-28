@@ -393,6 +393,22 @@ qboolean UI_FontAvailable(int index)
 	return qfalse;
 }
 
+qboolean UI_FontLoaded(int index)
+{
+	if (index < 0 || index >= fonts_num)
+	{
+		return qfalse;
+	}
+
+	/* Loaded fonts always have at least one registered shader image. */
+	if (fonts[index].shaderCount > 0)
+	{
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
 void UI_FontSelect(int index)
 {
 	if (UI_FontAvailable(index))

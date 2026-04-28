@@ -322,6 +322,7 @@ enum
 extern void UI_LoadFonts(void);
 extern void UI_FontSelect(int index);
 extern qboolean UI_FontAvailable(int index);
+extern qboolean UI_FontLoaded(int index);
 extern int UI_FontIndexFromName(const char* name);
 extern int UI_FontIndexFromCvar(vmCvar_t* cvar);
 extern int UI_GetFontCount(void);
