@@ -23,6 +23,8 @@
 
 static int			dp_realtime;
 static float		jumpHeight;
+static qhandle_t	uiCandleFlameShader;
+static qhandle_t	uiCandleFlameShaderBlue;
 
 
 /*
@@ -740,6 +742,141 @@ static void UI_AddFrozenOverlay( const refEntity_t *source, const playerInfo_t *
 	trap_R_AddRefEntityToScene( &overlay );
 }
 
+static void UI_DrawCandleAtTag( const refEntity_t *torso, qboolean blueFlame ) {
+	polyVert_t verts[4];
+	polyVert_t capVerts[16];
+	refEntity_t anchor;
+	refEntity_t flame;
+	vec3_t candleOrigin;
+	vec3_t p0Bottom;
+	vec3_t p1Bottom;
+	vec3_t p0Top;
+	vec3_t p1Top;
+	float radius;
+	float height;
+	float angle0;
+	float angle1;
+	float x0;
+	float y0;
+	float x1;
+	float y1;
+	float t;
+	int i;
+	int segments;
+
+	if ( !uiCandleFlameShader ) {
+		uiCandleFlameShader = trap_R_RegisterShaderNoMip( "textures/sfx/flame1" );
+	}
+	if ( !uiCandleFlameShaderBlue ) {
+		uiCandleFlameShaderBlue = trap_R_RegisterShaderNoMip( "textures/sfx/flameanim_dimmer" );
+	}
+
+	memset( &anchor, 0, sizeof( anchor ) );
+	UI_PositionEntityOnTag( &anchor, torso, torso->hModel, "tag_weapon" );
+	VectorCopy( anchor.origin, candleOrigin );
+	candleOrigin[2] -= 7.0f; /* Lower candle by 12 units to fit hands. */
+
+	radius = 1.2f;
+	height = 10.0f;
+	segments = 12;
+
+	for ( i = 0; i < segments; i++ ) {
+		angle0 = ( (float)i / (float)segments ) * ( 2.0f * M_PI );
+		angle1 = ( (float)( i + 1 ) / (float)segments ) * ( 2.0f * M_PI );
+		x0 = cos( angle0 ) * radius;
+		y0 = sin( angle0 ) * radius;
+		x1 = cos( angle1 ) * radius;
+		y1 = sin( angle1 ) * radius;
+		t = (float)i / (float)segments;
+
+		VectorSet( p0Bottom, candleOrigin[0] + x0, candleOrigin[1] + y0, candleOrigin[2] );
+		VectorSet( p1Bottom, candleOrigin[0] + x1, candleOrigin[1] + y1, candleOrigin[2] );
+		VectorSet( p0Top, candleOrigin[0] + x0, candleOrigin[1] + y0, candleOrigin[2] + height );
+		VectorSet( p1Top, candleOrigin[0] + x1, candleOrigin[1] + y1, candleOrigin[2] + height );
+
+		VectorCopy( p0Top, verts[0].xyz );
+		verts[0].st[0] = t;
+		verts[0].st[1] = 0;
+		verts[0].modulate[0] = 255;
+		verts[0].modulate[1] = 237;
+		verts[0].modulate[2] = 179;
+		verts[0].modulate[3] = 255;
+
+		VectorCopy( p0Bottom, verts[1].xyz );
+		verts[1].st[0] = t;
+		verts[1].st[1] = 1;
+		verts[1].modulate[0] = 255;
+		verts[1].modulate[1] = 237;
+		verts[1].modulate[2] = 179;
+		verts[1].modulate[3] = 255;
+
+		VectorCopy( p1Bottom, verts[2].xyz );
+		verts[2].st[0] = t + 1.0f / segments;
+		verts[2].st[1] = 1;
+		verts[2].modulate[0] = 255;
+		verts[2].modulate[1] = 237;
+		verts[2].modulate[2] = 179;
+		verts[2].modulate[3] = 255;
+
+		VectorCopy( p1Top, verts[3].xyz );
+		verts[3].st[0] = t + 1.0f / segments;
+		verts[3].st[1] = 0;
+		verts[3].modulate[0] = 255;
+		verts[3].modulate[1] = 237;
+		verts[3].modulate[2] = 179;
+		verts[3].modulate[3] = 255;
+
+		trap_R_AddPolyToScene( uis.whiteShader, 4, verts );
+	}
+
+	for ( i = 0; i < segments; i++ ) {
+		angle0 = ( (float)i / (float)segments ) * ( 2.0f * M_PI );
+		x0 = cos( angle0 ) * radius;
+		y0 = sin( angle0 ) * radius;
+
+		capVerts[i].xyz[0] = candleOrigin[0] + x0;
+		capVerts[i].xyz[1] = candleOrigin[1] + y0;
+		capVerts[i].xyz[2] = candleOrigin[2] + height;
+		capVerts[i].st[0] = 0.5f + x0 / ( 2.0f * radius );
+		capVerts[i].st[1] = 0.5f + y0 / ( 2.0f * radius );
+		capVerts[i].modulate[0] = 255;
+		capVerts[i].modulate[1] = 245;
+		capVerts[i].modulate[2] = 200;
+		capVerts[i].modulate[3] = 255;
+	}
+	trap_R_AddPolyToScene( uis.whiteShader, segments, capVerts );
+
+	for ( i = 0; i < segments; i++ ) {
+		angle0 = ( (float)i / (float)segments ) * ( 2.0f * M_PI );
+		x0 = cos( angle0 ) * radius;
+		y0 = sin( angle0 ) * radius;
+
+		capVerts[i].xyz[0] = candleOrigin[0] + x0;
+		capVerts[i].xyz[1] = candleOrigin[1] + y0;
+		capVerts[i].xyz[2] = candleOrigin[2];
+		capVerts[i].st[0] = 0.5f + x0 / ( 2.0f * radius );
+		capVerts[i].st[1] = 0.5f + y0 / ( 2.0f * radius );
+		capVerts[i].modulate[0] = 215;
+		capVerts[i].modulate[1] = 172;
+		capVerts[i].modulate[2] = 128;
+		capVerts[i].modulate[3] = 255;
+	}
+	trap_R_AddPolyToScene( uis.whiteShader, segments, capVerts );
+
+	memset( &flame, 0, sizeof( flame ) );
+	VectorCopy( candleOrigin, flame.origin );
+	flame.origin[2] += height + 3.0f;
+	flame.reType = RT_SPRITE;
+	flame.radius = 2.6f;
+	flame.customShader = blueFlame ? uiCandleFlameShaderBlue : uiCandleFlameShader;
+	flame.shaderRGBA[0] = 255;
+	flame.shaderRGBA[1] = blueFlame ? 180 : 170;
+	flame.shaderRGBA[2] = blueFlame ? 255 : 70;
+	flame.shaderRGBA[3] = 230;
+
+	trap_R_AddRefEntityToScene( &flame );
+}
+
 
 /*
 ===============
@@ -917,7 +1054,9 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 		//
 		// add the gun
 		//
-		if ( pi->currentWeapon != WP_NONE ) {
+		if ( pi->useCandleWeapon ) {
+			UI_DrawCandleAtTag( &torso, pi->useCustomWeaponColor );
+		} else if ( pi->currentWeapon != WP_NONE ) {
 			memset( &gun, 0, sizeof(gun) );
 			gun.hModel = pi->weaponModel;
 			VectorCopy( origin, gun.lightingOrigin );
@@ -936,7 +1075,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 		//
 		// add the spinning barrel
 		//
-		if ( pi->realWeapon == WP_MACHINEGUN || pi->realWeapon == WP_GAUNTLET || pi->realWeapon == WP_BFG ) {
+		if ( !pi->useCandleWeapon && ( pi->realWeapon == WP_MACHINEGUN || pi->realWeapon == WP_GAUNTLET || pi->realWeapon == WP_BFG ) ) {
 			vec3_t	angles;
 
 			memset( &barrel, 0, sizeof(barrel) );
@@ -961,7 +1100,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 		//
 		// add muzzle flash
 		//
-		if ( dp_realtime <= pi->muzzleFlashTime && pi->currentWeapon != WP_NONE ) {
+		if ( !pi->useCandleWeapon && dp_realtime <= pi->muzzleFlashTime && pi->currentWeapon != WP_NONE ) {
 			if ( pi->flashModel ) {
 				memset( &flash, 0, sizeof(flash) );
 				flash.hModel = pi->flashModel;

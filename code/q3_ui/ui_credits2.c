@@ -30,6 +30,8 @@ typedef struct {
 
 	playerInfo_t		playerinfo[7];
 	sfxHandle_t			nightmareSound;
+	sfxHandle_t			perfectSound;
+	sfxHandle_t			winnerSound;
 	sfxHandle_t			rocketFireSound;
 	sfxHandle_t			rocketFlySound;
 	sfxHandle_t			silenceSound;
@@ -50,6 +52,8 @@ static creditsmenu_t	s_credits2;
 static float y_pos = 0;
 static float y_step = DEFAULT_YSTEP;
 static char oldMusicVolume[16];
+static float creditsMusicLastVolume;
+static qboolean creditsMusicHover;
 static qboolean p_taunt;
 static qboolean p_stand;
 static int old_uis;
@@ -61,11 +65,29 @@ static qboolean rocketInFlight;
 static int explosionStartTime;
 static int gibStartTime;
 static qboolean rocketVictimAlive[3];
+static int rocketVictimDeathTime[3];
 static float gibVel[UI_EASTER_GIBS_COUNT][2];
 static qboolean rocketHasTarget;
 static vec2_t rocketStartPos;
 static vec2_t rocketEndPos;
 static vec2_t rocketImpactPos;
+static int sevenComboCount;
+static qboolean candleModeEnabled;
+static int candleModeActivatedTime;
+static qboolean finaleTriggered;
+static int perfectStartTime;
+static int winnerStartTime;
+static qboolean perfectPlayed;
+static qboolean winnerPlayed;
+static qboolean bonesWinAnimPlayed;
+static qhandle_t uiCreditsCandleFlameShader;
+static qhandle_t uiCreditsCandleFlameShaderBlue;
+
+#define CREDITS2_MUSIC_TRACK "music/TZ_Inc_Free_Song.ogg"
+#define CREDITS2_MUSIC_BTN_X 620
+#define CREDITS2_MUSIC_BTN_Y 462
+#define CREDITS2_MUSIC_BTN_W 72
+#define CREDITS2_MUSIC_BTN_H 18
 
 static const int rocketVictimModelIndices[3] = { 3, 4, 5 };
 static const float rocketVictimCenters[3][2] = {
@@ -76,6 +98,18 @@ static const float rocketVictimCenters[3][2] = {
 /* Muzzle point for Bones rocket launcher (aligned to tag_flash in credits pose). */
 #define BONES_MUZZLE_X 560.0f
 #define BONES_MUZZLE_Y 210.0f
+
+static void UI_CreditMenu2_SetCandleMode( qboolean enabled ) {
+	int i;
+
+	candleModeEnabled = enabled;
+	if ( enabled ) {
+		candleModeActivatedTime = uis.realtime;
+	}
+	for ( i = 0; i < 7; i++ ) {
+		s_credits2.playerinfo[i].useCandleWeapon = enabled;
+	}
+}
 
 static void UI_CreditMenu2_DrawRect640( float x, float y, float w, float h, const vec4_t color ) {
 	UI_FillRect( x, y, w, h, color );
@@ -91,15 +125,41 @@ static void UI_CreditMenu2_DrawShader640( float x, float y, float w, float h, qh
 	UI_SetColor( NULL );
 }
 
+
 static void UI_CreditMenu2_DrawRocketModel640( float x, float y, float yaw ) {
 	refdef_t refdef;
 	refEntity_t projectile;
+	refEntity_t flame;
+	polyVert_t verts[4];
+	polyVert_t capVerts[16];
 	vec3_t origin;
 	vec3_t angles;
+	vec3_t forward;
+	vec3_t right;
+	vec3_t up;
+	vec3_t backCenter;
+	vec3_t frontCenter;
+	vec3_t side0;
+	vec3_t side1;
+	vec3_t p0Bottom;
+	vec3_t p1Bottom;
+	vec3_t p0Top;
+	vec3_t p1Top;
 	float rx, ry, rw, rh;
 	float xx;
+	float radius;
+	float length;
+	float angle0;
+	float angle1;
+	float c0;
+	float s0;
+	float c1;
+	float s1;
+	float t;
+	int i;
+	int segments;
 
-	if ( !s_credits2.playerinfo[0].headModel ) {
+	if ( !candleModeEnabled && !s_credits2.playerinfo[0].headModel ) {
 		return;
 	}
 
@@ -124,24 +184,141 @@ static void UI_CreditMenu2_DrawRocketModel640( float x, float y, float yaw ) {
 	refdef.time = uis.realtime;
 	AxisClear( refdef.viewaxis );
 
-	projectile.hModel = s_credits2.playerinfo[0].headModel;
-	projectile.customSkin = s_credits2.playerinfo[0].headSkin;
-	projectile.reType = RT_MODEL;
-	projectile.customShader = 0;
-	projectile.renderfx = RF_NOSHADOW | RF_LIGHTING_ORIGIN;
+	trap_R_ClearScene();
+
 	origin[0] = 30.0f;
 	origin[1] = 0.0f;
 	origin[2] = 0.0f;
-	VectorCopy( origin, projectile.origin );
-	VectorCopy( origin, projectile.oldorigin );
-	VectorCopy( origin, projectile.lightingOrigin );
 	angles[PITCH] = 0.0f;
 	angles[YAW] = yaw + 180.0f;
 	angles[ROLL] = 0.0f;
-	AnglesToAxis( angles, projectile.axis );
 
-	trap_R_ClearScene();
-	trap_R_AddRefEntityToScene( &projectile );
+	if ( !candleModeEnabled ) {
+		projectile.hModel = s_credits2.playerinfo[0].headModel;
+		projectile.customSkin = s_credits2.playerinfo[0].headSkin;
+		projectile.reType = RT_MODEL;
+		projectile.customShader = 0;
+		projectile.renderfx = RF_NOSHADOW | RF_LIGHTING_ORIGIN;
+		VectorCopy( origin, projectile.origin );
+		VectorCopy( origin, projectile.oldorigin );
+		VectorCopy( origin, projectile.lightingOrigin );
+		AnglesToAxis( angles, projectile.axis );
+		trap_R_AddRefEntityToScene( &projectile );
+	} else {
+		if ( !uiCreditsCandleFlameShader ) {
+			uiCreditsCandleFlameShader = trap_R_RegisterShaderNoMip( "textures/sfx/flame1" );
+		}
+		if ( !uiCreditsCandleFlameShaderBlue ) {
+			uiCreditsCandleFlameShaderBlue = trap_R_RegisterShaderNoMip( "textures/sfx/flameanim_dimmer" );
+		}
+
+		AngleVectors( angles, forward, right, up );
+		length = 17.0f;
+		radius = 1.3f;
+		segments = 12;
+		VectorMA( origin, -0.5f * length, forward, backCenter );
+		VectorMA( origin, 0.5f * length, forward, frontCenter );
+
+		for ( i = 0; i < segments; i++ ) {
+			angle0 = ( (float)i / (float)segments ) * ( 2.0f * M_PI );
+			angle1 = ( (float)( i + 1 ) / (float)segments ) * ( 2.0f * M_PI );
+			c0 = cos( angle0 );
+			s0 = sin( angle0 );
+			c1 = cos( angle1 );
+			s1 = sin( angle1 );
+			t = (float)i / (float)segments;
+
+			VectorScale( right, c0 * radius, side0 );
+			VectorMA( side0, s0 * radius, up, side0 );
+			VectorScale( right, c1 * radius, side1 );
+			VectorMA( side1, s1 * radius, up, side1 );
+
+			VectorAdd( backCenter, side0, p0Bottom );
+			VectorAdd( backCenter, side1, p1Bottom );
+			VectorAdd( frontCenter, side0, p0Top );
+			VectorAdd( frontCenter, side1, p1Top );
+
+			VectorCopy( p0Top, verts[0].xyz );
+			verts[0].st[0] = t;
+			verts[0].st[1] = 0;
+			verts[0].modulate[0] = 255;
+			verts[0].modulate[1] = 237;
+			verts[0].modulate[2] = 179;
+			verts[0].modulate[3] = 255;
+
+			VectorCopy( p0Bottom, verts[1].xyz );
+			verts[1].st[0] = t;
+			verts[1].st[1] = 1;
+			verts[1].modulate[0] = 255;
+			verts[1].modulate[1] = 237;
+			verts[1].modulate[2] = 179;
+			verts[1].modulate[3] = 255;
+
+			VectorCopy( p1Bottom, verts[2].xyz );
+			verts[2].st[0] = t + 1.0f / segments;
+			verts[2].st[1] = 1;
+			verts[2].modulate[0] = 255;
+			verts[2].modulate[1] = 237;
+			verts[2].modulate[2] = 179;
+			verts[2].modulate[3] = 255;
+
+			VectorCopy( p1Top, verts[3].xyz );
+			verts[3].st[0] = t + 1.0f / segments;
+			verts[3].st[1] = 0;
+			verts[3].modulate[0] = 255;
+			verts[3].modulate[1] = 237;
+			verts[3].modulate[2] = 179;
+			verts[3].modulate[3] = 255;
+
+			trap_R_AddPolyToScene( uis.whiteShader, 4, verts );
+		}
+
+		for ( i = 0; i < segments; i++ ) {
+			angle0 = ( (float)i / (float)segments ) * ( 2.0f * M_PI );
+			c0 = cos( angle0 );
+			s0 = sin( angle0 );
+			VectorScale( right, c0 * radius, side0 );
+			VectorMA( side0, s0 * radius, up, side0 );
+
+			VectorAdd( frontCenter, side0, capVerts[i].xyz );
+			capVerts[i].st[0] = 0.5f + c0 * 0.5f;
+			capVerts[i].st[1] = 0.5f + s0 * 0.5f;
+			capVerts[i].modulate[0] = 255;
+			capVerts[i].modulate[1] = 245;
+			capVerts[i].modulate[2] = 200;
+			capVerts[i].modulate[3] = 255;
+		}
+		trap_R_AddPolyToScene( uis.whiteShader, segments, capVerts );
+
+		for ( i = 0; i < segments; i++ ) {
+			angle0 = ( (float)i / (float)segments ) * ( 2.0f * M_PI );
+			c0 = cos( angle0 );
+			s0 = sin( angle0 );
+			VectorScale( right, c0 * radius, side0 );
+			VectorMA( side0, s0 * radius, up, side0 );
+
+			VectorAdd( backCenter, side0, capVerts[i].xyz );
+			capVerts[i].st[0] = 0.5f + c0 * 0.5f;
+			capVerts[i].st[1] = 0.5f + s0 * 0.5f;
+			capVerts[i].modulate[0] = 215;
+			capVerts[i].modulate[1] = 172;
+			capVerts[i].modulate[2] = 128;
+			capVerts[i].modulate[3] = 255;
+		}
+		trap_R_AddPolyToScene( uis.whiteShader, segments, capVerts );
+
+		memset( &flame, 0, sizeof( flame ) );
+		VectorMA( frontCenter, 1.8f, forward, flame.origin );
+		flame.reType = RT_SPRITE;
+		flame.radius = 3.1f;
+		flame.customShader = uiCreditsCandleFlameShaderBlue;
+		flame.shaderRGBA[0] = 170;
+		flame.shaderRGBA[1] = 200;
+		flame.shaderRGBA[2] = 255;
+		flame.shaderRGBA[3] = 235;
+		trap_R_AddRefEntityToScene( &flame );
+	}
+
 	trap_R_RenderScene( &refdef );
 }
 
@@ -162,11 +339,16 @@ static void UI_CreditMenu2_InitEaster( void ) {
 	rocketImpactPos[1] = BONES_MUZZLE_Y;
 	for ( i = 0; i < 3; i++ ) {
 		rocketVictimAlive[i] = qtrue;
+		rocketVictimDeathTime[i] = 0;
 	}
 	for ( i = 0; i < UI_EASTER_GIBS_COUNT; i++ ) {
 		gibVel[i][0] = 0.0f;
 		gibVel[i][1] = 0.0f;
 	}
+	finaleTriggered = qfalse;
+	perfectPlayed = qfalse;
+	winnerPlayed = qfalse;
+	bonesWinAnimPlayed = qfalse;
 }
 
 static void UI_CreditMenu2_SpawnGibs( void ) {
@@ -188,6 +370,7 @@ static void UI_CreditMenu2_RocketImpact( void ) {
 
 	modelIndex = rocketVictimModelIndices[rocketTargetIndex];
 	rocketVictimAlive[rocketTargetIndex] = qfalse;
+	rocketVictimDeathTime[rocketTargetIndex] = uis.realtime;
 	s_credits2.playerinfo[modelIndex].torsoAnim = ( ( s_credits2.playerinfo[modelIndex].torsoAnim & ANIM_TOGGLEBIT ) ^ ANIM_TOGGLEBIT ) | BOTH_DEATH1;
 	s_credits2.playerinfo[modelIndex].legsAnim = ( ( s_credits2.playerinfo[modelIndex].legsAnim & ANIM_TOGGLEBIT ) ^ ANIM_TOGGLEBIT ) | BOTH_DEATH1;
 
@@ -217,6 +400,25 @@ static void UI_CreditMenu2_RocketImpact( void ) {
 	trap_S_StartLocalSound( s_credits2.gibSound, CHAN_AUTO );
 	if ( !rocketVictimAlive[0] && !rocketVictimAlive[1] && !rocketVictimAlive[2] ) {
 		trap_S_StartLocalSound( s_credits2.nightmareSound, CHAN_ANNOUNCER );
+
+		if ( candleModeEnabled &&
+			 !finaleTriggered &&
+			 rocketVictimDeathTime[0] >= candleModeActivatedTime &&
+			 rocketVictimDeathTime[1] >= candleModeActivatedTime &&
+			 rocketVictimDeathTime[2] >= candleModeActivatedTime ) {
+			finaleTriggered = qtrue;
+			perfectStartTime = uis.realtime;
+			perfectPlayed = qfalse;
+			winnerPlayed = qfalse;
+			bonesWinAnimPlayed = qfalse;
+			winnerStartTime = perfectStartTime + 1200;
+
+			trap_S_StartLocalSound( s_credits2.perfectSound, CHAN_ANNOUNCER );
+			perfectPlayed = qtrue;
+
+			/* stop music and credits scrolling */
+			trap_Cmd_ExecuteText( EXEC_APPEND, "stopmusic;" );
+		}
 	}
 
 	explosionStartTime = uis.realtime;
@@ -380,6 +582,48 @@ static void UI_CreditMenu2_DrawEasterEffects( void ) {
 			gibStartTime = 0;
 		}
 	}
+
+	if ( finaleTriggered ) {
+		if ( !winnerPlayed && uis.realtime >= winnerStartTime ) {
+			trap_S_StartLocalSound( s_credits2.winnerSound, CHAN_ANNOUNCER );
+			winnerPlayed = qtrue;
+
+			if ( !bonesWinAnimPlayed ) {
+				playerInfo_t *bones = &s_credits2.playerinfo[0];
+				bones->torsoAnim = ( ( bones->torsoAnim & ANIM_TOGGLEBIT ) ^ ANIM_TOGGLEBIT ) | TORSO_GESTURE;
+				bones->torsoAnimationTimer = UI_TIMER_GESTURE;
+				bonesWinAnimPlayed = qtrue;
+			}
+		}
+	}
+}
+
+static qboolean UI_CreditMenu2_IsMusicEnabled( void ) {
+	return trap_Cvar_VariableValue( "s_musicvolume" ) > 0.0f;
+}
+
+static void UI_CreditMenu2_ToggleMusic( void ) {
+	float currentMusicVolume;
+	float totalVolume;
+
+	currentMusicVolume = trap_Cvar_VariableValue( "s_musicvolume" );
+	if ( currentMusicVolume > 0.0f ) {
+		creditsMusicLastVolume = currentMusicVolume;
+		trap_Cvar_SetValue( "s_musicvolume", 0 );
+		trap_Cmd_ExecuteText( EXEC_APPEND, "stopmusic;" );
+		return;
+	}
+
+	if ( creditsMusicLastVolume <= 0.0f ) {
+		totalVolume = trap_Cvar_VariableValue( "s_volume" );
+		creditsMusicLastVolume = totalVolume * 0.25f;
+	}
+	if ( creditsMusicLastVolume <= 0.0f ) {
+		creditsMusicLastVolume = 0.25f;
+	}
+
+	trap_Cvar_SetValue( "s_musicvolume", creditsMusicLastVolume );
+	trap_Cmd_ExecuteText( EXEC_APPEND, va( "music %s", CREDITS2_MUSIC_TRACK ) );
 }
 
 /*
@@ -388,8 +632,29 @@ UI_CreditMenu2_Key
 =================
 */
 static sfxHandle_t UI_CreditMenu2_Key( int key ) {
+	if ( key & K_CHAR_FLAG ) {
+		return 0;
+	}
+
+	if ( key == '7' ) {
+		sevenComboCount++;
+		if ( sevenComboCount >= 3 ) {
+			if ( !candleModeEnabled ) {
+				UI_CreditMenu2_SetCandleMode( qtrue );
+			}
+			sevenComboCount = 0;
+		}
+	} else {
+		sevenComboCount = 0;
+	}
+
 	if ( trap_Key_IsDown( K_CTRL ) && key == '5' ) {
 		UI_CreditMenu2_StartRocket();
+		return 0;
+	}
+
+	if ( key == K_MOUSE1 && creditsMusicHover ) {
+		UI_CreditMenu2_ToggleMusic();
 		return 0;
 	}
 
@@ -538,10 +803,43 @@ UI_CreditMenu2_Draw
 #define DRAW_GSTEP1(x) DRAW_G(x) STEP_Y1()
 #define DRAW_GTITLESTEP(x) DRAW_GTITLE(x) STEP_YTITLE()
 
+static void UI_CreditMenu2_DrawMusicButton( void ) {
+	vec4_t musicColor;
+
+	creditsMusicHover = UI_CursorInRect(
+		CREDITS2_MUSIC_BTN_X - CREDITS2_MUSIC_BTN_W,
+		CREDITS2_MUSIC_BTN_Y,
+		CREDITS2_MUSIC_BTN_W,
+		CREDITS2_MUSIC_BTN_H
+	);
+
+	if ( creditsMusicHover ) {
+		musicColor[0] = 1.0f;
+		musicColor[1] = 1.0f;
+		musicColor[2] = 1.0f;
+		musicColor[3] = 1.0f;
+	} else if ( UI_CreditMenu2_IsMusicEnabled() ) {
+		musicColor[0] = 0.55f;
+		musicColor[1] = 0.55f;
+		musicColor[2] = 0.55f;
+		musicColor[3] = 1.0f;
+	} else {
+		musicColor[0] = 0.10f;
+		musicColor[1] = 0.10f;
+		musicColor[2] = 0.10f;
+		musicColor[3] = 1.0f;
+	}
+
+	UI_OSPDrawStringNew( CREDITS2_MUSIC_BTN_X, CREDITS2_MUSIC_BTN_Y, "MUSIC", musicColor, color_black,
+		BECHAR_SIZE_WIDTH, BECHAR_SIZE_HEIGHT, SCREEN_WIDTH, DS_PROPORTIONAL | DS_HRIGHT | DS_SHADOW, NULL, NULL, NULL );
+}
+
 static void UI_CreditMenu2_Draw( void ) {
 	float		y;
 
-	y_pos -= y_step;
+	if ( !finaleTriggered ) {
+		y_pos -= y_step;
+	}
 
 	if (y_pos < -CGX_CREDITS_END)
 		y_pos = -CGX_CREDITS_END;
@@ -561,67 +859,88 @@ static void UI_CreditMenu2_Draw( void ) {
 		UI_FontSelect(fontIndex);
 	}
 
-	y = y_pos;	
+	if ( !finaleTriggered ) {
+		y = y_pos;	
 
-	DRAW_GTITLESTEP("OSP2-BE (Black Edition)")
-	DRAW_WSTEP1("Programming")
-	DRAW_WSTEP1("diwoc")
-	DRAW_WSTEP1("2025-2026")
-	DRAW_WSTEP1("https://scoqx.github.io/")
-	DRAW_WSTEP1("")
-	DRAW_WSTEP1("Based on OSP2")
-	DRAW_WSTEP1("written by Snems")
-	DRAW_WSTEP1("https://github.com/snems/OSP2")
-	DRAW_WSTEP1("")
-	DRAW_GTITLESTEP("Special thanks to:")
-	// 1st block
-	DRAW_WSTEP1("-=Friends & Contributors=-")
-	DRAW_WSTEP1("Snems")
-	DRAW_WSTEP1("Kr3m")
-	DRAW_WSTEP1("Mirage")
-	DRAW_WSTEP1("Mus1n")
-	DRAW_WSTEP1("MrX")
-	DRAW_WSTEP1("Zenx")
-	DRAW_WSTEP1("Tuborg")
-	DRAW_WSTEP1("Meta")
-	DRAW_WSTEP1("Konstalker")
-	// 2nd block
-	DRAW_WSTEP1("-=Financial Backers=-")
-	DRAW_WSTEP1("enq3")
-	DRAW_WSTEP1("John Coffey")
-	DRAW_WSTEP1("Maked")
-	DRAW_WSTEP1("Roskoshny")
-	DRAW_WSTEP1("Anonymous player #1")
-	DRAW_WSTEP1("Anonymous player #2")
-	DRAW_WSTEP1("")
-	DRAW_WSTEP1("Based on source codes:")
-	DRAW_WSTEP1("OSP")
-	DRAW_WSTEP1("https://www.orangesmoothie.org")
-	DRAW_WSTEP1("")
-	DRAW_WSTEP1("Cyrax")
-	DRAW_WSTEP1("https://github.com/ec-/baseq3a")
-	DRAW_WSTEP1("")
-	DRAW_WSTEP1("x0ry")
-	DRAW_WSTEP1("https://github.com/xq3e/engine")
-	DRAW_WSTEP1("")
-	DRAW_WSTEP1("Neil Toronto")
-	DRAW_WSTEP1("http://ra.is/unlagged")
-	DRAW_WSTEP1("")
-	DRAW_WSTEP1("Ratmod")
-	DRAW_WSTEP1("https://github.com/rdntcntrl/ratoa_gamecode")
-	DRAW_WSTEP1("")
-	DRAW_WSTEP1("")
-	DRAW_WSTEP1("Music:")
-	DRAW_WSTEP1("TZ-Inc. - Free Song")
-	DRAW_WSTEP1("")
-	DRAW_WSTEP1("")
-	DRAW_RSTEP1("Quake III Arena")
-	DRAW_WSTEP1("Id Software, Inc.")
-	DRAW_WSTEP1("All Rights Reserved")
+		DRAW_GTITLESTEP("OSP2-BE (Black Edition)")
+		DRAW_WSTEP1("Programming")
+		DRAW_WSTEP1("diwoc")
+		DRAW_WSTEP1("2025-2026")
+		DRAW_WSTEP1("https://scoqx.github.io/")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("Based on OSP2")
+		DRAW_WSTEP1("written by Snems")
+		DRAW_WSTEP1("https://github.com/snems/OSP2")
+		DRAW_WSTEP1("")
+		DRAW_GTITLESTEP("Special thanks to:")
+		// 1st block
+		DRAW_WSTEP1("-=Friends & Contributors=-")
+		DRAW_WSTEP1("Snems")
+		DRAW_WSTEP1("Kr3m")
+		DRAW_WSTEP1("Mirage")
+		DRAW_WSTEP1("Mus1n")
+		DRAW_WSTEP1("MrX")
+		DRAW_WSTEP1("Zenx")
+		DRAW_WSTEP1("Tuborg")
+		DRAW_WSTEP1("Meta")
+		DRAW_WSTEP1("Konstalker")
+		// 2nd block
+		DRAW_WSTEP1("-=Financial Backers=-")
+		DRAW_WSTEP1("enq3")
+		DRAW_WSTEP1("John Coffey")
+		DRAW_WSTEP1("Maked")
+		DRAW_WSTEP1("Roskoshny")
+		DRAW_WSTEP1("Anonymous player #1")
+		DRAW_WSTEP1("Anonymous player #2")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("Based on source codes:")
+		DRAW_WSTEP1("OSP")
+		DRAW_WSTEP1("https://www.orangesmoothie.org")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("Cyrax")
+		DRAW_WSTEP1("https://github.com/ec-/baseq3a")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("x0ry")
+		DRAW_WSTEP1("https://github.com/xq3e/engine")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("Neil Toronto")
+		DRAW_WSTEP1("http://ra.is/unlagged")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("Ratmod")
+		DRAW_WSTEP1("https://github.com/rdntcntrl/ratoa_gamecode")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("Music:")
+		DRAW_WSTEP1("TZ-Inc. - Free Song")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("")
+		DRAW_RSTEP1("Quake III Arena")
+		DRAW_WSTEP1("Id Software, Inc.")
+		DRAW_WSTEP1("All Rights Reserved")
 
-	y += 345;
+		y += 345;
 
-	UI_DrawProportionalString( 320, y, "QUAKE III ARENA", UI_CENTER|UI_GIANTFONT|UI_PULSE, uis.themeColor );
+		UI_DrawProportionalString( 320, y, "QUAKE III ARENA", UI_CENTER|UI_GIANTFONT|UI_PULSE, uis.themeColor );
+	}
+
+	if ( finaleTriggered ) {
+		float ty;
+		vec4_t yellow = { 1.0f, 0.9f, 0.2f, 1.0f };
+		vec4_t red = { 1.0f, 0.15f, 0.15f, 1.0f };
+
+		UI_FontSelect( 6 );
+		ty = SCREEN_HEIGHT * ( 1.0f / 3.0f );
+		UI_OSPDrawStringNew( 320.0f, ty, "CONGRATULATIONS", yellow, color_black,
+			16.0f, 24.0f, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER|DS_SHADOW, NULL, NULL, NULL );
+		ty += 26.0f;
+		UI_OSPDrawStringNew( 320.0f, ty, "YOU WIN", yellow, color_black,
+			16.0f, 24.0f, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER|DS_SHADOW, NULL, NULL, NULL );
+		ty += 26.0f;
+		UI_OSPDrawStringNew( 320.0f, ty, "QUAKE IS 666", red, color_black,
+			16.0f, 24.0f, SCREEN_WIDTH, DS_PROPORTIONAL|DS_HCENTER|DS_SHADOW, NULL, NULL, NULL );
+	}
+
+	UI_CreditMenu2_DrawMusicButton();
 }
 
 
@@ -660,6 +979,8 @@ void UI_CreditMenu2( void ) {
 	}
 
 	UI_InitPlayerModels();
+	sevenComboCount = 0;
+	UI_CreditMenu2_SetCandleMode( qfalse );
 	UI_CreditMenu2_InitEaster();
 	s_credits2.nightmareSound = trap_S_RegisterSound( "sound/misc/nightmare.wav", qfalse );
 	s_credits2.rocketFireSound = trap_S_RegisterSound( "sound/weapons/rocket/rocklf1a.wav", qfalse );
@@ -672,6 +993,8 @@ void UI_CreditMenu2( void ) {
 	s_credits2.sargeDeathSound = trap_S_RegisterSound( "sound/player/sarge/death1.wav", qfalse );
 	s_credits2.slashDeathSound = trap_S_RegisterSound( "sound/player/slash/death1.wav", qfalse );
 	s_credits2.gibSound = trap_S_RegisterSound( "sound/player/gibsplt1.wav", qfalse );
+	s_credits2.perfectSound = trap_S_RegisterSound( "sound/feedback/perfect.wav", qfalse );
+	s_credits2.winnerSound = trap_S_RegisterSound( "sound/player/announce/youwin.wav", qfalse );
 	s_credits2.smokePuffShader = trap_R_RegisterShaderNoMip( "smokePuff" );
 	s_credits2.rocketExplosionShader = trap_R_RegisterShaderNoMip( "rocketExplosion" );
 	s_credits2.bloodExplosionShader = trap_R_RegisterShaderNoMip( "bloodExplosion" );
@@ -695,7 +1018,8 @@ void UI_CreditMenu2( void ) {
 			trap_Cvar_SetValue( "s_musicvolume", musicVol );
 	}
 
-	// Music placeholder
-	trap_Cmd_ExecuteText(EXEC_APPEND, "music music/TZ_Inc_Free_Song.ogg");
+	creditsMusicLastVolume = trap_Cvar_VariableValue( "s_musicvolume" );
+	creditsMusicHover = qfalse;
+	trap_Cmd_ExecuteText( EXEC_APPEND, va( "music %s", CREDITS2_MUSIC_TRACK ) );
 
 }

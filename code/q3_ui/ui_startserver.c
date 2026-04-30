@@ -31,7 +31,7 @@ START SERVER MENU *****
 #define MAX_MAPCOLS		4
 #define MAX_MAPSPERPAGE	8
 
-#define MAX_NAMELENGTH	16
+#define MAX_NAMELENGTH	32
 
 #define ID_GAMETYPE				10
 #define ID_PICTURES				11	// 12, 13, 14
@@ -75,6 +75,7 @@ typedef struct {
 } startserver_t;
 
 static startserver_t s_startserver;
+static qboolean s_startserver_mapfilterFocused;
 
 static const char *gametype_items[] = {
 	"Free For All",
@@ -83,6 +84,36 @@ static const char *gametype_items[] = {
 	"Capture the Flag",
 	NULL
 };
+
+/*
+=================
+StartServer_IsMapFilterEditKey
+=================
+*/
+static qboolean StartServer_IsMapFilterEditKey( int key ) {
+	if ( key & K_CHAR_FLAG ) {
+		return qtrue;
+	}
+
+	switch ( key ) {
+		case K_BACKSPACE:
+		case K_DEL:
+		case K_KP_DEL:
+		case K_INS:
+		case K_KP_INS:
+		case K_LEFTARROW:
+		case K_KP_LEFTARROW:
+		case K_RIGHTARROW:
+		case K_KP_RIGHTARROW:
+		case K_HOME:
+		case K_KP_HOME:
+		case K_END:
+		case K_KP_END:
+			return qtrue;
+	}
+
+	return qfalse;
+}
 
 static int gametype_remap[] = { GT_FFA, GT_TOURNAMENT, GT_TEAM, GT_CTF };
 static int gametype_remap2[] = {0, 1, 0, 2, 3};
@@ -278,7 +309,7 @@ static void StartServer_DrawMapFilter( void *self ) {
 	f = (menufield_s *)self;
 	basex = f->generic.x;
 	y = f->generic.y;
-	focus = ( f->generic.parent->cursor == f->generic.menuPosition );
+	focus = s_startserver_mapfilterFocused;
 
 	style = UI_LEFT | UI_SMALLFONT;
 	color = text_color_normal;
@@ -309,6 +340,38 @@ static void StartServer_DrawMapFilter( void *self ) {
 		style = ( style & ~UI_PULSE ) | UI_BLINK;
 		UI_DrawChar( basex + f->field.cursor * SMALLCHAR_WIDTH, y, c, style, color );
 	}
+}
+
+/*
+=================
+StartServer_MenuKey
+=================
+*/
+static sfxHandle_t StartServer_MenuKey( int key ) {
+	menucommon_s *item;
+
+	item = Menu_ItemAtCursor( &s_startserver.menu );
+
+	if ( s_startserver_mapfilterFocused && key == K_ESCAPE ) {
+		s_startserver_mapfilterFocused = qfalse;
+		return menu_null_sound;
+	}
+
+	if ( key == K_MOUSE1 ) {
+		if ( item == (menucommon_s *)&s_startserver.mapfilter &&
+			(item->flags & QMF_HASMOUSEFOCUS) ) {
+			s_startserver_mapfilterFocused = qtrue;
+		} else {
+			s_startserver_mapfilterFocused = qfalse;
+		}
+	} else if ( !s_startserver_mapfilterFocused &&
+		item == (menucommon_s *)&s_startserver.mapfilter &&
+		StartServer_IsMapFilterEditKey( key ) ) {
+		/* Ignore edit keys until field is explicitly focused by click. */
+		return menu_null_sound;
+	}
+
+	return Menu_DefaultKey( &s_startserver.menu, key );
 }
 
 
@@ -459,11 +522,13 @@ static void StartServer_MenuInit( void ) {
 
 	// zero set all our globals
 	memset( &s_startserver, 0 ,sizeof(startserver_t) );
+	s_startserver_mapfilterFocused = qfalse;
 
 	StartServer_Cache();
 
 	s_startserver.menu.wrapAround = qtrue;
 	s_startserver.menu.fullscreen = qtrue;
+	s_startserver.menu.key = StartServer_MenuKey;
 
 	s_startserver.banner.generic.type  = MTYPE_BTEXT;
 	s_startserver.banner.generic.x	   = 320;

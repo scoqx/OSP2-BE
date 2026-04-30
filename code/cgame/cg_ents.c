@@ -80,7 +80,7 @@ static void CG_PolyBasePredictPosition(timepos_t *positions, vec3_t out, float f
 		CG_LinearInterpolation(&positions[1], out, f);
 		return;
 	}
-	positions[4].time = positions[3].time + (positions[3].time - positions[2].time) * bias;
+	positions[3].time = positions[2].time + (positions[2].time - positions[1].time) * bias;
 	CG_LinearInterpolation(&positions[1], positions[3].pos, 1.0f + bias);
 	CG_LagrangeInterpolation(positions, 4, out, time);
 }
@@ -1017,7 +1017,7 @@ static void CG_InterpolateEntityPosition(centity_t* cent)
 		currStates[client] = cent->currentState.pos;
 	}
 
-	f = cg.frameInterpolation + cg_entityOverpolate.value;
+	f = cg.frameInterpolation + cg_entityOverpolate.value / (float)(cg.nextSnap->serverTime - cg.snap->serverTime);
 
 	BG_EvaluateTrajectory(&cent->currentState.pos, cg.snap->serverTime, positions[1].pos);
 	BG_EvaluateTrajectory(&cent->nextState.pos, cg.nextSnap->serverTime, positions[2].pos);

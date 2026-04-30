@@ -554,6 +554,7 @@ typedef struct {
 	vec4_t			customLegsColor;
 	qboolean		useCustomWeaponColor;
 	vec4_t			customWeaponColor;
+	qboolean		useCandleWeapon;
 
 	qboolean		useOutline;
 	vec4_t			outlineColor;

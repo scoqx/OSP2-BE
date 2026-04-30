@@ -238,7 +238,7 @@ void CG_OSPDrawEmojiListOverlay(void)
 	const float lineYStart = y + 24.0f;
 	const float lineStep = 14.0f;
 	float footerY;
-	vec4_t bgColor = {0, 0, 0.04, 0.8};
+	vec4_t bgColor;
 	float colWidth;
 	char hashHex[9];
 	const int flags = DS_HLEFT | DS_EMOJI | DS_PROPORTIONAL;
@@ -267,6 +267,8 @@ void CG_OSPDrawEmojiListOverlay(void)
 	}
 	remainingSec = (remainingMs + 999) / 1000;
 	CG_OSPEmojiHashToHex(emojiOverlayHash, hashHex, sizeof(hashHex));
+	Vector4Copy(cgs.beEmojiListBgColor, bgColor);
+	bgColor[3] = cg_emojiListOpaque.value;
 
 	CG_FillRect(x, y, w, (float)emojiOverlayWindowHeight, bgColor);
 	CG_OSPDrawGradientFrame(x, y, w, (float)emojiOverlayWindowHeight, 1, 12, 0.005f, 0.05f, 3);

@@ -569,6 +569,8 @@ vmCvar_t        cg_entityOverpolate;
 vmCvar_t           cg_teamHealthBar;
 vmCvar_t        cg_healthBarStyle;
 vmCvar_t        cg_emojiListFont;
+vmCvar_t        cg_emojiListBgColor;
+vmCvar_t        cg_emojiListOpaque;
 
 cgFontIndices_t cgFontIndices;
 
@@ -1040,6 +1042,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_teamHealthBar, "cg_teamHealthBar", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_healthBarStyle, "cg_healthBarStyle", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_emojiListFont, "cg_emojiListFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListFont },
+	{ &cg_emojiListBgColor, "cg_emojiListBgColor", "00000A", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListBgColor },
+	{ &cg_emojiListOpaque, "cg_emojiListOpaque", "0.8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListOpaque },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -2421,6 +2425,8 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_teamIndicatorBgOpaque");
 	CG_CvarTouch("cg_teamIndicatorOffset");
 	CG_CvarTouch("cg_teamIndicatorMaxLength");
+	CG_CvarTouch("cg_emojiListBgColor");
+	CG_CvarTouch("cg_emojiListOpaque");
 	CG_CvarTouch("cg_teamIndicatorFontSize");
 	CG_CvarTouch("cg_teamIndicatorAdjust");
 

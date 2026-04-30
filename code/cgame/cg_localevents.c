@@ -614,6 +614,14 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorBgColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cgs.bePlayerIndicatorBgColor);
 }
+void CG_LocalEventCvarChanged_cg_emojiListBgColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.beEmojiListBgColor);
+}
+void CG_LocalEventCvarChanged_cg_emojiListOpaque(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
+}
 void CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);

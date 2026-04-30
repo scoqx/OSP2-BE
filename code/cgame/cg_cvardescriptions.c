@@ -451,6 +451,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_healthBarStyle", "Health bar style, bitmask. Frame applies everywhere; text color and shadow only for standard overlay and teamIndicator (not SuperHUD).\n  ^20^7 - no modifiers\n  ^21^7 - white frame\n  ^22^7 - black frame\n  ^24^7 - black text\n  ^28^7 - text shadow" },
 	{ "cg_teamHealthBar", "Health/armor bar in team overlay only.\n  ^20^7 - values only\n  ^21^7 - bar only\n  ^22^7 - bar and values" },
 	{ "cg_emojiListFont", "Font for on-screen emoji list. Values:\n  ^20^7 - ^210^7" },
+	{ "cg_emojiListBgColor", "Emoji list background color.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
+	{ "cg_emojiListOpaque", "Emoji list background opacity. Set ^20^7 for fully transparent and ^21^7 for opaque." },
 };
 
 

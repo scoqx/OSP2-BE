@@ -138,10 +138,7 @@ void CG_SHUDElementWeaponStatsRoutine(void* context)
 	{
 		lastUpdateTime = cg.time;
 		lastHits = ps->persistant[PERS_HITS];
-		if (!cgs.fpsclassico && !cg.intermissionStarted && (!CG_IS_DEAD() || (cg.snap && cg.snap->ps.clientNum != cg.clientNum)))
-		{
-			trap_SendClientCommand("getstatsinfo");
-		}
+		CG_TrySendStatsRequest();
 	}
 
 	wasSpectator = isSpectator;

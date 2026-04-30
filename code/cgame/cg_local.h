@@ -1725,6 +1725,7 @@ typedef struct
 	vec4_t          beBlueTeamColor;
 	vec4_t          bePlayerIndicatorColor;
 	vec4_t          bePlayerIndicatorBgColor;
+	vec4_t          beEmojiListBgColor;
 	vec2_t          bePlayerIndicatorFontSize;
 	vec2_t          beAccuracyFontSize;
 	customWeaponStats_t beWeaponStats[WP_NUM_WEAPONS];
@@ -2233,6 +2234,8 @@ extern vmCvar_t        cg_entityOverpolate;
 extern vmCvar_t           cg_teamHealthBar;
 extern vmCvar_t        cg_healthBarStyle;
 extern vmCvar_t        cg_emojiListFont;
+extern vmCvar_t        cg_emojiListBgColor;
+extern vmCvar_t        cg_emojiListOpaque;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -3079,7 +3082,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.03a" // BE (Black Edition)
+#define OSP_VERSION "be-1.03c" // BE (Black Edition)
 
 
 
@@ -3408,6 +3411,8 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_emojiListFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_emojiListBgColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_emojiListOpaque(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ReloadTeamTaskWheel(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskThemeColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart);

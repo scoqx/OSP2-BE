@@ -696,15 +696,50 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 	chars = 0;
 	for (;;)
 	{
+		int validIndexToken;
+
 		/* char index */
 		token = COM_ParseExt(&text, qtrue);
 		if (!token[0])
 			break;
 
-		if (token[0] == '\'' && token[1] && token[2] == '\'')   /* char code in form 'X' */
+		validIndexToken = qtrue;
+		if (token[0] == '\'' && token[1] && token[2] == '\'' && token[3] == '\0')   /* char code in form 'X' */
 			i = token[1] & 255;
-		else /* integer code */
+		else
+		{
+			int t;
+			t = 0;
+			if (token[t] == '-' || token[t] == '+')
+			{
+				t++;
+			}
+			if (token[t] == '\0')
+			{
+				validIndexToken = qfalse;
+			}
+			else
+			{
+				while (token[t] != '\0')
+				{
+					if (token[t] < '0' || token[t] > '9')
+					{
+						validIndexToken = qfalse;
+						break;
+					}
+					t++;
+				}
+			}
+
+			if (!validIndexToken)
+			{
+				SkipRestOfLine(&text);
+				continue;
+			}
+
+			/* integer code */
 			i = atoi(token);
+		}
 
 		if (i < 0 || i > 255)
 		{
@@ -717,8 +752,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 		token = COM_ParseExt(&text, qfalse);
 		if (!token[0])
 		{
-			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading x0.\n"));
-			return;
+			trap_Print(va(S_COLOR_YELLOW "UI_LoadFont: skipping incomplete char metric line in %s.\n", fontName));
+			break;
 		}
 		x0 = atof(token);
 
