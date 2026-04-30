@@ -63,7 +63,7 @@ static void CG_LagrangeInterpolation(timepos_t *positions, int count, vec3_t out
 static void CG_PolyBasePredictPosition(timepos_t *positions, vec3_t out, float f)
 {
 	const vec_t bias = 0.366f;   /* Chebyshev node */
-	const vec_t threshold = 200.0f;
+	const vec_t threshold = 660.0f;
 	const float time = positions[1].time + (positions[2].time - positions[1].time) * f;
 
 	/* Teleportation/respawn invalidates oldest position */
