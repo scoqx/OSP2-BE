@@ -813,7 +813,7 @@ UI:
   + zoti hud updated
 + Rounded squares images square11.tga, square12.tga, square13.tga, square14.tga, square21.tga, square31.tga, square41.tga
 
-30.04.2026 be v1.03c
+30.04.2026 be v1.03c1
 + cg_emojiListBgColor
 + cg_emojiListOpaque
 * cg_entityOverpolate and cg_enhancedInterpolation improvement

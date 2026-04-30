@@ -24,15 +24,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 
-/*
- * Entity position interpolation state (per-client, for interpolated entities).
- * Holding previous state in centity_t was unsafe; use these globals instead.
- */
-static trajectory_t  currStates[MAX_GENTITIES];
-static trajectory_t  prevStates[MAX_GENTITIES];
-static int           timeStates[MAX_GENTITIES];
-static int           prevTimes[MAX_GENTITIES];
-
 typedef struct timepos_s {
 	float time;
 	vec3_t pos;
@@ -1001,6 +992,10 @@ CG_InterpolateEntityPosition
 */
 static void CG_InterpolateEntityPosition(centity_t* cent)
 {
+	static trajectory_t currStates[MAX_CLIENTS];
+	static trajectory_t prevStates[MAX_CLIENTS];
+	static int          timeStates[MAX_CLIENTS];
+	static int          prevTimes[MAX_CLIENTS];
 	vec3_t       current, next;
 	float        f;
 	int          client;
