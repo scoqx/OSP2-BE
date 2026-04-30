@@ -1,10 +1,5 @@
-28.04.2026 be v1.03a
-+ /emojilist (2/3/..)
-+ printUI emoji support
-+ cg_scoreboardBE bitmask 16 - hide team score
-* cg_drawHitBox: no longer requires server permission; works unless explicitly disabled
-* SuperHUD: 
-  + element 'recordingdemo' 
-  * M1rage: all config updated
-  + zoti hud updated
-+ Rounded squares images square11.tga, square12.tga, square13.tga, square14.tga, square21.tga, square31.tga, square41.tga
+30.04.2026 be v1.03c
++ cg_emojiListBgColor
++ cg_emojiListOpaque
+* cg_entityOverpolate and cg_enhancedInterpolation improvement
+* Map selection menu fix
