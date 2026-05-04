@@ -4,6 +4,8 @@
  */
 #include "ui_local.h"
 
+qboolean Osp2Be_ColorFromChar( char code, vec4_t out );
+
 #define UI_COLORPARSE_MAXLEN 32
 
 typedef struct {
@@ -102,6 +104,13 @@ qboolean UI_ParseColorStr( const char *str, vec4_t out ) {
 				return qtrue;
 			}
 			t++;
+		}
+	}
+
+	/* One-letter OSP extended palette (a-z); must run before hex (g-z are not hex digits) */
+	if ( len == 1 && buf[0] >= 'a' && buf[0] <= 'z' ) {
+		if ( Osp2Be_ColorFromChar( buf[0], out ) ) {
+			return qtrue;
 		}
 	}
 

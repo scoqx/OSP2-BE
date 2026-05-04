@@ -743,6 +743,42 @@ void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cg.beEnemyGrenadesColor);
 }
+void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cg.battleSuitColorEnabled = qfalse;
+		return;
+	}
+	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beBattleSuitColor))
+	{
+		cg.battleSuitColorEnabled = qtrue;
+	}
+	else
+	{
+		Com_Printf("^1Color is wrong, default value used\n");
+		cg.battleSuitColorEnabled = qfalse;
+		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+	}
+}
+void CG_LocalEventCvarChanged_cg_enemyBattleSuitColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cg.enemyBattleSuitColorEnabled = qfalse;
+		return;
+	}
+	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beEnemyBattleSuitColor))
+	{
+		cg.enemyBattleSuitColorEnabled = qtrue;
+	}
+	else
+	{
+		Com_Printf("^1Color is wrong, default value used\n");
+		cg.enemyBattleSuitColorEnabled = qfalse;
+		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+	}
+}
 void CG_LocalEventCvarChanged_cg_healthColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cg.beHealthColor);

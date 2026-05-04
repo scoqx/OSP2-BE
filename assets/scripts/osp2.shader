@@ -447,28 +447,47 @@ grenadeCPMANew
     }
 }
 
-powerups/battleSuitNew
+powerups/battleSuitDye
 {
 	deformVertexes wave 100 sin 1 0 0 0
 	{
-		map textures/effects/envmapinvert.tga
+		map textures/effects/envmapmono.tga
+		tcGen environment
+		tcMod turb 0 0.15 0 0.3
+                tcmod rotate 333
+                tcmod scroll .3 .3
+		blendfunc GL_ONE GL_ONE
+        rgbGen entity
+	}
+    {
+		map textures/effects/envmapmono2.tga
 		tcGen environment
 		tcMod turb 0 0.15 0 0.3
         tcmod rotate 333
         tcmod scroll .3 .3
-		blendfunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		blendfunc GL_ONE GL_ONE
 	}
 }
-powerups/battleWeaponNew
+
+powerups/battleWeaponDye
 {
 	deformVertexes wave 100 sin 0.5 0 0 0
 	{
-		map textures/effects/envmapinvert.tga
+		map textures/effects/envmapmono.tga
 		tcGen environment
 		tcMod turb 0 0.15 0 0.3
         tcmod rotate 333
         tcmod scroll .3 .3
-		blendfunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		blendfunc GL_ONE GL_ONE
+        rgbGen entity
+	}
+    {
+		map textures/effects/envmapmono2.tga
+		tcGen environment
+		tcMod turb 0 0.15 0 0.3
+        tcmod rotate 333
+        tcmod scroll .3 .3
+		blendfunc GL_ONE GL_ONE
 	}
 }
 

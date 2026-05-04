@@ -352,7 +352,6 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_altGrenades", "Alternative grenade appearance. Values:\n  ^20^7 - Disabled\n  ^21^7 - OSP style\n  ^22^7 - BE style (custom color)\n  ^23^7 - BE style (custom color, ignores cg_drawBrightWeapons)" },
 	{ "cg_altGrenadesColor", "Color for alternative grenades. Requires ^3cg_altGrenades^7 set to ^22^7 or ^23^7.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_enemyGrenadesColor", "Color for enemy grenades (not supported everywhere). Requires ^3cg_altGrenades^7 set to ^22^7 or ^23^7.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
-	{ "cg_altBattleSuit", "Alternative battle suit effect:\n  ^20^7 - Disabled\n  ^21^7 - Enabled" },
 	{ "cg_itemFx", "Changes how items are rendered in the world. Bitmask:\n  ^20^7 - static\n  ^21^7 - bounce\n  ^22^7 - rotating\n  ^24^7 - scale"},
 	{ "cg_bubbleTrail", "Enables the drawing of bubble trails drawn by projectiles entering water. Set ^20^7 to disable."},
 	{ "cg_ignoreServerMessages", "Hides the message from server. Bitmask:\n  ^20^7 - show messages\n  ^21^7 - hide killer HP/AP (Q3MSK FFA only)\n  ^22^7 - hide ^1chat fragged^7\n  ^24^7 - hide server's chat-messages\n  ^28^7 - hide Backpack pickup messages"},
@@ -453,6 +452,9 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_emojiListFont", "Font for on-screen emoji list. Values:\n  ^20^7 - ^210^7" },
 	{ "cg_emojiListBgColor", "Emoji list background color.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_emojiListOpaque", "Emoji list background opacity. Set ^20^7 for fully transparent and ^21^7 for opaque." },
+	{ "cg_battleSuitColor", "Color for Battle Suit effect.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
+	{ "cg_enemyBattleSuitColor", "Color for Battle Suit effect on enemies.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
+	{ "cg_mutePowerUpCountdown", "Mute wear-off countdown tick sounds for powerups. Bitmask:\n  ^20^7 - all sounds on\n  ^21^7 - Quad\n  ^22^7 - Battle Suit\n  ^24^7 - Haste\n  ^28^7 - Invisibility\n  ^216^7 - Regeneration\n  ^232^7 - Flight" },
 };
 
 

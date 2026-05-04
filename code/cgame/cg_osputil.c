@@ -450,6 +450,14 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 
 	}
 
+	/* One-letter OSP/Quake extended color (a-z), same as ^-codes in text; before hex (g-z are not hex digits) */
+	if (len == 1 && in[0] >= 'a' && in[0] <= 'z')
+	{
+		CG_OSPColorFromChar(in[0], out);
+		out[3] = 1.0f;
+		return qtrue;
+	}
+
 	//remove prefix if have it
 	ptr = &in[0];
 	if (*ptr == '#')
@@ -691,6 +699,8 @@ void CG_ReloadColors(void)
 		"cg_altShadowColor",
 		"cg_altGrenadesColor",
 		"cg_enemyGrenadesColor",
+		"cg_battleSuitColor",
+		"cg_enemyBattleSuitColor",
 		"cg_healthColor",
 		"cg_healthLowColor",
 		"cg_healthMidColor",

@@ -420,7 +420,6 @@ vmCvar_t        cg_railCustomChamber;
 vmCvar_t        cg_altGrenadesColor;
 vmCvar_t        cg_enemyGrenadesColor;
 vmCvar_t        cg_drawGrenadeOwner;
-vmCvar_t        cg_altBattleSuit;
 vmCvar_t        cg_itemFx;
 vmCvar_t        cg_bubbleTrail;
 vmCvar_t        cg_ignoreServerMessages;
@@ -571,6 +570,9 @@ vmCvar_t        cg_healthBarStyle;
 vmCvar_t        cg_emojiListFont;
 vmCvar_t        cg_emojiListBgColor;
 vmCvar_t        cg_emojiListOpaque;
+vmCvar_t        cg_battleSuitColor;
+vmCvar_t        cg_enemyBattleSuitColor;
+vmCvar_t        cg_mutePowerUpCountdown;
 
 cgFontIndices_t cgFontIndices;
 
@@ -898,7 +900,6 @@ cvarTable_t cvarTable[] =
 	{ &cg_railCustomChamber, "cg_railCustomChamber", "1", CVAR_ARCHIVE },
 	{ &cg_altGrenadesColor, "cg_altGrenadesColor", "7", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altGrenadesColor },
 	{ &cg_enemyGrenadesColor, "cg_enemyGrenadesColor", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyGrenadesColor },
-	{ &cg_altBattleSuit, "cg_altBattleSuit", "0", CVAR_ARCHIVE },
 	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE },
 	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE },
 	{ &cg_gibs, "cg_gibs", "2", CVAR_ARCHIVE },
@@ -1044,6 +1045,9 @@ cvarTable_t cvarTable[] =
 	{ &cg_emojiListFont, "cg_emojiListFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListFont },
 	{ &cg_emojiListBgColor, "cg_emojiListBgColor", "00000A", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListBgColor },
 	{ &cg_emojiListOpaque, "cg_emojiListOpaque", "0.8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListOpaque },
+	{ &cg_battleSuitColor, "cg_battleSuitColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_battleSuitColor },
+	{ &cg_enemyBattleSuitColor, "cg_enemyBattleSuitColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyBattleSuitColor },
+	{ &cg_mutePowerUpCountdown, "cg_mutePowerUpCountdown", "0", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1947,9 +1951,9 @@ static void CG_RegisterGraphics(void)
 	cgs.media.quadShader = trap_R_RegisterShader("powerups/quad");
 	cgs.media.quadWeaponShader = trap_R_RegisterShader("powerups/quadWeapon");
 	cgs.media.battleSuitShader = trap_R_RegisterShader("powerups/battleSuit");
-	cgs.media.battleSuitShaderNew = trap_R_RegisterShader("powerups/battleSuitNew");
+	cgs.media.battleSuitShaderDye = trap_R_RegisterShader("powerups/battleSuitDye");
 	cgs.media.battleWeaponShader = trap_R_RegisterShader("powerups/battleWeapon");
-	cgs.media.battleWeaponShaderNew = trap_R_RegisterShader("powerups/battleWeaponNew");
+	cgs.media.battleWeaponShaderDye = trap_R_RegisterShader("powerups/battleWeaponDye");
 	cgs.media.invisShader = trap_R_RegisterShader("powerups/invisibility");
 	cgs.media.regenShader = trap_R_RegisterShader("powerups/regen");
 	cgs.media.hastePuffShader = trap_R_RegisterShader("hasteSmokePuff");
@@ -2437,6 +2441,8 @@ void CG_InitCvars(void)
 
 	CG_CvarTouch("cg_altGrenadesColor");
 	CG_CvarTouch("cg_enemyGrenadesColor");
+	CG_CvarTouch("cg_battleSuitColor");
+	CG_CvarTouch("cg_enemyBattleSuitColor");
 
 	CG_CvarTouch("cg_healthColor");
 	CG_CvarTouch("cg_healthLowColor");

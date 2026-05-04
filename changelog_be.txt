@@ -818,3 +818,10 @@ UI:
 + cg_emojiListOpaque
 * cg_entityOverpolate and cg_enhancedInterpolation improvement
 * Map selection menu fix
+
+05.05.2026 be v1.04
++ SuperHUD: StatusBar_HealthCount/StatusBar_ArmorCount style 1
++ cg_battleSuitcolor
++ cg_enemyBattleSuitColor
++ cg_mutePowerUpCountdown
+- cg_altBattleSuit

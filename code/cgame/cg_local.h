@@ -904,6 +904,10 @@ typedef struct
 	vec4_t      beAltShadowColor;
 	vec4_t      beAltGrenadesColor;
 	vec4_t      beEnemyGrenadesColor;
+	vec4_t      beEnemyBattleSuitColor;
+	qboolean    enemyBattleSuitColorEnabled;
+	vec4_t      beBattleSuitColor;
+	qboolean    battleSuitColorEnabled;
 	vec4_t      beHealthColor;
 	vec4_t      beHealthLowColor;
 	vec4_t      beHealthMidColor;
@@ -1094,9 +1098,9 @@ typedef struct
 	qhandle_t   invisShader;
 	qhandle_t   regenShader;
 	qhandle_t   battleSuitShader;
-	qhandle_t   battleSuitShaderNew;
+	qhandle_t   battleSuitShaderDye;
 	qhandle_t   battleWeaponShader;
-	qhandle_t   battleWeaponShaderNew;
+	qhandle_t   battleWeaponShaderDye;
 	qhandle_t   hastePuffShader;
 	qhandle_t   redKamikazeShader;
 	qhandle_t   blueKamikazeShader;
@@ -2097,7 +2101,6 @@ extern vmCvar_t         cg_centerMessagesFont;
 extern vmCvar_t         cg_railCustomChamber;
 extern vmCvar_t         cg_altGrenadesColor;
 extern vmCvar_t         cg_enemyGrenadesColor;
-extern vmCvar_t         cg_altBattleSuit;
 extern vmCvar_t         cg_itemFx;
 extern vmCvar_t         cg_bubbleTrail;
 extern vmCvar_t         cg_ignoreServerMessages;
@@ -2236,6 +2239,9 @@ extern vmCvar_t        cg_healthBarStyle;
 extern vmCvar_t        cg_emojiListFont;
 extern vmCvar_t        cg_emojiListBgColor;
 extern vmCvar_t        cg_emojiListOpaque;
+extern vmCvar_t        cg_battleSuitColor;
+extern vmCvar_t        cg_enemyBattleSuitColor;
+extern vmCvar_t        cg_mutePowerUpCountdown;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -3082,7 +3088,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.03c1" // BE (Black Edition)
+#define OSP_VERSION "be-1.04" // BE (Black Edition)
 
 
 
@@ -3448,6 +3454,8 @@ void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart);
 // void CG_LocalEventCvarChanged_cl_pitchspeed(cvarTable_t* cvart);
 // void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_entityOverpolate(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_enemyBattleSuitColor(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

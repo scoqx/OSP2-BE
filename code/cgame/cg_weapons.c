@@ -2050,7 +2050,21 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		qboolean pwInvis = pw & (1 << PW_INVIS);
 		qboolean pwBattle = pw & (1 << PW_BATTLESUIT);
 		qboolean pwQuad = pw & (1 << PW_QUAD);
-		qhandle_t battleShader = pwBattle ? (cg_altBattleSuit.integer ? cgs.media.battleWeaponShaderNew : cgs.media.battleWeaponShader) : 0;
+		qboolean useEnemyMono = pwBattle && cg.enemyBattleSuitColorEnabled && isEnemy;
+		qboolean useBattleMono = pwBattle && cg.battleSuitColorEnabled && !useEnemyMono;
+		qhandle_t battleShader = 0;
+
+		if (pwBattle)
+		{
+			if (useEnemyMono || useBattleMono)
+			{
+				battleShader = cgs.media.battleWeaponShaderDye;
+			}
+			else
+			{
+				battleShader = cgs.media.battleWeaponShader;
+			}
+		}
 
 		/* gun */
 		if (pwInvis)
@@ -2063,6 +2077,20 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			trap_R_AddRefEntityToScene(&gun);
 			if (pwBattle)
 			{
+				if (useEnemyMono)
+				{
+					gun.shaderRGBA[0] = (byte)(cg.beEnemyBattleSuitColor[0] * 255.0f);
+					gun.shaderRGBA[1] = (byte)(cg.beEnemyBattleSuitColor[1] * 255.0f);
+					gun.shaderRGBA[2] = (byte)(cg.beEnemyBattleSuitColor[2] * 255.0f);
+					gun.shaderRGBA[3] = 255;
+				}
+				else if (useBattleMono)
+				{
+					gun.shaderRGBA[0] = (byte)(cg.beBattleSuitColor[0] * 255.0f);
+					gun.shaderRGBA[1] = (byte)(cg.beBattleSuitColor[1] * 255.0f);
+					gun.shaderRGBA[2] = (byte)(cg.beBattleSuitColor[2] * 255.0f);
+					gun.shaderRGBA[3] = 255;
+				}
 				gun.customShader = battleShader;
 				trap_R_AddRefEntityToScene(&gun);
 			}
@@ -2140,6 +2168,20 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 				trap_R_AddRefEntityToScene(&barrel);
 				if (pwBattle)
 				{
+					if (useEnemyMono)
+					{
+						barrel.shaderRGBA[0] = (byte)(cg.beEnemyBattleSuitColor[0] * 255.0f);
+						barrel.shaderRGBA[1] = (byte)(cg.beEnemyBattleSuitColor[1] * 255.0f);
+						barrel.shaderRGBA[2] = (byte)(cg.beEnemyBattleSuitColor[2] * 255.0f);
+						barrel.shaderRGBA[3] = 255;
+					}
+					else if (useBattleMono)
+					{
+						barrel.shaderRGBA[0] = (byte)(cg.beBattleSuitColor[0] * 255.0f);
+						barrel.shaderRGBA[1] = (byte)(cg.beBattleSuitColor[1] * 255.0f);
+						barrel.shaderRGBA[2] = (byte)(cg.beBattleSuitColor[2] * 255.0f);
+						barrel.shaderRGBA[3] = 255;
+					}
 					barrel.customShader = battleShader;
 					trap_R_AddRefEntityToScene(&barrel);
 				}

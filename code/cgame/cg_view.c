@@ -876,6 +876,11 @@ static void CG_PowerupTimerSounds(void)
 		}
 		if ((t - cg.time) / POWERUP_BLINK_TIME != (t - cg.oldTime) / POWERUP_BLINK_TIME)
 		{
+			if (i >= PW_QUAD && i <= PW_FLIGHT &&
+			        (cg_mutePowerUpCountdown.integer & (1 << (i - PW_QUAD))))
+			{
+				continue;
+			}
 			trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_ITEM, cgs.media.wearOffSound);
 		}
 	}

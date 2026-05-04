@@ -3074,10 +3074,37 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 			}
 			else
 			{
-				if (!cg_altBattleSuit.integer)
-					ent->customShader = cgs.media.battleSuitShader;
+				qboolean isEnemyPlayer;
+				qboolean useEnemyMono;
+				qboolean useBattleMono;
+
+				isEnemyPlayer = qfalse;
+				if (state->clientNum >= 0 && state->clientNum < MAX_CLIENTS &&
+				        cgs.clientinfo[state->clientNum].infoValid)
+				{
+					isEnemyPlayer = CG_IsEnemy(&cgs.clientinfo[state->clientNum]);
+				}
+				useEnemyMono = cg.enemyBattleSuitColorEnabled && isEnemyPlayer;
+				useBattleMono = cg.battleSuitColorEnabled && !useEnemyMono;
+
+				if (useEnemyMono)
+				{
+					ent->customShader = cgs.media.battleSuitShaderDye;
+					ent->shaderRGBA[0] = (byte)(cg.beEnemyBattleSuitColor[0] * 255.0f);
+					ent->shaderRGBA[1] = (byte)(cg.beEnemyBattleSuitColor[1] * 255.0f);
+					ent->shaderRGBA[2] = (byte)(cg.beEnemyBattleSuitColor[2] * 255.0f);
+					ent->shaderRGBA[3] = 255;
+				}
+				else if (useBattleMono)
+				{
+					ent->customShader = cgs.media.battleSuitShaderDye;
+					ent->shaderRGBA[0] = (byte)(cg.beBattleSuitColor[0] * 255.0f);
+					ent->shaderRGBA[1] = (byte)(cg.beBattleSuitColor[1] * 255.0f);
+					ent->shaderRGBA[2] = (byte)(cg.beBattleSuitColor[2] * 255.0f);
+					ent->shaderRGBA[3] = 255;
+				}
 				else
-					ent->customShader = cgs.media.battleSuitShaderNew;
+					ent->customShader = cgs.media.battleSuitShader;
 				trap_R_AddRefEntityToScene(ent);
 			}
 		}

@@ -38,14 +38,36 @@ void* CG_SHUDElementSBACCreate(const superhudConfig_t* config)
 void CG_SHUDElementSBACRoutine(void* context)
 {
 	shudElementStatusbarArmorCount* element = (shudElementStatusbarArmorCount*)context;
+	int hp = cg.snap->ps.stats[STAT_HEALTH];
 	int ap = cg.snap->ps.stats[STAT_ARMOR];
+	int total;
+	int low;
+	int mid;
 
 	if (ap <= 0 && !SHUD_CHECK_SHOW_EMPTY(element))
 		return;
 
 	element->ctx.text = va(element->config.text.value, ap > 0 ? ap : 0);
 
-	if (ap <= 0 && element->config.color.isSet)
+	if (element->config.style.value == 1 && hp > 0)
+	{
+		total = CG_GetTotalHitPoints(hp, ap);
+		low = cg_healthLow.integer;
+		mid = cg_healthMid.integer;
+
+		if (total <= low)
+			Vector4Copy(cg.beHealthLowColor, element->ctx.color);
+		else if (total >= mid)
+		{
+			if (!element->config.color2.isSet)
+				Vector4Copy(element->config.color.value.rgba, element->ctx.color);
+			else
+				Vector4Copy(element->config.color2.value.rgba, element->ctx.color);
+		}
+		else
+			Vector4Copy(element->config.color.value.rgba, element->ctx.color);
+	}
+	else if (ap <= 0 && element->config.color.isSet)
 		Vector4Copy(element->config.color.value.rgba, element->ctx.color);
 	else
 		Vector4Copy(cg.healthColorLocal, element->ctx.color);
