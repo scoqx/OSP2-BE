@@ -455,6 +455,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_battleSuitColor", "Color for Battle Suit effect.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_enemyBattleSuitColor", "Color for Battle Suit effect on enemies.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_mutePowerUpCountdown", "Mute wear-off countdown tick sounds for powerups. Bitmask:\n  ^20^7 - all sounds on\n  ^21^7 - Quad\n  ^22^7 - Battle Suit\n  ^24^7 - Haste\n  ^28^7 - Invisibility\n  ^216^7 - Regeneration\n  ^232^7 - Flight" },
+	{ "cg_myTeam", "Choose visual team colors for HUD/interface (self and teammates), without changing your real team.\n  ^20^7 - disabled\n  ^21^7 - use red team colors\n  ^22^7 - use blue team colors\nYou can also use \"^2red^7\" or \"^2blue^7\"." },
 };
 
 

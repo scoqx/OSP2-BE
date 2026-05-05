@@ -825,3 +825,4 @@ UI:
 + cg_enemyBattleSuitColor
 + cg_mutePowerUpCountdown
 - cg_altBattleSuit
++ cg_myTeam
