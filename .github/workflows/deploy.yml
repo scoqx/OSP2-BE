@@ -1,4 +1,4 @@
-name: Deploy version files to scoqx.github.io
+name: Deploy version files to konstalker.github.io
 
 permissions:
   contents: write
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  TARGET_REPO: scoqx/scoqx.github.io
+  TARGET_REPO: konstalker/konstalker.github.io
   TARGET_BRANCH: main
   GIT_USER_NAME: GitHub Actions
   GIT_USER_EMAIL: actions@github.com
@@ -25,7 +25,7 @@ jobs:
         with:
           ref: master
 
-      - name: Checkout target repo scoqx.github.io
+      - name: Checkout target repo konstalker.github.io
         uses: actions/checkout@v3
         with:
           repository: ${{ env.TARGET_REPO }}

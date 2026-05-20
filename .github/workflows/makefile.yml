@@ -178,7 +178,7 @@ jobs:
     needs: [linux, mingw]
     runs-on: ubuntu-latest
     env:
-      TARGET_REPO: scoqx/scoqx.github.io
+      TARGET_REPO: konstalker/konstalker.github.io
       TARGET_BRANCH: main
       GIT_USER_NAME: GitHub Actions
       GIT_USER_EMAIL: actions@github.com
