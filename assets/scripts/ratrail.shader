@@ -1,3 +1,5 @@
+// -================== ratrail.shader
+
 ratRailParticle
 {
 	nopicmip
@@ -18,13 +20,6 @@ ratRailSpiral1
 		blendfunc add
 		rgbGen entity
 	}
-	//{
-	//	clampmap gfx/misc/ratrail/railspiral.tga
-	//	blendfunc add
-	//	rgbGen entity
-	//	//rgbGen const ( 0.5 0.5 0.5 )
-	//	//alphaGen entity
-	//}
 }
 ratRailSpiral
 {
@@ -46,16 +41,6 @@ ratRailCore
 	cull disable
 	{
 		animmap 64 gfx/misc/ratrail/beefyrail/rail1.tga  gfx/misc/ratrail/beefyrail/rail2.tga  gfx/misc/ratrail/beefyrail/rail3.tga  gfx/misc/ratrail/beefyrail/rail4.tga  gfx/misc/ratrail/beefyrail/rail5.tga  gfx/misc/ratrail/beefyrail/rail6.tga  gfx/misc/ratrail/beefyrail/rail7.tga  
-
-		// pattern repeats more often, higher quality 
-		////tcMod transform 2 0 0 1 0 0
-		// scaled normally
-		//tcMod transform 1 0 0 1 0 0
-		// pattern repeats more often, higher quality
-		// + rail is twice as thick
-		//tcMod transform 2 0 0 0.5 0 0.25
-		// pattern repeats more often, higher quality
-		// + rail thicker by a factor of 4/3
 		tcMod transform 2 0 0 0.75 0 0.125
 
 		blendfunc add
@@ -70,57 +55,11 @@ ratRailCoreOverlay
 	cull disable
 	{
 		animmap 40 gfx/misc/ratrail/beefyrail/railoverlay1.tga  gfx/misc/ratrail/beefyrail/railoverlay2.tga  gfx/misc/ratrail/beefyrail/railoverlay3.tga  gfx/misc/ratrail/beefyrail/railoverlay4.tga  gfx/misc/ratrail/beefyrail/railoverlay5.tga  gfx/misc/ratrail/beefyrail/railoverlay6.tga  gfx/misc/ratrail/beefyrail/railoverlay7.tga  
-
-		// pattern repeats more often, higher quality 
-		//tcMod transform 2 0 0 1 0 0
-		// scaled normally
-		//tcMod transform 1 0 0 1 0 0
-		// pattern repeats more often, higher quality
-		// + rail is twice as thick
-		//tcMod transform 2 0 0 0.5 0 0.25
-		// pattern repeats more often, higher quality
-		// + rail thicker by a factor of 4/3
 		tcMod transform 2 0 0 0.75 0 0.125
-
 		blendfunc add
 		rgbGen entity
 	}
 }
-
-//ratRailCore
-//{
-//	nopicmip
-//	sort nearest
-//	cull disable
-//	{
-//		animmap 64 gfx/misc/ratrail/rail1.tga  gfx/misc/ratrail/rail2.tga  gfx/misc/ratrail/rail3.tga  gfx/misc/ratrail/rail4.tga  gfx/misc/ratrail/rail5.tga  gfx/misc/ratrail/rail6.tga  gfx/misc/ratrail/rail7.tga  
-//
-//		// pattern repeats more often, higher quality 
-//		tcMod transform 2 0 0 1 0 0
-//		// scaled normally
-//		//tcMod transform 1 0 0 1 0 0
-//
-//		blendfunc add
-//		rgbGen entity
-//	}
-//}
-//ratRailCoreOverlay
-//{
-//	nopicmip
-//	sort nearest
-//	cull disable
-//	{
-//		animmap 40 gfx/misc/ratrail/railoverlay1.tga  gfx/misc/ratrail/railoverlay2.tga  gfx/misc/ratrail/railoverlay3.tga  gfx/misc/ratrail/railoverlay4.tga  gfx/misc/ratrail/railoverlay5.tga  gfx/misc/ratrail/railoverlay6.tga  gfx/misc/ratrail/railoverlay7.tga  
-//
-//		// pattern repeats more often, higher quality 
-//		tcMod transform 2 0 0 1 0 0
-//		// scaled normally
-//		//tcMod transform 1 0 0 1 0 0
-//
-//		blendfunc add
-//		rgbGen entity
-//	}
-//}
 
 ratRailCoreFat
 {
@@ -157,19 +96,245 @@ ratRailCoreOverlayFat
 	}
 }
 
-//ratRailCore1
-//{
-//	sort nearest
-//	cull disable
-//	{
-//		animmap 24 gfx/misc/ratrail/rail1.tga  gfx/misc/ratrail/rail2.tga  gfx/misc/ratrail/rail3.tga  gfx/misc/ratrail/rail4.tga  gfx/misc/ratrail/rail5.tga  gfx/misc/ratrail/rail6.tga  gfx/misc/ratrail/rail7.tga  
-//		blendfunc add
-//		rgbGen entity
-//	}
-//	{
-//		animmap 24 gfx/misc/ratrail/railoverlay1.tga  gfx/misc/ratrail/railoverlay2.tga  gfx/misc/ratrail/railoverlay3.tga  gfx/misc/ratrail/railoverlay4.tga  gfx/misc/ratrail/railoverlay5.tga  gfx/misc/ratrail/railoverlay6.tga  gfx/misc/ratrail/railoverlay7.tga  
-//		blendfunc add
-//		rgbGen identity
-//	}
-//}
-//
+// -================== ratrail_spiral.shader
+
+ratRailSpiralLightning0
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral0.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral0.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+ratRailSpiralLightning1
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral1.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral1.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+ratRailSpiralLightning2
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral2.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral2.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+ratRailSpiralLightning3
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral3.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral3.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+ratRailSpiralLightning4
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral4.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral4.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+ratRailSpiralLightning5
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral5.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral5.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+ratRailSpiralLightning6
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral6.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral6.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+ratRailSpiralLightning7
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral7.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral7.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+ratRailSpiralLightning8
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral8.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral8.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+ratRailSpiralLightning9
+ {
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/lspiral9.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/lspiral9.tga
+ 		tcMod transform 25 0 0 1 0 0
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.25 0.25 0.7
+ 	}
+ }
+
+// -================== ratrail_tube.shader
+
+railTube100
+{
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/railtube1.tga
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/railtube1_glow.tga
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.5 0.25 0.6
+ 	}
+}
+// scaled up texture for shorter tubes
+railTube50
+{
+ 	nopicmip
+ 	nomipmaps
+ 	sort nearest
+ 	cull disable
+ 	{
+ 		map gfx/misc/ratrail/railtube1.tga
+		tcMod scale 0.5 1
+
+ 		blendFunc add
+ 		rgbGen entity
+ 	}
+ 	{
+ 		map gfx/misc/ratrail/railtube1_glow.tga
+		tcMod scale 0.5 1
+ 		blendFunc add
+ 		rgbGen wave sin 0 0.5 0.25 0.6
+ 	}
+}

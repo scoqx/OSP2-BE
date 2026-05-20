@@ -31,12 +31,20 @@ void CG_SHUDElementItemPickupIconRoutine(void* context)
 
 	if (CG_SHUDGetFadeColor(element->ctx.color_origin, element->ctx.color, &element->config, cg.itemPickupTime))
 	{
-		element->ctx.image = cg_items[cg.itemPickup].icon;
+		vec4_t col;
+
+		element->ctx.image = CG_DyeFlagResolveInverseIcon(cg.itemPickup, cg_items[cg.itemPickup].icon);
 		CG_SHUDFill(&element->config);
 		CG_SHUDDrawBorder(&element->config);
 
 		CG_RegisterItemVisuals(cg.itemPickup);
-		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx);
+		Vector4Copy(element->ctx.color, col);
+		CG_SHUDConfigPickColor_Runtime(&element->config, col);
+		if (cg_items[cg.itemPickup].customVisualMask & ITEMCV_ICON)
+		{
+			CG_ModulateVec4ForCustomItemDyeIcon(cg.itemPickup, col);
+		}
+		CG_SHUDDrawStretchPic(element->ctx.coord, element->ctx.coordPicture, col, element->ctx.image);
 	}
 }
 

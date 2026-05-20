@@ -10,6 +10,10 @@ extern "C" {
 #define SUPERHUD_DEFAULT_FADEDELAY 1000.0
 #define SUPERHUD_EXECUTE_MAX_LEN   1024
 
+/* sbhc/sbac style bitmask: bit0 = color by total HP+armor; bit1 = cap shown number at 999 */
+#define SHUD_SBCOUNT_STYLE_TOTALHP_COLOR (1 << 0)
+#define SHUD_SBCOUNT_STYLE_CAP999        (1 << 1)
+
 typedef enum
 {
 	SUPERHUD_ALIGNH_LEFT,
@@ -155,6 +159,16 @@ typedef struct
 		char value[MAX_QPATH];
 		qboolean isSet;
 	} image2;
+	struct
+	{
+		superhudAlignH_t value;
+		qboolean isSet;
+	} imageAlignH;
+	struct
+	{
+		superhudAlignV_t value;
+		qboolean isSet;
+	} imageAlignV;
 	struct
 	{
 		vec4_t value;
@@ -573,6 +587,7 @@ void CG_SHUDElementItemPickupIconDestroy(void* context);
 
 void* CG_SHUDElementFlagStatusNMECreate(const superhudConfig_t* config);
 void* CG_SHUDElementFlagStatusOWNCreate(const superhudConfig_t* config);
+void* CG_SHUDElementFlagStatusCarryCreate(const superhudConfig_t* config);
 void CG_SHUDElementFlagStatusRoutine(void* context);
 void CG_SHUDElementFlagStatusDestroy(void* context);
 
@@ -716,6 +731,12 @@ void* CG_SHUDElementGridCreate(const superhudConfig_t* config);
 void CG_SHUDElementGridRoutine(void* context);
 void CG_SHUDElementGridDestroy(void* context);
 
+void* CG_SHUDElementRoundWarmupTextCreate(const superhudConfig_t* config);
+void* CG_SHUDElementRoundWarmupTimeCreate(const superhudConfig_t* config);
+void* CG_SHUDElementRoundWarmupFightCreate(const superhudConfig_t* config);
+void CG_SHUDElementRoundWarmupRoutine(void* context);
+void CG_SHUDElementRoundWarmupDestroy(void* context);
+
 /*
  * cg_superhud_util.c
  */
@@ -817,6 +838,7 @@ qboolean CG_SHUDGetFadeColor(const vec4_t from_color, vec4_t out, const superhud
 void CG_SHUDFillWithColor(const superhudCoord_t* coord, const float* color);
 void CG_SHUDElementCompileTeamOverlayConfig(int fontWidth, int style, shudTeamOverlay_t* configOut);
 void CG_SHUDConfigPickBgColor(const superhudConfig_t* config, float* color, qboolean alphaOverride);
+void CG_SHUDConfigPickColor_Runtime(const superhudConfig_t* config, vec4_t color);
 
 
 typedef struct
@@ -862,6 +884,7 @@ typedef struct
 	int time;
 	int sender;
 	int taskType;
+	int repeatCount;
 	int gameTime; /* Game time when task was sent (msec from level start) */
 	qboolean isPickup; /* True if this is a pickup mark (toClient=1) */
 	struct
@@ -938,6 +961,7 @@ typedef struct
 			int time;
 			int powerup;
 			qboolean isHoldable;
+			int dyeTintItemNum;
 		} element[SHUD_MAX_POWERUPS];
 		int numberOfActive;
 		int lastUpdateTime;

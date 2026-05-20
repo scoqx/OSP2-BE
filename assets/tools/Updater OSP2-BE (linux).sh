@@ -20,9 +20,9 @@ ARGS="+set sv_pure 0
       +set com_skipidlogo 1"
 
 CURL='/usr/bin/curl'
-url="https://scoqx.github.io/assets/zz-osp-pak8be.pk3"
-url_version="https://scoqx.github.io/version.json?v="
-url_changelog="https://scoqx.github.io/assets/changelog_be.txt"
+url="https://konstalker.github.io/assets/zz-osp-pak8be.pk3"
+url_version="https://konstalker.github.io/version.json?v="
+url_changelog="https://konstalker.github.io/assets/changelog_be.txt"
 
 # === PATHS ===
 SCRPATH="$(cd -- "$(dirname -- "$0")" && pwd -P)"

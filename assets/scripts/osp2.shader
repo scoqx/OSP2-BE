@@ -56,6 +56,19 @@ textures/effects/frozen
   }
 }
 
+textures/effects/frozenNew
+{
+  deformvertexes wave 100 sin 1.15 0 0 0
+  {
+    map textures/effects/frozen2.tga
+    blendFunc GL_SRC_ALPHA GL_ONE
+	tcGen environment
+    tcmod rotate 30
+    tcmod scroll 0.4 .1
+    rgbGen entity
+  }
+}
+
 damageIndicator2
 {
 	sort nearest
@@ -81,16 +94,36 @@ firstPersonGun
     }
 }
 
+// fullbright shaders
+fBright
+{
+	{
+		map $whiteimage
+		blendFunc GL_ONE GL_ZERO
+		rgbGen entity
+	}
+	{
+		map $whiteimage
+		blendFunc GL_DST_COLOR GL_ZERO
+		rgbGen identityLighting
+	}
+}
 
-
+fBrightVertexLight
+{
+	{
+		map $whiteimage
+		blendFunc GL_ONE GL_ZERO
+		rgbGen entity
+	}
+}
 
 // obituaries
 ObituariesSkull {
     {
         map icons/obituaries/ObituariesSkull.tga
-        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-        depthWrite
-        rgbGen identity
+        blendfunc blend
+        rgbgen vertex
     }
 }
 
@@ -447,131 +480,6 @@ grenadeCPMANew
     }
 }
 
-powerups/battleSuitDye
-{
-	deformVertexes wave 100 sin 1 0 0 0
-	{
-		map textures/effects/envmapmono.tga
-		tcGen environment
-		tcMod turb 0 0.15 0 0.3
-                tcmod rotate 333
-                tcmod scroll .3 .3
-		blendfunc GL_ONE GL_ONE
-        rgbGen entity
-	}
-    {
-		map textures/effects/envmapmono2.tga
-		tcGen environment
-		tcMod turb 0 0.15 0 0.3
-        tcmod rotate 333
-        tcmod scroll .3 .3
-		blendfunc GL_ONE GL_ONE
-	}
-}
-
-powerups/battleWeaponDye
-{
-	deformVertexes wave 100 sin 0.5 0 0 0
-	{
-		map textures/effects/envmapmono.tga
-		tcGen environment
-		tcMod turb 0 0.15 0 0.3
-        tcmod rotate 333
-        tcmod scroll .3 .3
-		blendfunc GL_ONE GL_ONE
-        rgbGen entity
-	}
-    {
-		map textures/effects/envmapmono2.tga
-		tcGen environment
-		tcMod turb 0 0.15 0 0.3
-        tcmod rotate 333
-        tcmod scroll .3 .3
-		blendfunc GL_ONE GL_ONE
-	}
-}
-
-icons/score
-{
-    {
-        map icons/score.tga
-        blendfunc blend
-        rgbgen vertex   
-    }
-}
-
-icons/star
-{
-	{
-		map icons/star.tga
-		blendfunc blend
-		rgbgen vertex   
-	}
-}
-
-icons/eye
-{
-	{
-		map icons/eye.tga
-		blendfunc blend
-		rgbgen vertex   
-	}
-}
-
-icons/signal
-{
-	{
-		map icons/signal.tga
-		blendfunc blend
-		rgbgen vertex   
-	}
-}
-
-icons/noSignal
-{
-	{
-		map icons/noSignal.tga
-		blendfunc blend
-		rgbgen vertex   
-	}
-}
-
-icons/exclamation
-{
-	{
-		map icons/exclamation.tga
-		blendfunc blend
-		rgbgen vertex   
-	}
-}
-
-icons/clock
-{
-	{
-		map icons/clock.tga
-		blendfunc blend
-		rgbgen vertex   
-	}
-}
-
-icons/leaderboard
-{
-	{
-		map icons/leaderboard.tga
-		blendfunc blend
-		rgbgen vertex   
-	}
-}
-
-icons/ready
-{
-	{
-		map icons/ready.tga
-		blendfunc blend
-		rgbgen vertex   
-	}
-}
-
 snowflake
 {
 	sort	underwater
@@ -633,3 +541,13 @@ grappleRope
 	}
 }
 
+weapons/fragEffect
+{
+  nopicmip  
+    {
+    map models/weapons2/fragEffect.tga
+    blendFunc GL_ONE GL_ONE
+    tcmod scroll -1.5 0
+    rgbGen entity
+  }
+}

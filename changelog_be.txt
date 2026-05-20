@@ -578,12 +578,12 @@ SHUD:
   * various fixes
 * PrintUI layer fix
 
-05.01.2025 be v1.00e
+05.01.2026 be v1.00e
 + SUPERHUD, visflags: gauntlet, machinegun, shotgun, grenade
     rocket, lightning, railgun, plasma, bfg
 * Team tasks fix
 
-06.01.2025 be v1.00f
+06.01.2026 be v1.00f
 + TEAM TASKS:
   + /teamTaskClients (who already sent works only on team)
   + Yes/No sounds
@@ -592,7 +592,7 @@ SHUD:
 + cg_teamIndicatorFontSize
 * cg_accuracyFontSize - 1/2 args
 
-07.01.2025 be v1.00h
+07.01.2026 be v1.00h
 * Meta: 
   * announcer, stats fix, .so build
 + E/T colors (enemy/team) for cvars
@@ -628,7 +628,7 @@ SuperHUD:
 + cg_simpleItemsRadius (QL)
 + cg_simpleItemsBob (QL) - 0/1/2 
 
-13.01.2025 be v1.00m2
+13.01.2026 be v1.00m2
 + SuperHUD:
   + StatusBar_AmmoBar: fix
   + weaponMaxValue
@@ -640,17 +640,17 @@ SuperHUD:
 + /behelp bitmask - how to use bitmask
 * lowhp fix
 
-15.01.2025 be v1.00n1
+15.01.2026 be v1.00n1
 + cg_teamTaskIconMinSize
 + cg_teamTask bitmask 64 - draw distance
 * Player models skin fix
 * cg_giveName fix
 
-16.01.2025 be v1.00o
+16.01.2026 be v1.00o
 * Improved Freeze mode compatibility with FPSClassico servers
   + Define FreezeTag, players alive, grenade launcher fix
 
-17.01.2025 be v1.00p1
+17.01.2026 be v1.00p1
 * FPSClassico:
   * fixed machinegun fire interval
   * fixed frozen player body state
@@ -658,18 +658,18 @@ SuperHUD:
 * cg_enableBreath can now be disabled by the server (g_enableBreath 0)
 * Clan Arena: Dealt damage info fixed
 
-19.01.2025 be v1.00q3
+19.01.2026 be v1.00q3
 + cg_hitSoundsQC
 + fragSound2-5 from XQ3E
 * +ttwheel inverted mouse fix
 * cg_bestats_autoaction 1 fix in osp hud
 + cg_brightWeaponsShader 1/2
 
-20.01.2025 be v1.00r
+20.01.2026 be v1.00r
 * fixed HP/AP info in CA (does not depend on cg_drawTeamOverlay)
 * fixed cg_drawTeamOverlay behavior in FPSClassico
 
-22.01.2025 be v1.00s2
+22.01.2026 be v1.00s2
 * OSP2 sync (SHUD lagometer)
 + cg_teleportEffect
 + cg_noExplosions 0/1
@@ -682,7 +682,7 @@ SuperHUD:
   * configs updated: m1rQLstyle, m1rQ4style
   * StatusBar_AmmoBar color/color2 fix
 
-23.01.2025 be v1.00t5
+23.01.2026 be v1.00t5
 TEAMTASKS:
   * IMPORTANT FIX FOR COMMON TASKS (Attack, Defence, Watch, Location)
   + tPickup (Mark that you picked up an item (megahealth, red armor, yellow armor))
@@ -696,7 +696,7 @@ TEAMTASKS:
 * cg_bestats_style 2 visual fix
 - *outLineSize 3 (wide) removed
 
-26.01.2025 be v1.00u5
+26.01.2026 be v1.00u5
 + UI BE Credits
 + ui_beCreditsFont
 + Loading screen version
@@ -826,3 +826,33 @@ UI:
 + cg_mutePowerUpCountdown
 - cg_altBattleSuit
 + cg_myTeam
+
+14.05.2026 be v1.04c
++ cg_quadDamageColor
++ cg_enemyQuadDamageColor
++ cg_roundSound
++ cg_freezeOldShader
++ cg_altLightningColor
++ cg_teamAltLightning
++ cg_teamLightningColor
++ cg_enemyAltLightning
++ cg_enemyLightningColor
++ cg_muteMyJump
++ cg_disableTextEffects
++ cg_floatSpriteMaxDist
++ cg_floatSpriteMinSize
++ cg_fragEffect
++ cg_fragEffectTime
++ cg_fragEffectColor
++ cg_killerGhost (metarena feature)
+* Lightning gun dynamic light and flash visual fix
+* Dynamic light fix for red team player with quad damage
+* Red quad shader fix
+* Crosshair/decors shader fix
+Capture The Flag: 
+* Icons and Flags now are colorable (uses cg_redTeamColor and cg_blueTeamColor)
+SuperHUD:
++ roundwarmup elements set (roundwarmup_time, roundwarmup_text, roundwarmup_fight)
++ StatusBar_HealthCount / StatusBar_ArmorCount - style 2
++ imageAlignh and imageAlignv parameters
+* M1rage HUD configs and fonts updated.

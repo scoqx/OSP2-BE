@@ -1,7 +1,8 @@
 #include "ui_osp2be.h"
 
 /* Teams category controls */
-const osp2beCvarDef_t osp2beTeamsControls[] = {
+const osp2beCvarDef_t osp2beTeamsControls[] =
+{
 	{ "Select Model", "cg_teamModel", OSP2BE_CONTROL_BUTTON, OSP2BE_SPECIAL_MODEL_SELECTOR },
 	{ "Default", "cg_teamModel", OSP2BE_CONTROL_BUTTON, OSP2BE_SPECIAL_MODEL_DEFAULT },
 	{ "Head", "cg_teamModelColors", OSP2BE_CONTROL_COLOR_BUTTON, OSP2BE_SPECIAL_MODEL_HEAD },

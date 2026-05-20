@@ -1,7 +1,8 @@
 #include "ui_osp2be.h"
 
 /* Explosives category controls */
-const osp2beCvarDef_t osp2beExplosivesControls[] = {
+const osp2beCvarDef_t osp2beExplosivesControls[] =
+{
 	/* General */
 	{ "General", NULL, OSP2BE_CONTROL_FIELD, OSP2BE_SPECIAL_SECTION_HEADER },
 	{ "Delag", "cg_delag", OSP2BE_CONTROL_FIELD, OSP2BE_SPECIAL_NONE },
@@ -30,5 +31,5 @@ const osp2beCvarDef_t osp2beExplosivesControls[] = {
 	{ "Alt Plasma", "cg_altPlasma", OSP2BE_CONTROL_FIELD, OSP2BE_SPECIAL_NONE }
 };
 
-const int osp2beExplosivesControlsCount = ARRAY_LEN( osp2beExplosivesControls );
+const int osp2beExplosivesControlsCount = ARRAY_LEN(osp2beExplosivesControls);
 

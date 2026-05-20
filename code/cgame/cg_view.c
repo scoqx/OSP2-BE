@@ -861,6 +861,57 @@ static void CG_PowerupTimerSounds(void)
 {
 	int     i;
 	int     t;
+	int     tBs;
+	static int cg_prevBattleSuitEnd;
+	static int cg_prevRoundStartState;
+	static int cg_roundWarmupBsEndTime;
+
+	if (cg_debugNoobServer.integer)
+	{
+		if (cg_prevRoundStartState != cgs.roundStartState)
+		{
+			if (cg_prevRoundStartState == 2 && cgs.roundStartState == 1 && cg_roundWarmupBsEndTime > 0)
+			{
+				CG_Printf("Round warmup: ^5%.3f^7 sec\n",
+				          (cg.time - cg_roundWarmupBsEndTime) * 0.001f);
+				cg_roundWarmupBsEndTime = 0;
+			}
+			else if (cgs.roundStartState == 2)
+			{
+				cg_roundWarmupBsEndTime = 0;
+			}
+			cg_prevRoundStartState = cgs.roundStartState;
+		}
+	}
+	else
+	{
+		cg_prevRoundStartState = cgs.roundStartState;
+		cg_roundWarmupBsEndTime = 0;
+	}
+
+	/* Round warmup "0": battlesuit timer ended while in warmup */
+	if (cg_roundSound.integer == 2 && cgs.media.roundWarmup0Sound &&
+	        cgs.roundStartState == 2 && cg_prevBattleSuitEnd > 0)
+	{
+		tBs = cg.snap->ps.powerups[PW_BATTLESUIT];
+		if ((cg_prevBattleSuitEnd > cg.oldTime && cg_prevBattleSuitEnd <= cg.time) ||
+		        (tBs == 0 && cg_prevBattleSuitEnd > cg.oldTime))
+		{
+			trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_ITEM, cgs.media.roundWarmup0Sound);
+		}
+	}
+
+	if (cg_debugNoobServer.integer && cgs.roundStartState == 2 && cg_prevBattleSuitEnd > 0)
+	{
+		tBs = cg.snap->ps.powerups[PW_BATTLESUIT];
+		if ((cg_prevBattleSuitEnd > cg.oldTime && cg_prevBattleSuitEnd <= cg.time) ||
+		        (tBs == 0 && cg_prevBattleSuitEnd > cg.oldTime))
+		{
+			cg_roundWarmupBsEndTime = cg_prevBattleSuitEnd;
+		}
+	}
+
+	cg_prevBattleSuitEnd = cg.snap->ps.powerups[PW_BATTLESUIT];
 
 	// powerup timers going away
 	for (i = 0 ; i < MAX_POWERUPS ; i++)
@@ -876,12 +927,31 @@ static void CG_PowerupTimerSounds(void)
 		}
 		if ((t - cg.time) / POWERUP_BLINK_TIME != (t - cg.oldTime) / POWERUP_BLINK_TIME)
 		{
-			if (i >= PW_QUAD && i <= PW_FLIGHT &&
-			        (cg_mutePowerUpCountdown.integer & (1 << (i - PW_QUAD))))
+			sfxHandle_t sfx;
+
+			sfx = cgs.media.wearOffSound;
+
+			if (cgs.roundStartState == 2 && i == PW_BATTLESUIT)
+			{
+				if (cg_roundSound.integer == 0)
+				{
+					continue;
+				}
+				if (cg_roundSound.integer == 2)
+				{
+					sfx = cgs.media.roundWarmup321Sound;
+				}
+			}
+			else if (i >= PW_QUAD && i <= PW_FLIGHT &&
+			         (cg_mutePowerUpCountdown.integer & (1 << (i - PW_QUAD))))
 			{
 				continue;
 			}
-			trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_ITEM, cgs.media.wearOffSound);
+
+			if (sfx)
+			{
+				trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_ITEM, sfx);
+			}
 		}
 	}
 }
@@ -1236,7 +1306,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	// if (cgs.osp.cvarsUpdateDelay++ > 5)
 	// {
 	CG_UpdateCvars();
-	// 	cgs.osp.cvarsUpdateDelay = 0;
+	//  cgs.osp.cvarsUpdateDelay = 0;
 	// }
 
 	// if we are only updating the screen as a loading
@@ -1306,7 +1376,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	        cg.teamMarkers.supportedServer)
 		CG_TeamTaskUpdateFrame();
 	/* Single place per frame: crosshair entity, health color cache, realNumClients */
-	
+
 	CG_ScanForCrosshairEntity();
 	CG_ClientInfoUpdateFrame();
 
@@ -1364,7 +1434,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	//      trap_Cvar_Set("timescale", va("%f", cg_timescale.value));
 	//  }
 	// }
-	
+
 	// actually issue the rendering calls
 	CG_DrawActive(stereoView);
 

@@ -1,7 +1,8 @@
 #include "ui_osp2be.h"
 
 /* Player category controls */
-const osp2beCvarDef_t osp2bePlayerControls[] = {
+const osp2beCvarDef_t osp2bePlayerControls[] =
+{
 	{ "Select Model", "model", OSP2BE_CONTROL_BUTTON, OSP2BE_SPECIAL_MODEL_SELECTOR },
 	{ "Head", "cg_playerModelColors", OSP2BE_CONTROL_COLOR_BUTTON, OSP2BE_SPECIAL_MODEL_HEAD },
 	{ "Torso", "cg_playerModelColors", OSP2BE_CONTROL_COLOR_BUTTON, OSP2BE_SPECIAL_MODEL_TORSO },

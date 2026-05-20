@@ -231,6 +231,30 @@ void CG_ParseServerinfo(void)
 	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
 	// cgs.isOspServer = (Info_ValueForKey(info, "g_unlagged")[0] != '\0') ? qfalse : qtrue;
 
+	/* Parse Score_Time: Started -> 1, Warmup -> 2, else -> 0.
+	 * Round warmup is separate from the normal pre-match warmup. */
+	val = Info_ValueForKey(info, "Score_Time");
+	{
+		int newState = 0;
+
+		if (!atoi(CG_ConfigString(CS_WARMUP)))
+		{
+			if (val[0] == 'S' || val[0] == 's')
+			{
+				newState = 1;
+			}
+			else if (val[0] == 'W' || val[0] == 'w')
+			{
+				newState = 2;
+			}
+		}
+
+		if (newState != cgs.roundStartState)
+		{
+			cgs.roundStartState = newState;
+		}
+	}
+
 	/* CG_SetServerSettingsBE inlined - enableBreath from CS_SYSTEMINFO */
 	/* QVM_LOGIC: avoid Q_stricmp - use char comparison */
 	val = Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "g_enableBreath");
@@ -374,10 +398,24 @@ static void CG_ConfigStringModified(void)
 				CG_InitTeamTaskMarkers();
 				if (cg_exec_warmupEnded.string[0])
 					trap_SendConsoleCommand(cg_exec_warmupEnded.string);
+				str = Info_ValueForKey(CG_ConfigString(CS_SERVERINFO), "Score_Time");
+				if (str[0] == 'W' || str[0] == 'w')
+				{
+					cgs.roundStartState = 2;
+				}
+				else if (str[0] == 'S' || str[0] == 's')
+				{
+					cgs.roundStartState = 1;
+				}
+				else
+				{
+					cgs.roundStartState = 0;
+				}
 			}
 			else if (warmup > 0 && cg.warmup <= 0)
 			{
 				trap_S_StartLocalSound(cgs.media.countPrepareSound, CHAN_ANNOUNCER);
+				cgs.roundStartState = 0;
 			}
 			cg.warmup = warmup;
 		}
@@ -1646,11 +1684,44 @@ void CG_ServerCommand(void)
 			if (cmd[1] == 'p' && cmd[2] == '\0')
 			{
 				const char* arg;
+				const char* meatArg;
+				char*       meatPos;
+				int         meatOffset;
+				int         tailLen;
 				arg = CG_Argv(1);
-				if (!strstr(arg, "Multi-view demo created with"))
+
+				if (arg[0] == 'M' && arg[1] == 'u' && arg[2] == 'l' && arg[3] == 't' &&
+				        arg[4] == 'i' && arg[5] == '-' && arg[6] == 'v' && arg[7] == 'i' &&
+				        arg[8] == 'e' && arg[9] == 'w' && arg[10] == ' ' && arg[11] == 'd' &&
+				        arg[12] == 'e' && arg[13] == 'm' && arg[14] == 'o' && arg[15] == ' ' &&
+				        arg[16] == 'c' && arg[17] == 'r' && arg[18] == 'e' && arg[19] == 'a' &&
+				        arg[20] == 't' && arg[21] == 'e' && arg[22] == 'd' && arg[23] == ' ' &&
+				        arg[24] == 'w' && arg[25] == 'i' && arg[26] == 't' && arg[27] == 'h')
+				{
+					return;
+				}
+
+				meatArg = strstr(arg, "Enjoy the Meat");
+				if (!meatArg)
 				{
 					CG_CenterPrint(arg, 120, SMALLCHAR_WIDTH);
+					return;
 				}
+
+				Q_strncpyz(text, arg, sizeof(text));
+				meatOffset = meatArg - arg + 10; /* skip "Enjoy the " */
+				if (meatOffset + 11 < (int)sizeof(text))
+				{
+					meatPos = text + meatOffset;
+					tailLen = strlen(meatPos + 4);
+					if (meatOffset + 11 + tailLen < (int)sizeof(text))
+					{
+						memmove(meatPos + 11, meatPos + 4, tailLen + 1);
+						memcpy(meatPos, "Noob Server", 11);
+					}
+				}
+
+				CG_CenterPrint(text, 120, SMALLCHAR_WIDTH);
 				return;
 			}
 			/* cs - 2 chars */

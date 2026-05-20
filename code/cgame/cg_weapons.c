@@ -1490,6 +1490,25 @@ void CG_RegisterWeapon(int weaponNum)
 
 /*
 =================
+CG_UnregisterItemVisualForPowerup
+
+So quad / enviro visuals can switch between vanilla and dye world models when color cvars change.
+=================
+*/
+void CG_UnregisterItemVisualForPowerup(powerup_t pw)
+{
+	const gitem_t* it;
+
+	it = BG_FindItemForPowerup(pw);
+	if (!it)
+	{
+		return;
+	}
+	cg_items[ITEM_INDEX(it)].registered = qfalse;
+}
+
+/*
+=================
 CG_RegisterItemVisuals
 
 The server says this item is used on this level
@@ -1534,6 +1553,48 @@ void CG_RegisterItemVisuals(int itemNum)
 		if (item->world_model[1])
 		{
 			itemInfo->models[1] = trap_R_RegisterModel(item->world_model[1]);
+		}
+	}
+
+	{
+		const bg_customItemVisuals_t* cv;
+		int j;
+
+		cv = BG_CustomItemVisualsFind(item->classname);
+		if (cv)
+		{
+			qboolean useDyeVisuals = qtrue;
+			qhandle_t dyeIcon = 0;
+
+			if (!Q_stricmp(item->classname, "item_quad"))
+			{
+				useDyeVisuals = cg.quadDamageColorEnabled;
+			}
+			else if (!Q_stricmp(item->classname, "item_enviro"))
+			{
+				useDyeVisuals = cg.battleSuitColorEnabled;
+			}
+			if (cv->icon)
+			{
+				dyeIcon = trap_R_RegisterShader(cv->icon);
+			}
+			if (useDyeVisuals)
+			{
+				for (j = 0; j < MAX_ITEM_MODELS; j++)
+				{
+					if (cv->world_model[j])
+					{
+						itemInfo->models[j] = trap_R_RegisterModel(cv->world_model[j]);
+						itemInfo->customVisualMask |= ITEMCV_WORLDMODEL_SLOT(j);
+					}
+				}
+
+				if (dyeIcon)
+				{
+					itemInfo->icon = dyeIcon;
+					itemInfo->customVisualMask |= ITEMCV_ICON;
+				}
+			}
 		}
 	}
 }
@@ -1654,20 +1715,26 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 {
 	const clientInfo_t* target;
 	int shaft_type;
-	int enemy_shaft_type;
 	float tl;
+	qboolean isViewClient;
 	qboolean isOurClient;
+	qboolean isEnemyClient;
 	qboolean isDelagEnabled;
 
 	target = &cgs.clientinfo[cent->currentState.number];
 	shaft_type = cg_altLightning.integer;
-	enemy_shaft_type = cg_altLightning.integer;
-	isOurClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
+	isViewClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
+	isOurClient = cent->currentState.number == cg.clientNum;
+	if (!isOurClient && cg_spectPOV.integer && cg.snap &&
+	        (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+	        cent->currentState.number == cg.snap->ps.clientNum)
+		isOurClient = qtrue;
+	isEnemyClient = !isOurClient && CG_IsEnemy(target);
 	isDelagEnabled = (cg_delag.integer & 1 || cg_delag.integer & 2) && !cg.demoPlayback;
 
 	if (cent->currentState.weapon != WP_LIGHTNING)
 		return;
-	if (isOurClient)
+	if (isViewClient)
 	{
 		if (cg.snap->ps.weapon != WP_LIGHTNING || cg_lightningHide.integer)
 			return;
@@ -1692,13 +1759,13 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		if (tl < 0.0f)
 			tl = 0.0f;
 
-		if (isOurClient && isDelagEnabled)
+		if (isViewClient && isDelagEnabled)
 		{
 			VectorCopy(cg.predictedPlayerState.viewangles, baseAngles);
 			VectorCopy(cg.predictedPlayerState.origin, muzzlePoint);
 			muzzlePoint[2] += DEFAULT_VIEWHEIGHT;
 		}
-		else if (isOurClient && tl)
+		else if (isViewClient && tl)
 		{
 			VectorCopy(cg.refdefViewAngles, baseAngles);
 			VectorCopy(cg.refdef.vieworg, muzzlePoint);
@@ -1710,7 +1777,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 			muzzlePoint[2] += DEFAULT_VIEWHEIGHT;
 		}
 
-		if (isOurClient && tl)
+		if (isViewClient && tl)
 		{
 			int i;
 			float a;
@@ -1739,19 +1806,55 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		VectorCopy(origin, beam.origin);
 		beam.reType = RT_LIGHTNING;
 
+		if (isEnemyClient)
+		{
+			if (cg_enemyAltLightning.string[0])
+				shaft_type = cg_enemyAltLightning.integer;
+		}
+		else if (!isOurClient)
+		{
+			if (cg_teamAltLightning.string[0])
+				shaft_type = cg_teamAltLightning.integer;
+		}
+
 		if (shaft_type >= MAX_ALT_SHADERS || shaft_type < 0)
 			shaft_type = LIGHTNING_DEFAULT_SHADER;
 
 		{
-			qboolean useEnemyShader;
+			const playerColors_t* colors;
+			qboolean useColorShader;
 
-			useEnemyShader = CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING) && !isOurClient && cgs.osp.enemyColorsOverride.isLightningColorSet && CG_IsEnemy(target);
-			if (useEnemyShader)
+			colors = NULL;
+			useColorShader = qfalse;
+			if (CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING))
 			{
-				beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[enemy_shaft_type] : cgs.media.enemyLightningBolt[enemy_shaft_type];
-				beam.shaderRGBA[0] = cgs.osp.enemyColors.lightning[0] * 255;
-				beam.shaderRGBA[1] = cgs.osp.enemyColors.lightning[1] * 255;
-				beam.shaderRGBA[2] = cgs.osp.enemyColors.lightning[2] * 255;
+				if (isOurClient && cgs.osp.myColorsOverride.isLightningColorSet)
+				{
+					colors = &cgs.osp.myColors;
+					useColorShader = qtrue;
+				}
+				else if (isEnemyClient && cgs.osp.enemyColorsOverride.isLightningColorSet)
+				{
+					colors = &cgs.osp.enemyColors;
+					useColorShader = qtrue;
+				}
+				else if (!isOurClient && !isEnemyClient && cgs.osp.teamColorsOverride.isLightningColorSet)
+				{
+					colors = &cgs.osp.teamColors;
+					useColorShader = qtrue;
+				}
+				else if (!isOurClient && cgs.osp.myColorsOverride.isLightningColorSet)
+				{
+					colors = &cgs.osp.myColors;
+					useColorShader = qtrue;
+				}
+			}
+			if (useColorShader)
+			{
+				beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[shaft_type] : cgs.media.enemyLightningBolt[shaft_type];
+				beam.shaderRGBA[0] = colors->lightning[0] * 255;
+				beam.shaderRGBA[1] = colors->lightning[1] * 255;
+				beam.shaderRGBA[2] = colors->lightning[2] * 255;
 				beam.shaderRGBA[3] = 255;
 			}
 			else
@@ -1883,6 +1986,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	qboolean isTeammate;
 	qboolean usedBrightColor;
 	qboolean isSpectatingFollow;
+	qboolean continuousWeaponFiring;
 	int drawGunFlags;
 	int railChamberFlags;
 	int brightWeaponsShaderType;
@@ -1906,6 +2010,13 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		CG_RegisterWeapon(weaponNum);
 	weapon = &cg_weapons[weaponNum];
 	ci = &cgs.clientinfo[ps ? cg.predictedPlayerState.clientNum : cent->currentState.clientNum];
+	continuousWeaponFiring = (cent->currentState.eFlags & EF_FIRING) != 0;
+	if ((weaponNum == WP_LIGHTNING || weaponNum == WP_GAUNTLET) && cent->currentState.number == cg.predictedPlayerState.clientNum)
+	{
+		continuousWeaponFiring = cg.snap->ps.weapon == weaponNum && (cg.snap->ps.eFlags & EF_FIRING) &&
+		                         (weaponNum == WP_LIGHTNING ? cg.snap->ps.weaponstate == WEAPON_FIRING :
+		                          cg.snap->ps.weaponstate == WEAPON_READY || cg.snap->ps.weaponstate == WEAPON_FIRING);
+	}
 
 	/* --- base gun refEntity (default white; rail overrides below when applicable) --- */
 	memset(&gun, 0, sizeof(gun));
@@ -2052,7 +2163,11 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		qboolean pwQuad = pw & (1 << PW_QUAD);
 		qboolean useEnemyMono = pwBattle && cg.enemyBattleSuitColorEnabled && isEnemy;
 		qboolean useBattleMono = pwBattle && cg.battleSuitColorEnabled && !useEnemyMono;
+		qboolean useEnemyQuadMono = pwQuad && cg.enemyDamageColorEnabled && isEnemy;
+		qboolean useQuadMono = pwQuad && cg.quadDamageColorEnabled && !useEnemyQuadMono;
+		qboolean fragWeaponEffect = qfalse;
 		qhandle_t battleShader = 0;
+		qhandle_t quadGunShader = 0;
 
 		if (pwBattle)
 		{
@@ -2064,6 +2179,25 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			{
 				battleShader = cgs.media.battleWeaponShader;
 			}
+		}
+		if (pwQuad)
+		{
+			if (useEnemyQuadMono || useQuadMono)
+			{
+				quadGunShader = cgs.media.quadWeaponShaderDye;
+			}
+			else
+			{
+				quadGunShader = cgs.media.quadWeaponShader;
+			}
+		}
+		if (cg_fragEffect.integer &&
+		        cg_fragEffectTime.integer > 0 &&
+		        cg.time < cg.fragWeaponEffectTime &&
+		        cg.fragWeaponEffectClientNum == cg.snap->ps.clientNum &&
+		        ps && (parent->renderfx & RF_FIRST_PERSON))
+		{
+			fragWeaponEffect = qtrue;
 		}
 
 		/* gun */
@@ -2096,7 +2230,30 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			}
 			if (pwQuad)
 			{
-				gun.customShader = cgs.media.quadWeaponShader;
+				if (useEnemyQuadMono)
+				{
+					gun.shaderRGBA[0] = (byte)(cg.beEnemyDamageColor[0] * 255.0f);
+					gun.shaderRGBA[1] = (byte)(cg.beEnemyDamageColor[1] * 255.0f);
+					gun.shaderRGBA[2] = (byte)(cg.beEnemyDamageColor[2] * 255.0f);
+					gun.shaderRGBA[3] = 255;
+				}
+				else if (useQuadMono)
+				{
+					gun.shaderRGBA[0] = (byte)(cg.beQuadDamageColor[0] * 255.0f);
+					gun.shaderRGBA[1] = (byte)(cg.beQuadDamageColor[1] * 255.0f);
+					gun.shaderRGBA[2] = (byte)(cg.beQuadDamageColor[2] * 255.0f);
+					gun.shaderRGBA[3] = 255;
+				}
+				gun.customShader = quadGunShader;
+				trap_R_AddRefEntityToScene(&gun);
+			}
+			if (fragWeaponEffect)
+			{
+				gun.shaderRGBA[0] = (byte)(cg.beFragEffectColor[0] * 255.0f);
+				gun.shaderRGBA[1] = (byte)(cg.beFragEffectColor[1] * 255.0f);
+				gun.shaderRGBA[2] = (byte)(cg.beFragEffectColor[2] * 255.0f);
+				gun.shaderRGBA[3] = (byte)(cg.beFragEffectColor[3] * 255.0f);
+				gun.customShader = cgs.media.fragEffectShader;
 				trap_R_AddRefEntityToScene(&gun);
 			}
 		}
@@ -2119,6 +2276,12 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			{
 				/* inline CG_MachinegunSpinAngle */
 				int d = cg.time - cent->pe.barrelTime;
+				qboolean barrelFiring = (cent->currentState.eFlags & EF_FIRING) != 0;
+				if (cent->currentState.number == cg.predictedPlayerState.clientNum)
+				{
+					barrelFiring = cg.snap->ps.weapon == weaponNum && (cg.snap->ps.eFlags & EF_FIRING) &&
+					               (cg.snap->ps.weaponstate == WEAPON_READY || cg.snap->ps.weaponstate == WEAPON_FIRING);
+				}
 				if (cent->pe.barrelSpinning)
 					brlAngle = cent->pe.barrelAngle + d * 0.9f;
 				else
@@ -2128,11 +2291,11 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 					spd = 0.5f * (0.9f + (float)(1000 - d) / 1000.0f);
 					brlAngle = cent->pe.barrelAngle + d * spd;
 				}
-				if (cent->pe.barrelSpinning == !(cent->currentState.eFlags & EF_FIRING))
+				if (cent->pe.barrelSpinning == !barrelFiring)
 				{
 					cent->pe.barrelTime = cg.time;
 					cent->pe.barrelAngle = AngleMod(brlAngle);
-					cent->pe.barrelSpinning = !!(cent->currentState.eFlags & EF_FIRING);
+					cent->pe.barrelSpinning = barrelFiring;
 				}
 				angles[ROLL] = brlAngle;
 			}
@@ -2187,7 +2350,30 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 				}
 				if (pwQuad)
 				{
-					barrel.customShader = cgs.media.quadWeaponShader;
+					if (useEnemyQuadMono)
+					{
+						barrel.shaderRGBA[0] = (byte)(cg.beEnemyDamageColor[0] * 255.0f);
+						barrel.shaderRGBA[1] = (byte)(cg.beEnemyDamageColor[1] * 255.0f);
+						barrel.shaderRGBA[2] = (byte)(cg.beEnemyDamageColor[2] * 255.0f);
+						barrel.shaderRGBA[3] = 255;
+					}
+					else if (useQuadMono)
+					{
+						barrel.shaderRGBA[0] = (byte)(cg.beQuadDamageColor[0] * 255.0f);
+						barrel.shaderRGBA[1] = (byte)(cg.beQuadDamageColor[1] * 255.0f);
+						barrel.shaderRGBA[2] = (byte)(cg.beQuadDamageColor[2] * 255.0f);
+						barrel.shaderRGBA[3] = 255;
+					}
+					barrel.customShader = quadGunShader;
+					trap_R_AddRefEntityToScene(&barrel);
+				}
+				if (fragWeaponEffect)
+				{
+					barrel.shaderRGBA[0] = (byte)(cg.beFragEffectColor[0] * 255.0f);
+					barrel.shaderRGBA[1] = (byte)(cg.beFragEffectColor[1] * 255.0f);
+					barrel.shaderRGBA[2] = (byte)(cg.beFragEffectColor[2] * 255.0f);
+					barrel.shaderRGBA[3] = (byte)(cg.beFragEffectColor[3] * 255.0f);
+					barrel.customShader = cgs.media.fragEffectShader;
 					trap_R_AddRefEntityToScene(&barrel);
 				}
 			}
@@ -2228,7 +2414,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	/* continuous (LG/gauntlet/hook): show flash and effects only when actually firing */
 	if (weaponNum == WP_LIGHTNING || weaponNum == WP_GAUNTLET || weaponNum == WP_GRAPPLING_HOOK)
 	{
-		if (nonPredictedCent->currentState.eFlags & EF_FIRING)
+		if (weaponNum == WP_GRAPPLING_HOOK ? (nonPredictedCent->currentState.eFlags & EF_FIRING) : continuousWeaponFiring)
 		{
 			if (cg_muzzleFlash.integer || cent->currentState.clientNum != cg.clientNum)
 				trap_R_AddRefEntityToScene(&flash);
@@ -2294,7 +2480,7 @@ void CG_AddViewWeapon(playerState_t* ps)
 	}
 
 	// if (cg.testGun)
-	// 	return;
+	//  return;
 
 	// drop gun lower at higher fov
 	if (cg_fov.integer > 90)

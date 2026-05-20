@@ -1,6 +1,29 @@
-04.05.2026 be v1.04
-+ SuperHUD: StatusBar_HealthCount/StatusBar_ArmorCount style 1
-+ cg_battleSuitcolor
-+ cg_enemyBattleSuitColor
-+ cg_mutePowerUpCountdown
-- cg_altBattleSuit
+14.05.2026 be v1.04c
++ cg_quadDamageColor
++ cg_enemyQuadDamageColor
++ cg_roundSound
++ cg_freezeOldShader
++ cg_altLightningColor
++ cg_teamAltLightning
++ cg_teamLightningColor
++ cg_enemyAltLightning
++ cg_enemyLightningColor
++ cg_muteMyJump
++ cg_disableTextEffects
++ cg_floatSpriteMaxDist
++ cg_floatSpriteMinSize
++ cg_fragEffect
++ cg_fragEffectTime
++ cg_fragEffectColor
++ cg_killerGhost (metarena feature)
+* Lightning gun dynamic light and flash visual fix
+* Dynamic light fix for red team player with quad damage
+* Red quad shader fix
+* Crosshair/decors shader fix
+Capture The Flag: 
+* Icons and Flags now are colorable (uses cg_redTeamColor and cg_blueTeamColor)
+SuperHUD:
++ roundwarmup elements set (roundwarmup_time, roundwarmup_text, roundwarmup_fight)
++ StatusBar_HealthCount / StatusBar_ArmorCount - style 2
++ imageAlignh and imageAlignv parameters
+* M1rage HUD configs and fonts updated.

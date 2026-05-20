@@ -343,6 +343,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_customloc.o \
   $(B)/$(MOD)/cgame/cg_draw.o \
   $(B)/$(MOD)/cgame/cg_drawtools.o \
+  $(B)/$(MOD)/cgame/cg_dyeicons.o \
   $(B)/$(MOD)/cgame/cg_effects.o \
   $(B)/$(MOD)/cgame/cg_ents.o \
   $(B)/$(MOD)/cgame/cg_event.o \
@@ -415,6 +416,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_tempAcc.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_vmw.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_warmupinfo.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_roundwarmup.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_weaponlist.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_weapon_stats.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_player_stats.o \

@@ -445,7 +445,7 @@ void CG_ProcessSnapshots(void)
 	// spectOrigModel: refresh client info when spectated player changes
 	// refresh client info when viewed player changes (spect orig model or demo POV switch)
 	if ((cg.demoPlayback && cg.clientNum != cg.snap->ps.clientNum) ||
-	    (cg_spectOrigModel.integer && last_spect_player != cg.snap->ps.clientNum))
+	        (cg_spectOrigModel.integer && last_spect_player != cg.snap->ps.clientNum))
 	{
 		if (cg.demoPlayback)
 			cg.clientNum = cg.snap->ps.clientNum;

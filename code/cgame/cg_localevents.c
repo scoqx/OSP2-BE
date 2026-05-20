@@ -748,17 +748,20 @@ void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart)
 	if (!cvart->vmCvar->string[0])
 	{
 		cg.battleSuitColorEnabled = qfalse;
+		CG_UnregisterItemVisualForPowerup(PW_BATTLESUIT);
 		return;
 	}
 	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beBattleSuitColor))
 	{
 		cg.battleSuitColorEnabled = qtrue;
+		CG_UnregisterItemVisualForPowerup(PW_BATTLESUIT);
 	}
 	else
 	{
 		Com_Printf("^1Color is wrong, default value used\n");
 		cg.battleSuitColorEnabled = qfalse;
 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+		CG_UnregisterItemVisualForPowerup(PW_BATTLESUIT);
 	}
 }
 void CG_LocalEventCvarChanged_cg_enemyBattleSuitColor(cvarTable_t* cvart)
@@ -778,6 +781,54 @@ void CG_LocalEventCvarChanged_cg_enemyBattleSuitColor(cvarTable_t* cvart)
 		cg.enemyBattleSuitColorEnabled = qfalse;
 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
 	}
+}
+void CG_LocalEventCvarChanged_cg_quadDamageColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cg.quadDamageColorEnabled = qfalse;
+		CG_UnregisterItemVisualForPowerup(PW_QUAD);
+		return;
+	}
+	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beQuadDamageColor))
+	{
+		cg.quadDamageColorEnabled = qtrue;
+		CG_UnregisterItemVisualForPowerup(PW_QUAD);
+	}
+	else
+	{
+		Com_Printf("^1Color is wrong, default value used\n");
+		cg.quadDamageColorEnabled = qfalse;
+		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+		CG_UnregisterItemVisualForPowerup(PW_QUAD);
+	}
+}
+void CG_LocalEventCvarChanged_cg_enemyQuadDamageColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cg.enemyDamageColorEnabled = qfalse;
+		return;
+	}
+	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beEnemyDamageColor))
+	{
+		cg.enemyDamageColorEnabled = qtrue;
+	}
+	else
+	{
+		Com_Printf("^1Color is wrong, default value used\n");
+		cg.enemyDamageColorEnabled = qfalse;
+		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+	}
+}
+void CG_LocalEventCvarChanged_cg_fragEffectColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		Vector4Set(cg.beFragEffectColor, 1.0f, 1.0f, 1.0f, 1.0f);
+		return;
+	}
+	CG_LocalEventCvarParseColor(cvart, cg.beFragEffectColor);
 }
 void CG_LocalEventCvarChanged_cg_healthColor(cvarTable_t* cvart)
 {
@@ -802,7 +853,7 @@ void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 	if (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
 	{
 		const clientInfo_t* ourClient = &cgs.clientinfo[cg.clientNum];
-		
+
 		if (CG_OSPIsGameTypeCA(cgs.gametype))
 		{
 			realTeam = ourClient->rt;
@@ -829,7 +880,7 @@ void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 	if (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
 	{
 		const clientInfo_t* ourClient = &cgs.clientinfo[cg.clientNum];
-		
+
 		if (CG_OSPIsGameTypeCA(cgs.gametype))
 		{
 			realTeam = ourClient->rt;
@@ -847,7 +898,7 @@ void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart)
 {
-	const char *str;
+	const char* str;
 	team_t realTeam;
 
 	/* Accept Red/Blue as aliases for 1/2 */
@@ -862,7 +913,7 @@ void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart)
 	if (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
 	{
 		const clientInfo_t* ourClient = &cgs.clientinfo[cg.clientNum];
-		
+
 		if (CG_OSPIsGameTypeCA(cgs.gametype))
 		{
 			realTeam = ourClient->rt;
@@ -876,7 +927,7 @@ void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart)
 	{
 		realTeam = TEAM_RED;
 	}
-	
+
 	CG_UpdateVisualTeamColors(realTeam);
 	CG_ReloadColors();
 }

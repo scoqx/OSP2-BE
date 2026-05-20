@@ -159,6 +159,7 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 					pw->element[k + 1].powerup = pw->element[k].powerup;
 					pw->element[k + 1].time = pw->element[k].time;
 					pw->element[k + 1].isHoldable = pw->element[k].isHoldable;
+					pw->element[k + 1].dyeTintItemNum = pw->element[k].dyeTintItemNum;
 				}
 				break;
 			}
@@ -166,6 +167,7 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 		pw->element[j].powerup = i;
 		pw->element[j].time = t;
 		pw->element[j].isHoldable = qfalse;
+		pw->element[j].dyeTintItemNum = 0;
 		++pw->numberOfActive;
 	}
 
@@ -176,6 +178,7 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 			pw->element[pw->numberOfActive].powerup = hi;
 			pw->element[pw->numberOfActive].time = SUPERHUD_UPDATE_TIME * 2;
 			pw->element[pw->numberOfActive].isHoldable = qtrue;
+			pw->element[pw->numberOfActive].dyeTintItemNum = 0;
 			++pw->numberOfActive;
 		}
 	}
@@ -185,8 +188,12 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 		// need to fix
 		if (pw->element[i].isHoldable)
 		{
-			CG_RegisterItemVisuals(pw->element[i].powerup);
-			pw->element[i].powerup = cg_items[pw->element[i].powerup].icon;
+			int hi;
+
+			hi = pw->element[i].powerup;
+			CG_RegisterItemVisuals(hi);
+			pw->element[i].powerup = cg_items[hi].icon;
+			pw->element[i].dyeTintItemNum = hi;
 			pw->element[i].time /= 1000;
 		}
 		else
@@ -194,33 +201,65 @@ static void CG_SHUDElementPwUpdateState(struct superhudPowerupsCache_t* pw)
 			switch (pw->element[i].powerup)
 			{
 				case PW_QUAD:
-					pw->element[i].powerup = cgs.media.quadDamageIcon;
+					item = BG_FindItemForPowerup(PW_QUAD);
+					if (item)
+					{
+						int in = (int)(item - bg_itemlist);
+						CG_RegisterItemVisuals(in);
+						pw->element[i].powerup = cg_items[in].icon;
+						pw->element[i].dyeTintItemNum = in;
+					}
+					else
+					{
+						pw->element[i].powerup = cgs.media.quadDamageIcon;
+						pw->element[i].dyeTintItemNum = 0;
+					}
 					break;
 				case PW_BATTLESUIT:
-					pw->element[i].powerup = cgs.media.battleSuitIcon;
+					item = BG_FindItemForPowerup(PW_BATTLESUIT);
+					if (item)
+					{
+						int in = (int)(item - bg_itemlist);
+						CG_RegisterItemVisuals(in);
+						pw->element[i].powerup = cg_items[in].icon;
+						pw->element[i].dyeTintItemNum = in;
+					}
+					else
+					{
+						pw->element[i].powerup = cgs.media.battleSuitIcon;
+						pw->element[i].dyeTintItemNum = 0;
+					}
 					break;
 				case PW_HASTE:
 					pw->element[i].powerup = cgs.media.hasteIcon;
+					pw->element[i].dyeTintItemNum = 0;
 					break;
 				case PW_INVIS:
 					pw->element[i].powerup = cgs.media.invisIcon;
+					pw->element[i].dyeTintItemNum = 0;
 					break;
 				case PW_REGEN:
 					pw->element[i].powerup = cgs.media.regenIcon;
+					pw->element[i].dyeTintItemNum = 0;
 					break;
 				case PW_FLIGHT:
 					pw->element[i].powerup = cgs.media.flightIcon;
+					pw->element[i].dyeTintItemNum = 0;
 					break;
 				case PW_REDFLAG:
 				case PW_BLUEFLAG:
 					item = BG_FindItemForPowerup(pw->element[i].powerup);
 					if (item)
 					{
-						pw->element[i].powerup = trap_R_RegisterShader(item->icon);
+						int in = (int)(item - bg_itemlist);
+						CG_RegisterItemVisuals(in);
+						pw->element[i].powerup = cg_items[in].icon;
+						pw->element[i].dyeTintItemNum = in;
 					}
 					break;
 				default:
 					pw->element[i].powerup = 0;
+					pw->element[i].dyeTintItemNum = 0;
 					break;
 			}
 			pw->element[i].time = pw->element[i].time / 1000;
@@ -261,8 +300,17 @@ void CG_SHUDElementPwRoutine(void* context)
 	}
 	else
 	{
-		element->drawCtx.image = pwElement->powerup;
-		CG_SHUDDrawStretchPicCtx(&element->config, &element->drawCtx);
+		vec4_t col;
+
+		element->drawCtx.image = CG_DyeFlagResolveInverseIcon(pwElement->dyeTintItemNum, pwElement->powerup);
+		Vector4Copy(element->drawCtx.color, col);
+		CG_SHUDConfigPickColor_Runtime(&element->config, col);
+		if (pwElement->dyeTintItemNum >= 1 && pwElement->dyeTintItemNum < bg_numItems &&
+		        (cg_items[pwElement->dyeTintItemNum].customVisualMask & ITEMCV_ICON))
+		{
+			CG_ModulateVec4ForCustomItemDyeIcon(pwElement->dyeTintItemNum, col);
+		}
+		CG_SHUDDrawStretchPic(element->drawCtx.coord, element->drawCtx.coordPicture, col, element->drawCtx.image);
 	}
 }
 

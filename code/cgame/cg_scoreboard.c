@@ -1337,7 +1337,7 @@ int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScores)
 		{
 			qboolean isReady;
 			if (!cg.warmup && cg.predictedPlayerState.pm_type != PM_INTERMISSION &&
-			    cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+			        cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
 			{
 				if (cgs.q3msk)
 				{
@@ -1345,7 +1345,7 @@ int CG_OSPDrawTeamScores(int x, int y, int team, float fade, int maxScores)
 				}
 				else
 				{
-					isReady = (cg.snap->ps.stats[STAT_CLIENTS_READY] & (1 << score->client)) != 0; 
+					isReady = (cg.snap->ps.stats[STAT_CLIENTS_READY] & (1 << score->client)) != 0;
 				}
 			}
 			else
@@ -1654,13 +1654,13 @@ void SetScoreboardColors(vec4_t* rtColorHeader, vec4_t* rtColorBody, vec4_t* btC
 	vec4_t leftHeader, leftBody;
 	vec4_t rightHeader, rightBody;
 	const clientInfo_t* localCi = (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
-		? &cgs.clientinfo[cg.clientNum]
-		: NULL;
+	                              ? &cgs.clientinfo[cg.clientNum]
+	                              : NULL;
 	const qboolean isFreeSpectator =
-		(localCi != NULL && localCi->team == TEAM_SPECTATOR && !cg_spectPOV.integer);
+	    (localCi != NULL && localCi->team == TEAM_SPECTATOR && !cg_spectPOV.integer);
 	const qboolean swapOverlays = !isFreeSpectator &&
-	    ((cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
-	     (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED));
+	                              ((cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
+	                               (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED));
 
 	/* База: текущие эффективные командные цвета по колонкам: слева RED, справа BLUE */
 	Vector4Copy(scoreboard_rtColor, leftHeader);

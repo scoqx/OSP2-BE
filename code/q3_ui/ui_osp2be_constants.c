@@ -1,7 +1,8 @@
 #include "ui_osp2be_shared.h"
 
 /* Layout parameters */
-osp2beLayoutParams_t osp2be_layout = {
+osp2beLayoutParams_t osp2be_layout =
+{
 	640,  /* design_width */
 	480,  /* design_height */
 	320,  /* design_center_x */
@@ -23,7 +24,8 @@ osp2beLayoutParams_t osp2be_layout = {
 };
 
 /* Button parameters */
-osp2beButtonParams_t osp2be_button = {
+osp2beButtonParams_t osp2be_button =
+{
 	18,  /* height */
 	3,   /* default_width_multiplier */
 	56,  /* weapon_width */
@@ -32,14 +34,16 @@ osp2beButtonParams_t osp2be_button = {
 };
 
 /* Row parameters */
-osp2beRowParams_t osp2be_row = {
+osp2beRowParams_t osp2be_row =
+{
 	20,  /* height */
 	4,   /* gap_max */
 	8    /* weapon_offset */
 };
 
 /* Square/Color swatch parameters */
-osp2beSquareParams_t osp2be_square = {
+osp2beSquareParams_t osp2be_square =
+{
 	6,   /* size_offset */
 	12,  /* size_min */
 	4,   /* size_fallback_offset */
@@ -50,7 +54,8 @@ osp2beSquareParams_t osp2be_square = {
 };
 
 /* Icon parameters */
-osp2beIconParams_t osp2be_icon = {
+osp2beIconParams_t osp2be_icon =
+{
 	2,   /* size_offset */
 	16,  /* size_min */
 	14,  /* size_min_head */
@@ -58,7 +63,8 @@ osp2beIconParams_t osp2be_icon = {
 };
 
 /* Position offsets */
-osp2bePositionParams_t osp2be_position = {
+osp2bePositionParams_t osp2be_position =
+{
 	4,   /* square_x_offset */
 	8,   /* content_gap */
 	2,   /* square_x_offset_weapon */
@@ -70,12 +76,14 @@ osp2bePositionParams_t osp2be_position = {
 };
 
 /* Text parameters */
-osp2beTextParams_t osp2be_text = {
+osp2beTextParams_t osp2be_text =
+{
 	16   /* char_height */
 };
 
 /* Background alpha parameters */
-osp2beBackgroundAlphaParams_t osp2be_bg_alpha = {
+osp2beBackgroundAlphaParams_t osp2be_bg_alpha =
+{
 	0.0f,   /* bg_ingame */
 	1.0f,   /* bg_menu */
 	0.65f,  /* header_ingame */
@@ -87,7 +95,8 @@ osp2beBackgroundAlphaParams_t osp2be_bg_alpha = {
 };
 
 /* Background layout parameters */
-osp2beBackgroundLayoutParams_t osp2be_bg_layout = {
+osp2beBackgroundLayoutParams_t osp2be_bg_layout =
+{
 	18,  /* header_padding_left */
 	18,  /* header_padding_right */
 	-4,  /* params_side_padding */
@@ -96,13 +105,15 @@ osp2beBackgroundLayoutParams_t osp2be_bg_layout = {
 };
 
 /* Font parameters */
-osp2beFontParams_t osp2be_font = {
+osp2beFontParams_t osp2be_font =
+{
 	0,              /* index */
 	DS_PROPORTIONAL  /* flags */
 };
 
 /* Preview button parameters */
-osp2bePreviewButtonParams_t osp2be_preview_button = {
+osp2bePreviewButtonParams_t osp2be_preview_button =
+{
 	0.12f,  /* bg_r */
 	0.12f,  /* bg_g */
 	0.12f,  /* bg_b */

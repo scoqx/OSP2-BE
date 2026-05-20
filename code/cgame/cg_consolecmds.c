@@ -2117,7 +2117,7 @@ void CG_BEHelp_f(void)
 		CG_BEHelp_PrintFeature("cg_drawHitBox", CG_BE_HITBOX, "Draw enemy hitboxes", 0);
 		CG_BEHelp_PrintFeature("cg_friendsWallhackFrozen", CG_BE_TEAM_FROZEN, "Show frozen teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);
-		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color for enemies", 0);
+		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color override", 0);
 		CG_BEHelp_PrintFeature("cg_markTeam", CG_BE_MARK_TEAMMATE, "Mark teammate(s) to change outline color", -1);
 		CG_BEHelp_PrintFeature("cg_altShadow", CG_BE_ALT_SHADOW, "Alternative shadow", 0);
 		CG_BEHelp_PrintFeature("cg_altBlood", CG_BE_ALT_BLOOD, "Alternative blood effects on model hit", 0);
@@ -2429,7 +2429,7 @@ static qboolean CG_IsRegisteredGetCommand(const char* cmd)
 		}
 		nameEnd = listPos;
 		if (nameEnd > nameStart && (nameEnd - nameStart) == nameLen &&
-		    Q_stricmpn(name, bindsList + nameStart, nameLen) == 0)
+		        Q_stricmpn(name, bindsList + nameStart, nameLen) == 0)
 		{
 			return qtrue;
 		}

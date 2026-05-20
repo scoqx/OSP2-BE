@@ -729,6 +729,19 @@ typedef struct gitem_s
 	char*        sounds;        // string of all sounds this item will use
 } gitem_t;
 
+// Optional world model overrides by item classname (cgame registers these on top of bg_itemlist).
+// NULL world_model[n] keeps the nth model from bg_itemlist.
+typedef struct
+{
+	const char* classname;
+	const char* world_model[MAX_ITEM_MODELS];
+	const char* icon; /* optional; NULL = bg_itemlist icon */
+} bg_customItemVisuals_t;
+
+extern const bg_customItemVisuals_t bg_customItemVisuals[];
+
+const bg_customItemVisuals_t* BG_CustomItemVisualsFind(const char* classname);
+
 // included in both the game dll and the client
 extern  gitem_t bg_itemlist[];
 extern  int     bg_numItems;

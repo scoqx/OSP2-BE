@@ -68,6 +68,11 @@ int CG_OSPGetNormalizedStringSize(const char* str)
 	{
 		if (*str == '^' && *(str + 1) != 0 &&  *(str + 1) != '^')
 		{
+			if (CG_TextControlDisabled(*(str + 1)))
+			{
+				str += 2;
+				continue;
+			}
 			if (*(str + 1) == 'x' || *(str + 1) == 'X')
 			{
 				/* Ok, we have found ^x , check that next 6 charactes is color code */
@@ -553,8 +558,8 @@ void CG_UpdateMyTeam(void)
 	if (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
 	{
 		const team_t ourTeam = CG_OSPIsGameTypeCA(cgs.gametype)
-			? cgs.clientinfo[cg.clientNum].rt
-			: cgs.clientinfo[cg.clientNum].team;
+		                       ? cgs.clientinfo[cg.clientNum].rt
+		                       : cgs.clientinfo[cg.clientNum].team;
 		if (ourTeam == TEAM_SPECTATOR && !cg_spectPOV.integer)
 			realTeam = TEAM_SPECTATOR;
 	}
@@ -629,42 +634,42 @@ void CG_UpdateVisualTeamColors(team_t realTeam)
 	/* Apply cg_myTeam mapping */
 	switch (cg_myTeam.integer)
 	{
-	default:
-	case 0:
-		/* Default behavior: no remapping */
-		Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
-		Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
-		break;
-
-	case 1: /* Force "my team" to use red color scheme */
-		if (realTeam == TEAM_RED)
-		{
+		default:
+		case 0:
+			/* Default behavior: no remapping */
 			Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
 			Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
-		}
-		else /* realTeam == TEAM_BLUE */
-		{
-			/* Swap red/blue effective colors */
-			Vector4Copy(cgs.baseBlueTeamColor, cgs.beRedTeamColor);
-			Vector4Copy(cgs.baseRedTeamColor,  cgs.beBlueTeamColor);
-		}
-		break;
+			break;
 
-	case 2: /* Force "my team" to use blue color scheme */
-		if (realTeam == TEAM_BLUE)
-		{
-			Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
-			Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
-		}
-		else /* realTeam == TEAM_RED */
-		{
-			/* Swap red/blue effective colors */
-			Vector4Copy(cgs.baseBlueTeamColor, cgs.beRedTeamColor);
-			Vector4Copy(cgs.baseRedTeamColor,  cgs.beBlueTeamColor);
-		}
-		break;
+		case 1: /* Force "my team" to use red color scheme */
+			if (realTeam == TEAM_RED)
+			{
+				Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
+				Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+			}
+			else /* realTeam == TEAM_BLUE */
+			{
+				/* Swap red/blue effective colors */
+				Vector4Copy(cgs.baseBlueTeamColor, cgs.beRedTeamColor);
+				Vector4Copy(cgs.baseRedTeamColor,  cgs.beBlueTeamColor);
+			}
+			break;
+
+		case 2: /* Force "my team" to use blue color scheme */
+			if (realTeam == TEAM_BLUE)
+			{
+				Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
+				Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+			}
+			else /* realTeam == TEAM_RED */
+			{
+				/* Swap red/blue effective colors */
+				Vector4Copy(cgs.baseBlueTeamColor, cgs.beRedTeamColor);
+				Vector4Copy(cgs.baseRedTeamColor,  cgs.beBlueTeamColor);
+			}
+			break;
 	}
-	
+
 	/* Also update scoreboard base colors (they follow beRedTeamColor/beBlueTeamColor) */
 	Vector4Copy(cgs.beRedTeamColor, scoreboard_rtColor);
 	Vector4Copy(cgs.beBlueTeamColor, scoreboard_btColor);
@@ -701,6 +706,8 @@ void CG_ReloadColors(void)
 		"cg_enemyGrenadesColor",
 		"cg_battleSuitColor",
 		"cg_enemyBattleSuitColor",
+		"cg_quadDamageColor",
+		"cg_enemyQuadDamageColor",
 		"cg_healthColor",
 		"cg_healthLowColor",
 		"cg_healthMidColor",

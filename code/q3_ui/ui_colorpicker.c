@@ -57,14 +57,16 @@ extern double cos(double);
 #define COLORPICKER_BUTTON_HEIGHT 24
 #define COLORPICKER_BUTTON_GAP 12
 
-typedef struct {
-	const char *name;
+typedef struct
+{
+	const char* name;
 	float r;
 	float g;
 	float b;
 } uiColorPickerNamedColor_t;
 
-static const uiColorPickerNamedColor_t uiColorPickerNamedColors[] = {
+static const uiColorPickerNamedColor_t uiColorPickerNamedColors[] =
+{
 	{ "white", 1.0f, 1.0f, 1.0f },
 	{ "black", 0.0f, 0.0f, 0.0f },
 	{ "red", 1.0f, 0.0f, 0.0f },
@@ -88,7 +90,8 @@ static qboolean uiColorPickerLastUsedColorsUsed[COLORPICKER_LAST_USED_COUNT];
 static vec4_t uiColorPickerCopiedColors[COLORPICKER_COPIED_COUNT];
 static qboolean uiColorPickerCopiedColorsUsed[COLORPICKER_COPIED_COUNT];
 
-static void UI_ColorPicker_AddToLastUsed( const vec4_t color ) {
+static void UI_ColorPicker_AddToLastUsed(const vec4_t color)
+{
 	int i;
 	int j;
 	int foundIndex;
@@ -96,7 +99,8 @@ static void UI_ColorPicker_AddToLastUsed( const vec4_t color ) {
 	qboolean found;
 	float diff;
 
-	if ( !color ) {
+	if (!color)
+	{
 		return;
 	}
 
@@ -104,21 +108,26 @@ static void UI_ColorPicker_AddToLastUsed( const vec4_t color ) {
 	foundIndex = -1;
 	found = qfalse;
 
-	if ( uiColorPickerLastUsedColorsUsed[0] ) {
-		diff = ( color[0] - uiColorPickerLastUsedColors[0][0] ) * ( color[0] - uiColorPickerLastUsedColors[0][0] ) +
-		       ( color[1] - uiColorPickerLastUsedColors[0][1] ) * ( color[1] - uiColorPickerLastUsedColors[0][1] ) +
-		       ( color[2] - uiColorPickerLastUsedColors[0][2] ) * ( color[2] - uiColorPickerLastUsedColors[0][2] );
-		if ( diff < epsilon * epsilon ) {
+	if (uiColorPickerLastUsedColorsUsed[0])
+	{
+		diff = (color[0] - uiColorPickerLastUsedColors[0][0]) * (color[0] - uiColorPickerLastUsedColors[0][0]) +
+		       (color[1] - uiColorPickerLastUsedColors[0][1]) * (color[1] - uiColorPickerLastUsedColors[0][1]) +
+		       (color[2] - uiColorPickerLastUsedColors[0][2]) * (color[2] - uiColorPickerLastUsedColors[0][2]);
+		if (diff < epsilon * epsilon)
+		{
 			return;
 		}
 	}
 
-	for ( i = 0; i < COLORPICKER_LAST_USED_COUNT; i++ ) {
-		if ( uiColorPickerLastUsedColorsUsed[i] ) {
-			diff = ( color[0] - uiColorPickerLastUsedColors[i][0] ) * ( color[0] - uiColorPickerLastUsedColors[i][0] ) +
-			       ( color[1] - uiColorPickerLastUsedColors[i][1] ) * ( color[1] - uiColorPickerLastUsedColors[i][1] ) +
-			       ( color[2] - uiColorPickerLastUsedColors[i][2] ) * ( color[2] - uiColorPickerLastUsedColors[i][2] );
-			if ( diff < epsilon * epsilon ) {
+	for (i = 0; i < COLORPICKER_LAST_USED_COUNT; i++)
+	{
+		if (uiColorPickerLastUsedColorsUsed[i])
+		{
+			diff = (color[0] - uiColorPickerLastUsedColors[i][0]) * (color[0] - uiColorPickerLastUsedColors[i][0]) +
+			       (color[1] - uiColorPickerLastUsedColors[i][1]) * (color[1] - uiColorPickerLastUsedColors[i][1]) +
+			       (color[2] - uiColorPickerLastUsedColors[i][2]) * (color[2] - uiColorPickerLastUsedColors[i][2]);
+			if (diff < epsilon * epsilon)
+			{
 				foundIndex = i;
 				found = qtrue;
 				break;
@@ -126,7 +135,8 @@ static void UI_ColorPicker_AddToLastUsed( const vec4_t color ) {
 		}
 	}
 
-	if ( found && foundIndex >= 0 ) {
+	if (found && foundIndex >= 0)
+	{
 		vec4_t tempColor;
 		qboolean tempUsed;
 
@@ -136,7 +146,8 @@ static void UI_ColorPicker_AddToLastUsed( const vec4_t color ) {
 		tempColor[3] = uiColorPickerLastUsedColors[foundIndex][3];
 		tempUsed = uiColorPickerLastUsedColorsUsed[foundIndex];
 
-		for ( j = foundIndex; j > 0; j-- ) {
+		for (j = foundIndex; j > 0; j--)
+		{
 			uiColorPickerLastUsedColors[j][0] = uiColorPickerLastUsedColors[j - 1][0];
 			uiColorPickerLastUsedColors[j][1] = uiColorPickerLastUsedColors[j - 1][1];
 			uiColorPickerLastUsedColors[j][2] = uiColorPickerLastUsedColors[j - 1][2];
@@ -149,8 +160,11 @@ static void UI_ColorPicker_AddToLastUsed( const vec4_t color ) {
 		uiColorPickerLastUsedColors[0][2] = tempColor[2];
 		uiColorPickerLastUsedColors[0][3] = tempColor[3];
 		uiColorPickerLastUsedColorsUsed[0] = tempUsed;
-	} else {
-		for ( i = COLORPICKER_LAST_USED_COUNT - 1; i > 0; i-- ) {
+	}
+	else
+	{
+		for (i = COLORPICKER_LAST_USED_COUNT - 1; i > 0; i--)
+		{
 			uiColorPickerLastUsedColors[i][0] = uiColorPickerLastUsedColors[i - 1][0];
 			uiColorPickerLastUsedColors[i][1] = uiColorPickerLastUsedColors[i - 1][1];
 			uiColorPickerLastUsedColors[i][2] = uiColorPickerLastUsedColors[i - 1][2];
@@ -166,43 +180,51 @@ static void UI_ColorPicker_AddToLastUsed( const vec4_t color ) {
 	}
 }
 
-static qboolean UI_ColorPicker_ParseNamedColor(const char *value, vec4_t out) {
+static qboolean UI_ColorPicker_ParseNamedColor(const char* value, vec4_t out)
+{
 	char lower[32];
 	int i;
 	int index;
 	char c;
 
-	if (!value) {
+	if (!value)
+	{
 		return qfalse;
 	}
 
-	for (i = 0; value[i] && i < (int)sizeof(lower) - 1; i++) {
+	for (i = 0; value[i] && i < (int)sizeof(lower) - 1; i++)
+	{
 		c = value[i];
-		if (c >= 'A' && c <= 'Z') {
+		if (c >= 'A' && c <= 'Z')
+		{
 			c = (char)(c - 'A' + 'a');
 		}
 		lower[i] = c;
 	}
 	lower[i] = '\0';
 
-	if (i <= 0) {
+	if (i <= 0)
+	{
 		return qfalse;
 	}
 
 	index = 0;
-	while (uiColorPickerNamedColors[index].name) {
-		const char *name;
-		const char *test;
+	while (uiColorPickerNamedColors[index].name)
+	{
+		const char* name;
+		const char* test;
 
 		name = uiColorPickerNamedColors[index].name;
 		test = lower;
 
-		while (*name && *test && *name == *test) {
+		while (*name && *test && *name == *test)
+		{
 			name++;
 			test++;
 		}
 
-		if (!*name && !*test) {
+		if (!*name && !*test)
+		{
 			out[0] = uiColorPickerNamedColors[index].r;
 			out[1] = uiColorPickerNamedColors[index].g;
 			out[2] = uiColorPickerNamedColors[index].b;
@@ -216,71 +238,84 @@ static qboolean UI_ColorPicker_ParseNamedColor(const char *value, vec4_t out) {
 	return qfalse;
 }
 
-static void UI_ColorPicker_UpdateHexString(uiColorPicker_t *picker, int red, int green, int blue);
-static void UI_ColorPicker_UpdateFromCurrent(uiColorPicker_t *picker);
-static void UI_ColorPicker_ResetInputState(uiColorPicker_t *picker);
-static void UI_ColorPicker_SetMode(uiColorPicker_t *picker, int mode);
-static void UI_ColorPicker_SetComponentFromValue(uiColorPicker_t *picker, int componentIndex, int value);
-static int UI_ColorPicker_ParseComponentText(const char *text);
+static void UI_ColorPicker_UpdateHexString(uiColorPicker_t* picker, int red, int green, int blue);
+static void UI_ColorPicker_UpdateFromCurrent(uiColorPicker_t* picker);
+static void UI_ColorPicker_ResetInputState(uiColorPicker_t* picker);
+static void UI_ColorPicker_SetMode(uiColorPicker_t* picker, int mode);
+static void UI_ColorPicker_SetComponentFromValue(uiColorPicker_t* picker, int componentIndex, int value);
+static int UI_ColorPicker_ParseComponentText(const char* text);
 static int UI_ColorPicker_FindPaletteIndex(const vec4_t color);
-static void UI_ColorPicker_DrawModeTabs(uiColorPicker_t *picker, int tabY);
-static void UI_ColorPicker_DrawButtons(uiColorPicker_t *picker, int buttonY);
-static void UI_ColorPicker_DrawPreview(uiColorPicker_t *picker, int previewX, int previewY, int labelY);
-static void UI_ColorPicker_DrawRGB(uiColorPicker_t *picker, int contentTop);
-static void UI_ColorPicker_DrawPalette(uiColorPicker_t *picker, int contentTop);
-static void UI_ColorPicker_Commit(uiColorPicker_t *picker);
+static void UI_ColorPicker_DrawModeTabs(uiColorPicker_t* picker, int tabY);
+static void UI_ColorPicker_DrawButtons(uiColorPicker_t* picker, int buttonY);
+static void UI_ColorPicker_DrawPreview(uiColorPicker_t* picker, int previewX, int previewY, int labelY);
+static void UI_ColorPicker_DrawRGB(uiColorPicker_t* picker, int contentTop);
+static void UI_ColorPicker_DrawPalette(uiColorPicker_t* picker, int contentTop);
+static void UI_ColorPicker_Commit(uiColorPicker_t* picker);
 static void UI_ColorPicker_UpdateModeCvar(int mode);
 
-static int UI_ColorPicker_HexDigit(char c) {
-	if (c >= '0' && c <= '9') {
+static int UI_ColorPicker_HexDigit(char c)
+{
+	if (c >= '0' && c <= '9')
+	{
 		return c - '0';
 	}
-	if (c >= 'A' && c <= 'F') {
+	if (c >= 'A' && c <= 'F')
+	{
 		return c - 'A' + 10;
 	}
-	if (c >= 'a' && c <= 'f') {
+	if (c >= 'a' && c <= 'f')
+	{
 		return c - 'a' + 10;
 	}
 	return -1;
 }
 
-static float UI_ColorPicker_ParseHexComponent(const char *ptr) {
+static float UI_ColorPicker_ParseHexComponent(const char* ptr)
+{
 	int high;
 	int low;
 
 	high = UI_ColorPicker_HexDigit(ptr[0]);
-	if (high < 0) {
+	if (high < 0)
+	{
 		return -1.0f;
 	}
 
 	low = UI_ColorPicker_HexDigit(ptr[1]);
-	if (low < 0) {
+	if (low < 0)
+	{
 		return -1.0f;
 	}
 
 	return (float)(high * 16 + low) / 255.0f;
 }
 
-static qboolean UI_ColorPicker_ParseHexColor(const char *value, vec4_t out) {
+static qboolean UI_ColorPicker_ParseHexColor(const char* value, vec4_t out)
+{
 	float component;
 	int len;
 	int i;
 
-	if (!value) {
+	if (!value)
+	{
 		return qfalse;
 	}
 
 	len = 0;
-	while (value[len]) {
+	while (value[len])
+	{
 		len++;
 	}
 
-	if (len == 3) {
+	if (len == 3)
+	{
 		/* short form: RGB -> RRGGBB */
-		for (i = 0; i < 3; i++) {
+		for (i = 0; i < 3; i++)
+		{
 			int digit;
 			digit = UI_ColorPicker_HexDigit(value[i]);
-			if (digit < 0) {
+			if (digit < 0)
+			{
 				return qfalse;
 			}
 			out[i] = (float)(digit * 17) / 255.0f;
@@ -289,24 +324,28 @@ static qboolean UI_ColorPicker_ParseHexColor(const char *value, vec4_t out) {
 		return qtrue;
 	}
 
-	if (len < 6) {
+	if (len < 6)
+	{
 		return qfalse;
 	}
 
 	component = UI_ColorPicker_ParseHexComponent(value);
-	if (component < 0.0f) {
+	if (component < 0.0f)
+	{
 		return qfalse;
 	}
 	out[0] = component;
 
 	component = UI_ColorPicker_ParseHexComponent(value + 2);
-	if (component < 0.0f) {
+	if (component < 0.0f)
+	{
 		return qfalse;
 	}
 	out[1] = component;
 
 	component = UI_ColorPicker_ParseHexComponent(value + 4);
-	if (component < 0.0f) {
+	if (component < 0.0f)
+	{
 		return qfalse;
 	}
 	out[2] = component;
@@ -314,7 +353,8 @@ static qboolean UI_ColorPicker_ParseHexColor(const char *value, vec4_t out) {
 	return qtrue;
 }
 
-static void UI_ColorPicker_OSPColorFromNumber(int number, vec4_t out) {
+static void UI_ColorPicker_OSPColorFromNumber(int number, vec4_t out)
+{
 	float red;
 	float green;
 	float blue;
@@ -325,82 +365,91 @@ static void UI_ColorPicker_OSPColorFromNumber(int number, vec4_t out) {
 	green = 1.0f;
 	blue = 1.0f;
 
-	if (number >= 10 && number < 34) {
+	if (number >= 10 && number < 34)
+	{
 		tmp = ((360.0 * (double)number) - 3600.0) / 24.0;
 		sixtyRadians = 60.0 * M_PI / 180.0;
-		if (tmp <= 120.0) {
+		if (tmp <= 120.0)
+		{
 			tmp = M_PI * tmp / 180.0;
 			blue = 0.0f;
 			red = (float)((cos(tmp) / (cos(sixtyRadians - tmp)) + 1.0) / 3.0);
 			green = 1.0f - (red + blue);
-		} else if (tmp <= 240.0) {
+		}
+		else if (tmp <= 240.0)
+		{
 			tmp = M_PI * (tmp - 120.0) / 180.0;
 			red = 0.0f;
 			green = (float)((cos(tmp) / (cos(sixtyRadians - tmp)) + 1.0) / 3.0);
 			blue = 1.0f - (red + green);
-		} else {
+		}
+		else
+		{
 			tmp = M_PI * (tmp - 240.0) / 180.0;
 			green = 0.0f;
 			blue = (float)((cos(tmp) / (cos(sixtyRadians - tmp)) + 1.0) / 3.0);
 			red = 1.0f - (green + blue);
 		}
-	} else {
-		switch (number) {
-		case 0:
-			red = 1.0f;
-			green = 1.0f;
-			blue = 1.0f;
-			break;
-		case 1:
-			red = 1.0f;
-			green = 0.2f;
-			blue = 0.2f;
-			break;
-		case 2:
-			red = 0.2f;
-			green = 1.0f;
-			blue = 0.2f;
-			break;
-		case 3:
-			red = 1.0f;
-			green = 1.0f;
-			blue = 0.1f;
-			break;
-		case 4:
-			red = 0.2f;
-			green = 0.2f;
-			blue = 1.0f;
-			break;
-		case 5:
-			red = 0.1f;
-			green = 1.0f;
-			blue = 1.0f;
-			break;
-		case 6:
-			red = 1.0f;
-			green = 0.1f;
-			blue = 1.0f;
-			break;
-		case 7:
-			red = 1.0f;
-			green = 0.59f;
-			blue = 0.12f;
-			break;
-		case 8:
-			red = 0.65f;
-			green = 0.2f;
-			blue = 0.65f;
-			break;
-		case 9:
-			red = 0.6f;
-			green = 0.6f;
-			blue = 1.0f;
-			break;
-		default:
-			red = 1.0f;
-			green = 1.0f;
-			blue = 1.0f;
-			break;
+	}
+	else
+	{
+		switch (number)
+		{
+			case 0:
+				red = 1.0f;
+				green = 1.0f;
+				blue = 1.0f;
+				break;
+			case 1:
+				red = 1.0f;
+				green = 0.2f;
+				blue = 0.2f;
+				break;
+			case 2:
+				red = 0.2f;
+				green = 1.0f;
+				blue = 0.2f;
+				break;
+			case 3:
+				red = 1.0f;
+				green = 1.0f;
+				blue = 0.1f;
+				break;
+			case 4:
+				red = 0.2f;
+				green = 0.2f;
+				blue = 1.0f;
+				break;
+			case 5:
+				red = 0.1f;
+				green = 1.0f;
+				blue = 1.0f;
+				break;
+			case 6:
+				red = 1.0f;
+				green = 0.1f;
+				blue = 1.0f;
+				break;
+			case 7:
+				red = 1.0f;
+				green = 0.59f;
+				blue = 0.12f;
+				break;
+			case 8:
+				red = 0.65f;
+				green = 0.2f;
+				blue = 0.65f;
+				break;
+			case 9:
+				red = 0.6f;
+				green = 0.6f;
+				blue = 1.0f;
+				break;
+			default:
+				red = 1.0f;
+				green = 1.0f;
+				blue = 1.0f;
+				break;
 		}
 	}
 
@@ -410,22 +459,26 @@ static void UI_ColorPicker_OSPColorFromNumber(int number, vec4_t out) {
 	out[3] = 1.0f;
 }
 
-static qboolean UI_ColorPicker_ColorFromChar(char code, vec4_t out) {
+static qboolean UI_ColorPicker_ColorFromChar(char code, vec4_t out)
+{
 	int number;
 
-	if (code >= '0' && code <= '9') {
+	if (code >= '0' && code <= '9')
+	{
 		number = code - '0';
 		UI_ColorPicker_OSPColorFromNumber(number, out);
 		return qtrue;
 	}
 
-	if (code >= 'a' && code <= 'z') {
+	if (code >= 'a' && code <= 'z')
+	{
 		number = code - 'a' + 10;
 		UI_ColorPicker_OSPColorFromNumber(number, out);
 		return qtrue;
 	}
 
-	if (code >= 'A' && code <= 'Z') {
+	if (code >= 'A' && code <= 'Z')
+	{
 		number = code - 'A' + 10;
 		UI_ColorPicker_OSPColorFromNumber(number, out);
 		return qtrue;
@@ -434,24 +487,29 @@ static qboolean UI_ColorPicker_ColorFromChar(char code, vec4_t out) {
 	return qfalse;
 }
 
-static qboolean UI_ColorPicker_ParseColorValue(const char *value, vec4_t out) {
+static qboolean UI_ColorPicker_ParseColorValue(const char* value, vec4_t out)
+{
 	char clean[32];
 	int len;
 	int i;
-	const char *ptr;
+	const char* ptr;
 
-	if (!value) {
+	if (!value)
+	{
 		return qfalse;
 	}
 
-	while (*value == ' ' || *value == '\t' || *value == '\r' || *value == '\n') {
+	while (*value == ' ' || *value == '\t' || *value == '\r' || *value == '\n')
+	{
 		value++;
 	}
 
 	ptr = value;
 	len = 0;
-	while (*ptr && len < (int)sizeof(clean) - 1) {
-		if (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n') {
+	while (*ptr && len < (int)sizeof(clean) - 1)
+	{
+		if (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')
+		{
 			break;
 		}
 		clean[len] = *ptr;
@@ -460,41 +518,52 @@ static qboolean UI_ColorPicker_ParseColorValue(const char *value, vec4_t out) {
 	}
 	clean[len] = '\0';
 
-	if (len <= 0) {
+	if (len <= 0)
+	{
 		return qfalse;
 	}
 
-	if (clean[0] == '^' && len >= 2) {
+	if (clean[0] == '^' && len >= 2)
+	{
 		return UI_ColorPicker_ColorFromChar(clean[1], out);
 	}
 
-	if (len == 1) {
-		if (UI_ColorPicker_ColorFromChar(clean[0], out)) {
+	if (len == 1)
+	{
+		if (UI_ColorPicker_ColorFromChar(clean[0], out))
+		{
 			return qtrue;
 		}
 	}
 
-	if (clean[0] == '#') {
-		for (i = 0; i < len; i++) {
+	if (clean[0] == '#')
+	{
+		for (i = 0; i < len; i++)
+		{
 			clean[i] = clean[i + 1];
 		}
 		len--;
 	}
 
-	if (len <= 0) {
+	if (len <= 0)
+	{
 		return qfalse;
 	}
 
-	if (UI_ColorPicker_ParseNamedColor(clean, out)) {
+	if (UI_ColorPicker_ParseNamedColor(clean, out))
+	{
 		return qtrue;
 	}
 
-	if (len == 3) {
+	if (len == 3)
+	{
 		return UI_ColorPicker_ParseHexColor(clean, out);
 	}
 
-	if (len >= 6) {
-		if (len > 6) {
+	if (len >= 6)
+	{
+		if (len > 6)
+		{
 			clean[6] = '\0';
 		}
 		return UI_ColorPicker_ParseHexColor(clean, out);
@@ -503,8 +572,10 @@ static qboolean UI_ColorPicker_ParseColorValue(const char *value, vec4_t out) {
 	return qfalse;
 }
 
-static void UI_ColorPicker_GeneratePalette(vec4_t *palette, int *count) {
-	static const float baseColors[COLORPICKER_PALETTE_COLS][3] = {
+static void UI_ColorPicker_GeneratePalette(vec4_t* palette, int* count)
+{
+	static const float baseColors[COLORPICKER_PALETTE_COLS][3] =
+	{
 		{ 1.0f, 0.0f, 0.0f }, /* ^1 red */
 		{ 1.0f, 0.5f, 0.0f }, /* ^2 orange */
 		{ 1.0f, 1.0f, 0.0f }, /* ^3 yellow */
@@ -525,7 +596,7 @@ static void UI_ColorPicker_GeneratePalette(vec4_t *palette, int *count) {
 	float r;
 	float g;
 	float b;
-	const float *base;
+	const float* base;
 	int colorRowIndex;
 	int factorIndex;
 	float factor;
@@ -533,7 +604,8 @@ static void UI_ColorPicker_GeneratePalette(vec4_t *palette, int *count) {
 	*count = 0;
 
 	/* First row: grayscale */
-	for (i = 0; i < COLORPICKER_PALETTE_COLS; i++) {
+	for (i = 0; i < COLORPICKER_PALETTE_COLS; i++)
+	{
 		float gray;
 		gray = 1.0f - ((float)i / (float)(COLORPICKER_PALETTE_COLS - 1));
 		palette[*count][0] = gray;
@@ -544,31 +616,44 @@ static void UI_ColorPicker_GeneratePalette(vec4_t *palette, int *count) {
 	}
 
 	/* Remaining rows: vivid colors with light/dark variations */
-	for (row = 1; row < COLORPICKER_PALETTE_ROWS; row++) {
+	for (row = 1; row < COLORPICKER_PALETTE_ROWS; row++)
+	{
 		colorRowIndex = row - 1;
-		for (col = 0; col < COLORPICKER_PALETTE_COLS; col++) {
+		for (col = 0; col < COLORPICKER_PALETTE_COLS; col++)
+		{
 			base = baseColors[col];
 
-			if (colorRowIndex == baseRowIndex) {
+			if (colorRowIndex == baseRowIndex)
+			{
 				r = base[0];
 				g = base[1];
 				b = base[2];
-			} else if (colorRowIndex <= COLORPICKER_LIGHTEN_COUNT) {
+			}
+			else if (colorRowIndex <= COLORPICKER_LIGHTEN_COUNT)
+			{
 				factorIndex = colorRowIndex - 1;
-				if (factorIndex < 0) {
+				if (factorIndex < 0)
+				{
 					factorIndex = 0;
-				} else if (factorIndex >= COLORPICKER_LIGHTEN_COUNT) {
+				}
+				else if (factorIndex >= COLORPICKER_LIGHTEN_COUNT)
+				{
 					factorIndex = COLORPICKER_LIGHTEN_COUNT - 1;
 				}
 				factor = lightenFactors[factorIndex];
 				r = base[0] + (1.0f - base[0]) * factor;
 				g = base[1] + (1.0f - base[1]) * factor;
 				b = base[2] + (1.0f - base[2]) * factor;
-			} else {
+			}
+			else
+			{
 				factorIndex = colorRowIndex - 1 - COLORPICKER_LIGHTEN_COUNT;
-				if (factorIndex < 0) {
+				if (factorIndex < 0)
+				{
 					factorIndex = 0;
-				} else if (factorIndex >= COLORPICKER_DARKEN_COUNT) {
+				}
+				else if (factorIndex >= COLORPICKER_DARKEN_COUNT)
+				{
 					factorIndex = COLORPICKER_DARKEN_COUNT - 1;
 				}
 				factor = darkenFactors[factorIndex];
@@ -576,19 +661,28 @@ static void UI_ColorPicker_GeneratePalette(vec4_t *palette, int *count) {
 				g = base[1] * (1.0f - factor);
 				b = base[2] * (1.0f - factor);
 			}
-			if (r < 0.0f) {
+			if (r < 0.0f)
+			{
 				r = 0.0f;
-			} else if (r > 1.0f) {
+			}
+			else if (r > 1.0f)
+			{
 				r = 1.0f;
 			}
-			if (g < 0.0f) {
+			if (g < 0.0f)
+			{
 				g = 0.0f;
-			} else if (g > 1.0f) {
+			}
+			else if (g > 1.0f)
+			{
 				g = 1.0f;
 			}
-			if (b < 0.0f) {
+			if (b < 0.0f)
+			{
 				b = 0.0f;
-			} else if (b > 1.0f) {
+			}
+			else if (b > 1.0f)
+			{
 				b = 1.0f;
 			}
 
@@ -602,28 +696,39 @@ static void UI_ColorPicker_GeneratePalette(vec4_t *palette, int *count) {
 
 }
 
-static void UI_ColorPicker_UpdateHexString(uiColorPicker_t *picker, int red, int green, int blue) {
+static void UI_ColorPicker_UpdateHexString(uiColorPicker_t* picker, int red, int green, int blue)
+{
 	static const char hexDigits[] = "0123456789ABCDEF";
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
-	if (red < 0) {
+	if (red < 0)
+	{
 		red = 0;
-	} else if (red > 255) {
+	}
+	else if (red > 255)
+	{
 		red = 255;
 	}
 
-	if (green < 0) {
+	if (green < 0)
+	{
 		green = 0;
-	} else if (green > 255) {
+	}
+	else if (green > 255)
+	{
 		green = 255;
 	}
 
-	if (blue < 0) {
+	if (blue < 0)
+	{
 		blue = 0;
-	} else if (blue > 255) {
+	}
+	else if (blue > 255)
+	{
 		blue = 255;
 	}
 
@@ -636,12 +741,14 @@ static void UI_ColorPicker_UpdateHexString(uiColorPicker_t *picker, int red, int
 	picker->hexBuffer[6] = '\0';
 }
 
-static void UI_ColorPicker_UpdateFromCurrent(uiColorPicker_t *picker) {
+static void UI_ColorPicker_UpdateFromCurrent(uiColorPicker_t* picker)
+{
 	int red;
 	int green;
 	int blue;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
@@ -649,21 +756,30 @@ static void UI_ColorPicker_UpdateFromCurrent(uiColorPicker_t *picker) {
 	green = (int)(picker->currentColor[1] * 255.0f + 0.5f);
 	blue = (int)(picker->currentColor[2] * 255.0f + 0.5f);
 
-	if (red < 0) {
+	if (red < 0)
+	{
 		red = 0;
-	} else if (red > 255) {
+	}
+	else if (red > 255)
+	{
 		red = 255;
 	}
 
-	if (green < 0) {
+	if (green < 0)
+	{
 		green = 0;
-	} else if (green > 255) {
+	}
+	else if (green > 255)
+	{
 		green = 255;
 	}
 
-	if (blue < 0) {
+	if (blue < 0)
+	{
 		blue = 0;
-	} else if (blue > 255) {
+	}
+	else if (blue > 255)
+	{
 		blue = 255;
 	}
 
@@ -678,24 +794,29 @@ static void UI_ColorPicker_UpdateFromCurrent(uiColorPicker_t *picker) {
 	UI_ColorPicker_UpdateHexString(picker, red, green, blue);
 }
 
-static int UI_ColorPicker_ParseComponentText(const char *text) {
+static int UI_ColorPicker_ParseComponentText(const char* text)
+{
 	int value;
 	int i;
 	char c;
 
 	value = 0;
 
-	if (!text) {
+	if (!text)
+	{
 		return 0;
 	}
 
-	for (i = 0; text[i]; i++) {
+	for (i = 0; text[i]; i++)
+	{
 		c = text[i];
-		if (c < '0' || c > '9') {
+		if (c < '0' || c > '9')
+		{
 			break;
 		}
 		value = value * 10 + (c - '0');
-		if (value > 255) {
+		if (value > 255)
+		{
 			value = 255;
 			break;
 		}
@@ -704,7 +825,8 @@ static int UI_ColorPicker_ParseComponentText(const char *text) {
 	return value;
 }
 
-static int UI_ColorPicker_FindPaletteIndex(const vec4_t color) {
+static int UI_ColorPicker_FindPaletteIndex(const vec4_t color)
+{
 	vec4_t palette[COLORPICKER_PALETTE_CELLS];
 	int paletteCount;
 	int i;
@@ -721,28 +843,35 @@ static int UI_ColorPicker_FindPaletteIndex(const vec4_t color) {
 	b = color[2];
 	tolerance = 0.001f;
 
-	for (i = 0; i < paletteCount; i++) {
+	for (i = 0; i < paletteCount; i++)
+	{
 		delta = palette[i][0] - r;
-		if (delta < 0.0f) {
+		if (delta < 0.0f)
+		{
 			delta = -delta;
 		}
-		if (delta > tolerance) {
+		if (delta > tolerance)
+		{
 			continue;
 		}
 
 		delta = palette[i][1] - g;
-		if (delta < 0.0f) {
+		if (delta < 0.0f)
+		{
 			delta = -delta;
 		}
-		if (delta > tolerance) {
+		if (delta > tolerance)
+		{
 			continue;
 		}
 
 		delta = palette[i][2] - b;
-		if (delta < 0.0f) {
+		if (delta < 0.0f)
+		{
 			delta = -delta;
 		}
-		if (delta > tolerance) {
+		if (delta > tolerance)
+		{
 			continue;
 		}
 
@@ -752,21 +881,27 @@ static int UI_ColorPicker_FindPaletteIndex(const vec4_t color) {
 	return -1;
 }
 
-static void UI_ColorPicker_ResetInputState(uiColorPicker_t *picker) {
-	if (!picker) {
+static void UI_ColorPicker_ResetInputState(uiColorPicker_t* picker)
+{
+	if (!picker)
+	{
 		return;
 	}
 
 	picker->focusedField = -1;
 }
 
-static void UI_ColorPicker_UpdateModeCvar(int mode) {
-	const char *value;
+static void UI_ColorPicker_UpdateModeCvar(int mode)
+{
+	const char* value;
 
 	value = "0";
-	if (mode == COLORPICKER_MODE_RGB) {
+	if (mode == COLORPICKER_MODE_RGB)
+	{
 		value = "1";
-	} else if (mode == COLORPICKER_MODE_PALETTE) {
+	}
+	else if (mode == COLORPICKER_MODE_PALETTE)
+	{
 		value = "2";
 	}
 
@@ -774,42 +909,52 @@ static void UI_ColorPicker_UpdateModeCvar(int mode) {
 	trap_Cvar_Update(&ui_pallete_type);
 }
 
-static void UI_ColorPicker_SetMode(uiColorPicker_t *picker, int mode) {
+static void UI_ColorPicker_SetMode(uiColorPicker_t* picker, int mode)
+{
 	int previousMode;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
-	if (mode != COLORPICKER_MODE_RGB && mode != COLORPICKER_MODE_PALETTE) {
+	if (mode != COLORPICKER_MODE_RGB && mode != COLORPICKER_MODE_PALETTE)
+	{
 		mode = COLORPICKER_MODE_RGB;
 	}
 
 	previousMode = picker->mode;
 	picker->mode = mode;
-	if (previousMode != mode) {
+	if (previousMode != mode)
+	{
 		UI_ColorPicker_UpdateModeCvar(mode);
 	}
 
 	UI_ColorPicker_ResetInputState(picker);
 }
 
-static void UI_ColorPicker_SetComponentFromValue(uiColorPicker_t *picker, int componentIndex, int value) {
+static void UI_ColorPicker_SetComponentFromValue(uiColorPicker_t* picker, int componentIndex, int value)
+{
 	int red;
 	int green;
 	int blue;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
-	if (componentIndex < 0 || componentIndex > 2) {
+	if (componentIndex < 0 || componentIndex > 2)
+	{
 		return;
 	}
 
-	if (value < 0) {
+	if (value < 0)
+	{
 		value = 0;
-	} else if (value > 255) {
+	}
+	else if (value > 255)
+	{
 		value = 255;
 	}
 
@@ -825,17 +970,20 @@ static void UI_ColorPicker_SetComponentFromValue(uiColorPicker_t *picker, int co
 	UI_ColorPicker_UpdateHexString(picker, red, green, blue);
 }
 
-static void UI_ColorPicker_UpdateFromHexString(uiColorPicker_t *picker) {
+static void UI_ColorPicker_UpdateFromHexString(uiColorPicker_t* picker)
+{
 	vec4_t parsed;
 	int red;
 	int green;
 	int blue;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
-	if (UI_ColorPicker_ParseHexColor(picker->hexBuffer, parsed)) {
+	if (UI_ColorPicker_ParseHexColor(picker->hexBuffer, parsed))
+	{
 		picker->currentColor[0] = parsed[0];
 		picker->currentColor[1] = parsed[1];
 		picker->currentColor[2] = parsed[2];
@@ -845,19 +993,28 @@ static void UI_ColorPicker_UpdateFromHexString(uiColorPicker_t *picker) {
 		green = (int)(parsed[1] * 255.0f + 0.5f);
 		blue = (int)(parsed[2] * 255.0f + 0.5f);
 
-		if (red < 0) {
+		if (red < 0)
+		{
 			red = 0;
-		} else if (red > 255) {
+		}
+		else if (red > 255)
+		{
 			red = 255;
 		}
-		if (green < 0) {
+		if (green < 0)
+		{
 			green = 0;
-		} else if (green > 255) {
+		}
+		else if (green > 255)
+		{
 			green = 255;
 		}
-		if (blue < 0) {
+		if (blue < 0)
+		{
 			blue = 0;
-		} else if (blue > 255) {
+		}
+		else if (blue > 255)
+		{
 			blue = 255;
 		}
 
@@ -873,14 +1030,16 @@ static void UI_ColorPicker_UpdateFromHexString(uiColorPicker_t *picker) {
 	}
 }
 
-static void UI_ColorPicker_DrawModeTabs(uiColorPicker_t *picker, int tabY) {
+static void UI_ColorPicker_DrawModeTabs(uiColorPicker_t* picker, int tabY)
+{
 	vec4_t activeColor;
 	vec4_t inactiveColor;
 	vec4_t borderColor;
 	int rgbX;
 	int paletteX;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
@@ -913,7 +1072,8 @@ static void UI_ColorPicker_DrawModeTabs(uiColorPicker_t *picker, int tabY) {
 	UI_DrawString(paletteX + 8, tabY + 4, "Palette", UI_SMALLFONT | UI_LEFT, color_white);
 }
 
-static void UI_ColorPicker_DrawButtons(uiColorPicker_t *picker, int buttonY) {
+static void UI_ColorPicker_DrawButtons(uiColorPicker_t* picker, int buttonY)
+{
 	vec4_t buttonColor;
 	vec4_t borderColor;
 	vec4_t hintColor;
@@ -921,7 +1081,8 @@ static void UI_ColorPicker_DrawButtons(uiColorPicker_t *picker, int buttonY) {
 	int cancelX;
 	int hintX;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
@@ -944,9 +1105,10 @@ static void UI_ColorPicker_DrawButtons(uiColorPicker_t *picker, int buttonY) {
 	cancelX = applyX - COLORPICKER_BUTTON_GAP - COLORPICKER_BUTTON_WIDTH;
 
 	/* Draw hint text in palette mode */
-	if ( picker->mode == COLORPICKER_MODE_PALETTE ) {
+	if (picker->mode == COLORPICKER_MODE_PALETTE)
+	{
 		hintX = picker->x + COLORPICKER_PANEL_PADDING;
-		UI_DrawString( hintX, buttonY + 4, "hold alt to quick use", UI_SMALLFONT | UI_LEFT, hintColor );
+		UI_DrawString(hintX, buttonY + 4, "hold alt to quick use", UI_SMALLFONT | UI_LEFT, hintColor);
 	}
 
 	UI_FillRect(cancelX, buttonY, COLORPICKER_BUTTON_WIDTH, COLORPICKER_BUTTON_HEIGHT, buttonColor);
@@ -958,7 +1120,8 @@ static void UI_ColorPicker_DrawButtons(uiColorPicker_t *picker, int buttonY) {
 	UI_DrawString(applyX + 20, buttonY + 4, "Apply", UI_SMALLFONT | UI_LEFT, color_white);
 }
 
-static void UI_ColorPicker_DrawPreview(uiColorPicker_t *picker, int previewX, int previewY, int labelY) {
+static void UI_ColorPicker_DrawPreview(uiColorPicker_t* picker, int previewX, int previewY, int labelY)
+{
 	vec4_t borderColor;
 	vec4_t fieldBackground;
 	vec4_t focusBackground;
@@ -979,7 +1142,8 @@ static void UI_ColorPicker_DrawPreview(uiColorPicker_t *picker, int previewX, in
 	int iconX;
 	int iconY;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
@@ -1030,13 +1194,14 @@ static void UI_ColorPicker_DrawPreview(uiColorPicker_t *picker, int previewX, in
 
 	UI_FillRect(copyButtonX, copyButtonY, COLORPICKER_COPY_BUTTON_SIZE, COLORPICKER_COPY_BUTTON_SIZE, buttonBackground);
 	UI_DrawRect(copyButtonX, copyButtonY, COLORPICKER_COPY_BUTTON_SIZE, COLORPICKER_COPY_BUTTON_SIZE, borderColor);
-	copyIcon = trap_R_RegisterShaderNoMip( "menu/be/copy.png" );
-	if ( copyIcon ) {
+	copyIcon = trap_R_RegisterShaderNoMip("menu/be/copy.png");
+	if (copyIcon)
+	{
 		iconSize = COLORPICKER_COPY_BUTTON_SIZE - 6;
-		iconX = copyButtonX + ( COLORPICKER_COPY_BUTTON_SIZE - iconSize ) / 2;
-		iconY = copyButtonY + ( COLORPICKER_COPY_BUTTON_SIZE - iconSize ) / 2;
-		trap_R_SetColor( NULL );
-		UI_DrawHandlePic( iconX, iconY, iconSize, iconSize, copyIcon );
+		iconX = copyButtonX + (COLORPICKER_COPY_BUTTON_SIZE - iconSize) / 2;
+		iconY = copyButtonY + (COLORPICKER_COPY_BUTTON_SIZE - iconSize) / 2;
+		trap_R_SetColor(NULL);
+		UI_DrawHandlePic(iconX, iconY, iconSize, iconSize, copyIcon);
 	}
 
 	UI_FillRect(pasteButtonX, pasteButtonY, COLORPICKER_PASTE_BUTTON_WIDTH, COLORPICKER_PASTE_BUTTON_HEIGHT, buttonBackground);
@@ -1059,43 +1224,49 @@ static void UI_ColorPicker_DrawPreview(uiColorPicker_t *picker, int previewX, in
 		lastUsedX = hexFieldX;
 		lastUsedY = copyButtonY + COLORPICKER_COPY_BUTTON_SIZE + COLORPICKER_COPY_PASTE_GAP;
 
-		for ( i = 0; i < COLORPICKER_LAST_USED_COUNT; i++ ) {
+		for (i = 0; i < COLORPICKER_LAST_USED_COUNT; i++)
+		{
 			col = i % COLORPICKER_LAST_USED_COLS;
 			row = i / COLORPICKER_LAST_USED_COLS;
-			cellX = lastUsedX + col * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
-			cellY = lastUsedY + row * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
+			cellX = lastUsedX + col * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
+			cellY = lastUsedY + row * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
 
-			if ( uiColorPickerLastUsedColorsUsed[i] ) {
-				UI_FillRect( cellX, cellY, COLORPICKER_SAVED_COLOR_SIZE, COLORPICKER_SAVED_COLOR_SIZE, uiColorPickerLastUsedColors[i] );
+			if (uiColorPickerLastUsedColorsUsed[i])
+			{
+				UI_FillRect(cellX, cellY, COLORPICKER_SAVED_COLOR_SIZE, COLORPICKER_SAVED_COLOR_SIZE, uiColorPickerLastUsedColors[i]);
 			}
-			UI_DrawRect( cellX, cellY, COLORPICKER_SAVED_COLOR_SIZE, COLORPICKER_SAVED_COLOR_SIZE, borderColor );
+			UI_DrawRect(cellX, cellY, COLORPICKER_SAVED_COLOR_SIZE, COLORPICKER_SAVED_COLOR_SIZE, borderColor);
 		}
 
 		copiedX = hexFieldX;
-		copiedY = lastUsedY + COLORPICKER_LAST_USED_ROWS * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP ) + COLORPICKER_COPY_PASTE_GAP;
+		copiedY = lastUsedY + COLORPICKER_LAST_USED_ROWS * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP) + COLORPICKER_COPY_PASTE_GAP;
 
-		copyIconSmall = trap_R_RegisterShaderNoMip( "menu/be/copy.png" );
-		if ( copyIconSmall ) {
+		copyIconSmall = trap_R_RegisterShaderNoMip("menu/be/copy.png");
+		if (copyIconSmall)
+		{
 			iconSize = 12;
-			UI_DrawHandlePic( copiedX, copiedY + 2, iconSize, iconSize, copyIconSmall );
+			UI_DrawHandlePic(copiedX, copiedY + 2, iconSize, iconSize, copyIconSmall);
 		}
 		copiedY += COLORPICKER_SECTION_HEADER_HEIGHT;
 
-		for ( i = 0; i < COLORPICKER_COPIED_COUNT; i++ ) {
+		for (i = 0; i < COLORPICKER_COPIED_COUNT; i++)
+		{
 			col = i % COLORPICKER_COPIED_COLS;
 			row = i / COLORPICKER_COPIED_COLS;
-			cellX = hexFieldX + col * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
-			cellY = copiedY + row * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
+			cellX = hexFieldX + col * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
+			cellY = copiedY + row * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
 
-			if ( uiColorPickerCopiedColorsUsed[i] ) {
-				UI_FillRect( cellX, cellY, COLORPICKER_SAVED_COLOR_SIZE, COLORPICKER_SAVED_COLOR_SIZE, uiColorPickerCopiedColors[i] );
+			if (uiColorPickerCopiedColorsUsed[i])
+			{
+				UI_FillRect(cellX, cellY, COLORPICKER_SAVED_COLOR_SIZE, COLORPICKER_SAVED_COLOR_SIZE, uiColorPickerCopiedColors[i]);
 			}
-			UI_DrawRect( cellX, cellY, COLORPICKER_SAVED_COLOR_SIZE, COLORPICKER_SAVED_COLOR_SIZE, borderColor );
+			UI_DrawRect(cellX, cellY, COLORPICKER_SAVED_COLOR_SIZE, COLORPICKER_SAVED_COLOR_SIZE, borderColor);
 		}
 	}
 }
 
-static void UI_ColorPicker_DrawRGB(uiColorPicker_t *picker, int contentTop) {
+static void UI_ColorPicker_DrawRGB(uiColorPicker_t* picker, int contentTop)
+{
 	vec4_t sliderBackground;
 	vec4_t borderColor;
 	vec4_t fieldBackground;
@@ -1116,7 +1287,8 @@ static void UI_ColorPicker_DrawRGB(uiColorPicker_t *picker, int contentTop) {
 	int sliderYOffset;
 	int fieldYOffset;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
@@ -1149,7 +1321,8 @@ static void UI_ColorPicker_DrawRGB(uiColorPicker_t *picker, int contentTop) {
 	sliderYOffset = (COLORPICKER_RGB_ROW_HEIGHT - COLORPICKER_RGB_SLIDER_HEIGHT) / 2;
 	fieldYOffset = (COLORPICKER_RGB_ROW_HEIGHT - COLORPICKER_RGB_FIELD_HEIGHT) / 2;
 
-	for (row = 0; row < 3; row++) {
+	for (row = 0; row < 3; row++)
+	{
 		labelText[0] = (char)('R' + row);
 		labelText[1] = '\0';
 
@@ -1161,7 +1334,8 @@ static void UI_ColorPicker_DrawRGB(uiColorPicker_t *picker, int contentTop) {
 
 		UI_FillRect(sliderX, sliderY, COLORPICKER_RGB_SLIDER_WIDTH, COLORPICKER_RGB_SLIDER_HEIGHT, sliderBackground);
 
-		for (step = 0; step < COLORPICKER_RGB_SLIDER_WIDTH; step++) {
+		for (step = 0; step < COLORPICKER_RGB_SLIDER_WIDTH; step++)
+		{
 			float fraction;
 
 			fraction = (float)step / (float)(COLORPICKER_RGB_SLIDER_WIDTH - 1);
@@ -1176,10 +1350,12 @@ static void UI_ColorPicker_DrawRGB(uiColorPicker_t *picker, int contentTop) {
 		UI_DrawRect(sliderX, sliderY, COLORPICKER_RGB_SLIDER_WIDTH, COLORPICKER_RGB_SLIDER_HEIGHT, borderColor);
 
 		handleX = sliderX + (int)(picker->sliderValues[row] * (float)(COLORPICKER_RGB_SLIDER_WIDTH - 1) + 0.5f);
-		if (handleX < sliderX) {
+		if (handleX < sliderX)
+		{
 			handleX = sliderX;
 		}
-		if (handleX > sliderX + COLORPICKER_RGB_SLIDER_WIDTH - 1) {
+		if (handleX > sliderX + COLORPICKER_RGB_SLIDER_WIDTH - 1)
+		{
 			handleX = sliderX + COLORPICKER_RGB_SLIDER_WIDTH - 1;
 		}
 		UI_FillRect(handleX - 2, sliderY - 2, 4, COLORPICKER_RGB_SLIDER_HEIGHT + 4, borderColor);
@@ -1194,7 +1370,8 @@ static void UI_ColorPicker_DrawRGB(uiColorPicker_t *picker, int contentTop) {
 	UI_ColorPicker_DrawPreview(picker, previewX, previewY, contentTop - 20);
 }
 
-static void UI_ColorPicker_DrawPalette(uiColorPicker_t *picker, int contentTop) {
+static void UI_ColorPicker_DrawPalette(uiColorPicker_t* picker, int contentTop)
+{
 	vec4_t palette[COLORPICKER_PALETTE_CELLS];
 	int paletteCount;
 	vec4_t borderColor;
@@ -1211,7 +1388,8 @@ static void UI_ColorPicker_DrawPalette(uiColorPicker_t *picker, int contentTop) 
 	int previewX;
 	int previewY;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
@@ -1232,15 +1410,18 @@ static void UI_ColorPicker_DrawPalette(uiColorPicker_t *picker, int contentTop) 
 	gridLeft = picker->x + COLORPICKER_PANEL_PADDING;
 	gridTop = contentTop;
 
-	if (gridTop + gridHeight > picker->y + picker->height - COLORPICKER_PANEL_PADDING - COLORPICKER_BUTTON_HEIGHT - 12) {
+	if (gridTop + gridHeight > picker->y + picker->height - COLORPICKER_PANEL_PADDING - COLORPICKER_BUTTON_HEIGHT - 12)
+	{
 		gridTop = picker->y + picker->height - COLORPICKER_PANEL_PADDING - COLORPICKER_BUTTON_HEIGHT - 12 - gridHeight;
 	}
 
-	if (gridLeft + gridWidth + COLORPICKER_RGB_PREVIEW_SIZE + 32 > picker->x + picker->width) {
+	if (gridLeft + gridWidth + COLORPICKER_RGB_PREVIEW_SIZE + 32 > picker->x + picker->width)
+	{
 		gridLeft = picker->x + (picker->width - gridWidth) / 2;
 	}
 
-	for (i = 0; i < paletteCount; i++) {
+	for (i = 0; i < paletteCount; i++)
+	{
 		row = i / COLORPICKER_PALETTE_COLS;
 		col = i % COLORPICKER_PALETTE_COLS;
 		cellX = gridLeft + col * COLORPICKER_CELL_SIZE;
@@ -1249,7 +1430,8 @@ static void UI_ColorPicker_DrawPalette(uiColorPicker_t *picker, int contentTop) 
 		UI_FillRect(cellX + 1, cellY + 1, COLORPICKER_CELL_SIZE - 2, COLORPICKER_CELL_SIZE - 2, palette[i]);
 		UI_DrawRect(cellX, cellY, COLORPICKER_CELL_SIZE, COLORPICKER_CELL_SIZE, borderColor);
 
-		if (picker->selectedPaletteIndex == i) {
+		if (picker->selectedPaletteIndex == i)
+		{
 			UI_DrawRect(cellX - 2, cellY - 2, COLORPICKER_CELL_SIZE + 4, COLORPICKER_CELL_SIZE + 4, highlightColor);
 		}
 	}
@@ -1259,25 +1441,30 @@ static void UI_ColorPicker_DrawPalette(uiColorPicker_t *picker, int contentTop) 
 	UI_ColorPicker_DrawPreview(picker, previewX, previewY, contentTop - 20);
 }
 
-static void UI_ColorPicker_Commit(uiColorPicker_t *picker) {
-	if (!picker) {
+static void UI_ColorPicker_Commit(uiColorPicker_t* picker)
+{
+	if (!picker)
+	{
 		return;
 	}
 
-	UI_ColorPicker_UpdateFromCurrent( picker );
-	UI_ColorPicker_AddToLastUsed( picker->currentColor );
+	UI_ColorPicker_UpdateFromCurrent(picker);
+	UI_ColorPicker_AddToLastUsed(picker->currentColor);
 
-	if (picker->callback) {
+	if (picker->callback)
+	{
 		picker->callback(picker->hexBuffer, picker->userData);
 	}
 
 	UI_ColorPicker_Close(picker);
 }
 
-void UI_ColorPicker_Init(uiColorPicker_t *picker) {
+void UI_ColorPicker_Init(uiColorPicker_t* picker)
+{
 	int i;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
@@ -1288,10 +1475,12 @@ void UI_ColorPicker_Init(uiColorPicker_t *picker) {
 	picker->currentColor[3] = 1.0f;
 	picker->hexBuffer[0] = '\0';
 
-	for ( i = 0; i < COLORPICKER_LAST_USED_COUNT; i++ ) {
+	for (i = 0; i < COLORPICKER_LAST_USED_COUNT; i++)
+	{
 		uiColorPickerLastUsedColorsUsed[i] = qfalse;
 	}
-	for ( i = 0; i < COLORPICKER_COPIED_COUNT; i++ ) {
+	for (i = 0; i < COLORPICKER_COPIED_COUNT; i++)
+	{
 		uiColorPickerCopiedColorsUsed[i] = qfalse;
 	}
 	picker->callback = NULL;
@@ -1312,10 +1501,12 @@ void UI_ColorPicker_Init(uiColorPicker_t *picker) {
 	UI_ColorPicker_UpdateHexString(picker, 255, 255, 255);
 }
 
-void UI_ColorPicker_Open(uiColorPicker_t *picker, const char *initialValue, void (*callback)(const char *hexColor, void *userData), void *userData) {
+void UI_ColorPicker_Open(uiColorPicker_t* picker, const char* initialValue, void (*callback)(const char* hexColor, void* userData), void* userData)
+{
 	int savedMode;
 
-	if (!picker) {
+	if (!picker)
+	{
 		return;
 	}
 
@@ -1326,7 +1517,8 @@ void UI_ColorPicker_Open(uiColorPicker_t *picker, const char *initialValue, void
 	picker->height = COLORPICKER_PANEL_HEIGHT;
 
 	/* Parse initial color */
-	if (!UI_ColorPicker_ParseColorValue(initialValue, picker->currentColor)) {
+	if (!UI_ColorPicker_ParseColorValue(initialValue, picker->currentColor))
+	{
 		picker->currentColor[0] = 1.0f;
 		picker->currentColor[1] = 1.0f;
 		picker->currentColor[2] = 1.0f;
@@ -1337,11 +1529,16 @@ void UI_ColorPicker_Open(uiColorPicker_t *picker, const char *initialValue, void
 	picker->selectedPaletteIndex = UI_ColorPicker_FindPaletteIndex(picker->currentColor);
 	trap_Cvar_Update(&ui_pallete_type);
 	savedMode = ui_pallete_type.integer;
-	if (savedMode == 2) {
+	if (savedMode == 2)
+	{
 		UI_ColorPicker_SetMode(picker, COLORPICKER_MODE_PALETTE);
-	} else if (savedMode == 1) {
+	}
+	else if (savedMode == 1)
+	{
 		UI_ColorPicker_SetMode(picker, COLORPICKER_MODE_RGB);
-	} else {
+	}
+	else
+	{
 		UI_ColorPicker_SetMode(picker, COLORPICKER_MODE_RGB);
 	}
 
@@ -1350,8 +1547,10 @@ void UI_ColorPicker_Open(uiColorPicker_t *picker, const char *initialValue, void
 	picker->y = (480 - picker->height) / 2;
 }
 
-void UI_ColorPicker_Close(uiColorPicker_t *picker) {
-	if (!picker) {
+void UI_ColorPicker_Close(uiColorPicker_t* picker)
+{
+	if (!picker)
+	{
 		return;
 	}
 
@@ -1359,22 +1558,26 @@ void UI_ColorPicker_Close(uiColorPicker_t *picker) {
 	UI_ColorPicker_ResetInputState(picker);
 }
 
-qboolean UI_ColorPicker_IsActive(uiColorPicker_t *picker) {
-	if (!picker) {
+qboolean UI_ColorPicker_IsActive(uiColorPicker_t* picker)
+{
+	if (!picker)
+	{
 		return qfalse;
 	}
 
 	return picker->active;
 }
 
-void UI_ColorPicker_Draw(uiColorPicker_t *picker) {
+void UI_ColorPicker_Draw(uiColorPicker_t* picker)
+{
 	vec4_t background;
 	vec4_t borderColor;
 	int tabY;
 	int contentTop;
 	int buttonY;
 
-	if (!picker || !picker->active) {
+	if (!picker || !picker->active)
+	{
 		return;
 	}
 
@@ -1397,18 +1600,22 @@ void UI_ColorPicker_Draw(uiColorPicker_t *picker) {
 
 	UI_ColorPicker_DrawModeTabs(picker, tabY);
 
-	if (picker->mode == COLORPICKER_MODE_RGB) {
+	if (picker->mode == COLORPICKER_MODE_RGB)
+	{
 		UI_ColorPicker_DrawRGB(picker, contentTop);
-	} else {
+	}
+	else
+	{
 		UI_ColorPicker_DrawPalette(picker, contentTop);
 	}
 
 	UI_ColorPicker_DrawButtons(picker, buttonY);
 }
 
-qboolean UI_ColorPicker_HandleKey(uiColorPicker_t *picker, int key) {
+qboolean UI_ColorPicker_HandleKey(uiColorPicker_t* picker, int key)
+{
 	int field;
-	char *buffer;
+	char* buffer;
 	int len;
 	int maxLen;
 	int value;
@@ -1419,27 +1626,36 @@ qboolean UI_ColorPicker_HandleKey(uiColorPicker_t *picker, int key) {
 	maxLen = 0;
 	value = 0;
 
-	if (!picker || !picker->active) {
+	if (!picker || !picker->active)
+	{
 		return qfalse;
 	}
 
-	if (key == K_ESCAPE || key == K_MOUSE2) {
+	if (key == K_ESCAPE || key == K_MOUSE2)
+	{
 		UI_ColorPicker_Close(picker);
 		return qtrue;
 	}
 
-	if (key == K_ENTER || key == K_KP_ENTER) {
+	if (key == K_ENTER || key == K_KP_ENTER)
+	{
 		UI_ColorPicker_Commit(picker);
 		return qtrue;
 	}
 
-	if (picker->mode == COLORPICKER_MODE_RGB) {
-		if (key == K_TAB) {
-			if (picker->focusedField < 0 || picker->focusedField >= COLORPICKER_FIELD_HEX) {
+	if (picker->mode == COLORPICKER_MODE_RGB)
+	{
+		if (key == K_TAB)
+		{
+			if (picker->focusedField < 0 || picker->focusedField >= COLORPICKER_FIELD_HEX)
+			{
 				picker->focusedField = 0;
-			} else {
+			}
+			else
+			{
 				picker->focusedField++;
-				if (picker->focusedField > COLORPICKER_FIELD_HEX) {
+				if (picker->focusedField > COLORPICKER_FIELD_HEX)
+				{
 					picker->focusedField = 0;
 				}
 			}
@@ -1448,20 +1664,25 @@ qboolean UI_ColorPicker_HandleKey(uiColorPicker_t *picker, int key) {
 
 		field = picker->focusedField;
 
-		if (field == COLORPICKER_FIELD_HEX) {
+		if (field == COLORPICKER_FIELD_HEX)
+		{
 			buffer = picker->hexBuffer;
 			maxLen = (int)sizeof(picker->hexBuffer) - 1;
 
-			if (key >= '0' && key <= '9') {
+			if (key >= '0' && key <= '9')
+			{
 				len = 0;
-				while (buffer[len]) {
+				while (buffer[len])
+				{
 					len++;
-					if (len >= maxLen) {
+					if (len >= maxLen)
+					{
 						break;
 					}
 				}
 
-				if (len >= 6) {
+				if (len >= 6)
+				{
 					return qtrue;
 				}
 
@@ -1471,22 +1692,27 @@ qboolean UI_ColorPicker_HandleKey(uiColorPicker_t *picker, int key) {
 				return qtrue;
 			}
 
-			if ((key >= 'a' && key <= 'f') || (key >= 'A' && key <= 'F')) {
+			if ((key >= 'a' && key <= 'f') || (key >= 'A' && key <= 'F'))
+			{
 				char hexChar;
 				len = 0;
-				while (buffer[len]) {
+				while (buffer[len])
+				{
 					len++;
-					if (len >= maxLen) {
+					if (len >= maxLen)
+					{
 						break;
 					}
 				}
 
-				if (len >= 6) {
+				if (len >= 6)
+				{
 					return qtrue;
 				}
 
 				hexChar = (char)key;
-				if (hexChar >= 'a' && hexChar <= 'f') {
+				if (hexChar >= 'a' && hexChar <= 'f')
+				{
 					hexChar = (char)(hexChar - 'a' + 'A');
 				}
 				buffer[len] = hexChar;
@@ -1495,13 +1721,16 @@ qboolean UI_ColorPicker_HandleKey(uiColorPicker_t *picker, int key) {
 				return qtrue;
 			}
 
-			if (key == K_BACKSPACE) {
+			if (key == K_BACKSPACE)
+			{
 				len = 0;
-				while (buffer[len]) {
+				while (buffer[len])
+				{
 					len++;
 				}
 
-				if (len > 0) {
+				if (len > 0)
+				{
 					buffer[len - 1] = '\0';
 					UI_ColorPicker_UpdateFromHexString(picker);
 				}
@@ -1509,36 +1738,48 @@ qboolean UI_ColorPicker_HandleKey(uiColorPicker_t *picker, int key) {
 			}
 		}
 
-		if (field < 0 || field > 2) {
-			if (key >= '0' && key <= '9') {
+		if (field < 0 || field > 2)
+		{
+			if (key >= '0' && key <= '9')
+			{
 				picker->focusedField = 0;
 				field = 0;
-			} else {
+			}
+			else
+			{
 				return qfalse;
 			}
 		}
 
-		if (field >= 0 && field <= 2) {
+		if (field >= 0 && field <= 2)
+		{
 			buffer = picker->componentText[field];
 			maxLen = (int)sizeof(picker->componentText[field]) - 1;
 
-			if (key >= '0' && key <= '9') {
+			if (key >= '0' && key <= '9')
+			{
 				len = 0;
-				while (buffer[len]) {
+				while (buffer[len])
+				{
 					len++;
-					if (len >= maxLen) {
+					if (len >= maxLen)
+					{
 						break;
 					}
 				}
 
-				if (len >= maxLen) {
+				if (len >= maxLen)
+				{
 					return qtrue;
 				}
 
-				if (len == 1 && buffer[0] == '0') {
+				if (len == 1 && buffer[0] == '0')
+				{
 					buffer[0] = (char)key;
 					buffer[1] = '\0';
-				} else {
+				}
+				else
+				{
 					buffer[len] = (char)key;
 					buffer[len + 1] = '\0';
 				}
@@ -1549,15 +1790,20 @@ qboolean UI_ColorPicker_HandleKey(uiColorPicker_t *picker, int key) {
 				return qtrue;
 			}
 
-			if (key == K_BACKSPACE) {
+			if (key == K_BACKSPACE)
+			{
 				len = 0;
-				while (buffer[len]) {
+				while (buffer[len])
+				{
 					len++;
 				}
 
-				if (len > 1) {
+				if (len > 1)
+				{
 					buffer[len - 1] = '\0';
-				} else {
+				}
+				else
+				{
 					buffer[0] = '0';
 					buffer[1] = '\0';
 				}
@@ -1573,7 +1819,8 @@ qboolean UI_ColorPicker_HandleKey(uiColorPicker_t *picker, int key) {
 	return qfalse;
 }
 
-qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qboolean click) {
+qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t* picker, int x, int y, qboolean click)
+{
 	int buttonY;
 	int applyX;
 	int cancelX;
@@ -1582,14 +1829,17 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 	int paletteTabX;
 	int contentTop;
 
-	if (!picker || !picker->active) {
+	if (!picker || !picker->active)
+	{
 		return qfalse;
 	}
 
 	if (x < picker->x || x >= picker->x + picker->width ||
-		y < picker->y || y >= picker->y + picker->height) {
-		if ( click ) {
-			UI_ColorPicker_Close( picker );
+	        y < picker->y || y >= picker->y + picker->height)
+	{
+		if (click)
+		{
+			UI_ColorPicker_Close(picker);
 		}
 		return qfalse;
 	}
@@ -1598,12 +1848,15 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 	applyX = picker->x + picker->width - COLORPICKER_PANEL_PADDING - COLORPICKER_BUTTON_WIDTH;
 	cancelX = applyX - COLORPICKER_BUTTON_GAP - COLORPICKER_BUTTON_WIDTH;
 
-	if (y >= buttonY && y < buttonY + COLORPICKER_BUTTON_HEIGHT) {
-		if (x >= applyX && x < applyX + COLORPICKER_BUTTON_WIDTH) {
+	if (y >= buttonY && y < buttonY + COLORPICKER_BUTTON_HEIGHT)
+	{
+		if (x >= applyX && x < applyX + COLORPICKER_BUTTON_WIDTH)
+		{
 			UI_ColorPicker_Commit(picker);
 			return qtrue;
 		}
-		if (x >= cancelX && x < cancelX + COLORPICKER_BUTTON_WIDTH) {
+		if (x >= cancelX && x < cancelX + COLORPICKER_BUTTON_WIDTH)
+		{
 			UI_ColorPicker_Close(picker);
 			return qtrue;
 		}
@@ -1613,16 +1866,21 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 	rgbTabX = picker->x + COLORPICKER_PANEL_PADDING;
 	paletteTabX = rgbTabX + COLORPICKER_MODE_BUTTON_WIDTH + COLORPICKER_MODE_BUTTON_GAP;
 
-	if (y >= tabY && y < tabY + COLORPICKER_MODE_BUTTON_HEIGHT) {
-		if (x >= rgbTabX && x < rgbTabX + COLORPICKER_MODE_BUTTON_WIDTH) {
-			if (picker->mode != COLORPICKER_MODE_RGB) {
+	if (y >= tabY && y < tabY + COLORPICKER_MODE_BUTTON_HEIGHT)
+	{
+		if (x >= rgbTabX && x < rgbTabX + COLORPICKER_MODE_BUTTON_WIDTH)
+		{
+			if (picker->mode != COLORPICKER_MODE_RGB)
+			{
 				UI_ColorPicker_SetMode(picker, COLORPICKER_MODE_RGB);
 				UI_ColorPicker_UpdateFromCurrent(picker);
 			}
 			return qtrue;
 		}
-		if (x >= paletteTabX && x < paletteTabX + COLORPICKER_MODE_BUTTON_WIDTH) {
-			if (picker->mode != COLORPICKER_MODE_PALETTE) {
+		if (x >= paletteTabX && x < paletteTabX + COLORPICKER_MODE_BUTTON_WIDTH)
+		{
+			if (picker->mode != COLORPICKER_MODE_PALETTE)
+			{
 				UI_ColorPicker_SetMode(picker, COLORPICKER_MODE_PALETTE);
 			}
 			return qtrue;
@@ -1631,7 +1889,8 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 
 	contentTop = tabY + COLORPICKER_MODE_BUTTON_HEIGHT + 12;
 
-	if (picker->mode == COLORPICKER_MODE_RGB) {
+	if (picker->mode == COLORPICKER_MODE_RGB)
+	{
 		int sliderX;
 		int fieldX;
 		int previewX;
@@ -1680,8 +1939,10 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 			hexFieldBottom = hexFieldY + COLORPICKER_HEX_FIELD_HEIGHT;
 
 			if (y >= hexFieldTop && y < hexFieldBottom &&
-			    x >= hexFieldLeft && x < hexFieldRight) {
-				if ( click ) {
+			        x >= hexFieldLeft && x < hexFieldRight)
+			{
+				if (click)
+				{
 					picker->focusedField = COLORPICKER_FIELD_HEX;
 				}
 				return qtrue;
@@ -1695,19 +1956,24 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 			copyButtonBottom = copyButtonY + COLORPICKER_COPY_BUTTON_SIZE;
 
 			if (y >= copyButtonTop && y < copyButtonBottom &&
-			    x >= copyButtonLeft && x < copyButtonRight) {
-				if ( click ) {
+			        x >= copyButtonLeft && x < copyButtonRight)
+			{
+				if (click)
+				{
 					int i;
 					int oldestIndex;
-					UI_ColorPicker_UpdateFromCurrent( picker );
+					UI_ColorPicker_UpdateFromCurrent(picker);
 					oldestIndex = -1;
-					for ( i = 0; i < COLORPICKER_COPIED_COUNT; i++ ) {
-						if ( !uiColorPickerCopiedColorsUsed[i] ) {
+					for (i = 0; i < COLORPICKER_COPIED_COUNT; i++)
+					{
+						if (!uiColorPickerCopiedColorsUsed[i])
+						{
 							oldestIndex = i;
 							break;
 						}
 					}
-					if ( oldestIndex < 0 ) {
+					if (oldestIndex < 0)
+					{
 						oldestIndex = 0;
 					}
 					uiColorPickerCopiedColors[oldestIndex][0] = picker->currentColor[0];
@@ -1727,22 +1993,28 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 			pasteButtonBottom = pasteButtonY + COLORPICKER_PASTE_BUTTON_HEIGHT;
 
 			if (y >= pasteButtonTop && y < pasteButtonBottom &&
-			    x >= pasteButtonLeft && x < pasteButtonRight) {
-				if ( click ) {
+			        x >= pasteButtonLeft && x < pasteButtonRight)
+			{
+				if (click)
+				{
 					char clipboardData[64];
-					char *source;
+					char* source;
 
 					source = NULL;
-					trap_GetClipboardData( clipboardData, sizeof( clipboardData ) );
-					if ( clipboardData[0] && UI_ColorPicker_ParseHexColor( clipboardData, picker->currentColor ) ) {
+					trap_GetClipboardData(clipboardData, sizeof(clipboardData));
+					if (clipboardData[0] && UI_ColorPicker_ParseHexColor(clipboardData, picker->currentColor))
+					{
 						source = clipboardData;
-					} else if ( uiColorPickerClipboardBuffer[0] && UI_ColorPicker_ParseHexColor( uiColorPickerClipboardBuffer, picker->currentColor ) ) {
+					}
+					else if (uiColorPickerClipboardBuffer[0] && UI_ColorPicker_ParseHexColor(uiColorPickerClipboardBuffer, picker->currentColor))
+					{
 						source = uiColorPickerClipboardBuffer;
 					}
 
-					if ( source ) {
-						Q_strncpyz( picker->hexBuffer, source, sizeof( picker->hexBuffer ) );
-						UI_ColorPicker_UpdateFromHexString( picker );
+					if (source)
+					{
+						Q_strncpyz(picker->hexBuffer, source, sizeof(picker->hexBuffer));
+						UI_ColorPicker_UpdateFromHexString(picker);
 					}
 				}
 				return qtrue;
@@ -1766,51 +2038,57 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 				lastUsedX = hexFieldX;
 				lastUsedY = copyButtonY + COLORPICKER_COPY_BUTTON_SIZE + COLORPICKER_COPY_PASTE_GAP;
 
-				for ( i = 0; i < COLORPICKER_LAST_USED_COUNT; i++ ) {
+				for (i = 0; i < COLORPICKER_LAST_USED_COUNT; i++)
+				{
 					col = i % COLORPICKER_LAST_USED_COLS;
 					row = i / COLORPICKER_LAST_USED_COLS;
-					cellX = lastUsedX + col * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
-					cellY = lastUsedY + row * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
+					cellX = lastUsedX + col * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
+					cellY = lastUsedY + row * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
 					cellLeft = cellX;
 					cellRight = cellX + COLORPICKER_SAVED_COLOR_SIZE;
 					cellTop = cellY;
 					cellBottom = cellY + COLORPICKER_SAVED_COLOR_SIZE;
 
-					if ( y >= cellTop && y < cellBottom &&
-					     x >= cellLeft && x < cellRight ) {
-						if ( click && uiColorPickerLastUsedColorsUsed[i] ) {
+					if (y >= cellTop && y < cellBottom &&
+					        x >= cellLeft && x < cellRight)
+					{
+						if (click && uiColorPickerLastUsedColorsUsed[i])
+						{
 							picker->currentColor[0] = uiColorPickerLastUsedColors[i][0];
 							picker->currentColor[1] = uiColorPickerLastUsedColors[i][1];
 							picker->currentColor[2] = uiColorPickerLastUsedColors[i][2];
 							picker->currentColor[3] = uiColorPickerLastUsedColors[i][3];
-							UI_ColorPicker_UpdateFromCurrent( picker );
+							UI_ColorPicker_UpdateFromCurrent(picker);
 						}
 						return qtrue;
 					}
 				}
 
 				copiedX = hexFieldX;
-				copiedY = lastUsedY + COLORPICKER_LAST_USED_ROWS * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP ) + COLORPICKER_COPY_PASTE_GAP;
+				copiedY = lastUsedY + COLORPICKER_LAST_USED_ROWS * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP) + COLORPICKER_COPY_PASTE_GAP;
 				copiedY += COLORPICKER_SECTION_HEADER_HEIGHT;
 
-				for ( i = 0; i < COLORPICKER_COPIED_COUNT; i++ ) {
+				for (i = 0; i < COLORPICKER_COPIED_COUNT; i++)
+				{
 					col = i % COLORPICKER_COPIED_COLS;
 					row = i / COLORPICKER_COPIED_COLS;
-					cellX = copiedX + col * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
-					cellY = copiedY + row * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
+					cellX = copiedX + col * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
+					cellY = copiedY + row * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
 					cellLeft = cellX;
 					cellRight = cellX + COLORPICKER_SAVED_COLOR_SIZE;
 					cellTop = cellY;
 					cellBottom = cellY + COLORPICKER_SAVED_COLOR_SIZE;
 
-					if ( y >= cellTop && y < cellBottom &&
-					     x >= cellLeft && x < cellRight ) {
-						if ( click && uiColorPickerCopiedColorsUsed[i] ) {
+					if (y >= cellTop && y < cellBottom &&
+					        x >= cellLeft && x < cellRight)
+					{
+						if (click && uiColorPickerCopiedColorsUsed[i])
+						{
 							picker->currentColor[0] = uiColorPickerCopiedColors[i][0];
 							picker->currentColor[1] = uiColorPickerCopiedColors[i][1];
 							picker->currentColor[2] = uiColorPickerCopiedColors[i][2];
 							picker->currentColor[3] = uiColorPickerCopiedColors[i][3];
-							UI_ColorPicker_UpdateFromCurrent( picker );
+							UI_ColorPicker_UpdateFromCurrent(picker);
 						}
 						return qtrue;
 					}
@@ -1818,7 +2096,8 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 			}
 		}
 
-		for (row = 0; row < 3; row++) {
+		for (row = 0; row < 3; row++)
+		{
 			int rowTop;
 			int sliderY;
 			int fieldY;
@@ -1838,25 +2117,31 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 			fieldRight = fieldX + COLORPICKER_RGB_FIELD_WIDTH;
 
 			if (y >= fieldY && y < fieldY + COLORPICKER_RGB_FIELD_HEIGHT &&
-			    x >= fieldLeft && x < fieldRight) {
-				if ( click ) {
+			        x >= fieldLeft && x < fieldRight)
+			{
+				if (click)
+				{
 					picker->focusedField = row;
 				}
 				return qtrue;
 			}
 
 			if (y >= sliderY && y < sliderY + COLORPICKER_RGB_SLIDER_HEIGHT &&
-			    x >= sliderLeft && x < sliderRight) {
+			        x >= sliderLeft && x < sliderRight)
+			{
 				fraction = (float)(x - sliderLeft) / (float)(COLORPICKER_RGB_SLIDER_WIDTH - 1);
-				if (fraction < 0.0f) {
+				if (fraction < 0.0f)
+				{
 					fraction = 0.0f;
 				}
-				if (fraction > 1.0f) {
+				if (fraction > 1.0f)
+				{
 					fraction = 1.0f;
 				}
 				value = (int)(fraction * 255.0f + 0.5f);
 				UI_ColorPicker_SetComponentFromValue(picker, row, value);
-				if ( click ) {
+				if (click)
+				{
 					picker->focusedField = row;
 				}
 				picker->selectedPaletteIndex = -1;
@@ -1888,11 +2173,13 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 		gridLeft = picker->x + COLORPICKER_PANEL_PADDING;
 		gridTop = contentTop;
 
-		if (gridTop + gridHeight > picker->y + picker->height - COLORPICKER_PANEL_PADDING - COLORPICKER_BUTTON_HEIGHT - 12) {
+		if (gridTop + gridHeight > picker->y + picker->height - COLORPICKER_PANEL_PADDING - COLORPICKER_BUTTON_HEIGHT - 12)
+		{
 			gridTop = picker->y + picker->height - COLORPICKER_PANEL_PADDING - COLORPICKER_BUTTON_HEIGHT - 12 - gridHeight;
 		}
 
-		if (gridLeft + gridWidth + COLORPICKER_RGB_PREVIEW_SIZE + 32 > picker->x + picker->width) {
+		if (gridLeft + gridWidth + COLORPICKER_RGB_PREVIEW_SIZE + 32 > picker->x + picker->width)
+		{
 			gridLeft = picker->x + (picker->width - gridWidth) / 2;
 		}
 
@@ -1931,19 +2218,24 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 			copyButtonBottom = copyButtonY + COLORPICKER_COPY_BUTTON_SIZE;
 
 			if (y >= copyButtonTop && y < copyButtonBottom &&
-			    x >= copyButtonLeft && x < copyButtonRight) {
-				if ( click ) {
+			        x >= copyButtonLeft && x < copyButtonRight)
+			{
+				if (click)
+				{
 					int i;
 					int oldestIndex;
-					UI_ColorPicker_UpdateFromCurrent( picker );
+					UI_ColorPicker_UpdateFromCurrent(picker);
 					oldestIndex = -1;
-					for ( i = 0; i < COLORPICKER_COPIED_COUNT; i++ ) {
-						if ( !uiColorPickerCopiedColorsUsed[i] ) {
+					for (i = 0; i < COLORPICKER_COPIED_COUNT; i++)
+					{
+						if (!uiColorPickerCopiedColorsUsed[i])
+						{
 							oldestIndex = i;
 							break;
 						}
 					}
-					if ( oldestIndex < 0 ) {
+					if (oldestIndex < 0)
+					{
 						oldestIndex = 0;
 					}
 					uiColorPickerCopiedColors[oldestIndex][0] = picker->currentColor[0];
@@ -1963,22 +2255,28 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 			pasteButtonBottom = pasteButtonY + COLORPICKER_PASTE_BUTTON_HEIGHT;
 
 			if (y >= pasteButtonTop && y < pasteButtonBottom &&
-			    x >= pasteButtonLeft && x < pasteButtonRight) {
-				if ( click ) {
+			        x >= pasteButtonLeft && x < pasteButtonRight)
+			{
+				if (click)
+				{
 					char clipboardData[64];
-					char *source;
+					char* source;
 
 					source = NULL;
-					trap_GetClipboardData( clipboardData, sizeof( clipboardData ) );
-					if ( clipboardData[0] && UI_ColorPicker_ParseHexColor( clipboardData, picker->currentColor ) ) {
+					trap_GetClipboardData(clipboardData, sizeof(clipboardData));
+					if (clipboardData[0] && UI_ColorPicker_ParseHexColor(clipboardData, picker->currentColor))
+					{
 						source = clipboardData;
-					} else if ( uiColorPickerClipboardBuffer[0] && UI_ColorPicker_ParseHexColor( uiColorPickerClipboardBuffer, picker->currentColor ) ) {
+					}
+					else if (uiColorPickerClipboardBuffer[0] && UI_ColorPicker_ParseHexColor(uiColorPickerClipboardBuffer, picker->currentColor))
+					{
 						source = uiColorPickerClipboardBuffer;
 					}
 
-					if ( source ) {
-						Q_strncpyz( picker->hexBuffer, source, sizeof( picker->hexBuffer ) );
-						UI_ColorPicker_UpdateFromHexString( picker );
+					if (source)
+					{
+						Q_strncpyz(picker->hexBuffer, source, sizeof(picker->hexBuffer));
+						UI_ColorPicker_UpdateFromHexString(picker);
 					}
 				}
 				return qtrue;
@@ -2002,51 +2300,57 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 				lastUsedX = hexFieldX;
 				lastUsedY = copyButtonY + COLORPICKER_COPY_BUTTON_SIZE + COLORPICKER_COPY_PASTE_GAP;
 
-				for ( i = 0; i < COLORPICKER_LAST_USED_COUNT; i++ ) {
+				for (i = 0; i < COLORPICKER_LAST_USED_COUNT; i++)
+				{
 					col = i % COLORPICKER_LAST_USED_COLS;
 					row = i / COLORPICKER_LAST_USED_COLS;
-					cellX = lastUsedX + col * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
-					cellY = lastUsedY + row * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
+					cellX = lastUsedX + col * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
+					cellY = lastUsedY + row * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
 					cellLeft = cellX;
 					cellRight = cellX + COLORPICKER_SAVED_COLOR_SIZE;
 					cellTop = cellY;
 					cellBottom = cellY + COLORPICKER_SAVED_COLOR_SIZE;
 
-					if ( y >= cellTop && y < cellBottom &&
-					     x >= cellLeft && x < cellRight ) {
-						if ( click && uiColorPickerLastUsedColorsUsed[i] ) {
+					if (y >= cellTop && y < cellBottom &&
+					        x >= cellLeft && x < cellRight)
+					{
+						if (click && uiColorPickerLastUsedColorsUsed[i])
+						{
 							picker->currentColor[0] = uiColorPickerLastUsedColors[i][0];
 							picker->currentColor[1] = uiColorPickerLastUsedColors[i][1];
 							picker->currentColor[2] = uiColorPickerLastUsedColors[i][2];
 							picker->currentColor[3] = uiColorPickerLastUsedColors[i][3];
-							UI_ColorPicker_UpdateFromCurrent( picker );
+							UI_ColorPicker_UpdateFromCurrent(picker);
 						}
 						return qtrue;
 					}
 				}
 
 				copiedX = hexFieldX;
-				copiedY = lastUsedY + COLORPICKER_LAST_USED_ROWS * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP ) + COLORPICKER_COPY_PASTE_GAP;
+				copiedY = lastUsedY + COLORPICKER_LAST_USED_ROWS * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP) + COLORPICKER_COPY_PASTE_GAP;
 				copiedY += COLORPICKER_SECTION_HEADER_HEIGHT;
 
-				for ( i = 0; i < COLORPICKER_COPIED_COUNT; i++ ) {
+				for (i = 0; i < COLORPICKER_COPIED_COUNT; i++)
+				{
 					col = i % COLORPICKER_COPIED_COLS;
 					row = i / COLORPICKER_COPIED_COLS;
-					cellX = copiedX + col * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
-					cellY = copiedY + row * ( COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP );
+					cellX = copiedX + col * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
+					cellY = copiedY + row * (COLORPICKER_SAVED_COLOR_SIZE + COLORPICKER_SAVED_COLORS_GAP);
 					cellLeft = cellX;
 					cellRight = cellX + COLORPICKER_SAVED_COLOR_SIZE;
 					cellTop = cellY;
 					cellBottom = cellY + COLORPICKER_SAVED_COLOR_SIZE;
 
-					if ( y >= cellTop && y < cellBottom &&
-					     x >= cellLeft && x < cellRight ) {
-						if ( click && uiColorPickerCopiedColorsUsed[i] ) {
+					if (y >= cellTop && y < cellBottom &&
+					        x >= cellLeft && x < cellRight)
+					{
+						if (click && uiColorPickerCopiedColorsUsed[i])
+						{
 							picker->currentColor[0] = uiColorPickerCopiedColors[i][0];
 							picker->currentColor[1] = uiColorPickerCopiedColors[i][1];
 							picker->currentColor[2] = uiColorPickerCopiedColors[i][2];
 							picker->currentColor[3] = uiColorPickerCopiedColors[i][3];
-							UI_ColorPicker_UpdateFromCurrent( picker );
+							UI_ColorPicker_UpdateFromCurrent(picker);
 						}
 						return qtrue;
 					}
@@ -2054,7 +2358,8 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 			}
 		}
 
-		if (x < gridLeft || x >= gridLeft + gridWidth || y < gridTop || y >= gridTop + gridHeight) {
+		if (x < gridLeft || x >= gridLeft + gridWidth || y < gridTop || y >= gridTop + gridHeight)
+		{
 			return qtrue;
 		}
 
@@ -2063,13 +2368,15 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 		col = relX / COLORPICKER_CELL_SIZE;
 		row = relY / COLORPICKER_CELL_SIZE;
 
-		if (col < 0 || col >= COLORPICKER_PALETTE_COLS || row < 0 || row >= COLORPICKER_PALETTE_ROWS) {
+		if (col < 0 || col >= COLORPICKER_PALETTE_COLS || row < 0 || row >= COLORPICKER_PALETTE_ROWS)
+		{
 			return qtrue;
 		}
 
 		index = row * COLORPICKER_PALETTE_COLS + col;
 
-		if (index >= 0 && index < paletteCount) {
+		if (index >= 0 && index < paletteCount)
+		{
 			picker->currentColor[0] = palette[index][0];
 			picker->currentColor[1] = palette[index][1];
 			picker->currentColor[2] = palette[index][2];
@@ -2077,10 +2384,11 @@ qboolean UI_ColorPicker_HandleMouse(uiColorPicker_t *picker, int x, int y, qbool
 			picker->selectedPaletteIndex = index;
 			UI_ColorPicker_UpdateFromCurrent(picker);
 			picker->focusedField = -1;
-			
+
 			/* If Alt is held and this is a click, immediately apply the color */
-			if ( click && trap_Key_IsDown( K_ALT ) ) {
-				UI_ColorPicker_Commit( picker );
+			if (click && trap_Key_IsDown(K_ALT))
+			{
+				UI_ColorPicker_Commit(picker);
 			}
 		}
 	}

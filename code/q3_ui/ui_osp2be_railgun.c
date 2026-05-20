@@ -1,7 +1,8 @@
 #include "ui_osp2be.h"
 
 /* Railgun category controls */
-const osp2beCvarDef_t osp2beRailgunControls[] = {
+const osp2beCvarDef_t osp2beRailgunControls[] =
+{
 	/* Railgun */
 	{ "Railgun", NULL, OSP2BE_CONTROL_FIELD, OSP2BE_SPECIAL_SECTION_HEADER },
 	{ "Rail Trail Time", "cg_railTrailTime", OSP2BE_CONTROL_FIELD, OSP2BE_SPECIAL_NONE },
@@ -21,6 +22,6 @@ const osp2beCvarDef_t osp2beRailgunControls[] = {
 	{ "Rail Width", "r_railWidth", OSP2BE_CONTROL_FIELD, OSP2BE_SPECIAL_NONE }
 };
 
-const int osp2beRailgunControlsCount = ARRAY_LEN( osp2beRailgunControls );
+const int osp2beRailgunControlsCount = ARRAY_LEN(osp2beRailgunControls);
 
 

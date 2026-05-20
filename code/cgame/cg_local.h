@@ -395,21 +395,21 @@ typedef struct
 	char            redTeam[MAX_TEAMNAME];
 	char            blueTeam[MAX_TEAMNAME];
 	char            originalHeadModel[MAX_QPATH];
-	
+
 	qboolean        newAnims;       // true if using the new mission pack animations
 	qboolean        fixedlegs;      // true if legs yaw is always the same as torso yaw
 	qboolean        fixedtorso;     // true if torso never changes yaw
-	
+
 	vec3_t          headOffset;     // move head in icon views
 	footstep_t      footsteps;
 	gender_t        gender;         // from model
-	
+
 	qhandle_t       legsModel;
 	qhandle_t       legsSkin;
-	
+
 	qhandle_t       torsoModel;
 	qhandle_t       torsoSkin;
-	
+
 	qhandle_t       headModel;
 	qhandle_t       headSkin;
 
@@ -423,7 +423,7 @@ typedef struct
 	team_t          st; // 1 for coach
 	qboolean        isFrozenEnt; // from cent
 	int             frozenEntity; // entity num
-	
+
 	int             medkitUsageTime;
 } clientInfo_t;
 
@@ -474,11 +474,23 @@ typedef struct weaponInfo_s
 // each IT_* item has an associated itemInfo_t
 // that constains media references necessary to present the
 // item and its effects
+/*
+ * Bitmask: which visual fields are overridden by bg_customItemVisuals_t (vs bg_itemlist).
+ * Set once in CG_RegisterItemVisuals — use for per-field dye tint without BG_CustomItemVisualsFind.
+ */
+#define ITEMCV_ICON               (1u << 0)
+#define ITEMCV_WORLDMODEL_0       (1u << 1)
+#define ITEMCV_WORLDMODEL_1       (1u << 2)
+#define ITEMCV_WORLDMODEL_2       (1u << 3)
+#define ITEMCV_WORLDMODEL_3       (1u << 4)
+#define ITEMCV_WORLDMODEL_SLOT(s) (1u << (1 + (unsigned int)(s))) /* s in 0..MAX_ITEM_MODELS-1 */
+
 typedef struct
 {
 	qboolean        registered;
 	qhandle_t       models[MAX_ITEM_MODELS];
 	qhandle_t       icon;
+	unsigned int    customVisualMask; /* ITEMCV_* */
 } itemInfo_t;
 
 
@@ -492,8 +504,8 @@ typedef struct
 
 // typedef struct
 // {
-// 	vec3_t positions[MAX_SKULLTRAIL];
-// 	int numpositions;
+//  vec3_t positions[MAX_SKULLTRAIL];
+//  int numpositions;
 // } skulltrail_t;
 
 #define MAX_TEAMTASK_MARKS  32
@@ -703,6 +715,8 @@ typedef struct
 
 	int         timelimitWarnings;  // 5 min, 1 min, overtime
 	int         fraglimitWarnings;
+	int         fragWeaponEffectTime;
+	int         fragWeaponEffectClientNum;
 
 	qboolean    mapRestart;         // set on a map restart to set back the weapon
 
@@ -730,7 +744,7 @@ typedef struct
 
 	// input state sent to server
 	int         weaponSelect;
-	
+
 	// auto rotating items
 	vec3_t      autoAngles;
 	vec3_t      autoAxis[3];
@@ -771,7 +785,7 @@ typedef struct
 	score_t     scores[MAX_CLIENTS];
 	qboolean    showScores;
 	qboolean    showAccuracy;
-	qboolean	showWStats;
+	qboolean    showWStats;
 	qboolean    scoreBoardShowing;
 	int         scoreFadeTime;
 	char        killerName[MAX_NAME_LENGTH];
@@ -833,7 +847,6 @@ typedef struct
 	// warmup countdown
 	int         warmup;
 	int         warmupCount;
-
 	//==========================
 
 	int         itemPickup;
@@ -908,6 +921,11 @@ typedef struct
 	qboolean    enemyBattleSuitColorEnabled;
 	vec4_t      beBattleSuitColor;
 	qboolean    battleSuitColorEnabled;
+	vec4_t      beEnemyDamageColor;
+	qboolean    enemyDamageColorEnabled;
+	vec4_t      beQuadDamageColor;
+	qboolean    quadDamageColorEnabled;
+	vec4_t      beFragEffectColor;
 	vec4_t      beHealthColor;
 	vec4_t      beHealthLowColor;
 	vec4_t      beHealthMidColor;
@@ -958,7 +976,11 @@ typedef struct
 	qhandle_t   neutralFlagModel;
 	qhandle_t   redFlagShader[3];
 	qhandle_t   blueFlagShader[3];
-	qhandle_t   flagShader[4];
+
+	qhandle_t   dyeFlagModel;
+	qhandle_t   dyeFlagShader[3];
+	qhandle_t   dyeFlagShaderInv[3];
+
 
 	qhandle_t   flagPoleModel;
 	qhandle_t   flagFlapModel;
@@ -1034,6 +1056,7 @@ typedef struct
 	qhandle_t   frozenFoeTagShader;
 	qhandle_t   frozenFoeTagShaderWallhack;
 	qhandle_t   frozenShader;
+	qhandle_t   frozenNewShader;
 
 	qhandle_t   balloonShader;
 	qhandle_t   connectionShader;
@@ -1093,8 +1116,11 @@ typedef struct
 	qhandle_t freezeShader;
 	qhandle_t freezeMarkShader;
 	qhandle_t   quadShader;
+	qhandle_t   quadShaderDye;
 	qhandle_t   redQuadShader;
 	qhandle_t   quadWeaponShader;
+	qhandle_t   quadWeaponShaderDye;
+	qhandle_t   fragEffectShader;
 	qhandle_t   invisShader;
 	qhandle_t   regenShader;
 	qhandle_t   battleSuitShader;
@@ -1407,6 +1433,9 @@ typedef struct
 
 	sfxHandle_t freezeSoundReplacement;
 
+	sfxHandle_t roundWarmup321Sound;
+	sfxHandle_t roundWarmup0Sound;
+
 } cgMedia_t;
 
 typedef struct osp_decal_s
@@ -1593,6 +1622,7 @@ typedef struct cgs_osp_s
 	qhandle_t hboxShader;
 	qhandle_t hboxShader_nocull;
 	playerColors_t myColors;
+	playerColorsOverride_t myColorsOverride;
 	playerColors_t teamColors;
 	playerColorsOverride_t teamColorsOverride;
 	playerColors_t enemyColors;
@@ -1675,7 +1705,7 @@ typedef struct
 	qboolean        deadInFreeze[MAX_CLIENTS];  /* clients dead in freeze (ctf/tdm unfreeze), from getdstatus */
 	int             redflag, blueflag;      // flag status from configstrings
 	int             flagStatus;
-	
+	int             roundStartState; // 0 - not registered, 1 - started, 2 - warmup.
 	//
 	// locally derived information from gamestate
 	//
@@ -1739,8 +1769,8 @@ typedef struct
 	int             beServerEnableBreath;
 	// int             beAutohop;  /* 0=нет pmove_autohop в cs, 1=есть и нельзя управлять, 2=можно управлять */
 
-	qboolean        q3msk;		  // Q3msk.net
-	qboolean 		fpsclassico;  // fpsclasico.com
+	qboolean        q3msk;        // Q3msk.net
+	qboolean        fpsclassico;  // fpsclasico.com
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
 } cgs_t;
@@ -2058,7 +2088,6 @@ extern vmCvar_t           cg_stackHitSounds;
 extern vmCvar_t           cg_stackHitSoundsTimeout;
 extern vmCvar_t           cg_drawCenterMessages;
 extern vmCvar_t           cg_predictStepOffset;
-extern vmCvar_t         cg_enemyLightningColor;
 extern vmCvar_t         cg_uniqueColorTable;
 extern vmCvar_t             cg_noVoteBeep;
 extern vmCvar_t         cg_damageDrawFrame;
@@ -2109,7 +2138,6 @@ extern vmCvar_t         cg_healthLowColor;
 extern vmCvar_t         cg_healthMidColor;
 extern vmCvar_t         cg_redTeamColor;
 extern vmCvar_t         cg_blueTeamColor;
-extern vmCvar_t         cg_myTeam;
 extern vmCvar_t        cg_friendHudMarkerMaxDist;
 extern vmCvar_t        cg_friendHudMarkerSize;
 extern vmCvar_t        cg_friendHudMarkerMaxScale;
@@ -2208,40 +2236,60 @@ extern vmCvar_t         cg_exec_joinSpec;
 extern vmCvar_t         cg_exec_gauntlet;
 extern vmCvar_t         cg_exec_bfg;
 extern vmCvar_t         cg_exec_shud;
-extern vmCvar_t           cg_simpleItemsRadius;
-extern vmCvar_t           cg_simpleItemsBob;
-extern vmCvar_t        cg_brightWeaponsOpaque;
-extern vmCvar_t        uc_sensitivity;
-extern vmCvar_t        cg_teamTaskIconMinSize;
-extern vmCvar_t        cg_noExplosions;
-extern vmCvar_t        cg_noItemUseSound;
-extern vmCvar_t           cg_hitSoundsQC;
-extern vmCvar_t           cg_brightWeaponsShader;
-extern vmCvar_t           teamoverlay2;
-extern vmCvar_t        cg_friendsWallhackFrozen;
-extern vmCvar_t        cg_teleportEffect;
-extern vmCvar_t        cg_teamTaskNewSounds;
-extern vmCvar_t        cg_teamTaskVersion;
-extern vmCvar_t           cg_altRail;
-extern vmCvar_t           cg_railFix;
-extern vmCvar_t           cg_freezeSoundFix;
-extern vmCvar_t           cg_infoVersionFont;
+extern vmCvar_t         cg_simpleItemsRadius;
+extern vmCvar_t         cg_simpleItemsBob;
+extern vmCvar_t         cg_brightWeaponsOpaque;
+extern vmCvar_t         uc_sensitivity;
+extern vmCvar_t         cg_teamTaskIconMinSize;
+extern vmCvar_t         cg_noExplosions;
+extern vmCvar_t         cg_noItemUseSound;
+extern vmCvar_t			cg_hitSoundsQC;
+extern vmCvar_t			cg_brightWeaponsShader;
+extern vmCvar_t			teamoverlay2;
+extern vmCvar_t			cg_friendsWallhackFrozen;
+extern vmCvar_t			cg_teleportEffect;
+extern vmCvar_t			cg_infoVersionFont;
+extern vmCvar_t         cl_reconnectArgs;
+extern vmCvar_t			cg_altRail;
+extern vmCvar_t			cg_altRailBeefy;
+extern vmCvar_t			cg_teamTaskNewSounds;
+extern vmCvar_t			cg_teamTaskVersion;
+extern vmCvar_t			cg_railFix;
+extern vmCvar_t			cg_freezeSoundFix;
 // extern vmCvar_t          cg_snow;
 // extern vmCvar_t          cl_yawspeed;
 // extern vmCvar_t          cl_pitchspeed;
-extern vmCvar_t         cl_reconnectArgs;
-extern vmCvar_t           cg_infoDetail;
-extern vmCvar_t           cg_altRailBeefy;
-extern vmCvar_t        cg_enhancedInterpolation;
-extern vmCvar_t        cg_entityOverpolate;
-extern vmCvar_t           cg_teamHealthBar;
-extern vmCvar_t        cg_healthBarStyle;
-extern vmCvar_t        cg_emojiListFont;
-extern vmCvar_t        cg_emojiListBgColor;
-extern vmCvar_t        cg_emojiListOpaque;
-extern vmCvar_t        cg_battleSuitColor;
-extern vmCvar_t        cg_enemyBattleSuitColor;
-extern vmCvar_t        cg_mutePowerUpCountdown;
+extern vmCvar_t         cg_infoDetail;
+extern vmCvar_t         cg_enhancedInterpolation;
+extern vmCvar_t         cg_entityOverpolate;
+extern vmCvar_t         cg_healthBarStyle;
+extern vmCvar_t			cg_teamHealthBar;
+extern vmCvar_t         cg_emojiListFont;
+extern vmCvar_t         cg_emojiListBgColor;
+extern vmCvar_t         cg_emojiListOpaque;
+extern vmCvar_t         cg_battleSuitColor;
+extern vmCvar_t         cg_enemyBattleSuitColor;
+extern vmCvar_t         cg_mutePowerUpCountdown;
+extern vmCvar_t         cg_myTeam;
+extern vmCvar_t         cg_roundSound;
+extern vmCvar_t         cg_debugNoobServer;
+extern vmCvar_t         cg_quadDamageColor;
+extern vmCvar_t         cg_enemyQuadDamageColor;
+extern vmCvar_t         cg_floatSpriteMaxDist;
+extern vmCvar_t         cg_floatSpriteMinSize;
+extern vmCvar_t         cg_altLightningColor;
+extern vmCvar_t         cg_teamLightningColor;
+extern vmCvar_t         cg_enemyLightningColor;
+extern vmCvar_t			cg_enemyAltLightning;
+extern vmCvar_t			cg_teamAltLightning;
+extern vmCvar_t			cg_muteMyJump;
+extern vmCvar_t			cg_freezeOldShader;
+extern vmCvar_t			cg_disableTextEffects;
+extern vmCvar_t         cg_fragEffectTime;
+extern vmCvar_t         cg_fragEffectColor;
+extern vmCvar_t         cg_fragEffect;
+extern vmCvar_t         cg_drawUniqueColors;
+extern vmCvar_t         cg_killerGhost;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2299,7 +2347,7 @@ void CG_UpdateCvars(void);
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);
 int CG_CountRealClients(void);
-qboolean CG_AdminNameEqualsRateX7(const char *s);
+qboolean CG_AdminNameEqualsRateX7(const char* s);
 void CG_BEParseXStatsToStatsAll(void);
 void CG_SHUDEventTempAccuracy(int weapon, float accuracy);
 void CG_LoadMenus(const char* menuFile);
@@ -2368,6 +2416,15 @@ void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader);
 void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, float angle, const vec4_t color);
 
+void CG_GetCustomDyeItemTintVec4(const gitem_t* item, vec4_t out);
+void CG_ItemDyeResolveTint(const gitem_t* item, vec4_t out);
+qboolean CG_GetDyeFlagTintVec4(int team, vec4_t out);
+void CG_GetDyeFlagCarrierLightRgb(int team, vec3_t rgb);
+qboolean CG_ItemDyeFlagInverseHudPath(const gitem_t* item);
+qhandle_t CG_DyeFlagResolveInverseIcon(int itemNum, qhandle_t shader);
+void CG_DrawDyeFlagPicOld(float x, float y, float w, float h, int team, qhandle_t shader);
+void CG_ModulateVec4ForCustomItemDyeIcon(int itemNum, vec4_t color);
+
 float CG_OSPDrawStringLength(const char* string, float ax, float aw, int proportional);
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth);
 
@@ -2401,6 +2458,13 @@ void CG_OSPDrawEmojiListOverlay(void);
 
 #define OSP_TEXT_CMD_MAX 2048
 
+/* cg_disableTextEffects bitmask */
+#define CG_DTEF_PALETTE         1   /* ^0 - ^9 */
+#define CG_DTEF_HEX             2   /* ^Xrrggbb ^xrrggbb */
+#define CG_DTEF_BLINK           4   /* ^B ^b */
+#define CG_DTEF_FLASH           8   /* ^F ^f */
+#define CG_DTEF_RESET           16  /* ^N ^n */
+
 typedef enum
 {
 	OSP_TEXT_CMD_CHAR = 0,
@@ -2425,6 +2489,7 @@ typedef struct
 
 text_command_t* CG_CompileText(const char* text, int flags);
 void CG_CompiledTextDestroy(text_command_t* root);
+qboolean CG_TextControlDisabled(char controlChar);
 void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale, int colored);
 
 extern vec4_t defaultBorderSize;
@@ -2476,6 +2541,7 @@ int CG_OSPDrawStringOld(int x, int y, const char* str, int charWidth, int charHe
 qboolean CG_Hex16GetColor(const char* str, float* color);
 
 void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
+void CG_OSPDrawFrameNew(float x, float y, float w, float h, vec4_t borderSize, vec4_t color);
 void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
 void CG_OSPDrawBlurFrame(float x, float y, float w, float h, float size, vec4_t color); // inner
 
@@ -2564,7 +2630,7 @@ enum
 	PI_ICON      = 16,
 	PI_SPECTATOR = 32,
 	PI_STATS_BARS = 64
-	// PI_WEAPON = 128
+	                // PI_WEAPON = 128
 };
 
 //
@@ -2624,20 +2690,22 @@ void CG_PainEvent(centity_t* cent, int health);
 void CG_SetEntitySoundPosition(centity_t* cent);
 void CG_AddPacketEntities(void);
 void CG_Beam(centity_t* cent);
-void CG_AdjustPositionForMover( const vec3_t in, int moverNum, int fromTime, int toTime, vec3_t out, vec3_t angles_in, vec3_t angles_out );
+void CG_AdjustPositionForMover(const vec3_t in, int moverNum, int fromTime, int toTime, vec3_t out, vec3_t angles_in, vec3_t angles_out);
 
 void CG_PositionEntityOnTag(refEntity_t* entity, const refEntity_t* parent,
-                            qhandle_t parentModel, char* tagName);
-void CG_PositionRotatedEntityOnTag(refEntity_t* entity, const refEntity_t* parent,
-                                   qhandle_t parentModel, char* tagName);
+	qhandle_t parentModel, char* tagName);
+	void CG_PositionRotatedEntityOnTag(refEntity_t* entity, const refEntity_t* parent,
+		qhandle_t parentModel, char* tagName);		
 
+qboolean CG_IsKillerGhostBody(const entityState_t* s);
 
 
 //
 // cg_weapons.c
 //
 
-enum {
+enum
+{
 	DRAW_GUN_SHOW               = 1,   /* 000001 */
 	DRAW_GUN_NO_MOVE_ANIMATION  = 2,   /* 000010 */
 	DRAW_GUN_NO_SWITCH_ANIMATION = 4,  /* 001000 */
@@ -2651,6 +2719,7 @@ void CG_Weapon_f(void);
 
 void CG_RegisterWeapon(int weaponNum);
 void CG_RegisterItemVisuals(int itemNum);
+void CG_UnregisterItemVisualForPowerup(powerup_t pw);
 
 void CG_FireWeapon(centity_t* cent);
 void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, impactSound_t soundType);
@@ -3088,7 +3157,7 @@ int CG_NewParticleArea(int num);
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
 // #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.04a" // BE (Black Edition)
+#define OSP_VERSION "be-1.04c" // BE (Black Edition)
 
 
 
@@ -3456,6 +3525,9 @@ void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_entityOverpolate(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyBattleSuitColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_quadDamageColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_enemyQuadDamageColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_fragEffectColor(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

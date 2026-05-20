@@ -40,6 +40,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | Chat1 - Chat16                | Строки чата. Сообщение появляется сначала в Chat1.           |
 | FlagStatus_NME                | Статус флага вражеской команды.                              |
 | FlagStatus_OWN                | Статус флага своей команды.                                  |
+| FlagStatus_CARRY              | Иконка несомого флага (опц. своя через image).               |
 | FollowMessage                 | Сообщение "Following PlayerName".                            |
 | FPS                           | Счетчик FPS.                                                 |
 | FragMessage                   | Сообщение о полученном фраге.                                |
@@ -123,6 +124,8 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | FontSize      | w h            | Размер шрифта ширина и высота.                            |
 | Image         | string         | Путь к шейдеру или картинке.                              |
 | Image2        | string         | Путь к шейдеру или картинке для второго слоя.             |
+| imageAlignh   | L/C/R          | Выравнивание изображения по горизонтали.                  |
+| imageAlignv   | T/C/B          | Выравнивание изображения по вертикали.                    |
 | Monospace     |                | Использовать моноширинную печать.                         |
 | Rect          | x y w h        | Координаты и размер элемента.                             |
 | Text          | string         | Текстовая строка.                                         |
@@ -317,6 +320,10 @@ execute { cg_fov 100; exec myconfig.cfg }
 - Style 1 - мигающий режим (элемент периодически скрывается/показывается).
 - Можно задать своё изображение через `image "image/shader path"`.
 - Можно задать текст через `text "text"`.
+
+## FlagStatus_CARRY
+
+- Можно задать свою иконку: `image "icons/your_icon.tga"` (или путь к shader).
 
 ## FPS
 

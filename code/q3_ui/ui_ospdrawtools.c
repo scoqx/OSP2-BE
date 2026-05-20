@@ -35,8 +35,8 @@ typedef struct
 
 #define MAX_FONTS 32
 static font_t fonts[MAX_FONTS];
-static char customFontNames[MAX_FONTS - 21][MAX_QPATH];
-static int fonts_num = 21;
+static char customFontNames[MAX_FONTS - 23][MAX_QPATH];
+static int fonts_num = 23;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
 
@@ -380,7 +380,9 @@ static void UI_InitFontNames(void)
 	fonts[17].name = "q4snumbers";
 	fonts[18].name = "q4mnumbers";
 	fonts[19].name = "conthrax";
-	fonts[20].name = "qlhandelgothichud";
+	fonts[20].name = "qlhandelgothic";
+	fonts[21].name = "quakeworld";
+	fonts[22].name = "quakeworld_numbers";
 }
 
 qboolean UI_FontAvailable(int index)
@@ -559,6 +561,37 @@ void UI_Fonts_f(void)
 	}
 }
 
+/* 1-based line and column for parse cursor (column = byte index on current line, excluding CR) */
+static void UI_FontParseLineColumn(const char* bufStart, const char* parseCursor, int* outLine, int* outCol)
+{
+	const char* p;
+
+	*outLine = 1;
+	*outCol = 1;
+	if (!bufStart)
+	{
+		*outLine = 0;
+		*outCol = 0;
+		return;
+	}
+	if (!parseCursor)
+	{
+		parseCursor = bufStart + strlen(bufStart);
+	}
+	for (p = bufStart; p < parseCursor; p++)
+	{
+		if (*p == '\n')
+		{
+			(*outLine)++;
+			*outCol = 1;
+		}
+		else if (*p != '\r')
+		{
+			(*outCol)++;
+		}
+	}
+}
+
 static void UI_LoadFont(font_t* fnt, const char* fontName)
 {
 	char buf[ 8000 ];
@@ -587,6 +620,9 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 	float x0;
 	float y0;
 	qboolean swapped;
+	const char* bufBase;
+	int parseLine;
+	int parseCol;
 
 	len = trap_FS_FOpenFile(fontName, &f, FS_READ);
 	if (f == FS_INVALID_HANDLE)
@@ -605,6 +641,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 	trap_FS_FCloseFile(f);
 	buf[ len ] = '\0';
 
+	bufBase = (const char*)buf;
+
 	shaderCount = 0;
 
 	text = buf; /* initialize parser */
@@ -615,7 +653,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 		token = COM_ParseExt(&text, qtrue);
 		if (token[0] == '\0')
 		{
-			Com_Printf(S_COLOR_RED "UI_LoadFont: parse error.\n");
+			UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+			Com_Printf(S_COLOR_RED "UI_LoadFont: parse error in %s at line %i column %i.\n", fontName, parseLine, parseCol);
 			return;
 		}
 
@@ -631,7 +670,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 			token = COM_ParseExt(&text, qfalse);
 			if (!UI_FileExist(token))
 			{
-				Com_Printf("UI_LoadFont: font image '%s' doesn't exist.\n", token);
+				UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+				Com_Printf("UI_LoadFont: font image '%s' doesn't exist (%s line %i column %i).\n", token, fontName, parseLine, parseCol);
 				return;
 			}
 			/* save shader name */
@@ -652,7 +692,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 			token = COM_ParseExt(&text, qfalse);
 			if (token[0] == '\0' || (width = atof(token)) <= 0.0)
 			{
-				Com_Printf("UI_LoadFont: error reading image width.\n");
+				UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+				Com_Printf("UI_LoadFont: error reading image width in %s at line %i column %i.\n", fontName, parseLine, parseCol);
 				return;
 			}
 			r_width = 1.0 / width;
@@ -660,7 +701,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 			token = COM_ParseExt(&text, qfalse);
 			if (token[0] == '\0' || (height = atof(token)) <= 0.0)
 			{
-				Com_Printf("UI_LoadFont: error reading image height.\n");
+				UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+				Com_Printf("UI_LoadFont: error reading image height in %s at line %i column %i.\n", fontName, parseLine, parseCol);
 				return;
 			}
 			r_height = 1.0 / height;
@@ -668,7 +710,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 			token = COM_ParseExt(&text, qfalse);
 			if (token[0] == '\0')
 			{
-				Com_Printf("UI_LoadFont: error reading char width.\n");
+				UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+				Com_Printf("UI_LoadFont: error reading char width in %s at line %i column %i.\n", fontName, parseLine, parseCol);
 				return;
 			}
 			char_width = atof(token);
@@ -676,7 +719,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 			token = COM_ParseExt(&text, qfalse);
 			if (token[0] == '\0')
 			{
-				Com_Printf("UI_LoadFont: error reading char height.\n");
+				UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+				Com_Printf("UI_LoadFont: error reading char height in %s at line %i column %i.\n", fontName, parseLine, parseCol);
 				return;
 			}
 			char_height = atof(token);
@@ -687,7 +731,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 
 	if (shaderCount == 0)
 	{
-		Com_Printf("UI_LoadFont: no font images specified in %s.\n", fontName);
+		UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+		Com_Printf("UI_LoadFont: no font images specified in %s at line %i column %i.\n", fontName, parseLine, parseCol);
 		return;
 	}
 
@@ -743,7 +788,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 
 		if (i < 0 || i > 255)
 		{
-			trap_Print(va(S_COLOR_RED "UI_LoadFont: bad char index %i.\n", i));
+			UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+			trap_Print(va(S_COLOR_RED "UI_LoadFont: bad char index %i in %s at line %i column %i.\n", i, fontName, parseLine, parseCol));
 			return;
 		}
 		fm = fnt->metrics + i;
@@ -752,7 +798,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 		token = COM_ParseExt(&text, qfalse);
 		if (!token[0])
 		{
-			trap_Print(va(S_COLOR_YELLOW "UI_LoadFont: skipping incomplete char metric line in %s.\n", fontName));
+			UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+			trap_Print(va(S_COLOR_YELLOW "UI_LoadFont: skipping incomplete char metric line in %s at line %i column %i.\n", fontName, parseLine, parseCol));
 			break;
 		}
 		x0 = atof(token);
@@ -761,7 +808,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 		token = COM_ParseExt(&text, qfalse);
 		if (!token[0])
 		{
-			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading y0.\n"));
+			UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading y0 (glyph index %i) in %s at line %i column %i.\n", i, fontName, parseLine, parseCol));
 			return;
 		}
 		y0 = atof(token);
@@ -770,7 +818,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 		token = COM_ParseExt(&text, qfalse);
 		if (!token[0])
 		{
-			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading x-offset.\n"));
+			UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading x-offset (glyph index %i) in %s at line %i column %i.\n", i, fontName, parseLine, parseCol));
 			return;
 		}
 		w1 = atof(token);
@@ -779,7 +828,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 		token = COM_ParseExt(&text, qfalse);
 		if (!token[0])
 		{
-			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading x-length.\n"));
+			UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading x-length (glyph index %i) in %s at line %i column %i.\n", i, fontName, parseLine, parseCol));
 			return;
 		}
 		w2 = atof(token);
@@ -788,7 +838,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 		token = COM_ParseExt(&text, qfalse);
 		if (!token[0])
 		{
-			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading space1.\n"));
+			UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading space1 (glyph index %i) in %s at line %i column %i.\n", i, fontName, parseLine, parseCol));
 			return;
 		}
 		s1 = atof(token);
@@ -797,7 +848,8 @@ static void UI_LoadFont(font_t* fnt, const char* fontName)
 		token = COM_ParseExt(&text, qfalse);
 		if (!token[0])
 		{
-			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading space2.\n"));
+			UI_FontParseLineColumn(bufBase, (const char*)text, &parseLine, &parseCol);
+			trap_Print(va(S_COLOR_RED "UI_LoadFont: error reading space2 (glyph index %i) in %s at line %i column %i.\n", i, fontName, parseLine, parseCol));
 			return;
 		}
 		s2 = atof(token);
@@ -912,7 +964,7 @@ static void UI_LoadCustomFonts(void)
 			continue;
 		}
 
-		if (customFontIndex >= (MAX_FONTS - 21))
+		if (customFontIndex >= (MAX_FONTS - 23))
 		{
 			trap_Print(va(S_COLOR_YELLOW "UI_LoadCustomFonts: maximum number of custom fonts reached, skipping '%s'\n", fontName));
 			continue;
@@ -931,7 +983,7 @@ static void UI_LoadCustomFonts(void)
 		{
 			continue;
 		}
-		
+
 		/* Check if file exists using trap_FS_FOpenFile */
 		{
 			fileHandle_t testFile;
@@ -947,17 +999,17 @@ static void UI_LoadCustomFonts(void)
 			}
 			trap_FS_FCloseFile(testFile);
 		}
-		
+
 		Q_strncpyz(customFontNames[customFontIndex], fontName, sizeof(customFontNames[customFontIndex]));
 		fonts[fonts_num].name = customFontNames[customFontIndex];
-		
+
 		/* Store font index before loading */
 		fonts_num++;
 		customFontIndex++;
-		
+
 		/* Load font - UI_LoadFont will print errors if file doesn't exist */
 		UI_LoadFont(&fonts[fonts_num - 1], fontPath);
-		
+
 		/* Check if font was loaded successfully by verifying shaderCount > 0 */
 		if (fonts[fonts_num - 1].shaderCount > 0)
 		{
@@ -997,7 +1049,9 @@ void UI_LoadFonts(void)
 	UI_LoadFont(&fonts[17], "gfx/2d/q4snumbers.cfg");
 	UI_LoadFont(&fonts[18], "gfx/2d/q4mnumbers.cfg");
 	UI_LoadFont(&fonts[19], "gfx/2d/conthrax.cfg");
-	UI_LoadFont(&fonts[20], "gfx/2d/qlhandelgothichud.cfg");
+	UI_LoadFont(&fonts[20], "gfx/2d/qlhandelgothic.cfg");
+	UI_LoadFont(&fonts[21], "gfx/2d/quakeworld.cfg");
+	UI_LoadFont(&fonts[22], "gfx/2d/quakeworld_numbers.cfg");
 	UI_LoadCustomFonts();
 }
 

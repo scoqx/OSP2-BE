@@ -2,10 +2,10 @@
 setlocal
 
 :: Define URLs and paths
-set "OSP2_URL=https://scoqx.github.io/assets/zz-osp-pak8be.pk3"
+set "OSP2_URL=https://konstalker.github.io/assets/zz-osp-pak8be.pk3"
 set "OSP2_FILE=%~dp0osp\zz-osp-pak8be.pk3"
-set "VERSION_URL=https://scoqx.github.io/assets/version.txt"
-set "CHANGELOG_URL=https://scoqx.github.io/assets/version_changelog.txt"
+set "VERSION_URL=https://konstalker.github.io/assets/version.txt"
+set "CHANGELOG_URL=https://konstalker.github.io/assets/version_changelog.txt"
 set "TEMP_VERSION=%TEMP%\osp2_version.txt"
 set "TEMP_CHANGELOG=%TEMP%\osp2_changelog.txt"
 

@@ -40,15 +40,20 @@ void CG_SHUDElementSBHCRoutine(void* context)
 	shudElementStatusbarHealthCount* element = (shudElementStatusbarHealthCount*)context;
 	int hp = cg.snap->ps.stats[STAT_HEALTH];
 	int ap = cg.snap->ps.stats[STAT_ARMOR];
+	int display;
 	int total;
 	int low;
 	int mid;
+	int style = element->config.style.value;
 
-	element->ctx.text = va(element->config.text.value, hp > 0 ? hp : 0);
+	display = hp > 0 ? hp : 0;
+	if ((style & SHUD_SBCOUNT_STYLE_CAP999) && display > 999)
+		display = 999;
+	element->ctx.text = va(element->config.text.value, display);
 
 	if (hp <= 0 && element->config.color.isSet)
 		Vector4Copy(element->config.color.value.rgba, element->ctx.color);
-	else if (hp > 0 && element->config.style.value == 1)
+	else if (hp > 0 && (style & SHUD_SBCOUNT_STYLE_TOTALHP_COLOR))
 	{
 		total = CG_GetTotalHitPoints(hp, ap);
 		low = cg_healthLow.integer;

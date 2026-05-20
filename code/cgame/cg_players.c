@@ -1394,10 +1394,10 @@ static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new)
 
 	/* Skip heavy model/skin/sounds load when model and skin names did not change (e.g. refresh of other clients in CG_UpdateOtherClientsInfo). */
 	modelUnchanged = old->infoValid &&
-	    Q_stricmp(old->modelName, new->modelName) == 0 &&
-	    Q_stricmp(old->skinName, new->skinName) == 0 &&
-	    Q_stricmp(old->headModelName, new->headModelName) == 0 &&
-	    Q_stricmp(old->headSkinName, new->headSkinName) == 0;
+	                 Q_stricmp(old->modelName, new->modelName) == 0 &&
+	                 Q_stricmp(old->skinName, new->skinName) == 0 &&
+	                 Q_stricmp(old->headModelName, new->headModelName) == 0 &&
+	                 Q_stricmp(old->headSkinName, new->headSkinName) == 0;
 
 	if (modelUnchanged)
 	{
@@ -2119,7 +2119,7 @@ void CG_NewClientInfo(int clientNum)
 	if (isOurClient)
 	{
 		/* Update tracked team from config string (most reliable source) */
-		
+
 		static team_t ourTeam = -1;
 		static int ourClientNum = -1;
 		static qboolean wasSpectator = qtrue;
@@ -2787,7 +2787,7 @@ static void CG_BreathPuffs(centity_t* cent, refEntity_t* head)
 CG_TrailItem
 ===============
 */
-static void CG_TrailItem(centity_t* cent, qhandle_t hModel)
+static void CG_TrailItem(centity_t* cent, qhandle_t hModel, const vec4_t color)
 {
 	refEntity_t     ent;
 	vec3_t          angles;
@@ -2805,6 +2805,13 @@ static void CG_TrailItem(centity_t* cent, qhandle_t hModel)
 	AnglesToAxis(angles, ent.axis);
 
 	ent.hModel = hModel;
+	if (color)
+	{
+		ent.shaderRGBA[0] = (byte)(color[0] * 255.0f);
+		ent.shaderRGBA[1] = (byte)(color[1] * 255.0f);
+		ent.shaderRGBA[2] = (byte)(color[2] * 255.0f);
+		ent.shaderRGBA[3] = (byte)(color[3] * 255.0f);
+	}
 	trap_R_AddRefEntityToScene(&ent);
 }
 
@@ -2817,6 +2824,28 @@ CG_PlayerPowerups
 static void CG_PlayerPowerups(centity_t* cent)
 {
 	int     powerups;
+	vec4_t  tint;
+	vec3_t  flagLightRgb;
+
+	if (CG_IsKillerGhostBody(&cent->currentState))
+	{
+		const float* tc;
+
+		if (cg_killerGhost.integer != 1)
+		{
+			return;
+		}
+		if (cgs.beMyTeam == TEAM_BLUE)
+		{
+			tc = cgs.beBlueTeamColor;
+		}
+		else
+		{
+			tc = cgs.beRedTeamColor;
+		}
+		trap_R_AddLightToScene(cent->lerpOrigin, (float)(200 + (rand() & 31)), tc[0], tc[1], tc[2]);
+		return;
+	}
 
 	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
 	{
@@ -2849,7 +2878,69 @@ static void CG_PlayerPowerups(centity_t* cent)
 	// quad gives a dlight
 	if (powerups & (1 << PW_QUAD))
 	{
-		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), 0.2f, 0.2f, 1);
+		float               r, g, b;
+		int                 clientNum;
+		const clientInfo_t* ci;
+
+		r = 0.2f;
+		g = 0.2f;
+		b = 1.0f;
+		clientNum = cent->currentState.clientNum;
+		if (clientNum >= 0 && clientNum < MAX_CLIENTS &&
+		        cgs.clientinfo[clientNum].infoValid)
+		{
+			ci = &cgs.clientinfo[clientNum];
+			if (!cg.enemyDamageColorEnabled && !cg.quadDamageColorEnabled)
+			{
+				if (ci->team == TEAM_RED)
+				{
+					r = 1.0f;
+					g = 0.2f;
+					b = 0.2f;
+				}
+				else if (ci->team == TEAM_BLUE)
+				{
+					r = 0.2f;
+					g = 0.2f;
+					b = 1.0f;
+				}
+			}
+			else
+			{
+				qboolean isEnemyPlayer;
+				qboolean useEnemyMono;
+				qboolean useQuadMono;
+
+				isEnemyPlayer = CG_IsEnemy(ci);
+				useEnemyMono = cg.enemyDamageColorEnabled && isEnemyPlayer;
+				useQuadMono = cg.quadDamageColorEnabled && !useEnemyMono;
+				if (useEnemyMono)
+				{
+					r = cg.beEnemyDamageColor[0];
+					g = cg.beEnemyDamageColor[1];
+					b = cg.beEnemyDamageColor[2];
+				}
+				else if (useQuadMono)
+				{
+					r = cg.beQuadDamageColor[0];
+					g = cg.beQuadDamageColor[1];
+					b = cg.beQuadDamageColor[2];
+				}
+				else if (ci->team == TEAM_RED)
+				{
+					r = 1.0f;
+					g = 0.2f;
+					b = 0.2f;
+				}
+				else if (ci->team == TEAM_BLUE)
+				{
+					r = 0.2f;
+					g = 0.2f;
+					b = 1.0f;
+				}
+			}
+		}
+		trap_R_AddLightToScene(cent->lerpOrigin, (float)(200 + (rand() & 31)), r, g, b);
 	}
 
 	// flight plays a looped sound
@@ -2861,21 +2952,25 @@ static void CG_PlayerPowerups(centity_t* cent)
 	// redflag
 	if (powerups & (1 << PW_REDFLAG))
 	{
-		CG_TrailItem(cent, cgs.media.redFlagModel);
-		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), 1.0, 0.2f, 0.2f);
+		CG_GetDyeFlagTintVec4(TEAM_RED, tint);
+		CG_TrailItem(cent, cgs.media.redFlagModel, tint);
+		CG_GetDyeFlagCarrierLightRgb(TEAM_RED, flagLightRgb);
+		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), flagLightRgb[0], flagLightRgb[1], flagLightRgb[2]);
 	}
 
 	// blueflag
 	if (powerups & (1 << PW_BLUEFLAG))
 	{
-		CG_TrailItem(cent, cgs.media.blueFlagModel);
-		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), 0.2f, 0.2f, 1.0);
+		CG_GetDyeFlagTintVec4(TEAM_BLUE, tint);
+		CG_TrailItem(cent, cgs.media.blueFlagModel, tint);
+		CG_GetDyeFlagCarrierLightRgb(TEAM_BLUE, flagLightRgb);
+		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), flagLightRgb[0], flagLightRgb[1], flagLightRgb[2]);
 	}
 
 	// neutralflag
 	if (powerups & (1 << PW_NEUTRALFLAG))
 	{
-		CG_TrailItem(cent, cgs.media.neutralFlagModel);
+		CG_TrailItem(cent, cgs.media.neutralFlagModel, NULL);
 		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), 1.0, 1.0, 1.0);
 	}
 
@@ -2894,10 +2989,11 @@ CG_PlayerFloatSprite
 Float a sprite over the player's head
 ===============
 */
-static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color)
+static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars)
 {
 	int             rf;
 	refEntity_t     ent;
+	float           radius;
 
 	if (cent->currentState.number == cg.snap->ps.clientNum && !cg.renderingThirdPerson)
 	{
@@ -2913,7 +3009,36 @@ static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color
 	ent.origin[2] += 48;
 	ent.reType = RT_SPRITE;
 	ent.customShader = shader;
-	ent.radius = 10;
+
+	if (useFloatSpriteCvars)
+	{
+		vec3_t          delta;
+		float           minSize;
+		int             maxDist;
+		float           dist;
+
+		minSize = cg_floatSpriteMinSize.value;
+		if (minSize <= 0.0f)
+		{
+			minSize = 1.0f;
+		}
+		radius = 10.0f * minSize;
+		maxDist = cg_floatSpriteMaxDist.integer;
+		if (maxDist > 0)
+		{
+			VectorSubtract(ent.origin, cg.refdef.vieworg, delta);
+			dist = (float)VectorLength(delta);
+			if (dist >= maxDist)
+			{
+				radius *= dist / maxDist;
+			}
+		}
+	}
+	else
+	{
+		radius = 10.0f;
+	}
+	ent.radius = radius;
 	ent.renderfx = rf;
 	if (color)
 	{
@@ -2946,13 +3071,13 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 
 	if (cent->currentState.eFlags & EF_CONNECTION)
 	{
-		CG_PlayerFloatSprite(cent, cgs.media.connectionShader, NULL);
+		CG_PlayerFloatSprite(cent, cgs.media.connectionShader, NULL, qtrue);
 		return;
 	}
 
 	if (cent->currentState.eFlags & EF_TALK)
 	{
-		CG_PlayerFloatSprite(cent, cgs.media.balloonShader, NULL);
+		CG_PlayerFloatSprite(cent, cgs.media.balloonShader, NULL, qtrue);
 		return;
 	}
 
@@ -2974,6 +3099,7 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 	}
 
 	if (!rewardShader && cg_drawFriend.integer && !(cent->currentState.eFlags & EF_DEAD) &&
+	        !CG_IsKillerGhostBody(&cent->currentState) &&
 	        cg.snap->ps.persistant[PERS_TEAM] == ci->team && cgs.gametype >= GT_TEAM)
 	{
 		if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
@@ -2997,9 +3123,9 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 	}
 
 	if (rewardShader)
-		CG_PlayerFloatSprite(cent, rewardShader, NULL);
+		CG_PlayerFloatSprite(cent, rewardShader, NULL, qfalse);
 	else if (friendShader)
-		CG_PlayerFloatSprite(cent, friendShader, friendColor);
+		CG_PlayerFloatSprite(cent, friendShader, friendColor, qtrue);
 }
 
 void CG_AddRefEntityFrozenPlayer(refEntity_t* ent, entityState_t* state, int team)
@@ -3014,7 +3140,7 @@ void CG_AddRefEntityFrozenPlayer(refEntity_t* ent, entityState_t* state, int tea
 	ent->shaderRGBA[2] = ci->colors.frozen[2] * 255;
 
 	ent->shaderRGBA[3] = 255;
-	ent->customShader = cgs.media.frozenShader;
+	ent->customShader = cg_freezeOldShader.integer ? cgs.media.frozenShader : cgs.media.frozenNewShader;
 	trap_R_AddRefEntityToScene(ent);
 }
 
@@ -3029,6 +3155,31 @@ Also called by CG_Missile for quad rockets, but nobody can tell...
 */
 void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int team)
 {
+	if (CG_IsKillerGhostBody(state))
+	{
+		const float* tc;
+
+		trap_R_AddRefEntityToScene(ent);
+		if (cg_killerGhost.integer != 1)
+		{
+			return;
+		}
+		if (cgs.beMyTeam == TEAM_BLUE)
+		{
+			tc = cgs.beBlueTeamColor;
+		}
+		else
+		{
+			tc = cgs.beRedTeamColor;
+		}
+		ent->customShader = cgs.media.quadShaderDye;
+		ent->shaderRGBA[0] = (byte)(tc[0] * 255.0f);
+		ent->shaderRGBA[1] = (byte)(tc[1] * 255.0f);
+		ent->shaderRGBA[2] = (byte)(tc[2] * 255.0f);
+		ent->shaderRGBA[3] = 255;
+		trap_R_AddRefEntityToScene(ent);
+		return;
+	}
 
 	if (state->powerups & (1 << PW_INVIS))
 	{
@@ -3037,6 +3188,10 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 	}
 	else
 	{
+		int             powerups;
+		qboolean        isEnemyPlayer;
+		qboolean        needIsEnemy;
+
 		/*
 		if ( state->eFlags & EF_KAMIKAZE ) {
 		    if (team == TEAM_BLUE)
@@ -3049,15 +3204,60 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 		trap_R_AddRefEntityToScene(ent);
 		//}
 
-		if (state->powerups & (1 << PW_QUAD))
+		powerups = state->powerups;
+		needIsEnemy = qfalse;
+		if ((powerups & (1 << PW_QUAD)) && cg.enemyDamageColorEnabled)
 		{
-			if (team == TEAM_RED)
+			needIsEnemy = qtrue;
+		}
+		if ((powerups & (1 << PW_BATTLESUIT)) && state->weapon != WP_NONE &&
+		        cg.enemyBattleSuitColorEnabled)
+		{
+			needIsEnemy = qtrue;
+		}
+
+		isEnemyPlayer = qfalse;
+		if (needIsEnemy && state->clientNum >= 0 && state->clientNum < MAX_CLIENTS)
+		{
+			const clientInfo_t* ci = &cgs.clientinfo[state->clientNum];
+
+			if (ci->infoValid)
+			{
+				isEnemyPlayer = CG_IsEnemy(ci);
+			}
+		}
+
+		if (powerups & (1 << PW_QUAD))
+		{
+			qboolean useEnemyMono;
+			qboolean useQuadMono;
+
+			useEnemyMono = cg.enemyDamageColorEnabled && isEnemyPlayer;
+			useQuadMono = cg.quadDamageColorEnabled && !useEnemyMono;
+
+			if (useEnemyMono)
+			{
+				ent->customShader = cgs.media.quadShaderDye;
+				ent->shaderRGBA[0] = (byte)(cg.beEnemyDamageColor[0] * 255.0f);
+				ent->shaderRGBA[1] = (byte)(cg.beEnemyDamageColor[1] * 255.0f);
+				ent->shaderRGBA[2] = (byte)(cg.beEnemyDamageColor[2] * 255.0f);
+				ent->shaderRGBA[3] = 255;
+			}
+			else if (useQuadMono)
+			{
+				ent->customShader = cgs.media.quadShaderDye;
+				ent->shaderRGBA[0] = (byte)(cg.beQuadDamageColor[0] * 255.0f);
+				ent->shaderRGBA[1] = (byte)(cg.beQuadDamageColor[1] * 255.0f);
+				ent->shaderRGBA[2] = (byte)(cg.beQuadDamageColor[2] * 255.0f);
+				ent->shaderRGBA[3] = 255;
+			}
+			else if (team == TEAM_RED)
 				ent->customShader = cgs.media.redQuadShader;
 			else
 				ent->customShader = cgs.media.quadShader;
 			trap_R_AddRefEntityToScene(ent);
 		}
-		if (state->powerups & (1 << PW_REGEN))
+		if (powerups & (1 << PW_REGEN))
 		{
 			if (((cg.time / 100) % 10) == 1)
 			{
@@ -3066,7 +3266,7 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 			}
 		}
 
-		if (state->powerups & (1 << PW_BATTLESUIT))
+		if (powerups & (1 << PW_BATTLESUIT))
 		{
 			if (state->weapon == WP_NONE)
 			{
@@ -3074,16 +3274,9 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 			}
 			else
 			{
-				qboolean isEnemyPlayer;
 				qboolean useEnemyMono;
 				qboolean useBattleMono;
 
-				isEnemyPlayer = qfalse;
-				if (state->clientNum >= 0 && state->clientNum < MAX_CLIENTS &&
-				        cgs.clientinfo[state->clientNum].infoValid)
-				{
-					isEnemyPlayer = CG_IsEnemy(&cgs.clientinfo[state->clientNum]);
-				}
 				useEnemyMono = cg.enemyBattleSuitColorEnabled && isEnemyPlayer;
 				useBattleMono = cg.battleSuitColorEnabled && !useEnemyMono;
 
@@ -3534,7 +3727,6 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 	qboolean outlineIsSpec;
 	qboolean outlineIsEnemy;
 	vec4_t outlineColor = {0, 0, 0, 0};
-	team_t myStateTeam, myRealTeam, enemyTeam, ourPerspectiveTeam, targetTeam;
 	vec3_t uniqueColorVec = {0, 0, 0};
 
 	if (cent != lastOutlineCent)
@@ -3557,32 +3749,12 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 			                (localCi->team == TEAM_SPECTATOR);
 
 			outlineIsEnemy = qfalse;
-			if (ci != localCi)
+			if (ci != localCi && ci->infoValid)
 			{
-				myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
-				myRealTeam = (cgs.gametype >= GT_CA) ? localCi->rt : localCi->team;
-				enemyTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
 				if (cgs.gametype <= GT_SINGLE_PLAYER)
 					outlineIsEnemy = qtrue;
-				else if (myStateTeam == TEAM_RED)
-					outlineIsEnemy = (enemyTeam == TEAM_BLUE);
-				else if (myStateTeam == TEAM_BLUE)
-					outlineIsEnemy = (enemyTeam == TEAM_RED);
-				else if (myStateTeam == TEAM_SPECTATOR)
-				{
-					if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
-					        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
-					{
-						ourPerspectiveTeam = (cgs.gametype >= GT_CA) ?
-						                     cgs.clientinfo[cg.snap->ps.clientNum].rt :
-						                     cgs.clientinfo[cg.snap->ps.clientNum].team;
-						targetTeam = (cgs.gametype >= GT_CA) ? ci->rt : ci->team;
-						outlineIsEnemy = (ourPerspectiveTeam != targetTeam);
-					}
-					else
-						outlineIsEnemy = (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR) ?
-						                 (enemyTeam == TEAM_BLUE) : (enemyTeam == TEAM_RED);
-				}
+				else
+					outlineIsEnemy = CG_IsEnemy(ci);
 			}
 
 			if (cg_drawOutline.integer && ci->infoValid &&
@@ -3596,17 +3768,15 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 				outlineCachedDraw = qtrue;
 
 				if (outlineIsSpec && !cg_spectPOV.integer)
-					Vector4Copy(ci->team == TEAM_RED ? cg.beTeamOutlineColor : cg.beEnemyOutlineColor, outlineColor);
-				else if (outlineIsEnemy && cg_enemyOutlineColorUnique.integer == 0)
-					Vector4Copy(cg.beEnemyOutlineColor, outlineColor);
-				else if (outlineIsEnemy)
+					Vector4Copy(outlineIsEnemy ? cg.beEnemyOutlineColor : cg.beTeamOutlineColor, outlineColor);
+				else if (outlineIsEnemy && cg_enemyOutlineColorUnique.integer)
 				{
 					VectorCopy(UNIQUE_COLOR(clientNum), uniqueColorVec);
-					outlineColor[0] = (cg_enemyOutlineColorUnique.integer & 1) ? uniqueColorVec[0] : cg.beEnemyOutlineColor[0];
-					outlineColor[1] = (cg_enemyOutlineColorUnique.integer & 2) ? uniqueColorVec[1] : cg.beEnemyOutlineColor[1];
-					outlineColor[2] = (cg_enemyOutlineColorUnique.integer & 4) ? uniqueColorVec[2] : cg.beEnemyOutlineColor[2];
+					VectorCopy(uniqueColorVec, outlineColor);
 					outlineColor[3] = 1.0f;
 				}
+				else if (outlineIsEnemy)
+					Vector4Copy(cg.beEnemyOutlineColor, outlineColor);
 				else if (useMarkTeammate && cgs.beMarkedTeam[clientNum])
 					Vector4Copy(cg.beMarkedTeamColor, outlineColor);
 				else
@@ -3648,6 +3818,9 @@ static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clie
 	if (cent->currentState.number == cg.snap->ps.clientNum)
 		return;
 	if (ci->team != cg.snap->ps.persistant[PERS_TEAM])
+		return;
+
+	if (CG_IsKillerGhostBody(&cent->currentState))
 		return;
 
 	isFrozen = CG_IS_FROZEN_ENTITY(cent);
@@ -3801,7 +3974,8 @@ void CG_Player(centity_t* cent)
 	CG_PlayerAngles(cent, legs.axis, torso.axis, head.axis);
 	CG_PlayerAnimation(cent, &legs.oldframe, &legs.frame, &legs.backlerp, &torso.oldframe, &torso.frame, &torso.backlerp);
 	/* QVM_LOGIC: skip call when no powerups and not spect glow - CG_PlayerPowerups returns immediately anyway */
-	if (cent->currentState.powerups ||
+	if ((CG_IsKillerGhostBody(&cent->currentState) && cg_killerGhost.integer == 1) ||
+	        (!CG_IsKillerGhostBody(&cent->currentState) && cent->currentState.powerups) ||
 	        (localCi->team == TEAM_SPECTATOR && cg_spectGlow.integer))
 		CG_PlayerPowerups(cent);
 	CG_PlayerSprites(cent, ci, clientNum, useTeamFrozen, useTeamFoeWh);

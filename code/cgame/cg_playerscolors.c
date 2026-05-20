@@ -375,37 +375,14 @@ static void CG_PlayerColorsLoadOverrides(playerColors_t* colors,
 	{
 		int len = strlen(lightningColor->string);
 		vec4_t parsedColor;
-		qboolean colorParsed = qfalse;
 
-		// one number per color format
-		if (len == 1 && lightningColor->string[0] != '0')
+		// color name, digit, E/T or prefixed hex format
+		if (len > 0 && CG_ParseColorStr(lightningColor->string, parsedColor))
 		{
 			if (override) override->isLightningColorSet = qtrue;
-			CG_OSPColorFromChar(lightningColor->string[0], colors->lightning);
-			colorParsed = qtrue;
-		}
-
-		// 8bit hex format: rrggbb
-		if (!colorParsed && len == 6)
-		{
-			if (override) override->isLightningColorSet = qtrue;
-			CG_Hex16GetColor(&lightningColor->string[0], &colors->lightning[0]);
-			CG_Hex16GetColor(&lightningColor->string[2], &colors->lightning[1]);
-			CG_Hex16GetColor(&lightningColor->string[4], &colors->lightning[2]);
-			colorParsed = qtrue;
-		}
-
-		// string color names (Red, Blue, etc.) or other formats
-		// Skip if it's exactly "0" (disabled), but allow "0x..." formats
-		if (!colorParsed && len > 0 && !(len == 1 && lightningColor->string[0] == '0'))
-		{
-			if (CG_ParseColorStr(lightningColor->string, parsedColor))
-			{
-				if (override) override->isLightningColorSet = qtrue;
-				colors->lightning[0] = parsedColor[0];
-				colors->lightning[1] = parsedColor[1];
-				colors->lightning[2] = parsedColor[2];
-			}
+			colors->lightning[0] = parsedColor[0];
+			colors->lightning[1] = parsedColor[1];
+			colors->lightning[2] = parsedColor[2];
 		}
 	}
 }
@@ -416,17 +393,18 @@ static void CG_RebuildOurPlayerColors(void)
 	char color2[8];
 	/* our colors allways is set */
 	CG_PlayerColorsLoadDefault(&cgs.osp.myColors);
+	memset(&cgs.osp.myColorsOverride, 0, sizeof(cgs.osp.myColorsOverride));
 
 	trap_Cvar_VariableStringBuffer("color1", color1, 8);
 	trap_Cvar_VariableStringBuffer("color2", color2, 8);
 	CG_PlayerColorsFromCS(&cgs.osp.myColors, NULL, color1, color2);
 
 	CG_PlayerColorsLoadOverrides(&cgs.osp.myColors,
-	                             NULL,
+	                             &cgs.osp.myColorsOverride,
 	                             &cg_playerModelColors,
 	                             &cg_playerRailColors,
 	                             &cg_playerFrozenColor,
-	                             NULL);
+	                             &cg_altLightningColor);
 }
 
 void CG_RebuildPlayerColors(void)
@@ -443,7 +421,7 @@ void CG_RebuildPlayerColors(void)
 	                             &cg_teamModelColors,
 	                             &cg_teamRailColors,
 	                             &cg_teamFrozenColor,
-	                             NULL);
+	                             &cg_teamLightningColor);
 
 	/* Enemy colors */
 	/* Do not load default */

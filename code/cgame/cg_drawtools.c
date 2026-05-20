@@ -233,6 +233,83 @@ void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4
 	trap_R_SetColor(NULL);
 }
 
+void CG_OSPDrawFrameNew(float x, float y, float w, float h, vec4_t borderSize, vec4_t color)
+{
+	float left;
+	float top;
+	float right;
+	float bottom;
+	float leftSize;
+	float topSize;
+	float rightSize;
+	float bottomSize;
+	float leftOuter;
+	float rightOuter;
+	float lineX;
+	float lineW;
+	float lineY;
+	float lineH;
+	float x2;
+	float y2;
+
+	if (!borderSize || !color)
+	{
+		return;
+	}
+
+	left = borderSize[0];
+	top = borderSize[1];
+	right = borderSize[2];
+	bottom = borderSize[3];
+
+	if (left == 0.0f && top == 0.0f && right == 0.0f && bottom == 0.0f)
+	{
+		return;
+	}
+
+	x2 = x + w;
+	y2 = y + h;
+	CG_AdjustFrom640(&x, &y, &x2, &y2);
+	w = x2 - x;
+	h = y2 - y;
+
+	leftSize = (left < 0.0f) ? -left : left;
+	topSize = (top < 0.0f) ? -top : top;
+	rightSize = (right < 0.0f) ? -right : right;
+	bottomSize = (bottom < 0.0f) ? -bottom : bottom;
+
+	leftOuter = (left > 0.0f) ? leftSize : 0.0f;
+	rightOuter = (right > 0.0f) ? rightSize : 0.0f;
+	lineX = x - leftOuter;
+	lineW = w + leftOuter + rightOuter;
+	lineY = y + ((top < 0.0f) ? topSize : 0.0f);
+	lineH = h - ((top < 0.0f) ? topSize : 0.0f) - ((bottom < 0.0f) ? bottomSize : 0.0f);
+
+	trap_R_SetColor(color);
+
+	if (topSize > 0.0f)
+	{
+		trap_R_DrawStretchPic(lineX, (top < 0.0f) ? y : y - topSize, lineW, topSize, 0, 0, 0, 0, cgs.media.whiteShader);
+	}
+	if (bottomSize > 0.0f)
+	{
+		trap_R_DrawStretchPic(lineX, (bottom < 0.0f) ? y + h - bottomSize : y + h, lineW, bottomSize, 0, 0, 0, 0, cgs.media.whiteShader);
+	}
+	if (lineH > 0.0f)
+	{
+		if (leftSize > 0.0f)
+		{
+			trap_R_DrawStretchPic((left < 0.0f) ? x : x - leftSize, lineY, leftSize, lineH, 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+		if (rightSize > 0.0f)
+		{
+			trap_R_DrawStretchPic((right < 0.0f) ? x + w - rightSize : x + w, lineY, rightSize, lineH, 0, 0, 0, 0, cgs.media.whiteShader);
+		}
+	}
+
+	trap_R_SetColor(NULL);
+}
+
 void CG_OSPDrawFrameAdjusted(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner)
 {
 	if (!borderSize || !color)
@@ -385,7 +462,43 @@ void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color,
 	trap_R_SetColor(NULL);
 }
 
+/*
+================
+CG_GetCustomDyeItemTintVec4
 
+Tint for custom dye visuals; see CG_ItemDyeResolveTint.
+================
+*/
+void CG_GetCustomDyeItemTintVec4(const gitem_t* item, vec4_t out)
+{
+	CG_ItemDyeResolveTint(item, out);
+}
+
+/*
+================
+CG_ModulateVec4ForCustomItemDyeIcon
+
+Multiplies RGB for HUD dye icons when ITEMCV_ICON is set.
+================
+*/
+void CG_ModulateVec4ForCustomItemDyeIcon(int itemNum, vec4_t color)
+{
+	vec4_t tint;
+
+	if (itemNum < 1 || itemNum >= bg_numItems ||
+	        !(cg_items[itemNum].customVisualMask & ITEMCV_ICON))
+	{
+		return;
+	}
+	if (CG_ItemDyeFlagInverseHudPath(&bg_itemlist[itemNum]))
+	{
+		return;
+	}
+	CG_ItemDyeResolveTint(&bg_itemlist[itemNum], tint);
+	color[0] *= tint[0];
+	color[1] *= tint[1];
+	color[2] *= tint[2];
+}
 
 /*
 ===============
@@ -465,6 +578,25 @@ void CG_DrawStringExt(int x, int y, const char* string, const float* setColor,
 		{
 			if (Q_IsColorString(s))
 			{
+				char c;
+
+				c = s[1];
+				if (CG_TextControlDisabled(c))
+				{
+					s += 2;
+					continue;
+				}
+				if (c == 'x' || c == 'X')
+				{
+					float dummy;
+					if (CG_Hex16GetColor(&s[2], &dummy) &&
+					        CG_Hex16GetColor(&s[4], &dummy) &&
+					        CG_Hex16GetColor(&s[6], &dummy))
+					{
+						s += 8;
+						continue;
+					}
+				}
 				s += 2;
 				continue;
 			}
@@ -484,11 +616,33 @@ void CG_DrawStringExt(int x, int y, const char* string, const float* setColor,
 	{
 		if (Q_IsColorString(s))
 		{
+			char c;
+
+			c = s[1];
+			if (CG_TextControlDisabled(c))
+			{
+				s += 2;
+				continue;
+			}
 			if (!forceColor)
 			{
-				memcpy(color, g_color_table[ColorIndex(*(s + 1))], sizeof(color));
-				color[3] = setColor[3];
-				trap_R_SetColor(color);
+				if (c >= '0' && c <= '9')
+				{
+					memcpy(color, g_color_table[ColorIndex(c)], sizeof(color));
+					color[3] = setColor[3];
+					trap_R_SetColor(color);
+				}
+			}
+			if (c == 'x' || c == 'X')
+			{
+				float dummy;
+				if (CG_Hex16GetColor(&s[2], &dummy) &&
+				        CG_Hex16GetColor(&s[4], &dummy) &&
+				        CG_Hex16GetColor(&s[6], &dummy))
+				{
+					s += 8;
+					continue;
+				}
 			}
 			s += 2;
 			continue;
@@ -531,6 +685,46 @@ void CG_DrawSmallStringColor(int x, int y, const char* s, vec4_t color, int flag
 /*
  * Text compiler
  */
+qboolean CG_TextControlDisabled(char controlChar)
+{
+	int mask;
+
+	mask = cg_disableTextEffects.integer;
+	if (!mask)
+	{
+		return qfalse;
+	}
+
+	switch (controlChar)
+	{
+		case 'B':
+		case 'b':
+			return (mask & CG_DTEF_BLINK) != 0;
+		case 'F':
+		case 'f':
+			return (mask & CG_DTEF_FLASH) != 0;
+		case 'N':
+		case 'n':
+			return (mask & CG_DTEF_RESET) != 0;
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+			return (mask & CG_DTEF_PALETTE) != 0;
+		case 'X':
+		case 'x':
+			return (mask & CG_DTEF_HEX) != 0;
+		default:
+			return qfalse;
+	}
+}
+
 //Cut time related symbols like ^f ^F
 void CG_OSPDrawStringPrepare(const char* from, char* to, int size)
 {
@@ -546,6 +740,11 @@ void CG_OSPDrawStringPrepare(const char* from, char* to, int size)
 	{
 		if (from[0] == '^' && from[1] != '^')
 		{
+			if (CG_TextControlDisabled(from[1]))
+			{
+				from += 2;
+				continue;
+			}
 			switch (from[1])
 			{
 				case 'f':
@@ -619,6 +818,11 @@ text_command_t* CG_CompileText(const char* in, int flags)
 	{
 		if (text[0] == '^' && text[1])
 		{
+			if (CG_TextControlDisabled(text[1]))
+			{
+				text += 2;
+				continue;
+			}
 			switch (text[1])
 			{
 				case 'F':
@@ -718,7 +922,7 @@ text_command_t* CG_CompileText(const char* in, int flags)
 					text += 8;
 					break;
 				default:
-					if ((text[1] >= '0') && (text[1] <= '9'))
+					if ((text[1] >= '0') && (text[1] <= '9') && !CG_TextControlDisabled(text[1]))
 					{
 						color_index = text[1] - 0x30;
 						VectorCopy(g_color_table[color_index], commands[i].value.color); //-V557
@@ -795,8 +999,8 @@ typedef struct
 
 #define MAX_FONTS 32
 static font_t fonts[MAX_FONTS];
-static char customFontNames[MAX_FONTS - 21][MAX_QPATH];
-static int fonts_num = 21;
+static char customFontNames[MAX_FONTS - 23][MAX_QPATH];
+static int fonts_num = 23;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
 
@@ -827,7 +1031,9 @@ static void CG_InitFontNames(void)
 	fonts[17].name = "q4snumbers";
 	fonts[18].name = "q4mnumbers";
 	fonts[19].name = "conthrax";
-	fonts[20].name = "qlhandelgothichud";
+	fonts[20].name = "qlhandelgothic";
+	fonts[21].name = "quakeworld";
+	fonts[22].name = "quakeworld_numbers";
 }
 
 qboolean CG_FontAvailable(int index)
@@ -1350,7 +1556,7 @@ static void CG_LoadCustomFonts(void)
 			continue;
 		}
 
-		if (customFontIndex >= (MAX_FONTS - 21))
+		if (customFontIndex >= (MAX_FONTS - 23))
 		{
 			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: maximum number of custom fonts reached, skipping '%s'\n", fontName);
 			continue;
@@ -1431,7 +1637,9 @@ void CG_LoadFonts(void)
 	CG_LoadFont(&fonts[17], "gfx/2d/q4snumbers.cfg");
 	CG_LoadFont(&fonts[18], "gfx/2d/q4mnumbers.cfg");
 	CG_LoadFont(&fonts[19], "gfx/2d/conthrax.cfg");
-	CG_LoadFont(&fonts[20], "gfx/2d/qlhandelgothichud.cfg");
+	CG_LoadFont(&fonts[20], "gfx/2d/qlhandelgothic.cfg");
+	CG_LoadFont(&fonts[21], "gfx/2d/quakeworld.cfg");
+	CG_LoadFont(&fonts[22], "gfx/2d/quakeworld_numbers.cfg");
 	CG_LoadCustomFonts();
 }
 
@@ -1615,10 +1823,27 @@ void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, 
 		{
 			if (*s == Q_COLOR_ESCAPE && s[1] != '\0' && s[1] != '^')
 			{
-				//if ( !(options & DS_SHOW_CODE) ) {
+				char c;
+
+				c = s[1];
+				if (CG_TextControlDisabled(c))
+				{
+					s += 2;
+					continue;
+				}
+				if (c == 'x' || c == 'X')
+				{
+					float dummy;
+					if (CG_Hex16GetColor((const char*)&s[2], &dummy) &&
+					        CG_Hex16GetColor((const char*)&s[4], &dummy) &&
+					        CG_Hex16GetColor((const char*)&s[6], &dummy))
+					{
+						s += 8;
+						continue;
+					}
+				}
 				s += 2;
 				continue;
-				//}
 			}
 			//fm = &font->metrics[ *s ];
 			fm = &metrics[ *s ];
@@ -1667,15 +1892,35 @@ void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, 
 
 		if (*s == Q_COLOR_ESCAPE && s[1] != '\0' && s[1] != '^')
 		{
+			char c;
+
+			c = s[1];
+			if (CG_TextControlDisabled(c))
+			{
+				s += 2;
+				continue;
+			}
 			if (!(flags & DS_FORCE_COLOR))
 			{
-				VectorCopy(g_color_table[ ColorIndex(s[1]) ], color);
-				trap_R_SetColor(color);
+				if (c >= '0' && c <= '9')
+				{
+					VectorCopy(g_color_table[ColorIndex(c)], color);
+					trap_R_SetColor(color);
+				}
 			}
-			//if ( !(options & DS_SHOW_CODE) ) {
+			if (c == 'x' || c == 'X')
+			{
+				float dummy;
+				if (CG_Hex16GetColor((const char*)&s[2], &dummy) &&
+				        CG_Hex16GetColor((const char*)&s[4], &dummy) &&
+				        CG_Hex16GetColor((const char*)&s[6], &dummy))
+				{
+					s += 8;
+					continue;
+				}
+			}
 			s += 2;
 			continue;
-			//}
 		}
 
 		//fm = &font->metrics[ *s ];
@@ -1727,11 +1972,29 @@ int CG_DrawStrlen(const char* str)
 	{
 		if (*str == '^')
 		{
+			char c;
+
 			++str; //skip ^
 			--len;
 			if (len)
 			{
-				if (*str == 'X' || *str == 'x')
+				c = *str;
+				if (CG_TextControlDisabled(c))
+				{
+					if (c == 'x' || c == 'X')
+					{
+						++str;
+						--len;
+						continue;
+					}
+					if (c != '^')
+					{
+						++str;
+						--len;
+						continue;
+					}
+				}
+				if (c == 'X' || c == 'x')
 				{
 					++str; //skip code X/x
 					--len;
@@ -1745,9 +2008,9 @@ int CG_DrawStrlen(const char* str)
 						continue;
 					}
 				}
-				else if (*str != '^')
+				else if (c != '^')
 				{
-					++str; //skip code X/x
+					++str;
 					--len;
 					continue;
 				}
@@ -2669,6 +2932,11 @@ int CG_OSPDrawStringOld(int x, int y, const char* str, int charWidth, int charHe
 			control_char = str_ptr[1];
 			str_ptr += 2;
 
+			if (CG_TextControlDisabled(control_char))
+			{
+				continue;
+			}
+
 			switch (control_char)
 			{
 				case '0':
@@ -2818,7 +3086,15 @@ float CG_OSPDrawStringLengthNew(const char* string, float ax, float aw, float ma
 
 		if (*s == Q_COLOR_ESCAPE && s[1] != '\0' && s[1] != '^')
 		{
-			switch (s[1])
+			char c;
+
+			c = s[1];
+			if (CG_TextControlDisabled(c))
+			{
+				s += 2;
+				continue;
+			}
+			switch (c)
 			{
 				case 'X':
 				case 'x':
@@ -2836,14 +3112,13 @@ float CG_OSPDrawStringLengthNew(const char* string, float ax, float aw, float ma
 					{
 						break;
 					}
+					s += 8;
+					continue;
 				}
-				s += 8;
-				break;
 				default:
 					s += 2;
-					break;
+					continue;
 			}
-			continue;
 		}
 
 		fm = &metrics[ *s ];

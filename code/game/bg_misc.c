@@ -764,6 +764,68 @@ gitem_t bg_itemlist[] =
 
 int     bg_numItems = sizeof(bg_itemlist) / sizeof(bg_itemlist[0]) - 1;
 
+const bg_customItemVisuals_t bg_customItemVisuals[] =
+{
+	{
+		"item_quad",
+		{
+			"models/powerups/instant/quadDye.md3",
+			"models/powerups/instant/quad_ringDye.md3",
+			NULL,
+			NULL
+		},
+		"icons/dye/quad"
+	},
+	{
+		"item_enviro",
+		{
+			"models/powerups/instant/enviroDye.md3",
+			"models/powerups/instant/enviro_ringDye.md3",
+			NULL,
+			NULL
+		},
+		"icons/dye/envirosuit"
+	},
+	{
+		"team_CTF_redflag",
+		{
+			"models/flags/flagDye.md3",
+			NULL,
+			NULL,
+			NULL
+		},
+		"icons/dye/iconf_dye1"
+	},
+	{
+		"team_CTF_blueflag",
+		{
+			"models/flags/flagDye.md3",
+			NULL,
+			NULL,
+			NULL
+		},
+		"icons/dye/iconf_dye1"
+	},
+	{ NULL }
+};
+
+const bg_customItemVisuals_t* BG_CustomItemVisualsFind(const char* classname)
+{
+	int i;
+
+	if (!classname)
+	{
+		return NULL;
+	}
+	for (i = 0; bg_customItemVisuals[i].classname; i++)
+	{
+		if (!Q_stricmp(classname, bg_customItemVisuals[i].classname))
+		{
+			return &bg_customItemVisuals[i];
+		}
+	}
+	return NULL;
+}
 
 /*
 ==============

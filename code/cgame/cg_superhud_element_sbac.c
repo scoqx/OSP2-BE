@@ -40,16 +40,21 @@ void CG_SHUDElementSBACRoutine(void* context)
 	shudElementStatusbarArmorCount* element = (shudElementStatusbarArmorCount*)context;
 	int hp = cg.snap->ps.stats[STAT_HEALTH];
 	int ap = cg.snap->ps.stats[STAT_ARMOR];
+	int display;
 	int total;
 	int low;
 	int mid;
+	int style = element->config.style.value;
 
 	if (ap <= 0 && !SHUD_CHECK_SHOW_EMPTY(element))
 		return;
 
-	element->ctx.text = va(element->config.text.value, ap > 0 ? ap : 0);
+	display = ap > 0 ? ap : 0;
+	if ((style & SHUD_SBCOUNT_STYLE_CAP999) && display > 999)
+		display = 999;
+	element->ctx.text = va(element->config.text.value, display);
 
-	if (element->config.style.value == 1 && hp > 0)
+	if ((style & SHUD_SBCOUNT_STYLE_TOTALHP_COLOR) && hp > 0)
 	{
 		total = CG_GetTotalHitPoints(hp, ap);
 		low = cg_healthLow.integer;

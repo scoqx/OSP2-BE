@@ -300,11 +300,13 @@ void CG_ReflectVelocity(localEntity_t* le, trace_t* trace)
 }
 void CG_AddFragmentHideFrozen(localEntity_t* le)
 {
-	if (le->refEntity.customShader == cgs.media.frozenShader)
+	qhandle_t customShader = le->refEntity.customShader;
+
+	if (customShader == cgs.media.frozenShader || customShader == cgs.media.frozenNewShader)
 	{
 		le->refEntity.customShader = 0;
 		trap_R_AddRefEntityToScene(&le->refEntity);
-		le->refEntity.customShader = cgs.media.frozenShader;
+		le->refEntity.customShader = customShader;
 	}
 }
 /*

@@ -445,15 +445,59 @@ void CG_SHUDTextMakeContext(const superhudConfig_t* in, superhudTextContext_t* o
 void CG_SHUDDrawMakeContext(const superhudConfig_t* in, superhudDrawContext_t* out)
 {
 	superhudConfig_t config;
+	float x;
+	float y;
+	float w;
+	float h;
+
 	memset(out, 0, sizeof(*out));
 	memcpy(&config, in, sizeof(config));
 
 	CG_SHUDConfigDefaultsCheck(&config);
 
-	out->coord.named.x = config.rect.value[0];
-	out->coord.named.y = config.rect.value[1];
-	out->coord.named.w = config.rect.value[2];
-	out->coord.named.h = config.rect.value[3];
+	w = config.rect.value[2];
+	h = config.rect.value[3];
+	x = config.rect.value[0];
+	y = config.rect.value[1];
+
+	if (in->imageAlignH.isSet)
+	{
+		switch (in->imageAlignH.value)
+		{
+			default:
+			case SUPERHUD_ALIGNH_LEFT:
+				x = config.rect.value[0];
+				break;
+			case SUPERHUD_ALIGNH_CENTER:
+				x = config.rect.value[0] - w * 0.5f;
+				break;
+			case SUPERHUD_ALIGNH_RIGHT:
+				x = config.rect.value[0] - w;
+				break;
+		}
+	}
+
+	if (in->imageAlignV.isSet)
+	{
+		switch (in->imageAlignV.value)
+		{
+			default:
+			case SUPERHUD_ALIGNV_TOP:
+				y = config.rect.value[1];
+				break;
+			case SUPERHUD_ALIGNV_CENTER:
+				y = config.rect.value[1] - h * 0.5f;
+				break;
+			case SUPERHUD_ALIGNV_BOTTOM:
+				y = config.rect.value[1] - h;
+				break;
+		}
+	}
+
+	out->coord.named.x = x;
+	out->coord.named.y = y;
+	out->coord.named.w = w;
+	out->coord.named.h = h;
 
 	out->coordPicture.named.x = 0.0f;
 	out->coordPicture.named.y = 0.0f;
@@ -852,53 +896,32 @@ static void CG_SHUDBarPreparePrintBTT(const superhudBarContext_t* ctx, float val
 }
 
 /*
- * Calculate texture coordinates for bar image divided into 100 parts
- * Returns texture coordinates (s1, t1, s2, t2) for the given progress value (0.0 to 1.0)
- * direction: bar direction (horizontal or vertical)
- * progress: progress value from 0.0 to 1.0
+ * Texture coordinates for a partial bar image (progress 0.0 - 1.0).
+ * UV extent matches draw rect when used with CG_SHUDBarSyncImageDrawRect.
  */
 static void CG_SHUDBarGetImageTexCoords(superhudDirection_t direction, float progress, float* s1, float* t1, float* s2, float* t2)
 {
-	int parts;
-	float partSize;
-	float endProgress;
-
-	// Clamp progress to 0.0 - 1.0
 	if (progress < 0.0f)
 	{
 		progress = 0.0f;
 	}
-	if (progress > 1.0f)
+	else if (progress > 1.0f)
 	{
 		progress = 1.0f;
 	}
-
-	// Calculate how many parts (out of 100) should be visible
-	parts = (int)(progress * 100.0f);
-	if (parts > 100)
-	{
-		parts = 100;
-	}
-	if (parts < 0)
-	{
-		parts = 0;
-	}
-
-	partSize = 1.0f / 100.0f;
-	endProgress = (float)parts * partSize;
 
 	if (direction == SUPERHUD_DIR_LEFT_TO_RIGHT)
 	{
 		// Horizontal bar left to right: show from left
 		*s1 = 0.0f;
 		*t1 = 0.0f;
-		*s2 = endProgress;
+		*s2 = progress;
 		*t2 = 1.0f;
 	}
 	else if (direction == SUPERHUD_DIR_RIGHT_TO_LEFT)
 	{
 		// Horizontal bar right to left: show from right
-		*s1 = 1.0f - endProgress;
+		*s1 = 1.0f - progress;
 		*t1 = 0.0f;
 		*s2 = 1.0f;
 		*t2 = 1.0f;
@@ -909,15 +932,61 @@ static void CG_SHUDBarGetImageTexCoords(superhudDirection_t direction, float pro
 		*s1 = 0.0f;
 		*t1 = 0.0f;
 		*s2 = 1.0f;
-		*t2 = endProgress;
+		*t2 = progress;
 	}
 	else // SUPERHUD_DIR_BOTTOM_TO_TOP
 	{
 		// Vertical bar bottom to top: show from bottom
 		*s1 = 0.0f;
-		*t1 = 1.0f - endProgress;
+		*t1 = 1.0f - progress;
 		*s2 = 1.0f;
 		*t2 = 1.0f;
+	}
+}
+
+/*
+ * Set draw rect from the same progress used for image UVs (avoids stretch/jitter vs quantized texcoords).
+ */
+static void CG_SHUDBarSyncImageDrawRect(superhudDirection_t direction, const vec4_t full, float progress, vec4_t draw)
+{
+	float extent;
+
+	if (progress <= 0.0f)
+	{
+		draw[0] = full[0];
+		draw[1] = full[1];
+		draw[2] = 0.0f;
+		draw[3] = 0.0f;
+		return;
+	}
+	if (progress > 1.0f)
+	{
+		progress = 1.0f;
+	}
+
+	if (direction == SUPERHUD_DIR_LEFT_TO_RIGHT || direction == SUPERHUD_DIR_RIGHT_TO_LEFT)
+	{
+		extent = full[2] * progress;
+		draw[0] = full[0];
+		draw[1] = full[1];
+		draw[2] = extent;
+		draw[3] = full[3];
+		if (direction == SUPERHUD_DIR_RIGHT_TO_LEFT)
+		{
+			draw[0] = full[0] + full[2] - extent;
+		}
+	}
+	else
+	{
+		extent = full[3] * progress;
+		draw[0] = full[0];
+		draw[1] = full[1];
+		draw[2] = full[2];
+		draw[3] = extent;
+		if (direction == SUPERHUD_DIR_BOTTOM_TO_TOP)
+		{
+			draw[1] = full[1] + full[3] - extent;
+		}
 	}
 }
 
@@ -977,6 +1046,15 @@ void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, flo
 			progress1 = coords.bar1_value[3] / ctx->bar[0][3];
 		}
 		progress2 = 0.0f;
+	}
+
+	if (ctx->image != 0)
+	{
+		CG_SHUDBarSyncImageDrawRect(ctx->direction, ctx->bar[0], progress1, coords.bar1_value);
+		if (ctx->two_bars)
+		{
+			CG_SHUDBarSyncImageDrawRect(ctx->direction, ctx->bar[1], progress2, coords.bar2_value);
+		}
 	}
 
 	// Draw background

@@ -19,6 +19,8 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseFont(configFileInfo_
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseFontSize(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImage(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImage2(configFileInfo_t* finfo, superhudConfig_t* config);
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImageAlignH(configFileInfo_t* finfo, superhudConfig_t* config);
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImageAlignV(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImageTC(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseItTeam(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseMargins(configFileInfo_t* finfo, superhudConfig_t* config);
@@ -60,6 +62,8 @@ static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 	{ "fontsize", CG_SHUDConfigCommandParseFontSize },
 	{ "image", CG_SHUDConfigCommandParseImage },
 	{ "image2", CG_SHUDConfigCommandParseImage2 },
+	{ "imagealignh", CG_SHUDConfigCommandParseImageAlignH },
+	{ "imagealignv", CG_SHUDConfigCommandParseImageAlignV },
 	{ "imagetc", CG_SHUDConfigCommandParseImageTC },
 	{ "itteam", CG_SHUDConfigCommandParseItTeam },
 	{ "margins", CG_SHUDConfigCommandParseMargins },
@@ -1259,6 +1263,82 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseAlighV(configFileInf
 	}
 
 	if (status == SUPERHUD_CONFIG_OK) config->alignV.isSet = qtrue;
+	return status;
+}
+
+/*
+ * parse image horizontal align command: L/C/R
+ */
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImageAlignH(configFileInfo_t* finfo, superhudConfig_t* config)
+{
+	char c;
+	superhudConfigParseStatus_t status;
+
+	config->imageAlignH.isSet = qfalse;
+
+	status = CG_SHUDConfigSkipSCN(finfo);
+
+	if (status != SUPERHUD_CONFIG_OK) return status;
+
+	c = tolower(CG_SHUD_CONFIG_INFO_GET_CHAR(finfo));
+	switch (c)
+	{
+		case 'l':
+			config->imageAlignH.value = SUPERHUD_ALIGNH_LEFT;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'c':
+			config->imageAlignH.value = SUPERHUD_ALIGNH_CENTER;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'r':
+			config->imageAlignH.value = SUPERHUD_ALIGNH_RIGHT;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		default:
+			status = SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+			break;
+	}
+
+	if (status == SUPERHUD_CONFIG_OK) config->imageAlignH.isSet = qtrue;
+	return status;
+}
+
+/*
+ * parse image vertical align command: T/C/B
+ */
+static superhudConfigParseStatus_t CG_SHUDConfigCommandParseImageAlignV(configFileInfo_t* finfo, superhudConfig_t* config)
+{
+	char c;
+	superhudConfigParseStatus_t status;
+
+	config->imageAlignV.isSet = qfalse;
+
+	status = CG_SHUDConfigSkipSCN(finfo);
+
+	if (status != SUPERHUD_CONFIG_OK) return status;
+
+	c = tolower(CG_SHUD_CONFIG_INFO_GET_CHAR(finfo));
+	switch (c)
+	{
+		case 't':
+			config->imageAlignV.value = SUPERHUD_ALIGNV_TOP;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'c':
+			config->imageAlignV.value = SUPERHUD_ALIGNV_CENTER;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		case 'b':
+			config->imageAlignV.value = SUPERHUD_ALIGNV_BOTTOM;
+			CG_SHUD_CONFIG_INFO_NEXT_CHAR(finfo);
+			break;
+		default:
+			status = SUPERHUD_CONFIG_UNEXPECTED_CHARACTER;
+			break;
+	}
+
+	if (status == SUPERHUD_CONFIG_OK) config->imageAlignV.isSet = qtrue;
 	return status;
 }
 

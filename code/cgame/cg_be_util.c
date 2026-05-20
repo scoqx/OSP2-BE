@@ -103,7 +103,7 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_ALT_BLOOD, changed = qtrue;
 		if (cg_altPlasma.integer == 2)
 			beFlags |= CG_BE_ALT_PLASMAGUN, changed = qtrue;
-		if (cgs.osp.enemyColorsOverride.isLightningColorSet)
+		if (cgs.osp.myColorsOverride.isLightningColorSet || cgs.osp.teamColorsOverride.isLightningColorSet || cgs.osp.enemyColorsOverride.isLightningColorSet)
 			beFlags |= CG_BE_ENEMYLIGHTNING, changed = qtrue;
 		if (anyFbSkin || cg_drawBrightWeapons.integer)
 			beFlags |= CG_BE_FULLBRIGHT, changed = qtrue;
@@ -204,7 +204,7 @@ void CG_PrintDisabledFeatures(qboolean request)
 		}
 		if (value & CG_BE_ENEMYLIGHTNING)
 		{
-			Q_strcat(buffer, sizeof(buffer), first ? "Enemy lightning" : ", enemy lightning");
+			Q_strcat(buffer, sizeof(buffer), first ? "Lightning color" : ", lightning color");
 			first = qfalse;
 		}
 		if (value & CG_BE_MARK_TEAMMATE)

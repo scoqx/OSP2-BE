@@ -463,67 +463,67 @@ void CG_SHUDRoutine(void)
 		int k7 = cgs.osp.shud.key[7];
 		qboolean be_health_low = cg.beIsHealthLow;
 
-	CG_DrawCrosshair();
-	if (CG_DrawIntermission() == 0)
-	{
-		CG_OSPDrawCenterString();
-	}
-	currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
-
-	while (last)
-	{
-		int vflags = last->config.visiblity.isSet ? last->config.visiblity.value : last->element.visibility;
-		qboolean is_spectator_for_element = is_spectator;
-		int wf;
-		qboolean weapon_skip;
-		qboolean skip;
-
-		if (last->element.isFragmessage)
+		CG_DrawCrosshair();
+		if (CG_DrawIntermission() == 0)
 		{
-			is_spectator_for_element = is_spectator || (pm_type == PM_SPECTATOR);
+			CG_OSPDrawCenterString();
 		}
+		currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
 
-		wf = (vflags & SE_WEAPON_ANY);
-		weapon_skip = (wf != 0) && !(
-		                  ((vflags & SE_WEAPON_GAUNTLET) && currentWeapon == WP_GAUNTLET) ||
-		                  ((vflags & SE_WEAPON_MACHINEGUN) && currentWeapon == WP_MACHINEGUN) ||
-		                  ((vflags & SE_WEAPON_SHOTGUN) && currentWeapon == WP_SHOTGUN) ||
-		                  ((vflags & SE_WEAPON_GRENADE_LAUNCHER) && currentWeapon == WP_GRENADE_LAUNCHER) ||
-		                  ((vflags & SE_WEAPON_ROCKET_LAUNCHER) && currentWeapon == WP_ROCKET_LAUNCHER) ||
-		                  ((vflags & SE_WEAPON_LIGHTNING) && currentWeapon == WP_LIGHTNING) ||
-		                  ((vflags & SE_WEAPON_RAILGUN) && currentWeapon == WP_RAILGUN) ||
-		                  ((vflags & SE_WEAPON_PLASMAGUN) && currentWeapon == WP_PLASMAGUN) ||
-		                  ((vflags & SE_WEAPON_BFG) && currentWeapon == WP_BFG));
-
-		skip = (!(vflags & SE_IM) && is_intermission) ||
-		       ((vflags & SE_TEAM_ONLY) && !is_team_game) ||
-		       (!(vflags & SE_DEAD) && is_dead) ||
-		       (!(vflags & SE_SPECT) && is_spectator_for_element) ||
-		       ((vflags & SE_SCORES_HIDE) && is_scores) ||
-		       ((vflags & SE_DEMO_HIDE) && cg.demoPlayback) ||
-		       ((vflags & SE_KEY1_SHOW) && !k0) ||
-		       ((vflags & SE_KEY2_SHOW) && !k1) ||
-		       ((vflags & SE_KEY3_SHOW) && !k2) ||
-		       ((vflags & SE_KEY4_SHOW) && !k3) ||
-		       ((vflags & SE_KEY5_SHOW) && !k4) ||
-		       ((vflags & SE_KEY6_SHOW) && !k5) ||
-		       ((vflags & SE_KEY7_SHOW) && !k6) ||
-		       ((vflags & SE_KEY8_SHOW) && !k7) ||
-		       ((vflags & SE_GT_FFA) && is_gt_ffa) ||
-		       ((vflags & SE_GT_TDM) && is_gt_tdm) ||
-		       ((vflags & SE_GT_CTF) && is_gt_ctf) ||
-		       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
-		       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
-		       ((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
-		       ((vflags & SE_HEALTH_LOW) && !be_health_low) ||
-		       weapon_skip;
-
-		if (!skip && last->element.routine)
+		while (last)
 		{
-			last->element.routine(last->element.context);
+			int vflags = last->config.visiblity.isSet ? last->config.visiblity.value : last->element.visibility;
+			qboolean is_spectator_for_element = is_spectator;
+			int wf;
+			qboolean weapon_skip;
+			qboolean skip;
+
+			if (last->element.isFragmessage)
+			{
+				is_spectator_for_element = is_spectator || (pm_type == PM_SPECTATOR);
+			}
+
+			wf = (vflags & SE_WEAPON_ANY);
+			weapon_skip = (wf != 0) && !(
+			                  ((vflags & SE_WEAPON_GAUNTLET) && currentWeapon == WP_GAUNTLET) ||
+			                  ((vflags & SE_WEAPON_MACHINEGUN) && currentWeapon == WP_MACHINEGUN) ||
+			                  ((vflags & SE_WEAPON_SHOTGUN) && currentWeapon == WP_SHOTGUN) ||
+			                  ((vflags & SE_WEAPON_GRENADE_LAUNCHER) && currentWeapon == WP_GRENADE_LAUNCHER) ||
+			                  ((vflags & SE_WEAPON_ROCKET_LAUNCHER) && currentWeapon == WP_ROCKET_LAUNCHER) ||
+			                  ((vflags & SE_WEAPON_LIGHTNING) && currentWeapon == WP_LIGHTNING) ||
+			                  ((vflags & SE_WEAPON_RAILGUN) && currentWeapon == WP_RAILGUN) ||
+			                  ((vflags & SE_WEAPON_PLASMAGUN) && currentWeapon == WP_PLASMAGUN) ||
+			                  ((vflags & SE_WEAPON_BFG) && currentWeapon == WP_BFG));
+
+			skip = (!(vflags & SE_IM) && is_intermission) ||
+			       ((vflags & SE_TEAM_ONLY) && !is_team_game) ||
+			       (!(vflags & SE_DEAD) && is_dead) ||
+			       (!(vflags & SE_SPECT) && is_spectator_for_element) ||
+			       ((vflags & SE_SCORES_HIDE) && is_scores) ||
+			       ((vflags & SE_DEMO_HIDE) && cg.demoPlayback) ||
+			       ((vflags & SE_KEY1_SHOW) && !k0) ||
+			       ((vflags & SE_KEY2_SHOW) && !k1) ||
+			       ((vflags & SE_KEY3_SHOW) && !k2) ||
+			       ((vflags & SE_KEY4_SHOW) && !k3) ||
+			       ((vflags & SE_KEY5_SHOW) && !k4) ||
+			       ((vflags & SE_KEY6_SHOW) && !k5) ||
+			       ((vflags & SE_KEY7_SHOW) && !k6) ||
+			       ((vflags & SE_KEY8_SHOW) && !k7) ||
+			       ((vflags & SE_GT_FFA) && is_gt_ffa) ||
+			       ((vflags & SE_GT_TDM) && is_gt_tdm) ||
+			       ((vflags & SE_GT_CTF) && is_gt_ctf) ||
+			       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
+			       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
+			       ((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
+			       ((vflags & SE_HEALTH_LOW) && !be_health_low) ||
+			       weapon_skip;
+
+			if (!skip && last->element.routine)
+			{
+				last->element.routine(last->element.context);
+			}
+			last = last->next;
 		}
-		last = last->next;
-	}
 	}
 	if (cg.showWStats)
 	{
@@ -688,53 +688,89 @@ void CG_SHUDEventTeamTask(int sender, int taskType, qboolean isPickup)
 {
 	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 	superhudTeamTasksEntry_t* entry;
+	superhudTeamTasksEntry_t keptEntries[SHUD_MAX_TEAMTASKS_LINES];
 	int gameTime;
 	int i;
 	int checkIndex;
-	const int duplicateCheckTime = 100;
+	int keepCount;
+	int repeatCount;
+	int totalCount;
+	int startIndex;
+	unsigned int newIndex;
+	qboolean foundDuplicate;
 
-	/* Check for duplicate events - same sender and taskType within duplicateCheckTime */
-	if (sender >= 0 && sender < MAX_CLIENTS)
+	keepCount = 0;
+	repeatCount = 1;
+	foundDuplicate = qfalse;
+
+	/* Merge duplicates still present in SuperHUD history, then move the merged line to newest. */
+	for (i = SHUD_MAX_TEAMTASKS_LINES - 1; i >= 0; i--)
 	{
-		for (i = 0; i < SHUD_MAX_TEAMTASKS_LINES; i++)
+		checkIndex = (ctx->teamTasks.index - 1 - i + SHUD_MAX_TEAMTASKS_LINES) % SHUD_MAX_TEAMTASKS_LINES;
+		entry = &ctx->teamTasks.line[checkIndex];
+
+		if (entry->time == 0)
 		{
-			checkIndex = (ctx->teamTasks.index - 1 - i + SHUD_MAX_TEAMTASKS_LINES) % SHUD_MAX_TEAMTASKS_LINES;
-			entry = &ctx->teamTasks.line[checkIndex];
-
-			/* Skip empty entries */
-			if (entry->time == 0)
-			{
-				continue;
-			}
-
-			/* Check if this is a duplicate (same sender and taskType within time window) */
-			if (entry->sender == sender && entry->taskType == taskType)
-			{
-				int timeDiff;
-				timeDiff = cg.time - entry->time;
-				if (timeDiff >= 0 && timeDiff < duplicateCheckTime)
-				{
-					/* Duplicate event within time window - skip adding */
-					return;
-				}
-			}
+			continue;
 		}
+
+		if (entry->time != 0 && entry->sender == sender && entry->taskType == taskType && entry->isPickup == isPickup)
+		{
+			foundDuplicate = qtrue;
+			if (entry->repeatCount > 0)
+			{
+				repeatCount += entry->repeatCount;
+			}
+			else
+			{
+				++repeatCount;
+			}
+			continue;
+		}
+
+		memcpy(&keptEntries[keepCount], entry, sizeof(keptEntries[keepCount]));
+		++keepCount;
 	}
 
-	entry = &ctx->teamTasks.line[ctx->teamTasks.index % SHUD_MAX_TEAMTASKS_LINES];
+	if (repeatCount > 999)
+	{
+		repeatCount = 999;
+	}
+
+	if (foundDuplicate)
+	{
+		memset(ctx->teamTasks.line, 0, sizeof(ctx->teamTasks.line));
+
+		newIndex = ctx->teamTasks.index + 1;
+		totalCount = keepCount + 1;
+		startIndex = (newIndex + SHUD_MAX_TEAMTASKS_LINES - totalCount) % SHUD_MAX_TEAMTASKS_LINES;
+
+		for (i = 0; i < keepCount; i++)
+		{
+			memcpy(&ctx->teamTasks.line[(startIndex + i) % SHUD_MAX_TEAMTASKS_LINES], &keptEntries[i], sizeof(keptEntries[i]));
+		}
+
+		entry = &ctx->teamTasks.line[(startIndex + keepCount) % SHUD_MAX_TEAMTASKS_LINES];
+		ctx->teamTasks.index = newIndex;
+	}
+	else
+	{
+		entry = &ctx->teamTasks.line[ctx->teamTasks.index % SHUD_MAX_TEAMTASKS_LINES];
+		++ctx->teamTasks.index;
+	}
+
 	memset(entry, 0, sizeof(*entry));
 
 	entry->sender = sender;
 	entry->taskType = taskType;
 	entry->isPickup = isPickup;
 	entry->time = cg.time;
+	entry->repeatCount = repeatCount;
 
 	/* Calculate game time when task was sent */
 	gameTime = cg.time - cgs.levelStartTime;
 	entry->gameTime = gameTime;
 	entry->runtime.isInitialized = qfalse;
-
-	++ctx->teamTasks.index;
 }
 
 void CG_SHUDEventTempAccuracy(int weapon, float accuracy)

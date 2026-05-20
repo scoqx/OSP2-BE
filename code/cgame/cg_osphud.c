@@ -2100,7 +2100,7 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 					barX = (float)teamOverlay.armorOffsetChar;
 				}
 				CG_DrawHealthBar(barX, y, barW, (float)h, ci->health, ci->armor, 1.0f,
-					(cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue);
+				                 (cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue);
 			}
 			else
 			{
@@ -2372,10 +2372,21 @@ float CG_OSPDrawPickupItem(float y)
 		if (color)
 		{
 			CG_RegisterItemVisuals(cg.itemPickup);
-			trap_R_SetColor(color);
-			CG_DrawPicOld(8.0f, y, w, (float)h, cg_items[cg.itemPickup].icon);
-			CG_OSPDrawStringOld(w + 8 + (w / 3), y, bg_itemlist[cg.itemPickup].pickup_name, w, h, color, 0, 0);
+			if (cg_items[cg.itemPickup].customVisualMask & ITEMCV_ICON)
+			{
+				vec4_t picCol;
+
+				Vector4Copy(color, picCol);
+				CG_ModulateVec4ForCustomItemDyeIcon(cg.itemPickup, picCol);
+				trap_R_SetColor(picCol);
+			}
+			else
+			{
+				trap_R_SetColor(color);
+			}
+			CG_DrawPicOld(8.0f, y, w, (float)h, CG_DyeFlagResolveInverseIcon(cg.itemPickup, cg_items[cg.itemPickup].icon));
 			trap_R_SetColor(NULL);
+			CG_OSPDrawStringOld(w + 8 + (w / 3), y, bg_itemlist[cg.itemPickup].pickup_name, w, h, color, 0, 0);
 		}
 	}
 	return y;
@@ -2536,7 +2547,7 @@ static float CG_OSPHUDDrawScores(float y)
 				{
 					if (!ch_drawFlagNames.integer)
 					{
-						CG_DrawPicOld(x, y1 - 4.0f, flagW, fontScoresH + 8, cgs.media.blueFlagShader[cgs.blueflag]);
+						CG_DrawDyeFlagPicOld(x, y1 - 4.0f, flagW, fontScoresH + 8, TEAM_BLUE, cgs.media.blueFlagShader[cgs.blueflag]);
 					}
 					else
 					{
@@ -2544,7 +2555,7 @@ static float CG_OSPHUDDrawScores(float y)
 						if (ch_drawFlagNames.integer == 2 || ch_drawFlagNames.integer == 4)
 						{
 							x -= (fontScoresW << 1) + 8;
-							CG_DrawPicOld(x, y - 4.0f, flagW, fontScoresH + 8, cgs.media.blueFlagShader[cgs.blueflag]);
+							CG_DrawDyeFlagPicOld(x, y - 4.0f, flagW, fontScoresH + 8, TEAM_BLUE, cgs.media.blueFlagShader[cgs.blueflag]);
 						}
 
 						switch (cgs.blueflag)
@@ -2681,14 +2692,14 @@ static float CG_OSPHUDDrawScores(float y)
 				{
 					if (!ch_drawFlagNames.integer)
 					{
-						CG_DrawPicOld(x, y1 - 4.0f, flagW, fontScoresH + 8, cgs.media.redFlagShader[cgs.redflag]);
+						CG_DrawDyeFlagPicOld(x, y1 - 4.0f, flagW, fontScoresH + 8, TEAM_RED, cgs.media.redFlagShader[cgs.redflag]);
 					}
 					else
 					{
 						if (ch_drawFlagNames.integer == 2 || ch_drawFlagNames.integer == 4)
 						{
 							x -= (fontScoresW << 1) + 8;
-							CG_DrawPicOld(x, y - 4.0f, flagW, fontScoresH + 8, cgs.media.redFlagShader[cgs.redflag]);
+							CG_DrawDyeFlagPicOld(x, y - 4.0f, flagW, fontScoresH + 8, TEAM_RED, cgs.media.redFlagShader[cgs.redflag]);
 						}
 
 						switch (cgs.redflag)
@@ -3132,7 +3143,18 @@ static float CG_OSPDrawCustomPowerup(float x, float y, int powerup, int blink, q
 	{
 		if (blink == 0 || (cg.time % 1000) < 500)
 		{
-			CG_DrawPicOld(x, y, 24.0f, 24.0f, shader);
+			if (powerup == PW_REDFLAG)
+			{
+				CG_DrawDyeFlagPicOld(x, y, 24.0f, 24.0f, TEAM_RED, shader);
+			}
+			else if (powerup == PW_BLUEFLAG)
+			{
+				CG_DrawDyeFlagPicOld(x, y, 24.0f, 24.0f, TEAM_BLUE, shader);
+			}
+			else
+			{
+				CG_DrawPicOld(x, y, 24.0f, 24.0f, shader);
+			}
 		}
 
 		if (cg.predictedPlayerState.powerups[powerup])

@@ -24,7 +24,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 
-typedef struct timepos_s {
+typedef struct timepos_s
+{
 	float time;
 	vec3_t pos;
 } timepos_t;
@@ -36,22 +37,24 @@ static vec_t VectorDistance(vec3_t a, vec3_t b)
 	                   (a[2] - b[2]) * (a[2] - b[2]));
 }
 
-static void CG_LinearInterpolation(timepos_t *positions, vec3_t out, float f)
+static void CG_LinearInterpolation(timepos_t* positions, vec3_t out, float f)
 {
 	int i;
 	for (i = 0; i < 3; ++i)
 		out[i] = positions[0].pos[i] + (positions[1].pos[i] - positions[0].pos[i]) * f;
 }
 
-static void CG_LagrangeInterpolation(timepos_t *positions, int count, vec3_t out, float time)
+static void CG_LagrangeInterpolation(timepos_t* positions, int count, vec3_t out, float time)
 {
 	int i, j;
 	vec_t coefficient;
 
 	out[0] = out[1] = out[2] = 0.0f;
-	for (i = 0; i < count; ++i) {
+	for (i = 0; i < count; ++i)
+	{
 		coefficient = 1.0f;
-		for (j = 0; j < count; ++j) {
+		for (j = 0; j < count; ++j)
+		{
 			if (i == j)
 				continue;
 			coefficient *= (time - positions[j].time) / (positions[i].time - positions[j].time);
@@ -60,14 +63,15 @@ static void CG_LagrangeInterpolation(timepos_t *positions, int count, vec3_t out
 	}
 }
 
-static void CG_PolyBasePredictPosition(timepos_t *positions, vec3_t out, float f)
+static void CG_PolyBasePredictPosition(timepos_t* positions, vec3_t out, float f)
 {
 	const vec_t bias = 0.366f;   /* Chebyshev node */
 	const vec_t threshold = 660.0f;
 	const float time = positions[1].time + (positions[2].time - positions[1].time) * f;
 
 	/* Teleportation/respawn invalidates oldest position */
-	if (VectorDistance(positions[0].pos, positions[1].pos) >= threshold) {
+	if (VectorDistance(positions[0].pos, positions[1].pos) >= threshold)
+	{
 		CG_LinearInterpolation(&positions[1], out, f);
 		return;
 	}
@@ -347,10 +351,23 @@ static void CG_AddSimpleItem(centity_t* cent)
 	}
 
 	ent.customShader = cg_items[modelIndex].icon;
-	ent.shaderRGBA[0] = 255;
-	ent.shaderRGBA[1] = 255;
-	ent.shaderRGBA[2] = 255;
-	ent.shaderRGBA[3] = 255;
+	if (cg_items[modelIndex].customVisualMask & ITEMCV_ICON)
+	{
+		vec4_t t;
+
+		CG_GetCustomDyeItemTintVec4(item, t);
+		ent.shaderRGBA[0] = (byte)(t[0] * 255.0f);
+		ent.shaderRGBA[1] = (byte)(t[1] * 255.0f);
+		ent.shaderRGBA[2] = (byte)(t[2] * 255.0f);
+		ent.shaderRGBA[3] = (byte)(t[3] * 255.0f);
+	}
+	else
+	{
+		ent.shaderRGBA[0] = 255;
+		ent.shaderRGBA[1] = 255;
+		ent.shaderRGBA[2] = 255;
+		ent.shaderRGBA[3] = 255;
+	}
 
 	// items bob up and down continuously
 	if (cg_simpleItemsBob.integer)
@@ -417,6 +434,35 @@ static void CG_AddSimpleItem(centity_t* cent)
 
 /*
 ==================
+CG_FillCustomItemWorldDyeShaderRGBA
+
+Per-frame tint for world models registered with a bg_customItemVisuals world_model slot.
+==================
+*/
+static qboolean CG_FillCustomItemWorldDyeShaderRGBA(int itemNum, int slot, byte rgba[4])
+{
+	vec4_t         t;
+	unsigned int slotFlag;
+
+	if (itemNum < 1 || itemNum >= bg_numItems || slot < 0 || slot >= MAX_ITEM_MODELS)
+	{
+		return qfalse;
+	}
+	slotFlag = ITEMCV_WORLDMODEL_SLOT(slot);
+	if (!(cg_items[itemNum].customVisualMask & slotFlag))
+	{
+		return qfalse;
+	}
+	CG_GetCustomDyeItemTintVec4(&bg_itemlist[itemNum], t);
+	rgba[0] = (byte)(t[0] * 255.0f);
+	rgba[1] = (byte)(t[1] * 255.0f);
+	rgba[2] = (byte)(t[2] * 255.0f);
+	rgba[3] = (byte)(t[3] * 255.0f);
+	return qtrue;
+}
+
+/*
+==================
 CG_Item
 ==================
 */
@@ -425,6 +471,7 @@ static void CG_Item(centity_t* cent)
 	refEntity_t     ent;
 	entityState_t*  es;
 	gitem_t*        item;
+	int             itemNum;
 	int             itemFx;
 	int             gitype;
 	float           frac;
@@ -437,7 +484,8 @@ static void CG_Item(centity_t* cent)
 	if (es->modelindex >= bg_numItems)
 		CG_Error("Bad item index %i on entity", es->modelindex);
 
-	item = &bg_itemlist[es->modelindex];
+	itemNum = es->modelindex;
+	item = &bg_itemlist[itemNum];
 	itemFx = cg_itemFx.integer;
 	gitype = item->giType;
 
@@ -547,6 +595,15 @@ static void CG_Item(centity_t* cent)
 		}
 	}
 
+	if (CG_FillCustomItemWorldDyeShaderRGBA(itemNum, 0, ent.shaderRGBA))
+	{
+		/* slot 0: custom world model from bg_customItemVisuals */
+	}
+	else if (gitype != IT_WEAPON)
+	{
+		memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
+	}
+
 	trap_R_AddRefEntityToScene(&ent);
 
 	if (!cg_simpleItems.integer && (gitype == IT_HEALTH || gitype == IT_POWERUP))
@@ -567,6 +624,10 @@ static void CG_Item(centity_t* cent)
 				VectorScale(ent.axis[1], frac, ent.axis[1]);
 				VectorScale(ent.axis[2], frac, ent.axis[2]);
 				ent.nonNormalizedAxes = qtrue;
+			}
+			if (!CG_FillCustomItemWorldDyeShaderRGBA(itemNum, 1, ent.shaderRGBA))
+			{
+				memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
 			}
 			trap_R_AddRefEntityToScene(&ent);
 		}
@@ -959,14 +1020,16 @@ void CG_AdjustPositionForMover(const vec3_t in, int moverNum, int fromTime, int 
 	vec3_t       oldOrigin, origin, deltaOrigin;
 	vec3_t       oldAngles, angles, deltaAngles;
 
-	if (moverNum <= 0 || moverNum >= ENTITYNUM_MAX_NORMAL) {
+	if (moverNum <= 0 || moverNum >= ENTITYNUM_MAX_NORMAL)
+	{
 		VectorCopy(in, out);
 		VectorCopy(angles_in, angles_out);
 		return;
 	}
 
 	cent = &cg_entities[moverNum];
-	if (cent->currentState.eType != ET_MOVER) {
+	if (cent->currentState.eType != ET_MOVER)
+	{
 		VectorCopy(in, out);
 		VectorCopy(angles_in, angles_out);
 		return;
@@ -1005,7 +1068,8 @@ static void CG_InterpolateEntityPosition(centity_t* cent)
 		CG_Error("CG_InterpoateEntityPosition: cg.nextSnap == NULL");
 
 	client = cent->currentState.clientNum;
-	if (timeStates[client] != cg.snap->serverTime) {
+	if (timeStates[client] != cg.snap->serverTime)
+	{
 		prevTimes[client] = timeStates[client];
 		timeStates[client] = cg.snap->serverTime;
 		prevStates[client] = currStates[client];
@@ -1023,10 +1087,13 @@ static void CG_InterpolateEntityPosition(centity_t* cent)
 	positions[2].time = (float)cg.nextSnap->serverTime;
 	positions[3].time = positions[2].time + (positions[2].time - positions[1].time);
 
-	if (cg_enhancedInterpolation.integer) {
+	if (cg_enhancedInterpolation.integer)
+	{
 		CG_PolyBasePredictPosition(positions, current, f);
 		VectorCopy(current, cent->lerpOrigin);
-	} else {
+	}
+	else
+	{
 		cent->lerpOrigin[0] = positions[1].pos[0] + f * (positions[2].pos[0] - positions[1].pos[0]);
 		cent->lerpOrigin[1] = positions[1].pos[1] + f * (positions[2].pos[1] - positions[1].pos[1]);
 		cent->lerpOrigin[2] = positions[1].pos[2] + f * (positions[2].pos[2] - positions[1].pos[2]);
@@ -1171,6 +1238,26 @@ CG_AddCEntity
 
 ===============
 */
+/*
+================
+CG_IsKillerGhostBody
+Killer-ghost corpses: entityState weapon 0 with Quad and Invis bits only (server marker).
+================
+*/
+qboolean CG_IsKillerGhostBody(const entityState_t* s)
+{
+	const int mask = (1 << PW_QUAD) | (1 << PW_INVIS);
+	if (s->weapon != 0)
+	{
+		return qfalse;
+	}
+	if ((s->powerups & mask) != mask)
+	{
+		return qfalse;
+	}
+	return qtrue;
+}
+
 static void CG_AddCEntity(centity_t* cent)
 {
 	// event-only entities will have been dealt with already
@@ -1180,6 +1267,11 @@ static void CG_AddCEntity(centity_t* cent)
 	}
 
 	if (cent->currentState.eFlags & EF_DEAD && cg_deadBodyFilter.integer)
+	{
+		return;
+	}
+
+	if (cent->currentState.eType == ET_PLAYER && !cg_killerGhost.integer && CG_IsKillerGhostBody(&cent->currentState))
 	{
 		return;
 	}

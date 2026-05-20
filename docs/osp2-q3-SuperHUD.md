@@ -41,6 +41,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | Chat1 - Chat16                | Строки чата. Сообщение появляется сначала в Chat1.           |
 | FlagStatus_NME                | Статус флага вражеской команды.                              |
 | FlagStatus_OWN                | Статус флага своей команды.                                  |
+| FlagStatus_CARRY              | Иконка несомого флага (опц. своя через image).               |
 | FollowMessage                 | Сообщение "Following PlayerName".                            |
 | FPS                           | Счетчик FPS.                                                 |
 | FragMessage                   | Сообщение о полученном фраге.                                |
@@ -98,6 +99,10 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | playerStats_damage_ratio      | Коэфициент урона                                             |
 | player_name                   | Имя игрока                                                   |
 | recordingdemo                 | Индикатор записи демо (REC).                                 |
+| roundwarmup_text              | Текст разминки раунда                                        |
+| roundwarmup_time              | Таймер до начала раунда                                      |
+| roundwarmup_fight             | Начало раунда                                                |
+
 
 ## Команды
 
@@ -124,6 +129,8 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | FontSize      | w h            | Размер шрифта ширина и высота.                            |
 | Image         | string         | Путь к шейдеру или картинке.                              |
 | Image2        | string         | Путь к шейдеру или картинке для второго слоя.             |
+| imageAlignh   | L/C/R          | Выравнивание изображения по горизонтали.                  |
+| imageAlignv   | T/C/B          | Выравнивание изображения по вертикали.                    |
 | Monospace     |                | Использовать моноширинную печать.                         |
 | Rect          | x y w h        | Координаты и размер элемента.                             |
 | Text          | string         | Текстовая строка.                                         |
@@ -269,6 +276,7 @@ fps {
 ### StatusBar_HealthCount StatusBar_ArmorCount 
 
 - Style 1 - цвет значений задаётся через `color` для > healthMid и `color2` для < healthMid
+- Style 2 - Ограничивает вывод значением 999
 
 ### VisFlags 
 
@@ -364,6 +372,12 @@ fps {
 - Можно задать своё изображение через `image "image/shader path"`.
 - Можно задать текст через `text "text"`.
 
+## FlagStatus_OWN / FlagStatus_NME / FlagStatus_CARRY
+
+- `FlagStatus_OWN` / `FlagStatus_NME` — статус флага своей и вражеской команды (на базе, у игрока, брошен); вид иконки зависит от состояния.
+- `FlagStatus_CARRY` — только пока вы несёте флаг; всегда одна и та же картинка (без состояний база/брошен). Какой флаг несёте (красный, синий, нейтральный), определяется автоматически.
+- Для `FlagStatus_CARRY` можно задать свою иконку: `image "icons/your_icon.tga"` (или путь к shader). Без `image` используется стандартная иконка флага. Цвет — `color`, размер и выравнивание — `rect`, `imageAlignh`, `imageAlignv`.
+
 ## FPS
 
 - Style 1 - число FPS без суффикса "fps"
@@ -375,3 +389,10 @@ fps {
 ## team1-16 (team overlay)
 - Style 1 - компактный режим, выводится только ник и здоровье
 - rect x y w h - аргумент w задаёт ширину области, в пределах которой отображается ник
+
+## roundwarmup_fight roundwarmup_text
+- Есть возможность задать свой текст через { text "Your text"; }
+
+## roundwarmup_time
+- Style 1 - вывод времени без 'sec'
+- Style 2 - цвет времени изменяется по мере приближения к 0

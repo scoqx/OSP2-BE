@@ -18,13 +18,13 @@ typedef struct
 
 static void* CG_SHUDElementTeamCreate(const superhudConfig_t* config, int line)
 {
-	
+
 	shudTeamOverlay_t teamOverlay;
 
 	superhudConfig_t lcfg;
-	
+
 	shudElementTeam_t* element;
-	
+
 	float nameWidthPix;
 	float nameDelta;
 
@@ -41,7 +41,7 @@ static void* CG_SHUDElementTeamCreate(const superhudConfig_t* config, int line)
 	element->config.alignV.value = SUPERHUD_ALIGNV_CENTER;
 
 	CG_SHUDElementCompileTeamOverlayConfig(config->fontsize.value[0],
-		(config->style.isSet && config->style.value == 1) ? 1 : 0, &teamOverlay);
+	                                       (config->style.isSet && config->style.value == 1) ? 1 : 0, &teamOverlay);
 
 	nameWidthPix = teamOverlay.nameLenPix;
 
@@ -229,11 +229,11 @@ void CG_SHUDElementTeamRoutine(void* context)
 	if (cg_teamHealthBar.integer >= 1)
 	{
 		CG_DrawHealthBar(element->ctxHealthArmor.coord.named.x,
-		    element->config.rect.value[1],
-		    (float)element->ctxHealthArmor.width,
-		    element->config.rect.value[3],
-		    ci->health, ci->armor, element->config.color.value.rgba[3],
-		    (cg_teamHealthBar.integer == 2) ? element->ctxHealthArmor.fontIndex : -1, qfalse);
+		                 element->config.rect.value[1],
+		                 (float)element->ctxHealthArmor.width,
+		                 element->config.rect.value[3],
+		                 ci->health, ci->armor, element->config.color.value.rgba[3],
+		                 (cg_teamHealthBar.integer == 2) ? element->ctxHealthArmor.fontIndex : -1, qfalse);
 	}
 	else
 	{

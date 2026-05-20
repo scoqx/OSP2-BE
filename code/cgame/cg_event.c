@@ -244,10 +244,17 @@ static void CG_Obituary(entityState_t* ent)
 
 	if (attacker == cg.snap->ps.clientNum &&
 	        target != cg.snap->ps.clientNum &&
-	        cg_fragSound.integer &&
 	        !isUnfreezeEvent)
 	{
-		trap_S_StartLocalSound(CG_GetFragSound(), CHAN_LOCAL_SOUND);
+		if (cg_fragSound.integer)
+		{
+			trap_S_StartLocalSound(CG_GetFragSound(), CHAN_LOCAL_SOUND);
+		}
+		if (cg_fragEffect.integer && cg_fragEffectTime.integer > 0)
+		{
+			cg.fragWeaponEffectClientNum = attacker;
+			cg.fragWeaponEffectTime = cg.time + cg_fragEffectTime.integer;
+		}
 	}
 
 	if (ch_Obituaries.integer == 0) return;
@@ -943,12 +950,18 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 
 			// boing sound at origin, jump sound on player
 			trap_S_StartSound(cent->lerpOrigin, -1, CHAN_VOICE, cgs.media.jumpPadSound);
-			trap_S_StartSound(NULL, es->number, CHAN_VOICE, CG_CustomSound(es->number, "*jump1.wav"));
+			if (!cg_muteMyJump.integer || !cg.snap || es->number != cg.snap->ps.clientNum)
+			{
+				trap_S_StartSound(NULL, es->number, CHAN_VOICE, CG_CustomSound(es->number, "*jump1.wav"));
+			}
 			break;
 
 		case EV_JUMP:
 			DEBUGNAME("EV_JUMP");
-			trap_S_StartSound(NULL, es->number, CHAN_VOICE, CG_CustomSound(es->number, "*jump1.wav"));
+			if (!cg_muteMyJump.integer || !cg.snap || es->number != cg.snap->ps.clientNum)
+			{
+				trap_S_StartSound(NULL, es->number, CHAN_VOICE, CG_CustomSound(es->number, "*jump1.wav"));
+			}
 			break;
 		case EV_TAUNT:
 			DEBUGNAME("EV_TAUNT");

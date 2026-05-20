@@ -5,7 +5,8 @@
 #include "ui_osp2be.h"
 
 /* Layout parameters structure */
-typedef struct {
+typedef struct
+{
 	int design_width;
 	int design_height;
 	int design_center_x;
@@ -27,7 +28,8 @@ typedef struct {
 } osp2beLayoutParams_t;
 
 /* Button parameters structure */
-typedef struct {
+typedef struct
+{
 	int height;
 	int default_width_multiplier;
 	int weapon_width;
@@ -36,14 +38,16 @@ typedef struct {
 } osp2beButtonParams_t;
 
 /* Row parameters structure */
-typedef struct {
+typedef struct
+{
 	int height;
 	int gap_max;
 	int weapon_offset;
 } osp2beRowParams_t;
 
 /* Square/Color swatch parameters structure */
-typedef struct {
+typedef struct
+{
 	int size_offset;
 	int size_min;
 	int size_fallback_offset;
@@ -54,7 +58,8 @@ typedef struct {
 } osp2beSquareParams_t;
 
 /* Icon parameters structure */
-typedef struct {
+typedef struct
+{
 	int size_offset;
 	int size_min;
 	int size_min_head;
@@ -62,7 +67,8 @@ typedef struct {
 } osp2beIconParams_t;
 
 /* Position offsets structure */
-typedef struct {
+typedef struct
+{
 	int square_x_offset;
 	int content_gap;
 	int square_x_offset_weapon;
@@ -74,12 +80,14 @@ typedef struct {
 } osp2bePositionParams_t;
 
 /* Text parameters structure */
-typedef struct {
+typedef struct
+{
 	int char_height;
 } osp2beTextParams_t;
 
 /* Background alpha parameters structure */
-typedef struct {
+typedef struct
+{
 	float bg_ingame;
 	float bg_menu;
 	float header_ingame;
@@ -91,7 +99,8 @@ typedef struct {
 } osp2beBackgroundAlphaParams_t;
 
 /* Background layout parameters structure */
-typedef struct {
+typedef struct
+{
 	int header_padding_left;
 	int header_padding_right;
 	int params_side_padding;
@@ -100,13 +109,15 @@ typedef struct {
 } osp2beBackgroundLayoutParams_t;
 
 /* Font parameters structure */
-typedef struct {
+typedef struct
+{
 	int index;
 	int flags;
 } osp2beFontParams_t;
 
 /* Preview button parameters structure */
-typedef struct {
+typedef struct
+{
 	float bg_r;
 	float bg_g;
 	float bg_b;
@@ -121,7 +132,8 @@ typedef struct {
 } osp2bePreviewButtonParams_t;
 
 /* Theme colors structure */
-typedef struct {
+typedef struct
+{
 	/* Button colors */
 	vec4_t button_bg;
 	vec4_t button_border_normal;
@@ -129,7 +141,7 @@ typedef struct {
 	vec4_t button_default_color;
 	vec4_t button_icon_disabled;
 	vec4_t button_icon_enabled;
-	
+
 	/* Slider colors */
 	vec4_t slider_track_normal;
 	vec4_t slider_track_focus;
@@ -143,7 +155,7 @@ typedef struct {
 	vec4_t slider_handle_normal;
 	vec4_t slider_handle_focus;
 	vec4_t slider_handle_disabled;
-	
+
 	/* Toggle/Checkbox colors */
 	vec4_t toggle_bg_normal;
 	vec4_t toggle_bg_focus;
@@ -151,7 +163,7 @@ typedef struct {
 	vec4_t toggle_border_focus;
 	vec4_t toggle_text_checked;
 	vec4_t toggle_text_unchecked;
-	
+
 	/* Category list colors */
 	vec4_t category_bg_normal;
 	vec4_t category_bg_hover;
@@ -162,7 +174,7 @@ typedef struct {
 	vec4_t category_text_normal;
 	vec4_t category_text_hover;
 	vec4_t category_text_selected;
-	
+
 	/* Preview button text colors */
 	vec4_t preview_text_active;
 	vec4_t preview_text_inactive;

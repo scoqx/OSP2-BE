@@ -43,8 +43,9 @@ const char* dayOfWeekName[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 /*
 ==============
 CG_IsEnemy
-Enemy from current view: uses PERS_TEAM (spectator/follow). When spectator and cg_spectPOV+following,
-uses followed player's team; else red=ally blue=enemy. Without snap uses clientinfo team.
+Enemy from current view. Spectator uses clientinfo team (not PERS_TEAM alone when follow copies team).
+When spectator and following: spectPOV 1 = followed is ally (our colors); spectPOV 0 = followed is enemy. With spectPOV 1, others use followed player's team; else red=ally blue=enemy.
+Without snap uses clientinfo team.
 ==============
 */
 qboolean CG_IsEnemy(const clientInfo_t* target)
@@ -72,14 +73,18 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 
 	myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
 
-	if (myStateTeam == TEAM_SPECTATOR)
+	/* clientinfo spectator: do not use PERS_TEAM alone (follow may set it to followed team) */
+	if (myRealTeam == TEAM_SPECTATOR || myStateTeam == TEAM_SPECTATOR)
 	{
 		followNum = cg.snap->ps.clientNum;
-		/* Non-team modes: observed player is not enemy (e.g. grenade color) */
-		if (cgs.gametype < GT_TEAM && (cg.snap->ps.pm_flags & PMF_FOLLOW) && followNum >= 0 && followNum < MAX_CLIENTS && target == &cgs.clientinfo[followNum])
-			return qfalse;
-		if (cg_spectPOV.integer && (cg.snap->ps.pm_flags & PMF_FOLLOW) && followNum >= 0 && followNum < MAX_CLIENTS)
-			return (qboolean)((isCA ? cgs.clientinfo[followNum].rt : cgs.clientinfo[followNum].team) != enemyTeam);
+		if ((cg.snap->ps.pm_flags & PMF_FOLLOW) && followNum >= 0 && followNum < MAX_CLIENTS)
+		{
+			/* Followed player: spectPOV 1 = our colors, spectPOV 0 = enemy colors */
+			if (target == &cgs.clientinfo[followNum])
+				return (qboolean)(!cg_spectPOV.integer);
+			if (cg_spectPOV.integer)
+				return (qboolean)((isCA ? cgs.clientinfo[followNum].rt : cgs.clientinfo[followNum].team) != enemyTeam);
+		}
 		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
 			return (qboolean)(enemyTeam == TEAM_BLUE);
 		if (myRealTeam == TEAM_BLUE)
@@ -181,7 +186,7 @@ CG_Draw3DModel
 
 ================
 */
-void CG_Draw3DModel(float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t origin, vec3_t angles)
+static void CG_Draw3DModelWithColor(float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t origin, vec3_t angles, const vec4_t color)
 {
 	refdef_t        refdef;
 	refEntity_t     ent;
@@ -201,6 +206,13 @@ void CG_Draw3DModel(float x, float y, float w, float h, qhandle_t model, qhandle
 	ent.hModel = model;
 	ent.customSkin = skin;
 	ent.renderfx = RF_NOSHADOW;     // no stencil shadows
+	if (color)
+	{
+		ent.shaderRGBA[0] = (byte)(color[0] * 255.0f);
+		ent.shaderRGBA[1] = (byte)(color[1] * 255.0f);
+		ent.shaderRGBA[2] = (byte)(color[2] * 255.0f);
+		ent.shaderRGBA[3] = (byte)(color[3] * 255.0f);
+	}
 
 	refdef.rdflags = RDF_NOWORLDMODEL;
 
@@ -221,6 +233,11 @@ void CG_Draw3DModel(float x, float y, float w, float h, qhandle_t model, qhandle
 	trap_R_RenderScene(&refdef);
 }
 
+void CG_Draw3DModel(float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t origin, vec3_t angles)
+{
+	CG_Draw3DModelWithColor(x, y, w, h, model, skin, origin, angles, NULL);
+}
+
 /*
 ================
 CG_DrawHead
@@ -239,6 +256,29 @@ void CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headA
 	qhandle_t       headSkin;
 
 	ci = &cgs.clientinfo[ clientNum ];
+
+	if (cg_drawIcons.integer && cg_drawUniqueColors.integer > 0 && cg_drawUniqueColors.integer < 4 && clientNum >= 0 && clientNum < MAX_CLIENTS)
+	{
+		vec4_t uniqueColor;
+		vec4_t borderSize;
+		VectorCopy(UNIQUE_COLOR(clientNum), uniqueColor);
+		uniqueColor[3] = 1.0f;
+
+		if (cg_drawUniqueColors.integer == 1)
+		{
+			CG_FillRect(x, y, w, h, uniqueColor);
+		}
+		else if (cg_drawUniqueColors.integer == 2)
+		{
+			Vector4Set(borderSize, -1.0f, -1.0f, -1.0f, -1.0f);
+			CG_OSPDrawFrameNew(x, y, w, h, borderSize, uniqueColor);
+		}
+		else
+		{
+			Vector4Set(borderSize, -2.0f, -2.0f, -2.0f, -2.0f);
+			CG_OSPDrawFrameNew(x, y, w, h, borderSize, uniqueColor);
+		}
+	}
 
 	if (cg_draw3dIcons.integer)
 	{
@@ -340,6 +380,7 @@ void CG_DrawFlagModel(float x, float y, float w, float h, int team, qboolean for
 	vec3_t          origin, angles;
 	vec3_t          mins, maxs;
 	qhandle_t       handle;
+	vec4_t          tint;
 
 	if (!force2D && cg_draw3dIcons.integer)
 	{
@@ -377,23 +418,34 @@ void CG_DrawFlagModel(float x, float y, float w, float h, int team, qboolean for
 		{
 			return;
 		}
-		CG_Draw3DModel(x, y, w, h, handle, 0, origin, angles);
+		if (CG_GetDyeFlagTintVec4(team, tint))
+		{
+			CG_Draw3DModelWithColor(x, y, w, h, handle, 0, origin, angles, tint);
+		}
+		else
+		{
+			CG_Draw3DModel(x, y, w, h, handle, 0, origin, angles);
+		}
 	}
 	else if (cg_drawIcons.integer)
 	{
 		gitem_t* item;
+		qhandle_t icon;
 
 		if (team == TEAM_RED)
 		{
 			item = BG_FindItemForPowerup(PW_REDFLAG);
+			icon = cgs.media.redFlagShader[0];
 		}
 		else if (team == TEAM_BLUE)
 		{
 			item = BG_FindItemForPowerup(PW_BLUEFLAG);
+			icon = cgs.media.blueFlagShader[0];
 		}
 		else if (team == TEAM_FREE)
 		{
 			item = BG_FindItemForPowerup(PW_NEUTRALFLAG);
+			icon = item ? cg_items[ ITEM_INDEX(item) ].icon : 0;
 		}
 		else
 		{
@@ -401,7 +453,7 @@ void CG_DrawFlagModel(float x, float y, float w, float h, int team, qboolean for
 		}
 		if (item)
 		{
-			CG_DrawPicOld(x, y, w, h, cg_items[ ITEM_INDEX(item) ].icon);
+			CG_DrawDyeFlagPicOld(x, y, w, h, team, icon);
 		}
 	}
 }
@@ -1124,7 +1176,7 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 			if (cg_teamHealthBar.integer >= 1)
 			{
 				CG_DrawHealthBar((float)xx, (float)y, 7.0f * TINYCHAR_WIDTH, (float)TINYCHAR_HEIGHT, ci->health, ci->armor, 1.0f,
-					(cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue);
+				                 (cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue);
 			}
 			else
 			{
@@ -1290,7 +1342,7 @@ static float CG_DrawScores(float y)
 				y1 = y - BIGCHAR_HEIGHT - 8;
 				if (cgs.blueflag >= 0 && cgs.blueflag <= 2)
 				{
-					CG_DrawPicOld(x, y1 - 4, w, BIGCHAR_HEIGHT + 8, cgs.media.blueFlagShader[cgs.blueflag]);
+					CG_DrawDyeFlagPicOld(x, y1 - 4, w, BIGCHAR_HEIGHT + 8, TEAM_BLUE, cgs.media.blueFlagShader[cgs.blueflag]);
 				}
 			}
 		}
@@ -1318,7 +1370,7 @@ static float CG_DrawScores(float y)
 				y1 = y - BIGCHAR_HEIGHT - 8;
 				if (cgs.redflag >= 0 && cgs.redflag <= 2)
 				{
-					CG_DrawPicOld(x, y1 - 4, w, BIGCHAR_HEIGHT + 8, cgs.media.redFlagShader[cgs.redflag]);
+					CG_DrawDyeFlagPicOld(x, y1 - 4, w, BIGCHAR_HEIGHT + 8, TEAM_RED, cgs.media.redFlagShader[cgs.redflag]);
 				}
 			}
 		}
@@ -1578,10 +1630,21 @@ static int CG_DrawPickupItem(int y)
 		if (fadeColor)
 		{
 			CG_RegisterItemVisuals(value);
-			trap_R_SetColor(fadeColor);
-			CG_DrawPicOld(8, y, ICON_SIZE, ICON_SIZE, cg_items[ value ].icon);
-			CG_DrawBigString(ICON_SIZE + 16, y + (ICON_SIZE / 2 - BIGCHAR_HEIGHT / 2), bg_itemlist[ value ].pickup_name, fadeColor[0], DS_HCENTER | DS_SHADOW, 0);
+			if (cg_items[value].customVisualMask & ITEMCV_ICON)
+			{
+				vec4_t picCol;
+
+				Vector4Copy(fadeColor, picCol);
+				CG_ModulateVec4ForCustomItemDyeIcon(value, picCol);
+				trap_R_SetColor(picCol);
+			}
+			else
+			{
+				trap_R_SetColor(fadeColor);
+			}
+			CG_DrawPicOld(8, y, ICON_SIZE, ICON_SIZE, CG_DyeFlagResolveInverseIcon(value, cg_items[ value ].icon));
 			trap_R_SetColor(NULL);
+			CG_DrawBigString(ICON_SIZE + 16, y + (ICON_SIZE / 2 - BIGCHAR_HEIGHT / 2), bg_itemlist[ value ].pickup_name, fadeColor[0], DS_HCENTER | DS_SHADOW, 0);
 		}
 	}
 
@@ -3184,7 +3247,7 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 				CG_FillRect(rectX, rectY, rectW, rectH, teamColor);
 			}
 
-			if (hasStatsBars && ci->health > 0)
+			if (hasStatsBars && !(cent->currentState.eFlags & EF_DEAD) && ci->health > 0)
 			{
 				float barW = w * 5.0f;
 				float barH = h * 0.75f;
@@ -3232,7 +3295,7 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 					    cgFontIndices.teamIndicator, bgColor, NULL, NULL);
 				}
 			}
-			else if (hasStats && ci->health > 0)
+			else if (hasStats && !(cent->currentState.eFlags & EF_DEAD) && ci->health > 0)
 			{
 				char statsText[16];
 				vec4_t statsColor;
@@ -3283,13 +3346,18 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 
 			if (hasIcon)
 			{
-				float iconSize = h * 1.1f;
-				float iconX = headX - (iconSize * 0.5f);
-				float iconY = headY + (iconSize + (iconSize * 0.1f));
+				float iconW = w;
+				float iconH = h;
+				float iconX = headX - (iconW * 0.5f);
+				float iconY = headY + (iconH + (iconH * 0.1f));
 
 				if (cent->currentState.eFlags & EF_DEAD)
 				{
-					CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.obituariesSkull);
+					vec4_t color;
+					Vector4Set(color, 1.0f, 1.0f, 1.0f, nameColor[3]);
+					trap_R_SetColor(color);
+					CG_DrawPic(iconX, iconY, iconW, iconH, cgs.media.obituariesSkull);
+					trap_R_SetColor(NULL);
 				}
 				else if (ci->isFrozenEnt && (cg_teamIndicator.integer & PI_FROZEN))
 				{
@@ -3306,7 +3374,7 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 						vec4_t color;
 						Vector4Set(color, 1.0f, 1.0f, 1.0f, nameColor[3]);
 						trap_R_SetColor(color);
-						CG_DrawPic(iconX, iconY, iconSize, iconSize, cgs.media.frozenFoeTagShader);
+						CG_DrawPic(iconX, iconY, iconW, iconH, cgs.media.frozenFoeTagShader);
 						trap_R_SetColor(NULL);
 					}
 				}

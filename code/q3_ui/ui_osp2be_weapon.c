@@ -1,7 +1,8 @@
 #include "ui_osp2be.h"
 
 /* Weapon category controls */
-const osp2beCvarDef_t osp2beWeaponControls[] = {
+const osp2beCvarDef_t osp2beWeaponControls[] =
+{
 	/* Dynamic light colors */
 	{ "Dynamic light colors", NULL, OSP2BE_CONTROL_FIELD, OSP2BE_SPECIAL_SECTION_HEADER },
 	{ "LG", "cg_dlightLG", OSP2BE_CONTROL_COLOR_BUTTON, OSP2BE_SPECIAL_DLIGHT_WEAPON_LIGHTNING },
@@ -29,5 +30,5 @@ const osp2beCvarDef_t osp2beWeaponControls[] = {
 	{ "Projectile Nudge", "cg_projectileNudge", OSP2BE_CONTROL_FIELD, OSP2BE_SPECIAL_NONE }
 };
 
-const int osp2beWeaponControlsCount = ARRAY_LEN( osp2beWeaponControls );
+const int osp2beWeaponControlsCount = ARRAY_LEN(osp2beWeaponControls);
 

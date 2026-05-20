@@ -376,7 +376,6 @@ vmCvar_t           cg_stackHitSounds;
 vmCvar_t           cg_stackHitSoundsTimeout;
 vmCvar_t           cg_drawCenterMessages;
 vmCvar_t        cg_predictStepOffset;
-vmCvar_t        cg_enemyLightningColor;
 vmCvar_t        cg_uniqueColorTable;
 vmCvar_t        cg_noVoteBeep;
 vmCvar_t        cg_damageDrawFrame;
@@ -428,7 +427,6 @@ vmCvar_t        cg_healthLowColor;
 vmCvar_t        cg_healthMidColor;
 vmCvar_t        cg_redTeamColor;
 vmCvar_t        cg_blueTeamColor;
-vmCvar_t        cg_myTeam;
 vmCvar_t        cg_drawAccuracy;
 vmCvar_t        cg_accuracyFontSize;
 vmCvar_t        cg_accuracyIconSize;
@@ -514,7 +512,7 @@ vmCvar_t        cg_exec_tdm;
 vmCvar_t        cg_exec_ca;
 vmCvar_t        cg_exec_ctf;
 vmCvar_t        cg_exec_freeze;
-/* vmCvar_t        cg_autoHop; */  /* autohop commented out */
+/* vmCvar_t        cg_autoHop; */
 vmCvar_t        cg_damagePlums;
 vmCvar_t        cg_damagePlumSize;
 vmCvar_t        cg_damagePlumsWeapons;
@@ -546,33 +544,53 @@ vmCvar_t        cg_teamTaskIconMinSize;
 vmCvar_t        cg_hitSoundsQC;
 vmCvar_t        cg_brightWeaponsShader;
 vmCvar_t        teamoverlay2;
-	vmCvar_t        cg_noExplosions;
+vmCvar_t        cg_noExplosions;
 vmCvar_t        cg_noItemUseSound;
 vmCvar_t        cg_friendsWallhackFrozen;
 vmCvar_t        cg_teleportEffect;
+vmCvar_t        cg_infoVersionFont;
+vmCvar_t        cl_reconnectArgs;
 vmCvar_t        cg_altRail;
-vmCvar_t        cg_railFix;
+vmCvar_t        cg_altRailBeefy;
 vmCvar_t        cg_teamTaskNewSounds;
 vmCvar_t        cg_teamTaskVersion;
+vmCvar_t        cg_railFix;
 vmCvar_t        cg_freezeSoundFix;
-vmCvar_t        cg_infoVersionFont;
 // vmCvar_t     cl_pitchspeed;
 // vmCvar_t     cl_yawspeed;
-vmCvar_t        cl_reconnectArgs;
 vmCvar_t           cg_infoDetail;
-vmCvar_t        cg_altRailBeefy;
 vmCvar_t        cg_enhancedInterpolation;
 vmCvar_t        cg_entityOverpolate;
 // vmCvar_t        cg_snow;
 
-vmCvar_t           cg_teamHealthBar;
 vmCvar_t        cg_healthBarStyle;
+vmCvar_t		cg_teamHealthBar;
 vmCvar_t        cg_emojiListFont;
 vmCvar_t        cg_emojiListBgColor;
 vmCvar_t        cg_emojiListOpaque;
 vmCvar_t        cg_battleSuitColor;
 vmCvar_t        cg_enemyBattleSuitColor;
 vmCvar_t        cg_mutePowerUpCountdown;
+vmCvar_t        cg_myTeam;
+vmCvar_t        cg_roundSound;
+vmCvar_t        cg_debugNoobServer;
+vmCvar_t        cg_quadDamageColor;
+vmCvar_t        cg_enemyQuadDamageColor;
+vmCvar_t        cg_floatSpriteMaxDist;
+vmCvar_t        cg_floatSpriteMinSize;
+vmCvar_t        cg_altLightningColor;
+vmCvar_t        cg_teamLightningColor;
+vmCvar_t        cg_enemyLightningColor;
+vmCvar_t        cg_enemyAltLightning;
+vmCvar_t        cg_teamAltLightning;
+vmCvar_t        cg_muteMyJump;
+vmCvar_t        cg_freezeOldShader;
+vmCvar_t        cg_disableTextEffects;
+vmCvar_t        cg_fragEffectTime;
+vmCvar_t        cg_fragEffectColor;
+vmCvar_t        cg_fragEffect;
+vmCvar_t        cg_drawUniqueColors;
+vmCvar_t        cg_killerGhost;
 
 cgFontIndices_t cgFontIndices;
 
@@ -851,7 +869,6 @@ cvarTable_t cvarTable[] =
 	{ &cg_stackHitSoundsTimeout,    "cg_stackHitSoundsTimeout",   "500", CVAR_ARCHIVE },
 	{ &cg_drawCenterMessages, "cg_drawCenterMessages", "1", CVAR_ARCHIVE },
 	{ &cg_predictStepOffset, "cg_predictStepOffset", "1", CVAR_ARCHIVE },
-	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
 	{ &cg_uniqueColorTable, "cg_uniqueColorTable", "1", CVAR_ARCHIVE },
 	{ &cg_noVoteBeep, "cg_noVoteBeep", "0", CVAR_ARCHIVE },
 	{ &cg_damageDrawFrame, "cg_damageDrawFrame", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damageDrawFrame },
@@ -910,7 +927,6 @@ cvarTable_t cvarTable[] =
 	{ &cg_healthMidColor, "cg_healthMidColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_healthMidColor },
 	{ &cg_redTeamColor, "cg_redTeamColor", "Red", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_redTeamColor },
 	{ &cg_blueTeamColor, "cg_blueTeamColor", "Blue", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_blueTeamColor },
-	{ &cg_myTeam, "cg_myTeam", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_myTeam },
 	{ &cg_friendHudMarkerMaxDist, "cg_friendHudMarkerMaxDist", "0", CVAR_ARCHIVE },
 	{ &cg_friendHudMarkerSize, "cg_friendHudMarkerSize", "1", CVAR_ARCHIVE },
 	{ &cg_friendHudMarkerMaxScale, "cg_friendHudMarkerMaxScale", "1", CVAR_ARCHIVE },
@@ -971,9 +987,9 @@ cvarTable_t cvarTable[] =
 	{ &cg_exec_ca, "cg_exec_ca", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_ctf, "cg_exec_ctf", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_freeze, "cg_exec_freeze", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE /* | CVAR_USERINFO */ },
+	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
-	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE /* | CVAR_USERINFO */ },
+	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
 	/* { &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop}, */  /* autohop commented out */
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
@@ -1027,27 +1043,47 @@ cvarTable_t cvarTable[] =
 	{ &cg_noItemUseSound, "cg_noItemUseSound", "0", CVAR_ARCHIVE },
 	{ &cg_friendsWallhackFrozen, "cg_friendsWallhackFrozen", "1", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teleportEffect, "cg_teleportEffect", "1", CVAR_ARCHIVE },
+	{ &cg_infoVersionFont, "cg_infoVersionFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_infoVersionFont },
+	{ &cl_reconnectArgs, "cl_reconnectArgs", "", CVAR_ARCHIVE_ND | CVAR_NOTABCOMPLETE | CVAR_NORESTART, },
 	{ &cg_altRail, "cg_altRail", "0", CVAR_ARCHIVE | CVAR_UPDATED },
-	{ &cg_railFix, "cg_railFix", "0", CVAR_ARCHIVE },
+	{ &cg_altRailBeefy, "cg_altRailBeefy", "0", CVAR_ARCHIVE },
 	{ &cg_teamTaskNewSounds, "cg_teamTaskNewSounds", "1", CVAR_ARCHIVE },
 	// { &cg_teamTaskVersion, "cg_teamTaskVersion", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_railFix, "cg_railFix", "0", CVAR_ARCHIVE },
 	{ &cg_freezeSoundFix, "cg_freezeSoundFix", "", CVAR_ARCHIVE },
-	{ &cg_infoVersionFont, "cg_infoVersionFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_infoVersionFont },
 	// { &cl_pitchspeed, "cl_pitchspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_pitchspeed },
 	// { &cl_yawspeed, "cl_yawspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_yawSpeed },
-	{ &cl_reconnectArgs, "cl_reconnectArgs", "", CVAR_ARCHIVE_ND | CVAR_NOTABCOMPLETE | CVAR_NORESTART, },
 	{ &cg_infoDetail, "cg_infoDetail", "1", CVAR_ARCHIVE },
-	{ &cg_altRailBeefy, "cg_altRailBeefy", "0", CVAR_ARCHIVE },
-	{ &cg_enhancedInterpolation, "cg_enhancedInterpolation", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_entityOverpolate, "cg_entityOverpolate", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_entityOverpolate },
-	{ &cg_teamHealthBar, "cg_teamHealthBar", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_healthBarStyle, "cg_healthBarStyle", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_emojiListFont, "cg_emojiListFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListFont },
-	{ &cg_emojiListBgColor, "cg_emojiListBgColor", "00000A", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListBgColor },
-	{ &cg_emojiListOpaque, "cg_emojiListOpaque", "0.8", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_emojiListOpaque },
+	{ &cg_enhancedInterpolation, "cg_enhancedInterpolation", "0", CVAR_ARCHIVE },
+	{ &cg_entityOverpolate, "cg_entityOverpolate", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_entityOverpolate },
+	{ &cg_healthBarStyle, "cg_healthBarStyle", "0", CVAR_ARCHIVE },
+	{ &cg_teamHealthBar, "cg_teamHealthBar", "0", CVAR_ARCHIVE },
+	{ &cg_emojiListFont, "cg_emojiListFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListFont },
+	{ &cg_emojiListBgColor, "cg_emojiListBgColor", "00000A", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListBgColor },
+	{ &cg_emojiListOpaque, "cg_emojiListOpaque", "0.8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListOpaque },
 	{ &cg_battleSuitColor, "cg_battleSuitColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_battleSuitColor },
 	{ &cg_enemyBattleSuitColor, "cg_enemyBattleSuitColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyBattleSuitColor },
 	{ &cg_mutePowerUpCountdown, "cg_mutePowerUpCountdown", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_myTeam, "cg_myTeam", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_myTeam },
+	{ &cg_roundSound, "cg_roundSound", "2", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_debugNoobServer, "cg_debugNoobServer", "0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE },
+	{ &cg_quadDamageColor, "cg_quadDamageColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_quadDamageColor },
+	{ &cg_enemyQuadDamageColor, "cg_enemyQuadDamageColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyQuadDamageColor  },
+	{ &cg_floatSpriteMaxDist, "cg_floatSpriteMaxDist", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_floatSpriteMinSize, "cg_floatSpriteMinSize", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_altLightningColor, "cg_altLightningColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_teamLightningColor, "cg_teamLightningColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_enemyAltLightning, "cg_enemyAltLightning", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teamAltLightning, "cg_teamAltLightning", "", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_muteMyJump, "cg_muteMyJump", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_freezeOldShader, "cg_freezeOldShader", "0", CVAR_ARCHIVE | CVAR_NEW},
+	{ &cg_disableTextEffects, "cg_disableTextEffects", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_fragEffectTime, "cg_fragEffectTime", "500", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_fragEffectColor, "cg_fragEffectColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_fragEffectColor },
+	{ &cg_fragEffect, "cg_fragEffect", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_drawUniqueColors, "cg_drawUniqueColors", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_killerGhost, "cg_killerGhost", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1666,6 +1702,11 @@ static void CG_RegisterSounds(void)
 	cgs.media.pingSimpleSoundNew = trap_S_RegisterSound("sound/teamplay/ping-simple-new.wav", qfalse);
 	cgs.media.pingAcceptSoundNew = trap_S_RegisterSound("sound/teamplay/ping-accept-new.wav", qfalse);
 	cgs.media.pingDenySoundNew = trap_S_RegisterSound("sound/teamplay/ping-deny-new.wav", qfalse);
+
+	// Countdown sounds
+	cgs.media.roundWarmup321Sound = trap_S_RegisterSound("sound/feedback/321.wav", qtrue);
+	cgs.media.roundWarmup0Sound = trap_S_RegisterSound("sound/feedback/0.wav", qtrue);
+
 }
 
 qhandle_t CG_GetFragSound(void)
@@ -1949,7 +1990,10 @@ static void CG_RegisterGraphics(void)
 
 	// powerup shaders
 	cgs.media.quadShader = trap_R_RegisterShader("powerups/quad");
+	cgs.media.quadShaderDye = trap_R_RegisterShader("powerups/quadDye");
 	cgs.media.quadWeaponShader = trap_R_RegisterShader("powerups/quadWeapon");
+	cgs.media.quadWeaponShaderDye = trap_R_RegisterShader("powerups/quadWeaponDye");
+	cgs.media.fragEffectShader = trap_R_RegisterShader("weapons/fragEffect");
 	cgs.media.battleSuitShader = trap_R_RegisterShader("powerups/battleSuit");
 	cgs.media.battleSuitShaderDye = trap_R_RegisterShader("powerups/battleSuitDye");
 	cgs.media.battleWeaponShader = trap_R_RegisterShader("powerups/battleWeapon");
@@ -1979,14 +2023,21 @@ static void CG_RegisterGraphics(void)
 
 	if (cgs.gametype == GT_CTF || cg_buildScript.integer)
 	{
-		cgs.media.redFlagModel = trap_R_RegisterModel("models/flags/r_flag.md3");
-		cgs.media.blueFlagModel = trap_R_RegisterModel("models/flags/b_flag.md3");
-		cgs.media.redFlagShader[0] = trap_R_RegisterShaderNoMip("icons/iconf_red1");
-		cgs.media.redFlagShader[1] = trap_R_RegisterShaderNoMip("icons/iconf_red2");
-		cgs.media.redFlagShader[2] = trap_R_RegisterShaderNoMip("icons/iconf_red3");
-		cgs.media.blueFlagShader[0] = trap_R_RegisterShaderNoMip("icons/iconf_blu1");
-		cgs.media.blueFlagShader[1] = trap_R_RegisterShaderNoMip("icons/iconf_blu2");
-		cgs.media.blueFlagShader[2] = trap_R_RegisterShaderNoMip("icons/iconf_blu3");
+		cgs.media.dyeFlagModel = trap_R_RegisterModel("models/flags/flagDye.md3");
+		cgs.media.dyeFlagShader[0] = trap_R_RegisterShaderNoMip("icons/dye/iconf_dye1");
+		cgs.media.dyeFlagShader[1] = trap_R_RegisterShaderNoMip("icons/dye/iconf_dye2");
+		cgs.media.dyeFlagShader[2] = trap_R_RegisterShaderNoMip("icons/dye/iconf_dye3");
+		cgs.media.dyeFlagShaderInv[0] = trap_R_RegisterShaderNoMip("icons/dye/iconf_dye1inv");
+		cgs.media.dyeFlagShaderInv[1] = trap_R_RegisterShaderNoMip("icons/dye/iconf_dye2inv");
+		cgs.media.dyeFlagShaderInv[2] = trap_R_RegisterShaderNoMip("icons/dye/iconf_dye3inv");
+		cgs.media.redFlagModel = cgs.media.dyeFlagModel;
+		cgs.media.blueFlagModel = cgs.media.dyeFlagModel;
+		cgs.media.redFlagShader[0] = cgs.media.dyeFlagShader[0];
+		cgs.media.redFlagShader[1] = cgs.media.dyeFlagShader[1];
+		cgs.media.redFlagShader[2] = cgs.media.dyeFlagShader[2];
+		cgs.media.blueFlagShader[0] = cgs.media.dyeFlagShader[0];
+		cgs.media.blueFlagShader[1] = cgs.media.dyeFlagShader[1];
+		cgs.media.blueFlagShader[2] = cgs.media.dyeFlagShader[2];
 	}
 
 
@@ -1995,9 +2046,10 @@ static void CG_RegisterGraphics(void)
 		cgs.media.frozenFoeTagShader = trap_R_RegisterShader("sprites/frozenFoeTag");
 		cgs.media.frozenFoeTagShaderWallhack = trap_R_RegisterShader("sprites/frozenFoeTag2");
 		cgs.media.frozenShader = trap_R_RegisterShader("textures/effects/frozen");
+		cgs.media.frozenNewShader = trap_R_RegisterShader("textures/effects/frozenNew");
 		cgs.media.friendShader = trap_R_RegisterShader("sprites/foe");
 		cgs.media.friendShaderWallhack = trap_R_RegisterShader("sprites/foe2");
-		cgs.media.redQuadShader = trap_R_RegisterShader("powerups/blueflag");
+		cgs.media.redQuadShader = trap_R_RegisterShader("powerups/quadRed");
 	}
 
 
@@ -2443,6 +2495,9 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_enemyGrenadesColor");
 	CG_CvarTouch("cg_battleSuitColor");
 	CG_CvarTouch("cg_enemyBattleSuitColor");
+	CG_CvarTouch("cg_quadDamageColor");
+	CG_CvarTouch("cg_enemyQuadDamageColor");
+	CG_CvarTouch("cg_fragEffectColor");
 
 	CG_CvarTouch("cg_healthColor");
 	CG_CvarTouch("cg_healthLowColor");
@@ -2540,6 +2595,7 @@ static void CG_InitPlayerColors(void)
 	// (e.g. when no cvar contains 'E' or 'T'), enemyColors stay zero and other
 	// players render black until user manually reloads colors.
 	CG_RebuildPlayerColors();
+	CG_UpdateBeFeatures();
 	CG_UpdateAllClientsInfo();
 }
 
@@ -2694,10 +2750,10 @@ void CG_InitTeamTaskMarkers(void)
 /*
  * Returns qtrue if s equals "RateX7" when Q3 color codes (^x) are skipped.
  */
-qboolean CG_AdminNameEqualsRateX7(const char *s)
+qboolean CG_AdminNameEqualsRateX7(const char* s)
 {
 	static const char needle[] = "RateX7";
-	const char *n;
+	const char* n;
 
 	if (!s)
 		return qfalse;
@@ -2757,11 +2813,12 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	/* restore r_gamma from uc_gamma only when ui_forceGamma 1; when 0 we don't restore */
 	{
 		char forceGammaStr[8];
-		trap_Cvar_VariableStringBuffer( "ui_forceGamma", forceGammaStr, sizeof(forceGammaStr) );
-		if ( forceGammaStr[0] == '1' ) {
+		trap_Cvar_VariableStringBuffer("ui_forceGamma", forceGammaStr, sizeof(forceGammaStr));
+		if (forceGammaStr[0] == '1')
+		{
 			char ucGammaStr[16];
-			trap_Cvar_VariableStringBuffer( "uc_gamma", ucGammaStr, sizeof(ucGammaStr) );
-			trap_Cvar_Set( "r_gamma", (ucGammaStr[0] != '\0') ? ucGammaStr : "1" );
+			trap_Cvar_VariableStringBuffer("uc_gamma", ucGammaStr, sizeof(ucGammaStr));
+			trap_Cvar_Set("r_gamma", (ucGammaStr[0] != '\0') ? ucGammaStr : "1");
 		}
 	}
 
@@ -3214,10 +3271,10 @@ void CG_PrintNewCommandsBE_f(void)
 		requestedNum = atoi(arg);
 	}
 
-	// start from cg_enemyLightningColor
+	// start from cg_uniqueColorTable (BE cvar block; do not use cg_enemyLightningColor — it moved in the table)
 	for (i = 0; i < numCommands; i++)
 	{
-		if (!strcmp(cvarTable[i].cvarName, "cg_enemyLightningColor"))
+		if (!strcmp(cvarTable[i].cvarName, "cg_uniqueColorTable"))
 		{
 			startIndex = i;
 			break;
@@ -3226,7 +3283,7 @@ void CG_PrintNewCommandsBE_f(void)
 
 	if (startIndex < 0)
 	{
-		CG_Printf("cg_enemyLightningColor not found\n");
+		CG_Printf("cg_uniqueColorTable not found\n");
 		return;
 	}
 

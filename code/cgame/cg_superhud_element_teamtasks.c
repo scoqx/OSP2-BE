@@ -161,6 +161,13 @@ static void CG_SHUDElementTeamTasksInitializeRuntime(shudElementTeamTasks_t* ele
 
 	/* Get event name */
 	CG_SHUDTeamTaskGetTaskName(entry->taskType, entry->runtime.eventName, sizeof(entry->runtime.eventName), entry->isPickup);
+	if (entry->repeatCount > 1)
+	{
+		char eventName[MAX_QPATH];
+
+		Q_strncpyz(eventName, entry->runtime.eventName, sizeof(eventName));
+		Com_sprintf(entry->runtime.eventName, sizeof(entry->runtime.eventName), "%s x%i", eventName, entry->repeatCount);
+	}
 
 	/* Set sender color - always white since we only display our own team */
 	Vector4Copy(colorWhite, entry->runtime.senderColor);
