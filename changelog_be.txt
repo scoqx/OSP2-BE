@@ -827,7 +827,7 @@ UI:
 - cg_altBattleSuit
 + cg_myTeam
 
-22.05.2026 be v1.04c
+22.05.2026 be v1.04d
 + cg_quadDamageColor
 + cg_enemyQuadDamageColor
 + cg_roundSound
