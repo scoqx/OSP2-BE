@@ -866,7 +866,7 @@ static void CG_PowerupTimerSounds(void)
 	static int cg_prevRoundStartState;
 	static int cg_roundWarmupBsEndTime;
 
-	if (cg_debugNoobServer.integer)
+	if (cg_debugServer.integer == 1)
 	{
 		if (cg_prevRoundStartState != cgs.roundStartState)
 		{
@@ -901,7 +901,7 @@ static void CG_PowerupTimerSounds(void)
 		}
 	}
 
-	if (cg_debugNoobServer.integer && cgs.roundStartState == 2 && cg_prevBattleSuitEnd > 0)
+	if (cg_debugServer.integer == 1 && cgs.roundStartState == 2 && cg_prevBattleSuitEnd > 0)
 	{
 		tBs = cg.snap->ps.powerups[PW_BATTLESUIT];
 		if ((cg_prevBattleSuitEnd > cg.oldTime && cg_prevBattleSuitEnd <= cg.time) ||

@@ -2808,6 +2808,9 @@ void CG_FireWeapon(centity_t* cent)
 	if (ent->weapon == WP_LIGHTNING && cent->pe.lightningFiring)
 		return;
 
+	if (cent->currentState.number == cg.predictedPlayerState.clientNum)
+		CG_DebugServerOnFireWeapon(ent->weapon);
+
 	if ((cent->currentState.powerups & (1 << PW_QUAD)) && cg.time > cgs.osp.quadSoundTime)
 	{
 		cgs.osp.quadSoundTime = cg.time + 1050;

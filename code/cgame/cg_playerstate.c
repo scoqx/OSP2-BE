@@ -75,6 +75,40 @@ static int prevAmmo = 0;
 /* Lightning weapon tracking state (was CG_UpdateWeaponTracking), file scope for CG_UpdateLightningTracking */
 static int lastHitsValueLightning = 0;
 
+/* cg_debugServer 2: shot on one weapon -> switch to another (ms) */
+static int cg_debugShotTime;
+static int cg_debugShotWeapon;
+
+/* cg_debugServer 3: interval between EV_FIRE_WEAPON shots (ms) */
+static int cg_debugIntervalLastTime;
+static int cg_debugIntervalLastWeapon;
+
+/*
+==============
+CG_DebugServerOnFireWeapon
+==============
+*/
+void CG_DebugServerOnFireWeapon(int weapon)
+{
+	if (cg_debugServer.integer != 3)
+	{
+		cg_debugIntervalLastTime = 0;
+		cg_debugIntervalLastWeapon = WP_NONE;
+		return;
+	}
+	if (weapon <= WP_NONE || weapon >= WP_NUM_WEAPONS)
+	{
+		return;
+	}
+	if (cg_debugIntervalLastTime > 0 && weapon == cg_debugIntervalLastWeapon)
+	{
+		CG_Printf("Shot interval: ^5%s^7 ^5%d^7 ms\n",
+		          weaponNames[weapon], cg.time - cg_debugIntervalLastTime);
+	}
+	cg_debugIntervalLastTime = cg.time;
+	cg_debugIntervalLastWeapon = weapon;
+}
+
 /*
 ==============
 CG_UpdateLightningTracking
@@ -765,6 +799,38 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 			cg.zoomed = qfalse;
 			cg.zoomTime = cg.time;
 		}
+	}
+
+	if (cg_debugServer.integer == 2 && ps->clientNum == cg.snap->ps.clientNum)
+	{
+		if (ps->weaponstate == WEAPON_FIRING && ops->weaponstate != WEAPON_FIRING &&
+		        ps->weapon > WP_NONE && ps->weapon < WP_NUM_WEAPONS)
+		{
+			cg_debugShotTime = cg.time;
+			cg_debugShotWeapon = ps->weapon;
+		}
+		else if (cg_debugShotTime > 0 && ps->weapon != ops->weapon &&
+		         ps->weapon > WP_NONE && ops->weapon > WP_NONE &&
+		         ps->weapon != cg_debugShotWeapon &&
+		         ops->weapon == cg_debugShotWeapon)
+		{
+			CG_Printf("Shot->switch: ^5%s^7 -> ^5%s^7 ^5%d^7 ms\n",
+			          weaponNames[ops->weapon], weaponNames[ps->weapon],
+			          cg.time - cg_debugShotTime);
+			cg_debugShotTime = 0;
+			cg_debugShotWeapon = WP_NONE;
+		}
+	}
+	else if (cg_debugServer.integer != 2)
+	{
+		cg_debugShotTime = 0;
+		cg_debugShotWeapon = WP_NONE;
+	}
+
+	if (cg_debugServer.integer != 3)
+	{
+		cg_debugIntervalLastTime = 0;
+		cg_debugIntervalLastWeapon = WP_NONE;
 	}
 
 	// Exec on weapon

@@ -2272,7 +2272,7 @@ extern vmCvar_t         cg_enemyBattleSuitColor;
 extern vmCvar_t         cg_mutePowerUpCountdown;
 extern vmCvar_t         cg_myTeam;
 extern vmCvar_t         cg_roundSound;
-extern vmCvar_t         cg_debugNoobServer;
+extern vmCvar_t         cg_debugServer;
 extern vmCvar_t         cg_quadDamageColor;
 extern vmCvar_t         cg_enemyQuadDamageColor;
 extern vmCvar_t         cg_floatSpriteMaxDist;
@@ -2891,6 +2891,7 @@ qboolean CG_ClientSupportsTeamTask(int clientNum);
 //
 void CG_Respawn(void);
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
+void CG_DebugServerOnFireWeapon(int weapon);
 void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
 

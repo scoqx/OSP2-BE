@@ -3157,26 +3157,7 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 {
 	if (CG_IsKillerGhostBody(state))
 	{
-		const float* tc;
-
-		trap_R_AddRefEntityToScene(ent);
-		if (cg_killerGhost.integer != 1)
-		{
-			return;
-		}
-		if (cgs.beMyTeam == TEAM_BLUE)
-		{
-			tc = cgs.beBlueTeamColor;
-		}
-		else
-		{
-			tc = cgs.beRedTeamColor;
-		}
-		ent->customShader = cgs.media.quadShaderDye;
-		ent->shaderRGBA[0] = (byte)(tc[0] * 255.0f);
-		ent->shaderRGBA[1] = (byte)(tc[1] * 255.0f);
-		ent->shaderRGBA[2] = (byte)(tc[2] * 255.0f);
-		ent->shaderRGBA[3] = 255;
+		ent->customShader = cgs.media.invisShader;
 		trap_R_AddRefEntityToScene(ent);
 		return;
 	}
