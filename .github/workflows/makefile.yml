@@ -468,21 +468,15 @@ jobs:
             --changelog source-repo/assets/version_changelog.txt \
             --status-dir status-repo
 
-      - name: Update mod_sig in response.conf
+      - name: Update mod_sig in deploy/response.conf
         working-directory: status-repo
-        run: python3 gen_status_sig.py --write
-
-      - name: Sync deploy/ from root (same version and changelog)
-        run: |
-          python3 source-repo/scripts/patch_osp2be_status_server.py \
-            --status-dir status-repo \
-            --sync-deploy-only
+        run: python3 gen_status_sig.py --write -c deploy/response.conf
 
       - name: Commit and push to osp2be-status-server
         run: |
           cd status-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add version_changelog.txt response.conf deploy/version_changelog.txt deploy/response.conf
+          git add deploy/version_changelog.txt deploy/response.conf
           git diff --quiet --cached || git commit -m "Update version_changelog and status version [auto]"
           git push origin ${{ env.STATUS_BRANCH }}

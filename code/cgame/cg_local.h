@@ -1567,7 +1567,7 @@ typedef struct
 #define CG_DAMAGEPLUMS_ENABLE      1
 #define CG_DAMAGEPLUMS_STACK       2
 #define CG_DAMAGEPLUMS_NOCOLOR     4
-#define CG_DAMAGEPLUMS_ACTIVE      (CG_DAMAGEPLUMS_ENABLE | CG_DAMAGEPLUMS_STACK)
+#define CG_DAMAGEPLUMS_ACTIVE      (CG_DAMAGEPLUMS_ENABLE | CG_DAMAGEPLUMS_STACK | CG_DAMAGEPLUMS_NOCOLOR)
 /* Border damage plums: scale edge offset toward crosshair (1 = on edge, lower = inward) */
 #define CG_DAMAGE_PLUM_BORDER_POS_SCALE    0.9f
 
