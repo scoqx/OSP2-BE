@@ -8,7 +8,9 @@ on:
     branches: [ "master" ]
     paths-ignore:
       - '**.md'
-      - '*.txt'
+      - 'changelog_be_r.txt'
+      - 'assets/version.txt'
+      - 'assets/version_changelog.txt'
       - '.gitignore'
       - 'docs/*'
       - 'build/*'
@@ -17,7 +19,9 @@ on:
     branches: [ "master" ]
     paths-ignore:
       - '**.md'
-      - '*.txt'
+      - 'changelog_be_r.txt'
+      - 'assets/version.txt'
+      - 'assets/version_changelog.txt'
       - '.gitignore'
       - 'docs/*'
       - 'build/*'
@@ -25,13 +29,52 @@ on:
   workflow_dispatch:
 
 jobs:
+  sync-version-assets:
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Regenerate version.txt and version_changelog.txt
+        run: |
+          cd build/qvm
+          make ../../assets/version.txt ../../assets/version_changelog.txt
+          echo "=== version.txt ==="
+          cat ../../assets/version.txt
+          echo "=== version_changelog.txt (line 1) ==="
+          head -1 ../../assets/version_changelog.txt
+
+      - name: Commit and push version assets to OSP2-PBE
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add assets/version.txt assets/version_changelog.txt
+          if git diff --staged --quiet; then
+            echo "Version assets already up to date in repo"
+            exit 0
+          fi
+          git commit -m "Sync version.txt and version_changelog.txt from osp_version.h [skip ci]"
+          git push
+
   linux:
+    needs: sync-version-assets
+    if: always() && (needs.sync-version-assets.result == 'success' || needs.sync-version-assets.result == 'skipped')
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          ref: master
+          fetch-depth: 0
+
+      - name: Pull latest after version sync
+        if: needs.sync-version-assets.result == 'success'
+        run: git pull --ff-only origin master
 
       - name: Create version files
         run: |
@@ -116,6 +159,8 @@ jobs:
 
   mingw:
     name: MinGW GCC
+    needs: sync-version-assets
+    if: always() && (needs.sync-version-assets.result == 'success' || needs.sync-version-assets.result == 'skipped')
     runs-on: windows-2022
 
     defaults:
@@ -126,6 +171,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          ref: master
+          fetch-depth: 0
+
+      - name: Pull latest after version sync
+        if: needs.sync-version-assets.result == 'success'
+        run: git pull --ff-only origin master
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -437,12 +488,16 @@ jobs:
       GIT_USER_NAME: GitHub Actions
       GIT_USER_EMAIL: actions@github.com
     steps:
-      - name: Checkout OSP2-PBE at this commit
+      - name: Checkout OSP2-PBE (latest master after version sync)
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: master
+          fetch-depth: 0
           submodules: recursive
           path: source-repo
+
+      - name: Pull latest master
+        run: git -C source-repo pull --ff-only origin master
 
       - name: Build fresh version.txt and version_changelog.txt
         run: |

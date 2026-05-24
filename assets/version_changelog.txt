@@ -1,4 +1,4 @@
-24.05.2026 be v1.04c
+24.05.2026 be v1.04e
 UI:
 + BE Update notifications in menu and changelog
 + ui_beStatusFont

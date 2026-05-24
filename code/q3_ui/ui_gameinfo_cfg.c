@@ -1,6 +1,7 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "ui_local.h"
+#include "ui_status_sign.h"
 
 #define UI_GAMEINFO_CFG_FILE            "gameinfo.cfg"
 #define UI_GAMEINFO_CFG_READ_MAX        4096
