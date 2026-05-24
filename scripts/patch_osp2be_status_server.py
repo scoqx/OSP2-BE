@@ -68,22 +68,35 @@ def set_status_field(content: str, key: str, value: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--version-txt", type=Path, required=True)
-    parser.add_argument("--changelog", type=Path, required=True)
+    parser.add_argument("--version-txt", type=Path, default=None)
+    parser.add_argument("--changelog", type=Path, default=None)
     parser.add_argument(
         "--status-dir",
         type=Path,
         required=True,
         help="Checkout root of scoqx/osp2be-status-server",
     )
+    parser.add_argument(
+        "--sync-deploy-only",
+        action="store_true",
+        help="Only copy root response.conf and version_changelog.txt into deploy/",
+    )
     args = parser.parse_args()
+
+    status_dir = args.status_dir.resolve()
+    if args.sync_deploy_only:
+        sync_deploy_dir(status_dir)
+        return 0
+
+    if not args.version_txt or not args.changelog:
+        print("Error: --version-txt and --changelog are required", file=sys.stderr)
+        return 1
 
     for path in (args.version_txt, args.changelog):
         if not path.is_file():
             print(f"Error: missing file: {path}", file=sys.stderr)
             return 1
 
-    status_dir = args.status_dir.resolve()
     response_conf = status_dir / "response.conf"
     if not response_conf.is_file():
         print(f"Error: missing {response_conf}", file=sys.stderr)
@@ -111,9 +124,10 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    dest_changelog = status_dir / "version_changelog.txt"
-    shutil.copy2(args.changelog, dest_changelog)
-    print(f"Copied changelog -> {dest_changelog}")
+    for dest_name in ("version_changelog.txt",):
+        dest = status_dir / dest_name
+        shutil.copy2(args.changelog, dest)
+        print(f"Copied changelog -> {dest}")
 
     text = response_conf.read_text(encoding="utf-8")
     text = set_status_field(text, "version", version)
@@ -122,6 +136,18 @@ def main() -> int:
     response_conf.write_text(text, encoding="utf-8", newline="\n")
     print(f"Patched {response_conf}: version={version}" + (f", date={date}" if date else ""))
     return 0
+
+
+def sync_deploy_dir(status_dir: Path) -> None:
+    """Mirror root response.conf and version_changelog.txt into deploy/."""
+    deploy = status_dir / "deploy"
+    deploy.mkdir(parents=True, exist_ok=True)
+    for name in ("response.conf", "version_changelog.txt"):
+        src = status_dir / name
+        if not src.is_file():
+            raise FileNotFoundError(f"missing {src} before deploy sync")
+        shutil.copy2(src, deploy / name)
+        print(f"Synced deploy/{name}")
 
 
 if __name__ == "__main__":

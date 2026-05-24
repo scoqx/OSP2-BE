@@ -437,17 +437,21 @@ jobs:
       GIT_USER_NAME: GitHub Actions
       GIT_USER_EMAIL: actions@github.com
     steps:
-      - name: Download version artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: version-files
-          path: version-artifacts
-
-      - name: Checkout OSP2-PBE (patch script)
+      - name: Checkout OSP2-PBE at this commit
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ${{ github.sha }}
+          submodules: recursive
           path: source-repo
+
+      - name: Build fresh version.txt and version_changelog.txt
+        run: |
+          cd source-repo/build/qvm
+          make ../../assets/version.txt ../../assets/version_changelog.txt
+          echo "=== version.txt ==="
+          cat ../../assets/version.txt
+          echo "=== version_changelog.txt (line 1) ==="
+          head -1 ../../assets/version_changelog.txt
 
       - name: Checkout osp2be-status-server
         uses: actions/checkout@v4
@@ -459,26 +463,26 @@ jobs:
 
       - name: Patch response.conf and version_changelog.txt
         run: |
-          VERSION_TXT=$(find version-artifacts -name version.txt -type f | head -1)
-          CHANGELOG=$(find version-artifacts -name version_changelog.txt -type f | head -1)
-          if [ -z "$VERSION_TXT" ] || [ -z "$CHANGELOG" ]; then
-            echo "Error: version.txt or version_changelog.txt not found in version-files artifact"
-            exit 1
-          fi
           python3 source-repo/scripts/patch_osp2be_status_server.py \
-            --version-txt "$VERSION_TXT" \
-            --changelog "$CHANGELOG" \
+            --version-txt source-repo/assets/version.txt \
+            --changelog source-repo/assets/version_changelog.txt \
             --status-dir status-repo
 
       - name: Update mod_sig in response.conf
         working-directory: status-repo
         run: python3 gen_status_sig.py --write
 
+      - name: Sync deploy/ from root (same version and changelog)
+        run: |
+          python3 source-repo/scripts/patch_osp2be_status_server.py \
+            --status-dir status-repo \
+            --sync-deploy-only
+
       - name: Commit and push to osp2be-status-server
         run: |
           cd status-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add version_changelog.txt response.conf
+          git add version_changelog.txt response.conf deploy/version_changelog.txt deploy/response.conf
           git diff --quiet --cached || git commit -m "Update version_changelog and status version [auto]"
           git push origin ${{ env.STATUS_BRANCH }}
