@@ -5,8 +5,9 @@ file_path = 'code/qcommon/osp_version.h'
 with open(file_path, 'r') as file:
     lines = file.readlines()
 
+version = None
 for line in lines:
-    if "#define OSP_VERSION" in line and not line.strip().startswith('//'):
+    if re.match(r'^\s*#define\s+OSP_VERSION\s+"', line) and not line.strip().startswith('//'):
         match = re.search(r'"(.*?)"', line)
         if match:
             version = match.group(1)

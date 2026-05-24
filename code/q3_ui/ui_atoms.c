@@ -1890,7 +1890,7 @@ static void UI_LANJob_IssueServerStatus(void)
 	trap_Cmd_ExecuteText(EXEC_NOW, va("serverstatus %s\n", active));
 }
 
-void UI_LANJob_BeginServerStatus(const char* target)
+static void UI_LANJob_BeginServerStatus(const char* target)
 {
 	UI_LANJob_Reset();
 	ui_lanJob.job = UI_LANJOB_SERVER_STATUS;
@@ -1898,7 +1898,7 @@ void UI_LANJob_BeginServerStatus(const char* target)
 	UI_LANJob_IssueServerStatus();
 }
 
-void UI_LANJob_BeginServerStatusDual(const char* target, const char* targetAlt)
+static void UI_LANJob_BeginServerStatusDual(const char* target, const char* targetAlt)
 {
 	UI_LANJob_Reset();
 	ui_lanJob.job = UI_LANJOB_SERVER_STATUS;
@@ -2069,6 +2069,26 @@ Poll pending trap_LAN_* jobs (server status fetch). Runs with or without UI key 
 void UI_LANJobsTick(void)
 {
 	UI_LANJob_Tick();
+}
+
+void UI_ServerStatus_Secheck2Begin(const char* target)
+{
+	if (!target || !target[0])
+	{
+		return;
+	}
+
+	UI_LANJob_BeginServerStatus(target);
+}
+
+void UI_ServerStatus_Secheck2BeginDual(const char* target, const char* targetAlt)
+{
+	if (!target || !target[0] || !targetAlt || !targetAlt[0])
+	{
+		return;
+	}
+
+	UI_LANJob_BeginServerStatusDual(target, targetAlt);
 }
 
 /*

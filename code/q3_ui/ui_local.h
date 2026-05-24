@@ -371,6 +371,9 @@ extern void UI_OtherMenu(void);
 extern void UI_TeamMainMenu(void);
 extern void TeamMain_Cache(void);
 
+void UI_ServerStatus_Secheck2Begin(const char* target);
+void UI_ServerStatus_Secheck2BeginDual(const char* target, const char* targetAlt);
+
 //
 // ui_connect.c
 //
@@ -643,8 +646,6 @@ extern void         UI_FillRect(float x, float y, float width, float height, con
 extern void         UI_DrawRect(float x, float y, float width, float height, const float* color);
 extern void         UI_UpdateScreen(void);
 extern void         UI_LANJobsTick(void);
-extern void         UI_LANJob_BeginServerStatus(const char* target);
-extern void         UI_LANJob_BeginServerStatusDual(const char* target, const char* targetAlt);
 extern void         UI_SetColor(const float* rgba);
 extern void         UI_LerpColor(vec4_t a, vec4_t b, vec4_t c, float t);
 extern void         UI_DrawBannerString(int x, int y, const char* str, int style, vec4_t color);

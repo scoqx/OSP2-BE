@@ -113,7 +113,7 @@ FORCE:
 
 ../../assets/version.txt: FORCE $(COMDIR)/osp_version.h
 	@echo "Extracting version from $(COMDIR)/osp_version.h"
-	@grep -E '^#define OSP_VERSION' $(COMDIR)/osp_version.h | sed -E 's/^#define OSP_VERSION "([^"]*)".*/\1/' > $@
+	@grep -E '^#define OSP_VERSION "' $(COMDIR)/osp_version.h | sed -E 's/^#define OSP_VERSION "([^"]*)".*/\1/' > $@
 	@echo "Version file created: $$(cat $@)"
 
 ../../assets/version_changelog.txt: FORCE ../../changelog_be.txt ../../assets/version.txt

@@ -1524,24 +1524,15 @@ void UI_ServerStatus_FetchBegin(const char* target)
 	}
 
 	UI_ServerStatus_FetchPrepare();
-	UI_LANJob_BeginServerStatus(target);
+	UI_ServerStatus_Secheck2Begin(target);
 }
 
 void UI_ServerStatus_FetchOnMainMenu(void)
 {
-	const char*     primary;
-	const char*     alternate;
-
 	UI_ServerStatus_EnsureFonts();
 	UI_ServerStatus_FetchPrepare();
-	primary = UI_GameinfoCfg_GetStatusServerPrimary();
-	alternate = UI_GameinfoCfg_GetStatusServerAlternate();
-	if (!primary || !primary[0] || !alternate || !alternate[0])
-	{
-		return;
-	}
-
-	UI_LANJob_BeginServerStatusDual(primary, alternate);
+	UI_ServerStatus_Secheck2BeginDual(UI_GameinfoCfg_GetStatusServerPrimary(),
+	        UI_GameinfoCfg_GetStatusServerAlternate());
 }
 
 void UI_ServerStatus_OnFetchTimeout(void)

@@ -513,10 +513,12 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_demo2.o \
   $(B)/$(MOD)/ui/ui_display.o \
   $(B)/$(MOD)/ui/ui_gameinfo.o \
+  $(B)/$(MOD)/ui/ui_gameinfo_cfg.o \
   $(B)/$(MOD)/ui/ui_ingame.o \
   $(B)/$(MOD)/ui/ui_loadconfig.o \
   $(B)/$(MOD)/ui/ui_menu.o \
   $(B)/$(MOD)/ui/ui_mfield.o \
+  $(B)/$(MOD)/ui/ui_md5.o \
   $(B)/$(MOD)/ui/ui_mods.o \
   $(B)/$(MOD)/ui/ui_network.o \
   $(B)/$(MOD)/ui/ui_options.o \
@@ -528,7 +530,9 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_removebots.o \
   $(B)/$(MOD)/ui/ui_saveconfig.o \
   $(B)/$(MOD)/ui/ui_serverinfo.o \
+  $(B)/$(MOD)/ui/ui_server_status.o \
   $(B)/$(MOD)/ui/ui_servers2.o \
+  $(B)/$(MOD)/ui/ui_status_sign.o \
   $(B)/$(MOD)/ui/ui_setup.o \
   $(B)/$(MOD)/ui/ui_sound.o \
   $(B)/$(MOD)/ui/ui_sparena.o \
