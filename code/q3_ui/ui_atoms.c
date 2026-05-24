@@ -6,6 +6,8 @@
     User interface building blocks and support functions.
 **********************************************************************/
 #include "ui_local.h"
+#include "ui_status_sign.h"
+#include "ui_server_status.h"
 
 uiStatic_t      uis;
 qboolean        m_entersound;       // after a frame, so caching won't disrupt the sound
@@ -1704,6 +1706,11 @@ void UI_MouseEvent(int dx, int dy)
 	else if (uis.cursory > uis.screenYmax)
 		uis.cursory = uis.screenYmax;
 
+	if (UI_ServerStatus_IsModal())
+	{
+		return;
+	}
+
 	// region test the active menu items
 	for (i = 0; i < uis.activemenu->nitems; i++)
 	{
@@ -1806,6 +1813,264 @@ void UI_Cache_f(void)
 }
 
 
+#define UI_LANJOB_ADDRESSLENGTH	64
+#define UI_LANJOB_WAIT_MS		3000
+
+typedef enum
+{
+	UI_LANJOB_NONE = 0,
+	UI_LANJOB_SERVER_STATUS
+} ui_lanjob_t;
+
+static struct
+{
+	ui_lanjob_t		job;
+	char			target[UI_LANJOB_ADDRESSLENGTH];
+	char			targetAlt[UI_LANJOB_ADDRESSLENGTH];
+	qboolean		dual;
+	qboolean		tryAlt;
+	int				deadline;
+	char			pingInfo[MAX_INFO_STRING];
+	qboolean		hasPingInfo;
+	qboolean		pingIssued;
+} ui_lanJob;
+
+static void UI_LANJob_CapturePingInfo(void);
+static const char* UI_LANJob_ActiveTarget(void);
+static void UI_LANJob_EnsurePingForChangelog(void);
+
+static void UI_LANJob_Reset(void)
+{
+	ui_lanJob.job = UI_LANJOB_NONE;
+	ui_lanJob.target[0] = '\0';
+	ui_lanJob.targetAlt[0] = '\0';
+	ui_lanJob.dual = qfalse;
+	ui_lanJob.tryAlt = qfalse;
+	ui_lanJob.hasPingInfo = qfalse;
+	ui_lanJob.pingInfo[0] = '\0';
+	ui_lanJob.pingIssued = qfalse;
+}
+
+static void UI_LANJob_EnsurePingForChangelog(void)
+{
+	if (ui_lanJob.pingIssued || !uiServerStatus.received)
+	{
+		return;
+	}
+	if (!UI_ServerStatus_WantsChangelog())
+	{
+		return;
+	}
+
+	ui_lanJob.pingIssued = qtrue;
+	trap_Cmd_ExecuteText(EXEC_NOW, va("ping %s\n", UI_LANJob_ActiveTarget()));
+}
+
+static const char* UI_LANJob_ActiveTarget(void)
+{
+	if (ui_lanJob.dual && ui_lanJob.tryAlt && ui_lanJob.targetAlt[0])
+	{
+		return ui_lanJob.targetAlt;
+	}
+
+	return ui_lanJob.target;
+}
+
+static void UI_LANJob_IssueServerStatus(void)
+{
+	const char*     active;
+
+	active = UI_LANJob_ActiveTarget();
+	if (!active[0])
+	{
+		return;
+	}
+
+	ui_lanJob.deadline = trap_Milliseconds() + UI_LANJOB_WAIT_MS;
+	trap_Cmd_ExecuteText(EXEC_NOW, va("serverstatus %s\n", active));
+}
+
+void UI_LANJob_BeginServerStatus(const char* target)
+{
+	UI_LANJob_Reset();
+	ui_lanJob.job = UI_LANJOB_SERVER_STATUS;
+	Q_strncpyz(ui_lanJob.target, target, sizeof(ui_lanJob.target));
+	UI_LANJob_IssueServerStatus();
+}
+
+void UI_LANJob_BeginServerStatusDual(const char* target, const char* targetAlt)
+{
+	UI_LANJob_Reset();
+	ui_lanJob.job = UI_LANJOB_SERVER_STATUS;
+	ui_lanJob.dual = qtrue;
+	ui_lanJob.tryAlt = qfalse;
+	Q_strncpyz(ui_lanJob.target, target, sizeof(ui_lanJob.target));
+	Q_strncpyz(ui_lanJob.targetAlt, targetAlt, sizeof(ui_lanJob.targetAlt));
+	UI_LANJob_IssueServerStatus();
+}
+
+static qboolean UI_LANJob_TryBeginAlternate(void)
+{
+	if (!ui_lanJob.dual || ui_lanJob.tryAlt || uiServerStatus.received)
+	{
+		return qfalse;
+	}
+	if (!ui_lanJob.targetAlt[0])
+	{
+		return qfalse;
+	}
+
+	ui_lanJob.tryAlt = qtrue;
+	ui_lanJob.hasPingInfo = qfalse;
+	ui_lanJob.pingInfo[0] = '\0';
+	ui_lanJob.pingIssued = qfalse;
+	UI_LANJob_IssueServerStatus();
+	return qtrue;
+}
+
+static void UI_LANJob_TickServerStatus(void)
+{
+	char	status[BIG_INFO_STRING];
+	int		ret;
+
+	ret = trap_LAN_ServerStatus(UI_LANJob_ActiveTarget(), status, sizeof(status));
+	if (ret && status[0])
+	{
+		UI_ServerStatus_ApplyFromGetstatus(status);
+		if (uiServerStatus.last)
+		{
+			ui_lanJob.hasPingInfo = qfalse;
+			ui_lanJob.pingInfo[0] = '\0';
+		}
+		else
+		{
+			UI_LANJob_CapturePingInfo();
+		}
+		UI_LANJob_EnsurePingForChangelog();
+		if (ui_lanJob.hasPingInfo && UI_ServerStatus_WantsChangelog())
+		{
+			UI_ServerStatus_ApplyFromGetinfo(ui_lanJob.pingInfo);
+		}
+		if (ui_lanJob.hasPingInfo || !UI_ServerStatus_WantsChangelog())
+		{
+			UI_LANJob_Reset();
+			return;
+		}
+	}
+	else if (uiServerStatus.received)
+	{
+		if (uiServerStatus.last)
+		{
+			ui_lanJob.hasPingInfo = qfalse;
+			ui_lanJob.pingInfo[0] = '\0';
+			UI_LANJob_Reset();
+			return;
+		}
+		UI_LANJob_CapturePingInfo();
+		UI_LANJob_EnsurePingForChangelog();
+		if (!UI_ServerStatus_WantsChangelog())
+		{
+			UI_LANJob_Reset();
+			return;
+		}
+		if (ui_lanJob.hasPingInfo)
+		{
+			UI_ServerStatus_ApplyFromGetinfo(ui_lanJob.pingInfo);
+			UI_LANJob_Reset();
+			return;
+		}
+	}
+
+	trap_LAN_UpdateVisiblePings(AS_LOCAL);
+}
+
+static void UI_LANJob_CapturePingInfo(void)
+{
+	char	adrstr[UI_LANJOB_ADDRESSLENGTH];
+	char	info[MAX_INFO_STRING];
+	int		i;
+	int		time;
+
+	if (!UI_LANJob_ActiveTarget()[0])
+	{
+		return;
+	}
+
+	for (i = 0; i < MAX_PINGREQUESTS; i++)
+	{
+		trap_LAN_GetPing(i, adrstr, sizeof(adrstr), &time);
+		if (!adrstr[0])
+		{
+			continue;
+		}
+		if (Q_stricmp(adrstr, UI_LANJob_ActiveTarget()))
+		{
+			continue;
+		}
+		if (!time)
+		{
+			continue;
+		}
+
+		trap_LAN_GetPingInfo(i, info, sizeof(info));
+		if (!info[0])
+		{
+			continue;
+		}
+
+		ui_lanJob.hasPingInfo = qtrue;
+		Q_strncpyz(ui_lanJob.pingInfo, info, sizeof(ui_lanJob.pingInfo));
+		return;
+	}
+}
+
+static void UI_LANJob_OnTimeout(void)
+{
+	if (UI_LANJob_TryBeginAlternate())
+	{
+		return;
+	}
+
+	UI_LANJob_CapturePingInfo();
+	if (ui_lanJob.hasPingInfo && UI_ServerStatus_WantsChangelog())
+	{
+		UI_ServerStatus_ApplyFromGetinfo(ui_lanJob.pingInfo);
+	}
+	if (!uiServerStatus.received)
+	{
+		UI_ServerStatus_OnFetchTimeout();
+	}
+	UI_LANJob_Reset();
+}
+
+static void UI_LANJob_Tick(void)
+{
+	if (ui_lanJob.job == UI_LANJOB_NONE)
+	{
+		return;
+	}
+
+	if (trap_Milliseconds() > ui_lanJob.deadline)
+	{
+		UI_LANJob_OnTimeout();
+		return;
+	}
+
+	UI_LANJob_TickServerStatus();
+}
+
+/*
+=================
+UI_LANJobsTick
+
+Poll pending trap_LAN_* jobs (server status fetch). Runs with or without UI key catcher.
+=================
+*/
+void UI_LANJobsTick(void)
+{
+	UI_LANJob_Tick();
+}
+
 /*
 =================
 UI_ConsoleCommand
@@ -1901,8 +2166,10 @@ void UI_Init(void)
 	int start = trap_Milliseconds();
 
 	UI_RegisterCvars();
+	UI_RegisterCvarDescriptions();
 
 	UI_InitGameinfo();
+	UI_GameinfoCfg_Load();
 
 	// cache redundant calulations
 	UI_VideoCheck(-99999);
@@ -2064,6 +2331,8 @@ void UI_Refresh(int realtime)
 {
 	uis.frametime = realtime - uis.realtime;
 	uis.realtime  = realtime;
+
+	UI_LANJobsTick();
 
 	if (!(trap_Key_GetCatcher() & KEYCATCH_UI))
 	{
