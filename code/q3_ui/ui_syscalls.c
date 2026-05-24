@@ -22,6 +22,16 @@ int PASSFLOAT(float x)
 	return *(int*)&floatTemp;
 }
 
+int trap_UI_GetValue_Q3E(int cmd, char* value, int valueSize, const char* key)
+{
+	return syscall(cmd, value, valueSize, key);
+}
+
+int trap_UI_SetDescription_Q3E(int cmd, const char* name, const char* description)
+{
+	return syscall(cmd, name, description);
+}
+
 void trap_Print(const char* string)
 {
 	syscall(UI_PRINT, string);

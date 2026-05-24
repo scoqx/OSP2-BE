@@ -80,7 +80,7 @@ cg_damageFrameSize
 cg_damageIndicatorOpaque
 cg_damageIndicatorScale
 cg_damageKick
-cg_damagePlumSize
+cg_damagePlumsSize
 cg_damagePlums
 cg_damagePlumsWeapons
 cg_damageSound

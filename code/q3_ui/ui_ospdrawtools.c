@@ -1084,6 +1084,124 @@ static float GetSymbolSize(char sym, qboolean proportional, float charWidth)
 	return charWidth;
 }
 
+int UI_OSPTextFitLineWidth640(const char* lineStart, const char* lineEnd, float charWidth,
+                              int proportional, float maxWidth640)
+{
+	const char*     s;
+	float           ax;
+	int             count;
+	int             lastSpaceCount;
+	float           w;
+
+	if (!lineStart || lineStart >= lineEnd || maxWidth640 <= 0.0f)
+	{
+		return 0;
+	}
+
+	s = lineStart;
+	ax = 0.0f;
+	count = 0;
+	lastSpaceCount = 0;
+
+	while (s < lineEnd)
+	{
+		if (s[0] == '^' && s[1])
+		{
+			s += 2;
+			continue;
+		}
+
+		w = GetSymbolSize(*s, (qboolean)proportional, charWidth);
+		if (count > 0 && (ax + w) > maxWidth640)
+		{
+			if (lastSpaceCount > 0)
+			{
+				return lastSpaceCount;
+			}
+			return count;
+		}
+
+		if (*s == ' ')
+		{
+			lastSpaceCount = count;
+		}
+
+		ax += w;
+		count++;
+		s++;
+	}
+
+	return count;
+}
+
+int UI_OSPTextCountWrappedLines640(const char* text, float charWidth, int proportional,
+                                   float maxWidth640)
+{
+	const char*     p;
+	const char*     lineStart;
+	const char*     lineEnd;
+	int             lines;
+	int             chunk;
+	int             remain;
+
+	if (!text || !text[0] || maxWidth640 <= 0.0f)
+	{
+		return 0;
+	}
+
+	lines = 0;
+	p = text;
+	while (*p)
+	{
+		lineStart = p;
+		lineEnd = p;
+		while (*lineEnd && *lineEnd != '\n' && *lineEnd != '\r')
+		{
+			lineEnd++;
+		}
+
+		if (lineEnd <= lineStart)
+		{
+			lines++;
+			if (p[0] == '\r' && p[1] == '\n')
+			{
+				p += 2;
+			}
+			else if (*p)
+			{
+				p++;
+			}
+			continue;
+		}
+
+		remain = (int)(lineEnd - lineStart);
+		while (remain > 0)
+		{
+			chunk = UI_OSPTextFitLineWidth640(lineStart, lineEnd, charWidth, proportional,
+			                                  maxWidth640);
+			if (chunk <= 0)
+			{
+				chunk = 1;
+			}
+			if (chunk > remain)
+			{
+				chunk = remain;
+			}
+			lines++;
+			lineStart += chunk;
+			remain -= chunk;
+		}
+
+		p = lineEnd;
+		while (*p == '\n' || *p == '\r')
+		{
+			p++;
+		}
+	}
+
+	return lines;
+}
+
 static float DrawCompiledStringLength(const text_command_t* cmd, float aw, int proportional)
 {
 	const font_metric_t* fm;

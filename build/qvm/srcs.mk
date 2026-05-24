@@ -55,7 +55,8 @@ CG_SRC = \
  cg_emoji
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \
-ui_gameinfo ui_atoms ui_colorparse ui_cinematics ui_connect ui_controls2 ui_demo2 \
+ui_gameinfo ui_gameinfo_cfg ui_atoms ui_cvardescriptions ui_colorparse ui_cinematics ui_connect ui_controls2 ui_demo2 \
+ui_md5 ui_status_sign ui_server_status \
 ui_mfield ui_credits ui_credits2 ui_menu ui_ingame ui_confirm ui_setup ui_options \
 ui_display ui_sound ui_network ui_playermodel ui_players ui_playersettings \
 ui_preferences ui_qmenu ui_serverinfo ui_servers2 ui_sparena ui_osp2be ui_colorpicker \

@@ -146,6 +146,7 @@ typedef struct servernode_s
 	char    hostname[MAX_HOSTNAMELENGTH + 1];
 	char    hostnameColored[MAX_HOSTNAME_COLORCHARS];
 	char    mapname[MAX_MAPNAMELENGTH + 1];
+	char    mapnameLevelshot[MAX_QPATH];
 	int     numclients;
 	int     maxclients;
 	int     pingtime;
@@ -568,7 +569,7 @@ static void ArenaServers_UpdatePicture(void)
 	else
 	{
 		servernodeptr = g_arenaservers.table[ g_arenaservers.list.curvalue ].servernode;
-		Com_sprintf(picname, sizeof(picname), "levelshots/%s.tga", servernodeptr->mapname);
+		Com_sprintf(picname, sizeof(picname), "levelshots/%s", servernodeptr->mapnameLevelshot);
 		g_arenaservers.mappic.generic.name = picname;
 
 	}
@@ -1147,9 +1148,15 @@ static void ArenaServers_Insert(const char* adrstr, const char* info, int pingti
 			;
 	}
 
-	Q_strncpyz(servernodeptr->mapname, Info_ValueForKey(info, "mapname"), sizeof(servernodeptr->mapname));
-	Q_CleanStr(servernodeptr->mapname);
-	Q_strupr(servernodeptr->mapname);
+	{
+		char fullMap[MAX_QPATH];
+
+		Q_strncpyz(fullMap, Info_ValueForKey(info, "mapname"), sizeof(fullMap));
+		Q_CleanStr(fullMap);
+		Q_strupr(fullMap);
+		Q_strncpyz(servernodeptr->mapnameLevelshot, fullMap, sizeof(servernodeptr->mapnameLevelshot));
+		Q_strncpyz(servernodeptr->mapname, fullMap, sizeof(servernodeptr->mapname));
+	}
 
 	servernodeptr->numclients = abs(atoi(Info_ValueForKey(info, "clients")));
 	servernodeptr->maxclients = abs(atoi(Info_ValueForKey(info, "sv_maxclients")));

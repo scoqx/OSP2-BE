@@ -327,3 +327,88 @@ void UI_VideoCheck(int time)
 		uis.lastVideoCheck = time;
 	}
 }
+
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
+static void trap_Cvar_SetDescription_local(const char* name, const char* description)
+{
+	(void)name;
+	(void)description;
+}
+
+typedef void (setCvarDescription_t)(const char* name, const char* description);
+typedef qboolean(trap_GetValue_t)(char* value, int valueSize, const char* key);
+
+#ifdef Q3_VM
+
+void UI_SetCvarDescription(const char* name, const char* description)
+{
+	static setCvarDescription_t* setDescription = NULL;
+
+	if (!setDescription)
+	{
+		int addr;
+		char  value[MAX_CVAR_VALUE_STRING];
+		trap_GetValue_t* trap_GetValue;
+
+		setDescription = trap_Cvar_SetDescription_local;
+		trap_Cvar_VariableStringBuffer("//trap_GetValue", value, sizeof(value));
+
+		if (value[0])
+		{
+			addr = atoi(value);
+
+			addr = ~addr;
+
+			trap_GetValue = (trap_GetValue_t*)(addr);
+
+			if (trap_GetValue(value, sizeof(value), "trap_Cvar_SetDescription_Q3E"))
+			{
+				addr = atoi(value);
+
+				addr = ~addr;
+
+				setDescription = (setCvarDescription_t*)addr;
+			}
+		}
+	}
+
+	setDescription(name, description);
+}
+
+#else
+
+void UI_SetCvarDescription(const char* name, const char* description)
+{
+	static int setDescriptionFuncId = 0;
+
+	if (!setDescriptionFuncId)
+	{
+		int getValueFuncId;
+		char  value[MAX_CVAR_VALUE_STRING];
+
+		setDescriptionFuncId = -1;
+
+		trap_Cvar_VariableStringBuffer("//trap_GetValue", value, sizeof(value));
+
+		if (value[0])
+		{
+			getValueFuncId = atoi(value);
+
+			if (trap_UI_GetValue_Q3E(getValueFuncId, value, sizeof(value), "trap_Cvar_SetDescription_Q3E"))
+			{
+				setDescriptionFuncId = atoi(value);
+			}
+		}
+	}
+
+	if (setDescriptionFuncId == -1)
+	{
+		return;
+	}
+
+	trap_UI_SetDescription_Q3E(setDescriptionFuncId, name, description);
+}
+
+#endif

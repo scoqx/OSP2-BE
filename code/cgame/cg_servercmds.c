@@ -2101,8 +2101,7 @@ void CG_ServerCommand(void)
 				int argc;
 				vec3_t position;
 
-				/* Only process if enabled (1 = normal, 2 = stacking) */
-				if (cg_damagePlums.integer < 1)
+				if (!(cg_damagePlums.integer & CG_DAMAGEPLUMS_ACTIVE))
 				{
 					return;
 				}

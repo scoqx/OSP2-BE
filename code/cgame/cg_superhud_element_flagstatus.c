@@ -140,7 +140,7 @@ void CG_SHUDElementFlagStatusRoutine(void* context)
 		qhandle_t pic;
 
 		pic = CG_DyeFlagResolveInverseIcon(ITEM_INDEX(item), element->ctx.image);
-		if (CG_GetDyeFlagTintVec4(team, tint))
+		if (!CG_OldFlagIcons() && CG_GetDyeFlagTintVec4(team, tint))
 		{
 			if (CG_ItemDyeFlagInverseHudPath(item))
 			{

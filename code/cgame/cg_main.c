@@ -591,6 +591,8 @@ vmCvar_t        cg_fragEffectColor;
 vmCvar_t        cg_fragEffect;
 vmCvar_t        cg_drawUniqueColors;
 vmCvar_t        cg_killerGhost;
+vmCvar_t        cg_numbersSet;
+vmCvar_t        cg_oldFlags;
 
 cgFontIndices_t cgFontIndices;
 
@@ -1084,6 +1086,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_fragEffect, "cg_fragEffect", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_drawUniqueColors, "cg_drawUniqueColors", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_killerGhost, "cg_killerGhost", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_numbersSet, "cg_numbersSet", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_numbersSet },
+	{ &cg_oldFlags, "cg_oldFlags", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_oldFlags },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1733,6 +1737,49 @@ qhandle_t CG_GetFragSound(void)
 //===================================================================================
 
 
+static const char* cg_numberSuffix[11] =
+{
+	"zero_32b",
+	"one_32b",
+	"two_32b",
+	"three_32b",
+	"four_32b",
+	"five_32b",
+	"six_32b",
+	"seven_32b",
+	"eight_32b",
+	"nine_32b",
+	"minus_32b",
+};
+
+static const char* CG_NumberShaderPrefix(void)
+{
+	switch (cg_numbersSet.integer)
+	{
+	case 2:
+		return "gfx/2d/customnumbers/elite/";
+	case 3:
+		return "gfx/2d/customnumbers/eternal/";
+	case 4:
+		return "gfx/2d/customnumbers/odyssey/";
+	case 1:
+	default:
+		return "gfx/2d/numbers/";
+	}
+}
+
+void CG_RegisterNumberShaders(void)
+{
+	int i;
+	const char* prefix;
+
+	prefix = CG_NumberShaderPrefix();
+	for (i = 0; i < 11; i++)
+	{
+		cgs.media.numberShaders[i] = trap_R_RegisterShader(va("%s%s", prefix, cg_numberSuffix[i]));
+	}
+}
+
 /*
 =================
 CG_RegisterGraphics
@@ -1744,20 +1791,6 @@ static void CG_RegisterGraphics(void)
 {
 	int         i;
 	char        items[MAX_ITEMS + 1];
-	static char*     sb_nums[11] =
-	{
-		"gfx/2d/numbers/zero_32b",
-		"gfx/2d/numbers/one_32b",
-		"gfx/2d/numbers/two_32b",
-		"gfx/2d/numbers/three_32b",
-		"gfx/2d/numbers/four_32b",
-		"gfx/2d/numbers/five_32b",
-		"gfx/2d/numbers/six_32b",
-		"gfx/2d/numbers/seven_32b",
-		"gfx/2d/numbers/eight_32b",
-		"gfx/2d/numbers/nine_32b",
-		"gfx/2d/numbers/minus_32b",
-	};
 
 	// clear any references to old media
 	memset(&cg.refdef, 0, sizeof(cg.refdef));
@@ -1770,10 +1803,7 @@ static void CG_RegisterGraphics(void)
 	// precache status bar pics
 	CG_LoadingString("game media");
 
-	for (i = 0 ; i < 11 ; i++)
-	{
-		cgs.media.numberShaders[i] = trap_R_RegisterShader(sb_nums[i]);
-	}
+	CG_RegisterNumberShaders();
 
 	cgs.media.botSkillShaders[0] = trap_R_RegisterShader("menu/art/skill1.tga");
 	cgs.media.botSkillShaders[1] = trap_R_RegisterShader("menu/art/skill2.tga");
@@ -2030,14 +2060,15 @@ static void CG_RegisterGraphics(void)
 		cgs.media.dyeFlagShaderInv[0] = trap_R_RegisterShaderNoMip("icons/dye/iconf_dye1inv");
 		cgs.media.dyeFlagShaderInv[1] = trap_R_RegisterShaderNoMip("icons/dye/iconf_dye2inv");
 		cgs.media.dyeFlagShaderInv[2] = trap_R_RegisterShaderNoMip("icons/dye/iconf_dye3inv");
-		cgs.media.redFlagModel = cgs.media.dyeFlagModel;
-		cgs.media.blueFlagModel = cgs.media.dyeFlagModel;
-		cgs.media.redFlagShader[0] = cgs.media.dyeFlagShader[0];
-		cgs.media.redFlagShader[1] = cgs.media.dyeFlagShader[1];
-		cgs.media.redFlagShader[2] = cgs.media.dyeFlagShader[2];
-		cgs.media.blueFlagShader[0] = cgs.media.dyeFlagShader[0];
-		cgs.media.blueFlagShader[1] = cgs.media.dyeFlagShader[1];
-		cgs.media.blueFlagShader[2] = cgs.media.dyeFlagShader[2];
+		cgs.media.classicRedFlagModel = trap_R_RegisterModel("models/flags/r_flag.md3");
+		cgs.media.classicBlueFlagModel = trap_R_RegisterModel("models/flags/b_flag.md3");
+		cgs.media.classicRedFlagShader[0] = trap_R_RegisterShaderNoMip("icons/iconf_red1");
+		cgs.media.classicRedFlagShader[1] = trap_R_RegisterShaderNoMip("icons/iconf_red2");
+		cgs.media.classicRedFlagShader[2] = trap_R_RegisterShaderNoMip("icons/iconf_red3");
+		cgs.media.classicBlueFlagShader[0] = trap_R_RegisterShaderNoMip("icons/iconf_blu1");
+		cgs.media.classicBlueFlagShader[1] = trap_R_RegisterShaderNoMip("icons/iconf_blu2");
+		cgs.media.classicBlueFlagShader[2] = trap_R_RegisterShaderNoMip("icons/iconf_blu3");
+		CG_UpdateFlagMedia();
 	}
 
 
@@ -2490,6 +2521,7 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_scoreboardFont");
 	CG_CvarTouch("cg_centerMessagesFont");
 	CG_CvarTouch("cg_infoVersionFont");
+	CG_CvarTouch("cg_numbersSet");
 
 	CG_CvarTouch("cg_altGrenadesColor");
 	CG_CvarTouch("cg_enemyGrenadesColor");

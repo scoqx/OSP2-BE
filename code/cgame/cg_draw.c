@@ -418,7 +418,7 @@ void CG_DrawFlagModel(float x, float y, float w, float h, int team, qboolean for
 		{
 			return;
 		}
-		if (CG_GetDyeFlagTintVec4(team, tint))
+		if (CG_GetDyeFlagTintVec4(team, tint) && !CG_OldFlagModels())
 		{
 			CG_Draw3DModelWithColor(x, y, w, h, handle, 0, origin, angles, tint);
 		}

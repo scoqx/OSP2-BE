@@ -509,6 +509,7 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_controls2.o \
   $(B)/$(MOD)/ui/ui_credits.o \
   $(B)/$(MOD)/ui/ui_credits2.o \
+  $(B)/$(MOD)/ui/ui_cvardescriptions.o \
   $(B)/$(MOD)/ui/ui_demo2.o \
   $(B)/$(MOD)/ui/ui_display.o \
   $(B)/$(MOD)/ui/ui_gameinfo.o \

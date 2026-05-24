@@ -7,6 +7,84 @@ CG dye item icons: cvar-driven tint for powerups with custom dye visuals.
 
 #define CG_DYE_FLAG_BLACK_EPS (1.0f / 255.0f)
 
+#define CG_OLDFLAG_MODELS   1
+#define CG_OLDFLAG_ICONS    2
+
+qboolean CG_OldFlagModels(void)
+{
+	return (cg_oldFlags.integer & CG_OLDFLAG_MODELS) ? qtrue : qfalse;
+}
+
+qboolean CG_OldFlagIcons(void)
+{
+	return (cg_oldFlags.integer & CG_OLDFLAG_ICONS) ? qtrue : qfalse;
+}
+
+/*
+=================
+CG_UpdateFlagMedia
+
+Select active flag world models and HUD shaders from cg_oldFlags.
+=================
+*/
+void CG_UpdateFlagMedia(void)
+{
+	int i;
+
+	if (cgs.gametype != GT_CTF && !cg_buildScript.integer)
+	{
+		return;
+	}
+
+	trap_Cvar_Update(&cg_oldFlags);
+
+	if (CG_OldFlagModels())
+	{
+		cgs.media.redFlagModel = cgs.media.classicRedFlagModel;
+		cgs.media.blueFlagModel = cgs.media.classicBlueFlagModel;
+	}
+	else
+	{
+		cgs.media.redFlagModel = cgs.media.dyeFlagModel;
+		cgs.media.blueFlagModel = cgs.media.dyeFlagModel;
+	}
+
+	for (i = 0; i < 3; i++)
+	{
+		if (CG_OldFlagIcons())
+		{
+			cgs.media.redFlagShader[i] = cgs.media.classicRedFlagShader[i];
+			cgs.media.blueFlagShader[i] = cgs.media.classicBlueFlagShader[i];
+		}
+		else
+		{
+			cgs.media.redFlagShader[i] = cgs.media.dyeFlagShader[i];
+			cgs.media.blueFlagShader[i] = cgs.media.dyeFlagShader[i];
+		}
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_oldFlags(cvarTable_t* cvart)
+{
+	int value;
+
+	value = cvart->vmCvar->integer;
+	if (value < 0)
+	{
+		trap_Cvar_Set("cg_oldFlags", "0");
+		return;
+	}
+	if (value > 3)
+	{
+		trap_Cvar_Set("cg_oldFlags", "3");
+		return;
+	}
+
+	CG_UpdateFlagMedia();
+	CG_UnregisterItemVisualForPowerup(PW_REDFLAG);
+	CG_UnregisterItemVisualForPowerup(PW_BLUEFLAG);
+}
+
 static qboolean CG_DyeFlagTintRgbIsBlack(const vec4_t v)
 {
 	return (v[0] <= CG_DYE_FLAG_BLACK_EPS && v[1] <= CG_DYE_FLAG_BLACK_EPS && v[2] <= CG_DYE_FLAG_BLACK_EPS);
@@ -23,6 +101,10 @@ void CG_ItemDyeResolveTint(const gitem_t* item, vec4_t out)
 
 	if (item->giType == IT_TEAM)
 	{
+		if (CG_OldFlagIcons())
+		{
+			return;
+		}
 		if (item->giTag == PW_REDFLAG)
 		{
 			CG_GetDyeFlagTintVec4(TEAM_RED, out);
@@ -77,6 +159,23 @@ void CG_GetDyeFlagCarrierLightRgb(int team, vec3_t rgb)
 {
 	vec4_t tint;
 
+	if (CG_OldFlagModels())
+	{
+		if (team == TEAM_RED)
+		{
+			VectorSet(rgb, 1.0f, 0.2f, 0.2f);
+		}
+		else if (team == TEAM_BLUE)
+		{
+			VectorSet(rgb, 0.2f, 0.2f, 1.0f);
+		}
+		else
+		{
+			VectorSet(rgb, 1.0f, 1.0f, 1.0f);
+		}
+		return;
+	}
+
 	if (!CG_GetDyeFlagTintVec4(team, tint))
 	{
 		VectorSet(rgb, 1.0f, 1.0f, 1.0f);
@@ -98,6 +197,10 @@ qboolean CG_ItemDyeFlagInverseHudPath(const gitem_t* item)
 	team_t     tm;
 
 	if (!item || item->giType != IT_TEAM)
+	{
+		return qfalse;
+	}
+	if (CG_OldFlagIcons())
 	{
 		return qfalse;
 	}
@@ -128,6 +231,10 @@ qhandle_t CG_DyeFlagResolveInverseIcon(int itemNum, qhandle_t shader)
 	{
 		return shader;
 	}
+	if (CG_OldFlagIcons())
+	{
+		return shader;
+	}
 	if (!CG_ItemDyeFlagInverseHudPath(&bg_itemlist[itemNum]))
 	{
 		return shader;
@@ -153,6 +260,11 @@ void CG_DrawDyeFlagPicOld(float x, float y, float w, float h, int team, qhandle_
 		return;
 	}
 	drawShader = shader;
+	if (CG_OldFlagIcons())
+	{
+		CG_DrawPicOld(x, y, w, h, drawShader);
+		return;
+	}
 	if (CG_GetDyeFlagTintVec4(team, tint))
 	{
 		if (CG_DyeFlagTintRgbIsBlack(tint))

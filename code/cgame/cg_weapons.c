@@ -1564,6 +1564,8 @@ void CG_RegisterItemVisuals(int itemNum)
 		if (cv)
 		{
 			qboolean useDyeVisuals = qtrue;
+			qboolean useDyeFlagModels = qtrue;
+			qboolean useDyeFlagIcon = qtrue;
 			qhandle_t dyeIcon = 0;
 
 			if (!Q_stricmp(item->classname, "item_quad"))
@@ -1573,6 +1575,12 @@ void CG_RegisterItemVisuals(int itemNum)
 			else if (!Q_stricmp(item->classname, "item_enviro"))
 			{
 				useDyeVisuals = cg.battleSuitColorEnabled;
+			}
+			else if (!Q_stricmp(item->classname, "team_CTF_redflag") ||
+			         !Q_stricmp(item->classname, "team_CTF_blueflag"))
+			{
+				useDyeFlagModels = CG_OldFlagModels() ? qfalse : qtrue;
+				useDyeFlagIcon = CG_OldFlagIcons() ? qfalse : qtrue;
 			}
 			if (cv->icon)
 			{
@@ -1584,12 +1592,16 @@ void CG_RegisterItemVisuals(int itemNum)
 				{
 					if (cv->world_model[j])
 					{
+						if (!useDyeFlagModels)
+						{
+							continue;
+						}
 						itemInfo->models[j] = trap_R_RegisterModel(cv->world_model[j]);
 						itemInfo->customVisualMask |= ITEMCV_WORLDMODEL_SLOT(j);
 					}
 				}
 
-				if (dyeIcon)
+				if (dyeIcon && useDyeFlagIcon)
 				{
 					itemInfo->icon = dyeIcon;
 					itemInfo->customVisualMask |= ITEMCV_ICON;

@@ -417,8 +417,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamTaskHudMarkerSize", "Base size for team task HUD markers." },
 	{ "cg_teamTaskHudMarkerMaxScale", "Maximum scale for team task HUD markers." },
 	{ "cg_teamTaskHudMarkerMinScale", "Minimum scale for team task HUD markers." },
-	{ "cg_damagePlums", "Show damage plums (floating damage numbers). ^9Requires server support.^7\n  ^20^7 - disabled\n  ^21^7 - normal mode\n  ^22^7 - stacking mode" },
-	{ "cg_damagePlumSize", "Size of damage plums." },
+	{ "cg_damagePlums", "Show damage plums (floating damage numbers). ^9Requires server support.^7 Bitmask:\n  ^21^7 - enabled\n  ^22^7 - stacking\n  ^24^7 - no damage colors (white digits)" },
+	{ "cg_damagePlumsSize", "Size of damage plums." },
 	{ "cg_damagePlumsWeapons", "Weapon filter for damage plums. Bitmask:\n  ^21^7 - Gauntlet\n  ^22^7 - Machine Gun\n  ^24^7 - Shotgun\n  ^28^7 - Grenade Launcher\n  ^216^7 - Rocket Launcher\n  ^232^7 - Lightning Gun\n  ^264^7 - Railgun\n  ^2128^7 - Plasma Gun\n  ^2256^7 - BFG" },
 	{ "cg_chatColor", "Color for chat messages. ^20^7-^29^7 or ^2a^7-^2z^7 - Q3A colors." },
 	{ "cg_teamChatColor", "Color for team chat messages. ^20^7-^29^7 or ^2a^7-^2z^7 - Q3A colors." },
@@ -473,6 +473,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_fragEffect", "Enable ^3fragEffect^7 on the first-person weapon after a frag. Set ^20^7 to disable." },
 	{ "cg_drawUniqueColors", "Draw unique player color behind the player head:\n  ^20^7 - disabled\n  ^21^7 - filled background\n  ^22^7 - 1 px border\n  ^23^7 - 2 px border" },
 	{ "cg_killerGhost", "Killer ghost body from server (metarena). Set ^20^7 to hide.\n ^21^7 - draw with glow (^3cg_redTeamColor^7/^3cg_blueTeamColor^7 for your team)\n ^22^7 - draw without glow" },
+	{ "cg_numbersSet", "HUD digit sprite set for damage plums and other number draws:\n  ^21^7 - default\n  ^22^7 - Elite\n  ^23^7 - Eternal\n  ^24^7 - Odyssey" },
+	{ "cg_oldFlags", "CTF flag visuals. Bitmask:\n  ^20^7 - team-colored dye models and icons\n  ^21^7 - classic world models\n  ^22^7 - classic HUD icons\n  ^23^7 - classic models and icons" },
 };
 
 

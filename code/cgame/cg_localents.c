@@ -807,68 +807,181 @@ void CG_AddScorePlum(localEntity_t* le)
 	}
 }
 
+static void CG_DamagePlumSetColor(int colorDamage, refEntity_t* re)
+{
+	float t;
+	float r;
+	float g;
+	float b;
+	float pulse;
+	int   ir;
+	int   ig;
+	int   ib;
+
+	if (colorDamage < 25)
+	{
+		re->shaderRGBA[0] = 0xff;
+		re->shaderRGBA[1] = 0xff;
+		re->shaderRGBA[2] = 0xff;
+		return;
+	}
+
+	if (colorDamage < 50)
+	{
+		t = (float)(colorDamage - 25) * (1.0f / 25.0f);
+		r = 255.0f;
+		g = 255.0f;
+		b = 255.0f + t * (80.0f - 255.0f);
+	}
+	else if (colorDamage < 75)
+	{
+		t = (float)(colorDamage - 50) * (1.0f / 25.0f);
+		r = 255.0f;
+		g = 255.0f + t * (178.0f - 255.0f);
+		b = 80.0f;
+	}
+	else if (colorDamage <= 100)
+	{
+		t = (float)(colorDamage - 75) * (1.0f / 25.0f);
+		r = 255.0f;
+		g = 178.0f + t * (80.0f - 178.0f);
+		b = 80.0f;
+	}
+	else
+	{
+		r = 255.0f;
+		g = 80.0f;
+		if (colorDamage <= 120)
+		{
+			b = 80.0f;
+		}
+		else if (colorDamage >= 250)
+		{
+			t = 1.0f;
+			b = 255.0f;
+			pulse = sin((float)cg.time * 0.004f);
+			b += pulse * 28.0f;
+		}
+		else
+		{
+			t = (float)(colorDamage - 120) * (1.0f / 130.0f);
+			b = 80.0f + t * 175.0f;
+			pulse = sin((float)cg.time * 0.004f);
+			b += pulse * 28.0f * t;
+		}
+	}
+
+	ir = (int)r;
+	ig = (int)g;
+	ib = (int)b;
+	if (ir < 0)
+	{
+		ir = 0;
+	}
+	else if (ir > 255)
+	{
+		ir = 255;
+	}
+	if (ig < 0)
+	{
+		ig = 0;
+	}
+	else if (ig > 255)
+	{
+		ig = 255;
+	}
+	if (ib < 0)
+	{
+		ib = 0;
+	}
+	else if (ib > 255)
+	{
+		ib = 255;
+	}
+
+	re->shaderRGBA[0] = (byte)ir;
+	re->shaderRGBA[1] = (byte)ig;
+	re->shaderRGBA[2] = (byte)ib;
+}
+
 void CG_AddDamagePlum(localEntity_t* le)
 {
 	refEntity_t* re;
 	vec3_t      origin, dir, vec, up = {0, 0, 1};
-	float       c;
 	int         i, damage, digits[MAX_PLUM_DIGITS], numdigits, negative;
 	float deltaTime;
 	float size;
 
 	re = &le->refEntity;
 
-	c = (le->endTime - cg.time) * le->lifeRate;
-
 	damage = le->radius;
-	if (damage < 10)
 	{
-		re->shaderRGBA[0] = 0xff;
-		re->shaderRGBA[1] = 0xff;
-		re->shaderRGBA[2] = 0xff;
+		int colorDamage;
+
+		colorDamage = damage;
+		if (colorDamage < 0)
+		{
+			colorDamage = -colorDamage;
+		}
+
+		if (cg_damagePlums.integer & CG_DAMAGEPLUMS_NOCOLOR)
+		{
+			re->shaderRGBA[0] = 0xff;
+			re->shaderRGBA[1] = 0xff;
+			re->shaderRGBA[2] = 0xff;
+		}
+		else
+		{
+			CG_DamagePlumSetColor(colorDamage, re);
+		}
 	}
-	else if (damage < 30)
+
+	deltaTime = (cg.time - le->startTime) * 0.001f;
+	if (deltaTime >= 0.9f)
 	{
-		re->shaderRGBA[0] = 0xff;
-		re->shaderRGBA[1] = 0xff;
-		re->shaderRGBA[2] = 0x50;
-	}
-	else if (damage < 50)
-	{
-		re->shaderRGBA[0] = 0xff;
-		re->shaderRGBA[1] = 0xb2;
-		re->shaderRGBA[2] = 0x50;
+		float fade;
+
+		fade = (1.2f - deltaTime) * (1.0f / 0.3f);
+		if (fade < 0.0f)
+		{
+			fade = 0.0f;
+		}
+		re->shaderRGBA[3] = (byte)(0xff * fade);
 	}
 	else
 	{
-		re->shaderRGBA[0] = 0xff;
-		re->shaderRGBA[1] = 0x50;
-		re->shaderRGBA[2] = 0x50;
-	}
-
-
-	if (c < 0.25)
-		re->shaderRGBA[3] = 0xff * 4 * c;
-	else
 		re->shaderRGBA[3] = 0xff;
+	}
 
+	size = cg_damagePlumSize.value * 0.03f;
+	re->radius = size * 0.5f;
 
-	deltaTime = (cg.time - le->startTime) * 0.001;
+	if (CG_ComputeHudBorderWorldPos(le->pos.trBase, re->radius, CG_DAMAGE_PLUM_BORDER_POS_SCALE, origin))
+	{
+		CG_DrawDamagePlumDigitsHorizontal(origin, (int)le->radius, re->shaderRGBA, size);
+		return;
+	}
+
 	VectorCopy(le->pos.trBase, origin);
 
+	origin[2]+= 4.0f;
+	
 	VectorSubtract(cg.refdef.vieworg, origin, dir);
 	CrossProduct(dir, up, vec);
 	VectorNormalize(vec);
 	VectorNormalize(dir);
 	VectorMA(cg.refdef.vieworg, -8, dir, origin);
 
-	VectorMA(origin, deltaTime, le->pos.trDelta, origin);
-	// like TR_GRAVITY, but with different gravity
-	origin[2] -= 0.5 * 12 * deltaTime * deltaTime;
+	{
+		float riseT;
 
-
-	size = cg_damagePlumSize.value * 0.03;
-	re->radius = size / 2;
+		riseT = deltaTime / 3.2f;
+		if (riseT > 1.0f)
+		{
+			riseT = 1.0f;
+		}
+		origin[2] += 2.0f * riseT;
+	}
 
 	negative = qfalse;
 	if (damage < 0)

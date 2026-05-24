@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef CG_LOCAL_H
 #define CG_LOCAL_H
 #include "../qcommon/q_shared.h"
+#include "../qcommon/osp_version.h"
 #include "tr_types.h"
 #include "../game/bg_public.h"
 #include "cg_public.h"
@@ -980,6 +981,10 @@ typedef struct
 	qhandle_t   dyeFlagModel;
 	qhandle_t   dyeFlagShader[3];
 	qhandle_t   dyeFlagShaderInv[3];
+	qhandle_t   classicRedFlagModel;
+	qhandle_t   classicBlueFlagModel;
+	qhandle_t   classicRedFlagShader[3];
+	qhandle_t   classicBlueFlagShader[3];
 
 
 	qhandle_t   flagPoleModel;
@@ -1558,6 +1563,13 @@ typedef struct
 #define CG_TEAMTASK_SHOWNAME       (1 << 4)  // 16 - Show player name below mark when hovering
 #define CG_TEAMTASK_UNIQUECOLORS   (1 << 5)  // 32 - Use unique colors
 #define CG_TEAMTASK_SHOWDISTANCE   (1 << 6)  // 64 - Show distance in meters
+
+#define CG_DAMAGEPLUMS_ENABLE      1
+#define CG_DAMAGEPLUMS_STACK       2
+#define CG_DAMAGEPLUMS_NOCOLOR     4
+#define CG_DAMAGEPLUMS_ACTIVE      (CG_DAMAGEPLUMS_ENABLE | CG_DAMAGEPLUMS_STACK)
+/* Border damage plums: scale edge offset toward crosshair (1 = on edge, lower = inward) */
+#define CG_DAMAGE_PLUM_BORDER_POS_SCALE    0.9f
 
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
@@ -2290,6 +2302,8 @@ extern vmCvar_t         cg_fragEffectColor;
 extern vmCvar_t         cg_fragEffect;
 extern vmCvar_t         cg_drawUniqueColors;
 extern vmCvar_t         cg_killerGhost;
+extern vmCvar_t         cg_numbersSet;
+extern vmCvar_t         cg_oldFlags;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2363,6 +2377,7 @@ char* CG_OSPGetCvarName(vmCvar_t* cvar) ;
 cvarTable_t* CG_GetCgCvarByName(const char* name);
 void CG_CvarTouch(const char* name);
 void CG_ReloadColors(void);
+void CG_RegisterNumberShaders(void);
 void CG_CvarResetToDefault(const char* name);
 
 qhandle_t CG_GetFragSound(void);
@@ -2418,6 +2433,9 @@ void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, flo
 
 void CG_GetCustomDyeItemTintVec4(const gitem_t* item, vec4_t out);
 void CG_ItemDyeResolveTint(const gitem_t* item, vec4_t out);
+qboolean CG_OldFlagModels(void);
+qboolean CG_OldFlagIcons(void);
+void CG_UpdateFlagMedia(void);
 qboolean CG_GetDyeFlagTintVec4(int team, vec4_t out);
 void CG_GetDyeFlagCarrierLightRgb(int team, vec3_t rgb);
 qboolean CG_ItemDyeFlagInverseHudPath(const gitem_t* item);
@@ -2796,6 +2814,8 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
                                 qboolean isSprite);
 
 void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle);
+qboolean CG_ComputeHudBorderWorldPos(vec3_t origin, float markerRadius, float offsetScale, vec3_t outWorldPos);
+void CG_DrawDamagePlumDigitsHorizontal(vec3_t origin, int damage, const byte rgba[4], float digitSize);
 void CG_TestSkullMarker(void);
 void CG_TeamTaskUpdateFrame(void);
 void CG_AddTeamTaskOverheadSprites(void);
@@ -3157,10 +3177,6 @@ int CG_NewParticleArea(int num);
 
 qboolean CG_DrawIntermission(void);
 /*************************************************************************************************/
-// #define OSP_VERSION "0.06-test" // OSP2 ogirinal
-#define OSP_VERSION "be-1.04d" // BE (Black Edition)
-
-
 
 
 //
@@ -3529,6 +3545,8 @@ void CG_LocalEventCvarChanged_cg_enemyBattleSuitColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_quadDamageColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyQuadDamageColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_fragEffectColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_numbersSet(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_oldFlags(cvarTable_t* cvart);
 
 #ifdef __cplusplus
 }

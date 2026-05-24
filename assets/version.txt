@@ -1,1 +1,2 @@
-be-1.04d
+#define OSP_VERSION_H
+be-1.04c

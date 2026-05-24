@@ -856,3 +856,19 @@ SuperHUD:
 + StatusBar_HealthCount / StatusBar_ArmorCount - style 2
 + imageAlignh and imageAlignv parameters
 * M1rage HUD configs and fonts updated.
+
+1.06.2026 be v1.04c
+UI:
++ BE Update notifications in menu and changelog
++ ui_beStatusFont
++ Fixed server browser levelshot rendering
++ Cvar descriptions
+CGAME:
+* cg_damagePlums rework digits floating
++ cg_damagePlums bitmask 4 (White digits)
+* cg_damagePlumSize -> cg_damagePlumsSize (Plum->Plums)
++ cg_numberSet
++ cg_oldFlags
+SuperHUD:
++ FlagStatus_CARRY element
++ Fonts: Odyssey, verdana fixed (Mirage)

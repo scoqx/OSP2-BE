@@ -437,7 +437,6 @@ void CG_SHUDRoutine(void)
 	qboolean is_gt_ft;
 	qboolean is_gt_ca;
 
-	/* Used in every iteration of the loop — read once (QVM: avoid N reads for N elements). */
 	pm_type = cg.predictedPlayerState.pm_type;
 	gt = cgs.gametype;
 	is_dead = (pm_type == PM_DEAD || pm_type == PM_FREEZE);
@@ -535,7 +534,7 @@ void CG_SHUDRoutine(void)
 	}
 	if (!cg_printui.integer || cg.printuiActiveCount == 0)
 	{
-		/* early exit: skip printui block */
+
 	}
 	else
 	{

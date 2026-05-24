@@ -2952,8 +2952,15 @@ static void CG_PlayerPowerups(centity_t* cent)
 	// redflag
 	if (powerups & (1 << PW_REDFLAG))
 	{
-		CG_GetDyeFlagTintVec4(TEAM_RED, tint);
-		CG_TrailItem(cent, cgs.media.redFlagModel, tint);
+		if (CG_OldFlagModels())
+		{
+			CG_TrailItem(cent, cgs.media.redFlagModel, NULL);
+		}
+		else
+		{
+			CG_GetDyeFlagTintVec4(TEAM_RED, tint);
+			CG_TrailItem(cent, cgs.media.redFlagModel, tint);
+		}
 		CG_GetDyeFlagCarrierLightRgb(TEAM_RED, flagLightRgb);
 		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), flagLightRgb[0], flagLightRgb[1], flagLightRgb[2]);
 	}
@@ -2961,8 +2968,15 @@ static void CG_PlayerPowerups(centity_t* cent)
 	// blueflag
 	if (powerups & (1 << PW_BLUEFLAG))
 	{
-		CG_GetDyeFlagTintVec4(TEAM_BLUE, tint);
-		CG_TrailItem(cent, cgs.media.blueFlagModel, tint);
+		if (CG_OldFlagModels())
+		{
+			CG_TrailItem(cent, cgs.media.blueFlagModel, NULL);
+		}
+		else
+		{
+			CG_GetDyeFlagTintVec4(TEAM_BLUE, tint);
+			CG_TrailItem(cent, cgs.media.blueFlagModel, tint);
+		}
 		CG_GetDyeFlagCarrierLightRgb(TEAM_BLUE, flagLightRgb);
 		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), flagLightRgb[0], flagLightRgb[1], flagLightRgb[2]);
 	}

@@ -24,6 +24,7 @@ MAIN MENU
 #define MAIN_BANNER_MODEL               "models/mapobjects/banner/banner5.md3"
 #define MAIN_BANNER_MODEL_NEW           "models/mapobjects/banner/bannerNew.md3"
 #define MAIN_MENU_VERTICAL_SPACING      34
+#define MAIN_MENU_FOOTER_LABEL          "OSP2-BE (Black Edition), 2025-2026, diwoc"
 
 
 typedef struct
@@ -67,8 +68,31 @@ static sfxHandle_t Main_MenuKey(int key)
 	int clickX;
 	int clickY;
 
+	if (UI_ServerStatus_HandleModalKey(key))
+	{
+		if (key == K_ESCAPE)
+		{
+			return menu_out_sound;
+		}
+
+		if (key == K_MOUSE1)
+		{
+			return menu_move_sound;
+		}
+	}
+
+	if (UI_ServerStatus_IsModal())
+	{
+		return 0;
+	}
+
 	if (key == K_MOUSE1)
 	{
+		if (UI_ServerStatus_HandleBarClick(key))
+		{
+			return menu_move_sound;
+		}
+
 		clickX = uis.cursorx;
 		clickY = uis.cursory;
 
@@ -82,7 +106,7 @@ static sfxHandle_t Main_MenuKey(int key)
 		}
 
 		textHeight = SMALLCHAR_HEIGHT;
-		textWidth = strlen("OSP2-BE (Black Edition), 2025-2026, diwoc") * SMALLCHAR_WIDTH;
+		textWidth = strlen(MAIN_MENU_FOOTER_LABEL) * SMALLCHAR_WIDTH;
 
 		if (clickY >= textY && clickY <= textY + textHeight &&
 		        clickX >= 320 - textWidth / 2 && clickX <= 320 + textWidth / 2)
@@ -269,14 +293,16 @@ static void Main_MenuDraw(void)
 	if (uis.demoversion)
 	{
 		UI_DrawProportionalString(320, 372, "DEMO      FOR MATURE AUDIENCES      DEMO", UI_CENTER | UI_SMALLFONT, color);
-		UI_DrawString(320, 375, "OSP2-BE (Black Edition), 2025-2026, diwoc", UI_CENTER | UI_SMALLFONT | UI_PULSE_2, colorBE);
-		UI_DrawString(320, 400, "Quake III Arena(c) 1999-2000, Id Software, Inc.  All Rights Reserved", UI_CENTER | UI_SMALLFONT, color);
+		UI_DrawString(320, 380, MAIN_MENU_FOOTER_LABEL, UI_CENTER | UI_SMALLFONT | UI_PULSE_2, colorBE);
+		UI_DrawString(320, 405, "Quake III Arena(c) 1999-2000, Id Software, Inc.  All Rights Reserved", UI_CENTER | UI_SMALLFONT, color);
 	}
 	else
 	{
-		UI_DrawString(320, 425, "OSP2-BE (Black Edition), 2025-2026, diwoc", UI_CENTER | UI_SMALLFONT | UI_PULSE_2, colorBE);
-		UI_DrawString(320, 450, "Quake III Arena(c) 1999-2000, Id Software, Inc.  All Rights Reserved", UI_CENTER | UI_SMALLFONT, color);
+		UI_DrawString(320, 400, MAIN_MENU_FOOTER_LABEL, UI_CENTER | UI_SMALLFONT | UI_PULSE_2, colorBE);
+		UI_DrawString(320, 425, "Quake III Arena(c) 1999-2000, Id Software, Inc.  All Rights Reserved", UI_CENTER | UI_SMALLFONT, color);
 	}
+
+	UI_ServerStatus_DrawBar();
 }
 
 
@@ -475,4 +501,5 @@ void UI_MainMenu(void)
 	uis.menusp = 0;
 	UI_PushMenu(&s_main.menu);
 
+	UI_ServerStatus_FetchOnMainMenu();
 }

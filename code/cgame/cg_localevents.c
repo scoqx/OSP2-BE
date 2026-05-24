@@ -1419,3 +1419,16 @@ void CG_LocalEventCvarChanged_cg_entityOverpolate(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(-1.0f, 1.0f, cvart->vmCvar->value);
 }
+
+void CG_LocalEventCvarChanged_cg_numbersSet(cvarTable_t* cvart)
+{
+	int set;
+
+	set = cvart->vmCvar->integer;
+	if (set != 1 && set != 2 && set != 3 && set != 4)
+	{
+		trap_Cvar_Set("cg_numbersSet", "1");
+		return;
+	}
+	CG_RegisterNumberShaders();
+}

@@ -1188,7 +1188,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 
 		case EV_DAMAGEPLUM:
 			DEBUGNAME("EV_DAMAGEPLUM");
-			if (cg_damagePlums.integer)
+			if (cg_damagePlums.integer & CG_DAMAGEPLUMS_ACTIVE)
 			{
 				CG_DamagePlum(cent->currentState.otherEntityNum, cent->lerpOrigin, cent->currentState.time);
 			}

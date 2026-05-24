@@ -267,7 +267,7 @@ void CG_DamagePlum(int client, vec3_t org, int damage)
 	static vec3_t lastPos;
 
 	// only visualize for the client that scored
-	if (client != cg.predictedPlayerState.clientNum || cg_damagePlums.integer == 0)
+	if (client != cg.predictedPlayerState.clientNum || !(cg_damagePlums.integer & CG_DAMAGEPLUMS_ACTIVE))
 	{
 		return;
 	}
@@ -278,7 +278,7 @@ void CG_DamagePlum(int client, vec3_t org, int damage)
 	isMultiHit = qfalse;
 
 	// If stacking enabled (value = 2), check if multiple events came at the same time
-	if (cg_damagePlums.integer == 2)
+	if (cg_damagePlums.integer & CG_DAMAGEPLUMS_STACK)
 	{
 		// Count how many damage plums were created at the same time (before this one)
 		// Events that come at the same time indicate one projectile/rail hitting multiple targets
@@ -336,7 +336,7 @@ void CG_DamagePlum(int client, vec3_t org, int damage)
 	le->leFlags = 0;
 	le->leType = LE_DAMAGEPLUM;
 	le->startTime = cg.time;
-	le->endTime = cg.time + 1000;
+	le->endTime = cg.time + 1200;
 	le->lifeRate = 1.0 / (le->endTime - le->startTime);
 
 
@@ -352,9 +352,7 @@ void CG_DamagePlum(int client, vec3_t org, int damage)
 	//CG_Printf( "Plum origin %i %i %i -- %i\n", (int)org[0], (int)org[1], (int)org[2], (int)Distance(org, lastPos));
 	VectorCopy(org, lastPos);
 
-	le->pos.trDelta[0] = 2.0 * crandom();
-	le->pos.trDelta[1] = 2.0 * crandom();
-	le->pos.trDelta[2] = 6.0;
+	VectorClear(le->pos.trDelta);
 
 	re = &le->refEntity;
 
@@ -704,10 +702,17 @@ void CG_BigExplode(vec3_t playerOrigin)
 	CG_LaunchExplode(origin, velocity, cgs.media.smoke2);
 }
 
+#define DAMAGE_PLUM_BORDER_MAX_DIGITS 10
+
 /*
- * Draw an indicator at the screen border.
- */
-void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle)
+===================
+CG_ComputeHudBorderWorldPos
+
+Same visibility test as HUD border markers. Returns qtrue when origin is outside
+the view frustum and writes the world position on the screen edge to outWorldPos.
+===================
+*/
+qboolean CG_ComputeHudBorderWorldPos(vec3_t origin, float markerRadius, float offsetScale, vec3_t outWorldPos)
 {
 	vec3_t dir;
 	float front, left, up;
@@ -716,15 +721,14 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 	float hfov_x, hfov_y;
 	float tanX, tanY, cosX, cosY, sinX, sinY;
 	float phi, cosPhi, sinPhi;
-	float dist, ratio, circleSz;
+	float dist, ratio;
+	float circleSz;
 	float rX, rY;
 	float h1, h2, len;
-	refEntity_t ent;
+	float edgeRadius;
+	vec3_t offset;
 	vec3_t middleOfPlane;
 	vec3_t planeAxis[2];
-
-	if (!shader)
-		return;
 
 	VectorSubtract(origin, cg.refdef.vieworg, dir);
 	front = DotProduct(dir, cg.refdef.viewaxis[0]);
@@ -736,7 +740,9 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 
 	r = VectorLength(flu);
 	if (r < 0.001f)
-		return;
+	{
+		return qfalse;
+	}
 
 	hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
 	hfov_y = cg.refdef.fov_y * (float)M_PI / 360.0f;
@@ -745,9 +751,10 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 	inc = (float)M_PI * 0.5f - inc;
 
 	if (front > 0.0f && fabs(az) < hfov_x && fabs(inc) < hfov_y)
-		return;
+	{
+		return qfalse;
+	}
 
-	/* Precompute hfov trig once (QVM: avoid repeated cos/sin/tan in block) */
 	tanX = tan(hfov_x);
 	tanY = tan(hfov_y);
 	cosX = cos(hfov_x);
@@ -759,49 +766,178 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 	circleSz = 100.0f;
 	ratio = tanY / tanX;
 
+	phi = atan2(-flu[2], flu[1]);
+	edgeRadius = markerRadius;
+	if (edgeRadius < 0.1f)
+	{
+		edgeRadius = 0.1f;
+	}
+
+	VectorScale(cg.refdef.viewaxis[0], dist, middleOfPlane);
+	rX = dist / cosX;
+	rY = dist / cosY;
+	VectorScale(cg.refdef.viewaxis[1], rX * sinX - edgeRadius, planeAxis[0]);
+	VectorScale(cg.refdef.viewaxis[2], -(rY * sinY - edgeRadius), planeAxis[1]);
+
+	cosPhi = cos(phi);
+	sinPhi = sin(phi);
+	if (fabs(cosPhi) < 0.001f)
+	{
+		cosPhi = (cosPhi >= 0.0f) ? 0.001f : -0.001f;
+	}
+	if (fabs(sinPhi) < 0.001f)
+	{
+		sinPhi = (sinPhi >= 0.0f) ? 0.001f : -0.001f;
+	}
+
+	r = cosPhi * circleSz;
+	VectorScale(planeAxis[0], r, offset);
+	r = sinPhi * circleSz / ratio;
+	VectorMA(offset, r, planeAxis[1], offset);
+
+	h1 = fabs(rX * sinX - edgeRadius) / fabs(cosPhi);
+	h2 = fabs(rY * sinY - edgeRadius) / fabs(sinPhi);
+	if (h2 < h1)
+	{
+		h1 = h2;
+	}
+	len = VectorLength(offset);
+	if (len > h1)
+	{
+		VectorScale(offset, h1 / len, offset);
+	}
+
+	if (offsetScale > 0.0f && offsetScale < 1.0f)
+	{
+		VectorScale(offset, offsetScale, offset);
+	}
+
+	VectorAdd(middleOfPlane, offset, offset);
+	VectorAdd(cg.refdef.vieworg, offset, outWorldPos);
+	return qtrue;
+}
+
+/*
+===================
+CG_DrawDamagePlumDigitsHorizontal
+
+Draw damage digits at a world position without rotating them to the border angle.
+===================
+*/
+void CG_DrawDamagePlumDigitsHorizontal(vec3_t origin, int damage, const byte rgba[4], float digitSize)
+{
+	refEntity_t ent;
+	vec3_t right;
+	int digits[DAMAGE_PLUM_BORDER_MAX_DIGITS];
+	int numdigits;
+	int i;
+	qboolean negative;
+	float halfSpread;
+
+	if (digitSize < 0.01f)
+	{
+		return;
+	}
+
+	negative = qfalse;
+	if (damage < 0)
+	{
+		negative = qtrue;
+		damage = -damage;
+	}
+
+	for (numdigits = 0; !(numdigits && !damage) && numdigits < DAMAGE_PLUM_BORDER_MAX_DIGITS - 1; numdigits++)
+	{
+		digits[numdigits] = damage % 10;
+		damage = damage / 10;
+	}
+
+	if (negative)
+	{
+		digits[numdigits] = 10;
+		numdigits++;
+	}
+
+	if (numdigits < 1)
+	{
+		return;
+	}
+
 	memset(&ent, 0, sizeof(ent));
 	ent.reType = RT_SPRITE;
 	ent.renderfx = RF_FIRST_PERSON;
+	ent.rotation = 0.0f;
+	ent.radius = digitSize * 0.5f;
+	ent.shaderRGBA[0] = rgba[0];
+	ent.shaderRGBA[1] = rgba[1];
+	ent.shaderRGBA[2] = rgba[2];
+	ent.shaderRGBA[3] = rgba[3];
+
+	VectorCopy(cg.refdef.viewaxis[1], right);
+	halfSpread = ((float)numdigits - 1.0f) * 0.5f;
+
+	for (i = 0; i < numdigits; i++)
+	{
+		VectorMA(origin, (halfSpread - (float)i) * digitSize, right, ent.origin);
+		ent.customShader = cgs.media.numberShaders[digits[numdigits - 1 - i]];
+		trap_R_AddRefEntityToScene(&ent);
+	}
+}
+
+/*
+ * Draw an indicator at the screen border.
+ */
+void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t shader, int baseAngle)
+{
+	vec3_t dir;
+	float front, left, up;
+	vec3_t flu;
+	vec3_t worldPos;
+	float hfov_x;
+	float tanX;
+	float phi;
+	float markerRadius;
+	refEntity_t ent;
+
+	if (!shader)
+	{
+		return;
+	}
+
+	hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
+	tanX = tan(hfov_x);
+	markerRadius = 0.5f * radius * tanX;
+	if (markerRadius < 0.1f)
+	{
+		markerRadius = 0.1f;
+	}
+
+	if (!CG_ComputeHudBorderWorldPos(origin, markerRadius, 1.0f, worldPos))
+	{
+		return;
+	}
+
+	VectorSubtract(origin, cg.refdef.vieworg, dir);
+	front = DotProduct(dir, cg.refdef.viewaxis[0]);
+	left = DotProduct(dir, cg.refdef.viewaxis[1]);
+	up = DotProduct(dir, cg.refdef.viewaxis[2]);
+	flu[0] = front;
+	flu[1] = left;
+	flu[2] = up;
 	phi = atan2(-flu[2], flu[1]);
-	ent.rotation = phi / (float)M_PI * 180.0f + baseAngle;
-	ent.radius = 0.5f * radius * tanX;
-	if (ent.radius < 0.1f)
-		ent.radius = 0.1f;
+
+	memset(&ent, 0, sizeof(ent));
+	ent.reType = RT_SPRITE;
+	ent.renderfx = RF_FIRST_PERSON;
+	ent.rotation = phi / (float)M_PI * 180.0f + (float)baseAngle;
+	ent.radius = markerRadius;
 	ent.customShader = shader;
 	ent.shaderRGBA[0] = (byte)(color[0] * 255.0f);
 	ent.shaderRGBA[1] = (byte)(color[1] * 255.0f);
 	ent.shaderRGBA[2] = (byte)(color[2] * 255.0f);
 	ent.shaderRGBA[3] = (byte)(color[3] * 168.0f);
+	VectorCopy(worldPos, ent.origin);
 
-	VectorScale(cg.refdef.viewaxis[0], dist, middleOfPlane);
-	rX = dist / cosX;
-	rY = dist / cosY;
-	VectorScale(cg.refdef.viewaxis[1], rX * sinX - ent.radius, planeAxis[0]);
-	VectorScale(cg.refdef.viewaxis[2], -(rY * sinY - ent.radius), planeAxis[1]);
-
-	cosPhi = cos(phi);
-	sinPhi = sin(phi);
-	if (fabs(cosPhi) < 0.001f)
-		cosPhi = (cosPhi >= 0.0f) ? 0.001f : -0.001f;
-	if (fabs(sinPhi) < 0.001f)
-		sinPhi = (sinPhi >= 0.0f) ? 0.001f : -0.001f;
-
-	r = cosPhi * circleSz;
-	VectorScale(planeAxis[0], r, ent.origin);
-	r = sinPhi * circleSz / ratio;
-	VectorMA(ent.origin, r, planeAxis[1], ent.origin);
-
-	/* viewaxis are unit: length(planeAxis) = fabs(scale) */
-	h1 = fabs(rX * sinX - ent.radius) / fabs(cosPhi);
-	h2 = fabs(rY * sinY - ent.radius) / fabs(sinPhi);
-	if (h2 < h1)
-		h1 = h2;
-	len = VectorLength(ent.origin);
-	if (len > h1)
-		VectorScale(ent.origin, h1 / len, ent.origin);
-
-	VectorAdd(middleOfPlane, ent.origin, ent.origin);
-	VectorAdd(cg.refdef.vieworg, ent.origin, ent.origin);
 	trap_R_AddRefEntityToScene(&ent);
 }
 

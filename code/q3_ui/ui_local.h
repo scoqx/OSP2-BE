@@ -4,6 +4,7 @@
 #define __UI_LOCAL_H__
 
 #include "../game/q_shared.h"
+#include "../qcommon/osp_version.h"
 #include "../cgame/tr_types.h"
 //NOTE: include the ui_public.h from the new UI
 #include "../ui/ui_public.h" // bk001205 - yes, do have to use this
@@ -12,6 +13,8 @@
 #define UI_API_VERSION  4
 #include "keycodes.h"
 #include "../game/bg_public.h"
+#include "ui_server_status.h"
+#include "ui_gameinfo_cfg.h"
 
 typedef void (*voidfunc_f)(void);
 
@@ -333,6 +336,10 @@ extern void UI_OSPDrawStringNew(float x, float y, const char* string, const vec4
                                 vec4_t shadowColor,
                                 float charWidth, float charHeight, int maxWidth, int flags,
                                 vec4_t background, vec4_t border, vec4_t borderColor);
+extern int UI_OSPTextFitLineWidth640(const char* lineStart, const char* lineEnd, float charWidth,
+                                     int proportional, float maxWidth640);
+extern int UI_OSPTextCountWrappedLines640(const char* text, float charWidth, int proportional,
+                                           float maxWidth640);
 extern void UI_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
 extern text_command_t* UI_CompileText(const char* text);
 extern void UI_CompiledTextDestroy(text_command_t* root);
@@ -363,6 +370,9 @@ extern void UI_OtherMenu(void);
 //
 extern void UI_TeamMainMenu(void);
 extern void TeamMain_Cache(void);
+
+void UI_ServerStatus_Secheck2Begin(const char* target);
+void UI_ServerStatus_Secheck2BeginDual(const char* target, const char* targetAlt);
 
 //
 // ui_connect.c
@@ -635,6 +645,7 @@ extern void         UI_DrawHandlePic(float x, float y, float w, float h, qhandle
 extern void         UI_FillRect(float x, float y, float width, float height, const float* color);
 extern void         UI_DrawRect(float x, float y, float width, float height, const float* color);
 extern void         UI_UpdateScreen(void);
+extern void         UI_LANJobsTick(void);
 extern void         UI_SetColor(const float* rgba);
 extern void         UI_LerpColor(vec4_t a, vec4_t b, vec4_t c, float t);
 extern void         UI_DrawBannerString(int x, int y, const char* str, int style, vec4_t color);
@@ -741,6 +752,7 @@ int             trap_GetConfigString(int index, char* buff, int buffsize);
 int             trap_LAN_GetServerCount(int source);
 void            trap_LAN_GetServerAddressString(int source, int n, char* buf, int buflen);
 void            trap_LAN_GetServerInfo(int source, int n, char* buf, int buflen);
+qboolean        trap_LAN_UpdateVisiblePings(int source);
 int             trap_LAN_GetPingQueueCount(void);
 void            trap_LAN_SaveCachedServers(void);
 void            trap_LAN_LoadCachedServers(void);
@@ -760,6 +772,14 @@ int             trap_CL_UI_RankGetLeauges(const char* playername);
 void            trap_CL_UI_RankUserCreate(const char* name, const char* password);
 void            trap_CL_UI_RankUserReset(void);
 void            trap_CL_UI_RankUserRequestLogout(void);
+
+#ifndef Q3_VM
+int             trap_UI_GetValue_Q3E(int cmd, char* value, int valueSize, const char* key);
+int             trap_UI_SetDescription_Q3E(int cmd, const char* name, const char* description);
+#endif
+
+void            UI_SetCvarDescription(const char* name, const char* description);
+void            UI_RegisterCvarDescriptions(void);
 
 //
 // ui_addbots.c

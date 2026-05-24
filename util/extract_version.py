@@ -1,6 +1,6 @@
 import re
 
-file_path = 'code/cgame/cg_local.h'
+file_path = 'code/qcommon/osp_version.h'
 
 with open(file_path, 'r') as file:
     lines = file.readlines()
