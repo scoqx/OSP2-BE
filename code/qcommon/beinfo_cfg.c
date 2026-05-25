@@ -343,6 +343,7 @@ static void BeinfoCfg_SkipKeyArguments(char** text)
 	}
 }
 
+#if defined(Q3UI) || defined(UI)
 static void BeinfoCfg_SetStatusServer(char* dest, int destSize, qboolean* hasFlag,
         const char* value)
 {
@@ -355,7 +356,6 @@ static void BeinfoCfg_SetStatusServer(char* dest, int destSize, qboolean* hasFla
 	*hasFlag = qtrue;
 }
 
-#if defined(Q3UI) || defined(UI)
 static qboolean BeinfoCfg_UiKeyIsKnown(const char* key)
 {
 	if (!key || !key[0])
