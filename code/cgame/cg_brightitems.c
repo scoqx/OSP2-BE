@@ -21,7 +21,7 @@ typedef struct
 static const itemBrightColorEntry_t itemBrightColorDefaults[] =
 {
 	/* armor */
-	{ "item_armor_shard",      0.75f, 0.75f, 0.75f, 1.00f },
+	{ "item_armor_shard",      0.49f, 0.69, 0.28f, 1.00f },
 	{ "item_armor_combat",     1.00f, 1.00f, 0.00f, 1.00f },
 	{ "item_armor_body",       1.00f, 0.00f, 0.00f, 1.00f },
 	{ "item_armor_jacket",     0.00f, 1.00f, 0.00f, 1.00f },
@@ -29,7 +29,7 @@ static const itemBrightColorEntry_t itemBrightColorDefaults[] =
 	{ "item_health_small",     0.00f, 1.00f, 0.00f, 1.00f },
 	{ "item_health",           1.00f, 1.00f, 0.00f, 1.00f },
 	{ "item_health_large",     1.00f, 0.50f, 0.00f, 1.00f },
-	{ "item_health_mega",      1.00f, 0.00f, 1.00f, 1.00f },
+	{ "item_health_mega",      0.15f, 0.6f, 0.95f, 1.00f },
 	/* ammo (world weapons: cg_drawBrightWeapons bit 8) */
 	{ "ammo_shells",             1.00f, 0.50f, 0.00f, 1.00f },
 	{ "ammo_bullets",            1.00f, 1.00f, 0.00f, 1.00f },
@@ -189,6 +189,7 @@ static void CG_BeinfoBrightItemOverride(const char* classname, float r, float g,
 void CG_UpdateBrightItemsDynamicColors(void)
 {
 	vec4_t color;
+	int     idx;
 
 	if (cg.quadDamageCustomColor)
 	{
@@ -200,8 +201,12 @@ void CG_UpdateBrightItemsDynamicColors(void)
 	}
 	else
 	{
-		CG_GetDefaultQuadDamageColor(color);
-		CG_SetBrightItemColorByClassname("item_quad", color);
+		idx = CG_BrightItemIndexByClassname("item_quad");
+		if (idx < 0 || !cgs.beBrightItemsBeinfoSet[idx])
+		{
+			CG_GetDefaultQuadDamageColor(color);
+			CG_SetBrightItemColorByClassname("item_quad", color);
+		}
 	}
 
 	if (cg.battleSuitCustomColor)
@@ -214,8 +219,12 @@ void CG_UpdateBrightItemsDynamicColors(void)
 	}
 	else
 	{
-		CG_GetDefaultBattleSuitColor(color);
-		CG_SetBrightItemColorByClassname("item_enviro", color);
+		idx = CG_BrightItemIndexByClassname("item_enviro");
+		if (idx < 0 || !cgs.beBrightItemsBeinfoSet[idx])
+		{
+			CG_GetDefaultBattleSuitColor(color);
+			CG_SetBrightItemColorByClassname("item_enviro", color);
+		}
 	}
 
 	if (CG_FlagUsesClassicBrightColor())

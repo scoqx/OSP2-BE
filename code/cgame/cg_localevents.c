@@ -747,8 +747,7 @@ void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0])
 	{
-		CG_GetDefaultBattleSuitColor(cg.beBattleSuitColor);
-		cg.battleSuitColorEnabled = qtrue;
+		cg.battleSuitColorEnabled = qfalse;
 		cg.battleSuitCustomColor = qfalse;
 		CG_UnregisterItemVisualForPowerup(PW_BATTLESUIT);
 		CG_UpdateBrightItemsDynamicColors();
@@ -764,8 +763,7 @@ void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart)
 	else
 	{
 		Com_Printf("^1Color is wrong, default value used\n");
-		CG_GetDefaultBattleSuitColor(cg.beBattleSuitColor);
-		cg.battleSuitColorEnabled = qtrue;
+		cg.battleSuitColorEnabled = qfalse;
 		cg.battleSuitCustomColor = qfalse;
 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
 		CG_UnregisterItemVisualForPowerup(PW_BATTLESUIT);
@@ -794,8 +792,7 @@ void CG_LocalEventCvarChanged_cg_quadDamageColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0])
 	{
-		CG_GetDefaultQuadDamageColor(cg.beQuadDamageColor);
-		cg.quadDamageColorEnabled = qtrue;
+		cg.quadDamageColorEnabled = qfalse;
 		cg.quadDamageCustomColor = qfalse;
 		CG_UnregisterItemVisualForPowerup(PW_QUAD);
 		CG_UpdateBrightItemsDynamicColors();
@@ -811,8 +808,7 @@ void CG_LocalEventCvarChanged_cg_quadDamageColor(cvarTable_t* cvart)
 	else
 	{
 		Com_Printf("^1Color is wrong, default value used\n");
-		CG_GetDefaultQuadDamageColor(cg.beQuadDamageColor);
-		cg.quadDamageColorEnabled = qtrue;
+		cg.quadDamageColorEnabled = qfalse;
 		cg.quadDamageCustomColor = qfalse;
 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
 		CG_UnregisterItemVisualForPowerup(PW_QUAD);

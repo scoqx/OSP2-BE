@@ -873,10 +873,11 @@ SuperHUD:
 + FlagStatus_CARRY element
 + Fonts: Odyssey, verdana fixed (Mirage)
 
-25.05.2026 be v1.04f
+25.05.2026 be v1.04f1
 + ui_beStatusBorderColor
 + cg_drawBrightItems
 + /beconfigs/beInfo.cfg settings file
 - cg_brightWeaponsColor* cvars removed, configure using beInfo.cfg (My apologies)
 * full bright shader and ghost gun shader separated
 * Alternate fullgright shader rework, now supports transparency
+* Quad damage and battle suit models color fix
