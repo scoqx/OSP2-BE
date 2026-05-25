@@ -51,11 +51,11 @@ CG_SRC = \
  cg_superhud_element_roundwarmup \
  l_crc \
  cg_chatfilter cg_teamtaskfilter cg_crosshair \
- cg_be_util cg_be_stats cg_brightitems beinfo_cfg \
+ cg_be_util cg_be_stats cg_brightitems beinfo_cfg osp_fonts \
  cg_emoji
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \
-ui_gameinfo beinfo_cfg ui_atoms ui_cvardescriptions ui_colorparse ui_cinematics ui_connect ui_controls2 ui_demo2 \
+ui_gameinfo beinfo_cfg osp_fonts ui_atoms ui_cvardescriptions ui_colorparse ui_cinematics ui_connect ui_controls2 ui_demo2 \
 ui_md5 ui_status_sign ui_server_status \
 ui_mfield ui_credits ui_credits2 ui_menu ui_ingame ui_confirm ui_setup ui_options \
 ui_display ui_sound ui_network ui_playermodel ui_players ui_playersettings \

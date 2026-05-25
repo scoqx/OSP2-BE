@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_drawtools.c -- helper functions called by cg_draw, cg_scoreboard, cg_info, etc
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
+#include "../qcommon/osp_fonts.h"
 
 
 typedef struct OSP_ClientFont_t
@@ -999,8 +1000,8 @@ typedef struct
 
 #define MAX_FONTS 32
 static font_t fonts[MAX_FONTS];
-static char customFontNames[MAX_FONTS - 23][MAX_QPATH];
-static int fonts_num = 23;
+static char customFontNames[MAX_FONTS - OSP_BUILTIN_FONT_COUNT][MAX_QPATH];
+static int fonts_num = OSP_BUILTIN_FONT_COUNT;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
 
@@ -1011,29 +1012,12 @@ int CG_GetFontCount(void)
 
 static void CG_InitFontNames(void)
 {
-	fonts[0].name = "id";
-	fonts[1].name = "idblock";
-	fonts[2].name = "sansman";
-	fonts[3].name = "cpma";
-	fonts[4].name = "m1rage";
-	fonts[5].name = "elite_emoji";
-	fonts[6].name = "diablo";
-	fonts[7].name = "eternal";
-	fonts[8].name = "qlnumbers";
-	fonts[9].name = "elite";
-	fonts[10].name = "elitebigchars";
-	fonts[11].name = "eliteeternal";
-	fonts[12].name = "bigcharseliteeternal";
-	fonts[13].name = "elitestoropia";
-	fonts[14].name = "bigcharselitestoropia";
-	fonts[15].name = "bigcharseliteorbitron";
-	fonts[16].name = "eliteorbitron";
-	fonts[17].name = "q4snumbers";
-	fonts[18].name = "q4mnumbers";
-	fonts[19].name = "conthrax";
-	fonts[20].name = "qlhandelgothic";
-	fonts[21].name = "quakeworld";
-	fonts[22].name = "quakeworld_numbers";
+	int i;
+
+	for (i = 0; i < OSP_BUILTIN_FONT_COUNT; i++)
+	{
+		fonts[i].name = ospBuiltinFonts[i].name;
+	}
 }
 
 qboolean CG_FontAvailable(int index)
@@ -1556,7 +1540,7 @@ static void CG_LoadCustomFonts(void)
 			continue;
 		}
 
-		if (customFontIndex >= (MAX_FONTS - 23))
+		if (customFontIndex >= (MAX_FONTS - OSP_BUILTIN_FONT_COUNT))
 		{
 			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: maximum number of custom fonts reached, skipping '%s'\n", fontName);
 			continue;
@@ -1616,30 +1600,13 @@ static void CG_LoadCustomFonts(void)
 
 void CG_LoadFonts(void)
 {
+	int i;
+
 	CG_InitFontNames();
-	CG_LoadFont(&fonts[0], "gfx/2d/bigchars.cfg");
-	CG_LoadFont(&fonts[1], "gfx/2d/numbers.cfg");
-	CG_LoadFont(&fonts[2], "gfx/2d/sansman.cfg");
-	CG_LoadFont(&fonts[3], "gfx/2d/sansman.cfg"); // use sansman instead of cpma
-	CG_LoadFont(&fonts[4], "gfx/2d/m1rage.cfg");
-	CG_LoadFont(&fonts[5], "gfx/2d/elite_emoji.cfg");
-	CG_LoadFont(&fonts[6], "gfx/2d/diablo.cfg");
-	CG_LoadFont(&fonts[7], "gfx/2d/eternal.cfg");
-	CG_LoadFont(&fonts[8], "gfx/2d/qlnumbers.cfg");
-	CG_LoadFont(&fonts[9], "gfx/2d/Elite.cfg");
-	CG_LoadFont(&fonts[10], "gfx/2d/EliteBigchars.cfg");
-	CG_LoadFont(&fonts[11], "gfx/2d/EliteEternal.cfg");
-	CG_LoadFont(&fonts[12], "gfx/2d/BigcharsEliteEternal.cfg");
-	CG_LoadFont(&fonts[13], "gfx/2d/EliteStoropia.cfg");
-	CG_LoadFont(&fonts[14], "gfx/2d/BigcharsEliteStoropia.cfg");
-	CG_LoadFont(&fonts[15], "gfx/2d/BigcharsEliteOrbitron.cfg");
-	CG_LoadFont(&fonts[16], "gfx/2d/EliteOrbitron.cfg");
-	CG_LoadFont(&fonts[17], "gfx/2d/q4snumbers.cfg");
-	CG_LoadFont(&fonts[18], "gfx/2d/q4mnumbers.cfg");
-	CG_LoadFont(&fonts[19], "gfx/2d/conthrax.cfg");
-	CG_LoadFont(&fonts[20], "gfx/2d/qlhandelgothic.cfg");
-	CG_LoadFont(&fonts[21], "gfx/2d/quakeworld.cfg");
-	CG_LoadFont(&fonts[22], "gfx/2d/quakeworld_numbers.cfg");
+	for (i = 0; i < OSP_BUILTIN_FONT_COUNT; i++)
+	{
+		CG_LoadFont(&fonts[i], ospBuiltinFonts[i].cfgPath);
+	}
 	CG_LoadCustomFonts();
 }
 

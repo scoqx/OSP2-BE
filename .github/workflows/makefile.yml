@@ -521,6 +521,7 @@ jobs:
           python3 source-repo/scripts/patch_osp2be_status_server.py \
             --version-txt source-repo/assets/version.txt \
             --changelog source-repo/assets/version_changelog.txt \
+            --status-config source-repo/be_status_server.conf \
             --status-dir status-repo
 
       - name: Update mod_sig in deploy/response.conf

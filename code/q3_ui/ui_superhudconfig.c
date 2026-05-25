@@ -139,6 +139,49 @@ static void SuperHUDConfig_ApplyConfig(void)
 	}
 }
 
+static void SuperHUDConfig_SetListSelectionToConfig(const char* configName)
+{
+	int currentIndex;
+	int i;
+
+	if (!configName || !configName[0] || s_superhudconfig.numfiles <= 0)
+	{
+		return;
+	}
+
+	currentIndex = 0;
+	for (i = 0; i < s_superhudconfig.numfiles; i++)
+	{
+		if (!Q_stricmp(s_superhudconfig.filenames[i], configName))
+		{
+			currentIndex = i;
+			break;
+		}
+	}
+
+	s_superhudconfig.list.curvalue = currentIndex;
+	if (currentIndex < s_superhudconfig.list.height)
+	{
+		s_superhudconfig.list.top = 0;
+	}
+	else
+	{
+		s_superhudconfig.list.top = currentIndex - (s_superhudconfig.list.height / 2);
+		if (s_superhudconfig.list.top < 0)
+		{
+			s_superhudconfig.list.top = 0;
+		}
+		if (s_superhudconfig.list.top + s_superhudconfig.list.height > s_superhudconfig.numfiles)
+		{
+			s_superhudconfig.list.top = s_superhudconfig.numfiles - s_superhudconfig.list.height;
+			if (s_superhudconfig.list.top < 0)
+			{
+				s_superhudconfig.list.top = 0;
+			}
+		}
+	}
+}
+
 static void SuperHUDConfig_RestoreConfig(void)
 {
 	if (s_superhudconfig.currentConfig[0])
@@ -146,6 +189,7 @@ static void SuperHUDConfig_RestoreConfig(void)
 		trap_Cvar_Set("ch_file", s_superhudconfig.currentConfig);
 		trap_Cvar_Set("cg_shud", "1");
 		/* ch_file and cg_shud change callbacks already trigger config load - no need for reloadhud */
+		SuperHUDConfig_SetListSelectionToConfig(s_superhudconfig.currentConfig);
 	}
 }
 
@@ -279,8 +323,6 @@ static sfxHandle_t SuperHUDConfig_Key(int key)
 
 static void SuperHUDConfig_MenuInit(void)
 {
-	int currentIndex;
-	int i;
 	char currentConfig[MAX_QPATH];
 	unsigned char* bytes;
 	int j;
@@ -389,41 +431,7 @@ static void SuperHUDConfig_MenuInit(void)
 	Menu_AddItem(&s_superhudconfig.menu, &s_superhudconfig.up);
 	Menu_AddItem(&s_superhudconfig.menu, &s_superhudconfig.down);
 
-	currentIndex = 0;
-	if (s_superhudconfig.numfiles > 0)
-	{
-		for (i = 0; i < s_superhudconfig.numfiles; i++)
-		{
-			if (!Q_stricmp(s_superhudconfig.filenames[i], s_superhudconfig.currentConfig))
-			{
-				currentIndex = i;
-				break;
-			}
-		}
-	}
-	s_superhudconfig.list.curvalue = currentIndex;
-	/* Set top so that current item is visible, but try to show as many items as possible from the start */
-	if (currentIndex < s_superhudconfig.list.height)
-	{
-		s_superhudconfig.list.top = 0;
-	}
-	else
-	{
-		/* Center the current item in the visible area */
-		s_superhudconfig.list.top = currentIndex - (s_superhudconfig.list.height / 2);
-		if (s_superhudconfig.list.top < 0)
-		{
-			s_superhudconfig.list.top = 0;
-		}
-		if (s_superhudconfig.list.top + s_superhudconfig.list.height > s_superhudconfig.numfiles)
-		{
-			s_superhudconfig.list.top = s_superhudconfig.numfiles - s_superhudconfig.list.height;
-			if (s_superhudconfig.list.top < 0)
-			{
-				s_superhudconfig.list.top = 0;
-			}
-		}
-	}
+	SuperHUDConfig_SetListSelectionToConfig(s_superhudconfig.currentConfig);
 
 	s_superhudconfig.restore.generic.type = MTYPE_PTEXT;
 	s_superhudconfig.restore.generic.flags = QMF_CENTER_JUSTIFY | QMF_PULSEIFFOCUS;

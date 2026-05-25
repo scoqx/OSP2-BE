@@ -428,6 +428,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_be_stats.o \
   $(B)/$(MOD)/cgame/cg_brightitems.o \
   $(B)/$(MOD)/cgame/beinfo_cfg.o \
+  $(B)/$(MOD)/cgame/osp_fonts.o \
   \
   $(B)/$(MOD)/game/bg_lib.o \
   $(B)/$(MOD)/game/bg_misc.o \
@@ -516,6 +517,7 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_display.o \
   $(B)/$(MOD)/ui/ui_gameinfo.o \
   $(B)/$(MOD)/ui/beinfo_cfg.o \
+  $(B)/$(MOD)/ui/osp_fonts.o \
   $(B)/$(MOD)/ui/ui_ingame.o \
   $(B)/$(MOD)/ui/ui_loadconfig.o \
   $(B)/$(MOD)/ui/ui_menu.o \
@@ -595,6 +597,9 @@ $(B)/$(MOD)/cgame/%.o: $(CGDIR)/%.c
 $(B)/$(MOD)/cgame/beinfo_cfg.o: $(COMDIR)/beinfo_cfg.c
 	$(DO_CGAME_CC)
 
+$(B)/$(MOD)/cgame/osp_fonts.o: $(COMDIR)/osp_fonts.c
+	$(DO_CGAME_CC)
+
 $(B)/$(MOD)/game/%.o: $(QADIR)/%.c
 	$(DO_GAME_CC)
 
@@ -605,6 +610,9 @@ $(B)/$(MOD)/ui/%.o: $(UIDIR)/%.c
 	$(DO_UI_CC)
 
 $(B)/$(MOD)/ui/beinfo_cfg.o: $(COMDIR)/beinfo_cfg.c
+	$(DO_UI_CC)
+
+$(B)/$(MOD)/ui/osp_fonts.o: $(COMDIR)/osp_fonts.c
 	$(DO_UI_CC)
 
 $(B)/$(MOD)/ui/q_%.o: $(COMDIR)/q_%.c
