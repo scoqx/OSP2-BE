@@ -474,7 +474,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_drawUniqueColors", "Draw unique player color behind the player head:\n  ^20^7 - disabled\n  ^21^7 - filled background\n  ^22^7 - 1 px border\n  ^23^7 - 2 px border" },
 	{ "cg_killerGhost", "Killer ghost body from server (metarena). Set ^20^7 to hide.\n ^21^7 - draw with glow (^3cg_redTeamColor^7/^3cg_blueTeamColor^7 for your team)\n ^22^7 - draw without glow" },
 	{ "cg_numbersSet", "HUD digit sprite set for damage plums and other number draws:\n  ^21^7 - default\n  ^22^7 - Elite\n  ^23^7 - Eternal\n  ^24^7 - Odyssey" },
-	{ "cg_oldFlags", "CTF flag visuals. Bitmask:\n  ^20^7 - team-colored dye models and icons\n  ^21^7 - classic world models\n  ^22^7 - classic HUD icons\n  ^23^7 - classic models and icons" },
+	{ "cg_oldFlags", "CTF flag visuals. Requires ^3vid_restart^7. Bitmask:\n  ^20^7 - team-colored dye models and icons\n  ^21^7 - classic world models. \n  ^22^7 - classic HUD icons\n  ^23^7 - classic models and icons" },
 };
 
 

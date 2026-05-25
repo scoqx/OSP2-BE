@@ -8,7 +8,7 @@ CGAME:
 * cg_damagePlums rework digits floating
 + cg_damagePlums bitmask 4 (White digits)
 * cg_damagePlumSize -> cg_damagePlumsSize (Plum->Plums)
-+ cg_numberSet
++ cg_numbersSet
 + cg_oldFlags
 SuperHUD:
 + FlagStatus_CARRY element
