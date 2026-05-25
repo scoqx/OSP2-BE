@@ -98,11 +98,11 @@ static sfxHandle_t Main_MenuKey(int key)
 
 		if (uis.demoversion)
 		{
-			textY = 375;
+			textY = 380;
 		}
 		else
 		{
-			textY = 425;
+			textY = 400;
 		}
 
 		textHeight = SMALLCHAR_HEIGHT;

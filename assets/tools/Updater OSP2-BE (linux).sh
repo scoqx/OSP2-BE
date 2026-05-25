@@ -21,7 +21,7 @@ ARGS="+set sv_pure 0
 
 CURL='/usr/bin/curl'
 url="https://konstalker.github.io/assets/zz-osp-pak8be.pk3"
-url_version="https://konstalker.github.io/version.json?v="
+url_version="https://konstalker.github.io/assets/version.txt"
 url_changelog="https://konstalker.github.io/assets/changelog_be.txt"
 
 # === PATHS ===
@@ -40,7 +40,7 @@ fi
 # === CHECK VERSION ===
 echo -n "last version: "
 
-version="$($CURL -s "$url_version" | jq -r '.version')"
+version="$($CURL -s "$url_version" | tr -d '\r' | head -n 1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
 echo -e "\033[1m$version\033[0m"
 
 if [ -f "$version_path" ]; then
