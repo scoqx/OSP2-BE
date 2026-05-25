@@ -2189,7 +2189,7 @@ void UI_Init(void)
 	UI_RegisterCvarDescriptions();
 
 	UI_InitGameinfo();
-	UI_GameinfoCfg_Load();
+	UI_BeinfoCfg_Load();
 
 	// cache redundant calulations
 	UI_VideoCheck(-99999);

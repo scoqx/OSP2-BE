@@ -721,15 +721,6 @@ void CG_ReloadColors(void)
 		"cg_teamTaskThemeColor",
 		"cg_teamIndicatorColor",
 		"cg_teamIndicatorBgColor",
-		"cg_brightWeaponsColorGauntlet",
-		"cg_brightWeaponsColorMG",
-		"cg_brightWeaponsColorSG",
-		"cg_brightWeaponsColorGL",
-		"cg_brightWeaponsColorRL",
-		"cg_brightWeaponsColorLG",
-		"cg_brightWeaponsColorRG",
-		"cg_brightWeaponsColorPG",
-		"cg_brightWeaponsColorBFG",
 		NULL
 	};
 

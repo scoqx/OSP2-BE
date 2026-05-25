@@ -13,12 +13,14 @@ SERVER STATUS (getstatus / mod_sig, main menu bar)
 
 #define UI_STATUS_BAR_WIDTH             360.0f
 #define UI_STATUS_BAR_HEIGHT            24.0f
+#define UI_STATUS_BAR_HEIGHT_COLLAPSED  14.0f
+#define UI_STATUS_COLLAPSED_CHAR_HEIGHT 12.0f
 #define UI_STATUS_BAR_MIN_EXPANDED      120.0f
 #define UI_STATUS_BAR_MAX_EXPANDED      420.0f
 #define UI_STATUS_CHANGELOG_FILE        "version_changelog.txt"
 #define UI_STATUS_CHANGELOG_READ_MAX    8192
 #define UI_STATUS_CHAR_WIDTH            8.0f
-#define UI_STATUS_CHAR_HEIGHT           14.0f
+#define UI_STATUS_CHAR_HEIGHT           12.0f
 #define UI_STATUS_PANEL_PAD             6.0f
 #define UI_STATUS_BODY_EXTRA_PAD        6.0f
 #define UI_STATUS_SCROLLBAR_WIDTH       8.0f
@@ -48,9 +50,10 @@ static qboolean UI_ServerStatus_ChangelogLayout(float panelW, float bodyH, float
         qboolean* outNeedScroll);
 static float UI_ServerStatus_DrawMultilineClipped(float x, float y, float maxW, const char* text,
         vec4_t color, int flags, float clipTop, float clipBottom);
-static void UI_ServerStatus_DrawText(float x, float y, const char* text, vec4_t color, int flags);
+static void UI_ServerStatus_DrawText(float x, float y, const char* text, vec4_t color, int flags,
+        float charW, float charH);
 static void UI_ServerStatus_DrawTextWidth(float x, float y, const char* text, vec4_t color,
-        int flags, int maxWidth640);
+        int flags, int maxWidth640, float charW, float charH);
 static void UI_ServerStatus_DrawScrollbar(float x, float y, float w, float h, float contentH,
         float scroll);
 static void UI_ServerStatus_ClampChangelogScroll(float bodyH, float contentH);
@@ -68,7 +71,23 @@ static float UI_ServerStatus_ExpandedHeadersHeight(void);
 static void UI_ServerStatus_PanelBodyRect(float panelX, float panelY, float panelW, float panelH,
         float* outBodyY, float* outBodyH);
 static void UI_ServerStatus_DrawHeaderRow(float x, float y, float w, float rowH,
-        const char* leftText, vec4_t leftColor, const char* rightText, vec4_t rightColor);
+        const char* leftText, vec4_t leftColor, const char* rightText, vec4_t rightColor,
+        float charW, float charH);
+static qboolean UI_ServerStatus_GetBorderColor(vec4_t borderColor);
+
+static qboolean UI_ServerStatus_GetBorderColor(vec4_t borderColor)
+{
+	trap_Cvar_Update(&ui_beStatusBorderColor);
+	if (!ui_beStatusBorderColor.string[0])
+	{
+		return qfalse;
+	}
+	if (!UI_ParseColorStr(ui_beStatusBorderColor.string, borderColor))
+	{
+		Vector4Copy(colorWhite, borderColor);
+	}
+	return qtrue;
+}
 
 static void UI_ServerStatus_ClearActiveMenuMouseFocus(void)
 {
@@ -193,9 +212,9 @@ static void UI_ServerStatus_BarRect640(float* outX, float* outY, float* outW, fl
 	float   y;
 
 	*outW = UI_STATUS_BAR_WIDTH;
-	*outH = UI_STATUS_BAR_HEIGHT;
+	*outH = ui_statusBarExpanded ? UI_STATUS_BAR_HEIGHT : UI_STATUS_BAR_HEIGHT_COLLAPSED;
 	*outX = (640.0f - UI_STATUS_BAR_WIDTH) * 0.5f;
-	y = 480.0f - UI_STATUS_BAR_HEIGHT;
+	y = 480.0f - *outH;
 
 	if (ui_statusBarExpanded)
 	{
@@ -314,10 +333,10 @@ static float UI_ServerStatus_ExpandedHeadersHeight(void)
 {
 	float           h;
 
-	h = UI_STATUS_BAR_HEIGHT;
+	h = UI_STATUS_BAR_HEIGHT_COLLAPSED;
 	if (UI_ServerStatus_HasUpdateHeaderRow())
 	{
-		h += UI_STATUS_BAR_HEIGHT;
+		h += UI_STATUS_BAR_HEIGHT_COLLAPSED;
 	}
 	return h;
 }
@@ -328,7 +347,7 @@ static void UI_ServerStatus_PanelBodyRect(float panelX, float panelY, float pane
 	float           headersH;
 
 	headersH = UI_ServerStatus_ExpandedHeadersHeight();
-	*outBodyY = panelY + headersH + UI_STATUS_PANEL_PAD + UI_STATUS_BODY_EXTRA_PAD;
+	*outBodyY = panelY + headersH + UI_STATUS_PANEL_PAD;
 	*outBodyH = panelH - headersH - UI_STATUS_PANEL_PAD * 2.0f - UI_STATUS_BODY_EXTRA_PAD;
 }
 
@@ -630,6 +649,10 @@ static void UI_ServerStatus_ClampChangelogScroll(float bodyH, float contentH)
 	{
 		maxScroll = 0.0f;
 	}
+	if (UI_STATUS_CHAR_HEIGHT > 0.0f)
+	{
+		maxScroll = (float)((int)(maxScroll / UI_STATUS_CHAR_HEIGHT)) * UI_STATUS_CHAR_HEIGHT;
+	}
 
 	if (ui_statusChangelogScroll < 0.0f)
 	{
@@ -638,6 +661,16 @@ static void UI_ServerStatus_ClampChangelogScroll(float bodyH, float contentH)
 	if (ui_statusChangelogScroll > maxScroll)
 	{
 		ui_statusChangelogScroll = maxScroll;
+	}
+
+	if (UI_STATUS_CHAR_HEIGHT > 0.0f)
+	{
+		ui_statusChangelogScroll = (float)((int)(ui_statusChangelogScroll / UI_STATUS_CHAR_HEIGHT + 0.5f))
+		                          * UI_STATUS_CHAR_HEIGHT;
+		if (ui_statusChangelogScroll > maxScroll)
+		{
+			ui_statusChangelogScroll = maxScroll;
+		}
 	}
 }
 
@@ -753,7 +786,8 @@ static float UI_ServerStatus_DrawMultilineClipped(float x, float y, float maxW, 
 			{
 				memcpy(lineBuf, lineStart, chunk);
 				lineBuf[chunk] = '\0';
-				UI_ServerStatus_DrawTextWidth(x, lineY, lineBuf, color, flags, maxWidthPx);
+				UI_ServerStatus_DrawTextWidth(x, lineY, lineBuf, color, flags, maxWidthPx,
+				                              UI_STATUS_CHAR_WIDTH, UI_STATUS_CHAR_HEIGHT);
 			}
 
 			lineY += UI_STATUS_CHAR_HEIGHT;
@@ -832,7 +866,14 @@ static void UI_ServerStatus_DrawScrollbar(float x, float y, float w, float h, fl
 	track[2] = 0.25f;
 	track[3] = 0.85f;
 	UI_FillRect(x, y, w, h, track);
-	UI_DrawRect(x, y, w, h, colorWhite);
+	{
+		vec4_t  borderColor;
+
+		if (UI_ServerStatus_GetBorderColor(borderColor))
+		{
+			UI_DrawRect(x, y, w, h, borderColor);
+		}
+	}
 
 	thumb[0] = 0.65f;
 	thumb[1] = 0.65f;
@@ -994,7 +1035,7 @@ static void UI_ServerStatus_ScrollByDelta(float delta)
 }
 
 static void UI_ServerStatus_DrawTextWidth(float x, float y, const char* text, vec4_t color,
-        int flags, int maxWidth640)
+        int flags, int maxWidth640, float charW, float charH)
 {
 	if (!text || !text[0])
 	{
@@ -1012,38 +1053,44 @@ static void UI_ServerStatus_DrawTextWidth(float x, float y, const char* text, ve
 	}
 
 	UI_OSPDrawStringNew(x, y, text, color, color_black,
-	                    UI_STATUS_CHAR_WIDTH, UI_STATUS_CHAR_HEIGHT,
+	                    charW, charH,
 	                    maxWidth640, flags | DS_SHADOW | DS_PROPORTIONAL, NULL, NULL, NULL);
 }
 
-static void UI_ServerStatus_DrawText(float x, float y, const char* text, vec4_t color, int flags)
+static void UI_ServerStatus_DrawText(float x, float y, const char* text, vec4_t color, int flags,
+        float charW, float charH)
 {
-	UI_ServerStatus_DrawTextWidth(x, y, text, color, flags, SCREEN_WIDTH);
+	UI_ServerStatus_DrawTextWidth(x, y, text, color, flags, SCREEN_WIDTH, charW, charH);
 }
 
 static void UI_ServerStatus_DrawHeaderRow(float x, float y, float w, float rowH,
-        const char* leftText, vec4_t leftColor, const char* rightText, vec4_t rightColor)
+        const char* leftText, vec4_t leftColor, const char* rightText, vec4_t rightColor,
+        float charW, float charH)
 {
 	float           rowCenterY;
+	vec4_t          borderColor;
 
-	UI_DrawRect(x, y, w, rowH, colorWhite);
+	if (UI_ServerStatus_GetBorderColor(borderColor))
+	{
+		UI_DrawRect(x, y, w, rowH, borderColor);
+	}
 	rowCenterY = y + rowH * 0.5f;
 
 	if (leftText && leftText[0])
 	{
 		UI_ServerStatus_DrawText(x + UI_STATUS_PANEL_PAD, rowCenterY, leftText, leftColor,
-		                         DS_VCENTER);
+		                         DS_VCENTER, charW, charH);
 	}
 
 	if (rightText && rightText[0])
 	{
 		UI_ServerStatus_DrawText(x + w - UI_STATUS_PANEL_PAD, rowCenterY, rightText, rightColor,
-		                         DS_VCENTER | DS_HRIGHT);
+		                         DS_VCENTER | DS_HRIGHT, charW, charH);
 	}
 }
 
 static void UI_ServerStatus_DrawStatusRow(float x, float y, float w, float rowH,
-        const char* statusLabel, vec4_t statusColor)
+        const char* statusLabel, vec4_t statusColor, float charW, float charH)
 {
 	char            verBuf[64];
 	vec4_t          verColor;
@@ -1064,10 +1111,12 @@ static void UI_ServerStatus_DrawStatusRow(float x, float y, float w, float rowH,
 	verColor[2] = text_color_disabled[2];
 	verColor[3] = 1.0f;
 
-	UI_ServerStatus_DrawHeaderRow(x, y, w, rowH, statusLabel, statusColor, verBuf, verColor);
+	UI_ServerStatus_DrawHeaderRow(x, y, w, rowH, statusLabel, statusColor, verBuf, verColor,
+	                              charW, charH);
 }
 
-static void UI_ServerStatus_DrawUpdateHeaderRow(float x, float y, float w, float rowH)
+static void UI_ServerStatus_DrawUpdateHeaderRow(float x, float y, float w, float rowH,
+        float charW, float charH)
 {
 	char            verBuf[64];
 	const char*     leftText;
@@ -1096,7 +1145,8 @@ static void UI_ServerStatus_DrawUpdateHeaderRow(float x, float y, float w, float
 	verColor[2] = 0.2f;
 	verColor[3] = 1.0f;
 
-	UI_ServerStatus_DrawHeaderRow(x, y, w, rowH, leftText, dateColor, verBuf, verColor);
+	UI_ServerStatus_DrawHeaderRow(x, y, w, rowH, leftText, dateColor, verBuf, verColor,
+	                              charW, charH);
 }
 
 static qboolean UI_ServerStatus_ClientInHfvList(void)
@@ -1274,9 +1324,17 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 	bg[0] = 0.0f;
 	bg[1] = 0.0f;
 	bg[2] = 0.0f;
-	bg[3] = 0.75f;
+	bg[3] = ui_statusBarExpanded ? 0.75f : 0.25f;
 	UI_FillRect(x, y, w, h, bg);
-	UI_DrawRect(x, y, w, h, colorWhite);
+
+	{
+		vec4_t  borderColor;
+
+		if (UI_ServerStatus_GetBorderColor(borderColor))
+		{
+			UI_DrawRect(x, y, w, h, borderColor);
+		}
+	}
 
 	textColor[0] = color[0];
 	textColor[1] = color[1];
@@ -1295,13 +1353,17 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 		float           contentY;
 		qboolean        needScroll;
 
-		UI_ServerStatus_DrawStatusRow(x, rowY, w, UI_STATUS_BAR_HEIGHT, label, textColor);
-		rowY += UI_STATUS_BAR_HEIGHT;
+		UI_ServerStatus_DrawStatusRow(x, rowY, w, UI_STATUS_BAR_HEIGHT_COLLAPSED, label,
+		                              textColor, UI_STATUS_CHAR_WIDTH,
+		                              UI_STATUS_COLLAPSED_CHAR_HEIGHT);
+		rowY += UI_STATUS_BAR_HEIGHT_COLLAPSED;
 
 		if (UI_ServerStatus_HasUpdateHeaderRow())
 		{
-			UI_ServerStatus_DrawUpdateHeaderRow(x, rowY, w, UI_STATUS_BAR_HEIGHT);
-			rowY += UI_STATUS_BAR_HEIGHT;
+			UI_ServerStatus_DrawUpdateHeaderRow(x, rowY, w, UI_STATUS_BAR_HEIGHT_COLLAPSED,
+			                                    UI_STATUS_CHAR_WIDTH,
+			                                    UI_STATUS_COLLAPSED_CHAR_HEIGHT);
+			rowY += UI_STATUS_BAR_HEIGHT_COLLAPSED;
 		}
 
 		UI_ServerStatus_PanelBodyRect(x, y, w, h, &bodyY, &bodyH);
@@ -1335,7 +1397,9 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 	}
 	else
 	{
-		UI_ServerStatus_DrawStatusRow(x, rowY, w, UI_STATUS_BAR_HEIGHT, label, textColor);
+		UI_ServerStatus_DrawStatusRow(x, rowY, w, UI_STATUS_BAR_HEIGHT_COLLAPSED, label,
+		                              textColor, UI_STATUS_CHAR_WIDTH,
+		                              UI_STATUS_COLLAPSED_CHAR_HEIGHT);
 	}
 }
 
@@ -1418,7 +1482,8 @@ qboolean UI_ServerStatus_HandleBarClick(int key)
 			UI_ServerStatus_SetExpanded(qfalse);
 		}
 		else if (uis.cursorx >= x && uis.cursorx <= x + w &&
-		         uis.cursory >= y && uis.cursory <= y + UI_STATUS_BAR_HEIGHT)
+		         uis.cursory >= y &&
+		         uis.cursory <= y + UI_ServerStatus_ExpandedHeadersHeight())
 		{
 			UI_ServerStatus_SetExpanded(qfalse);
 		}
@@ -1531,8 +1596,8 @@ void UI_ServerStatus_FetchOnMainMenu(void)
 {
 	UI_ServerStatus_EnsureFonts();
 	UI_ServerStatus_FetchPrepare();
-	UI_ServerStatus_Secheck2BeginDual(UI_GameinfoCfg_GetStatusServerPrimary(),
-	        UI_GameinfoCfg_GetStatusServerAlternate());
+	UI_ServerStatus_Secheck2BeginDual(UI_BeinfoCfg_GetStatusServerPrimary(),
+	        UI_BeinfoCfg_GetStatusServerAlternate());
 }
 
 void UI_ServerStatus_OnFetchTimeout(void)

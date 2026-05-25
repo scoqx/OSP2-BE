@@ -1,0 +1,73 @@
+// =============================================================================
+// beinfo.txt — пример (НЕ кладите этот файл в pk3 / assets)
+//
+// Скопируйте в корень установки Quake III / мода OSP2-BE как
+// beinfo.txt (рядом с baseq3 или в папке мода, откуда клиент читает FS).
+//
+// Опционально. Если файла нет — всё работает как обычно.
+// Парсер: code/qcommon/beinfo_cfg.c
+//
+//   ui     — адреса для status sign (be_statusServer1/2)
+//   cgame  — brightcolor_<name> R G B A  или  RRGGBB / RRGGBBAA (hex, напр. FF00FF10)
+//            предметы: cg_drawBrightItems; оружие: weapon_* из bg_itemlist, cg_drawBrightWeapons
+//
+// brightcolor_* применяется только когда нет «своего» цвета:
+//   item_quad / item_enviro — пока пусты cg_quadDamageColor / cg_battleSuitColor
+//   флаги — только cg_oldFlags bit 1 (старые модели: 1 и 3); при 0/2 — dye, team colors
+// Неизвестные ключи и битые строки тихо пропускаются.
+// =============================================================================
+
+AddVar
+{
+	ui
+	{
+		be_statusServer1 = 127.0.0.1:27888;
+		be_statusServer2 = 127.0.0.1:27889;
+	}
+
+	cgame
+	{
+		// armor
+		brightcolor_item_armor_shard 0.75 0.75 0.75 1;
+		brightcolor_item_armor_combat 1 1 0 1;
+		brightcolor_item_armor_body 1 0 0 1;
+		brightcolor_item_armor_jacket 0 1 0 1;
+		// health
+		brightcolor_item_health_small 0 1 0 1;
+		brightcolor_item_health 1 1 0 1;
+		brightcolor_item_health_large 1 0.5 0 1;
+		brightcolor_item_health_mega 1 0 1 1;
+		// ammo
+		brightcolor_ammo_shells 1 0.5 0 1;
+		brightcolor_ammo_bullets 1 1 0 1;
+		brightcolor_ammo_grenades 0 1 0 1;
+		brightcolor_ammo_cells 1 0 1 1;
+		brightcolor_ammo_lightning 1 1 1 1;
+		brightcolor_ammo_rockets 1 0 0 1;
+		brightcolor_ammo_slugs 0 1 1 1;
+		brightcolor_ammo_bfg 0 0 1 1;
+		// holdables
+		brightcolor_holdable_teleporter 0 1 1 1;
+		brightcolor_holdable_medkit 0 1 0.5 1;
+		// powerups
+		brightcolor_item_quad 0 0.890196 0.945098 1;
+		brightcolor_item_enviro 1 0.65098 0.003922 1;
+		brightcolor_item_haste 1 1 0 1;
+		brightcolor_item_invis 0.6 0.6 1 1;
+		brightcolor_item_regen 1 0 1 1;
+		brightcolor_item_flight 0.5 0.8 1 1;
+		// CTF flags
+		brightcolor_team_CTF_redflag 1 0 0 1;
+		brightcolor_team_CTF_blueflag 0 0.133333 1 1;
+		// weapons
+		brightcolor_weapon_gauntlet 1 1 1 1;
+		brightcolor_weapon_machinegun 1 1 0 1;
+		brightcolor_weapon_shotgun 1 0.5 0 1;
+		brightcolor_weapon_grenadelauncher 0 1 0 1;
+		brightcolor_weapon_rocketlauncher 1 0 0 1;
+		brightcolor_weapon_lightning 1 1 1 1;
+		brightcolor_weapon_railgun 0 1 1 1;
+		brightcolor_weapon_plasmagun 1 0 1 1;
+		brightcolor_weapon_bfg 0 0 1 1;
+	}
+}

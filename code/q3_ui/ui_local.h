@@ -14,7 +14,7 @@
 #include "keycodes.h"
 #include "../game/bg_public.h"
 #include "ui_server_status.h"
-#include "ui_gameinfo_cfg.h"
+#include "ui_beinfo_cfg.h"
 
 typedef void (*voidfunc_f)(void);
 

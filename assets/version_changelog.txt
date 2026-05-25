@@ -1,15 +1,7 @@
-24.05.2026 be v1.04e
-UI:
-+ BE Update notifications in menu and changelog
-+ ui_beStatusFont
-+ Fixed server browser levelshot rendering
-+ Cvar descriptions
-CGAME:
-* cg_damagePlums rework digits floating
-+ cg_damagePlums bitmask 4 (White digits)
-* cg_damagePlumSize -> cg_damagePlumsSize (Plum->Plums)
-+ cg_numbersSet
-+ cg_oldFlags
-SuperHUD:
-+ FlagStatus_CARRY element
-+ Fonts: Odyssey, verdana fixed (Mirage)
+25.05.2026 be v1.04f
++ ui_beStatusBorderColor
++ cg_drawBrightItems
++ /beconfigs/beInfo.cfg settings file
+- cg_brightWeaponsColor* cvars removed, configure using beInfo.cfg (My apologies)
+* full bright shader and ghost gun shader separated
+* Alternate fullgright shader rework, now supports transparency

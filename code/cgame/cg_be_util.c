@@ -105,7 +105,7 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_ALT_PLASMAGUN, changed = qtrue;
 		if (cgs.osp.myColorsOverride.isLightningColorSet || cgs.osp.teamColorsOverride.isLightningColorSet || cgs.osp.enemyColorsOverride.isLightningColorSet)
 			beFlags |= CG_BE_ENEMYLIGHTNING, changed = qtrue;
-		if (anyFbSkin || cg_drawBrightWeapons.integer)
+		if (anyFbSkin || cg_drawBrightWeapons.integer || cg_drawBrightItems.integer)
 			beFlags |= CG_BE_FULLBRIGHT, changed = qtrue;
 		if (cg_drawHitBox.integer)
 			beFlags |= CG_BE_HITBOX, changed = qtrue;

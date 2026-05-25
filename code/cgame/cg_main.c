@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_main.c -- initialization and primary entry point for cgame
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
+#include "../qcommon/beinfo_cfg.h"
 
 int forceModelModificationCount = -1;
 
@@ -518,15 +519,6 @@ vmCvar_t        cg_damagePlumSize;
 vmCvar_t        cg_damagePlumsWeapons;
 vmCvar_t        cg_chatColor;
 vmCvar_t        cg_teamChatColor;
-vmCvar_t        cg_brightWeaponsColorGauntlet;
-vmCvar_t        cg_brightWeaponsColorMG;
-vmCvar_t        cg_brightWeaponsColorSG;
-vmCvar_t        cg_brightWeaponsColorGL;
-vmCvar_t        cg_brightWeaponsColorRL;
-vmCvar_t        cg_brightWeaponsColorLG;
-vmCvar_t        cg_brightWeaponsColorRG;
-vmCvar_t        cg_brightWeaponsColorPG;
-vmCvar_t        cg_brightWeaponsColorBFG;
 vmCvar_t        cg_countdownTimer;
 vmCvar_t        cg_teamIndicatorFontSize;
 vmCvar_t        cg_exec_intermission;
@@ -593,6 +585,8 @@ vmCvar_t        cg_drawUniqueColors;
 vmCvar_t        cg_killerGhost;
 vmCvar_t        cg_numbersSet;
 vmCvar_t        cg_oldFlags;
+vmCvar_t        cg_drawBrightItems;
+vmCvar_t        cg_brightItemsOpaque;
 
 cgFontIndices_t cgFontIndices;
 
@@ -1017,15 +1011,6 @@ cvarTable_t cvarTable[] =
 	{ &cg_printui_template, "cg_printui_template", "640 20 18x24 hR font 2 time 2000", CVAR_ARCHIVE },
 	{ &cg_printui_template2, "cg_printui_template2", "320 100 22x30 hC font 4 time 2000", CVAR_ARCHIVE },
 	// { &cg_snow, "cg_snow", "1", CVAR_ARCHIVE | CVAR_LATCH },
-	{ &cg_brightWeaponsColorGauntlet, "cg_brightWeaponsColorGauntlet", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorMG, "cg_brightWeaponsColorMG", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorSG, "cg_brightWeaponsColorSG", "Orange", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorGL, "cg_brightWeaponsColorGL", "Green", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorRL, "cg_brightWeaponsColorRL", "Red", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorLG, "cg_brightWeaponsColorLG", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorRG, "cg_brightWeaponsColorRG", "Cyan", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorPG, "cg_brightWeaponsColorPG", "Magenta", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
-	{ &cg_brightWeaponsColorBFG, "cg_brightWeaponsColorBFG", "Blue", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightWeaponsColor },
 	{ &cg_teamIndicatorFontSize, "cg_teamIndicatorFontSize", "8 10", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFontSize },
 	{ &cg_exec_intermission, "cg_exec_intermission", "", CVAR_ARCHIVE },
 	{ &cg_exec_warmupEnded, "cg_exec_warmupEnded", "", CVAR_ARCHIVE },
@@ -1088,6 +1073,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_killerGhost, "cg_killerGhost", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_numbersSet, "cg_numbersSet", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_numbersSet },
 	{ &cg_oldFlags, "cg_oldFlags", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_oldFlags },
+	{ &cg_drawBrightItems, "cg_drawBrightItems", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
+	{ &cg_brightItemsOpaque, "cg_brightItemsOpaque", "0.8", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1879,7 +1866,10 @@ static void CG_RegisterGraphics(void)
 	}
 
 	cgs.media.firstPersonGun = trap_R_RegisterShader("firstPersonGun");
+	cgs.media.fullBrightShader = trap_R_RegisterShader("fBrightItems");
 	cgs.media.altFullBrightShader = trap_R_RegisterShader("altFullBrightShader");
+	cgs.media.flagBrightShader = trap_R_RegisterShader("models/flags/flag2Fullbright");
+	cgs.media.flagBrightAltShader = trap_R_RegisterShader("models/flags/flag2Fullbright2");
 
 	cgs.media.bloodTrailShader = trap_R_RegisterShader("bloodTrail");
 	cgs.media.lagometerShader = trap_R_RegisterShader("lagometer");
@@ -2558,15 +2548,6 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_teamTaskFont");
 	CG_CvarTouch("cg_teamTaskThemeColor");
 
-	CG_CvarTouch("cg_brightWeaponsColorGauntlet");
-	CG_CvarTouch("cg_brightWeaponsColorMG");
-	CG_CvarTouch("cg_brightWeaponsColorSG");
-	CG_CvarTouch("cg_brightWeaponsColorGL");
-	CG_CvarTouch("cg_brightWeaponsColorRL");
-	CG_CvarTouch("cg_brightWeaponsColorLG");
-	CG_CvarTouch("cg_brightWeaponsColorRG");
-	CG_CvarTouch("cg_brightWeaponsColorPG");
-	CG_CvarTouch("cg_brightWeaponsColorBFG");
 	CG_CvarTouch("cg_brightWeaponsOpaque");
 
 	CG_CvarTouch("cg_gunX");
@@ -2863,6 +2844,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	//init variables
 	CG_InitCvars();
 	CG_InitTeamColors();
+	CG_InitBrightItemsColors();
+	BeinfoCfg_SetBrightColorHandler(CG_BeinfoApplyBrightColor);
+	BeinfoCfg_Load();
 
 	/* Update cached font indices and be_features */
 	CG_UpdateFontIndices();

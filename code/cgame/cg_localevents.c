@@ -747,21 +747,29 @@ void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0])
 	{
-		cg.battleSuitColorEnabled = qfalse;
+		CG_GetDefaultBattleSuitColor(cg.beBattleSuitColor);
+		cg.battleSuitColorEnabled = qtrue;
+		cg.battleSuitCustomColor = qfalse;
 		CG_UnregisterItemVisualForPowerup(PW_BATTLESUIT);
+		CG_UpdateBrightItemsDynamicColors();
 		return;
 	}
 	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beBattleSuitColor))
 	{
 		cg.battleSuitColorEnabled = qtrue;
+		cg.battleSuitCustomColor = qtrue;
 		CG_UnregisterItemVisualForPowerup(PW_BATTLESUIT);
+		CG_UpdateBrightItemsDynamicColors();
 	}
 	else
 	{
 		Com_Printf("^1Color is wrong, default value used\n");
-		cg.battleSuitColorEnabled = qfalse;
+		CG_GetDefaultBattleSuitColor(cg.beBattleSuitColor);
+		cg.battleSuitColorEnabled = qtrue;
+		cg.battleSuitCustomColor = qfalse;
 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
 		CG_UnregisterItemVisualForPowerup(PW_BATTLESUIT);
+		CG_UpdateBrightItemsDynamicColors();
 	}
 }
 void CG_LocalEventCvarChanged_cg_enemyBattleSuitColor(cvarTable_t* cvart)
@@ -786,21 +794,29 @@ void CG_LocalEventCvarChanged_cg_quadDamageColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0])
 	{
-		cg.quadDamageColorEnabled = qfalse;
+		CG_GetDefaultQuadDamageColor(cg.beQuadDamageColor);
+		cg.quadDamageColorEnabled = qtrue;
+		cg.quadDamageCustomColor = qfalse;
 		CG_UnregisterItemVisualForPowerup(PW_QUAD);
+		CG_UpdateBrightItemsDynamicColors();
 		return;
 	}
 	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beQuadDamageColor))
 	{
 		cg.quadDamageColorEnabled = qtrue;
+		cg.quadDamageCustomColor = qtrue;
 		CG_UnregisterItemVisualForPowerup(PW_QUAD);
+		CG_UpdateBrightItemsDynamicColors();
 	}
 	else
 	{
 		Com_Printf("^1Color is wrong, default value used\n");
-		cg.quadDamageColorEnabled = qfalse;
+		CG_GetDefaultQuadDamageColor(cg.beQuadDamageColor);
+		cg.quadDamageColorEnabled = qtrue;
+		cg.quadDamageCustomColor = qfalse;
 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
 		CG_UnregisterItemVisualForPowerup(PW_QUAD);
+		CG_UpdateBrightItemsDynamicColors();
 	}
 }
 void CG_LocalEventCvarChanged_cg_enemyQuadDamageColor(cvarTable_t* cvart)
@@ -868,6 +884,7 @@ void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart)
 		realTeam = TEAM_RED;
 	}
 	CG_UpdateVisualTeamColors(realTeam);
+	CG_UpdateBrightItemsDynamicColors();
 }
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 {
@@ -895,6 +912,7 @@ void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart)
 		realTeam = TEAM_RED;
 	}
 	CG_UpdateVisualTeamColors(realTeam);
+	CG_UpdateBrightItemsDynamicColors();
 }
 void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart)
 {
@@ -930,6 +948,7 @@ void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart)
 
 	CG_UpdateVisualTeamColors(realTeam);
 	CG_ReloadColors();
+	CG_UpdateBrightItemsDynamicColors();
 }
 
 
@@ -1280,53 +1299,6 @@ void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart)
 void CG_LocalEventCvarChanged_cg_brightWeaponsOpaque(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
-}
-
-void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart)
-{
-	const char* cvarName = cvart->cvarName;
-	weapon_t weapon = WP_NONE;
-	vec4_t color;
-	int i;
-
-	// Массив соответствий суффиксов имен cvar оружию
-	struct
-	{
-		const char* suffix;
-		weapon_t weaponType;
-	} weaponMap[] =
-	{
-		{ "Gauntlet", WP_GAUNTLET },
-		{ "MG", WP_MACHINEGUN },
-		{ "SG", WP_SHOTGUN },
-		{ "GL", WP_GRENADE_LAUNCHER },
-		{ "RL", WP_ROCKET_LAUNCHER },
-		{ "LG", WP_LIGHTNING },
-		{ "RG", WP_RAILGUN },
-		{ "PG", WP_PLASMAGUN },
-		{ "BFG", WP_BFG },
-		{ NULL, WP_NONE }
-	};
-
-	// Определяем оружие по суффиксу в имени cvar: cg_brightWeaponsColorXXX
-	for (i = 0; weaponMap[i].suffix; i++)
-	{
-		char expectedName[MAX_QPATH];
-		Com_sprintf(expectedName, sizeof(expectedName), "cg_brightWeaponsColor%s", weaponMap[i].suffix);
-		if (Q_stricmp(cvarName, expectedName) == 0)
-		{
-			weapon = weaponMap[i].weaponType;
-			break;
-		}
-	}
-
-	if (weapon > WP_NONE && weapon < WP_NUM_WEAPONS)
-	{
-		if (CG_ParseColorStr(cvart->vmCvar->string, color))
-		{
-			VectorCopy(color, cgs.beBrightWeaponsColor[weapon]);
-		}
-	}
 }
 
 void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart)

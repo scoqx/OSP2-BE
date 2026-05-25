@@ -1923,10 +1923,25 @@ static void CG_SpawnRailTrail(centity_t* cent, vec3_t origin)
 void CG_InitBrightWeaponsColors(void)
 {
 	int i;
+
 	for (i = 0; i < WP_NUM_WEAPONS; i++)
 	{
 		VectorCopy(weaponBrightColors[i], cgs.beBrightWeaponsColor[i]);
+		cgs.beBrightWeaponsBeinfoSet[i] = qfalse;
+		cgs.beBrightWeaponsBeinfoOpaque[i] = 1.0f;
 	}
+}
+
+float CG_GetBrightWeaponOpacity(int weaponNum)
+{
+	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS &&
+	        cgs.beBrightWeaponsBeinfoSet[weaponNum])
+	{
+		return cgs.beBrightWeaponsBeinfoOpaque[weaponNum];
+	}
+
+	trap_Cvar_Update(&cg_brightWeaponsOpaque);
+	return cg_brightWeaponsOpaque.value;
 }
 
 void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum)
@@ -1937,7 +1952,7 @@ void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum)
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 	{
 		color = cgs.beBrightWeaponsColor[weaponNum];
-		opacity = cg_brightWeaponsOpaque.value;
+		opacity = CG_GetBrightWeaponOpacity(weaponNum);
 
 		gun->shaderRGBA[0] = 255 * color[0];
 		gun->shaderRGBA[1] = 255 * color[1];
@@ -1952,7 +1967,7 @@ void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum)
 
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 	{
-		opacity = cg_brightWeaponsOpaque.value;
+		opacity = CG_GetBrightWeaponOpacity(weaponNum);
 
 		ent->shaderRGBA[0] = 255 * cgs.beBrightWeaponsColor[weaponNum][0];
 		ent->shaderRGBA[1] = 255 * cgs.beBrightWeaponsColor[weaponNum][1];
@@ -1969,7 +1984,7 @@ qhandle_t CG_SelectBrightWeaponsShader(void)
 	}
 	else
 	{
-		return cgs.media.firstPersonGun;
+		return cgs.media.fullBrightShader;
 	}
 }
 /*
@@ -2002,13 +2017,12 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	int drawGunFlags;
 	int railChamberFlags;
 	int brightWeaponsShaderType;
-	float brightWeaponsOpacity;
+	float brightWeaponOpacity;
 
 	/* --- cvars (hot path: 64 players * 60 FPS) --- */
 	drawGunFlags = cg_drawGun.integer;
 	railChamberFlags = cg_railCustomChamber.integer;
 	brightWeaponsShaderType = cg_brightWeaponsShader.integer;
-	brightWeaponsOpacity = cg_brightWeaponsOpaque.value;
 
 	/* --- who we're drawing: own gun, enemy, teammate, spectate follow --- */
 	isOwnGun = ps && cent->currentState.number == cg.clientNum;
@@ -2136,12 +2150,13 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		if (wantBright && weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 		{
 			float* bc = cgs.beBrightWeaponsColor[weaponNum];
+			brightWeaponOpacity = CG_GetBrightWeaponOpacity(weaponNum);
 			gun.shaderRGBA[0] = (byte)(255 * bc[0]);
 			gun.shaderRGBA[1] = (byte)(255 * bc[1]);
 			gun.shaderRGBA[2] = (byte)(255 * bc[2]);
-			gun.shaderRGBA[3] = (byte)(255 * brightWeaponsOpacity);
+			gun.shaderRGBA[3] = (byte)(255 * brightWeaponOpacity);
 			usedBrightColor = qtrue;
-			gun.customShader = (brightWeaponsShaderType == 2) ? cgs.media.altFullBrightShader : cgs.media.firstPersonGun;
+			gun.customShader = (brightWeaponsShaderType == 2) ? cgs.media.altFullBrightShader : cgs.media.fullBrightShader;
 		}
 	}
 	/* --- ghost gun (cg_gunColor / cg_gunOpaque) --- */
@@ -2317,11 +2332,12 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			if (usedBrightColor && weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
 			{
 				float* bc = cgs.beBrightWeaponsColor[weaponNum];
+				brightWeaponOpacity = CG_GetBrightWeaponOpacity(weaponNum);
 				barrel.shaderRGBA[0] = (byte)(255 * bc[0]);
 				barrel.shaderRGBA[1] = (byte)(255 * bc[1]);
 				barrel.shaderRGBA[2] = (byte)(255 * bc[2]);
-				barrel.shaderRGBA[3] = (byte)(255 * brightWeaponsOpacity);
-				barrel.customShader = (brightWeaponsShaderType == 2) ? cgs.media.altFullBrightShader : cgs.media.firstPersonGun;
+				barrel.shaderRGBA[3] = (byte)(255 * brightWeaponOpacity);
+				barrel.customShader = (brightWeaponsShaderType == 2) ? cgs.media.altFullBrightShader : cgs.media.fullBrightShader;
 			}
 			else if (ghostGun)
 			{

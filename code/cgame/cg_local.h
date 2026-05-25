@@ -926,6 +926,8 @@ typedef struct
 	qboolean    enemyDamageColorEnabled;
 	vec4_t      beQuadDamageColor;
 	qboolean    quadDamageColorEnabled;
+	qboolean    quadDamageCustomColor;
+	qboolean    battleSuitCustomColor;
 	vec4_t      beFragEffectColor;
 	vec4_t      beHealthColor;
 	vec4_t      beHealthLowColor;
@@ -1043,7 +1045,10 @@ typedef struct
 	qhandle_t   lightningShader; //probably removed
 	qhandle_t   grappleRopeShader;
 	qhandle_t   firstPersonGun;
+	qhandle_t   fullBrightShader;
 	qhandle_t   altFullBrightShader;
+	qhandle_t   flagBrightShader;
+	qhandle_t   flagBrightAltShader;
 
 	qhandle_t   unk_media_60;
 	qhandle_t   unk_media_61;
@@ -1777,6 +1782,10 @@ typedef struct
 	customWeaponStats_t beWeaponStats[WP_NUM_WEAPONS];
 	// qboolean        beSupportedServer;
 	vec3_t          beBrightWeaponsColor[WP_NUM_WEAPONS];
+	qboolean        beBrightWeaponsBeinfoSet[WP_NUM_WEAPONS];
+	float           beBrightWeaponsBeinfoOpaque[WP_NUM_WEAPONS];
+	vec4_t          beBrightItemsColor[MAX_ITEMS];
+	qboolean        beBrightItemsBeinfoSet[MAX_ITEMS];
 	team_t          beMyTeam;
 	int             beServerEnableBreath;
 	// int             beAutohop;  /* 0=нет pmove_autohop в cs, 1=есть и нельзя управлять, 2=можно управлять */
@@ -2304,6 +2313,8 @@ extern vmCvar_t         cg_drawUniqueColors;
 extern vmCvar_t         cg_killerGhost;
 extern vmCvar_t         cg_numbersSet;
 extern vmCvar_t         cg_oldFlags;
+extern vmCvar_t         cg_drawBrightItems;
+extern vmCvar_t         cg_brightItemsOpaque;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2761,7 +2772,31 @@ void CG_UpdateWeaponDlightColor(weapon_t weapon);
 float CG_GetWeaponTempAccuracy(int weapon);
 void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum);
 void CG_InitBrightWeaponsColors(void);
+float CG_GetBrightWeaponOpacity(int weaponNum);
+void CG_BeinfoApplyBrightColor(const char* classname, float r, float g, float b, float a);
 qhandle_t CG_SelectBrightWeaponsShader(void);
+/* icons/dye/colors.cfg — default powerup / classic flag tints (0.0–1.0) */
+#define CG_DEFAULT_QUAD_DAMAGE_R    0.0f
+#define CG_DEFAULT_QUAD_DAMAGE_G    (227.0f / 255.0f)
+#define CG_DEFAULT_QUAD_DAMAGE_B    (241.0f / 255.0f)
+#define CG_DEFAULT_BATTLE_SUIT_R    1.0f
+#define CG_DEFAULT_BATTLE_SUIT_G    (166.0f / 255.0f)
+#define CG_DEFAULT_BATTLE_SUIT_B    (1.0f / 255.0f)
+#define CG_DEFAULT_FLAG_RED_R       1.0f
+#define CG_DEFAULT_FLAG_RED_G       0.0f
+#define CG_DEFAULT_FLAG_RED_B       0.0f
+#define CG_DEFAULT_FLAG_BLUE_R      0.0f
+#define CG_DEFAULT_FLAG_BLUE_G      (34.0f / 255.0f)
+#define CG_DEFAULT_FLAG_BLUE_B      1.0f
+
+void CG_InitBrightItemsColors(void);
+void CG_UpdateBrightItemsDynamicColors(void);
+void CG_GetDefaultQuadDamageColor(vec4_t out);
+void CG_GetDefaultBattleSuitColor(vec4_t out);
+qboolean CG_FlagUsesClassicBrightColor(void);
+qboolean CG_BrightItemBeinfoOverrideAllowed(const char* classname);
+qhandle_t CG_SelectBrightItemsShader(int itemNum);
+qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum);
 
 
 //
@@ -3533,7 +3568,6 @@ void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_brightWeaponsOpaque(cvarTable_t* cvart);
-void CG_LocalEventCvarChanged_cg_brightWeaponsColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart);

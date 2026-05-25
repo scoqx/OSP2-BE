@@ -95,6 +95,7 @@ firstPersonGun
 }
 
 // fullbright shaders
+// for player model
 fBright
 {
 	{
@@ -115,6 +116,17 @@ fBrightVertexLight
 		map $whiteimage
 		blendFunc GL_ONE GL_ZERO
 		rgbGen entity
+	}
+}
+
+// for weapons and items
+fBrightItems
+{
+	{
+		map $whiteimage
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen entity
+		alphaGen entity
 	}
 }
 
@@ -452,6 +464,7 @@ tempAcc_LG_Icon
 
 disconnectedNew
 {
+	nomipmaps
 	nopicmip
 	{
 		map gfx/2d/net.tga
@@ -497,8 +510,8 @@ altFullBrightShader
 {
 	sort nearest
     {
-        map textures/effects/envmapghost.jpg
-        blendFunc add
+        map textures/effects/envmapghost.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
 	    tcmod rotate 30
         tcmod scroll 1 .1
         rgbGen entity

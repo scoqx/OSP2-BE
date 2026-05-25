@@ -23,6 +23,7 @@ static uiCvarDescriptionTable_t uiCvarDescriptionTable[] =
 	{ "ui_bannerColor", "Alternative banner color.\n \"^2color^7\" - color name, digit or hex" },
 	{ "ui_pallete_type", "Color picker palette mode index. Set from the in-menu color picker." },
 	{ "ui_beStatusFont", "Font for the main menu BE status bar and changelog panel. Use ^3/fonts^7 for indices." },
+	{ "ui_beStatusBorderColor", "Border color for the main menu BE status bar and changelog panel. Clear cvar to hide borders.\n \"^2color^7\" - color name, digit or hex" },
 };
 
 static const int uiCvarDescriptionTableSize = sizeof(uiCvarDescriptionTable) / sizeof(uiCvarDescriptionTable[0]);

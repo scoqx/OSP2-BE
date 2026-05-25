@@ -565,43 +565,56 @@ static void CG_Item(centity_t* cent)
 		VectorScale(ent.axis[1], 1.5f, ent.axis[1]);
 		VectorScale(ent.axis[2], 1.5f, ent.axis[2]);
 		ent.nonNormalizedAxes = qtrue;
-		if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 8))
-		{
-			int w;
-			float* bc;
-			float op;
-			w = item->giTag;
-			ent.customShader = (cg_brightWeaponsShader.integer == 2) ? cgs.media.altFullBrightShader : cgs.media.firstPersonGun;
-			if (w > WP_NONE && w < WP_NUM_WEAPONS)
-			{
-				bc = cgs.beBrightWeaponsColor[w];
-				op = cg_brightWeaponsOpaque.value;
-				if (op < 0.0f) op = 0.0f;
-				if (op > 1.0f) op = 1.0f;
-				ent.shaderRGBA[0] = 255 * bc[0];
-				ent.shaderRGBA[1] = 255 * bc[1];
-				ent.shaderRGBA[2] = 255 * bc[2];
-				ent.shaderRGBA[3] = 255 * op;
-			}
-		}
-		else if (item->giTag == WP_RAILGUN)
-		{
-			const float* color;
-			color = (cg_railCustomChamber.integer & 2) ? (const float*)cgs.osp.myColors.railRings : (const float*)colorWhite;
-			ent.shaderRGBA[0] = 255 * color[0];
-			ent.shaderRGBA[1] = 255 * color[1];
-			ent.shaderRGBA[2] = 255 * color[2];
-			ent.shaderRGBA[3] = 255;
-		}
 	}
 
-	if (CG_FillCustomItemWorldDyeShaderRGBA(itemNum, 0, ent.shaderRGBA))
 	{
-		/* slot 0: custom world model from bg_customItemVisuals */
-	}
-	else if (gitype != IT_WEAPON)
-	{
-		memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
+		qboolean usedBrightItem;
+
+		usedBrightItem = CG_ApplyBrightItem(&ent, itemNum);
+		if (!usedBrightItem && gitype == IT_WEAPON)
+		{
+			if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 8))
+			{
+				int w;
+				float* bc;
+				float op;
+				w = item->giTag;
+				ent.customShader = (cg_brightWeaponsShader.integer == 2) ? cgs.media.altFullBrightShader : cgs.media.fullBrightShader;
+				if (w > WP_NONE && w < WP_NUM_WEAPONS)
+				{
+					bc = cgs.beBrightWeaponsColor[w];
+					op = CG_GetBrightWeaponOpacity(w);
+					if (op < 0.0f) op = 0.0f;
+					if (op > 1.0f) op = 1.0f;
+					ent.shaderRGBA[0] = 255 * bc[0];
+					ent.shaderRGBA[1] = 255 * bc[1];
+					ent.shaderRGBA[2] = 255 * bc[2];
+					ent.shaderRGBA[3] = 255 * op;
+					usedBrightItem = qtrue;
+				}
+			}
+			else if (item->giTag == WP_RAILGUN)
+			{
+				const float* color;
+				color = (cg_railCustomChamber.integer & 2) ? (const float*)cgs.osp.myColors.railRings : (const float*)colorWhite;
+				ent.shaderRGBA[0] = 255 * color[0];
+				ent.shaderRGBA[1] = 255 * color[1];
+				ent.shaderRGBA[2] = 255 * color[2];
+				ent.shaderRGBA[3] = 255;
+			}
+		}
+
+		if (!usedBrightItem)
+		{
+			if (CG_FillCustomItemWorldDyeShaderRGBA(itemNum, 0, ent.shaderRGBA))
+			{
+				/* slot 0: custom world model from bg_customItemVisuals */
+			}
+			else if (gitype != IT_WEAPON)
+			{
+				memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
+			}
+		}
 	}
 
 	trap_R_AddRefEntityToScene(&ent);
@@ -625,9 +638,12 @@ static void CG_Item(centity_t* cent)
 				VectorScale(ent.axis[2], frac, ent.axis[2]);
 				ent.nonNormalizedAxes = qtrue;
 			}
-			if (!CG_FillCustomItemWorldDyeShaderRGBA(itemNum, 1, ent.shaderRGBA))
+			if (!CG_ApplyBrightItem(&ent, itemNum))
 			{
-				memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
+				if (!CG_FillCustomItemWorldDyeShaderRGBA(itemNum, 1, ent.shaderRGBA))
+				{
+					memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
+				}
 			}
 			trap_R_AddRefEntityToScene(&ent);
 		}

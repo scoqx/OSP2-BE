@@ -20,6 +20,36 @@ qboolean CG_OldFlagIcons(void)
 	return (cg_oldFlags.integer & CG_OLDFLAG_ICONS) ? qtrue : qfalse;
 }
 
+void CG_GetDefaultQuadDamageColor(vec4_t out)
+{
+	if (!out)
+	{
+		return;
+	}
+	out[0] = CG_DEFAULT_QUAD_DAMAGE_R;
+	out[1] = CG_DEFAULT_QUAD_DAMAGE_G;
+	out[2] = CG_DEFAULT_QUAD_DAMAGE_B;
+	out[3] = 1.0f;
+}
+
+void CG_GetDefaultBattleSuitColor(vec4_t out)
+{
+	if (!out)
+	{
+		return;
+	}
+	out[0] = CG_DEFAULT_BATTLE_SUIT_R;
+	out[1] = CG_DEFAULT_BATTLE_SUIT_G;
+	out[2] = CG_DEFAULT_BATTLE_SUIT_B;
+	out[3] = 1.0f;
+}
+
+qboolean CG_FlagUsesClassicBrightColor(void)
+{
+	/* Classic red/blue only when old world flag models are on (cg_oldFlags bit 1). */
+	return CG_OldFlagModels();
+}
+
 /*
 =================
 CG_UpdateFlagMedia
@@ -83,6 +113,7 @@ void CG_LocalEventCvarChanged_cg_oldFlags(cvarTable_t* cvart)
 	CG_UpdateFlagMedia();
 	CG_UnregisterItemVisualForPowerup(PW_REDFLAG);
 	CG_UnregisterItemVisualForPowerup(PW_BLUEFLAG);
+	CG_UpdateBrightItemsDynamicColors();
 }
 
 static qboolean CG_DyeFlagTintRgbIsBlack(const vec4_t v)
@@ -133,6 +164,7 @@ void CG_ItemDyeResolveTint(const gitem_t* item, vec4_t out)
 		out[0] = cg.beBattleSuitColor[0];
 		out[1] = cg.beBattleSuitColor[1];
 		out[2] = cg.beBattleSuitColor[2];
+		return;
 	}
 }
 
