@@ -1,7 +1,5 @@
 27.05.2026 be v1.04g
-UI:
 + BE Status animations
-CGAME:
 + cg_myFootsteps
 + cg_teamFootsteps
 + cg_enemyFootsteps
