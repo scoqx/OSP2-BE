@@ -468,6 +468,9 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_oldFlags", "CTF flag visuals. Requires ^3vid_restart^7. Bitmask:\n  ^20^7 - team-colored dye models and icons\n  ^21^7 - classic world models\n  ^22^7 - classic HUD icons\n  ^23^7 - classic models and icons" },
 	{ "cg_drawBrightItems", "Render 3D world pickups with bright colors. Ground weapons use ^3cg_drawBrightWeapons^7.\n  ^20^7 - disabled\n  ^21^7 - default shader\n  ^22^7 - alternative shader" },
 	{ "cg_brightItemsOpaque", "Opacity for pickups rendered with ^3cg_drawBrightItems^7\n  ^20.0^7 - ^21.0^7" },
+	{ "cg_myFootsteps", "Footstep type for yourself.\n  ^2-1^7 - model or custom sound model from ^3cg_mySound^7\n  ^20^7 - normal\n  ^21^7 - boot\n  ^22^7 - flesh\n  ^23^7 - mech\n  ^24^7 - energy" },
+	{ "cg_teamFootsteps", "Footstep type for teammates.\n  ^2-1^7 - model or custom sound model from ^3cg_teamSound^7\n  ^20^7 - normal\n  ^21^7 - boot\n  ^22^7 - flesh\n  ^23^7 - mech\n  ^24^7 - energy" },
+	{ "cg_enemyFootsteps", "Footstep type for enemies.\n  ^2-1^7 - model or custom sound model from ^3cg_enemySound^7\n  ^20^7 - normal\n  ^21^7 - boot\n  ^22^7 - flesh\n  ^23^7 - mech\n  ^24^7 - energy" },
 };
 
 

@@ -882,3 +882,9 @@ SuperHUD:
 - cg_brightWeaponsColor* cvars removed, configure using beInfo.cfg (My apologies)
 * full bright shader and ghost gun shader separated
 * Alternate fullgright shader rework, now supports transparency
+
+27.05.2026 be v1.04g
++ BE Status animations
++ cg_myFootsteps
++ cg_teamFootsteps
++ cg_enemyFootsteps

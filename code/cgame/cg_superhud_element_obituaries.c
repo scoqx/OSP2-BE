@@ -447,9 +447,7 @@ static qhandle_t CG_SHUDObituaryGetModIcon(int mod, qboolean unfrozen)
 			return cgs.media.battleSuitIcon;
 		default:
 			return cgs.media.botSkillShaders[4];
-			break;
 	}
-	return 0;// no shader
 }
 
 void CG_SHUDElementObituariesDestroy(void* context)

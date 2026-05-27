@@ -246,6 +246,108 @@ void CG_OSPConfigDisableBEFeatures(int value)
 	CG_PrintDisabledFeatures(qfalse);
 	CG_UpdateBeFeatures();
 }
+
+static int CG_OSP2BEManualTourneyMode(void)
+{
+	/* Temporary: tourney-mode logic is kept, but external drivers are disabled. */
+	return 0;
+}
+
+void CG_OSP2BEConfigTourneyModeSet(int value)
+{
+	(void)value;
+	cgs.beTourneyMode = CG_OSP2BEManualTourneyMode();
+	trap_Cvar_Update(&com_maxfps);
+	trap_Cvar_Update(&cl_pitchspeed);
+	trap_Cvar_Update(&cl_yawspeed);
+	if (cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK)
+	{
+		cgs.beTourneyLockedMaxfps = com_maxfps.integer;
+	}
+	if (cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_DISABLE_MOUSE_SCRIPTS)
+	{
+		cgs.beTourneyLockedPitch = cl_pitchspeed.integer;
+		cgs.beTourneyLockedYaw = cl_yawspeed.integer;
+	}
+}
+
+void CG_OSP2BEConfigTourneyModeRefresh(void)
+{
+	CG_OSP2BEConfigTourneyModeSet(0);
+}
+
+static qboolean CG_OSP2BECanChangeMaxfpsInTourney(void)
+{
+	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK))
+	{
+		return qtrue;
+	}
+	if (cg.warmup)
+	{
+		return qtrue;
+	}
+	if (!cg.snap)
+	{
+		return qtrue;
+	}
+	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+	{
+		return qtrue;
+	}
+	return qfalse;
+}
+
+void CG_OSP2BEOnWarmupEnded(void)
+{
+	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK))
+	{
+		return;
+	}
+	trap_Cvar_Update(&com_maxfps);
+	cgs.beTourneyLockedMaxfps = com_maxfps.integer;
+}
+
+void CG_OSP2BEOnComMaxfpsChanged(int value)
+{
+	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK))
+	{
+		return;
+	}
+	if (CG_OSP2BECanChangeMaxfpsInTourney())
+	{
+		cgs.beTourneyLockedMaxfps = value;
+		return;
+	}
+	if (value != cgs.beTourneyLockedMaxfps)
+	{
+		trap_SendConsoleCommand(va("set com_maxfps %i\n", cgs.beTourneyLockedMaxfps));
+		CG_PrintOnce("^3com_maxfps^7 cannot be changed during tournament match. Change in ^2warmup^7 or as ^2spectator^7.\n");
+	}
+}
+
+void CG_OSP2BEOnPitchspeedChanged(int value)
+{
+	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_DISABLE_MOUSE_SCRIPTS))
+	{
+		return;
+	}
+	if (value != cgs.beTourneyLockedPitch)
+	{
+		trap_Cvar_Set("cl_pitchspeed", va("%d", cgs.beTourneyLockedPitch));
+	}
+}
+
+void CG_OSP2BEOnYawspeedChanged(int value)
+{
+	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_DISABLE_MOUSE_SCRIPTS))
+	{
+		return;
+	}
+	if (value != cgs.beTourneyLockedYaw)
+	{
+		trap_Cvar_Set("cl_yawspeed", va("%d", cgs.beTourneyLockedYaw));
+	}
+}
 /*
  * Unknown cs 0x368
  */

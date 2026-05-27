@@ -268,6 +268,8 @@ vmCvar_t           r_znear;
 vmCvar_t           handicap;
 vmCvar_t           m_pitch;
 vmCvar_t           com_maxfps;
+vmCvar_t           cl_pitchspeed;
+vmCvar_t           cl_yawspeed;
 
 vmCvar_t           cg_noLeadSounds;
 vmCvar_t           cg_fragSound;
@@ -587,6 +589,9 @@ vmCvar_t        cg_numbersSet;
 vmCvar_t        cg_oldFlags;
 vmCvar_t        cg_drawBrightItems;
 vmCvar_t        cg_brightItemsOpaque;
+vmCvar_t        cg_myFootsteps;
+vmCvar_t        cg_teamFootsteps;
+vmCvar_t        cg_enemyFootsteps;
 
 cgFontIndices_t cgFontIndices;
 
@@ -793,7 +798,7 @@ cvarTable_t cvarTable[] =
 	{ &r_znear, "r_znear", "4",  0, CG_LocalEventCvarChanged_r_znear},
 	{ &handicap, "handicap", "100", 0, CG_LocalEventCvarChanged_handicap},
 	{ &m_pitch, "m_pitch", "0.022", CVAR_ARCHIVE },
-	{ &com_maxfps, "com_maxfps", "125", CVAR_ARCHIVE },
+	{ &com_maxfps, "com_maxfps", "125", CVAR_ARCHIVE, CG_LocalEventCvarChanged_com_maxfps },
 	{ &cg_noLeadSounds, "cg_noLeadSounds", "0", CVAR_ARCHIVE },
 	{ &cg_fragSound, "cg_fragSound", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_fragSound},
 	{ &cg_lightningHideCrosshair, "cg_lightningHideCrosshair", "0", CVAR_ARCHIVE },
@@ -1038,8 +1043,8 @@ cvarTable_t cvarTable[] =
 	// { &cg_teamTaskVersion, "cg_teamTaskVersion", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_railFix, "cg_railFix", "0", CVAR_ARCHIVE },
 	{ &cg_freezeSoundFix, "cg_freezeSoundFix", "", CVAR_ARCHIVE },
-	// { &cl_pitchspeed, "cl_pitchspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_pitchspeed },
-	// { &cl_yawspeed, "cl_yawspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_yawSpeed },
+	{ &cl_pitchspeed, "cl_pitchspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_pitchspeed },
+	{ &cl_yawspeed, "cl_yawspeed", "140", CVAR_ARCHIVE_ND, CG_LocalEventCvarChanged_cl_yawSpeed },
 	{ &cg_infoDetail, "cg_infoDetail", "1", CVAR_ARCHIVE },
 	{ &cg_enhancedInterpolation, "cg_enhancedInterpolation", "0", CVAR_ARCHIVE },
 	{ &cg_entityOverpolate, "cg_entityOverpolate", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_entityOverpolate },
@@ -1075,6 +1080,9 @@ cvarTable_t cvarTable[] =
 	{ &cg_oldFlags, "cg_oldFlags", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_oldFlags },
 	{ &cg_drawBrightItems, "cg_drawBrightItems", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	{ &cg_brightItemsOpaque, "cg_brightItemsOpaque", "0.8", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_myFootsteps, "cg_myFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_teamFootsteps, "cg_teamFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_enemyFootsteps, "cg_enemyFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -2562,8 +2570,8 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_railRingsRadius");
 	CG_CvarTouch("cg_railRingsSpacing");
 
-	// CG_CvarTouch("cl_pitchspeed");
-	// CG_CvarTouch("cl_yawspeed");
+	CG_CvarTouch("cl_pitchspeed");
+	CG_CvarTouch("cl_yawspeed");
 }
 
 /*
@@ -3010,6 +3018,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		}
 		// CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
 		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
+		/* CG_OSP2BEConfigTourneyModeSet(atoi(CG_ConfigString(CS_OSP2BE_TOURNEY_MODE))); */
 
 		/* cache damageInfoAllowed - gametype, fpsclassico, custom_client_2, beDisableFeatures all known */
 		CG_UpdateDamageInfoAllowed();
@@ -3095,6 +3104,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	/* Run cg_execVstr (and gametype exec) before CG_RegisterClients(), so they run before
 	 * cg_exec_joinGame which is triggered when local clientinfo is first applied. */
 	CG_UpdateCvars();
+	/* CG_OSP2BEConfigTourneyModeRefresh(); */
 	if (cg_execVstr.string[0])
 	{
 		trap_SendConsoleCommand(cg_execVstr.string);

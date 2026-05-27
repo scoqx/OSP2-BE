@@ -1,9 +1,7 @@
-25.05.2026 be v1.04f2
-+ Fonts: Odyssey and verdana
-* Quad damage and battle suit models color fix
-+ ui_beStatusBorderColor
-+ cg_drawBrightItems
-+ /beconfigs/beInfo.cfg settings file
-- cg_brightWeaponsColor* cvars removed, configure using beInfo.cfg (My apologies)
-* full bright shader and ghost gun shader separated
-* Alternate fullgright shader rework, now supports transparency
+27.05.2026 be v1.04g
+UI:
++ BE Status animations
+CGAME:
++ cg_myFootsteps
++ cg_teamFootsteps
++ cg_enemyFootsteps

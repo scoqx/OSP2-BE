@@ -1560,6 +1560,9 @@ typedef struct
 #define CG_BE_AUTOJUMP          (1 << 17) // 131072
 #define CG_BE_HITBOX            (1 << 18) // 262144
 
+#define OSP2BE_TOURNEY_MODE_FPS_LOCK            (1 << 0) // 1 - fps lock
+#define OSP2BE_TOURNEY_MODE_DISABLE_MOUSE_SCRIPTS (1 << 1) // 2 - disable mouse scripts
+
 // Team task flags (bitmask for cg_teamTask)
 #define CG_TEAMTASK_ENABLED        (1 << 0)  // 1 - Enable team task markers
 #define CG_TEAMTASK_MARKSOUND      (1 << 1)  // 2 - Play sound when marking
@@ -1763,6 +1766,10 @@ typedef struct
 
 	/* BE (OSP2-BE) settings - flattened from cgs.be */
 	int             beDisableFeatures;    /* server-disabled features bitmask */
+	int             beTourneyMode;        /* CS_OSP2BE_TOURNEY_MODE bitmask */
+	int             beTourneyLockedMaxfps;
+	int             beTourneyLockedPitch;
+	int             beTourneyLockedYaw;
 	int             beEnabled;            /* cached be_enabled.integer */
 	int             beFeaturesEnabled;    /* final bitmask: enabled features */
 	qboolean        damageInfoAllowed;    /* cached: CA=true, fpsclassico=false, else BE|OSP */
@@ -2036,6 +2043,8 @@ extern vmCvar_t           r_znear;
 extern vmCvar_t           handicap;
 extern vmCvar_t           m_pitch;
 extern vmCvar_t           com_maxfps;
+extern vmCvar_t           cl_pitchspeed;
+extern vmCvar_t           cl_yawspeed;
 extern vmCvar_t           cg_noLeadSounds;
 extern vmCvar_t           cg_fragSound;
 extern vmCvar_t           cg_lightningHide;
@@ -2315,6 +2324,9 @@ extern vmCvar_t         cg_numbersSet;
 extern vmCvar_t         cg_oldFlags;
 extern vmCvar_t         cg_drawBrightItems;
 extern vmCvar_t         cg_brightItemsOpaque;
+extern vmCvar_t         cg_myFootsteps;
+extern vmCvar_t         cg_teamFootsteps;
+extern vmCvar_t         cg_enemyFootsteps;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -3285,6 +3297,12 @@ void CG_OSPConfigCustomClient2Set(int value);
 void CG_OSPConfigModeSet(int value);
 void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
+void CG_OSP2BEConfigTourneyModeSet(int value);
+void CG_OSP2BEConfigTourneyModeRefresh(void);
+void CG_OSP2BEOnWarmupEnded(void);
+void CG_OSP2BEOnComMaxfpsChanged(int value);
+void CG_OSP2BEOnPitchspeedChanged(int value);
+void CG_OSP2BEOnYawspeedChanged(int value);
 // void CG_OSPSupportedBEServer(qboolean value);
 void CG_PrintDisabledFeatures(qboolean request);
 
@@ -3571,8 +3589,9 @@ void CG_LocalEventCvarChanged_cg_brightWeaponsOpaque(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart);
-// void CG_LocalEventCvarChanged_cl_pitchspeed(cvarTable_t* cvart);
-// void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_com_maxfps(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cl_pitchspeed(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_entityOverpolate(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyBattleSuitColor(cvarTable_t* cvart);

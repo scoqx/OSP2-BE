@@ -120,19 +120,26 @@ sfxHandle_t CG_CustomSound(int clientNum, const char* soundName)
 }
 
 /*
- * Footsteps type to use for a client: from cg_mySound/cg_teamSound/cg_enemySound model if set, else from ci->footsteps.
+ * Footsteps type to use for a client:
+ *  - cg_*Footsteps >= 0 forces dedicated footstep type (Devotion style).
+ *  - cg_*Footsteps == -1 keeps default behavior:
+ *      custom sound model footsteps from cg_*Sound (if set), otherwise model footsteps.
  */
 footstep_t CG_EffectiveFootsteps(int clientNum)
 {
 	clientInfo_t* ci;
 	int myteam;
 	clientInfo_t* myself;
+	int forcedFootsteps;
+	qboolean isMyself;
+	qboolean isTeammate;
 
-	if (!cgs.customModelSound || !cg.snap)
-		goto use_model;
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
 		clientNum = 0;
 	ci = &cgs.clientinfo[clientNum];
+	if (!cg.snap)
+		return ci->footsteps;
+
 	{
 		const playerState_t* ps = &cg.snap->ps;
 		if (ps->pm_flags & PMF_FOLLOW && ps->persistant[PERS_TEAM] == TEAM_SPECTATOR)
@@ -146,26 +153,41 @@ footstep_t CG_EffectiveFootsteps(int clientNum)
 			myself = &cgs.clientinfo[cg.clientNum];
 		}
 	}
-	if (ci == myself && cg_mySound.string[0])
+
+	isMyself = (ci == myself);
+	isTeammate = (!isMyself && myteam != TEAM_FREE && ci->team == myteam);
+	forcedFootsteps = isMyself ? cg_myFootsteps.integer : (isTeammate ? cg_teamFootsteps.integer : cg_enemyFootsteps.integer);
+
+	switch (forcedFootsteps)
+	{
+		case FOOTSTEP_NORMAL:
+		case FOOTSTEP_BOOT:
+		case FOOTSTEP_FLESH:
+		case FOOTSTEP_MECH:
+		case FOOTSTEP_ENERGY:
+			return forcedFootsteps;
+		default:
+			break;
+	}
+
+	if (!cgs.customModelSound)
+		return ci->footsteps;
+
+	if (isMyself && cg_mySound.string[0])
 	{
 		if (cgs.myFootsteps < FOOTSTEP_TOTAL)
 			return cgs.myFootsteps;
-		goto use_model;
+		return ci->footsteps;
 	}
-	if (myteam != TEAM_FREE && ci->team == myteam && ci != myself && cg_teamSound.string[0])
+	if (isTeammate && cg_teamSound.string[0])
 	{
 		if (cgs.teamFootsteps < FOOTSTEP_TOTAL)
 			return cgs.teamFootsteps;
-		goto use_model;
+		return ci->footsteps;
 	}
-	if ((ci->team != myteam || (myteam == TEAM_FREE && ci != myself)) && cg_enemySound.string[0])
-	{
-		if (cgs.enemyFootsteps < FOOTSTEP_TOTAL)
-			return cgs.enemyFootsteps;
-		goto use_model;
-	}
-use_model:
-	ci = &cgs.clientinfo[clientNum];
+	if (!isMyself && !isTeammate && cg_enemySound.string[0] && cgs.enemyFootsteps < FOOTSTEP_TOTAL)
+		return cgs.enemyFootsteps;
+
 	return ci->footsteps;
 }
 

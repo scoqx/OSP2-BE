@@ -132,6 +132,12 @@ void CG_LocalEventCvarChanged_cl_timenudge(cvarTable_t* cvart)
 	}
 }
 
+void CG_LocalEventCvarChanged_com_maxfps(cvarTable_t* cvart)
+{
+	/* CG_OSP2BEOnComMaxfpsChanged(cvart->vmCvar->integer); */
+	// (void)cvart;
+}
+
 void CG_LocalEventCvarChanged_ch_recordMessage(cvarTable_t* cvart)
 {
 	if (cg.snap)
@@ -1365,23 +1371,17 @@ void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart)
 	}
 }
 
-// void CG_LocalEventCvarChanged_cl_pitchspeed(cvarTable_t* cvart)
-//{
-//	if ( )
-//	{
-//      CG_PrintOnce("  ^9cl_pitchspeed^7 is locked in Tourney game.\n");
-//      trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
-//	}
-//}
+void CG_LocalEventCvarChanged_cl_pitchspeed(cvarTable_t* cvart)
+{
+	/* CG_OSP2BEOnPitchspeedChanged(cvart->vmCvar->integer); */
+	// (void)cvart;
+}
 
-// void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart)
-// {
-//  if ( )
-//  {
-//      CG_PrintOnce("  ^9cl_yawSpeed^7 is locked in Tourney game.\n");
-//      trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
-//  }
-// }
+void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart)
+{
+	/* CG_OSP2BEOnYawspeedChanged(cvart->vmCvar->integer); */
+	// (void)cvart;
+}
 
 void CG_LocalEventCvarChanged_cg_entityOverpolate(cvarTable_t* cvart)
 {

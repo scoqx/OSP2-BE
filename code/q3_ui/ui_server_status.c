@@ -22,23 +22,35 @@ SERVER STATUS (getstatus / mod_sig, main menu bar)
 #define UI_STATUS_CHAR_WIDTH            8.0f
 #define UI_STATUS_CHAR_HEIGHT           12.0f
 #define UI_STATUS_PANEL_PAD             6.0f
-#define UI_STATUS_BODY_EXTRA_PAD        6.0f
+#define UI_STATUS_BODY_EXTRA_PAD        0.0f // probably need 2.0f
 #define UI_STATUS_SCROLLBAR_WIDTH       8.0f
 #define UI_STATUS_SCROLLBAR_GAP         1.0f
 #define UI_STATUS_SCROLL_WHEEL_STEP     (UI_STATUS_CHAR_HEIGHT * 3.0f)
-#define UI_STATUS_UPDATE_DATE_LABEL     "Update date"
+#define UI_STATUS_UPDATE_DATE_LABEL     "Date"
 #define UI_STATUS_MENU_CURSOR_UNSET     (-2)
+#define UI_STATUS_AUTOHIDE_DELAY_MS     3000
+#define UI_STATUS_AUTOHIDE_SPEED_PPS    3.5f
+#define UI_STATUS_AUTOHIDE_TRIGGER_H    10.0f
+#define UI_STATUS_EXPAND_ANIM_SPEED     4.0f
 
 uiServerStatus_t    uiServerStatus;
 
 static qboolean     ui_statusFetchAttempted;
 static qboolean     ui_statusOffline;
+static qboolean     ui_statusBadKey;
 static qboolean     ui_statusBarExpanded;
 static qboolean     ui_statusFontReady;
 static int          ui_statusSavedMenuCursor = UI_STATUS_MENU_CURSOR_UNSET;
 static float        ui_statusChangelogScroll;
 static qboolean     ui_statusScrollbarDrag;
 static float        ui_statusScrollbarDragGrab;
+static int          ui_statusAutoHideStartMs = -1;
+static int          ui_statusAutoHideLastMs = 0;
+static float        ui_statusAutoHideFrac; /* 0 - visible, 1 - hidden below screen */
+static const char*  ui_statusAutoHideLabel;
+static float        ui_statusExpandFrac;
+static int          ui_statusExpandLastMs;
+static qboolean     ui_statusExpandModalActive;
 
 static void UI_ServerStatus_StoreFromValidatedInfo(const char* infostring);
 static const char* UI_ServerStatus_LocalVersionCompareString(void);
@@ -48,6 +60,8 @@ static float UI_ServerStatus_ExpandedHeight640(float panelW);
 static float UI_ServerStatus_ChangelogContentHeight(float textW);
 static qboolean UI_ServerStatus_ChangelogLayout(float panelW, float bodyH, float* outTextW,
         qboolean* outNeedScroll);
+static void UI_ServerStatus_ChangelogLayoutSettled(float panelW, float* outTextW,
+        qboolean* outNeedScroll, float* outContentH, float* outBodyH);
 static float UI_ServerStatus_DrawMultilineClipped(float x, float y, float maxW, const char* text,
         vec4_t color, int flags, float clipTop, float clipBottom);
 static void UI_ServerStatus_DrawText(float x, float y, const char* text, vec4_t color, int flags,
@@ -70,10 +84,17 @@ static qboolean UI_ServerStatus_HasUpdateHeaderRow(void);
 static float UI_ServerStatus_ExpandedHeadersHeight(void);
 static void UI_ServerStatus_PanelBodyRect(float panelX, float panelY, float panelW, float panelH,
         float* outBodyY, float* outBodyH);
+static float UI_ServerStatus_PanelBodyClipBottom(float panelY, float panelH);
 static void UI_ServerStatus_DrawHeaderRow(float x, float y, float w, float rowH,
         const char* leftText, vec4_t leftColor, const char* rightText, vec4_t rightColor,
         float charW, float charH);
 static qboolean UI_ServerStatus_GetBorderColor(vec4_t borderColor);
+static qboolean UI_ServerStatus_AutoHideEligible(const char* label);
+static qboolean UI_ServerStatus_AutoHideTriggerHover(float x, float w);
+static void UI_ServerStatus_AutoHideTick(const char* label, float x, float w);
+static float UI_ServerStatus_EaseSmooth(float t);
+static void UI_ServerStatus_ExpandAnimTick(void);
+static qboolean UI_ServerStatus_DrawExpandedVisual(void);
 
 static qboolean UI_ServerStatus_GetBorderColor(vec4_t borderColor)
 {
@@ -87,6 +108,124 @@ static qboolean UI_ServerStatus_GetBorderColor(vec4_t borderColor)
 		Vector4Copy(colorWhite, borderColor);
 	}
 	return qtrue;
+}
+
+static qboolean UI_ServerStatus_AutoHideEligible(const char* label)
+{
+	if (!label || !label[0])
+	{
+		return qfalse;
+	}
+	return (qboolean)(!Q_stricmp(label, "Ready to play") || !Q_stricmp(label, "Status servers offline"));
+}
+
+static qboolean UI_ServerStatus_AutoHideTriggerHover(float x, float w)
+{
+	float   y;
+
+	/* Trigger zone at bottom edge even when bar is hidden. */
+	y = 480.0f - UI_STATUS_AUTOHIDE_TRIGGER_H;
+	if (uis.cursorx >= x && uis.cursorx <= x + w)
+	{
+		if (uis.cursory >= y && uis.cursory <= 480.0f)
+		{
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+static void UI_ServerStatus_AutoHideTick(const char* label, float x, float w)
+{
+	int         now;
+	int         dtMs;
+	float       dt;
+	qboolean    eligible;
+	qboolean    hover;
+	float       target;
+
+	if (ui_statusBarExpanded || ui_statusExpandFrac > 0.001f)
+	{
+		ui_statusAutoHideStartMs = -1;
+		ui_statusAutoHideLabel = NULL;
+		ui_statusAutoHideFrac = 0.0f;
+		ui_statusAutoHideLastMs = 0;
+		return;
+	}
+
+	eligible = UI_ServerStatus_AutoHideEligible(label);
+	hover = UI_ServerStatus_AutoHideTriggerHover(x, w);
+	now = trap_Milliseconds();
+
+	if (!eligible)
+	{
+		ui_statusAutoHideStartMs = -1;
+		ui_statusAutoHideLabel = NULL;
+		target = 0.0f;
+	}
+	else
+	{
+		if (ui_statusAutoHideStartMs < 0 || ui_statusAutoHideLabel != label)
+		{
+			ui_statusAutoHideStartMs = now;
+			ui_statusAutoHideLabel = label;
+		}
+
+		if (hover)
+		{
+			target = 0.0f;
+		}
+		else if (now - ui_statusAutoHideStartMs >= UI_STATUS_AUTOHIDE_DELAY_MS)
+		{
+			target = 1.0f;
+		}
+		else
+		{
+			target = 0.0f;
+		}
+	}
+
+	if (ui_statusAutoHideLastMs <= 0)
+	{
+		ui_statusAutoHideLastMs = now;
+	}
+	dtMs = now - ui_statusAutoHideLastMs;
+	if (dtMs < 0)
+	{
+		dtMs = 0;
+	}
+	if (dtMs > 250)
+	{
+		dtMs = 250;
+	}
+	ui_statusAutoHideLastMs = now;
+
+	dt = (float)dtMs * 0.001f;
+	if (ui_statusAutoHideFrac < target)
+	{
+		ui_statusAutoHideFrac += UI_STATUS_AUTOHIDE_SPEED_PPS * dt;
+		if (ui_statusAutoHideFrac > target)
+		{
+			ui_statusAutoHideFrac = target;
+		}
+	}
+	else if (ui_statusAutoHideFrac > target)
+	{
+		ui_statusAutoHideFrac -= UI_STATUS_AUTOHIDE_SPEED_PPS * dt;
+		if (ui_statusAutoHideFrac < target)
+		{
+			ui_statusAutoHideFrac = target;
+		}
+	}
+
+	if (ui_statusAutoHideFrac < 0.0f)
+	{
+		ui_statusAutoHideFrac = 0.0f;
+	}
+	if (ui_statusAutoHideFrac > 1.0f)
+	{
+		ui_statusAutoHideFrac = 1.0f;
+	}
 }
 
 static void UI_ServerStatus_ClearActiveMenuMouseFocus(void)
@@ -154,26 +293,120 @@ static void UI_ServerStatus_MenuModalLeave(void)
 	UI_ServerStatus_ClearActiveMenuMouseFocus();
 }
 
+static float UI_ServerStatus_EaseSmooth(float t)
+{
+	if (t <= 0.0f)
+	{
+		return 0.0f;
+	}
+	if (t >= 1.0f)
+	{
+		return 1.0f;
+	}
+	return t * t * (3.0f - 2.0f * t);
+}
+
+static void UI_ServerStatus_ExpandAnimTick(void)
+{
+	int         now;
+	int         dtMs;
+	float       dt;
+	float       target;
+
+	target = ui_statusBarExpanded ? 1.0f : 0.0f;
+	now = trap_Milliseconds();
+	if (ui_statusExpandLastMs <= 0)
+	{
+		ui_statusExpandLastMs = now;
+	}
+	dtMs = now - ui_statusExpandLastMs;
+	if (dtMs < 0)
+	{
+		dtMs = 0;
+	}
+	if (dtMs > 250)
+	{
+		dtMs = 250;
+	}
+	ui_statusExpandLastMs = now;
+	dt = (float)dtMs * 0.001f;
+
+	if (ui_statusExpandFrac < target)
+	{
+		ui_statusExpandFrac += UI_STATUS_EXPAND_ANIM_SPEED * dt;
+		if (ui_statusExpandFrac > target)
+		{
+			ui_statusExpandFrac = target;
+		}
+	}
+	else if (ui_statusExpandFrac > target)
+	{
+		ui_statusExpandFrac -= UI_STATUS_EXPAND_ANIM_SPEED * dt;
+		if (ui_statusExpandFrac < target)
+		{
+			ui_statusExpandFrac = target;
+		}
+	}
+
+	if (!ui_statusBarExpanded && ui_statusExpandFrac <= 0.001f)
+	{
+		ui_statusExpandFrac = 0.0f;
+		if (ui_statusExpandModalActive)
+		{
+			UI_ServerStatus_MenuModalLeave();
+			ui_statusExpandModalActive = qfalse;
+		}
+	}
+}
+
+static qboolean UI_ServerStatus_DrawExpandedVisual(void)
+{
+	return (qboolean)(UI_ServerStatus_EaseSmooth(ui_statusExpandFrac) > 0.001f);
+}
+
+/*
+ * Scrollbar only after expand animation finishes. While panel height is still
+ * animating, bodyH is smaller than the final value and needScroll becomes true
+ * briefly (scrollbar flashes during open/close).
+ */
+static qboolean UI_ServerStatus_ScrollbarActive(void)
+{
+	return (qboolean)(ui_statusBarExpanded && ui_statusExpandFrac >= 0.999f);
+}
+
 static void UI_ServerStatus_SetExpanded(qboolean expanded)
 {
 	if (ui_statusBarExpanded == expanded)
 	{
-		return;
+		if (expanded && ui_statusExpandFrac >= 0.999f)
+		{
+			return;
+		}
+		if (!expanded && ui_statusExpandFrac <= 0.001f)
+		{
+			return;
+		}
 	}
 
 	if (expanded)
 	{
-		ui_statusChangelogScroll = 0.0f;
-		ui_statusScrollbarDrag = qfalse;
-		ui_statusScrollbarDragGrab = 0.0f;
-		UI_ServerStatus_MenuModalEnter();
+		if (ui_statusExpandFrac < 0.01f)
+		{
+			ui_statusChangelogScroll = 0.0f;
+			ui_statusScrollbarDrag = qfalse;
+			ui_statusScrollbarDragGrab = 0.0f;
+		}
+		if (!ui_statusExpandModalActive)
+		{
+			UI_ServerStatus_MenuModalEnter();
+			ui_statusExpandModalActive = qtrue;
+		}
 	}
 	else
 	{
 		ui_statusChangelogScroll = 0.0f;
 		ui_statusScrollbarDrag = qfalse;
 		ui_statusScrollbarDragGrab = 0.0f;
-		UI_ServerStatus_MenuModalLeave();
 	}
 
 	ui_statusBarExpanded = expanded;
@@ -208,22 +441,27 @@ static void UI_ServerStatus_EnsureFonts(void)
 
 static void UI_ServerStatus_BarRect640(float* outX, float* outY, float* outW, float* outH)
 {
-	float   totalH;
-	float   y;
+	float   collapsedH;
+	float   expandedH;
+	float   easedFrac;
+	float   animH;
 
+	collapsedH = UI_STATUS_BAR_HEIGHT_COLLAPSED;
 	*outW = UI_STATUS_BAR_WIDTH;
-	*outH = ui_statusBarExpanded ? UI_STATUS_BAR_HEIGHT : UI_STATUS_BAR_HEIGHT_COLLAPSED;
 	*outX = (640.0f - UI_STATUS_BAR_WIDTH) * 0.5f;
-	y = 480.0f - *outH;
 
-	if (ui_statusBarExpanded)
+	easedFrac = UI_ServerStatus_EaseSmooth(ui_statusExpandFrac);
+	if (easedFrac > 0.001f)
 	{
-		totalH = UI_ServerStatus_ExpandedHeight640(UI_STATUS_BAR_WIDTH);
-		y = 480.0f - totalH;
-		*outH = totalH;
+		expandedH = UI_ServerStatus_ExpandedHeight640(UI_STATUS_BAR_WIDTH);
+		animH = collapsedH + (expandedH - collapsedH) * easedFrac;
 	}
-
-	*outY = y;
+	else
+	{
+		animH = collapsedH;
+	}
+	*outH = animH;
+	*outY = 480.0f - animH;
 }
 
 static void UI_ServerStatus_ClearChangelog(void)
@@ -349,6 +587,21 @@ static void UI_ServerStatus_PanelBodyRect(float panelX, float panelY, float pane
 	headersH = UI_ServerStatus_ExpandedHeadersHeight();
 	*outBodyY = panelY + headersH + UI_STATUS_PANEL_PAD;
 	*outBodyH = panelH - headersH - UI_STATUS_PANEL_PAD * 2.0f - UI_STATUS_BODY_EXTRA_PAD;
+}
+
+/*
+ * Bottom reading margin (UI_STATUS_BODY_EXTRA_PAD) fades in only when fully expanded.
+ * While opening/closing, changelog clip reaches the panel bottom so text does not
+ * appear to emerge from an inactive black strip.
+ */
+static float UI_ServerStatus_PanelBodyClipBottom(float panelY, float panelH)
+{
+	float           eased;
+	float           extraPad;
+
+	eased = UI_ServerStatus_EaseSmooth(ui_statusExpandFrac);
+	extraPad = UI_STATUS_BODY_EXTRA_PAD * eased;
+	return panelY + panelH - UI_STATUS_PANEL_PAD - extraPad;
 }
 
 static void UI_ServerStatus_BuildServerChangelogHeader(const char* version, char* out, int outSize)
@@ -572,7 +825,7 @@ static qboolean UI_ServerStatus_IsOfflineState(void)
 		return qfalse;
 	}
 
-	if (!uiServerStatus.received || ui_statusOffline || !uiServerStatus.valid)
+	if (!uiServerStatus.received || ui_statusOffline || ui_statusBadKey || !uiServerStatus.valid)
 	{
 		return qtrue;
 	}
@@ -638,6 +891,22 @@ static qboolean UI_ServerStatus_ChangelogLayout(float panelW, float bodyH, float
 	*outTextW = textW;
 	*outNeedScroll = needScroll;
 	return needScroll;
+}
+
+/*
+ * Line breaks for changelog use the fully expanded body width/height so they do
+ * not reflow while the panel height animates.
+ */
+static void UI_ServerStatus_ChangelogLayoutSettled(float panelW, float* outTextW,
+        qboolean* outNeedScroll, float* outContentH, float* outBodyH)
+{
+	float           expandedH;
+	float           bodyY;
+
+	expandedH = UI_ServerStatus_ExpandedHeight640(panelW);
+	UI_ServerStatus_PanelBodyRect(0.0f, 0.0f, panelW, expandedH, &bodyY, outBodyH);
+	UI_ServerStatus_ChangelogLayout(panelW, *outBodyH, outTextW, outNeedScroll);
+	*outContentH = UI_ServerStatus_ChangelogContentHeight(*outTextW);
 }
 
 static void UI_ServerStatus_ClampChangelogScroll(float bodyH, float contentH)
@@ -953,7 +1222,8 @@ static qboolean UI_ServerStatus_HandleScrollbarMouse(float panelX, float panelY,
 	float           mx;
 	float           my;
 
-	if (!ui_statusBarExpanded || !uiServerStatus.changelogReady || !pressed)
+	if (!UI_ServerStatus_DrawExpandedVisual() || !UI_ServerStatus_ScrollbarActive() ||
+	        !uiServerStatus.changelogReady || !pressed)
 	{
 		return qfalse;
 	}
@@ -1017,7 +1287,8 @@ static void UI_ServerStatus_ScrollByDelta(float delta)
 	float           contentH;
 	qboolean        needScroll;
 
-	if (!ui_statusBarExpanded || !uiServerStatus.changelogReady)
+	if (!UI_ServerStatus_DrawExpandedVisual() || !UI_ServerStatus_ScrollbarActive() ||
+	        !uiServerStatus.changelogReady)
 	{
 		return;
 	}
@@ -1246,7 +1517,37 @@ static void UI_ServerStatus_GetBarMessage(const char** outText, vec4_t outColor)
 		return;
 	}
 
-	if (!uiServerStatus.received || ui_statusOffline || !uiServerStatus.valid)
+	if (ui_statusOffline)
+	{
+		*outText = "Status servers offline";
+		outColor[0] = 0.55f;
+		outColor[1] = 0.55f;
+		outColor[2] = 0.55f;
+		outColor[3] = 1.0f;
+		return;
+	}
+
+	if (ui_statusBadKey)
+	{
+		*outText = "Invalid status";
+		outColor[0] = 1.0f;
+		outColor[1] = 0.0f;
+		outColor[2] = 0.0f;
+		outColor[3] = 1.0f;
+		return;
+	}
+
+	if (!uiServerStatus.received)
+	{
+		*outText = "Connecting";
+		outColor[0] = 1.0f;
+		outColor[1] = 1.0f;
+		outColor[2] = 1.0f;
+		outColor[3] = 1.0f;
+		return;
+	}
+
+	if (!uiServerStatus.valid)
 	{
 		*outText = "Offline";
 		outColor[0] = 0.55f;
@@ -1288,7 +1589,12 @@ qboolean UI_ServerStatus_IsModal(void)
 	const char*     label;
 	vec4_t          color;
 
-	if (!ui_statusBarExpanded || !ui_statusFetchAttempted)
+	if (!ui_statusFetchAttempted)
+	{
+		return qfalse;
+	}
+
+	if (ui_statusExpandFrac <= 0.001f && !ui_statusBarExpanded)
 	{
 		return qfalse;
 	}
@@ -1309,13 +1615,18 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 	vec4_t          textColor;
 	float           rowY;
 	float           bodyH;
+	float           expandVis;
+	qboolean        drawExpanded;
 
-	if (ui_statusBarExpanded)
+	expandVis = UI_ServerStatus_EaseSmooth(ui_statusExpandFrac);
+	drawExpanded = UI_ServerStatus_DrawExpandedVisual();
+
+	if (drawExpanded)
 	{
 		dim[0] = 0.0f;
 		dim[1] = 0.0f;
 		dim[2] = 0.0f;
-		dim[3] = 0.45f;
+		dim[3] = 0.45f * expandVis;
 		UI_FillRect(uis.screenXmin, uis.screenYmin,
 		            uis.screenXmax - uis.screenXmin,
 		            uis.screenYmax - uis.screenYmin, dim);
@@ -1324,7 +1635,7 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 	bg[0] = 0.0f;
 	bg[1] = 0.0f;
 	bg[2] = 0.0f;
-	bg[3] = ui_statusBarExpanded ? 0.75f : 0.25f;
+	bg[3] = drawExpanded ? (0.25f + 0.5f * expandVis) : 0.25f;
 	UI_FillRect(x, y, w, h, bg);
 
 	{
@@ -1343,7 +1654,7 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 
 	rowY = y;
 
-	if (ui_statusBarExpanded)
+	if (drawExpanded)
 	{
 		float           bodyY;
 		float           bodyClipTop;
@@ -1368,12 +1679,23 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 
 		UI_ServerStatus_PanelBodyRect(x, y, w, h, &bodyY, &bodyH);
 		bodyClipTop = bodyY;
-		bodyClipBottom = bodyY + bodyH;
+		bodyClipBottom = UI_ServerStatus_PanelBodyClipBottom(y, h);
 
 		if (bodyH > UI_STATUS_CHAR_HEIGHT && uiServerStatus.changelogReady)
 		{
-			UI_ServerStatus_ChangelogLayout(w, bodyH, &textW, &needScroll);
-			contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+			float           bodyHSettled;
+
+			bodyHSettled = bodyH;
+			if (UI_ServerStatus_ScrollbarActive())
+			{
+				UI_ServerStatus_ChangelogLayout(w, bodyH, &textW, &needScroll);
+				contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+			}
+			else
+			{
+				UI_ServerStatus_ChangelogLayoutSettled(w, &textW, &needScroll, &contentH,
+				                                       &bodyHSettled);
+			}
 			UI_ServerStatus_ClampChangelogScroll(bodyH, contentH);
 
 			contentY = bodyY - ui_statusChangelogScroll;
@@ -1385,7 +1707,7 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 				                                    DS_HLEFT, bodyClipTop, bodyClipBottom);
 			}
 
-			if (needScroll)
+			if (needScroll && UI_ServerStatus_ScrollbarActive())
 			{
 				float   sbX;
 
@@ -1411,6 +1733,7 @@ void UI_ServerStatus_DrawBar(void)
 	float           y;
 	float           w;
 	float           h;
+	float           hideOffset;
 
 	if (!ui_statusFetchAttempted)
 	{
@@ -1425,10 +1748,15 @@ void UI_ServerStatus_DrawBar(void)
 		return;
 	}
 
+	UI_ServerStatus_ExpandAnimTick();
 	UI_ServerStatus_BarRect640(&x, &y, &w, &h);
+	UI_ServerStatus_AutoHideTick(label, x, w);
+	hideOffset = ui_statusAutoHideFrac * (UI_STATUS_BAR_HEIGHT_COLLAPSED + 2.0f);
+	y += hideOffset;
 	UI_ServerStatus_DrawBarPanel(x, y, w, h, label, color);
 
-	if (ui_statusBarExpanded && ui_statusScrollbarDrag)
+	if (UI_ServerStatus_DrawExpandedVisual() && UI_ServerStatus_ScrollbarActive() &&
+	        ui_statusScrollbarDrag)
 	{
 		if (trap_Key_IsDown(K_MOUSE1))
 		{
@@ -1450,6 +1778,7 @@ qboolean UI_ServerStatus_HandleBarClick(int key)
 	float           y;
 	float           w;
 	float           h;
+	float           triggerY;
 
 	if (key != K_MOUSE1)
 	{
@@ -1467,9 +1796,10 @@ qboolean UI_ServerStatus_HandleBarClick(int key)
 		return qfalse;
 	}
 
+	UI_ServerStatus_ExpandAnimTick();
 	UI_ServerStatus_BarRect640(&x, &y, &w, &h);
 
-	if (ui_statusBarExpanded)
+	if (ui_statusBarExpanded || ui_statusExpandFrac > 0.02f)
 	{
 		if (UI_ServerStatus_HandleScrollbarMouse(x, y, w, h, qtrue))
 		{
@@ -1491,6 +1821,22 @@ qboolean UI_ServerStatus_HandleBarClick(int key)
 		return qtrue;
 	}
 
+	/* If hidden/animating, click in trigger zone should open expanded panel. */
+	triggerY = 480.0f - UI_STATUS_AUTOHIDE_TRIGGER_H;
+	if (ui_statusAutoHideFrac > 0.0f && uis.cursorx >= x && uis.cursorx <= x + w)
+	{
+		if (uis.cursory >= triggerY && uis.cursory <= 480.0f)
+		{
+			ui_statusAutoHideFrac = 0.0f;
+			ui_statusAutoHideStartMs = -1;
+			ui_statusAutoHideLabel = NULL;
+			UI_ServerStatus_EnsureLocalChangelogForOffline();
+			UI_ServerStatus_SetExpanded(qtrue);
+			return qtrue;
+		}
+	}
+
+	/* Normal click when visible. */
 	if (uis.cursorx >= x && uis.cursorx <= x + w &&
 	        uis.cursory >= y && uis.cursory <= y + h)
 	{
@@ -1557,21 +1903,27 @@ void UI_ServerStatus_Clear(void)
 	UI_ServerStatus_ClearChangelog();
 	ui_statusFetchAttempted = qfalse;
 	ui_statusOffline = qfalse;
-	if (ui_statusBarExpanded)
+	ui_statusBadKey = qfalse;
+	ui_statusAutoHideStartMs = -1;
+	ui_statusAutoHideLastMs = 0;
+	ui_statusAutoHideFrac = 0.0f;
+	ui_statusAutoHideLabel = NULL;
+	ui_statusExpandFrac = 0.0f;
+	ui_statusExpandLastMs = 0;
+	if (ui_statusExpandModalActive)
 	{
-		UI_ServerStatus_SetExpanded(qfalse);
+		UI_ServerStatus_MenuModalLeave();
+		ui_statusExpandModalActive = qfalse;
 	}
-	else
-	{
-		ui_statusBarExpanded = qfalse;
-		ui_statusSavedMenuCursor = UI_STATUS_MENU_CURSOR_UNSET;
-	}
+	ui_statusBarExpanded = qfalse;
+	ui_statusSavedMenuCursor = UI_STATUS_MENU_CURSOR_UNSET;
 }
 
 static void UI_ServerStatus_FetchPrepare(void)
 {
 	ui_statusFetchAttempted = qtrue;
 	ui_statusOffline = qfalse;
+	ui_statusBadKey = qfalse;
 	uiServerStatus.valid = qfalse;
 	uiServerStatus.received = qfalse;
 	UI_ServerStatus_ClearChangelog();
@@ -1603,6 +1955,7 @@ void UI_ServerStatus_FetchOnMainMenu(void)
 void UI_ServerStatus_OnFetchTimeout(void)
 {
 	ui_statusOffline = qtrue;
+	ui_statusBadKey = qfalse;
 	UI_ServerStatus_EnsureLocalChangelogForOffline();
 }
 
@@ -1639,8 +1992,8 @@ void UI_ServerStatus_ApplyFromGetstatus(const char* status)
 
 	if (!UI_ServerStatus_ParseValidatedGetstatus(status, infostring, sizeof(infostring)))
 	{
-		ui_statusOffline = qtrue;
-		UI_ServerStatus_EnsureLocalChangelogForOffline();
+		ui_statusBadKey = qtrue;
+		ui_statusOffline = qfalse;
 		return;
 	}
 
