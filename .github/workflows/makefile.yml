@@ -133,9 +133,48 @@ jobs:
           if-no-files-found: error
           retention-days: 5
 
-  create-release:
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+  verify-build-artifacts:
     needs: [linux, mingw]
+    if: >-
+      github.ref == 'refs/heads/master' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      needs.linux.result == 'success' &&
+      needs.mingw.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Verify QVM pack and both library packages
+        run: |
+          set -e
+          missing=0
+          check() {
+            if [ ! -f "$1" ]; then
+              echo "Missing: $1"
+              missing=1
+            else
+              echo "OK: $1 ($(du -h "$1" | cut -f1))"
+            fi
+          }
+          check "qvm-linux/zz-osp-pak8be.pk3"
+          check "osp2-be-linux/osp2-be-linux.tar.gz"
+          check "cgame-linux/cgamex86_64.so"
+          check "ui-linux/uix86_64.so"
+          check "osp2-be-win/osp2-be-win.zip"
+          check "cgame-win/cgamex86_64.dll"
+          check "ui-win/uix86_64.dll"
+          check "version-files/version.txt"
+          check "version-files/version_changelog.txt"
+          if [ "$missing" -ne 0 ]; then
+            echo "Build artifact verification failed"
+            exit 1
+          fi
+          echo "All builds produced required artifacts"
+
+  create-release:
+    if: success()
+    needs: [verify-build-artifacts]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -226,7 +265,8 @@ jobs:
           retention-days: 5
 
   deploy-to-gh-pages:
-    needs: [linux, mingw]
+    needs: [verify-build-artifacts]
+    if: success()
     runs-on: ubuntu-latest
     env:
       TARGET_REPO: konstalker/konstalker.github.io
@@ -280,7 +320,9 @@ jobs:
 
       - name: Copy artifacts to assets folder
         run: |
+          set -euo pipefail
           mkdir -p target-repo/assets
+          copy_fail=0
           
           # Function to find and copy file
           find_and_copy() {
@@ -297,22 +339,28 @@ jobs:
               return 0
             fi
             
-            echo "Warning: $filename not found in artifacts"
+            echo "ERROR: $filename not found in artifacts"
+            copy_fail=1
             return 1
           }
           
           # Copy Linux QVM (zz-osp-pak8be.pk3)
-          find_and_copy "zz-osp-pak8be.pk3" "target-repo/assets/zz-osp-pak8be.pk3"
+          find_and_copy "zz-osp-pak8be.pk3" "target-repo/assets/zz-osp-pak8be.pk3" || true
           
           # Copy Linux libraries archive (osp2-be-linux.tar.gz)
-          find_and_copy "osp2-be-linux.tar.gz" "target-repo/assets/osp2-be-linux.tar.gz"
+          find_and_copy "osp2-be-linux.tar.gz" "target-repo/assets/osp2-be-linux.tar.gz" || true
           
           # Copy Windows libraries archive (osp2-be-win.zip)
-          find_and_copy "osp2-be-win.zip" "target-repo/assets/osp2-be-win.zip"
+          find_and_copy "osp2-be-win.zip" "target-repo/assets/osp2-be-win.zip" || true
           
           # Copy version files
-          find_and_copy "version.txt" "target-repo/assets/version.txt"
-          find_and_copy "version_changelog.txt" "target-repo/assets/version_changelog.txt"
+          find_and_copy "version.txt" "target-repo/assets/version.txt" || true
+          find_and_copy "version_changelog.txt" "target-repo/assets/version_changelog.txt" || true
+          
+          if [ "$copy_fail" -ne 0 ]; then
+            echo "ERROR: Required build artifacts missing; refusing to update website"
+            exit 1
+          fi
           
           # Copy config files from source repo (always copy, fail if missing)
           if [ -f source-repo/assets/OSP2.cfg ]; then
@@ -367,35 +415,22 @@ jobs:
           echo "Files found:"
           ls -lh assets/ || echo "No files found"
           
-          # Check for required files
           required_files=(
-            "OSP2.cfg"
-            "OSP2English.cfg"
-            "changelog_be.txt"
-          )
-          
-          # Check for optional but expected files
-          expected_files=(
             "zz-osp-pak8be.pk3"
             "osp2-be-linux.tar.gz"
             "osp2-be-win.zip"
             "version.txt"
             "version_changelog.txt"
+            "OSP2.cfg"
+            "OSP2English.cfg"
+            "changelog_be.txt"
           )
           
           missing_files=()
           for file in "${required_files[@]}"; do
             if [ ! -f "assets/$file" ]; then
               missing_files+=("$file")
-              echo "WARNING: Required file missing: $file"
-            else
-              echo "OK: $file exists ($(du -h assets/$file | cut -f1))"
-            fi
-          done
-          
-          for file in "${expected_files[@]}"; do
-            if [ ! -f "assets/$file" ]; then
-              echo "WARNING: Expected file missing: $file"
+              echo "ERROR: Required file missing: $file"
             else
               echo "OK: $file exists ($(du -h assets/$file | cut -f1))"
             fi
@@ -479,8 +514,8 @@ jobs:
           ls -lh assets/ || echo "Assets directory is empty or missing"
 
   deploy-to-status-server:
-    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    needs: [linux, mingw]
+    needs: [verify-build-artifacts]
+    if: success()
     runs-on: ubuntu-latest
     env:
       STATUS_REPO: scoqx/osp2be-status-server
