@@ -3902,7 +3902,7 @@ static void CG_OSPDrawCrosshairNames(void)
 			if (ci->team && ci->team == cg.snap->ps.persistant[PERS_TEAM] && ch_TeamCrosshairHealth.integer != 0 && !(cg.snap->ps.pm_flags & PMF_FOLLOW) && !(ci->health == 0 && ci->armor == 0))
 			{
 				int x_name;
-				int x_health;
+				int x_health = 0;
 				int mode;
 				int yStat;
 				float barW;
@@ -3943,7 +3943,7 @@ static void CG_OSPDrawCrosshairNames(void)
 					CG_DrawHealthBar(0.0f, (float)yStat, barW, (float)h2, ci->health, ci->armor, color[3], fontIndex, qtrue);
 					yStat += h2;
 				}
-				if ((mode & CH_TEAM_CROSSHAIR_HEALTH_VALUES) && !(mode & CH_TEAM_CROSSHAIR_HEALTH_BAR))
+				if (mode == CH_TEAM_CROSSHAIR_HEALTH_VALUES)
 				{
 					Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], color2);
 					color2[3] = 0.5f * color[3];
