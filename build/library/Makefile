@@ -352,6 +352,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_localents.o \
   $(B)/$(MOD)/cgame/cg_localevents.o \
   $(B)/$(MOD)/cgame/cg_marks.o \
+  $(B)/$(MOD)/cgame/cg_medals.o \
   $(B)/$(MOD)/cgame/cg_players.o \
   $(B)/$(MOD)/cgame/cg_playerstate.o \
   $(B)/$(MOD)/cgame/cg_playerscolors.o \
