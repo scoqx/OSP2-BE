@@ -1,5 +1,7 @@
-27.05.2026 be v1.04g
-+ BE Status animations
-+ cg_myFootsteps
-+ cg_teamFootsteps
-+ cg_enemyFootsteps
+30.05.2026 be v1.04h
++ cg_oldMedals 0/1
++ ch_TeamCrosshairHealth 2 (health bar)
++ cg_damagePlumsTimeout
++ Emojis: :eye-rolling: :trollface: :shock: :stonks: :not-stonks: :rollsafe:
++ `TargetStatusBar` SuperHUD element
++ SuperHUD bars alignh/alignv support (some SHUD configs fixed)

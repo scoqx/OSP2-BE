@@ -2188,13 +2188,47 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		qboolean pwInvis = pw & (1 << PW_INVIS);
 		qboolean pwBattle = pw & (1 << PW_BATTLESUIT);
 		qboolean pwQuad = pw & (1 << PW_QUAD);
-		qboolean useEnemyMono = pwBattle && cg.enemyBattleSuitColorEnabled && isEnemy;
-		qboolean useBattleMono = pwBattle && cg.battleSuitColorEnabled && !useEnemyMono;
-		qboolean useEnemyQuadMono = pwQuad && cg.enemyDamageColorEnabled && isEnemy;
-		qboolean useQuadMono = pwQuad && cg.quadDamageColorEnabled && !useEnemyQuadMono;
+		qboolean pwIsEnemy;
+		qboolean needPwEnemy;
+		qboolean useEnemyMono;
+		qboolean useBattleMono;
+		qboolean useEnemyQuadMono;
+		qboolean useQuadMono;
 		qboolean fragWeaponEffect = qfalse;
 		qhandle_t battleShader = 0;
 		qhandle_t quadGunShader = 0;
+		int pwClientNum;
+
+		pwIsEnemy = qfalse;
+		needPwEnemy = qfalse;
+		if (pwBattle && (cg.enemyBattleSuitColorEnabled || cg.battleSuitColorEnabled))
+		{
+			needPwEnemy = qtrue;
+		}
+		if (pwQuad && (cg.enemyQuadDamageColorEnabled || cg.quadDamageColorEnabled))
+		{
+			needPwEnemy = qtrue;
+		}
+		pwClientNum = cent->currentState.clientNum;
+		if ((pwClientNum < 0 || pwClientNum >= MAX_CLIENTS) &&
+		        cent->currentState.number >= 0 && cent->currentState.number < MAX_CLIENTS)
+		{
+			pwClientNum = cent->currentState.number;
+		}
+		if (needPwEnemy && pwClientNum >= 0 && pwClientNum < MAX_CLIENTS)
+		{
+			const clientInfo_t* pwCi;
+
+			pwCi = &cgs.clientinfo[pwClientNum];
+			if (pwCi->infoValid)
+			{
+				pwIsEnemy = CG_IsEnemyForPowerupVisual(pwCi);
+			}
+		}
+		useEnemyMono = pwBattle && cg.enemyBattleSuitColorEnabled && pwIsEnemy;
+		useBattleMono = pwBattle && cg.battleSuitColorEnabled && !useEnemyMono;
+		useEnemyQuadMono = pwQuad && cg.enemyQuadDamageColorEnabled && pwIsEnemy;
+		useQuadMono = pwQuad && cg.quadDamageColorEnabled && !useEnemyQuadMono;
 
 		if (pwBattle)
 		{
@@ -2259,9 +2293,9 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			{
 				if (useEnemyQuadMono)
 				{
-					gun.shaderRGBA[0] = (byte)(cg.beEnemyDamageColor[0] * 255.0f);
-					gun.shaderRGBA[1] = (byte)(cg.beEnemyDamageColor[1] * 255.0f);
-					gun.shaderRGBA[2] = (byte)(cg.beEnemyDamageColor[2] * 255.0f);
+					gun.shaderRGBA[0] = (byte)(cg.beEnemyQuadDamageColor[0] * 255.0f);
+					gun.shaderRGBA[1] = (byte)(cg.beEnemyQuadDamageColor[1] * 255.0f);
+					gun.shaderRGBA[2] = (byte)(cg.beEnemyQuadDamageColor[2] * 255.0f);
 					gun.shaderRGBA[3] = 255;
 				}
 				else if (useQuadMono)
@@ -2380,9 +2414,9 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 				{
 					if (useEnemyQuadMono)
 					{
-						barrel.shaderRGBA[0] = (byte)(cg.beEnemyDamageColor[0] * 255.0f);
-						barrel.shaderRGBA[1] = (byte)(cg.beEnemyDamageColor[1] * 255.0f);
-						barrel.shaderRGBA[2] = (byte)(cg.beEnemyDamageColor[2] * 255.0f);
+						barrel.shaderRGBA[0] = (byte)(cg.beEnemyQuadDamageColor[0] * 255.0f);
+						barrel.shaderRGBA[1] = (byte)(cg.beEnemyQuadDamageColor[1] * 255.0f);
+						barrel.shaderRGBA[2] = (byte)(cg.beEnemyQuadDamageColor[2] * 255.0f);
 						barrel.shaderRGBA[3] = 255;
 					}
 					else if (useQuadMono)

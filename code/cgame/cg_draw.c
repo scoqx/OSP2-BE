@@ -44,7 +44,7 @@ const char* dayOfWeekName[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 ==============
 CG_IsEnemy
 Enemy from current view. Spectator uses clientinfo team (not PERS_TEAM alone when follow copies team).
-When spectator and following: spectPOV 1 = followed is ally (our colors); spectPOV 0 = followed is enemy. With spectPOV 1, others use followed player's team; else red=ally blue=enemy.
+When spectator and following: spectPOV 1 = ally/enemy from followed team; spectPOV 0 = fixed red ally / blue enemy (same as model colors).
 Without snap uses clientinfo team.
 ==============
 */
@@ -77,14 +77,15 @@ qboolean CG_IsEnemy(const clientInfo_t* target)
 	if (myRealTeam == TEAM_SPECTATOR || myStateTeam == TEAM_SPECTATOR)
 	{
 		followNum = cg.snap->ps.clientNum;
-		if ((cg.snap->ps.pm_flags & PMF_FOLLOW) && followNum >= 0 && followNum < MAX_CLIENTS)
+		if ((cg.snap->ps.pm_flags & PMF_FOLLOW) && followNum >= 0 && followNum < MAX_CLIENTS &&
+		        cg_spectPOV.integer)
 		{
-			/* Followed player: spectPOV 1 = our colors, spectPOV 0 = enemy colors */
+			/* spectPOV 1: ally/enemy from followed player's team */
 			if (target == &cgs.clientinfo[followNum])
-				return (qboolean)(!cg_spectPOV.integer);
-			if (cg_spectPOV.integer)
-				return (qboolean)((isCA ? cgs.clientinfo[followNum].rt : cgs.clientinfo[followNum].team) != enemyTeam);
+				return qfalse;
+			return (qboolean)((isCA ? cgs.clientinfo[followNum].rt : cgs.clientinfo[followNum].team) != enemyTeam);
 		}
+		/* spectPOV 0 or free spec: red ally, blue enemy (same as model colors) */
 		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR)
 			return (qboolean)(enemyTeam == TEAM_BLUE);
 		if (myRealTeam == TEAM_BLUE)
@@ -1219,8 +1220,8 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 
 					if (item)
 					{
-						CG_DrawPicOld(xx, y, TINYCHAR_WIDTH, TINYCHAR_HEIGHT,
-						              trap_R_RegisterShader(item->icon));
+						CG_DrawClientPowerupIconOld(xx, y, TINYCHAR_WIDTH, TINYCHAR_HEIGHT,
+						                            j, sortedTeamPlayers[i]);
 						if (right)
 						{
 							xx -= TINYCHAR_WIDTH;
@@ -1576,8 +1577,8 @@ static float CG_DrawPowerups(float y)
 				size = ICON_SIZE;
 			}
 
-			CG_DrawPicOld(640 - size, y + ICON_SIZE / 2 - size / 2,
-			              size, size, trap_R_RegisterShader(item->icon));
+			CG_DrawClientPowerupIconOld(640 - size, y + ICON_SIZE / 2 - size / 2,
+			              size, size, sorted[i], ps->clientNum);
 		}
 	}
 	trap_R_SetColor(NULL);
@@ -1828,7 +1829,7 @@ void CG_DrawReward(void)
 
 	if (!(cg_drawRewards.integer & DRAW_REWARDS_NOICON))
 	{
-		CG_DrawPic(x, y, w, h, cg.rewardShader[0]);
+		CG_DrawMedalRewardPic(x, y, w, h, cg.rewardShader[0], cg.rewardTime, REWARD_TIME);
 	}
 
 	if (cg.rewardCount[0] > 1 && !(cg_drawRewards.integer & DRAW_REWARDS_NOICON))

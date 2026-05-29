@@ -131,3 +131,4 @@
 `:smile:`
 `:heart:`
 `:salut:`
+`:eye-rolling:`

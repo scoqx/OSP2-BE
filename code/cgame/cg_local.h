@@ -61,6 +61,15 @@ extern "C" {
 #define ATTACKER_HEAD_TIME  10000
 #define REWARD_TIME         3000
 
+#define CG_MEDAL_TYPE_COUNT     6
+#define CG_MEDAL_FRAME_COUNT    48
+
+typedef struct
+{
+	qhandle_t   shader;
+	vec4_t      frameTc[CG_MEDAL_FRAME_COUNT];
+} cgMedalAtlas_t;
+
 #define PULSE_SCALE         1.5         // amount to scale up the icons when activating
 
 #define MAX_STEP_CHANGE     32
@@ -105,6 +114,9 @@ extern "C" {
 
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
+
+#define CH_TEAM_CROSSHAIR_HEALTH_VALUES 1
+#define CH_TEAM_CROSSHAIR_HEALTH_BAR    2
 
 typedef enum
 {
@@ -922,8 +934,8 @@ typedef struct
 	qboolean    enemyBattleSuitColorEnabled;
 	vec4_t      beBattleSuitColor;
 	qboolean    battleSuitColorEnabled;
-	vec4_t      beEnemyDamageColor;
-	qboolean    enemyDamageColorEnabled;
+	vec4_t      beEnemyQuadDamageColor;
+	qboolean    enemyQuadDamageColorEnabled;
 	vec4_t      beQuadDamageColor;
 	qboolean    quadDamageColorEnabled;
 	qboolean    quadDamageCustomColor;
@@ -955,7 +967,8 @@ typedef struct
 	qhandle_t   charsetShader;
 	qhandle_t   charsetProp;
 	qhandle_t   charsetPropGlow;
-	qhandle_t   charsetPropB;
+	// qhandle_t   charsetPropB;
+	qhandle_t   charsetPropBNew;
 	qhandle_t   whiteShader;
 	qhandle_t   hboxShaderNew;
 	qhandle_t   hboxShaderNew_nocull;
@@ -1218,6 +1231,7 @@ typedef struct
 	qhandle_t   medalDefend;
 	qhandle_t   medalAssist;
 	qhandle_t   medalCapture;
+	cgMedalAtlas_t medalAtlas[CG_MEDAL_TYPE_COUNT];
 	qhandle_t   blender180Shader;
 
 	//superhud
@@ -2327,6 +2341,8 @@ extern vmCvar_t         cg_brightItemsOpaque;
 extern vmCvar_t         cg_myFootsteps;
 extern vmCvar_t         cg_teamFootsteps;
 extern vmCvar_t         cg_enemyFootsteps;
+extern vmCvar_t         cg_oldMedals;
+extern vmCvar_t         cg_damagePlumsTimeout;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2456,6 +2472,7 @@ void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, flo
 
 void CG_GetCustomDyeItemTintVec4(const gitem_t* item, vec4_t out);
 void CG_ItemDyeResolveTint(const gitem_t* item, vec4_t out);
+void CG_ItemDyeResolveTintForClient(const gitem_t* item, int clientNum, vec4_t out);
 qboolean CG_OldFlagModels(void);
 qboolean CG_OldFlagIcons(void);
 void CG_UpdateFlagMedia(void);
@@ -2464,7 +2481,9 @@ void CG_GetDyeFlagCarrierLightRgb(int team, vec3_t rgb);
 qboolean CG_ItemDyeFlagInverseHudPath(const gitem_t* item);
 qhandle_t CG_DyeFlagResolveInverseIcon(int itemNum, qhandle_t shader);
 void CG_DrawDyeFlagPicOld(float x, float y, float w, float h, int team, qhandle_t shader);
+void CG_DrawClientPowerupIconOld(float x, float y, float w, float h, int powerup, int clientNum);
 void CG_ModulateVec4ForCustomItemDyeIcon(int itemNum, vec4_t color);
+void CG_ModulateVec4ForCustomItemDyeIconForClient(int itemNum, int clientNum, vec4_t color);
 
 float CG_OSPDrawStringLength(const char* string, float ax, float aw, int proportional);
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth);
@@ -2634,6 +2653,9 @@ void CG_DrawTimer2(void);
 float CG_DrawAttacker(float y);
 void CG_DrawAmmoWarning(void);
 void CG_DrawReward(void);
+void CG_RegisterMedalAnimationShaders(void);
+void CG_MedalResolveFrame(qhandle_t medalShader, int startTime, int durationMsec, qhandle_t* outShader, vec4_t outTc);
+void CG_DrawMedalRewardPic(float x, float y, float w, float h, qhandle_t medalShader, int startTime, int durationMsec);
 void CG_DrawWarmup(void);
 void CG_ScanForCrosshairEntity(void);
 int CG_CrosshairTarget(vec3_t itemPos);
@@ -2703,6 +2725,7 @@ void CG_UpdateAllClientsInfo(void);
 #define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype < GT_TEAM) ? 1 : ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team))))
 /* Enemy from current view: uses PERS_TEAM (spectator/follow), cg_spectPOV when spectating */
 qboolean CG_IsEnemy(const clientInfo_t* target);
+qboolean CG_IsEnemyForPowerupVisual(const clientInfo_t* target);
 qboolean CG_IsWarmup(void);
 qboolean CG_IsIntermission(void);
 

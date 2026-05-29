@@ -274,12 +274,17 @@ void CG_DamagePlum(int client, vec3_t org, int damage)
 
 
 	totalDamage = damage;
-	timeThreshold = 750; // milliseconds
 	isMultiHit = qfalse;
 
 	// If stacking enabled (value = 2), check if multiple events came at the same time
 	if (cg_damagePlums.integer & CG_DAMAGEPLUMS_STACK)
 	{
+		timeThreshold = cg_damagePlumsTimeout.integer;
+		if (timeThreshold <= 0)
+		{
+			timeThreshold = 750;
+		}
+
 		// Count how many damage plums were created at the same time (before this one)
 		// Events that come at the same time indicate one projectile/rail hitting multiple targets
 		eventCount = 0;

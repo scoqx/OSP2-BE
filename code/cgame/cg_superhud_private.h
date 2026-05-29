@@ -494,6 +494,7 @@ void CG_SHUDElementTargetNameRoutine(void* context);
 void CG_SHUDElementTargetNameDestroy(void* context);
 
 void* CG_SHUDElementTargetStatusCreate(const superhudConfig_t* config);
+void* CG_SHUDElementTargetStatusBarCreate(const superhudConfig_t* config);
 void CG_SHUDElementTargetStatusRoutine(void* context);
 void CG_SHUDElementTargetStatusDestroy(void* context);
 
@@ -782,6 +783,7 @@ typedef struct
 	float max; // maximum coord for bar
 	float koeff; //multiplier
 	vec4_t bar[2]; // coord of two bars
+	vec4_t box; // aligned rect (640) for fill/border
 	vec4_t color_top; // color of bar
 	vec4_t color2_top; // color of top bar of doublebar
 	vec4_t color_back; // color of background

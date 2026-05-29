@@ -308,7 +308,10 @@ void CG_SHUDElementPwRoutine(void* context)
 		if (pwElement->dyeTintItemNum >= 1 && pwElement->dyeTintItemNum < bg_numItems &&
 		        (cg_items[pwElement->dyeTintItemNum].customVisualMask & ITEMCV_ICON))
 		{
-			CG_ModulateVec4ForCustomItemDyeIcon(pwElement->dyeTintItemNum, col);
+			int pwOwnerClient;
+
+			pwOwnerClient = cg.snap->ps.clientNum;
+			CG_ModulateVec4ForCustomItemDyeIconForClient(pwElement->dyeTintItemNum, pwOwnerClient, col);
 		}
 		CG_SHUDDrawStretchPic(element->drawCtx.coord, element->drawCtx.coordPicture, col, element->drawCtx.image);
 	}

@@ -825,17 +825,17 @@ void CG_LocalEventCvarChanged_cg_enemyQuadDamageColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0])
 	{
-		cg.enemyDamageColorEnabled = qfalse;
+		cg.enemyQuadDamageColorEnabled = qfalse;
 		return;
 	}
-	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beEnemyDamageColor))
+	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beEnemyQuadDamageColor))
 	{
-		cg.enemyDamageColorEnabled = qtrue;
+		cg.enemyQuadDamageColorEnabled = qtrue;
 	}
 	else
 	{
 		Com_Printf("^1Color is wrong, default value used\n");
-		cg.enemyDamageColorEnabled = qfalse;
+		cg.enemyQuadDamageColorEnabled = qfalse;
 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
 	}
 }

@@ -73,7 +73,8 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | StatusBar_HealthCount         | Счетчик здоровья.                                            |
 | StatusBar_HealthIcon          | Иконка здоровья.                                             |
 | TargetName                    | Имя игрока в прицеле.                                        |
-| TargetStatus                  | Здоровье/броня тиммейта.                                     |
+| TargetStatus                  | Здоровье/броня тиммейта под прицелом (текст).                |
+| TargetStatusBar               | Здоровье/броня тиммейта под прицелом (полоска).              |
 | TeamCount_NME                 | Количество живых игроков во вражеской команде (только фриз). |
 | TeamCount_OWN                 | Количество живых игроков в своей команде (только фриз).      |
 | Team1-Team16                  | Тимоверлей.                                                  |
@@ -256,12 +257,13 @@ fps {
 - Для выбора типа списка (левый/правый/горизонтальный) используется команда `TextAlign`.
 - Для изменения цвета выбранного оружия используйте `color2`
 
-### StatusBar_HealthBar StatusBar_ArmorBar StatusBar_AmmoBar
+### StatusBar_HealthBar StatusBar_ArmorBar StatusBar_AmmoBar TargetStatusBar
 
 - Doublebar - включить двойную полосу
 - Direction - Направление полосы
 - Image - Путь к изображению для полосы.
 - Image2 - Путь к изображению для второго слоя полосы.
+- AlignH / AlignV - выравнивание полоски по якорю `rect` (x/y).
 
 Только для здоровья и брони:
 - Style 1 - цвет зависит от хп, 
@@ -277,6 +279,12 @@ fps {
 
 - Style 1 - цвет значений задаётся через `color` для > healthMid и `color2` для < healthMid
 - Style 2 - Ограничивает вывод значением 999
+
+### TargetStatusBar
+
+- Style 1 - цвет зависит от HP/AP цели под прицелом.
+- Style 2 - color и color2.
+- Style 3 - то же что и Style 2, но при достижении значения установленного в cg_healthLow — цвет зависит от HP/AP цели (cg_healthColorLevels).
 
 ### VisFlags 
 

@@ -121,8 +121,11 @@ static qboolean CG_DyeFlagTintRgbIsBlack(const vec4_t v)
 	return (v[0] <= CG_DYE_FLAG_BLACK_EPS && v[1] <= CG_DYE_FLAG_BLACK_EPS && v[2] <= CG_DYE_FLAG_BLACK_EPS);
 }
 
-void CG_ItemDyeResolveTint(const gitem_t* item, vec4_t out)
+void CG_ItemDyeResolveTintForClient(const gitem_t* item, int clientNum, vec4_t out)
 {
+	const clientInfo_t* ci;
+	qboolean useEnemy;
+
 	Vector4Set(out, 1.0f, 1.0f, 1.0f, 1.0f);
 
 	if (!item)
@@ -152,20 +155,59 @@ void CG_ItemDyeResolveTint(const gitem_t* item, vec4_t out)
 		return;
 	}
 
-	if (item->giTag == PW_QUAD && cg.quadDamageColorEnabled)
+	useEnemy = qfalse;
+	if (clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
-		out[0] = cg.beQuadDamageColor[0];
-		out[1] = cg.beQuadDamageColor[1];
-		out[2] = cg.beQuadDamageColor[2];
+		ci = &cgs.clientinfo[clientNum];
+		if (ci->infoValid)
+		{
+			useEnemy = CG_IsEnemyForPowerupVisual(ci);
+		}
+	}
+
+	if (item->giTag == PW_QUAD)
+	{
+		if (useEnemy && cg.enemyQuadDamageColorEnabled)
+		{
+			out[0] = cg.beEnemyQuadDamageColor[0];
+			out[1] = cg.beEnemyQuadDamageColor[1];
+			out[2] = cg.beEnemyQuadDamageColor[2];
+			return;
+		}
+		if (cg.quadDamageColorEnabled)
+		{
+			out[0] = cg.beQuadDamageColor[0];
+			out[1] = cg.beQuadDamageColor[1];
+			out[2] = cg.beQuadDamageColor[2];
+			return;
+		}
+		CG_GetDefaultQuadDamageColor(out);
 		return;
 	}
-	if (item->giTag == PW_BATTLESUIT && cg.battleSuitColorEnabled)
+	if (item->giTag == PW_BATTLESUIT)
 	{
-		out[0] = cg.beBattleSuitColor[0];
-		out[1] = cg.beBattleSuitColor[1];
-		out[2] = cg.beBattleSuitColor[2];
+		if (useEnemy && cg.enemyBattleSuitColorEnabled)
+		{
+			out[0] = cg.beEnemyBattleSuitColor[0];
+			out[1] = cg.beEnemyBattleSuitColor[1];
+			out[2] = cg.beEnemyBattleSuitColor[2];
+			return;
+		}
+		if (cg.battleSuitColorEnabled)
+		{
+			out[0] = cg.beBattleSuitColor[0];
+			out[1] = cg.beBattleSuitColor[1];
+			out[2] = cg.beBattleSuitColor[2];
+			return;
+		}
+		CG_GetDefaultBattleSuitColor(out);
 		return;
 	}
+}
+
+void CG_ItemDyeResolveTint(const gitem_t* item, vec4_t out)
+{
+	CG_ItemDyeResolveTintForClient(item, -1, out);
 }
 
 qboolean CG_GetDyeFlagTintVec4(int team, vec4_t out)
@@ -318,4 +360,30 @@ void CG_DrawDyeFlagPicOld(float x, float y, float w, float h, int team, qhandle_
 		return;
 	}
 	CG_DrawPicOld(x, y, w, h, drawShader);
+}
+
+void CG_DrawClientPowerupIconOld(float x, float y, float w, float h, int powerup, int clientNum)
+{
+	gitem_t* item;
+	int itemNum;
+	qhandle_t shader;
+	vec4_t col;
+
+	item = BG_FindItemForPowerup(powerup);
+	if (!item)
+	{
+		return;
+	}
+	itemNum = (int)(item - bg_itemlist);
+	CG_RegisterItemVisuals(itemNum);
+	shader = cg_items[itemNum].icon;
+	if (!(cg_items[itemNum].customVisualMask & ITEMCV_ICON))
+	{
+		shader = trap_R_RegisterShader(item->icon);
+	}
+	Vector4Set(col, 1.0f, 1.0f, 1.0f, 1.0f);
+	CG_ModulateVec4ForCustomItemDyeIconForClient(itemNum, clientNum, col);
+	trap_R_SetColor(col);
+	CG_DrawPicOld(x, y, w, h, shader);
+	trap_R_SetColor(NULL);
 }

@@ -99,6 +99,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "statusbar_armorbar", 0, CG_SHUDElementSBABCreate, CG_SHUDElementSBABRoutine, CG_SHUDElementSBABDestroy },
 	{ "statusbar_armoricon", 0, CG_SHUDElementSBAICreate, CG_SHUDElementSBAIRoutine, CG_SHUDElementSBAIDestroy },
 	{ "statusbar_armorcount", 0, CG_SHUDElementSBACCreate, CG_SHUDElementSBACRoutine, CG_SHUDElementSBACDestroy },
+	{ "targetstatusbar", SE_TEAM_ONLY, CG_SHUDElementTargetStatusBarCreate, CG_SHUDElementTargetStatusRoutine, CG_SHUDElementTargetStatusDestroy },
 	{ "targetname", 0, CG_SHUDElementTargetNameCreate, CG_SHUDElementTargetNameRoutine, CG_SHUDElementTargetNameDestroy },
 	{ "targetstatus", SE_TEAM_ONLY, CG_SHUDElementTargetStatusCreate, CG_SHUDElementTargetStatusRoutine, CG_SHUDElementTargetStatusDestroy },
 	{ "teamcount_nme", SE_TEAM_ONLY, CG_SHUDElementTeamCountNMECreate, CG_SHUDElementTeamCountRoutine, CG_SHUDElementTeamCountDestroy },

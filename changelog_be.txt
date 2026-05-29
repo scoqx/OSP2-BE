@@ -870,7 +870,7 @@ CGAME:
 + cg_numbersSet
 + cg_oldFlags
 SuperHUD:
-+ FlagStatus_CARRY element
++ `FlagStatus_CARRY` element
 + Fonts: Odyssey, verdana fixed (Mirage)
 
 25.05.2026 be v1.04f2
@@ -888,3 +888,11 @@ SuperHUD:
 + cg_myFootsteps
 + cg_teamFootsteps
 + cg_enemyFootsteps
+
+30.05.2026 be v1.04h
++ cg_oldMedals 0/1
++ ch_TeamCrosshairHealth 2 (health bar)
++ cg_damagePlumsTimeout
++ Emojis: :eye-rolling: :trollface: :shock: :stonks: :not-stonks: :rollsafe:
++ `TargetStatusBar` SuperHUD element
++ SuperHUD bars alignh/alignv support (some SHUD configs fixed)

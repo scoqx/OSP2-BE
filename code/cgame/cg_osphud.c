@@ -2193,7 +2193,7 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 						gi = BG_FindItemForPowerup(k);
 						if (gi)
 						{
-							CG_OSPDrawPic((float)px, y, (float)w, (float)h, trap_R_RegisterShader(gi->icon));
+							CG_DrawClientPowerupIconOld((float)px, y, (float)w, (float)h, k, sortedTeamPlayers[i]);
 							px -= w;
 						}
 					}
@@ -2958,8 +2958,8 @@ static float CG_OSPDrawPowerups(float x, float y)
 				size = ICON_SIZE;
 			}
 
-			CG_DrawPicOld(x + 64.0f, y + ICON_SIZE / 2.0f - size / 2.0f,
-			              size, size, trap_R_RegisterShader(item->icon));
+			CG_DrawClientPowerupIconOld(x + 64.0f, y + ICON_SIZE / 2.0f - size / 2.0f,
+			              size, size, sorted[i], ps->clientNum);
 		}
 	}
 	trap_R_SetColor(NULL);
@@ -3844,18 +3844,38 @@ static void CG_OSPDrawCrosshairNames(void)
 
 			if (ci->team != TEAM_FREE && ci->team == cg.snap->ps.persistant[PERS_TEAM] && ch_TeamCrosshairHealth.integer != 0 && !(cg.snap->ps.pm_flags & PMF_FOLLOW) && !(ci->health == 0 && ci->armor == 0))
 			{
-				char str2[64];
 				int w2;
 				int h2;
-				int len2;
-				vec4_t color2;
+				int yStat;
+				int mode;
 
+				mode = ch_TeamCrosshairHealth.integer;
 				CG_OSPGetClientFontSize(&cf_TeamCrosshairHealth, &w2, &h2);
-				Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], color2);
-				Com_sprintf(str2, 64, "%i/%i", ci->health, ci->armor);
-				len2 = CG_DrawStrlen(str2);
-				color2[3] = color[3];
-				CG_OSPDrawStringOld((int)(320.0f - ((float)(len2 * w2) / 2.0f)), h + 170, str2, w2, h2, color2, 0, 0);
+				yStat = h + 170;
+				if (mode & CH_TEAM_CROSSHAIR_HEALTH_BAR)
+				{
+					float barW;
+					float barX;
+					int fontIndex;
+
+					barW = (float)(w2 * 10);
+					barX = 320.0f - barW * 0.5f;
+					fontIndex = (mode & CH_TEAM_CROSSHAIR_HEALTH_VALUES) ? 0 : -1;
+					CG_DrawHealthBar(barX, (float)yStat, barW, (float)h2, ci->health, ci->armor, color[3], fontIndex, qtrue);
+					yStat += h2;
+				}
+				if ((mode & CH_TEAM_CROSSHAIR_HEALTH_VALUES) && !(mode & CH_TEAM_CROSSHAIR_HEALTH_BAR))
+				{
+					char str2[64];
+					int len2;
+					vec4_t color2;
+
+					Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], color2);
+					Com_sprintf(str2, 64, "%i/%i", ci->health, ci->armor);
+					len2 = CG_DrawStrlen(str2);
+					color2[3] = color[3];
+					CG_OSPDrawStringOld((int)(320.0f - ((float)(len2 * w2) / 2.0f)), yStat, str2, w2, h2, color2, 0, 0);
+				}
 			}
 		}
 		else
@@ -3883,27 +3903,52 @@ static void CG_OSPDrawCrosshairNames(void)
 			{
 				int x_name;
 				int x_health;
+				int mode;
+				int yStat;
+				float barW;
+
+				mode = ch_TeamCrosshairHealth.integer;
 				CG_OSPGetClientFontSize(&cf_TeamCrosshairHealth, &w2, &h2);
-				y -= h2;
-				Com_sprintf(str2, 64, "%i/%i", ci->health, ci->armor);
+				if (mode & (CH_TEAM_CROSSHAIR_HEALTH_BAR | CH_TEAM_CROSSHAIR_HEALTH_VALUES))
+				{
+					y -= h2;
+				}
 				lenName = CG_DrawStrlen(ci->name);
 				nameW = (float)(lenName * w);
-				lenStr = CG_DrawStrlen(str2);
-				healthW = lenStr * w2;
-				if (nameW > healthW)
+				barW = (float)(w2 * 10);
+				x_name = 0;
+				if (mode == CH_TEAM_CROSSHAIR_HEALTH_VALUES)
 				{
-					x_name = 0;
-					x_health = nameW / 2.0f - healthW / 2.0f;
+					Com_sprintf(str2, 64, "%i/%i", ci->health, ci->armor);
+					lenStr = CG_DrawStrlen(str2);
+					healthW = lenStr * w2;
+					if (nameW > healthW)
+					{
+						x_name = 0;
+						x_health = nameW / 2.0f - healthW / 2.0f;
+					}
+					else
+					{
+						x_name = healthW / 2.0f - nameW / 2.0f;
+						x_health = 0;
+					}
 				}
-				else
+				CG_OSPDrawStringOld(x_name, (int)y, ci->name, w, h, color, 0, 0);
+				yStat = (int)y + h;
+				if (mode & CH_TEAM_CROSSHAIR_HEALTH_BAR)
 				{
-					x_name = healthW / 2.0f - nameW / 2.0f;
-					x_health = 0;
+					int fontIndex;
+
+					fontIndex = (mode & CH_TEAM_CROSSHAIR_HEALTH_VALUES) ? 0 : -1;
+					CG_DrawHealthBar(0.0f, (float)yStat, barW, (float)h2, ci->health, ci->armor, color[3], fontIndex, qtrue);
+					yStat += h2;
 				}
-				CG_OSPDrawStringOld(x_name, y, ci->name, w, h, color, 0, 0);
-				Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], color2);
-				color2[3] = 0.5f * color[3];
-				CG_OSPDrawStringOld(x_health, y + h, str2, w2, h2, color2, 0, 0);
+				if ((mode & CH_TEAM_CROSSHAIR_HEALTH_VALUES) && !(mode & CH_TEAM_CROSSHAIR_HEALTH_BAR))
+				{
+					Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], color2);
+					color2[3] = 0.5f * color[3];
+					CG_OSPDrawStringOld(x_health, yStat, str2, w2, h2, color2, 0, 0);
+				}
 			}
 			else
 			{

@@ -214,7 +214,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "ch_statusbarStyle", "^2Not working^7" },
 	{ "ch_TeamchatOnly", "Print only team chat messages in console. Set ^20^7 to print all messages." },
 	{ "cf_Teamchat", "Font size of the teamchat. Requires ^3cg_enableOSPhud^7 ^21^7\n  Use format ^2width^7x^2height^7" },
-	{ "ch_TeamCrosshairHealth", "Show health and armor of teammates under the crosshair. Set ^20^7 to disable." },
+	{ "ch_TeamCrosshairHealth", "Teammate HP/AP under crosshair in ^3OSP HUD^7. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - HP/AP values\n  ^22^7 - HP/AP bar (^3cg_healthBarStyle^7)" },
 	{ "cf_TeamCrosshairHealth", "Font size of the health and armor of teammates under the crosshair.\nRequires ^3cg_enableOSPhud^7 ^21^7 and ^3ch_TeamCrosshairHealth^7 ^21^7\n  Use format ^2width^7x^2height^7" },
 	{ "ch_Teamoverlay", "Defines the layout of the team overlay line.\n  ^2n^7 - Player name (optionally prefixed with a number for width, e.g. ^212n^7). \n  ^2p^7 - Powerup icon\n  ^2h^7 - Health\n  ^2a^7 - Armor\n  ^2w^7 - Ammo icon\n  ^2l^7 - Location" },
 	{ "cf_Teamoverlay", "Font size of team overlay strings.\nRequires ^3cg_enableOSPhud^7 ^21^7 and ^cg_drawTeamOverlay^7 ^21^7\n  Use format ^2width^7x^2height^7" },
@@ -471,6 +471,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_myFootsteps", "Footstep type for yourself.\n  ^2-1^7 - model or custom sound model from ^3cg_mySound^7\n  ^20^7 - normal\n  ^21^7 - boot\n  ^22^7 - flesh\n  ^23^7 - mech\n  ^24^7 - energy" },
 	{ "cg_teamFootsteps", "Footstep type for teammates.\n  ^2-1^7 - model or custom sound model from ^3cg_teamSound^7\n  ^20^7 - normal\n  ^21^7 - boot\n  ^22^7 - flesh\n  ^23^7 - mech\n  ^24^7 - energy" },
 	{ "cg_enemyFootsteps", "Footstep type for enemies.\n  ^2-1^7 - model or custom sound model from ^3cg_enemySound^7\n  ^20^7 - normal\n  ^21^7 - boot\n  ^22^7 - flesh\n  ^23^7 - mech\n  ^24^7 - energy" },
+	{ "cg_damagePlumsTimeout", "Damage plums stacking window in milliseconds. Used when ^3cg_damagePlums^7 has bit ^22^7 (stacking)." },
+	{ "cg_oldMedals", "Reward medal icons on HUD and SuperHUD (Impressive, Excellent, etc.). Used when ^3cg_drawRewards^7 is enabled.\n  ^20^7 - animated BE medals\n  ^21^7 - classic static shaders" },
 };
 
 

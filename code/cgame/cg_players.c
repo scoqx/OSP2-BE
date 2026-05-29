@@ -23,6 +23,39 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_players.c -- handle the media and animation for player entities
 #include "cg_local.h"
 #include "../qcommon/l_crc.h"
+
+qboolean CG_IsEnemyForPowerupVisual(const clientInfo_t* target)
+{
+	const clientInfo_t* localCi;
+
+	if (!target)
+	{
+		return qfalse;
+	}
+	localCi = &cgs.clientinfo[cg.clientNum];
+	if (target == localCi)
+	{
+		return qfalse;
+	}
+	if (!target->infoValid)
+	{
+		return qfalse;
+	}
+	if (cgs.gametype <= GT_SINGLE_PLAYER)
+	{
+		return qtrue;
+	}
+	{
+		qboolean isEnemy;
+
+		isEnemy = CG_IsEnemy(target);
+		if (cgs.gametype >= GT_TEAM && cg_swapSkins.integer)
+		{
+			isEnemy = (qboolean)!isEnemy;
+		}
+		return isEnemy;
+	}
+}
 #include "tr_types.h"
 
 #define SHADOW_DISTANCE 128  /* base from ground to player for shadow trace */
@@ -2908,11 +2941,10 @@ static void CG_PlayerPowerups(centity_t* cent)
 		g = 0.2f;
 		b = 1.0f;
 		clientNum = cent->currentState.clientNum;
-		if (clientNum >= 0 && clientNum < MAX_CLIENTS &&
-		        cgs.clientinfo[clientNum].infoValid)
+		if (clientNum >= 0 && clientNum < MAX_CLIENTS)
 		{
 			ci = &cgs.clientinfo[clientNum];
-			if (!cg.enemyDamageColorEnabled && !cg.quadDamageColorEnabled)
+			if (!cg.enemyQuadDamageColorEnabled && !cg.quadDamageColorEnabled)
 			{
 				if (ci->team == TEAM_RED)
 				{
@@ -2933,14 +2965,14 @@ static void CG_PlayerPowerups(centity_t* cent)
 				qboolean useEnemyMono;
 				qboolean useQuadMono;
 
-				isEnemyPlayer = CG_IsEnemy(ci);
-				useEnemyMono = cg.enemyDamageColorEnabled && isEnemyPlayer;
+				isEnemyPlayer = CG_IsEnemyForPowerupVisual(ci);
+				useEnemyMono = cg.enemyQuadDamageColorEnabled && isEnemyPlayer;
 				useQuadMono = cg.quadDamageColorEnabled && !useEnemyMono;
 				if (useEnemyMono)
 				{
-					r = cg.beEnemyDamageColor[0];
-					g = cg.beEnemyDamageColor[1];
-					b = cg.beEnemyDamageColor[2];
+					r = cg.beEnemyQuadDamageColor[0];
+					g = cg.beEnemyQuadDamageColor[1];
+					b = cg.beEnemyQuadDamageColor[2];
 				}
 				else if (useQuadMono)
 				{
@@ -3223,12 +3255,13 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 
 		powerups = state->powerups;
 		needIsEnemy = qfalse;
-		if ((powerups & (1 << PW_QUAD)) && cg.enemyDamageColorEnabled)
+		if ((powerups & (1 << PW_QUAD)) &&
+		        (cg.enemyQuadDamageColorEnabled || cg.quadDamageColorEnabled))
 		{
 			needIsEnemy = qtrue;
 		}
 		if ((powerups & (1 << PW_BATTLESUIT)) && state->weapon != WP_NONE &&
-		        cg.enemyBattleSuitColorEnabled)
+		        (cg.enemyBattleSuitColorEnabled || cg.battleSuitColorEnabled))
 		{
 			needIsEnemy = qtrue;
 		}
@@ -3240,7 +3273,7 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 
 			if (ci->infoValid)
 			{
-				isEnemyPlayer = CG_IsEnemy(ci);
+				isEnemyPlayer = CG_IsEnemyForPowerupVisual(ci);
 			}
 		}
 
@@ -3249,15 +3282,15 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 			qboolean useEnemyMono;
 			qboolean useQuadMono;
 
-			useEnemyMono = cg.enemyDamageColorEnabled && isEnemyPlayer;
+			useEnemyMono = cg.enemyQuadDamageColorEnabled && isEnemyPlayer;
 			useQuadMono = cg.quadDamageColorEnabled && !useEnemyMono;
 
 			if (useEnemyMono)
 			{
 				ent->customShader = cgs.media.quadShaderDye;
-				ent->shaderRGBA[0] = (byte)(cg.beEnemyDamageColor[0] * 255.0f);
-				ent->shaderRGBA[1] = (byte)(cg.beEnemyDamageColor[1] * 255.0f);
-				ent->shaderRGBA[2] = (byte)(cg.beEnemyDamageColor[2] * 255.0f);
+				ent->shaderRGBA[0] = (byte)(cg.beEnemyQuadDamageColor[0] * 255.0f);
+				ent->shaderRGBA[1] = (byte)(cg.beEnemyQuadDamageColor[1] * 255.0f);
+				ent->shaderRGBA[2] = (byte)(cg.beEnemyQuadDamageColor[2] * 255.0f);
 				ent->shaderRGBA[3] = 255;
 			}
 			else if (useQuadMono)
@@ -3765,14 +3798,7 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 			                (localCi->rt == TEAM_SPECTATOR) :
 			                (localCi->team == TEAM_SPECTATOR);
 
-			outlineIsEnemy = qfalse;
-			if (ci != localCi && ci->infoValid)
-			{
-				if (cgs.gametype <= GT_SINGLE_PLAYER)
-					outlineIsEnemy = qtrue;
-				else
-					outlineIsEnemy = CG_IsEnemy(ci);
-			}
+			outlineIsEnemy = CG_IsEnemyForPowerupVisual(ci);
 
 			if (cg_drawOutline.integer && ci->infoValid &&
 			        !(cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) &&

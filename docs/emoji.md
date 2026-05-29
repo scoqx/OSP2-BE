@@ -132,3 +132,9 @@
 `:heart:`
 `:salut:`
 `:capture:`
+`:eye-rolling:`
+`:trollface:`
+`:shock:`
+`:stonks:`
+`:not-stonks:`
+`:rollsafe:`

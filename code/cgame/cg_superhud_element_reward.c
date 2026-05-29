@@ -43,6 +43,12 @@ static void* CG_SHUDElementRewardCreate(const superhudConfig_t* config, shudRewa
 		Q_strncpyz(element->config.text.value, "%d", sizeof(element->config.text.value));
 	}
 
+	if (!element->config.time.isSet)
+	{
+		element->config.time.isSet = qtrue;
+		element->config.time.value = REWARD_TIME;
+	}
+
 	return element;
 }
 
@@ -107,9 +113,34 @@ void CG_SHUDElementRewardRoutine(void* context)
 
 	if (element->type == SHUD_REWARD_ICON)
 	{
+		int durationMsec;
+
 		if (!(cg_drawRewards.integer & DRAW_REWARDS_NOICON))
 		{
-			element->ctx.d.image = cg.rewardShader[0];
+			durationMsec = REWARD_TIME;
+			if (element->config.time.isSet && element->config.time.value > 0)
+			{
+				durationMsec = element->config.time.value;
+			}
+			if (cg_oldMedals.integer)
+			{
+				element->ctx.d.image = cg.rewardShader[0];
+				element->ctx.d.coordPicture.named.x = 0.0f;
+				element->ctx.d.coordPicture.named.y = 0.0f;
+				element->ctx.d.coordPicture.named.w = 1.0f;
+				element->ctx.d.coordPicture.named.h = 1.0f;
+			}
+			else
+			{
+				vec4_t medalTc;
+
+				CG_MedalResolveFrame(cg.rewardShader[0], cg.rewardTime, durationMsec,
+				                     &element->ctx.d.image, medalTc);
+				element->ctx.d.coordPicture.named.x = medalTc[0];
+				element->ctx.d.coordPicture.named.y = medalTc[1];
+				element->ctx.d.coordPicture.named.w = medalTc[2];
+				element->ctx.d.coordPicture.named.h = medalTc[3];
+			}
 			CG_SHUDFill(&element->config);
 			CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx.d);
 			CG_SHUDDrawBorder(&element->config);

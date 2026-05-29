@@ -482,7 +482,7 @@ CG_ModulateVec4ForCustomItemDyeIcon
 Multiplies RGB for HUD dye icons when ITEMCV_ICON is set.
 ================
 */
-void CG_ModulateVec4ForCustomItemDyeIcon(int itemNum, vec4_t color)
+void CG_ModulateVec4ForCustomItemDyeIconForClient(int itemNum, int clientNum, vec4_t color)
 {
 	vec4_t tint;
 
@@ -495,10 +495,15 @@ void CG_ModulateVec4ForCustomItemDyeIcon(int itemNum, vec4_t color)
 	{
 		return;
 	}
-	CG_ItemDyeResolveTint(&bg_itemlist[itemNum], tint);
+	CG_ItemDyeResolveTintForClient(&bg_itemlist[itemNum], clientNum, tint);
 	color[0] *= tint[0];
 	color[1] *= tint[1];
 	color[2] *= tint[2];
+}
+
+void CG_ModulateVec4ForCustomItemDyeIcon(int itemNum, vec4_t color)
+{
+	CG_ModulateVec4ForCustomItemDyeIconForClient(itemNum, -1, color);
 }
 
 /*
@@ -2589,7 +2594,7 @@ static void UI_DrawBannerString2(int x, int y, const char* str, vec4_t color)
 			fheight = (float)PROPB_HEIGHT / 256.0f;
 			aw = (float)propMapB[ch][2] * cgs.screenXScale_Old;
 			ah = (float)PROPB_HEIGHT * cgs.screenXScale_Old;
-			trap_R_DrawStretchPic(ax, ay, aw, ah, fcol, frow, fcol + fwidth, frow + fheight, cgs.media.charsetPropB);
+			trap_R_DrawStretchPic(ax, ay, aw, ah, fcol, frow, fcol + fwidth, frow + fheight, cgs.media.charsetPropBNew);
 			ax += (aw + (float)PROPB_GAP_WIDTH * cgs.screenXScale_Old);
 		}
 		s++;

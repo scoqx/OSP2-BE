@@ -592,6 +592,8 @@ vmCvar_t        cg_brightItemsOpaque;
 vmCvar_t        cg_myFootsteps;
 vmCvar_t        cg_teamFootsteps;
 vmCvar_t        cg_enemyFootsteps;
+vmCvar_t        cg_oldMedals;
+vmCvar_t        cg_damagePlumsTimeout;
 
 cgFontIndices_t cgFontIndices;
 
@@ -1048,7 +1050,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_infoDetail, "cg_infoDetail", "1", CVAR_ARCHIVE },
 	{ &cg_enhancedInterpolation, "cg_enhancedInterpolation", "0", CVAR_ARCHIVE },
 	{ &cg_entityOverpolate, "cg_entityOverpolate", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_entityOverpolate },
-	{ &cg_healthBarStyle, "cg_healthBarStyle", "0", CVAR_ARCHIVE },
+	{ &cg_healthBarStyle, "cg_healthBarStyle", "10", CVAR_ARCHIVE },
 	{ &cg_teamHealthBar, "cg_teamHealthBar", "0", CVAR_ARCHIVE },
 	{ &cg_emojiListFont, "cg_emojiListFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListFont },
 	{ &cg_emojiListBgColor, "cg_emojiListBgColor", "00000A", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListBgColor },
@@ -1083,6 +1085,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_myFootsteps, "cg_myFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamFootsteps, "cg_teamFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_enemyFootsteps, "cg_enemyFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_oldMedals, "cg_oldMedals", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_damagePlumsTimeout, "cg_damagePlumsTimeout", "750", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -2158,6 +2162,8 @@ static void CG_RegisterGraphics(void)
 	cgs.media.medalAssist = trap_R_RegisterShaderNoMip("medal_assist");
 	cgs.media.medalCapture = trap_R_RegisterShaderNoMip("medal_capture");
 
+	CG_RegisterMedalAnimationShaders();
+
 	// superhud
 	cgs.media.obituariesGrenadeDirect = trap_R_RegisterShader("ObituariesGrenadeDirect");
 	cgs.media.obituariesRocketDirect = trap_R_RegisterShader("ObituariesRocketDirect");
@@ -2826,7 +2832,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	cgs.media.charsetProp           = trap_R_RegisterShaderNoMip("menu/art/font1_prop.tga");
 	cgs.media.charsetPropGlow     = trap_R_RegisterShaderNoMip("menu/art/font1_prop_glo.tga");
-	cgs.media.charsetPropB        = trap_R_RegisterShaderNoMip("menu/art/font2_prop.tga");
+	// cgs.media.charsetPropB        = trap_R_RegisterShaderNoMip("menu/art/font2_prop.tga");
+	cgs.media.charsetPropBNew        = trap_R_RegisterShaderNoMip("menu/art/font2_propNew.tga");
 
 	CG_RegisterCvars();
 	CG_RegisterCvarDescriptions();

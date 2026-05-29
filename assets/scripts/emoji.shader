@@ -1450,3 +1450,69 @@ gfx/emoji/capture
     rgbgen vertex
   }
 }
+
+gfx/emoji/eye-rolling
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/eye-rolling.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/trollface
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/trollface.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/shock
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/shock.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/stonks
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/stonks.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/not-stonks
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/not-stonks.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/rollsafe
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/rollsafe.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}

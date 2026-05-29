@@ -24,9 +24,6 @@ void CG_SHUDElementSBABRoutine(void* context)
 	shudElementStatusbarArmorBar* element = (shudElementStatusbarArmorBar*)context;
 	float ap = cg.snap->ps.stats[STAT_ARMOR];
 
-	CG_SHUDFill(&element->config);
-	CG_SHUDDrawBorder(&element->config);
-
 	switch (element->config.style.value)
 	{
 		case 1:

@@ -508,10 +508,17 @@ void CG_SHUDDrawMakeContext(const superhudConfig_t* in, superhudDrawContext_t* o
 	Vector4Copy(out->color, out->color_origin);
 }
 
+/*
+================
+CG_SHUDBarMakeContext
+================
+*/
 void CG_SHUDBarMakeContext(const superhudConfig_t* in, superhudBarContext_t* out, float max)
 {
 	float x = 0, y = 0;
 	float bar_height, bar_width;
+	float boxW;
+	float boxH;
 	superhudConfig_t config;
 	memset(out, 0, sizeof(*out));
 	memcpy(&config, in, sizeof(config));
@@ -536,8 +543,51 @@ void CG_SHUDBarMakeContext(const superhudConfig_t* in, superhudBarContext_t* out
 
 	out->direction = config.direction.value;
 
+	boxW = config.rect.value[2];
+	boxH = config.rect.value[3];
 	x = config.rect.value[0];
 	y = config.rect.value[1];
+
+	if (!config.alignH.isSet)
+	{
+		config.alignH.value = SUPERHUD_ALIGNH_LEFT;
+	}
+
+	if (!config.alignV.isSet)
+	{
+		config.alignV.value = SUPERHUD_ALIGNV_TOP;
+	}
+
+	switch (config.alignH.value)
+	{
+		default:
+		case SUPERHUD_ALIGNH_LEFT:
+			break;
+		case SUPERHUD_ALIGNH_CENTER:
+			x = config.rect.value[0] - boxW * 0.5f;
+			break;
+		case SUPERHUD_ALIGNH_RIGHT:
+			x = config.rect.value[0] - boxW;
+			break;
+	}
+
+	switch (config.alignV.value)
+	{
+		default:
+		case SUPERHUD_ALIGNV_TOP:
+			break;
+		case SUPERHUD_ALIGNV_CENTER:
+			y = config.rect.value[1] - boxH * 0.5f;
+			break;
+		case SUPERHUD_ALIGNV_BOTTOM:
+			y = config.rect.value[1] - boxH;
+			break;
+	}
+
+	out->box[0] = x;
+	out->box[1] = y;
+	out->box[2] = boxW;
+	out->box[3] = boxH;
 
 	if (config.doublebar.isSet)
 	{
@@ -990,6 +1040,38 @@ static void CG_SHUDBarSyncImageDrawRect(superhudDirection_t direction, const vec
 	}
 }
 
+static void CG_SHUDBarFillAndBorder(const superhudConfig_t* cfg, const superhudBarContext_t* ctx)
+{
+	superhudConfig_t tmp;
+
+	if (!cfg->rect.isSet)
+	{
+		return;
+	}
+
+	if (!cfg->fill.isSet && !(cfg->border.isSet && cfg->borderColor.isSet))
+	{
+		return;
+	}
+
+	memcpy(&tmp, cfg, sizeof(tmp));
+	tmp.rect.value[0] = ctx->box[0];
+	tmp.rect.value[1] = ctx->box[1];
+	tmp.rect.value[2] = ctx->box[2];
+	tmp.rect.value[3] = ctx->box[3];
+	tmp.alignH.isSet = qfalse;
+	tmp.alignV.isSet = qfalse;
+
+	if (cfg->fill.isSet)
+	{
+		CG_SHUDFill(&tmp);
+	}
+	if (cfg->border.isSet && cfg->borderColor.isSet)
+	{
+		CG_SHUDDrawBorder(&tmp);
+	}
+}
+
 void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, float value)
 {
 	drawBarCoords_t coords;
@@ -999,6 +1081,8 @@ void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, flo
 	float s1_2, t1_2, s2_2, t2_2;
 	qhandle_t shader1;
 	qboolean useImage;
+
+	CG_SHUDBarFillAndBorder(cfg, ctx);
 
 	memset(&coords, 0, sizeof(coords));
 

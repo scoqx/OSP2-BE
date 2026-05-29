@@ -24,9 +24,6 @@ void CG_SHUDElementSBHBRoutine(void* context)
 	shudElementStatusbarHealthBar* element = (shudElementStatusbarHealthBar*)context;
 	float hp = cg.snap->ps.stats[STAT_HEALTH];
 
-	CG_SHUDFill(&element->config);
-	CG_SHUDDrawBorder(&element->config);
-
 	switch (element->config.style.value)
 	{
 		case 1:
