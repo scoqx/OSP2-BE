@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout current repo (source)
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           ref: master
           submodules: recursive
@@ -29,7 +29,7 @@ jobs:
           make ../../assets/version.txt ../../assets/version_changelog.txt
 
       - name: Checkout target repo konstalker.github.io
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.TARGET_REPO }}
           ref: ${{ env.TARGET_BRANCH }}

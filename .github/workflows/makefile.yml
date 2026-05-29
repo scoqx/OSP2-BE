@@ -35,7 +35,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
           ref: master
@@ -91,21 +91,21 @@ jobs:
         run: |
           make MOD=osp2
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: qvm-linux
           path: build/qvm/zz-osp-pak8be.pk3
           if-no-files-found: error
           retention-days: 5
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: cgame-linux
           path: build/library/build/release-linux-x86_64/osp2/cgamex86_64.so
           if-no-files-found: error
           retention-days: 5
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ui-linux
           path: build/library/build/release-linux-x86_64/osp2/uix86_64.so
@@ -117,14 +117,14 @@ jobs:
           cd build/library/build/release-linux-x86_64/osp2
           tar -czf ../../../osp2-be-linux.tar.gz cgamex86_64.so uix86_64.so
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: osp2-be-linux
           path: build/library/osp2-be-linux.tar.gz
           if-no-files-found: error
           retention-days: 5
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: version-files
           path: |
@@ -143,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
 
       - name: Verify QVM pack and both library packages
         run: |
@@ -180,10 +180,10 @@ jobs:
       contents: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
 
       - name: Create latest build
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: latest-build
           name: Latest Build
@@ -207,7 +207,7 @@ jobs:
         shell: bash
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
           ref: master
@@ -218,7 +218,7 @@ jobs:
         run: git pull --ff-only origin master
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
@@ -237,14 +237,14 @@ jobs:
         run: |
           make MOD=osp2
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: cgame-win
           path: build/library/build/release-mingw64-x86_64/osp2/cgamex86_64.dll
           if-no-files-found: error
           retention-days: 5
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ui-win
           path: build/library/build/release-mingw64-x86_64/osp2/uix86_64.dll
@@ -257,7 +257,7 @@ jobs:
           if [ -f ../../../osp2-be-win.zip ]; then rm ../../../osp2-be-win.zip; fi
           ../../../../qvm/tools/7za.exe a -tzip -mx=0 ../../../osp2-be-win.zip cgamex86_64.dll uix86_64.dll
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: osp2-be-win
           path: build/library/osp2-be-win.zip
@@ -275,7 +275,7 @@ jobs:
       GIT_USER_EMAIL: actions@github.com
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: false
@@ -305,7 +305,7 @@ jobs:
           fi
 
       - name: Checkout target repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.TARGET_REPO }}
           ref: ${{ env.TARGET_BRANCH }}
@@ -313,7 +313,7 @@ jobs:
           path: target-repo
 
       - name: Checkout source repo for config files
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           ref: master
           path: source-repo
@@ -524,7 +524,7 @@ jobs:
       GIT_USER_EMAIL: actions@github.com
     steps:
       - name: Checkout OSP2-PBE (latest master after version sync)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: master
           fetch-depth: 0
@@ -544,7 +544,7 @@ jobs:
           head -1 ../../assets/version_changelog.txt
 
       - name: Checkout osp2be-status-server
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.STATUS_REPO }}
           ref: ${{ env.STATUS_BRANCH }}
