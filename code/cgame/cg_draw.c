@@ -2893,9 +2893,9 @@ void CG_OSPDrawNewCredits(void)
 	int showTime = 8000;
 
 	float x = 100.0f;
-	float y = 100.0f;
+	float y = 80.0f;
 	float w = 440.0f;
-	float h = 280.0f;
+	float h = 300.0f;
 	float charHeight = 14, charWidth = 8;
 	float textX = (w / 2) + x;
 	float textY = y + 2.0f;
@@ -2920,15 +2920,17 @@ void CG_OSPDrawNewCredits(void)
 		"",
 		"Special thanks to:",
 		"Snems, Kr3m, Mirage, Mus1n",
-		"MrX, Zenx, Tuborg, Meta, Konstalker",
-		"enq3, John Coffey, Maked, Roskoshny"
+		"Zenx, Tuborg, Meta, Konstalker",
+		"enq3, John Coffey, Maked, Roskoshny",
 		"",
-		"Based on source codes:",
+		"Based on source codes/assets:",
 		"OSP   ^Bhttps://www.orangesmoothie.org",
 		"Cyrax   ^Bhttps://github.com/ec-/baseq3a",
 		"x0ry   ^Bhttps://github.com/xq3e/engine",
 		"Neil Toronto   ^Bhttp://ra.is/unlagged",
 		"Ratmod   ^Bhttps://github.com/rdntcntrl/ratoa_gamecode",
+		"Devotion   ^Bhttps://github.com/alcachofass/devotion",
+		"CPMA   ^Bhttps://playmorepromode.com/",
 		NULL
 	};
 	static int startTime = 0;
@@ -2980,7 +2982,7 @@ void CG_OSPDrawNewCredits(void)
 	    charWidth * 2, firstLineHeight,
 	    w,
 	    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
-	    2,
+	    6,
 	    NULL, border, colorBlack
 	);
 
@@ -2998,7 +3000,7 @@ void CG_OSPDrawNewCredits(void)
 		    charWidth, charHeight,
 		    w,
 		    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER,
-		    4,
+		    16,
 		    NULL, NULL, NULL
 		);
 	}

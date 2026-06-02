@@ -69,6 +69,50 @@ textures/effects/frozenNew
   }
 }
 
+// Honey Bunny QT's wet melting ice 
+textures/effects/frozenNew2
+{
+    // inflate the model by 1.15 units
+    deformvertexes wave 100 sin 1.15 0 0 0
+    
+    // physics and rendering rules
+    surfaceparm trans
+    surfaceparm nolightmap
+    surfaceparm slick      
+
+    // the milky inner frost
+    {
+        map textures/effects/milky-ice.tga
+        blendFunc blend
+        tcMod turb 0 0.05 0 0.1
+        rgbGen entity
+    }
+
+    // the ice scratches
+    {
+        map textures/effects/scratches.tga
+        tcMod scroll 0.001  0.003
+        blendFunc add 
+    }
+
+    // the hard glass reflection (ambient)
+    {
+        map textures/effects/tinfx2c.tga
+        tcGen environment 
+        blendFunc add
+        rgbGen wave sin 0.5 0 0 0
+    }
+
+    // the "wet jesus" hack (dynamic specular if this even works)
+    {
+        map textures/effects/drops.tga
+        blendFunc GL_SRC_ALPHA GL_ONE
+        alphaGen lightingSpecular
+        tcMod scroll 0 -0.05
+        rgbGen entity
+    }
+}
+
 damageIndicator2
 {
 	sort nearest

@@ -559,19 +559,6 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_spreset.o \
   $(B)/$(MOD)/ui/ui_superhudconfig.o \
   $(B)/$(MOD)/ui/ui_ospdrawtools.o \
-  $(B)/$(MOD)/ui/ui_osp2be.o \
-  $(B)/$(MOD)/ui/ui_osp2be_constants.o \
-  $(B)/$(MOD)/ui/ui_osp2be_controls.o \
-  $(B)/$(MOD)/ui/ui_osp2be_draw.o \
-  $(B)/$(MOD)/ui/ui_osp2be_explosives.o \
-  $(B)/$(MOD)/ui/ui_osp2be_general.o \
-  $(B)/$(MOD)/ui/ui_osp2be_player.o \
-  $(B)/$(MOD)/ui/ui_osp2be_preview.o \
-  $(B)/$(MOD)/ui/ui_osp2be_railgun.o \
-  $(B)/$(MOD)/ui/ui_osp2be_superhud.o \
-  $(B)/$(MOD)/ui/ui_osp2be_teams.o \
-  $(B)/$(MOD)/ui/ui_osp2be_utils.o \
-  $(B)/$(MOD)/ui/ui_osp2be_weapon.o \
   \
   $(B)/$(MOD)/ui/q_math.o \
   $(B)/$(MOD)/ui/q_shared.o

@@ -1,4 +1,5 @@
-// Copyright (C) 2025-2026 diwoc
+// Copyright (c) 2025-2026 diwoc
+// Contact: diwoc@outlook.com
 //
 /*
 =======================================================================
@@ -985,7 +986,6 @@ static void UI_CreditMenu2_Draw(void)
 		DRAW_WSTEP1("Kr3m")
 		DRAW_WSTEP1("Mirage")
 		DRAW_WSTEP1("Mus1n")
-		DRAW_WSTEP1("MrX")
 		DRAW_WSTEP1("Zenx")
 		DRAW_WSTEP1("Tuborg")
 		DRAW_WSTEP1("Meta")
@@ -999,7 +999,7 @@ static void UI_CreditMenu2_Draw(void)
 		DRAW_WSTEP1("Anonymous player #1")
 		DRAW_WSTEP1("Anonymous player #2")
 		DRAW_WSTEP1("")
-		DRAW_WSTEP1("Based on source codes:")
+		DRAW_WSTEP1("Based on source codes/assets:")
 		DRAW_WSTEP1("OSP")
 		DRAW_WSTEP1("https://www.orangesmoothie.org")
 		DRAW_WSTEP1("")
@@ -1014,6 +1014,12 @@ static void UI_CreditMenu2_Draw(void)
 		DRAW_WSTEP1("")
 		DRAW_WSTEP1("Ratmod")
 		DRAW_WSTEP1("https://github.com/rdntcntrl/ratoa_gamecode")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("Devotion")
+		DRAW_WSTEP1("https://github.com/alcachofass/devotion")
+		DRAW_WSTEP1("")
+		DRAW_WSTEP1("CPMA")
+		DRAW_WSTEP1("https://playmorepromode.com/")
 		DRAW_WSTEP1("")
 		DRAW_WSTEP1("")
 		DRAW_WSTEP1("Music:")

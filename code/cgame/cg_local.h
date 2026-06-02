@@ -1080,6 +1080,7 @@ typedef struct
 	qhandle_t   frozenFoeTagShaderWallhack;
 	qhandle_t   frozenShader;
 	qhandle_t   frozenNewShader;
+	qhandle_t   frozenNewShader2;
 
 	qhandle_t   balloonShader;
 	qhandle_t   connectionShader;
@@ -1585,6 +1586,7 @@ typedef struct
 #define CG_TEAMTASK_SHOWNAME       (1 << 4)  // 16 - Show player name below mark when hovering
 #define CG_TEAMTASK_UNIQUECOLORS   (1 << 5)  // 32 - Use unique colors
 #define CG_TEAMTASK_SHOWDISTANCE   (1 << 6)  // 64 - Show distance in meters
+#define CG_TEAMTASK_SHOWWITHOUTHOVER (1 << 7)  // 128 - Show name/distance without aiming at mark
 
 #define CG_DAMAGEPLUMS_ENABLE      1
 #define CG_DAMAGEPLUMS_STACK       2
@@ -2327,7 +2329,6 @@ extern vmCvar_t         cg_enemyLightningColor;
 extern vmCvar_t			cg_enemyAltLightning;
 extern vmCvar_t			cg_teamAltLightning;
 extern vmCvar_t			cg_muteMyJump;
-extern vmCvar_t			cg_freezeOldShader;
 extern vmCvar_t			cg_disableTextEffects;
 extern vmCvar_t         cg_fragEffectTime;
 extern vmCvar_t         cg_fragEffectColor;
@@ -2343,6 +2344,7 @@ extern vmCvar_t         cg_teamFootsteps;
 extern vmCvar_t         cg_enemyFootsteps;
 extern vmCvar_t         cg_oldMedals;
 extern vmCvar_t         cg_damagePlumsTimeout;
+extern vmCvar_t         cg_freezeShader;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -3026,6 +3028,7 @@ const char* CG_GetCvarDescription(const char* cvarName);
 // cg_teamtasks_utils.c
 //
 qboolean CG_IsTeamTaskSupported(void);
+qboolean CG_TeamTaskShouldUseDeadHereWarn(void);
 qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType);
 qhandle_t CG_GetPickupShader(void);
 //===============================================

@@ -18,6 +18,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Entry:
+    file_path: Path
     cvar: str
     desc_raw: str
     desc_line: int
@@ -176,20 +177,20 @@ def _decode_c_string_to_bytes(raw: str) -> bytes:
     return bytes(b)
 
 
-def _parse_entries(repo_root: Path) -> list[Entry]:
-    path = repo_root / "code" / "cgame" / "cg_cvardescriptions.c"
+def _parse_entries_from_file(repo_root: Path, relative_path: Path, table_name: str) -> list[Entry]:
+    path = repo_root / relative_path
     src = path.read_text(encoding="utf-8", errors="replace")
     src = _strip_c_comments_keep_strings(src)
 
     # Narrow to the table to avoid false positives.
-    m = re.search(r"static\s+cvarDescriptionTable_t\s+cvarDescriptionTable\[\]\s*=\s*\{", src)
+    m = re.search(rf"static\s+\w+\s+{re.escape(table_name)}\[\]\s*=\s*\{{", src)
     if not m:
-        raise RuntimeError("Can't find cvarDescriptionTable[] initializer")
+        raise RuntimeError(f"Can't find {table_name}[] initializer in {relative_path}")
     start = m.end()  # position after '{'
 
     end = src.find("};", start)
     if end == -1:
-        raise RuntimeError("Can't find end of cvarDescriptionTable[] (missing '};')")
+        raise RuntimeError(f"Can't find end of {table_name}[] in {relative_path} (missing '}};')")
 
     table = src[start:end]
 
@@ -210,7 +211,7 @@ def _parse_entries(repo_root: Path) -> list[Entry]:
         line = base_line + before.count("\n")
         cvar = bytes(em.group("name"), "utf-8").decode("unicode_escape", errors="replace")
         desc_raw = em.group("desc")
-        entries.append(Entry(cvar=cvar, desc_raw=desc_raw, desc_line=line))
+        entries.append(Entry(file_path=relative_path, cvar=cvar, desc_raw=desc_raw, desc_line=line))
 
     return entries
 
@@ -219,7 +220,14 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
     limit = _read_max_cvar_value_string(repo_root)
 
-    entries = _parse_entries(repo_root)
+    sources = (
+        (Path("code") / "cgame" / "cg_cvardescriptions.c", "cvarDescriptionTable"),
+        (Path("code") / "q3_ui" / "ui_cvardescriptions.c", "uiCvarDescriptionTable"),
+    )
+    entries: list[Entry] = []
+    for relative_path, table_name in sources:
+        entries.extend(_parse_entries_from_file(repo_root, relative_path, table_name))
+
     if not entries:
         print("ERROR: no cvar descriptions found to validate", file=sys.stderr)
         return 2
@@ -233,14 +241,13 @@ def main() -> int:
             bad.append((e, desc_len))
 
     if bad:
-        cfile = repo_root / "code" / "cgame" / "cg_cvardescriptions.c"
         print(
             f"ERROR: cvar description(s) exceed engine limit: strlen(desc) must be < {limit} bytes",
             file=sys.stderr,
         )
         for e, ln in bad:
             print(
-                f"  {cfile}:{e.desc_line}: {e.cvar}: {ln} bytes (max {limit-1})",
+                f"  {repo_root / e.file_path}:{e.desc_line}: {e.cvar}: {ln} bytes (max {limit-1})",
                 file=sys.stderr,
             )
         return 1

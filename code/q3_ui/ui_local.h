@@ -405,11 +405,6 @@ extern void UI_ModsMenu(void);
 extern void UI_ModsMenu_Cache(void);
 
 //
-// ui_osp2be.c
-//
-extern void UI_Osp2BeMenu(void);
-
-//
 // ui_advanced.c
 //
 extern void UI_AdvancedMenu(void);

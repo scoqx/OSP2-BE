@@ -4,8 +4,6 @@
  */
 #include "ui_local.h"
 
-qboolean Osp2Be_ColorFromChar(char code, vec4_t out);
-
 #define UI_COLORPARSE_MAXLEN 32
 
 typedef struct
@@ -78,6 +76,101 @@ static void UI_ParseHex24Bit(const char* str, vec4_t out)
 	out[1] = UI_FloatFromHex8bit(hex[2], hex[3]);
 	out[2] = UI_FloatFromHex8bit(hex[4], hex[5]);
 	out[3] = 1.0f;
+}
+
+static void UI_ColorParse_OSPColorFromNumber(int number, vec4_t out)
+{
+	float red;
+	float green;
+	float blue;
+	double tmp;
+	double sixtyRadians;
+
+	red = 1.0f;
+	green = 1.0f;
+	blue = 1.0f;
+
+	if (number >= 10 && number < 34)
+	{
+		tmp = ((360.0 * (double)number) - 3600.0) / 24.0;
+		sixtyRadians = 60.0 * M_PI / 180.0;
+		if (tmp <= 120.0)
+		{
+			tmp = M_PI * tmp / 180.0;
+			blue = 0.0f;
+			red = (float)((cos(tmp) / (cos(sixtyRadians - tmp)) + 1.0) / 3.0);
+			green = 1.0f - (red + blue);
+		}
+		else if (tmp <= 240.0)
+		{
+			tmp = M_PI * (tmp - 120.0) / 180.0;
+			red = 0.0f;
+			green = (float)((cos(tmp) / (cos(sixtyRadians - tmp)) + 1.0) / 3.0);
+			blue = 1.0f - (red + green);
+		}
+		else
+		{
+			tmp = M_PI * (tmp - 240.0) / 180.0;
+			green = 0.0f;
+			blue = (float)((cos(tmp) / (cos(sixtyRadians - tmp)) + 1.0) / 3.0);
+			red = 1.0f - (green + blue);
+		}
+	}
+	else
+	{
+		switch (number)
+		{
+			case 0: red = 1.0f; green = 1.0f; blue = 1.0f; break;
+			case 1: red = 1.0f; green = 0.2f; blue = 0.2f; break;
+			case 2: red = 0.2f; green = 1.0f; blue = 0.2f; break;
+			case 3: red = 1.0f; green = 1.0f; blue = 0.1f; break;
+			case 4: red = 0.2f; green = 0.2f; blue = 1.0f; break;
+			case 5: red = 0.1f; green = 1.0f; blue = 1.0f; break;
+			case 6: red = 1.0f; green = 0.1f; blue = 1.0f; break;
+			case 7: red = 1.0f; green = 0.59f; blue = 0.12f; break;
+			case 8: red = 0.65f; green = 0.2f; blue = 0.65f; break;
+			case 9: red = 0.6f; green = 0.6f; blue = 1.0f; break;
+			default: red = 1.0f; green = 1.0f; blue = 1.0f; break;
+		}
+	}
+
+	out[0] = red;
+	out[1] = green;
+	out[2] = blue;
+	out[3] = 1.0f;
+}
+
+qboolean Osp2Be_ColorFromChar(char code, vec4_t out)
+{
+	int number;
+
+	if (!out)
+	{
+		return qfalse;
+	}
+
+	if (code >= '0' && code <= '9')
+	{
+		number = code - '0';
+		UI_ColorParse_OSPColorFromNumber(number, out);
+		return qtrue;
+	}
+
+	if (code >= 'a' && code <= 'z')
+	{
+		number = code - 'a' + 10;
+		UI_ColorParse_OSPColorFromNumber(number, out);
+		return qtrue;
+	}
+
+	if (code >= 'A' && code <= 'Z')
+	{
+		number = code - 'A' + 10;
+		UI_ColorParse_OSPColorFromNumber(number, out);
+		return qtrue;
+	}
+
+	return qfalse;
 }
 
 qboolean UI_ParseColorStr(const char* str, vec4_t out)

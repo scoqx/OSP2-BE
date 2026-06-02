@@ -102,7 +102,7 @@ static sfxHandle_t Main_MenuKey(int key)
 		}
 		else
 		{
-			textY = 400;
+			textY = 415;
 		}
 
 		textHeight = SMALLCHAR_HEIGHT;
@@ -298,8 +298,8 @@ static void Main_MenuDraw(void)
 	}
 	else
 	{
-		UI_DrawString(320, 400, MAIN_MENU_FOOTER_LABEL, UI_CENTER | UI_SMALLFONT | UI_PULSE_2, colorBE);
-		UI_DrawString(320, 425, "Quake III Arena(c) 1999-2000, Id Software, Inc.  All Rights Reserved", UI_CENTER | UI_SMALLFONT, color);
+		UI_DrawString(320, 415, MAIN_MENU_FOOTER_LABEL, UI_CENTER | UI_SMALLFONT | UI_PULSE_2, colorBE);
+		UI_DrawString(320, 440, "Quake III Arena(c) 1999-2000, Id Software, Inc.  All Rights Reserved", UI_CENTER | UI_SMALLFONT, color);
 	}
 
 	UI_ServerStatus_DrawBar();

@@ -147,7 +147,14 @@ static void CG_SHUDElementTeamTasksInitializeRuntime(shudElementTeamTasks_t* ele
 		ci = &cgs.clientinfo[entry->sender];
 		if (ci->infoValid)
 		{
-			Q_strncpyz(entry->runtime.senderName, ci->name, MAX_QPATH);
+			if (element->config.style.isSet && element->config.style.value == 1)
+			{
+				Q_strncpyz(entry->runtime.senderName, ci->name_clean, MAX_QPATH);
+			}
+			else
+			{
+				Q_strncpyz(entry->runtime.senderName, ci->name, MAX_QPATH);
+			}
 		}
 		else
 		{
@@ -169,30 +176,68 @@ static void CG_SHUDElementTeamTasksInitializeRuntime(shudElementTeamTasks_t* ele
 		Com_sprintf(entry->runtime.eventName, sizeof(entry->runtime.eventName), "%s x%i", eventName, entry->repeatCount);
 	}
 
-	/* Set sender color - always white since we only display our own team */
-	Vector4Copy(colorWhite, entry->runtime.senderColor);
+	if (element->config.style.isSet && element->config.style.value == 1)
+	{
+		Vector4Copy(colorWhite, entry->runtime.senderColor);
+	}
 
 	entry->runtime.isInitialized = qtrue;
+}
+
+/*
+ * Map HUD line (TeamTask1 = 1, ...) to the Nth newest still-visible event.
+ * Skips expired and PLAYERDEAD entries so lines pack toward the first slot.
+ */
+static superhudTeamTasksEntry_t* CG_SHUDElementTeamTasksFindEntry(shudElementTeamTasks_t* element)
+{
+	superhudGlobalContext_t* ctx;
+	int i;
+	int checkIndex;
+	int visibleSlot;
+	superhudTeamTasksEntry_t* entry;
+
+	ctx = element->gctx;
+	visibleSlot = 0;
+
+	for (i = 0; i < SHUD_MAX_TEAMTASKS_LINES; i++)
+	{
+		checkIndex = (ctx->teamTasks.index - 1 - i + SHUD_MAX_TEAMTASKS_LINES) % SHUD_MAX_TEAMTASKS_LINES;
+		entry = &ctx->teamTasks.line[checkIndex];
+
+		if (entry->time == 0)
+		{
+			continue;
+		}
+
+		if (entry->taskType == TEAMTASK_PLAYERDEAD)
+		{
+			continue;
+		}
+
+		if (!CG_SHUDGetFadeColor(element->ctxTime.color_origin, element->ctxTime.color, &element->config, entry->time))
+		{
+			entry->time = 0;
+			continue;
+		}
+
+		++visibleSlot;
+		if (visibleSlot == element->index)
+		{
+			return entry;
+		}
+	}
+
+	return NULL;
 }
 
 void CG_SHUDElementTeamTasksRoutine(void* context)
 {
 	shudElementTeamTasks_t* element = (shudElementTeamTasks_t*)context;
 	superhudTeamTasksEntry_t* entry;
-	int index;
 	float currentX;
 
-	index = (element->gctx->teamTasks.index - element->index) % SHUD_MAX_TEAMTASKS_LINES;
-	entry = &element->gctx->teamTasks.line[index];
-
-	if (entry->time == 0 || !CG_SHUDGetFadeColor(element->ctxTime.color_origin, element->ctxTime.color, &element->config, entry->time))
-	{
-		entry->time = 0;
-		return;
-	}
-
-	/* Ignore Dead messages */
-	if (entry->taskType == TEAMTASK_PLAYERDEAD)
+	entry = CG_SHUDElementTeamTasksFindEntry(element);
+	if (!entry)
 	{
 		return;
 	}
@@ -280,6 +325,18 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 	element->ctxSender.coord.named.x = currentX;
 	element->ctxSender.background[3] = 0;
 
+	if (element->config.style.isSet && element->config.style.value == 1)
+	{
+		Vector4Copy(entry->runtime.senderColor, element->ctxSender.color);
+	}
+	else
+	{
+		Vector4Copy(element->ctxSender.color_origin, element->ctxSender.color);
+		CG_SHUDConfigPickColor_Runtime(&element->config, element->ctxSender.color);
+	}
+
+	element->ctxSender.color[3] = element->ctxSender.color_origin[3] * element->ctxTime.color[3];
+
 	element->ctxSender.width = entry->runtime.maxNameLenPix;
 	CG_SHUDTextPrintNew(&element->config, &element->ctxSender, qfalse);
 	currentX += entry->runtime.senderWidth + entry->runtime.spacing;
@@ -290,13 +347,17 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 		element->ctxIcon.image = entry->runtime.iconShader;
 		element->ctxIcon.coord.named.x = currentX;
 		element->ctxIcon.coord.named.w = element->ctxIcon.coord.named.h * 0.75f;
-		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxIcon);
+		Vector4Copy(element->ctxIcon.color_origin, element->ctxIcon.color);
+		CG_SHUDConfigPickColor_Runtime(&element->config, element->ctxIcon.color);
+		element->ctxIcon.color[3] = element->ctxIcon.color_origin[3] * element->ctxTime.color[3];
+		CG_SHUDDrawStretchPic(element->ctxIcon.coord, element->ctxIcon.coordPicture, element->ctxIcon.color, element->ctxIcon.image);
 		currentX += element->ctxIcon.coord.named.w + entry->runtime.spacing;
 	}
 
 	/* Draw event name */
 	element->ctxEventName.text = entry->runtime.eventName;
 	element->ctxEventName.coord.named.x = currentX;
+	Vector4Copy(element->ctxTime.color, element->ctxEventName.color);
 	CG_SHUDTextPrintNew(&element->config, &element->ctxEventName, qfalse);
 }
 

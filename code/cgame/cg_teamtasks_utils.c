@@ -10,17 +10,8 @@ Contact: diwoc@outlook.com
 This file contains original work created by diwoc.
 It is included in the OSP2-BE modification for Quake III Arena and is
 distributed under the terms of the project's primary license.
-
-Additional licensing:
-Original portions authored by diwoc may also be used under the
-DIWOC Custom Non-Commercial License v1.0, provided such portions are
-separated from all id Software code and Quake III Arena–derived material.
-
-For details, refer to LICENSE_DIWOC.txt.
 ===========================================================================
 */
-//
-// cg_teamtasks_utils.c -- team task utility functions and command definitions
 
 #include "cg_local.h"
 
@@ -95,14 +86,6 @@ teamTaskCommand_t teamTaskCommands[] =
 
 /*
 =================
-CG_GetTeamTaskShaderByType
-
-Get shader handle for teamtask type
-Returns 0 if not found or not loaded
-=================
-*/
-/*
-=================
 CG_GetPickupShader
 
 Get shader for pickup command based on current pickup item state
@@ -142,6 +125,14 @@ qhandle_t CG_GetPickupShader(void)
 	return cgs.media.teamTasksPickupEmpty;
 }
 
+/*
+=================
+CG_GetTeamTaskShaderByType
+
+Get shader handle for teamtask type
+Returns 0 if not found or not loaded
+=================
+*/
 qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType)
 {
 	switch (taskType)
@@ -267,6 +258,47 @@ Check if server supports team task
 qboolean CG_IsTeamTaskSupported(void)
 {
 	return cg.teamMarkers.supportedServer;
+}
+
+/*
+=================
+CG_TeamTaskShouldUseDeadHereWarn
+
+True when tHere/tWarn must use death position, not crosshair or live origin.
+Uses local client state: cg.snap->ps follows spectated player, so CG_IS_DEAD()
+alone is wrong while switching follow targets.
+=================
+*/
+qboolean CG_TeamTaskShouldUseDeadHereWarn(void)
+{
+	if (!CG_IS_LOCAL_CLIENT_ON_SCREEN())
+	{
+		return qtrue;
+	}
+	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
+	{
+		return qtrue;
+	}
+	if (CG_IsClientFreeFloat())
+	{
+		return qtrue;
+	}
+	if (CG_IS_DEAD())
+	{
+		return qtrue;
+	}
+	if (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
+	{
+		if (cg.snap->ps.stats[STAT_HEALTH] <= 0)
+		{
+			return qtrue;
+		}
+		if (cg.snap->ps.pm_type == PM_SPECTATOR)
+		{
+			return qtrue;
+		}
+	}
+	return qfalse;
 }
 
 /*

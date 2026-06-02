@@ -302,7 +302,8 @@ void CG_AddFragmentHideFrozen(localEntity_t* le)
 {
 	qhandle_t customShader = le->refEntity.customShader;
 
-	if (customShader == cgs.media.frozenShader || customShader == cgs.media.frozenNewShader)
+	if (customShader == cgs.media.frozenShader || customShader == cgs.media.frozenNewShader
+	        || customShader == cgs.media.frozenNewShader2)
 	{
 		le->refEntity.customShader = 0;
 		trap_R_AddRefEntityToScene(&le->refEntity);

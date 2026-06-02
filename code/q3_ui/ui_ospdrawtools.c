@@ -1618,4 +1618,3 @@ void UI_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 
 	trap_R_SetColor(NULL);
 }
-

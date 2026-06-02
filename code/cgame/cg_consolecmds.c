@@ -1388,7 +1388,7 @@ void CG_TeamTaskMarkHere(void)
 		}
 	}
 
-	if (CG_IS_DEAD() || !CG_IS_LOCAL_CLIENT_ON_SCREEN())
+	if (CG_TeamTaskShouldUseDeadHereWarn())
 	{
 		if (cg.teamMarkers.deathPositionValid)
 		{
@@ -1408,7 +1408,7 @@ void CG_TeamTaskMarkHere(void)
 
 
 	/* Check if we're currently alive */
-	if (!CG_IS_DEAD() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
+	if (cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
 	{
 		/* Check if player has flag in CTF mode */
 		if (cgs.gametype == GT_CTF &&
@@ -1466,7 +1466,7 @@ void CG_TeamTaskMarkWarn(void)
 		}
 	}
 
-	if (CG_IS_DEAD() || !CG_IS_LOCAL_CLIENT_ON_SCREEN())
+	if (CG_TeamTaskShouldUseDeadHereWarn())
 	{
 		/* Check cooldown for tWarn DEAD command (2 seconds) */
 		if (!TokenBucket_Consume(&cg.teamMarkers.sendCommandBucketWarn, cg.time))
@@ -1492,7 +1492,7 @@ void CG_TeamTaskMarkWarn(void)
 	}
 
 	/* Check if we're currently alive */
-	if (!CG_IS_DEAD() && cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
+	if (cg.predictedPlayerState.pm_type != PM_SPECTATOR && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
 	{
 		/* Player is alive - send WARN_ALIVE using view direction (like tAttack) */
 		CG_SendTeamTaskMark(0, TEAMTASK_WARN_ALIVE);

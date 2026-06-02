@@ -59,9 +59,7 @@ ui_gameinfo beinfo_cfg osp_fonts ui_atoms ui_cvardescriptions ui_colorparse ui_c
 ui_md5 ui_status_sign ui_server_status \
 ui_mfield ui_credits ui_credits2 ui_menu ui_ingame ui_confirm ui_setup ui_options \
 ui_display ui_sound ui_network ui_playermodel ui_players ui_playersettings \
-ui_preferences ui_qmenu ui_serverinfo ui_servers2 ui_sparena ui_osp2be ui_colorpicker \
-ui_osp2be_general ui_osp2be_player ui_osp2be_weapon ui_osp2be_railgun ui_osp2be_explosives ui_osp2be_teams ui_osp2be_superhud ui_osp2be_constants \
-ui_osp2be_preview ui_osp2be_draw ui_osp2be_controls ui_osp2be_utils \
+ui_preferences ui_qmenu ui_serverinfo ui_servers2 ui_sparena ui_colorpicker \
 ui_superhudconfig ui_ospdrawtools ui_advanced \
 ui_specifyserver ui_sppostgame ui_splevel ui_spskill ui_startserver ui_team \
 ui_video ui_addbots ui_removebots ui_teamorders ui_loadconfig ui_saveconfig \

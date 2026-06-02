@@ -2,7 +2,7 @@
 ===========================================================================
 cg_be_stats.c
 
-BE (Backend Engine) statistics display system
+BE (Black Edition) statistics display system
 
 Copyright (c) 2026 diwoc
 Contact: diwoc@outlook.com
@@ -10,17 +10,9 @@ Contact: diwoc@outlook.com
 This file contains original work created by diwoc.
 It is included in the OSP2-BE modification for Quake III Arena and is
 distributed under the terms of the project's primary license.
-
-Additional licensing:
-Original portions authored by diwoc may also be used under the
-DIWOC Custom Non-Commercial License v1.0, provided such portions are
-separated from all id Software code and Quake III Arena–derived material.
-
-For details, refer to LICENSE_DIWOC.txt.
 ===========================================================================
 */
-//
-// cg_be_stats.c -- BE statistics display system
+
 #include "cg_local.h"
 
 #define MAX_TOKEN_LEN MAX_QPATH

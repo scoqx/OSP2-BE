@@ -3208,7 +3208,18 @@ void CG_AddRefEntityFrozenPlayer(refEntity_t* ent, entityState_t* state, int tea
 	ent->shaderRGBA[2] = ci->colors.frozen[2] * 255;
 
 	ent->shaderRGBA[3] = 255;
-	ent->customShader = cg_freezeOldShader.integer ? cgs.media.frozenShader : cgs.media.frozenNewShader;
+	if (cg_freezeShader.integer == 2)
+	{
+		ent->customShader = cgs.media.frozenNewShader;
+	}
+	else if (cg_freezeShader.integer == 3)
+	{
+		ent->customShader = cgs.media.frozenNewShader2;
+	}
+	else
+	{
+		ent->customShader = cgs.media.frozenShader;
+	}
 	trap_R_AddRefEntityToScene(ent);
 }
 

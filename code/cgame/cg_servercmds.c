@@ -584,9 +584,9 @@ static void CG_ConfigStringModified(void)
 			CG_UpdateBeFeatures();
 			CG_UpdateDamageInfoAllowed();
 			break;
-		case CS_OSP2BE_TOURNEY_MODE:
-			/* CG_OSP2BEConfigTourneyModeSet(atoi(str)); */
-			break;
+		// case CS_OSP2BE_TOURNEY_MODE:
+		// 	CG_OSP2BEConfigTourneyModeSet(atoi(str));
+		// 	break;
 		default:
 			if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 			{

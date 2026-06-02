@@ -10,17 +10,8 @@ Contact: diwoc@outlook.com
 This file contains original work created by diwoc.
 It is included in the OSP2-BE modification for Quake III Arena and is
 distributed under the terms of the project's primary license.
-
-Additional licensing:
-Original portions authored by diwoc may also be used under the
-DIWOC Custom Non-Commercial License v1.0, provided such portions are
-separated from all id Software code and Quake III Arena–derived material.
-
-For details, refer to LICENSE_DIWOC.txt.
 ===========================================================================
 */
-//
-// cg_teamtasks_draw.c -- team task marker rendering functions
 
 #include "cg_local.h"
 
@@ -1393,6 +1384,27 @@ static void CG_ProcessCommonMarkData(teamTaskMark_t* mark, float t,
 	{
 		/* Not a player mark - no name to show */
 		renderData->nameFade = 0.0f;
+	}
+
+	if ((constants->teamTaskFlags & CG_TEAMTASK_SHOWWITHOUTHOVER)
+	    && !((mark->isOverhead && mark->clientNum == cg.clientNum) || shouldDisplayAsOverhead))
+	{
+		qboolean showLabel;
+
+		showLabel = qfalse;
+		if (constants->teamTaskFlags & CG_TEAMTASK_SHOWDISTANCE)
+		{
+			showLabel = qtrue;
+		}
+		if ((constants->teamTaskFlags & CG_TEAMTASK_SHOWNAME)
+		    && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		{
+			showLabel = qtrue;
+		}
+		if (showLabel)
+		{
+			renderData->nameFade = 1.0f;
+		}
 	}
 }
 

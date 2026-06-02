@@ -578,7 +578,6 @@ vmCvar_t        cg_enemyLightningColor;
 vmCvar_t        cg_enemyAltLightning;
 vmCvar_t        cg_teamAltLightning;
 vmCvar_t        cg_muteMyJump;
-vmCvar_t        cg_freezeOldShader;
 vmCvar_t        cg_disableTextEffects;
 vmCvar_t        cg_fragEffectTime;
 vmCvar_t        cg_fragEffectColor;
@@ -594,6 +593,7 @@ vmCvar_t        cg_teamFootsteps;
 vmCvar_t        cg_enemyFootsteps;
 vmCvar_t        cg_oldMedals;
 vmCvar_t        cg_damagePlumsTimeout;
+vmCvar_t        cg_freezeShader;
 
 cgFontIndices_t cgFontIndices;
 
@@ -1055,38 +1055,38 @@ cvarTable_t cvarTable[] =
 	{ &cg_emojiListFont, "cg_emojiListFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListFont },
 	{ &cg_emojiListBgColor, "cg_emojiListBgColor", "00000A", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListBgColor },
 	{ &cg_emojiListOpaque, "cg_emojiListOpaque", "0.8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListOpaque },
-	{ &cg_battleSuitColor, "cg_battleSuitColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_battleSuitColor },
-	{ &cg_enemyBattleSuitColor, "cg_enemyBattleSuitColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyBattleSuitColor },
-	{ &cg_mutePowerUpCountdown, "cg_mutePowerUpCountdown", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_myTeam, "cg_myTeam", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_myTeam },
-	{ &cg_roundSound, "cg_roundSound", "2", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_battleSuitColor, "cg_battleSuitColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_battleSuitColor },
+	{ &cg_enemyBattleSuitColor, "cg_enemyBattleSuitColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyBattleSuitColor },
+	{ &cg_mutePowerUpCountdown, "cg_mutePowerUpCountdown", "0", CVAR_ARCHIVE },
+	{ &cg_myTeam, "cg_myTeam", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_myTeam },
+	{ &cg_roundSound, "cg_roundSound", "2", CVAR_ARCHIVE },
 	{ &cg_debugServer, "cg_debugServer", "0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE },
-	{ &cg_quadDamageColor, "cg_quadDamageColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_quadDamageColor },
-	{ &cg_enemyQuadDamageColor, "cg_enemyQuadDamageColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyQuadDamageColor  },
-	{ &cg_floatSpriteMaxDist, "cg_floatSpriteMaxDist", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_floatSpriteMinSize, "cg_floatSpriteMinSize", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_altLightningColor, "cg_altLightningColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyLightningColor },
-	{ &cg_teamLightningColor, "cg_teamLightningColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyLightningColor },
-	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyLightningColor },
-	{ &cg_enemyAltLightning, "cg_enemyAltLightning", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_teamAltLightning, "cg_teamAltLightning", "", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_muteMyJump, "cg_muteMyJump", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_freezeOldShader, "cg_freezeOldShader", "0", CVAR_ARCHIVE | CVAR_NEW},
-	{ &cg_disableTextEffects, "cg_disableTextEffects", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_fragEffectTime, "cg_fragEffectTime", "500", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_fragEffectColor, "cg_fragEffectColor", "White", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_fragEffectColor },
-	{ &cg_fragEffect, "cg_fragEffect", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_drawUniqueColors, "cg_drawUniqueColors", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_killerGhost, "cg_killerGhost", "1", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_numbersSet, "cg_numbersSet", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_numbersSet },
-	{ &cg_oldFlags, "cg_oldFlags", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_oldFlags },
-	{ &cg_drawBrightItems, "cg_drawBrightItems", "0", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
-	{ &cg_brightItemsOpaque, "cg_brightItemsOpaque", "0.8", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_quadDamageColor, "cg_quadDamageColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_quadDamageColor },
+	{ &cg_enemyQuadDamageColor, "cg_enemyQuadDamageColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyQuadDamageColor  },
+	{ &cg_floatSpriteMaxDist, "cg_floatSpriteMaxDist", "0", CVAR_ARCHIVE },
+	{ &cg_floatSpriteMinSize, "cg_floatSpriteMinSize", "1", CVAR_ARCHIVE },
+	{ &cg_altLightningColor, "cg_altLightningColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_teamLightningColor, "cg_teamLightningColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_enemyLightningColor, "cg_enemyLightningColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyLightningColor },
+	{ &cg_enemyAltLightning, "cg_enemyAltLightning", "", CVAR_ARCHIVE },
+	{ &cg_teamAltLightning, "cg_teamAltLightning", "", CVAR_ARCHIVE },
+	{ &cg_muteMyJump, "cg_muteMyJump", "0", CVAR_ARCHIVE },
+	{ &cg_disableTextEffects, "cg_disableTextEffects", "0", CVAR_ARCHIVE },
+	{ &cg_fragEffectTime, "cg_fragEffectTime", "500", CVAR_ARCHIVE },
+	{ &cg_fragEffectColor, "cg_fragEffectColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_fragEffectColor },
+	{ &cg_fragEffect, "cg_fragEffect", "1", CVAR_ARCHIVE },
+	{ &cg_drawUniqueColors, "cg_drawUniqueColors", "0", CVAR_ARCHIVE },
+	{ &cg_killerGhost, "cg_killerGhost", "1", CVAR_ARCHIVE },
+	{ &cg_numbersSet, "cg_numbersSet", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_numbersSet },
+	{ &cg_oldFlags, "cg_oldFlags", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_oldFlags },
+	{ &cg_drawBrightItems, "cg_drawBrightItems", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
+	{ &cg_brightItemsOpaque, "cg_brightItemsOpaque", "0.8", CVAR_ARCHIVE },
 	{ &cg_myFootsteps, "cg_myFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamFootsteps, "cg_teamFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_enemyFootsteps, "cg_enemyFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_oldMedals, "cg_oldMedals", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_damagePlumsTimeout, "cg_damagePlumsTimeout", "750", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_freezeShader, "cg_freezeShader", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -2080,6 +2080,7 @@ static void CG_RegisterGraphics(void)
 		cgs.media.frozenFoeTagShaderWallhack = trap_R_RegisterShader("sprites/frozenFoeTag2");
 		cgs.media.frozenShader = trap_R_RegisterShader("textures/effects/frozen");
 		cgs.media.frozenNewShader = trap_R_RegisterShader("textures/effects/frozenNew");
+		cgs.media.frozenNewShader2 = trap_R_RegisterShader("textures/effects/frozenNew2");
 		cgs.media.friendShader = trap_R_RegisterShader("sprites/foe");
 		cgs.media.friendShaderWallhack = trap_R_RegisterShader("sprites/foe2");
 		cgs.media.redQuadShader = trap_R_RegisterShader("powerups/quadRed");
@@ -3023,8 +3024,12 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 				cgs.osp.gameTypeFreeze = 1;
 			}
 		}
+		// Every server is supported
 		// CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
+
 		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
+		
+		// Not finished yet
 		/* CG_OSP2BEConfigTourneyModeSet(atoi(CG_ConfigString(CS_OSP2BE_TOURNEY_MODE))); */
 
 		/* cache damageInfoAllowed - gametype, fpsclassico, custom_client_2, beDisableFeatures all known */

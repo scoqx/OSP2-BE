@@ -119,7 +119,7 @@ extern "C" {
 #define CS_OSP_CUSTOM_CLIENT2                     874
 #define CS_OSP2BE_SUPPORTED                     887
 #define CS_OSP2BE_DISABLED_FEATURES             888
-#define CS_OSP2BE_TOURNEY_MODE                  889
+#define CS_OSP2BE_TOURNEY_MODE                  889    // Not finished yet
 #define XQ3E_ALLOW_FEATURES                     1000
 
 #define CS_MAX                  (XQ3E_ALLOW_FEATURES)
@@ -760,7 +760,6 @@ qboolean    BG_CanItemBeGrabbed(int gametype, const entityState_t* ent, const pl
 #define DF_NO_FALLING               8
 #define DF_FIXED_FOV                16
 #define DF_NO_FOOTSTEPS             32
-// MRX
 #define DF_NO_ITEM_RESET            64
 #define DF_NO_TEAM_RESET            128
 #define DF_INSTANT_WEAPON_CHANGE    256

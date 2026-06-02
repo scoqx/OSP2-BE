@@ -896,3 +896,9 @@ SuperHUD:
 + Emojis: :eye-rolling: :trollface: :shock: :stonks: :not-stonks: :rollsafe:
 + `TargetStatusBar` SuperHUD element
 + SuperHUD bars alignh/alignv support (some SHUD configs fixed)
+
+02.06.2026 be v1.05
+* SuperHUD TeamTask improvements
++ SuperHUD TeamTask style 1 (clean names)
++ cg_teamTask 128 - draw name / distance without aiming at mark
+* cg_freezeOldShader 0/1 -> cg_freezeShader 1/2/3 (added HoneyBunnyQT variant)

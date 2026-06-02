@@ -1,5 +1,4 @@
 #include "ui_local.h"
-#include "ui_osp2be_shared.h"
 
 #define ART_BACK0                   "menu/art/back_0"
 #define ART_BACK1                   "menu/art/back_1"
