@@ -2895,7 +2895,7 @@ void CG_OSPDrawNewCredits(void)
 	float x = 100.0f;
 	float y = 80.0f;
 	float w = 440.0f;
-	float h = 322.0f;
+	float h = 328.0f;
 	float charHeight = 14, charWidth = 8;
 	float textX = (w / 2) + x;
 	float textY = y + 2.0f;
