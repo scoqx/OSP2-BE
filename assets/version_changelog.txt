@@ -1,4 +1,4 @@
 04.06.2026 be v1.05b
 + /tShowDead (Re-show ally death marks)
-+ ui_infoVersionFont
++ ui_infoVersionFont (Error Message menu)
 + BE Status Full changelog
