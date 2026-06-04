@@ -2109,10 +2109,24 @@ static float UI_ServerStatus_DrawMultilineFullChangelog(float panelX, float y, f
 				lineBottom = lineY + UI_STATUS_CHAR_HEIGHT;
 				if (lineBottom > clipTop && lineTop < clipBottom)
 				{
-					UI_ServerStatus_DrawChangelogTextLine(contentX, lineY, lineStart, chunk,
-					                                      physicalLineStart, lineEnd,
-					                                      text_color_normal, DS_HLEFT,
-					                                      maxWidthPx);
+					qboolean    drawLine;
+
+					drawLine = qtrue;
+					if (skipBand && physicalLineStart == skipLineStart)
+					{
+						if (lineBottom > skipClipTop && lineTop < skipClipBottom)
+						{
+							drawLine = qfalse;
+						}
+					}
+
+					if (drawLine)
+					{
+						UI_ServerStatus_DrawChangelogTextLine(contentX, lineY, lineStart, chunk,
+						                                      physicalLineStart, lineEnd,
+						                                      text_color_normal, DS_HLEFT,
+						                                      maxWidthPx);
+					}
 				}
 
 				lineY += UI_STATUS_CHAR_HEIGHT;
@@ -2216,7 +2230,6 @@ static void UI_ServerStatus_ScrollbarDragUpdate(float panelX, float panelY, floa
 	float           textW;
 	float           contentH;
 	qboolean        needScroll;
-	float           sbX;
 	float           sbY;
 	float           sbH;
 	float           maxScroll;
@@ -2243,7 +2256,6 @@ static void UI_ServerStatus_ScrollbarDragUpdate(float panelX, float panelY, floa
 	        panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
 	sbH = bodyH;
 	sbY = bodyY;
-	sbX = panelX + panelW - UI_STATUS_PANEL_PAD - UI_STATUS_SCROLLBAR_WIDTH;
 	my = uis.cursory;
 
 	UI_ServerStatus_ScrollbarGetThumb(sbH, contentH, ui_statusChangelogScroll, &thumbH, &thumbY,
