@@ -16,26 +16,24 @@ distributed under the terms of the project's primary license.
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
 
+// qboolean CG_BE_Timer(int msec)
+// {
+// 	static int lastTime = 0;
+// 	int currentTime = cg.time;
 
-
-qboolean CG_BE_Timer(int msec)
-{
-	static int lastTime = 0;
-	int currentTime = cg.time;
-
-	int diff = currentTime - lastTime;
-	if (diff < 0)
-	{
-		lastTime = currentTime;
-		return qfalse;
-	}
-	if (diff >= msec)
-	{
-		lastTime = currentTime;
-		return qtrue;
-	}
-	return qfalse;
-}
+// 	int diff = currentTime - lastTime;
+// 	if (diff < 0)
+// 	{
+// 		lastTime = currentTime;
+// 		return qfalse;
+// 	}
+// 	if (diff >= msec)
+// 	{
+// 		lastTime = currentTime;
+// 		return qtrue;
+// 	}
+// 	return qfalse;
+// }
 
 void CG_UpdateBeFeatures(void)
 {
@@ -421,18 +419,6 @@ void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
 /*
 =================
 CG_UpdateDamageInfoAllowed
-
-Recalculate cached cgs.damageInfoAllowed.
-Call when:
-  - CG_UpdateBeFeatures() runs (beFeaturesEnabled changed)
-  - CS_OSP_CUSTOM_CLIENT2 configstring changes
-  - At init (via CG_UpdateBeFeatures)
-
-Inputs (all stable or updated via specific handlers):
-  - cgs.gametype       (set at init, never changes)
-  - cgs.fpsclassico    (set at init, never changes)
-  - cgs.beFeaturesEnabled (updated via CG_UpdateBeFeatures)
-  - cgs.osp.custom_client_2 (updated via CS_OSP_CUSTOM_CLIENT2)
 =================
 */
 void CG_UpdateDamageInfoAllowed(void)

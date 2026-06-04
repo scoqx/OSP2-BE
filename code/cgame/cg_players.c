@@ -1091,6 +1091,9 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
 			return;
 		case TEAMTASK_PLAYERDEAD:
+			CG_TeamTaskStoreAllyDeathPosition(clientNum, coord);
+			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+			return;
 		case TEAMTASK_HERE_DEAD:
 		case TEAMTASK_WARN_DEAD:
 			CG_TeamTaskMark(coord, templateID, clientNum, toClient);
@@ -2879,6 +2882,8 @@ CG_PlayerPowerups
 static void CG_PlayerPowerups(centity_t* cent)
 {
 	int     powerups;
+	int     clientNum;
+	int     specTeam;
 	vec4_t  tint;
 	vec3_t  flagLightRgb;
 
@@ -2886,41 +2891,32 @@ static void CG_PlayerPowerups(centity_t* cent)
 	{
 		const float* tc;
 
-		if (cg_killerGhost.integer != 1)
+		if (cg_killerGhost.integer == 1)
 		{
-			return;
+			tc = (cgs.beMyTeam == TEAM_BLUE) ? cgs.beBlueTeamColor : cgs.beRedTeamColor;
+			trap_R_AddLightToScene(cent->lerpOrigin, (float)(200 + (rand() & 31)), tc[0], tc[1], tc[2]);
 		}
-		if (cgs.beMyTeam == TEAM_BLUE)
-		{
-			tc = cgs.beBlueTeamColor;
-		}
-		else
-		{
-			tc = cgs.beRedTeamColor;
-		}
-		trap_R_AddLightToScene(cent->lerpOrigin, (float)(200 + (rand() & 31)), tc[0], tc[1], tc[2]);
 		return;
 	}
 
-	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+	clientNum = cent->currentState.clientNum;
+	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR &&
+	        (cg_spectGlow.integer || clientNum == cg.snap->ps.generic1 - 32))
 	{
-		int clientNum = cent->currentState.clientNum;
-		if (cg_spectGlow.integer || clientNum == cg.snap->ps.generic1 - 32)
+		specTeam = cgs.clientinfo[clientNum].team;
+		if (specTeam == TEAM_BLUE)
 		{
-			if (cgs.clientinfo[clientNum].team == TEAM_BLUE)
-			{
-				trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 200), 0.2, 0.2, 1.0);
-				trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 200), 0.2, 0.2, 1.0);
-			}
-			else if (cgs.clientinfo[clientNum].team == TEAM_RED)
-			{
-				trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 200), 1.0, 0.2, 0.2);
-				trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 200), 1.0, 0.2, 0.2);
-			}
-			else if (cgs.clientinfo[clientNum].team == TEAM_FREE)
-			{
-				trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 0xc8), 1.0, 1.0, 1.0);
-			}
+			trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 200), 0.2, 0.2, 1.0);
+			trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 200), 0.2, 0.2, 1.0);
+		}
+		else if (specTeam == TEAM_RED)
+		{
+			trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 200), 1.0, 0.2, 0.2);
+			trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 200), 1.0, 0.2, 0.2);
+		}
+		else if (specTeam == TEAM_FREE)
+		{
+			trap_R_AddLightToScene(cent->lerpOrigin, (float)((rand() & 0x1f) + 0xc8), 1.0, 1.0, 1.0);
 		}
 	}
 
@@ -2934,64 +2930,47 @@ static void CG_PlayerPowerups(centity_t* cent)
 	if (powerups & (1 << PW_QUAD))
 	{
 		float               r, g, b;
-		int                 clientNum;
 		const clientInfo_t* ci;
+		qboolean            isEnemyPlayer;
+		qboolean            useEnemyMono;
+		qboolean            useQuadMono;
 
 		r = 0.2f;
 		g = 0.2f;
 		b = 1.0f;
-		clientNum = cent->currentState.clientNum;
 		if (clientNum >= 0 && clientNum < MAX_CLIENTS)
 		{
 			ci = &cgs.clientinfo[clientNum];
-			if (!cg.enemyQuadDamageColorEnabled && !cg.quadDamageColorEnabled)
+			isEnemyPlayer = qfalse;
+			if (cg.enemyQuadDamageColorEnabled)
 			{
-				if (ci->team == TEAM_RED)
-				{
-					r = 1.0f;
-					g = 0.2f;
-					b = 0.2f;
-				}
-				else if (ci->team == TEAM_BLUE)
-				{
-					r = 0.2f;
-					g = 0.2f;
-					b = 1.0f;
-				}
-			}
-			else
-			{
-				qboolean isEnemyPlayer;
-				qboolean useEnemyMono;
-				qboolean useQuadMono;
-
 				isEnemyPlayer = CG_IsEnemyForPowerupVisual(ci);
-				useEnemyMono = cg.enemyQuadDamageColorEnabled && isEnemyPlayer;
-				useQuadMono = cg.quadDamageColorEnabled && !useEnemyMono;
-				if (useEnemyMono)
-				{
-					r = cg.beEnemyQuadDamageColor[0];
-					g = cg.beEnemyQuadDamageColor[1];
-					b = cg.beEnemyQuadDamageColor[2];
-				}
-				else if (useQuadMono)
-				{
-					r = cg.beQuadDamageColor[0];
-					g = cg.beQuadDamageColor[1];
-					b = cg.beQuadDamageColor[2];
-				}
-				else if (ci->team == TEAM_RED)
-				{
-					r = 1.0f;
-					g = 0.2f;
-					b = 0.2f;
-				}
-				else if (ci->team == TEAM_BLUE)
-				{
-					r = 0.2f;
-					g = 0.2f;
-					b = 1.0f;
-				}
+			}
+			useEnemyMono = cg.enemyQuadDamageColorEnabled && isEnemyPlayer;
+			useQuadMono = cg.quadDamageColorEnabled && !useEnemyMono;
+			if (useEnemyMono)
+			{
+				r = cg.beEnemyQuadDamageColor[0];
+				g = cg.beEnemyQuadDamageColor[1];
+				b = cg.beEnemyQuadDamageColor[2];
+			}
+			else if (useQuadMono)
+			{
+				r = cg.beQuadDamageColor[0];
+				g = cg.beQuadDamageColor[1];
+				b = cg.beQuadDamageColor[2];
+			}
+			else if (ci->team == TEAM_RED)
+			{
+				r = 1.0f;
+				g = 0.2f;
+				b = 0.2f;
+			}
+			else if (ci->team == TEAM_BLUE)
+			{
+				r = 0.2f;
+				g = 0.2f;
+				b = 1.0f;
 			}
 		}
 		trap_R_AddLightToScene(cent->lerpOrigin, (float)(200 + (rand() & 31)), r, g, b);
@@ -3006,14 +2985,14 @@ static void CG_PlayerPowerups(centity_t* cent)
 	// redflag
 	if (powerups & (1 << PW_REDFLAG))
 	{
-		if (CG_OldFlagModels())
-		{
-			CG_TrailItem(cent, cgs.media.redFlagModel, NULL);
-		}
-		else
+		if (!CG_OldFlagModels())
 		{
 			CG_GetDyeFlagTintVec4(TEAM_RED, tint);
 			CG_TrailItem(cent, cgs.media.redFlagModel, tint);
+		}
+		else
+		{
+			CG_TrailItem(cent, cgs.media.redFlagModel, NULL);
 		}
 		CG_GetDyeFlagCarrierLightRgb(TEAM_RED, flagLightRgb);
 		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), flagLightRgb[0], flagLightRgb[1], flagLightRgb[2]);
@@ -3022,14 +3001,14 @@ static void CG_PlayerPowerups(centity_t* cent)
 	// blueflag
 	if (powerups & (1 << PW_BLUEFLAG))
 	{
-		if (CG_OldFlagModels())
-		{
-			CG_TrailItem(cent, cgs.media.blueFlagModel, NULL);
-		}
-		else
+		if (!CG_OldFlagModels())
 		{
 			CG_GetDyeFlagTintVec4(TEAM_BLUE, tint);
 			CG_TrailItem(cent, cgs.media.blueFlagModel, tint);
+		}
+		else
+		{
+			CG_TrailItem(cent, cgs.media.blueFlagModel, NULL);
 		}
 		CG_GetDyeFlagCarrierLightRgb(TEAM_BLUE, flagLightRgb);
 		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), flagLightRgb[0], flagLightRgb[1], flagLightRgb[2]);
@@ -3780,13 +3759,12 @@ caller adds outline pass by setting ent->customShader, ent->shaderRGBA from cach
 Saves 2 function calls per player (was CG_PlayerOutline called 3x; now 1x Begin + inline add at 3 sites).
 ===============
 */
-static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean useMarkTeammate)
+static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean useMarkTeammate, qboolean outlineIsEnemy)
 {
 	int clientNum;
 	const clientInfo_t* ci;
 	const clientInfo_t* localCi;
 	qboolean outlineIsSpec;
-	qboolean outlineIsEnemy;
 	vec4_t outlineColor = {0, 0, 0, 0};
 	vec3_t uniqueColorVec = {0, 0, 0};
 
@@ -3808,8 +3786,6 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 			outlineIsSpec = (cgs.gametype >= GT_CA) ?
 			                (localCi->rt == TEAM_SPECTATOR) :
 			                (localCi->team == TEAM_SPECTATOR);
-
-			outlineIsEnemy = CG_IsEnemyForPowerupVisual(ci);
 
 			if (cg_drawOutline.integer && ci->infoValid &&
 			        !(cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) &&
@@ -3940,6 +3916,7 @@ void CG_Player(centity_t* cent)
 	qboolean        paintItBlack;
 	qboolean        useOutline;
 	qboolean useMarkTeammate;
+	qboolean outlineIsEnemy;
 	qboolean useTeamFrozen;
 	qboolean useTeamFoeWh;
 	/* QVM_LOGIC: pre-computed paintBlack - avoid 3x branch + 3x triple-assign */
@@ -3999,11 +3976,12 @@ void CG_Player(centity_t* cent)
 	/* QVM_LOGIC: compute feature flags once per player instead of multiple checks */
 	useMarkTeammate = CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE);
 	useOutline = CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer;
+	outlineIsEnemy = useOutline ? CG_IsEnemyForPowerupVisual(ci) : qfalse;
 	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
 	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 
 	/* QVM: one outline cache update per player; outline add inlined after each body part (saves 2 calls) */
-	CG_PlayerOutlineBegin(cent, useOutline, useMarkTeammate);
+	CG_PlayerOutlineBegin(cent, useOutline, useMarkTeammate, outlineIsEnemy);
 
 	renderfx = 0;
 

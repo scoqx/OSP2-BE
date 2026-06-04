@@ -53,6 +53,24 @@ void CG_HandlePlayerDeathTeamTask(int target, qboolean isUnfreezeEvent)
 
 /*
 =================
+CG_TeamTaskStoreAllyDeathPosition
+
+Save death coordinates from incoming TEAMTASK_PLAYERDEAD mark
+=================
+*/
+void CG_TeamTaskStoreAllyDeathPosition(int clientNum, vec3_t coord)
+{
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+
+	VectorCopy(coord, cg.teamMarkers.allyDeathPosition[clientNum]);
+	cg.teamMarkers.allyDeathPositionValid[clientNum] = qtrue;
+}
+
+/*
+=================
 TeamTask command definitions
 =================
 */

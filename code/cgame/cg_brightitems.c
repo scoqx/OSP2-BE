@@ -55,18 +55,85 @@ static const itemBrightColorEntry_t itemBrightColorDefaults[] =
 	{ NULL, 1.00f, 1.00f, 1.00f, 1.00f }
 };
 
+#define BRIGHT_CLASSNAME_HASH_SIZE 65536u
+#define BRIGHT_DEFAULTS_HASH_MAX  32
+
+static unsigned long brightItemNameHash[MAX_ITEMS];
+static unsigned long brightKnownHashQuad;
+static unsigned long brightKnownHashEnviro;
+static unsigned long brightKnownHashRedFlag;
+static unsigned long brightKnownHashBlueFlag;
+static int           brightItemIdxQuad;
+static int           brightItemIdxEnviro;
+static int           brightItemIdxRedFlag;
+static int           brightItemIdxBlueFlag;
+
+static void CG_BrightItemsCacheClassnameData(void)
+{
+	int           i;
+	const char*   cn;
+
+	brightKnownHashQuad = Com_GenerateHashValue("item_quad", BRIGHT_CLASSNAME_HASH_SIZE);
+	brightKnownHashEnviro = Com_GenerateHashValue("item_enviro", BRIGHT_CLASSNAME_HASH_SIZE);
+	brightKnownHashRedFlag = Com_GenerateHashValue("team_CTF_redflag", BRIGHT_CLASSNAME_HASH_SIZE);
+	brightKnownHashBlueFlag = Com_GenerateHashValue("team_CTF_blueflag", BRIGHT_CLASSNAME_HASH_SIZE);
+
+	brightItemIdxQuad = -1;
+	brightItemIdxEnviro = -1;
+	brightItemIdxRedFlag = -1;
+	brightItemIdxBlueFlag = -1;
+
+	for (i = 1; i < bg_numItems; i++)
+	{
+		cn = bg_itemlist[i].classname;
+		if (!cn)
+		{
+			brightItemNameHash[i] = 0;
+			continue;
+		}
+		brightItemNameHash[i] = Com_GenerateHashValue(cn, BRIGHT_CLASSNAME_HASH_SIZE);
+
+		if (brightItemIdxQuad < 0 && brightItemNameHash[i] == brightKnownHashQuad &&
+		        !Q_stricmp(cn, "item_quad"))
+		{
+			brightItemIdxQuad = i;
+		}
+		else if (brightItemIdxEnviro < 0 && brightItemNameHash[i] == brightKnownHashEnviro &&
+		         !Q_stricmp(cn, "item_enviro"))
+		{
+			brightItemIdxEnviro = i;
+		}
+		else if (brightItemIdxRedFlag < 0 && brightItemNameHash[i] == brightKnownHashRedFlag &&
+		         !Q_stricmp(cn, "team_CTF_redflag"))
+		{
+			brightItemIdxRedFlag = i;
+		}
+		else if (brightItemIdxBlueFlag < 0 && brightItemNameHash[i] == brightKnownHashBlueFlag &&
+		         !Q_stricmp(cn, "team_CTF_blueflag"))
+		{
+			brightItemIdxBlueFlag = i;
+		}
+	}
+}
+
 static int CG_BrightItemIndexByClassname(const char* classname)
 {
-	int i;
-	const char* cn;
+	unsigned long h;
+	int           i;
+	const char*   cn;
 
 	if (!classname || !classname[0])
 	{
 		return -1;
 	}
 
+	h = Com_GenerateHashValue(classname, BRIGHT_CLASSNAME_HASH_SIZE);
 	for (i = 1; i < bg_numItems; i++)
 	{
+		if (brightItemNameHash[i] != h)
+		{
+			continue;
+		}
 		cn = bg_itemlist[i].classname;
 		if (cn && !Q_stricmp(cn, classname))
 		{
@@ -76,39 +143,43 @@ static int CG_BrightItemIndexByClassname(const char* classname)
 	return -1;
 }
 
-static void CG_SetBrightItemColorByClassname(const char* classname, const float rgba[4])
+static int CG_SetBrightItemColorByClassname(const char* classname, const float rgba[4])
 {
 	int idx;
 
 	idx = CG_BrightItemIndexByClassname(classname);
 	if (idx < 0 || !rgba)
 	{
-		return;
+		return -1;
 	}
 
 	cgs.beBrightItemsColor[idx][0] = rgba[0];
 	cgs.beBrightItemsColor[idx][1] = rgba[1];
 	cgs.beBrightItemsColor[idx][2] = rgba[2];
 	cgs.beBrightItemsColor[idx][3] = rgba[3];
+	return idx;
 }
 
 qboolean CG_BrightItemBeinfoOverrideAllowed(const char* classname)
 {
+	unsigned long h;
+
 	if (!classname || !classname[0])
 	{
 		return qfalse;
 	}
 
-	if (!Q_stricmp(classname, "item_quad"))
+	h = Com_GenerateHashValue(classname, BRIGHT_CLASSNAME_HASH_SIZE);
+	if (h == brightKnownHashQuad && !Q_stricmp(classname, "item_quad"))
 	{
 		return cg.quadDamageCustomColor ? qfalse : qtrue;
 	}
-	if (!Q_stricmp(classname, "item_enviro"))
+	if (h == brightKnownHashEnviro && !Q_stricmp(classname, "item_enviro"))
 	{
 		return cg.battleSuitCustomColor ? qfalse : qtrue;
 	}
-	if (!Q_stricmp(classname, "team_CTF_redflag") ||
-	        !Q_stricmp(classname, "team_CTF_blueflag"))
+	if ((h == brightKnownHashRedFlag && !Q_stricmp(classname, "team_CTF_redflag")) ||
+	        (h == brightKnownHashBlueFlag && !Q_stricmp(classname, "team_CTF_blueflag")))
 	{
 		return CG_FlagUsesClassicBrightColor();
 	}
@@ -118,24 +189,28 @@ qboolean CG_BrightItemBeinfoOverrideAllowed(const char* classname)
 
 static weapon_t CG_BrightWeaponByClassname(const char* classname)
 {
-	int i;
+	unsigned long h;
+	int           i;
+	const char*   cn;
 
 	if (!classname || !classname[0])
 	{
 		return WP_NONE;
 	}
 
+	h = Com_GenerateHashValue(classname, BRIGHT_CLASSNAME_HASH_SIZE);
 	for (i = 1; i < bg_numItems; i++)
 	{
 		if (bg_itemlist[i].giType != IT_WEAPON)
 		{
 			continue;
 		}
-		if (!bg_itemlist[i].classname)
+		if (brightItemNameHash[i] != h)
 		{
 			continue;
 		}
-		if (!Q_stricmp(bg_itemlist[i].classname, classname))
+		cn = bg_itemlist[i].classname;
+		if (cn && !Q_stricmp(cn, classname))
 		{
 			return bg_itemlist[i].giTag;
 		}
@@ -164,6 +239,7 @@ static void CG_BeinfoBrightWeaponOverride(const char* classname, float r, float 
 static void CG_BeinfoBrightItemOverride(const char* classname, float r, float g, float b, float a)
 {
 	vec4_t color;
+	int    idx;
 
 	if (!CG_BrightItemBeinfoOverrideAllowed(classname))
 	{
@@ -174,22 +250,16 @@ static void CG_BeinfoBrightItemOverride(const char* classname, float r, float g,
 	color[1] = g;
 	color[2] = b;
 	color[3] = a;
-	CG_SetBrightItemColorByClassname(classname, color);
+	idx = CG_SetBrightItemColorByClassname(classname, color);
+	if (idx >= 0)
 	{
-		int idx;
-
-		idx = CG_BrightItemIndexByClassname(classname);
-		if (idx >= 0)
-		{
-			cgs.beBrightItemsBeinfoSet[idx] = qtrue;
-		}
+		cgs.beBrightItemsBeinfoSet[idx] = qtrue;
 	}
 }
 
 void CG_UpdateBrightItemsDynamicColors(void)
 {
 	vec4_t color;
-	int     idx;
 
 	if (cg.quadDamageCustomColor)
 	{
@@ -199,14 +269,10 @@ void CG_UpdateBrightItemsDynamicColors(void)
 		color[3] = 1.0f;
 		CG_SetBrightItemColorByClassname("item_quad", color);
 	}
-	else
+	else if (brightItemIdxQuad < 0 || !cgs.beBrightItemsBeinfoSet[brightItemIdxQuad])
 	{
-		idx = CG_BrightItemIndexByClassname("item_quad");
-		if (idx < 0 || !cgs.beBrightItemsBeinfoSet[idx])
-		{
-			CG_GetDefaultQuadDamageColor(color);
-			CG_SetBrightItemColorByClassname("item_quad", color);
-		}
+		CG_GetDefaultQuadDamageColor(color);
+		CG_SetBrightItemColorByClassname("item_quad", color);
 	}
 
 	if (cg.battleSuitCustomColor)
@@ -217,14 +283,10 @@ void CG_UpdateBrightItemsDynamicColors(void)
 		color[3] = 1.0f;
 		CG_SetBrightItemColorByClassname("item_enviro", color);
 	}
-	else
+	else if (brightItemIdxEnviro < 0 || !cgs.beBrightItemsBeinfoSet[brightItemIdxEnviro])
 	{
-		idx = CG_BrightItemIndexByClassname("item_enviro");
-		if (idx < 0 || !cgs.beBrightItemsBeinfoSet[idx])
-		{
-			CG_GetDefaultBattleSuitColor(color);
-			CG_SetBrightItemColorByClassname("item_enviro", color);
-		}
+		CG_GetDefaultBattleSuitColor(color);
+		CG_SetBrightItemColorByClassname("item_enviro", color);
 	}
 
 	if (CG_FlagUsesClassicBrightColor())
@@ -259,9 +321,11 @@ void CG_UpdateBrightItemsDynamicColors(void)
 
 void CG_InitBrightItemsColors(void)
 {
-	int     i;
-	int     j;
-	vec4_t  white;
+	int           i;
+	int           j;
+	int           numDefaults;
+	vec4_t        white;
+	unsigned long brightDefaultHash[BRIGHT_DEFAULTS_HASH_MAX];
 
 	white[0] = 1.0f;
 	white[1] = 1.0f;
@@ -274,17 +338,36 @@ void CG_InitBrightItemsColors(void)
 		cgs.beBrightItemsBeinfoSet[i] = qfalse;
 	}
 
+	CG_BrightItemsCacheClassnameData();
+
+	numDefaults = 0;
+	for (j = 0; itemBrightColorDefaults[j].classname; j++)
+	{
+		if (numDefaults < BRIGHT_DEFAULTS_HASH_MAX)
+		{
+			brightDefaultHash[numDefaults] = Com_GenerateHashValue(
+			        itemBrightColorDefaults[j].classname, BRIGHT_CLASSNAME_HASH_SIZE);
+			numDefaults++;
+		}
+	}
+
 	for (i = 1; i < bg_numItems; i++)
 	{
-		const char* cn;
+		const char*   cn;
+		unsigned long h;
 
 		cn = bg_itemlist[i].classname;
 		if (!cn)
 		{
 			continue;
 		}
-		for (j = 0; itemBrightColorDefaults[j].classname; j++)
+		h = brightItemNameHash[i];
+		for (j = 0; j < numDefaults; j++)
 		{
+			if (h != brightDefaultHash[j])
+			{
+				continue;
+			}
 			if (!Q_stricmp(cn, itemBrightColorDefaults[j].classname))
 			{
 				cgs.beBrightItemsColor[i][0] = itemBrightColorDefaults[j].r;
@@ -307,7 +390,7 @@ void CG_BeinfoApplyBrightColor(const char* classname, float r, float g, float b,
 		return;
 	}
 
-	if (!Q_stricmpn(classname, "weapon_", 7))
+	if (classname[0] == 'w' && !Q_stricmpn(classname, "weapon_", 7))
 	{
 		CG_BeinfoBrightWeaponOverride(classname, r, g, b, a);
 		return;
@@ -316,9 +399,9 @@ void CG_BeinfoApplyBrightColor(const char* classname, float r, float g, float b,
 	CG_BeinfoBrightItemOverride(classname, r, g, b, a);
 }
 
-qhandle_t CG_SelectBrightItemsShader(int itemNum)
+qhandle_t CG_SelectBrightItemsShader(int gitype)
 {
-	if (itemNum >= 1 && itemNum < bg_numItems && bg_itemlist[itemNum].giType == IT_TEAM)
+	if (gitype == IT_TEAM)
 	{
 		if (cg_drawBrightItems.integer == 2)
 		{
@@ -333,12 +416,18 @@ qhandle_t CG_SelectBrightItemsShader(int itemNum)
 	return cgs.media.fullBrightShader;
 }
 
-qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum)
+qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum, int gitype)
 {
 	const float* bc;
 	float       op;
+	int         drawBright;
 
-	if (!cg_drawBrightItems.integer || cg_simpleItems.integer)
+	if (gitype == IT_WEAPON)
+	{
+		return qfalse;
+	}
+	drawBright = cg_drawBrightItems.integer;
+	if (!drawBright || cg_simpleItems.integer)
 	{
 		return qfalse;
 	}
@@ -350,10 +439,6 @@ qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum)
 	{
 		return qfalse;
 	}
-	if (bg_itemlist[itemNum].giType == IT_WEAPON)
-	{
-		return qfalse;
-	}
 
 	bc = cgs.beBrightItemsColor[itemNum];
 	if (cgs.beBrightItemsBeinfoSet[itemNum])
@@ -362,19 +447,18 @@ qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum)
 	}
 	else
 	{
-		trap_Cvar_Update(&cg_brightItemsOpaque);
 		op = cg_brightItemsOpaque.value;
 	}
 	if (op < 0.0f)
 	{
 		op = 0.0f;
 	}
-	if (op > 1.0f)
+	else if (op > 1.0f)
 	{
 		op = 1.0f;
 	}
 
-	ent->customShader = CG_SelectBrightItemsShader(itemNum);
+	ent->customShader = CG_SelectBrightItemsShader(gitype);
 	ent->shaderRGBA[0] = (byte)(255 * bc[0]);
 	ent->shaderRGBA[1] = (byte)(255 * bc[1]);
 	ent->shaderRGBA[2] = (byte)(255 * bc[2]);

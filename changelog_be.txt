@@ -903,3 +903,8 @@ SuperHUD:
 * SuperHUD Mirage's configs updated
 + cg_teamTask 128 - draw name / distance without aiming at mark
 * cg_freezeOldShader 0/1 -> cg_freezeShader 1/2/3 (added HoneyBunnyQT variant)
+
+04.06.2026 be v1.05b
++ /tShowDead (Re-show ally death marks)
++ ui_infoVersionFont (Error Message menu)
++ BE Status Full changelog

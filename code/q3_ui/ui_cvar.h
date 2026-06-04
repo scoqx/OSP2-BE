@@ -110,6 +110,7 @@ UI_CVAR(ui_framesFullscreen, "ui_framesFullscreen", "0", CVAR_ARCHIVE)
 UI_CVAR(ui_banner, "ui_banner", "1", CVAR_ARCHIVE)
 UI_CVAR(ui_bannerColor, "ui_bannerColor", "1", CVAR_ARCHIVE)
 UI_CVAR(ui_infoDetail, "ui_infoDetail", "0", CVAR_ARCHIVE)
+UI_CVAR(ui_infoVersionFont, "ui_infoVersionFont", "2", CVAR_ARCHIVE)
 
 
 #undef UI_CVAR

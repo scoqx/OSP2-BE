@@ -2895,7 +2895,7 @@ void CG_OSPDrawNewCredits(void)
 	float x = 100.0f;
 	float y = 80.0f;
 	float w = 440.0f;
-	float h = 300.0f;
+	float h = 322.0f;
 	float charHeight = 14, charWidth = 8;
 	float textX = (w / 2) + x;
 	float textY = y + 2.0f;
@@ -2930,6 +2930,8 @@ void CG_OSPDrawNewCredits(void)
 		"Neil Toronto   ^Bhttp://ra.is/unlagged",
 		"Ratmod   ^Bhttps://github.com/rdntcntrl/ratoa_gamecode",
 		"Devotion   ^Bhttps://github.com/alcachofass/devotion",
+		"Q3 1.16n X-Mod   ^Bhttps://github.com/navgg/Quake-3-1.16n-extensions",
+		"Nemesis 1.16n   ^Bhttps://github.com/dledmonds/quake3-nemesis-1.16n",
 		"CPMA   ^Bhttps://playmorepromode.com/",
 		NULL
 	};

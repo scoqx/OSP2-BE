@@ -116,6 +116,10 @@ FORCE:
 	@grep -E '^#define OSP_VERSION "' $(COMDIR)/osp_version.h | sed -E 's/^#define OSP_VERSION "([^"]*)".*/\1/' > $@
 	@echo "Version file created: $$(cat $@)"
 
+../../assets/changelog_be_r.txt: FORCE ../../changelog_be.txt
+	@echo "Reversing full changelog for UI"
+	@$(PYTHON) ../../scripts/reverse_changelog_be.py
+
 ../../assets/version_changelog.txt: FORCE ../../changelog_be.txt ../../assets/version.txt
 	@echo "Extracting changelog for current version"
 	@VERSION_NUM=$$(cat ../../assets/version.txt | sed 's/be-//'); \
@@ -152,7 +156,7 @@ FORCE:
 	fi
 
 #$(PK3): vm/qagame.qvm vm/cgame.qvm vm/ui.qvm
-$(PK3): vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt
+$(PK3): vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/changelog_be_r.txt
 	@echo "Creating package with version files..."
 	@echo "Version: $$(cat ../../assets/version.txt)"
 	@$(7Z) $@ vm/*.qvm vm/*.jts ../../assets/*

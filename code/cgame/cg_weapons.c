@@ -1932,7 +1932,7 @@ void CG_InitBrightWeaponsColors(void)
 	}
 }
 
-float CG_GetBrightWeaponOpacity(int weaponNum)
+static float CG_GetBrightWeaponOpacity(int weaponNum)
 {
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS &&
 	        cgs.beBrightWeaponsBeinfoSet[weaponNum])
@@ -1940,7 +1940,6 @@ float CG_GetBrightWeaponOpacity(int weaponNum)
 		return cgs.beBrightWeaponsBeinfoOpaque[weaponNum];
 	}
 
-	trap_Cvar_Update(&cg_brightWeaponsOpaque);
 	return cg_brightWeaponsOpaque.value;
 }
 

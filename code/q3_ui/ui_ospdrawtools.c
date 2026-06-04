@@ -1051,6 +1051,11 @@ static float GetSymbolSize(char sym, qboolean proportional, float charWidth)
 	return charWidth;
 }
 
+float UI_OSPCharWidth640(char sym, float charWidth, int proportional)
+{
+	return GetSymbolSize(sym, (qboolean)proportional, charWidth);
+}
+
 int UI_OSPTextFitLineWidth640(const char* lineStart, const char* lineEnd, float charWidth,
                               int proportional, float maxWidth640)
 {

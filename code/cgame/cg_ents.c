@@ -569,39 +569,40 @@ static void CG_Item(centity_t* cent)
 
 	{
 		qboolean usedBrightItem;
+		qboolean brightStyleCached;
+		qhandle_t brightShader;
+		byte     brightRGBA[4];
 
-		usedBrightItem = CG_ApplyBrightItem(&ent, itemNum);
-		if (!usedBrightItem && gitype == IT_WEAPON)
+		usedBrightItem = qfalse;
+		brightStyleCached = qfalse;
+
+		if (gitype != IT_WEAPON)
 		{
-			if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 8))
+			usedBrightItem = CG_ApplyBrightItem(&ent, itemNum, gitype);
+		}
+		else if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && (cg_drawBrightWeapons.integer & 8))
+		{
+			int w;
+
+			w = item->giTag;
+			if (w > WP_NONE && w < WP_NUM_WEAPONS)
 			{
-				int w;
-				float* bc;
-				float op;
-				w = item->giTag;
-				ent.customShader = (cg_brightWeaponsShader.integer == 2) ? cgs.media.altFullBrightShader : cgs.media.fullBrightShader;
-				if (w > WP_NONE && w < WP_NUM_WEAPONS)
-				{
-					bc = cgs.beBrightWeaponsColor[w];
-					op = CG_GetBrightWeaponOpacity(w);
-					if (op < 0.0f) op = 0.0f;
-					if (op > 1.0f) op = 1.0f;
-					ent.shaderRGBA[0] = 255 * bc[0];
-					ent.shaderRGBA[1] = 255 * bc[1];
-					ent.shaderRGBA[2] = 255 * bc[2];
-					ent.shaderRGBA[3] = 255 * op;
-					usedBrightItem = qtrue;
-				}
+				ent.customShader = (cg_brightWeaponsShader.integer == 2) ?
+				                   cgs.media.altFullBrightShader : cgs.media.fullBrightShader;
+				CG_SetWeaponBrightColorWorld(&ent, w);
+				usedBrightItem = qtrue;
 			}
-			else if (item->giTag == WP_RAILGUN)
-			{
-				const float* color;
-				color = (cg_railCustomChamber.integer & 2) ? (const float*)cgs.osp.myColors.railRings : (const float*)colorWhite;
-				ent.shaderRGBA[0] = 255 * color[0];
-				ent.shaderRGBA[1] = 255 * color[1];
-				ent.shaderRGBA[2] = 255 * color[2];
-				ent.shaderRGBA[3] = 255;
-			}
+		}
+		else if (item->giTag == WP_RAILGUN)
+		{
+			const float* color;
+
+			color = (cg_railCustomChamber.integer & 2) ?
+			        (const float*)cgs.osp.myColors.railRings : (const float*)colorWhite;
+			ent.shaderRGBA[0] = 255 * color[0];
+			ent.shaderRGBA[1] = 255 * color[1];
+			ent.shaderRGBA[2] = 255 * color[2];
+			ent.shaderRGBA[3] = 255;
 		}
 
 		if (!usedBrightItem)
@@ -615,37 +616,55 @@ static void CG_Item(centity_t* cent)
 				memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
 			}
 		}
-	}
-
-	trap_R_AddRefEntityToScene(&ent);
-
-	if (!cg_simpleItems.integer && (gitype == IT_HEALTH || gitype == IT_POWERUP))
-	{
-		if ((ent.hModel = cg_items[es->modelindex].models[1]) != 0)
+		else
 		{
-			vec3_t spinAngles;
-			VectorClear(spinAngles);
-			if (gitype == IT_POWERUP)
+			brightStyleCached = qtrue;
+			brightShader = ent.customShader;
+			brightRGBA[0] = ent.shaderRGBA[0];
+			brightRGBA[1] = ent.shaderRGBA[1];
+			brightRGBA[2] = ent.shaderRGBA[2];
+			brightRGBA[3] = ent.shaderRGBA[3];
+		}
+
+		trap_R_AddRefEntityToScene(&ent);
+
+		if (!cg_simpleItems.integer && (gitype == IT_HEALTH || gitype == IT_POWERUP))
+		{
+			if ((ent.hModel = cg_items[es->modelindex].models[1]) != 0)
 			{
-				ent.origin[2] += 12;
-				spinAngles[1] = (cg.time & 1023) * 360.0f / -1024.0f;
-			}
-			AnglesToAxis(spinAngles, ent.axis);
-			if (frac != 1.0f)
-			{
-				VectorScale(ent.axis[0], frac, ent.axis[0]);
-				VectorScale(ent.axis[1], frac, ent.axis[1]);
-				VectorScale(ent.axis[2], frac, ent.axis[2]);
-				ent.nonNormalizedAxes = qtrue;
-			}
-			if (!CG_ApplyBrightItem(&ent, itemNum))
-			{
-				if (!CG_FillCustomItemWorldDyeShaderRGBA(itemNum, 1, ent.shaderRGBA))
+				vec3_t spinAngles;
+
+				VectorClear(spinAngles);
+				if (gitype == IT_POWERUP)
 				{
-					memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
+					ent.origin[2] += 12;
+					spinAngles[1] = (cg.time & 1023) * 360.0f / -1024.0f;
 				}
+				AnglesToAxis(spinAngles, ent.axis);
+				if (frac != 1.0f)
+				{
+					VectorScale(ent.axis[0], frac, ent.axis[0]);
+					VectorScale(ent.axis[1], frac, ent.axis[1]);
+					VectorScale(ent.axis[2], frac, ent.axis[2]);
+					ent.nonNormalizedAxes = qtrue;
+				}
+				if (brightStyleCached)
+				{
+					ent.customShader = brightShader;
+					ent.shaderRGBA[0] = brightRGBA[0];
+					ent.shaderRGBA[1] = brightRGBA[1];
+					ent.shaderRGBA[2] = brightRGBA[2];
+					ent.shaderRGBA[3] = brightRGBA[3];
+				}
+				else if (!CG_ApplyBrightItem(&ent, itemNum, gitype))
+				{
+					if (!CG_FillCustomItemWorldDyeShaderRGBA(itemNum, 1, ent.shaderRGBA))
+					{
+						memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
+					}
+				}
+				trap_R_AddRefEntityToScene(&ent);
 			}
-			trap_R_AddRefEntityToScene(&ent);
 		}
 	}
 }
@@ -685,23 +704,6 @@ static void CG_Missile(centity_t* cent)
 	{
 		weapon->missileTrailFunc(cent, weapon);
 	}
-	/*
-	    if ( cent->currentState.modelindex == TEAM_RED ) {
-	        col = 1;
-	    }
-	    else if ( cent->currentState.modelindex == TEAM_BLUE ) {
-	        col = 2;
-	    }
-	    else {
-	        col = 0;
-	    }
-
-	    // add dynamic light
-	    if ( weapon->missileDlight ) {
-	        trap_R_AddLightToScene(cent->lerpOrigin, weapon->missileDlight,
-	            weapon->missileDlightColor[col][0], weapon->missileDlightColor[col][1], weapon->missileDlightColor[col][2] );
-	    }
-	*/
 	// add dynamic light
 	if (weapon->missileDlight)
 	{

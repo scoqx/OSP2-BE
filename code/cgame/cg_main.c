@@ -2741,6 +2741,8 @@ Initialize team task markers
 */
 void CG_InitTeamTaskMarkers(void)
 {
+	int i;
+
 	/* numTeamTaskMarks = 0: no iteration over array, memset not needed (QVM_LOGIC) */
 	cg.teamMarkers.numTeamTaskMarks = 0;
 
@@ -2765,6 +2767,11 @@ void CG_InitTeamTaskMarkers(void)
 	/* Initialize death position storage */
 	VectorClear(cg.teamMarkers.deathPosition);
 	cg.teamMarkers.deathPositionValid = qfalse;
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		cg.teamMarkers.allyDeathPositionValid[i] = qfalse;
+	}
 
 	/* Initialize pickup item storage */
 	cg.teamMarkers.pickupItemType = 0;

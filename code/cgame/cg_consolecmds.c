@@ -1566,6 +1566,74 @@ void CG_TeamTaskMarkPickup(void)
 	}
 }
 
+void CG_TeamTaskMarkShowDead(void)
+{
+	int i;
+	int client;
+	clientInfo_t* ci;
+
+	if (!cg.teamMarkers.teamTaskEnabled)
+	{
+		return;
+	}
+	if (cgs.gametype < GT_TEAM)
+	{
+		CG_PrintOnce("^3There are no teams\n");
+		return;
+	}
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS))
+	{
+		return;
+	}
+	if (cg.intermissionStarted)
+	{
+		return;
+	}
+	if (!CG_IS_LOCAL_CLIENT_ON_SCREEN())
+	{
+		return;
+	}
+	if (CG_IS_DEAD())
+	{
+		return;
+	}
+	if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
+	{
+		return;
+	}
+	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+	{
+		return;
+	}
+	if (!(cg_teamTask.integer & CG_TEAMTASK_ONDEATH))
+	{
+		return;
+	}
+
+	for (i = 0; i < numSortedTeamPlayers; i++)
+	{
+		client = sortedTeamPlayers[i];
+		if (client < 0 || client >= MAX_CLIENTS)
+		{
+			continue;
+		}
+		if (client == cg.clientNum)
+		{
+			continue;
+		}
+		ci = &cgs.clientinfo[client];
+		if (ci->health > 0)
+		{
+			continue;
+		}
+		if (!cg.teamMarkers.allyDeathPositionValid[client])
+		{
+			continue;
+		}
+		CG_TeamTaskMark(cg.teamMarkers.allyDeathPosition[client], TEAMTASK_PLAYERDEAD, client, 0);
+	}
+}
+
 void CG_TeamTaskMarkSend(void)
 {
 	int targetType;
@@ -2016,6 +2084,7 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("  ^2tHere^7       - Mark your current position (alive) or death location (dead)\n");
 	CG_Printf("  ^2tWarn^7       - Mark crosshair position (alive) or death location (dead)\n");
 	CG_Printf("  ^2tPickup^7     - Mark that you picked up an item (megahealth, redarmor, yellowarmor)\n");
+	CG_Printf("  ^2tShowDead^7    - Re-show ally death marks locally\n");
 	CG_Printf("  ^2tSmart^7      - Smart mode (auto-detects target)\n");
 	CG_Printf("  ^7Smart mode automatically detects:\n");
 	CG_Printf("    - Enemy players (marks as target)\n");
@@ -2028,6 +2097,8 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("    - Haste (marks as haste)\n");
 	CG_Printf("    - Yellow armor (marks as yellowarmor)\n");
 	CG_Printf("    - Health bubbles (marks as health)\n");
+	CG_Printf("    - Red flag and blue flag (CTF only)\n");
+	CG_Printf("    - Red and blue flag carriers (CTF only)\n");
 	CG_Printf("    - Nothing (uses default from ^3cg_teamTaskSmartDefault^7)\n\n");
 
 	CG_Printf("^3Muting team tasks:\n");
@@ -2368,6 +2439,7 @@ static consoleCommand_t commands[] =
 	{ "tHere", CG_TeamTaskMarkHere },
 	{ "tWarn", CG_TeamTaskMarkWarn },
 	{ "tPickup", CG_TeamTaskMarkPickup },
+	{ "tShowDead", CG_TeamTaskMarkShowDead },
 	{ "tSmart", CG_TeamTaskMarkSend },
 	{ "+ttwheel", CG_SelwheelMarkStart },
 	{ "-ttwheel", CG_SelwheelMarkStop },

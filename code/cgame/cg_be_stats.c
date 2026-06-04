@@ -363,7 +363,7 @@ static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCo
 {
 	int col = 0;
 	const newStatsInfo_t* s = &cgs.newStats;
-	int style = cg_bestats_style.integer;  // глобальная переменная/настройка
+	int style = cg_bestats_style.integer;  // global cvar/setting
 	qboolean isFreeze = cgs.osp.gameTypeFreeze;
 
 	if (outCols == NULL)
@@ -514,7 +514,7 @@ static void CG_BEStatsBuildGeneral_CTF(BEStatToken_t tokens[32][12], int* outCol
 	}
 	else
 	{
-		// ===== Стандартный стиль =====
+		// ===== Default style =====
 		int mins = s->flagTime / 60;
 		float secs = (float)s->flagTime - 60.0f * (float)mins;
 
@@ -626,22 +626,22 @@ static void CG_BEStatsBuildGeneral_Default(BEStatToken_t tokens[32][12], int* ou
 
 	if (style == 2)
 	{
-		// style == 2 — 5 строк
-		// 1 строка: заголовки Score Klls K/D
+		// style == 2 — 5 rows
+		// row 1: labels Score Klls K/D
 		CG_BEStatsSetTokenLabel(tokens, 0, 0, "Score", beStatsSettings.colorY);
 		CG_BEStatsSetTokenLabel(tokens, 0, 1, "Klls", beStatsSettings.colorG);
-		// 2 строка: значения для Score Klls K/D
+		// row 2: values for Score Klls K/D
 		CG_BEStatsSetTokenValueInt(tokens, 1, 0, "%d", s->score, beStatsSettings.defaultColor);
 		CG_BEStatsSetTokenValueInt(tokens, 1, 1, "%d", s->kills, beStatsSettings.defaultColor);
-		// 3 строка: заголовки Dths Sui
+		// row 3: labels Dths Sui
 		CG_BEStatsSetTokenLabel(tokens, 2, 0, "K/D", beStatsSettings.colorY);
 		CG_BEStatsSetTokenLabel(tokens, 2, 1, "Dths", beStatsSettings.colorR);
 		CG_BEStatsSetTokenLabel(tokens, 2, 2, "Sui", beStatsSettings.colorR);
-		// 4 строка: значения для Dths Sui
+		// row 4: values for Dths Sui
 		CG_BEStatsSetTokenValueFloat(tokens, 3, 0, "%.1f", s->kdratio, beStatsSettings.defaultColor);
 		CG_BEStatsSetTokenValueInt(tokens, 3, 1, "%d", s->deaths, beStatsSettings.defaultColor);
 		CG_BEStatsSetTokenValueInt(tokens, 3, 2, "%d", s->suicides, beStatsSettings.defaultColor);
-		*outCols = 3; // максимум по столбцам (для первой и второй строки)
+		*outCols = 3; // max columns (for first and second rows)
 	}
 	else
 	{
@@ -730,7 +730,7 @@ qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 	qboolean any = qfalse;
 	row = *rowOut;
 
-	// Заголовок
+	// Header
 	if (set->statsStyle != 2)
 	{
 		CG_BEStatsSetTokenLabel(tokens, row, 0, "Weapon", beStatsSettings.defaultColor);
@@ -752,7 +752,7 @@ qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 
 		row++;
 	}
-	// Разделитель
+	// Separator
 	CG_BEStatsSetTokenLabel(tokens, row, 0, "#hr", beStatsSettings.defaultColor);
 	for (col = 1; col < 12; col++)
 	{
@@ -781,7 +781,7 @@ qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 
 		if (set->statsStyle == 2)
 		{
-			// Иконка оружия
+			// Weapon icon
 			Com_sprintf(buf, sizeof(buf), "#image cg_weapons[%d].weaponIcon", i);
 			CG_BEStatsSetTokenLabel(tokens, row, col, buf, beStatsSettings.defaultColor);
 			CG_BEStatsSetTokenWidth(tokens, row, col, 1.4f);
@@ -802,7 +802,7 @@ qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 		}
 		else
 		{
-			// Название оружия
+			// Weapon name
 			CG_BEStatsSetTokenLabel(tokens, row, col, weaponNames[i], beStatsSettings.defaultColor);
 			CG_BEStatsSetTokenWidth(tokens, row, col, 10.0f);
 			col++;
@@ -853,7 +853,7 @@ qboolean CG_BEStatsBuildWeaponStats(BEStatToken_t tokens[32][12], int* rowOut)
 			col++;
 		}
 
-		// Очищаем остальные токены на этой строке
+		// Clear remaining tokens on this row
 		for (; col < 12; col++)
 		{
 			tokens[row][col].text[0] = '\0';
@@ -1013,7 +1013,7 @@ void CG_BEStatsDrawWindow(BEStatToken_t tokens[32][12], int rows)
 			maxWidth = rowWidth;
 	}
 
-	// Применяем widthCutoff
+	// Apply widthCutoff
 	maxWidth -= set->widthCutoff;
 	if (maxWidth < 0)
 		maxWidth = 0;

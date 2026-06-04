@@ -204,14 +204,55 @@ sfxHandle_t ErrorMessage_Key(int key)
 	return (menu_null_sound);
 }
 
-/*
-===============
-Main_MenuDraw
-TTimo: this function is common to the main menu and errorMessage menu
-===============
-*/
+static void UI_DrawErrorScreenInfoVersion(void)
+{
+	char            versionStr[64];
+	const char*     versionPtr;
+	int             fontIndex;
+	float           charW;
+	float           charH;
 
-static void Main_MenuDraw(void)
+	if (!UI_FontLoaded(2))
+	{
+		UI_LoadFonts();
+	}
+
+	fontIndex = UI_FontIndexFromCvar(&ui_infoVersionFont);
+	if (!UI_FontAvailable(fontIndex))
+	{
+		fontIndex = 2;
+	}
+
+	if (UI_FontLoaded(fontIndex))
+	{
+		UI_FontSelect(fontIndex);
+	}
+
+	versionPtr = OSP_VERSION;
+	if (!Q_strncmp(versionPtr, "be-", 3))
+	{
+		versionPtr += 3;
+	}
+
+	/* Match cgame CG_OSPDrawStringNew + CG_AdjustFrom640 (separate X/Y scale), not UI letterbox uniform scale */
+	charW = 8.0f;
+	charH = 12.0f;
+	if (uis.scale > 0.0f)
+	{
+		charW = 8.0f * ((float)uis.glconfig.vidWidth / 640.0f) / uis.scale;
+		charH = 12.0f * ((float)uis.glconfig.vidHeight / 480.0f) / uis.scale;
+	}
+
+	Com_sprintf(versionStr, sizeof(versionStr), "OSP2-BE(%s)", versionPtr);
+	UI_OSPDrawStringNew(uis.screenXmax, 467.0f, versionStr,
+	                    color_white, color_black,
+	                    charW, charH,
+	                    (int)(uis.screenXmax - uis.screenXmin),
+	                    DS_HRIGHT | DS_PROPORTIONAL | DS_SHADOW,
+	                    NULL, NULL, NULL);
+}
+
+static void Main_MenuDrawBannerScene(void)
 {
 	refdef_t        refdef;
 	refEntity_t     ent;
@@ -219,12 +260,6 @@ static void Main_MenuDraw(void)
 	vec3_t          angles;
 	float           adjust;
 	float           x, y, w, h;
-	vec4_t          color;
-	vec4_t          colorBE = {0.25f, 0.25f, 0.25f, 0.1f};
-
-	Vector4Copy(uis.themeColor, color);
-
-	/* setup the refdef */
 
 	memset(&refdef, 0, sizeof(refdef));
 
@@ -242,7 +277,7 @@ static void Main_MenuDraw(void)
 	refdef.width = w;
 	refdef.height = h;
 
-	adjust = 0; // JDC: Kenneth asked me to stop this 1.0 * sin( (float)uis.realtime / 1000 );
+	adjust = 0;
 	refdef.fov_x = 60 + adjust;
 	refdef.fov_y = 19.6875 + adjust;
 
@@ -254,7 +289,6 @@ static void Main_MenuDraw(void)
 
 	trap_R_ClearScene();
 
-	// ui_banner == 2: new banner; any other value: standard banner
 	memset(&ent, 0, sizeof(ent));
 
 	adjust = 5.0 * sin((float)uis.realtime / 5000);
@@ -277,18 +311,15 @@ static void Main_MenuDraw(void)
 
 	trap_R_AddRefEntityToScene(&ent);
 
-
 	trap_R_RenderScene(&refdef);
+}
 
-	if (strlen(s_errorMessage.errorMessage))
-	{
-		UI_DrawProportionalString_AutoWrapped(320, 192, 600, 20, s_errorMessage.errorMessage, UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, menu_text_color);
-	}
-	else
-	{
-		// standard menu drawing
-		Menu_Draw(&s_main.menu);
-	}
+static void Main_MenuDrawFooter(void)
+{
+	vec4_t          color;
+	vec4_t          colorBE = {0.25f, 0.25f, 0.25f, 0.1f};
+
+	Vector4Copy(uis.themeColor, color);
 
 	if (uis.demoversion)
 	{
@@ -301,6 +332,32 @@ static void Main_MenuDraw(void)
 		UI_DrawString(320, 415, MAIN_MENU_FOOTER_LABEL, UI_CENTER | UI_SMALLFONT | UI_PULSE_2, colorBE);
 		UI_DrawString(320, 440, "Quake III Arena(c) 1999-2000, Id Software, Inc.  All Rights Reserved", UI_CENTER | UI_SMALLFONT, color);
 	}
+}
+
+static void ErrorMessage_MenuDraw(void)
+{
+	Main_MenuDrawBannerScene();
+
+	UI_DrawProportionalString_AutoWrapped(320, 192, 600, 20, s_errorMessage.errorMessage,
+	                                      UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, menu_text_color);
+	UI_DrawErrorScreenInfoVersion();
+
+	Main_MenuDrawFooter();
+}
+
+/*
+===============
+Main_MenuDraw
+===============
+*/
+
+static void Main_MenuDraw(void)
+{
+	Main_MenuDrawBannerScene();
+
+	Menu_Draw(&s_main.menu);
+
+	Main_MenuDrawFooter();
 
 	UI_ServerStatus_DrawBar();
 }
@@ -374,7 +431,7 @@ void UI_MainMenu(void)
 	trap_Cvar_VariableStringBuffer("com_errorMessage", s_errorMessage.errorMessage, sizeof(s_errorMessage.errorMessage));
 	if (s_errorMessage.errorMessage[0])
 	{
-		s_errorMessage.menu.draw = Main_MenuDraw;
+		s_errorMessage.menu.draw = ErrorMessage_MenuDraw;
 		s_errorMessage.menu.key = ErrorMessage_Key;
 		s_errorMessage.menu.fullscreen = qtrue;
 		s_errorMessage.menu.wrapAround = qtrue;

@@ -1450,6 +1450,18 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		return qfalse;
 	}
 
+	/* Skip ally death mark while team overlay reports they are alive */
+	if (mark->markType == TEAMTASK_PLAYERDEAD && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+	{
+		clientInfo_t* deadCi;
+
+		deadCi = &cgs.clientinfo[mark->clientNum];
+		if (deadCi->health > 0)
+		{
+			return qfalse;
+		}
+	}
+
 	/* Skip item marks that have pickup nearby (precomputed in CG_TeamTaskUpdateFrame) */
 	if (cg.teamMarkers.markHasPickupNear[markIndex])
 		return qfalse;

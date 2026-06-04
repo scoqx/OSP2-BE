@@ -602,6 +602,10 @@ typedef struct cgs_teamMarkers_s
 	vec3_t      deathPosition;
 	qboolean    deathPositionValid;
 
+	/* ally death positions from TEAMTASK_PLAYERDEAD marks (for /tShowDead) */
+	vec3_t      allyDeathPosition[MAX_CLIENTS];
+	qboolean    allyDeathPositionValid[MAX_CLIENTS];
+
 	/* pickup items storage (for /tPickup command) */
 	int         pickupItemType; /* 0 = none, TEAMTASK_MEGAHEALTH, TEAMTASK_REDARMOR, TEAMTASK_YELLOWARMOR */
 	vec3_t      pickupItemPosition;
@@ -2809,7 +2813,6 @@ void CG_UpdateWeaponDlightColor(weapon_t weapon);
 float CG_GetWeaponTempAccuracy(int weapon);
 void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum);
 void CG_InitBrightWeaponsColors(void);
-float CG_GetBrightWeaponOpacity(int weaponNum);
 void CG_BeinfoApplyBrightColor(const char* classname, float r, float g, float b, float a);
 qhandle_t CG_SelectBrightWeaponsShader(void);
 /* icons/dye/colors.cfg — default powerup / classic flag tints (0.0–1.0) */
@@ -2832,8 +2835,8 @@ void CG_GetDefaultQuadDamageColor(vec4_t out);
 void CG_GetDefaultBattleSuitColor(vec4_t out);
 qboolean CG_FlagUsesClassicBrightColor(void);
 qboolean CG_BrightItemBeinfoOverrideAllowed(const char* classname);
-qhandle_t CG_SelectBrightItemsShader(int itemNum);
-qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum);
+qhandle_t CG_SelectBrightItemsShader(int gitype);
+qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum, int gitype);
 
 
 //
@@ -3445,7 +3448,9 @@ void CG_TeamTaskMarkLocation(void);
 void CG_TeamTaskMarkHere(void);
 void CG_TeamTaskMarkWarn(void);
 void CG_TeamTaskMarkPickup(void);
+void CG_TeamTaskMarkShowDead(void);
 void CG_TeamTaskMarkSend(void);
+void CG_TeamTaskStoreAllyDeathPosition(int clientNum, vec3_t coord);
 void CG_SelwheelMarkStart(void);
 void CG_SelwheelMarkStop(void);
 void CG_SelwheelMarkClose(void);

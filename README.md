@@ -12,6 +12,8 @@ OSP2-BE incorporates code from several notable Quake mods and projects:
 - **Unlagged Mod by Nail Toronto**
 - **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
 - **Devotion**: [GitHub Link](https://github.com/alcachofass/devotion)
+- **Quake 3 1.16n extensions (X-Mod)**: [GitHub Link](https://github.com/navgg/Quake-3-1.16n-extensions)
+- **Nemesis Client 1.16n**: [GitHub Link](https://github.com/dledmonds/quake3-nemesis-1.16n)
 
 Some Assets taken from:
 - **CPMA**: https://playmorepromode.com/

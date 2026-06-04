@@ -18,7 +18,11 @@ SERVER STATUS (getstatus / mod_sig, main menu bar)
 #define UI_STATUS_BAR_MIN_EXPANDED      120.0f
 #define UI_STATUS_BAR_MAX_EXPANDED      420.0f
 #define UI_STATUS_CHANGELOG_FILE        "version_changelog.txt"
+#define UI_STATUS_FULL_CHANGELOG_FILE   "changelog_be_r.txt"
 #define UI_STATUS_CHANGELOG_READ_MAX    8192
+#define UI_STATUS_FULL_CHANGELOG_MAX    32768
+#define UI_STATUS_FULL_CHANGELOG_TOP    200.0f
+#define UI_STATUS_FULL_BTN_LABEL        "Full changelog"
 #define UI_STATUS_CHAR_WIDTH            8.0f
 #define UI_STATUS_CHAR_HEIGHT           12.0f
 #define UI_STATUS_PANEL_PAD             6.0f
@@ -26,10 +30,11 @@ SERVER STATUS (getstatus / mod_sig, main menu bar)
 #define UI_STATUS_SCROLLBAR_WIDTH       8.0f
 #define UI_STATUS_SCROLLBAR_GAP         1.0f
 #define UI_STATUS_SCROLL_WHEEL_STEP     (UI_STATUS_CHAR_HEIGHT * 3.0f)
+#define UI_STATUS_SCROLL_CTRL_LINES     6.0f
 #define UI_STATUS_UPDATE_DATE_LABEL     "Date"
 #define UI_STATUS_MENU_CURSOR_UNSET     (-2)
-#define UI_STATUS_AUTOHIDE_DELAY_MS     3000
-#define UI_STATUS_AUTOHIDE_SPEED_PPS    3.5f
+#define UI_STATUS_AUTOHIDE_DELAY_MS     2000
+#define UI_STATUS_AUTOHIDE_SPEED_PPS    4.0f
 #define UI_STATUS_AUTOHIDE_TRIGGER_H    10.0f
 #define UI_STATUS_EXPAND_ANIM_SPEED     4.0f
 
@@ -51,6 +56,15 @@ static const char*  ui_statusAutoHideLabel;
 static float        ui_statusExpandFrac;
 static int          ui_statusExpandLastMs;
 static qboolean     ui_statusExpandModalActive;
+static qboolean     ui_statusFullChangelogOpen;
+static qboolean     ui_statusFullChangelogReady;
+static qboolean     ui_statusFullBtnHover;
+static float        ui_statusFullExpandFrac;
+static int          ui_statusFullExpandLastMs;
+static char         ui_statusFullChangelogText[UI_STATUS_FULL_CHANGELOG_MAX];
+static const char*  ui_statusFullStickyLine;
+static char         ui_statusFullStickyDate[64];
+static char         ui_statusFullStickyVersion[64];
 
 static void UI_ServerStatus_StoreFromValidatedInfo(const char* infostring);
 static const char* UI_ServerStatus_LocalVersionCompareString(void);
@@ -60,10 +74,20 @@ static float UI_ServerStatus_ExpandedHeight640(float panelW);
 static float UI_ServerStatus_ChangelogContentHeight(float textW);
 static qboolean UI_ServerStatus_ChangelogLayout(float panelW, float bodyH, float* outTextW,
         qboolean* outNeedScroll);
+static qboolean UI_ServerStatus_ChangelogLayoutEx(float panelW, float bodyH, float panelY,
+        float bodyY, float* outTextW, qboolean* outNeedScroll);
+static float UI_ServerStatus_ChangelogContentHeightEx(float textW, float bodyY, float row2Y,
+        float row2Bottom);
 static void UI_ServerStatus_ChangelogLayoutSettled(float panelW, float* outTextW,
         qboolean* outNeedScroll, float* outContentH, float* outBodyH);
 static float UI_ServerStatus_DrawMultilineClipped(float x, float y, float maxW, const char* text,
         vec4_t color, int flags, float clipTop, float clipBottom);
+static float UI_ServerStatus_DrawMultilineClippedSkip(float x, float y, float maxW, const char* text,
+        vec4_t color, int flags, float clipTop, float clipBottom, const char* skipLineStart,
+        float skipClipTop, float skipClipBottom);
+static float UI_ServerStatus_DrawMultilineFullChangelog(float panelX, float y, float textW,
+        float versionRowW, const char* text, float clipTop, float clipBottom,
+        const char* skipLineStart, float skipClipTop, float skipClipBottom);
 static void UI_ServerStatus_DrawText(float x, float y, const char* text, vec4_t color, int flags,
         float charW, float charH);
 static void UI_ServerStatus_DrawTextWidth(float x, float y, const char* text, vec4_t color,
@@ -80,8 +104,22 @@ static void UI_ServerStatus_ScrollbarGetThumb(float sbH, float contentH, float s
         float* outThumbH, float* outThumbY, float* outMaxScroll);
 static void UI_ServerStatus_ParseChangelogHeaderMeta(const char* headerLine);
 static void UI_ServerStatus_ClearChangelogMeta(void);
-static qboolean UI_ServerStatus_HasUpdateHeaderRow(void);
+static qboolean UI_ServerStatus_HasSecondHeaderRow(void);
+static qboolean UI_ServerStatus_HasFullChangelogButton(void);
 static float UI_ServerStatus_ExpandedHeadersHeight(void);
+static void UI_ServerStatus_FullExpandAnimTick(void);
+static qboolean UI_ServerStatus_FullChangelogViewActive(void);
+static void UI_ServerStatus_FullChangelogApplyFirstVersionSticky(void);
+static const char* UI_ServerStatus_FullChangelogFirstVersionLine(void);
+static float UI_ServerStatus_ExpandedHeight640Short(float panelW);
+static void UI_ServerStatus_LoadFullChangelog(void);
+static void UI_ServerStatus_CloseFullChangelog(void);
+static void UI_ServerStatus_FullChangelogUpdateSticky(float panelY, float bodyY, float scroll,
+        float textW, float row2Y, float row2Bottom);
+static void UI_ServerStatus_DrawSecondHeaderRow(float x, float y, float w, float rowH,
+        float charW, float charH);
+static void UI_ServerStatus_DrawFullChangelogButton(float x, float y, float w, float rowH);
+static qboolean UI_ServerStatus_FullChangelogButtonHit(float x, float w, float rowY, float rowH);
 static void UI_ServerStatus_PanelBodyRect(float panelX, float panelY, float panelW, float panelH,
         float* outBodyY, float* outBodyH);
 static float UI_ServerStatus_PanelBodyClipBottom(float panelY, float panelH);
@@ -359,6 +397,60 @@ static void UI_ServerStatus_ExpandAnimTick(void)
 	}
 }
 
+static void UI_ServerStatus_FullExpandAnimTick(void)
+{
+	int         now;
+	int         dtMs;
+	float       dt;
+	float       target;
+
+	target = ui_statusFullChangelogOpen ? 1.0f : 0.0f;
+	now = trap_Milliseconds();
+	if (ui_statusFullExpandLastMs <= 0)
+	{
+		ui_statusFullExpandLastMs = now;
+	}
+	dtMs = now - ui_statusFullExpandLastMs;
+	if (dtMs < 0)
+	{
+		dtMs = 0;
+	}
+	if (dtMs > 250)
+	{
+		dtMs = 250;
+	}
+	ui_statusFullExpandLastMs = now;
+	dt = (float)dtMs * 0.001f;
+
+	if (ui_statusFullExpandFrac < target)
+	{
+		ui_statusFullExpandFrac += UI_STATUS_EXPAND_ANIM_SPEED * dt;
+		if (ui_statusFullExpandFrac > target)
+		{
+			ui_statusFullExpandFrac = target;
+		}
+	}
+	else if (ui_statusFullExpandFrac > target)
+	{
+		ui_statusFullExpandFrac -= UI_STATUS_EXPAND_ANIM_SPEED * dt;
+		if (ui_statusFullExpandFrac < target)
+		{
+			ui_statusFullExpandFrac = target;
+		}
+	}
+
+	if (!ui_statusFullChangelogOpen && ui_statusFullExpandFrac <= 0.001f)
+	{
+		ui_statusFullExpandFrac = 0.0f;
+	}
+}
+
+static qboolean UI_ServerStatus_FullChangelogViewActive(void)
+{
+	return (qboolean)((ui_statusFullChangelogOpen || ui_statusFullExpandFrac > 0.001f) &&
+	                  ui_statusFullChangelogReady);
+}
+
 static qboolean UI_ServerStatus_DrawExpandedVisual(void)
 {
 	return (qboolean)(UI_ServerStatus_EaseSmooth(ui_statusExpandFrac) > 0.001f);
@@ -371,7 +463,15 @@ static qboolean UI_ServerStatus_DrawExpandedVisual(void)
  */
 static qboolean UI_ServerStatus_ScrollbarActive(void)
 {
-	return (qboolean)(ui_statusBarExpanded && ui_statusExpandFrac >= 0.999f);
+	if (!ui_statusBarExpanded || ui_statusExpandFrac < 0.999f)
+	{
+		return qfalse;
+	}
+	if (ui_statusFullChangelogOpen && ui_statusFullExpandFrac < 0.999f)
+	{
+		return qfalse;
+	}
+	return qtrue;
 }
 
 static void UI_ServerStatus_SetExpanded(qboolean expanded)
@@ -407,6 +507,7 @@ static void UI_ServerStatus_SetExpanded(qboolean expanded)
 		ui_statusChangelogScroll = 0.0f;
 		ui_statusScrollbarDrag = qfalse;
 		ui_statusScrollbarDragGrab = 0.0f;
+		UI_ServerStatus_CloseFullChangelog();
 	}
 
 	ui_statusBarExpanded = expanded;
@@ -552,19 +653,340 @@ static void UI_ServerStatus_ParseChangelogHeaderMeta(const char* headerLine)
 	}
 }
 
-static qboolean UI_ServerStatus_HasUpdateHeaderRow(void)
+static qboolean UI_ServerStatus_HasSecondHeaderRow(void)
 {
-	if (!uiServerStatus.changelogReady)
+	return uiServerStatus.changelogReady;
+}
+
+static qboolean UI_ServerStatus_HasFullChangelogButton(void)
+{
+	return uiServerStatus.changelogReady;
+}
+
+static qboolean UI_ServerStatus_LineIsVersionHeader(const char* lineStart, const char* lineEnd)
+{
+	int             i;
+	int             len;
+
+	if (!lineStart || lineEnd <= lineStart)
 	{
 		return qfalse;
 	}
 
-	if (uiServerStatus.changelogUpdateDate[0] || uiServerStatus.changelogNewVersion[0])
+	len = (int)(lineEnd - lineStart);
+	if (len < 14)
 	{
-		return qtrue;
+		return qfalse;
 	}
 
-	return qfalse;
+	for (i = 0; i < 10; i++)
+	{
+		if (i == 2 || i == 5)
+		{
+			if (lineStart[i] != '.')
+			{
+				return qfalse;
+			}
+		}
+		else if (lineStart[i] < '0' || lineStart[i] > '9')
+		{
+			return qfalse;
+		}
+	}
+
+	if (lineStart[10] != ' ')
+	{
+		return qfalse;
+	}
+
+	if (Q_strncmp(lineStart + 11, "be v", 4))
+	{
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
+static void UI_ServerStatus_ParseVersionLineMeta(const char* headerLine, char* dateOut, int dateSize,
+        char* verOut, int verSize)
+{
+	char            work[128];
+	char*           be;
+	char*           ver;
+	int             i;
+
+	if (dateOut && dateSize > 0)
+	{
+		dateOut[0] = '\0';
+	}
+	if (verOut && verSize > 0)
+	{
+		verOut[0] = '\0';
+	}
+
+	if (!headerLine || !headerLine[0])
+	{
+		return;
+	}
+
+	Q_strncpyz(work, headerLine, sizeof(work));
+	be = Q_stristr(work, " be ");
+	if (be)
+	{
+		*be = '\0';
+		for (i = (int)(be - work) - 1; i >= 0; i--)
+		{
+			if (work[i] != ' ' && work[i] != '\t')
+			{
+				break;
+			}
+			work[i] = '\0';
+		}
+		if (work[0] && dateOut && dateSize > 0)
+		{
+			Q_strncpyz(dateOut, work, dateSize);
+		}
+
+		ver = be + 5;
+		if (*ver && verOut && verSize > 0)
+		{
+			Q_strncpyz(verOut, ver, verSize);
+		}
+	}
+	else if (work[0] && dateOut && dateSize > 0)
+	{
+		Q_strncpyz(dateOut, work, dateSize);
+	}
+}
+
+static void UI_ServerStatus_LoadFullChangelog(void)
+{
+	fileHandle_t    f;
+	int             len;
+
+	if (ui_statusFullChangelogReady)
+	{
+		return;
+	}
+
+	ui_statusFullChangelogText[0] = '\0';
+	ui_statusFullStickyLine = NULL;
+	ui_statusFullStickyDate[0] = '\0';
+	ui_statusFullStickyVersion[0] = '\0';
+
+	len = trap_FS_FOpenFile(UI_STATUS_FULL_CHANGELOG_FILE, &f, FS_READ);
+	if (len <= 0)
+	{
+		return;
+	}
+	if (len >= (int)sizeof(ui_statusFullChangelogText))
+	{
+		len = sizeof(ui_statusFullChangelogText) - 1;
+	}
+
+	trap_FS_Read(ui_statusFullChangelogText, len, f);
+	trap_FS_FCloseFile(f);
+	ui_statusFullChangelogText[len] = '\0';
+
+	if (!ui_statusFullChangelogText[0])
+	{
+		return;
+	}
+
+	ui_statusFullChangelogReady = qtrue;
+}
+
+static void UI_ServerStatus_CloseFullChangelog(void)
+{
+	ui_statusFullChangelogOpen = qfalse;
+	ui_statusChangelogScroll = 0.0f;
+	ui_statusFullStickyLine = NULL;
+	ui_statusFullStickyDate[0] = '\0';
+	ui_statusFullStickyVersion[0] = '\0';
+	ui_statusFullBtnHover = qfalse;
+}
+
+static const char* UI_ServerStatus_FullChangelogFirstVersionLine(void)
+{
+	const char*     p;
+	const char*     lineStart;
+	const char*     lineEnd;
+
+	if (!ui_statusFullChangelogText[0])
+	{
+		return NULL;
+	}
+
+	p = ui_statusFullChangelogText;
+	while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+	{
+		p++;
+	}
+
+	while (*p)
+	{
+		lineStart = p;
+		lineEnd = p;
+		while (*lineEnd && *lineEnd != '\n' && *lineEnd != '\r')
+		{
+			lineEnd++;
+		}
+
+		if (lineEnd > lineStart && UI_ServerStatus_LineIsVersionHeader(lineStart, lineEnd))
+		{
+			return lineStart;
+		}
+
+		p = lineEnd;
+		while (*p == '\n' || *p == '\r')
+		{
+			p++;
+		}
+	}
+
+	return NULL;
+}
+
+static void UI_ServerStatus_FullChangelogApplyFirstVersionSticky(void)
+{
+	const char*     sticky;
+	char            lineBuf[128];
+	int             copyLen;
+
+	sticky = UI_ServerStatus_FullChangelogFirstVersionLine();
+	if (!sticky)
+	{
+		return;
+	}
+
+	ui_statusFullStickyLine = sticky;
+	copyLen = 0;
+	while (sticky[copyLen] && sticky[copyLen] != '\n' && sticky[copyLen] != '\r' &&
+	        copyLen < (int)sizeof(lineBuf) - 1)
+	{
+		copyLen++;
+	}
+	memcpy(lineBuf, sticky, copyLen);
+	lineBuf[copyLen] = '\0';
+	UI_ServerStatus_ParseVersionLineMeta(lineBuf, ui_statusFullStickyDate,
+	                                     sizeof(ui_statusFullStickyDate),
+	                                     ui_statusFullStickyVersion,
+	                                     sizeof(ui_statusFullStickyVersion));
+}
+
+static void UI_ServerStatus_FullChangelogUpdateSticky(float panelY, float bodyY, float scroll,
+        float textW, float row2Y, float row2Bottom)
+{
+	const char*     p;
+	const char*     lineStart;
+	const char*     lineEnd;
+	float           lineY;
+	const char*     sticky;
+	int             chunk;
+	int             remain;
+
+	ui_statusFullStickyLine = NULL;
+	ui_statusFullStickyDate[0] = '\0';
+	ui_statusFullStickyVersion[0] = '\0';
+
+	if (!ui_statusFullChangelogReady || !ui_statusFullChangelogText[0])
+	{
+		return;
+	}
+
+	sticky = NULL;
+	lineY = 0.0f;
+
+	p = ui_statusFullChangelogText;
+	while (*p)
+	{
+		lineStart = p;
+		lineEnd = p;
+		while (*lineEnd && *lineEnd != '\n' && *lineEnd != '\r')
+		{
+			lineEnd++;
+		}
+
+		if (lineEnd <= lineStart)
+		{
+			lineY += UI_STATUS_CHAR_HEIGHT;
+			if (p[0] == '\r' && p[1] == '\n')
+			{
+				p += 2;
+			}
+			else if (*p)
+			{
+				p++;
+			}
+			continue;
+		}
+
+		if (UI_ServerStatus_LineIsVersionHeader(lineStart, lineEnd))
+		{
+			float   screenTop;
+
+			screenTop = bodyY - scroll + lineY;
+			if (screenTop <= row2Bottom + 0.5f)
+			{
+				sticky = lineStart;
+			}
+
+			lineY += UI_STATUS_CHAR_HEIGHT;
+		}
+		else
+		{
+			remain = (int)(lineEnd - lineStart);
+			while (remain > 0)
+			{
+				chunk = UI_OSPTextFitLineWidth640(lineStart, lineEnd, UI_STATUS_CHAR_WIDTH, 1,
+				                                  textW);
+				if (chunk <= 0)
+				{
+					chunk = 1;
+				}
+				if (chunk > remain)
+				{
+					chunk = remain;
+				}
+				lineY += UI_STATUS_CHAR_HEIGHT;
+				lineStart += chunk;
+				remain -= chunk;
+			}
+		}
+
+		p = lineEnd;
+		while (*p == '\n' || *p == '\r')
+		{
+			p++;
+		}
+	}
+
+	if (sticky)
+	{
+		char            lineBuf[128];
+		int             copyLen;
+
+		ui_statusFullStickyLine = sticky;
+		copyLen = 0;
+		while (sticky[copyLen] && sticky[copyLen] != '\n' && sticky[copyLen] != '\r' &&
+		        copyLen < (int)sizeof(lineBuf) - 1)
+		{
+			copyLen++;
+		}
+		memcpy(lineBuf, sticky, copyLen);
+		lineBuf[copyLen] = '\0';
+		UI_ServerStatus_ParseVersionLineMeta(lineBuf, ui_statusFullStickyDate,
+		                                     sizeof(ui_statusFullStickyDate),
+		                                     ui_statusFullStickyVersion,
+		                                     sizeof(ui_statusFullStickyVersion));
+	}
+	else
+	{
+		UI_ServerStatus_FullChangelogApplyFirstVersionSticky();
+	}
+
+	(void)panelY;
+	(void)row2Y;
 }
 
 static float UI_ServerStatus_ExpandedHeadersHeight(void)
@@ -572,7 +994,7 @@ static float UI_ServerStatus_ExpandedHeadersHeight(void)
 	float           h;
 
 	h = UI_STATUS_BAR_HEIGHT_COLLAPSED;
-	if (UI_ServerStatus_HasUpdateHeaderRow())
+	if (UI_ServerStatus_HasSecondHeaderRow())
 	{
 		h += UI_STATUS_BAR_HEIGHT_COLLAPSED;
 	}
@@ -846,13 +1268,174 @@ static void UI_ServerStatus_EnsureLocalChangelogForOffline(void)
 	}
 }
 
+static float UI_ServerStatus_ShortChangelogContentHeight(float textW)
+{
+	int             lines;
+
+	if (!uiServerStatus.changelogReady || !uiServerStatus.changelogBody[0])
+	{
+		return 0.0f;
+	}
+
+	lines = UI_OSPTextCountWrappedLines640(uiServerStatus.changelogBody, UI_STATUS_CHAR_WIDTH, 1,
+	                                       textW);
+	return (float)lines * UI_STATUS_CHAR_HEIGHT;
+}
+
+static qboolean UI_ServerStatus_FullChangelogVersionHiddenInBody(const char* physicalLineStart,
+        float lineTop, float lineBottom, float skipClipTop, float skipClipBottom)
+{
+	if (!ui_statusFullStickyLine || physicalLineStart != ui_statusFullStickyLine)
+	{
+		return qfalse;
+	}
+
+	if (ui_statusChangelogScroll < 0.5f)
+	{
+		return qtrue;
+	}
+
+	if (lineBottom > skipClipTop && lineTop < skipClipBottom)
+	{
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+static float UI_ServerStatus_FullChangelogBodyContentHeight(float textW, float bodyY, float scroll,
+        float row2Y, float row2Bottom)
+{
+	const char*     p;
+	const char*     lineStart;
+	const char*     lineEnd;
+	const char*     physicalLineStart;
+	float           lineY;
+	int             chunk;
+	int             remain;
+	float           skipClipTop;
+	float           skipClipBottom;
+
+	if (!ui_statusFullChangelogText[0])
+	{
+		return 0.0f;
+	}
+
+	skipClipTop = row2Y;
+	skipClipBottom = row2Bottom;
+	(void)bodyY;
+
+	lineY = 0.0f;
+	p = ui_statusFullChangelogText;
+	while (*p)
+	{
+		physicalLineStart = p;
+		lineStart = p;
+		lineEnd = p;
+		while (*lineEnd && *lineEnd != '\n' && *lineEnd != '\r')
+		{
+			lineEnd++;
+		}
+
+		if (lineEnd <= lineStart)
+		{
+			lineY += UI_STATUS_CHAR_HEIGHT;
+			if (p[0] == '\r' && p[1] == '\n')
+			{
+				p += 2;
+			}
+			else if (*p)
+			{
+				p++;
+			}
+			continue;
+		}
+
+		if (UI_ServerStatus_LineIsVersionHeader(lineStart, lineEnd))
+		{
+			float   lineTop;
+			float   lineBottom;
+
+			lineTop = bodyY - scroll + lineY;
+			lineBottom = lineTop + UI_STATUS_CHAR_HEIGHT;
+			if (!UI_ServerStatus_FullChangelogVersionHiddenInBody(physicalLineStart, lineTop,
+			        lineBottom, skipClipTop, skipClipBottom))
+			{
+				lineY += UI_STATUS_CHAR_HEIGHT;
+			}
+		}
+		else
+		{
+			remain = (int)(lineEnd - lineStart);
+			while (remain > 0)
+			{
+				chunk = UI_OSPTextFitLineWidth640(lineStart, lineEnd, UI_STATUS_CHAR_WIDTH, 1,
+				                                  textW);
+				if (chunk <= 0)
+				{
+					chunk = 1;
+				}
+				if (chunk > remain)
+				{
+					chunk = remain;
+				}
+				lineY += UI_STATUS_CHAR_HEIGHT;
+				lineStart += chunk;
+				remain -= chunk;
+			}
+		}
+
+		p = lineEnd;
+		while (*p == '\n' || *p == '\r')
+		{
+			p++;
+		}
+	}
+
+	return lineY;
+}
+
+static float UI_ServerStatus_ChangelogContentHeightEx(float textW, float bodyY, float row2Y,
+        float row2Bottom)
+{
+	if (!uiServerStatus.changelogReady)
+	{
+		return 0.0f;
+	}
+
+	if (UI_ServerStatus_FullChangelogViewActive() && ui_statusFullChangelogText[0])
+	{
+		return UI_ServerStatus_FullChangelogBodyContentHeight(textW, bodyY,
+		        ui_statusChangelogScroll, row2Y, row2Bottom);
+	}
+
+	return UI_ServerStatus_ShortChangelogContentHeight(textW);
+}
+
 static float UI_ServerStatus_ChangelogContentHeight(float textW)
 {
 	int             lines;
+	float           contentH;
 
 	if (!uiServerStatus.changelogReady)
 	{
 		return 0.0f;
+	}
+
+	if (UI_ServerStatus_FullChangelogViewActive() && ui_statusFullChangelogText[0])
+	{
+		lines = UI_OSPTextCountWrappedLines640(ui_statusFullChangelogText, UI_STATUS_CHAR_WIDTH, 1,
+		                                       textW);
+		contentH = (float)lines * UI_STATUS_CHAR_HEIGHT;
+		if (ui_statusFullStickyLine && ui_statusChangelogScroll < 0.5f)
+		{
+			contentH -= UI_STATUS_CHAR_HEIGHT;
+		}
+		if (contentH < 0.0f)
+		{
+			contentH = 0.0f;
+		}
+		return contentH;
 	}
 
 	if (!uiServerStatus.changelogBody[0])
@@ -868,12 +1451,29 @@ static float UI_ServerStatus_ChangelogContentHeight(float textW)
 static qboolean UI_ServerStatus_ChangelogLayout(float panelW, float bodyH, float* outTextW,
         qboolean* outNeedScroll)
 {
+	return UI_ServerStatus_ChangelogLayoutEx(panelW, bodyH, 0.0f, 0.0f, outTextW, outNeedScroll);
+}
+
+static qboolean UI_ServerStatus_ChangelogLayoutEx(float panelW, float bodyH, float panelY,
+        float bodyY, float* outTextW, qboolean* outNeedScroll)
+{
 	float           textW;
 	float           contentH;
+	float           row2Y;
+	float           row2Bottom;
 	qboolean        needScroll;
 
 	textW = panelW - UI_STATUS_PANEL_PAD * 2.0f;
-	contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+	if (UI_ServerStatus_FullChangelogViewActive() && panelY > 0.0f && bodyY > 0.0f)
+	{
+		row2Y = panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED;
+		row2Bottom = row2Y + UI_STATUS_BAR_HEIGHT_COLLAPSED;
+		contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY, row2Y, row2Bottom);
+	}
+	else
+	{
+		contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+	}
 	needScroll = (contentH > bodyH + 0.5f);
 
 	if (needScroll)
@@ -884,7 +1484,16 @@ static qboolean UI_ServerStatus_ChangelogLayout(float panelW, float bodyH, float
 		{
 			textW = UI_STATUS_CHAR_WIDTH * 8.0f;
 		}
-		contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+		if (UI_ServerStatus_FullChangelogViewActive() && panelY > 0.0f && bodyY > 0.0f)
+		{
+			row2Y = panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED;
+			row2Bottom = row2Y + UI_STATUS_BAR_HEIGHT_COLLAPSED;
+			contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY, row2Y, row2Bottom);
+		}
+		else
+		{
+			contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+		}
 		needScroll = (contentH > bodyH + 0.5f);
 	}
 
@@ -949,7 +1558,7 @@ static void UI_ServerStatus_ScrollChangelog(float delta, float bodyH, float cont
 	UI_ServerStatus_ClampChangelogScroll(bodyH, contentH);
 }
 
-static float UI_ServerStatus_ExpandedHeight640(float panelW)
+static float UI_ServerStatus_ExpandedHeight640Short(float panelW)
 {
 	float           h;
 	float           textW;
@@ -965,7 +1574,7 @@ static float UI_ServerStatus_ExpandedHeight640(float panelW)
 	}
 
 	UI_ServerStatus_ChangelogLayout(panelW, bodyHMax, &textW, &needScroll);
-	contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+	contentH = UI_ServerStatus_ShortChangelogContentHeight(textW);
 
 	h += contentH;
 	if (h > UI_STATUS_BAR_MAX_EXPANDED)
@@ -980,13 +1589,249 @@ static float UI_ServerStatus_ExpandedHeight640(float panelW)
 	return h;
 }
 
+static float UI_ServerStatus_ExpandedHeight640(float panelW)
+{
+	float           shortH;
+	float           fullH;
+	float           t;
+
+	shortH = UI_ServerStatus_ExpandedHeight640Short(panelW);
+
+	if (!ui_statusFullChangelogReady && ui_statusFullExpandFrac <= 0.001f)
+	{
+		return shortH;
+	}
+
+	fullH = 480.0f - UI_STATUS_FULL_CHANGELOG_TOP;
+	if (fullH > UI_STATUS_BAR_MAX_EXPANDED)
+	{
+		fullH = UI_STATUS_BAR_MAX_EXPANDED;
+	}
+	if (fullH < UI_STATUS_BAR_MIN_EXPANDED)
+	{
+		fullH = UI_STATUS_BAR_MIN_EXPANDED;
+	}
+
+	if (fullH <= shortH + 0.5f)
+	{
+		return fullH;
+	}
+
+	t = UI_ServerStatus_EaseSmooth(ui_statusFullExpandFrac);
+	return shortH + (fullH - shortH) * t;
+}
+
+static qboolean UI_ServerStatus_ChangelogLineMarkerColor(char c, vec4_t out)
+{
+	switch (c)
+	{
+	case '*':
+		out[0] = 1.0f;
+		out[1] = 1.0f;
+		out[2] = 0.4f;
+		out[3] = 1.0f;
+		return qtrue;
+	case '+':
+		out[0] = 0.4f;
+		out[1] = 1.0f;
+		out[2] = 0.4f;
+		out[3] = 1.0f;
+		return qtrue;
+	case '-':
+		out[0] = 1.0f;
+		out[1] = 0.4f;
+		out[2] = 0.4f;
+		out[3] = 1.0f;
+		return qtrue;
+	default:
+		return qfalse;
+	}
+}
+
+static qboolean UI_ServerStatus_ChangelogLineMarkerChar(char c)
+{
+	return (qboolean)(c == '*' || c == '+' || c == '-');
+}
+
+static const char* UI_ServerStatus_ChangelogLineMarkerAt(const char* physicalLineStart,
+        const char* lineEnd)
+{
+	const char*     p;
+
+	if (!physicalLineStart || physicalLineStart >= lineEnd)
+	{
+		return NULL;
+	}
+
+	p = physicalLineStart;
+	while (p < lineEnd && (*p == ' ' || *p == '\t'))
+	{
+		p++;
+	}
+	if (p < lineEnd && UI_ServerStatus_ChangelogLineMarkerChar(*p))
+	{
+		return p;
+	}
+
+	return NULL;
+}
+
+static float UI_ServerStatus_TextSpanWidth640(const char* start, const char* end)
+{
+	const char*     s;
+	float           ax;
+
+	ax = 0.0f;
+	s = start;
+	while (s < end)
+	{
+		if (s[0] == '^' && s[1])
+		{
+			s += 2;
+			continue;
+		}
+
+		ax += UI_OSPCharWidth640(*s, UI_STATUS_CHAR_WIDTH, 1);
+		s++;
+	}
+
+	return ax;
+}
+
+static void UI_ServerStatus_DrawChangelogTextSpan(float x, float y, const char* start, int len,
+        vec4_t color, int flags, int maxWidthPx)
+{
+	char            buf[256];
+
+	if (len <= 0)
+	{
+		return;
+	}
+
+	if (len >= (int)sizeof(buf))
+	{
+		len = sizeof(buf) - 1;
+	}
+
+	memcpy(buf, start, len);
+	buf[len] = '\0';
+	UI_ServerStatus_DrawTextWidth(x, y, buf, color, flags, maxWidthPx, UI_STATUS_CHAR_WIDTH,
+	                              UI_STATUS_CHAR_HEIGHT);
+}
+
+static float UI_ServerStatus_ChangelogMarkerColumnWidth(void)
+{
+	float           w;
+	float           wSym;
+
+	w = UI_OSPCharWidth640('*', UI_STATUS_CHAR_WIDTH, 1);
+	wSym = UI_OSPCharWidth640('+', UI_STATUS_CHAR_WIDTH, 1);
+	if (wSym > w)
+	{
+		w = wSym;
+	}
+	wSym = UI_OSPCharWidth640('-', UI_STATUS_CHAR_WIDTH, 1);
+	if (wSym > w)
+	{
+		w = wSym;
+	}
+	return w;
+}
+
+static void UI_ServerStatus_DrawChangelogTextLine(float lineBaseX, float y, const char* chunkStart,
+        int chunkLen, const char* physicalLineStart, const char* lineEnd, vec4_t color, int flags,
+        int maxWidthPx)
+{
+	const char*     markerAt;
+	const char*     chunkEnd;
+	const char*     bodyStart;
+	vec4_t          markColor;
+	char            markBuf[2];
+	int             prefixLen;
+	int             bodyLen;
+	float           lineX;
+	float           markerX;
+	float           bodyX;
+
+	if (!chunkStart || chunkLen <= 0)
+	{
+		return;
+	}
+
+	chunkEnd = chunkStart + chunkLen;
+	markerAt = UI_ServerStatus_ChangelogLineMarkerAt(physicalLineStart, lineEnd);
+
+	if (!markerAt)
+	{
+		UI_ServerStatus_DrawChangelogTextSpan(lineBaseX, y, chunkStart, chunkLen, color, flags,
+		                                      maxWidthPx);
+		return;
+	}
+
+	if (chunkStart > markerAt)
+	{
+		UI_ServerStatus_DrawChangelogTextSpan(lineBaseX, y, chunkStart, chunkLen, color, flags,
+		                                      maxWidthPx);
+		return;
+	}
+
+	lineX = lineBaseX + UI_ServerStatus_TextSpanWidth640(physicalLineStart, chunkStart);
+
+	if (chunkEnd <= markerAt)
+	{
+		prefixLen = chunkLen;
+		UI_ServerStatus_DrawChangelogTextSpan(lineX, y, chunkStart, prefixLen, color, flags,
+		                                      maxWidthPx);
+		return;
+	}
+
+	if (markerAt > chunkStart)
+	{
+		prefixLen = (int)(markerAt - chunkStart);
+		UI_ServerStatus_DrawChangelogTextSpan(lineX, y, chunkStart, prefixLen, color, flags,
+		                                      maxWidthPx);
+	}
+
+	if (!UI_ServerStatus_ChangelogLineMarkerColor(*markerAt, markColor))
+	{
+		UI_ServerStatus_DrawChangelogTextSpan(lineX, y, markerAt, (int)(chunkEnd - markerAt),
+		                                      color, flags, maxWidthPx);
+		return;
+	}
+
+	markerX = lineBaseX + UI_ServerStatus_TextSpanWidth640(physicalLineStart, markerAt);
+	markBuf[0] = *markerAt;
+	markBuf[1] = '\0';
+	UI_ServerStatus_DrawTextWidth(markerX, y, markBuf, markColor, flags, maxWidthPx,
+	                              UI_STATUS_CHAR_WIDTH, UI_STATUS_CHAR_HEIGHT);
+
+	bodyStart = markerAt + 1;
+	if (bodyStart >= chunkEnd)
+	{
+		return;
+	}
+
+	bodyX = markerX + UI_ServerStatus_ChangelogMarkerColumnWidth();
+	bodyLen = (int)(chunkEnd - bodyStart);
+	UI_ServerStatus_DrawChangelogTextSpan(bodyX, y, bodyStart, bodyLen, color, flags, maxWidthPx);
+}
+
 static float UI_ServerStatus_DrawMultilineClipped(float x, float y, float maxW, const char* text,
         vec4_t color, int flags, float clipTop, float clipBottom)
+{
+	return UI_ServerStatus_DrawMultilineClippedSkip(x, y, maxW, text, color, flags, clipTop,
+	        clipBottom, NULL, 0.0f, 0.0f);
+}
+
+static float UI_ServerStatus_DrawMultilineClippedSkip(float x, float y, float maxW, const char* text,
+        vec4_t color, int flags, float clipTop, float clipBottom, const char* skipLineStart,
+        float skipClipTop, float skipClipBottom)
 {
 	char            lineBuf[256];
 	const char*     p;
 	const char*     lineStart;
 	const char*     lineEnd;
+	const char*     physicalLineStart;
 	int             chunk;
 	int             remain;
 	float           lineY;
@@ -994,6 +1839,7 @@ static float UI_ServerStatus_DrawMultilineClipped(float x, float y, float maxW, 
 	float           lineTop;
 	float           lineBottom;
 	int             maxWidthPx;
+	qboolean        skipBand;
 
 	if (!text || !text[0] || !ui_statusFontReady)
 	{
@@ -1006,11 +1852,14 @@ static float UI_ServerStatus_DrawMultilineClipped(float x, float y, float maxW, 
 		maxWidthPx = 1;
 	}
 
+	skipBand = (qboolean)(skipLineStart != NULL);
+
 	startY = y;
 	lineY = y;
 	p = text;
 	while (*p)
 	{
+		physicalLineStart = p;
 		lineStart = p;
 		lineEnd = p;
 		while (*lineEnd && *lineEnd != '\n' && *lineEnd != '\r')
@@ -1053,15 +1902,223 @@ static float UI_ServerStatus_DrawMultilineClipped(float x, float y, float maxW, 
 			lineBottom = lineY + UI_STATUS_CHAR_HEIGHT;
 			if (lineBottom > clipTop && lineTop < clipBottom)
 			{
-				memcpy(lineBuf, lineStart, chunk);
-				lineBuf[chunk] = '\0';
-				UI_ServerStatus_DrawTextWidth(x, lineY, lineBuf, color, flags, maxWidthPx,
-				                              UI_STATUS_CHAR_WIDTH, UI_STATUS_CHAR_HEIGHT);
+				qboolean    drawLine;
+
+				drawLine = qtrue;
+				if (skipBand && physicalLineStart == skipLineStart)
+				{
+					if (lineBottom > skipClipTop && lineTop < skipClipBottom)
+					{
+						drawLine = qfalse;
+					}
+				}
+
+				if (drawLine)
+				{
+					UI_ServerStatus_DrawChangelogTextLine(x, lineY, lineStart, chunk,
+					                                      physicalLineStart, lineEnd, color,
+					                                      flags, maxWidthPx);
+				}
 			}
 
 			lineY += UI_STATUS_CHAR_HEIGHT;
 			lineStart += chunk;
 			remain -= chunk;
+		}
+
+		p = lineEnd;
+		while (*p == '\n' || *p == '\r')
+		{
+			p++;
+		}
+	}
+
+	return lineY - startY;
+}
+
+static void UI_ServerStatus_DrawVersionContentRow(float x, float y, float w, float rowH,
+        const char* dateText, const char* verText, float clipTop, float clipBottom)
+{
+	vec4_t          bg;
+	vec4_t          dateColor;
+	vec4_t          verColor;
+	float           lineTop;
+	float           lineBottom;
+
+	lineTop = y;
+	lineBottom = y + rowH;
+	if (lineBottom <= clipTop || lineTop >= clipBottom)
+	{
+		return;
+	}
+
+	bg[0] = 0.25f;
+	bg[1] = 0.25f;
+	bg[2] = 0.25f;
+	bg[3] = 0.25f;
+	UI_FillRect(x, y, w, rowH, bg);
+
+	dateColor[0] = 1.0f;
+	dateColor[1] = 1.0f;
+	dateColor[2] = 1.0f;
+	dateColor[3] = 1.0f;
+
+	verColor[0] = 0.8f;
+	verColor[1] = 0.8f;
+	verColor[2] = 0.8f;
+	verColor[3] = 1.0f;
+
+	if (!dateText)
+	{
+		dateText = "";
+	}
+	if (!verText)
+	{
+		verText = "";
+	}
+
+	UI_ServerStatus_DrawHeaderRow(x, y, w, rowH, dateText, dateColor, verText, verColor,
+	                              UI_STATUS_CHAR_WIDTH, UI_STATUS_CHAR_HEIGHT);
+}
+
+static float UI_ServerStatus_ScrollWheelStep(void)
+{
+	if (trap_Key_IsDown(K_CTRL))
+	{
+		return UI_STATUS_CHAR_HEIGHT * UI_STATUS_SCROLL_CTRL_LINES;
+	}
+	return UI_STATUS_SCROLL_WHEEL_STEP;
+}
+
+static float UI_ServerStatus_DrawMultilineFullChangelog(float panelX, float y, float textW,
+        float versionRowW, const char* text, float clipTop, float clipBottom,
+        const char* skipLineStart, float skipClipTop, float skipClipBottom)
+{
+	char            lineBuf[256];
+	const char*     p;
+	const char*     lineStart;
+	const char*     lineEnd;
+	const char*     physicalLineStart;
+	int             chunk;
+	int             remain;
+	float           lineY;
+	float           startY;
+	float           lineTop;
+	float           lineBottom;
+	float           contentX;
+	int             maxWidthPx;
+	qboolean        skipBand;
+
+	if (!text || !text[0] || !ui_statusFontReady)
+	{
+		return 0.0f;
+	}
+
+	contentX = panelX + UI_STATUS_PANEL_PAD;
+	maxWidthPx = (int)textW;
+	if (maxWidthPx < 1)
+	{
+		maxWidthPx = 1;
+	}
+
+	skipBand = (qboolean)(skipLineStart != NULL);
+	startY = y;
+	lineY = y;
+	p = text;
+	while (*p)
+	{
+		physicalLineStart = p;
+		lineStart = p;
+		lineEnd = p;
+		while (*lineEnd && *lineEnd != '\n' && *lineEnd != '\r')
+		{
+			lineEnd++;
+		}
+
+		if (lineEnd <= lineStart)
+		{
+			lineY += UI_STATUS_CHAR_HEIGHT;
+			if (p[0] == '\r' && p[1] == '\n')
+			{
+				p += 2;
+			}
+			else if (*p)
+			{
+				p++;
+			}
+			continue;
+		}
+
+		if (UI_ServerStatus_LineIsVersionHeader(lineStart, lineEnd))
+		{
+			char            dateBuf[64];
+			char            verBuf[64];
+			qboolean        drawLine;
+			qboolean        hiddenInBody;
+
+			lineTop = lineY;
+			lineBottom = lineY + UI_STATUS_CHAR_HEIGHT;
+			hiddenInBody = UI_ServerStatus_FullChangelogVersionHiddenInBody(physicalLineStart,
+			        lineTop, lineBottom, skipClipTop, skipClipBottom);
+			drawLine = (qboolean)(!hiddenInBody && lineBottom > clipTop && lineTop < clipBottom);
+
+			if (drawLine)
+			{
+				int     copyLen;
+
+				copyLen = (int)(lineEnd - lineStart);
+				if (copyLen >= (int)sizeof(lineBuf))
+				{
+					copyLen = sizeof(lineBuf) - 1;
+				}
+				memcpy(lineBuf, lineStart, copyLen);
+				lineBuf[copyLen] = '\0';
+				UI_ServerStatus_ParseVersionLineMeta(lineBuf, dateBuf, sizeof(dateBuf), verBuf,
+				                                     sizeof(verBuf));
+				UI_ServerStatus_DrawVersionContentRow(panelX, lineY, versionRowW,
+				                                      UI_STATUS_CHAR_HEIGHT, dateBuf, verBuf,
+				                                      clipTop, clipBottom);
+			}
+
+			if (!hiddenInBody)
+			{
+				lineY += UI_STATUS_CHAR_HEIGHT;
+			}
+		}
+		else
+		{
+			remain = (int)(lineEnd - lineStart);
+			while (remain > 0)
+			{
+				chunk = UI_OSPTextFitLineWidth640(lineStart, lineEnd, UI_STATUS_CHAR_WIDTH, 1,
+				                                  textW);
+				if (chunk <= 0)
+				{
+					chunk = 1;
+				}
+				if (chunk > remain)
+				{
+					chunk = remain;
+				}
+				if (chunk >= (int)sizeof(lineBuf))
+				{
+					chunk = sizeof(lineBuf) - 1;
+				}
+
+				lineTop = lineY;
+				lineBottom = lineY + UI_STATUS_CHAR_HEIGHT;
+				if (lineBottom > clipTop && lineTop < clipBottom)
+				{
+					UI_ServerStatus_DrawChangelogTextLine(contentX, lineY, lineStart, chunk,
+					                                      physicalLineStart, lineEnd,
+					                                      text_color_normal, DS_HLEFT,
+					                                      maxWidthPx);
+				}
+
+				lineY += UI_STATUS_CHAR_HEIGHT;
+				lineStart += chunk;
+				remain -= chunk;
+			}
 		}
 
 		p = lineEnd;
@@ -1174,14 +2231,16 @@ static void UI_ServerStatus_ScrollbarDragUpdate(float panelX, float panelY, floa
 	}
 
 	UI_ServerStatus_PanelBodyRect(panelX, panelY, panelW, panelH, &bodyY, &bodyH);
-	UI_ServerStatus_ChangelogLayout(panelW, bodyH, &textW, &needScroll);
+	UI_ServerStatus_ChangelogLayoutEx(panelW, bodyH, panelY, bodyY, &textW, &needScroll);
 	if (!needScroll)
 	{
 		ui_statusScrollbarDrag = qfalse;
 		return;
 	}
 
-	contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+	contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY,
+	        panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED,
+	        panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
 	sbH = bodyH;
 	sbY = bodyY;
 	sbX = panelX + panelW - UI_STATUS_PANEL_PAD - UI_STATUS_SCROLLBAR_WIDTH;
@@ -1191,11 +2250,6 @@ static void UI_ServerStatus_ScrollbarDragUpdate(float panelX, float panelY, floa
 	                                  &maxScroll);
 	trackRange = sbH - thumbH;
 	if (trackRange < 1.0f || maxScroll < 1.0f)
-	{
-		return;
-	}
-
-	if (uis.cursorx < sbX || uis.cursorx > sbX + UI_STATUS_SCROLLBAR_WIDTH)
 	{
 		return;
 	}
@@ -1229,14 +2283,16 @@ static qboolean UI_ServerStatus_HandleScrollbarMouse(float panelX, float panelY,
 	}
 
 	UI_ServerStatus_PanelBodyRect(panelX, panelY, panelW, panelH, &bodyY, &bodyH);
-	UI_ServerStatus_ChangelogLayout(panelW, bodyH, &textW, &needScroll);
+	UI_ServerStatus_ChangelogLayoutEx(panelW, bodyH, panelY, bodyY, &textW, &needScroll);
 	if (!needScroll)
 	{
 		ui_statusScrollbarDrag = qfalse;
 		return qfalse;
 	}
 
-	contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+	contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY,
+	        panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED,
+	        panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
 	UI_ServerStatus_ClampChangelogScroll(bodyH, contentH);
 
 	sbW = UI_STATUS_SCROLLBAR_WIDTH;
@@ -1295,13 +2351,14 @@ static void UI_ServerStatus_ScrollByDelta(float delta)
 
 	UI_ServerStatus_BarRect640(&x, &y, &w, &h);
 	UI_ServerStatus_PanelBodyRect(x, y, w, h, &bodyY, &bodyH);
-	UI_ServerStatus_ChangelogLayout(w, bodyH, &textW, &needScroll);
+	UI_ServerStatus_ChangelogLayoutEx(w, bodyH, y, bodyY, &textW, &needScroll);
 	if (!needScroll)
 	{
 		return;
 	}
 
-	contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+	contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY,
+	        y + UI_STATUS_BAR_HEIGHT_COLLAPSED, y + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
 	UI_ServerStatus_ScrollChangelog(delta, bodyH, contentH);
 }
 
@@ -1386,7 +2443,7 @@ static void UI_ServerStatus_DrawStatusRow(float x, float y, float w, float rowH,
 	                              charW, charH);
 }
 
-static void UI_ServerStatus_DrawUpdateHeaderRow(float x, float y, float w, float rowH,
+static void UI_ServerStatus_DrawSecondHeaderRow(float x, float y, float w, float rowH,
         float charW, float charH)
 {
 	char            verBuf[64];
@@ -1394,16 +2451,33 @@ static void UI_ServerStatus_DrawUpdateHeaderRow(float x, float y, float w, float
 	vec4_t          dateColor;
 	vec4_t          verColor;
 
-	leftText = uiServerStatus.changelogUpdateDate;
-	if (!leftText[0])
+	if (UI_ServerStatus_FullChangelogViewActive())
 	{
-		leftText = UI_STATUS_UPDATE_DATE_LABEL;
-	}
+		leftText = ui_statusFullStickyDate;
+		if (!leftText[0])
+		{
+			leftText = UI_STATUS_UPDATE_DATE_LABEL;
+		}
 
-	verBuf[0] = '\0';
-	if (uiServerStatus.changelogNewVersion[0])
+		verBuf[0] = '\0';
+		if (ui_statusFullStickyVersion[0])
+		{
+			Q_strncpyz(verBuf, ui_statusFullStickyVersion, sizeof(verBuf));
+		}
+	}
+	else
 	{
-		Q_strncpyz(verBuf, uiServerStatus.changelogNewVersion, sizeof(verBuf));
+		leftText = uiServerStatus.changelogUpdateDate;
+		if (!leftText[0])
+		{
+			leftText = UI_STATUS_UPDATE_DATE_LABEL;
+		}
+
+		verBuf[0] = '\0';
+		if (uiServerStatus.changelogNewVersion[0])
+		{
+			Q_strncpyz(verBuf, uiServerStatus.changelogNewVersion, sizeof(verBuf));
+		}
 	}
 
 	dateColor[0] = 1.0f;
@@ -1416,8 +2490,118 @@ static void UI_ServerStatus_DrawUpdateHeaderRow(float x, float y, float w, float
 	verColor[2] = 0.2f;
 	verColor[3] = 1.0f;
 
-	UI_ServerStatus_DrawHeaderRow(x, y, w, rowH, leftText, dateColor, verBuf, verColor,
-	                              charW, charH);
+	UI_ServerStatus_DrawHeaderRow(x, y, w, rowH, leftText, dateColor, verBuf, verColor, charW,
+	                              charH);
+
+	if (UI_ServerStatus_HasFullChangelogButton())
+	{
+		UI_ServerStatus_DrawFullChangelogButton(x, y, w, rowH);
+	}
+	else
+	{
+		ui_statusFullBtnHover = qfalse;
+	}
+}
+
+static void UI_ServerStatus_FullChangelogButtonRect(float x, float y, float w, float rowH,
+        float* outBtnX, float* outBtnY, float* outBtnW, float* outBtnH)
+{
+	float           btnW;
+	float           textW;
+
+	textW = (float)UI_ProportionalStringWidth(UI_STATUS_FULL_BTN_LABEL);
+	btnW = textW + 12.0f;
+	if (btnW > w - UI_STATUS_PANEL_PAD * 2.0f)
+	{
+		btnW = w - UI_STATUS_PANEL_PAD * 2.0f;
+	}
+
+	*outBtnX = x + (w - btnW) * 0.5f;
+	*outBtnY = y;
+	*outBtnW = btnW;
+	*outBtnH = rowH;
+}
+
+static void UI_ServerStatus_DrawFullChangelogButton(float x, float y, float w, float rowH)
+{
+	vec4_t          textColor;
+	float           btnX;
+	float           btnY;
+	float           btnW;
+	float           btnH;
+	float           rowCenterX;
+	float           rowCenterY;
+	qboolean        active;
+	qboolean        hover;
+
+	UI_ServerStatus_FullChangelogButtonRect(x, y, w, rowH, &btnX, &btnY, &btnW, &btnH);
+
+	rowCenterX = x + w * 0.5f;
+	rowCenterY = y + rowH * 0.5f;
+
+	active = (qboolean)(ui_statusFullChangelogOpen || ui_statusFullExpandFrac > 0.001f);
+	hover = (qboolean)(uis.cursorx >= btnX && uis.cursorx <= btnX + btnW &&
+	                   uis.cursory >= btnY && uis.cursory <= btnY + btnH);
+	ui_statusFullBtnHover = hover;
+
+	if (active)
+	{
+		if (hover)
+		{
+			textColor[0] = 0.55f;
+			textColor[1] = 0.55f;
+			textColor[2] = 0.55f;
+		}
+		else
+		{
+			textColor[0] = 1.0f;
+			textColor[1] = 1.0f;
+			textColor[2] = 1.0f;
+		}
+	}
+	else
+	{
+		if (hover)
+		{
+			textColor[0] = 1.0f;
+			textColor[1] = 1.0f;
+			textColor[2] = 1.0f;
+		}
+		else
+		{			
+			textColor[0] = 0.55f;
+			textColor[1] = 0.55f;
+			textColor[2] = 0.55f;
+		}
+	}
+	textColor[3] = 1.0f;
+
+	UI_ServerStatus_DrawText(rowCenterX, rowCenterY, UI_STATUS_FULL_BTN_LABEL, textColor,
+	                         DS_VCENTER | DS_HCENTER, UI_STATUS_CHAR_WIDTH,
+	                         UI_STATUS_COLLAPSED_CHAR_HEIGHT);
+}
+
+static qboolean UI_ServerStatus_FullChangelogButtonHit(float x, float w, float rowY, float rowH)
+{
+	float           btnW;
+	float           btnH;
+	float           btnX;
+	float           btnY;
+
+	if (!UI_ServerStatus_HasFullChangelogButton())
+	{
+		return qfalse;
+	}
+
+	UI_ServerStatus_FullChangelogButtonRect(x, rowY, w, rowH, &btnX, &btnY, &btnW, &btnH);
+
+	if (uis.cursorx >= btnX && uis.cursorx <= btnX + btnW &&
+	        uis.cursory >= btnY && uis.cursory <= btnY + btnH)
+	{
+		return qtrue;
+	}
+
+	return qfalse;
 }
 
 static qboolean UI_ServerStatus_ClientInHfvList(void)
@@ -1664,32 +2848,56 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 		float           contentY;
 		qboolean        needScroll;
 
+		needScroll = qfalse;
+		textW = 0.0f;
+		contentH = 0.0f;
+
 		UI_ServerStatus_DrawStatusRow(x, rowY, w, UI_STATUS_BAR_HEIGHT_COLLAPSED, label,
 		                              textColor, UI_STATUS_CHAR_WIDTH,
 		                              UI_STATUS_COLLAPSED_CHAR_HEIGHT);
 		rowY += UI_STATUS_BAR_HEIGHT_COLLAPSED;
 
-		if (UI_ServerStatus_HasUpdateHeaderRow())
-		{
-			UI_ServerStatus_DrawUpdateHeaderRow(x, rowY, w, UI_STATUS_BAR_HEIGHT_COLLAPSED,
-			                                    UI_STATUS_CHAR_WIDTH,
-			                                    UI_STATUS_COLLAPSED_CHAR_HEIGHT);
-			rowY += UI_STATUS_BAR_HEIGHT_COLLAPSED;
-		}
-
 		UI_ServerStatus_PanelBodyRect(x, y, w, h, &bodyY, &bodyH);
 		bodyClipTop = bodyY;
 		bodyClipBottom = UI_ServerStatus_PanelBodyClipBottom(y, h);
 
+		if (UI_ServerStatus_HasSecondHeaderRow())
+		{
+			float           row2Y;
+			float           row2Bottom;
+			float           rowH;
+
+			rowH = UI_STATUS_BAR_HEIGHT_COLLAPSED;
+			row2Y = rowY;
+			row2Bottom = row2Y + rowH;
+
+			if (UI_ServerStatus_FullChangelogViewActive())
+			{
+				UI_ServerStatus_ChangelogLayoutEx(w, bodyH, y, bodyY, &textW, &needScroll);
+				UI_ServerStatus_FullChangelogUpdateSticky(y, bodyY, ui_statusChangelogScroll, textW,
+				        row2Y, row2Bottom);
+			}
+
+			UI_ServerStatus_DrawSecondHeaderRow(x, row2Y, w, rowH, UI_STATUS_CHAR_WIDTH,
+			                                    UI_STATUS_COLLAPSED_CHAR_HEIGHT);
+			rowY += rowH;
+		}
+
 		if (bodyH > UI_STATUS_CHAR_HEIGHT && uiServerStatus.changelogReady)
 		{
 			float           bodyHSettled;
+			float           row2Y;
+			float           row2Bottom;
+
+			row2Y = y + UI_STATUS_BAR_HEIGHT_COLLAPSED;
+			row2Bottom = row2Y + UI_STATUS_BAR_HEIGHT_COLLAPSED;
 
 			bodyHSettled = bodyH;
 			if (UI_ServerStatus_ScrollbarActive())
 			{
-				UI_ServerStatus_ChangelogLayout(w, bodyH, &textW, &needScroll);
-				contentH = UI_ServerStatus_ChangelogContentHeight(textW);
+				UI_ServerStatus_ChangelogLayoutEx(w, bodyH, y, bodyY, &textW, &needScroll);
+				contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY, row2Y,
+				        row2Bottom);
 			}
 			else
 			{
@@ -1700,7 +2908,20 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 
 			contentY = bodyY - ui_statusChangelogScroll;
 
-			if (uiServerStatus.changelogBody[0])
+			if (UI_ServerStatus_FullChangelogViewActive() && ui_statusFullChangelogText[0])
+			{
+				float   versionRowW;
+
+				versionRowW = w;
+				if (needScroll && UI_ServerStatus_ScrollbarActive())
+				{
+					versionRowW = textW + UI_STATUS_PANEL_PAD;
+				}
+				UI_ServerStatus_DrawMultilineFullChangelog(x, contentY, textW, versionRowW,
+				        ui_statusFullChangelogText, bodyClipTop, bodyClipBottom,
+				        ui_statusFullStickyLine, row2Y, row2Bottom);
+			}
+			else if (uiServerStatus.changelogBody[0])
 			{
 				UI_ServerStatus_DrawMultilineClipped(x + UI_STATUS_PANEL_PAD, contentY, textW,
 				                                    uiServerStatus.changelogBody, text_color_normal,
@@ -1749,6 +2970,7 @@ void UI_ServerStatus_DrawBar(void)
 	}
 
 	UI_ServerStatus_ExpandAnimTick();
+	UI_ServerStatus_FullExpandAnimTick();
 	UI_ServerStatus_BarRect640(&x, &y, &w, &h);
 	UI_ServerStatus_AutoHideTick(label, x, w);
 	hideOffset = ui_statusAutoHideFrac * (UI_STATUS_BAR_HEIGHT_COLLAPSED + 2.0f);
@@ -1797,12 +3019,41 @@ qboolean UI_ServerStatus_HandleBarClick(int key)
 	}
 
 	UI_ServerStatus_ExpandAnimTick();
+	UI_ServerStatus_FullExpandAnimTick();
 	UI_ServerStatus_BarRect640(&x, &y, &w, &h);
 
 	if (ui_statusBarExpanded || ui_statusExpandFrac > 0.02f)
 	{
+		float           btnRowY;
+		float           headerCloseMax;
+
 		if (UI_ServerStatus_HandleScrollbarMouse(x, y, w, h, qtrue))
 		{
+			return qtrue;
+		}
+
+		btnRowY = y + UI_STATUS_BAR_HEIGHT_COLLAPSED;
+
+		if (UI_ServerStatus_FullChangelogButtonHit(x, w, btnRowY,
+		        UI_STATUS_BAR_HEIGHT_COLLAPSED))
+		{
+			if (ui_statusFullChangelogOpen || ui_statusFullExpandFrac > 0.001f)
+			{
+				UI_ServerStatus_CloseFullChangelog();
+				trap_S_StartLocalSound(menu_move_sound, CHAN_LOCAL_SOUND);
+			}
+			else
+			{
+				UI_ServerStatus_LoadFullChangelog();
+				if (ui_statusFullChangelogReady)
+				{
+					ui_statusFullChangelogOpen = qtrue;
+					ui_statusChangelogScroll = 0.0f;
+					ui_statusFullExpandLastMs = 0;
+					UI_ServerStatus_FullChangelogApplyFirstVersionSticky();
+					trap_S_StartLocalSound(menu_move_sound, CHAN_LOCAL_SOUND);
+				}
+			}
 			return qtrue;
 		}
 
@@ -1811,11 +3062,14 @@ qboolean UI_ServerStatus_HandleBarClick(int key)
 		{
 			UI_ServerStatus_SetExpanded(qfalse);
 		}
-		else if (uis.cursorx >= x && uis.cursorx <= x + w &&
-		         uis.cursory >= y &&
-		         uis.cursory <= y + UI_ServerStatus_ExpandedHeadersHeight())
+		else
 		{
-			UI_ServerStatus_SetExpanded(qfalse);
+			headerCloseMax = y + UI_STATUS_BAR_HEIGHT_COLLAPSED;
+			if (uis.cursorx >= x && uis.cursorx <= x + w &&
+			        uis.cursory >= y && uis.cursory <= headerCloseMax)
+			{
+				UI_ServerStatus_SetExpanded(qfalse);
+			}
 		}
 
 		return qtrue;
@@ -1857,7 +3111,14 @@ qboolean UI_ServerStatus_HandleModalKey(int key)
 
 	if (key == K_ESCAPE)
 	{
-		UI_ServerStatus_SetExpanded(qfalse);
+		if (ui_statusFullChangelogOpen || ui_statusFullExpandFrac > 0.001f)
+		{
+			UI_ServerStatus_CloseFullChangelog();
+		}
+		else
+		{
+			UI_ServerStatus_SetExpanded(qfalse);
+		}
 		return qtrue;
 	}
 
@@ -1872,13 +3133,13 @@ qboolean UI_ServerStatus_HandleModalKey(int key)
 
 	if (key == K_MWHEELUP)
 	{
-		UI_ServerStatus_ScrollByDelta(-UI_STATUS_SCROLL_WHEEL_STEP);
+		UI_ServerStatus_ScrollByDelta(-UI_ServerStatus_ScrollWheelStep());
 		return qtrue;
 	}
 
 	if (key == K_MWHEELDOWN)
 	{
-		UI_ServerStatus_ScrollByDelta(UI_STATUS_SCROLL_WHEEL_STEP);
+		UI_ServerStatus_ScrollByDelta(UI_ServerStatus_ScrollWheelStep());
 		return qtrue;
 	}
 
@@ -1917,6 +3178,11 @@ void UI_ServerStatus_Clear(void)
 	}
 	ui_statusBarExpanded = qfalse;
 	ui_statusSavedMenuCursor = UI_STATUS_MENU_CURSOR_UNSET;
+	UI_ServerStatus_CloseFullChangelog();
+	ui_statusFullChangelogReady = qfalse;
+	ui_statusFullChangelogText[0] = '\0';
+	ui_statusFullExpandFrac = 0.0f;
+	ui_statusFullExpandLastMs = 0;
 }
 
 static void UI_ServerStatus_FetchPrepare(void)
