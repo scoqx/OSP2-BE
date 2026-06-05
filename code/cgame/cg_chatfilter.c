@@ -179,7 +179,6 @@ void CG_ChatfilterLoadFile(const char* filename)
 	rc = trap_FS_FOpenFile(path, &filterFileHandle, FS_READ);
 	if (rc < 0 || !filterFileHandle)
 	{
-		CG_Printf("^1chat filter file %s not found\n", path);
 		return;
 	}
 

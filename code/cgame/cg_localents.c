@@ -310,6 +310,17 @@ void CG_AddFragmentHideFrozen(localEntity_t* le)
 		le->refEntity.customShader = customShader;
 	}
 }
+
+static void CG_AddFragmentToScene(localEntity_t* le)
+{
+	CG_ApplyBrightBrassIfNeeded(le);
+	if (cgs.osp.gameTypeFreeze)
+	{
+		CG_AddFragmentHideFrozen(le);
+	}
+	trap_R_AddRefEntityToScene(&le->refEntity);
+}
+
 /*
 ================
 CG_AddFragment
@@ -336,20 +347,12 @@ void CG_AddFragment(localEntity_t* le)
 			le->refEntity.renderfx |= RF_LIGHTING_ORIGIN;
 			oldZ = le->refEntity.origin[2];
 			le->refEntity.origin[2] -= 16 * (1.0 - (float)t / SINK_TIME);
-			if (cgs.osp.gameTypeFreeze)
-			{
-				CG_AddFragmentHideFrozen(le);
-			}
-			trap_R_AddRefEntityToScene(&le->refEntity);
+			CG_AddFragmentToScene(le);
 			le->refEntity.origin[2] = oldZ;
 		}
 		else
 		{
-			if (cgs.osp.gameTypeFreeze)
-			{
-				CG_AddFragmentHideFrozen(le);
-			}
-			trap_R_AddRefEntityToScene(&le->refEntity);
+			CG_AddFragmentToScene(le);
 		}
 
 		return;
@@ -373,11 +376,7 @@ void CG_AddFragment(localEntity_t* le)
 			AnglesToAxis(angles, le->refEntity.axis);
 		}
 
-		if (cgs.osp.gameTypeFreeze)
-		{
-			CG_AddFragmentHideFrozen(le);
-		}
-		trap_R_AddRefEntityToScene(&le->refEntity);
+		CG_AddFragmentToScene(le);
 
 		// add a blood trail
 		if (cg_gibs.integer && le->leBounceSoundType == LEBS_BLOOD)
@@ -406,7 +405,7 @@ void CG_AddFragment(localEntity_t* le)
 	// reflect the velocity on the trace plane
 	CG_ReflectVelocity(le, &trace);
 
-	trap_R_AddRefEntityToScene(&le->refEntity);
+	CG_AddFragmentToScene(le);
 }
 
 /*

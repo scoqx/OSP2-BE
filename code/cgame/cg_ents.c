@@ -683,12 +683,10 @@ static void CG_Missile(centity_t* cent)
 	const weaponInfo_t*      weapon;
 	qboolean useAltGrenades;
 	qboolean useFullbright;
-	qboolean useAltPlasma2;
 //	int  col;
 
 	useAltGrenades = CG_BE_FEATURE_ENABLED(CG_BE_ALT_GRENADES);
 	useFullbright = CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT);
-	useAltPlasma2 = CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN);
 	s1 = &cent->currentState;
 	if (s1->weapon > WP_NUM_WEAPONS)
 	{
@@ -707,8 +705,26 @@ static void CG_Missile(centity_t* cent)
 	// add dynamic light
 	if (weapon->missileDlight)
 	{
+		float   dlR;
+		float   dlG;
+		float   dlB;
+
+		dlR = weapon->missileDlightColor[0];
+		dlG = weapon->missileDlightColor[1];
+		dlB = weapon->missileDlightColor[2];
+		if (s1->weapon == WP_PLASMAGUN)
+		{
+			vec4_t  plasmaColor;
+
+			if (CG_PlasmaColorForOwner(s1->otherEntityNum, plasmaColor))
+			{
+				dlR = plasmaColor[0];
+				dlG = plasmaColor[1];
+				dlB = plasmaColor[2];
+			}
+		}
 		trap_R_AddLightToScene(cent->lerpOrigin, weapon->missileDlight,
-		                       weapon->missileDlightColor[0], weapon->missileDlightColor[1], weapon->missileDlightColor[2]);
+		                       dlR, dlG, dlB);
 	}
 
 	// add missile sound
@@ -740,11 +756,11 @@ static void CG_Missile(centity_t* cent)
 		{
 			ent.customShader = cgs.media.plasmaQLBallShader;
 		}
-		else if (useAltPlasma2 && altPlasma == 2)
+		else if (altPlasma == 2)
 		{
 			ent.customShader = cgs.media.plasmaOldBallShader;
 		}
-		else if (cg_oldPlasma.integer || !altPlasma || !(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG) || (altPlasma == 2 && !useAltPlasma2))
+		else if (cg_oldPlasma.integer || !altPlasma || !(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG))
 		{
 			if ((cg_nomip.integer & 2) == 0)
 			{
@@ -766,6 +782,8 @@ static void CG_Missile(centity_t* cent)
 				ent.customShader = cgs.media.plasmaNewBallNoPicMipShader;
 			}
 		}
+
+		CG_ApplyPlasmaEntityColor(s1->otherEntityNum, &ent, &ent.customShader);
 
 		trap_R_AddRefEntityToScene(&ent);
 		return;

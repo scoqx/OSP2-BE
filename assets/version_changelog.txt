@@ -1,4 +1,7 @@
-04.06.2026 be v1.05b
-+ /tShowDead (Re-show ally death marks)
-+ ui_infoVersionFont (Error Message menu)
-+ BE Status Full changelog
+06.06.2026 be v1.05c
++ cg_plasmaColor, cg_enemyPlasmaColor
+* Bright weapons brass fix
+* Bright weapons/items shader impvomenets
+* cg_altLightning 4 colored shader rework
+* Emoji optimization
+* Various fixes

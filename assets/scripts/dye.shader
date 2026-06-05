@@ -550,34 +550,29 @@ models/flags/flag2Dye
 	}
 }
 
-models/flags/flag2Fullbright2
-{
-	sort nearest
-    {
-        map textures/effects/envmapghost.tga
-        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-	    tcmod rotate 30
-        tcmod scroll 1 .1
-        rgbGen entity
-	    alphaGen entity
-    }
-}
-
 // fullbright shaders
 models/flags/flag2Fullbright
 {
 	cull none
 	{
 		map $whiteimage
-		blendFunc GL_ONE GL_ZERO
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
 		rgbGen entity
-	}
-	{
-		map $whiteimage
-		blendFunc GL_DST_COLOR GL_ZERO
-		rgbGen identityLighting
+		alphaGen entity
 	}
 }
 
+models/flags/flag2Fullbright2
+{
+	cull none
+    {
+        map textures/effects/envmapghost.jpg
+        blendfunc GL_SRC_ALPHA GL_ONE
+	    tcmod rotate 30
+        tcmod scroll 1 .1
+        rgbGen entity
+	    alphaGen entity
+    }
+}
 
 //===================================================

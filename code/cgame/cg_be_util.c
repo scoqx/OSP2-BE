@@ -16,25 +16,6 @@ distributed under the terms of the project's primary license.
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
 
-// qboolean CG_BE_Timer(int msec)
-// {
-// 	static int lastTime = 0;
-// 	int currentTime = cg.time;
-
-// 	int diff = currentTime - lastTime;
-// 	if (diff < 0)
-// 	{
-// 		lastTime = currentTime;
-// 		return qfalse;
-// 	}
-// 	if (diff >= msec)
-// 	{
-// 		lastTime = currentTime;
-// 		return qtrue;
-// 	}
-// 	return qfalse;
-// }
-
 void CG_UpdateBeFeatures(void)
 {
 	static qboolean inUpdateAllClientsInfo = qfalse;
@@ -92,8 +73,8 @@ void CG_UpdateBeFeatures(void)
 			beFlags |= CG_BE_ALT_SHADOW, changed = qtrue;
 		if (cg_altBlood.integer)
 			beFlags |= CG_BE_ALT_BLOOD, changed = qtrue;
-		if (cg_altPlasma.integer == 2)
-			beFlags |= CG_BE_ALT_PLASMAGUN, changed = qtrue;
+		if (cg_plasmaColor.string[0] || cg_enemyPlasmaColor.string[0])
+			beFlags |= CG_BE_PLASMAGUN_COLOR, changed = qtrue;
 		if (cgs.osp.myColorsOverride.isLightningColorSet || cgs.osp.teamColorsOverride.isLightningColorSet || cgs.osp.enemyColorsOverride.isLightningColorSet)
 			beFlags |= CG_BE_ENEMYLIGHTNING, changed = qtrue;
 		if (anyFbSkin || cg_drawBrightWeapons.integer || cg_drawBrightItems.integer)
@@ -213,9 +194,9 @@ void CG_PrintDisabledFeatures(qboolean request)
 			Q_strcat(buffer, sizeof(buffer), first ? "Alt blood" : ", alt blood");
 			first = qfalse;
 		}
-		if (value & CG_BE_ALT_PLASMAGUN)
+		if (value & CG_BE_PLASMAGUN_COLOR)
 		{
-			Q_strcat(buffer, sizeof(buffer), first ? "Alt plasma 2" : ", alt plasma 2");
+			Q_strcat(buffer, sizeof(buffer), first ? "Plasma color" : ", plasma color");
 			first = qfalse;
 		}
 		if (value & CG_BE_OUTLINE)

@@ -2148,7 +2148,7 @@ static void CG_BEHelp_PrintFeature(const char* cvarName, int featureFlag, const 
 static void CG_BEHelp_PrintFeatureCommand(const char* cmdName, int featureFlag, const char* description)
 {
 	if (!cgs.beEnabled)
-		CG_Printf("  ^3%s ^7\"^9BE^7\" - %s\n", cmdName, description);
+		CG_Printf("  ^3%s ^7\"^9OFF^7\" - %s\n", cmdName, description);
 	else if (cgs.beDisableFeatures & featureFlag)
 		CG_Printf("  ^3%s ^7\"^1SRV^7\" - %s\n", cmdName, description);
 	else
@@ -2192,11 +2192,12 @@ void CG_BEHelp_f(void)
 		CG_BEHelp_PrintFeature("cg_markTeam", CG_BE_MARK_TEAMMATE, "Mark teammate(s) to change outline color", -1);
 		CG_BEHelp_PrintFeature("cg_altShadow", CG_BE_ALT_SHADOW, "Alternative shadow", 0);
 		CG_BEHelp_PrintFeature("cg_altBlood", CG_BE_ALT_BLOOD, "Alternative blood effects on model hit", 0);
-		CG_BEHelp_PrintFeature("cg_altPlasma", CG_BE_ALT_PLASMAGUN, "Alternative plasma projectile and trail rendering", 0);
+		CG_BEHelp_PrintFeature("cg_plasmaColor", CG_BE_PLASMAGUN_COLOR, "Plasma bolt and impact color (cg_enemyPlasmaColor for enemies)", 0);
 		CG_BEHelp_PrintFeature("cg_drawOutline", CG_BE_OUTLINE, "Set player outline rendering mode", 0);
 		CG_BEHelp_PrintFeature("cg_teamIndicator", CG_BE_TEAM_INDICATOR, "Draw player indicator over ally", 0);
 		// CG_BEHelp_PrintFeature("cg_damagePlums", CG_BE_DAMAGEINFO, "Show damage plums (floating damage numbers)", 0);
 		CG_BEHelp_PrintFeature("cg_drawBrightWeapons", CG_BE_FULLBRIGHT, "Render weapons with a single bright color", 0);
+		CG_BEHelp_PrintFeature("cg_drawBrightItems", CG_BE_FULLBRIGHT, "Render 3D world pickups with bright colors (not weapons)", 0);
 		CG_BEHelp_PrintFeature("cg_teamTask", CG_BE_TEAMTASKS, "Team task markers", 0);
 		CG_BEHelp_PrintFeature("cg_noExplosions", CG_BE_NO_EXPLOSIONS, "Disable all projectile and weapon impact explosions", 0);
 		CG_BEHelp_PrintFeature("cg_footsteps", CG_BE_METAL_FOOTSTEPS, "Metal surface footsteps (2 = force normal footsteps)", 0);

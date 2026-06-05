@@ -47,8 +47,8 @@ static const itemBrightColorEntry_t itemBrightColorDefaults[] =
 	{ "item_enviro",  CG_DEFAULT_BATTLE_SUIT_R, CG_DEFAULT_BATTLE_SUIT_G, CG_DEFAULT_BATTLE_SUIT_B, 1.00f },
 	{ "item_haste",              1.00f, 1.00f, 0.00f, 1.00f },
 	{ "item_invis",              0.60f, 0.60f, 1.00f, 1.00f },
-	{ "item_regen",              1.00f, 0.00f, 1.00f, 1.00f },
-	{ "item_flight",             0.50f, 0.80f, 1.00f, 1.00f },
+	{ "item_regen",              1.00f, 0.00f, 0.00f, 1.00f },
+	{ "item_flight",             1.00f, 0.20f, 1.00f, 1.00f },
 	/* CTF (classic red/blue only if cg_oldFlags bit 1; else team colors) */
 	{ "team_CTF_redflag",  CG_DEFAULT_FLAG_RED_R, CG_DEFAULT_FLAG_RED_G, CG_DEFAULT_FLAG_RED_B, 1.00f },
 	{ "team_CTF_blueflag", CG_DEFAULT_FLAG_BLUE_R, CG_DEFAULT_FLAG_BLUE_G, CG_DEFAULT_FLAG_BLUE_B, 1.00f },
@@ -426,12 +426,12 @@ qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum, int gitype)
 	{
 		return qfalse;
 	}
-	drawBright = cg_drawBrightItems.integer;
-	if (!drawBright || cg_simpleItems.integer)
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
 	{
 		return qfalse;
 	}
-	if (!CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
+	drawBright = cg_drawBrightItems.integer;
+	if (!drawBright || cg_simpleItems.integer)
 	{
 		return qfalse;
 	}

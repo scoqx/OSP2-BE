@@ -554,8 +554,8 @@ altFullBrightShader
 {
 	sort nearest
     {
-        map textures/effects/envmapghost.tga
-        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        map textures/effects/envmapghost.jpg
+        blendfunc GL_SRC_ALPHA GL_ONE
 	    tcmod rotate 30
         tcmod scroll 1 .1
         rgbGen entity
@@ -607,4 +607,65 @@ weapons/fragEffect
     tcmod scroll -1.5 0
     rgbGen entity
   }
+}
+
+
+// From nemesis for cg_altPlasma 0/1/3
+sprites/plasma_color
+{
+	cull disable
+	{
+		clampmap sprites/plasma_color.tga
+		blendfunc GL_ONE GL_ONE
+                tcMod rotate 931
+			rgbgen entity
+	}
+    	{
+		clampmap sprites/plasma_color2.tga
+		blendfunc GL_ONE GL_ONE
+                tcMod rotate 931
+	}
+}
+
+plasmaExplosion2
+{
+	cull disable
+	{
+		clampmap models/weaphits/plasmaboom_color.tga
+		blendfunc add
+                tcMod stretch triangle .6 0.1 0 8
+                tcmod rotate 999
+                rgbGen wave inversesawtooth 0 1 0 1.5
+                rgbGen entity
+	}
+}
+
+// For cg_altPlasma 2
+sprites/plasma_color_old
+{
+	cull disable
+	{
+		clampmap sprites/plasma_old_color.tga
+		blendfunc GL_ONE GL_ONE
+                tcMod rotate 931
+			rgbgen entity
+	}
+    {
+		clampmap sprites/plasma_old_color2.tga
+		blendfunc GL_ONE GL_ONE
+                tcMod rotate 931
+	}
+}
+
+plasmaExplosion2_old
+{
+	cull disable
+	{
+		clampmap models/weaphits/plasmaboom_old_color.tga
+		blendfunc add
+                tcMod stretch triangle .6 0.1 0 8
+                tcmod rotate 999
+                rgbGen wave inversesawtooth 0 1 0 1.5
+                rgbGen entity
+	}
 }

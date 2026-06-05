@@ -458,23 +458,39 @@ enemyLightningBoltNew3 //cg_altLightning 3
 
 enemyLightningBoltNew4 //cg_altLightning 4
 {
-  nopicmip
-  nomipmaps
-  cull none
-  {
-    map gfx/misc/enm_lightning0.tga
-		blendfunc add
-		tcMod scale 1 1
-		tcMod scroll -2.5 0
-		rgbGen vertex
-  }
-  {
-    map gfx/misc/enm_lightning0.tga
-		blendfunc add
-		tcMod scale -1 -1
-		tcMod scroll -6 0
-		rgbGen vertex
-  }
+	nopicmip
+	nomipmaps
+	cull none
+	// base layer
+	{
+		map gfx/misc/enm_lightning0.tga
+    	blendFunc add
+		rgbgen wave sin 1 0.5 0 1.1
+		tcmod scale  2 1
+		tcMod scroll -5 0
+	}
+	{
+		map gfx/misc/enm_lightning0.tga
+    	blendFunc add
+		rgbgen wave sin 1 0.8 0 1.1
+		tcmod scale  -1.3 -1
+		tcMod scroll -7.2 0
+	}
+	// 2nd colored layer
+    {
+		clampMap gfx/misc/enm_lightning0_2.tga
+    	blendFunc GL_ONE GL_ONE
+		rgbgen entity
+		tcMod transform 2 0 0 2 0 -0.5
+		tcMod scroll -5 0
+	}
+	{
+		clampMap gfx/misc/enm_lightning0_2.tga
+    	blendFunc GL_ONE GL_ONE
+		rgbgen entity
+		tcMod transform -1.3 0 0 -2 0 1.5
+		tcMod scroll -7.2 0
+	}
 }
 
 enemyLightningBoltNew5 //cg_altLightning 5

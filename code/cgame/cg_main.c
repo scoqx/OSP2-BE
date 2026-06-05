@@ -468,6 +468,7 @@ vmCvar_t        cg_bestats_widthCutoff;
 vmCvar_t        cg_teamIndicatorFade;
 vmCvar_t        cg_teamIndicatorFadeRadius;
 vmCvar_t        be_features;
+vmCvar_t        compilation_build;
 vmCvar_t        be_enabled;
 vmCvar_t        cg_scoreboardTextSize;
 vmCvar_t        cg_scoreboardScale;
@@ -594,6 +595,8 @@ vmCvar_t        cg_enemyFootsteps;
 vmCvar_t        cg_oldMedals;
 vmCvar_t        cg_damagePlumsTimeout;
 vmCvar_t        cg_freezeShader;
+vmCvar_t        cg_plasmaColor;
+vmCvar_t        cg_enemyPlasmaColor;
 
 cgFontIndices_t cgFontIndices;
 
@@ -966,6 +969,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFade },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE, },
 	{ &be_features, "be_features", "", CVAR_ROM | CVAR_USERINFO },
+	{ &compilation_build, "compilation_build", "", CVAR_ROM | CVAR_USERINFO },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE /* | CVAR_USERINFO */, CG_LocalEventBeFeaturesChanged },
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE },
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
@@ -1087,6 +1091,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_oldMedals, "cg_oldMedals", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_damagePlumsTimeout, "cg_damagePlumsTimeout", "750", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_freezeShader, "cg_freezeShader", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_plasmaColor, "cg_plasmaColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_plasmaColor },
+	{ &cg_enemyPlasmaColor, "cg_enemyPlasmaColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyPlasmaColor },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1866,6 +1872,11 @@ static void CG_RegisterGraphics(void)
 	if (!cgs.media.plasmaQLBallShader)
 		cgs.media.plasmaQLBallShader = cgs.media.plasmaBallShader;
 
+	cgs.media.plasmaBallColorShader = trap_R_RegisterShader("sprites/plasma_color");
+	cgs.media.plasmaBallColorOldShader = trap_R_RegisterShader("sprites/plasma_color_old");
+	if (!cgs.media.plasmaBallColorOldShader)
+		cgs.media.plasmaBallColorOldShader = cgs.media.plasmaBallColorShader;
+
 	cgs.media.grenadeCPMANoPicMipShader = trap_R_RegisterShaderNoMip("grenadeCPMA_NPM");
 	cgs.media.grenadeCPMANoPicMipShaderNew = trap_R_RegisterShaderNoMip("grenadeCPMANew");
 	cgs.media.grenadeCPMAModel = trap_R_RegisterModel("models/ammo/grenadeCPMA.md3");
@@ -2530,6 +2541,8 @@ void CG_InitCvars(void)
 
 	CG_CvarTouch("cg_altGrenadesColor");
 	CG_CvarTouch("cg_enemyGrenadesColor");
+	CG_CvarTouch("cg_plasmaColor");
+	CG_CvarTouch("cg_enemyPlasmaColor");
 	CG_CvarTouch("cg_battleSuitColor");
 	CG_CvarTouch("cg_enemyBattleSuitColor");
 	CG_CvarTouch("cg_quadDamageColor");
@@ -2643,14 +2656,14 @@ void CG_ParseCompilationInfo(void)
 	char buildString[MAX_QPATH * 2 + 2];
 	char name[MAX_QPATH];
 	char version[MAX_QPATH];
-	vmCvar_t compilation_build;
 	int parseResult;
 
 	// Open the 'cversion' file
 	fileSize = trap_FS_FOpenFile("cversion", &fileHandle, FS_READ);
 	if (fileSize <= 0 || !fileHandle)
 	{
-		return; // File not found
+		trap_Cvar_Set("compilation_build", "");
+		return;
 	}
 
 	// Read the file contents
@@ -2672,11 +2685,12 @@ void CG_ParseCompilationInfo(void)
 
 	if (parseResult == 2)
 	{
-		// Form the NAME:VERSION string
 		Com_sprintf(buildString, sizeof(buildString), "%s: %s", name, version);
-
-		// Register the cvar
-		trap_Cvar_Register(&compilation_build, "compilation_build", buildString, CVAR_USERINFO | CVAR_ROM);
+		trap_Cvar_Set("compilation_build", buildString);
+	}
+	else
+	{
+		trap_Cvar_Set("compilation_build", "");
 	}
 
 	Z_Free(fileContent);
@@ -3111,17 +3125,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_LoadingString("sounds");
 	CG_RegisterSounds();
 
-	// // cause smoke bug
-	// for (i = 1; i < WP_NUM_WEAPONS; i++)
-	// {
-	//  CG_RegisterWeapon(i);
-	// }
-
 	CG_LoadingString("graphics");
 	CG_RegisterGraphics();
 
-	/* Run cg_execVstr (and gametype exec) before CG_RegisterClients(), so they run before
-	 * cg_exec_joinGame which is triggered when local clientinfo is first applied. */
 	CG_UpdateCvars();
 	/* CG_OSP2BEConfigTourneyModeRefresh(); */
 	if (cg_execVstr.string[0])
@@ -3139,7 +3145,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cg.loading = qfalse;    // future players will be deferred
 
 	// Force update player colors if color cvars contain 'T' or 'E'
-	// Must be called after clients are registered
 	CG_InitPlayerColors();
 
 	CG_InitLocalEntities();
@@ -3238,7 +3243,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_ChatfilterLoadFile(CG_CHATFILTER_DEFAULT_FILE);
 	CG_TeamTaskFilterLoadFile(CG_TEAMTASKFILTER_DEFAULT_FILE);
-
+	CG_NotifyTeamTaskServerSupportOnMapLoad();
 	if (cg_clearOnLevelLoad.integer)
 	{
 		trap_SendConsoleCommand("clear");

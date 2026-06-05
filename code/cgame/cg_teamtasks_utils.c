@@ -280,6 +280,35 @@ qboolean CG_IsTeamTaskSupported(void)
 
 /*
 =================
+CG_NotifyTeamTaskServerSupportOnMapLoad
+
+After map load: warn if team gametype, cg_teamTask enabled, server did not
+disable team tasks, but server lacks team task protocol (no \\tt in configstring).
+=================
+*/
+void CG_NotifyTeamTaskServerSupportOnMapLoad(void)
+{
+	if (cgs.gametype < GT_TEAM)
+	{
+		return;
+	}
+	if (!cg_teamTask.integer)
+	{
+		return;
+	}
+	if (cgs.beDisableFeatures & CG_BE_TEAMTASKS)
+	{
+		return;
+	}
+	if (CG_IsTeamTaskSupported())
+	{
+		return;
+	}
+	CG_PrintOnce("[^9OSP2-BE^7] ^1Team tasks not supported on this server!\n");
+}
+
+/*
+=================
 CG_TeamTaskShouldUseDeadHereWarn
 
 True when tHere/tWarn must use death position, not crosshair or live origin.

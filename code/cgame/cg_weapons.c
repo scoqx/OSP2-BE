@@ -114,7 +114,7 @@ static void CG_MachineGunEjectBrass(centity_t* cent)
 	le->angles.trDelta[1] = 1;
 	le->angles.trDelta[2] = 0;
 
-	le->leFlags = LEF_TUMBLE;
+	le->leFlags = LEF_TUMBLE | LEF_PLAYER_BRASS | ((cent->currentState.number & 0xFFFF) << 16);
 	le->leBounceSoundType = LEBS_BRASS;
 	le->leMarkType = LEMT_NONE;
 }
@@ -197,7 +197,7 @@ static void CG_ShotgunEjectBrass(centity_t* cent)
 		le->angles.trDelta[1] = 0.5;
 		le->angles.trDelta[2] = 0;
 
-		le->leFlags = LEF_TUMBLE;
+		le->leFlags = LEF_TUMBLE | LEF_PLAYER_BRASS | ((cent->currentState.number & 0xFFFF) << 16);
 		le->leBounceSoundType = LEBS_BRASS;
 		le->leMarkType = LEMT_NONE;
 	}
@@ -1405,7 +1405,14 @@ void CG_RegisterWeapon(int weaponNum)
 			cgs.media.plasmaOldExplosionShader = trap_R_RegisterShader("plasmaExplosion_old");
 			if (!cgs.media.plasmaOldExplosionShader)
 			{
-				cgs.media.plasmaOldExplosionShader = cgs.media.plasmaOldExplosionShader;
+				cgs.media.plasmaOldExplosionShader = cgs.media.plasmaExplosionShader;
+			}
+
+			cgs.media.plasmaExplosionColorShader = trap_R_RegisterShader("plasmaExplosion2");
+			cgs.media.plasmaExplosionColorOldShader = trap_R_RegisterShader("plasmaExplosion2_old");
+			if (!cgs.media.plasmaExplosionColorOldShader)
+			{
+				cgs.media.plasmaExplosionColorOldShader = cgs.media.plasmaExplosionColorShader;
 			}
 
 			cgs.media.plasmaExplosionQLShader = trap_R_RegisterShader("plasmaExplosionQL");
@@ -1986,6 +1993,65 @@ qhandle_t CG_SelectBrightWeaponsShader(void)
 		return cgs.media.fullBrightShader;
 	}
 }
+
+void CG_ApplyBrightBrassIfNeeded(localEntity_t* le)
+{
+	weapon_t      weaponNum;
+	int           clientNum;
+	int           drawBright;
+	qboolean      isEnemy;
+	qboolean      isTeammate;
+	qboolean      isOwn;
+	qboolean      isSpectatingFollow;
+	qhandle_t     hModel;
+
+	if (!(le->leFlags & LEF_PLAYER_BRASS) || le->leBounceSoundType != LEBS_BRASS)
+	{
+		return;
+	}
+
+	drawBright = cg_drawBrightWeapons.integer;
+	if (!drawBright || !CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT))
+	{
+		return;
+	}
+
+	clientNum = CG_LE_BRASS_CLIENT_NUM(le->leFlags);
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+
+	isOwn = (clientNum == cg.clientNum);
+	isEnemy = CG_IsEnemy(&cgs.clientinfo[clientNum]);
+	isTeammate = !isEnemy && !isOwn;
+	isSpectatingFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) && (clientNum == cg.snap->ps.clientNum);
+
+	if (!(((drawBright & 1) && (isOwn || isSpectatingFollow)) ||
+	        ((drawBright & 2) && isTeammate) ||
+	        ((drawBright & 4) && isEnemy)))
+	{
+		return;
+	}
+
+	hModel = le->refEntity.hModel;
+	if (hModel == cgs.media.machinegunBrassModel)
+	{
+		weaponNum = WP_MACHINEGUN;
+	}
+	else if (hModel == cgs.media.shotgunBrassModel)
+	{
+		weaponNum = WP_SHOTGUN;
+	}
+	else
+	{
+		return;
+	}
+
+	CG_SetWeaponBrightColor(&le->refEntity, weaponNum);
+	le->refEntity.customShader = CG_SelectBrightWeaponsShader();
+}
+
 /*
 =============
 CG_AddPlayerWeapon
@@ -2899,6 +2965,108 @@ void CG_FireWeapon(centity_t* cent)
 
 /*
 =================
+CG_PlasmaColorForOwner
+
+Returns qtrue when cg_plasmaColor / cg_enemyPlasmaColor apply for this shooter.
+=================
+*/
+qboolean CG_PlasmaColorForOwner(int owner, vec4_t color)
+{
+	const clientInfo_t* ci;
+
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_PLASMAGUN_COLOR))
+	{
+		return qfalse;
+	}
+
+	if (!color || owner < 0 || owner >= MAX_CLIENTS)
+	{
+		return qfalse;
+	}
+
+	ci = &cgs.clientinfo[owner];
+	if (!ci->infoValid)
+	{
+		return qfalse;
+	}
+
+	if (CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IsEnemy(ci)
+	    || (cgs.gametype == GT_TOURNAMENT))
+	{
+		if (!cg_plasmaColor.string[0])
+		{
+			return qfalse;
+		}
+		color[0] = cg.bePlasmaColor[0];
+		color[1] = cg.bePlasmaColor[1];
+		color[2] = cg.bePlasmaColor[2];
+		color[3] = cg.bePlasmaColor[3];
+	}
+	else
+	{
+		if (!cg_enemyPlasmaColor.string[0])
+		{
+			return qfalse;
+		}
+		color[0] = cg.beEnemyPlasmaColor[0];
+		color[1] = cg.beEnemyPlasmaColor[1];
+		color[2] = cg.beEnemyPlasmaColor[2];
+		color[3] = cg.beEnemyPlasmaColor[3];
+	}
+
+	return qtrue;
+}
+
+static qboolean CG_PlasmaAltUsesOldColorAssets(void)
+{
+	return (cg_altPlasma.integer == 2);
+}
+
+qhandle_t CG_PlasmaColorBallShader(void)
+{
+	if (CG_PlasmaAltUsesOldColorAssets())
+	{
+		return cgs.media.plasmaBallColorOldShader;
+	}
+
+	return cgs.media.plasmaBallColorShader;
+}
+
+qhandle_t CG_PlasmaColorExplosionShader(void)
+{
+	if (CG_PlasmaAltUsesOldColorAssets())
+	{
+		return cgs.media.plasmaExplosionColorOldShader;
+	}
+
+	return cgs.media.plasmaExplosionColorShader;
+}
+
+void CG_ApplyPlasmaEntityColor(int owner, refEntity_t* ent, qhandle_t* shader)
+{
+	vec4_t          color;
+	qhandle_t       colorShader;
+
+	if (!ent || !shader || !CG_PlasmaColorForOwner(owner, color))
+	{
+		return;
+	}
+
+	colorShader = CG_PlasmaColorBallShader();
+	if (!colorShader)
+	{
+		return;
+	}
+
+	*shader = colorShader;
+	ent->shaderRGBA[0] = (byte)(color[0] * 255.0f);
+	ent->shaderRGBA[1] = (byte)(color[1] * 255.0f);
+	ent->shaderRGBA[2] = (byte)(color[2] * 255.0f);
+	ent->shaderRGBA[3] = 255;
+}
+
+/*
+=================
 CG_MissileHitWall
 
 Caused by an EV_MISSILE_MISS event, or directly by local bullet tracing
@@ -3034,8 +3202,6 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 			shader = cgs.media.plasmaExplosionShader;
 			mark = cgs.media.energyMarkShader;
 			altPlasma = cg_altPlasma.integer;
-			if (altPlasma == 2 && !CG_BE_FEATURE_ENABLED(CG_BE_ALT_PLASMAGUN))
-				altPlasma = 0;
 
 			if (altPlasma == 0)
 			{
@@ -3182,6 +3348,24 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 			{
 				// colorize with client color
 				VectorCopy(cgs.clientinfo[clientNum].colors.railCore, le->color);
+			}
+			else if (weapon == WP_PLASMAGUN)
+			{
+				vec4_t          plasmaColor;
+				qhandle_t       colorShader;
+
+				if (CG_PlasmaColorForOwner(clientNum, plasmaColor))
+				{
+					colorShader = CG_PlasmaColorExplosionShader();
+					if (colorShader)
+					{
+						le->refEntity.customShader = colorShader;
+						le->refEntity.shaderRGBA[0] = (byte)(plasmaColor[0] * 255.0f);
+						le->refEntity.shaderRGBA[1] = (byte)(plasmaColor[1] * 255.0f);
+						le->refEntity.shaderRGBA[2] = (byte)(plasmaColor[2] * 255.0f);
+						le->refEntity.shaderRGBA[3] = 255;
+					}
+				}
 			}
 		}
 	}

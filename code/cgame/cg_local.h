@@ -269,8 +269,11 @@ typedef enum
 	LEF_SOUND1           = 0x0004,          // sound 1 for kamikaze
 	LEF_SOUND2           = 0x0008,          // sound 2 for kamikaze
 	LEF_FADE_RGB         = 0x0010,          // fade all channels, not just alpha
-	LEF_MOVE_OLDORIGIN   = 0x0020           // move oldorigin as well (rail spiral2)
+	LEF_MOVE_OLDORIGIN   = 0x0020,          // move oldorigin as well (rail spiral2)
+	LEF_PLAYER_BRASS     = 0x0040           // MG/SG shell; clientNum in bits 16-31
 } leFlag_t;
+
+#define CG_LE_BRASS_CLIENT_NUM(leFlags)  (((leFlags) >> 16) & 0xFFFF)
 
 typedef enum
 {
@@ -934,6 +937,8 @@ typedef struct
 	vec4_t      beAltShadowColor;
 	vec4_t      beAltGrenadesColor;
 	vec4_t      beEnemyGrenadesColor;
+	vec4_t      bePlasmaColor;
+	vec4_t      beEnemyPlasmaColor;
 	vec4_t      beEnemyBattleSuitColor;
 	qboolean    enemyBattleSuitColorEnabled;
 	vec4_t      beBattleSuitColor;
@@ -1203,6 +1208,10 @@ typedef struct
 	qhandle_t   plasmaOldExplosionNoPicMipShader;
 	qhandle_t   plasmaQLBallShader;
 	qhandle_t   plasmaExplosionQLShader;
+	qhandle_t   plasmaBallColorShader;
+	qhandle_t   plasmaBallColorOldShader;
+	qhandle_t   plasmaExplosionColorShader;
+	qhandle_t   plasmaExplosionColorOldShader;
 
 	// special effects models
 	qhandle_t   teleportEffectModel;
@@ -1566,7 +1575,7 @@ typedef struct
 #define CG_BE_MARK_TEAMMATE     (1 << 4) // 16
 #define CG_BE_ALT_SHADOW        (1 << 5) // 32
 #define CG_BE_ALT_BLOOD         (1 << 6) // 64
-#define CG_BE_ALT_PLASMAGUN     (1 << 7) // 128
+#define CG_BE_PLASMAGUN_COLOR     (1 << 7) // 128
 #define CG_BE_OUTLINE           (1 << 8) // 256
 #define CG_BE_TEAM_INDICATOR    (1 << 9) // 512
 #define CG_BE_DAMAGEINFO        (1 << 10) // 1024
@@ -2349,6 +2358,8 @@ extern vmCvar_t         cg_enemyFootsteps;
 extern vmCvar_t         cg_oldMedals;
 extern vmCvar_t         cg_damagePlumsTimeout;
 extern vmCvar_t         cg_freezeShader;
+extern vmCvar_t         cg_plasmaColor;
+extern vmCvar_t         cg_enemyPlasmaColor;
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2792,6 +2803,10 @@ void CG_RegisterItemVisuals(int itemNum);
 void CG_UnregisterItemVisualForPowerup(powerup_t pw);
 
 void CG_FireWeapon(centity_t* cent);
+qboolean CG_PlasmaColorForOwner(int owner, vec4_t color);
+qhandle_t CG_PlasmaColorBallShader(void);
+qhandle_t CG_PlasmaColorExplosionShader(void);
+void CG_ApplyPlasmaEntityColor(int owner, refEntity_t* ent, qhandle_t* shader);
 void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, impactSound_t soundType);
 void CG_MissileHitPlayer(int weapon, vec3_t origin, vec3_t dir, int entityNum);
 void CG_ShotgunFire(entityState_t* es);
@@ -2815,6 +2830,7 @@ void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum);
 void CG_InitBrightWeaponsColors(void);
 void CG_BeinfoApplyBrightColor(const char* classname, float r, float g, float b, float a);
 qhandle_t CG_SelectBrightWeaponsShader(void);
+void CG_ApplyBrightBrassIfNeeded(localEntity_t* le);
 /* icons/dye/colors.cfg — default powerup / classic flag tints (0.0–1.0) */
 #define CG_DEFAULT_QUAD_DAMAGE_R    0.0f
 #define CG_DEFAULT_QUAD_DAMAGE_G    (227.0f / 255.0f)
@@ -3031,6 +3047,7 @@ const char* CG_GetCvarDescription(const char* cvarName);
 // cg_teamtasks_utils.c
 //
 qboolean CG_IsTeamTaskSupported(void);
+void CG_NotifyTeamTaskServerSupportOnMapLoad(void);
 qboolean CG_TeamTaskShouldUseDeadHereWarn(void);
 qhandle_t CG_GetTeamTaskShaderByType(teamtask_t taskType);
 qhandle_t CG_GetPickupShader(void);
@@ -3594,6 +3611,8 @@ void CG_LocalEventCvarChanged_cg_teamTaskThemeColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_plasmaColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_enemyPlasmaColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_healthColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_healthLowColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_healthMidColor(cvarTable_t* cvart);

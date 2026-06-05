@@ -1205,13 +1205,13 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 		case EV_MISSILE_MISS:
 			DEBUGNAME("EV_MISSILE_MISS");
 			ByteToDir(es->eventParm, dir);
-			CG_MissileHitWall(es->weapon, 0, position, dir, IMPACTSOUND_DEFAULT);
+			CG_MissileHitWall(es->weapon, es->otherEntityNum, position, dir, IMPACTSOUND_DEFAULT);
 			break;
 
 		case EV_MISSILE_MISS_METAL:
 			DEBUGNAME("EV_MISSILE_MISS_METAL");
 			ByteToDir(es->eventParm, dir);
-			CG_MissileHitWall(es->weapon, 0, position, dir, IMPACTSOUND_METAL);
+			CG_MissileHitWall(es->weapon, es->otherEntityNum, position, dir, IMPACTSOUND_METAL);
 			break;
 
 		case EV_RAILTRAIL:

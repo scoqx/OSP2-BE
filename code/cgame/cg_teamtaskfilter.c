@@ -171,7 +171,6 @@ void CG_TeamTaskFilterLoadFile(const char* filename)
 	rc = trap_FS_FOpenFile(path, &filterFileHandle, FS_READ);
 	if (rc < 0 || !filterFileHandle)
 	{
-		CG_Printf("^1team task filter file %s not found\n", path);
 		return;
 	}
 

@@ -721,6 +721,8 @@ void CG_ReloadColors(void)
 		"cg_teamTaskThemeColor",
 		"cg_teamIndicatorColor",
 		"cg_teamIndicatorBgColor",
+		"cg_plasmaColor",
+		"cg_enemyPlasmaColor",
 		NULL
 	};
 

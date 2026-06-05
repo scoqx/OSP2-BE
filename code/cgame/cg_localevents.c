@@ -749,6 +749,24 @@ void CG_LocalEventCvarChanged_cg_enemyGrenadesColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cg.beEnemyGrenadesColor);
 }
+
+void CG_LocalEventCvarChanged_cg_plasmaColor(cvarTable_t* cvart)
+{
+	if (cvart->vmCvar->string[0])
+	{
+		CG_LocalEventCvarParseColor(cvart, cg.bePlasmaColor);
+	}
+	CG_UpdateBeFeatures();
+}
+
+void CG_LocalEventCvarChanged_cg_enemyPlasmaColor(cvarTable_t* cvart)
+{
+	if (cvart->vmCvar->string[0])
+	{
+		CG_LocalEventCvarParseColor(cvart, cg.beEnemyPlasmaColor);
+	}
+	CG_UpdateBeFeatures();
+}
 void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart)
 {
 	if (!cvart->vmCvar->string[0])

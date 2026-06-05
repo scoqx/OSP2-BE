@@ -129,7 +129,7 @@ void CG_OSPCvarsRestrictValues(void)
 	qboolean changed = qfalse;
 	if (cg_trueLightning.integer > 1)
 	{
-		trap_Cvar_Set("cg_trueLightning", "0.5");
+		trap_Cvar_Set("cg_trueLightning", "1");
 	}
 
 	if (cgs.localServer)
