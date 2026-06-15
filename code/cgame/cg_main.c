@@ -89,6 +89,8 @@ vmCvar_t           osp_hidden;
 vmCvar_t           osp_debug;
 vmCvar_t           cg_autoswitch;
 vmCvar_t           cg_drawGun;
+vmCvar_t           phy_movetype;
+vmCvar_t           phy_snapVectors;
 vmCvar_t           cg_zoomFov;
 vmCvar_t           cg_zoomTime;
 vmCvar_t           cg_zoomSensitivityAuto;
@@ -608,6 +610,8 @@ cvarTable_t cvarTable[] =
 	{ &osp_client, "osp_client", "1008_OSP2_"OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
+	{ &phy_movetype, "phy_movetype", "-1", CVAR_SYSTEMINFO },
+	{ &phy_snapVectors, "g_snapVectors", "0", CVAR_SYSTEMINFO },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
 	{ &cg_drawGun, "cg_drawGun", "1", CVAR_ARCHIVE },
 	{ &cg_zoomFov, "cg_zoomfov", "22.5", CVAR_ARCHIVE },

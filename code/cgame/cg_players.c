@@ -1006,11 +1006,15 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 	{
 		centity_t* cent;
 
-		cent = &cg_entities[clientNum];
-		if (cent->currentState.clientNum == clientNum && cent->currentState.eType == ET_PLAYER)
+		for (i = 0 ; i < MAX_GENTITIES ; i++)
 		{
-			CG_ResetPlayerEntity(cent);
+			cent = &cg_entities[i];
+			if (cent->currentState.clientNum == clientNum && cent->currentState.eType == ET_PLAYER)
+			{
+				CG_ResetPlayerEntity(cent);
+			}
 		}
+
 		if ((cgs.gametype == GT_TEAM || cgs.gametype == GT_CTF) && cgs.osp.gameTypeFreeze
 		        && ci->frozenEntity >= 0 && ci->frozenEntity < MAX_GENTITIES)
 		{

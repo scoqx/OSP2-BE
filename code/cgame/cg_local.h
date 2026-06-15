@@ -1828,6 +1828,8 @@ typedef struct
 
 	qboolean        q3msk;        // Q3msk.net
 	qboolean        fpsclassico;  // fpsclasico.com
+	qboolean        osdf_signature;
+	int             phy_cpm_crouchslide_time;
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
 } cgs_t;
@@ -1863,6 +1865,8 @@ extern  weaponInfo_t    cg_weapons[MAX_WEAPONS];
 extern  itemInfo_t      cg_items[MAX_ITEMS];
 extern  markPoly_t      cg_markPolys[MAX_MARK_POLYS];
 
+extern vmCvar_t           phy_movetype;
+extern vmCvar_t           phy_snapVectors;
 extern vmCvar_t           osp_client;
 extern vmCvar_t           osp_hidden;
 extern vmCvar_t           osp_debug;
