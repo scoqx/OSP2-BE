@@ -1828,8 +1828,6 @@ typedef struct
 
 	qboolean        q3msk;        // Q3msk.net
 	qboolean        fpsclassico;  // fpsclasico.com
-	qboolean        osdf_signature;
-	int             phy_cpm_crouchslide_time;
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
 } cgs_t;
@@ -2381,8 +2379,7 @@ extern vmCvar_t           cg_shud_chatmsg12;
 extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
-extern vmCvar_t           phy_movetype;
-extern vmCvar_t           phy_snapVectors;
+
 
 extern vmCvar_t         be_run;
 //

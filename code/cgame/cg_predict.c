@@ -620,11 +620,6 @@ We detect prediction errors and allow them to be decayed off over several frames
 to ease the jerk.
 =================
 */
-
-static vec_t VectorDistance(vec3_t a, vec3_t b) {
-  return (vec_t)sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
-}
-
 void CG_PredictPlayerState(void)
 {
 	int         cmdNum, current;
@@ -783,7 +778,7 @@ void CG_PredictPlayerState(void)
 				{
 					if (!VectorCompare(oldPlayerState.origin, adjusted))
 					{
-						CG_Printf("prediction error %.3f\n", VectorDistance(oldPlayerState.origin, adjusted) * (float)(1000 / (cg.time - cg_pmove.cmd.serverTime)));
+						CG_Printf("prediction error\n");
 					}
 				}
 				VectorSubtract(oldPlayerState.origin, adjusted, delta);

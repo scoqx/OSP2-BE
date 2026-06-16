@@ -527,7 +527,6 @@ typedef enum
 #define UI_INVERSE      0x00002000
 #define UI_PULSE        0x00004000
 #define UI_PULSE_2      0x00008000
-#define UI_SMALLERFONT  0x00010000  /* small font at ~80% size (e.g. map names) */
 
 #if defined(_DEBUG) && !defined(BSPC)
 #define HUNK_DEBUG
@@ -612,8 +611,6 @@ extern  vec3_t  bytedirs[NUMVERTEXNORMALS];
 
 #define SMALLCHAR_WIDTH     8
 #define SMALLCHAR_HEIGHT    16
-#define SMALLERCHAR_WIDTH   6
-#define SMALLERCHAR_HEIGHT  10
 
 #define BIGCHAR_WIDTH       16
 #define BIGCHAR_HEIGHT      16
@@ -1001,11 +998,6 @@ void    Q_strcat(char* dest, int size, const char* src);
 int Q_PrintStrlen(const char* string);
 // removes color sequences from string
 char* Q_CleanStr(char* string);
-
-char* BG_StripColor(char* string);
-char* Q_stristr(const char* str1, const char* str2);
-int BG_sprintf(char* buf, const char* format, ...);
-int Q_vsprintf(char* buffer, const char* fmt, va_list argptr);
 
 char *Q_strtok(char *s, const char *delim);
 //=============================================
@@ -1408,31 +1400,6 @@ typedef struct usercmd_s
 
 //===================================================================
 
-//::OSDF added
-//:::::::::::::::::
-// Pmove Extracted Data
-//   Stores extracted pmove data for the cg module
-//   It is cleared before the client's call to Pmove() inside cg_predict.c
-//   Renamed from state_t
-typedef struct {
-  float g_squared;  // gravity squared.  0 when not on slick.
-  float v_squared;  // norm velocity squared (starts as previous_velocity)
-  float vf_squared; // norm velocity (friction), squared
-  float a_squared;  // Accel squared
-  float v;          // norm Velocity (starts as previous_velocity)
-  float vf;         // this frame's norm velocity
-  float a; // Accel corresponding to this frame (airaccel, groundaccel, etc)
-           // Extracted from walkmove, airmove, etc
-  float wishspeed; // Wishspeed, as calculated in Pmove().   Extracted from
-                   // X_Accelerate()
-  // pm specific
-  int movetype;  // Physics movetype index
-  int tracemask; // Collides against these types of surfaces
-  usercmd_t cmd;
-} pmoveData_t; // TODO: Get this data out of pm. Should be extern for all CG
-//:::::::::::::::::
-//::OSDF end
-
 // if entityState->solid == SOLID_BMODEL, modelindex is an inline model number
 #define SOLID_BMODEL    0xffffff
 
@@ -1571,16 +1538,6 @@ typedef struct qtime_s
 	int tm_isdst;   /* daylight savings time flag */
 } qtime_t;
 
-//::OSDF modded
-//:::::::::::::::::
-// VectorMAM: taken from mmod. ::? Not in q3a. Where does it come from
-// originally? :thinking:
-void VectorMAM(float scale1, vec3_t b1, float scale2, vec3_t b2, vec3_t c);
-
-vec_t VectorLength2D(const vec3_t v);
-vec_t VectorLengthSquared2D(vec2_t const v);
-//:::::::::::::::::
-//::OSDF end
 
 // server browser sources
 // TTimo: AS_MPLAYER is no longer used

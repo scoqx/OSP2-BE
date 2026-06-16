@@ -20,14 +20,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 //
-#ifndef BG_LOCAL_H
-#define BG_LOCAL_H
-
-#include "../qcommon/qcommon.h"
-#include "../qcommon/q_shared.h"
-
-#include "bg_public.h"
-
 // bg_local.h -- local definitions for the bg (both games) files
 #ifdef __cplusplus
 extern "C" {
@@ -38,7 +30,6 @@ extern "C" {
 #define STEPSIZE        18
 
 #define JUMP_VELOCITY   270
-#define NOSNAP_JUMP_VELOCITY   285
 
 #define TIMER_LAND      130
 #define TIMER_GESTURE   (34*66+50)
@@ -125,6 +116,4 @@ void        PM_StepSlideMove(qboolean gravity);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

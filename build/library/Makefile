@@ -435,12 +435,6 @@ CGOBJ_ = \
   $(B)/$(MOD)/game/bg_misc.o \
   $(B)/$(MOD)/game/bg_pmove.o \
   $(B)/$(MOD)/game/bg_slidemove.o \
-  $(B)/$(MOD)/game/core.o \
-  $(B)/$(MOD)/game/slidemove.o \
-  $(B)/$(MOD)/game/q3a.o \
-  $(B)/$(MOD)/game/vq1.o \
-  $(B)/$(MOD)/game/vjk.o \
-  $(B)/$(MOD)/game/vq4.o \
   \
   $(B)/$(MOD)/qcommon/l_crc.o \
   $(B)/$(MOD)/qcommon/common.o \

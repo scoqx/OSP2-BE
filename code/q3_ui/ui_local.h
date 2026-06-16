@@ -12,7 +12,6 @@
 #undef UI_API_VERSION
 #define UI_API_VERSION  4
 #include "keycodes.h"
-
 #include "../game/bg_public.h"
 #include "ui_server_status.h"
 #include "ui_beinfo_cfg.h"

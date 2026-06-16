@@ -19,11 +19,6 @@ along with Foobar; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-#ifndef BG_PUBLIC_H
-#define BG_PUBLIC_H
-
-#include "../qcommon/q_shared.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -134,9 +129,9 @@ extern "C" {
 #error config strings overlaps
 #endif
 
-// #if (CS_MAX) > MAX_CONFIGSTRINGS
-// #error overflow: (CS_MAX) > MAX_CONFIGSTRINGS
-// #endif
+#if (CS_MAX) > MAX_CONFIGSTRINGS
+#error overflow: (CS_MAX) > MAX_CONFIGSTRINGS
+#endif
 
 typedef enum
 {
@@ -235,14 +230,6 @@ typedef struct
 	// these will be different functions during game and cgame
 	void (*trace)(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask);
 	int (*pointcontents)(const vec3_t point, int passEntityNum);
-
-
-	//::OSDF modded
-	int movetype;           // Physics type selection from cvar. Latch protected
-	float overbounce_scale; // Amount of overbounce scale to apply. Default
-	                        // OVERCLIP = 1.001f
-	pmoveData_t pmd;        // Stores extracted pmove data needed outside of pmove
-	//::OSDF end
 } pmove_t;
 
 // if a full pmove isn't done on the client, you can just update the angles
@@ -274,13 +261,7 @@ typedef enum
 	STAT_RAIL_DELAY = 8,
 	STAT_ARMOR_TYPE = 9,                //aromor: red/green/yellow
 	STAT_OSP_10 = 10,
-	STAT_WEAPON_DELAY = 11,
-
-	// OSDF
-	STAT_TIME_LASTJUMP = 12,
-	STAT_TIME_CROUCHSLIDE = 10,
-	STAT_RAMPSLIDE = 13,
-	STAT_JUMP_HOLDBOOST = 14
+	STAT_WEAPON_DELAY = 11
 } statIndex_t;
 
 
@@ -873,6 +854,4 @@ qboolean    BG_PlayerTouchesItem(playerState_t* ps, entityState_t* item, int atT
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

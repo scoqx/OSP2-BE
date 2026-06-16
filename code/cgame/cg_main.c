@@ -597,8 +597,6 @@ vmCvar_t        cg_damagePlumsTimeout;
 vmCvar_t        cg_freezeShader;
 vmCvar_t        cg_plasmaColor;
 vmCvar_t        cg_enemyPlasmaColor;
-vmCvar_t		phy_movetype;
-vmCvar_t		phy_snapVectors;
 
 cgFontIndices_t cgFontIndices;
 
@@ -1095,8 +1093,6 @@ cvarTable_t cvarTable[] =
 	{ &cg_freezeShader, "cg_freezeShader", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_plasmaColor, "cg_plasmaColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_plasmaColor },
 	{ &cg_enemyPlasmaColor, "cg_enemyPlasmaColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyPlasmaColor },
-	{ &phy_movetype, "phy_movetype", "-1", CVAR_SYSTEMINFO },
-	{ &phy_snapVectors, "g_snapVectors", "0", CVAR_SYSTEMINFO },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
