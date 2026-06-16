@@ -20,7 +20,7 @@ This is the only way control passes into the module.
 This must be the very first function compiled into the .qvm file
 ================
 */
-DLLEXPORT intptr_t vmMain(int command, int arg0, int arg1)
+DLLEXPORT int vmMain(int command, int arg0, int arg1)
 {
 	switch (command)
 	{

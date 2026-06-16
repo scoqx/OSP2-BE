@@ -13,6 +13,7 @@ CG_SRC = \
  cg_localents cg_players cg_playerstate cg_predict cg_scoreboard cg_marks cg_medals \
  cg_servercmds cg_snapshot cg_view cg_weapons cg_printui cg_teamtasks_tokenbucket cg_teamtasks_utils cg_teamtasks_draw cg_teamtasks_selwheel cg_teamtasks_crypto \
  bg_slidemove bg_pmove bg_lib bg_misc \
+ core slidemove q3a vq1 vjk vq4 \
  q_math q_shared cg_ospconfig cg_osputil cg_osphud cg_unlagged cg_playerscolors\
  cg_localevents cg_customloc cg_cvardescriptions common\
  cg_superhud cg_superhud_configparser cg_superhud_util cg_superhud_private\
