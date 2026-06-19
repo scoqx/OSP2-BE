@@ -96,7 +96,7 @@ ifeq ($(PLATFORM),linux)
 	@if [ -f tools/q3rcc ]; then chmod +x tools/q3rcc; fi
 endif
 
-.PHONY: all dirs FORCE check_cvardesc
+.PHONY: all dirs FORCE check_cvardesc check_status_infostring
 
 check_cvardesc: FORCE
 ifeq ($(MINGW),1)
@@ -107,6 +107,17 @@ ifeq ($(MINGW),1)
 	fi
 else
 	@$(PYTHON) ../../scripts/check_cvardesc_len.py
+endif
+
+check_status_infostring: FORCE ../../assets/version.txt ../../assets/version_changelog.txt
+ifeq ($(MINGW),1)
+	@if command -v $(PYTHON) >/dev/null 2>&1; then \
+		$(PYTHON) ../../scripts/check_status_infostring.py; \
+	else \
+		echo "Warning: Python not found, skipping status infostring check"; \
+	fi
+else
+	@$(PYTHON) ../../scripts/check_status_infostring.py
 endif
 
 FORCE:
@@ -156,7 +167,7 @@ FORCE:
 	fi
 
 #$(PK3): vm/qagame.qvm vm/cgame.qvm vm/ui.qvm
-$(PK3): vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt
+$(PK3): check_status_infostring vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt
 	@echo "Creating package with version files..."
 	@echo "Version: $$(cat ../../assets/version.txt)"
 	@$(7Z) $@ vm/*.qvm vm/*.jts vm/*.map ../../assets/*
