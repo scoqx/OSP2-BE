@@ -193,7 +193,8 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	bgW = entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->ctxMod.coord.named.h * 0.15);
 	bgH = element->ctxAttacker.coord.named.h * 1.1;
 
-	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target) // background for entire element
+	if ((cg.clientNum == entry->attacker || cg.clientNum == entry->target) &&
+	        element->config.bgcolor.isSet)
 	{
 		vec4_t bgColor;
 		float fadeAlpha;

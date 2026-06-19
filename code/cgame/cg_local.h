@@ -2582,6 +2582,7 @@ void CG_DrawLagometerGraphsInRect(float ax, float ay, float aw, float ah);
 float CG_DrawLagometer(float pos);
 void CG_SetCvarDescription(const char* name, const char* description);
 qboolean CG_IsRecordingDemo(void);
+qboolean CG_KeyCapsLockOn(void);
 
 
 //
@@ -3032,7 +3033,7 @@ localEntity_t* CG_SmokePuff(const vec3_t p,
                             int leFlags,
                             qhandle_t hShader);
 void CG_BubbleTrail(vec3_t start, vec3_t end, float spacing);
-void CG_SpawnEffect(vec3_t org);
+refEntity_t     *CG_SpawnEffect(vec3_t org, qboolean firstPerson);
 void CG_ScorePlum(int client, vec3_t org, int score);
 void CG_DamagePlum(int client, vec3_t org, int damage);
 void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops);
@@ -3229,6 +3230,7 @@ void        trap_Print(const char* fmt);
 int     trap_CG_GetValue_Q3E(int cmd, char* value, int valueSize, const char* key);
 int     trap_CG_SetDescription_Q3E(int cmd, const char* name, const char* description);
 int     trap_IsRecordingDemo_Q3E(int cmd);
+int     trap_Key_CapsLockOn_Q3E(int cmd);
 
 #endif
 
@@ -3589,6 +3591,7 @@ void CG_BEChat_EmojiDrawUI(float inputX, float inputY, float inputW, beChatInput
 qboolean CG_BEChat_EmojiMouseDown(float virtX, float virtY, beChatInput_t* edit, float maxTextW);
 qboolean CG_BEChat_EmojiPickerWheel(int wheelUp);
 float CG_BEChat_EmojiButtonReserveWidth(void);
+float CG_BEChat_HelpBtnReserveWidth(void);
 int CG_BEChat_EmojiTextFlags(int baseFlags);
 
 float CG_BEChat_InputFieldMaxWidth(void);

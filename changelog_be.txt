@@ -934,7 +934,7 @@ SuperHUD:
   FIXES:
   * visflag scorehide, 
   * Fade (text shadow, bg, border)
-  * Weaponlist
+  * Weaponlist center align fix
   * Score_OWN, TeamCount_OWN, Score_NME, TeamCount_NME visflag spectator
 + ChatWindow
   + /enterchat, /enterchatteam, +showchat
@@ -946,3 +946,12 @@ SuperHUD:
 + cg_muteWorldSounds
 * Perfomance optimization
 * Various fixes
+
+20.06.2026 be v1.05e1
++ cg_muteWorldSounds: add ts_dm5 howl
++ ChatWindow CTRL+MWHEELUP/DOWN quick scroll
++ ChatWindow CapsLock support (Q3E 20.06.2026+ only)
+* Teleport effect 1st person improvements
+* SHUD obituaries fix
+* SHUD PreDecorate/PostDecorate fix (text, image or only fill/border)
+* GlobalPos fix

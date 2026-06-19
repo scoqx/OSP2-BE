@@ -938,9 +938,10 @@ qboolean CG_IsMutedWorldSound(int soundIndex)
 		return qfalse;
 	}
 
-	if (strstr(s, "1shot_greg_03.wav") ||
-		strstr(s, "1shot_greg_01.wav") ||
-		strstr(s, "htf.wav"))				// rmx-maps
+	if (strstr(s, "1shot_greg_03.wav")	||	// Vanilla "ambient"
+		strstr(s, "1shot_greg_01.wav")	||	// Vanilla "ambient"
+		strstr(s, "htf.wav")			||	// rmx-maps
+		strstr(s, "wycie2.wav"))			// ts_dm5 howl
 	{
 		return qtrue;
 	}

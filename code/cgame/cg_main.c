@@ -3211,6 +3211,13 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_RegisterGraphics();
 
 	CG_UpdateCvars(cvarTableSize);
+
+	if (cg_chatWindow.integer)
+	{
+		CG_LoadingString("emoji");
+		CG_OSPLoadEmoji();
+	}
+
 	/* CG_OSP2BEConfigTourneyModeRefresh(); */
 	if (cg_execVstr.string[0])
 	{
@@ -3532,6 +3539,7 @@ static void trap_Cvar_SetDescription_local(const char* name, const char* descrip
 typedef void (setCvarDescription_t)(const char* name, const char* description);
 typedef qboolean(trap_GetValue_t)(char* value, int valueSize, const char* key);
 typedef qboolean(trap_IsRecordingDemo_t)(void);
+typedef qboolean(trap_Key_CapsLockOn_t)(void);
 
 
 // [meta]:
@@ -3676,5 +3684,74 @@ qboolean CG_IsRecordingDemo(void)
 	}
 
 	return (qboolean)trap_IsRecordingDemo_Q3E(isRecordingDemoFuncId);
+#endif
+}
+
+qboolean cg_keyCapsLockOnAvail;
+
+qboolean CG_KeyCapsLockOn(void)
+{
+#ifdef Q3_VM
+	static trap_Key_CapsLockOn_t* keyCapsLockOn = NULL;
+
+	if (!keyCapsLockOn)
+	{
+		int addr;
+		char value[MAX_CVAR_VALUE_STRING];
+		trap_GetValue_t* trap_GetValue;
+
+		trap_Cvar_VariableStringBuffer("//trap_GetValue", value, sizeof(value));
+
+		if (value[0])
+		{
+			addr = atoi(value);
+			addr = ~addr;
+			trap_GetValue = (trap_GetValue_t*)(addr);
+
+			if (trap_GetValue(value, sizeof(value), "trap_Key_CapsLockOn_Q3E"))
+			{
+				addr = atoi(value);
+				addr = ~addr;
+				keyCapsLockOn = (trap_Key_CapsLockOn_t*)addr;
+				cg_keyCapsLockOnAvail = qtrue;
+			}
+		}
+	}
+
+	if (!keyCapsLockOn)
+	{
+		return qfalse;
+	}
+
+	return keyCapsLockOn();
+#else
+	static int keyCapsLockOnFuncId = 0;
+
+	if (!keyCapsLockOnFuncId)
+	{
+		int getValueFuncId;
+		char value[MAX_CVAR_VALUE_STRING];
+
+		keyCapsLockOnFuncId = -1;
+		trap_Cvar_VariableStringBuffer("//trap_GetValue", value, sizeof(value));
+
+		if (value[0])
+		{
+			getValueFuncId = atoi(value);
+
+			if (trap_CG_GetValue_Q3E(getValueFuncId, value, sizeof(value), "trap_Key_CapsLockOn_Q3E"))
+			{
+				keyCapsLockOnFuncId = atoi(value);
+				cg_keyCapsLockOnAvail = qtrue;
+			}
+		}
+	}
+
+	if (keyCapsLockOnFuncId == -1)
+	{
+		return qfalse;
+	}
+
+	return (qboolean)trap_Key_CapsLockOn_Q3E(keyCapsLockOnFuncId);
 #endif
 }

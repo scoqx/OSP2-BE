@@ -11,6 +11,8 @@ Copyright (c) 2026 diwoc
 #include "cg_local.h"
 #include "../ui/keycodes.h"
 
+extern qboolean cg_keyCapsLockOnAvail;
+
 #define BE_CHAT_FONT_W_BASE     6.0f
 #define BE_CHAT_FONT_H_BASE     10.0f
 #define BE_CHAT_INPUT_CHARS     48
@@ -29,6 +31,7 @@ Copyright (c) 2026 diwoc
 
 #define BE_CHAT_REPEAT_DELAY_MS     500
 #define BE_CHAT_REPEAT_INTERVAL_MS  50
+#define BE_CHAT_SCROLL_CTRL_STEP    4
 #define BE_CHAT_FLAT_ROWS_MAX       256
 
 #define BE_CHAT_FADE_MAX_MS         800
@@ -3288,10 +3291,21 @@ static void CG_BEChat_ScrollbarDragUpdate(void)
 }
 
 
+float CG_BEChat_HelpBtnReserveWidth(void)
+{
+	float size;
+
+	size = BECHAT_EMOJI_BTN_SIZE;
+	if (size < BECHAT_CHAR_H)
+	{
+		size = BECHAT_HELP_BTN_SIZE;
+	}
+	return BECHAT_EMOJI_BTN_HIT_PAD + size;
+}
+
 static void CG_BEChat_HelpLayout(float winX, float winY, float winW, float winH, float* outX, float* outY, float* outSize)
 {
 	float size;
-	float gap;
 	float emojiBtnX;
 	float emojiBtnY;
 	float emojiBtnW;
@@ -3323,10 +3337,9 @@ static void CG_BEChat_HelpLayout(float winX, float winY, float winW, float winH,
 		*outSize = size;
 	}
 
-	gap = BECHAT_EMOJI_BTN_HIT_PAD;
 	if (outX)
 	{
-		*outX = emojiBtnX - gap - size;
+		*outX = emojiBtnX - CG_BEChat_HelpBtnReserveWidth();
 	}
 	if (outY)
 	{
@@ -4272,6 +4285,57 @@ static int CG_BEChat_ApplyShiftChar(int ch)
 	}
 }
 
+static int CG_BEChat_ApplyInputKeyChar(int ch)
+{
+	qboolean shift;
+	qboolean caps;
+
+	caps = CG_KeyCapsLockOn();
+
+	if (!cg_keyCapsLockOnAvail)
+	{
+		if (trap_Key_IsDown(K_SHIFT))
+		{
+			return CG_BEChat_ApplyShiftChar(ch);
+		}
+		return ch;
+	}
+
+	shift = trap_Key_IsDown(K_SHIFT);
+
+	if (ch >= 'a' && ch <= 'z')
+	{
+		if (shift)
+		{
+			if (caps)
+			{
+				return ch;
+			}
+			return CG_BEChat_ApplyShiftChar(ch);
+		}
+		if (caps)
+		{
+			return ch - ('a' - 'A');
+		}
+		return ch;
+	}
+
+	if (ch >= 'A' && ch <= 'Z')
+	{
+		if (shift ^ caps)
+		{
+			return ch;
+		}
+		return ch + ('a' - 'A');
+	}
+
+	if (shift)
+	{
+		return CG_BEChat_ApplyShiftChar(ch);
+	}
+	return ch;
+}
+
 
 
 static void CG_BEChat_RepeatKeyAction(int key, float maxTextW)
@@ -4329,11 +4393,7 @@ static void CG_BEChat_RepeatKeyAction(int key, float maxTextW)
 
 	if (key >= 32 && key < 127)
 	{
-		ch = key;
-		if (trap_Key_IsDown(K_SHIFT))
-		{
-			ch = CG_BEChat_ApplyShiftChar(ch);
-		}
+		ch = CG_BEChat_ApplyInputKeyChar(key);
 		CG_BEChat_InputChar(&beChatWindow.input, ch, maxTextW);
 		return;
 	}
@@ -4577,7 +4637,7 @@ static void CG_BEChat_ProcessKey(int keycode)
 		{
 			return;
 		}
-		CG_BEChat_InputChar(&beChatWindow.input, keycode, maxTextW);
+		CG_BEChat_InputChar(&beChatWindow.input, CG_BEChat_ApplyInputKeyChar(keycode), maxTextW);
 		return;
 	}
 
@@ -4599,10 +4659,7 @@ static void CG_BEChat_ProcessKey(int keycode)
 				return;
 			}
 		}
-		if (trap_Key_IsDown(K_SHIFT))
-		{
-			ch = CG_BEChat_ApplyShiftChar(ch);
-		}
+		ch = CG_BEChat_ApplyInputKeyChar(ch);
 		CG_BEChat_InputChar(&beChatWindow.input, ch, maxTextW);
 		return;
 	}
@@ -4913,20 +4970,26 @@ void CG_BEChat_KeyEvent(int key, qboolean down)
 
 		if (k == K_MWHEELUP)
 		{
+			int step;
+
 			if (CG_BEChat_EmojiPickerWheel(1))
 			{
 				return;
 			}
-			CG_BEChat_Scroll(1);
+			step = trap_Key_IsDown(K_CTRL) ? BE_CHAT_SCROLL_CTRL_STEP : 1;
+			CG_BEChat_Scroll(step);
 			return;
 		}
 		if (k == K_MWHEELDOWN)
 		{
+			int step;
+
 			if (CG_BEChat_EmojiPickerWheel(0))
 			{
 				return;
 			}
-			CG_BEChat_Scroll(-1);
+			step = trap_Key_IsDown(K_CTRL) ? BE_CHAT_SCROLL_CTRL_STEP : 1;
+			CG_BEChat_Scroll(-step);
 			return;
 		}
 		if (k == K_MOUSE1)
@@ -5197,7 +5260,14 @@ void CG_BEChat_Draw(void)
 	bg[3] = cg_chatWindowBgOpaque.value;
 	if (!(cg_chatWindow.integer & BE_CHAT_INPUT_ONLY_BG_BIT))
 	{
-		CG_FillRect(x, y, w, h, bg);
+		float bgH;
+
+		bgH = h;
+		if (beChatWindow.historyOnly)
+		{
+			bgH -= BECHAT_INPUT_ROW_H;
+		}
+		CG_FillRect(x, y, w, bgH, bg);
 	}
 
 	visible = CG_BEChat_VisibleHistoryLines();

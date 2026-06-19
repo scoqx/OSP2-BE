@@ -156,7 +156,7 @@ float CG_BEChat_EmojiInputTextMaxWidth(float contentX)
 	float maxW;
 
 	drawX = CG_BEChat_InputTextDrawX(contentX);
-	maxW = beChatEmoji.btnX - drawX - BECHAT_EMOJI_BTN_PAD;
+	maxW = beChatEmoji.btnX - drawX - BECHAT_EMOJI_BTN_PAD - CG_BEChat_HelpBtnReserveWidth();
 	if (maxW < BECHAT_CHAR_W)
 	{
 		maxW = BECHAT_CHAR_W;

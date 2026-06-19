@@ -490,6 +490,13 @@ static qboolean CG_OSPEmojiIsCharAllowed(char c)
 
 }
 
+/*
+=================
+CG_OSPLoadEmoji
+
+Loads all tokens from gfx/emoji/emoji.cfg (once per cgame session).
+=================
+*/
 void CG_OSPLoadEmoji(void)
 {
 	char text[16384];

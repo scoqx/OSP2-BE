@@ -64,6 +64,11 @@ int     trap_IsRecordingDemo_Q3E(int cmd)
 	return syscall(cmd);
 }
 
+int     trap_Key_CapsLockOn_Q3E(int cmd)
+{
+	return syscall(cmd);
+}
+
 #endif
 
 void    trap_Print(const char* fmt)

@@ -1,24 +1,8 @@
-19.06.2026 be v1.05e
-SuperHUD:
-  + `LastStanding` SuperHUD element
-  + visflags: negated conditions via `!` prefix on any flag
-  + visflags: style1-4/cg_shudStyle 1-4
-  + TargetStatus - style 1
-  + Mirage: +mischkonsumer.cfg, *All configs CTF fix
-  + diwoc: Roamer.cfg
-  + Grid: font option for division labels (style 1)
-  FIXES:
-  * visflag scorehide, 
-  * Fade (text shadow, bg, border)
-  * Weaponlist
-  * Score_OWN, TeamCount_OWN, Score_NME, TeamCount_NME visflag spectator
-+ ChatWindow
-  + /enterchat, /enterchatteam, +showchat
-  + cg_chatWindow, cg_chatWindowTime, cg_chatWindowPos, cg_chatWindowSize, cg_chatWindowFont, 
-    cg_chatWindowFontSize, cg_chatWindowBgColor, cg_chatWindowBgOpaque
-+ cg_scoreboardBE: 32, 64 - hide "Fragged by...", hide place line
-+ cg_healthColorLevels: 4 (disable teammate's health blinking)
-+ cg_friendsWallhack: 4 (GlobalPos)
-+ cg_muteWorldSounds
-* Perfomance optimization
-* Various fixes
+20.06.2026 be v1.05e1
++ cg_muteWorldSounds: add ts_dm5 howl
++ ChatWindow CTRL+MWHEELUP/DOWN quick scroll
++ ChatWindow CapsLock support (Q3E 20.06.2026+ only)
+* Teleport effect 1st person improvements
+* SHUD obituaries fix
+* SHUD PreDecorate/PostDecorate fix (text, image or only fill/border)
+* GlobalPos fix

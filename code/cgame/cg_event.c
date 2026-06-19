@@ -1147,7 +1147,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			trap_S_StartSound(NULL, es->number, CHAN_AUTO, cgs.media.teleInSound);
 			if (cg_teleportEffect.integer || (cg.snap && es->clientNum != cg.snap->ps.clientNum))
 			{
-				CG_SpawnEffect(position);
+				CG_SpawnEffect(position, cg.snap && cg.snap->ps.clientNum == clientNum && cg_thirdPerson.integer == 0);
 			}
 			break;
 
@@ -1156,7 +1156,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			trap_S_StartSound(NULL, es->number, CHAN_AUTO, cgs.media.teleOutSound);
 			if (cg_teleportEffect.integer || (cg.snap && es->clientNum != cg.snap->ps.clientNum))
 			{
-				CG_SpawnEffect(position);
+				CG_SpawnEffect(position, qfalse);
 			}
 			break;
 

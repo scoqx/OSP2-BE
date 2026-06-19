@@ -228,7 +228,7 @@ static qboolean CG_MapLocs_LoadQLM1Binary(const byte* raw, int rawLen)
 		color = raw[pos++];
 		nameLen = raw[pos++];
 
-		if (nameLen <= 0 || pos + nameLen > rawLen)
+		if (pos + nameLen > rawLen)
 		{
 			break;
 		}

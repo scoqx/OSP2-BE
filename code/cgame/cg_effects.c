@@ -177,7 +177,7 @@ CG_SpawnEffect
 Player teleporting in or out
 ==================
 */
-void CG_SpawnEffect(vec3_t org)
+refEntity_t *CG_SpawnEffect(vec3_t org, qboolean firstPerson)
 {
 	localEntity_t*   le;
 	refEntity_t*     re;
@@ -201,7 +201,20 @@ void CG_SpawnEffect(vec3_t org)
 	AxisClear(re->axis);
 
 	VectorCopy(org, re->origin);
-	re->origin[2] -= 24;
+
+	if (firstPerson)
+	{
+		re->origin[2] -= 5.0f;
+		re->renderfx = RF_FIRST_PERSON;
+		re = CG_SpawnEffect(org, qfalse);
+		re->renderfx = RF_THIRD_PERSON;
+	}
+	else
+	{
+		re->origin[2] -= 24.0f;
+	}
+
+	return re;
 }
 
 
