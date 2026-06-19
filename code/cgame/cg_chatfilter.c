@@ -133,35 +133,149 @@ void CG_ChatfilterAddName(const char* name)
 	Q_strncpyz(target->name, name, len + 1);
 }
 
-messageAllowed_t CG_ChatCheckMessageAllowed(const char* message)
+qboolean CG_ChatExtractSenderName(const char* message, char* name, int nameSize)
 {
-	const chatFilterTableNode_t* target;
 	const char* splitter;
-	const char* start = message;
-	char name[MAX_QPATH];
+	const char* start;
 	int len;
 
-	//check, is it tell command
+	if (!message || !name || nameSize <= 0)
+	{
+		return qfalse;
+	}
+
+	start = message;
 	if (start[0] == 25 && (start[1] == '(' || start[1] == '['))
 	{
 		start += 2;
 	}
 
-	splitter = strchr(start, 25);// 25 is splitter
-	if (!splitter) return MESSAGE_ALLOWED_OTHER; // no splitter, nothing to do
+	splitter = strchr(start, 25);
+	if (!splitter)
+	{
+		return qfalse;
+	}
 
-	splitter -= 2; //there is 2 symbols after name: ^7
+	splitter -= 2;
 	len = splitter - start;
-	if (len <= 0) return MESSAGE_ALLOWED_OTHER; // something strange, ignore
-	if (len >= MAX_QPATH) return MESSAGE_ALLOWED_OTHER;
-	//
+	if (len <= 0 || len >= nameSize)
+	{
+		return qfalse;
+	}
+
 	memcpy(name, start, len);
 	name[len] = 0;
+	return qtrue;
+}
+
+static int CG_ChatClientNumFromBracketId(const char* senderName)
+{
+	const char* rb;
+	int clientNum;
+
+	if (!senderName || senderName[0] != '[')
+	{
+		return -1;
+	}
+
+	rb = strchr(senderName, ']');
+	if (!rb)
+	{
+		return -1;
+	}
+
+	clientNum = atoi(senderName + 1);
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS || !cgs.clientinfo[clientNum].infoValid)
+	{
+		return -1;
+	}
+
+	return clientNum;
+}
+
+static int CG_ChatClientNumFromSenderName(const char* senderName)
+{
+	int i;
+	char cleanSender[MAX_QPATH];
+	char cleanCompare[MAX_QPATH];
+	clientInfo_t* ci;
+
+	if (!senderName || !senderName[0])
+	{
+		return -1;
+	}
+
+	i = CG_ChatClientNumFromBracketId(senderName);
+	if (i >= 0)
+	{
+		return i;
+	}
+
+	Q_strncpyz(cleanSender, senderName, sizeof(cleanSender));
+	CG_RemoveChatEscapeCharAll(cleanSender);
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		ci = &cgs.clientinfo[i];
+		if (!ci->infoValid)
+		{
+			continue;
+		}
+
+		if (Q_stricmp(ci->name, senderName) == 0 || Q_stricmp(ci->name_original, senderName) == 0)
+		{
+			return i;
+		}
+
+		Q_strncpyz(cleanCompare, ci->name, sizeof(cleanCompare));
+		CG_RemoveChatEscapeCharAll(cleanCompare);
+		if (Q_stricmp(cleanCompare, cleanSender) == 0)
+		{
+			return i;
+		}
+
+		Q_strncpyz(cleanCompare, ci->name_original, sizeof(cleanCompare));
+		CG_RemoveChatEscapeCharAll(cleanCompare);
+		if (Q_stricmp(cleanCompare, cleanSender) == 0)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+int CG_ChatResolveSenderClientNum(const char* rawMessage, int serverClientNum)
+{
+	char senderName[MAX_QPATH];
+
+	if (serverClientNum >= 0 && serverClientNum < MAX_CLIENTS && cgs.clientinfo[serverClientNum].infoValid)
+	{
+		return serverClientNum;
+	}
+
+	if (!CG_ChatExtractSenderName(rawMessage, senderName, sizeof(senderName)))
+	{
+		return -1;
+	}
+
+	CG_RemoveChatEscapeChar(senderName);
+	return CG_ChatClientNumFromSenderName(senderName);
+}
+
+messageAllowed_t CG_ChatCheckMessageAllowed(const char* message)
+{
+	const chatFilterTableNode_t* target;
+	char name[MAX_QPATH];
+
+	if (!CG_ChatExtractSenderName(message, name, sizeof(name)))
+	{
+		return MESSAGE_ALLOWED_OTHER;
+	}
 
 	target = CG_ChatfilterFindName(name);
 
-
-	return target == NULL ? MESSAGE_ALLOWED_PLAYER : MESSAGE_NOTALLOWED; //not found
+	return target == NULL ? MESSAGE_ALLOWED_PLAYER : MESSAGE_NOTALLOWED;
 }
 
 void CG_ChatfilterLoadFile(const char* filename)

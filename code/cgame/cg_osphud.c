@@ -1798,7 +1798,7 @@ static float CG_OSPDrawTeamInfo(float y)
 
 static int CG_OSPGetPresistantTeam(void)
 {
-	/* В оригинале именно так, надо решить нужна ли эта обертка вообще */
+	/* Original does it this way; decide if this wrapper is needed at all */
 	if (!CG_OSPIsGameTypeCA(cgs.gametype))
 	{
 		return cg.snap->ps.persistant[PERS_TEAM];
@@ -2100,7 +2100,8 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 					barX = (float)teamOverlay.armorOffsetChar;
 				}
 				CG_DrawHealthBar(barX, y, barW, (float)h, ci->health, ci->armor, 1.0f,
-				                 (cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue);
+				                 (cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue,
+				                 &cg.healthColorByClient[sortedTeamPlayers[i]], qtrue);
 			}
 			else
 			{
@@ -2490,7 +2491,7 @@ static float CG_OSPHUDDrawScores(float y)
 	if (cgs.gametype >= GT_TEAM)
 	{
 		qboolean haveFlag = qfalse;
-		float xBlue; // Сохраняем x для синего блока, чтобы использовать для красного когда блоки друг над другом
+		float xBlue; // save x for blue block to reuse for red when blocks are stacked
 
 		s = NULL;
 		if (cgs.osp.gameTypeFreeze == 0 && !CG_OSPIsGameTypeCA(cgs.gametype))
@@ -2505,7 +2506,7 @@ static float CG_OSPHUDDrawScores(float y)
 		len = CG_DrawStrlen(s);
 		w = len * fontScoresW + 8;
 		x -=  w + 2;
-		xBlue = x; // Сохраняем позицию синего блока
+		xBlue = x; // save blue block position
 
 		if (cgs.osp.gameTypeFreeze != 0 || CG_OSPIsGameTypeCA(cgs.gametype))
 		{
@@ -2532,7 +2533,7 @@ static float CG_OSPHUDDrawScores(float y)
 			item = BG_FindItemForPowerup(PW_BLUEFLAG);
 			if (item)
 			{
-				// В Freeze Tag используем ширину только для счета, без формата с количеством игроков
+				// In Freeze Tag use width for score only, not player-count format
 				if (CG_OSPIsGameTypeFreeze() || CG_OSPIsGameTypeCA(cgs.gametype))
 				{
 					len = CG_DrawStrlen(va("%2i", s2));
@@ -2625,13 +2626,13 @@ static float CG_OSPHUDDrawScores(float y)
 
 		if ((cgs.gametype == GT_CTF) && (ch_drawFlagNames.integer == 0))
 		{
-			// В CTF без имен флагов - блоки друг над другом, используем тот же x что и для синего
+			// CTF without flag names — stacked blocks, same x as blue
 			x = xBlue;
 			y -= fontScoresH + 8;
 		}
 		else if (cgs.gametype == GT_CTF && (ch_drawFlagNames.integer == 2 || ch_drawFlagNames.integer == 4))
 		{
-			// В CTF с именами флагов - блоки друг над другом, используем тот же x что и для синего
+			// CTF with flag names — stacked blocks, same x as blue
 			x = xBlue;
 			y -= fontScoresH + 8;
 		}
@@ -2643,7 +2644,7 @@ static float CG_OSPHUDDrawScores(float y)
 			}
 			else
 			{
-				// Блоки друг над другом - используем тот же x что и для синего
+				// Stacked blocks — same x as blue
 				x = xBlue;
 				y -= fontScoresH + 8;
 			}
@@ -2677,7 +2678,7 @@ static float CG_OSPHUDDrawScores(float y)
 
 			if (item)
 			{
-				// В Freeze Tag используем ширину только для счета, без формата с количеством игроков
+				// In Freeze Tag use width for score only, not player-count format
 				if (CG_OSPIsGameTypeFreeze() || CG_OSPIsGameTypeCA(cgs.gametype))
 				{
 					len = CG_DrawStrlen(va("%2i", s1));
@@ -3861,7 +3862,8 @@ static void CG_OSPDrawCrosshairNames(void)
 					barW = (float)(w2 * 10);
 					barX = 320.0f - barW * 0.5f;
 					fontIndex = (mode & CH_TEAM_CROSSHAIR_HEALTH_VALUES) ? 0 : -1;
-					CG_DrawHealthBar(barX, (float)yStat, barW, (float)h2, ci->health, ci->armor, color[3], fontIndex, qtrue);
+					CG_DrawHealthBar(barX, (float)yStat, barW, (float)h2, ci->health, ci->armor, color[3], fontIndex, qtrue,
+					                 &cg.healthColorByClient[cg.crosshairClientNum], qfalse);
 					yStat += h2;
 				}
 				if ((mode & CH_TEAM_CROSSHAIR_HEALTH_VALUES) && !(mode & CH_TEAM_CROSSHAIR_HEALTH_BAR))
@@ -3940,7 +3942,8 @@ static void CG_OSPDrawCrosshairNames(void)
 					int fontIndex;
 
 					fontIndex = (mode & CH_TEAM_CROSSHAIR_HEALTH_VALUES) ? 0 : -1;
-					CG_DrawHealthBar(0.0f, (float)yStat, barW, (float)h2, ci->health, ci->armor, color[3], fontIndex, qtrue);
+					CG_DrawHealthBar(0.0f, (float)yStat, barW, (float)h2, ci->health, ci->armor, color[3], fontIndex, qtrue,
+					                 &cg.healthColorByClient[cg.crosshairClientNum], qfalse);
 					yStat += h2;
 				}
 				if (mode == CH_TEAM_CROSSHAIR_HEALTH_VALUES)

@@ -12,6 +12,26 @@ qboolean CG_OSPIsGameTypeFreeze()
 	return (cgs.gametype == GT_TEAM || cgs.gametype == GT_CTF) && cgs.osp.gameTypeFreeze;
 }
 
+/*
+=================
+CG_ClientInfoIsFreezeTinfoFrozen
+
+Freeze mode: scoreboard/tinfo 0 HP and 0 armor means frozen body (no live entity to tag).
+=================
+*/
+qboolean CG_ClientInfoIsFreezeTinfoFrozen(const clientInfo_t* ci)
+{
+	if (!ci->infoValid || !CG_OSPIsGameTypeFreeze())
+	{
+		return qfalse;
+	}
+	if (ci->health > 0 || ci->armor > 0)
+	{
+		return qfalse;
+	}
+	return qtrue;
+}
+
 qboolean CG_OSPIsGameTypeTDM()
 {
 	return cgs.gametype == GT_TEAM && !(cgs.osp.gameTypeFreeze);

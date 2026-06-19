@@ -96,6 +96,7 @@ UI_CVAR(uc_shudBindsList, "uc_shudBindsList", "", CVAR_ARCHIVE | CVAR_NOTABCOMPL
 UI_CVAR(ui_beCreditsFont, "ui_beCreditsFont", "2", CVAR_ARCHIVE)
 UI_CVAR(ui_beStatusFont, "ui_beStatusFont", "2", CVAR_ARCHIVE)
 UI_CVAR(ui_beStatusBorderColor, "ui_beStatusBorderColor", "White", CVAR_ARCHIVE)
+UI_CVAR(ui_beStatusChecked, "ui_beStatusChecked", "0", CVAR_TEMP | CVAR_NOTABCOMPLETE | CVAR_NORESTART)
 
 UI_CVAR(ui_menuBgStyle, "ui_menuBgStyle", "1", CVAR_ARCHIVE)
 UI_CVAR(ui_menuDarken, "ui_menuDarken", "0", CVAR_ARCHIVE)

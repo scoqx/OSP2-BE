@@ -116,7 +116,7 @@ FORCE:
 	@grep -E '^#define OSP_VERSION "' $(COMDIR)/osp_version.h | sed -E 's/^#define OSP_VERSION "([^"]*)".*/\1/' > $@
 	@echo "Version file created: $$(cat $@)"
 
-../../assets/changelog_be_r.txt: FORCE ../../changelog_be.txt
+../../assets/docs/changelog_be_r.txt: FORCE ../../changelog_be.txt
 	@echo "Reversing full changelog for UI"
 	@$(PYTHON) ../../scripts/reverse_changelog_be.py
 
@@ -156,11 +156,10 @@ FORCE:
 	fi
 
 #$(PK3): vm/qagame.qvm vm/cgame.qvm vm/ui.qvm
-$(PK3): vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/changelog_be_r.txt
+$(PK3): vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt
 	@echo "Creating package with version files..."
 	@echo "Version: $$(cat ../../assets/version.txt)"
-	@$(7Z) $@ vm/*.qvm vm/*.jts ../../assets/*
-# @$(7Z) $@ vm/*.qvm vm/*.map ../../assets/*
+	@$(7Z) $@ vm/*.qvm vm/*.jts vm/*.map ../../assets/*
 
 
 cc = cd vm/$1 && $(Q3LCC) $2 -o $(notdir $@).tmp ../../$< && mv $(notdir $@).tmp $(notdir $@)

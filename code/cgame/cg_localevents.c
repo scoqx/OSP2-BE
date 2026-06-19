@@ -370,7 +370,7 @@ void CG_LocalEventCvarChanged_ch_file(cvarTable_t* cvart)
 {
 	if (cvart->vmCvar->string[0])
 	{
-		CG_SHUDLoadConfig();
+		CG_SHUDLoadConfig(qfalse);
 	}
 }
 
@@ -378,7 +378,21 @@ void CG_LocalEventCvarChanged_cg_shud(cvarTable_t* cvart)
 {
 	if (cvart->vmCvar->integer && ch_file.string[0])
 	{
-		CG_SHUDLoadConfig();
+		CG_SHUDLoadConfig(qfalse);
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_shudStyle(cvarTable_t* cvart)
+{
+	if (cvart->vmCvar->integer < 1 || cvart->vmCvar->integer > 4)
+	{
+		trap_Cvar_Set(cvart->cvarName, "1");
+		return;
+	}
+
+	if (cg_shud.integer && ch_file.string[0])
+	{
+		CG_SHUDLoadConfig(qtrue);
 	}
 }
 
@@ -740,6 +754,28 @@ void CG_LocalEventCvarChanged_cg_emojiListFont(cvarTable_t* cvart)
 		trap_Cvar_Set("cg_emojiListFont", "2");
 	}
 	CG_UpdateFontIndices();
+}
+void CG_LocalEventCvarChanged_cg_chatWindowFont(cvarTable_t* cvart)
+{
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
+	{
+		trap_Cvar_Set("cg_chatWindowFont", "2");
+	}
+	CG_UpdateFontIndices();
+}
+void CG_LocalEventCvarChanged_cg_chatWindowBgColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cgs.beChatWindowBgColor);
+}
+void CG_LocalEventCvarChanged_cg_chatWindowBgOpaque(cvarTable_t* cvart)
+{
+	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
+}
+void CG_LocalEventCvarChanged_cg_chatWindowFontSize(cvarTable_t* cvart)
+{
+	CG_BEChat_UpdateFontSizeFromCvar();
 }
 void CG_LocalEventCvarChanged_cg_altGrenadesColor(cvarTable_t* cvart)
 {

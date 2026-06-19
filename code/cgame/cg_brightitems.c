@@ -41,7 +41,7 @@ static const itemBrightColorEntry_t itemBrightColorDefaults[] =
 	{ "ammo_bfg",                0.00f, 0.00f, 1.00f, 1.00f },
 	/* holdables */
 	{ "holdable_teleporter",     0.00f, 1.00f, 1.00f, 1.00f },
-	{ "holdable_medkit",         0.00f, 1.00f, 0.50f, 1.00f },
+	{ "holdable_medkit",         1.00f, 0.00f, 0.00f, 1.00f },
 	/* powerups (quad/enviro defaults match icons/dye/colors.cfg) */
 	{ "item_quad",    CG_DEFAULT_QUAD_DAMAGE_R, CG_DEFAULT_QUAD_DAMAGE_G, CG_DEFAULT_QUAD_DAMAGE_B, 1.00f },
 	{ "item_enviro",  CG_DEFAULT_BATTLE_SUIT_R, CG_DEFAULT_BATTLE_SUIT_G, CG_DEFAULT_BATTLE_SUIT_B, 1.00f },

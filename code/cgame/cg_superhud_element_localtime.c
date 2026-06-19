@@ -72,7 +72,7 @@ void CG_SHUDElementLocalTimeRoutine(void* context)
 			}
 			else
 			{
-				// 24-часовой формат (по умолчанию)
+				// 24-hour format (default)
 				Com_sprintf(element->s, MAX_QPATH, "%02d:%02d", qtime.tm_hour, qtime.tm_min);
 			}
 		}

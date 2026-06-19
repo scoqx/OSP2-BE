@@ -4,7 +4,7 @@ gfx/emoji/sarge
     nopicmip
     nomipmaps
   {
-    map models/players/sarge/icon_default.tga
+    map gfx/emoji/sarge.png
     blendfunc blend
     rgbgen vertex
   }
@@ -15,7 +15,7 @@ gfx/emoji/grunt
     nopicmip
     nomipmaps
   {
-    map models/players/grunt/icon_default.tga
+    map gfx/emoji/grunt.png
     blendfunc blend
     rgbgen vertex
   }
@@ -26,7 +26,7 @@ gfx/emoji/klesk
     nopicmip
     nomipmaps
   {
-    map models/players/klesk/icon_default.tga
+    map gfx/emoji/klesk.png
     blendfunc blend
     rgbgen vertex
   }
@@ -37,7 +37,7 @@ gfx/emoji/zael
     nopicmip
     nomipmaps
   {
-    map models/players/uriel/icon_zael.tga
+    map gfx/emoji/zael.png
     blendfunc blend
     rgbgen vertex
   }
@@ -48,7 +48,7 @@ gfx/emoji/angel
     nopicmip
     nomipmaps
   {
-    map models/players/lucy/icon_angel.tga
+    map gfx/emoji/angel.png
     blendfunc blend
     rgbgen vertex
   }
@@ -59,7 +59,7 @@ gfx/emoji/bitterman
     nopicmip
     nomipmaps
   {
-    map models/players/bitterman/icon_default.tga
+    map gfx/emoji/bitterman.png
     blendfunc blend
     rgbgen vertex
   }
@@ -70,7 +70,7 @@ gfx/emoji/ranger
     nopicmip
     nomipmaps
   {
-    map models/players/ranger/icon_default.tga
+    map gfx/emoji/ranger.png
     blendfunc blend
     rgbgen vertex
   }
@@ -81,7 +81,7 @@ gfx/emoji/flight
     nopicmip
     nomipmaps
   {
-    map icons/flight.tga
+    map gfx/emoji/flight.png
     blendfunc blend
     rgbgen vertex
   }
@@ -125,7 +125,7 @@ gfx/emoji/keel
     nopicmip
     nomipmaps
   {
-    map models/players/keel/icon.tga
+    map gfx/emoji/keel.png
     blendfunc blend
     rgbgen vertex
   }
@@ -136,7 +136,7 @@ gfx/emoji/ra
     nopicmip
     nomipmaps
   {
-    map icons/iconr_red.tga
+    map gfx/emoji/ra.png
     blendfunc blend
     rgbgen vertex
   }
@@ -158,7 +158,7 @@ gfx/emoji/visor
     nopicmip
     nomipmaps
   {
-    map models/players/visor/icon_default.tga
+    map gfx/emoji/visor.png
     blendfunc blend
     rgbgen vertex
   }
@@ -191,7 +191,7 @@ gfx/emoji/bfg
     nopicmip
     nomipmaps
   {
-    map icons/iconw_bfg.tga
+    map gfx/emoji/bfg.png
     blendfunc blend
     rgbgen vertex
   }
@@ -202,7 +202,7 @@ gfx/emoji/ga
     nopicmip
     nomipmaps
   {
-    map icons/iconr_green.tga
+    map gfx/emoji/ga.png
     blendfunc blend
     rgbgen vertex
   }
@@ -213,7 +213,7 @@ gfx/emoji/regen
     nopicmip
     nomipmaps
   {
-    map icons/regen.tga
+    map gfx/emoji/regen.png
     blendfunc blend
     rgbgen vertex
   }
@@ -246,7 +246,7 @@ gfx/emoji/crash
     nopicmip
     nomipmaps
   {
-    map models/players/crash/icon.tga
+    map gfx/emoji/crash.png
     blendfunc blend
     rgbgen vertex
   }
@@ -257,7 +257,7 @@ gfx/emoji/invis
     nopicmip
     nomipmaps
   {
-    map icons/invis.tga
+    map gfx/emoji/invis.png
     blendfunc blend
     rgbgen vertex
   }
@@ -268,7 +268,7 @@ gfx/emoji/roderic
     nopicmip
     nomipmaps
   {
-    map models/players/sarge/icon_roderic.tga
+    map gfx/emoji/roderic.png
     blendfunc blend
     rgbgen vertex
   }
@@ -290,7 +290,7 @@ gfx/emoji/biker
     nopicmip
     nomipmaps
   {
-    map models/players/biker/icon_default.tga
+    map gfx/emoji/biker.png
     blendfunc blend
     rgbgen vertex
   }
@@ -301,7 +301,7 @@ gfx/emoji/pg
     nopicmip
     nomipmaps
   {
-    map icons/iconw_plasma.tga
+    map gfx/emoji/pg.png
     blendfunc blend
     rgbgen vertex
   }
@@ -312,7 +312,7 @@ gfx/emoji/gorre
     nopicmip
     nomipmaps
   {
-    map models/players/visor/icon_gorre.tga
+    map gfx/emoji/gorre.png
     blendfunc blend
     rgbgen vertex
   }
@@ -323,7 +323,7 @@ gfx/emoji/grrl
     nopicmip
     nomipmaps
   {
-    map models/players/slash/icon_grrl.tga
+    map gfx/emoji/grrl.png
     blendfunc blend
     rgbgen vertex
   }
@@ -345,7 +345,7 @@ gfx/emoji/hunter
     nopicmip
     nomipmaps
   {
-    map models/players/hunter/icon_default.tga
+    map gfx/emoji/hunter.png
     blendfunc blend
     rgbgen vertex
   }
@@ -356,7 +356,7 @@ gfx/emoji/gl
     nopicmip
     nomipmaps
   {
-    map icons/iconw_grenade.tga
+    map gfx/emoji/gl.png
     blendfunc blend
     rgbgen vertex
   }
@@ -367,7 +367,7 @@ gfx/emoji/lucy
     nopicmip
     nomipmaps
   {
-    map models/players/lucy/icon_default.tga
+    map gfx/emoji/lucy.png
     blendfunc blend
     rgbgen vertex
   }
@@ -378,7 +378,7 @@ gfx/emoji/mg
     nopicmip
     nomipmaps
   {
-    map icons/iconw_machinegun.tga
+    map gfx/emoji/mg.png
     blendfunc blend
     rgbgen vertex
   }
@@ -389,7 +389,7 @@ gfx/emoji/keelpm
     nopicmip
     nomipmaps
   {
-    map models/players/keel/icon_pm.tga
+    map gfx/emoji/keelpm.png
     blendfunc blend
     rgbgen vertex
   }
@@ -400,7 +400,7 @@ gfx/emoji/medkit
     nopicmip
     nomipmaps
   {
-    map icons/medkit.tga
+    map gfx/emoji/medkit.png
     blendfunc blend
     rgbgen vertex
   }
@@ -411,7 +411,7 @@ gfx/emoji/krusade
     nopicmip
     nomipmaps
   {
-    map models/players/sarge/icon_krusade.tga
+    map gfx/emoji/krusade.png
     blendfunc blend
     rgbgen vertex
   }
@@ -444,7 +444,7 @@ gfx/emoji/phobos
     nopicmip
     nomipmaps
   {
-    map models/players/doom/icon_phobos.tga
+    map gfx/emoji/phobos.png
     blendfunc blend
     rgbgen vertex
   }
@@ -455,7 +455,7 @@ gfx/emoji/excellent
     nopicmip
     nomipmaps
   {
-    map menu/medals/medal_excellent.tga
+    map gfx/emoji/excellent.png
     blendfunc blend
     rgbgen vertex
   }
@@ -466,7 +466,7 @@ gfx/emoji/orbb
     nopicmip
     nomipmaps
   {
-    map models/players/orbb/icon_default.tga
+    map gfx/emoji/orbb.png
     blendfunc blend
     rgbgen vertex
   }
@@ -488,7 +488,7 @@ gfx/emoji/daemia
     nopicmip
     nomipmaps
   {
-    map models/players/major/icon_daemia.tga
+    map gfx/emoji/daemia.png
     blendfunc blend
     rgbgen vertex
   }
@@ -510,7 +510,7 @@ gfx/emoji/uriel
     nopicmip
     nomipmaps
   {
-    map models/players/uriel/icon_default.tga
+    map gfx/emoji/uriel.png
     blendfunc blend
     rgbgen vertex
   }
@@ -532,7 +532,7 @@ gfx/emoji/major
     nopicmip
     nomipmaps
   {
-    map models/players/major/icon_default.tga
+    map gfx/emoji/major.png
     blendfunc blend
     rgbgen vertex
   }
@@ -565,7 +565,7 @@ gfx/emoji/stripe
     nopicmip
     nomipmaps
   {
-    map models/players/grunt/icon_stripe.tga
+    map gfx/emoji/stripe.png
     blendfunc blend
     rgbgen vertex
   }
@@ -576,7 +576,7 @@ gfx/emoji/5hp
     nopicmip
     nomipmaps
   {
-    map icons/iconh_green.tga
+    map gfx/emoji/5hp.png
     blendfunc blend
     rgbgen vertex
   }
@@ -598,7 +598,7 @@ gfx/emoji/accuracy
     nopicmip
     nomipmaps
   {
-    map menu/medals/medal_accuracy.tga
+    map gfx/emoji/accuracy.png
     blendfunc blend
     rgbgen vertex
   }
@@ -620,7 +620,7 @@ gfx/emoji/hossman
     nopicmip
     nomipmaps
   {
-    map models/players/biker/icon_hossman.tga
+    map gfx/emoji/hossman.png
     blendfunc blend
     rgbgen vertex
   }
@@ -631,7 +631,7 @@ gfx/emoji/yuriko
     nopicmip
     nomipmaps
   {
-    map models/players/slash/icon_default.tga
+    map gfx/emoji/yuriko.png
     blendfunc blend
     rgbgen vertex
   }
@@ -642,7 +642,7 @@ gfx/emoji/defend
     nopicmip
     nomipmaps
   {
-    map menu/medals/medal_defend.tga
+    map gfx/emoji/defend.png
     blendfunc blend
     rgbgen vertex
   }
@@ -653,7 +653,7 @@ gfx/emoji/harpy
     nopicmip
     nomipmaps
   {
-    map models/players/hunter/icon_harpy.tga
+    map gfx/emoji/harpy.png
     blendfunc blend
     rgbgen vertex
   }
@@ -697,7 +697,7 @@ gfx/emoji/humiliation
     nopicmip
     nomipmaps
   {
-    clampmap icons/iconw_gauntlet.tga
+    map gfx/emoji/humiliation.png
     blendfunc blend
     rgbgen vertex
   }
@@ -719,7 +719,7 @@ gfx/emoji/bones
     nopicmip
     nomipmaps
   {
-    map models/players/bones/icon_default.tga
+    map gfx/emoji/bones.png
     blendfunc blend
     rgbgen vertex
   }
@@ -730,7 +730,7 @@ gfx/emoji/lg
     nopicmip
     nomipmaps
   {
-    map icons/iconw_lightning.tga
+    map gfx/emoji/lg.png
     blendfunc blend
     rgbgen vertex
   }
@@ -763,7 +763,7 @@ gfx/emoji/flisk
     nopicmip
     nomipmaps
   {
-    map models/players/klesk/icon_flisk.tga
+    map gfx/emoji/flisk.png
     blendfunc blend
     rgbgen vertex
   }
@@ -785,7 +785,7 @@ gfx/emoji/50hp
     nopicmip
     nomipmaps
   {
-    map icons/iconh_red.tga
+    map gfx/emoji/50hp.png
     blendfunc blend
     rgbgen vertex
   }
@@ -796,7 +796,7 @@ gfx/emoji/wrack
     nopicmip
     nomipmaps
   {
-    map models/players/ranger/icon_wrack.tga
+    map gfx/emoji/wrack.png
     blendfunc blend
     rgbgen vertex
   }
@@ -807,7 +807,7 @@ gfx/emoji/shard
     nopicmip
     nomipmaps
   {
-    map icons/iconr_shard.tga
+    map gfx/emoji/shard.png
     blendfunc blend
     rgbgen vertex
   }
@@ -818,7 +818,7 @@ gfx/emoji/xaero
     nopicmip
     nomipmaps
   {
-    map models/players/xaero/icon_default.tga
+    map gfx/emoji/xaero.png
     blendfunc blend
     rgbgen vertex
   }
@@ -840,7 +840,7 @@ gfx/emoji/frags
     nopicmip
     nomipmaps
   {
-    map menu/medals/medal_frags.tga
+    map gfx/emoji/frags.png
     blendfunc blend
     rgbgen vertex
   }
@@ -862,7 +862,7 @@ gfx/emoji/anarki
     nopicmip
     nomipmaps
   {
-    map models/players/anarki/icon_default.tga
+    map gfx/emoji/anarki.png
     blendfunc blend
     rgbgen vertex
   }
@@ -873,7 +873,7 @@ gfx/emoji/mh
     nopicmip
     nomipmaps
   {
-    map icons/iconh_mega.tga
+    map gfx/emoji/mh.png
     blendfunc blend
     rgbgen vertex
   }
@@ -884,7 +884,7 @@ gfx/emoji/nightmare
     nopicmip
     nomipmaps
   {
-    map menu/art/skill5.tga
+    map gfx/emoji/nightmare.png
     blendfunc blend
     rgbgen vertex
   }
@@ -895,7 +895,7 @@ gfx/emoji/gauntlet
     nopicmip
     nomipmaps
   {
-    clampmap icons/iconw_gauntlet.tga
+    map gfx/emoji/gauntlet.png
     blendfunc blend
     rgbgen vertex
   }
@@ -906,7 +906,7 @@ gfx/emoji/mynx
     nopicmip
     nomipmaps
   {
-    map models/players/mynx/icon_default.tga
+    map gfx/emoji/mynx.png
     blendfunc blend
     rgbgen vertex
   }
@@ -917,7 +917,7 @@ gfx/emoji/teleporter
     nopicmip
     nomipmaps
   {
-    map icons/teleporter.tga
+    map gfx/emoji/teleporter.png
     blendfunc blend
     rgbgen vertex
   }
@@ -928,7 +928,7 @@ gfx/emoji/sg
     nopicmip
     nomipmaps
   {
-    map icons/iconw_shotgun.tga
+    map gfx/emoji/sg.png
     blendfunc blend
     rgbgen vertex
   }
@@ -939,7 +939,7 @@ gfx/emoji/doom
     nopicmip
     nomipmaps
   {
-    map models/players/doom/icon_default.tga
+    map gfx/emoji/doom.png
     blendfunc blend
     rgbgen vertex
   }
@@ -950,7 +950,7 @@ gfx/emoji/quake3
     nopicmip
     nomipmaps
   {
-    map menu/art/skill4.tga
+    map gfx/emoji/quake3.png
     blendfunc blend
     rgbgen vertex
   }
@@ -961,7 +961,7 @@ gfx/emoji/razor-id
     nopicmip
     nomipmaps
   {
-    map models/players/razor/icon_id.tga
+    map gfx/emoji/razor-id.png
     blendfunc blend
     rgbgen vertex
   }
@@ -994,7 +994,7 @@ gfx/emoji/razor
     nopicmip
     nomipmaps
   {
-    map models/players/razor/icon_default.tga
+    map gfx/emoji/razor.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1016,7 +1016,7 @@ gfx/emoji/impressive
     nopicmip
     nomipmaps
   {
-    map menu/medals/medal_impressive.tga
+    map gfx/emoji/impressive.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1038,7 +1038,7 @@ gfx/emoji/haste
     nopicmip
     nomipmaps
   {
-    map icons/haste.tga
+    map gfx/emoji/haste.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1082,7 +1082,7 @@ gfx/emoji/ya
     nopicmip
     nomipmaps
   {
-    map icons/iconr_yellow.tga
+    map gfx/emoji/ya.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1126,7 +1126,7 @@ gfx/emoji/cadavre
     nopicmip
     nomipmaps
   {
-    map models/players/biker/icon_cadavre.tga
+    map gfx/emoji/cadavre.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1148,7 +1148,7 @@ gfx/emoji/quad
     nopicmip
     nomipmaps
   {
-    map icons/quad.tga
+    map gfx/emoji/quad.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1159,7 +1159,7 @@ gfx/emoji/slash
     nopicmip
     nomipmaps
   {
-    map models/players/slash/icon_default.tga
+    map gfx/emoji/slash.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1170,7 +1170,7 @@ gfx/emoji/tankjrpm
     nopicmip
     nomipmaps
   {
-    map models/players/tankjr/icon_pm.tga
+    map gfx/emoji/tankjrpm.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1181,7 +1181,7 @@ gfx/emoji/hook
     nopicmip
     nomipmaps
   {
-    map icons/iconw_grapple.tga
+    map gfx/emoji/hook.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1225,7 +1225,7 @@ gfx/emoji/tankjr
     nopicmip
     nomipmaps
   {
-    map models/players/tankjr/icon.tga
+    map gfx/emoji/tankjr.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1291,7 +1291,7 @@ gfx/emoji/victory
     nopicmip
     nomipmaps
   {
-    map menu/medals/medal_victory.tga
+    map gfx/emoji/victory.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1302,7 +1302,7 @@ gfx/emoji/sorlag
     nopicmip
     nomipmaps
   {
-    map models/players/sorlag/icon_default.tga
+    map gfx/emoji/sorlag.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1313,7 +1313,7 @@ gfx/emoji/assist
     nopicmip
     nomipmaps
   {
-    map menu/medals/medal_assist.tga
+    map gfx/emoji/assist.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1335,7 +1335,7 @@ gfx/emoji/razor-patriot
     nopicmip
     nomipmaps
   {
-    map models/players/razor/icon_patriot.tga
+    map gfx/emoji/razor-patriot.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1346,7 +1346,7 @@ gfx/emoji/25hp
     nopicmip
     nomipmaps
   {
-    map icons/iconh_yellow.tga
+    map gfx/emoji/25hp.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1357,7 +1357,7 @@ gfx/emoji/battlesuit
     nopicmip
     nomipmaps
   {
-    map icons/envirosuit.tga
+    map gfx/emoji/battlesuit.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1379,7 +1379,7 @@ gfx/emoji/rg
     nopicmip
     nomipmaps
   {
-    map icons/iconw_railgun.tga
+    map gfx/emoji/rg.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1401,7 +1401,7 @@ gfx/emoji/rl
     nopicmip
     nomipmaps
   {
-    map icons/iconw_rocket.tga
+    map gfx/emoji/rl.png
     blendfunc blend
     rgbgen vertex
   }
@@ -1445,7 +1445,7 @@ gfx/emoji/capture
     nopicmip
     nomipmaps
   {
-    map menu/medals/medal_capture.tga
+    map gfx/emoji/capture.png
     blendfunc blend
     rgbgen vertex
   }

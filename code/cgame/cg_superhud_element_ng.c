@@ -43,24 +43,20 @@ void CG_SHUDElementNGRoutine(void* context)
 {
 	shudElementNG_t* element = (shudElementNG_t*) context;
 	float ax, ay, aw, ah;
-	int a;
-	int i;
-	int v;
+	int cmdNum;
+	usercmd_t cmd;
+	static int delay = 0;
 
-	float   mid, range;
-	int     color = 0;
-	float   vscale;
-
-	ax = element->config.rect.value[0];
-	ay = element->config.rect.value[1];
-	aw = element->config.rect.value[2];
-	ah = element->config.rect.value[3];
+	ax = element->ctx.coord.named.x;
+	ay = element->ctx.coord.named.y;
+	aw = element->ctx.coord.named.w;
+	ah = element->ctx.coord.named.h;
 
 	CG_SHUDDrawBorder(&element->config);
 
 	trap_R_SetColor(NULL);
-
 	CG_AdjustFrom640(&ax, &ay, &aw, &ah);
+
 	if (element->config.fill.isSet)
 	{
 		if (element->config.bgcolor.isSet)
@@ -79,118 +75,34 @@ void CG_SHUDElementNGRoutine(void* context)
 		trap_R_DrawStretchPic(ax, ay, aw, ah, 0, 0, 1, 1, cgs.media.lagometerShader);
 	}
 
-	range = ah / 3;
-	mid = ay + range;
+	CG_DrawLagometerGraphsInRect(ax, ay, aw, ah);
 
-	vscale = range / MAX_LAGOMETER_RANGE;
-
-	// draw the frame interpoalte / extrapolate graph
-	for (a = 0 ; a < aw ; a++)
+	if (!cg.snap)
 	{
-		i = (lagometer.frameCount - 1 - a) & (LAG_SAMPLES - 1);
-		v = lagometer.frameSamples[i];
-		v *= vscale;
-		if (v > 0)
-		{
-			if (color != 1)
-			{
-				color = 1;
-				trap_R_SetColor(g_color_table[ColorIndex(COLOR_YELLOW)]);
-			}
-			if (v > range)
-			{
-				v = range;
-			}
-			trap_R_DrawStretchPic(ax + aw - a, mid - v, 1, v, 0, 0, 0, 0, cgs.media.whiteShader);
-		}
-		else if (v < 0)
-		{
-			if (color != 2)
-			{
-				color = 2;
-				trap_R_SetColor(g_color_table[ColorIndex(COLOR_BLUE)]);
-			}
-			v = -v;
-			if (v > range)
-			{
-				v = range;
-			}
-			trap_R_DrawStretchPic(ax + aw - a, mid, 1, v, 0, 0, 0, 0, cgs.media.whiteShader);
-		}
+		return;
 	}
 
-	for (a = 0 ; a < aw ; a++)
+	cmdNum = trap_GetCurrentCmdNumber() - CMD_BACKUP + 1;
+	trap_GetUserCmd(cmdNum, &cmd);
+	if (cmd.serverTime <= cg.snap->ps.commandTime || cmd.serverTime > cg.time)
 	{
-		i = (lagometer.snapshotCount - 1 - a) & (LAG_SAMPLES - 1);
-		v = lagometer.snapshotSamples[i];
-		if (v > 0)
-		{
-			if (lagometer.snapshotFlags[i] & SNAPFLAG_RATE_DELAYED)
-			{
-				if (color != 5)
-				{
-					color = 5;  // YELLOW for rate delay
-					trap_R_SetColor(g_color_table[ColorIndex(COLOR_YELLOW)]);
-				}
-			}
-			else
-			{
-				if (color != 3)
-				{
-					color = 3;
-					trap_R_SetColor(g_color_table[ColorIndex(COLOR_GREEN)]);
-				}
-			}
-			v = v * vscale;
-			if (v > range)
-			{
-				v = range;
-			}
-			trap_R_DrawStretchPic(ax + aw - a, ay + ah - v, 1, v, 0, 0, 0, 0, cgs.media.whiteShader);
-		}
-		else if (v < 0)
-		{
-			if (color != 4)
-			{
-				color = 4;      // RED for dropped snapshots
-				trap_R_SetColor(g_color_table[ColorIndex(COLOR_RED)]);
-			}
-			trap_R_DrawStretchPic(ax + aw - a, ay + ah - range, 1, range, 0, 0, 0, 0, cgs.media.whiteShader);
-		}
+		delay = cg.time;
+		return;
 	}
 
-	trap_R_SetColor(NULL);
-
+	if (delay + 500 > cg.time)
 	{
-		int         cmdNum;
-		usercmd_t   cmd;
-		static int  delay = 0;
-
-		// draw the phone jack if we are completely past our buffers
-		cmdNum = trap_GetCurrentCmdNumber() - CMD_BACKUP + 1;
-		trap_GetUserCmd(cmdNum, &cmd);
-		if (cmd.serverTime <= cg.snap->ps.commandTime || cmd.serverTime > cg.time)    // special check for map_restart // bk 0102165 - FIXME
-		{
-			delay = cg.time;
-			return ;
-		}
-
-		if (delay + 500 > cg.time)
-		{
-			return;
-		}
-
-		// also add text in center of screen
-		CG_SHUDTextPrint(&element->config, &element->tctx);
-
-		// blink the icon
-		if ((cg.time >> 9) & 1)
-		{
-			return;
-		}
-
-		trap_R_DrawStretchPic(ax, ay, aw, ah, 0, 0, 1, 1, cgs.media.connectionShader);
+		return;
 	}
+
+	CG_SHUDTextPrint(&element->config, &element->tctx);
+
+	if ((cg.time >> 9) & 1)
+	{
+		return;
+	}
+
+	trap_R_DrawStretchPic(ax, ay, aw, ah, 0, 0, 1, 1, cgs.media.connectionShader);
 }
 
 void CG_SHUDElementNGDestroy(void* context)

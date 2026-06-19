@@ -960,7 +960,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	if (!cg.teamMarkers.teamTaskEnabled || !markType)
 		return;
 
-	/* One pack pass: remove marks to be replaced before adding new (QVM_LOGIC: O(n) not O(n²)) */
+	/* One pack pass: remove marks to be replaced before adding new (O(n) not O(n²)) */
 	isOverheadMark = (markType == TEAMTASK_YES || markType == TEAMTASK_NO ||
 	                  markType == TEAMTASK_MEDIC || markType == TEAMTASK_HERE_ALIVE);
 	isHereWarnDead = (markType == TEAMTASK_HERE_DEAD || markType == TEAMTASK_WARN_DEAD);

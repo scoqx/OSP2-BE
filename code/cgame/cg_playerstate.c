@@ -753,8 +753,7 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 CG_TransitionPlayerState
 
 One pass over playerstate changes: damage, respawn, zoom, exec (weapon/onDeath),
-spectate exec, ammo, events, duck. QVM_LOGIC: change-driven, no per-frame vmCvar
-reads in hot path (exec uses cgs snapshot).
+spectate exec, ammo, events, duck. Change-driven; exec uses cgs snapshot.
 ===============
 */
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)

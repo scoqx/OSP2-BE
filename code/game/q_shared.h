@@ -838,7 +838,7 @@ typedef enum
 // per-level limits
 //
 #define MAX_CLIENTS         64      // absolute limit
-#define MAX_LOCATIONS       64
+#define MAX_LOCATIONS       198     /* CS 608..805 (CS_OSP_SERVER_MODE 806) */
 
 #define GENTITYNUM_BITS     10      // don't need to send any more
 #define MAX_GENTITIES       (1<<GENTITYNUM_BITS) // 1024

@@ -167,6 +167,7 @@ rgbgen vertex
 icons/dye/envirosuit
 {
 	nopicmip
+	nomipmaps
 	{
 		map icons/dye/envirosuit.tga
 		blendFunc blend
@@ -176,6 +177,7 @@ rgbgen vertex
 icons/dye/quad
 {
 	nopicmip
+	nomipmaps
 	{
 		map icons/dye/quad.tga
 		blendFunc blend

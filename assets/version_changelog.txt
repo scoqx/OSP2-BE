@@ -1,4 +1,26 @@
-16.06.2026 be v1.05d
-Meta:
- + Predict for OSDF-based mods (metarena)
- * Segfault fixed
+19.06.2026 be v1.05e
+SuperHUD:
+  + `LastStanding` SuperHUD element
+  + visflags: negated conditions via `!` prefix on any flag
+  + visflags: style1-4
+  + cg_shudStyle 1-4 for visflags
+  + TargetStatus - style 1
+  + Mirage: +mischkonsumer.cfg, *All configs CTF fix
+  + diwoc: Roamer.cfg
+  * visflag scorehide rework
+  + Fade fix for text shadow, background, border
+  * Weaponlist center align fix
+  + Grid: font option for division labels (style 1)
+  * Score_OWN, TeamCount_OWN, Score_NME, TeamCount_NME visflag spectator fix
++ ChatWindow
+  + /enterchat, /enterchatteam, +showchat
+  + cg_chatWindow, cg_chatWindowTime, cg_chatWindowPos, cg_chatWindowSize, cg_chatWindowFont, 
+    cg_chatWindowFontSize, cg_chatWindowBgColor, cg_chatWindowBgOpaque
++ cg_scoreboardBE bitmask: 32, 64 - hide "Fragged by...", hide place line
++ cg_healthColorLevels 4 (disable teammate's health blinking when taking damage)
++ cg_friendsWallhack bitmask 4 - Fullmap friends wallhack
++ cg_muteWorldSounds
+* cg_teamHealthBar improvements
+* Perfomance optimization
+* BE Status fix
+* Various fixes

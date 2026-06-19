@@ -601,11 +601,18 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 	int flagsFound = 0;
 	char c;
 	int flags = 0;
+	int flagsNeg = 0;
+	int styleFlags = 0;
+	int styleFlagsNeg = 0;
 
 	config->visflags.isSet = qfalse;
+	config->visflags.valueNeg = 0;
 
 	do
 	{
+		qboolean negate;
+		int* flagTarget;
+
 		status = CG_SHUDConfigSkipSCN(finfo);
 		if (status != SUPERHUD_CONFIG_OK)
 		{
@@ -618,37 +625,51 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 			break; // end of command
 		}
 
-		if (CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_IM_STR, SE_IM, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_TEAM_ONLY_STR, SE_TEAM_ONLY, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SPECT_STR, SE_SPECT, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_DEAD_STR, SE_DEAD, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_DEMO_HIDE_STR, SE_DEMO_HIDE, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SCORES_HIDE_STR, SE_SCORES_HIDE, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY1_SHOW_STR, SE_KEY1_SHOW, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY2_SHOW_STR, SE_KEY2_SHOW, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY3_SHOW_STR, SE_KEY3_SHOW, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY4_SHOW_STR, SE_KEY4_SHOW, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY5_SHOW_STR, SE_KEY5_SHOW, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY6_SHOW_STR, SE_KEY6_SHOW, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY7_SHOW_STR, SE_KEY7_SHOW, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY8_SHOW_STR, SE_KEY8_SHOW, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_FFA_STR, SE_GT_FFA, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_TDM_STR, SE_GT_TDM, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_CTF_STR, SE_GT_CTF, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_TOURNEY_STR, SE_GT_TOURNEY, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_FREEZETAG_STR, SE_GT_FREEZETAG, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_CLANARENA_STR, SE_GT_CLANARENA, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_GAUNTLET_STR, SE_WEAPON_GAUNTLET, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_MACHINEGUN_STR, SE_WEAPON_MACHINEGUN, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_SHOTGUN_STR, SE_WEAPON_SHOTGUN, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_GRENADE_LAUNCHER_STR, SE_WEAPON_GRENADE_LAUNCHER, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_ROCKET_LAUNCHER_STR, SE_WEAPON_ROCKET_LAUNCHER, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_LIGHTNING_STR, SE_WEAPON_LIGHTNING, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_RAILGUN_STR, SE_WEAPON_RAILGUN, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_PLASMAGUN_STR, SE_WEAPON_PLASMAGUN, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_BFG_STR, SE_WEAPON_BFG, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_HEALTH_LOW_STR, SE_HEALTH_LOW, &flags) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHOW_EMPTY_STR, SE_SHOW_EMPTY, &flags)
+		negate = qfalse;
+		if (c == '!')
+		{
+			negate = qtrue;
+			finfo->pos++;
+		}
+
+		flagTarget = negate ? &flagsNeg : &flags;
+
+		if (CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHUD_STYLE1_STR, SE_SHUD_STYLE1, negate ? &styleFlagsNeg : &styleFlags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHUD_STYLE2_STR, SE_SHUD_STYLE2, negate ? &styleFlagsNeg : &styleFlags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHUD_STYLE3_STR, SE_SHUD_STYLE3, negate ? &styleFlagsNeg : &styleFlags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHUD_STYLE4_STR, SE_SHUD_STYLE4, negate ? &styleFlagsNeg : &styleFlags) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_IM_STR, SE_IM, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_TEAM_ONLY_STR, SE_TEAM_ONLY, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SPECT_STR, SE_SPECT, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_DEAD_STR, SE_DEAD, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_DEMO_HIDE_STR, SE_DEMO_HIDE, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SCORES_HIDE_STR, SE_SCORES_HIDE, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY1_SHOW_STR, SE_KEY1_SHOW, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY2_SHOW_STR, SE_KEY2_SHOW, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY3_SHOW_STR, SE_KEY3_SHOW, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY4_SHOW_STR, SE_KEY4_SHOW, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY5_SHOW_STR, SE_KEY5_SHOW, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY6_SHOW_STR, SE_KEY6_SHOW, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY7_SHOW_STR, SE_KEY7_SHOW, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_KEY8_SHOW_STR, SE_KEY8_SHOW, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_FFA_STR, SE_GT_FFA, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_TDM_STR, SE_GT_TDM, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_CTF_STR, SE_GT_CTF, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_TOURNEY_STR, SE_GT_TOURNEY, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_FREEZETAG_STR, SE_GT_FREEZETAG, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_GT_CLANARENA_STR, SE_GT_CLANARENA, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_GAUNTLET_STR, SE_WEAPON_GAUNTLET, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_MACHINEGUN_STR, SE_WEAPON_MACHINEGUN, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_SHOTGUN_STR, SE_WEAPON_SHOTGUN, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_GRENADE_LAUNCHER_STR, SE_WEAPON_GRENADE_LAUNCHER, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_ROCKET_LAUNCHER_STR, SE_WEAPON_ROCKET_LAUNCHER, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_LIGHTNING_STR, SE_WEAPON_LIGHTNING, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_RAILGUN_STR, SE_WEAPON_RAILGUN, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_PLASMAGUN_STR, SE_WEAPON_PLASMAGUN, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_BFG_STR, SE_WEAPON_BFG, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_HEALTH_LOW_STR, SE_HEALTH_LOW, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WARMUP_STR, SE_WARMUP, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHOW_EMPTY_STR, SE_SHOW_EMPTY, flagTarget)
 		   )
 		{
 			++flagsFound;
@@ -673,6 +694,14 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 	{
 		config->visflags.isSet = qtrue;
 		config->visflags.value = flags;
+		config->visflags.valueNeg = flagsNeg;
+	}
+
+	if (styleFlags != 0 || styleFlagsNeg != 0)
+	{
+		config->visiblity.isSet = qtrue;
+		config->visiblity.value |= styleFlags;
+		config->visiblity.valueNeg |= styleFlagsNeg;
 	}
 
 	return SUPERHUD_CONFIG_OK;
@@ -1561,7 +1590,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseStyle(configFileInfo
 
 	config->style.isSet = qfalse;
 
-	// Парсим целочисленное значение для стиля
+	// Parse integer value for style
 	status = CG_SHUDParseInt(finfo, &config->style.value);
 	if (status != SUPERHUD_CONFIG_OK)
 	{
@@ -1751,18 +1780,18 @@ void CG_SHUDFileInfoTeardown(configFileInfo_t* cfi)
 	cfi->last_line = NULL;
 }
 
-/* Поиск элемента
+/* Find element
  *
- * пропускаем пробелы
- * пропускаем комментарии
- * пропускаем новую строку
- * берем токен
- * пропускаем пробелы
- * пропускаем комментарии
- * пропускаем новую строку
- * находим {
+ * skip whitespace
+ * skip comments
+ * skip newline
+ * take token
+ * skip whitespace
+ * skip comments
+ * skip newline
+ * find {
  *
- * ошибки:
+ * errors:
  *
  * SUPERHUD_CONFIG_WRONG_ELEMENT_NAME
  * SUPERHUD_CONFIG_LOST_ELEMENT_BODY
@@ -1868,12 +1897,12 @@ const superhudConfigParseElement_t CG_SHUDFileInfoGetElementItem(configFileInfo_
 	return result;
 }
 
-/* Поиск команды
+/* Find command
  *
- * пропускаем пробелы
- * пропускаем комментарии
- * пропускаем новую строку
- * берем токен
+ * skip whitespace
+ * skip comments
+ * skip newline
+ * take token
  *
  * SUPERHUD_CONFIG_WRONG_COMMAND_NAME
  * SUPERHUD_CONFIG_LOST_ELEMENT_BODY
@@ -2015,7 +2044,7 @@ qboolean CG_SHUDFileInfoSkipElementBody(configFileInfo_t* cfi)
 }
 
 /*
- * Инициализация парсера
+ * Parser initialization
  * No need to free allocated memory as object will be destroyed only when cgame.qvm die
  */
 void CG_SHUDParserInit(void)

@@ -70,7 +70,7 @@ static qboolean CG_SHUDScoresGetMax(int* scores)
 		*scores = cgs.fraglimit;
 	}
 
-	return *scores > 0;
+	return qtrue;
 }
 
 static qboolean CG_SHUDScoresGetOWN(int* scores)
@@ -84,13 +84,13 @@ static qboolean CG_SHUDScoresGetOWN(int* scores)
 			*scores = cgs.scores1;
 			return *scores != SCORE_NOT_PRESENT;
 		}
+		case TEAM_SPECTATOR:
 		case TEAM_RED:
 			*scores = cgs.scores1;
 			return *scores != SCORE_NOT_PRESENT;
 		case TEAM_BLUE:
 			*scores = cgs.scores2;
 			return *scores != SCORE_NOT_PRESENT;
-		case TEAM_SPECTATOR:
 		case TEAM_4:
 		case TEAM_5:
 		case TEAM_6:
@@ -119,13 +119,13 @@ static qboolean CG_SHUDScoresGetNME(int* scores)
 			*scores = cgs.scores2;
 			return *scores != SCORE_NOT_PRESENT;
 		}
+		case TEAM_SPECTATOR:
 		case TEAM_RED:
 			*scores = cgs.scores2;
 			return *scores != SCORE_NOT_PRESENT;
 		case TEAM_BLUE:
 			*scores = cgs.scores1;
 			return *scores != SCORE_NOT_PRESENT;
-		case TEAM_SPECTATOR:
 		case TEAM_4:
 		case TEAM_5:
 		case TEAM_6:
@@ -189,7 +189,7 @@ void CG_SHUDElementScoreRoutine(void* context)
 	if (!result)
 		return;
 
-	element->ctx.text = va(element->config.text.value, scores);
+	element->ctx.text = CG_SHUDVaTextWithInt(&element->config, scores);
 
 	if (element->config.color2.isSet && CG_SHUDScoresShouldUseColor2(element->type))
 	{

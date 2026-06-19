@@ -34,8 +34,7 @@ void CG_SHUDElementItemPickupIconRoutine(void* context)
 		vec4_t col;
 
 		element->ctx.image = CG_DyeFlagResolveInverseIcon(cg.itemPickup, cg_items[cg.itemPickup].icon);
-		CG_SHUDFill(&element->config);
-		CG_SHUDDrawBorder(&element->config);
+		CG_SHUDFillAndFrameForElement(&element->config, element->ctx.color_origin, element->ctx.color);
 
 		CG_RegisterItemVisuals(cg.itemPickup);
 		Vector4Copy(element->ctx.color, col);

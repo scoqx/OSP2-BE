@@ -26,18 +26,19 @@ AddVar
 	}
 
 	cgame
+	cgame
 	{
-		// armor
-		brightcolor_item_armor_shard 0.75 0.75 0.75 1;
+		# armor
+		brightcolor_item_armor_shard 0.49 0.69 0.28 1;
 		brightcolor_item_armor_combat 1 1 0 1;
 		brightcolor_item_armor_body 1 0 0 1;
 		brightcolor_item_armor_jacket 0 1 0 1;
-		// health
+		# health
 		brightcolor_item_health_small 0 1 0 1;
 		brightcolor_item_health 1 1 0 1;
 		brightcolor_item_health_large 1 0.5 0 1;
-		brightcolor_item_health_mega 1 0 1 1;
-		// ammo
+		brightcolor_item_health_mega 0.15 0.6 0.95 1;
+		# ammo
 		brightcolor_ammo_shells 1 0.5 0 1;
 		brightcolor_ammo_bullets 1 1 0 1;
 		brightcolor_ammo_grenades 0 1 0 1;
@@ -46,20 +47,20 @@ AddVar
 		brightcolor_ammo_rockets 1 0 0 1;
 		brightcolor_ammo_slugs 0 1 1 1;
 		brightcolor_ammo_bfg 0 0 1 1;
-		// holdables
+		# holdables
 		brightcolor_holdable_teleporter 0 1 1 1;
-		brightcolor_holdable_medkit 0 1 0.5 1;
-		// powerups
+		brightcolor_holdable_medkit 1 0 0 1;
+		# powerups
 		brightcolor_item_quad 0 0.890196 0.945098 1;
 		brightcolor_item_enviro 1 0.65098 0.003922 1;
 		brightcolor_item_haste 1 1 0 1;
 		brightcolor_item_invis 0.6 0.6 1 1;
-		brightcolor_item_regen 1 0 1 1;
+		brightcolor_item_regen 1 0 0 1;
 		brightcolor_item_flight 0.5 0.8 1 1;
-		// CTF flags
+		# CTF flags
 		brightcolor_team_CTF_redflag 1 0 0 1;
 		brightcolor_team_CTF_blueflag 0 0.133333 1 1;
-		// weapons
+		# weapons
 		brightcolor_weapon_gauntlet 1 1 1 1;
 		brightcolor_weapon_machinegun 1 1 0 1;
 		brightcolor_weapon_shotgun 1 0.5 0 1;

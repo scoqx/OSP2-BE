@@ -66,8 +66,6 @@ void CG_UpdateFlagMedia(void)
 		return;
 	}
 
-	trap_Cvar_Update(&cg_oldFlags);
-
 	if (CG_OldFlagModels())
 	{
 		cgs.media.redFlagModel = cgs.media.classicRedFlagModel;
@@ -161,7 +159,7 @@ void CG_ItemDyeResolveTintForClient(const gitem_t* item, int clientNum, vec4_t o
 		ci = &cgs.clientinfo[clientNum];
 		if (ci->infoValid)
 		{
-			useEnemy = CG_IsEnemyForPowerupVisual(ci);
+			useEnemy = CG_CACHED_IS_ENEMY_POWERUP_CI(ci);
 		}
 	}
 

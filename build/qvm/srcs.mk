@@ -9,13 +9,13 @@ QA_SRC = \
 
 CG_SRC = \
  cg_main $(CGDIR)/cg_syscalls.asm \
- cg_consolecmds cg_draw cg_drawtools cg_dyeicons cg_effects cg_ents cg_event cg_info \
+ cg_consolecmds cg_draw cg_drawtools cg_ospdrawstring cg_dyeicons cg_effects cg_ents cg_event cg_info \
  cg_localents cg_players cg_playerstate cg_predict cg_scoreboard cg_marks cg_medals \
- cg_servercmds cg_snapshot cg_view cg_weapons cg_printui cg_teamtasks_tokenbucket cg_teamtasks_utils cg_teamtasks_draw cg_teamtasks_selwheel cg_teamtasks_crypto \
+ cg_servercmds cg_snapshot cg_view cg_weapons cg_printui cg_teamtasks_utils cg_teamtasks_draw cg_teamtasks_selwheel \
  bg_slidemove bg_pmove bg_lib bg_misc \
  core slidemove q3a vq1 vjk vq4 \
  q_math q_shared cg_ospconfig cg_osputil cg_osphud cg_unlagged cg_playerscolors\
- cg_localevents cg_customloc cg_cvardescriptions common\
+ cg_localevents cg_customloc cg_maplocs cg_globalpos cg_cvardescriptions common\
  cg_superhud cg_superhud_configparser cg_superhud_util cg_superhud_private\
  cg_superhud_element_fps \
  cg_superhud_element_sbhc cg_superhud_element_sbhi cg_superhud_element_sbhb \
@@ -50,9 +50,11 @@ CG_SRC = \
  cg_superhud_element_grid \
  cg_superhud_element_teamtasks \
  cg_superhud_element_roundwarmup \
+ cg_superhud_element_laststanding \
+ cg_superhud_element_timelimit \
  l_crc \
- cg_chatfilter cg_teamtaskfilter cg_crosshair \
- cg_be_util cg_be_stats cg_brightitems beinfo_cfg osp_fonts \
+ cg_chatfilter cg_crosshair \
+ cg_be_util cg_be_stats cg_be_chatwindow cg_be_chatwindow_emoji cg_brightitems beinfo_cfg osp_fonts \
  cg_emoji
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \

@@ -338,7 +338,7 @@ static void SuperHUDConfig_MenuInit(void)
 	trap_Cvar_VariableStringBuffer("ch_file", currentConfig, sizeof(currentConfig));
 	if (!currentConfig[0])
 	{
-		Q_strncpyz(currentConfig, "default", sizeof(currentConfig));
+		Q_strncpyz(currentConfig, "roamer", sizeof(currentConfig));
 	}
 	Q_strncpyz(s_superhudconfig.currentConfig, currentConfig, sizeof(s_superhudconfig.currentConfig));
 
@@ -384,17 +384,17 @@ static void SuperHUDConfig_MenuInit(void)
 		barWidth = SUPERHUD_CONFIG_LIST_WIDTH * SMALLCHAR_WIDTH;
 		leftMargin = (FRAME_INGAME_W - barWidth) / 2;
 
-		/* Center bar between frame edges so левый/правый отступы равны */
+		/* Center bar between frame edges so left/right margins match */
 		s_superhudconfig.list.generic.x = frameX + leftMargin + 2;
 
-		/* Hitbox совпадает с прямоугольником выделения */
+		/* Hitbox matches selection rectangle */
 		u = s_superhudconfig.list.generic.x - 2;
 		s_superhudconfig.list.generic.left = u;
 		s_superhudconfig.list.generic.right = u + barWidth;
 		s_superhudconfig.list.generic.top = s_superhudconfig.list.generic.y;
 		s_superhudconfig.list.generic.bottom = s_superhudconfig.list.generic.y + s_superhudconfig.list.height * SMALLCHAR_HEIGHT;
 
-		/* Arrow “slider” на тех же координатах, что в ADD BOTS */
+		/* Arrow "slider" at same coordinates as ADD BOTS */
 		s_superhudconfig.arrows.generic.type  = MTYPE_BITMAP;
 		s_superhudconfig.arrows.generic.name  = ART_ARROWS;
 		s_superhudconfig.arrows.generic.flags = QMF_INACTIVE;
@@ -436,8 +436,8 @@ static void SuperHUDConfig_MenuInit(void)
 	s_superhudconfig.restore.generic.flags = QMF_CENTER_JUSTIFY | QMF_PULSEIFFOCUS;
 	s_superhudconfig.restore.generic.callback = SuperHUDConfig_Event;
 	s_superhudconfig.restore.generic.id = ID_SUPERHUD_RESTORE;
-	/* Справа от BACK, по вертикали по центру кнопки */
-	s_superhudconfig.restore.generic.x = 320 + 40; /* правее правого края BACK (320) */
+	/* Right of BACK, vertically centered on the button */
+	s_superhudconfig.restore.generic.x = 320 + 40; /* to the right of BACK right edge (320) */
 	s_superhudconfig.restore.generic.y = (256 + 128 - 64) + (64 / 2) - (SMALLCHAR_HEIGHT / 2);
 	s_superhudconfig.restore.string = "RESTORE";
 	s_superhudconfig.restore.color = uis.themeColor;

@@ -521,11 +521,11 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out)
 =================
 CG_UpdateMyTeam
 
-Команда для цветов T/E = команда игрока, за которым мы смотрим в snapshot.
-Играем за собой — это наша команда; наблюдаем за кем-то — команда того, за кем смотрим.
+Team for T/E colors = team of the player we view in the snapshot.
+Playing as ourselves — our team; spectating someone — that player's team.
 =================
 */
-/* Cache for early-out when POV/team unchanged (QVM: avoid per-frame work when nothing changed) */
+/* Cache for early-out when POV/team unchanged */
 static int s_lastViewClientNum = -1;
 static team_t s_lastViewedTeam = TEAM_FREE;
 static team_t s_lastRealTeam = TEAM_FREE;
@@ -600,11 +600,11 @@ void CG_InvalidateVisualTeamColorsCache(void)
 =================
 CG_UpdateVisualTeamColors
 
-Пересчитывает эффективные командные цвета (cgs.beRedTeamColor / cgs.beBlueTeamColor)
-из базовых цветов и текущих настроек cg_myTeam. В неккомандных режимах и для
-наблюдателя цвета остаются базовыми.
+Recomputes effective team colors (cgs.beRedTeamColor / cgs.beBlueTeamColor)
+from base colors and current cg_myTeam settings. In non-team modes and for
+spectators colors stay at base values.
 
-realTeam - реальная команда игрока (TEAM_RED, TEAM_BLUE, или другая)
+realTeam - player's actual team (TEAM_RED, TEAM_BLUE, or other)
 =================
 */
 void CG_UpdateVisualTeamColors(team_t realTeam)
@@ -679,8 +679,8 @@ void CG_UpdateVisualTeamColors(team_t realTeam)
 =================
 CG_ReloadColors
 
-Проверяет все cvar с цветами и обновляет те, которые содержат 'E' или 'T'
-для динамического обновления цветов при смене команды
+Scans color cvars and refreshes those containing 'E' or 'T'
+for dynamic color updates when team changes
 =================
 */
 void CG_ReloadColors(void)
@@ -757,7 +757,193 @@ void CG_ReloadColors(void)
 	}
 }
 
+/*
+=================
+CG_RegisterAltShaderSeries
 
+Register base shader plus numbered variants (basename2 .. basename16).
+Stops loading variants after two consecutive missing shaders; remaining slots use base.
+=================
+*/
+void CG_RegisterAltShaderSeries(qhandle_t* out, const char* basename)
+{
+	int i;
+	int misses;
+	qhandle_t base;
+	qhandle_t h;
 
+	out[0] = trap_R_RegisterShader(basename);
+	base = out[0];
 
+	misses = 0;
+	for (i = 1; i < MAX_ALT_SHADERS; i++)
+	{
+		if (misses >= 2)
+		{
+			out[i] = base;
+			continue;
+		}
 
+		h = trap_R_RegisterShader(va("%s%i", basename, i + 1));
+		if (!h)
+		{
+			out[i] = base;
+			misses++;
+		}
+		else
+		{
+			out[i] = h;
+			misses = 0;
+		}
+	}
+}
+
+/*
+=================
+CG_HealthColorFromAllyBand
+=================
+BE health levels: full / mid / low preset colors (cg_healthColorLevels).
+*/
+void CG_HealthColorFromAllyBand(int band, vec4_t hcolorOut)
+{
+	if (band == CG_HEALTH_BAND_LOW)
+	{
+		VectorCopy(cg.beHealthLowColor, hcolorOut);
+	}
+	else if (band == CG_HEALTH_BAND_MID)
+	{
+		VectorCopy(cg.beHealthMidColor, hcolorOut);
+	}
+	else
+	{
+		VectorCopy(cg.beHealthColor, hcolorOut);
+	}
+	hcolorOut[3] = 1.0f;
+}
+
+/*
+=================
+CG_HealthColorFromStats
+=================
+Health/armor values → RGB using cg_healthColorLevels / low / mid.
+*/
+void CG_HealthColorFromStats(int health, int armor, vec4_t hcolorOut, int* healthBandOut)
+{
+	int levels;
+	int low;
+	int mid;
+	int h;
+	int a;
+	int cnt;
+	int max;
+	int band;
+
+	levels = cg_healthColorLevels.integer;
+	low    = cg_healthLow.integer;
+	mid    = cg_healthMid.integer;
+	h = health;
+	a = armor;
+
+	if (h <= 0)
+	{
+		VectorClear(hcolorOut);
+		hcolorOut[3] = 1.0f;
+		if (healthBandOut)
+		{
+			*healthBandOut = CG_HEALTH_BAND_FULL;
+		}
+		return;
+	}
+
+	cnt = a;
+	max = h * ARMOR_PROTECTION / (1.0 - ARMOR_PROTECTION);
+	if (max < cnt)
+	{
+		cnt = max;
+	}
+	h += cnt;
+
+	if (!levels)
+	{
+		hcolorOut[0] = 1.0f;
+		hcolorOut[3] = 1.0f;
+		if (h >= 100)
+		{
+			hcolorOut[2] = 1.0f;
+		}
+		else if (h < 66)
+		{
+			hcolorOut[2] = 0;
+		}
+		else
+		{
+			hcolorOut[2] = (float)(h - 66) / 33.0f;
+		}
+		if (h > 60)
+		{
+			hcolorOut[1] = 1.0f;
+		}
+		else if (h < 30)
+		{
+			hcolorOut[1] = 0;
+		}
+		else
+		{
+			hcolorOut[1] = (float)(h - 30) / 30.0f;
+		}
+		if (healthBandOut)
+		{
+			*healthBandOut = CG_HEALTH_BAND_FULL;
+		}
+		return;
+	}
+
+	band = CG_HEALTH_BAND_FULL;
+	if (h <= low)
+	{
+		band = CG_HEALTH_BAND_LOW;
+	}
+	else if (h >= mid)
+	{
+		band = CG_HEALTH_BAND_MID;
+	}
+
+	if (healthBandOut)
+	{
+		*healthBandOut = band;
+	}
+
+	CG_HealthColorFromAllyBand(band, hcolorOut);
+}
+
+/*
+=================
+CG_IsMutedWorldSound
+
+Level configstring sounds (CS_SOUNDS) blocked when cg_muteWorldSounds is set.
+=================
+*/
+qboolean CG_IsMutedWorldSound(int soundIndex)
+{
+	const char* s;
+
+	if (!cg_muteWorldSounds.integer || soundIndex <= 0)
+	{
+		return qfalse;
+	}
+
+	s = CG_ConfigString(CS_SOUNDS + soundIndex);
+	if (!s || !s[0] || s[0] == '*')
+	{
+		return qfalse;
+	}
+
+	if (strstr(s, "1shot_greg_03.wav") ||
+		strstr(s, "1shot_greg_01.wav") ||
+		strstr(s, "htf.wav"))				// rmx-maps
+	{
+		return qtrue;
+	}
+
+	return qfalse;
+}

@@ -35,6 +35,8 @@ def reverse_changelog(input_file, output_file):
     blocks.reverse()
     reversed_content = "\n\n".join(blocks)
 
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
     with open(output_file, "w", encoding="utf-8", newline="\n") as f:
         f.write(reversed_content)
         if not reversed_content.endswith("\n"):
@@ -47,7 +49,7 @@ def reverse_changelog(input_file, output_file):
 def main():
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     input_file = os.path.join(project_root, "changelog_be.txt")
-    output_file = os.path.join(project_root, "assets", "changelog_be_r.txt")
+    output_file = os.path.join(project_root, "assets", "docs", "changelog_be_r.txt")
 
     if not os.path.exists(input_file):
         print(f"Missing {input_file}", file=sys.stderr)

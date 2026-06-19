@@ -93,10 +93,10 @@ extern "C" {
 
 #define CS_BLUEPLAYERALIVE      29      // FPS Classsico
 #define CS_MODELS               32
-#define CS_SOUNDS               (CS_MODELS+MAX_MODELS) //32+256 = 288
+#define CS_SOUNDS               (CS_MODELS+MAX_MODELS) //32+256 = 288 (289?)
 #define CS_PLAYERS              (CS_SOUNDS+MAX_SOUNDS) // 288 + 256 = 544
 #define CS_LOCATIONS            (CS_PLAYERS+MAX_CLIENTS) // 544 + 64 = 608
-#define CS_PARTICLES            (CS_LOCATIONS+MAX_LOCATIONS)  // 608 + 64 = 672
+#define CS_PARTICLES            (CS_LOCATIONS+MAX_LOCATIONS)  // 608 + MAX_LOCATIONS
 
 
 #define CS_OSP_SERVER_MODE                        806
@@ -130,8 +130,8 @@ extern "C" {
 #define CS_MAX                  (XQ3E_ALLOW_FEATURES)
 
 
-#if (CS_PARTICLES+MAX_LOCATIONS) > CS_OSP_SERVER_MODE
-#error config strings overlaps
+#if (CS_LOCATIONS + MAX_LOCATIONS) > CS_OSP_SERVER_MODE
+#error location config strings overlap CS_OSP_SERVER_MODE
 #endif
 
 // #if (CS_MAX) > MAX_CONFIGSTRINGS

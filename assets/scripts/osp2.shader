@@ -176,6 +176,7 @@ fBrightItems
 
 // obituaries
 ObituariesSkull {
+	nopicmip
     {
         map icons/obituaries/ObituariesSkull.tga
         blendfunc blend
@@ -184,6 +185,7 @@ ObituariesSkull {
 }
 
 ObituariesFallenCrashed {
+	nopicmip
     {
         map icons/obituaries/fallencrashed.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -193,6 +195,7 @@ ObituariesFallenCrashed {
 }
 
 ObituariesFalling {
+	nopicmip
     {
         map icons/obituaries/falling.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -202,6 +205,7 @@ ObituariesFalling {
 }
 
 ObituariesDrowned {
+	nopicmip
     {
         map icons/obituaries/drowned.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -211,6 +215,7 @@ ObituariesDrowned {
 }
 
 ObituariesLava {
+	nopicmip
     {
         map icons/obituaries/lava.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -220,6 +225,7 @@ ObituariesLava {
 }
 
 ObituariesTelefrag {
+	nopicmip
     {
         map icons/obituaries/telefrag.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -229,6 +235,7 @@ ObituariesTelefrag {
 }
 
 ObituariesMelted {
+	nopicmip
     {
         map icons/obituaries/melted.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -238,6 +245,7 @@ ObituariesMelted {
 }
 
 ObituariesRocketDirect {
+	nopicmip
     {
         map icons/iconw_rocket.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -253,6 +261,7 @@ ObituariesRocketDirect {
 }
 
 ObituariesGrenadeDirect {
+	nopicmip
     {
         map icons/iconw_grenade.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -268,6 +277,7 @@ ObituariesGrenadeDirect {
 }
 
 ObituariesPlasmaDirect {
+	nopicmip
     {
         map icons/iconw_plasma.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -283,6 +293,7 @@ ObituariesPlasmaDirect {
 }
 
 ObituariesBFGDirect {
+	nopicmip
     {
         map icons/iconw_BFG.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
@@ -508,7 +519,6 @@ tempAcc_LG_Icon
 
 disconnectedNew
 {
-	nomipmaps
 	nopicmip
 	{
 		map gfx/2d/net.tga

@@ -57,7 +57,7 @@ void CG_UpdateBeFeatures(void)
 		beFlags = 0, changed = qtrue;
 	else
 	{
-		if (cg_friendsWallhack.integer)
+		if (cg_friendsWallhack.integer & (CG_FRIENDS_WALLHACK_FOE | CG_FRIENDS_WALLHACK_TEAM_INDICATOR | CG_FRIENDS_WALLHACK_GLOBAL_POS))
 			beFlags |= CG_BE_TEAM_FOE_WH, changed = qtrue;
 		if (cg_altGrenades.integer == 2 || cg_altGrenades.integer == 3)
 			beFlags |= CG_BE_ALT_GRENADES, changed = qtrue;
@@ -139,6 +139,9 @@ void CG_UpdateFontIndices(void)
 	newVal = CG_FontIndexFromCvar(&cg_emojiListFont);
 	if (newVal != cgFontIndices.emojiList)
 		cgFontIndices.emojiList = newVal;
+	newVal = CG_FontIndexFromCvar(&cg_chatWindowFont);
+	if (newVal != cgFontIndices.chatWindow)
+		cgFontIndices.chatWindow = newVal;
 }
 
 void CG_PrintDisabledFeatures(qboolean request)
@@ -456,7 +459,7 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 		return;
 	}
 
-	/* определяем направление и абсолютное значение */
+	/* determine direction and absolute value */
 	isDarkening = (strength < 0.0f);
 	absStrength = (strength < 0.0f) ? -strength : strength;
 
@@ -467,12 +470,12 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 
 	if (isDarkening)
 	{
-		/* чем светлее — тем сильнее затемнение */
+		/* lighter color — stronger darkening */
 		factor = absStrength * luminance;
 	}
 	else
 	{
-		/* чем темнее — тем сильнее отбеливание */
+		/* darker color — stronger lightening */
 		factor = absStrength * (1.0f - luminance);
 	}
 
@@ -486,15 +489,15 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 		{
 			factor = 1.0f;
 		}
-		/* двигаем цвет к черному */
+		/* move color toward black */
 		rgb[0] -= rgb[0] * factor;
 		rgb[1] -= rgb[1] * factor;
 		rgb[2] -= rgb[2] * factor;
 	}
 	else
 	{
-		/* для осветления используем absStrength напрямую с линейной интерполяцией к белому */
-		/* Это гарантирует, что все компоненты двигаются к 1.0 пропорционально strength */
+		/* for lightening use absStrength directly with linear interpolation toward white */
+		/* ensures all components move toward 1.0 proportional to strength */
 		if (absStrength > 1.0f)
 		{
 			absStrength = 1.0f;
@@ -504,12 +507,12 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 		rgb[2] = rgb[2] * (1.0f - absStrength) + 1.0f * absStrength;
 	}
 
-	/* опционально: изменяем альфу для HUD */
+	/* optionally adjust alpha for HUD */
 	if (alpha)
 	{
 		if (isDarkening)
 		{
-			/* уменьшаем альфу при затемнении */
+			/* reduce alpha when darkening */
 			*alpha -= *alpha * factor * 0.5f;
 			if (*alpha < 0.0f)
 			{
@@ -518,7 +521,7 @@ void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength)
 		}
 		else
 		{
-			/* увеличиваем альфу при отбеливании */
+			/* increase alpha when lightening */
 			*alpha += (1.0f - *alpha) * factor * 0.5f;
 			if (*alpha > 1.0f)
 			{

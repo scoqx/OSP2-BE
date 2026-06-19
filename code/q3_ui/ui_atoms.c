@@ -834,15 +834,15 @@ void UI_DrawProportionalString(int x, int y, const char* str, int style, vec4_t 
 		float pulseAmount;
 		float targetR, targetG, targetB;
 
-		// Определяем направление пульсации для каждого канала
-		// Если цвет ближе к 1, идём к 0. Если ближе к 0, идём к 1.
+		// Determine pulse direction for each channel
+		// If color is closer to 1, go toward 0. If closer to 0, go toward 1.
 		if (color[0] > 0.5)
 		{
-			targetR = 0.0; // светлый -> тёмный
+			targetR = 0.0; // light -> dark
 		}
 		else
 		{
-			targetR = 1.0; // тёмный -> светлый
+			targetR = 1.0; // dark -> light
 		}
 
 		if (color[1] > 0.5)
@@ -863,14 +863,14 @@ void UI_DrawProportionalString(int x, int y, const char* str, int style, vec4_t 
 			targetB = 1.0;
 		}
 
-		// Пульсация от 0 до 1 и обратно
+		// Pulse from 0 to 1 and back
 		pulseAmount = 0.5 + 0.5 * cos(2.0 * 3.14159265358979323846 * (uis.realtime % 1000) / 1000.0);
 
-		// Интерполяция между исходным цветом и целевым
+		// Interpolate between original and target color
 		drawcolor[0] = color[0] + (targetR - color[0]) * pulseAmount;
 		drawcolor[1] = color[1] + (targetG - color[1]) * pulseAmount;
 		drawcolor[2] = color[2] + (targetB - color[2]) * pulseAmount;
-		drawcolor[3] = color[3]; // альфа остаётся как есть
+		drawcolor[3] = color[3]; // alpha unchanged
 
 		UI_DrawProportionalString2(x, y, str, drawcolor, sizeScale, uis.charsetPropGlow);
 		return;
@@ -1437,7 +1437,7 @@ static void UI_DrawStringCommon(int x, int y, const char* str, int style, vec4_t
 		float pulseAmount;
 		float targetR, targetG, targetB;
 
-		// Определяем направление пульсации для каждого канала
+		// Determine pulse direction for each channel
 		if (color[0] > 0.5)
 		{
 			targetR = 0.0f;
@@ -1465,10 +1465,10 @@ static void UI_DrawStringCommon(int x, int y, const char* str, int style, vec4_t
 			targetB = 1.0f;
 		}
 
-		// Пульсация от 0 до 1 и обратно
+		// Pulse from 0 to 1 and back
 		pulseAmount = 0.5f + 0.5f * (float)cos(2.0f * 3.14159265358979323846f * (uis.realtime % 1000) / 1000.0f);
 
-		// Интерполяция между исходным цветом и целевым
+		// Interpolate between original and target color
 		pulseColor[0] = color[0] + (targetR - color[0]) * pulseAmount;
 		pulseColor[1] = color[1] + (targetG - color[1]) * pulseAmount;
 		pulseColor[2] = color[2] + (targetB - color[2]) * pulseAmount;
@@ -1835,10 +1835,6 @@ static struct
 	qboolean		pingIssued;
 } ui_lanJob;
 
-static void UI_LANJob_CapturePingInfo(void);
-static const char* UI_LANJob_ActiveTarget(void);
-static void UI_LANJob_EnsurePingForChangelog(void);
-
 static void UI_LANJob_Reset(void)
 {
 	ui_lanJob.job = UI_LANJOB_NONE;
@@ -1849,6 +1845,56 @@ static void UI_LANJob_Reset(void)
 	ui_lanJob.hasPingInfo = qfalse;
 	ui_lanJob.pingInfo[0] = '\0';
 	ui_lanJob.pingIssued = qfalse;
+}
+
+static const char* UI_LANJob_ActiveTarget(void)
+{
+	if (ui_lanJob.dual && ui_lanJob.tryAlt && ui_lanJob.targetAlt[0])
+	{
+		return ui_lanJob.targetAlt;
+	}
+
+	return ui_lanJob.target;
+}
+
+static void UI_LANJob_CapturePingInfo(void)
+{
+	char	adrstr[UI_LANJOB_ADDRESSLENGTH];
+	char	info[MAX_INFO_STRING];
+	int		i;
+	int		time;
+
+	if (!UI_LANJob_ActiveTarget()[0])
+	{
+		return;
+	}
+
+	for (i = 0; i < MAX_PINGREQUESTS; i++)
+	{
+		trap_LAN_GetPing(i, adrstr, sizeof(adrstr), &time);
+		if (!adrstr[0])
+		{
+			continue;
+		}
+		if (Q_stricmp(adrstr, UI_LANJob_ActiveTarget()))
+		{
+			continue;
+		}
+		if (!time)
+		{
+			continue;
+		}
+
+		trap_LAN_GetPingInfo(i, info, sizeof(info));
+		if (!info[0])
+		{
+			continue;
+		}
+
+		ui_lanJob.hasPingInfo = qtrue;
+		Q_strncpyz(ui_lanJob.pingInfo, info, sizeof(ui_lanJob.pingInfo));
+		return;
+	}
 }
 
 static void UI_LANJob_EnsurePingForChangelog(void)
@@ -1866,14 +1912,10 @@ static void UI_LANJob_EnsurePingForChangelog(void)
 	trap_Cmd_ExecuteText(EXEC_NOW, va("ping %s\n", UI_LANJob_ActiveTarget()));
 }
 
-static const char* UI_LANJob_ActiveTarget(void)
+static void UI_LANJob_Complete(void)
 {
-	if (ui_lanJob.dual && ui_lanJob.tryAlt && ui_lanJob.targetAlt[0])
-	{
-		return ui_lanJob.targetAlt;
-	}
-
-	return ui_lanJob.target;
+	UI_ServerStatus_NotifyFetchCycleComplete();
+	UI_LANJob_Reset();
 }
 
 static void UI_LANJob_IssueServerStatus(void)
@@ -1937,7 +1979,7 @@ static void UI_LANJob_TickServerStatus(void)
 	if (ret && status[0])
 	{
 		UI_ServerStatus_ApplyFromGetstatus(status);
-		if (uiServerStatus.last)
+		if (uiServerStatus.last || uiServerStatus.unreleased)
 		{
 			ui_lanJob.hasPingInfo = qfalse;
 			ui_lanJob.pingInfo[0] = '\0';
@@ -1953,75 +1995,35 @@ static void UI_LANJob_TickServerStatus(void)
 		}
 		if (ui_lanJob.hasPingInfo || !UI_ServerStatus_WantsChangelog())
 		{
-			UI_LANJob_Reset();
+			UI_LANJob_Complete();
 			return;
 		}
 	}
 	else if (uiServerStatus.received)
 	{
-		if (uiServerStatus.last)
+		if (uiServerStatus.last || uiServerStatus.unreleased)
 		{
 			ui_lanJob.hasPingInfo = qfalse;
 			ui_lanJob.pingInfo[0] = '\0';
-			UI_LANJob_Reset();
+			UI_LANJob_Complete();
 			return;
 		}
 		UI_LANJob_CapturePingInfo();
 		UI_LANJob_EnsurePingForChangelog();
 		if (!UI_ServerStatus_WantsChangelog())
 		{
-			UI_LANJob_Reset();
+			UI_LANJob_Complete();
 			return;
 		}
 		if (ui_lanJob.hasPingInfo)
 		{
 			UI_ServerStatus_ApplyFromGetinfo(ui_lanJob.pingInfo);
-			UI_LANJob_Reset();
+			UI_LANJob_Complete();
 			return;
 		}
 	}
 
 	trap_LAN_UpdateVisiblePings(AS_LOCAL);
-}
-
-static void UI_LANJob_CapturePingInfo(void)
-{
-	char	adrstr[UI_LANJOB_ADDRESSLENGTH];
-	char	info[MAX_INFO_STRING];
-	int		i;
-	int		time;
-
-	if (!UI_LANJob_ActiveTarget()[0])
-	{
-		return;
-	}
-
-	for (i = 0; i < MAX_PINGREQUESTS; i++)
-	{
-		trap_LAN_GetPing(i, adrstr, sizeof(adrstr), &time);
-		if (!adrstr[0])
-		{
-			continue;
-		}
-		if (Q_stricmp(adrstr, UI_LANJob_ActiveTarget()))
-		{
-			continue;
-		}
-		if (!time)
-		{
-			continue;
-		}
-
-		trap_LAN_GetPingInfo(i, info, sizeof(info));
-		if (!info[0])
-		{
-			continue;
-		}
-
-		ui_lanJob.hasPingInfo = qtrue;
-		Q_strncpyz(ui_lanJob.pingInfo, info, sizeof(ui_lanJob.pingInfo));
-		return;
-	}
 }
 
 static void UI_LANJob_OnTimeout(void)
@@ -2040,7 +2042,7 @@ static void UI_LANJob_OnTimeout(void)
 	{
 		UI_ServerStatus_OnFetchTimeout();
 	}
-	UI_LANJob_Reset();
+	UI_LANJob_Complete();
 }
 
 static void UI_LANJob_Tick(void)
@@ -2187,6 +2189,7 @@ void UI_Init(void)
 
 	UI_RegisterCvars();
 	UI_RegisterCvarDescriptions();
+	trap_Cvar_Set("ui_beStatusChecked", "0");
 
 	UI_InitGameinfo();
 	UI_BeinfoCfg_Load();

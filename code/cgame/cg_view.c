@@ -1192,100 +1192,266 @@ Check for changes in player stats and print them to console
 //  }
 // }
 
-/* Health→color for client cache (file scope; cvars passed so loop never touches cvars). */
-#define CG_VIEW_HEALTH_COLOR_ONE(healthVal, armorVal, hcolorOut, levelsCached, lowCached, midCached) do { \
-    int _h = (healthVal); \
-    int _a = (armorVal); \
-    int _cnt, _max; \
-    if (_h <= 0) { VectorClear(hcolorOut); (hcolorOut)[3] = 1; } \
-    else { \
-        _cnt = _a; _max = _h * ARMOR_PROTECTION / (1.0 - ARMOR_PROTECTION); if (_max < _cnt) _cnt = _max; _h += _cnt; \
-        if (!(levelsCached)) { \
-            (hcolorOut)[0] = 1.0f; (hcolorOut)[3] = 1.0f; \
-            if (_h >= 100) (hcolorOut)[2] = 1.0f; else if (_h < 66) (hcolorOut)[2] = 0; else (hcolorOut)[2] = (float)(_h - 66) / 33.0f; \
-            if (_h > 60) (hcolorOut)[1] = 1.0f; else if (_h < 30) (hcolorOut)[1] = 0; else (hcolorOut)[1] = (float)(_h - 30) / 30.0f; \
-        } else { \
-            if (_h <= (lowCached)) VectorCopy(cg.beHealthLowColor, hcolorOut); \
-            else if (_h >= (midCached)) VectorCopy(cg.beHealthMidColor, hcolorOut); \
-            else VectorCopy(cg.beHealthColor, hcolorOut); \
-            (hcolorOut)[3] = 1.0f; \
-        } \
-    } \
-} while (0)
+// /*
+// =================
+// CG_ClientInfoUpdateLocalHealth
+// =================
+// POV (self or follow): snap stats → cg.healthColorLocal. Teammates: tInfo → healthColorByClient.
+// */
+// static void CG_ClientInfoUpdateLocalHealth(void)
+// {
+// 	CG_HealthColorFromStats(
+// 	    cg.snap->ps.stats[STAT_HEALTH],
+// 	    cg.snap->ps.stats[STAT_ARMOR],
+// 	    cg.healthColorLocal
+// 	);
+// }
 
 /*
 =================
-CG_ClientInfoUpdateFrame
+CG_ClientInfoUpdateEnemyViewFrame
 =================
-Per-frame: crosshair entity, health color cache, realNumClients. Local to view (no global macro).
+isEnemyView / isEnemyPowerupVisual, realNumClients, team roster counts (valid slots only).
 */
-static void CG_ClientInfoUpdateFrame(void)
+static int CG_ClientInfoUpdateEnemyViewFrame(qboolean teamMode, qboolean gtAllEnemies,
+        qboolean swapPwEnemy, qboolean isCA, qboolean isSpectator,
+        qboolean spectFollowPOV, int myRealTeam, int myStateTeam,
+        int followTeam, clientInfo_t* followCi)
 {
 	int i;
-	int levels, low, mid;
 	int count;
-	qboolean teamMode;
+	int enemyTeam;
+	qboolean isEnemy;
+	clientInfo_t* ci;
+	team_t rosterTeam;
 
-	if (!cg.snap)
-		return;
+	cg.teamPlayerCountRed = 0;
+	cg.teamPlayerCountBlue = 0;
 
-	levels = cg_healthColorLevels.integer;
-	low    = cg_healthLow.integer;
-	mid    = cg_healthMid.integer;
-
-	// локальный цвет всегда обновляется
-	CG_VIEW_HEALTH_COLOR_ONE(
-	    cg.snap->ps.stats[STAT_HEALTH],
-	    cg.snap->ps.stats[STAT_ARMOR],
-	    cg.healthColorLocal,
-	    levels, low, mid
-	);
-
-	teamMode = (cgs.gametype >= GT_TEAM);
 	count = 0;
-
-	/* T/E colors = team of the player we're viewing (snap); single place per frame with team client loop */
-	if (teamMode)
-		CG_UpdateMyTeam();
-
-	// -------------------------
-	// FFA: только считаем игроков
-	// -------------------------
-	if (!teamMode)
-	{
-		for (i = 0; i < MAX_CLIENTS; i++)
-		{
-			if (cgs.clientinfo[i].infoValid)
-				count++;
-		}
-
-		cg.realNumClients = count;
-		return;
-	}
-
-	// -------------------------
-	// TEAM: считаем + обновляем цвета
-	// -------------------------
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
-		if (!cgs.clientinfo[i].infoValid)
+		ci = &cgs.clientinfo[i];
+
+		if (!ci->infoValid)
 		{
-			VectorClear(cg.healthColorByClient[i]);
-			cg.healthColorByClient[i][3] = 1;
+			cg.isEnemyView[i] = qfalse;
+			cg.isEnemyPowerupVisual[i] = qfalse;
+			if (teamMode)
+			{
+				VectorClear(cg.healthColorByClient[i]);
+				cg.healthColorByClient[i][3] = 1;
+				cg.allyHealthBand[i] = CG_HEALTH_BAND_FULL;
+				cg.allyHealthBlinkMidLow[i] = qfalse;
+			}
 			continue;
 		}
 
 		count++;
 
-		CG_VIEW_HEALTH_COLOR_ONE(
-		    cgs.clientinfo[i].health,
-		    cgs.clientinfo[i].armor,
-		    cg.healthColorByClient[i],
-		    levels, low, mid
-		);
+		if (teamMode)
+		{
+			rosterTeam = isCA ? ci->rt : ci->team;
+			if (rosterTeam == TEAM_RED)
+			{
+				cg.teamPlayerCountRed++;
+			}
+			else if (rosterTeam == TEAM_BLUE)
+			{
+				cg.teamPlayerCountBlue++;
+			}
+		}
+
+		if (i == cg.clientNum)
+		{
+			cg.isEnemyView[i] = qfalse;
+			cg.isEnemyPowerupVisual[i] = qfalse;
+			continue;
+		}
+
+		if (gtAllEnemies)
+		{
+			cg.isEnemyView[i] = qtrue;
+			cg.isEnemyPowerupVisual[i] = qtrue;
+			continue;
+		}
+
+		enemyTeam = isCA ? ci->rt : ci->team;
+		isEnemy = qfalse;
+		if (isSpectator && spectFollowPOV && ci != followCi)
+		{
+			isEnemy = (qboolean)(followTeam != enemyTeam);
+		}
+		else if (isSpectator && !spectFollowPOV &&
+		         (myRealTeam == TEAM_RED || myRealTeam == TEAM_SPECTATOR))
+		{
+			isEnemy = (qboolean)(enemyTeam == TEAM_BLUE);
+		}
+		else if (isSpectator && !spectFollowPOV && myRealTeam == TEAM_BLUE)
+		{
+			isEnemy = (qboolean)(enemyTeam == TEAM_RED);
+		}
+		else if (!isSpectator &&
+		         (myStateTeam == TEAM_RED || myStateTeam == TEAM_BLUE))
+		{
+			isEnemy = (qboolean)(myStateTeam != enemyTeam);
+		}
+
+		cg.isEnemyView[i] = isEnemy;
+		cg.isEnemyPowerupVisual[i] = (qboolean)(isEnemy ^ swapPwEnemy);
 	}
 
-	cg.realNumClients = count;
+	return count;
+}
+
+/*
+=================
+CG_ClientInfoUpdateHealthBlinkPhases
+=================
+Timed low-color flash (base color from teaminfo; trigger in CG_ParseTeamInfo).
+*/
+static void CG_ClientInfoUpdateHealthBlinkPhases(void)
+{
+	int i;
+	int levels;
+	int elapsed;
+	int phase;
+	clientInfo_t* ci;
+
+	levels = cg_healthColorLevels.integer;
+	if (!levels || (levels & 4))
+	{
+		return;
+	}
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		int until;
+
+		until = cg.healthBlinkUntil[i];
+		if (!until || cg.time >= until)
+		{
+			if (until && cg.time >= until)
+			{
+				ci = &cgs.clientinfo[i];
+				if (ci->infoValid && i != cg.clientNum && ci->health > 0)
+				{
+					CG_HealthColorFromAllyBand(cg.allyHealthBand[i], cg.healthColorByClient[i]);
+				}
+				cg.healthBlinkUntil[i] = 0;
+				cg.allyHealthBlinkMidLow[i] = qfalse;
+			}
+			continue;
+		}
+
+		ci = &cgs.clientinfo[i];
+		if (!ci->infoValid || i == cg.clientNum || ci->health <= 0)
+		{
+			continue;
+		}
+
+		elapsed = cg.time - (until - CG_HEALTH_BLINK_MSEC);
+		if (elapsed < 0)
+		{
+			elapsed = 0;
+		}
+		phase = elapsed / CG_HEALTH_BLINK_PHASE_MSEC;
+		if (phase >= 3)
+		{
+			CG_HealthColorFromAllyBand(cg.allyHealthBand[i], cg.healthColorByClient[i]);
+			continue;
+		}
+		if (cg.allyHealthBlinkMidLow[i])
+		{
+			if (phase & 1)
+			{
+				VectorCopy(cg.beHealthLowColor, cg.healthColorByClient[i]);
+			}
+			else
+			{
+				VectorCopy(cg.beHealthColor, cg.healthColorByClient[i]);
+			}
+			cg.healthColorByClient[i][3] = 1.0f;
+		}
+		else if (phase & 1)
+		{
+			CG_HealthColorFromAllyBand(cg.allyHealthBand[i], cg.healthColorByClient[i]);
+		}
+		else
+		{
+			VectorCopy(cg.beHealthLowColor, cg.healthColorByClient[i]);
+			cg.healthColorByClient[i][3] = 1.0f;
+		}
+	}
+}
+
+/*
+=================
+CG_ClientInfoUpdateFrame
+=================
+Per-frame: local health color, isEnemyView, blink phases, realNumClients, UpdateMyTeam.
+Teammate health colors: CG_ParseTeamInfo. Must run before CG_AddPacketEntities.
+*/
+static void CG_ClientInfoUpdateFrame(void)
+{
+	int myRealTeam;
+	int myStateTeam;
+	int followNum;
+	int followTeam;
+	qboolean teamMode;
+	qboolean swapPwEnemy;
+	qboolean isCA;
+	qboolean gtAllEnemies;
+	qboolean isSpectator;
+	qboolean spectFollowPOV;
+	clientInfo_t* followCi;
+	const clientInfo_t* localCi;
+
+	if (!cg.snap)
+		return;
+
+	// Get main stats
+	CG_HealthColorFromStats(
+		cg.snap->ps.stats[STAT_HEALTH],
+		cg.snap->ps.stats[STAT_ARMOR],
+		cg.healthColorLocal,
+		NULL
+	);
+
+	teamMode = (cgs.gametype >= GT_TEAM);
+	swapPwEnemy = (teamMode && cg_swapSkins.integer);
+	gtAllEnemies = (qboolean)(cgs.gametype <= GT_SINGLE_PLAYER);
+
+	/* T/E colors = team of the player we're viewing (snap) */
+	if (teamMode)
+		CG_UpdateMyTeam();
+
+	isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+	localCi = &cgs.clientinfo[cg.clientNum];
+	myRealTeam = isCA ? localCi->rt : localCi->team;
+	myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
+	isSpectator = (qboolean)(myRealTeam == TEAM_SPECTATOR || myStateTeam == TEAM_SPECTATOR);
+	spectFollowPOV = qfalse;
+	followCi = NULL;
+	followTeam = 0;
+	if (isSpectator)
+	{
+		followNum = cg.snap->ps.clientNum;
+		if ((cg.snap->ps.pm_flags & PMF_FOLLOW) && followNum >= 0 &&
+		        followNum < MAX_CLIENTS && cg_spectPOV.integer)
+		{
+			spectFollowPOV = qtrue;
+			followCi = &cgs.clientinfo[followNum];
+			followTeam = isCA ? followCi->rt : followCi->team;
+		}
+	}
+
+	cg.realNumClients = CG_ClientInfoUpdateEnemyViewFrame(teamMode, gtAllEnemies,
+	                      swapPwEnemy, isCA, isSpectator, spectFollowPOV,
+	                      myRealTeam, myStateTeam, followTeam, followCi);
+
+	if (teamMode)
+		CG_ClientInfoUpdateHealthBlinkPhases();
 }
 
 /*
@@ -1302,12 +1468,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	cg.time = serverTime;
 	cg.demoPlayback = demoPlayback;
 
-	// // update cvars
-	// if (cgs.osp.cvarsUpdateDelay++ > 5)
-	// {
-	CG_UpdateCvars();
-	//  cgs.osp.cvarsUpdateDelay = 0;
-	// }
+	CG_UpdateCvars(0);
 
 	// if we are only updating the screen as a loading
 	// pacifier, don't even try to read snapshots
@@ -1326,6 +1487,8 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 
 	// set up cg.snap and possibly cg.nextSnap
 	CG_ProcessSnapshots();
+
+	CG_BEChat_Frame(stereoView);
 
 	// if we haven't received any snapshots yet, all
 	// we can draw is the information screen
@@ -1361,6 +1524,9 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_DamageBlendBlob();
 	}
 
+	/* Enemy/health client caches before entity add (hot paths read isEnemyView[]) */
+	CG_ClientInfoUpdateFrame();
+
 	// build the render lists
 	if (!cg.hyperspace)
 	{
@@ -1375,10 +1541,17 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	        CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS) ||
 	        cg.teamMarkers.supportedServer)
 		CG_TeamTaskUpdateFrame();
-	/* Single place per frame: crosshair entity, health color cache, realNumClients */
 
 	CG_ScanForCrosshairEntity();
-	CG_ClientInfoUpdateFrame();
+	if ((cg_friendsWallhack.integer & CG_FRIENDS_WALLHACK_GLOBAL_POS) && CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) &&
+	        cgs.gametype >= GT_TEAM && cg.snap)
+	{
+		CG_UpdateTeamGlobalPosFrame();
+	}
+	else
+	{
+		CG_ClearTeamGlobalPosFrame();
+	}
 
 	CG_AddViewWeapon(&cg.predictedPlayerState);
 

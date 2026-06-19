@@ -24,38 +24,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../qcommon/l_crc.h"
 
-qboolean CG_IsEnemyForPowerupVisual(const clientInfo_t* target)
-{
-	const clientInfo_t* localCi;
-
-	if (!target)
-	{
-		return qfalse;
-	}
-	localCi = &cgs.clientinfo[cg.clientNum];
-	if (target == localCi)
-	{
-		return qfalse;
-	}
-	if (!target->infoValid)
-	{
-		return qfalse;
-	}
-	if (cgs.gametype <= GT_SINGLE_PLAYER)
-	{
-		return qtrue;
-	}
-	{
-		qboolean isEnemy;
-
-		isEnemy = CG_IsEnemy(target);
-		if (cgs.gametype >= GT_TEAM && cg_swapSkins.integer)
-		{
-			isEnemy = (qboolean)!isEnemy;
-		}
-		return isEnemy;
-	}
-}
 #include "tr_types.h"
 
 #define SHADOW_DISTANCE 128  /* base from ground to player for shadow trace */
@@ -81,7 +49,7 @@ static void CG_UpdateOtherClientsInfo(void);
 void CG_UpdateAllClientsInfo(void);
 static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new);
 
-/* QVM: outline cache at file scope so CG_Player can inline the add after each body part (saves 2 function calls per player) */
+/* Outline draw cache at file scope (CG_PlayerOutlineBegin / per body part) */
 static centity_t* lastOutlineCent;
 static qboolean outlineCachedDraw;
 static qhandle_t outlineCachedShader;
@@ -1640,7 +1608,7 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 	const char* cfgModelString = Info_ValueForKey(config, "model");
 	const char* cfgHModelString = Info_ValueForKey(config, "hmodel");
 
-	// сначала решим какую строку модели использовать
+	// decide which model string to use first
 	if (isOurClient)
 	{
 		trap_Cvar_VariableStringBuffer("model", modelName, sizeof(modelName));
@@ -2948,7 +2916,7 @@ static void CG_PlayerPowerups(centity_t* cent)
 			isEnemyPlayer = qfalse;
 			if (cg.enemyQuadDamageColorEnabled)
 			{
-				isEnemyPlayer = CG_IsEnemyForPowerupVisual(ci);
+				isEnemyPlayer = CG_CACHED_IS_ENEMY_POWERUP_NUM(clientNum);
 			}
 			useEnemyMono = cg.enemyQuadDamageColorEnabled && isEnemyPlayer;
 			useQuadMono = cg.quadDamageColorEnabled && !useEnemyMono;
@@ -3035,39 +3003,25 @@ static void CG_PlayerPowerups(centity_t* cent)
 
 /*
 ===============
-CG_PlayerFloatSprite
+CG_AddFloatSpriteAtOrigin
 
-Float a sprite over the player's head
+World-space float sprite (friend arrow, talk balloon, etc.) at a player origin.
 ===============
 */
-static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars)
+static float CG_FloatSpriteRadiusAtOrigin(const vec3_t worldOrigin, qboolean useFloatSpriteCvars, float zLift)
 {
-	int             rf;
-	refEntity_t     ent;
-	float           radius;
+	vec3_t entOrigin;
+	vec3_t delta;
+	float  minSize;
+	int    maxDist;
+	float  dist;
+	float  radius;
 
-	if (cent->currentState.number == cg.snap->ps.clientNum && !cg.renderingThirdPerson)
-	{
-		rf = RF_THIRD_PERSON;       // only show in mirrors
-	}
-	else
-	{
-		rf = 0;
-	}
-
-	memset(&ent, 0, sizeof(ent));
-	VectorCopy(cent->lerpOrigin, ent.origin);
-	ent.origin[2] += 48;
-	ent.reType = RT_SPRITE;
-	ent.customShader = shader;
+	VectorCopy(worldOrigin, entOrigin);
+	entOrigin[2] += 48.0f + zLift;
 
 	if (useFloatSpriteCvars)
 	{
-		vec3_t          delta;
-		float           minSize;
-		int             maxDist;
-		float           dist;
-
 		minSize = cg_floatSpriteMinSize.value;
 		if (minSize <= 0.0f)
 		{
@@ -3077,11 +3031,11 @@ static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color
 		maxDist = cg_floatSpriteMaxDist.integer;
 		if (maxDist > 0)
 		{
-			VectorSubtract(ent.origin, cg.refdef.vieworg, delta);
+			VectorSubtract(entOrigin, cg.refdef.vieworg, delta);
 			dist = (float)VectorLength(delta);
-			if (dist >= maxDist)
+			if (dist >= (float)maxDist)
 			{
-				radius *= dist / maxDist;
+				radius *= dist / (float)maxDist;
 			}
 		}
 	}
@@ -3089,17 +3043,65 @@ static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color
 	{
 		radius = 10.0f;
 	}
-	ent.radius = radius;
-	ent.renderfx = rf;
-	if (color)
+	return radius;
+}
+
+void CG_AddFloatSpriteAtOrigin(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale, float zLift)
+{
+	int             rf;
+	refEntity_t     ent;
+	float           radius;
+	byte            alphaByte;
+
+	if (!shader)
 	{
-		MAKERGBA(ent.shaderRGBA, color[0] * 255, color[1] * 255, color[2] * 255, 255);
+		return;
+	}
+
+	if (alphaScale <= 0.0f)
+	{
+		return;
+	}
+
+	if (cg.snap && subjectClientNum == cg.snap->ps.clientNum && !cg.renderingThirdPerson)
+	{
+		rf = RF_THIRD_PERSON;
 	}
 	else
 	{
-		MAKERGBA(ent.shaderRGBA, 255, 255, 255, 255);
+		rf = 0;
+	}
+
+	memset(&ent, 0, sizeof(ent));
+	VectorCopy(worldOrigin, ent.origin);
+	ent.origin[2] += 48.0f + zLift;
+	ent.reType = RT_SPRITE;
+	ent.customShader = shader;
+
+	radius = CG_FloatSpriteRadiusAtOrigin(worldOrigin, useFloatSpriteCvars, zLift);
+	ent.radius = radius;
+	ent.renderfx = rf;
+
+	alphaByte = (byte)(255.0f * alphaScale);
+	if (alphaByte < 1)
+	{
+		alphaByte = 1;
+	}
+
+	if (color)
+	{
+		MAKERGBA(ent.shaderRGBA, color[0] * 255, color[1] * 255, color[2] * 255, alphaByte);
+	}
+	else
+	{
+		MAKERGBA(ent.shaderRGBA, 255, 255, 255, alphaByte);
 	}
 	trap_R_AddRefEntityToScene(&ent);
+}
+
+static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale)
+{
+	CG_AddFloatSpriteAtOrigin(cent->lerpOrigin, cent->currentState.number, shader, color, useFloatSpriteCvars, alphaScale, 0.0f);
 }
 
 /*
@@ -3118,17 +3120,19 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 	qboolean     hasOverhead = cg.teamMarkers.drawTeamTasks && cg.teamMarkers.clientHasOverhead[clientNum];
 
 	if (hasOverhead)
+	{
 		return;
+	}
 
 	if (cent->currentState.eFlags & EF_CONNECTION)
 	{
-		CG_PlayerFloatSprite(cent, cgs.media.connectionShader, NULL, qtrue);
+		CG_PlayerFloatSprite(cent, cgs.media.connectionShader, NULL, qfalse, 1.0f);
 		return;
 	}
 
 	if (cent->currentState.eFlags & EF_TALK)
 	{
-		CG_PlayerFloatSprite(cent, cgs.media.balloonShader, NULL, qtrue);
+		CG_PlayerFloatSprite(cent, cgs.media.balloonShader, NULL, qfalse, 1.0f);
 		return;
 	}
 
@@ -3174,9 +3178,13 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 	}
 
 	if (rewardShader)
-		CG_PlayerFloatSprite(cent, rewardShader, NULL, qfalse);
+	{
+		CG_PlayerFloatSprite(cent, rewardShader, NULL, qfalse, 1.0f);
+	}
 	else if (friendShader)
-		CG_PlayerFloatSprite(cent, friendShader, friendColor, qtrue);
+	{
+		CG_PlayerFloatSprite(cent, friendShader, friendColor, qtrue, 1.0f);
+	}
 }
 
 void CG_AddRefEntityFrozenPlayer(refEntity_t* ent, entityState_t* state, int team)
@@ -3267,7 +3275,7 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 
 			if (ci->infoValid)
 			{
-				isEnemyPlayer = CG_IsEnemyForPowerupVisual(ci);
+				isEnemyPlayer = CG_CACHED_IS_ENEMY_POWERUP_NUM(state->clientNum);
 			}
 		}
 
@@ -3444,7 +3452,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	}
 
 	// if they don't exist, forget it
-	if (!CG_IsEnemy(ci))
+	if (!CG_CACHED_IS_ENEMY_CI(ci))
 	{
 		return;
 	}
@@ -3826,17 +3834,8 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 	}
 }
 
-/*
-===============
-CG_FriendHudMarker
-
-Draw HUD marker for a teammate (distance, traces, wallhack, frozen, health color).
-Early returns when markers disabled, not team game, spectator, self, or not ally.
-===============
-*/
-static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clientNum, qboolean useTeamFrozen, qboolean useTeamFoeWh)
+void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clientNum, qboolean isFrozen, qboolean useTeamFrozen, qboolean useTeamFoeWh, int baseAngle, float alphaScale)
 {
-	qboolean isFrozen;
 	qboolean friendVisible;
 	vec3_t start;
 	vec3_t end;
@@ -3849,29 +3848,25 @@ static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clie
 		return;
 	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
 		return;
-	if (cent->currentState.number == cg.snap->ps.clientNum)
+	if (clientNum == cg.snap->ps.clientNum)
 		return;
 	if (ci->team != cg.snap->ps.persistant[PERS_TEAM])
 		return;
 
-	if (CG_IsKillerGhostBody(&cent->currentState))
-		return;
-
-	isFrozen = CG_IS_FROZEN_ENTITY(cent);
-	if ((cent->currentState.eFlags & EF_DEAD) && !isFrozen)
+	if (!isFrozen && ci->health <= 0)
 		return;
 
 	friendVisible = qtrue;
 	if (!(cg_friendsWallhack.integer & 2) || (isFrozen && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen)))
 	{
 		VectorCopy(cg.refdef.vieworg, start);
-		VectorCopy(cent->lerpOrigin, end);
+		VectorCopy(origin, end);
 		end[2] += 24.0f;
 		CG_Trace(&trace, start, vec3_origin, vec3_origin, end, cg.snap->ps.clientNum, CONTENTS_SOLID);
 		friendVisible = (trace.fraction == 1.0f);
 		if (friendVisible)
 		{
-			CG_Trace(&trace, start, vec3_origin, vec3_origin, cent->lerpOrigin, cg.snap->ps.clientNum, CONTENTS_SOLID);
+			CG_Trace(&trace, start, vec3_origin, vec3_origin, origin, cg.snap->ps.clientNum, CONTENTS_SOLID);
 			friendVisible = (trace.fraction == 1.0f);
 		}
 	}
@@ -3880,7 +3875,7 @@ static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clie
 	if (isFrozen && !friendVisible && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen))
 		return;
 
-	dist = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
+	dist = Distance(origin, cg.predictedPlayerState.origin);
 	if (cg_friendHudMarkerMaxDist.integer > 0 && dist > cg_friendHudMarkerMaxDist.value)
 		return;
 
@@ -3897,9 +3892,32 @@ static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clie
 			Vector4Copy(colorWhite, color);
 		else
 			Vector4Copy(cg.healthColorByClient[clientNum], color);
-		CG_HudBorderMarker(cent->lerpOrigin, color, cg_friendHudMarkerSize.value * sz,
-		                   isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader, 270);
+		color[3] *= alphaScale;
+		CG_HudBorderMarker(origin, color, cg_friendHudMarkerSize.value * sz,
+		                   isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader, baseAngle);
 	}
+}
+
+/*
+===============
+CG_FriendHudMarker
+
+Draw HUD marker for a teammate (distance, traces, wallhack, frozen, health color).
+Early returns when markers disabled, not team game, spectator, self, or not ally.
+===============
+*/
+static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clientNum, qboolean useTeamFrozen, qboolean useTeamFoeWh)
+{
+	qboolean isFrozen;
+
+	if (CG_IsKillerGhostBody(&cent->currentState))
+		return;
+
+	isFrozen = CG_IS_FROZEN_ENTITY(cent);
+	if ((cent->currentState.eFlags & EF_DEAD) && !isFrozen)
+		return;
+
+	CG_FriendHudMarkerAtOrigin(cent->lerpOrigin, ci, clientNum, isFrozen, useTeamFrozen, useTeamFoeWh, 270, 1.0f);
 }
 
 /*
@@ -3918,14 +3936,13 @@ void CG_Player(centity_t* cent)
 	qboolean        shadow;
 	float           shadowPlane;
 	qboolean        paintItBlack;
+	qboolean        deadBodyHide;
 	qboolean        useOutline;
 	qboolean useMarkTeammate;
 	qboolean outlineIsEnemy;
 	qboolean useTeamFrozen;
 	qboolean useTeamFoeWh;
-	/* QVM_LOGIC: pre-computed paintBlack - avoid 3x branch + 3x triple-assign */
 	byte            paintBlackRGBA[4] = {0, 0, 0, 0xff};
-	/* QVM: one pointer for many accesses to same global slot - cheaper than repeated cgs.clientinfo[cg.clientNum] */
 	const clientInfo_t* localCi = &cgs.clientinfo[cg.clientNum];
 
 	if (cg.clientNum == cent->currentState.clientNum && (global_viewlistFirstOption || localCi->team == TEAM_SPECTATOR))
@@ -3977,14 +3994,12 @@ void CG_Player(centity_t* cent)
 		return;
 	}
 
-	/* QVM_LOGIC: compute feature flags once per player instead of multiple checks */
 	useMarkTeammate = CG_BE_FEATURE_ENABLED(CG_BE_MARK_TEAMMATE);
 	useOutline = CG_BE_FEATURE_ENABLED(CG_BE_OUTLINE) && cg_drawOutline.integer;
-	outlineIsEnemy = useOutline ? CG_IsEnemyForPowerupVisual(ci) : qfalse;
+	outlineIsEnemy = useOutline ? CG_CACHED_IS_ENEMY_POWERUP_CI(ci) : qfalse;
 	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
 	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 
-	/* QVM: one outline cache update per player; outline add inlined after each body part (saves 2 calls) */
 	CG_PlayerOutlineBegin(cent, useOutline, useMarkTeammate, outlineIsEnemy);
 
 	renderfx = 0;
@@ -4009,7 +4024,6 @@ void CG_Player(centity_t* cent)
 
 	CG_PlayerAngles(cent, legs.axis, torso.axis, head.axis);
 	CG_PlayerAnimation(cent, &legs.oldframe, &legs.frame, &legs.backlerp, &torso.oldframe, &torso.frame, &torso.backlerp);
-	/* QVM_LOGIC: skip call when no powerups and not spect glow - CG_PlayerPowerups returns immediately anyway */
 	if ((CG_IsKillerGhostBody(&cent->currentState) && cg_killerGhost.integer == 1) ||
 	        (!CG_IsKillerGhostBody(&cent->currentState) && cent->currentState.powerups) ||
 	        (localCi->team == TEAM_SPECTATOR && cg_spectGlow.integer))
@@ -4030,11 +4044,24 @@ void CG_Player(centity_t* cent)
 	}
 	renderfx |= RF_LIGHTING_ORIGIN;         // use the same origin for all
 	//
-	paintItBlack = cg_deadBodyBlack.integer && (
+	deadBodyHide = qfalse;
+	if ((cent->currentState.eFlags & EF_DEAD) && cg_deadBodyInvisible.integer)
+	{
+		/* intermission vote: keep armed player models visible; in-game hide corpse immediately */
+		if (!(cg.snap && cg.snap->ps.pm_type == PM_INTERMISSION && cent->currentState.weapon != WP_NONE))
+		{
+			deadBodyHide = qtrue;
+			legs.customShader = cgs.media.invisShader;
+			torso.customShader = cgs.media.invisShader;
+			head.customShader = cgs.media.invisShader;
+		}
+	}
+
+	paintItBlack = cg_deadBodyBlack.integer && !deadBodyHide && (
 	                   cent->currentState.eFlags & EF_DEAD || //dead
 	                   (cgs.osp.gameTypeFreeze && (cent->currentState.weapon == WP_NONE) && (cent->currentState.powerups & (1 << PW_BATTLESUIT)))// or frozen
 	               );
-	/* QVM_LOGIC: pre-compute paintBlack RGBA once, apply 3x via single int copy; lookup table avoids switch */
+	/* paintBlack: one RGBA + lookup table by cg_deadBodyBlack */
 	if (paintItBlack)
 	{
 		static const byte paintLevels[] = {55, 165, 110, 55};
@@ -4043,16 +4070,6 @@ void CG_Player(centity_t* cent)
 		paintBlackRGBA[1] = level;
 		paintBlackRGBA[2] = level;
 		/* [3] already 0xff from init */
-	}
-
-	if ((cent->currentState.eFlags & EF_DEAD) && cg_deadBodyInvisible.integer)
-	{
-		if (cent->currentState.weapon == WP_NONE)   // show player model with weapon during intermission vote - don't make it invisible
-		{
-			legs.customShader = cgs.media.invisShader;
-			torso.customShader = cgs.media.invisShader;
-			head.customShader = cgs.media.invisShader;
-		}
 	}
 
 

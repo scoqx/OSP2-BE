@@ -4,6 +4,27 @@
 
 static superhudElement_t* elementsHead;
 
+static const int shudKeyShowVflag[8] =
+{
+	SE_KEY1_SHOW, SE_KEY2_SHOW, SE_KEY3_SHOW, SE_KEY4_SHOW,
+	SE_KEY5_SHOW, SE_KEY6_SHOW, SE_KEY7_SHOW, SE_KEY8_SHOW
+};
+
+static const int shudWeaponShowVflag[WP_NUM_WEAPONS] =
+{
+	0,
+	SE_WEAPON_GAUNTLET,
+	SE_WEAPON_MACHINEGUN,
+	SE_WEAPON_SHOTGUN,
+	SE_WEAPON_GRENADE_LAUNCHER,
+	SE_WEAPON_ROCKET_LAUNCHER,
+	SE_WEAPON_LIGHTNING,
+	SE_WEAPON_RAILGUN,
+	SE_WEAPON_PLASMAGUN,
+	SE_WEAPON_BFG,
+	0
+};
+
 static void CG_SHUDRoutenesDestroy(superhudElement_t* shud)
 {
 	superhudElement_t* tmp;
@@ -26,7 +47,398 @@ static void CG_SHUDUpdateVisflags(superHUDConfigElement_t* element, const superh
 	if (element && config && config->visflags.isSet)
 	{
 		element->visibility = config->visflags.value;
+		element->visibilityNeg = config->visflags.valueNeg;
 	}
+}
+
+static qboolean CG_SHUDStyleVisSkip(const superhudConfig_t* config)
+{
+	int activeStyle;
+	int mask;
+
+	if (!config->visiblity.isSet)
+	{
+		return qfalse;
+	}
+
+	activeStyle = cg_shudStyle.integer;
+	if (activeStyle < 1)
+	{
+		activeStyle = 1;
+	}
+	else if (activeStyle > 4)
+	{
+		activeStyle = 4;
+	}
+	mask = 1 << (activeStyle - 1);
+
+	if ((config->visiblity.valueNeg & mask) != 0)
+	{
+		return qtrue;
+	}
+	if ((config->visiblity.value & SE_SHUD_STYLE_ANY) != 0)
+	{
+		return (config->visiblity.value & mask) == 0;
+	}
+
+	return qfalse;
+}
+
+static qboolean CG_SHUDGametypeSkipForGt(int vflags, int gt, qboolean gameTypeFreeze)
+{
+	return ((vflags & SE_GT_FFA) && gt == GT_FFA) ||
+	       ((vflags & SE_GT_TDM) && gt == GT_TEAM && !gameTypeFreeze) ||
+	       ((vflags & SE_GT_CTF) && gt == GT_CTF) ||
+	       ((vflags & SE_GT_TOURNEY) && gt == GT_TOURNAMENT) ||
+	       ((vflags & SE_GT_FREEZETAG) && (gt == GT_TEAM || gt == GT_CTF) && gameTypeFreeze) ||
+	       ((vflags & SE_GT_CLANARENA) && gt >= GT_CA);
+}
+
+static qboolean CG_SHUDVisflagsAreGametypeOnly(int vflags, int vflagsNeg)
+{
+	int other;
+
+	other = vflags & ~(SE_GT_ANY | SE_SHOW_EMPTY);
+	other |= vflagsNeg & ~(SE_GT_ANY | SE_SHOW_EMPTY);
+	return ((vflags | vflagsNeg) & SE_GT_ANY) != 0 && other == 0;
+}
+
+#define SE_WEAPON_ANY (SE_WEAPON_GAUNTLET | SE_WEAPON_MACHINEGUN | SE_WEAPON_SHOTGUN | \
+	SE_WEAPON_GRENADE_LAUNCHER | SE_WEAPON_ROCKET_LAUNCHER | SE_WEAPON_LIGHTNING | \
+	SE_WEAPON_RAILGUN | SE_WEAPON_PLASMAGUN | SE_WEAPON_BFG)
+
+/* Optional per-frame visflags rules (subset of SE_*); only evaluated if set in frameChecks. */
+#define SHUD_FCHK_KEY_SHOW  (1 << 0)
+#define SHUD_FCHK_GT_SHOW   (1 << 1)
+#define SHUD_FCHK_TEAM      (1 << 2)
+#define SHUD_FCHK_SCORES    (1 << 3)
+#define SHUD_FCHK_DEMO      (1 << 4)
+#define SHUD_FCHK_KEY_NEG   (1 << 5)
+#define SHUD_FCHK_GT_NEG    (1 << 6)
+#define SHUD_FCHK_HEALTH    (1 << 7)
+#define SHUD_FCHK_WARMUP    (1 << 8)
+#define SHUD_FCHK_WEAPON    (1 << 9)
+
+/*
+ * Cache visflags on the element once at config load (after visibility is copied from config).
+ */
+static void CG_SHUDElementVisPrepare(superhudElement_t* el)
+{
+	int vflags;
+	int vflagsNeg;
+	int combined;
+	int frameChecks;
+	superhudElementVis_t* vis;
+
+	vflags = el->element.visibility;
+	vflagsNeg = el->element.visibilityNeg;
+	combined = vflags | vflagsNeg;
+	frameChecks = 0;
+
+	if (vflags & SE_KEY_ANY)
+	{
+		frameChecks |= SHUD_FCHK_KEY_SHOW;
+	}
+	if (vflags & SE_GT_ANY)
+	{
+		frameChecks |= SHUD_FCHK_GT_SHOW;
+	}
+	if (combined & SE_TEAM_ONLY)
+	{
+		frameChecks |= SHUD_FCHK_TEAM;
+	}
+	if (combined & SE_SCORES_HIDE)
+	{
+		frameChecks |= SHUD_FCHK_SCORES;
+	}
+	if (combined & SE_DEMO_HIDE)
+	{
+		frameChecks |= SHUD_FCHK_DEMO;
+	}
+	if (vflagsNeg & SE_KEY_ANY)
+	{
+		frameChecks |= SHUD_FCHK_KEY_NEG;
+	}
+	if (vflagsNeg & SE_GT_ANY)
+	{
+		frameChecks |= SHUD_FCHK_GT_NEG;
+	}
+	if (combined & SE_HEALTH_LOW)
+	{
+		frameChecks |= SHUD_FCHK_HEALTH;
+	}
+	if (combined & SE_WARMUP)
+	{
+		frameChecks |= SHUD_FCHK_WARMUP;
+	}
+	if (combined & SE_WEAPON_ANY)
+	{
+		frameChecks |= SHUD_FCHK_WEAPON;
+	}
+
+	vis = &el->vis;
+	vis->vflags = vflags;
+	vis->vflagsNeg = vflagsNeg;
+	vis->frameChecks = frameChecks;
+	vis->showInIntermission = (vflags & SE_IM) != 0 && (vflagsNeg & SE_IM) == 0;
+	vis->showWhenDead = (vflags & SE_DEAD) != 0 && (vflagsNeg & SE_DEAD) == 0;
+	vis->showWhenSpect = (vflags & SE_SPECT) != 0 && (vflagsNeg & SE_SPECT) == 0;
+}
+
+/*
+ * Return qtrue if the element should be drawn this frame (visflags vs frame context).
+ */
+static qboolean CG_SHUDElementVisible(const superhudElement_t* el, const superhudFrameContext_t* fc,
+                                      qboolean be_health_low)
+{
+	const superhudElementVis_t* vis;
+	int vflags;
+	int vflagsNeg;
+	int frameChecks;
+	qboolean is_spectator_for_element;
+
+	vis = &el->vis;
+	vflags = vis->vflags;
+	vflagsNeg = vis->vflagsNeg;
+	frameChecks = vis->frameChecks;
+
+	if (fc->is_intermission && !vis->showInIntermission)
+	{
+		return qfalse;
+	}
+	if (fc->is_dead && !vis->showWhenDead)
+	{
+		return qfalse;
+	}
+
+	is_spectator_for_element = fc->is_spectator;
+	if (el->element.isFragmessage)
+	{
+		is_spectator_for_element = fc->is_spectator || (fc->pm_type == PM_SPECTATOR);
+	}
+	if (is_spectator_for_element && !vis->showWhenSpect)
+	{
+		return qfalse;
+	}
+
+	if (!frameChecks)
+	{
+		return qtrue;
+	}
+
+	if ((frameChecks & SHUD_FCHK_KEY_SHOW) && fc->keyHideMask && (vflags & fc->keyHideMask))
+	{
+		return qfalse;
+	}
+	if ((frameChecks & SHUD_FCHK_GT_SHOW) && (vflags & fc->gtHideMask))
+	{
+		return qfalse;
+	}
+	if (frameChecks & SHUD_FCHK_TEAM)
+	{
+		if ((vflags & SE_TEAM_ONLY) && !fc->is_team_game)
+		{
+			return qfalse;
+		}
+		if ((vflagsNeg & SE_TEAM_ONLY) && fc->is_team_game)
+		{
+			return qfalse;
+		}
+	}
+	if (frameChecks & SHUD_FCHK_SCORES)
+	{
+		if ((vflags & SE_SCORES_HIDE) && fc->is_scores)
+		{
+			return qfalse;
+		}
+		if ((vflagsNeg & SE_SCORES_HIDE) && !fc->is_scores)
+		{
+			return qfalse;
+		}
+	}
+	if (frameChecks & SHUD_FCHK_DEMO)
+	{
+		if ((vflags & SE_DEMO_HIDE) && fc->demo_playback)
+		{
+			return qfalse;
+		}
+		if ((vflagsNeg & SE_DEMO_HIDE) && !fc->demo_playback)
+		{
+			return qfalse;
+		}
+	}
+	if ((frameChecks & SHUD_FCHK_KEY_NEG) && (vflagsNeg & ~fc->keyHideMask & SE_KEY_ANY))
+	{
+		return qfalse;
+	}
+	if ((frameChecks & SHUD_FCHK_GT_NEG) && !(vflagsNeg & fc->gtHideMask))
+	{
+		return qfalse;
+	}
+	if (frameChecks & SHUD_FCHK_HEALTH)
+	{
+		if ((vflags & SE_HEALTH_LOW) && !be_health_low)
+		{
+			return qfalse;
+		}
+		if ((vflagsNeg & SE_HEALTH_LOW) && be_health_low)
+		{
+			return qfalse;
+		}
+	}
+	if (frameChecks & SHUD_FCHK_WARMUP)
+	{
+		if ((vflags & SE_WARMUP) && !fc->is_warmup)
+		{
+			return qfalse;
+		}
+		if ((vflagsNeg & SE_WARMUP) && fc->is_warmup)
+		{
+			return qfalse;
+		}
+	}
+	if (frameChecks & SHUD_FCHK_WEAPON)
+	{
+		if (((vflags & SE_WEAPON_ANY) && !(vflags & fc->weaponVis)) ||
+		        ((vflagsNeg & SE_WEAPON_ANY) && (vflagsNeg & fc->weaponVis)))
+		{
+			return qfalse;
+		}
+	}
+
+	return qtrue;
+}
+
+static void CG_SHUDFinalizeElementChain(superhudElement_t** head)
+{
+	superhudElement_t* el;
+	superhudElement_t** link;
+	int vflags;
+	int vflagsNeg;
+
+	if (!head || !*head)
+	{
+		return;
+	}
+
+	link = head;
+	el = *head;
+	while (el)
+	{
+		if (!el->element.context || !el->element.routine)
+		{
+			superhudElement_t* drop;
+
+			drop = el;
+			el = el->next;
+			*link = el;
+			Z_Free(drop);
+			continue;
+		}
+
+		vflags = el->element.visibility;
+		vflagsNeg = el->element.visibilityNeg;
+		CG_SHUDElementVisPrepare(el);
+
+		if (CG_SHUDVisflagsAreGametypeOnly(vflags, vflagsNeg) &&
+		        CG_SHUDGametypeSkipForGt(vflags, cgs.gametype, cgs.osp.gameTypeFreeze))
+		{
+			superhudElement_t* drop;
+
+			drop = el;
+			el = el->next;
+			*link = el;
+			if (drop->element.destroy)
+			{
+				drop->element.destroy(drop->element.context);
+			}
+			Z_Free(drop);
+			continue;
+		}
+
+		if (CG_SHUDStyleVisSkip(&el->config))
+		{
+			superhudElement_t* drop;
+
+			drop = el;
+			el = el->next;
+			*link = el;
+			if (drop->element.destroy)
+			{
+				drop->element.destroy(drop->element.context);
+			}
+			Z_Free(drop);
+			continue;
+		}
+
+		link = &el->next;
+		el = el->next;
+	}
+}
+
+/* Per-frame player/HUD state used by CG_SHUDElementVisible (see superhudElementVis_t). */
+static void CG_SHUDFillFrameContext(superhudFrameContext_t* fc)
+{
+	int gt;
+	int i;
+	int keyHideMask;
+	int pm_type;
+
+	pm_type = cg.predictedPlayerState.pm_type;
+	gt = cgs.gametype;
+	fc->pm_type = pm_type;
+	fc->currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
+	fc->is_dead = (pm_type == PM_DEAD || pm_type == PM_FREEZE);
+	fc->is_intermission = (pm_type == PM_INTERMISSION);
+	fc->is_team_game = (gt >= GT_TEAM);
+	fc->is_spectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+	fc->is_scores = cg.scoreBoardShowing;
+	fc->is_warmup = (cg.warmup != 0) ? qtrue : qfalse;
+	fc->demo_playback = cg.demoPlayback;
+
+	fc->weaponVis = 0;
+	if (fc->currentWeapon > WP_NONE && fc->currentWeapon < WP_NUM_WEAPONS)
+	{
+		fc->weaponVis = shudWeaponShowVflag[fc->currentWeapon];
+	}
+
+	fc->gtHideMask = 0;
+	if (gt == GT_FFA)
+	{
+		fc->gtHideMask |= SE_GT_FFA;
+	}
+	if (gt == GT_TOURNAMENT)
+	{
+		fc->gtHideMask |= SE_GT_TOURNEY;
+	}
+	if (gt == GT_TEAM && !cgs.osp.gameTypeFreeze)
+	{
+		fc->gtHideMask |= SE_GT_TDM;
+	}
+	if (gt == GT_CTF)
+	{
+		fc->gtHideMask |= SE_GT_CTF;
+	}
+	if ((gt == GT_TEAM || gt == GT_CTF) && cgs.osp.gameTypeFreeze)
+	{
+		fc->gtHideMask |= SE_GT_FREEZETAG;
+	}
+	if (gt >= GT_CA)
+	{
+		fc->gtHideMask |= SE_GT_CLANARENA;
+	}
+
+	keyHideMask = 0;
+	i = 0;
+	do
+	{
+		if (!cgs.osp.shud.key[i])
+		{
+			keyHideMask |= shudKeyShowVflag[i];
+		}
+	}
+	while (++i < 8);
+	fc->keyHideMask = keyHideMask;
 }
 
 static void CG_SHUDExecuteCommands(const char* commands)
@@ -51,7 +463,7 @@ static void CG_SHUDExecuteCommands(const char* commands)
 	trap_SendConsoleCommand(commandBuffer);
 }
 
-qboolean CG_SHUDLoadConfigPrivate(const char* filename)
+qboolean CG_SHUDLoadConfigPrivate(const char* filename, qboolean silent)
 {
 	fileHandle_t fileHandle;
 	int rc;
@@ -356,12 +768,25 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename)
 
 	}
 
+	CG_SHUDFinalizeElementChain(&newElementsHead);
 
+	{
+		superhudElement_t* countEl;
+
+		numberOfElementsCreated = 0;
+		for (countEl = newElementsHead; countEl; countEl = countEl->next)
+		{
+			++numberOfElementsCreated;
+		}
+	}
 
 	CG_SHUDRoutenesDestroy(elementsHead);
 	elementsHead = newElementsHead;
 
-	CG_Printf("^3SuperHUD: loaded config file: %s: %d drawable element%s.\n", superhudFilename, numberOfElementsCreated, numberOfElementsCreated > 1 ? "s" : "");
+	if (!silent)
+	{
+		CG_Printf("^3SuperHUD: loaded config file: %s: %d drawable element%s.\n", superhudFilename, numberOfElementsCreated, numberOfElementsCreated > 1 ? "s" : "");
+	}
 
 	CG_SHUDFileInfoTeardown(&finfo);
 	return qtrue;
@@ -390,6 +815,7 @@ void CG_SHUDChatRestore(void)
 		index = (ctx->chat.index + i) % SHUD_MAX_CHAT_LINES;
 		Com_sprintf(cvar_name, MAX_QPATH, "cg_shud_chatmsg%d", index);
 		trap_Cvar_VariableStringBuffer(cvar_name, ctx->chat.line[index].message, sizeof(ctx->chat.line[index].message));
+		ctx->chat.line[index].senderClientNum = -1;
 	}
 	trap_Cvar_VariableStringBuffer("cg_shud_chatindex", index_str, sizeof(index_str));
 	ctx->chat.index = atoi(index_str);
@@ -398,12 +824,12 @@ void CG_SHUDChatRestore(void)
 /*
  * Load SuperHUD config
  */
-void CG_SHUDLoadConfig(void)
+void CG_SHUDLoadConfig(qboolean silent)
 {
-	if (!CG_SHUDLoadConfigPrivate(ch_file.string))
+	if (!CG_SHUDLoadConfigPrivate(ch_file.string, silent))
 	{
 		CG_Printf("^1SuperHUD: couldn't load file %s, going to load default.cfg\n", ch_file.string);
-		if (!CG_SHUDLoadConfigPrivate("default"))
+		if (!CG_SHUDLoadConfigPrivate("roamer", silent))
 		{
 			CG_Printf("^1SuperHUD: couldn't default config, going to disable SuperHUD\n", ch_file.string);
 			trap_Cvar_Set("cg_shud", "0");
@@ -415,114 +841,31 @@ void CG_SHUDLoadConfig(void)
 	}
 }
 
-#define SE_WEAPON_ANY (SE_WEAPON_GAUNTLET | SE_WEAPON_MACHINEGUN | SE_WEAPON_SHOTGUN | \
-    SE_WEAPON_GRENADE_LAUNCHER | SE_WEAPON_ROCKET_LAUNCHER | SE_WEAPON_LIGHTNING | \
-    SE_WEAPON_RAILGUN | SE_WEAPON_PLASMAGUN | SE_WEAPON_BFG)
-
+/*
+ * SuperHUD draw pass: fill frame context once, then each element's routine if visible.
+ */
 void CG_SHUDRoutine(void)
 {
 	superhudElement_t* last = elementsHead;
-	int currentWeapon;
-	int pm_type;
-	int gt;
-	qboolean is_dead;
-	qboolean is_intermission;
-	qboolean is_team_game;
-	qboolean is_spectator;
-	qboolean is_scores;
-	qboolean is_gt_ffa;
-	qboolean is_gt_tourney;
-	qboolean is_gt_tdm;
-	qboolean is_gt_ctf;
-	qboolean is_gt_ft;
-	qboolean is_gt_ca;
+	superhudFrameContext_t* fc = &superhudGlobalContext.frame;
+	qboolean be_health_low;
 
-	pm_type = cg.predictedPlayerState.pm_type;
-	gt = cgs.gametype;
-	is_dead = (pm_type == PM_DEAD || pm_type == PM_FREEZE);
-	is_intermission = (pm_type == PM_INTERMISSION);
-	is_team_game = (gt >= GT_TEAM);
-	is_spectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
-	is_scores = (cg.showScores || cgs.osp.chud.scoreboard) ? qtrue : qfalse;
-	is_gt_ffa = (gt == GT_FFA);
-	is_gt_tourney = (gt == GT_TOURNAMENT);
-	is_gt_tdm = (gt == GT_TEAM && !cgs.osp.gameTypeFreeze);
-	is_gt_ctf = (gt == GT_CTF);
-	is_gt_ft = ((gt == GT_TEAM || gt == GT_CTF) && cgs.osp.gameTypeFreeze);
-	is_gt_ca = (gt >= GT_CA);
-
+	CG_DrawCrosshair();
+	if (CG_DrawIntermission() == 0)
 	{
-		int k0 = cgs.osp.shud.key[0];
-		int k1 = cgs.osp.shud.key[1];
-		int k2 = cgs.osp.shud.key[2];
-		int k3 = cgs.osp.shud.key[3];
-		int k4 = cgs.osp.shud.key[4];
-		int k5 = cgs.osp.shud.key[5];
-		int k6 = cgs.osp.shud.key[6];
-		int k7 = cgs.osp.shud.key[7];
-		qboolean be_health_low = cg.beIsHealthLow;
+		CG_OSPDrawCenterString();
+	}
 
-		CG_DrawCrosshair();
-		if (CG_DrawIntermission() == 0)
+	CG_SHUDFillFrameContext(fc);
+	be_health_low = cg.beIsHealthLow;
+
+	while (last)
+	{
+		if (CG_SHUDElementVisible(last, fc, be_health_low) && last->element.routine)
 		{
-			CG_OSPDrawCenterString();
+			last->element.routine(last->element.context);
 		}
-		currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
-
-		while (last)
-		{
-			int vflags = last->config.visiblity.isSet ? last->config.visiblity.value : last->element.visibility;
-			qboolean is_spectator_for_element = is_spectator;
-			int wf;
-			qboolean weapon_skip;
-			qboolean skip;
-
-			if (last->element.isFragmessage)
-			{
-				is_spectator_for_element = is_spectator || (pm_type == PM_SPECTATOR);
-			}
-
-			wf = (vflags & SE_WEAPON_ANY);
-			weapon_skip = (wf != 0) && !(
-			                  ((vflags & SE_WEAPON_GAUNTLET) && currentWeapon == WP_GAUNTLET) ||
-			                  ((vflags & SE_WEAPON_MACHINEGUN) && currentWeapon == WP_MACHINEGUN) ||
-			                  ((vflags & SE_WEAPON_SHOTGUN) && currentWeapon == WP_SHOTGUN) ||
-			                  ((vflags & SE_WEAPON_GRENADE_LAUNCHER) && currentWeapon == WP_GRENADE_LAUNCHER) ||
-			                  ((vflags & SE_WEAPON_ROCKET_LAUNCHER) && currentWeapon == WP_ROCKET_LAUNCHER) ||
-			                  ((vflags & SE_WEAPON_LIGHTNING) && currentWeapon == WP_LIGHTNING) ||
-			                  ((vflags & SE_WEAPON_RAILGUN) && currentWeapon == WP_RAILGUN) ||
-			                  ((vflags & SE_WEAPON_PLASMAGUN) && currentWeapon == WP_PLASMAGUN) ||
-			                  ((vflags & SE_WEAPON_BFG) && currentWeapon == WP_BFG));
-
-			skip = (!(vflags & SE_IM) && is_intermission) ||
-			       ((vflags & SE_TEAM_ONLY) && !is_team_game) ||
-			       (!(vflags & SE_DEAD) && is_dead) ||
-			       (!(vflags & SE_SPECT) && is_spectator_for_element) ||
-			       ((vflags & SE_SCORES_HIDE) && is_scores) ||
-			       ((vflags & SE_DEMO_HIDE) && cg.demoPlayback) ||
-			       ((vflags & SE_KEY1_SHOW) && !k0) ||
-			       ((vflags & SE_KEY2_SHOW) && !k1) ||
-			       ((vflags & SE_KEY3_SHOW) && !k2) ||
-			       ((vflags & SE_KEY4_SHOW) && !k3) ||
-			       ((vflags & SE_KEY5_SHOW) && !k4) ||
-			       ((vflags & SE_KEY6_SHOW) && !k5) ||
-			       ((vflags & SE_KEY7_SHOW) && !k6) ||
-			       ((vflags & SE_KEY8_SHOW) && !k7) ||
-			       ((vflags & SE_GT_FFA) && is_gt_ffa) ||
-			       ((vflags & SE_GT_TDM) && is_gt_tdm) ||
-			       ((vflags & SE_GT_CTF) && is_gt_ctf) ||
-			       ((vflags & SE_GT_TOURNEY) && is_gt_tourney) ||
-			       ((vflags & SE_GT_FREEZETAG) && is_gt_ft) ||
-			       ((vflags & SE_GT_CLANARENA) && is_gt_ca) ||
-			       ((vflags & SE_HEALTH_LOW) && !be_health_low) ||
-			       weapon_skip;
-
-			if (!skip && last->element.routine)
-			{
-				last->element.routine(last->element.context);
-			}
-			last = last->next;
-		}
+		last = last->next;
 	}
 	if (cg.showWStats)
 	{
@@ -532,11 +875,7 @@ void CG_SHUDRoutine(void)
 	{
 		CG_DrawSelwheelIcons();
 	}
-	if (!cg_printui.integer || cg.printuiActiveCount == 0)
-	{
-
-	}
-	else
+	if (cg_printui.integer && cg.printuiActiveCount != 0)
 	{
 		CG_DrawPrintUI();
 	}
@@ -572,20 +911,21 @@ static void CG_SHUDChatIndexSave(int index)
 	trap_Cvar_Set("cg_shud_chatindex", va("%d", index));
 }
 
-void CG_SHUDEventChat(const char* message)
+void CG_SHUDEventChat(const char* message, int senderClientNum)
 {
 	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 	int index;
 
 	index = ctx->chat.index % SHUD_MAX_CHAT_LINES;
 	Q_strncpyz(ctx->chat.line[index].message, message, MAX_SAY_TEXT);
+	ctx->chat.line[index].senderClientNum = senderClientNum;
 	CG_SHUDChatLineSave(message, index);
 	ctx->chat.line[index].time = cg.time;
 	++ctx->chat.index;
 	CG_SHUDChatIndexSave(ctx->chat.index);
 }
 
-void CG_SHUDEventTeamChat(const char* message)
+void CG_SHUDEventTeamChat(const char* message, int senderClientNum)
 {
 	int len = 0;
 	char* loc_start;
@@ -659,6 +999,7 @@ void CG_SHUDEventTeamChat(const char* message)
 	CG_SHUDChatLineSave(ctx->chat.line[index].message, index);
 
 	ctx->chat.line[index].time = cg.time;
+	ctx->chat.line[index].senderClientNum = senderClientNum;
 	++ctx->chat.index;
 
 	CG_SHUDChatIndexSave(ctx->chat.index);
@@ -697,6 +1038,11 @@ void CG_SHUDEventTeamTask(int sender, int taskType, qboolean isPickup)
 	int startIndex;
 	unsigned int newIndex;
 	qboolean foundDuplicate;
+
+	if (cgs.gametype < GT_TEAM || taskType == TEAMTASK_PLAYERDEAD)
+	{
+		return;
+	}
 
 	keepCount = 0;
 	repeatCount = 1;
@@ -770,6 +1116,8 @@ void CG_SHUDEventTeamTask(int sender, int taskType, qboolean isPickup)
 	gameTime = cg.time - cgs.levelStartTime;
 	entry->gameTime = gameTime;
 	entry->runtime.isInitialized = qfalse;
+
+	ctx->teamTasks.hasActive = qtrue;
 }
 
 void CG_SHUDEventTempAccuracy(int weapon, float accuracy)

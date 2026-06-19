@@ -32,6 +32,7 @@ void CG_SHUDElementGridRoutine(void* context)
 	float startCol, startRow;
 	superhudCoord_t coord;
 	qboolean hasColor2 = element->config.color2.isSet;
+	qboolean style1 = element->config.style.isSet && element->config.style.value == 1;
 
 	Vector4Copy(element->config.color.value.rgba, color1);
 	if (hasColor2)
@@ -84,6 +85,71 @@ void CG_SHUDElementGridRoutine(void* context)
 		else
 		{
 			CG_SHUDFillWithColor(&coord, color1);
+		}
+	}
+
+	if (style1)
+	{
+		superhudConfig_t labelConfig;
+		superhudTextContext_t textCtx;
+		char textBuf[64];
+		char textBufLeft[64];
+
+		memcpy(&labelConfig, &element->config, sizeof(labelConfig));
+		labelConfig.textAlign.value = SUPERHUD_ALIGNH_LEFT;
+		labelConfig.textAlign.isSet = qtrue;
+		labelConfig.alignV.value = SUPERHUD_ALIGNV_BOTTOM;
+		labelConfig.alignV.isSet = qtrue;
+		labelConfig.fontsize.value[0] = cellWidth / 4.0f;
+		labelConfig.fontsize.value[1] = cellHeight / 2.5f;
+		labelConfig.fontsize.isSet = qtrue;
+		labelConfig.color.value.rgba[3] = 1.0f;
+		labelConfig.color.isSet = qtrue;
+
+		// top labels along the first row
+		for (col = startCol; col <= 640; col += cellWidth)
+		{
+			float labelX;
+			if (col < 0.0f)
+			{
+				continue;
+			}
+
+			labelX = col;
+			Com_sprintf(textBuf, sizeof(textBuf), "%d", (int)(labelX + 0.5f));
+
+			labelConfig.rect.value[0] = labelX;
+			labelConfig.rect.value[1] = y - cellHeight;
+			labelConfig.rect.value[2] = cellWidth;
+			labelConfig.rect.value[3] = cellHeight;
+			labelConfig.rect.isSet = qtrue;
+
+			CG_SHUDTextMakeContext(&labelConfig, &textCtx);
+			textCtx.text = textBuf;
+			CG_SHUDTextPrintNew(&labelConfig, &textCtx, qfalse);
+		}
+
+		// left labels along the first column
+		for (row = startRow; row <= 480; row += cellHeight)
+		{
+			float labelY;
+			if (row < 0.0f)
+			{
+				continue;
+			}
+
+			labelY = row - cellHeight;
+			Com_sprintf(textBufLeft, sizeof(textBufLeft), "%d", (int)(row + 0.5f));
+
+			labelConfig.rect.value[0] = x;
+			labelConfig.rect.value[1] = labelY;
+			labelConfig.rect.value[2] = cellWidth;
+			labelConfig.rect.value[3] = cellHeight;
+			labelConfig.rect.isSet = qtrue;
+
+			CG_SHUDTextMakeContext(&labelConfig, &textCtx);
+			textCtx.text = textBufLeft;
+			CG_SHUDTextPrintNew(&labelConfig, &textCtx, qfalse);
 		}
 	}
 }

@@ -362,10 +362,14 @@ const emoji_t* CG_OSPGetEmoji(const char* name)
 		return NULL;
 	}
 
-	second_colon = strchr(&name[1], EMOJI_CHAR);
+	second_colon = name + 1;
+	while (*second_colon && *second_colon != EMOJI_CHAR)
+	{
+		second_colon++;
+	}
 
 	// Not emoji if there is no second colon or no text
-	if (!second_colon || second_colon - name == 1)
+	if (*second_colon != EMOJI_CHAR || second_colon - name == 1)
 	{
 		return NULL;
 	}
@@ -382,7 +386,20 @@ const emoji_t* CG_OSPGetEmoji(const char* name)
 
 	emoji_name[emoji_len] = 0;
 
-	Q_strlwr(emoji_name);
+	{
+		int li;
+
+		for (li = 0; li < emoji_len; li++)
+		{
+			char c;
+
+			c = emoji_name[li];
+			if (c >= 'A' && c <= 'Z')
+			{
+				emoji_name[li] = c - 'A' + 'a';
+			}
+		}
+	}
 
 	target = emojiTable[Com_GenerateHashValue(emoji_name, CG_EMOJI_HASH_SIZE)];
 
@@ -391,12 +408,7 @@ const emoji_t* CG_OSPGetEmoji(const char* name)
 		target = target->next;
 	}
 
-	if (target == NULL)
-	{
-		return NULL;
-	}
-
-	return Q_stricmp(emoji_name, target->emoji.name) == 0 ? &target->emoji : NULL;
+	return target ? &target->emoji : NULL;
 }
 
 void CG_OSPAddEmoji(const char* name)
@@ -532,7 +544,101 @@ void CG_OSPLoadEmoji(void)
 	}
 }
 
+#define CG_EMOJI_SORTED_MAX 512
 
+static const emoji_t* emojiSorted[CG_EMOJI_SORTED_MAX];
+static int emojiSortedCount;
+static qboolean emojiSortedBuilt;
+
+static void CG_OSPEmojiBuildSortedList(void)
+{
+	int i;
+	int j;
+	emojiTable_t* node;
+
+	if (emojiSortedBuilt)
+	{
+		return;
+	}
+
+	emojiSortedBuilt = qtrue;
+	emojiSortedCount = 0;
+
+	for (i = 0; i < CG_EMOJI_HASH_SIZE; ++i)
+	{
+		for (node = emojiTable[i]; node; node = node->next)
+		{
+			if (emojiSortedCount >= CG_EMOJI_SORTED_MAX)
+			{
+				return;
+			}
+			emojiSorted[emojiSortedCount++] = &node->emoji;
+		}
+	}
+
+	for (i = 0; i < emojiSortedCount - 1; ++i)
+	{
+		for (j = i + 1; j < emojiSortedCount; ++j)
+		{
+			if (Q_stricmp(emojiSorted[i]->name, emojiSorted[j]->name) > 0)
+			{
+				const emoji_t* tmp;
+				tmp = emojiSorted[i];
+				emojiSorted[i] = emojiSorted[j];
+				emojiSorted[j] = tmp;
+			}
+		}
+	}
+}
+
+int CG_OSPEmojiSortedCount(void)
+{
+	if (!emojiLoaded)
+	{
+		CG_OSPLoadEmoji();
+	}
+	CG_OSPEmojiBuildSortedList();
+	return emojiSortedCount;
+}
+
+const emoji_t* CG_OSPEmojiSortedAt(int index)
+{
+	if (index < 0 || index >= CG_OSPEmojiSortedCount())
+	{
+		return NULL;
+	}
+	return emojiSorted[index];
+}
+
+int CG_OSPEmojiPrefixMatch(const char* plainPrefix, const emoji_t** outList, int maxOut)
+{
+	int i;
+	int count;
+	int prefixLen;
+	char plain[64];
+	const emoji_t* em;
+
+	if (!outList || maxOut < 1)
+	{
+		return 0;
+	}
+
+	count = 0;
+	prefixLen = plainPrefix ? strlen(plainPrefix) : 0;
+
+	for (i = 0; i < CG_OSPEmojiSortedCount() && count < maxOut; ++i)
+	{
+		em = emojiSorted[i];
+		CG_OSPEmojiTokenToPlainName(em->name, plain, sizeof(plain));
+		if (prefixLen > 0 && Q_stricmpn(plain, plainPrefix, prefixLen))
+		{
+			continue;
+		}
+		outList[count++] = em;
+	}
+
+	return count;
+}
 
 
 

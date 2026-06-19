@@ -149,12 +149,12 @@
   + shadowColor for text
   * visflags: showempty for enemyscore, tempAcc
 
-24.04.2025 be v.0.059e
+24.04.2025 be v0.059e
 + StatusBar_AmmoCount shading when realoading
   * dark grey by default, or color2 is set
   * disable by style (any)
 
-24.04.2025 be v.0.059j
+24.04.2025 be v0.059j
 * crosshairNames
   + teammates names in fog
   + ignore fog on maps: Asylum, Quarantine, oxodm32, oxodm90, rjldm3, gen_q1dm1
@@ -881,7 +881,7 @@ SuperHUD:
 + /beconfigs/beInfo.cfg settings file
 - cg_brightWeaponsColor* cvars removed, configure using beInfo.cfg (My apologies)
 * full bright shader and ghost gun shader separated
-* Alternate fullgright shader rework, now supports transparency
+* Alternate fullbright shader rework, now supports transparency
 
 27.05.2026 be v1.04g
 + BE Status animations
@@ -921,3 +921,30 @@ SuperHUD:
 Meta:
  + Predict for OSDF-based mods (metarena)
  * Segfault fixed
+
+19.06.2026 be v1.05e
+SuperHUD:
+  + `LastStanding` SuperHUD element
+  + visflags: negated conditions via `!` prefix on any flag
+  + visflags: style1-4
+  + cg_shudStyle 1-4 for visflags
+  + TargetStatus - style 1
+  + Mirage: +mischkonsumer.cfg, *All configs CTF fix
+  + diwoc: Roamer.cfg
+  * visflag scorehide rework
+  + Fade fix for text shadow, background, border
+  * Weaponlist center align fix
+  + Grid: font option for division labels (style 1)
+  * Score_OWN, TeamCount_OWN, Score_NME, TeamCount_NME visflag spectator fix
++ ChatWindow
+  + /enterchat, /enterchatteam, +showchat
+  + cg_chatWindow, cg_chatWindowTime, cg_chatWindowPos, cg_chatWindowSize, cg_chatWindowFont, 
+    cg_chatWindowFontSize, cg_chatWindowBgColor, cg_chatWindowBgOpaque
++ cg_scoreboardBE bitmask: 32, 64 - hide "Fragged by...", hide place line
++ cg_healthColorLevels 4 (disable teammate's health blinking when taking damage)
++ cg_friendsWallhack bitmask 4 - Fullmap friends wallhack
++ cg_muteWorldSounds
+* cg_teamHealthBar improvements
+* Perfomance optimization
+* BE Status fix
+* Various fixes

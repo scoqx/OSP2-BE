@@ -31,7 +31,7 @@ void CG_SHUDElementSBABRoutine(void* context)
 			break;
 
 		case 2:
-			// Поведение как в style 3, но без isHealthLow
+			// Same behavior as style 3, but without isHealthLow
 			Vector4Copy(element->config.color.value.rgba, element->ctx.color_top);
 
 			if (!element->config.color2.isSet)

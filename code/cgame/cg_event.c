@@ -1274,6 +1274,10 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 		{
 			sfxHandle_t soundHandle;
 			DEBUGNAME("EV_GENERAL_SOUND");
+			if (CG_IsMutedWorldSound(es->eventParm))
+			{
+				break;
+			}
 			s = CG_ConfigString(CS_SOUNDS + es->eventParm);
 			if (cg_freezeSoundFix.integer != 0)
 			{
@@ -1303,6 +1307,10 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 
 		case EV_GLOBAL_SOUND:   // play from the player's head so it never diminishes
 			DEBUGNAME("EV_GLOBAL_SOUND");
+			if (CG_IsMutedWorldSound(es->eventParm))
+			{
+				break;
+			}
 			s = CG_ConfigString(CS_SOUNDS + es->eventParm);
 			// CG_Printf("^3[SOUND DEBUG]^7 EV_GLOBAL_SOUND: index=^2%i^7, sound=^2%s^7, entity=^2%i^7\n", es->eventParm, s[0] ? s : "(registered)", es->number);
 			if (cgs.gameSounds[ es->eventParm ])

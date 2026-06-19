@@ -176,6 +176,9 @@ static void CG_ParseTeamInfo(void)
 
 	for (i = 0 ; i < numSortedTeamPlayers ; i++)
 	{
+		int oldHealth;
+		int oldArmor;
+
 		client = atoi(CG_Argv(i * 6 + 2));
 
 		ci = &cgs.clientinfo[ client ];
@@ -186,11 +189,51 @@ static void CG_ParseTeamInfo(void)
 		{
 			CG_CustomLocationsSetLocation(CG_Argv(i * 6 + 3), ci->customLocation);
 		}
+		oldHealth = ci->health;
+		oldArmor = ci->armor;
 		ci->location = atoi(CG_Argv(i * 6 + 3));
 		ci->health = atoi(CG_Argv(i * 6 + 4));
 		ci->armor = atoi(CG_Argv(i * 6 + 5));
 		ci->curWeapon = atoi(CG_Argv(i * 6 + 6));
 		ci->powerups = atoi(CG_Argv(i * 6 + 7));
+
+		CG_HealthColorFromStats(ci->health, ci->armor, cg.healthColorByClient[client],
+		                        &cg.allyHealthBand[client]);
+
+		/* Ally damage blink: -1 on HP or AP at 100+ between tInfo updates is handicap noise */
+		{
+			int levels;
+			int drop;
+			qboolean damage;
+
+			levels = cg_healthColorLevels.integer;
+			if (levels && !(levels & 4) && client != cg.clientNum)
+			{
+				damage = qfalse;
+				if (ci->health < oldHealth)
+				{
+					drop = oldHealth - ci->health;
+					if (drop > 1 || oldHealth < 100)
+					{
+						damage = qtrue;
+					}
+				}
+				if (!damage && ci->armor < oldArmor)
+				{
+					drop = oldArmor - ci->armor;
+					if (drop > 1 || oldArmor < 100)
+					{
+						damage = qtrue;
+					}
+				}
+				if (damage && ci->health > 0)
+				{
+					cg.healthBlinkUntil[client] = cg.time + CG_HEALTH_BLINK_MSEC;
+					cg.allyHealthBlinkMidLow[client] =
+					    (qboolean)(cg.allyHealthBand[client] == CG_HEALTH_BAND_LOW);
+				}
+			}
+		}
 	}
 }
 
@@ -207,7 +250,7 @@ void CG_ParseServerinfo(void)
 {
 	const char* info;
 	const char* val;
-	int timelimitVal = 0;  /* QVM_LOGIC 2.1: explicit init */
+	int timelimitVal = 0;
 
 	info = CG_ConfigString(CS_SERVERINFO);
 	val = Info_ValueForKey(info, "g_gametype");
@@ -263,7 +306,7 @@ void CG_ParseServerinfo(void)
 	}
 
 	/* CG_SetServerSettingsBE inlined - enableBreath from CS_SYSTEMINFO */
-	/* QVM_LOGIC: avoid Q_stricmp - use char comparison */
+	/* g_enableBreath: disabled only when value is exactly "0" */
 	val = Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "g_enableBreath");
 	cgs.beServerEnableBreath = (val[0] == '\0' || val[0] != '0' || val[1] != '\0') ? 1 : 0;
 }
@@ -611,6 +654,10 @@ static void CG_ConfigStringModified(void)
 				CG_NewClientInfo(num - CS_PLAYERS);
 				CG_BuildSpectatorString();
 			}
+			else if (num >= CS_LOCATIONS && num < CS_LOCATIONS + MAX_LOCATIONS)
+			{
+				CG_MapLocs_NotifyLocationConfigStringChanged();
+			}
 			break;
 	}
 }
@@ -789,6 +836,31 @@ static void CG_MapRestart(void)
 }
 
 
+static qboolean CG_ChatIsPaletteColorChar(char c)
+{
+	if (c >= '0' && c <= '9')
+	{
+		return qtrue;
+	}
+	if (c >= 'a' && c <= 'z')
+	{
+		if (c == 'b' || c == 'f' || c == 'n')
+		{
+			return qfalse;
+		}
+		return qtrue;
+	}
+	if (c >= 'A' && c <= 'Z')
+	{
+		if (c == 'B' || c == 'F' || c == 'N')
+		{
+			return qfalse;
+		}
+		return qtrue;
+	}
+	return qfalse;
+}
+
 /*
 =================
 CG_RemoveChatEscapeChar
@@ -820,24 +892,21 @@ void CG_RemoveChatEscapeChar(char* text)
 			        CG_Hex16GetColor(&text[i + 4], &tmp) &&
 			        CG_Hex16GetColor(&text[i + 6], &tmp))
 			{
-				i += 6;
+				i += 7;
+				if (text[i + 1] == '^' && (text[i + 2] == 'n' || text[i + 2] == 'N'))
+				{
+					i += 2;
+				}
 			}
-			++i;
+			else
+			{
+				++i;
+			}
 		}
 		else if (command)
 		{
 			switch (command)
 			{
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-					text[l++] = text[i];
-					break;
 				case '9':
 					++i;
 					text[l++] = '^';
@@ -854,7 +923,15 @@ void CG_RemoveChatEscapeChar(char* text)
 					text[l++] = '^';
 					break;
 				default:
-					++i;
+					if (CG_ChatIsPaletteColorChar(command))
+					{
+						text[l++] = text[i];
+					}
+					else
+					{
+						++i;
+					}
+					break;
 			}
 		}
 
@@ -898,43 +975,81 @@ CG_RemoveChatEscapeCharAll
 */
 void CG_RemoveChatEscapeCharAll(char* text)
 {
-	int i, l;
-	char command;
+	const char* s;
+	char* d;
+	char c;
+	float color;
 
-	l = 0;
-	for (i = 0; text[i]; i++)
+	if (!text)
 	{
-		if (text[i] == '\x19')
-			continue;
+		return;
+	}
 
-		if (text[i] != '^')
+	s = text;
+	d = text;
+
+	while (*s)
+	{
+		if (*s == '\x19')
 		{
-			text[l++] = text[i];
+			s++;
 			continue;
 		}
 
-		command = text[i + 1];
-
-		if (command == 'X' || command == 'x')
+		if (*s != '^')
 		{
-			float tmp;
-			if (CG_Hex16GetColor(&text[i + 2], &tmp) &&
-			        CG_Hex16GetColor(&text[i + 4], &tmp) &&
-			        CG_Hex16GetColor(&text[i + 6], &tmp))
+			*d++ = *s++;
+			continue;
+		}
+
+		s++;
+		if (!*s)
+		{
+			break;
+		}
+
+		c = *s;
+		if (CG_TextControlDisabled(c))
+		{
+			if (c == 'x' || c == 'X')
 			{
-				i += 7; /* Skip ^X and 6 hex characters (total 8 characters, -1 because for loop will increment) */
+				s++;
 				continue;
 			}
-			++i; /* Skip ^ if invalid format, then continue to skip X via loop increment */
+			if (c != '^')
+			{
+				s++;
+				continue;
+			}
+		}
+
+		if (c == 'X' || c == 'x')
+		{
+			s++;
+			if (CG_Hex16GetColor(s, &color) &&
+			        CG_Hex16GetColor(s + 2, &color) &&
+			        CG_Hex16GetColor(s + 4, &color))
+			{
+				s += 6;
+			}
+			if (*s == '^' && (s[1] == 'n' || s[1] == 'N'))
+			{
+				s += 2;
+			}
 			continue;
 		}
-		else if (command == '^')
+
+		if (c == '^')
 		{
-			text[l++] = '^';
+			*d++ = '^';
+			s++;
+			continue;
 		}
-		++i;
+
+		s++;
 	}
-	text[l] = '\0';
+
+	*d = '\0';
 }
 
 static void CG_OSPPrintXStats(void)
@@ -950,7 +1065,7 @@ static void CG_OSPPrintXStats(void)
 
 	index = 1;
 	damage_activity = qfalse;
-	stats_mask = cgs.osp.stats_mask;     /* QVM_LOGIC: cache globals */
+	stats_mask = cgs.osp.stats_mask;
 	stats_shift = cgs.osp.stats_shift;
 
 	client_id = atoi(CG_Argv(index++));
@@ -1229,7 +1344,6 @@ void CG_BEParseStatsInfo(void)
 	arg_cnt = 23;
 
 	/* weaponIndex = 1: WP_NONE should always be ignored even if weapon mask has it flagged */
-	/* QVM_LOGIC: cache weapon mask, use pointer to avoid repeated array indexing */
 	{
 		int weaponMask;
 		weaponStats_t* wstat;
@@ -1654,9 +1768,8 @@ void CG_ServerCommand(void)
 	{
 		return;
 	}
-	ignoreMask = cg_ignoreServerMessages.integer;   /* one read per command (QVM_LOGIC) */
+	ignoreMask = cg_ignoreServerMessages.integer;
 
-	/* QVM_LOGIC optimization: first-character switch reduces strcmp calls from 25+ to 2-3 average */
 	switch (cmd[0])
 	{
 		case 'p':
@@ -1668,7 +1781,6 @@ void CG_ServerCommand(void)
 				Q_strncpyz(text, CG_Argv(1), sizeof(text));
 				CG_RemoveChatEscapeChar(text);
 
-				/* QVM_LOGIC: flattened branching - early exits reduce nesting */
 				if ((ignoreMask & 1) && (had_pos = strstr(text, " had ")) != NULL)
 				{
 					if ((size_t)(had_pos - text) > 0)
@@ -1750,11 +1862,15 @@ void CG_ServerCommand(void)
 				messageAllowed_t ma;
 				qboolean isVanilaChatEnabled;
 				qboolean isShudChatEnabled;
+				qboolean isChatWindowEnabled;
 				qboolean isTellMessage;
 				int chatClientNum;
+				int senderClientNum;
 				int argc;
+				char rawChat[MAX_STRING_CHARS];
 
-				Q_strncpyz(text, CG_Argv(1), 1024);
+				Q_strncpyz(rawChat, CG_Argv(1), sizeof(rawChat));
+				Q_strncpyz(text, rawChat, 1024);
 
 				/* Tell messages should use color ^6 (magenta) instead of regular chat color */
 				isTellMessage = (text[0] == 25 && (text[1] == '(' || text[1] == '['));
@@ -1770,22 +1886,39 @@ void CG_ServerCommand(void)
 					return;
 				}
 
-				/* Get clientNum from command (CG_Argv(2) if available) */
-				argc = trap_Argc();
-				if (argc >= 3)
-					chatClientNum = atoi(CG_Argv(2));
-				if (argc >= 3 && chatClientNum >= 0 && chatClientNum < MAX_CLIENTS && isTellMessage && chatClientNum != cg.clientNum)
-					cg.beLastTellSender = chatClientNum;
+				if (ma == MESSAGE_ALLOWED_PLAYER)
+				{
+					chatClientNum = -1;
+					argc = trap_Argc();
+					if (argc >= 3)
+					{
+						chatClientNum = atoi(CG_Argv(2));
+					}
+					senderClientNum = CG_ChatResolveSenderClientNum(rawChat, chatClientNum);
+					if (argc >= 3 && chatClientNum >= 0 && chatClientNum < MAX_CLIENTS && isTellMessage && chatClientNum != cg.clientNum)
+					{
+						CG_SetLastTellSenderClientNum(chatClientNum);
+					}
+					else if (isTellMessage && senderClientNum >= 0 && senderClientNum != cg.clientNum)
+					{
+						CG_SetLastTellSenderClientNum(senderClientNum);
+					}
+				}
+				else
+				{
+					senderClientNum = -1;
+				}
 
 				isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_COMMMON_ENABLED;
 				isShudChatEnabled = cg_shudChatEnable.integer & CG_CHAT_COMMMON_ENABLED && ma == MESSAGE_ALLOWED_PLAYER;
+				isChatWindowEnabled = (cg_chatWindow.integer) != 0;
 
-				if (!isVanilaChatEnabled && !isShudChatEnabled)
+				if (!isVanilaChatEnabled && !isShudChatEnabled && !isChatWindowEnabled)
 				{
 					return;
 				}
 
-				if (!cg_nochatbeep.integer)
+				if (!cg_nochatbeep.integer && (isVanilaChatEnabled || isShudChatEnabled || isChatWindowEnabled))
 				{
 					trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
 				}
@@ -1821,8 +1954,11 @@ void CG_ServerCommand(void)
 				}
 				if (isShudChatEnabled)
 				{
-					CG_SHUDEventChat(text);
+					CG_SHUDEventChat(text, senderClientNum);
 				}
+				CG_BEChat_AddLine(text, senderClientNum,
+				                  isTellMessage ? BE_CHAT_MSG_TELL :
+				                  (ma == MESSAGE_ALLOWED_PLAYER ? BE_CHAT_MSG_SAY : BE_CHAT_MSG_OTHER));
 				return;
 			}
 			/* clientLevelShot - real work (camelCase, need Q_stricmp) */
@@ -1850,8 +1986,12 @@ void CG_ServerCommand(void)
 				messageAllowed_t ma;
 				qboolean isVanilaChatEnabled;
 				qboolean isShudChatEnabled;
+				qboolean isChatWindowEnabled;
+				int senderClientNum;
+				char rawChat[MAX_STRING_CHARS];
 
-				Q_strncpyz(text, CG_Argv(1), 1024);
+				Q_strncpyz(rawChat, CG_Argv(1), sizeof(rawChat));
+				Q_strncpyz(text, rawChat, 1024);
 				ma = CG_ChatCheckMessageAllowed(text);
 				if (ma == MESSAGE_NOTALLOWED)
 				{
@@ -1863,15 +2003,25 @@ void CG_ServerCommand(void)
 					return;
 				}
 
+				if (ma == MESSAGE_ALLOWED_PLAYER)
+				{
+					senderClientNum = CG_ChatResolveSenderClientNum(rawChat, -1);
+				}
+				else
+				{
+					senderClientNum = -1;
+				}
+
 				isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_TEAM_ENABLED;
 				isShudChatEnabled = cg_shudChatEnable.integer & CG_CHAT_TEAM_ENABLED && ma == MESSAGE_ALLOWED_PLAYER;
+				isChatWindowEnabled = (cg_chatWindow.integer) != 0;
 
-				if (!isVanilaChatEnabled && !isShudChatEnabled)
+				if (!isVanilaChatEnabled && !isShudChatEnabled && !isChatWindowEnabled)
 				{
 					return;
 				}
 
-				if (!cg_noTeamChatBeep.integer)
+				if (!cg_noTeamChatBeep.integer && (isVanilaChatEnabled || isShudChatEnabled || isChatWindowEnabled))
 				{
 					trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
 				}
@@ -1909,9 +2059,10 @@ void CG_ServerCommand(void)
 
 				if (isShudChatEnabled)
 				{
-					CG_SHUDEventChat(text);
+					CG_SHUDEventChat(text, senderClientNum);
 				}
 
+				CG_BEChat_AddLine(text, senderClientNum, BE_CHAT_MSG_TEAM);
 				return;
 			}
 			/* "tinfo" */

@@ -8,7 +8,7 @@ on:
     branches: [ "master" ]
     paths-ignore:
       - '**.md'
-      - 'changelog_be_r.txt'
+      - 'assets/docs/changelog_be_r.txt'
       - 'assets/version.txt'
       - 'assets/version_changelog.txt'
       - '.gitignore'
@@ -19,7 +19,7 @@ on:
     branches: [ "master" ]
     paths-ignore:
       - '**.md'
-      - 'changelog_be_r.txt'
+      - 'assets/docs/changelog_be_r.txt'
       - 'assets/version.txt'
       - 'assets/version_changelog.txt'
       - '.gitignore'
@@ -79,7 +79,7 @@ jobs:
       - name: Create version files
         run: |
           cd build/qvm
-          make ../../assets/version.txt ../../assets/version_changelog.txt
+          make ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt
       
       - name: build-qvm
         working-directory: build/qvm
@@ -225,7 +225,7 @@ jobs:
       - name: Create version files
         run: |
           cd build/qvm
-          make ../../assets/version.txt ../../assets/version_changelog.txt
+          make ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt
 
       - name: build-qvm
         working-directory: build/qvm

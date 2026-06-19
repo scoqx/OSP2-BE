@@ -618,6 +618,10 @@ extern  vec3_t  bytedirs[NUMVERTEXNORMALS];
 #define BIGCHAR_WIDTH       16
 #define BIGCHAR_HEIGHT      16
 
+#define BIGCHAR_WIDTH_WS       12
+#define BIGCHAR_HEIGHT_WS      16
+
+
 #define GIANTCHAR_WIDTH     32
 #define GIANTCHAR_HEIGHT    48
 
@@ -1011,7 +1015,7 @@ char *Q_strtok(char *s, const char *delim);
 //=============================================
 
 // 64-bit integers for global rankings interface
-// implemented as a struct for qvm compatibility
+// 64-bit value as byte struct (no native 64-bit int in VM)
 typedef struct
 {
 	byte    b0;
@@ -1240,7 +1244,7 @@ typedef enum
 // per-level limits
 //
 #define MAX_CLIENTS         64      // absolute limit
-#define MAX_LOCATIONS       64
+#define MAX_LOCATIONS       198     /* CS 608..805 (CS_OSP_SERVER_MODE 806) */
 
 #define GENTITYNUM_BITS     10      // don't need to send any more
 #define MAX_GENTITIES       (1<<GENTITYNUM_BITS)

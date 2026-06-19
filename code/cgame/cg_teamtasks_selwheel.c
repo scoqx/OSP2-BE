@@ -271,7 +271,7 @@ void CG_UpdateSelwheelMark(void)
 =================
 CG_UpdateAndDrawSelwheelMark
 
-Update ttwheel mark position and draw it. Inlined (QVM: one call, no nested calls).
+Update ttwheel mark position and draw it.
 =================
 */
 void CG_UpdateAndDrawSelwheelMark(void)

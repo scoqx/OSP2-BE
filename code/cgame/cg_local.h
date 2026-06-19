@@ -47,6 +47,12 @@ extern "C" {
 #define PULSE_TIME          200
 #define DAMAGE_DEFLECT_TIME 100
 #define DAMAGE_RETURN_TIME  400
+#define CG_HEALTH_BLINK_MSEC       400
+#define CG_HEALTH_BLINK_PHASE_MSEC 133
+
+#define CG_HEALTH_BAND_FULL  0
+#define CG_HEALTH_BAND_MID   1
+#define CG_HEALTH_BAND_LOW   2
 #define DAMAGE_TIME         500
 #define LAND_DEFLECT_TIME   150
 #define LAND_RETURN_TIME    300
@@ -88,6 +94,81 @@ typedef struct
 #define TEAMCHAT_WIDTH      80
 #define TEAMCHAT_HEIGHT     8
 
+#define BE_CHAT_HISTORY_LINES   128
+#define BE_CHAT_LINE_CHARS      (MAX_SAY_TEXT + 64)
+
+#define BE_CHAT_MSG_SAY         0
+#define BE_CHAT_MSG_TEAM        1
+#define BE_CHAT_MSG_TELL        2
+#define BE_CHAT_MSG_OTHER       3
+
+typedef struct
+{
+	char    text[BE_CHAT_LINE_CHARS];
+	int     senderClientNum;
+	int     repeat;
+	int     addTime;
+	int     msgKind;
+} beChatHistoryLine_t;
+
+typedef struct
+{
+	beChatHistoryLine_t lines[BE_CHAT_HISTORY_LINES];
+	int                 writeIndex;
+	int                 count;
+} beChatHistory_t;
+
+typedef struct
+{
+	char    buffer[MAX_SAY_TEXT];
+	int     cursor;
+	int     scroll;
+	int     widthInChars;
+} beChatInput_t;
+
+typedef struct
+{
+	float charW;
+	float charH;
+	float pad;
+	float inputRowH;
+	float inputRowBit4Y;
+	float sbW;
+	float sbGap;
+	float sbHitPad;
+	float sbBorder;
+	float cursorW;
+	float cursorH;
+	float emojiBtnPad;
+	float emojiBtnHitPad;
+	float emojiBtnSize;
+	float emojiPanelPad;
+	float emojiWinPad;
+	float emojiPreviewGap;
+	float emojiTipPad;
+	float helpBtnSize;
+} beChatWindowMetrics_t;
+
+#define BECHAT_CHAR_W            (cgs.beChatMetrics.charW)
+#define BECHAT_CHAR_H            (cgs.beChatMetrics.charH)
+#define BECHAT_PAD               (cgs.beChatMetrics.pad)
+#define BECHAT_INPUT_ROW_H       (cgs.beChatMetrics.inputRowH)
+#define BECHAT_INPUT_ROW_BIT4_Y  (cgs.beChatMetrics.inputRowBit4Y)
+#define BECHAT_SB_W              (cgs.beChatMetrics.sbW)
+#define BECHAT_SB_GAP            (cgs.beChatMetrics.sbGap)
+#define BECHAT_SB_HIT_PAD        (cgs.beChatMetrics.sbHitPad)
+#define BECHAT_SB_BORDER         (cgs.beChatMetrics.sbBorder)
+#define BECHAT_CURSOR_W          (cgs.beChatMetrics.cursorW)
+#define BECHAT_CURSOR_H          (cgs.beChatMetrics.cursorH)
+#define BECHAT_EMOJI_BTN_PAD     (cgs.beChatMetrics.emojiBtnPad)
+#define BECHAT_EMOJI_BTN_HIT_PAD (cgs.beChatMetrics.emojiBtnHitPad)
+#define BECHAT_EMOJI_BTN_SIZE    (cgs.beChatMetrics.emojiBtnSize)
+#define BECHAT_EMOJI_PANEL_PAD   (cgs.beChatMetrics.emojiPanelPad)
+#define BECHAT_EMOJI_WIN_PAD     (cgs.beChatMetrics.emojiWinPad)
+#define BECHAT_EMOJI_PREVIEW_GAP (cgs.beChatMetrics.emojiPreviewGap)
+#define BECHAT_EMOJI_TIP_PAD     (cgs.beChatMetrics.emojiTipPad)
+#define BECHAT_HELP_BTN_SIZE     (cgs.beChatMetrics.helpBtnSize)
+
 // very large characters
 #define GIANT_WIDTH         32
 #define GIANT_HEIGHT        48
@@ -107,6 +188,10 @@ typedef struct
 #define DEFAULT_BLUETEAM_NAME       "Pagans"
 
 #define MAX_ALT_SHADERS 16
+
+#define CG_FRIENDS_WALLHACK_FOE           1
+#define CG_FRIENDS_WALLHACK_TEAM_INDICATOR 2
+#define CG_FRIENDS_WALLHACK_GLOBAL_POS    4
 
 #define DRAW_REWARDS_NOICON (1 << 1)
 #define DRAW_REWARDS_NOSPRITE (1 << 2)
@@ -441,6 +526,9 @@ typedef struct
 	int             frozenEntity; // entity num
 
 	int             medkitUsageTime;
+
+	qboolean        globalPos;      /* tinfo zone origin from locs .qloc64 (no drawable entity) */
+	vec3_t          globalPosOrigin;
 } clientInfo_t;
 
 
@@ -559,10 +647,10 @@ typedef struct
 // Token Bucket for anti-flood
 typedef struct
 {
-	int tokens;         /* текущее количество */
-	int maxTokens;      /* максимум */
-	int refillTime;     /* мс на 1 токен */
-	int lastTime;       /* cg.time последнего апдейта */
+	int tokens;         /* current count */
+	int maxTokens;      /* maximum */
+	int refillTime;     /* ms per token */
+	int lastTime;       /* cg.time of last update */
 } tokenBucket_t;
 
 typedef struct cgs_teamMarkers_s
@@ -664,6 +752,7 @@ typedef struct cgFontIndices_s
 	int infoVersion;
 	int bestats;
 	int emojiList;
+	int chatWindow;
 } cgFontIndices_t;
 
 /* Runtime printui entry: startTime = cg.time, duration/fade, active; updated every frame */
@@ -697,9 +786,9 @@ typedef struct
 } globalBeStatsSettings_t;
 
 /*
- * cg_t — текущее состояние кадра и предсказания.
- * Меняется каждый кадр. При рестарте турнира по сути пересоздаётся вместе с cgame.
- * Примеры: cg.time, cg.snap, predictedPlayerState, зум, табло.
+ * cg_t — current frame state and prediction.
+ * Updated every frame. On tournament restart it is effectively recreated with cgame.
+ * Examples: cg.time, cg.snap, predictedPlayerState, zoom, scoreboard.
  */
 typedef struct
 {
@@ -784,6 +873,8 @@ typedef struct
 	char        infoScreenText[MAX_STRING_CHARS];
 
 	int         realNumClients;
+	int         teamPlayerCountRed;
+	int         teamPlayerCountBlue;
 
 	// scoreboard
 	int         scoresRequestTime;
@@ -839,6 +930,11 @@ typedef struct
 	int         crosshairClientNum;
 	int         crosshairClientTime;
 	qboolean    crosshairIgnoreFog;
+	qboolean    teamTinfoLocations; /* CS location names + map qloc64 + cg_friendsWallhack bit 4 */
+	int         teamMarkerStackIndex[MAX_CLIENTS];
+	int         teamMarkerStackGroupSize[MAX_CLIENTS];
+	int         teamMarkerStackCacheTime;
+	qboolean    teamMarkerStackCacheAlliesOnly;
 	/* Item entity indices this frame (filled in CG_Item; used e.g. for crosshair target) */
 	int         itemEntityIndices[MAX_GENTITIES];
 	int         numItemEntityIndices;
@@ -919,7 +1015,6 @@ typedef struct
 
 	/* BE frame/session state (was cgs.be.*) */
 	int         beFollowingMe;
-	int         beLastTellSender;
 	qboolean    beStatsAllRequested;
 	qboolean    beIsHealthLow;
 	qboolean    beClientDamagePrinted;
@@ -955,14 +1050,21 @@ typedef struct
 	vec4_t      beHealthMidColor;
 	qboolean    beShowCredits;
 
-	/* Per-frame health color cache: filled in CG_ClientInfoUpdateFrame; local=stats, byClient=clientinfo (QVM: avoid repeated CG_GetColorForHealth) */
+	/* healthColorLocal: per-frame from snap; healthColorByClient: from teaminfo + cvar refresh */
 	vec4_t      healthColorLocal;       /* local player: cg.snap->ps.stats[STAT_HEALTH/ARMOR] */
-	vec4_t      healthColorByClient[MAX_CLIENTS]; /* per client: cgs.clientinfo[i].health/armor */
+	vec4_t      healthColorByClient[MAX_CLIENTS]; /* teammates: tInfo + per-frame damage blink */
+	int         allyHealthBand[MAX_CLIENTS];  /* CG_HEALTH_BAND_*; from CG_ParseTeamInfo */
+	qboolean    allyHealthBlinkMidLow[MAX_CLIENTS]; /* blink: mid/low phases if LOW at damage */
+	int         healthBlinkUntil[MAX_CLIENTS];    /* cg.time+ms while blinking; 0 = idle */
+	/* Per-frame ally/enemy from current view; filled in CG_ClientInfoUpdateFrame before AddPacketEntities */
+	qboolean    isEnemyView[MAX_CLIENTS];
+	qboolean    isEnemyPowerupVisual[MAX_CLIENTS];
 
 	/* PrintUI: session UI state; drawn/updated every frame (startTime uses cg.time) */
 	printUI_t   printui[CG_PRINTUI_MAX];
 	int         printuiActiveCount;
 	int         printuiActiveIndices[CG_PRINTUI_MAX];
+
 } cg_t;
 
 
@@ -1692,9 +1794,9 @@ typedef struct cgs_osp_s
 
 
 /*
- * cgs_t — данные, загруженные из геймстейта (configstrings, медиа, правила).
- * Меняется при смене карты/геймстейта, конфигстрингов. При рестарте турнира не очищается.
- * Примеры: cgs.gametype, cgs.media, cgs.clientinfo, cgs.mapname.
+ * cgs_t — data loaded from gamestate (configstrings, media, rules).
+ * Changes on map/gamestate/configstring updates. Not cleared on tournament restart.
+ * Examples: cgs.gametype, cgs.media, cgs.clientinfo, cgs.mapname.
  */
 typedef struct
 {
@@ -1735,6 +1837,7 @@ typedef struct
 	char            redTeam[MAX_QPATH];
 	char            blueTeam[MAX_QPATH];
 	// qboolean        isOspServer;            // g_unlagged is not osp
+											   // I'm not sure how to distinguish OSP and baseq3a servers
 
 	int             voteTime;
 	int             voteYes;
@@ -1772,6 +1875,8 @@ typedef struct
 	int             teamChatMsgTimes[TEAMCHAT_HEIGHT];
 	int             teamChatPos;
 	int             teamLastChatPos;
+
+	beChatHistory_t beChatHistory;
 
 	// // orders
 	// int currentOrder;
@@ -1813,8 +1918,10 @@ typedef struct
 	vec4_t          bePlayerIndicatorColor;
 	vec4_t          bePlayerIndicatorBgColor;
 	vec4_t          beEmojiListBgColor;
+	vec4_t          beChatWindowBgColor;
 	vec2_t          bePlayerIndicatorFontSize;
 	vec2_t          beAccuracyFontSize;
+	beChatWindowMetrics_t beChatMetrics;
 	customWeaponStats_t beWeaponStats[WP_NUM_WEAPONS];
 	// qboolean        beSupportedServer;
 	vec3_t          beBrightWeaponsColor[WP_NUM_WEAPONS];
@@ -1824,7 +1931,7 @@ typedef struct
 	qboolean        beBrightItemsBeinfoSet[MAX_ITEMS];
 	team_t          beMyTeam;
 	int             beServerEnableBreath;
-	// int             beAutohop;  /* 0=нет pmove_autohop в cs, 1=есть и нельзя управлять, 2=можно управлять */
+	// int             beAutohop;  /* 0=no pmove_autohop in cs, 1=present and not controllable, 2=controllable */
 
 	qboolean        q3msk;        // Q3msk.net
 	qboolean        fpsclassico;  // fpsclasico.com
@@ -1834,7 +1941,7 @@ typedef struct
 	newStatsInfo_t statsAll[MAX_CLIENTS];
 } cgs_t;
 
-/* Crosshair colors/distance: top-level global for QVM (one level of indirection) */
+/* Crosshair colors/distance (top-level global) */
 typedef struct
 {
 	vec4_t color;
@@ -1958,6 +2065,8 @@ extern vmCvar_t           cg_smoothClients;
 extern vmCvar_t           cg_cameraMode;
 extern vmCvar_t           pmove_fixed;
 extern vmCvar_t           pmove_msec;
+extern vmCvar_t           phy_movetype;
+extern vmCvar_t           phy_snapVectors;
 extern vmCvar_t           cg_noTaunt;
 extern vmCvar_t           cg_noProjectileTrail;
 extern vmCvar_t           cg_oldRail;
@@ -2344,6 +2453,7 @@ extern vmCvar_t         cg_enemyLightningColor;
 extern vmCvar_t			cg_enemyAltLightning;
 extern vmCvar_t			cg_teamAltLightning;
 extern vmCvar_t			cg_muteMyJump;
+extern vmCvar_t			cg_muteWorldSounds;
 extern vmCvar_t			cg_disableTextEffects;
 extern vmCvar_t         cg_fragEffectTime;
 extern vmCvar_t         cg_fragEffectColor;
@@ -2362,6 +2472,18 @@ extern vmCvar_t         cg_damagePlumsTimeout;
 extern vmCvar_t         cg_freezeShader;
 extern vmCvar_t         cg_plasmaColor;
 extern vmCvar_t         cg_enemyPlasmaColor;
+extern vmCvar_t         cg_shudStyle;
+extern vmCvar_t         cg_chatWindow;
+extern vmCvar_t         cg_chatWindowMessageTime;
+extern vmCvar_t         cg_chatWindowPos;
+extern vmCvar_t         cg_chatWindowSize;
+extern vmCvar_t         cg_chatWindowFont;
+extern vmCvar_t         cg_chatWindowFontSize;
+extern vmCvar_t         cg_beLastTellSender;
+extern vmCvar_t         cg_chatWindowBgColor;
+extern vmCvar_t         cg_chatWindowBgOpaque;
+
+
 
 // temp cvars
 extern vmCvar_t           cg_shud_chatindex;
@@ -2381,8 +2503,6 @@ extern vmCvar_t           cg_shud_chatmsg12;
 extern vmCvar_t           cg_shud_chatmsg13;
 extern vmCvar_t           cg_shud_chatmsg14;
 extern vmCvar_t           cg_shud_chatmsg15;
-extern vmCvar_t           phy_movetype;
-extern vmCvar_t           phy_snapVectors;
 
 extern vmCvar_t         be_run;
 //
@@ -2415,7 +2535,7 @@ void QDECL CG_PrintOnce(const char* msg, ...);
 
 void CG_StartMusic(void);
 
-void CG_UpdateCvars(void);
+void CG_UpdateCvars(int maxEntries);
 
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);
@@ -2437,6 +2557,7 @@ cvarTable_t* CG_GetCgCvarByName(const char* name);
 void CG_CvarTouch(const char* name);
 void CG_ReloadColors(void);
 void CG_RegisterNumberShaders(void);
+void CG_RegisterAltShaderSeries(qhandle_t* out, const char* basename);
 void CG_CvarResetToDefault(const char* name);
 
 qhandle_t CG_GetFragSound(void);
@@ -2457,6 +2578,7 @@ void CG_ZoomToggle_f(void);
 void CG_AddBufferedSound(sfxHandle_t sfx);
 
 void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoPlayback);
+void CG_DrawLagometerGraphsInRect(float ax, float ay, float aw, float ah);
 float CG_DrawLagometer(float pos);
 void CG_SetCvarDescription(const char* name, const char* description);
 qboolean CG_IsRecordingDemo(void);
@@ -2484,7 +2606,7 @@ typedef struct
 void CG_AdjustFrom640(float* x, float* y, float* w, float* h);
 void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean correctWide);
 void CG_FillRect(float x, float y, float width, float height, const float* color);
-void CG_DrawHealthBar(float x, float y, float width, float height, int health, int armor, float alpha, int fontIndex, qboolean useCvarTextStyle);
+void CG_DrawHealthBar(float x, float y, float width, float height, int health, int armor, float alpha, int fontIndex, qboolean useCvarTextStyle, vec4_t* barColorSrc, qboolean teamOverlayHealthBar);
 void CG_DrawPicOld(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader);
@@ -2511,6 +2633,21 @@ int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int t
 void CG_OSPDrawStringPrepare(const char* from, char* to, int size);
 void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background);
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor, vec4_t shadowColor, float charWidth, float charHeight, int maxWidth, int flags, int fontIndex, vec4_t background, vec4_t border, vec4_t borderColor);
+float CG_OSPDrawStringNewTextWidth(const char* string, float charWidth, float charHeight, int flags, int fontIndex);
+float CG_OSPDrawStringNewSliceWidth(const char* start, const char* end, float charWidth, float charHeight, int flags, int fontIndex);
+int CG_OSPDrawStringNewFitBytes(const char* start, const char* end, float maxVirtWidth, float charWidth, float charHeight, int flags, int fontIndex);
+
+typedef struct cg_osp_font_metric_s
+{
+	float tc_prop[4];
+	float tc_mono[4];
+	float space1;
+	float space2;
+	float width;
+} cg_osp_font_metric_t;
+
+qhandle_t CG_OSPFontShaderForHeight(int fontIndex, float charHeight);
+const cg_osp_font_metric_t* CG_OSPFontMetricsPtr(int fontIndex);
 
 int CG_GetFontCount(void);
 void CG_FontSelect(int index);
@@ -2533,6 +2670,9 @@ typedef struct
 } emoji_t;
 const emoji_t* CG_OSPGetEmoji(const char* name);
 void CG_OSPLoadEmoji(void);
+int CG_OSPEmojiSortedCount(void);
+const emoji_t* CG_OSPEmojiSortedAt(int index);
+int CG_OSPEmojiPrefixMatch(const char* plainPrefix, const emoji_t** outList, int maxOut);
 void CG_OSPEmojiList_f(void);
 void CG_OSPDrawEmojiListOverlay(void);
 
@@ -2587,7 +2727,7 @@ enum
 	DS_VTOP         = 0x20,// vertical top
 	DS_VCENTER      = 0x40,// vertical center
 	DS_MAX_WIDTH_IS_CHARS = 0x80,// flag for calculation
-	DS_EMOJI        = 0x160,// allow emoji
+	DS_EMOJI        = 0x200,// allow emoji (must not overlap DS_VTOP/DS_VCENTER)
 };
 void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxChars, int flags);
 
@@ -2675,7 +2815,6 @@ void CG_DrawAmmoWarning(void);
 void CG_DrawReward(void);
 void CG_RegisterMedalAnimationShaders(void);
 void CG_MedalResolveFrame(qhandle_t medalShader, int startTime, int durationMsec, qhandle_t* outShader, vec4_t outTc);
-void CG_DrawMedalRewardPic(float x, float y, float w, float h, qhandle_t medalShader, int startTime, int durationMsec);
 void CG_DrawWarmup(void);
 void CG_ScanForCrosshairEntity(void);
 int CG_CrosshairTarget(vec3_t itemPos);
@@ -2736,16 +2875,17 @@ void CG_UpdateAllClientsInfo(void);
     ((cgs.gametype == GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 #define CG_IsLocalClientOnScreen() \
     (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
-/* QVM hot path: use macros instead of calls to avoid CALL/ENTER/LEAVE */
 #define CG_IS_DEAD() (cg.snap && (cg.snap->ps.pm_type == PM_DEAD || cg.snap->ps.pm_type == PM_SPINTERMISSION))
 #define CG_IS_LOCAL_CLIENT_SPECTATOR() ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 #define CG_IS_LOCAL_CLIENT_ON_SCREEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
 #define CG_IS_FROZEN_ENTITY(cent) ((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && ((cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS))
 /* In non-team modes (FFA, Tournament, SP) everyone except self is enemy; else use team/rt */
 #define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype < GT_TEAM) ? 1 : ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team))))
-/* Enemy from current view: uses PERS_TEAM (spectator/follow), cg_spectPOV when spectating */
-qboolean CG_IsEnemy(const clientInfo_t* target);
-qboolean CG_IsEnemyForPowerupVisual(const clientInfo_t* target);
+#define CG_CACHED_IS_ENEMY_NUM(n) (((n) >= 0 && (n) < MAX_CLIENTS) ? cg.isEnemyView[(n)] : qfalse)
+#define CG_CACHED_IS_ENEMY_CI(ci) CG_CACHED_IS_ENEMY_NUM((int)((ci) - cgs.clientinfo))
+#define CG_CACHED_IS_ENEMY_POWERUP_NUM(n) (((n) >= 0 && (n) < MAX_CLIENTS) ? cg.isEnemyPowerupVisual[(n)] : qfalse)
+#define CG_CACHED_IS_ENEMY_POWERUP_CI(ci) CG_CACHED_IS_ENEMY_POWERUP_NUM((int)((ci) - cgs.clientinfo))
+/* Enemy from current view: per-frame cache in CG_ClientInfoUpdateFrame; hot paths use CG_CACHED_IS_ENEMY_* */
 qboolean CG_IsWarmup(void);
 qboolean CG_IsIntermission(void);
 
@@ -2952,6 +3092,7 @@ qboolean CG_TrySendDstatusRequest(void);
 qboolean CG_GetDeadInFreeze(int clientNum);
 qboolean CG_OSPDrawScoretable(void);
 qboolean CG_BEDrawTeamScoretable(void);
+void CG_ScoreboardAccuracyStatsRefresh(void);
 
 
 extern int customScoreboardColorIsSet;
@@ -3015,6 +3156,23 @@ void CG_CheckChangedPredictableEvents(playerState_t* ps);
 //
 extern qboolean customLocationsEnabled;
 void CG_CustomLocationsLoad(void);
+
+qboolean CG_MapLocs_Load(void);
+qboolean CG_MapLocs_GetById(int id, vec3_t origin, char* name, int nameSize);
+qboolean CG_MapLocs_Count(void);
+qboolean CG_MapLocs_ServerHasLocationNames(void);
+void CG_MapLocs_NotifyLocationConfigStringChanged(void);
+void CG_ClearTeamGlobalPosFrame(void);
+void CG_MapLocs_f(void);
+
+void CG_UpdateTeamGlobalPosFrame(void);
+qboolean CG_ClientTeamMarkerOrigin(int clientNum, vec3_t out);
+void CG_EnsureTeamMarkerStackCache(qboolean gameModeNotSpectator);
+float CG_TeamIndicatorLayoutPitch(float h, qboolean hasName, qboolean hasStats, qboolean hasStatsBars, qboolean hasIcon, qboolean showHealthRows);
+void CG_AddGlobalPosFriendFloatSprites(void);
+void CG_DrawGlobalPosFriendHudMarkers(void);
+void CG_AddFloatSpriteAtOrigin(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale, float zLift);
+void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clientNum, qboolean isFrozen, qboolean useTeamFrozen, qboolean useTeamFoeWh, int baseAngle, float alphaScale);
 const char* CG_CustomLocationsGetName(const float* pos);
 void CG_CustomLocationsSetLocation(const char* info, vec3_t loc);
 qboolean CG_CustomLocationsTeamChatCode(const char* str, vec3_t cloc, char** cloc_begin, char** cloc_end);
@@ -3034,7 +3192,6 @@ void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
 int CG_GetRemainingGameTimeMsec(qboolean forItemPickup);
 void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength);
 void CG_Get_f(void);
-
 //
 //cg_be_stats
 //
@@ -3329,6 +3486,7 @@ void CG_UpdateDamageInfoAllowed(void);  /* recalc cached cgs.damageInfoAllowed *
 void CG_OSPCvarsRestrictValues(void);
 #define CG_OSPIsGameTypeCA(gt) ((gt) >= GT_CA)
 qboolean CG_OSPIsGameTypeFreeze(void);
+qboolean CG_ClientInfoIsFreezeTinfoFrozen(const clientInfo_t* ci);
 qboolean CG_OSPIsGameTypeTDM(void);
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup);
 void CG_OSPUpdateUserInfo(qboolean arg);
@@ -3383,7 +3541,68 @@ void CG_OSPNormalizeNameCopy(char* from, char* to, unsigned int size);
 void CG_DynamicMemReport(void);
 const char* CG_LoadLine(const char* ptr, char* out, int outSize);
 qboolean CG_ParseColorStr(const char* str, vec4_t out);
+qboolean CG_IsMutedWorldSound(int soundIndex);
 void CG_PrintUI_f(void);
+
+void CG_SendReplyMessage(const char* message);
+int CG_LastTellSenderClientNum(void);
+void CG_SetLastTellSenderClientNum(int clientNum);
+
+void CG_BEChat_UpdateFontSizeFromCvar(void);
+void CG_BEChat_Init(void);
+void CG_BEChat_Open(void);
+void CG_BEChat_OpenHistoryView(void);
+void CG_BEChat_CloseHistoryView(void);
+void CG_BEChat_Close(void);
+void CG_BEChat_AddLine(const char* text, int senderClientNum, int msgKind);
+int CG_BEChat_HistorySenderClientNum(int linesBack);
+void CG_BEChat_KeyEvent(int key, qboolean down);
+void CG_BEChat_MouseEvent(int dx, int dy);
+void CG_BEChat_Draw(void);
+void CG_BEChat_Frame(stereoFrame_t stereoView);
+void CG_BEChat_EventHandling(int type);
+qboolean CG_BEChat_IsOpen(void);
+void CG_BEChat_f(void);
+void CG_BEChat_Team_f(void);
+void CG_BEChat_ShowHistoryDown_f(void);
+void CG_BEChat_ShowHistoryUp_f(void);
+void CG_BEChat_WindowLayout(float* outX, float* outY, float* outW, float* outH);
+
+void CG_BEChat_EmojiSessionOpen(void);
+float CG_BEChat_InputRowY(float winY, float winH);
+float CG_BEChat_InputRowBgY(float winY, float winH);
+void CG_BEChat_EmojiPrepareInputRow(float winX, float winY, float winW, float winH);
+float CG_BEChat_EmojiInputTextMaxWidth(float contentX);
+void CG_BEChat_EmojiPickerDragPoll(void);
+void CG_BEChat_EmojiPickerHoverFrame(void);
+void CG_BEChat_VirtualCursorPos(float* virtX, float* virtY);
+void CG_BEChat_EmojiSessionClose(void);
+void CG_BEChat_EmojiOnInputChanged(beChatInput_t* edit);
+qboolean CG_BEChat_EmojiProcessKey(int keycode, beChatInput_t* edit, float maxTextW);
+qboolean CG_BEChat_EmojiAcIsActive(void);
+void CG_BEChat_EmojiCursorStepLeft(beChatInput_t* edit);
+void CG_BEChat_EmojiCursorStepRight(beChatInput_t* edit);
+void CG_BEChat_EmojiBackspace(beChatInput_t* edit, float maxTextW);
+void CG_BEChat_EmojiDelete(beChatInput_t* edit, float maxTextW);
+void CG_BEChat_EmojiInsertToken(beChatInput_t* edit, const char* token, float maxTextW);
+void CG_BEChat_EmojiDrawUI(float inputX, float inputY, float inputW, beChatInput_t* edit, const vec4_t color, int textFlags);
+qboolean CG_BEChat_EmojiMouseDown(float virtX, float virtY, beChatInput_t* edit, float maxTextW);
+qboolean CG_BEChat_EmojiPickerWheel(int wheelUp);
+float CG_BEChat_EmojiButtonReserveWidth(void);
+int CG_BEChat_EmojiTextFlags(int baseFlags);
+
+float CG_BEChat_InputFieldMaxWidth(void);
+int CG_BEChat_InputByteUnitLen(const char* text, int pos, int textLen);
+void CG_BEChat_InputSnapScrollPos(beChatInput_t* edit);
+qboolean CG_BEChat_InputTryBackspacePalette(beChatInput_t* edit);
+void CG_BEChat_InputClampScroll(beChatInput_t* edit, float maxTextW);
+const char* CG_BEChat_InputPromptText(void);
+float CG_BEChat_InputTextDrawX(float contentX);
+qboolean CG_BEChat_CmdAcIsActive(void);
+qboolean CG_BEChat_CmdAcProcessKey(int keycode, beChatInput_t* edit, float maxTextW);
+void CG_BEChat_CmdAcDraw(float inputX, float inputY, beChatInput_t* edit, const vec4_t color, int textFlags);
+void CG_BEChat_EmojiTogglePicker(void);
+
 void CG_DrawPrintUI(void);
 void CG_PrintUIRemoveFromActiveList(int idx);
 
@@ -3429,6 +3648,8 @@ typedef enum
 	MESSAGE_ALLOWED_OTHER,
 } messageAllowed_t;
 messageAllowed_t CG_ChatCheckMessageAllowed(const char* message);
+qboolean CG_ChatExtractSenderName(const char* message, char* name, int nameSize);
+int CG_ChatResolveSenderClientNum(const char* rawMessage, int serverClientNum);
 void CG_ChatfilterLoadFile(const char* filename);
 void CG_ChatfilterSaveFile(const char* filename);
 void CG_ChatfilterAddName(const char* name);
@@ -3437,7 +3658,7 @@ qboolean CG_ChatfilterIsNameMuted(const char* name);
 void CG_ChatfilterDump(void);
 
 //
-// cg_teamtaskfilter.c
+// team task filter (cg_teamtasks_utils.c)
 //
 #define CG_TEAMTASKFILTER_DEFAULT_FILE "teamtaskfilter"
 void CG_TeamTaskFilterLoadFile(const char* filename);
@@ -3502,6 +3723,8 @@ void CG_SelwheelParseTeamTaskWheel(void);
 // cg_localevents.c
 //
 void CG_UpdateMyTeam(void);
+void CG_HealthColorFromStats(int health, int armor, vec4_t hcolorOut, int* healthBandOut);
+void CG_HealthColorFromAllyBand(int band, vec4_t hcolorOut);
 void CG_UpdateVisualTeamColors(team_t realTeam);
 void CG_InvalidateVisualTeamColorsCache(void);
 
@@ -3552,6 +3775,7 @@ void CG_LocalEventCvarChanged_cg_fragSound(cvarTable_t* cvart);
 
 void CG_LocalEventCvarChanged_ch_file(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_shud(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_shudStyle(cvarTable_t* cvart);
 
 void CG_LocalEventCvarChanged_ch_crosshairColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ch_crosshairActionColor(cvarTable_t* cvart);
@@ -3607,6 +3831,10 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_emojiListFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_chatWindowFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_chatWindowFontSize(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_chatWindowBgColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_chatWindowBgOpaque(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_emojiListBgColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_emojiListOpaque(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ReloadTeamTaskWheel(cvarTable_t* cvart);

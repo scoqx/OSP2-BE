@@ -633,7 +633,7 @@ void CG_TeamTaskUpdateFrame(void)
 
 			if (!cgs.clientinfo[clientNum].isFrozenEnt)
 				continue;
-			if (!cgs.clientinfo[clientNum].infoValid || CG_IsEnemy(&cgs.clientinfo[clientNum]))
+			if (!cgs.clientinfo[clientNum].infoValid || CG_CACHED_IS_ENEMY_NUM(clientNum))
 				continue;
 			fci = &cgs.clientinfo[clientNum];
 			cent = &cg_entities[fci->frozenEntity];
@@ -1608,7 +1608,7 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 
 		if (!CG_WorldToScreen(mark->origin, &x, &y))
 		{
-			// за камерой — считаем вне экрана
+			// behind camera — treat as off-screen
 			isOutsideScreen = qtrue;
 			renderData->x = 0.0f;
 			renderData->y = 0.0f;

@@ -255,28 +255,63 @@ static void CG_TellAttacker_f(void)
 	trap_SendClientCommand(command);
 }
 
-static void CG_Reply_f(void)
+int CG_LastTellSenderClientNum(void)
 {
-	int     clientNum;
-	char    command[128];
-	char    message[128];
+	int clientNum;
 
-	if (cg.beLastTellSender < 0 || cg.beLastTellSender >= MAX_CLIENTS)
+	if (!cg_beLastTellSender.string[0])
 	{
-		CG_Printf("No one to reply to.\n");
+		return -1;
+	}
+
+	clientNum = atoi(cg_beLastTellSender.string);
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return -1;
+	}
+
+	return clientNum;
+}
+
+void CG_SetLastTellSenderClientNum(int clientNum)
+{
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		trap_Cvar_Set("cg_beLastTellSender", "");
 		return;
 	}
 
-	clientNum = cg.beLastTellSender;
-	trap_Args(message, 128);
-	if (message[0] == '\0')
+	trap_Cvar_Set("cg_beLastTellSender", va("%i", clientNum));
+}
+
+void CG_SendReplyMessage(const char* message)
+{
+	int     clientNum;
+	char    command[MAX_STRING_CHARS];
+
+	if (!message || !message[0])
 	{
 		CG_Printf("Usage: /reply <message>\n");
 		return;
 	}
 
-	Com_sprintf(command, 128, "tell %i %s", clientNum, message);
+	clientNum = CG_LastTellSenderClientNum();
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		CG_Printf("No one to reply to.\n");
+		return;
+	}
+
+	Com_sprintf(command, sizeof(command), "tell %i %s", clientNum, message);
 	trap_SendClientCommand(command);
+}
+
+static void CG_Reply_f(void)
+{
+	char    message[128];
+
+	trap_Args(message, 128);
+	CG_SendReplyMessage(message);
 }
 
 /*
@@ -878,7 +913,7 @@ void CG_OSPDynamicMem_f(void)
 
 void CG_ReloadHud_f(void)
 {
-	CG_SHUDLoadConfig();
+	CG_SHUDLoadConfig(qfalse);
 }
 
 void CG_PrintPlayerIDs_f(void)
@@ -2084,7 +2119,7 @@ void CG_TeamTaskHelp_f(void)
 	CG_Printf("  ^2tHere^7       - Mark your current position (alive) or death location (dead)\n");
 	CG_Printf("  ^2tWarn^7       - Mark crosshair position (alive) or death location (dead)\n");
 	CG_Printf("  ^2tPickup^7     - Mark that you picked up an item (megahealth, redarmor, yellowarmor)\n");
-	CG_Printf("  ^2tShowDead^7    - Re-show ally death marks locally\n");
+	CG_Printf("  ^2tShowDead^7   - Re-show ally death marks locally\n");
 	CG_Printf("  ^2tSmart^7      - Smart mode (auto-detects target)\n");
 	CG_Printf("  ^7Smart mode automatically detects:\n");
 	CG_Printf("    - Enemy players (marks as target)\n");
@@ -2344,6 +2379,7 @@ static consoleCommand_t commands[] =
 	{ "prevskin", CG_TestModelPrevSkin_f },
 #endif
 	{ "viewpos", CG_Viewpos_f },
+	{ "maplocs", CG_MapLocs_f },
 	{ "+scores", CG_ScoresDown_f },
 	{ "-scores", CG_ScoresUp_f },
 	{ "+autojump", CG_AutoJumpDown_f },
@@ -2430,6 +2466,10 @@ static consoleCommand_t commands[] =
 	{ "fonts", CG_Fonts_f },
 	{ "emojilist", CG_OSPEmojiList_f },
 	{ "printui", CG_PrintUI_f },
+	{ "enterchat", CG_BEChat_f },
+	{ "enterchatteam", CG_BEChat_Team_f },
+	{ "+showchat", CG_BEChat_ShowHistoryDown_f },
+	{ "-showchat", CG_BEChat_ShowHistoryUp_f },
 	{ "tAttack", CG_TeamTaskMarkOffense },
 	{ "tDefence", CG_TeamTaskMarkDefence },
 	{ "tWatch", CG_TeamTaskMarkWatch },

@@ -233,7 +233,8 @@ void CG_SHUDElementTeamRoutine(void* context)
 		                 (float)element->ctxHealthArmor.width,
 		                 element->config.rect.value[3],
 		                 ci->health, ci->armor, element->config.color.value.rgba[3],
-		                 (cg_teamHealthBar.integer == 2) ? element->ctxHealthArmor.fontIndex : -1, qfalse);
+		                 (cg_teamHealthBar.integer == 2) ? element->ctxHealthArmor.fontIndex : -1, qfalse,
+		                 &cg.healthColorByClient[sortedTeamPlayers[index]], qtrue);
 	}
 	else
 	{

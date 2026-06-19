@@ -161,6 +161,8 @@ vmCvar_t           cg_smoothClients;
 vmCvar_t           cg_cameraMode;
 vmCvar_t           pmove_fixed;
 vmCvar_t           pmove_msec;
+vmCvar_t		   phy_movetype;
+vmCvar_t		   phy_snapVectors;
 vmCvar_t           cg_noTaunt;
 vmCvar_t           cg_noProjectileTrail;
 vmCvar_t           cg_oldRail;
@@ -551,8 +553,6 @@ vmCvar_t        cg_teamTaskNewSounds;
 vmCvar_t        cg_teamTaskVersion;
 vmCvar_t        cg_railFix;
 vmCvar_t        cg_freezeSoundFix;
-// vmCvar_t     cl_pitchspeed;
-// vmCvar_t     cl_yawspeed;
 vmCvar_t           cg_infoDetail;
 vmCvar_t        cg_enhancedInterpolation;
 vmCvar_t        cg_entityOverpolate;
@@ -579,6 +579,7 @@ vmCvar_t        cg_enemyLightningColor;
 vmCvar_t        cg_enemyAltLightning;
 vmCvar_t        cg_teamAltLightning;
 vmCvar_t        cg_muteMyJump;
+vmCvar_t        cg_muteWorldSounds;
 vmCvar_t        cg_disableTextEffects;
 vmCvar_t        cg_fragEffectTime;
 vmCvar_t        cg_fragEffectColor;
@@ -597,8 +598,15 @@ vmCvar_t        cg_damagePlumsTimeout;
 vmCvar_t        cg_freezeShader;
 vmCvar_t        cg_plasmaColor;
 vmCvar_t        cg_enemyPlasmaColor;
-vmCvar_t		phy_movetype;
-vmCvar_t		phy_snapVectors;
+vmCvar_t        cg_shudStyle;
+vmCvar_t        cg_chatWindow;
+vmCvar_t        cg_chatWindowMessageTime;
+vmCvar_t        cg_chatWindowPos;
+vmCvar_t        cg_chatWindowSize;
+vmCvar_t        cg_chatWindowFont;
+vmCvar_t        cg_chatWindowFontSize;
+vmCvar_t        cg_chatWindowBgColor;
+vmCvar_t        cg_chatWindowBgOpaque;
 
 cgFontIndices_t cgFontIndices;
 
@@ -693,6 +701,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT },
 	{ &pmove_fixed, "pmove_fixed", "0", 0, CG_LocalEventCvarChanged_pmove_fixed},
 	{ &pmove_msec, "pmove_msec", "8",  },
+	{ &phy_movetype, "phy_movetype", "-1", CVAR_SYSTEMINFO },
+	{ &phy_snapVectors, "g_snapVectors", "0", CVAR_SYSTEMINFO },
 	{ &cg_noTaunt, "cg_noTaunt", "0", CVAR_ARCHIVE },
 	{ &cg_noProjectileTrail, "cg_noProjectileTrail", "0", CVAR_ARCHIVE },
 	{ &cg_oldRail, "cg_oldRail", "1", CVAR_ARCHIVE },
@@ -764,7 +774,7 @@ cvarTable_t cvarTable[] =
 	{ &cf_Following, "cf_Following", "24x24", CVAR_ARCHIVE },
 	{ &ch_FilterLocationsTeamchat, "ch_FilterLocationsTeamchat", "0", CVAR_ARCHIVE },
 	{ &ch_fragMessage, "ch_fragMessage", "1", CVAR_ARCHIVE },
-	{ &ch_file, "ch_file", "default", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ch_file},
+	{ &ch_file, "ch_file", "roamer", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ch_file},
 	{ &cf_Fragmsg, "cf_Fragmsg", "16x16", CVAR_ARCHIVE },
 	{ &ch_graphs, "ch_graphs", "1", CVAR_ARCHIVE },
 	{ &ch_InverseTeamChat, "ch_InverseTeamChat", "1", CVAR_ARCHIVE },
@@ -939,7 +949,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_friendHudMarkerSize, "cg_friendHudMarkerSize", "1", CVAR_ARCHIVE },
 	{ &cg_friendHudMarkerMaxScale, "cg_friendHudMarkerMaxScale", "1", CVAR_ARCHIVE },
 	{ &cg_friendHudMarkerMinScale, "cg_friendHudMarkerMinScale", "0.3", CVAR_ARCHIVE },
-	{ &cg_friendsWallhack, "cg_friendsWallhack", "1", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
+	{ &cg_friendsWallhack, "cg_friendsWallhack", "7", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_drawHudMarkers, "cg_drawHudMarkers", "1", CVAR_ARCHIVE },
 	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE },
 	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "10 14", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_accuracyFontSize },
@@ -1002,7 +1012,7 @@ cvarTable_t cvarTable[] =
 	/* { &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop}, */  /* autohop commented out */
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
-	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "2800", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
+	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "5000", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
 	{ &cg_teamTask, "cg_teamTask", "31", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teamTaskScale, "cg_teamTaskScale", "1.0", CVAR_ARCHIVE },
 	{ &cg_teamTaskOpaque, "cg_teamTaskOpaque", "0.7", CVAR_ARCHIVE },
@@ -1077,6 +1087,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_enemyAltLightning, "cg_enemyAltLightning", "", CVAR_ARCHIVE },
 	{ &cg_teamAltLightning, "cg_teamAltLightning", "", CVAR_ARCHIVE },
 	{ &cg_muteMyJump, "cg_muteMyJump", "0", CVAR_ARCHIVE },
+	{ &cg_muteWorldSounds, "cg_muteWorldSounds", "0", CVAR_ARCHIVE },
 	{ &cg_disableTextEffects, "cg_disableTextEffects", "0", CVAR_ARCHIVE },
 	{ &cg_fragEffectTime, "cg_fragEffectTime", "500", CVAR_ARCHIVE },
 	{ &cg_fragEffectColor, "cg_fragEffectColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_fragEffectColor },
@@ -1095,8 +1106,15 @@ cvarTable_t cvarTable[] =
 	{ &cg_freezeShader, "cg_freezeShader", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_plasmaColor, "cg_plasmaColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_plasmaColor },
 	{ &cg_enemyPlasmaColor, "cg_enemyPlasmaColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyPlasmaColor },
-	{ &phy_movetype, "phy_movetype", "-1", CVAR_SYSTEMINFO },
-	{ &phy_snapVectors, "g_snapVectors", "0", CVAR_SYSTEMINFO },
+	{ &cg_shudStyle, "cg_shudStyle", "1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_shudStyle },
+	{ &cg_chatWindow, "cg_chatWindow", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_chatWindowMessageTime, "cg_chatWindowMessageTime", "3000", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_chatWindowPos, "cg_chatWindowPos", "140 300", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_chatWindowSize, "cg_chatWindowSize", "360 120", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_chatWindowFont, "cg_chatWindowFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowFont },
+	{ &cg_chatWindowFontSize, "cg_chatWindowFontSize", "6 10", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowFontSize },
+	{ &cg_chatWindowBgColor, "cg_chatWindowBgColor", "000000", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgColor },
+	{ &cg_chatWindowBgOpaque, "cg_chatWindowBgOpaque", "0.25", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgOpaque },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1119,6 +1137,39 @@ vmCvar_t           cg_shud_chatmsg12;
 vmCvar_t           cg_shud_chatmsg13;
 vmCvar_t           cg_shud_chatmsg14;
 vmCvar_t           cg_shud_chatmsg15;
+vmCvar_t           cg_bechat_hist0;
+vmCvar_t           cg_bechat_hist1;
+vmCvar_t           cg_bechat_hist2;
+vmCvar_t           cg_bechat_hist3;
+vmCvar_t           cg_bechat_hist4;
+vmCvar_t           cg_bechat_hist5;
+vmCvar_t           cg_bechat_hist6;
+vmCvar_t           cg_bechat_hist7;
+vmCvar_t           cg_bechat_hist8;
+vmCvar_t           cg_bechat_hist9;
+vmCvar_t           cg_bechat_hist10;
+vmCvar_t           cg_bechat_hist11;
+vmCvar_t           cg_bechat_hist12;
+vmCvar_t           cg_bechat_hist13;
+vmCvar_t           cg_bechat_hist14;
+vmCvar_t           cg_bechat_hist15;
+vmCvar_t           cg_bechat_sent0;
+vmCvar_t           cg_bechat_sent1;
+vmCvar_t           cg_bechat_sent2;
+vmCvar_t           cg_bechat_sent3;
+vmCvar_t           cg_bechat_sent4;
+vmCvar_t           cg_bechat_sent5;
+vmCvar_t           cg_bechat_sent6;
+vmCvar_t           cg_bechat_sent7;
+vmCvar_t           cg_bechat_sent8;
+vmCvar_t           cg_bechat_sent9;
+vmCvar_t           cg_bechat_sent10;
+vmCvar_t           cg_bechat_sent11;
+vmCvar_t           cg_bechat_sent12;
+vmCvar_t           cg_bechat_sent13;
+vmCvar_t           cg_bechat_sent14;
+vmCvar_t           cg_bechat_sent15;
+vmCvar_t           cg_beLastTellSender;
 
 static cvarTable_t cvarTable_temp[] =
 {
@@ -1139,6 +1190,39 @@ static cvarTable_t cvarTable_temp[] =
 	{ &cg_shud_chatmsg13, "cg_shud_chatmsg13", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
 	{ &cg_shud_chatmsg14, "cg_shud_chatmsg14", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
 	{ &cg_shud_chatmsg15, "cg_shud_chatmsg15", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist0, "cg_bechat_hist0", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist1, "cg_bechat_hist1", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist2, "cg_bechat_hist2", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist3, "cg_bechat_hist3", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist4, "cg_bechat_hist4", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist5, "cg_bechat_hist5", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist6, "cg_bechat_hist6", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist7, "cg_bechat_hist7", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist8, "cg_bechat_hist8", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist9, "cg_bechat_hist9", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist10, "cg_bechat_hist10", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist11, "cg_bechat_hist11", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist12, "cg_bechat_hist12", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist13, "cg_bechat_hist13", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist14, "cg_bechat_hist14", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_hist15, "cg_bechat_hist15", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent0, "cg_bechat_sent0", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent1, "cg_bechat_sent1", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent2, "cg_bechat_sent2", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent3, "cg_bechat_sent3", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent4, "cg_bechat_sent4", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent5, "cg_bechat_sent5", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent6, "cg_bechat_sent6", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent7, "cg_bechat_sent7", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent8, "cg_bechat_sent8", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent9, "cg_bechat_sent9", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent10, "cg_bechat_sent10", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent11, "cg_bechat_sent11", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent12, "cg_bechat_sent12", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent13, "cg_bechat_sent13", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent14, "cg_bechat_sent14", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_bechat_sent15, "cg_bechat_sent15", "", CVAR_INIT | CVAR_NORESTART | CVAR_TEMP | CVAR_NOTABCOMPLETE },
+	{ &cg_beLastTellSender, "cg_beLastTellSender", "", CVAR_TEMP | CVAR_NORESTART | CVAR_NOTABCOMPLETE },
 };
 
 #define CG_VARS_HASH_SIZE 512
@@ -1253,17 +1337,49 @@ void CG_RegisterCvars(void)
 	CG_OSPCvarsRestrictValues();
 }
 
-void CG_UpdateCvars(void)
+#define CG_CVARS_UPDATE_SLICES  6
+
+static int cvarUpdateSliceIndex;
+
+void CG_UpdateCvars(int maxEntries)
 {
-	int         i;
+	int         processed;
 	cvarTable_t* cv;
 
-	for (i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++)
+	if (cvarTableSize <= 0)
 	{
-		if (!cv->vmCvar) continue;
+		return;
+	}
+
+	if (maxEntries == 0)
+	{
+		maxEntries = (cvarTableSize + CG_CVARS_UPDATE_SLICES - 1) / CG_CVARS_UPDATE_SLICES;
+	}
+	else if (maxEntries < 0 || maxEntries > cvarTableSize)
+	{
+		maxEntries = cvarTableSize;
+		cvarUpdateSliceIndex = 0;
+	}
+
+	for (processed = 0; processed < maxEntries; processed++)
+	{
+		cv = &cvarTable[cvarUpdateSliceIndex];
+		cvarUpdateSliceIndex++;
+		if (cvarUpdateSliceIndex >= cvarTableSize)
+		{
+			cvarUpdateSliceIndex = 0;
+		}
+
+		if (!cv->vmCvar)
+		{
+			continue;
+		}
 		trap_Cvar_Update(cv->vmCvar);
 
-		if (cv->forceModelModificationCount == cv->vmCvar->modificationCount) continue;
+		if (cv->forceModelModificationCount == cv->vmCvar->modificationCount)
+		{
+			continue;
+		}
 		cv->forceModelModificationCount = cv->vmCvar->modificationCount;
 
 		if (cv->onChanged)
@@ -2146,21 +2262,7 @@ static void CG_RegisterGraphics(void)
 
 
 	}
-	for (i = 0; i < MAX_ALT_SHADERS; i++)
-	{
-		if (i == 0)
-		{
-			cgs.media.bloodExplosionShaderNew[0] = trap_R_RegisterShader("bloodExplosionNew");
-		}
-		else
-		{
-			cgs.media.bloodExplosionShaderNew[i] = trap_R_RegisterShader(va("bloodExplosionNew%i", i + 1));
-			if (!cgs.media.bloodExplosionShaderNew[i])
-			{
-				cgs.media.bloodExplosionShaderNew[i] = cgs.media.bloodExplosionShaderNew[0];
-			}
-		}
-	}
+	CG_RegisterAltShaderSeries(cgs.media.bloodExplosionShaderNew, "bloodExplosionNew");
 
 	cgs.media.bulletFlashModel = trap_R_RegisterModel("models/weaphits/bullet.md3");
 	cgs.media.ringFlashModel = trap_R_RegisterModel("models/weaphits/ring02.md3");
@@ -2213,17 +2315,6 @@ static void CG_RegisterGraphics(void)
 	    (cg_teamOutlineSize.integer == 1) ? trap_R_RegisterShader("outlineThin") :
 	    (cg_teamOutlineSize.integer == 2) ? trap_R_RegisterShader("outlineMedium") :
 	    trap_R_RegisterShader("outlineMedium");
-
-	// BE New Scoreboard
-	cgs.media.scoreboardBEScore = trap_R_RegisterShaderNoMip("icons/score");
-	cgs.media.scoreboardBEStar = trap_R_RegisterShaderNoMip("icons/star");
-	cgs.media.scoreboardBEEye = trap_R_RegisterShaderNoMip("icons/eye");
-	cgs.media.scoreboardBEExclamation = trap_R_RegisterShaderNoMip("icons/exclamation");
-	cgs.media.scoreboardBESignal = trap_R_RegisterShaderNoMip("icons/signal");
-	cgs.media.scoreboardBENoSignal = trap_R_RegisterShaderNoMip("icons/noSignal");
-	cgs.media.scoreboardBEClock = trap_R_RegisterShaderNoMip("icons/clock");
-	cgs.media.scoreboardBELeaderboard = trap_R_RegisterShaderNoMip("icons/leaderboard");
-	cgs.media.scoreboardBEReady = trap_R_RegisterShaderNoMip("icons/ready");
 
 	cgs.media.unknownSkinIcon = trap_R_RegisterShaderNoMip("models/players/icon_unknown.tga");
 
@@ -2279,21 +2370,7 @@ static void CG_RegisterGraphics(void)
 	}
 
 	cgs.media.shadowMarkShader = trap_R_RegisterShader("markShadow");
-	for (i = 0; i < MAX_ALT_SHADERS; i++)
-	{
-		if (i == 0)
-		{
-			cgs.media.shadowMarkShaderNew[0] = trap_R_RegisterShader("markShadowNew");
-		}
-		else
-		{
-			cgs.media.shadowMarkShaderNew[i] = trap_R_RegisterShader(va("markShadowNew%i", i + 1));
-			if (!cgs.media.shadowMarkShaderNew[i])
-			{
-				cgs.media.shadowMarkShaderNew[i] = cgs.media.shadowMarkShaderNew[0];
-			}
-		}
-	}
+	CG_RegisterAltShaderSeries(cgs.media.shadowMarkShaderNew, "markShadowNew");
 
 	cgs.media.wakeMarkShader = trap_R_RegisterShader("wake");
 	cgs.media.bloodMarkShader = trap_R_RegisterShader("bloodMark");
@@ -2534,6 +2611,8 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_teamIndicatorMaxLength");
 	CG_CvarTouch("cg_emojiListBgColor");
 	CG_CvarTouch("cg_emojiListOpaque");
+	CG_CvarTouch("cg_chatWindowBgColor");
+	CG_CvarTouch("cg_chatWindowBgOpaque");
 	CG_CvarTouch("cg_teamIndicatorFontSize");
 	CG_CvarTouch("cg_teamIndicatorAdjust");
 
@@ -2761,7 +2840,7 @@ void CG_InitTeamTaskMarkers(void)
 {
 	int i;
 
-	/* numTeamTaskMarks = 0: no iteration over array, memset not needed (QVM_LOGIC) */
+	/* numTeamTaskMarks = 0: no iteration over array, memset not needed */
 	cg.teamMarkers.numTeamTaskMarks = 0;
 
 	cg.teamMarkers.packRoundNextFrame = qfalse;
@@ -2795,9 +2874,6 @@ void CG_InitTeamTaskMarkers(void)
 	cg.teamMarkers.pickupItemType = 0;
 	VectorClear(cg.teamMarkers.pickupItemPosition);
 	cg.teamMarkers.pickupItemTime = 0;
-
-	/* Initialize last tell sender for reply command */
-	cg.beLastTellSender = -1;
 }
 
 /*
@@ -2838,6 +2914,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	// clear everything
 	memset(&cgs, 0, sizeof(cgs));
 	memset(&cg, 0, sizeof(cg));
+	cg.teamMarkerStackCacheTime = -1;
 	for (i = 0; i < MAX_CLIENTS; i++)
 		cg.predictedDeadInFreeze[i] = -1;
 	memset(cg_entities, 0, sizeof(cg_entities));
@@ -2894,6 +2971,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_UpdateBeFeatures();
 
 	CG_InitConsoleCommands();
+	CG_BEChat_Init();
 
 	if (cg_clientLog.integer)
 	{
@@ -2947,7 +3025,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_Error("Client/Server game mismatch: %s/%s", GAME_VERSION, s);
 	}
 
-// Разные константы для разных версий OSP, вероятно нужно оставить один вариант
+// Different constants for different OSP versions; probably should keep only one variant
 	cgs.osp.stats_mask = 0xffff;
 	cgs.osp.stats_shift = 0x10;
 
@@ -3132,7 +3210,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_LoadingString("graphics");
 	CG_RegisterGraphics();
 
-	CG_UpdateCvars();
+	CG_UpdateCvars(cvarTableSize);
 	/* CG_OSP2BEConfigTourneyModeRefresh(); */
 	if (cg_execVstr.string[0])
 	{
@@ -3179,6 +3257,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	}
 
 	CG_CustomLocationsLoad();
+	CG_MapLocs_Load();
 
 	cgs.osp.decals_number = 0;
 	if (cg_drawDecals.integer)
@@ -3280,16 +3359,19 @@ CG_EventHandling
 */
 void CG_EventHandling(int type)
 {
+	CG_BEChat_EventHandling(type);
 }
 
 
 
 void CG_KeyEvent(int key, qboolean down)
 {
+	CG_BEChat_KeyEvent(key, down);
 }
 
 void CG_MouseEvent(int x, int y)
 {
+	CG_BEChat_MouseEvent(x, y);
 }
 
 char* CG_OSPGetCvarName(vmCvar_t* cvar)

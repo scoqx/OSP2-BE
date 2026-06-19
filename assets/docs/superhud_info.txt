@@ -59,6 +59,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | Powerup1_time - Powerup8_time | Оставшееся время действия поверапа.                          |
 | RankMessage                   | Ранг в таблице. Видно при получении фрага.                   |
 | Score_Limit                   | Лимит очков.                                                 |
+| Timelimit                     | Лимит времени матча (минуты).                                |
 | Score_NME                     | Очки врага/команды или лидирующего игрока.                   |
 | Score_OWN                     | Собственные очки или очки своей команды.                     |
 | Specmessage                   | Сообщение SPECTATOR.                                         |
@@ -219,29 +220,27 @@ execute { cg_fov 100; exec myconfig.cfg }
 - Image2 - Путь к изображению для второго слоя полосы.
 - AlignH / AlignV - выравнивание полоски по якорю `rect` (x/y).
 
-Только для здоровья и брони:
+Только для здоровья и брони: (StatusBar_HealthBar / StatusBar_ArmorBar)
 - Style 1 - цвет зависит от хп, 
 - Style 2 - обе полосы в одном месте, цвет задаётся через `color` и `color2`.
 - Style 3 - то же что и Style 2, но при достижении значения установленного в cg_healthLow - бары красятся в красный цвет.
 
-Только для TargetStatusBar:
-- Style 1 - цвет зависит от HP/AP цели под прицелом.
-- Style 2 - color и color2.
-- Style 3 - то же что и Style 2, но при достижении значения установленного в cg_healthLow — цвет зависит от HP/AP цели (cg_healthColorLevels).
-
-Только для патронов:
+Только для патронов: (StatusBar_AmmoBar)
 - color2 - изменить цвет среднего значение боезапаса (дефолт - оранжевый)
 - weaponMaxValue - задать максимальное значение для определенных оружий. Формат: номер оружия значение номер оружия значение. По умолчанию для всех оружий 200. Пример: `weaponMaxValue 1 50 2 100` (оружие 1 - максимум 50, оружие 2 - максимум 100). У пилы (WP_GAUNTLET) нет патронов.
 
+ Только для полоски здоровья при наведени: (TargetStatusBar)
+- Style 1 - цвет зависит от HP/AP цели под прицелом.
+- Style 2 - color и color2.
+- Style 3 - то же что и Style 2, но при достижении значения установленного в cg_healthLow — цвет зависит от HP/AP цели (cg_healthColorLevels).
 
 ### StatusBar_HealthCount StatusBar_ArmorCount 
 
 - Style 1 - цвет значений задаётся через `color` для > healthMid и `color2` для < healthMid
 
-### TargetStatus TargetStatusBar
+### Score_Limit, Timelimit
 
-- Отображаются при наведении прицела на союзника (как TargetName).
-- TargetStatus — текст `[HP/AP]`.
+- Команда `Text` задаёт свой текст, который выводится перед числовым значением (без `Text` — только число). Пример: `text "Limit: "` → `Limit: 20`
 
 ### VisFlags 
 
@@ -250,6 +249,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 - teamonly - видно в только в командных режимах
 - spectator - видно в режиме спектатора
 - dead - видно если игрок мертв
+- warmup - видно во время разминки (warmup)
 - demohide - скрывать в режиме просмотра демо
 - scoreshide - скрывать в режиме просмотра счета
 - key1show - скрывать если не нажата кнопка +shudkey1
@@ -277,11 +277,14 @@ execute { cg_fov 100; exec myconfig.cfg }
 - plasma - видно только когда активно оружие Plasmagun
 - bfg - видно только когда активно оружие BFG
 - lowhp - показывать когда мало здоровья (cg_healthLow)
+- style1 - style4 - видно только при совпадении с cg_shudStyle (1-4). Не занимают биты остальных флагов.
 
 Можно указывать несколько вариантов через пробел:
 
     visflags teamonly key1show;
     visflags machinegun rocket lightning;
+
+Любой флаг из списка выше можно записать с префиксом `!` — для него применяется обратное условие видимости.
 
 ### Obituary1 - Obituary8
 

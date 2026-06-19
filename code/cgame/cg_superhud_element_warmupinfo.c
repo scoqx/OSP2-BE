@@ -36,17 +36,17 @@ void CG_SHUDElementWarmupInfoRoutine(void* context)
 	}
 	else if (sec > 0)
 	{
-		if (cg.showScores == 0)
-		{
-			sec = (sec - cg.time) / 1000;
-			if (sec < 0)
-			{
-				cg.warmup = 0;
-				sec = 0;
-			}
-			Com_sprintf(str, 256, "Starts in: %i", sec + 1);
-			element->ctx.text = str;
-		}
+		// if (cg.showScores == 0)
+		// {
+	sec = (sec - cg.time) / 1000;
+	if (sec < 0)
+	{
+		cg.warmup = 0;
+		sec = 0;
+	}
+	Com_sprintf(str, 256, "Starts in: %i", sec + 1);
+	element->ctx.text = str;
+		// }
 	}
 	if (!element->ctx.text)
 	{

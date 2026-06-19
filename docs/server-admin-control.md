@@ -19,7 +19,7 @@ seta be_enabled "0"
 
 | Битовая маска | Функция         | Описание                            |
 |---------------|-----------------|-------------------------------------|
-| 1             | Team wh         | Wallhack союзников                  |
+| 1             | Team wh         | Wallhack союзников, global pos (бит 4 `cg_friendsWallhack`) |
 | 2             | Model sound     | Выбор звуков моделей                |
 | 4             | Alt grenades    | Альтернативные гранаты              |
 | 8             | Enemy lightning | Цвет молнии противника              |

@@ -193,9 +193,18 @@ void CG_SHUDElementObituariesRoutine(void* context)
 	bgW = entry->runtime.attackerWidth + entry->runtime.spacing * 2 + element->ctxMod.coord.named.w + entry->runtime.targetWidth + (element->ctxMod.coord.named.h * 0.15);
 	bgH = element->ctxAttacker.coord.named.h * 1.1;
 
-	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target) // Фон для всего элемента
+	if (cg.clientNum == entry->attacker || cg.clientNum == entry->target) // background for entire element
 	{
-		CG_FillRect(bgX, bgY, bgW, bgH, element->config.bgcolor.value.rgba);
+		vec4_t bgColor;
+		float fadeAlpha;
+
+		fadeAlpha = CG_SHUDFadeAlphaScale(element->ctxAttacker.color_origin, element->ctxAttacker.color);
+		CG_SHUDConfigPickBgColor(&element->config, bgColor, qfalse);
+		if (fadeAlpha != 1.0f)
+		{
+			bgColor[3] *= fadeAlpha;
+		}
+		CG_FillRect(bgX, bgY, bgW, bgH, bgColor);
 	}
 	if (entry->attacker != entry->target)
 	{
@@ -359,6 +368,15 @@ void CG_SHUDElementObituariesRoutine(void* context)
 		coord[3] = h;
 
 		CG_SHUDConfigPickBorderColor(&element->config, borderColor, qfalse);
+		{
+			float fadeAlpha;
+
+			fadeAlpha = CG_SHUDFadeAlphaScale(element->ctxAttacker.color_origin, element->ctxAttacker.color);
+			if (fadeAlpha != 1.0f)
+			{
+				borderColor[3] *= fadeAlpha;
+			}
+		}
 
 		CG_OSPDrawFrame(coord[0], coord[1], coord[2], coord[3],
 		                (float*)element->config.border.value, borderColor, qfalse);

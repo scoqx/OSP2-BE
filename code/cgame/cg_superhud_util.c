@@ -34,7 +34,7 @@ typedef struct
 //  {
 //      case SUPERHUD_COLOR_RGBA:
 //          target = in->rgba;
-//          finalAlpha = in->rgba[3]; // Берём альфу из исходного цвета
+//          finalAlpha = in->rgba[3]; // take alpha from source color
 //          break;
 
 //      case SUPERHUD_COLOR_T:
@@ -56,13 +56,13 @@ typedef struct
 //          break;
 //  }
 
-//  // Если color2 задан и исходный color — это буква (T, E, I), то заменяем только альфу
+//  // If color2 is set and source color is a letter (T, E, I), replace alpha only
 //  if (config->color2.isSet && in->type != SUPERHUD_COLOR_RGBA)
 //  {
 //      finalAlpha = config->color2.value.rgba[3];
 //  }
 
-//  // Применяем цвет
+//  // Apply color
 //  if (alphaOverride)
 //  {
 //      color[0] = target[0];
@@ -83,7 +83,7 @@ typedef struct
 //  const superhudColor_t* in = &config->bgcolor.value;
 //  const float* target;
 //  team_t team;
-//  float finalAlpha = 1.0f;  // по умолчанию 1
+//  float finalAlpha = 1.0f;  // default 1
 
 //  if (!config->bgcolor.isSet)
 //  {
@@ -102,7 +102,7 @@ typedef struct
 //  {
 //      case SUPERHUD_COLOR_RGBA:
 //          target = in->rgba;
-//          finalAlpha = in->rgba[3];  // Берём альфу из исходного цвета
+//          finalAlpha = in->rgba[3];  // take alpha from source color
 //          break;
 
 //      case SUPERHUD_COLOR_T:
@@ -121,7 +121,7 @@ typedef struct
 //          break;
 //  }
 
-//  // Если bgcolor2 задан и исходный цвет не RGBA, заменяем только альфу
+//  // If bgcolor2 is set and source color is not RGBA, replace alpha only
 //  if (config->bgcolor2.isSet && in->type != SUPERHUD_COLOR_RGBA)
 //  {
 //      finalAlpha = config->bgcolor2.value.rgba[3];
@@ -139,7 +139,7 @@ typedef struct
 //      color[0] = target[0];
 //      color[1] = target[1];
 //      color[2] = target[2];
-//      color[3] = finalAlpha;  // Всегда задаём альфу и здесь
+//      color[3] = finalAlpha;  // always set alpha here too
 //  }
 // }
 
@@ -442,6 +442,53 @@ void CG_SHUDTextMakeContext(const superhudConfig_t* in, superhudTextContext_t* o
 }
 
 
+static void CG_SHUDGetImageAlignedRect(const superhudConfig_t* in, float* x, float* y, float* w, float* h)
+{
+	if (!in->rect.isSet)
+	{
+		return;
+	}
+
+	*w = in->rect.value[2];
+	*h = in->rect.value[3];
+	*x = in->rect.value[0];
+	*y = in->rect.value[1];
+
+	if (in->imageAlignH.isSet)
+	{
+		switch (in->imageAlignH.value)
+		{
+			default:
+			case SUPERHUD_ALIGNH_LEFT:
+				*x = in->rect.value[0];
+				break;
+			case SUPERHUD_ALIGNH_CENTER:
+				*x = in->rect.value[0] - (*w) * 0.5f;
+				break;
+			case SUPERHUD_ALIGNH_RIGHT:
+				*x = in->rect.value[0] - (*w);
+				break;
+		}
+	}
+
+	if (in->imageAlignV.isSet)
+	{
+		switch (in->imageAlignV.value)
+		{
+			default:
+			case SUPERHUD_ALIGNV_TOP:
+				*y = in->rect.value[1];
+				break;
+			case SUPERHUD_ALIGNV_CENTER:
+				*y = in->rect.value[1] - (*h) * 0.5f;
+				break;
+			case SUPERHUD_ALIGNV_BOTTOM:
+				*y = in->rect.value[1] - (*h);
+				break;
+		}
+	}
+}
+
 void CG_SHUDDrawMakeContext(const superhudConfig_t* in, superhudDrawContext_t* out)
 {
 	superhudConfig_t config;
@@ -455,44 +502,7 @@ void CG_SHUDDrawMakeContext(const superhudConfig_t* in, superhudDrawContext_t* o
 
 	CG_SHUDConfigDefaultsCheck(&config);
 
-	w = config.rect.value[2];
-	h = config.rect.value[3];
-	x = config.rect.value[0];
-	y = config.rect.value[1];
-
-	if (in->imageAlignH.isSet)
-	{
-		switch (in->imageAlignH.value)
-		{
-			default:
-			case SUPERHUD_ALIGNH_LEFT:
-				x = config.rect.value[0];
-				break;
-			case SUPERHUD_ALIGNH_CENTER:
-				x = config.rect.value[0] - w * 0.5f;
-				break;
-			case SUPERHUD_ALIGNH_RIGHT:
-				x = config.rect.value[0] - w;
-				break;
-		}
-	}
-
-	if (in->imageAlignV.isSet)
-	{
-		switch (in->imageAlignV.value)
-		{
-			default:
-			case SUPERHUD_ALIGNV_TOP:
-				y = config.rect.value[1];
-				break;
-			case SUPERHUD_ALIGNV_CENTER:
-				y = config.rect.value[1] - h * 0.5f;
-				break;
-			case SUPERHUD_ALIGNV_BOTTOM:
-				y = config.rect.value[1] - h;
-				break;
-		}
-	}
+	CG_SHUDGetImageAlignedRect(in, &x, &y, &w, &h);
 
 	out->coord.named.x = x;
 	out->coord.named.y = y;
@@ -715,12 +725,16 @@ qboolean CG_SHUDIsTimeOut(const superhudConfig_t* cfg, int startTime)
 }
 
 /*
-   *  Затухание
-   *  возвращает qfalse если элемент потух
+   *  Fade out
+   *  returns qfalse if the element has fully faded
    */
 qboolean CG_SHUDGetFadeColor(const vec4_t from_color, vec4_t out, const superhudConfig_t* cfg, int startTime)
 {
-	int time = 0;
+	int time;
+	int fadetime;
+	float fadedelay;
+	float k;
+	vec4_t tmpfade;
 
 	Vector4Copy(from_color, out);
 
@@ -729,39 +743,64 @@ qboolean CG_SHUDGetFadeColor(const vec4_t from_color, vec4_t out, const superhud
 		return qtrue;
 	}
 
+	if (!cfg->fade.isSet)
+	{
+		return qfalse;
+	}
+
+	time = 0;
 	if (cfg->time.isSet)
 	{
 		time = cfg->time.value;
 	}
 
-	if (cfg->fade.isSet)
+	fadedelay = SUPERHUD_DEFAULT_FADEDELAY;
+	if (cfg->fadedelay.isSet)
 	{
-		int fadetime;
-		float fadedelay = SUPERHUD_DEFAULT_FADEDELAY;
-
-		fadetime = cg.time - startTime - time;
-
-		if (cfg->fadedelay.isSet)
-		{
-			fadedelay = (float)cfg->fadedelay.value;
-		}
-
-		if (fadetime > 0 && fadetime < fadedelay)
-		{
-			vec4_t tmpfade;
-			float k = (float)fadetime / fadedelay;
-			Vector4Copy(cfg->fade.value, tmpfade);
-			Vector4Subtract(tmpfade, from_color, tmpfade);
-			Vector4MA(from_color, k, tmpfade, out);
-			return qtrue;
-		}
-		else
-		{
-			return qfalse;
-		}
+		fadedelay = (float)cfg->fadedelay.value;
 	}
 
-	return qfalse;
+	if (fadedelay <= 0.0f)
+	{
+		return qfalse;
+	}
+
+	fadetime = cg.time - startTime - time;
+
+	if (fadetime < 0)
+	{
+		return qtrue;
+	}
+
+	if (fadetime >= (int)fadedelay)
+	{
+		return qfalse;
+	}
+
+	k = (float)fadetime / fadedelay;
+	Vector4Copy(cfg->fade.value, tmpfade);
+	Vector4Subtract(tmpfade, from_color, tmpfade);
+	Vector4MA(from_color, k, tmpfade, out);
+	return qtrue;
+}
+
+const char* CG_SHUDVaTextWithInt(superhudConfig_t* config, int value)
+{
+	char* text;
+
+	if (!config->text.isSet || !config->text.value[0])
+	{
+		return va("%i", value);
+	}
+
+	text = config->text.value;
+
+	if (strchr(text, '%'))
+	{
+		return va(text, value);
+	}
+
+	return va("%s%i", text, value);
 }
 
 void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
@@ -1260,25 +1299,41 @@ void CG_SHUDFillWithColor(const superhudCoord_t* coord, const float* color)
 	trap_R_SetColor(NULL);
 }
 
-qboolean CG_SHUDFill(const superhudConfig_t* cfg)
+float CG_SHUDFadeAlphaScale(const vec4_t color_origin, const vec4_t color)
+{
+	if (color_origin[3] > 0.0f)
+	{
+		return color[3] / color_origin[3];
+	}
+	return color[3];
+}
+
+qboolean CG_SHUDFillFade(const superhudConfig_t* cfg, float fadeAlpha)
 {
 	float x, y, w, h;
 	vec4_t bgColor;
+
 	if (!cfg->fill.isSet || !cfg->rect.isSet)
 	{
 		return qfalse;
 	}
 
-	x = cfg->rect.value[0];
-	y = cfg->rect.value[1];
-	w = cfg->rect.value[2];
-	h = cfg->rect.value[3];
+	if (fadeAlpha <= 0.0f)
+	{
+		return qfalse;
+	}
+
+	CG_SHUDGetImageAlignedRect(cfg, &x, &y, &w, &h);
 
 	CG_AdjustFrom640(&x, &y, &w, &h);
 
 	if (cfg->bgcolor.isSet)
 	{
 		CG_SHUDConfigPickBgColor(cfg, bgColor, qfalse);
+		if (fadeAlpha != 1.0f)
+		{
+			bgColor[3] *= fadeAlpha;
+		}
 
 		trap_R_SetColor(bgColor);
 		trap_R_DrawStretchPic(x, y, w, h, 0, 0, 0, 0, cgs.media.whiteShader);
@@ -1295,7 +1350,11 @@ qboolean CG_SHUDFill(const superhudConfig_t* cfg)
 			return qfalse;
 		}
 
-		CG_SHUDConfigPickColor_Runtime(cfg, color);
+		CG_SHUDConfigPickColor_Init(cfg, color);
+		if (fadeAlpha != 1.0f)
+		{
+			color[3] *= fadeAlpha;
+		}
 
 		trap_R_SetColor(color);
 		trap_R_DrawStretchPic(x, y, w, h, 0, 0, 1, 1, image);
@@ -1304,6 +1363,11 @@ qboolean CG_SHUDFill(const superhudConfig_t* cfg)
 	}
 
 	return qfalse;
+}
+
+qboolean CG_SHUDFill(const superhudConfig_t* cfg)
+{
+	return CG_SHUDFillFade(cfg, 1.0f);
 }
 
 
@@ -1422,7 +1486,7 @@ void CG_SHUDDrawBorderDirect(const superhudCoord_t* coord, const vec4_t border, 
 
 }
 
-qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg)
+qboolean CG_SHUDDrawBorderFade(const superhudConfig_t* cfg, float fadeAlpha)
 {
 	vec4_t coord;
 	vec4_t borderColor;
@@ -1432,15 +1496,43 @@ qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg)
 		return qfalse;
 	}
 
-	Vector4Copy(cfg->rect.value, coord);
+	if (fadeAlpha <= 0.0f)
+	{
+		return qfalse;
+	}
+
+	CG_SHUDGetImageAlignedRect(cfg, &coord[0], &coord[1], &coord[2], &coord[3]);
 	CG_AdjustFrom640(&coord[0], &coord[1], &coord[2], &coord[3]);
 
 	CG_SHUDConfigPickBorderColor(cfg, borderColor, qfalse);
+	if (fadeAlpha != 1.0f)
+	{
+		borderColor[3] *= fadeAlpha;
+	}
 
 	CG_OSPDrawFrame(coord[0], coord[1], coord[2], coord[3],
 	                (float*)cfg->border.value, borderColor, qfalse);
 
 	return qtrue;
+}
+
+qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg)
+{
+	return CG_SHUDDrawBorderFade(cfg, 1.0f);
+}
+
+void CG_SHUDFillAndFrameForElement(const superhudConfig_t* cfg, const vec4_t color_origin, const vec4_t color)
+{
+	float fadeAlpha;
+
+	fadeAlpha = CG_SHUDFadeAlphaScale(color_origin, color);
+	if (fadeAlpha <= 0.0f)
+	{
+		return;
+	}
+
+	CG_SHUDFillFade(cfg, fadeAlpha);
+	CG_SHUDDrawBorderFade(cfg, fadeAlpha);
 }
 
 void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ctx)
@@ -1552,3 +1644,4 @@ void CG_SHUDParseWeaponMaxValue(const char* valueStr, int* maxammo, int arraySiz
 		}
 	}
 }
+

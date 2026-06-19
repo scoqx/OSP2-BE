@@ -18,7 +18,7 @@ SERVER STATUS (getstatus / mod_sig, main menu bar)
 #define UI_STATUS_BAR_MIN_EXPANDED      120.0f
 #define UI_STATUS_BAR_MAX_EXPANDED      420.0f
 #define UI_STATUS_CHANGELOG_FILE        "version_changelog.txt"
-#define UI_STATUS_FULL_CHANGELOG_FILE   "changelog_be_r.txt"
+#define UI_STATUS_FULL_CHANGELOG_FILE   "docs/changelog_be_r.txt"
 #define UI_STATUS_CHANGELOG_READ_MAX    8192
 #define UI_STATUS_FULL_CHANGELOG_MAX    32768
 #define UI_STATUS_FULL_CHANGELOG_TOP    200.0f
@@ -29,8 +29,8 @@ SERVER STATUS (getstatus / mod_sig, main menu bar)
 #define UI_STATUS_BODY_EXTRA_PAD        0.0f // probably need 2.0f
 #define UI_STATUS_SCROLLBAR_WIDTH       8.0f
 #define UI_STATUS_SCROLLBAR_GAP         1.0f
-#define UI_STATUS_SCROLL_WHEEL_STEP     (UI_STATUS_CHAR_HEIGHT * 3.0f)
-#define UI_STATUS_SCROLL_CTRL_LINES     6.0f
+#define UI_STATUS_SCROLL_WHEEL_STEP     UI_STATUS_CHAR_HEIGHT
+#define UI_STATUS_SCROLL_CTRL_LINES     (UI_STATUS_CHAR_HEIGHT * 3.0f)
 #define UI_STATUS_UPDATE_DATE_LABEL     "Date"
 #define UI_STATUS_MENU_CURSOR_UNSET     (-2)
 #define UI_STATUS_AUTOHIDE_DELAY_MS     2000
@@ -68,6 +68,7 @@ static char         ui_statusFullStickyVersion[64];
 
 static void UI_ServerStatus_StoreFromValidatedInfo(const char* infostring);
 static const char* UI_ServerStatus_LocalVersionCompareString(void);
+static int UI_ServerStatus_CompareBeVersion(const char* a, const char* b);
 static void UI_ServerStatus_ClearChangelog(void);
 static void UI_ServerStatus_LoadLocalChangelog(void);
 static float UI_ServerStatus_ExpandedHeight640(float panelW);
@@ -133,6 +134,8 @@ static void UI_ServerStatus_AutoHideTick(const char* label, float x, float w);
 static float UI_ServerStatus_EaseSmooth(float t);
 static void UI_ServerStatus_ExpandAnimTick(void);
 static qboolean UI_ServerStatus_DrawExpandedVisual(void);
+static qboolean UI_ServerStatus_ParseValidatedGetstatus(const char* status, char* infostring,
+        int infostringSize);
 
 static qboolean UI_ServerStatus_GetBorderColor(vec4_t borderColor)
 {
@@ -154,7 +157,9 @@ static qboolean UI_ServerStatus_AutoHideEligible(const char* label)
 	{
 		return qfalse;
 	}
-	return (qboolean)(!Q_stricmp(label, "Ready to play") || !Q_stricmp(label, "Status servers offline"));
+	return (qboolean)(!Q_stricmp(label, "Ready to play") ||
+	                  !Q_stricmp(label, "Unreleased build") ||
+	                  !Q_stricmp(label, "Status servers offline"));
 }
 
 static qboolean UI_ServerStatus_AutoHideTriggerHover(float x, float w)
@@ -1268,6 +1273,247 @@ static void UI_ServerStatus_EnsureLocalChangelogForOffline(void)
 	}
 }
 
+static const char* UI_ServerStatus_SkipPastLine(const char* p)
+{
+	if (!p)
+	{
+		return "";
+	}
+
+	while (*p && *p != '\n' && *p != '\r')
+	{
+		p++;
+	}
+	while (*p == '\n' || *p == '\r')
+	{
+		p++;
+	}
+
+	return p;
+}
+
+static const char* UI_ServerStatus_FindNextVersionBlock(const char* p)
+{
+	const char*     lineStart;
+	const char*     lineEnd;
+
+	if (!p)
+	{
+		return NULL;
+	}
+
+	while (*p)
+	{
+		lineStart = p;
+		lineEnd = p;
+		while (*lineEnd && *lineEnd != '\n' && *lineEnd != '\r')
+		{
+			lineEnd++;
+		}
+
+		if (lineEnd > lineStart && UI_ServerStatus_LineIsVersionHeader(lineStart, lineEnd))
+		{
+			return lineStart;
+		}
+
+		p = lineEnd;
+		while (*p == '\n' || *p == '\r')
+		{
+			p++;
+		}
+	}
+
+	return NULL;
+}
+
+static void UI_ServerStatus_CopyChangelogBodyRange(const char* start, const char* end, char* out,
+        int outSize)
+{
+	int             len;
+
+	if (!out || outSize < 1)
+	{
+		return;
+	}
+
+	out[0] = '\0';
+	if (!start || !*start)
+	{
+		return;
+	}
+
+	if (!end)
+	{
+		end = start + strlen(start);
+	}
+
+	while (end > start && (end[-1] == '\n' || end[-1] == '\r'))
+	{
+		end--;
+	}
+
+	while (*start == '\n' || *start == '\r')
+	{
+		start++;
+	}
+
+	len = (int)(end - start);
+	if (len <= 0)
+	{
+		return;
+	}
+
+	if (len >= outSize)
+	{
+		len = outSize - 1;
+	}
+
+	memcpy(out, start, len);
+	out[len] = '\0';
+}
+
+static qboolean UI_ServerStatus_VersionHeaderMatchesLocal(const char* lineStart,
+        const char* lineEnd)
+{
+	char            header[128];
+	char            ver[64];
+	const char*     localVer;
+	int             len;
+
+	if (!lineStart || lineEnd <= lineStart)
+	{
+		return qfalse;
+	}
+
+	len = (int)(lineEnd - lineStart);
+	if (len >= (int)sizeof(header))
+	{
+		len = sizeof(header) - 1;
+	}
+	memcpy(header, lineStart, len);
+	header[len] = '\0';
+
+	UI_ServerStatus_ParseVersionLineMeta(header, NULL, 0, ver, sizeof(ver));
+	if (!ver[0])
+	{
+		return qfalse;
+	}
+
+	localVer = UI_ServerStatus_LocalVersionCompareString();
+	return (qboolean)(UI_ServerStatus_CompareBeVersion(localVer, ver) == 0);
+}
+
+static qboolean UI_ServerStatus_TryLoadUnreleasedChangelogFromFull(void)
+{
+	const char*     p;
+	const char*     lineStart;
+	const char*     lineEnd;
+	const char*     bodyStart;
+	const char*     nextBlock;
+	int             copyLen;
+
+	if (!uiServerStatus.unreleased)
+	{
+		return qfalse;
+	}
+
+	UI_ServerStatus_ClearChangelog();
+	UI_ServerStatus_LoadFullChangelog();
+	if (!ui_statusFullChangelogReady)
+	{
+		return qfalse;
+	}
+
+	p = ui_statusFullChangelogText;
+	while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+	{
+		p++;
+	}
+
+	while (*p)
+	{
+		lineStart = p;
+		lineEnd = p;
+		while (*lineEnd && *lineEnd != '\n' && *lineEnd != '\r')
+		{
+			lineEnd++;
+		}
+
+		if (lineEnd > lineStart && UI_ServerStatus_LineIsVersionHeader(lineStart, lineEnd) &&
+		        UI_ServerStatus_VersionHeaderMatchesLocal(lineStart, lineEnd))
+		{
+			copyLen = (int)(lineEnd - lineStart);
+			if (copyLen >= (int)sizeof(uiServerStatus.changelogHeader))
+			{
+				copyLen = sizeof(uiServerStatus.changelogHeader) - 1;
+			}
+			memcpy(uiServerStatus.changelogHeader, lineStart, copyLen);
+			uiServerStatus.changelogHeader[copyLen] = '\0';
+
+			bodyStart = UI_ServerStatus_SkipPastLine(lineStart);
+			nextBlock = UI_ServerStatus_FindNextVersionBlock(bodyStart);
+			UI_ServerStatus_CopyChangelogBodyRange(bodyStart, nextBlock,
+			                                       uiServerStatus.changelogBody,
+			                                       sizeof(uiServerStatus.changelogBody));
+			UI_ServerStatus_ParseChangelogHeaderMeta(uiServerStatus.changelogHeader);
+			uiServerStatus.changelogReady = (qboolean)(uiServerStatus.changelogBody[0] != '\0' ||
+			                                           uiServerStatus.changelogHeader[0] != '\0');
+			return uiServerStatus.changelogReady;
+		}
+
+		p = lineEnd;
+		while (*p == '\n' || *p == '\r')
+		{
+			p++;
+		}
+	}
+
+	return qfalse;
+}
+
+static void UI_ServerStatus_OpenFullChangelogDirect(void)
+{
+	UI_ServerStatus_ClearChangelog();
+	UI_ServerStatus_LoadFullChangelog();
+	if (!ui_statusFullChangelogReady)
+	{
+		return;
+	}
+
+	uiServerStatus.changelogReady = qtrue;
+	ui_statusFullChangelogOpen = qtrue;
+	ui_statusChangelogScroll = 0.0f;
+	ui_statusFullExpandLastMs = 0;
+	UI_ServerStatus_FullChangelogApplyFirstVersionSticky();
+}
+
+static void UI_ServerStatus_PrepareUnreleasedBarExpand(void)
+{
+	if (!uiServerStatus.unreleased)
+	{
+		return;
+	}
+
+	if (UI_ServerStatus_TryLoadUnreleasedChangelogFromFull())
+	{
+		UI_ServerStatus_CloseFullChangelog();
+		return;
+	}
+
+	UI_ServerStatus_OpenFullChangelogDirect();
+}
+
+static void UI_ServerStatus_EnsureChangelogForBarExpand(void)
+{
+	if (uiServerStatus.unreleased)
+	{
+		UI_ServerStatus_PrepareUnreleasedBarExpand();
+		return;
+	}
+
+	UI_ServerStatus_EnsureLocalChangelogForOffline();
+}
+
 static float UI_ServerStatus_ShortChangelogContentHeight(float textW)
 {
 	int             lines;
@@ -1301,6 +1547,21 @@ static qboolean UI_ServerStatus_FullChangelogVersionHiddenInBody(const char* phy
 	}
 
 	return qfalse;
+}
+
+static qboolean UI_ServerStatus_FullChangelogVersionHiddenReserveHeight(qboolean hiddenInBody)
+{
+	if (!hiddenInBody)
+	{
+		return qtrue;
+	}
+
+	/*
+	 * At scroll top the first version row is shown only in the sticky header; omit it
+	 * from body layout. While scrolling, a version stuck under the header still reserves
+	 * one line in body coordinates so the next entry is not clipped above bodyY.
+	 */
+	return (qboolean)(ui_statusChangelogScroll >= 0.5f);
 }
 
 static float UI_ServerStatus_FullChangelogBodyContentHeight(float textW, float bodyY, float scroll,
@@ -1353,13 +1614,15 @@ static float UI_ServerStatus_FullChangelogBodyContentHeight(float textW, float b
 
 		if (UI_ServerStatus_LineIsVersionHeader(lineStart, lineEnd))
 		{
-			float   lineTop;
-			float   lineBottom;
+			float       lineTop;
+			float       lineBottom;
+			qboolean    hiddenInBody;
 
 			lineTop = bodyY - scroll + lineY;
 			lineBottom = lineTop + UI_STATUS_CHAR_HEIGHT;
-			if (!UI_ServerStatus_FullChangelogVersionHiddenInBody(physicalLineStart, lineTop,
-			        lineBottom, skipClipTop, skipClipBottom))
+			hiddenInBody = UI_ServerStatus_FullChangelogVersionHiddenInBody(physicalLineStart,
+			        lineTop, lineBottom, skipClipTop, skipClipBottom);
+			if (UI_ServerStatus_FullChangelogVersionHiddenReserveHeight(hiddenInBody))
 			{
 				lineY += UI_STATUS_CHAR_HEIGHT;
 			}
@@ -2080,7 +2343,7 @@ static float UI_ServerStatus_DrawMultilineFullChangelog(float panelX, float y, f
 				                                      clipTop, clipBottom);
 			}
 
-			if (!hiddenInBody)
+			if (UI_ServerStatus_FullChangelogVersionHiddenReserveHeight(hiddenInBody))
 			{
 				lineY += UI_STATUS_CHAR_HEIGHT;
 			}
@@ -2676,6 +2939,11 @@ static qboolean UI_ServerStatus_UpdateRequired(void)
 		return qfalse;
 	}
 
+	if (uiServerStatus.unreleased)
+	{
+		return qfalse;
+	}
+
 	if (uiServerStatus.flags & 2)
 	{
 		return qtrue;
@@ -2701,7 +2969,12 @@ qboolean UI_ServerStatus_WantsChangelog(void)
 		return qfalse;
 	}
 
-	return (qboolean)(!uiServerStatus.last);
+	if (uiServerStatus.last || uiServerStatus.unreleased)
+	{
+		return qfalse;
+	}
+
+	return qtrue;
 }
 
 static void UI_ServerStatus_GetBarMessage(const char** outText, vec4_t outColor)
@@ -2759,6 +3032,16 @@ static void UI_ServerStatus_GetBarMessage(const char** outText, vec4_t outColor)
 		outColor[0] = 0.2f;
 		outColor[1] = 0.85f;
 		outColor[2] = 0.2f;
+		outColor[3] = 1.0f;
+		return;
+	}
+
+	if (uiServerStatus.unreleased)
+	{
+		*outText = "Unreleased build";
+		outColor[0] = 0.0f;
+		outColor[1] = 1.0f;
+		outColor[2] = 1.0f;
 		outColor[3] = 1.0f;
 		return;
 	}
@@ -3096,7 +3379,7 @@ qboolean UI_ServerStatus_HandleBarClick(int key)
 			ui_statusAutoHideFrac = 0.0f;
 			ui_statusAutoHideStartMs = -1;
 			ui_statusAutoHideLabel = NULL;
-			UI_ServerStatus_EnsureLocalChangelogForOffline();
+			UI_ServerStatus_EnsureChangelogForBarExpand();
 			UI_ServerStatus_SetExpanded(qtrue);
 			return qtrue;
 		}
@@ -3106,7 +3389,7 @@ qboolean UI_ServerStatus_HandleBarClick(int key)
 	if (uis.cursorx >= x && uis.cursorx <= x + w &&
 	        uis.cursory >= y && uis.cursory <= y + h)
 	{
-		UI_ServerStatus_EnsureLocalChangelogForOffline();
+		UI_ServerStatus_EnsureChangelogForBarExpand();
 		UI_ServerStatus_SetExpanded(qtrue);
 		return qtrue;
 	}
@@ -3170,31 +3453,45 @@ qboolean UI_ServerStatus_HandleModalKey(int key)
 	return qfalse;
 }
 
-void UI_ServerStatus_Clear(void)
+static qboolean UI_ServerStatus_SessionAlreadyChecked(void)
 {
-	memset(&uiServerStatus, 0, sizeof(uiServerStatus));
-	UI_ServerStatus_ClearChangelog();
-	ui_statusFetchAttempted = qfalse;
-	ui_statusOffline = qfalse;
-	ui_statusBadKey = qfalse;
-	ui_statusAutoHideStartMs = -1;
-	ui_statusAutoHideLastMs = 0;
-	ui_statusAutoHideFrac = 0.0f;
-	ui_statusAutoHideLabel = NULL;
-	ui_statusExpandFrac = 0.0f;
-	ui_statusExpandLastMs = 0;
-	if (ui_statusExpandModalActive)
+	trap_Cvar_Update(&ui_beStatusChecked);
+	if (ui_beStatusChecked.integer != 0)
 	{
-		UI_ServerStatus_MenuModalLeave();
-		ui_statusExpandModalActive = qfalse;
+		if (ui_statusFetchAttempted)
+		{
+			return qtrue;
+		}
+		/* Cvar outlived UI reload (e.g. vid_restart); cached bar state is gone */
+		trap_Cvar_Set("ui_beStatusChecked", "0");
+		return qfalse;
 	}
-	ui_statusBarExpanded = qfalse;
-	ui_statusSavedMenuCursor = UI_STATUS_MENU_CURSOR_UNSET;
-	UI_ServerStatus_CloseFullChangelog();
-	ui_statusFullChangelogReady = qfalse;
-	ui_statusFullChangelogText[0] = '\0';
-	ui_statusFullExpandFrac = 0.0f;
-	ui_statusFullExpandLastMs = 0;
+
+	if (!ui_statusFetchAttempted)
+	{
+		return qfalse;
+	}
+
+	if (!uiServerStatus.received && !ui_statusOffline && !ui_statusBadKey)
+	{
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+void UI_ServerStatus_NotifyFetchCycleComplete(void)
+{
+	if (!uiServerStatus.received)
+	{
+		return;
+	}
+	if (UI_ServerStatus_WantsChangelog() && !uiServerStatus.changelogReady)
+	{
+		return;
+	}
+
+	trap_Cvar_Set("ui_beStatusChecked", "1");
 }
 
 static void UI_ServerStatus_FetchPrepare(void)
@@ -3211,20 +3508,14 @@ static void UI_ServerStatus_FetchPrepare(void)
 	}
 }
 
-void UI_ServerStatus_FetchBegin(const char* target)
+void UI_ServerStatus_FetchOnMainMenu(void)
 {
-	if (!target || !target[0])
+	UI_ServerStatus_EnsureFonts();
+	if (UI_ServerStatus_SessionAlreadyChecked())
 	{
 		return;
 	}
 
-	UI_ServerStatus_FetchPrepare();
-	UI_ServerStatus_Secheck2Begin(target);
-}
-
-void UI_ServerStatus_FetchOnMainMenu(void)
-{
-	UI_ServerStatus_EnsureFonts();
 	UI_ServerStatus_FetchPrepare();
 	UI_ServerStatus_Secheck2BeginDual(UI_BeinfoCfg_GetStatusServerPrimary(),
 	        UI_BeinfoCfg_GetStatusServerAlternate());
@@ -3237,7 +3528,7 @@ void UI_ServerStatus_OnFetchTimeout(void)
 	UI_ServerStatus_EnsureLocalChangelogForOffline();
 }
 
-qboolean UI_ServerStatus_ParseValidatedGetstatus(const char* status, char* infostring,
+static qboolean UI_ServerStatus_ParseValidatedGetstatus(const char* status, char* infostring,
         int infostringSize)
 {
 	if (!status || !status[0] || !infostring || infostringSize <= 0)
@@ -3254,16 +3545,6 @@ qboolean UI_ServerStatus_ParseValidatedGetstatus(const char* status, char* infos
 	return (qboolean)(infostring[0] != '\0');
 }
 
-void UI_ServerStatus_ApplyValidatedInfostring(const char* infostring)
-{
-	if (!infostring || !infostring[0])
-	{
-		return;
-	}
-
-	UI_ServerStatus_StoreFromValidatedInfo(infostring);
-}
-
 void UI_ServerStatus_ApplyFromGetstatus(const char* status)
 {
 	char            infostring[MAX_INFO_STRING];
@@ -3276,6 +3557,242 @@ void UI_ServerStatus_ApplyFromGetstatus(const char* status)
 	}
 
 	UI_ServerStatus_StoreFromValidatedInfo(infostring);
+}
+
+typedef struct
+{
+	int         major;
+	int         minor;
+	char        suffix[16];
+	int         channel;
+	int         channelNum;
+} ui_beVersionParsed_t;
+
+#define UI_BE_VER_CHANNEL_NONE  0
+#define UI_BE_VER_CHANNEL_ALPHA 1
+#define UI_BE_VER_CHANNEL_BETA  2
+#define UI_BE_VER_CHANNEL_REL   3
+
+static void UI_ServerStatus_NormalizeBeVersion(const char* in, char* out, int outSize)
+{
+	const char*     s;
+	char*           d;
+	int             remain;
+	int             c;
+
+	if (!out || outSize < 1)
+	{
+		return;
+	}
+
+	out[0] = '\0';
+	if (!in)
+	{
+		return;
+	}
+
+	s = in;
+	while (*s == ' ')
+	{
+		s++;
+	}
+
+	if (!Q_strncmp(s, "be-", 3))
+	{
+		s += 3;
+	}
+	else if (!Q_stricmpn(s, "be", 2))
+	{
+		s += 2;
+		while (*s == '-')
+		{
+			s++;
+		}
+	}
+
+	while (*s == ' ')
+	{
+		s++;
+	}
+
+	if (*s == 'v' || *s == 'V')
+	{
+		s++;
+	}
+
+	d = out;
+	remain = outSize - 1;
+	while (*s && remain > 0)
+	{
+		c = *s++;
+		if (c >= 'A' && c <= 'Z')
+		{
+			c = c + ('a' - 'A');
+		}
+		*d++ = (char)c;
+		remain--;
+	}
+	*d = '\0';
+}
+
+static qboolean UI_ServerStatus_ParseBeVersion(const char* norm, ui_beVersionParsed_t* v)
+{
+	const char*     s;
+	int             n;
+	int             i;
+
+	if (!v)
+	{
+		return qfalse;
+	}
+
+	memset(v, 0, sizeof(*v));
+	v->channel = UI_BE_VER_CHANNEL_REL;
+	if (!norm || !norm[0])
+	{
+		return qfalse;
+	}
+
+	s = norm;
+	n = 0;
+	while (*s >= '0' && *s <= '9')
+	{
+		n = n * 10 + (*s - '0');
+		s++;
+	}
+	v->major = n;
+
+	if (*s != '.')
+	{
+		return qtrue;
+	}
+	s++;
+
+	n = 0;
+	while (*s >= '0' && *s <= '9')
+	{
+		n = n * 10 + (*s - '0');
+		s++;
+	}
+	v->minor = n;
+
+	i = 0;
+	while (*s && *s != '-' && i < (int)sizeof(v->suffix) - 1)
+	{
+		if ((*s >= '0' && *s <= '9') || (*s >= 'a' && *s <= 'z'))
+		{
+			v->suffix[i++] = *s++;
+		}
+		else
+		{
+			break;
+		}
+	}
+	v->suffix[i] = '\0';
+
+	if (*s == '-')
+	{
+		s++;
+		if (!Q_strncmp(s, "alpha", 5))
+		{
+			v->channel = UI_BE_VER_CHANNEL_ALPHA;
+			s += 5;
+		}
+		else if (!Q_strncmp(s, "beta", 4))
+		{
+			v->channel = UI_BE_VER_CHANNEL_BETA;
+			s += 4;
+		}
+		else
+		{
+			return qtrue;
+		}
+
+		n = 0;
+		while (*s >= '0' && *s <= '9')
+		{
+			n = n * 10 + (*s - '0');
+			s++;
+		}
+		v->channelNum = (n > 0) ? n : 1;
+	}
+
+	return qtrue;
+}
+
+static int UI_ServerStatus_CompareSuffix(const char* a, const char* b)
+{
+	if (!a)
+	{
+		a = "";
+	}
+	if (!b)
+	{
+		b = "";
+	}
+
+	while (*a && *b)
+	{
+		if (*a != *b)
+		{
+			return (*a < *b) ? -1 : 1;
+		}
+		a++;
+		b++;
+	}
+
+	if (*a)
+	{
+		return 1;
+	}
+	if (*b)
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+static int UI_ServerStatus_CompareBeVersionNormalized(const char* normA, const char* normB)
+{
+	ui_beVersionParsed_t    a;
+	ui_beVersionParsed_t    b;
+	int                     r;
+
+	UI_ServerStatus_ParseBeVersion(normA, &a);
+	UI_ServerStatus_ParseBeVersion(normB, &b);
+
+	if (a.major != b.major)
+	{
+		return a.major - b.major;
+	}
+	if (a.minor != b.minor)
+	{
+		return a.minor - b.minor;
+	}
+
+	r = UI_ServerStatus_CompareSuffix(a.suffix, b.suffix);
+	if (r != 0)
+	{
+		return r;
+	}
+
+	if (a.channel != b.channel)
+	{
+		return a.channel - b.channel;
+	}
+
+	return a.channelNum - b.channelNum;
+}
+
+static int UI_ServerStatus_CompareBeVersion(const char* a, const char* b)
+{
+	char    na[64];
+	char    nb[64];
+
+	UI_ServerStatus_NormalizeBeVersion(a, na, sizeof(na));
+	UI_ServerStatus_NormalizeBeVersion(b, nb, sizeof(nb));
+	return UI_ServerStatus_CompareBeVersionNormalized(na, nb);
 }
 
 static const char* UI_ServerStatus_LocalVersionCompareString(void)
@@ -3322,8 +3839,14 @@ static void UI_ServerStatus_StoreFromValidatedInfo(const char* infostring)
 	Q_strncpyz(uiServerStatus.titleText, Info_ValueForKey(infostring, "TitleText"),
 	           sizeof(uiServerStatus.titleText));
 
-	localVersion = UI_ServerStatus_LocalVersionCompareString();
-	uiServerStatus.last = (qboolean)(!strcmp(localVersion, uiServerStatus.version));
+	{
+		int     cmp;
+
+		localVersion = UI_ServerStatus_LocalVersionCompareString();
+		cmp = UI_ServerStatus_CompareBeVersion(localVersion, uiServerStatus.version);
+		uiServerStatus.last = (qboolean)(cmp == 0);
+		uiServerStatus.unreleased = (qboolean)(cmp > 0);
+	}
 
 	UI_ServerStatus_ClearChangelog();
 	if (uiServerStatus.last)

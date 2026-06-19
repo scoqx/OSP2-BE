@@ -4,3 +4,6 @@ build/qvm/zz-osp-pak8be.pk3
 build/library/build/
 build/tests/build/
 dll
+
+# Doxygen HTML (HTML_OUTPUT = html in Doxyfile)
+/html/

@@ -338,11 +338,13 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_cvardescriptions.o \
   $(B)/$(MOD)/cgame/cg_crosshair.o \
   $(B)/$(MOD)/cgame/cg_chatfilter.o \
-  $(B)/$(MOD)/cgame/cg_teamtaskfilter.o \
   $(B)/$(MOD)/cgame/cg_consolecmds.o \
   $(B)/$(MOD)/cgame/cg_customloc.o \
+  $(B)/$(MOD)/cgame/cg_maplocs.o \
+  $(B)/$(MOD)/cgame/cg_globalpos.o \
   $(B)/$(MOD)/cgame/cg_draw.o \
   $(B)/$(MOD)/cgame/cg_drawtools.o \
+  $(B)/$(MOD)/cgame/cg_ospdrawstring.o \
   $(B)/$(MOD)/cgame/cg_dyeicons.o \
   $(B)/$(MOD)/cgame/cg_effects.o \
   $(B)/$(MOD)/cgame/cg_ents.o \
@@ -367,11 +369,9 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_osphud.o \
   $(B)/$(MOD)/cgame/cg_osputil.o \
   $(B)/$(MOD)/cgame/cg_unlagged.o \
-  $(B)/$(MOD)/cgame/cg_teamtasks_tokenbucket.o \
   $(B)/$(MOD)/cgame/cg_teamtasks_utils.o \
   $(B)/$(MOD)/cgame/cg_teamtasks_draw.o \
   $(B)/$(MOD)/cgame/cg_teamtasks_selwheel.o \
-  $(B)/$(MOD)/cgame/cg_teamtasks_crypto.o \
   $(B)/$(MOD)/cgame/cg_superhud.o \
   $(B)/$(MOD)/cgame/cg_superhud_configparser.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_ammomessage.o \
@@ -408,6 +408,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_sbhc.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_sbhi.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_score.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_timelimit.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_specmessage.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_speed.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_target_name.o \
@@ -418,6 +419,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_element_vmw.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_warmupinfo.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_roundwarmup.o \
+  $(B)/$(MOD)/cgame/cg_superhud_element_laststanding.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_weaponlist.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_weapon_stats.o \
   $(B)/$(MOD)/cgame/cg_superhud_element_player_stats.o \
@@ -427,6 +429,8 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_superhud_util.o \
   $(B)/$(MOD)/cgame/cg_be_util.o \
   $(B)/$(MOD)/cgame/cg_be_stats.o \
+  $(B)/$(MOD)/cgame/cg_be_chatwindow.o \
+  $(B)/$(MOD)/cgame/cg_be_chatwindow_emoji.o \
   $(B)/$(MOD)/cgame/cg_brightitems.o \
   $(B)/$(MOD)/cgame/beinfo_cfg.o \
   $(B)/$(MOD)/cgame/osp_fonts.o \

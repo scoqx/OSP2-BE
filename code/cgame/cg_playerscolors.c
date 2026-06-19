@@ -4,8 +4,8 @@
 =================
 CG_GetColorFromETCode
 
-Получает цвет из E/T кода (E = enemy, T = team)
-Возвращает qtrue если символ был E или T, иначе qfalse
+Gets color from E/T code (E = enemy, T = team)
+Returns qtrue if the symbol was E or T, otherwise qfalse
 =================
 */
 static qboolean CG_GetColorFromETCode(char code, vec3_t out)

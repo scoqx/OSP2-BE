@@ -101,7 +101,14 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 
 		Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], hcolor);
 
-		Com_sprintf(s, sizeof(s), "[%i/%i]", ci->health, ci->armor);
+		if (element->config.style.isSet && element->config.style.value == 1)
+		{
+			Com_sprintf(s, sizeof(s), "%i/%i", ci->health, ci->armor);
+		}
+		else
+		{
+			Com_sprintf(s, sizeof(s), "[%i/%i]", ci->health, ci->armor);
+		}
 
 		element->textCtx.text = s;
 
@@ -116,117 +123,33 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 	}
 	else
 	{
-		float fadeAlpha;
-		float value;
-		vec4_t barColor;
+		float barAlpha;
+		superhudConfig_t frameCfg;
 
-		fadeAlpha = element->textCtx.color[3];
+		barAlpha = element->textCtx.color[3];
+		if (element->config.color.isSet)
+		{
+			barAlpha *= element->config.color.value.rgba[3];
+		}
 
 		CG_SHUDBarMakeContext(&element->config, &element->barCtx, TARGET_STATUS_BAR_MAX_HP);
 
-		Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], barColor);
+		memcpy(&frameCfg, &element->config, sizeof(frameCfg));
+		frameCfg.rect.value[0] = element->barCtx.box[0];
+		frameCfg.rect.value[1] = element->barCtx.box[1];
+		frameCfg.rect.value[2] = element->barCtx.box[2];
+		frameCfg.rect.value[3] = element->barCtx.box[3];
+		frameCfg.alignH.isSet = qfalse;
+		frameCfg.alignV.isSet = qfalse;
 
-		switch (element->config.style.isSet ? element->config.style.value : 1)
-		{
-			case 3:
-			{
-				qboolean targetHealthLow;
+		CG_SHUDFillAndFrameForElement(&frameCfg, element->textCtx.color_origin, element->textCtx.color);
 
-				targetHealthLow = qfalse;
-				if (cg_healthColorLevels.integer && ci->health > 0)
-				{
-					if (CG_GetTotalHitPoints(ci->health, ci->armor) <= cg_healthLow.integer)
-					{
-						targetHealthLow = qtrue;
-					}
-				}
-
-				if (targetHealthLow)
-				{
-					Vector4Copy(barColor, element->barCtx.color_top);
-					if (element->config.color.isSet)
-					{
-						element->barCtx.color_top[3] = element->config.color.value.rgba[3];
-					}
-
-					if (element->barCtx.two_bars)
-					{
-						if (!element->config.color2.isSet)
-						{
-							Vector4Copy(element->barCtx.color_top, element->barCtx.color2_top);
-							element->barCtx.color2_top[3] *= 3.0f;
-						}
-						else
-						{
-							Vector4Copy(barColor, element->barCtx.color2_top);
-							element->barCtx.color2_top[3] = element->config.color2.value.rgba[3];
-						}
-					}
-				}
-				else
-				{
-					Vector4Copy(element->config.color.value.rgba, element->barCtx.color_top);
-
-					if (element->barCtx.two_bars)
-					{
-						if (!element->config.color2.isSet)
-						{
-							Vector4Copy(element->barCtx.color_top, element->barCtx.color2_top);
-							element->barCtx.color2_top[3] *= 3.0f;
-						}
-						else
-						{
-							Vector4Copy(element->config.color2.value.rgba, element->barCtx.color2_top);
-						}
-					}
-				}
-				break;
-			}
-
-			case 2:
-				Vector4Copy(element->config.color.value.rgba, element->barCtx.color_top);
-				if (element->barCtx.two_bars)
-				{
-					if (element->config.color2.isSet)
-					{
-						Vector4Copy(element->config.color2.value.rgba, element->barCtx.color2_top);
-					}
-					else
-					{
-						Vector4Copy(element->barCtx.color_top, element->barCtx.color2_top);
-						element->barCtx.color2_top[3] *= 3.0f;
-					}
-				}
-				break;
-
-			case 1:
-			default:
-				Vector4Copy(barColor, element->barCtx.color_top);
-				if (element->config.color.isSet)
-				{
-					element->barCtx.color_top[3] = element->config.color.value.rgba[3];
-				}
-				if (element->barCtx.two_bars)
-				{
-					if (element->config.color2.isSet)
-					{
-						Vector4Copy(element->config.color2.value.rgba, element->barCtx.color2_top);
-					}
-					else
-					{
-						Vector4Copy(element->barCtx.color_top, element->barCtx.color2_top);
-						element->barCtx.color2_top[3] *= 3.0f;
-					}
-				}
-				break;
-		}
-
-		element->barCtx.color_top[3] *= fadeAlpha;
-		element->barCtx.color2_top[3] *= fadeAlpha;
-		element->barCtx.color_back[3] *= fadeAlpha;
-
-		value = (float)CG_GetTotalHitPoints(ci->health, ci->armor);
-		CG_SHUDBarPrint(&element->config, &element->barCtx, value);
+		CG_DrawHealthBar(element->barCtx.box[0],
+		                 element->barCtx.box[1],
+		                 element->barCtx.box[2],
+		                 element->barCtx.box[3],
+		                 ci->health, ci->armor, barAlpha, -1, qfalse,
+		                 &cg.healthColorByClient[cg.crosshairClientNum], qfalse);
 	}
 }
 

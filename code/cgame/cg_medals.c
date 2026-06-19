@@ -287,7 +287,7 @@ static int CG_MedalFrameIndex(int startTime, int durationMsec)
 	return slot;
 }
 
-void CG_MedalResolveFrame(qhandle_t medalShader, int startTime, int durationMsec, qhandle_t* outShader, vec4_t outTc)
+ void CG_MedalResolveFrame(qhandle_t medalShader, int startTime, int durationMsec, qhandle_t* outShader, vec4_t outTc)
 {
 	int type;
 	int frameIndex;
@@ -312,19 +312,4 @@ void CG_MedalResolveFrame(qhandle_t medalShader, int startTime, int durationMsec
 	frameIndex = CG_MedalFrameIndex(startTime, durationMsec);
 	*outShader = atlas->shader;
 	Vector4Copy(atlas->frameTc[frameIndex], outTc);
-}
-
-void CG_DrawMedalRewardPic(float x, float y, float w, float h, qhandle_t medalShader, int startTime, int durationMsec)
-{
-	qhandle_t shader;
-	vec4_t tc;
-
-	if (cg_oldMedals.integer)
-	{
-		CG_DrawPic(x, y, w, h, medalShader);
-		return;
-	}
-
-	CG_MedalResolveFrame(medalShader, startTime, durationMsec, &shader, tc);
-	trap_R_DrawStretchPic(x, y, w, h, tc[0], tc[1], tc[2], tc[3], shader);
 }

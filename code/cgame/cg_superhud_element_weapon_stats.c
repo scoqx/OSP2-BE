@@ -17,7 +17,7 @@ typedef struct
 	int weaponIndex;
 } shudElementWeaponStats_t;
 
-// === Универсальная функция создания ===
+// === Generic create function ===
 void* CG_SHUDElementWeaponStatsCreate(const superhudConfig_t* config, shudElementWeaponStatsType_t type, int weaponIndex)
 {
 	shudElementWeaponStats_t* element;

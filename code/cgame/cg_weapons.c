@@ -640,7 +640,7 @@ void CG_RailTrail(clientInfo_t* ci, vec3_t start, vec3_t end)
 
 	j = 18;
 	{
-		/* Precompute common settings (QVM: avoid repeated operations in loop) */
+		/* Precompute common settings for ring segment loop */
 		qhandle_t ringsShader = (cg_nomip.integer & 0x20) ? cgs.media.railRingsShaderNoPicMip : cgs.media.railRingsShader;
 		float ringsRadius = cg_railRingsSize.value;
 		float ringsColorR = ci->colors.railRings[0];
@@ -780,6 +780,9 @@ void CG_RailTrail2(clientInfo_t* ci, vec3_t start, vec3_t end)
 	AxisClear(re->axis);
 }
 
+#define RAIL_EFFECT_MAX_SEGMENTS    64
+#define RAIL_EFFECT_BASE_SPACING    16
+
 /*
 ====================
 CG_AddRailEffect - CG_RailTrail2 effect(AF trail)
@@ -788,42 +791,68 @@ CG_AddRailEffect - CG_RailTrail2 effect(AF trail)
 void CG_AddRailEffect(localEntity_t* le)
 {
 	refEntity_t* re;
+	refEntity_t particle;
 	vec3_t forward, right, up, posx, posy, pos, oldpos, move, vec;
-	float c, len, radius, theta, sn, cs, spacing;
-	int i, r, g, b;
+	float c, len, radius, theta, sn, cs, spacing, fade, invLen;
+	int i, r, g, b, step, maxStep;
+
+	if (cg_railRingsRadius.value <= 0.0f)
+	{
+		return;
+	}
 
 	re = &le->refEntity;
 	c = (le->endTime - cg.time) * le->lifeRate;
+	if (c <= 0.0f)
+	{
+		return;
+	}
 	c *= 0xff;
-
-	spacing = 16.0f;
+	fade = c / 0xff;
 
 	VectorCopy(re->origin, move);
 	VectorSubtract(re->oldorigin, re->origin, vec);
 
-	// Find the forward, right, and up vectors
 	VectorCopy(vec, forward);
 	VectorNormalize(forward);
 	PerpendicularVector(right, forward);
 	CrossProduct(forward, right, up);
 
 	len = VectorNormalize(vec);
+	if (len <= 0.0f)
+	{
+		return;
+	}
+
+	spacing = (float)RAIL_EFFECT_BASE_SPACING;
+	maxStep = (int)(len / spacing);
+	if (maxStep > RAIL_EFFECT_MAX_SEGMENTS)
+	{
+		spacing = len / (float)RAIL_EFFECT_MAX_SEGMENTS;
+		maxStep = RAIL_EFFECT_MAX_SEGMENTS;
+	}
 	VectorScale(vec, spacing, vec);
+	invLen = 1.0f / len;
 
-	// Use color from le->color (which contains railRings color with proper enemy/team/self detection)
-	// le->color is already multiplied by 0.75, so we need to divide by 0.75 to get original value
-	// then multiply by 255 for shaderRGBA and by (c/0xff) for fade
-	r = (int)(le->color[0] / 0.75f * 255.0f * (c / 0xff));
-	g = (int)(le->color[1] / 0.75f * 255.0f * (c / 0xff));
-	b = (int)(le->color[2] / 0.75f * 255.0f * (c / 0xff));
+	r = (int)(le->color[0] / 0.75f * 255.0f * fade);
+	g = (int)(le->color[1] / 0.75f * 255.0f * fade);
+	b = (int)(le->color[2] / 0.75f * 255.0f * fade);
 
-	// Initialize oldpos to starting position
+	memset(&particle, 0, sizeof(particle));
+	particle.reType = RT_RAIL_CORE;
+	particle.customShader = cgs.media.railCoreShader;
+	particle.shaderRGBA[0] = r;
+	particle.shaderRGBA[1] = g;
+	particle.shaderRGBA[2] = b;
+	particle.shaderRGBA[3] = (int)(c * le->color[3]);
+	AxisClear(particle.axis);
+
 	VectorCopy(move, oldpos);
 
-	for (i = 0; i < len; i += spacing)
+	for (step = 0; step < maxStep; step++)
 	{
-		// Maximum radius depends on cg_railRingsRadius, fade based on time
-		radius = cg_railRingsRadius.value * sin(i / len * M_PI) * (c / 0xff);
+		i = (int)(step * spacing);
+		radius = cg_railRingsRadius.value * sin((float)i * invLen * (float)M_PI) * fade;
 
 		theta = (float)(i - cg.time % 360) * M_PI / 180 * 2;
 
@@ -833,31 +862,13 @@ void CG_AddRailEffect(localEntity_t* le)
 		VectorScale(right, cs, posx);
 		VectorScale(up, sn, posy);
 		VectorAdd(posx, posy, pos);
-
 		VectorScale(pos, radius, pos);
-
 		VectorAdd(pos, move, pos);
 
-		if (i > 0)
+		if (step > 0)
 		{
-			// Add particle directly to scene without creating local entity
-			// to avoid exhausting the local entity pool
-			refEntity_t particle;
-
-			memset(&particle, 0, sizeof(particle));
-			particle.reType = RT_RAIL_CORE;
-			particle.customShader = cgs.media.railCoreShader;
-
-			particle.shaderRGBA[0] = r;
-			particle.shaderRGBA[1] = g;
-			particle.shaderRGBA[2] = b;
-			particle.shaderRGBA[3] = (int)(0xff * c * le->color[3] / 0xff);
-
-			AxisClear(particle.axis);
-
 			VectorCopy(pos, particle.origin);
 			VectorCopy(oldpos, particle.oldorigin);
-
 			trap_R_AddRefEntityToScene(&particle);
 		}
 
@@ -1240,59 +1251,79 @@ void CG_RegisterWeapon(int weaponNum)
 
 
 
-			for (i = 0; i < MAX_ALT_SHADERS; ++i)
 			{
-				if (i == 0)//cg_altLightning 0
+				int altMisses;
+
+				altMisses = 0;
+				for (i = 0; i < MAX_ALT_SHADERS; ++i)
 				{
-					cgs.media.lightningBolt[0] = trap_R_RegisterShader("lightningBoltNew");
-					cgs.media.lightningBoltNoPicMip[0] = trap_R_RegisterShader("lightningBoltNewNoPicMip");
-					cgs.media.enemyLightningBolt[0] = trap_R_RegisterShader("enemyLightningBoltNew");
-					cgs.media.enemyLightningBoltNoPicMip[0] = trap_R_RegisterShader("enemyLightningBoltNewNoPicMip");
-					if (!cgs.media.lightningBoltNoPicMip[0])
+					if (i == 0)//cg_altLightning 0
 					{
-						cgs.media.lightningBoltNoPicMip[0] = cgs.media.lightningBolt[0];
+						cgs.media.lightningBolt[0] = trap_R_RegisterShader("lightningBoltNew");
+						cgs.media.lightningBoltNoPicMip[0] = trap_R_RegisterShader("lightningBoltNewNoPicMip");
+						cgs.media.enemyLightningBolt[0] = trap_R_RegisterShader("enemyLightningBoltNew");
+						cgs.media.enemyLightningBoltNoPicMip[0] = trap_R_RegisterShader("enemyLightningBoltNewNoPicMip");
+						if (!cgs.media.lightningBoltNoPicMip[0])
+						{
+							cgs.media.lightningBoltNoPicMip[0] = cgs.media.lightningBolt[0];
+						}
+						if (!cgs.media.enemyLightningBoltNoPicMip[0])
+						{
+							cgs.media.enemyLightningBoltNoPicMip[0] = cgs.media.enemyLightningBolt[0];
+						}
 					}
-					if (!cgs.media.enemyLightningBoltNoPicMip[0])
+					else if (i == 1)//cg_altLightning 1
 					{
-						cgs.media.enemyLightningBoltNoPicMip[0] = cgs.media.enemyLightningBolt[0];
+						cgs.media.lightningBolt[1] = trap_R_RegisterShader("lightningBolt");
+						cgs.media.lightningBoltNoPicMip[1] = trap_R_RegisterShader("lightningBoltNoPicMip");
+						cgs.media.enemyLightningBolt[1] = trap_R_RegisterShader("enemyLightningBolt");
+						cgs.media.enemyLightningBoltNoPicMip[1] = trap_R_RegisterShader("enemyLightningBoltNoPicMip");
+						if (!cgs.media.lightningBoltNoPicMip[1])
+						{
+							cgs.media.lightningBoltNoPicMip[1] = cgs.media.lightningBolt[1];
+						}
+						if (!cgs.media.enemyLightningBoltNoPicMip[1])
+						{
+							cgs.media.enemyLightningBoltNoPicMip[1] = cgs.media.enemyLightningBolt[1];
+						}
 					}
-				}
-				else if (i == 1)//cg_altLightning 1
-				{
-					cgs.media.lightningBolt[1] = trap_R_RegisterShader("lightningBolt");
-					cgs.media.lightningBoltNoPicMip[1] = trap_R_RegisterShader("lightningBoltNoPicMip");
-					cgs.media.enemyLightningBolt[1] = trap_R_RegisterShader("enemyLightningBolt");
-					cgs.media.enemyLightningBoltNoPicMip[1] = trap_R_RegisterShader("enemyLightningBoltNoPicMip");
-					if (!cgs.media.lightningBoltNoPicMip[1])
-					{
-						cgs.media.lightningBoltNoPicMip[1] = cgs.media.lightningBolt[1];
-					}
-					if (!cgs.media.enemyLightningBoltNoPicMip[1])
-					{
-						cgs.media.enemyLightningBoltNoPicMip[1] = cgs.media.enemyLightningBolt[1];
-					}
-				}
-				else //cg_altLightning > 1
-				{
-					cgs.media.lightningBolt[i] = trap_R_RegisterShader(va("lightningBoltNew%i", i));
-					cgs.media.enemyLightningBolt[i] = trap_R_RegisterShader(va("enemyLightningBoltNew%i", i));
-					if (!cgs.media.lightningBolt[i])
+					else if (altMisses >= 2)//cg_altLightning > 1, stop after two missing in a row
 					{
 						cgs.media.lightningBolt[i] = cgs.media.lightningBolt[0];
-					}
-					if (!cgs.media.enemyLightningBolt[i])
-					{
 						cgs.media.enemyLightningBolt[i] = cgs.media.enemyLightningBolt[0];
-					}
-					cgs.media.lightningBoltNoPicMip[i] = trap_R_RegisterShader(va("lightningBoltNewNoPicMip%i", i));
-					cgs.media.enemyLightningBoltNoPicMip[i] = trap_R_RegisterShader(va("enemyLightningBoltNewNoPicMip%i", i));
-					if (!cgs.media.lightningBoltNoPicMip[i])
-					{
 						cgs.media.lightningBoltNoPicMip[i] = cgs.media.lightningBolt[i];
-					}
-					if (!cgs.media.enemyLightningBoltNoPicMip[i])
-					{
 						cgs.media.enemyLightningBoltNoPicMip[i] = cgs.media.enemyLightningBolt[i];
+					}
+					else //cg_altLightning > 1
+					{
+						qhandle_t bolt;
+
+						bolt = trap_R_RegisterShader(va("lightningBoltNew%i", i));
+						cgs.media.enemyLightningBolt[i] = trap_R_RegisterShader(va("enemyLightningBoltNew%i", i));
+						if (!bolt)
+						{
+							altMisses++;
+							cgs.media.lightningBolt[i] = cgs.media.lightningBolt[0];
+						}
+						else
+						{
+							altMisses = 0;
+							cgs.media.lightningBolt[i] = bolt;
+						}
+						if (!cgs.media.enemyLightningBolt[i])
+						{
+							cgs.media.enemyLightningBolt[i] = cgs.media.enemyLightningBolt[0];
+						}
+						cgs.media.lightningBoltNoPicMip[i] = trap_R_RegisterShader(va("lightningBoltNewNoPicMip%i", i));
+						cgs.media.enemyLightningBoltNoPicMip[i] = trap_R_RegisterShader(va("enemyLightningBoltNewNoPicMip%i", i));
+						if (!cgs.media.lightningBoltNoPicMip[i])
+						{
+							cgs.media.lightningBoltNoPicMip[i] = cgs.media.lightningBolt[i];
+						}
+						if (!cgs.media.enemyLightningBoltNoPicMip[i])
+						{
+							cgs.media.enemyLightningBoltNoPicMip[i] = cgs.media.enemyLightningBolt[i];
+						}
 					}
 				}
 			}
@@ -1732,7 +1763,6 @@ angle)
 */
 void CG_LightningBolt(centity_t* cent, float* origin)
 {
-	const clientInfo_t* target;
 	int shaft_type;
 	float tl;
 	qboolean isViewClient;
@@ -1740,7 +1770,6 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	qboolean isEnemyClient;
 	qboolean isDelagEnabled;
 
-	target = &cgs.clientinfo[cent->currentState.number];
 	shaft_type = cg_altLightning.integer;
 	isViewClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
 	isOurClient = cent->currentState.number == cg.clientNum;
@@ -1748,7 +1777,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	        (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
 	        cent->currentState.number == cg.snap->ps.clientNum)
 		isOurClient = qtrue;
-	isEnemyClient = !isOurClient && CG_IsEnemy(target);
+	isEnemyClient = !isOurClient && CG_CACHED_IS_ENEMY_NUM(cent->currentState.number);
 	isDelagEnabled = (cg_delag.integer & 1 || cg_delag.integer & 2) && !cg.demoPlayback;
 
 	if (cent->currentState.weapon != WP_LIGHTNING)
@@ -2023,7 +2052,7 @@ void CG_ApplyBrightBrassIfNeeded(localEntity_t* le)
 	}
 
 	isOwn = (clientNum == cg.clientNum);
-	isEnemy = CG_IsEnemy(&cgs.clientinfo[clientNum]);
+	isEnemy = CG_CACHED_IS_ENEMY_NUM(clientNum);
 	isTeammate = !isEnemy && !isOwn;
 	isSpectatingFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) && (clientNum == cg.snap->ps.clientNum);
 
@@ -2091,7 +2120,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 
 	/* --- who we're drawing: own gun, enemy, teammate, spectate follow --- */
 	isOwnGun = ps && cent->currentState.number == cg.clientNum;
-	isEnemy = CG_IsEnemy(&cgs.clientinfo[cent->currentState.number]);
+	isEnemy = CG_CACHED_IS_ENEMY_NUM(cent->currentState.number);
 	isTeammate = !isEnemy && (cent->currentState.number != cg.clientNum);
 	usedBrightColor = qfalse;
 	isSpectatingFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) && (cent->currentState.number == cg.snap->ps.clientNum);
@@ -2282,13 +2311,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		}
 		if (needPwEnemy && pwClientNum >= 0 && pwClientNum < MAX_CLIENTS)
 		{
-			const clientInfo_t* pwCi;
-
-			pwCi = &cgs.clientinfo[pwClientNum];
-			if (pwCi->infoValid)
-			{
-				pwIsEnemy = CG_IsEnemyForPowerupVisual(pwCi);
-			}
+			pwIsEnemy = CG_CACHED_IS_ENEMY_POWERUP_NUM(pwClientNum);
 		}
 		useEnemyMono = pwBattle && cg.enemyBattleSuitColorEnabled && pwIsEnemy;
 		useBattleMono = pwBattle && cg.battleSuitColorEnabled && !useEnemyMono;
@@ -2850,10 +2873,10 @@ float CG_GetWeaponTempAccuracy(int weapon)
 		return 0.0f;
 	}
 
-	// Проверяем, изменились ли значения
+	// Check whether values changed
 	if (hits == lastHits[weapon] && shots == lastShots[weapon])
 	{
-		return lastAcc[weapon]; // Возвращаем предыдущее значение
+		return lastAcc[weapon]; // return previous value
 	}
 
 	acc = (hits / (float)shots) * 100.0f;
@@ -2862,7 +2885,7 @@ float CG_GetWeaponTempAccuracy(int weapon)
 		acc = 100.0f;
 	}
 
-	// Обновляем кэш
+	// Update cache
 	lastHits[weapon] = hits;
 	lastShots[weapon] = shots;
 	lastAcc[weapon] = acc;
@@ -2990,8 +3013,8 @@ qboolean CG_PlasmaColorForOwner(int owner, vec4_t color)
 		return qfalse;
 	}
 
-	if (CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IsEnemy(ci)
-	    || (cgs.gametype == GT_TOURNAMENT))
+	if (CG_OSPIsGameTypeCA(cgs.gametype) || !CG_CACHED_IS_ENEMY_NUM(owner)
+	    || (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */))
 	{
 		if (!cg_plasmaColor.string[0])
 		{

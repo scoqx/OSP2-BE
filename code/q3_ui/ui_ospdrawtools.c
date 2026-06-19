@@ -8,7 +8,7 @@ Adapted from cgame/cg_drawtools.c
 #include "ui_local.h"
 #include "../qcommon/osp_fonts.h"
 
-/* Memory allocation - use static buffers for C89 compatibility and QVM */
+/* Memory allocation - use static buffers for C89 compatibility */
 static text_command_t ui_compileTextBuffer[OSP_TEXT_CMD_MAX];
 static char ui_compileTextStringBuffer[8192];
 static text_command_t ui_compileTextResult[OSP_TEXT_CMD_MAX];
@@ -339,7 +339,7 @@ text_command_t* UI_CompileText(const char* in)
 		return NULL;
 	}
 
-	/* Use static buffer instead of malloc for QVM compatibility */
+	/* Use static buffer instead of malloc */
 	result = ui_compileTextResult;
 	{
 		int j;

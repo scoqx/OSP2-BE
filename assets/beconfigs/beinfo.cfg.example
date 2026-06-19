@@ -43,13 +43,13 @@ AddVar
 		brightcolor_ammo_bfg 0 0 1 1;
 		# holdables
 		brightcolor_holdable_teleporter 0 1 1 1;
-		brightcolor_holdable_medkit 0 1 0.5 1;
+		brightcolor_holdable_medkit 1 0 0 1;
 		# powerups
 		brightcolor_item_quad 0 0.890196 0.945098 1;
 		brightcolor_item_enviro 1 0.65098 0.003922 1;
 		brightcolor_item_haste 1 1 0 1;
 		brightcolor_item_invis 0.6 0.6 1 1;
-		brightcolor_item_regen 1 0 1 1;
+		brightcolor_item_regen 1 0 0 1;
 		brightcolor_item_flight 0.5 0.8 1 1;
 		# CTF flags
 		brightcolor_team_CTF_redflag 1 0 0 1;

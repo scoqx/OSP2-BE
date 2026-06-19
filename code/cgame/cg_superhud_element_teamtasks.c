@@ -184,6 +184,27 @@ static void CG_SHUDElementTeamTasksInitializeRuntime(shudElementTeamTasks_t* ele
 	entry->runtime.isInitialized = qtrue;
 }
 
+static void CG_SHUDTeamTasksClearHasActiveIfEmpty(superhudGlobalContext_t* ctx)
+{
+	int i;
+
+	if (!ctx->teamTasks.hasActive)
+	{
+		return;
+	}
+
+	for (i = 0; i < SHUD_MAX_TEAMTASKS_LINES; i++)
+	{
+		if (ctx->teamTasks.line[i].time != 0 &&
+		        ctx->teamTasks.line[i].taskType != TEAMTASK_PLAYERDEAD)
+		{
+			return;
+		}
+	}
+
+	ctx->teamTasks.hasActive = qfalse;
+}
+
 /*
  * Map HUD line (TeamTask1 = 1, ...) to the Nth newest still-visible event.
  * Skips expired and PLAYERDEAD entries so lines pack toward the first slot.
@@ -211,12 +232,15 @@ static superhudTeamTasksEntry_t* CG_SHUDElementTeamTasksFindEntry(shudElementTea
 
 		if (entry->taskType == TEAMTASK_PLAYERDEAD)
 		{
+			entry->time = 0;
+			CG_SHUDTeamTasksClearHasActiveIfEmpty(ctx);
 			continue;
 		}
 
 		if (!CG_SHUDGetFadeColor(element->ctxTime.color_origin, element->ctxTime.color, &element->config, entry->time))
 		{
 			entry->time = 0;
+			CG_SHUDTeamTasksClearHasActiveIfEmpty(ctx);
 			continue;
 		}
 
@@ -235,12 +259,20 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 	shudElementTeamTasks_t* element = (shudElementTeamTasks_t*)context;
 	superhudTeamTasksEntry_t* entry;
 	float currentX;
+	float fadeScale;
+
+	if (!element->gctx->teamTasks.hasActive)
+	{
+		return;
+	}
 
 	entry = CG_SHUDElementTeamTasksFindEntry(element);
 	if (!entry)
 	{
 		return;
 	}
+
+	fadeScale = CG_SHUDFadeAlphaScale(element->ctxTime.color_origin, element->ctxTime.color);
 
 	element->ctxIcon.coord.named.w = element->config.rect.value[3];
 	element->ctxIcon.coord.named.h = element->config.rect.value[3];
@@ -277,16 +309,20 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 		/* Draw background fill if fill and bgcolor are set */
 		if (element->config.fill.isSet && element->config.bgcolor.isSet)
 		{
+			float fadeAlpha;
+
 			/* Set up coord for background */
 			bgCoord.named.x = bgX;
 			bgCoord.named.y = bgY;
 			bgCoord.named.w = bgW;
 			bgCoord.named.h = bgH;
 
-			/* Get background color with fade support */
+			fadeAlpha = fadeScale;
 			CG_SHUDConfigPickBgColor(&element->config, bgColor, qfalse);
-			/* Apply fade to background color alpha (fade is already calculated in ctxTime.color) */
-			bgColor[3] *= element->ctxTime.color[3];
+			if (fadeAlpha != 1.0f)
+			{
+				bgColor[3] *= fadeAlpha;
+			}
 
 			/* Draw background */
 			CG_SHUDFillWithColor(&bgCoord, bgColor);
@@ -299,6 +335,7 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 			float borderY;
 			float borderW;
 			float borderH;
+			float fadeAlpha;
 
 			/* Use same coordinates as background */
 			borderX = bgX;
@@ -309,10 +346,12 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 			/* Adjust coordinates for 640x480 */
 			CG_AdjustFrom640(&borderX, &borderY, &borderW, &borderH);
 
-			/* Get border color with fade support */
+			fadeAlpha = fadeScale;
 			CG_SHUDConfigPickBorderColor(&element->config, borderColor, qfalse);
-			/* Apply fade to border color alpha (fade is already calculated in ctxTime.color) */
-			borderColor[3] *= element->ctxTime.color[3];
+			if (fadeAlpha != 1.0f)
+			{
+				borderColor[3] *= fadeAlpha;
+			}
 
 			/* Draw border (outer border) */
 			CG_OSPDrawFrame(borderX, borderY, borderW, borderH,
@@ -335,7 +374,10 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 		CG_SHUDConfigPickColor_Runtime(&element->config, element->ctxSender.color);
 	}
 
-	element->ctxSender.color[3] = element->ctxSender.color_origin[3] * element->ctxTime.color[3];
+	if (fadeScale != 1.0f)
+	{
+		element->ctxSender.color[3] *= fadeScale;
+	}
 
 	element->ctxSender.width = entry->runtime.maxNameLenPix;
 	CG_SHUDTextPrintNew(&element->config, &element->ctxSender, qfalse);
@@ -349,7 +391,10 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 		element->ctxIcon.coord.named.w = element->ctxIcon.coord.named.h * 0.75f;
 		Vector4Copy(element->ctxIcon.color_origin, element->ctxIcon.color);
 		CG_SHUDConfigPickColor_Runtime(&element->config, element->ctxIcon.color);
-		element->ctxIcon.color[3] = element->ctxIcon.color_origin[3] * element->ctxTime.color[3];
+		if (fadeScale != 1.0f)
+		{
+			element->ctxIcon.color[3] *= fadeScale;
+		}
 		CG_SHUDDrawStretchPic(element->ctxIcon.coord, element->ctxIcon.coordPicture, element->ctxIcon.color, element->ctxIcon.image);
 		currentX += element->ctxIcon.coord.named.w + entry->runtime.spacing;
 	}

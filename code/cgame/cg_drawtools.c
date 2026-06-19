@@ -192,7 +192,7 @@ void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4
 
 	trap_R_SetColor(color);
 
-	// Если требуется нарисовать внутреннюю рамку (inner)
+	// Draw inner border when requested
 	if (inner)
 	{
 		if (borderSize[0] > 0.0f)   // Left
@@ -212,7 +212,7 @@ void CG_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4
 			trap_R_DrawStretchPic(x, y + h - borderSize[3], w, borderSize[3], 0, 0, 0, 0, cgs.media.whiteShader);
 		}
 	}
-	else // Если рисуем внешнюю рамку (outer)
+	else // draw outer border
 	{
 		if (borderSize[0] > 0.0f)   // Left
 		{
@@ -786,14 +786,17 @@ void CG_OSPDrawStringPrepare(const char* from, char* to, int size)
 	*to = 0; //eos
 }
 
+#define CG_COMPILE_TEXT_STRING_MAX 8192
+
+static text_command_t cg_compileTextBuffer[OSP_TEXT_CMD_MAX];
+static char cg_compileTextStringBuffer[CG_COMPILE_TEXT_STRING_MAX];
 
 text_command_t* CG_CompileText(const char* in, int flags)
 {
 	int b;
 	text_command_t* commands;
-	text_command_t* result = NULL;
 	char* text;
-	char* dmem;
+	const char* p;
 	int i = 0;
 	int len;
 	vec4_t back_color;
@@ -810,13 +813,21 @@ text_command_t* CG_CompileText(const char* in, int flags)
 
 	Vector4Copy(colorWhite, back_color);
 
-	commands = Z_Malloc(sizeof(*commands) * OSP_TEXT_CMD_MAX) ;
-	OSP_MEMORY_CHECK(commands);
+	commands = cg_compileTextBuffer;
 
-	len = strlen(in) + 1;
-	dmem = Z_Malloc(len);
-	OSP_MEMORY_CHECK(dmem);
-	text = dmem;
+	p = in;
+	len = 0;
+	while (*p)
+	{
+		len++;
+		p++;
+	}
+	len++;
+	if (len >= CG_COMPILE_TEXT_STRING_MAX)
+	{
+		len = CG_COMPILE_TEXT_STRING_MAX - 1;
+	}
+	text = cg_compileTextStringBuffer;
 
 	CG_OSPDrawStringPrepare(in, text, len);
 
@@ -962,22 +973,17 @@ text_command_t* CG_CompileText(const char* in, int flags)
 	}
 	commands[i++].type = OSP_TEXT_CMD_STOP;
 
-	result = Z_Malloc(sizeof(text_command_t) * i);
-	OSP_MEMORY_CHECK(result);
+	if (i >= OSP_TEXT_CMD_MAX)
+	{
+		return NULL;
+	}
 
-	memcpy(result, commands, sizeof(text_command_t) * i);
-
-	Z_Free(dmem);
-	Z_Free(commands);
-	return result;
+	return commands;
 }
 
 void CG_CompiledTextDestroy(text_command_t* root)
 {
-	if (root)
-	{
-		Z_Free(root);
-	}
+	(void)root;
 }
 
 /*
@@ -1043,6 +1049,38 @@ void CG_FontSelect(int index)
 		font = &fonts[index];
 		metrics = &font->metrics[0];
 	}
+}
+
+qhandle_t CG_OSPFontShaderForHeight(int fontIndex, float charHeight)
+{
+	const font_t* f;
+	int i;
+	qhandle_t sh;
+
+	if (fontIndex < 0 || fontIndex >= fonts_num)
+	{
+		fontIndex = 0;
+	}
+	f = &fonts[fontIndex];
+	sh = f->shader[0];
+	for (i = f->shaderCount - 1; i > 0; i--)
+	{
+		if (charHeight >= f->shaderThreshold[i])
+		{
+			sh = f->shader[i];
+			break;
+		}
+	}
+	return sh;
+}
+
+const cg_osp_font_metric_t* CG_OSPFontMetricsPtr(int fontIndex)
+{
+	if (fontIndex < 0 || fontIndex >= fonts_num)
+	{
+		fontIndex = 0;
+	}
+	return (const cg_osp_font_metric_t*)fonts[fontIndex].metrics;
 }
 
 int CG_FontIndexFromName(const char* name)
@@ -3226,60 +3264,6 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 	return ax;
 }
 
-
-//Restrict by chars (count)
-
-static float RestrictCompiledStringChars(text_command_t* cmd, int maxChars)
-{
-	int chars = 0;
-	int i;
-	text_command_t* curr;
-	qboolean restricted = qfalse;
-
-	if (!cmd || maxChars <= 0)
-		return 0;
-
-	for (i = 0; i < OSP_TEXT_CMD_MAX; ++i)
-	{
-		curr = &cmd[i];
-
-		if (curr->type == OSP_TEXT_CMD_CHAR || curr->type == OSP_TEXT_CMD_SHADER)
-		{
-			chars++;
-			if (chars >= maxChars)
-			{
-				restricted = qtrue;
-				break;
-			}
-		}
-		else if (curr->type == OSP_TEXT_CMD_STOP)
-		{
-			break;
-		}
-	}
-
-	if (restricted)
-	{
-		curr = &cmd[i];
-		if (curr->type == OSP_TEXT_CMD_CHAR)
-		{
-			curr->value.character = '.';
-		}
-		else if (curr->type == OSP_TEXT_CMD_SHADER)
-		{
-			curr->type = OSP_TEXT_CMD_CHAR;
-			curr->value.character = '.';
-		}
-
-		if (i + 1 < OSP_TEXT_CMD_MAX)
-		{
-			cmd[i + 1].type = OSP_TEXT_CMD_STOP;
-		}
-	}
-
-	return (float)chars;
-}
-
 int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth)
 {
 	int rez;
@@ -3801,6 +3785,59 @@ Set DS_MAX_WIDTH_IS_CHARS to enable character count restriction
 //  trap_R_SetColor(NULL);
 // }
 
+#if 0 /* CG_OSPDrawStringNew — legacy (cg_ospdrawstring.c) */
+
+static float RestrictCompiledStringChars(text_command_t* cmd, int maxChars)
+{
+	int chars = 0;
+	int i;
+	text_command_t* curr;
+	qboolean restricted = qfalse;
+
+	if (!cmd || maxChars <= 0)
+		return 0;
+
+	for (i = 0; i < OSP_TEXT_CMD_MAX; ++i)
+	{
+		curr = &cmd[i];
+
+		if (curr->type == OSP_TEXT_CMD_CHAR || curr->type == OSP_TEXT_CMD_SHADER)
+		{
+			chars++;
+			if (chars >= maxChars)
+			{
+				restricted = qtrue;
+				break;
+			}
+		}
+		else if (curr->type == OSP_TEXT_CMD_STOP)
+		{
+			break;
+		}
+	}
+
+	if (restricted)
+	{
+		curr = &cmd[i];
+		if (curr->type == OSP_TEXT_CMD_CHAR)
+		{
+			curr->value.character = '.';
+		}
+		else if (curr->type == OSP_TEXT_CMD_SHADER)
+		{
+			curr->type = OSP_TEXT_CMD_CHAR;
+			curr->value.character = '.';
+		}
+
+		if (i + 1 < OSP_TEXT_CMD_MAX)
+		{
+			cmd[i + 1].type = OSP_TEXT_CMD_STOP;
+		}
+	}
+
+	return (float)chars;
+}
+
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor,
                          vec4_t shadowColor,
                          float charWidth, float charHeight, int maxWidth, int flags,
@@ -3830,7 +3867,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	int textColorChanged = 0;
 	float mw;
 	float maxAlpha;
-	int pass; /* QVM: one outer loop over passes instead of two duplicate loops */
+	int pass; /* shadow pass, then text pass */
 	float vidWidth; /* cache for hot loop */
 
 	if (!string)
@@ -3914,7 +3951,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		trap_R_SetColor(colorWhite);
 	}
 
-	/* Draw border inline (no CG_OSPDrawFrame call per QVM_LOGIC); outer frame like CG_OSPDrawFrame(..., 0) */
+	/* Draw border inline; outer frame like CG_OSPDrawFrame(..., 0) */
 	if (hasBorder && borderColor && (border[0] > 0.0f || border[1] > 0.0f || border[2] > 0.0f || border[3] > 0.0f))
 	{
 		trap_R_SetColor(borderColor);
@@ -3958,7 +3995,6 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		maxAlpha = 1.0f;
 	}
 
-	/* QVM_LOGIC: one outer loop over passes (shadow, text), one inner loop + one switch = less bytecode */
 	xx = ax;
 	vidWidth = (float)cgs.glconfig.vidWidth;
 
@@ -4118,6 +4154,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	CG_CompiledTextDestroy(text_commands);
 	trap_R_SetColor(NULL);
 }
+#endif /* legacy CG_OSPDrawStringNew */
 
 
 

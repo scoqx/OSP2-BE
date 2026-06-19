@@ -216,7 +216,6 @@ teamTasks_flag
 	}
 }
 
-
 teamTasks_flagcarrier
 {
 	nomipmaps

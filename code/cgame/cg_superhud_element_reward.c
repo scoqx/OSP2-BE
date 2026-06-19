@@ -141,9 +141,8 @@ void CG_SHUDElementRewardRoutine(void* context)
 				element->ctx.d.coordPicture.named.w = medalTc[2];
 				element->ctx.d.coordPicture.named.h = medalTc[3];
 			}
-			CG_SHUDFill(&element->config);
+			CG_SHUDFillAndFrameForElement(&element->config, element->ctx.d.color_origin, element->ctx.d.color);
 			CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx.d);
-			CG_SHUDDrawBorder(&element->config);
 		}
 	}
 	else

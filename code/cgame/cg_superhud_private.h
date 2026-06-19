@@ -241,6 +241,7 @@ typedef struct
 	struct
 	{
 		int value;
+		int valueNeg;
 		qboolean isSet;
 	} visflags;
 	struct
@@ -251,6 +252,7 @@ typedef struct
 	struct
 	{
 		int value;
+		int valueNeg;
 		qboolean isSet;
 	} visiblity;
 	struct
@@ -264,23 +266,6 @@ typedef struct
 		qboolean isSet;
 	} weaponMaxValue;
 } superhudConfig_t;
-
-typedef superhudConfig_t superhudElementDefault_t;
-
-typedef enum
-{
-	SUPERHUD_ELEMENT_TYPE_DEFAULTS,
-}
-superhudElementType_t;
-
-typedef struct
-{
-	union
-	{
-		superhudElementDefault_t def; //todo remove it, default have no content
-	} value;
-	superhudElementType_t type;
-} superhudElementContent_t;
 
 typedef struct configFileLine_s
 {
@@ -370,11 +355,29 @@ typedef enum
 #define SE_WEAPON_BFG_STR "bfg"
 #define SE_HEALTH_LOW (1 << 26) // 0x04000000
 #define SE_HEALTH_LOW_STR "lowhp"
+#define SE_WARMUP (1U << 31)
+#define SE_WARMUP_STR "warmup"
+
+#define SE_SHUD_STYLE1 (1 << 0)
+#define SE_SHUD_STYLE1_STR "style1"
+#define SE_SHUD_STYLE2 (1 << 1)
+#define SE_SHUD_STYLE2_STR "style2"
+#define SE_SHUD_STYLE3 (1 << 2)
+#define SE_SHUD_STYLE3_STR "style3"
+#define SE_SHUD_STYLE4 (1 << 3)
+#define SE_SHUD_STYLE4_STR "style4"
+#define SE_SHUD_STYLE_ANY (SE_SHUD_STYLE1 | SE_SHUD_STYLE2 | SE_SHUD_STYLE3 | SE_SHUD_STYLE4)
+
+#define SE_GT_ANY (SE_GT_FFA | SE_GT_TOURNEY | SE_GT_TDM | SE_GT_CTF | SE_GT_FREEZETAG | SE_GT_CLANARENA)
+
+#define SE_KEY_ANY (SE_KEY1_SHOW | SE_KEY2_SHOW | SE_KEY3_SHOW | SE_KEY4_SHOW | \
+	SE_KEY5_SHOW | SE_KEY6_SHOW | SE_KEY7_SHOW | SE_KEY8_SHOW)
 
 #define SHUD_CHECK_SHOW_EMPTY(element) ( \
     ((element) != NULL) && \
     ((element)->config.visflags.isSet) && \
-    (((element)->config.visflags.value & SE_SHOW_EMPTY) != 0) \
+    (((element)->config.visflags.value & SE_SHOW_EMPTY) != 0) && \
+    (((element)->config.visflags.valueNeg & SE_SHOW_EMPTY) == 0) \
 )
 
 typedef struct superHUDConfigElement_s
@@ -387,6 +390,7 @@ typedef struct superHUDConfigElement_s
 	void* context;
 	int order;
 	qboolean isFragmessage;
+	int visibilityNeg;
 } superHUDConfigElement_t;
 
 typedef struct superhudElementDictMember_s
@@ -396,14 +400,51 @@ typedef struct superhudElementDictMember_s
 }
 superhudElementDictMember_t;
 
+/*
+ * Visibility data for one HUD element (filled at config load, read each frame).
+ *
+ * vflags / vflagsNeg — copy of element visflags (see SE_* in this header).
+ *
+ * showInIntermission, showWhenDead, showWhenSpect — without the matching positive
+ * visflags bit the element is hidden in that state (default HUD behavior).
+ *
+ * frameChecks — internal bitmask: which optional per-frame rules still apply
+ * (team, scores, weapon, keys, …). Built from vflags; not used outside cgame.
+ */
+typedef struct
+{
+	int vflags;
+	int vflagsNeg;
+	int frameChecks;
+	qboolean showInIntermission;
+	qboolean showWhenDead;
+	qboolean showWhenSpect;
+} superhudElementVis_t;
+
 typedef struct superhudElement_s
 {
 	superHUDConfigElement_t element;
 	superhudConfig_t config;
-	superhudElementContent_t content;
+	superhudElementVis_t vis;
 	struct superhudElement_s* next;
 }
 superhudElement_t;
+
+typedef struct
+{
+	int pm_type;
+	int currentWeapon;
+	int weaponVis;
+	int gtHideMask;
+	int keyHideMask;
+	qboolean is_dead;
+	qboolean is_intermission;
+	qboolean is_team_game;
+	qboolean is_spectator;
+	qboolean is_scores;
+	qboolean is_warmup;
+	qboolean demo_playback;
+} superhudFrameContext_t;
 
 typedef struct superHUDConfigCommand_s
 {
@@ -430,7 +471,7 @@ typedef struct
         E = Z_Malloc(sizeof(*E));                         \
         OSP_MEMORY_CHECK(E);                              \
         memset(E, 0, sizeof(*E));                         \
-        memcpy(&E->config, CFG, sizeof(element->config)); \
+        memcpy(&E->config, CFG, sizeof((E)->config)); \
     }while(0)
 
 void CG_SHUDParserInit(void);
@@ -577,6 +618,10 @@ void CG_SHUDElementFollowMessageDestroy(void* context);
 void* CG_SHUDElementGameTimeCreate(const superhudConfig_t* config);
 void CG_SHUDElementGameTimeRoutine(void* context);
 void CG_SHUDElementGameTimeDestroy(void* context);
+
+void* CG_SHUDElementTimelimitCreate(const superhudConfig_t* config);
+void CG_SHUDElementTimelimitRoutine(void* context);
+void CG_SHUDElementTimelimitDestroy(void* context);
 
 void* CG_SHUDElementItemPickupCreate(const superhudConfig_t* config);
 void CG_SHUDElementItemPickupRoutine(void* context);
@@ -738,6 +783,10 @@ void* CG_SHUDElementRoundWarmupFightCreate(const superhudConfig_t* config);
 void CG_SHUDElementRoundWarmupRoutine(void* context);
 void CG_SHUDElementRoundWarmupDestroy(void* context);
 
+void* CG_SHUDElementLastStandingCreate(const superhudConfig_t* config);
+void CG_SHUDElementLastStandingRoutine(void* context);
+void CG_SHUDElementLastStandingDestroy(void* context);
+
 /*
  * cg_superhud_util.c
  */
@@ -826,6 +875,7 @@ typedef struct
 
 void CG_SHUDBarMakeContext(const superhudConfig_t* in, superhudBarContext_t* out, float max);
 void CG_SHUDTextMakeContext(const superhudConfig_t* in, superhudTextContext_t* out);
+const char* CG_SHUDVaTextWithInt(superhudConfig_t* config, int value);
 void CG_SHUDDrawStretchPic(superhudCoord_t coord, const superhudCoord_t coordPicture, const float* color, qhandle_t shader);
 void CG_SHUDDrawMakeContext(const superhudConfig_t* cfg, superhudDrawContext_t* out);
 
@@ -834,6 +884,10 @@ void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* pos
 void CG_SHUDDrawStretchPicCtx(const superhudConfig_t* cfg, superhudDrawContext_t* out);
 void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, float value);
 qboolean CG_SHUDFill(const superhudConfig_t* cfg);
+qboolean CG_SHUDFillFade(const superhudConfig_t* cfg, float fadeAlpha);
+qboolean CG_SHUDDrawBorderFade(const superhudConfig_t* cfg, float fadeAlpha);
+void CG_SHUDFillAndFrameForElement(const superhudConfig_t* cfg, const vec4_t color_origin, const vec4_t color);
+float CG_SHUDFadeAlphaScale(const vec4_t color_origin, const vec4_t color);
 
 team_t CG_SHUDGetOurActiveTeam(void);
 qboolean CG_SHUDGetFadeColor(const vec4_t from_color, vec4_t out, const superhudConfig_t* cfg, int startTime);
@@ -847,6 +901,7 @@ typedef struct
 {
 	char message[MAX_SAY_TEXT];
 	int time;
+	int senderClientNum;
 } superhudChatEntry_t;
 
 typedef struct
@@ -955,6 +1010,7 @@ typedef struct
 	{
 		superhudTeamTasksEntry_t line[SHUD_MAX_TEAMTASKS_LINES];
 		unsigned int index;
+		qboolean hasActive;
 	} teamTasks;
 	struct superhudPowerupsCache_t
 	{
@@ -973,6 +1029,7 @@ typedef struct
 		superhudTempAccEntry_t weapon[WP_NUM_WEAPONS];
 	} tempAcc;
 	customStats_t customStats;
+	superhudFrameContext_t frame;
 } superhudGlobalContext_t;
 
 typedef enum

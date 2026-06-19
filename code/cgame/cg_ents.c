@@ -191,7 +191,7 @@ static void CG_EntityEffects(centity_t* cent)
 	CG_SetEntitySoundPosition(cent);
 
 	// add loop sound
-	if (cent->currentState.loopSound)
+	if (cent->currentState.loopSound && !CG_IsMutedWorldSound(cent->currentState.loopSound))
 	{
 		if (cent->currentState.eType != ET_SPEAKER)
 		{
@@ -283,6 +283,12 @@ static void CG_Speaker(centity_t* cent)
 
 	if (cg.time < cent->miscTime)
 	{
+		return;
+	}
+
+	if (CG_IsMutedWorldSound(cent->currentState.eventParm))
+	{
+		cent->miscTime = cg.time + cent->currentState.frame * 100 + cent->currentState.clientNum * 100 * crandom();
 		return;
 	}
 
@@ -805,8 +811,8 @@ static void CG_Missile(centity_t* cent)
 			{
 				const clientInfo_t* ci = &cgs.clientinfo[owner];
 
-				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_IsEnemy(ci)
-				                  || (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */); // OSP: all ally when tournament + ospauth
+				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_CACHED_IS_ENEMY_CI(ci)
+				                  || (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */); //
 
 				if (isAlly)
 				{

@@ -56,7 +56,6 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 	int ammo_max = 0;
 	int weapon;
 	int ammo;
-	float offsetX, offsetY;
 
 	if (!cg.snap)
 	{
@@ -82,7 +81,19 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 	if (ammo_max > element->ammoMax)
 	{
 		element->ammoMax = ammo_max;
-		element->ammoWidth = CG_OSPDrawStringLenPix(va(" %d", ammo_max), element->ammoCount[0].coord.named.w, element->ammoCount[0].flags, 0);
+	}
+
+	if (element->ammoMax < 0)
+	{
+		element->ammoMax = 0;
+	}
+
+	{
+		superhudTextContext_t measureCtx;
+
+		CG_SHUDTextMakeContext(&element->tmp_config, &measureCtx);
+		element->ammoWidth = CG_OSPDrawStringNewTextWidth(va("%d", element->ammoMax), measureCtx.coord.named.w, 0.0f, measureCtx.flags, measureCtx.fontIndex);
+		element->ammoWidth += measureCtx.coord.named.w / 6.0f;
 	}
 
 
@@ -196,57 +207,34 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 				Vector4Set(element->borderColor[element->weaponNum], 0, 0, 0, 0);
 			}
 
-			// ammo
+			/* ammo — own column (ammoWidth), centered in the background box */
 			if (align != SUPERHUD_ALIGNH_RIGHT)
 			{
 				element->tmp_config.rect.value[0] = x + w;
-				element->tmp_config.textAlign.value = SUPERHUD_ALIGNH_LEFT;
-				element->tmp_config.textAlign.isSet = qtrue;
 			}
 			else
 			{
-				element->tmp_config.rect.value[0] = x;
-				element->tmp_config.textAlign.value = SUPERHUD_ALIGNH_RIGHT;
-				element->tmp_config.textAlign.isSet = qtrue;
+				element->tmp_config.rect.value[0] = x - element->ammoWidth;
 			}
 			element->tmp_config.rect.value[1] = y;
-			element->tmp_config.rect.value[2] = w;
+			element->tmp_config.rect.value[2] = element->ammoWidth;
 			element->tmp_config.rect.value[3] = h;
 
 			element->tmp_config.alignV.value = SUPERHUD_ALIGNV_CENTER;
 			element->tmp_config.alignV.isSet = qtrue;
 
-			element->tmp_config.alignH.value = SUPERHUD_ALIGNH_LEFT;
+			element->tmp_config.alignH.value = SUPERHUD_ALIGNH_CENTER;
 			element->tmp_config.alignH.isSet = qtrue;
 
-			// Offset for text
-			offsetX = element->tmp_config.fontsize.value[0] / 8;
-			offsetY = element->tmp_config.fontsize.value[1] / 16;
-
-
-			if (align == SUPERHUD_ALIGNH_RIGHT)
-			{
-				element->tmp_config.rect.value[0] += (offsetX + offsetX);
-			}
-			else
-			{
-				element->tmp_config.rect.value[0] -= offsetX;
-				element->tmp_config.rect.value[1] -= offsetY;
-			}
+			element->tmp_config.textAlign.value = SUPERHUD_ALIGNH_CENTER;
+			element->tmp_config.textAlign.isSet = qtrue;
 
 			CG_SHUDTextMakeContext(&element->tmp_config, &element->ammoCount[element->weaponNum]);
 			element->ammoCount[element->weaponNum].text = &element->ammo[element->weaponNum][0];
 
 			ammo = CG_SHUDGetAmmo(wpi);
 
-			if (align != SUPERHUD_ALIGNH_RIGHT)
-			{
-				Com_sprintf(&element->ammo[element->weaponNum][0], 8, " %i", ammo);
-			}
-			else
-			{
-				Com_sprintf(&element->ammo[element->weaponNum][0], 8, "%i ", ammo);
-			}
+			Com_sprintf(&element->ammo[element->weaponNum][0], 8, "%i", ammo);
 
 			if (ammo == 0)
 			{

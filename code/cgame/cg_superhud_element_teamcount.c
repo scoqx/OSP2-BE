@@ -60,7 +60,7 @@ void CG_SHUDElementTeamCountRoutine(void* context)
 
 	team = CG_SHUDGetOurActiveTeam();
 
-	if (team == TEAM_RED)
+	if (team == TEAM_RED || team == TEAM_SPECTATOR)
 	{
 		count   = element->enemy ? cgs.osp.osp_teamcount2 : cgs.osp.osp_teamcount1;
 	}
