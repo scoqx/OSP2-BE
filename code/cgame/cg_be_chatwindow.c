@@ -5278,8 +5278,7 @@ void CG_BEChat_Draw(void)
 	float cursorPicY;
 	float cursorPicW;
 	float cursorPicH;
-	qboolean drawPerLineBg = qfalse;
-	
+
 	if (!cg.snap || !cg_chatWindow.integer)
 	{
 		return;
