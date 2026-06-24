@@ -80,7 +80,10 @@ cg_asm = $(call srcs,$(CG_SRC),vm/cgame)
 ui_asm = $(call srcs,$(UI_SRC),vm/ui)
 
 ifeq ($(MINGW),1)
-  PYTHON ?= python
+  PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null || echo python3)
+  define MINGW_PY_CMD
+if command -v python3 >/dev/null 2>&1; then python3 $(1); elif command -v python >/dev/null 2>&1; then python $(1); elif command -v py >/dev/null 2>&1; then py -3 $(1); elif test -x /c/Windows/py.exe; then /c/Windows/py.exe -3 $(1); else exit 1; fi
+  endef
 else
   PYTHON ?= python3
 endif
@@ -100,8 +103,8 @@ endif
 
 check_cvardesc: FORCE
 ifeq ($(MINGW),1)
-	@if command -v $(PYTHON) >/dev/null 2>&1; then \
-		$(PYTHON) ../../scripts/check_cvardesc_len.py; \
+	@if $(call MINGW_PY_CMD,../../scripts/check_cvardesc_len.py); then \
+		: ; \
 	else \
 		echo "Warning: Python not found, skipping cvar description check"; \
 	fi
@@ -111,8 +114,8 @@ endif
 
 check_status_infostring: FORCE ../../assets/version.txt ../../assets/version_changelog.txt
 ifeq ($(MINGW),1)
-	@if command -v $(PYTHON) >/dev/null 2>&1; then \
-		$(PYTHON) ../../scripts/check_status_infostring.py; \
+	@if $(call MINGW_PY_CMD,../../scripts/check_status_infostring.py); then \
+		: ; \
 	else \
 		echo "Warning: Python not found, skipping status infostring check"; \
 	fi
@@ -129,7 +132,30 @@ FORCE:
 
 ../../assets/docs/changelog_be_r.txt: FORCE ../../changelog_be.txt
 	@echo "Reversing full changelog for UI"
-	@$(PYTHON) ../../scripts/reverse_changelog_be.py
+	@mkdir -p ../../assets/docs
+	@awk ' \
+		BEGIN { n = 0; block = "" } \
+		/^[0-9][0-9]\.[0-9][0-9]\.[0-9][0-9][0-9][0-9] be v/ { \
+			if (block != "") { n++; blocks[n] = block } \
+			block = $$0; \
+			next \
+		} \
+		{ \
+			if (block != "") block = block "\n" $$0; \
+		} \
+		END { \
+			if (block != "") { n++; blocks[n] = block } \
+			if (n == 0) { \
+				print "No version blocks found in changelog!" > "/dev/stderr"; \
+				exit 1 \
+			} \
+			for (i = n; i >= 1; i--) { \
+				sub(/\n+$$/, "", blocks[i]); \
+				print blocks[i]; \
+				if (i > 1) print "" \
+			} \
+		} \
+	' ../../changelog_be.txt > $@.tmp && mv $@.tmp $@
 
 ../../assets/version_changelog.txt: FORCE ../../changelog_be.txt ../../assets/version.txt
 	@echo "Extracting changelog for current version"
