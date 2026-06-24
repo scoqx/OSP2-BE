@@ -92,25 +92,12 @@ jobs:
           make MOD=osp2
 
       - uses: actions/upload-artifact@v7
+        if: github.event_name != 'pull_request'
         with:
           name: qvm-linux
           path: build/qvm/zz-osp-pak8be.pk3
           if-no-files-found: error
-          retention-days: 5
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: cgame-linux
-          path: build/library/build/release-linux-x86_64/osp2/cgamex86_64.so
-          if-no-files-found: error
-          retention-days: 5
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ui-linux
-          path: build/library/build/release-linux-x86_64/osp2/uix86_64.so
-          if-no-files-found: error
-          retention-days: 5
+          retention-days: 1
 
       - name: Package Linux libraries for website
         run: |
@@ -118,20 +105,22 @@ jobs:
           tar -czf ../../../osp2-be-linux.tar.gz cgamex86_64.so uix86_64.so
 
       - uses: actions/upload-artifact@v7
+        if: github.event_name != 'pull_request'
         with:
           name: osp2-be-linux
           path: build/library/osp2-be-linux.tar.gz
           if-no-files-found: error
-          retention-days: 5
+          retention-days: 1
 
       - uses: actions/upload-artifact@v7
+        if: github.event_name != 'pull_request'
         with:
           name: version-files
           path: |
             assets/version.txt
             assets/version_changelog.txt
           if-no-files-found: error
-          retention-days: 5
+          retention-days: 1
 
   verify-build-artifacts:
     needs: [linux, mingw]
@@ -159,13 +148,13 @@ jobs:
           }
           check "qvm-linux/zz-osp-pak8be.pk3"
           check "osp2-be-linux/osp2-be-linux.tar.gz"
-          check "cgame-linux/cgamex86_64.so"
-          check "ui-linux/uix86_64.so"
           check "osp2-be-win/osp2-be-win.zip"
-          check "cgame-win/cgamex86_64.dll"
-          check "ui-win/uix86_64.dll"
           check "version-files/version.txt"
           check "version-files/version_changelog.txt"
+          tar -tzf osp2-be-linux/osp2-be-linux.tar.gz | grep -q 'cgamex86_64\.so$' || { echo "Missing cgamex86_64.so in Linux archive"; missing=1; }
+          tar -tzf osp2-be-linux/osp2-be-linux.tar.gz | grep -q 'uix86_64\.so$' || { echo "Missing uix86_64.so in Linux archive"; missing=1; }
+          unzip -l osp2-be-win/osp2-be-win.zip | grep -q 'cgamex86_64\.dll' || { echo "Missing cgamex86_64.dll in Windows archive"; missing=1; }
+          unzip -l osp2-be-win/osp2-be-win.zip | grep -q 'uix86_64\.dll' || { echo "Missing uix86_64.dll in Windows archive"; missing=1; }
           if [ "$missing" -ne 0 ]; then
             echo "Build artifact verification failed"
             exit 1
@@ -182,6 +171,14 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
 
+      - name: Extract libraries for release attachments
+        run: |
+          set -e
+          mkdir -p release-files
+          cp qvm-linux/zz-osp-pak8be.pk3 release-files/
+          tar -xzf osp2-be-linux/osp2-be-linux.tar.gz -C release-files
+          unzip -o osp2-be-win/osp2-be-win.zip -d release-files
+
       - name: Create latest build
         uses: softprops/action-gh-release@v3
         with:
@@ -189,11 +186,11 @@ jobs:
           name: Latest Build
           prerelease: false
           files: |
-            qvm-linux/zz-osp-pak8be.pk3
-            cgame-linux/cgamex86_64.so
-            ui-linux/uix86_64.so
-            cgame-win/cgamex86_64.dll
-            ui-win/uix86_64.dll
+            release-files/zz-osp-pak8be.pk3
+            release-files/cgamex86_64.so
+            release-files/uix86_64.so
+            release-files/cgamex86_64.dll
+            release-files/uix86_64.dll
           generate_release_notes: false
 
   mingw:
@@ -237,20 +234,6 @@ jobs:
         run: |
           make MOD=osp2
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: cgame-win
-          path: build/library/build/release-mingw64-x86_64/osp2/cgamex86_64.dll
-          if-no-files-found: error
-          retention-days: 5
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ui-win
-          path: build/library/build/release-mingw64-x86_64/osp2/uix86_64.dll
-          if-no-files-found: error
-          retention-days: 5
-
       - name: Package Windows libraries for website
         run: |
           cd build/library/build/release-mingw64-x86_64/osp2
@@ -258,11 +241,12 @@ jobs:
           ../../../../qvm/tools/7za.exe a -tzip -mx=0 ../../../osp2-be-win.zip cgamex86_64.dll uix86_64.dll
 
       - uses: actions/upload-artifact@v7
+        if: github.event_name != 'pull_request'
         with:
           name: osp2-be-win
           path: build/library/osp2-be-win.zip
           if-no-files-found: error
-          retention-days: 5
+          retention-days: 1
 
   deploy-to-gh-pages:
     needs: [verify-build-artifacts]
