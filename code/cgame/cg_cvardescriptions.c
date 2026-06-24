@@ -476,7 +476,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_plasmaColor", "Self/teammate plasma bolt and impact color. Empty — default.\n \"^2color^7\" - name, digit, hex, T or E" },
 	{ "cg_enemyPlasmaColor", "Enemy plasma bolt and impact color. Empty — default.\n \"^2color^7\" - name, digit, hex, T or E" },
 	{ "cg_shudStyle", "SuperHUD layout variant for ^3visflags^7 ^2style1^7-^2style4^7. Reloads HUD when changed.\n  ^21^7 - style1\n  ^22^7 - style2\n  ^23^7 - style3\n  ^24^7 - style4\nRequires ^3cg_shud^7 ^21^7." },
-	{ "cg_chatWindow", "In-game chat window (^3/enterchat^7). Bitmask:\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - keep open after sending (Enter)\n  ^24^7 - input-row background only when open\n  ^28^7 - separate duplicate messages (no ^2xN^7 merge)" },
+	{ "cg_chatWindow", "In-game chat window (^3/enterchat^7). Bitmask:\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - keep open after sending\n  ^24^7 - no history backgound\n  ^28^7 - separate duplicate messages" },
 	{ "cg_chatWindowMessageTime", "How long recent chat lines stay visible in the closed-window overlay. Set ^20^7 to hide timed overlay." },
 	{ "cg_chatWindowPos", "Chat window position as ^2X Y^7." },
 	{ "cg_chatWindowSize", "Chat window size as ^2width height^7." },

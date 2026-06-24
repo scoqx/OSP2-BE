@@ -193,7 +193,7 @@ static int CG_ChatClientNumFromBracketId(const char* senderName)
 	return clientNum;
 }
 
-static int CG_ChatClientNumFromSenderName(const char* senderName)
+int CG_ChatClientNumFromSenderName(const char* senderName)
 {
 	int i;
 	char cleanSender[MAX_QPATH];

@@ -564,6 +564,18 @@ static void CG_BEChat_SaveHistoryToCvars(void)
 	}
 }
 
+static void CG_BEChat_ClearMessageHistory(void)
+{
+	memset(&cgs.beChatHistory, 0, sizeof(cgs.beChatHistory));
+	beChatRowsCacheCount = 0;
+	beChatRowsCacheWriteIdx = 0;
+	beChatRowsCacheFrameTime = 0;
+	beChatRowsCacheTotal = 0;
+	beChatFlatCount = 0;
+	beChatWindow.historyScroll = 0;
+	CG_BEChat_SaveHistoryToCvars();
+}
+
 static qboolean CG_BEChat_PersistPopEntry(const char* src, int* ioEnd, char* out, int outSize)
 {
 	int end;
@@ -1300,10 +1312,50 @@ static qboolean CG_BEChat_TryCommitTellTarget(beChatInput_t* edit)
 	return qtrue;
 }
 
+static qboolean CG_BEChat_IsReplyLinePrefix(const char* buf, int* outMsgStart)
+{
+	const char* p;
+	int         i;
+
+	if (!buf)
+	{
+		return qfalse;
+	}
+
+	p = buf;
+	if (p[0] == '/')
+	{
+		p++;
+	}
+
+	if (Q_stricmpn(p, BE_CHAT_CMD_REPLY, (int)strlen(BE_CHAT_CMD_REPLY)) != 0)
+	{
+		return qfalse;
+	}
+
+	i = (int)strlen(BE_CHAT_CMD_REPLY);
+	if (p[i] != '\0' && p[i] != ' ')
+	{
+		return qfalse;
+	}
+
+	while (p[i] == ' ')
+	{
+		i++;
+	}
+
+	if (outMsgStart)
+	{
+		*outMsgStart = (int)(p - buf) + i;
+	}
+
+	return qtrue;
+}
+
 static qboolean CG_BEChat_TryCommitReply(beChatInput_t* edit)
 {
 	const char* buf;
-	int         i;
+	int         msgStart;
 
 	if (!edit || beChatWindow.destMode == BE_CHAT_DEST_REPLY)
 	{
@@ -1311,27 +1363,16 @@ static qboolean CG_BEChat_TryCommitReply(beChatInput_t* edit)
 	}
 
 	buf = edit->buffer;
-	if (Q_stricmpn(buf, "/reply", 6) != 0)
+	if (!CG_BEChat_IsReplyLinePrefix(buf, &msgStart))
 	{
 		return qfalse;
-	}
-
-	if (buf[6] != '\0' && buf[6] != ' ')
-	{
-		return qfalse;
-	}
-
-	i = 6;
-	while (buf[i] == ' ')
-	{
-		i++;
 	}
 
 	beChatWindow.destMode = BE_CHAT_DEST_REPLY;
 	beChatWindow.tellClientNum = -1;
 	beChatWindow.tellName[0] = '\0';
 
-	memmove(edit->buffer, buf + i, strlen(buf + i) + 1);
+	memmove(edit->buffer, buf + msgStart, strlen(buf + msgStart) + 1);
 	edit->cursor = strlen(edit->buffer);
 	edit->scroll = 0;
 	CG_BEChat_CmdAcClear();
@@ -2098,6 +2139,11 @@ void CG_BEChat_OpenHistoryView(void)
 	}
 
 	if (beChatWindow.open)
+	{
+		return;
+	}
+
+	if (cgs.beChatHistory.count == 0)
 	{
 		return;
 	}
@@ -3908,7 +3954,10 @@ static void CG_BEChat_InputChar(beChatInput_t* edit, int ch, float maxTextW)
 	CG_BEChat_CmdAcRefresh(edit);
 	if (ch == ' ')
 	{
-		CG_BEChat_TryCommitTellTarget(edit);
+		if (!CG_BEChat_TryCommitTellTarget(edit))
+		{
+			CG_BEChat_TryCommitReply(edit);
+		}
 	}
 	CG_BEChat_InputClampScroll(edit, maxTextW);
 }
@@ -3934,7 +3983,11 @@ static void CG_BEChat_SendReplyText(const char* message)
 		p++;
 	}
 
-	CG_SendReplyMessage(cmd);
+	if (!CG_SendReplyMessage(cmd))
+	{
+		return;
+	}
+
 	CG_BEChat_SentHistPush(cmd, BE_CHAT_DEST_REPLY, -1, NULL);
 	CG_BEChat_InputClear(&beChatWindow.input);
 	beChatWindow.historyScroll = 0;
@@ -3996,13 +4049,8 @@ static void CG_BEChat_SendInput(void)
 		return;
 	}
 
-	if (!Q_stricmpn(buf, "/reply", 6) && (buf[6] == '\0' || buf[6] == ' '))
+	if (CG_BEChat_IsReplyLinePrefix(buf, &i))
 	{
-		i = 6;
-		while (buf[i] == ' ')
-		{
-			i++;
-		}
 		if (!buf[i])
 		{
 			CG_BEChat_TryCommitReply(&beChatWindow.input);
@@ -4169,7 +4217,7 @@ static qboolean CG_BEChat_KeySupportsRepeat(int key)
 		if (trap_Key_IsDown(K_CTRL))
 		{
 			if (key == 'a' || key == 'A' || key == 'e' || key == 'E' ||
-			        key == 'v' || key == 'V')
+			        key == 'l' || key == 'L' || key == 'v' || key == 'V')
 			{
 				return qfalse;
 			}
@@ -4633,6 +4681,11 @@ static void CG_BEChat_ProcessKey(int keycode)
 			CG_BEChat_InputKeyDown(&beChatWindow.input, K_BACKSPACE, maxTextW);
 			return;
 		}
+		if (keycode == 'l' - 'a' + 1)
+		{
+			CG_BEChat_ClearMessageHistory();
+			return;
+		}
 		if (keycode < ' ')
 		{
 			return;
@@ -4656,6 +4709,11 @@ static void CG_BEChat_ProcessKey(int keycode)
 			{
 				beChatWindow.input.cursor = strlen(beChatWindow.input.buffer);
 				CG_BEChat_InputClampScroll(&beChatWindow.input, maxTextW);
+				return;
+			}
+			if (ch == 'l' || ch == 'L')
+			{
+				CG_BEChat_ClearMessageHistory();
 				return;
 			}
 		}
@@ -4932,12 +4990,12 @@ void CG_BEChat_KeyEvent(int key, qboolean down)
 		return;
 	}
 
+	k = key & ~K_CHAR_FLAG;
+
 	if (beChatWindow.historyOnly)
 	{
 		return;
 	}
-
-	k = key & ~K_CHAR_FLAG;
 
 	if (CG_BEChat_ConsoleBlocksInput())
 	{
@@ -5220,7 +5278,8 @@ void CG_BEChat_Draw(void)
 	float cursorPicY;
 	float cursorPicW;
 	float cursorPicH;
-
+	qboolean drawPerLineBg = qfalse;
+	
 	if (!cg.snap || !cg_chatWindow.integer)
 	{
 		return;
@@ -5289,14 +5348,14 @@ void CG_BEChat_Draw(void)
 	}
 
 	inputRowY = CG_BEChat_InputRowY(y, h);
+	if (cg_chatWindow.integer & BE_CHAT_INPUT_ONLY_BG_BIT)
+	{
+		CG_FillRect(x, CG_BEChat_InputRowBgY(y, h),
+		            historyTextW + BECHAT_PAD, BECHAT_INPUT_ROW_H, bg);
+	}
 	CG_OSPDrawStringNew(x + BECHAT_PAD, inputRowY, CG_BEChat_InputPromptText(), promptColor, colorBlack,
 	                    BECHAT_CHAR_W, BECHAT_CHAR_H, 0, BE_CHAT_TEXT_FLAGS, BE_CHAT_FONT,
 	                    NULL, NULL, NULL);
-	if (cg_chatWindow.integer & BE_CHAT_INPUT_ONLY_BG_BIT)
-	{
-		CG_FillRect(x + BECHAT_PAD, CG_BEChat_InputRowBgY(y, h),
-		            historyTextW, BECHAT_INPUT_ROW_H, bg);
-	}
 	CG_BEChat_DrawInputField(x + BECHAT_PAD, inputRowY, historyTextW, textColor);
 
 	CG_BEChat_HelpLayout(x, y, w, h, &helpBtnX, &helpBtnY, &helpBtnSize);
@@ -5352,5 +5411,25 @@ void CG_BEChat_ShowHistoryDown_f(void)
 void CG_BEChat_ShowHistoryUp_f(void)
 {
 	CG_BEChat_CloseHistoryView();
+}
+
+void CG_BEChat_ScrollUp_f(void)
+{
+	if (beChatWindow.open && beChatWindow.historyOnly)
+	{
+		int step;
+		step = trap_Key_IsDown(K_CTRL) ? BE_CHAT_SCROLL_CTRL_STEP : 1;
+		CG_BEChat_Scroll(step);
+	}
+}
+
+void CG_BEChat_ScrollDown_f(void)
+{
+	if (beChatWindow.open && beChatWindow.historyOnly)
+	{
+		int step;
+		step = trap_Key_IsDown(K_CTRL) ? BE_CHAT_SCROLL_CTRL_STEP : 1;
+		CG_BEChat_Scroll(-step);
+	}
 }
 

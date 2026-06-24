@@ -3546,9 +3546,10 @@ qboolean CG_ParseColorStr(const char* str, vec4_t out);
 qboolean CG_IsMutedWorldSound(int soundIndex);
 void CG_PrintUI_f(void);
 
-void CG_SendReplyMessage(const char* message);
+qboolean CG_SendReplyMessage(const char* message);
 int CG_LastTellSenderClientNum(void);
 void CG_SetLastTellSenderClientNum(int clientNum);
+void CG_SetLastTellSenderName(const char* name);
 
 void CG_BEChat_UpdateFontSizeFromCvar(void);
 void CG_BEChat_Init(void);
@@ -3568,6 +3569,8 @@ void CG_BEChat_f(void);
 void CG_BEChat_Team_f(void);
 void CG_BEChat_ShowHistoryDown_f(void);
 void CG_BEChat_ShowHistoryUp_f(void);
+void CG_BEChat_ScrollUp_f(void);
+void CG_BEChat_ScrollDown_f(void);
 void CG_BEChat_WindowLayout(float* outX, float* outY, float* outW, float* outH);
 
 void CG_BEChat_EmojiSessionOpen(void);
@@ -3653,6 +3656,7 @@ typedef enum
 messageAllowed_t CG_ChatCheckMessageAllowed(const char* message);
 qboolean CG_ChatExtractSenderName(const char* message, char* name, int nameSize);
 int CG_ChatResolveSenderClientNum(const char* rawMessage, int serverClientNum);
+int CG_ChatClientNumFromSenderName(const char* senderName);
 void CG_ChatfilterLoadFile(const char* filename);
 void CG_ChatfilterSaveFile(const char* filename);
 void CG_ChatfilterAddName(const char* name);

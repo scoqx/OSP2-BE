@@ -257,20 +257,13 @@ static void CG_TellAttacker_f(void)
 
 int CG_LastTellSenderClientNum(void)
 {
-	int clientNum;
-
+	trap_Cvar_Update(&cg_beLastTellSender);
 	if (!cg_beLastTellSender.string[0])
 	{
 		return -1;
 	}
 
-	clientNum = atoi(cg_beLastTellSender.string);
-	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
-	{
-		return -1;
-	}
-
-	return clientNum;
+	return CG_ChatClientNumFromSenderName(cg_beLastTellSender.string);
 }
 
 void CG_SetLastTellSenderClientNum(int clientNum)
@@ -284,7 +277,18 @@ void CG_SetLastTellSenderClientNum(int clientNum)
 	trap_Cvar_Set("cg_beLastTellSender", va("%i", clientNum));
 }
 
-void CG_SendReplyMessage(const char* message)
+void CG_SetLastTellSenderName(const char* name)
+{
+	if (!name || !name[0])
+	{
+		trap_Cvar_Set("cg_beLastTellSender", "");
+		return;
+	}
+
+	trap_Cvar_Set("cg_beLastTellSender", name);
+}
+
+qboolean CG_SendReplyMessage(const char* message)
 {
 	int     clientNum;
 	char    command[MAX_STRING_CHARS];
@@ -292,18 +296,19 @@ void CG_SendReplyMessage(const char* message)
 	if (!message || !message[0])
 	{
 		CG_Printf("Usage: /reply <message>\n");
-		return;
+		return qfalse;
 	}
 
 	clientNum = CG_LastTellSenderClientNum();
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
 	{
 		CG_Printf("No one to reply to.\n");
-		return;
+		return qfalse;
 	}
 
 	Com_sprintf(command, sizeof(command), "tell %i %s", clientNum, message);
 	trap_SendClientCommand(command);
+	return qtrue;
 }
 
 static void CG_Reply_f(void)
@@ -2470,6 +2475,8 @@ static consoleCommand_t commands[] =
 	{ "enterchatteam", CG_BEChat_Team_f },
 	{ "+showchat", CG_BEChat_ShowHistoryDown_f },
 	{ "-showchat", CG_BEChat_ShowHistoryUp_f },
+	{ "scrollchatup", CG_BEChat_ScrollUp_f },
+	{ "scrollchatdown", CG_BEChat_ScrollDown_f },
 	{ "tAttack", CG_TeamTaskMarkOffense },
 	{ "tDefence", CG_TeamTaskMarkDefence },
 	{ "tWatch", CG_TeamTaskMarkWatch },

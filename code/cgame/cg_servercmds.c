@@ -1864,9 +1864,7 @@ void CG_ServerCommand(void)
 				qboolean isShudChatEnabled;
 				qboolean isChatWindowEnabled;
 				qboolean isTellMessage;
-				int chatClientNum;
 				int senderClientNum;
-				int argc;
 				char rawChat[MAX_STRING_CHARS];
 
 				Q_strncpyz(rawChat, CG_Argv(1), sizeof(rawChat));
@@ -1888,25 +1886,30 @@ void CG_ServerCommand(void)
 
 				if (ma == MESSAGE_ALLOWED_PLAYER)
 				{
-					chatClientNum = -1;
-					argc = trap_Argc();
-					if (argc >= 3)
-					{
-						chatClientNum = atoi(CG_Argv(2));
-					}
-					senderClientNum = CG_ChatResolveSenderClientNum(rawChat, chatClientNum);
-					if (argc >= 3 && chatClientNum >= 0 && chatClientNum < MAX_CLIENTS && isTellMessage && chatClientNum != cg.clientNum)
-					{
-						CG_SetLastTellSenderClientNum(chatClientNum);
-					}
-					else if (isTellMessage && senderClientNum >= 0 && senderClientNum != cg.clientNum)
-					{
-						CG_SetLastTellSenderClientNum(senderClientNum);
-					}
+					senderClientNum = CG_ChatResolveSenderClientNum(rawChat, -1);
 				}
 				else
 				{
 					senderClientNum = -1;
+				}
+
+				if (isTellMessage && ma == MESSAGE_ALLOWED_PLAYER)
+				{
+					char senderName[MAX_QPATH];
+					int  replyTo;
+
+					if (CG_ChatExtractSenderName(rawChat, senderName, sizeof(senderName)))
+					{
+						CG_RemoveChatEscapeChar(senderName);
+						if (senderName[0])
+						{
+							replyTo = CG_ChatClientNumFromSenderName(senderName);
+							if (replyTo != cg.clientNum)
+							{
+								CG_SetLastTellSenderName(senderName);
+							}
+						}
+					}
 				}
 
 				isVanilaChatEnabled = cg_chatEnable.integer & CG_CHAT_COMMMON_ENABLED;

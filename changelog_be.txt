@@ -955,3 +955,8 @@ SuperHUD:
 * SHUD obituaries fix
 * SHUD PreDecorate/PostDecorate fix (text, image or only fill/border)
 * GlobalPos fix
+
+22.06.2026 be v1.05e2
++ ChatWindow CTRL+L - clear history
++ /scrollchatup and /scrollchatdown commands for scrolling +showchat
+* /reply fix
