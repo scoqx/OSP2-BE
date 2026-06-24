@@ -33,7 +33,7 @@ def reverse_changelog(input_file, output_file):
             blocks.append(block)
 
     blocks.reverse()
-    reversed_content = "\n\n".join(blocks)
+    reversed_content = "\n".join(blocks)
 
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
