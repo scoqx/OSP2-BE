@@ -86,6 +86,8 @@ typedef struct
 	int         helpTipHideStartTime;
 	int         latchCloseKey; /* key held at open (bind); repeat press closes */
 	int         sentHistBrowse; /* -1 draft; 0 newest sent; higher = older */
+	int         savedChannelDest;
+	int         channelDest; /* BE_CHAT_DEST_SAY or BE_CHAT_DEST_TEAM while chat is open */
 } beChatWindowState_t;
 
 typedef struct
@@ -100,10 +102,23 @@ typedef struct
 #define BE_CHAT_DEST_TEAM       1
 #define BE_CHAT_DEST_TELL       2
 #define BE_CHAT_DEST_REPLY      3
+#define BE_CHAT_DEST_MUTE_PICK  4
+#define BE_CHAT_DEST_MUTE_CONFIRM 5
+#define BE_CHAT_DEST_UNMUTE_PICK 6
 
 #define BE_CHAT_CMD_AC_MAX      32
 #define BE_CHAT_CMD_TELL        "tell"
 #define BE_CHAT_CMD_REPLY       "reply"
+#define BE_CHAT_CMD_MUTE        "mute"
+#define BE_CHAT_CMD_UNMUTE      "unmute"
+
+#define BE_CHAT_CMD_AC_MODE_SLASH_CMD       1
+#define BE_CHAT_CMD_AC_MODE_TELL_NAME       2
+#define BE_CHAT_CMD_AC_MODE_MUTE_PICK_DIGIT 3
+#define BE_CHAT_CMD_AC_MODE_UNMUTE_PICK_DIGIT 4
+#define BE_CHAT_CMD_AC_MODE_MUTE_COMMIT     5
+#define BE_CHAT_CMD_AC_MODE_UNMUTE_COMMIT   6
+#define BE_CHAT_CMD_AC_MODE_PLAIN_CMD       7
 
 static char beChatPromptText[64];
 
@@ -124,6 +139,17 @@ static int beChatSentHistWrite;
 static int beChatSentHistCount;
 
 static beChatSentHistEntry_t* CG_BEChat_SentHistEntryNewest(int indexFromNewest);
+static void CG_BEChat_ResetDestMode(void);
+static void CG_BEChat_InputClear(beChatInput_t* edit);
+static qboolean CG_BEChat_LineCmdChannelOpen(void);
+static qboolean CG_BEChat_LineSlashCmdAfter(const char* buf, const char* cmdWord,
+        int* outNameStart);
+static void CG_BEChat_CmdAcRefresh(beChatInput_t* edit);
+static void CG_BEChat_CmdAcComplete(beChatInput_t* edit, float maxTextW);
+static qboolean CG_BEChat_CmdAcRefreshMuteUnmutePickDigits(beChatInput_t* edit, const char* buf,
+        int cursor);
+static qboolean CG_BEChat_CmdAcRefreshMuteUnmuteLine(beChatInput_t* edit, const char* buf,
+        int cursor);
 
 static qboolean CG_BEChat_ConsoleBlocksInput(void)
 {
@@ -142,7 +168,7 @@ static const char* beChatHelpTipLines[BE_CHAT_HELP_TIP_LINE_COUNT] =
 	"^2Tab^7  switch global and team chat",
 	"^2Alt^7  emoji picker; type :name, then ^2Tab^7",
 	"Scroll: ^2wheel^7, ^2PgUp^7 / ^2PgDn^7, ^2Ctrl+Up^7 / ^2Ctrl+Down^7",
-	"Slash line: /tell, /reply, or player name",
+	"Slash line: /tell, /reply, /mute, /unmute, or player name",
 	"^2Up^7 / ^2Down^7  last sent (empty input) or autocomplete",
 };
 
@@ -938,6 +964,78 @@ static void CG_BEChat_CmdAcClear(void)
 	memset(&beChatCmdAc, 0, sizeof(beChatCmdAc));
 }
 
+static void CG_BEChat_CmdAcFillSlashCommandEntries(const char* prefix, int prefixLen)
+{
+	if (prefixLen <= (int)strlen(BE_CHAT_CMD_TELL) &&
+	        !Q_stricmpn(BE_CHAT_CMD_TELL, prefix, prefixLen))
+	{
+		Q_strncpyz(beChatCmdAc.entries[beChatCmdAc.count], BE_CHAT_CMD_TELL,
+		           sizeof(beChatCmdAc.entries[beChatCmdAc.count]));
+		beChatCmdAc.count++;
+	}
+	if (prefixLen <= (int)strlen(BE_CHAT_CMD_REPLY) &&
+	        !Q_stricmpn(BE_CHAT_CMD_REPLY, prefix, prefixLen))
+	{
+		Q_strncpyz(beChatCmdAc.entries[beChatCmdAc.count], BE_CHAT_CMD_REPLY,
+		           sizeof(beChatCmdAc.entries[beChatCmdAc.count]));
+		beChatCmdAc.count++;
+	}
+	if (prefixLen <= (int)strlen(BE_CHAT_CMD_MUTE) &&
+	        !Q_stricmpn(BE_CHAT_CMD_MUTE, prefix, prefixLen))
+	{
+		Q_strncpyz(beChatCmdAc.entries[beChatCmdAc.count], BE_CHAT_CMD_MUTE,
+		           sizeof(beChatCmdAc.entries[beChatCmdAc.count]));
+		beChatCmdAc.count++;
+	}
+	if (prefixLen <= (int)strlen(BE_CHAT_CMD_UNMUTE) &&
+	        !Q_stricmpn(BE_CHAT_CMD_UNMUTE, prefix, prefixLen))
+	{
+		Q_strncpyz(beChatCmdAc.entries[beChatCmdAc.count], BE_CHAT_CMD_UNMUTE,
+		           sizeof(beChatCmdAc.entries[beChatCmdAc.count]));
+		beChatCmdAc.count++;
+	}
+
+	if (beChatCmdAc.sel >= beChatCmdAc.count)
+	{
+		beChatCmdAc.sel = 0;
+	}
+}
+
+static void CG_BEChat_CmdAcTabSlashCommand(beChatInput_t* edit, float maxTextW)
+{
+	int len;
+
+	if (!edit)
+	{
+		return;
+	}
+
+	if (beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_PLAIN_CMD)
+	{
+		len = strlen(edit->buffer);
+		if (len + 1 >= MAX_SAY_TEXT)
+		{
+			CG_BEChat_InputClampScroll(edit, maxTextW);
+			return;
+		}
+		memmove(edit->buffer + 1, edit->buffer, len + 1);
+		edit->buffer[0] = '/';
+		edit->cursor++;
+		CG_BEChat_EmojiOnInputChanged(edit);
+		CG_BEChat_CmdAcRefresh(edit);
+		CG_BEChat_InputClampScroll(edit, maxTextW);
+		return;
+	}
+
+	if (beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_SLASH_CMD)
+	{
+		CG_BEChat_CmdAcComplete(edit, maxTextW);
+		return;
+	}
+
+	CG_BEChat_CmdAcComplete(edit, maxTextW);
+}
+
 static void CG_BEChat_PlayerPlainName(int clientNum, char* out, int outSize)
 {
 	clientInfo_t* ci;
@@ -969,6 +1067,25 @@ static void CG_BEChat_PlayerPlainName(int clientNum, char* out, int outSize)
 	CG_RemoveChatEscapeCharAll(out);
 }
 
+static qboolean CG_BEChat_IsDigitsOnly(const char* s)
+{
+	if (!s || !s[0])
+	{
+		return qfalse;
+	}
+
+	while (*s)
+	{
+		if (*s < '0' || *s > '9')
+		{
+			return qfalse;
+		}
+		s++;
+	}
+
+	return qtrue;
+}
+
 static void CG_BEChat_CmdAcRefresh(beChatInput_t* edit)
 {
 	const char* buf;
@@ -987,21 +1104,71 @@ static void CG_BEChat_CmdAcRefresh(beChatInput_t* edit)
 	beChatCmdAc.replaceFrom = 0;
 	beChatCmdAc.replaceTo = 0;
 
-	if (!edit || edit->buffer[0] != '/')
+	if (!edit)
 	{
 		return;
 	}
 
 	buf = edit->buffer;
 	cursor = edit->cursor;
+
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_PICK ||
+	        beChatWindow.destMode == BE_CHAT_DEST_UNMUTE_PICK)
+	{
+		CG_BEChat_CmdAcRefreshMuteUnmutePickDigits(edit, buf, cursor);
+		return;
+	}
+
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_CONFIRM)
+	{
+		return;
+	}
+
+	if (!edit->buffer[0])
+	{
+		return;
+	}
+
+	if (CG_BEChat_LineCmdChannelOpen() && edit->buffer[0] != '/')
+	{
+		int i;
+
+		if (cursor < 1)
+		{
+			return;
+		}
+		for (i = 0; i < cursor; i++)
+		{
+			if (buf[i] == ' ')
+			{
+				return;
+			}
+		}
+		prefixLen = cursor;
+		beChatCmdAc.mode = BE_CHAT_CMD_AC_MODE_PLAIN_CMD;
+		beChatCmdAc.replaceFrom = 0;
+		beChatCmdAc.replaceTo = cursor;
+		CG_BEChat_CmdAcFillSlashCommandEntries(buf, prefixLen);
+		return;
+	}
+
+	if (edit->buffer[0] != '/')
+	{
+		return;
+	}
+
 	if (cursor < 1)
 	{
 		return;
 	}
 
-	if (!Q_stricmpn(buf, "/tell", 5) && buf[5] == ' ')
+	if (CG_BEChat_CmdAcRefreshMuteUnmuteLine(edit, buf, cursor))
 	{
-		nameStart = 6;
+		return;
+	}
+
+	if (CG_BEChat_LineSlashCmdAfter(buf, BE_CHAT_CMD_TELL, &nameStart))
+	{
 		while (nameStart < cursor && buf[nameStart] == ' ')
 		{
 			nameStart++;
@@ -1025,7 +1192,12 @@ static void CG_BEChat_CmdAcRefresh(beChatInput_t* edit)
 			memcpy(prefix, buf + nameStart, prefixLen);
 			prefix[prefixLen] = '\0';
 
-			beChatCmdAc.mode = 2;
+			if (CG_BEChat_IsDigitsOnly(prefix))
+			{
+				return;
+			}
+
+			beChatCmdAc.mode = BE_CHAT_CMD_AC_MODE_TELL_NAME;
 			beChatCmdAc.replaceFrom = nameStart;
 			beChatCmdAc.replaceTo = nameEnd;
 
@@ -1077,61 +1249,59 @@ static void CG_BEChat_CmdAcRefresh(beChatInput_t* edit)
 		prefixLen = 0;
 	}
 
-	beChatCmdAc.mode = 1;
+	beChatCmdAc.mode = BE_CHAT_CMD_AC_MODE_SLASH_CMD;
 	beChatCmdAc.replaceFrom = 1;
 	beChatCmdAc.replaceTo = cursor;
-
-	if (prefixLen <= (int)strlen(BE_CHAT_CMD_TELL) &&
-	        !Q_stricmpn(BE_CHAT_CMD_TELL, buf + 1, prefixLen))
-	{
-		Q_strncpyz(beChatCmdAc.entries[beChatCmdAc.count], BE_CHAT_CMD_TELL,
-		           sizeof(beChatCmdAc.entries[beChatCmdAc.count]));
-		beChatCmdAc.count++;
-	}
-	if (prefixLen <= (int)strlen(BE_CHAT_CMD_REPLY) &&
-	        !Q_stricmpn(BE_CHAT_CMD_REPLY, buf + 1, prefixLen))
-	{
-		Q_strncpyz(beChatCmdAc.entries[beChatCmdAc.count], BE_CHAT_CMD_REPLY,
-		           sizeof(beChatCmdAc.entries[beChatCmdAc.count]));
-		beChatCmdAc.count++;
-	}
-
-	if (beChatCmdAc.sel >= beChatCmdAc.count)
-	{
-		beChatCmdAc.sel = 0;
-	}
+	CG_BEChat_CmdAcFillSlashCommandEntries(buf + 1, prefixLen);
 }
 
 static void CG_BEChat_ResetDestMode(void)
 {
-	beChatWindow.destMode = BE_CHAT_DEST_SAY;
+	if (beChatWindow.savedChannelDest == BE_CHAT_DEST_TEAM)
+	{
+		beChatWindow.destMode = BE_CHAT_DEST_TEAM;
+		beChatWindow.channelDest = BE_CHAT_DEST_TEAM;
+	}
+	else if (beChatWindow.savedChannelDest == BE_CHAT_DEST_SAY)
+	{
+		beChatWindow.destMode = BE_CHAT_DEST_SAY;
+		beChatWindow.channelDest = BE_CHAT_DEST_SAY;
+	}
+	else if (beChatWindow.channelDest == BE_CHAT_DEST_TEAM)
+	{
+		beChatWindow.destMode = BE_CHAT_DEST_TEAM;
+	}
+	else
+	{
+		beChatWindow.destMode = BE_CHAT_DEST_SAY;
+		beChatWindow.channelDest = BE_CHAT_DEST_SAY;
+	}
+	beChatWindow.savedChannelDest = -1;
 	beChatWindow.tellClientNum = -1;
 	beChatWindow.tellName[0] = '\0';
+}
+
+static void CG_BEChat_CancelMuteConfirm(void)
+{
+	if (beChatWindow.destMode != BE_CHAT_DEST_MUTE_CONFIRM)
+	{
+		return;
+	}
+
+	beChatWindow.tellClientNum = -1;
+	CG_BEChat_InputClear(&beChatWindow.input);
+	CG_BEChat_ResetDestMode();
+	CG_BEChat_CmdAcClear();
+	CG_BEChat_EmojiOnInputChanged(&beChatWindow.input);
 }
 
 static qboolean CG_BEChat_DestLocksTab(void)
 {
 	return (beChatWindow.destMode == BE_CHAT_DEST_TELL ||
-	        beChatWindow.destMode == BE_CHAT_DEST_REPLY) ? qtrue : qfalse;
-}
-
-static qboolean CG_BEChat_IsDigitsOnly(const char* s)
-{
-	if (!s || !s[0])
-	{
-		return qfalse;
-	}
-
-	while (*s)
-	{
-		if (*s < '0' || *s > '9')
-		{
-			return qfalse;
-		}
-		s++;
-	}
-
-	return qtrue;
+	        beChatWindow.destMode == BE_CHAT_DEST_REPLY ||
+	        beChatWindow.destMode == BE_CHAT_DEST_MUTE_PICK ||
+	        beChatWindow.destMode == BE_CHAT_DEST_MUTE_CONFIRM ||
+	        beChatWindow.destMode == BE_CHAT_DEST_UNMUTE_PICK) ? qtrue : qfalse;
 }
 
 static qboolean CG_BEChat_TellClientFromIdToken(const char* token, int* outClientNum)
@@ -1162,6 +1332,537 @@ static qboolean CG_BEChat_TellClientFromIdToken(const char* token, int* outClien
 	}
 
 	*outClientNum = clientNum;
+	return qtrue;
+}
+
+static qboolean CG_BEChat_LineSlashCmdAfter(const char* buf, const char* cmdWord, int* outNameStart)
+{
+	const char* p;
+	int         cmdLen;
+
+	if (!buf || !cmdWord || !cmdWord[0])
+	{
+		return qfalse;
+	}
+
+	p = buf;
+	if (p[0] == '/')
+	{
+		p++;
+	}
+
+	cmdLen = (int)strlen(cmdWord);
+	if (Q_stricmpn(p, cmdWord, cmdLen) != 0)
+	{
+		return qfalse;
+	}
+
+	if (p[cmdLen] != ' ')
+	{
+		return qfalse;
+	}
+
+	if (outNameStart)
+	{
+		*outNameStart = (int)(p + cmdLen + 1 - buf);
+	}
+
+	return qtrue;
+}
+
+static qboolean CG_BEChat_LineMuteAfterCmd(const char* buf, int* outNameStart)
+{
+	return CG_BEChat_LineSlashCmdAfter(buf, BE_CHAT_CMD_MUTE, outNameStart);
+}
+
+static qboolean CG_BEChat_LineUnmuteAfterCmd(const char* buf, int* outNameStart)
+{
+	return CG_BEChat_LineSlashCmdAfter(buf, BE_CHAT_CMD_UNMUTE, outNameStart);
+}
+
+static qboolean CG_BEChat_DestIsMuteFlow(void)
+{
+	return (beChatWindow.destMode == BE_CHAT_DEST_MUTE_PICK ||
+	        beChatWindow.destMode == BE_CHAT_DEST_MUTE_CONFIRM ||
+	        beChatWindow.destMode == BE_CHAT_DEST_UNMUTE_PICK) ? qtrue : qfalse;
+}
+
+static void CG_BEChat_SaveChannelDestBeforePick(void)
+{
+	if (beChatWindow.destMode == BE_CHAT_DEST_TEAM)
+	{
+		beChatWindow.savedChannelDest = BE_CHAT_DEST_TEAM;
+	}
+	else
+	{
+		beChatWindow.savedChannelDest = BE_CHAT_DEST_SAY;
+	}
+}
+
+static void CG_BEChat_IdPickBegin(int pickDestMode, beChatInput_t* edit)
+{
+	CG_BEChat_SaveChannelDestBeforePick();
+	beChatWindow.destMode = pickDestMode;
+	beChatWindow.tellClientNum = -1;
+	beChatWindow.tellName[0] = '\0';
+	if (edit)
+	{
+		edit->buffer[0] = '\0';
+		edit->cursor = 0;
+		edit->scroll = 0;
+		CG_BEChat_EmojiOnInputChanged(edit);
+	}
+	CG_BEChat_CmdAcClear();
+}
+
+static void CG_BEChat_MutePickBegin(beChatInput_t* edit)
+{
+	CG_BEChat_IdPickBegin(BE_CHAT_DEST_MUTE_PICK, edit);
+}
+
+static void CG_BEChat_UnmutePickBegin(beChatInput_t* edit)
+{
+	CG_BEChat_IdPickBegin(BE_CHAT_DEST_UNMUTE_PICK, edit);
+}
+
+static qboolean CG_BEChat_TryEnterSlashPickFromBuffer(beChatInput_t* edit,
+        qboolean (*lineAfterCmd)(const char* buf, int* outNameStart),
+        int pickDestMode)
+{
+	const char* buf;
+	int         nameStart;
+
+	if (!edit || beChatWindow.destMode == pickDestMode ||
+	        beChatWindow.destMode == BE_CHAT_DEST_TELL ||
+	        CG_BEChat_DestIsMuteFlow())
+	{
+		return qfalse;
+	}
+
+	buf = edit->buffer;
+	if (buf[0] != '/')
+	{
+		return qfalse;
+	}
+
+	if (!lineAfterCmd(buf, &nameStart))
+	{
+		return qfalse;
+	}
+
+	while (buf[nameStart] == ' ')
+	{
+		nameStart++;
+	}
+
+	if (buf[nameStart])
+	{
+		return qfalse;
+	}
+
+	CG_BEChat_IdPickBegin(pickDestMode, edit);
+	return qtrue;
+}
+
+static qboolean CG_BEChat_TryEnterMutePickFromBuffer(beChatInput_t* edit)
+{
+	return CG_BEChat_TryEnterSlashPickFromBuffer(edit, CG_BEChat_LineMuteAfterCmd,
+	        BE_CHAT_DEST_MUTE_PICK);
+}
+
+static qboolean CG_BEChat_TryEnterUnmutePickFromBuffer(beChatInput_t* edit)
+{
+	return CG_BEChat_TryEnterSlashPickFromBuffer(edit, CG_BEChat_LineUnmuteAfterCmd,
+	        BE_CHAT_DEST_UNMUTE_PICK);
+}
+
+static qboolean CG_BEChat_EnterMuteConfirm(beChatInput_t* edit, int clientNum)
+{
+	clientInfo_t* ci;
+	char          confirm[MAX_SAY_TEXT];
+
+	if (!edit || clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return qfalse;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid)
+	{
+		return qfalse;
+	}
+
+	beChatWindow.tellClientNum = clientNum;
+	confirm[0] = '\0';
+	Q_strncpyz(confirm, "mute: ", sizeof(confirm));
+	Q_strcat(confirm, sizeof(confirm), ci->name);
+	Q_strcat(confirm, sizeof(confirm), "?");
+	Q_strncpyz(edit->buffer, confirm, sizeof(edit->buffer));
+	edit->cursor = strlen(edit->buffer);
+	edit->scroll = 0;
+	beChatWindow.destMode = BE_CHAT_DEST_MUTE_CONFIRM;
+	CG_BEChat_CmdAcClear();
+	CG_BEChat_EmojiOnInputChanged(edit);
+	return qtrue;
+}
+
+static void CG_BEChat_FinishUnmutePick(beChatInput_t* edit, int clientNum)
+{
+	CG_ChatfilterUnmuteClient(clientNum);
+	CG_BEChat_InputClear(edit);
+	CG_BEChat_ResetDestMode();
+	beChatWindow.historyScroll = 0;
+	if (!(cg_chatWindow.integer & BE_CHAT_KEEP_OPEN_BIT))
+	{
+		CG_BEChat_Close();
+	}
+}
+
+static qboolean CG_BEChat_ParseMuteUnmuteIdAtCursor(const char* buf, const char* cmdWord,
+        int cursor, int* outClientNum)
+{
+	int  nameStart;
+	int  i;
+	int  nameLen;
+	char name[16];
+
+	if (!buf || !outClientNum || !CG_BEChat_LineSlashCmdAfter(buf, cmdWord, &nameStart))
+	{
+		return qfalse;
+	}
+
+	while (buf[nameStart] == ' ')
+	{
+		nameStart++;
+	}
+
+	nameLen = 0;
+	for (i = nameStart; i < cursor; i++)
+	{
+		if (buf[i] == ' ')
+		{
+			break;
+		}
+		if (nameLen >= (int)sizeof(name) - 1)
+		{
+			break;
+		}
+		name[nameLen++] = buf[i];
+	}
+	name[nameLen] = '\0';
+
+	if (!name[0] || !CG_BEChat_IsDigitsOnly(name))
+	{
+		return qfalse;
+	}
+
+	while (i < cursor && buf[i] == ' ')
+	{
+		i++;
+	}
+	if (i != cursor)
+	{
+		return qfalse;
+	}
+
+	return CG_BEChat_TellClientFromIdToken(name, outClientNum);
+}
+
+static qboolean CG_BEChat_ParseMuteUnmuteIdFullLine(const char* buf, const char* cmdWord,
+        int* outClientNum)
+{
+	int  nameStart;
+	int  i;
+	int  nameLen;
+	char name[16];
+
+	if (!buf || !outClientNum || !CG_BEChat_LineSlashCmdAfter(buf, cmdWord, &nameStart))
+	{
+		return qfalse;
+	}
+
+	while (buf[nameStart] == ' ')
+	{
+		nameStart++;
+	}
+
+	nameLen = 0;
+	for (i = nameStart; buf[i] && buf[i] != ' '; i++)
+	{
+		if (nameLen >= (int)sizeof(name) - 1)
+		{
+			break;
+		}
+		name[nameLen++] = buf[i];
+	}
+	name[nameLen] = '\0';
+
+	if (!name[0] || !CG_BEChat_IsDigitsOnly(name))
+	{
+		return qfalse;
+	}
+
+	while (buf[i] == ' ')
+	{
+		i++;
+	}
+	if (buf[i])
+	{
+		return qfalse;
+	}
+
+	return CG_BEChat_TellClientFromIdToken(name, outClientNum);
+}
+
+static qboolean CG_BEChat_TryCommitMutePick(beChatInput_t* edit)
+{
+	int clientNum;
+
+	if (!edit || beChatWindow.destMode != BE_CHAT_DEST_MUTE_PICK)
+	{
+		return qfalse;
+	}
+
+	if (!edit->buffer[0] || !CG_BEChat_IsDigitsOnly(edit->buffer))
+	{
+		return qfalse;
+	}
+
+	if (!CG_BEChat_TellClientFromIdToken(edit->buffer, &clientNum))
+	{
+		return qfalse;
+	}
+
+	return CG_BEChat_EnterMuteConfirm(edit, clientNum);
+}
+
+static qboolean CG_BEChat_TryCommitUnmutePick(beChatInput_t* edit)
+{
+	int clientNum;
+
+	if (!edit || beChatWindow.destMode != BE_CHAT_DEST_UNMUTE_PICK)
+	{
+		return qfalse;
+	}
+
+	if (!edit->buffer[0] || !CG_BEChat_IsDigitsOnly(edit->buffer))
+	{
+		return qfalse;
+	}
+
+	if (!CG_BEChat_TellClientFromIdToken(edit->buffer, &clientNum))
+	{
+		return qfalse;
+	}
+
+	CG_BEChat_FinishUnmutePick(edit, clientNum);
+	return qtrue;
+}
+
+static qboolean CG_BEChat_LineCmdChannelOpen(void)
+{
+	return (beChatWindow.destMode == BE_CHAT_DEST_SAY ||
+	        beChatWindow.destMode == BE_CHAT_DEST_TEAM) ? qtrue : qfalse;
+}
+
+static qboolean CG_BEChat_TryCommitMuteIdLine(beChatInput_t* edit)
+{
+	int clientNum;
+
+	if (!edit || !CG_BEChat_LineCmdChannelOpen())
+	{
+		return qfalse;
+	}
+
+	if (CG_BEChat_ParseMuteUnmuteIdAtCursor(edit->buffer, BE_CHAT_CMD_MUTE, edit->cursor, &clientNum))
+	{
+		return CG_BEChat_EnterMuteConfirm(edit, clientNum);
+	}
+
+	if (CG_BEChat_ParseMuteUnmuteIdFullLine(edit->buffer, BE_CHAT_CMD_MUTE, &clientNum))
+	{
+		return CG_BEChat_EnterMuteConfirm(edit, clientNum);
+	}
+
+	return qfalse;
+}
+
+static qboolean CG_BEChat_TryCommitUnmuteIdLine(beChatInput_t* edit)
+{
+	int clientNum;
+
+	if (!edit || !CG_BEChat_LineCmdChannelOpen())
+	{
+		return qfalse;
+	}
+
+	if (CG_BEChat_ParseMuteUnmuteIdAtCursor(edit->buffer, BE_CHAT_CMD_UNMUTE, edit->cursor, &clientNum))
+	{
+		CG_BEChat_FinishUnmutePick(edit, clientNum);
+		return qtrue;
+	}
+
+	if (CG_BEChat_ParseMuteUnmuteIdFullLine(edit->buffer, BE_CHAT_CMD_UNMUTE, &clientNum))
+	{
+		CG_BEChat_FinishUnmutePick(edit, clientNum);
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+static qboolean CG_BEChat_CmdAcRefreshMuteUnmutePickDigits(beChatInput_t* edit, const char* buf,
+        int cursor)
+{
+	int  prefixLen;
+	char prefix[16];
+	int  acMode;
+
+	if (cursor < 1)
+	{
+		return qfalse;
+	}
+
+	prefixLen = cursor;
+	if (prefixLen >= (int)sizeof(prefix))
+	{
+		prefixLen = (int)sizeof(prefix) - 1;
+	}
+	if (prefixLen > 0)
+	{
+		memcpy(prefix, buf, prefixLen);
+	}
+	prefix[prefixLen] = '\0';
+
+	if (!CG_BEChat_IsDigitsOnly(prefix) || prefixLen < 1)
+	{
+		return qfalse;
+	}
+
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_PICK)
+	{
+		acMode = BE_CHAT_CMD_AC_MODE_MUTE_PICK_DIGIT;
+	}
+	else
+	{
+		acMode = BE_CHAT_CMD_AC_MODE_UNMUTE_PICK_DIGIT;
+	}
+
+	beChatCmdAc.mode = acMode;
+	beChatCmdAc.replaceFrom = 0;
+	beChatCmdAc.replaceTo = cursor;
+	beChatCmdAc.count = 1;
+	beChatCmdAc.entries[0][0] = '\0';
+	if (beChatCmdAc.sel >= beChatCmdAc.count)
+	{
+		beChatCmdAc.sel = 0;
+	}
+	return qtrue;
+}
+
+static qboolean CG_BEChat_ParseLineMuteUnmute(const char* buf, char* outCmd, int outCmdSize,
+        int* outLineFrom, int* outCmdLettersEnd, int* outMsgStart)
+{
+	const char* p;
+	int         cmdLen;
+
+	if (!buf || !outCmd || outCmdSize < 1)
+	{
+		return qfalse;
+	}
+
+	p = buf;
+	if (outLineFrom)
+	{
+		*outLineFrom = 0;
+	}
+	if (p[0] == '/')
+	{
+		p++;
+	}
+
+	cmdLen = 0;
+	if (!Q_stricmpn(p, BE_CHAT_CMD_MUTE, (int)strlen(BE_CHAT_CMD_MUTE)))
+	{
+		cmdLen = (int)strlen(BE_CHAT_CMD_MUTE);
+		Q_strncpyz(outCmd, BE_CHAT_CMD_MUTE, outCmdSize);
+	}
+	else if (!Q_stricmpn(p, BE_CHAT_CMD_UNMUTE, (int)strlen(BE_CHAT_CMD_UNMUTE)))
+	{
+		cmdLen = (int)strlen(BE_CHAT_CMD_UNMUTE);
+		Q_strncpyz(outCmd, BE_CHAT_CMD_UNMUTE, outCmdSize);
+	}
+	else
+	{
+		return qfalse;
+	}
+
+	if (p[cmdLen] != '\0' && p[cmdLen] != ' ')
+	{
+		return qfalse;
+	}
+
+	if (outCmdLettersEnd)
+	{
+		*outCmdLettersEnd = (int)(p - buf) + cmdLen;
+	}
+
+	if (outMsgStart)
+	{
+		int i;
+
+		i = (int)(p - buf) + cmdLen;
+		while (buf[i] == ' ')
+		{
+			i++;
+		}
+		*outMsgStart = i;
+	}
+
+	return qtrue;
+}
+
+static qboolean CG_BEChat_CmdAcRefreshMuteUnmuteLine(beChatInput_t* edit, const char* buf, int cursor)
+{
+	char     cmdWord[MAX_NAME_LENGTH];
+	int      lineFrom;
+	int      msgStart;
+	qboolean hasMsg;
+
+	if (!CG_BEChat_ParseLineMuteUnmute(buf, cmdWord, sizeof(cmdWord),
+	                                   &lineFrom, NULL, &msgStart))
+	{
+		return qfalse;
+	}
+
+	hasMsg = (buf[msgStart] != '\0') ? qtrue : qfalse;
+	beChatCmdAc.replaceFrom = (buf[0] == '/') ? 0 : lineFrom;
+
+	if (hasMsg)
+	{
+		beChatCmdAc.replaceTo = msgStart;
+		if (!Q_stricmp(cmdWord, BE_CHAT_CMD_MUTE))
+		{
+			beChatCmdAc.mode = BE_CHAT_CMD_AC_MODE_MUTE_COMMIT;
+		}
+		else
+		{
+			beChatCmdAc.mode = BE_CHAT_CMD_AC_MODE_UNMUTE_COMMIT;
+		}
+	}
+	else
+	{
+		beChatCmdAc.replaceTo = cursor;
+		beChatCmdAc.mode = BE_CHAT_CMD_AC_MODE_SLASH_CMD;
+	}
+
+	beChatCmdAc.count = 1;
+	Q_strncpyz(beChatCmdAc.entries[0], cmdWord, sizeof(beChatCmdAc.entries[0]));
+	if (beChatCmdAc.sel >= beChatCmdAc.count)
+	{
+		beChatCmdAc.sel = 0;
+	}
+
 	return qtrue;
 }
 
@@ -1212,21 +1913,22 @@ static qboolean CG_BEChat_TryCommitTellTarget(beChatInput_t* edit)
 	int         nameLen;
 	int         afterName;
 	int         clientNum;
+	int         i;
 	char        name[MAX_NAME_LENGTH];
 	char        plainName[MAX_NAME_LENGTH];
 
-	if (!edit || beChatWindow.destMode == BE_CHAT_DEST_TELL)
+	if (!edit || beChatWindow.destMode == BE_CHAT_DEST_TELL ||
+	        CG_BEChat_DestIsMuteFlow())
 	{
 		return qfalse;
 	}
 
 	buf = edit->buffer;
-	if (Q_stricmpn(buf, "/tell", 5) != 0 || buf[5] != ' ')
+	if (!CG_BEChat_LineSlashCmdAfter(buf, BE_CHAT_CMD_TELL, &nameStart))
 	{
 		return qfalse;
 	}
 
-	nameStart = 6;
 	while (buf[nameStart] == ' ')
 	{
 		nameStart++;
@@ -1250,7 +1952,12 @@ static qboolean CG_BEChat_TryCommitTellTarget(beChatInput_t* edit)
 
 	if (CG_BEChat_IsDigitsOnly(name))
 	{
-		if (buf[afterName] != ' ')
+		i = afterName;
+		while (buf[i] == ' ' && i < edit->cursor)
+		{
+			i++;
+		}
+		if (i != edit->cursor)
 		{
 			return qfalse;
 		}
@@ -1408,6 +2115,36 @@ static void CG_BEChat_CmdAcComplete(beChatInput_t* edit, float maxTextW)
 
 	completedMode = beChatCmdAc.mode;
 	Q_strncpyz(completedCmd, beChatCmdAc.entries[sel], sizeof(completedCmd));
+
+	if (completedMode == BE_CHAT_CMD_AC_MODE_MUTE_PICK_DIGIT)
+	{
+		CG_BEChat_TryCommitMutePick(edit);
+		CG_BEChat_CmdAcClear();
+		CG_BEChat_InputClampScroll(edit, maxTextW);
+		return;
+	}
+
+	if (completedMode == BE_CHAT_CMD_AC_MODE_UNMUTE_PICK_DIGIT)
+	{
+		CG_BEChat_InputClampScroll(edit, maxTextW);
+		return;
+	}
+
+	if (completedMode == BE_CHAT_CMD_AC_MODE_MUTE_COMMIT)
+	{
+		CG_BEChat_TryCommitMuteIdLine(edit);
+		CG_BEChat_CmdAcClear();
+		CG_BEChat_InputClampScroll(edit, maxTextW);
+		return;
+	}
+
+	if (completedMode == BE_CHAT_CMD_AC_MODE_UNMUTE_COMMIT)
+	{
+		CG_BEChat_CmdAcRefresh(edit);
+		CG_BEChat_InputClampScroll(edit, maxTextW);
+		return;
+	}
+
 	Q_strncpyz(insert, beChatCmdAc.entries[sel], sizeof(insert));
 	insertLen = strlen(insert);
 	if (insertLen + 1 >= (int)sizeof(insert))
@@ -1441,14 +2178,27 @@ static void CG_BEChat_CmdAcComplete(beChatInput_t* edit, float maxTextW)
 	CG_BEChat_CmdAcRefresh(edit);
 	CG_BEChat_InputClampScroll(edit, maxTextW);
 
-	if (completedMode == 2)
+	if (completedMode == BE_CHAT_CMD_AC_MODE_TELL_NAME)
 	{
 		CG_BEChat_TryCommitTellTarget(edit);
 		CG_BEChat_InputClampScroll(edit, maxTextW);
 	}
-	else if (completedMode == 1 && !Q_stricmp(completedCmd, BE_CHAT_CMD_REPLY))
+	else if (completedMode == BE_CHAT_CMD_AC_MODE_SLASH_CMD &&
+	         !Q_stricmp(completedCmd, BE_CHAT_CMD_REPLY))
 	{
 		CG_BEChat_TryCommitReply(edit);
+		CG_BEChat_InputClampScroll(edit, maxTextW);
+	}
+	else if (completedMode == BE_CHAT_CMD_AC_MODE_SLASH_CMD &&
+	         !Q_stricmp(completedCmd, BE_CHAT_CMD_MUTE))
+	{
+		CG_BEChat_MutePickBegin(edit);
+		CG_BEChat_InputClampScroll(edit, maxTextW);
+	}
+	else if (completedMode == BE_CHAT_CMD_AC_MODE_SLASH_CMD &&
+	         !Q_stricmp(completedCmd, BE_CHAT_CMD_UNMUTE))
+	{
+		CG_BEChat_UnmutePickBegin(edit);
 		CG_BEChat_InputClampScroll(edit, maxTextW);
 	}
 }
@@ -1463,7 +2213,20 @@ qboolean CG_BEChat_CmdAcProcessKey(int keycode, beChatInput_t* edit, float maxTe
 	if (keycode == K_TAB ||
 	        ((keycode == K_RIGHTARROW || keycode == K_KP_RIGHTARROW) && !trap_Key_IsDown(K_CTRL)))
 	{
-		CG_BEChat_CmdAcComplete(edit, maxTextW);
+		if (beChatWindow.destMode == BE_CHAT_DEST_UNMUTE_PICK ||
+		        beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_UNMUTE_PICK_DIGIT)
+		{
+			return qtrue;
+		}
+		if (beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_PLAIN_CMD ||
+		        beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_SLASH_CMD)
+		{
+			CG_BEChat_CmdAcTabSlashCommand(edit, maxTextW);
+		}
+		else
+		{
+			CG_BEChat_CmdAcComplete(edit, maxTextW);
+		}
 		return qtrue;
 	}
 
@@ -1498,6 +2261,18 @@ const char* CG_BEChat_InputPromptText(void)
 	if (beChatWindow.destMode == BE_CHAT_DEST_TEAM)
 	{
 		return "> (TEAM)";
+	}
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_PICK)
+	{
+		return "> mute:";
+	}
+	if (beChatWindow.destMode == BE_CHAT_DEST_UNMUTE_PICK)
+	{
+		return "> unmute:";
+	}
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_CONFIRM)
+	{
+		return ">";
 	}
 	if (beChatWindow.destMode == BE_CHAT_DEST_TELL && beChatWindow.tellName[0])
 	{
@@ -1617,7 +2392,8 @@ void CG_BEChat_CmdAcDraw(float inputX, float inputY, beChatInput_t* edit,
 		ghostLen = strlen(ghostBuf);
 		drawGhost = qtrue;
 	}
-	else if (beChatCmdAc.mode == 1)
+	else if (beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_SLASH_CMD ||
+	         beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_PLAIN_CMD)
 	{
 		Q_strncpyz(ghostBuf, " ", sizeof(ghostBuf));
 		ghostLen = 1;
@@ -1678,6 +2454,16 @@ static void CG_BEChat_ProcessTabKey(float maxTextW)
 		CG_BEChat_InputClampScroll(edit, maxTextW);
 		return;
 	}
+	if (CG_BEChat_TryCommitMutePick(edit))
+	{
+		CG_BEChat_InputClampScroll(edit, maxTextW);
+		return;
+	}
+	if (CG_BEChat_TryCommitMuteIdLine(edit))
+	{
+		CG_BEChat_InputClampScroll(edit, maxTextW);
+		return;
+	}
 	if (CG_BEChat_DestLocksTab())
 	{
 		return;
@@ -1685,10 +2471,12 @@ static void CG_BEChat_ProcessTabKey(float maxTextW)
 	if (beChatWindow.destMode == BE_CHAT_DEST_TEAM)
 	{
 		beChatWindow.destMode = BE_CHAT_DEST_SAY;
+		beChatWindow.channelDest = BE_CHAT_DEST_SAY;
 	}
 	else
 	{
 		beChatWindow.destMode = BE_CHAT_DEST_TEAM;
+		beChatWindow.channelDest = BE_CHAT_DEST_TEAM;
 	}
 }
 
@@ -1866,7 +2654,11 @@ static void CG_BEChat_InputClear(beChatInput_t* edit)
 	edit->scroll = 0;
 	CG_BEChat_EmojiOnInputChanged(edit);
 	CG_BEChat_CmdAcClear();
-	CG_BEChat_ResetDestMode();
+	if (beChatWindow.destMode != BE_CHAT_DEST_SAY &&
+	        beChatWindow.destMode != BE_CHAT_DEST_TEAM)
+	{
+		CG_BEChat_ResetDestMode();
+	}
 	beChatWindow.sentHistBrowse = -1;
 }
 
@@ -2095,13 +2887,17 @@ static void CG_BEChat_OpenEx(qboolean teamDest)
 	beChatWindow.open = qtrue;
 	beChatWindow.historyOnly = qfalse;
 	beChatWindow.historyScroll = 0;
+	if (teamDest)
+	{
+		beChatWindow.channelDest = BE_CHAT_DEST_TEAM;
+	}
+	else
+	{
+		beChatWindow.channelDest = BE_CHAT_DEST_SAY;
+	}
 	CG_BEChat_ResetDestMode();
 	CG_BEChat_CmdAcClear();
 	CG_BEChat_InputClear(&beChatWindow.input);
-	if (teamDest)
-	{
-		beChatWindow.destMode = BE_CHAT_DEST_TEAM;
-	}
 	CG_BEChat_EmojiSessionOpen();
 	memset(beChatWindow.keyDown, 0, sizeof(beChatWindow.keyDown));
 	beChatWindow.repeatKey = -1;
@@ -2164,6 +2960,11 @@ void CG_BEChat_CloseHistoryView(void)
 	}
 }
 
+static void CG_BEChat_InvalidateRowsCache(void)
+{
+	beChatRowsCacheWriteIdx = -1;
+}
+
 void CG_BEChat_AddLine(const char* text, int senderClientNum, int msgKind)
 {
 	beChatHistory_t* history;
@@ -2201,6 +3002,7 @@ void CG_BEChat_AddLine(const char* text, int senderClientNum, int msgKind)
 			}
 			last->repeat++;
 			last->addTime = cg.time;
+			CG_BEChat_InvalidateRowsCache();
 			if (!beChatHistoryRestoreActive)
 			{
 				CG_BEChat_SaveHistoryToCvars();
@@ -3847,6 +4649,11 @@ static void CG_BEChat_InputKeyDown(beChatInput_t* edit, int key, float maxTextW)
 {
 	int len;
 
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_CONFIRM)
+	{
+		return;
+	}
+
 	len = strlen(edit->buffer);
 
 	if (trap_Key_IsDown(K_CTRL))
@@ -3934,6 +4741,20 @@ static void CG_BEChat_InputChar(beChatInput_t* edit, int ch, float maxTextW)
 {
 	int len;
 
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_CONFIRM)
+	{
+		return;
+	}
+
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_PICK ||
+	        beChatWindow.destMode == BE_CHAT_DEST_UNMUTE_PICK)
+	{
+		if (ch < '0' || ch > '9')
+		{
+			return;
+		}
+	}
+
 	if (ch < ' ')
 	{
 		return;
@@ -3958,6 +4779,8 @@ static void CG_BEChat_InputChar(beChatInput_t* edit, int ch, float maxTextW)
 		{
 			CG_BEChat_TryCommitReply(edit);
 		}
+		CG_BEChat_TryEnterMutePickFromBuffer(edit);
+		CG_BEChat_TryEnterUnmutePickFromBuffer(edit);
 	}
 	CG_BEChat_InputClampScroll(edit, maxTextW);
 }
@@ -4009,6 +4832,48 @@ static void CG_BEChat_SendInput(void)
 
 	buf = beChatWindow.input.buffer;
 
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_CONFIRM)
+	{
+		if (beChatWindow.tellClientNum >= 0)
+		{
+			CG_ChatfilterMuteClient(beChatWindow.tellClientNum);
+		}
+		CG_BEChat_InputClear(&beChatWindow.input);
+		CG_BEChat_ResetDestMode();
+		beChatWindow.historyScroll = 0;
+		if (!(cg_chatWindow.integer & BE_CHAT_KEEP_OPEN_BIT))
+		{
+			CG_BEChat_Close();
+		}
+		return;
+	}
+
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_PICK)
+	{
+		if (CG_BEChat_TryCommitMutePick(&beChatWindow.input))
+		{
+			return;
+		}
+	}
+
+	if (beChatWindow.destMode == BE_CHAT_DEST_UNMUTE_PICK)
+	{
+		if (CG_BEChat_TryCommitUnmutePick(&beChatWindow.input))
+		{
+			return;
+		}
+	}
+
+	if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_PICK ||
+	        beChatWindow.destMode == BE_CHAT_DEST_UNMUTE_PICK)
+	{
+		if (!buf[0])
+		{
+			CG_BEChat_Close();
+		}
+		return;
+	}
+
 	if (beChatWindow.destMode == BE_CHAT_DEST_TELL)
 	{
 		if (!buf[0])
@@ -4046,6 +4911,16 @@ static void CG_BEChat_SendInput(void)
 	if (!buf[0])
 	{
 		CG_BEChat_Close();
+		return;
+	}
+
+	if (CG_BEChat_TryCommitMuteIdLine(&beChatWindow.input))
+	{
+		return;
+	}
+
+	if (CG_BEChat_TryCommitUnmuteIdLine(&beChatWindow.input))
+	{
 		return;
 	}
 
@@ -4649,6 +5524,11 @@ static void CG_BEChat_ProcessKey(int keycode)
 
 	if (keycode == K_ESCAPE)
 	{
+		if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_CONFIRM)
+		{
+			CG_BEChat_CancelMuteConfirm();
+			return;
+		}
 		CG_BEChat_Close();
 		return;
 	}
@@ -4791,6 +5671,11 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 
 	if (CG_BEChat_KeyEdge(K_ESCAPE))
 	{
+		if (beChatWindow.destMode == BE_CHAT_DEST_MUTE_CONFIRM)
+		{
+			CG_BEChat_CancelMuteConfirm();
+			return;
+		}
 		CG_BEChat_Close();
 		return;
 	}
@@ -5170,7 +6055,7 @@ static void CG_BEChat_DrawInputField(float x, float y, float w, const vec4_t col
 	                    (int)maxTextW, CG_BEChat_EmojiTextFlags(BE_CHAT_TEXT_FLAGS), BE_CHAT_FONT,
 	                    NULL, NULL, NULL);
 
-	if (edit->cursor >= prestep)
+	if (edit->cursor >= prestep && beChatWindow.destMode != BE_CHAT_DEST_MUTE_CONFIRM)
 	{
 		char caretColorChar;
 
@@ -5431,4 +6316,3 @@ void CG_BEChat_ScrollDown_f(void)
 		CG_BEChat_Scroll(-step);
 	}
 }
-

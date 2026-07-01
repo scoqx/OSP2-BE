@@ -197,4 +197,3 @@ void UI_RankStatusMenu(void)
 	trap_CL_UI_RankUserReset();
 	UI_PushMenu(&s_rankstatus.menu);
 }
-

@@ -4331,5 +4331,3 @@ void CG_OSPHUDRoutine(void)
 		CG_DrawPrintUI();
 	}
 }
-
-

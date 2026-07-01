@@ -5,5 +5,11 @@ build/library/build/
 build/tests/build/
 dll
 
+backup/mapdata/
+backup/spawns/
+backup/tpexit/
+
+tools/__pycache__/
+
 # Doxygen HTML (HTML_OUTPUT = html in Doxyfile)
 /html/

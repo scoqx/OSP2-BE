@@ -260,4 +260,3 @@ void UI_LoadConfigMenu(void)
 	LoadConfig_MenuInit();
 	UI_PushMenu(&s_configs.menu);
 }
-

@@ -527,7 +527,7 @@ typedef struct
 
 	int             medkitUsageTime;
 
-	qboolean        globalPos;      /* tinfo zone origin from locs .qloc64 (no drawable entity) */
+	qboolean        globalPos;      /* tinfo zone origin from mapdata QLM1 */
 	vec3_t          globalPosOrigin;
 } clientInfo_t;
 
@@ -930,7 +930,7 @@ typedef struct
 	int         crosshairClientNum;
 	int         crosshairClientTime;
 	qboolean    crosshairIgnoreFog;
-	qboolean    teamTinfoLocations; /* CS location names + map qloc64 + cg_friendsWallhack bit 4 */
+	qboolean    teamTinfoLocations; /* CS location names + mapdata QLM1 + cg_friendsWallhack bit 4 */
 	int         teamMarkerStackIndex[MAX_CLIENTS];
 	int         teamMarkerStackGroupSize[MAX_CLIENTS];
 	int         teamMarkerStackCacheTime;
@@ -1171,8 +1171,12 @@ typedef struct
 	qhandle_t   firstPersonGun;
 	qhandle_t   fullBrightShader;
 	qhandle_t   altFullBrightShader;
+	qhandle_t   shadowItemShader;
+	qhandle_t   shadowItemFlagShader;
 	qhandle_t   flagBrightShader;
 	qhandle_t   flagBrightAltShader;
+	qhandle_t	spawnModelShader;
+	qhandle_t	spawnMarkPlasmaShader;
 
 	qhandle_t   unk_media_60;
 	qhandle_t   unk_media_61;
@@ -1318,6 +1322,7 @@ typedef struct
 	// special effects models
 	qhandle_t   teleportEffectModel;
 	qhandle_t   teleportEffectShader;
+	qhandle_t   teleporterStarsShader;
 	qhandle_t   invulnerabilityPowerupModel;
 
 	// scoreboard headers
@@ -1371,6 +1376,7 @@ typedef struct
 	qhandle_t selectCursor;
 	qhandle_t sizeCursor;
 	qhandle_t customShader[16];
+	qhandle_t circleShader;
 
 	// team tasks
 	qhandle_t teamTasksAttack;
@@ -1392,6 +1398,8 @@ typedef struct
 	qhandle_t teamTasksMedic;
 	qhandle_t teamTasksWarning;
 	qhandle_t teamTasksFlag;
+	qhandle_t worldFlagsFlagTaken;
+	qhandle_t worldFlagsFlagTaken_marker;
 	qhandle_t teamTasksFlagcarrier;
 	// team tasks pickup items
 	qhandle_t teamTasksRedarmorPickup;
@@ -1687,6 +1695,15 @@ typedef struct
 #define CG_BE_TEAM_FROZEN       (1 << 14) // 16384
 #define CG_BE_HUD_MARKERS       (1 << 15) // 32768
 #define CG_BE_METAL_FOOTSTEPS   (1 << 16) // 65536
+
+#define CG_SHADOW_ITEMS_CAT_HEALTH      (1 << 0)
+#define CG_SHADOW_ITEMS_CAT_ARMOR       (1 << 1)
+#define CG_SHADOW_ITEMS_CAT_WEAPON      (1 << 2)
+#define CG_SHADOW_ITEMS_CAT_AMMO        (1 << 3)
+#define CG_SHADOW_ITEMS_CAT_POWERUP     (1 << 4)
+#define CG_SHADOW_ITEMS_CAT_FLAG        (1 << 5)
+#define CG_SHADOW_ITEMS_CATEGORY_MASK   (CG_SHADOW_ITEMS_CAT_HEALTH | CG_SHADOW_ITEMS_CAT_ARMOR | CG_SHADOW_ITEMS_CAT_WEAPON | CG_SHADOW_ITEMS_CAT_AMMO | CG_SHADOW_ITEMS_CAT_POWERUP | CG_SHADOW_ITEMS_CAT_FLAG)
+#define CG_SHADOW_ITEMS_IGNORE_SERVER   (1 << 6)
 #define CG_BE_AUTOJUMP          (1 << 17) // 131072
 #define CG_BE_HITBOX            (1 << 18) // 262144
 
@@ -1900,7 +1917,9 @@ typedef struct
 
 	/* BE (OSP2-BE) settings - flattened from cgs.be */
 	int             beDisableFeatures;    /* server-disabled features bitmask */
-	int             beTourneyMode;        /* CS_OSP2BE_TOURNEY_MODE bitmask */
+	int             beSpawnItems;           /* CS_OSP2BE_SPAWN_ITEMS (g_spawnItems bitset) */
+	qboolean        beSpawnItemsKnown;      /* qtrue if server sent CS_OSP2BE_SPAWN_ITEMS */
+	int             beTourneyMode;        /* manual tourney mode bitmask */
 	int             beTourneyLockedMaxfps;
 	int             beTourneyLockedPitch;
 	int             beTourneyLockedYaw;
@@ -2482,6 +2501,10 @@ extern vmCvar_t         cg_chatWindowFontSize;
 extern vmCvar_t         cg_beLastTellSender;
 extern vmCvar_t         cg_chatWindowBgColor;
 extern vmCvar_t         cg_chatWindowBgOpaque;
+extern vmCvar_t         cg_drawSpawns;
+extern vmCvar_t         cg_drawTPexit;
+extern vmCvar_t         cg_shadowItems;
+extern vmCvar_t         cg_worldFlags;
 
 
 
@@ -2818,6 +2841,8 @@ void CG_RegisterMedalAnimationShaders(void);
 void CG_MedalResolveFrame(qhandle_t medalShader, int startTime, int durationMsec, qhandle_t* outShader, vec4_t outTc);
 void CG_DrawWarmup(void);
 void CG_ScanForCrosshairEntity(void);
+qboolean CG_CrosshairSolidClearToPoint(const vec3_t start, const vec3_t endPoint);
+qboolean CG_CrosshairInspectingWorldPoint(const vec3_t worldPoint, float radius);
 int CG_CrosshairTarget(vec3_t itemPos);
 void CG_CheckAutoshoot(void);
 // void CG_OSPDrawLeftSlidingWindowsRoutine(OSP_SlidingPrintContext_t* context);
@@ -2951,6 +2976,8 @@ qboolean CG_PlasmaColorForOwner(int owner, vec4_t color);
 qhandle_t CG_PlasmaColorBallShader(void);
 qhandle_t CG_PlasmaColorExplosionShader(void);
 void CG_ApplyPlasmaEntityColor(int owner, refEntity_t* ent, qhandle_t* shader);
+void CG_AddPlasmaMissileDlight(vec3_t origin, int ownerNum, qhandle_t spawnShader, const vec3_t spawnTeamColor);
+void CG_AddPlasmaMissileScene(vec3_t origin, int ownerNum, qhandle_t spawnShader, const vec3_t spawnTeamColor, qboolean addDlight);
 void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, impactSound_t soundType);
 void CG_MissileHitPlayer(int weapon, vec3_t origin, vec3_t dir, int entityNum);
 void CG_ShotgunFire(entityState_t* es);
@@ -3159,19 +3186,73 @@ extern qboolean customLocationsEnabled;
 void CG_CustomLocationsLoad(void);
 
 qboolean CG_MapLocs_Load(void);
+void CG_MapSpawns_Load(void);
+qboolean CG_MapSpawns_LoadQSP1Binary(const byte* raw, int rawLen);
+qboolean CG_MapSpawns_GetFlagStandOrigin(qboolean redFlag, vec3_t out);
+void CG_AddMapSpawns(void);
+int CG_MapSpawns_NumPoints(void);
+int CG_MapSpawns_NumPointsForMode(int mode);
+int CG_MapSpawns_ActiveModeIndex(void);
+const char* CG_MapSpawns_DataSource(void);
+void CG_MapSpawns_PrintList(int maxList);
+/* mapdata/mapdata.q3lb entry count cap (must match tools batch size). */
+#define CG_MAPDATA_Q3LB_MAX_MAPS    1024
+void CG_MapBundle_Load(void);
+void CG_MapBundle_LoadAllMapData(void);
+void CG_MapData_GetMapBaseName(char* out, int outSize);
+qboolean CG_MapBundle_HasPayload(void);
+qboolean CG_MapBundle_Section(const char* magic4, const byte** out, int* outLen);
+qboolean CG_MapBundle_QuerySections(int* version, int* qspLen, int* qitmLen, int* qlmLen, int* qtxLen);
+const char* CG_MapBundle_DataSource(void);
+void CG_TestQ3lb_f(void);
+void CG_ShadowItems_Load(void);
+void CG_AddShadowItems(void);
+int CG_ShadowItems_MapPointIndexForCent(centity_t* cent);
+int CG_ShadowItems_BobMiscTimeForPoint(int pointIdx);
+int CG_ShadowItems_PhaseEntForPoint(int pointIdx);
+void CG_ShadowItems_TouchLiveItemBob(int pointIdx, centity_t* cent);
+void CG_ShadowItems_OnItemRespawnEvent(centity_t* cent);
+int CG_ShadowItems_NumPoints(void);
+int CG_ShadowItems_NumPointsForMode(int mode);
+int CG_ShadowItems_ActiveModeIndex(void);
+int CG_ShadowItems_DebugEffectiveMask(void);
+void CG_ShadowItems_PrintList(int maxList);
+void CG_AddWorldItem3D(const vec3_t origin, int modelindex, int entNumber, int miscTime, qboolean shadowGhost, int shadowGhostAlpha);
+void CG_MapTPExit_Load(void);
+void CG_AddMapTPExits(void);
+int CG_MapTPExit_NumPoints(void);
+const char* CG_MapTPExit_DataSource(void);
+void CG_MapTPExit_PrintList(int maxList);
 qboolean CG_MapLocs_GetById(int id, vec3_t origin, char* name, int nameSize);
 qboolean CG_MapLocs_Count(void);
 qboolean CG_MapLocs_ServerHasLocationNames(void);
 void CG_MapLocs_NotifyLocationConfigStringChanged(void);
+int CG_MapLocs_NumZones(void);
+const char* CG_MapLocs_DataSource(void);
+void CG_MapLocs_PrintList(int maxList);
 void CG_ClearTeamGlobalPosFrame(void);
-void CG_MapLocs_f(void);
+
+void CG_WorldFlags_Reset(void);
+void CG_WorldFlags_Update(void);
+void CG_WorldFlags_OnFlagMark(int markType, const vec3_t origin);
+qboolean CG_WorldFlags_TryConsumeDroppedFlagTeamMark(int markType, const vec3_t origin, int clientNum);
+void CG_WorldFlags_DrawWorld(void);
+void CG_WorldFlags_AddSceneSprites(void);
+void CG_WorldFlags_DrawBorderHudMarkers(void);
+qboolean CG_WorldFlags_ClientHasStackDropFlag(int clientNum);
+void CG_WorldFlags_GetStackDropFlagColor(int clientNum, vec4_t color);
 
 void CG_UpdateTeamGlobalPosFrame(void);
 qboolean CG_ClientTeamMarkerOrigin(int clientNum, vec3_t out);
+qboolean CG_IsPointVisibleFromView(const vec3_t point);
 void CG_EnsureTeamMarkerStackCache(qboolean gameModeNotSpectator);
+int CG_TeamMarkerStackEffectiveSize(int clientNum);
 float CG_TeamIndicatorLayoutPitch(float h, qboolean hasName, qboolean hasStats, qboolean hasStatsBars, qboolean hasIcon, qboolean showHealthRows);
 void CG_AddGlobalPosFriendFloatSprites(void);
 void CG_DrawGlobalPosFriendHudMarkers(void);
+float CG_FloatSpriteRadiusAtDist(vec3_t worldOrigin, float minSize, int maxDist, float zLift);
+void CG_AddFloatSpriteAtOriginParams(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color,
+                                     float minSize, int maxDist, float alphaScale, float zLift);
 void CG_AddFloatSpriteAtOrigin(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale, float zLift);
 void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clientNum, qboolean isFrozen, qboolean useTeamFrozen, qboolean useTeamFoeWh, int baseAngle, float alphaScale);
 const char* CG_CustomLocationsGetName(const float* pos);
@@ -3544,6 +3625,7 @@ void CG_DynamicMemReport(void);
 const char* CG_LoadLine(const char* ptr, char* out, int outSize);
 qboolean CG_ParseColorStr(const char* str, vec4_t out);
 qboolean CG_IsMutedWorldSound(int soundIndex);
+void CG_MuteWorldSoundCacheInvalidate(int soundIndex);
 void CG_PrintUI_f(void);
 
 qboolean CG_SendReplyMessage(const char* message);
@@ -3661,6 +3743,8 @@ void CG_ChatfilterLoadFile(const char* filename);
 void CG_ChatfilterSaveFile(const char* filename);
 void CG_ChatfilterAddName(const char* name);
 void CG_ChatfilterDeleteName(const char* name);
+void CG_ChatfilterMuteClient(int clientNum);
+void CG_ChatfilterUnmuteClient(int clientNum);
 qboolean CG_ChatfilterIsNameMuted(const char* name);
 void CG_ChatfilterDump(void);
 

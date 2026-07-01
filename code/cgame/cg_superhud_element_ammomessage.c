@@ -52,4 +52,3 @@ void CG_SHUDElementAmmoMessageDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

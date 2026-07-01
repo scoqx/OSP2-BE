@@ -1515,4 +1515,3 @@ void CG_DrawPrintUI(void)
 		);
 	}
 }
-

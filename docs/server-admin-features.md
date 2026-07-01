@@ -27,8 +27,14 @@ set pmove_autohop "1"      // Включить, игроки не могут о�
 set pmove_autohop "2"      // Включить, игроки могут управлять
 ```
 
-#### CS_OSP2BE_TOURNEY_MODE (Configstring 889)
-- **Описание:** Серверная битовая маска ограничений для турнирного режима
+#### CS_OSP2BE_SPAWN_ITEMS (Configstring 889)
+
+- **Описание:** Bitset разрешённых групп спавна для клиентов OSP2-BE; совпадает с **`g_spawnItems`**. Подробнее: `docs/server-admin-control.md` (раздел CS 889).
+- **Серверный cvar:** `g_spawnItems`
+
+#### CS_OSP2BE_TOURNEY_MODE (Configstring — в разработке)
+
+- **Описание:** Серверная битовая маска ограничений для турнирного режима (номер configstring может отличаться от 889).
 - **Битовая маска:**
   - `1` - fps lock
   - `2` - disable mouse scripts

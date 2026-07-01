@@ -1250,4 +1250,3 @@ void CG_BEStatsShowStatsInfo(void)
 	// Draw
 	CG_BEStatsDrawWindow(tokens, row);
 }
-

@@ -431,7 +431,11 @@ qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum, int gitype)
 		return qfalse;
 	}
 	drawBright = cg_drawBrightItems.integer;
-	if (!drawBright || cg_simpleItems.integer)
+	if (!drawBright)
+	{
+		return qfalse;
+	}
+	if (cg_simpleItems.integer && gitype != IT_TEAM)
 	{
 		return qfalse;
 	}

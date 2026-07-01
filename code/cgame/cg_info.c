@@ -334,4 +334,3 @@ void CG_DrawInformation(void)
 	                    DS_HRIGHT | DS_PROPORTIONAL | DS_SHADOW,
 	                    cgFontIndices.infoVersion, NULL, NULL, NULL);
 }
-

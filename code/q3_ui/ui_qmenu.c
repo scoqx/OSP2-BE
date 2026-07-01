@@ -1950,4 +1950,3 @@ void Menu_Cache(void)
 	sliderButton_0 = trap_R_RegisterShaderNoMip("menu/art/sliderbutt_0");
 	sliderButton_1 = trap_R_RegisterShaderNoMip("menu/art/sliderbutt_1");
 }
-

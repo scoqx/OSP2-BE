@@ -1644,4 +1644,3 @@ void CG_SHUDParseWeaponMaxValue(const char* valueStr, int* maxammo, int arraySiz
 		}
 	}
 }
-

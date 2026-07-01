@@ -916,6 +916,46 @@ void CG_HealthColorFromStats(int health, int armor, vec4_t hcolorOut, int* healt
 	CG_HealthColorFromAllyBand(band, hcolorOut);
 }
 
+#define CG_MUTE_SOUND_UNCACHED  0
+#define CG_MUTE_SOUND_MUTED     1
+#define CG_MUTE_SOUND_CLEAR     2
+
+static byte cg_muteWorldSoundCache[MAX_SOUNDS];
+
+static qboolean CG_MuteWorldSoundPathIsMuted(const char* s)
+{
+	const char* p;
+
+	for (p = s; *p; p++)
+	{
+		if (p[0] == '1' && p[1] == 's' && p[2] == 'h' && p[3] == 'o' && p[4] == 't'
+		        && p[5] == '_' && p[6] == 'g' && p[7] == 'r' && p[8] == 'e' && p[9] == 'g'
+		        && p[10] == '_' && p[11] == '0' && (p[12] == '1' || p[12] == '3') && p[13] == '.')
+		{
+			return qtrue;
+		}
+		if (p[0] == 'h' && p[1] == 't' && p[2] == 'f' && p[3] == '.')
+		{
+			return qtrue;
+		}
+		if (p[0] == 'w' && p[1] == 'y' && p[2] == 'c' && p[3] == 'i' && p[4] == 'e' && p[5] == '2' && p[6] == '.')
+		{
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+void CG_MuteWorldSoundCacheInvalidate(int soundIndex)
+{
+	if (soundIndex <= 0 || soundIndex >= MAX_SOUNDS)
+	{
+		memset(cg_muteWorldSoundCache, 0, sizeof(cg_muteWorldSoundCache));
+		return;
+	}
+	cg_muteWorldSoundCache[soundIndex] = CG_MUTE_SOUND_UNCACHED;
+}
+
 /*
 =================
 CG_IsMutedWorldSound
@@ -926,8 +966,24 @@ Level configstring sounds (CS_SOUNDS) blocked when cg_muteWorldSounds is set.
 qboolean CG_IsMutedWorldSound(int soundIndex)
 {
 	const char* s;
+	byte        cached;
+	qboolean    muted;
 
 	if (!cg_muteWorldSounds.integer || soundIndex <= 0)
+	{
+		return qfalse;
+	}
+	if (soundIndex >= MAX_SOUNDS)
+	{
+		return qfalse;
+	}
+
+	cached = cg_muteWorldSoundCache[soundIndex];
+	if (cached == CG_MUTE_SOUND_MUTED)
+	{
+		return qtrue;
+	}
+	if (cached == CG_MUTE_SOUND_CLEAR)
 	{
 		return qfalse;
 	}
@@ -935,16 +991,11 @@ qboolean CG_IsMutedWorldSound(int soundIndex)
 	s = CG_ConfigString(CS_SOUNDS + soundIndex);
 	if (!s || !s[0] || s[0] == '*')
 	{
+		cg_muteWorldSoundCache[soundIndex] = CG_MUTE_SOUND_CLEAR;
 		return qfalse;
 	}
 
-	if (strstr(s, "1shot_greg_03.wav")	||	// Vanilla "ambient"
-		strstr(s, "1shot_greg_01.wav")	||	// Vanilla "ambient"
-		strstr(s, "htf.wav")			||	// rmx-maps
-		strstr(s, "wycie2.wav"))			// ts_dm5 howl
-	{
-		return qtrue;
-	}
-
-	return qfalse;
+	muted = CG_MuteWorldSoundPathIsMuted(s);
+	cg_muteWorldSoundCache[soundIndex] = muted ? CG_MUTE_SOUND_MUTED : CG_MUTE_SOUND_CLEAR;
+	return muted;
 }

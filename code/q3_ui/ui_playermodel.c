@@ -869,5 +869,3 @@ void UI_PlayerModelMenu_WithValues(const char* modelValue, const char* headValue
 		Menu_SetCursorToItem(&s_playermodel.menu, &s_playermodel.pics[cursorIndex]);
 	}
 }
-
-

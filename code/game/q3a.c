@@ -531,5 +531,3 @@ void q3a_move(pmove_t* pmove) {
 void cpm_move(pmove_t *pmove) { q3a_move(pmove); }
 void vq3_move(pmove_t *pmove) { q3a_move(pmove); }
 void cq3_move(pmove_t *pmove) { q3a_move(pmove); }
-
-

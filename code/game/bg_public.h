@@ -124,7 +124,7 @@ extern "C" {
 #define CS_OSP_CUSTOM_CLIENT2                     874
 #define CS_OSP2BE_SUPPORTED                     887
 #define CS_OSP2BE_DISABLED_FEATURES             888
-#define CS_OSP2BE_TOURNEY_MODE                  889    // Not finished yet
+#define CS_OSP2BE_SPAWN_ITEMS                   889
 #define XQ3E_ALLOW_FEATURES                     1000
 
 #define CS_MAX                  (XQ3E_ALLOW_FEATURES)

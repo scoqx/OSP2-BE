@@ -72,4 +72,3 @@ void CG_SHUDElementTargetNameDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

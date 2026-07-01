@@ -429,5 +429,3 @@ void UI_RankingsMenu(void)
 	Rankings_MenuInit();
 	UI_PushMenu(&s_rankings.menu);
 }
-
-

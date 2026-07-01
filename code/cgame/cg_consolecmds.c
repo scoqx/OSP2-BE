@@ -2384,7 +2384,7 @@ static consoleCommand_t commands[] =
 	{ "prevskin", CG_TestModelPrevSkin_f },
 #endif
 	{ "viewpos", CG_Viewpos_f },
-	{ "maplocs", CG_MapLocs_f },
+	{ "testq3lb", CG_TestQ3lb_f },
 	{ "+scores", CG_ScoresDown_f },
 	{ "-scores", CG_ScoresUp_f },
 	{ "+autojump", CG_AutoJumpDown_f },

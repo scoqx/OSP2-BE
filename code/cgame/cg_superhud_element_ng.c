@@ -112,6 +112,3 @@ void CG_SHUDElementNGDestroy(void* context)
 		Z_Free(context);
 	}
 }
-
-
-

@@ -2247,6 +2247,53 @@ Returns: 1 = nothing, 2 = enemy, 3 = red armor, 4 = megahealth, 5 = frozen ally,
          13 = red flag carrier, 14 = blue flag carrier, 15 = red flag, 16 = blue flag (CTF only)
 If item found, itemPos is filled with item center position
 */
+qboolean CG_CrosshairSolidClearToPoint(const vec3_t start, const vec3_t endPoint)
+{
+	trace_t trace;
+
+	if (!start || !endPoint)
+	{
+		return qfalse;
+	}
+
+	CG_Trace(&trace, start, vec3_origin, vec3_origin, endPoint,
+	         cg.snap ? cg.snap->ps.clientNum : -1, CONTENTS_SOLID);
+	return trace.fraction >= 0.99f;
+}
+
+qboolean CG_CrosshairInspectingWorldPoint(const vec3_t worldPoint, float radius)
+{
+	vec3_t  start;
+	vec3_t  delta;
+	vec3_t  closest;
+	float   along;
+	float   perpSq;
+	float   radiusSq;
+
+	if (!cg.snap || !worldPoint || radius <= 0.0f)
+	{
+		return qfalse;
+	}
+
+	VectorCopy(cg.refdef.vieworg, start);
+	if (!CG_CrosshairSolidClearToPoint(start, worldPoint))
+	{
+		return qfalse;
+	}
+
+	VectorSubtract(worldPoint, start, delta);
+	along = DotProduct(delta, cg.refdef.viewaxis[0]);
+	if (along <= 0.0f)
+	{
+		return qfalse;
+	}
+
+	VectorMA(start, along, cg.refdef.viewaxis[0], closest);
+	perpSq = DistanceSquared(worldPoint, closest);
+	radiusSq = radius * radius;
+	return perpSq <= radiusSq;
+}
+
 int CG_CrosshairTarget(vec3_t itemPos)
 {
 	trace_t trace;
@@ -2338,7 +2385,6 @@ int CG_CrosshairTarget(vec3_t itemPos)
 		gitem_t* checkItem;
 		int checkItemIndex;
 		vec3_t itemOrigin;
-		trace_t visibilityTrace;
 		vec3_t mins, maxs;
 		trace_t hboxTrace;
 		float hbox_height, hbox_size_xy, lift, half_h;
@@ -2419,11 +2465,7 @@ int CG_CrosshairTarget(vec3_t itemPos)
 
 					if (hboxTrace.fraction < 1.0f)
 					{
-						/* Check visibility - trace from camera to item to make sure there's no wall */
-						CG_Trace(&visibilityTrace, start, vec3_origin, vec3_origin, itemOrigin,
-						         cg.snap->ps.clientNum, CONTENTS_SOLID);
-
-						if (visibilityTrace.fraction >= 0.99f)
+						if (CG_CrosshairSolidClearToPoint(start, itemOrigin))
 						{
 							VectorCopy(itemOrigin, itemPos);
 
@@ -3182,6 +3224,36 @@ float CG_TeamIndicatorLayoutPitch(float h, qboolean hasName, qboolean hasStats, 
 	return extent + gap;
 }
 
+/*
+=================
+CG_IsPointVisibleFromView
+
+No solid geometry between vieworg and point (same traces as team indicator ally check).
+=================
+*/
+qboolean CG_IsPointVisibleFromView(const vec3_t point)
+{
+	vec3_t start;
+	vec3_t end;
+	trace_t trace;
+
+	if (!cg.snap)
+	{
+		return qfalse;
+	}
+
+	VectorCopy(cg.refdef.vieworg, start);
+	VectorCopy(point, end);
+	end[2] += 24.0f;
+	CG_Trace(&trace, start, vec3_origin, vec3_origin, end, cg.snap->ps.clientNum, CONTENTS_SOLID);
+	if (trace.fraction != 1.0f)
+	{
+		return qfalse;
+	}
+	CG_Trace(&trace, start, vec3_origin, vec3_origin, point, cg.snap->ps.clientNum, CONTENTS_SOLID);
+	return (trace.fraction == 1.0f);
+}
+
 static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameModeNotSpectator, qboolean isSpec,
         qboolean useTeamFrozen, vec3_t markerOrigin, centity_t** outCent)
 {
@@ -3242,23 +3314,7 @@ static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameMode
 	          (allyFrozenForVis && !isEnemy && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen));
 	if (needVis)
 	{
-		vec3_t start;
-		vec3_t end;
-		trace_t trace;
-
-		VectorCopy(cg.refdef.vieworg, start);
-		VectorCopy(markerOrigin, end);
-		end[2] += 24.0f;
-		CG_Trace(&trace, start, vec3_origin, vec3_origin, end, cg.snap->ps.clientNum, CONTENTS_SOLID);
-		if (trace.fraction != 1.0f)
-		{
-			friendVisible = qfalse;
-		}
-		else
-		{
-			CG_Trace(&trace, start, vec3_origin, vec3_origin, markerOrigin, cg.snap->ps.clientNum, CONTENTS_SOLID);
-			friendVisible = (trace.fraction == 1.0f);
-		}
+		friendVisible = CG_IsPointVisibleFromView(markerOrigin);
 	}
 	if (!friendVisible && ((cg_friendsWallhack.integer & 2) == 0 ||
 	                       (allyFrozenForVis && !isEnemy && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen))))
@@ -3281,6 +3337,7 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 	vec3_t toTarget;
 	float headX;
 	float headY;
+	float stackBaseY;
 	float w;
 	float h;
 	float dist;
@@ -3333,7 +3390,8 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		return;
 	}
 
-	if (cg.teamMarkerStackGroupSize[clientNum] > 1)
+	stackBaseY = headY;
+	if (cg.teamMarkerStackGroupSize[clientNum] > 1 || CG_WorldFlags_ClientHasStackDropFlag(clientNum))
 	{
 		float pitch;
 		float halfPitch;
@@ -3344,9 +3402,12 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		layoutHealthRows = hasStats || hasStatsBars;
 		pitch = CG_TeamIndicatorLayoutPitch(h, hasName, hasStats, hasStatsBars, hasIcon, layoutHealthRows);
 		halfPitch = pitch * 0.5f;
-		n = cg.teamMarkerStackGroupSize[clientNum];
+		n = CG_TeamMarkerStackEffectiveSize(clientNum);
 		idx = cg.teamMarkerStackIndex[clientNum];
-		headY -= (idx * 2 - (n - 1)) * halfPitch;
+		if (n > 1)
+		{
+			headY -= (idx * 2 - (n - 1)) * halfPitch;
+		}
 	}
 
 	Vector4Copy(cgs.bePlayerIndicatorBgColor, bgColor);
@@ -3376,6 +3437,32 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 	{
 		bgColor[3] *= 0.5f;
 		nameColor[3] *= 0.5f;
+	}
+
+	if (CG_WorldFlags_ClientHasStackDropFlag(clientNum) && cgs.media.teamTasksFlag)
+	{
+		vec4_t dropColor;
+		float flagSizeH;
+		float flagSizeW;
+		float flagX;
+		float flagY;
+		float pitchDrop;
+		float halfPitchDrop;
+		int n;
+		qboolean layoutHealthRows;
+
+		layoutHealthRows = hasStats || hasStatsBars;
+		n = CG_TeamMarkerStackEffectiveSize(clientNum);
+		pitchDrop = CG_TeamIndicatorLayoutPitch(h, hasName, hasStats, hasStatsBars, hasIcon, layoutHealthRows);
+		halfPitchDrop = pitchDrop * 0.5f;
+		CG_WorldFlags_GetStackDropFlagColor(clientNum, dropColor);
+		dropColor[3] *= nameColor[3];
+		flagSizeH = h;
+		flagSizeW = h * 0.75f;
+		flagY = stackBaseY - ((n - 1) * 2 - (n - 1)) * halfPitchDrop;
+		flagX = headX - (flagSizeW * 0.5f);
+		flagY -= flagSizeH * 0.5f;
+		CG_DrawPicWithColor(flagX, flagY, flagSizeW, flagSizeH, dropColor, cgs.media.teamTasksFlag);
 	}
 
 	if (cgs.gametype == GT_CTF && !CG_CACHED_IS_ENEMY_CI(ci) && cg_drawIcons.integer && cgs.media.teamTasksFlag &&
@@ -3893,6 +3980,11 @@ static void CG_Draw2D(void)
 		CG_DrawTeamTaskMarks();
 	}
 
+	if (cg_worldFlags.integer & 1)
+	{
+		CG_WorldFlags_DrawWorld();
+	}
+
 	// Team indicator
 	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) && cg_teamIndicator.integer)
 		CG_DrawPlayerIndicatorOnScreen();
@@ -4040,6 +4132,10 @@ void CG_DrawActive(stereoFrame_t stereoView)
 		{
 			CG_DrawTeamTaskBorderHudMarkers();
 			CG_AddTeamTaskOverheadSprites();
+		}
+		if (cg_worldFlags.integer & 2)
+		{
+			CG_WorldFlags_DrawBorderHudMarkers();
 		}
 		if (cg.teamTinfoLocations)
 		{
@@ -4326,4 +4422,3 @@ void CG_OSPDrawCenterString(void)
 	}
 	trap_R_SetColor(NULL);
 }
-

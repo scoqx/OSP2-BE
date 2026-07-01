@@ -924,6 +924,20 @@ void CG_DrawOldTourneyScoreboard(void)
 	CG_ScoreboardAccuracyStatsRefresh();
 }
 
+static void CG_ScoreboardDrawTeamTaskSupportIcon(float headX, float headY, int clientNum)
+{
+	static const vec4_t teamTaskSupportColor = { 0.0f, 1.0f, 0.0f, 1.0f };
+
+	if (!cgs.media.circleShader || !CG_ClientSupportsTeamTask(clientNum))
+	{
+		return;
+	}
+
+	trap_R_SetColor(teamTaskSupportColor);
+	CG_OSPDrawPic(headX + 1, headY + 2, 3.0f, 3.0f, cgs.media.circleShader);
+	trap_R_SetColor(NULL);
+}
+
 void CG_OSPDrawClientScore(int x, int y, const score_t* score, const float* color, float fade)
 {
 	char string[1024];
@@ -971,6 +985,8 @@ void CG_OSPDrawClientScore(int x, int y, const score_t* score, const float* colo
 	{
 		CG_OSPDrawPic(x + 22, y, 16.0f, 16.0f, cgs.media.frozenFoeTagShader);
 	}
+
+	CG_ScoreboardDrawTeamTaskSupportIcon(x + 22.0f, y, score->client);
 
 	if (score->ping == -1)
 	{
@@ -1210,6 +1226,8 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 			CG_OSPDrawPic(x + 22, y, 16.0f, 16.0f, cgs.media.frozenFoeTagShader);
 		}
 	}
+
+	CG_ScoreboardDrawTeamTaskSupportIcon(x + 22.0f, y, score->client);
 
 	if (score->ping == -1)
 	{
@@ -2126,4 +2144,3 @@ qboolean CG_BEDrawTeamScoretable(void)
 
 	return qtrue;
 }
-

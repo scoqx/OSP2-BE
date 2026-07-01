@@ -15,7 +15,7 @@ CG_SRC = \
  bg_slidemove bg_pmove bg_lib bg_misc \
  core slidemove q3a vq1 vjk vq4 \
  q_math q_shared cg_ospconfig cg_osputil cg_osphud cg_unlagged cg_playerscolors\
- cg_localevents cg_customloc cg_maplocs cg_globalpos cg_cvardescriptions common\
+ cg_localevents cg_customloc cg_maplocs cg_mapbundle cg_spawns cg_shadowitems cg_tpexit cg_globalpos cg_worldflags cg_cvardescriptions common\
  cg_superhud cg_superhud_configparser cg_superhud_util cg_superhud_private\
  cg_superhud_element_fps \
  cg_superhud_element_sbhc cg_superhud_element_sbhi cg_superhud_element_sbhb \

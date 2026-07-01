@@ -484,6 +484,10 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_chatWindowBgColor", "Chat window background color (^3/enterchat^7).\n \"^2color^7\" - name, digit, hex, T or E (team/enemy)" },
 	{ "cg_chatWindowBgOpaque", "Chat window background opacity (^3/enterchat^7).\n  ^20.0^7 - ^21.0^7" },
 	{ "cg_muteWorldSounds", "Mute some map sounds. Set ^20^7 to disable." },
+	{ "cg_drawSpawns", "Map spawn points. Bitmask:\n  ^21^7 - ghost models\n  ^22^7 - plasma markers\n  ^24^7 - neutral white (no team tint on mark/plasma/dlight)" },
+	{ "cg_drawTPexit", "Teleporter exit markers. Set ^21^7 to enable. Set ^20^7 to disable." },
+	{ "cg_shadowItems", "Ghost 3D pickups when the real item is absent. Set ^20^7 to disable. Bitmask:\n  ^21^7 - health\n  ^22^7 - armor\n  ^24^7 - weapons\n  ^28^7 - ammo\n  ^216^7 - powerups and holdables\n  ^232^7 - flags\n  ^264^7 - ignore server spawn mask" },
+	{ "cg_worldFlags", "CTF flag position indicators. Set ^20^7 to disable. Bitmask:\n  ^21^7 - world 2D icons\n  ^22^7 - off-screen border HUD markers" },
 };
 
 

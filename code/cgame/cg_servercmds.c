@@ -634,9 +634,10 @@ static void CG_ConfigStringModified(void)
 			CG_UpdateBeFeatures();
 			CG_UpdateDamageInfoAllowed();
 			break;
-		// case CS_OSP2BE_TOURNEY_MODE:
-		// 	CG_OSP2BEConfigTourneyModeSet(atoi(str));
-		// 	break;
+		case CS_OSP2BE_SPAWN_ITEMS:
+			cgs.beSpawnItems = atoi(str);
+			cgs.beSpawnItemsKnown = qtrue;
+			break;
 		default:
 			if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 			{
@@ -648,6 +649,7 @@ static void CG_ConfigStringModified(void)
 				{
 					cgs.gameSounds[num - CS_SOUNDS] = trap_S_RegisterSound(str, qfalse);
 				}
+				CG_MuteWorldSoundCacheInvalidate(num - CS_SOUNDS);
 			}
 			else if (num >= CS_PLAYERS && num < CS_PLAYERS + MAX_CLIENTS)
 			{

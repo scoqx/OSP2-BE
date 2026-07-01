@@ -83,4 +83,3 @@ void CG_SHUDElementAttackerIconDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

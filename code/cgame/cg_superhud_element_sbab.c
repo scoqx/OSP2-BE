@@ -96,4 +96,3 @@ void CG_SHUDElementSBABDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

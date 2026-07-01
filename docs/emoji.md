@@ -138,3 +138,6 @@
 `:stonks:`
 `:not-stonks:`
 `:rollsafe:`
+`:sad:`
+`:sob:`
+`:dogface:`

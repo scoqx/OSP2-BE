@@ -216,6 +216,17 @@ teamTasks_flag
 	}
 }
 
+teamTasks_flag_taken
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/flagTaken.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
 teamTasks_flagcarrier
 {
 	nomipmaps
@@ -441,6 +452,17 @@ teamTasks_flag_m
 	nopicmip
 	{
 		map sprites/teamTasks/flag_marker.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+}
+
+teamTasks_flagTaken_marker
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/flagTaken_marker.tga
 		blendfunc blend
 		rgbgen vertex
 	}

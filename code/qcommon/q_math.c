@@ -1442,5 +1442,3 @@ float Dequantize(int quantized, float minVal, float maxVal, int bits)
 
 	return result;
 }
-
-

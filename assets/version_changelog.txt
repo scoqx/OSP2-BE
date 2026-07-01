@@ -1,4 +1,9 @@
-22.06.2026 be v1.05e2
-+ ChatWindow CTRL+L - clear history
-+ /scrollchatup and /scrollchatdown commands for scrolling +showchat
-* /reply fix
+01.07.2026 be v1.06
++ ChatWindow: /mute and /unmute commands
++ emoji: :sad:, :sob:, :dogface:
++ Various fixes
++ Mapdata from .bsp (about 800 maps)
+  + cg_shadowItems
+  + cg_worldFlags and various improvements for CTF (flag status, team tasks)
+  + cg_drawSpawns
+  + cg_drawTPexit

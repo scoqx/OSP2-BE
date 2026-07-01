@@ -62,4 +62,3 @@ void CG_SHUDElementWarmupInfoDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

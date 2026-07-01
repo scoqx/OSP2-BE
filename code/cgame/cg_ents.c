@@ -469,64 +469,100 @@ static qboolean CG_FillCustomItemWorldDyeShaderRGBA(int itemNum, int slot, byte 
 
 /*
 ==================
-CG_Item
+CG_ShadowItemGhostShader
+
+Dedicated shadow pickup shaders (beShadowItem / beShadowItemFlag), alt-style envmap.
 ==================
 */
-static void CG_Item(centity_t* cent)
+static qhandle_t CG_ShadowItemGhostShader(int gitype)
+{
+	if (gitype == IT_TEAM)
+	{
+		if (cgs.media.shadowItemFlagShader)
+		{
+			return cgs.media.shadowItemFlagShader;
+		}
+	}
+
+	if (cgs.media.shadowItemShader)
+	{
+		return cgs.media.shadowItemShader;
+	}
+
+	if (cgs.media.altFullBrightShader)
+	{
+		return cgs.media.altFullBrightShader;
+	}
+	return 0;
+}
+
+/*
+==================
+CG_AddWorldItem3D
+
+Shared 3D item draw (world pickups). Used by real ET_ITEM entities and shadow ghosts.
+==================
+*/
+void CG_AddWorldItem3D(const vec3_t inOrigin, int modelindex, int entNumber, int miscTime, qboolean shadowGhost, int shadowGhostAlpha)
 {
 	refEntity_t     ent;
-	entityState_t*  es;
+	vec3_t          origin;
 	gitem_t*        item;
 	int             itemNum;
 	int             itemFx;
 	int             gitype;
 	float           frac;
+	int             ghostAlpha;
 
-	es = &cent->currentState;
-	if (!es->modelindex || (es->eFlags & EF_NODRAW))
+	itemNum = modelindex;
+	if (itemNum < 1 || itemNum >= bg_numItems)
+	{
 		return;
-	if (cg.numItemEntityIndices < MAX_GENTITIES)
-		cg.itemEntityIndices[cg.numItemEntityIndices++] = (int)(cent - cg_entities);
-	if (es->modelindex >= bg_numItems)
-		CG_Error("Bad item index %i on entity", es->modelindex);
+	}
 
-	itemNum = es->modelindex;
 	item = &bg_itemlist[itemNum];
 	itemFx = cg_itemFx.integer;
 	gitype = item->giType;
 
-	if (cg_simpleItems.integer && gitype != IT_TEAM)
+	if (shadowGhost && (!cg_items[itemNum].registered || !cg_items[itemNum].models[0]))
 	{
-		CG_AddSimpleItem(cent);
 		return;
 	}
 
+	ghostAlpha = shadowGhostAlpha;
+	if (shadowGhost && ghostAlpha <= 0)
+	{
+		ghostAlpha = 77;
+	}
+	if (shadowGhost && ghostAlpha > 255)
+	{
+		ghostAlpha = 255;
+	}
+
+	VectorCopy(inOrigin, origin);
 	memset(&ent, 0, sizeof(ent));
 	frac = 1.0f;
 
 	if (itemFx & 1)
 	{
 		float scale;
-		scale = 0.005f + cent->currentState.number * 0.00001f;
-		cent->lerpOrigin[2] += 4.0f + cos((cg.time + 1000) * scale) * 4.0f;
+		scale = 0.005f + entNumber * 0.00001f;
+		origin[2] += 4.0f + cos((cg.time + 1000) * scale) * 4.0f;
 	}
 
 	if (itemFx & 2)
 	{
 		if (gitype == IT_HEALTH)
 		{
-			VectorCopy(cg.autoAnglesFast, cent->lerpAngles);
 			AxisCopy(cg.autoAxisFast, ent.axis);
 		}
 		else
 		{
-			VectorCopy(cg.autoAngles, cent->lerpAngles);
 			AxisCopy(cg.autoAxis, ent.axis);
 		}
 	}
 	else
 	{
-		VectorClear(cent->lerpAngles);
 		AxisClear(ent.axis);
 		ent.axis[0][0] = 1;
 		ent.axis[1][1] = 1;
@@ -537,21 +573,21 @@ static void CG_Item(centity_t* cent)
 	{
 		weaponInfo_t* wi;
 		wi = &cg_weapons[item->giTag];
-		cent->lerpOrigin[0] -= wi->weaponMidpoint[0] * ent.axis[0][0] + wi->weaponMidpoint[1] * ent.axis[1][0] + wi->weaponMidpoint[2] * ent.axis[2][0];
-		cent->lerpOrigin[1] -= wi->weaponMidpoint[0] * ent.axis[0][1] + wi->weaponMidpoint[1] * ent.axis[1][1] + wi->weaponMidpoint[2] * ent.axis[2][1];
-		cent->lerpOrigin[2] -= wi->weaponMidpoint[0] * ent.axis[0][2] + wi->weaponMidpoint[1] * ent.axis[1][2] + wi->weaponMidpoint[2] * ent.axis[2][2];
-		cent->lerpOrigin[2] += 8;
+		origin[0] -= wi->weaponMidpoint[0] * ent.axis[0][0] + wi->weaponMidpoint[1] * ent.axis[1][0] + wi->weaponMidpoint[2] * ent.axis[2][0];
+		origin[1] -= wi->weaponMidpoint[0] * ent.axis[0][1] + wi->weaponMidpoint[1] * ent.axis[1][1] + wi->weaponMidpoint[2] * ent.axis[2][1];
+		origin[2] -= wi->weaponMidpoint[0] * ent.axis[0][2] + wi->weaponMidpoint[1] * ent.axis[1][2] + wi->weaponMidpoint[2] * ent.axis[2][2];
+		origin[2] += 8;
 	}
 
-	ent.hModel = cg_items[es->modelindex].models[0];
-	VectorCopy(cent->lerpOrigin, ent.origin);
-	VectorCopy(cent->lerpOrigin, ent.oldorigin);
+	ent.hModel = cg_items[itemNum].models[0];
+	VectorCopy(origin, ent.origin);
+	VectorCopy(origin, ent.oldorigin);
 	ent.nonNormalizedAxes = qfalse;
 
 	if (itemFx & 4)
 	{
 		int msec;
-		msec = cg.time - cent->miscTime;
+		msec = cg.time - miscTime;
 		frac = (msec >= 0 && msec < ITEM_SCALEUP_TIME) ? (float)msec / ITEM_SCALEUP_TIME : 1.0f;
 		if (frac != 1.0f)
 		{
@@ -563,7 +599,9 @@ static void CG_Item(centity_t* cent)
 	}
 
 	if (gitype == IT_WEAPON || gitype == IT_ARMOR)
+	{
 		ent.renderfx |= RF_MINLIGHT;
+	}
 
 	if (gitype == IT_WEAPON)
 	{
@@ -577,12 +615,27 @@ static void CG_Item(centity_t* cent)
 		qboolean usedBrightItem;
 		qboolean brightStyleCached;
 		qhandle_t brightShader;
-		byte     brightRGBA[4];
+		byte     brightRGBA[4] = { 0, 0, 0, 0 };
 
 		usedBrightItem = qfalse;
 		brightStyleCached = qfalse;
 
-		if (gitype != IT_WEAPON)
+		if (shadowGhost)
+		{
+			ent.customShader = CG_ShadowItemGhostShader(gitype);
+			ent.shaderRGBA[0] = 255;
+			ent.shaderRGBA[1] = 255;
+			ent.shaderRGBA[2] = 255;
+			ent.shaderRGBA[3] = ghostAlpha;
+			usedBrightItem = qtrue;
+			brightStyleCached = qtrue;
+			brightShader = ent.customShader;
+			brightRGBA[0] = ent.shaderRGBA[0];
+			brightRGBA[1] = ent.shaderRGBA[1];
+			brightRGBA[2] = ent.shaderRGBA[2];
+			brightRGBA[3] = ent.shaderRGBA[3];
+		}
+		else if (gitype != IT_WEAPON)
 		{
 			usedBrightItem = CG_ApplyBrightItem(&ent, itemNum, gitype);
 		}
@@ -615,14 +668,14 @@ static void CG_Item(centity_t* cent)
 		{
 			if (CG_FillCustomItemWorldDyeShaderRGBA(itemNum, 0, ent.shaderRGBA))
 			{
-				/* slot 0: custom world model from bg_customItemVisuals */
+				/* custom dye */
 			}
 			else if (gitype != IT_WEAPON)
 			{
 				memset(ent.shaderRGBA, 0, sizeof(ent.shaderRGBA));
 			}
 		}
-		else
+		else if (!shadowGhost)
 		{
 			brightStyleCached = qtrue;
 			brightShader = ent.customShader;
@@ -634,9 +687,9 @@ static void CG_Item(centity_t* cent)
 
 		trap_R_AddRefEntityToScene(&ent);
 
-		if (!cg_simpleItems.integer && (gitype == IT_HEALTH || gitype == IT_POWERUP))
+		if (gitype == IT_HEALTH || gitype == IT_POWERUP)
 		{
-			if ((ent.hModel = cg_items[es->modelindex].models[1]) != 0)
+			if ((ent.hModel = cg_items[itemNum].models[1]) != 0)
 			{
 				vec3_t spinAngles;
 
@@ -654,7 +707,15 @@ static void CG_Item(centity_t* cent)
 					VectorScale(ent.axis[2], frac, ent.axis[2]);
 					ent.nonNormalizedAxes = qtrue;
 				}
-				if (brightStyleCached)
+				if (shadowGhost)
+				{
+					ent.customShader = brightShader;
+					ent.shaderRGBA[0] = brightRGBA[0];
+					ent.shaderRGBA[1] = brightRGBA[1];
+					ent.shaderRGBA[2] = brightRGBA[2];
+					ent.shaderRGBA[3] = brightRGBA[3];
+				}
+				else if (brightStyleCached)
 				{
 					ent.customShader = brightShader;
 					ent.shaderRGBA[0] = brightRGBA[0];
@@ -672,6 +733,57 @@ static void CG_Item(centity_t* cent)
 				trap_R_AddRefEntityToScene(&ent);
 			}
 		}
+	}
+}
+
+/*
+==================
+CG_Item
+==================
+*/
+static void CG_Item(centity_t* cent)
+{
+	entityState_t*  es;
+	gitem_t*        item;
+	int             itemNum;
+	int             gitype;
+
+	es = &cent->currentState;
+	if (!es->modelindex || (es->eFlags & EF_NODRAW))
+		return;
+	if (cg.numItemEntityIndices < MAX_GENTITIES)
+		cg.itemEntityIndices[cg.numItemEntityIndices++] = (int)(cent - cg_entities);
+	if (es->modelindex >= bg_numItems)
+		CG_Error("Bad item index %i on entity", es->modelindex);
+
+	itemNum = es->modelindex;
+	item = &bg_itemlist[itemNum];
+	gitype = item->giType;
+
+	if (cg_simpleItems.integer && gitype != IT_TEAM)
+	{
+		CG_AddSimpleItem(cent);
+		return;
+	}
+
+	{
+		int     mapPoint;
+		int     phaseEnt;
+		int     miscTime;
+
+		mapPoint = CG_ShadowItems_MapPointIndexForCent(cent);
+		if (mapPoint >= 0)
+		{
+			CG_ShadowItems_TouchLiveItemBob(mapPoint, cent);
+			phaseEnt = CG_ShadowItems_PhaseEntForPoint(mapPoint);
+			miscTime = CG_ShadowItems_BobMiscTimeForPoint(mapPoint);
+		}
+		else
+		{
+			phaseEnt = cent->currentState.number;
+			miscTime = cent->miscTime;
+		}
+		CG_AddWorldItem3D(cent->lerpOrigin, itemNum, phaseEnt, miscTime, qfalse, 0);
 	}
 }
 
@@ -702,6 +814,20 @@ static void CG_Missile(centity_t* cent)
 
 	// calculate the axis
 	VectorCopy(s1->angles, cent->lerpAngles);
+
+	if (cent->currentState.weapon == WP_PLASMAGUN)
+	{
+		if (weapon->missileSound)
+		{
+			vec3_t  velocity;
+
+			BG_EvaluateTrajectoryDelta(&cent->currentState.pos, cg.time, velocity);
+			trap_S_AddLoopingSound(cent->currentState.number, cent->lerpOrigin, velocity,
+			                       weapon->missileSound);
+		}
+		CG_AddPlasmaMissileScene(cent->lerpOrigin, s1->otherEntityNum, 0, NULL, qtrue);
+		return;
+	}
 
 	// add trails
 	if (weapon->missileTrailFunc)
@@ -747,54 +873,6 @@ static void CG_Missile(centity_t* cent)
 	memset(&ent, 0, sizeof(ent));
 	VectorCopy(cent->lerpOrigin, ent.origin);
 	VectorCopy(cent->lerpOrigin, ent.oldorigin);
-
-	if (cent->currentState.weapon == WP_PLASMAGUN)
-	{
-		int altPlasma;
-
-		ent.reType = RT_SPRITE;
-		ent.radius = 16;
-		ent.rotation = 0;
-		ent.customShader = cgs.media.plasmaBallShader;
-		altPlasma = cg_altPlasma.integer;
-
-		if (altPlasma == 3)
-		{
-			ent.customShader = cgs.media.plasmaQLBallShader;
-		}
-		else if (altPlasma == 2)
-		{
-			ent.customShader = cgs.media.plasmaOldBallShader;
-		}
-		else if (cg_oldPlasma.integer || !altPlasma || !(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG))
-		{
-			if ((cg_nomip.integer & 2) == 0)
-			{
-				ent.customShader = cgs.media.plasmaBallShader;
-			}
-			else
-			{
-				ent.customShader = cgs.media.plasmaBallNoPicMipShader;
-			}
-		}
-		else
-		{
-			if ((cg_nomip.integer & 2) == 0)
-			{
-				ent.customShader = cgs.media.plasmaNewBallShader;
-			}
-			else
-			{
-				ent.customShader = cgs.media.plasmaNewBallNoPicMipShader;
-			}
-		}
-
-		CG_ApplyPlasmaEntityColor(s1->otherEntityNum, &ent, &ent.customShader);
-
-		trap_R_AddRefEntityToScene(&ent);
-		return;
-	}
-
 
 	// flicker between two skins
 	ent.skinNum = cg.clientFrame & 1;
@@ -1462,5 +1540,8 @@ void CG_AddPacketEntities(void)
 			continue;
 		CG_AddCEntity(cent);
 	}
-}
 
+	CG_AddMapSpawns();
+	CG_AddMapTPExits();
+	CG_AddShadowItems();
+}

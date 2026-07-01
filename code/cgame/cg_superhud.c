@@ -1131,4 +1131,3 @@ void CG_SHUDEventTempAccuracy(int weapon, float accuracy)
 	entry->tempAccuracy = accuracy;
 
 }
-

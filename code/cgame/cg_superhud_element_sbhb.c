@@ -95,4 +95,3 @@ void CG_SHUDElementSBHBDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

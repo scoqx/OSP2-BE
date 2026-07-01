@@ -558,9 +558,3 @@ void CG_SHUDElementTeamTasksDestroy(void* context)
 		Z_Free(context);
 	}
 }
-
-
-
-
-
-

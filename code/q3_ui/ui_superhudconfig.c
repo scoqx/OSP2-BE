@@ -577,4 +577,3 @@ void UI_SuperHUDConfigMenu(void)
 	s_superhudconfig.menu.draw = SuperHUDConfig_MenuDraw;
 	UI_PushMenu(&s_superhudconfig.menu);
 }
-

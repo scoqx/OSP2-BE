@@ -904,6 +904,48 @@ static void CG_DamagePlumSetColor(int colorDamage, refEntity_t* re)
 	re->shaderRGBA[2] = (byte)ib;
 }
 
+/*
+===================
+CG_DamagePlumFovSizeScale
+
+RF_FIRST_PERSON sprites grow on screen when FOV shrinks (zoom). Scale world size
+so plums stay near the size they have at the normal (unzoomed) FOV.
+===================
+*/
+static float CG_DamagePlumFovSizeScale(void)
+{
+	float baseFov;
+	float hfovRender;
+	float hfovBase;
+
+	if (cg.predictedPlayerState.pm_type == PM_INTERMISSION)
+	{
+		return 1.0f;
+	}
+
+	if (cgs.dmflags & DF_FIXED_FOV)
+	{
+		baseFov = 90.0f;
+	}
+	else
+	{
+		baseFov = cg_fov.value;
+		if (baseFov < 1.0f)
+		{
+			baseFov = 1.0f;
+		}
+		else if (baseFov > 160.0f)
+		{
+			baseFov = 160.0f;
+		}
+	}
+
+	hfovRender = cg.refdef.fov_x * (float)M_PI / 360.0f;
+	hfovBase = baseFov * (float)M_PI / 360.0f;
+
+	return tan(hfovRender) / tan(hfovBase);
+}
+
 void CG_AddDamagePlum(localEntity_t* le)
 {
 	refEntity_t* re;
@@ -954,6 +996,7 @@ void CG_AddDamagePlum(localEntity_t* le)
 	}
 
 	size = cg_damagePlumSize.value * 0.03f;
+	size *= CG_DamagePlumFovSizeScale();
 	re->radius = size * 0.5f;
 
 	if (CG_ComputeHudBorderWorldPos(le->pos.trBase, re->radius, CG_DAMAGE_PLUM_BORDER_POS_SCALE, origin))
@@ -1097,7 +1140,3 @@ void CG_AddLocalEntities(void)
 		}
 	}
 }
-
-
-
-

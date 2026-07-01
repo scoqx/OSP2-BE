@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quake 3 map locations for OSP2-BE (target_location / tinfo -> qloc64 / locs.q3lb).
+Quake 3 map locations for OSP2-BE (target_location / tinfo -> qloc64).
 
 Single script (Python 3): dev tools + pk3 folder scan for players.
 
@@ -17,9 +17,9 @@ Development:
   python parse_map_locations.py map.pk3 -o map.qloc64
   python parse_map_locations.py map.pk3 --locs
   python parse_map_locations.py --batch --pk3-dir .../baseq3 -o backup/locs
-  python parse_map_locations.py --pack-q3lb backup/locs -o assets/locs/locs.q3lb
 
-Ship in mod pk3: assets/locs/locs.q3lb and optional assets/locs/map.qloc64
+  Unified Q3LB: tools/parse_map_bundle.py → mapdata/mapdata.q3lb (QLM1 inside QMAP).
+  Per-map override: assets/locs/<map>.qloc64
 """
 
 from __future__ import annotations
@@ -27,8 +27,10 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import re
 import struct
 import sys
+import zlib
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -36,12 +38,19 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_QLoc64_DIR = REPO_ROOT / "backup" / "locs"
 DEFAULT_GAME_LOCS_DIR = REPO_ROOT / "assets" / "locs"
-DEFAULT_BUNDLE_PATH = REPO_ROOT / "assets" / "locs" / "locs.q3lb"
 DEFAULT_OUT_DIR = DEFAULT_QLoc64_DIR
-DEFAULT_PK3_DIRS = [
-    Path(r"c:\Program Files (x86)\Steam\steamapps\common\Quake 3 Arena\baseq3"),
-    Path(r"c:\Program Files (x86)\Steam\steamapps\common\Quake 3 Arena\osp"),
+
+STEAM_Q3_BASEQ3 = Path(r"C:\Program Files (x86)\Steam\steamapps\common\Quake 3 Arena\baseq3")
+STEAM_Q3_OSP = Path(r"C:\Program Files (x86)\Steam\steamapps\common\Quake 3 Arena\osp")
+USER_MAPS_DIR = Path(r"C:\maps")
+
+# collect_batch_jobs: later entries override earlier for the same map name.
+DEFAULT_MAP_SCAN_DIRS = [
+    STEAM_Q3_BASEQ3,
+    STEAM_Q3_OSP,
+    USER_MAPS_DIR,
 ]
+DEFAULT_PK3_DIRS = DEFAULT_MAP_SCAN_DIRS
 
 
 import base64
@@ -70,6 +79,49 @@ GAMETYPE_NAMES = {
 }
 
 
+def _zip_find_member_info(zf: zipfile.ZipFile, member: str) -> zipfile.ZipInfo | None:
+    member = member.replace("\\", "/")
+    try:
+        return zf.getinfo(member)
+    except KeyError:
+        pass
+    low = member.lower()
+    for info in zf.infolist():
+        if info.filename.replace("\\", "/").lower() == low:
+            return info
+    return None
+
+
+def _zip_read_member_bytes(zf: zipfile.ZipFile, member: str) -> bytes:
+    """Read zip entry; tolerate CDIR vs local header filename case mismatch."""
+    member = member.replace("\\", "/")
+    try:
+        return zf.read(member)
+    except zipfile.BadZipFile:
+        pass
+
+    info = _zip_find_member_info(zf, member)
+    if info is None:
+        raise KeyError(member)
+
+    with zf._lock:
+        zf.fp.seek(info.header_offset)
+        hdr = zf.fp.read(30)
+        if len(hdr) != 30 or hdr[:4] != b"PK\x03\x04":
+            raise zipfile.BadZipFile(f"bad local header for {member}")
+        fn_len, extra_len = struct.unpack_from("<HH", hdr, 26)
+        zf.fp.read(fn_len)
+        if extra_len:
+            zf.fp.read(extra_len)
+        raw = zf.fp.read(info.compress_size)
+
+    if info.compress_type == zipfile.ZIP_STORED:
+        return raw
+    if info.compress_type == zipfile.ZIP_DEFLATED:
+        return zlib.decompress(raw, -zlib.MAX_WBITS)
+    raise zipfile.BadZipFile(f"unsupported compression {info.compress_type} in {member}")
+
+
 def read_bsp_bytes(path: Path, bsp_in_pk3: str | None) -> tuple[bytes, str, str]:
     """Return (file bytes, source label, map name without extension)."""
     path = path.resolve()
@@ -79,7 +131,7 @@ def read_bsp_bytes(path: Path, bsp_in_pk3: str | None) -> tuple[bytes, str, str]
         with zipfile.ZipFile(path) as zf:
             inner = _resolve_bsp_in_pk3(zf, path.stem.lower(), bsp_in_pk3)
             inner = inner.replace("\\", "/")
-            data = zf.read(inner)
+            data = _zip_read_member_bytes(zf, inner)
         map_name = Path(inner).stem.lower()
         return data, f"{path}!{inner}", map_name
 
@@ -319,6 +371,64 @@ def assign_location_ids(slots: list[dict[str, Any]], freeze: bool) -> list[dict[
         n += 1
 
     return locations
+
+
+_CUSTOM_LOC_LINE = re.compile(
+    r"^\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(.+?)\s*$"
+)
+
+
+def parse_custom_loc_cfg_text(text: str) -> list[dict[str, Any]]:
+    """
+    Same line format as cgame cg_customloc.c (locs/<map>.cfg):
+    x y z name...  (name may contain spaces and ^color codes).
+    """
+    locations: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("//"):
+            continue
+        m = _CUSTOM_LOC_LINE.match(line)
+        if not m:
+            continue
+        ox = float(m.group(1))
+        oy = float(m.group(2))
+        oz = float(m.group(3))
+        name = m.group(4)
+        loc_id = len(locations) + 1
+        locations.append(
+            {
+                "id": loc_id,
+                "cs_index": loc_id,
+                "name": name,
+                "count_color": 0,
+                "origin": [ox, oy, oz],
+            }
+        )
+    return locations
+
+
+def find_custom_loc_cfg_path(map_name: str) -> Path | None:
+    key = map_name.lower()
+    for base in (DEFAULT_GAME_LOCS_DIR, DEFAULT_QLoc64_DIR):
+        if not base.is_dir():
+            continue
+        for path in base.iterdir():
+            if path.suffix.lower() != ".cfg":
+                continue
+            if path.stem.lower() != key:
+                continue
+            return path
+    return None
+
+
+def load_custom_locations_for_map(map_name: str) -> list[dict[str, Any]] | None:
+    path = find_custom_loc_cfg_path(map_name)
+    if path is None:
+        return None
+    text = path.read_text(encoding="utf-8", errors="replace")
+    locs = parse_custom_loc_cfg_text(text)
+    return locs if locs else None
 
 
 def location_at_point(
@@ -676,69 +786,6 @@ def run_batch(
     return 0 if written or skipped_exist else 1
 
 
-def pack_q3lb_from_qloc64_dir(src_dir: Path, out_path: Path) -> int:
-    """Pack all *.qloc64 in src_dir into one Q3LB binary (cgame locs/locs.q3lb)."""
-    entries: list[tuple[str, bytes]] = []
-    for path in sorted(src_dir.glob("*.qloc64")):
-        map_name = path.stem.lower()
-        if not map_name:
-            continue
-        try:
-            qlm = parse_qloc64(path.read_text(encoding="ascii"))
-        except (ValueError, OSError) as exc:
-            print(f"warn: skip {path.name}: {exc}", file=sys.stderr)
-            continue
-        if len(qlm) < 6 or qlm[:4] != PACK_MAGIC:
-            print(f"warn: skip {path.name}: not QLM1", file=sys.stderr)
-            continue
-        entries.append((map_name, qlm))
-
-    if not entries:
-        print("error: no valid qloc64 files", file=sys.stderr)
-        return 1
-
-    chunks = [b"Q3LB", struct.pack("<H", len(entries))]
-    for map_name, qlm in entries:
-        name_b = map_name.encode("utf-8")
-        if len(name_b) > 255:
-            print(f"warn: skip {map_name}: name too long", file=sys.stderr)
-            continue
-        chunks.append(struct.pack("<B", len(name_b)))
-        chunks.append(name_b)
-        chunks.append(struct.pack("<I", len(qlm)))
-        chunks.append(qlm)
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_bytes(b"".join(chunks))
-    print(
-        f"wrote {out_path} ({len(entries)} maps, {out_path.stat().st_size} bytes)",
-        file=sys.stderr,
-    )
-    return 0
-
-
-def verify_q3lb_lookup(bundle_path: Path, map_name: str) -> dict[str, Any] | None:
-    raw = bundle_path.read_bytes()
-    if len(raw) < 7 or raw[:4] != b"Q3LB":
-        raise ValueError("not Q3LB")
-    pos = 4
-    (n_maps,) = struct.unpack_from("<H", raw, pos)
-    pos += 2
-    needle = map_name.lower()
-    for _ in range(n_maps):
-        (name_len,) = struct.unpack_from("<B", raw, pos)
-        pos += 1
-        name = raw[pos : pos + name_len].decode("utf-8")
-        pos += name_len
-        (qlm_len,) = struct.unpack_from("<I", raw, pos)
-        pos += 4
-        blob = raw[pos : pos + qlm_len]
-        pos += qlm_len
-        if name == needle:
-            return unpack_locations_binary(blob)
-    return None
-
-
 def format_report_verbose(report: dict[str, Any]) -> str:
     lines: list[str] = []
     lines.append(f"map {_txt_string(report['map'])}")
@@ -998,45 +1045,12 @@ def main() -> int:
         metavar="DIR",
         help=(
             "Write <map>.qloc64 for per-map mod override (default dir: assets/locs). "
-            "Cgame loads locs/<map>.qloc64 before locs.q3lb."
+            "Cgame loads locs/<map>.qloc64 before mapdata (QLM1 in mapdata.q3lb)."
         ),
-    )
-    parser.add_argument(
-        "--pack-q3lb",
-        type=Path,
-        nargs="?",
-        const=DEFAULT_QLoc64_DIR,
-        metavar="SRC_DIR",
-        help=f"Pack SRC_DIR/*.qloc64 into locs.q3lb (Q3 locs bundle, default src: {DEFAULT_QLoc64_DIR.name})",
-    )
-    parser.add_argument(
-        "--verify-map",
-        metavar="NAME",
-        help="With --pack-q3lb output: print compact locs for map from bundle",
     )
     args = parser.parse_args()
 
     gt = GAMETYPE_NAMES[args.gametype]
-
-    if args.pack_q3lb is not None:
-        src = args.pack_q3lb.resolve()
-        if src.is_file() and src.suffix.lower() == ".qloc64":
-            src = src.parent
-        out = (
-            args.output.resolve()
-            if args.output
-            else DEFAULT_BUNDLE_PATH.resolve()
-        )
-        rc = pack_q3lb_from_qloc64_dir(src, out)
-        if rc != 0:
-            return rc
-        if args.verify_map:
-            report = verify_q3lb_lookup(out, args.verify_map)
-            if not report:
-                print(f"error: map {args.verify_map!r} not in bundle", file=sys.stderr)
-                return 1
-            sys.stdout.write(format_report_compact(report))
-        return 0
 
     if args.batch:
         pk3_dirs = args.pk3_dirs if args.pk3_dirs else DEFAULT_PK3_DIRS

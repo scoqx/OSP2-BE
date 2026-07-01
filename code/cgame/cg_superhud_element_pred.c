@@ -71,4 +71,3 @@ void CG_SHUDElementDecorDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

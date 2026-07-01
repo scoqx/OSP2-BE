@@ -313,4 +313,3 @@ void UI_SpecifyLeagueMenu(void)
 	SpecifyLeague_MenuInit();
 	UI_PushMenu(&s_specifyleague.menu);
 }
-

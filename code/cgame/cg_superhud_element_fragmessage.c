@@ -57,5 +57,3 @@ void CG_SHUDElementFragMessageDestroy(void* context)
 		Z_Free(context);
 	}
 }
-
-

@@ -185,5 +185,3 @@ void UI_LoginMenu(void)
 	Login_MenuInit();
 	UI_PushMenu(&s_login.menu);
 }
-
-

@@ -499,4 +499,3 @@ qboolean CG_SHUDVarGetString(const char* name, char* value, int maxlen)
 
 	return qfalse;
 }
-

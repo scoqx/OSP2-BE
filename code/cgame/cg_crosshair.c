@@ -354,4 +354,3 @@ void CG_DrawCrosshair(void)
 
 	trap_R_SetColor(0);
 }
-

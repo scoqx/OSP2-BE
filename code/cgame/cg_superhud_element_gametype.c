@@ -118,4 +118,3 @@ void CG_SHUDElementGameTypeDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

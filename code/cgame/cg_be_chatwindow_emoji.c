@@ -1402,9 +1402,9 @@ void CG_BEChat_EmojiDrawUI(float inputX, float inputY, float inputW, beChatInput
 	float btnY;
 	float btnW;
 	float btnH;
-	float labelX;
-	float labelY;
-	float labelW;
+	float iconX;
+	float iconY;
+	float iconSize;
 	char label[MAX_NAME_LENGTH];
 	vec4_t border;
 	vec4_t panelBg;
@@ -1452,14 +1452,24 @@ void CG_BEChat_EmojiDrawUI(float inputX, float inputY, float inputW, beChatInput
 		CG_BEChat_EmojiDrawHighlightRect(btnX, btnY, btnW, btnH, 1.0f, 0.0f);
 	}
 	CG_DrawRect(btnX, btnY, btnW, btnH, 1.0f, border);
-	labelW = CG_OSPDrawStringNewTextWidth(":osp2be:", BECHAT_CHAR_W, BECHAT_CHAR_H,
-	                                      BE_EMOJI_TEXT_FLAGS, BE_EMOJI_FONT);
-	labelX = btnX + (btnW - labelW) * 0.5f;
-	labelY = btnY + (btnH - BECHAT_CHAR_H) * 0.5f;
-	CG_OSPDrawStringNew(labelX, labelY, ":osp2be:",
-	                    color, colorBlack, BECHAT_CHAR_W, BECHAT_CHAR_H,
-	                    btnW, BE_EMOJI_TEXT_FLAGS, BE_EMOJI_FONT,
-	                    NULL, NULL, NULL);
+	iconSize = btnW - 4.0f;
+	if (iconSize > btnH - 4.0f)
+	{
+		iconSize = btnH - 4.0f;
+	}
+	iconX = btnX + (btnW - iconSize) * 0.5f;
+	iconY = btnY + (btnH - iconSize) * 0.5f;
+	{
+		const emoji_t* iconEm;
+
+		iconEm = CG_OSPGetEmoji(":osp2be:");
+		if (iconEm && iconEm->shader)
+		{
+			trap_R_SetColor(colorWhite);
+			CG_DrawPicOld(iconX, iconY, iconSize, iconSize, iconEm->shader);
+			trap_R_SetColor(NULL);
+		}
+	}
 
 	if (beChatEmoji.acCount > 0 && beChatEmoji.acColonPos >= 0 &&
 	        beChatEmoji.acSel >= 0 && beChatEmoji.acSel < beChatEmoji.acCount &&
@@ -1659,4 +1669,3 @@ void CG_BEChat_EmojiDrawUI(float inputX, float inputY, float inputW, beChatInput
 	CG_BEChat_EmojiDrawPickerTooltip();
 	}
 }
-

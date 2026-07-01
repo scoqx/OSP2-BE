@@ -410,5 +410,3 @@ void vq4_move(pmove_t* pmove) {
   // else                  { pm->ps->velocity[2] = floor(pm->ps->velocity[2] + 0.5f); } // No snapzones. Always snap vertical velocity, to preserve default max jump height
   // if (!(pml.walking) && pm->debugLevel) { Com_Printf("%i:Moved.Trigger\n", c_pmove); }
 }
-
-

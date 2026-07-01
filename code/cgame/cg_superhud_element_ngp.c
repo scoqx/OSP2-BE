@@ -47,5 +47,3 @@ void CG_SHUDElementNGPDestroy(void* context)
 		Z_Free(context);
 	}
 }
-
-

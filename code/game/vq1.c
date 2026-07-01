@@ -404,4 +404,3 @@ void vq1_move(pmove_t *pmove) {
     pm->ps->velocity[2] = floor(pm->ps->velocity[2] + 0.5f);
   }
 }
-

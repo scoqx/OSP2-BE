@@ -634,6 +634,3 @@ void CG_ClientInfoUpdateColors(clientInfo_t* ci, int clientNum)
 		}
 	}
 }
-
-
-

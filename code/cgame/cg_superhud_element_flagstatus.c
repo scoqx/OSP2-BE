@@ -166,4 +166,3 @@ void CG_SHUDElementFlagStatusDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

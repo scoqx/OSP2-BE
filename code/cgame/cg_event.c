@@ -1163,11 +1163,13 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 		case EV_ITEM_POP:
 			DEBUGNAME("EV_ITEM_POP");
 			trap_S_StartSound(NULL, es->number, CHAN_AUTO, cgs.media.respawnSound);
+			CG_ShadowItems_OnItemRespawnEvent(cent);
 			break;
 		case EV_ITEM_RESPAWN:
 			DEBUGNAME("EV_ITEM_RESPAWN");
 			cent->miscTime = cg.time;   // scale up from this
 			trap_S_StartSound(NULL, es->number, CHAN_AUTO, cgs.media.respawnSound);
+			CG_ShadowItems_OnItemRespawnEvent(cent);
 			break;
 
 		case EV_GRENADE_BOUNCE:
@@ -1556,4 +1558,3 @@ void CG_CheckEvents(centity_t* cent)
 
 	CG_EntityEvent(cent, cent->lerpOrigin);
 }
-

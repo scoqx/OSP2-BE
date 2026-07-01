@@ -69,5 +69,3 @@ void CG_SHUDElementLocationDestroy(void* context)
 		Z_Free(context);
 	}
 }
-
-

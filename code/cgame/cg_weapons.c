@@ -3090,6 +3090,154 @@ void CG_ApplyPlasmaEntityColor(int owner, refEntity_t* ent, qhandle_t* shader)
 
 /*
 =================
+CG_PlasmaTrailAtOrigin
+
+Plasma trail particles at a fixed point (stationary missile / spawn marker).
+=================
+*/
+static void CG_PlasmaTrailAtOrigin(vec3_t origin)
+{
+	centity_t cent;
+
+	if (cg_noProjectileTrail.integer || cg_oldPlasma.integer)
+	{
+		return;
+	}
+
+	memset(&cent, 0, sizeof(cent));
+	cent.currentState.eType = ET_MISSILE;
+	cent.currentState.weapon = WP_PLASMAGUN;
+	cent.currentState.pos.trType = TR_STATIONARY;
+	VectorCopy(origin, cent.currentState.pos.trBase);
+	cent.currentState.pos.trTime = cg.time;
+	VectorCopy(origin, cent.lerpOrigin);
+
+	CG_PlasmaTrail(&cent, &cg_weapons[WP_PLASMAGUN]);
+}
+
+/*
+=================
+CG_AddPlasmaMissileDlight
+=================
+*/
+void CG_AddPlasmaMissileDlight(vec3_t origin, int ownerNum, qhandle_t spawnShader, const vec3_t spawnTeamColor)
+{
+	const weaponInfo_t* weapon;
+	float               dlR;
+	float               dlG;
+	float               dlB;
+	vec4_t              plasmaColor;
+
+	weapon = &cg_weapons[WP_PLASMAGUN];
+	if (!weapon->missileDlight)
+	{
+		return;
+	}
+
+	dlR = weapon->missileDlightColor[0];
+	dlG = weapon->missileDlightColor[1];
+	dlB = weapon->missileDlightColor[2];
+	if (spawnShader && spawnTeamColor)
+	{
+		dlR = spawnTeamColor[0];
+		dlG = spawnTeamColor[1];
+		dlB = spawnTeamColor[2];
+	}
+	else if (CG_PlasmaColorForOwner(ownerNum, plasmaColor))
+	{
+		dlR = plasmaColor[0];
+		dlG = plasmaColor[1];
+		dlB = plasmaColor[2];
+	}
+
+	trap_R_AddLightToScene(origin, weapon->missileDlight, dlR, dlG, dlB);
+}
+
+/*
+=================
+CG_AddPlasmaMissileScene
+
+Missile visuals for WP_PLASMAGUN: trail (unless spawnShader), optional dlight, sprite.
+=================
+*/
+void CG_AddPlasmaMissileScene(vec3_t origin, int ownerNum, qhandle_t spawnShader, const vec3_t spawnTeamColor, qboolean addDlight)
+{
+	refEntity_t         ent;
+
+	if (!spawnShader)
+	{
+		CG_PlasmaTrailAtOrigin(origin);
+	}
+
+	if (addDlight)
+	{
+		CG_AddPlasmaMissileDlight(origin, ownerNum, spawnShader, spawnTeamColor);
+	}
+
+	memset(&ent, 0, sizeof(ent));
+	VectorCopy(origin, ent.origin);
+	VectorCopy(origin, ent.oldorigin);
+	ent.reType = RT_SPRITE;
+	ent.radius = 16;
+	ent.rotation = 0;
+
+	if (spawnShader)
+	{
+		ent.customShader = spawnShader;
+		if (spawnTeamColor)
+		{
+			ent.shaderRGBA[0] = (byte)(spawnTeamColor[0] * 255.0f);
+			ent.shaderRGBA[1] = (byte)(spawnTeamColor[1] * 255.0f);
+			ent.shaderRGBA[2] = (byte)(spawnTeamColor[2] * 255.0f);
+			ent.shaderRGBA[3] = 255;
+		}
+	}
+	else
+	{
+		int altPlasma;
+
+		ent.customShader = cgs.media.plasmaBallShader;
+		altPlasma = cg_altPlasma.integer;
+
+		if (altPlasma == 3)
+		{
+			ent.customShader = cgs.media.plasmaQLBallShader;
+		}
+		else if (altPlasma == 2)
+		{
+			ent.customShader = cgs.media.plasmaOldBallShader;
+		}
+		else if (cg_oldPlasma.integer || !altPlasma || !(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG))
+		{
+			if ((cg_nomip.integer & 2) == 0)
+			{
+				ent.customShader = cgs.media.plasmaBallShader;
+			}
+			else
+			{
+				ent.customShader = cgs.media.plasmaBallNoPicMipShader;
+			}
+		}
+		else
+		{
+			if ((cg_nomip.integer & 2) == 0)
+			{
+				ent.customShader = cgs.media.plasmaNewBallShader;
+			}
+			else
+			{
+				ent.customShader = cgs.media.plasmaNewBallNoPicMipShader;
+			}
+		}
+
+		CG_ApplyPlasmaEntityColor(ownerNum, &ent, &ent.customShader);
+	}
+
+	trap_R_AddRefEntityToScene(&ent);
+}
+
+/*
+=================
 CG_MissileHitWall
 
 Caused by an EV_MISSILE_MISS event, or directly by local bullet tracing
@@ -3871,4 +4019,3 @@ void CG_Bullet(vec3_t end, int sourceEntityNum, vec3_t normal, qboolean flesh, i
 	}
 
 }
-

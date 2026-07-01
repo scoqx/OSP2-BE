@@ -646,6 +646,3 @@ int CG_OSPEmojiPrefixMatch(const char* plainPrefix, const emoji_t** outList, int
 
 	return count;
 }
-
-
-

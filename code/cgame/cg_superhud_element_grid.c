@@ -161,6 +161,3 @@ void CG_SHUDElementGridDestroy(void* context)
 		Z_Free(context);
 	}
 }
-
-
-

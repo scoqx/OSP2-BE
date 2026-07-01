@@ -105,4 +105,3 @@ void CG_SHUDElementLocalTimeDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

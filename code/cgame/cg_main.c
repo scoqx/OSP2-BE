@@ -607,6 +607,10 @@ vmCvar_t        cg_chatWindowFont;
 vmCvar_t        cg_chatWindowFontSize;
 vmCvar_t        cg_chatWindowBgColor;
 vmCvar_t        cg_chatWindowBgOpaque;
+vmCvar_t        cg_drawSpawns;
+vmCvar_t        cg_drawTPexit;
+vmCvar_t        cg_shadowItems;
+vmCvar_t        cg_worldFlags;
 
 cgFontIndices_t cgFontIndices;
 
@@ -1115,6 +1119,10 @@ cvarTable_t cvarTable[] =
 	{ &cg_chatWindowFontSize, "cg_chatWindowFontSize", "6 10", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowFontSize },
 	{ &cg_chatWindowBgColor, "cg_chatWindowBgColor", "000000", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgColor },
 	{ &cg_chatWindowBgOpaque, "cg_chatWindowBgOpaque", "0.25", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgOpaque },
+	{ &cg_drawSpawns, "cg_drawSpawns", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_drawTPexit, "cg_drawTPexit", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_shadowItems, "cg_shadowItems", "63", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_worldFlags, "cg_worldFlags", "0", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -2011,9 +2019,16 @@ static void CG_RegisterGraphics(void)
 	cgs.media.firstPersonGun = trap_R_RegisterShader("firstPersonGun");
 	cgs.media.fullBrightShader = trap_R_RegisterShader("fBrightItems");
 	cgs.media.altFullBrightShader = trap_R_RegisterShader("altFullBrightShader");
+	cgs.media.shadowItemShader = trap_R_RegisterShader("beShadowItem");
+	cgs.media.shadowItemFlagShader = trap_R_RegisterShader("beShadowItemFlag");
 	cgs.media.flagBrightShader = trap_R_RegisterShader("models/flags/flag2Fullbright");
 	cgs.media.flagBrightAltShader = trap_R_RegisterShader("models/flags/flag2Fullbright2");
-
+	cgs.media.spawnModelShader = trap_R_RegisterShader("models/players/spawn");
+	cgs.media.spawnMarkPlasmaShader = trap_R_RegisterShader("sprites/spawn_mark_plasma");
+	if (!cgs.media.spawnMarkPlasmaShader)
+	{
+		cgs.media.spawnMarkPlasmaShader = cgs.media.plasmaBallColorShader;
+	}
 	cgs.media.bloodTrailShader = trap_R_RegisterShader("bloodTrail");
 	cgs.media.lagometerShader = trap_R_RegisterShader("lagometer");
 	cgs.media.connectionShader = trap_R_RegisterShader("disconnectedNew");
@@ -2071,6 +2086,8 @@ static void CG_RegisterGraphics(void)
 	cgs.media.teamTasksMedic = trap_R_RegisterShader("teamTasks_medic");
 	cgs.media.teamTasksWarning = trap_R_RegisterShader("teamTasks_warning");
 	cgs.media.teamTasksFlag = trap_R_RegisterShader("teamTasks_flag");
+	cgs.media.worldFlagsFlagTaken = trap_R_RegisterShader("teamTasks_flag_taken");
+	cgs.media.worldFlagsFlagTaken_marker = trap_R_RegisterShader("teamTasks_flagTaken_marker");
 	cgs.media.teamTasksFlagcarrier = trap_R_RegisterShader("teamTasks_flagcarrier");
 	/* team tasks pickup items */
 	cgs.media.teamTasksRedarmorPickup = trap_R_RegisterShader("teamTasks_redarmor_pickup");
@@ -2215,6 +2232,7 @@ static void CG_RegisterGraphics(void)
 		cgs.media.friendShader = trap_R_RegisterShader("sprites/foe");
 		cgs.media.friendShaderWallhack = trap_R_RegisterShader("sprites/foe2");
 		cgs.media.redQuadShader = trap_R_RegisterShader("powerups/quadRed");
+		cgs.media.circleShader = trap_R_RegisterShader("gfx/2d/hudres/rec");
 	}
 
 
@@ -2269,6 +2287,7 @@ static void CG_RegisterGraphics(void)
 	cgs.media.dishFlashModel = trap_R_RegisterModel("models/weaphits/boom01.md3");
 	cgs.media.teleportEffectModel = trap_R_RegisterModel("models/misc/telep.md3");
 	cgs.media.teleportEffectShader = trap_R_RegisterShader("teleportEffect");
+	cgs.media.teleporterStarsShader = trap_R_RegisterShader("teleporterStars");
 
 	cgs.media.cursor = trap_R_RegisterShaderNoMip("menu/art/3_cursor2");
 
@@ -3131,9 +3150,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		// CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
 
 		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
-		
-		// Not finished yet
-		/* CG_OSP2BEConfigTourneyModeSet(atoi(CG_ConfigString(CS_OSP2BE_TOURNEY_MODE))); */
+		s = CG_ConfigString(CS_OSP2BE_SPAWN_ITEMS);
+		cgs.beSpawnItems = atoi(s);
+		cgs.beSpawnItemsKnown = (s[0] != '\0') ? qtrue : qfalse;
 
 		/* cache damageInfoAllowed - gametype, fpsclassico, custom_client_2, beDisableFeatures all known */
 		CG_UpdateDamageInfoAllowed();
@@ -3264,7 +3283,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	}
 
 	CG_CustomLocationsLoad();
-	CG_MapLocs_Load();
+	CG_MapBundle_LoadAllMapData();
+	CG_MuteWorldSoundCacheInvalidate(0);
 
 	cgs.osp.decals_number = 0;
 	if (cg_drawDecals.integer)

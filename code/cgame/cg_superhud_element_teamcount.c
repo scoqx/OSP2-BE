@@ -88,4 +88,3 @@ void CG_SHUDElementTeamCountDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

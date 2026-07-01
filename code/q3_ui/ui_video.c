@@ -998,4 +998,3 @@ void UI_GraphicsOptionsMenu(void)
 	UI_PushMenu(&s_graphicsoptions.menu);
 	Menu_SetCursorToItem(&s_graphicsoptions.menu, &s_graphicsoptions.graphics);
 }
-

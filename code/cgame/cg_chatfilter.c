@@ -58,6 +58,59 @@ qboolean CG_ChatfilterIsNameMuted(const char* name)
 	return CG_ChatfilterFindName(name) != NULL;
 }
 
+static void CG_ChatfilterChatWindowNotice(int clientNum, qboolean muted)
+{
+	char          line[BE_CHAT_LINE_CHARS];
+	clientInfo_t* ci;
+
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid)
+	{
+		return;
+	}
+
+	line[0] = '\0';
+	Q_strncpyz(line, ci->name, sizeof(line));
+	if (muted)
+	{
+		Q_strcat(line, sizeof(line), " - ^1Muted");
+	}
+	else
+	{
+		Q_strcat(line, sizeof(line), " - ^2Unmuted");
+	}
+	CG_BEChat_AddLine(line, clientNum, BE_CHAT_MSG_OTHER);
+}
+
+void CG_ChatfilterMuteClient(int clientNum)
+{
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS || !cgs.clientinfo[clientNum].infoValid)
+	{
+		return;
+	}
+
+	CG_ChatfilterAddName(cgs.clientinfo[clientNum].name_original);
+	CG_ChatfilterSaveFile(CG_CHATFILTER_DEFAULT_FILE);
+	CG_ChatfilterChatWindowNotice(clientNum, qtrue);
+}
+
+void CG_ChatfilterUnmuteClient(int clientNum)
+{
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS || !cgs.clientinfo[clientNum].infoValid)
+	{
+		return;
+	}
+
+	CG_ChatfilterDeleteName(cgs.clientinfo[clientNum].name_original);
+	CG_ChatfilterSaveFile(CG_CHATFILTER_DEFAULT_FILE);
+	CG_ChatfilterChatWindowNotice(clientNum, qfalse);
+}
+
 void CG_ChatfilterDeleteName(const char* name)
 {
 	unsigned long hash;

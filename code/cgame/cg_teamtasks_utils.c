@@ -366,7 +366,15 @@ Save death coordinates from incoming TEAMTASK_PLAYERDEAD mark
 */
 void CG_TeamTaskStoreAllyDeathPosition(int clientNum, vec3_t coord)
 {
+	clientInfo_t* ci;
+
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid || CG_IS_ENEMY_SIMPLE(ci))
 	{
 		return;
 	}

@@ -341,7 +341,12 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_consolecmds.o \
   $(B)/$(MOD)/cgame/cg_customloc.o \
   $(B)/$(MOD)/cgame/cg_maplocs.o \
+  $(B)/$(MOD)/cgame/cg_mapbundle.o \
+  $(B)/$(MOD)/cgame/cg_spawns.o \
+  $(B)/$(MOD)/cgame/cg_shadowitems.o \
+  $(B)/$(MOD)/cgame/cg_tpexit.o \
   $(B)/$(MOD)/cgame/cg_globalpos.o \
+  $(B)/$(MOD)/cgame/cg_worldflags.o \
   $(B)/$(MOD)/cgame/cg_draw.o \
   $(B)/$(MOD)/cgame/cg_drawtools.o \
   $(B)/$(MOD)/cgame/cg_ospdrawstring.o \

@@ -2024,6 +2024,7 @@ void CG_NewClientInfo(int clientNum)
 	configstring = CG_ConfigString(clientNum + CS_PLAYERS);
 	if (!configstring[0])
 	{
+		CG_ClearSupportsTeamTask(clientNum);
 		memset(ci, 0, sizeof(*ci));
 		if (!cg.demoPlayback)
 		{
@@ -2143,7 +2144,6 @@ void CG_NewClientInfo(int clientNum)
 	}
 
 	CG_ForceNewClientInfo(ci, &newInfo);
-	CG_ClearSupportsTeamTask(clientNum);
 
 	/* If we changed team/client/spectator, refresh other clients' info once */
 	if (isOurClient)
@@ -2817,7 +2817,7 @@ static void CG_BreathPuffs(centity_t* cent, refEntity_t* head)
 CG_TrailItem
 ===============
 */
-static void CG_TrailItem(centity_t* cent, qhandle_t hModel, const vec4_t color)
+static void CG_TrailItem(centity_t* cent, qhandle_t hModel, const float* color, int itemNum)
 {
 	refEntity_t     ent;
 	vec3_t          angles;
@@ -2835,7 +2835,11 @@ static void CG_TrailItem(centity_t* cent, qhandle_t hModel, const vec4_t color)
 	AnglesToAxis(angles, ent.axis);
 
 	ent.hModel = hModel;
-	if (color)
+	if (itemNum > 0 && CG_ApplyBrightItem(&ent, itemNum, IT_TEAM))
+	{
+		/* cg_drawBrightItems carrier flag */
+	}
+	else if (color)
 	{
 		ent.shaderRGBA[0] = (byte)(color[0] * 255.0f);
 		ent.shaderRGBA[1] = (byte)(color[1] * 255.0f);
@@ -2957,14 +2961,27 @@ static void CG_PlayerPowerups(centity_t* cent)
 	// redflag
 	if (powerups & (1 << PW_REDFLAG))
 	{
-		if (!CG_OldFlagModels())
+		int redFlagItemNum;
+
+		redFlagItemNum = 0;
+		if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && cg_drawBrightItems.integer)
+		{
+			gitem_t* flagItem;
+
+			flagItem = BG_FindItemForPowerup(PW_REDFLAG);
+			if (flagItem)
+			{
+				redFlagItemNum = (int)(flagItem - bg_itemlist);
+			}
+		}
+		if (redFlagItemNum <= 0 && !CG_OldFlagModels())
 		{
 			CG_GetDyeFlagTintVec4(TEAM_RED, tint);
-			CG_TrailItem(cent, cgs.media.redFlagModel, tint);
+			CG_TrailItem(cent, cgs.media.redFlagModel, tint, redFlagItemNum);
 		}
 		else
 		{
-			CG_TrailItem(cent, cgs.media.redFlagModel, NULL);
+			CG_TrailItem(cent, cgs.media.redFlagModel, NULL, redFlagItemNum);
 		}
 		CG_GetDyeFlagCarrierLightRgb(TEAM_RED, flagLightRgb);
 		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), flagLightRgb[0], flagLightRgb[1], flagLightRgb[2]);
@@ -2973,14 +2990,27 @@ static void CG_PlayerPowerups(centity_t* cent)
 	// blueflag
 	if (powerups & (1 << PW_BLUEFLAG))
 	{
-		if (!CG_OldFlagModels())
+		int blueFlagItemNum;
+
+		blueFlagItemNum = 0;
+		if (CG_BE_FEATURE_ENABLED(CG_BE_FULLBRIGHT) && cg_drawBrightItems.integer)
+		{
+			gitem_t* flagItem;
+
+			flagItem = BG_FindItemForPowerup(PW_BLUEFLAG);
+			if (flagItem)
+			{
+				blueFlagItemNum = (int)(flagItem - bg_itemlist);
+			}
+		}
+		if (blueFlagItemNum <= 0 && !CG_OldFlagModels())
 		{
 			CG_GetDyeFlagTintVec4(TEAM_BLUE, tint);
-			CG_TrailItem(cent, cgs.media.blueFlagModel, tint);
+			CG_TrailItem(cent, cgs.media.blueFlagModel, tint, blueFlagItemNum);
 		}
 		else
 		{
-			CG_TrailItem(cent, cgs.media.blueFlagModel, NULL);
+			CG_TrailItem(cent, cgs.media.blueFlagModel, NULL, blueFlagItemNum);
 		}
 		CG_GetDyeFlagCarrierLightRgb(TEAM_BLUE, flagLightRgb);
 		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), flagLightRgb[0], flagLightRgb[1], flagLightRgb[2]);
@@ -2989,7 +3019,7 @@ static void CG_PlayerPowerups(centity_t* cent)
 	// neutralflag
 	if (powerups & (1 << PW_NEUTRALFLAG))
 	{
-		CG_TrailItem(cent, cgs.media.neutralFlagModel, NULL);
+		CG_TrailItem(cent, cgs.media.neutralFlagModel, NULL, 0);
 		trap_R_AddLightToScene(cent->lerpOrigin, 200 + (rand() & 31), 1.0, 1.0, 1.0);
 	}
 
@@ -3008,45 +3038,36 @@ CG_AddFloatSpriteAtOrigin
 World-space float sprite (friend arrow, talk balloon, etc.) at a player origin.
 ===============
 */
-static float CG_FloatSpriteRadiusAtOrigin(const vec3_t worldOrigin, qboolean useFloatSpriteCvars, float zLift)
+float CG_FloatSpriteRadiusAtDist(vec3_t worldOrigin, float minSize, int maxDist, float zLift)
 {
 	vec3_t entOrigin;
 	vec3_t delta;
-	float  minSize;
-	int    maxDist;
 	float  dist;
 	float  radius;
+
+	if (minSize <= 0.0f)
+	{
+		minSize = 1.0f;
+	}
+	radius = 10.0f * minSize;
 
 	VectorCopy(worldOrigin, entOrigin);
 	entOrigin[2] += 48.0f + zLift;
 
-	if (useFloatSpriteCvars)
+	if (maxDist > 0)
 	{
-		minSize = cg_floatSpriteMinSize.value;
-		if (minSize <= 0.0f)
+		VectorSubtract(entOrigin, cg.refdef.vieworg, delta);
+		dist = (float)VectorLength(delta);
+		if (dist >= (float)maxDist)
 		{
-			minSize = 1.0f;
+			radius *= dist / (float)maxDist;
 		}
-		radius = 10.0f * minSize;
-		maxDist = cg_floatSpriteMaxDist.integer;
-		if (maxDist > 0)
-		{
-			VectorSubtract(entOrigin, cg.refdef.vieworg, delta);
-			dist = (float)VectorLength(delta);
-			if (dist >= (float)maxDist)
-			{
-				radius *= dist / (float)maxDist;
-			}
-		}
-	}
-	else
-	{
-		radius = 10.0f;
 	}
 	return radius;
 }
 
-void CG_AddFloatSpriteAtOrigin(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale, float zLift)
+void CG_AddFloatSpriteAtOriginParams(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color,
+                                     float minSize, int maxDist, float alphaScale, float zLift)
 {
 	int             rf;
 	refEntity_t     ent;
@@ -3078,7 +3099,7 @@ void CG_AddFloatSpriteAtOrigin(vec3_t worldOrigin, int subjectClientNum, qhandle
 	ent.reType = RT_SPRITE;
 	ent.customShader = shader;
 
-	radius = CG_FloatSpriteRadiusAtOrigin(worldOrigin, useFloatSpriteCvars, zLift);
+	radius = CG_FloatSpriteRadiusAtDist(worldOrigin, minSize, maxDist, zLift);
 	ent.radius = radius;
 	ent.renderfx = rf;
 
@@ -3097,6 +3118,24 @@ void CG_AddFloatSpriteAtOrigin(vec3_t worldOrigin, int subjectClientNum, qhandle
 		MAKERGBA(ent.shaderRGBA, 255, 255, 255, alphaByte);
 	}
 	trap_R_AddRefEntityToScene(&ent);
+}
+
+void CG_AddFloatSpriteAtOrigin(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale, float zLift)
+{
+	float  minSize;
+	int    maxDist;
+
+	if (useFloatSpriteCvars)
+	{
+		minSize = cg_floatSpriteMinSize.value;
+		maxDist = cg_floatSpriteMaxDist.integer;
+	}
+	else
+	{
+		minSize = 1.0f;
+		maxDist = 0;
+	}
+	CG_AddFloatSpriteAtOriginParams(worldOrigin, subjectClientNum, shader, color, minSize, maxDist, alphaScale, zLift);
 }
 
 static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale)
@@ -4047,8 +4086,30 @@ void CG_Player(centity_t* cent)
 	deadBodyHide = qfalse;
 	if ((cent->currentState.eFlags & EF_DEAD) && cg_deadBodyInvisible.integer)
 	{
-		/* intermission vote: keep armed player models visible; in-game hide corpse immediately */
-		if (!(cg.snap && cg.snap->ps.pm_type == PM_INTERMISSION && cent->currentState.weapon != WP_NONE))
+		qboolean intermissionArmedPose;
+		int weapon;
+
+		/* intermission vote: armed corpses stay visible; in-game hide corpse immediately */
+		intermissionArmedPose = qfalse;
+		if (cg.snap &&
+		        (cg.snap->ps.pm_type == PM_INTERMISSION || cg.snap->ps.pm_type == PM_SPINTERMISSION ||
+		         cg.intermissionStarted))
+		{
+			weapon = cent->currentState.weapon;
+			if (weapon == WP_NONE && cent->currentState.clientNum == cg.clientNum)
+			{
+				weapon = cg.snap->ps.weapon;
+				if (weapon == WP_NONE)
+				{
+					weapon = cg.predictedPlayerState.weapon;
+				}
+			}
+			if (weapon != WP_NONE)
+			{
+				intermissionArmedPose = qtrue;
+			}
+		}
+		if (!intermissionArmedPose)
 		{
 			deadBodyHide = qtrue;
 			legs.customShader = cgs.media.invisShader;
@@ -4255,8 +4316,3 @@ void CG_ResetPlayerEntity(centity_t* cent)
 		CG_Printf("%i ResetPlayerEntity yaw=%i\n", cent->currentState.number, cent->pe.torso.yawAngle);
 	}
 }
-
-
-
-
-

@@ -3,7 +3,7 @@
 cg_globalpos.c
 
 Team tinfo zone positions (globalPos) when the server exposes location CS
-and map qloc64 is loaded.
+and mapdata QLM1 is loaded.
 
 Copyright (c) 2026 diwoc
 ===========================================================================
@@ -344,6 +344,58 @@ static void CG_FillTeamMarkerStackIndex(int stackIndex[MAX_CLIENTS], int stackGr
 	}
 }
 
+int CG_TeamMarkerStackEffectiveSize(int clientNum)
+{
+	int           n;
+	vec3_t        origin;
+	clientInfo_t* ci;
+	int           i;
+	vec3_t        dropOrigin;
+
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return 0;
+	}
+
+	n = cg.teamMarkerStackGroupSize[clientNum];
+	if (n < 1)
+	{
+		return n;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid || !CG_ClientTeamMarkerOrigin(clientNum, origin))
+	{
+		return n;
+	}
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		if (!CG_WorldFlags_ClientHasStackDropFlag(i))
+		{
+			continue;
+		}
+		if (!cgs.clientinfo[i].infoValid)
+		{
+			continue;
+		}
+		if (!CG_ClientTeamMarkerOrigin(i, dropOrigin))
+		{
+			if (!cgs.clientinfo[i].globalPos)
+			{
+				continue;
+			}
+			VectorCopy(cgs.clientinfo[i].globalPosOrigin, dropOrigin);
+		}
+		if (CG_TeamMarkerSameStackPoint(ci, origin, &cgs.clientinfo[i], dropOrigin))
+		{
+			return n + 1;
+		}
+	}
+
+	return n;
+}
+
 void CG_EnsureTeamMarkerStackCache(qboolean gameModeNotSpectator)
 {
 	if (cg.teamMarkerStackCacheTime == cg.time &&
@@ -468,6 +520,38 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
+		vec4_t dropColor;
+		int n;
+		float step;
+
+		if (i == cg.snap->ps.clientNum)
+		{
+			continue;
+		}
+		if (!CG_WorldFlags_ClientHasStackDropFlag(i))
+		{
+			continue;
+		}
+
+		ci = &cgs.clientinfo[i];
+		if (!ci->infoValid || !ci->globalPos)
+		{
+			continue;
+		}
+
+		VectorCopy(ci->globalPosOrigin, spriteOrigin);
+		n = CG_TeamMarkerStackEffectiveSize(i);
+		if (n > 1)
+		{
+			step = CG_GlobalPosFloatSpriteStackStep(ci->globalPosOrigin);
+			spriteOrigin[2] += ((n - 1) * 2 - (n - 1)) * (step * 0.5f);
+		}
+		CG_WorldFlags_GetStackDropFlagColor(i, dropColor);
+		CG_AddFloatSpriteAtOrigin(spriteOrigin, i, cgs.media.teamTasksFlag, dropColor, qtrue, GLOBAL_POS_DRAW_ALPHA, 0.0f);
+	}
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
 		int n;
 		int idx;
 		float step;
@@ -486,7 +570,7 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 		}
 
 		VectorCopy(ci->globalPosOrigin, spriteOrigin);
-		n = cg.teamMarkerStackGroupSize[i];
+		n = CG_TeamMarkerStackEffectiveSize(i);
 		if (n > 1)
 		{
 			idx = cg.teamMarkerStackIndex[i];
@@ -548,7 +632,7 @@ void CG_DrawGlobalPosFriendHudMarkers(void)
 				continue;
 			}
 
-			n = cg.teamMarkerStackGroupSize[i];
+			n = CG_TeamMarkerStackEffectiveSize(i);
 			idx = cg.teamMarkerStackIndex[i];
 			if (n > 1)
 			{

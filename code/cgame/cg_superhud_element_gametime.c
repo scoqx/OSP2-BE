@@ -61,4 +61,3 @@ void CG_SHUDElementGameTimeDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

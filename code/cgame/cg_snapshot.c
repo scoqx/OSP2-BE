@@ -454,4 +454,3 @@ void CG_ProcessSnapshots(void)
 		CG_UpdateAllClientsInfo();
 	}
 }
-

@@ -54,4 +54,3 @@ void CG_SHUDElementVMWDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

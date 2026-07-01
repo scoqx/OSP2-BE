@@ -50,5 +50,3 @@ int Q_sscanf( const char *buffer, const char *fmt, ... );
 #endif
 
 #endif
-
-

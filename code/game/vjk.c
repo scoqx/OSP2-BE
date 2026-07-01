@@ -235,4 +235,3 @@ void vjk_move(pmove_t *pmove) {
     trap_SnapVector(pm->ps->velocity);
   }
 }
-

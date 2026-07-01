@@ -469,4 +469,3 @@ qboolean CG_IsFollowing(void)
 	}
 	return qtrue;
 }
-

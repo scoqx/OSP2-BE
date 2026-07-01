@@ -163,4 +163,3 @@ void CG_SHUDElementRewardDestroy(void* context)
 		Z_Free(context);
 	}
 }
-

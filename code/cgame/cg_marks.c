@@ -2488,4 +2488,3 @@ void CG_ParticleMisc(qhandle_t pshader, vec3_t origin, int size, int duration, f
 
 	p->rotate = qfalse;
 }
-

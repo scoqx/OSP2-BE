@@ -1516,3 +1516,36 @@ gfx/emoji/rollsafe
     rgbgen vertex
   }
 }
+
+gfx/emoji/sad
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/sad.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/sob
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/sob.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/dogface
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/dogface.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}

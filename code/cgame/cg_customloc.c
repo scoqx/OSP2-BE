@@ -282,5 +282,3 @@ const char* CG_GetCTFLocation(int loc)
 {
 	return &ctfLocationsColors[loc % MAX_LOCATIONS][0];
 }
-
-

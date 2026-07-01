@@ -190,4 +190,3 @@ void UI_SpecifyServerMenu(void)
 	SpecifyServer_MenuInit();
 	UI_PushMenu(&s_specifyserver.menu);
 }
-

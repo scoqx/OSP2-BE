@@ -973,6 +973,29 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	if (!cg.teamMarkers.teamTaskEnabled || !markType)
 		return;
 
+	if (CG_WorldFlags_TryConsumeDroppedFlagTeamMark(markType, coord, clientNum))
+	{
+		if (cg.teamMarkers.teamTaskFlags & CG_TEAMTASK_MARKSOUND)
+		{
+			sfxHandle_t soundToPlay;
+
+			soundToPlay = 0;
+			if (cg_teamTaskNewSounds.integer & 1 && cgs.media.pingSimpleSoundNew)
+			{
+				soundToPlay = cgs.media.pingSimpleSoundNew;
+			}
+			else if (cgs.media.pingSimpleSound)
+			{
+				soundToPlay = cgs.media.pingSimpleSound;
+			}
+			if (soundToPlay)
+			{
+				trap_S_StartLocalSound(soundToPlay, CHAN_ANNOUNCER);
+			}
+		}
+		return;
+	}
+
 	/* One pack pass: remove marks to be replaced before adding new (O(n) not O(n²)) */
 	isOverheadMark = (markType == TEAMTASK_YES || markType == TEAMTASK_NO ||
 	                  markType == TEAMTASK_MEDIC || markType == TEAMTASK_HERE_ALIVE);
@@ -1078,6 +1101,14 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	}
 
 	/* Play sound when mark appears */
+	if (markType == TEAMTASK_REDFLAG || markType == TEAMTASK_BLUEFLAG)
+	{
+		if (!(cg_worldFlags.integer & 1) || ((markType == TEAMTASK_REDFLAG) ? cgs.redflag : cgs.blueflag) != 2)
+		{
+			CG_WorldFlags_OnFlagMark(markType, mark->origin);
+		}
+	}
+
 	if (cg.teamMarkers.teamTaskFlags & CG_TEAMTASK_MARKSOUND)
 	{
 		sfxHandle_t soundToPlay;

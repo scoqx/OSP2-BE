@@ -1553,6 +1553,11 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_ClearTeamGlobalPosFrame();
 	}
 
+	if (cgs.gametype == GT_CTF && cg_worldFlags.integer)
+	{
+		CG_WorldFlags_Update();
+	}
+
 	CG_AddViewWeapon(&cg.predictedPlayerState);
 
 	// add buffered sounds
@@ -1630,4 +1635,3 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 			trap_SendConsoleCommand("-moveup");
 	}
 }
-

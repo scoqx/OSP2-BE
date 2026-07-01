@@ -573,6 +573,34 @@ altFullBrightShader
     }
 }
 
+// cg_shadowItems only (same look as altFullBrightShader / flag2Fullbright2, separate names)
+beShadowItem
+{
+	sort nearest
+	{
+		map textures/effects/envmapghost.jpg
+		blendfunc GL_SRC_ALPHA GL_ONE
+		tcmod rotate 30
+		tcmod scroll 1 .1
+		rgbGen entity
+		alphaGen entity
+	}
+}
+
+beShadowItemFlag
+{
+	cull none
+	sort nearest
+	{
+		map textures/effects/envmapghost.jpg
+		blendfunc GL_SRC_ALPHA GL_ONE
+		tcmod rotate 30
+		tcmod scroll 1 .1
+		rgbGen entity
+		alphaGen entity
+	}
+}
+
 models/weapons2/grapple2/ball
 {
 	//novlcollapse
@@ -637,6 +665,23 @@ sprites/plasma_color
 	}
 }
 
+// cg_drawSpawns 2 — client-only spawn markers (color via entity, no weapon plasma shader)
+sprites/spawn_mark_plasma
+{
+	cull disable
+	{
+		clampmap sprites/spawn_mark_plasma.jpg
+		blendfunc GL_ONE GL_ONE
+		tcMod rotate 931
+		rgbgen entity
+	}
+	{
+		clampmap sprites/spawn_mark_plasma2.jpg
+		blendfunc GL_ONE GL_ONE
+		tcMod rotate 931
+	}
+}
+
 plasmaExplosion2
 {
 	cull disable
@@ -677,5 +722,40 @@ plasmaExplosion2_old
                 tcmod rotate 999
                 rgbGen wave inversesawtooth 0 1 0 1.5
                 rgbGen entity
+	}
+}
+
+teleporterStars
+{
+    nopicmip
+    nomipmaps
+	cull none
+	{
+		map gfx/misc/stars.jpg
+		blendFunc add
+		tcMod transform 0.707 -0.707 0.707 0.707 0 0
+		tcMod scroll 0 1
+		tcMod scale 2 2
+		rgbGen entity
+	}
+}
+
+models/players/spawn
+{
+	deformVertexes wave 100 sin 0 0 0 0
+	{
+		map textures/effects/quadmapmono.tga
+		blendfunc GL_ONE GL_ONE
+		tcGen environment
+		tcmod rotate 30
+		tcmod scroll 1 .1
+		rgbGen entity
+	}
+	{
+		map textures/effects/quadmapmono2.tga
+		blendfunc GL_ONE GL_ONE
+		tcGen environment
+		tcmod rotate 30
+		tcmod scroll 1 .1
 	}
 }

@@ -275,5 +275,3 @@ void UI_SignupMenu(void)
 	Signup_MenuInit();
 	UI_PushMenu(&s_signup.menu);
 }
-
-

@@ -324,6 +324,3 @@ void CG_SHUDElementPwDestroy(void* context)
 		Z_Free(context);
 	}
 }
-
-
-
