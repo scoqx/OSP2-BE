@@ -129,6 +129,7 @@ static vec3_t                   cg_shadowItemAnchorOrigin[CG_SHADOW_ITEM_MAX];
 static qboolean                 cg_shadowItemAnchorValid[CG_SHADOW_ITEM_MAX];
 
 static void CG_ShadowItems_SetSyncFromCent(int pointIdx, centity_t* cent);
+static float CG_ShadowItems_MatchXySqForModel(int modelindex);
 
 static int CG_ShadowItems_SlotBobMiscTime(int slot)
 {

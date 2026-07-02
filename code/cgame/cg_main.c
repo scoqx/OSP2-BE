@@ -1121,8 +1121,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_chatWindowBgOpaque, "cg_chatWindowBgOpaque", "0.25", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgOpaque },
 	{ &cg_drawSpawns, "cg_drawSpawns", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_drawTPexit, "cg_drawTPexit", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_shadowItems, "cg_shadowItems", "63", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_worldFlags, "cg_worldFlags", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_shadowItems, "cg_shadowItems", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_worldFlags, "cg_worldFlags", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
