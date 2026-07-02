@@ -1,3 +1,7 @@
+02.07.2026 be v1.06a
+* cg_shadowItems fix
++ ChatWindow alias for '%'
+
 01.07.2026 be v1.06
 + ChatWindow: /mute and /unmute commands
 + emoji: :sad:, :sob:, :dogface:
@@ -7,6 +11,7 @@
   + cg_worldFlags and various improvements for CTF (flag status, team tasks)
   + cg_drawSpawns
   + cg_drawTPexit
+
 
 22.06.2026 be v1.05e2
 + ChatWindow CTRL+L - clear history

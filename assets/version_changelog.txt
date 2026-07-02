@@ -1,9 +1,3 @@
-01.07.2026 be v1.06
-+ ChatWindow: /mute and /unmute commands
-+ emoji: :sad:, :sob:, :dogface:
-+ Various fixes
-+ Mapdata from .bsp (about 800 maps)
-  + cg_shadowItems
-  + cg_worldFlags and various improvements for CTF (flag status, team tasks)
-  + cg_drawSpawns
-  + cg_drawTPexit
+02.07.2026 be v1.06a
+* cg_shadowItems fix
++ ChatWindow alias for '%'

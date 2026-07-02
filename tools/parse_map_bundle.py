@@ -4,7 +4,7 @@ parse_map_bundle.py — mapdata для OSP2-BE (спавны QSP1, shadow-пик
 
 Как клиент грузит данные (cgame)
 --------------------------------
-1) mapdata/mapdata.q3lb — общий архив, запись по имени карты (без .bsp).
+1) mapdata/<имя_карты>.q3lb — приоритет (локальный тест), затем mapdata/mapdata.q3lb.
 2) Если карты нет в архиве или blob пустой:
    - mapdata/<имя_карты>.qmap  (бинарный QMAP)
    - mapdata/<имя_карты>.q3lb  (мини-архив на одну карту)
@@ -44,6 +44,7 @@ parse_map_bundle.py — mapdata для OSP2-BE (спавны QSP1, shadow-пик
   --pk3-dir DIR     доп. папки с pk3 (можно несколько; идут после стандартных)
 
 Скан по умолчанию (--batch): baseq3 → osp → C:\\maps (позже перекрывает раньше).
+  QITM1 v2 — spawn origin + flags; drop в cgame (CM). Python-drop убран (быстрый парсинг).
   MAP_ITEM_ENTITY_EXCLUDE — точки QITM, выкидываемые по индексу entity на карте.
   Локации без target_location в BSP: assets/locs/<map>.cfg (как locs/<map>.cfg в игре).
   -v                подробный лог
@@ -59,6 +60,7 @@ import math
 import re
 import struct
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -188,588 +190,29 @@ def pack_qtx1_binary(report: dict[str, Any]) -> bytes:
     return b"".join(chunks)
 
 
-# --- FinishSpawningItem drop (metarena code/game/g_items.c: trap_Trace, MASK_SOLID) ---
+def _fmt_origin_xyz(ox: float, oy: float, oz: float) -> list[float | int]:
+    return [int(v) if float(v).is_integer() else v for v in (ox, oy, oz)]
 
-ITEM_RADIUS = 15.0
-DROP_DEPTH = 4096.0
-SURFACE_CLIP_EPSILON = 0.03125
-CONTENTS_SOLID = 0x1
-DROP_SPATIAL_CELL = 128.0
-MAX_BRUSH_INDEX_SPAN = 2048.0
 
-MST_PLANAR = 1
-MST_PATCH = 2
-MST_TRIANGLE_STRIP = 3
-DSURFACE_SIZE = 104
-DRAWVERT_SIZE = 44
-DNODE_SIZE = 36
-DLEAF_SIZE = 48
-
-BSP_LUMP_SHADERS = 1
-BSP_LUMP_PLANES = 2
-BSP_LUMP_NODES = 3
-BSP_LUMP_LEAFS = 4
-BSP_LUMP_LEAFBRUSHES = 6
-BSP_LUMP_DRAWVERTS = 10
-BSP_LUMP_DRAWINDEXES = 11
-BSP_LUMP_BRUSHES = 8
-BSP_LUMP_BRUSHSIDES = 9
-BSP_LUMP_SURFACES = 13
-
-
-def _bsp_lump(data: bytes, lump_id: int) -> bytes:
-    off = 8 + lump_id * 8
-    fileofs, filelen = struct.unpack_from("<ii", data, off)
-    if fileofs < 0 or filelen < 0 or fileofs + filelen > len(data):
-        return b""
-    return data[fileofs : fileofs + filelen]
-
-
-def _plane_signbits(nx: float, ny: float, nz: float) -> int:
-    bits = 0
-    if nx < 0:
-        bits |= 1
-    if ny < 0:
-        bits |= 2
-    if nz < 0:
-        bits |= 4
-    return bits
-
-
-def _build_trace_offsets(mins: tuple[float, float, float], maxs: tuple[float, float, float]) -> list[tuple[float, float, float]]:
-    sx0, sy0, sz0 = mins
-    sx1, sy1, sz1 = maxs
-    return [
-        (sx0, sy0, sz0),
-        (sx1, sy0, sz0),
-        (sx0, sy1, sz0),
-        (sx1, sy1, sz0),
-        (sx0, sy0, sz1),
-        (sx1, sy0, sz1),
-        (sx0, sy1, sz1),
-        (sx1, sy1, sz1),
-    ]
-
-
-def _z_on_triangle_xy(
-    px: float,
-    py: float,
-    a: tuple[float, float, float],
-    b: tuple[float, float, float],
-    c: tuple[float, float, float],
-) -> float | None:
-    v0, v1, v2 = a, b, c
-    denom = (v1[1] - v2[1]) * (v0[0] - v2[0]) + (v2[0] - v1[0]) * (v0[1] - v2[1])
-    if abs(denom) < 1e-8:
-        return None
-    w0 = ((v1[1] - v2[1]) * (px - v2[0]) + (v2[0] - v1[0]) * (py - v2[1])) / denom
-    w1 = ((v2[1] - v0[1]) * (px - v2[0]) + (v0[0] - v2[0]) * (py - v2[1])) / denom
-    w2 = 1.0 - w0 - w1
-    if w0 < -0.001 or w1 < -0.001 or w2 < -0.001:
-        return None
-    return w0 * v0[2] + w1 * v1[2] + w2 * v2[2]
-
-
-class _SpatialIndex:
-    __slots__ = ("_cells", "_cell")
-
-    def __init__(self, cell_size: float) -> None:
-        self._cell = cell_size
-        self._cells: dict[tuple[int, int], list[int]] = {}
-
-    def _span(self, a: float, b: float) -> range:
-        lo = a if a < b else b
-        hi = b if b > a else a
-        c = self._cell
-        return range(int(math.floor(lo / c)), int(math.floor(hi / c)) + 1)
-
-    def add_rect(self, x0: float, y0: float, x1: float, y1: float, item_id: int) -> None:
-        cells = self._cells
-        for ix in self._span(x0, x1):
-            for iy in self._span(y0, y1):
-                key = (ix, iy)
-                bucket = cells.get(key)
-                if bucket is None:
-                    cells[key] = [item_id]
-                elif bucket[-1] != item_id:
-                    bucket.append(item_id)
-
-    def query_into(self, x: float, y: float, radius: float, out: set[int]) -> None:
-        cells = self._cells
-        for ix in self._span(x - radius, x + radius):
-            for iy in self._span(y - radius, y + radius):
-                bucket = cells.get((ix, iy))
-                if bucket:
-                    out.update(bucket)
-
-
-class _ItemDropCollision:
-    __slots__ = (
-        "brushes",
-        "brush_solid",
-        "brush_sides",
-        "planes",
-        "patch_tris",
-        "_brush_index",
-        "_patch_index",
-        "_trace_offsets",
-        "_brush_scratch",
-        "_patch_scratch",
-        "_origin_cache",
-        "_all_solid_brushes",
-        "_wide_brushes",
-    )
-
-    def __init__(self, bsp: bytes) -> None:
-        self.brushes: list[tuple[int, int, int]] = []
-        self.brush_solid: list[bool] = []
-        self.brush_sides: list[tuple[int, int]] = []
-        self.planes: list[tuple[float, float, float, float, int]] = []
-        self.patch_tris: list[
-            tuple[
-                tuple[float, float, float],
-                tuple[float, float, float],
-                tuple[float, float, float],
-                float,
-                float,
-                float,
-                float,
-            ]
-        ] = []
-        self._brush_index = _SpatialIndex(DROP_SPATIAL_CELL)
-        self._patch_index = _SpatialIndex(DROP_SPATIAL_CELL)
-        r = ITEM_RADIUS
-        self._trace_offsets = _build_trace_offsets((-r, -r, -r), (r, r, r))
-        self._brush_scratch: set[int] = set()
-        self._patch_scratch: set[int] = set()
-        self._origin_cache: dict[tuple[int, int, int], tuple[float, float, float]] = {}
-        self._all_solid_brushes: list[int] = []
-        self._wide_brushes: list[int] = []
-        self._parse(bsp)
-
-    def _push_solid_mesh_tri(
-        self,
-        t0: tuple[float, float, float],
-        t1: tuple[float, float, float],
-        t2: tuple[float, float, float],
-    ) -> None:
-        min_x = min(t0[0], t1[0], t2[0])
-        max_x = max(t0[0], t1[0], t2[0])
-        min_y = min(t0[1], t1[1], t2[1])
-        max_y = max(t0[1], t1[1], t2[1])
-        ti = len(self.patch_tris)
-        self.patch_tris.append((t0, t1, t2, min_x, max_x, min_y, max_y))
-        self._patch_index.add_rect(min_x, min_y, max_x, max_y, ti)
-
-    def _parse(self, bsp: bytes) -> None:
-        if len(bsp) < 68 or bsp[:4] != b"IBSP":
-            return
-
-        plane_blob = _bsp_lump(bsp, BSP_LUMP_PLANES)
-        for i in range(0, len(plane_blob) - 15, 16):
-            nx, ny, nz, dist = struct.unpack_from("<4f", plane_blob, i)
-            self.planes.append((nx, ny, nz, dist, _plane_signbits(nx, ny, nz)))
-
-        shader_blob = _bsp_lump(bsp, BSP_LUMP_SHADERS)
-        shader_contents: list[int] = []
-        for i in range(0, len(shader_blob) - 71, 72):
-            shader_contents.append(struct.unpack_from("<i", shader_blob, i + 68)[0])
-
-        brush_blob = _bsp_lump(bsp, BSP_LUMP_BRUSHES)
-        for i in range(0, len(brush_blob) - 11, 12):
-            first_side, num_sides, shader_num = struct.unpack_from("<iii", brush_blob, i)
-            self.brushes.append((first_side, num_sides, shader_num))
-            solid = False
-            if num_sides > 0 and 0 <= shader_num < len(shader_contents):
-                solid = bool(shader_contents[shader_num] & CONTENTS_SOLID)
-            self.brush_solid.append(solid)
-            if solid:
-                self._all_solid_brushes.append(len(self.brushes) - 1)
-
-        side_blob = _bsp_lump(bsp, BSP_LUMP_BRUSHSIDES)
-        for i in range(0, len(side_blob) - 7, 8):
-            self.brush_sides.append(struct.unpack_from("<ii", side_blob, i))
-
-        leaf_blob = _bsp_lump(bsp, BSP_LUMP_LEAFS)
-        leaf_brush_blob = _bsp_lump(bsp, BSP_LUMP_LEAFBRUSHES)
-        brush_xy: dict[int, list[float]] = {}
-        if leaf_blob and leaf_brush_blob and len(leaf_blob) % DLEAF_SIZE == 0:
-            num_leafs = len(leaf_blob) // DLEAF_SIZE
-            for li in range(num_leafs):
-                base = li * DLEAF_SIZE
-                leaf = struct.unpack_from("<ii6i4i", leaf_blob, base)
-                mn0, mn1, mx0, mx1 = float(leaf[2]), float(leaf[3]), float(leaf[5]), float(leaf[6])
-                first_lb = leaf[8]
-                num_lb = leaf[9]
-                if num_lb <= 0:
-                    continue
-                lb_end = (first_lb + num_lb) * 4
-                if lb_end > len(leaf_brush_blob):
-                    continue
-                for off in range(first_lb * 4, lb_end, 4):
-                    (bi,) = struct.unpack_from("<i", leaf_brush_blob, off)
-                    if bi < 0 or bi >= len(self.brushes) or not self.brush_solid[bi]:
-                        continue
-                    box = brush_xy.get(bi)
-                    if box is None:
-                        brush_xy[bi] = [mn0, mn1, mx0, mx1]
-                    else:
-                        if mn0 < box[0]:
-                            box[0] = mn0
-                        if mn1 < box[1]:
-                            box[1] = mn1
-                        if mx0 > box[2]:
-                            box[2] = mx0
-                        if mx1 > box[3]:
-                            box[3] = mx1
-
-        max_span = MAX_BRUSH_INDEX_SPAN
-        for bi, box in brush_xy.items():
-            if box[2] - box[0] > max_span or box[3] - box[1] > max_span:
-                self._wide_brushes.append(bi)
-            else:
-                self._brush_index.add_rect(box[0], box[1], box[2], box[3], bi)
-
-        surf_blob = _bsp_lump(bsp, BSP_LUMP_SURFACES)
-        vert_blob = _bsp_lump(bsp, BSP_LUMP_DRAWVERTS)
-        index_blob = _bsp_lump(bsp, BSP_LUMP_DRAWINDEXES)
-        if surf_blob and vert_blob and len(surf_blob) % DSURFACE_SIZE == 0:
-            num_surfs = len(surf_blob) // DSURFACE_SIZE
-            for si in range(num_surfs):
-                base = si * DSURFACE_SIZE
-                shader_num, _fog, surf_type, first_vert = struct.unpack_from("<4i", surf_blob, base)
-                if shader_num < 0 or shader_num >= len(shader_contents):
-                    continue
-                if not (shader_contents[shader_num] & CONTENTS_SOLID):
-                    continue
-
-                if surf_type == MST_PATCH:
-                    patch_w, patch_h = struct.unpack_from("<2i", surf_blob, base + 96)
-                    if patch_w < 2 or patch_h < 2:
-                        continue
-
-                    pts: list[tuple[float, float, float]] = []
-                    ok = True
-                    for j in range(patch_h):
-                        for i in range(patch_w):
-                            vo = (first_vert + j * patch_w + i) * DRAWVERT_SIZE
-                            if vo + 12 > len(vert_blob):
-                                ok = False
-                                break
-                            pts.append(struct.unpack_from("<3f", vert_blob, vo))
-                        if not ok:
-                            break
-                    if not ok or len(pts) != patch_w * patch_h:
-                        continue
-
-                    for j in range(patch_h - 1):
-                        for i in range(patch_w - 1):
-                            q = (
-                                pts[j * patch_w + i],
-                                pts[(j + 1) * patch_w + i],
-                                pts[(j + 1) * patch_w + i + 1],
-                                pts[j * patch_w + i + 1],
-                            )
-                            for a, b, c in ((0, 1, 2), (0, 2, 3)):
-                                self._push_solid_mesh_tri(q[a], q[b], q[c])
-
-                elif surf_type == MST_PLANAR:
-                    (num_verts,) = struct.unpack_from("<i", surf_blob, base + 16)
-                    if num_verts < 3:
-                        continue
-                    pts = []
-                    ok = True
-                    for vi in range(num_verts):
-                        vo = (first_vert + vi) * DRAWVERT_SIZE
-                        if vo + 12 > len(vert_blob):
-                            ok = False
-                            break
-                        pts.append(struct.unpack_from("<3f", vert_blob, vo))
-                    if not ok or len(pts) != num_verts:
-                        continue
-                    for vi in range(1, num_verts - 1):
-                        self._push_solid_mesh_tri(pts[0], pts[vi], pts[vi + 1])
-
-                elif surf_type == MST_TRIANGLE_STRIP:
-                    first_index, num_indexes = struct.unpack_from("<2i", surf_blob, base + 20)
-                    if num_indexes < 3 or not index_blob:
-                        continue
-                    idx_end = (first_index + num_indexes) * 4
-                    if idx_end > len(index_blob):
-                        continue
-                    for ii in range(num_indexes - 2):
-                        i0, i1, i2 = struct.unpack_from(
-                            "<3i", index_blob, (first_index + ii) * 4
-                        )
-                        if i0 == i1 or i1 == i2 or i0 == i2:
-                            continue
-                        if ii & 1:
-                            i1, i2 = i2, i1
-                        if i0 < 0 or i1 < 0 or i2 < 0:
-                            continue
-                        v0o = (first_vert + i0) * DRAWVERT_SIZE
-                        v1o = (first_vert + i1) * DRAWVERT_SIZE
-                        v2o = (first_vert + i2) * DRAWVERT_SIZE
-                        if v2o + 12 > len(vert_blob):
-                            continue
-                        t0 = struct.unpack_from("<3f", vert_blob, v0o)
-                        t1 = struct.unpack_from("<3f", vert_blob, v1o)
-                        t2 = struct.unpack_from("<3f", vert_blob, v2o)
-                        self._push_solid_mesh_tri(t0, t1, t2)
-
-    def _trace_one_brush(
-        self,
-        start: tuple[float, float, float],
-        end: tuple[float, float, float],
-        brush: tuple[int, int, int],
-    ) -> float | None:
-        first_side, num_sides, _shader = brush
-        if num_sides <= 0:
-            return None
-        offsets = self._trace_offsets
-        enter_frac = -1.0
-        leave_frac = 1.0
-        startout = False
-
-        for i in range(first_side, first_side + num_sides):
-            if i < 0 or i >= len(self.brush_sides):
-                return None
-            plane_num, _surf = self.brush_sides[i]
-            if plane_num < 0 or plane_num >= len(self.planes):
-                return None
-            nx, ny, nz, pdist, sb = self.planes[plane_num]
-            ox, oy, oz = offsets[sb]
-            dist = pdist - (nx * ox + ny * oy + nz * oz)
-
-            d1 = nx * start[0] + ny * start[1] + nz * start[2] - dist
-            d2 = nx * end[0] + ny * end[1] + nz * end[2] - dist
-
-            if d1 > 0:
-                startout = True
-
-            if d1 > 0 and (d2 >= SURFACE_CLIP_EPSILON or d2 >= d1):
-                return None
-
-            if d1 <= 0 and d2 <= 0:
-                continue
-
-            if d1 > d2:
-                f = (d1 - SURFACE_CLIP_EPSILON) / (d1 - d2)
-                if f < 0:
-                    f = 0.0
-                if f > enter_frac:
-                    enter_frac = f
-            else:
-                f = (d1 + SURFACE_CLIP_EPSILON) / (d1 - d2)
-                if f > 1:
-                    f = 1.0
-                if f < leave_frac:
-                    leave_frac = f
-
-        if not startout:
-            return 0.0
-        if enter_frac < leave_frac and enter_frac > -1:
-            if enter_frac < 0:
-                enter_frac = 0.0
-            return enter_frac
-        return None
-
-    def _box_trace_brushes(
-        self,
-        start: tuple[float, float, float],
-        end: tuple[float, float, float],
-        brush_ids: list[int],
-    ) -> tuple[float, float, float]:
-        best_frac = 1.0
-        brushes = self.brushes
-        brush_solid = self.brush_solid
-        for bi in brush_ids:
-            if not brush_solid[bi]:
-                continue
-            hit = self._trace_one_brush(start, end, brushes[bi])
-            if hit is not None and hit < best_frac:
-                best_frac = hit
-        if best_frac >= 1.0:
-            return end
-        return (
-            start[0] + best_frac * (end[0] - start[0]),
-            start[1] + best_frac * (end[1] - start[1]),
-            start[2] + best_frac * (end[2] - start[2]),
-        )
-
-    def _brush_candidates(self, cx: float, cy: float) -> list[int]:
-        scratch = self._brush_scratch
-        scratch.clear()
-        self._brush_index.query_into(cx, cy, ITEM_RADIUS, scratch)
-        for bi in self._wide_brushes:
-            scratch.add(bi)
-        if scratch:
-            return list(scratch)
-        return self._all_solid_brushes
-
-    def _patch_candidates(self, cx: float, cy: float) -> list[int]:
-        scratch = self._patch_scratch
-        scratch.clear()
-        self._patch_index.query_into(cx, cy, ITEM_RADIUS, scratch)
-        return list(scratch)
-
-    def _floor_z_at(self, px: float, py: float, z_top: float, tri_ids: list[int]) -> float | None:
-        best: float | None = None
-        tris = self.patch_tris
-        for ti in tri_ids:
-            if ti < 0 or ti >= len(tris):
-                continue
-            t0, t1, t2, min_x, max_x, min_y, max_y = tris[ti]
-            if px < min_x or px > max_x or py < min_y or py > max_y:
-                continue
-            z = _z_on_triangle_xy(px, py, t0, t1, t2)
-            if z is None or z >= z_top:
-                continue
-            if best is None or z > best:
-                best = z
-        return best
-
-    def _box_trace_patches(
-        self,
-        start: tuple[float, float, float],
-        end: tuple[float, float, float],
-        mins: tuple[float, float, float],
-        maxs: tuple[float, float, float],
-    ) -> tuple[float, float, float]:
-        if not self.patch_tris:
-            return end
-
-        cx, cy, cz = start
-        surface_ids = self._patch_candidates(cx, cy)
-        if not surface_ids:
-            return end
-
-        samples = (
-            (cx, cy),
-            (cx + mins[0], cy + mins[1]),
-            (cx + maxs[0], cy + mins[1]),
-            (cx + mins[0], cy + maxs[1]),
-            (cx + maxs[0], cy + maxs[1]),
-        )
-
-        best_frac = 1.0
-        best_end = end
-        drop = cz - end[2]
-        if drop <= 0.0:
-            return end
-
-        for px, py in samples:
-            fz = self._floor_z_at(px, py, cz, surface_ids)
-            if fz is None:
-                continue
-            end_z = fz + ITEM_RADIUS
-            frac = (cz - end_z) / drop
-            if frac < 0.0:
-                frac = 0.0
-            if frac > 1.0:
-                continue
-            if frac < best_frac:
-                best_frac = frac
-                best_end = (cx, cy, end_z)
-
-        return best_end
-
-    def drop(
-        self,
-        x: float,
-        y: float,
-        z: float,
-        *,
-        suspended: bool = False,
-    ) -> tuple[float, float, float]:
-        if suspended:
-            return x, y, z
-
-        key = (int(x), int(y), int(z))
-        cached = self._origin_cache.get(key)
-        if cached is not None:
-            return cached
-
-        r = ITEM_RADIUS
-        mins = (-r, -r, -r)
-        maxs = (r, r, r)
-        start = (x, y, z)
-        end = (x, y, z - DROP_DEPTH)
-
-        brush_hit = self._box_trace_brushes(start, end, self._brush_candidates(x, y))
-        patch_hit = self._box_trace_patches(start, end, mins, maxs)
-
-        drop_len = start[2] - end[2]
-        if drop_len <= 0.0:
-            result = start
-        else:
-            fb = (start[2] - brush_hit[2]) / drop_len
-            fp = (start[2] - patch_hit[2]) / drop_len
-            result = patch_hit if fp < fb else brush_hit
-
-        self._origin_cache[key] = result
-        return result
-
-
-_bsp_drop_cache: dict[int, _ItemDropCollision | None] = {}
-
-
-def _item_drop_collision(bsp: bytes) -> _ItemDropCollision | None:
-    key = id(bsp)
-    if key not in _bsp_drop_cache:
-        col = _ItemDropCollision(bsp)
-        if not col.planes and not col.patch_tris:
-            _bsp_drop_cache[key] = None
-        else:
-            _bsp_drop_cache[key] = col
-    return _bsp_drop_cache[key]
-
-
-def drop_pickup_origin(
-    bsp: bytes,
-    x: float,
-    y: float,
-    z: float,
-    *,
-    suspended: bool = False,
-) -> tuple[float, float, float]:
-    if not bsp:
-        return x, y, z
-    col = _item_drop_collision(bsp)
-    if col is None:
-        return x, y, z
-    return col.drop(x, y, z, suspended=suspended)
-
-
-def apply_item_origins_after_spawn(
-    bsp: bytes | None,
+def apply_item_spawn_metadata(
     points: list[dict[str, Any]],
     entities: list[dict[str, str]],
 ) -> None:
-    if not bsp:
-        return
-    col = _item_drop_collision(bsp)
-    if col is None:
-        return
+    """QITM v2: spawn origin + suspended; drop is done in cgame (CM trace)."""
     for pt in points:
         ent = entities[pt["e"]]
         ox, oy, oz = pt["o"]
         ox, oy, oz = float(ox), float(oy), float(oz)
-        suspended = bool(_spawn_int(ent, "spawnflags", 0) & 1)
-        nx, ny, nz = col.drop(ox, oy, oz, suspended=suspended)
-        pt["o"] = [
-            int(v) if float(v).is_integer() else v for v in (nx, ny, nz)
-        ]
-    release_item_drop_collision(bsp)
+        pt["so"] = _fmt_origin_xyz(ox, oy, oz)
+        if bool(_spawn_int(ent, "spawnflags", 0) & 1):
+            pt["sf"] = 1
+        elif "sf" in pt:
+            del pt["sf"]
+        pt["o"] = list(pt["so"])
 
 
-def release_item_drop_collision(bsp: bytes | None) -> None:
-    if bsp is not None:
-        _bsp_drop_cache.pop(id(bsp), None)
-
-
-def clear_item_drop_collision_cache() -> None:
-    _bsp_drop_cache.clear()
+def _progress_index_tag(index: int) -> str:
+    return f"[{index:>4}]"
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -791,7 +234,9 @@ MAP_ITEM_ENTITY_EXCLUDE: dict[str, frozenset[int]] = {
 MAP_DOC_VERSION = 1
 QMAP_MAGIC = b"QMAP"
 QMAP_VERSION = 2
-QITM1_VERSION = 1
+QITM1_VERSION_V1 = 1
+QITM1_VERSION_V2 = 2
+QITM1_FLAG_SUSPENDED = 1
 
 IT_HEALTH = 1
 IT_ARMOR = 2
@@ -925,7 +370,6 @@ def build_item_report(
     entities: list[dict[str, str]],
     item_table: dict[str, tuple[int, int, int]],
     freeze: bool,
-    bsp_bytes: bytes | None = None,
 ) -> dict[str, Any]:
     points: list[dict[str, Any]] = []
     for idx, ent in enumerate(entities):
@@ -935,8 +379,7 @@ def build_item_report(
         if row:
             points.append(row)
 
-    if bsp_bytes:
-        apply_item_origins_after_spawn(bsp_bytes, points, entities)
+    apply_item_spawn_metadata(points, entities)
 
     modes: dict[str, Any] = {}
     for gt, name in GAMETYPE_POOL_NAMES.items():
@@ -1001,7 +444,7 @@ def build_map_bundle_report(
     lump = entities_lump_from_bytes(bsp_bytes, source)
     entities = parse_entity_lump(lump)
 
-    items_doc = build_item_report(entities, item_table, freeze, bsp_bytes)
+    items_doc = build_item_report(entities, item_table, freeze)
     _apply_map_item_entity_excludes(map_name, items_doc)
     loc_doc = build_locations_report(entities, loc_gametype, freeze)
     if not loc_doc:
@@ -1044,12 +487,16 @@ def pack_qitm1_binary(items_doc: dict[str, Any]) -> bytes:
     if not points:
         raise ValueError("no item points")
 
-    chunks = [b"QITM1", struct.pack("<HH", QITM1_VERSION, len(points))]
+    chunks = [b"QITM1", struct.pack("<HH", QITM1_VERSION_V2, len(points))]
     for pt in points:
-        ox, oy, oz = pt["o"]
+        spawn = pt.get("so") or pt["o"]
+        ox, oy, oz = spawn
         mi = int(pt["mi"])
         sc = int(pt.get("sc", 0)) & 0xFF
-        chunks.append(struct.pack("<fffHBB", float(ox), float(oy), float(oz), mi, sc, 0))
+        flags = QITM1_FLAG_SUSPENDED if pt.get("sf") else 0
+        chunks.append(
+            struct.pack("<fffHBB", float(ox), float(oy), float(oz), mi, sc, flags)
+        )
 
     for mode_name in MODE_ORDER:
         block = modes.get(mode_name, {})
@@ -1136,7 +583,11 @@ def pack_q3lb_from_mapdata_dir(src_dir: Path, out_path: Path) -> int:
             continue
         entries.append((map_name, blob))
         if n % 50 == 0 or n == total:
-            print(f"  pack read {n}/{total}...", file=sys.stderr, flush=True)
+            tag = _progress_index_tag(n)
+            print(f"\r{tag} pack read {n}/{total}...", end="", file=sys.stderr, flush=True)
+
+    if total:
+        print(file=sys.stderr)
 
     if not entries:
         print("error: no valid .qmap files", file=sys.stderr)
@@ -1184,21 +635,21 @@ def batch_write_map_reports(
 
     print(f"scanning {len(jobs)} unique maps -> {out_dir}", file=sys.stderr)
 
-    for map_name in sorted(jobs.keys()):
+    sorted_maps = sorted(jobs.keys())
+
+    for index, map_name in enumerate(sorted_maps, 1):
+        tag = _progress_index_tag(index)
         label, path, inner, _ = jobs[map_name]
         out_path = out_dir / f"{map_name}.qmap"
         if skip_existing and out_path.is_file():
             skipped_exist += 1
             continue
-        print(f"  {map_name}...", file=sys.stderr, flush=True)
         try:
             doc = build_map_bundle_report(path, freeze, loc_gametype, inner, item_table)
         except (ValueError, OSError, zipfile.BadZipFile) as exc:
             skipped += 1
-            print(f"skip {map_name} ({label}): {exc}", file=sys.stderr)
+            print(f"{tag} skip {map_name} ({label}): {exc}", file=sys.stderr)
             continue
-        finally:
-            clear_item_drop_collision_cache()
 
         n_spawn = len(doc.get("spawns", {}).get("points") or [])
         n_item = len(doc.get("items", {}).get("points") or [])
@@ -1206,7 +657,7 @@ def batch_write_map_reports(
         if n_spawn == 0 and n_item == 0 and n_loc == 0:
             skipped_empty += 1
             if verbose:
-                print(f"skip {map_name}: empty bundle ({label})", file=sys.stderr)
+                print(f"{tag} skip {map_name}: empty bundle ({label})", file=sys.stderr)
             continue
 
         out_path.write_text(
@@ -1215,7 +666,8 @@ def batch_write_map_reports(
         )
         written += 1
         print(
-            f"wrote {out_path.name} (spawns={n_spawn} items={n_item} locs={n_loc}) <- {label}",
+            f"{tag} {map_name}: wrote {out_path.name} "
+            f"(spawns={n_spawn} items={n_item} locs={n_loc}) <- {label}",
             file=sys.stderr,
         )
 
@@ -1368,14 +820,19 @@ def main() -> int:
     else:
         write_single_map_qmap(DEFAULT_MAPDATA_DIR / f"{map_name}.qmap", map_name, doc)
 
-    if args.verbose:
-        n_spawn = len(doc.get("spawns", {}).get("points") or [])
-        n_item = len(doc.get("items", {}).get("points") or [])
-        n_loc = len((doc.get("locations") or {}).get("locations") or [])
-        print(f"  map={map_name} spawns={n_spawn} items={n_item} locs={n_loc} <- {label}", file=sys.stderr)
-
     return 0
 
 
+def _print_elapsed_seconds(start: float) -> None:
+    elapsed = time.perf_counter() - start
+    if elapsed >= 60.0:
+        print(f"elapsed: {elapsed / 60.0:.1f} min ({elapsed:.1f} s)", file=sys.stderr)
+    else:
+        print(f"elapsed: {elapsed:.2f} s", file=sys.stderr)
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    _t0 = time.perf_counter()
+    _rc = main()
+    _print_elapsed_seconds(_t0)
+    raise SystemExit(_rc)

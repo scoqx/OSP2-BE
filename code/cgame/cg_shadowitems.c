@@ -3,7 +3,8 @@
 cg_shadowitems.c
 
 Ghost 3D pickups when the real item is absent (cg_shadowItems bitmask).
-Data: mapdata/mapdata.q3lb QITM1 section. Requires cg_simpleItems 0.
+Data: mapdata QITM1 (v1 dropped origin, v2 spawn origin + client drop).
+Requires cg_simpleItems 0.
 
 Copyright (c) 2026 diwoc
 ===========================================================================
@@ -23,6 +24,9 @@ Copyright (c) 2026 diwoc
 #define CG_SHADOW_SLOT_ROTATE_MS    2000
 #define CG_SHADOW_SLOT_CROSSFADE_MS 500
 #define CG_SHADOW_GHOST_ALPHA       80
+
+#define CG_SHADOW_ITEM_DROP_DEPTH   4096.0f
+#define CG_SHADOW_QITM_FLAG_SUSPENDED 1
 
 #define CG_SHADOW_ITEMS_TEST_DRAW   0
 
@@ -269,54 +273,48 @@ static void CG_ShadowItems_Clear(void)
 	memset(cg_shadowSlotBobMiscTime, 0, sizeof(cg_shadowSlotBobMiscTime));
 }
 
-static qboolean CG_ShadowItems_LoadQITM1(const byte* raw, int rawLen)
+/*
+==================
+CG_ShadowItems_DropToFloor
+
+Same trace as game FinishSpawningItem (g_items.c): MASK_SOLID, ITEM_RADIUS bbox.
+==================
+*/
+static void CG_ShadowItems_DropToFloor(const vec3_t spawnOrigin, qboolean suspended, vec3_t outOrigin)
 {
-	int     version;
-	int     numPoints;
-	int     pos;
+	trace_t     tr;
+	vec3_t      dest;
+	vec3_t      mins;
+	vec3_t      maxs;
+
+	if (suspended)
+	{
+		VectorCopy(spawnOrigin, outOrigin);
+		return;
+	}
+
+	VectorSet(mins, -ITEM_RADIUS, -ITEM_RADIUS, -ITEM_RADIUS);
+	VectorSet(maxs, ITEM_RADIUS, ITEM_RADIUS, ITEM_RADIUS);
+	VectorCopy(spawnOrigin, outOrigin);
+	dest[0] = spawnOrigin[0];
+	dest[1] = spawnOrigin[1];
+	dest[2] = spawnOrigin[2] - CG_SHADOW_ITEM_DROP_DEPTH;
+
+	trap_CM_BoxTrace(&tr, spawnOrigin, dest, mins, maxs, 0, MASK_SOLID);
+	if (tr.startsolid)
+	{
+		return;
+	}
+
+	VectorCopy(tr.endpos, outOrigin);
+}
+
+static qboolean CG_ShadowItems_LoadQITM1Modes(const byte* raw, int rawLen, int pos)
+{
 	int     mode;
 	int     i;
 	int     nSpawned;
 	int     idx;
-
-	if (rawLen < 10 || raw[0] != 'Q' || raw[1] != 'I' || raw[2] != 'T' || raw[3] != 'M'
-	        || raw[4] != '1')
-	{
-		return qfalse;
-	}
-
-	version = CG_ShadowItems_ReadLE16(raw + 5);
-	numPoints = CG_ShadowItems_ReadLE16(raw + 7);
-	if (version != 1 || numPoints <= 0 || numPoints > CG_SHADOW_ITEM_MAX)
-	{
-		return qfalse;
-	}
-
-	pos = 9;
-	CG_ShadowItems_Clear();
-
-	for (i = 0; i < numPoints; i++)
-	{
-		cg_shadowItemPoint_t* pt;
-
-		if (pos + 18 > rawLen)
-		{
-			CG_ShadowItems_Clear();
-			return qfalse;
-		}
-		pt = &cg_shadowItemPoints[i];
-		pt->origin[0] = CG_ShadowItems_ReadFloat(raw + pos);
-		pos += 4;
-		pt->origin[1] = CG_ShadowItems_ReadFloat(raw + pos);
-		pos += 4;
-		pt->origin[2] = CG_ShadowItems_ReadFloat(raw + pos);
-		pos += 4;
-		pt->modelindex = CG_ShadowItems_ReadLE16(raw + pos);
-		pos += 2;
-		pt->shadowCat = raw[pos];
-		pos += 2;
-	}
-	cg_shadowItemCount = numPoints;
 
 	for (mode = 0; mode < CG_SHADOW_MODE_COUNT; mode++)
 	{
@@ -350,6 +348,79 @@ static qboolean CG_ShadowItems_LoadQITM1(const byte* raw, int rawLen)
 			cg_shadowModeIndices[mode][i] = idx;
 			cg_shadowPointActive[mode][idx] = qtrue;
 		}
+	}
+
+	return qtrue;
+}
+
+static qboolean CG_ShadowItems_LoadQITM1(const byte* raw, int rawLen)
+{
+	int                     version;
+	int                     numPoints;
+	int                     pos;
+	int                     i;
+	int                     pointSize;
+	vec3_t                  spawn;
+	qboolean                suspended;
+	cg_shadowItemPoint_t*   pt;
+
+	if (rawLen < 10 || raw[0] != 'Q' || raw[1] != 'I' || raw[2] != 'T' || raw[3] != 'M'
+	        || raw[4] != '1')
+	{
+		return qfalse;
+	}
+
+	version = CG_ShadowItems_ReadLE16(raw + 5);
+	numPoints = CG_ShadowItems_ReadLE16(raw + 7);
+	if (numPoints <= 0 || numPoints > CG_SHADOW_ITEM_MAX)
+	{
+		return qfalse;
+	}
+	if (version != 1 && version != 2)
+	{
+		return qfalse;
+	}
+
+	pointSize = (version == 2) ? 16 : 18;
+	pos = 9;
+	CG_ShadowItems_Clear();
+
+	for (i = 0; i < numPoints; i++)
+	{
+		if (pos + pointSize > rawLen)
+		{
+			CG_ShadowItems_Clear();
+			return qfalse;
+		}
+		pt = &cg_shadowItemPoints[i];
+		spawn[0] = CG_ShadowItems_ReadFloat(raw + pos);
+		pos += 4;
+		spawn[1] = CG_ShadowItems_ReadFloat(raw + pos);
+		pos += 4;
+		spawn[2] = CG_ShadowItems_ReadFloat(raw + pos);
+		pos += 4;
+		pt->modelindex = CG_ShadowItems_ReadLE16(raw + pos);
+		pos += 2;
+		pt->shadowCat = raw[pos];
+		pos += 1;
+		suspended = qfalse;
+		if (version == 2)
+		{
+			suspended = (raw[pos] & CG_SHADOW_QITM_FLAG_SUSPENDED) ? qtrue : qfalse;
+			pos += 1;
+			CG_ShadowItems_DropToFloor(spawn, suspended, pt->origin);
+		}
+		else
+		{
+			pos += 1;
+			VectorCopy(spawn, pt->origin);
+		}
+	}
+	cg_shadowItemCount = numPoints;
+
+	if (!CG_ShadowItems_LoadQITM1Modes(raw, rawLen, pos))
+	{
+		return qfalse;
 	}
 
 	CG_ShadowItems_BuildPickupSlots();
@@ -550,6 +621,8 @@ static void CG_ShadowItems_BuildPickupSlots(void)
 	for (slot = 0; slot < cg_shadowItemSlotCount; slot++)
 	{
 		int     idx;
+		int     k;
+		float   bestZ;
 
 		n = cg_shadowItemSlotMemberCount[slot];
 		if (n <= 0)
@@ -557,7 +630,18 @@ static void CG_ShadowItems_BuildPickupSlots(void)
 			continue;
 		}
 		idx = cg_shadowItemSlotMembers[slot][0];
+		bestZ = cg_shadowItemPoints[idx].origin[2];
+		for (k = 1; k < n; k++)
+		{
+			idx = cg_shadowItemSlotMembers[slot][k];
+			if (cg_shadowItemPoints[idx].origin[2] > bestZ)
+			{
+				bestZ = cg_shadowItemPoints[idx].origin[2];
+			}
+		}
+		idx = cg_shadowItemSlotMembers[slot][0];
 		VectorCopy(cg_shadowItemPoints[idx].origin, cg_shadowSlotDrawOrigin[slot]);
+		cg_shadowSlotDrawOrigin[slot][2] = bestZ;
 	}
 }
 

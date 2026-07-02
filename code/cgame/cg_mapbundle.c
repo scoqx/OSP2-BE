@@ -2,8 +2,8 @@
 ===========================================================================
 cg_mapbundle.c
 
-Unified map bundle: mapdata/mapdata.q3lb (Q3LB + QMAP per map),
-  or mapdata/<map>.q3lb when the map is missing from the main bundle.
+Unified map bundle: mapdata/<map>.q3lb overrides mapdata/mapdata.q3lb when present.
+  Per-map file is tried first (local testing); then the main Q3LB pack.
   QSP1 spawns, QITM1 shadow pickups, QLM1 locations, QTX1 teleporter exits (QMAP v2).
 
 Copyright (c) 2026 diwoc
@@ -331,6 +331,12 @@ void CG_MapBundle_Load(void)
 
 	CG_MapBundle_ClearPayload();
 
+	if (CG_MapBundle_LoadPerMapQ3lb(mapBase))
+	{
+		return;
+	}
+
+	CG_MapBundle_ClearPayload();
 	if (CG_MapBundle_LoadFromBundleFile(CG_MAPBUNDLE_PATH, mapBase)
 	        && CG_MapBundle_PayloadHasContent(cg_mapBundlePayload, cg_mapBundlePayloadLen))
 	{
@@ -338,7 +344,6 @@ void CG_MapBundle_Load(void)
 	}
 
 	CG_MapBundle_ClearPayload();
-	(void)CG_MapBundle_LoadPerMapQ3lb(mapBase);
 }
 
 qboolean CG_MapBundle_HasPayload(void)

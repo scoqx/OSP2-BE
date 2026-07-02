@@ -970,3 +970,7 @@ SuperHUD:
   + cg_worldFlags and various improvements for CTF (flag status, team tasks)
   + cg_drawSpawns
   + cg_drawTPexit
+
+02.07.2026 be v1.06a
+* cg_shadowItems fix
++ ChatWindow alias for '%'

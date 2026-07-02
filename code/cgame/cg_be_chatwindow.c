@@ -22,6 +22,10 @@ extern qboolean cg_keyCapsLockOnAvail;
 #define BE_CHAT_INPUT_ONLY_BG_BIT 4
 #define BE_CHAT_NO_REPEAT_MERGE_BIT 8
 #define BE_CHAT_EMOJI_PREVIEW_SCALE 1.2f
+/* Wire escape for '%' (Quake chat breaks on percent). Input/history use '%'; network uses "'/,". */
+#define BE_CHAT_PCT_WIRE0       '\''
+#define BE_CHAT_PCT_WIRE1       '/'
+#define BE_CHAT_PCT_WIRE2       ','
 
 #define BE_CHAT_WIN_DEF_X       220
 #define BE_CHAT_WIN_DEF_Y       240
@@ -2965,12 +2969,82 @@ static void CG_BEChat_InvalidateRowsCache(void)
 	beChatRowsCacheWriteIdx = -1;
 }
 
+static void CG_BEChat_EncodePercentWire(const char* src, char* dst, int dstSize)
+{
+	int si;
+	int di;
+
+	if (!dst || dstSize < 1)
+	{
+		return;
+	}
+
+	if (!src)
+	{
+		dst[0] = '\0';
+		return;
+	}
+
+	si = 0;
+	di = 0;
+	while (src[si] && di < dstSize - 1)
+	{
+		if (src[si] == '%')
+		{
+			if (di + 3 >= dstSize)
+			{
+				break;
+			}
+			dst[di++] = BE_CHAT_PCT_WIRE0;
+			dst[di++] = BE_CHAT_PCT_WIRE1;
+			dst[di++] = BE_CHAT_PCT_WIRE2;
+			si++;
+			continue;
+		}
+		dst[di++] = src[si++];
+	}
+	dst[di] = '\0';
+}
+
+static void CG_BEChat_DecodePercentWire(const char* src, char* dst, int dstSize)
+{
+	int si;
+	int di;
+
+	if (!dst || dstSize < 1)
+	{
+		return;
+	}
+
+	if (!src)
+	{
+		dst[0] = '\0';
+		return;
+	}
+
+	si = 0;
+	di = 0;
+	while (src[si] && di < dstSize - 1)
+	{
+		if (src[si] == BE_CHAT_PCT_WIRE0 && src[si + 1] == BE_CHAT_PCT_WIRE1 &&
+		        src[si + 2] == BE_CHAT_PCT_WIRE2)
+		{
+			dst[di++] = '%';
+			si += 3;
+			continue;
+		}
+		dst[di++] = src[si++];
+	}
+	dst[di] = '\0';
+}
+
 void CG_BEChat_AddLine(const char* text, int senderClientNum, int msgKind)
 {
 	beChatHistory_t* history;
 	beChatHistoryLine_t* last;
 	int index;
 	int lastIndex;
+	char decoded[BE_CHAT_LINE_CHARS];
 
 	if (!text || !text[0])
 	{
@@ -2981,6 +3055,9 @@ void CG_BEChat_AddLine(const char* text, int senderClientNum, int msgKind)
 	{
 		return;
 	}
+
+	CG_BEChat_DecodePercentWire(text, decoded, sizeof(decoded));
+	text = decoded;
 
 	history = &cgs.beChatHistory;
 
@@ -4788,6 +4865,7 @@ static void CG_BEChat_InputChar(beChatInput_t* edit, int ch, float maxTextW)
 static void CG_BEChat_SendReplyText(const char* message)
 {
 	char cmd[MAX_STRING_CHARS];
+	char wire[MAX_STRING_CHARS];
 	char* p;
 
 	if (!message)
@@ -4806,7 +4884,8 @@ static void CG_BEChat_SendReplyText(const char* message)
 		p++;
 	}
 
-	if (!CG_SendReplyMessage(cmd))
+	CG_BEChat_EncodePercentWire(cmd, wire, sizeof(wire));
+	if (!CG_SendReplyMessage(wire))
 	{
 		return;
 	}
@@ -4824,6 +4903,7 @@ static void CG_BEChat_SendInput(void)
 {
 	char* p;
 	char cmd[MAX_STRING_CHARS];
+	char wire[MAX_STRING_CHARS];
 	const char* buf;
 	int clientNum;
 	int i;
@@ -4885,7 +4965,8 @@ static void CG_BEChat_SendInput(void)
 		{
 			return;
 		}
-		trap_SendClientCommand(va("tell %i %s", beChatWindow.tellClientNum, buf));
+		CG_BEChat_EncodePercentWire(buf, wire, sizeof(wire));
+		trap_SendClientCommand(va("tell %i %s", beChatWindow.tellClientNum, wire));
 		CG_BEChat_SentHistPush(buf, beChatWindow.destMode,
 		                       beChatWindow.tellClientNum, beChatWindow.tellName);
 		CG_BEChat_InputClear(&beChatWindow.input);
@@ -4980,7 +5061,8 @@ static void CG_BEChat_SendInput(void)
 		{
 			return;
 		}
-		trap_SendClientCommand(va("tell %i %s", clientNum, msg));
+		CG_BEChat_EncodePercentWire(msg, wire, sizeof(wire));
+		trap_SendClientCommand(va("tell %i %s", clientNum, wire));
 		CG_BEChat_SentHistPush(msg, BE_CHAT_DEST_TELL, clientNum, name);
 		CG_BEChat_InputClear(&beChatWindow.input);
 		beChatWindow.historyScroll = 0;
@@ -5002,13 +5084,14 @@ static void CG_BEChat_SendInput(void)
 		p++;
 	}
 
+	CG_BEChat_EncodePercentWire(cmd, wire, sizeof(wire));
 	if (beChatWindow.destMode == BE_CHAT_DEST_TEAM)
 	{
-		trap_SendClientCommand(va("say_team %s", cmd));
+		trap_SendClientCommand(va("say_team %s", wire));
 	}
 	else
 	{
-		trap_SendClientCommand(va("say %s", cmd));
+		trap_SendClientCommand(va("say %s", wire));
 	}
 	CG_BEChat_SentHistPush(cmd, beChatWindow.destMode,
 	                       beChatWindow.tellClientNum, beChatWindow.tellName);
