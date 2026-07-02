@@ -769,21 +769,18 @@ static void CG_Item(centity_t* cent)
 	{
 		int     mapPoint;
 		int     phaseEnt;
-		int     miscTime;
 
 		mapPoint = CG_ShadowItems_MapPointIndexForCent(cent);
 		if (mapPoint >= 0)
 		{
 			CG_ShadowItems_TouchLiveItemBob(mapPoint, cent);
 			phaseEnt = CG_ShadowItems_PhaseEntForPoint(mapPoint);
-			miscTime = CG_ShadowItems_BobMiscTimeForPoint(mapPoint);
 		}
 		else
 		{
 			phaseEnt = cent->currentState.number;
-			miscTime = cent->miscTime;
 		}
-		CG_AddWorldItem3D(cent->lerpOrigin, itemNum, phaseEnt, miscTime, qfalse, 0);
+		CG_AddWorldItem3D(cent->lerpOrigin, itemNum, phaseEnt, cent->miscTime, qfalse, 0);
 	}
 }
 

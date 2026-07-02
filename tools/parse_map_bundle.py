@@ -28,11 +28,15 @@ parse_map_bundle.py — mapdata для OSP2-BE (спавны QSP1, shadow-пик
 
 Пакет mod / все карты
 ---------------------
-  python parse_map_bundle.py --batch -o backup/mapdata
-      JSON .qmap на карту (редактирование)
+  python parse_map_bundle.py
+      Полный пересбор с нуля: все карты → backup/mapdata/*.qmap (JSON),
+      затем assets/mapdata/mapdata.q3lb (один файл для pk3).
 
-  python parse_map_bundle.py --batch --pack-q3lb -o assets/mapdata/mapdata.q3lb
-      JSON в backup/mapdata, затем сборка mapdata.q3lb
+  python parse_map_bundle.py --batch -o backup/mapdata
+      Только JSON .qmap на карту (без q3lb).
+
+  python parse_map_bundle.py --batch --pack-q3lb
+      JSON в backup/mapdata, затем assets/mapdata/mapdata.q3lb
 
   python parse_map_bundle.py --pack-q3lb backup/mapdata -o assets/mapdata/mapdata.q3lb
       Пересобрать q3lb из уже готовых .qmap/.json
@@ -44,7 +48,7 @@ parse_map_bundle.py — mapdata для OSP2-BE (спавны QSP1, shadow-пик
   --pk3-dir DIR     доп. папки с pk3 (можно несколько; идут после стандартных)
 
 Скан по умолчанию (--batch): baseq3 → osp → C:\\maps (позже перекрывает раньше).
-  QITM1 v2 — spawn origin + flags; drop в cgame (CM). Python-drop убран (быстрый парсинг).
+  QITM1 v2 only — spawn origin + flags; drop в cgame (CM). Пересобери mapdata.q3lb текущим скриптом.
   MAP_ITEM_ENTITY_EXCLUDE — точки QITM, выкидываемые по индексу entity на карте.
   Локации без target_location в BSP: assets/locs/<map>.cfg (как locs/<map>.cfg в игре).
   -v                подробный лог
@@ -234,8 +238,7 @@ MAP_ITEM_ENTITY_EXCLUDE: dict[str, frozenset[int]] = {
 MAP_DOC_VERSION = 1
 QMAP_MAGIC = b"QMAP"
 QMAP_VERSION = 2
-QITM1_VERSION_V1 = 1
-QITM1_VERSION_V2 = 2
+QITM1_VERSION = 2
 QITM1_FLAG_SUSPENDED = 1
 
 IT_HEALTH = 1
@@ -487,10 +490,13 @@ def pack_qitm1_binary(items_doc: dict[str, Any]) -> bytes:
     if not points:
         raise ValueError("no item points")
 
-    chunks = [b"QITM1", struct.pack("<HH", QITM1_VERSION_V2, len(points))]
-    for pt in points:
-        spawn = pt.get("so") or pt["o"]
-        ox, oy, oz = spawn
+    chunks = [b"QITM1", struct.pack("<HH", QITM1_VERSION, len(points))]
+    for pi, pt in enumerate(points):
+        if "so" not in pt:
+            if "o" not in pt:
+                raise ValueError(f"item point {pi} missing 'so'/'o' (reparse with --batch)")
+            pt["so"] = list(pt["o"])
+        ox, oy, oz = pt["so"]
         mi = int(pt["mi"])
         sc = int(pt.get("sc", 0)) & 0xFF
         flags = QITM1_FLAG_SUSPENDED if pt.get("sf") else 0
@@ -547,17 +553,42 @@ def pack_qmap1_binary(doc: dict[str, Any]) -> bytes:
     )
 
 
+def _qmap_qitm_version(qmap_blob: bytes) -> int:
+    if len(qmap_blob) < 18 or qmap_blob[:4] != QMAP_MAGIC:
+        return 0
+    qmap_ver = qmap_blob[4] | (qmap_blob[5] << 8)
+    qsp_len = struct.unpack_from("<I", qmap_blob, 6)[0]
+    qitm_len = struct.unpack_from("<I", qmap_blob, 10)[0]
+    hdr = 22 if qmap_ver >= 2 else 18
+    if qitm_len <= 0 or hdr + qsp_len + qitm_len > len(qmap_blob):
+        return 0
+    sec = qmap_blob[hdr + qsp_len : hdr + qsp_len + qitm_len]
+    if len(sec) < 9 or sec[:5] != b"QITM1":
+        return 0
+    return struct.unpack_from("<H", sec, 5)[0]
+
+
 def _read_qmap_payload(path: Path) -> bytes:
     raw = path.read_bytes()
+    stripped = raw.lstrip()
+    if stripped.startswith(b"{"):
+        text = raw.decode("utf-8", errors="replace").strip()
+        if not text:
+            raise ValueError("empty file")
+        doc = json.loads(text)
+        if doc.get("v") != MAP_DOC_VERSION:
+            raise ValueError(f"unsupported v={doc.get('v')!r}")
+        return pack_qmap1_binary(doc)
+
     if len(raw) >= 4 and raw[:4] == QMAP_MAGIC:
+        qitm_ver = _qmap_qitm_version(raw)
+        if qitm_ver == 1:
+            raise ValueError(
+                f"{path.name}: stale binary QITM v1 — run --batch on this map, then pack JSON .qmap"
+            )
         return raw
-    text = raw.decode("utf-8", errors="replace").strip()
-    if not text:
-        raise ValueError("empty file")
-    doc = json.loads(text)
-    if doc.get("v") != MAP_DOC_VERSION:
-        raise ValueError(f"unsupported v={doc.get('v')!r}")
-    return pack_qmap1_binary(doc)
+
+    raise ValueError(f"{path.name}: not JSON mapdata and not QMAP binary")
 
 
 def pack_q3lb_from_mapdata_dir(src_dir: Path, out_path: Path) -> int:
@@ -679,6 +710,36 @@ def batch_write_map_reports(
     return 0 if written or skipped_exist else 1
 
 
+def run_default_full_rebuild(
+    item_table: dict[str, tuple[int, int, int]],
+    loc_gametype: int,
+    *,
+    freeze: bool = False,
+    verbose: bool = False,
+    pk3_dirs: list[Path] | None = None,
+) -> int:
+    out_dir = DEFAULT_OUT_DIR.resolve()
+    pack_out = DEFAULT_BUNDLE_PATH.resolve()
+    scan_dirs = pk3_dirs if pk3_dirs else DEFAULT_MAP_DIRS
+
+    print("full mapdata rebuild (default, no CLI args)", file=sys.stderr)
+    print(f"  1/2 parse maps -> {out_dir}", file=sys.stderr)
+    print(f"  2/2 pack Q3LB -> {pack_out}", file=sys.stderr)
+
+    rc = batch_write_map_reports(
+        scan_dirs,
+        out_dir,
+        freeze,
+        loc_gametype,
+        skip_existing=False,
+        verbose=verbose,
+        item_table=item_table,
+    )
+    if rc != 0:
+        return rc
+    return pack_q3lb_from_mapdata_dir(out_dir, pack_out)
+
+
 def write_single_map_qmap(out_path: Path, map_name: str, doc: dict[str, Any]) -> None:
     out_path = out_path.resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -709,15 +770,21 @@ def write_single_map_q3lb(out_path: Path, map_name: str, doc: dict[str, Any]) ->
 
 
 def main() -> int:
+    if len(sys.argv) == 1:
+        item_table = _load_item_table(BG_MISC)
+        return run_default_full_rebuild(item_table, GT_CTF)
+
     parser = argparse.ArgumentParser(
         description="Сбор mapdata (spawns, shadow items, locations, tpexit) для OSP2-BE.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Примеры:\n"
+            "  %(prog)s\n"
+            "      полный пересбор → backup/mapdata + assets/mapdata/mapdata.q3lb\n"
             "  %(prog)s mymap.bsp\n"
             "  %(prog)s mymap.bsp -o assets/mapdata/mymap.qmap\n"
             "  %(prog)s --batch -o backup/mapdata\n"
-            "  %(prog)s --batch --pack-q3lb -o assets/mapdata/mapdata.q3lb\n"
+            "  %(prog)s --batch --pack-q3lb\n"
             "\n"
             "Подробная инструкция — в docstring в начале файла parse_map_bundle.py"
         ),
@@ -774,7 +841,14 @@ def main() -> int:
 
     if args.batch:
         dirs = args.pk3_dirs if args.pk3_dirs else DEFAULT_MAP_DIRS
-        if args.output and args.output.suffix.lower() == ".q3lb":
+        if args.pack_q3lb is not None:
+            out_dir = args.pack_q3lb.resolve()
+            pack_out = (
+                args.output.resolve()
+                if args.output
+                else DEFAULT_BUNDLE_PATH.resolve()
+            )
+        elif args.output and args.output.suffix.lower() == ".q3lb":
             out_dir = DEFAULT_OUT_DIR.resolve()
             pack_out = args.output.resolve()
         else:
@@ -783,9 +857,11 @@ def main() -> int:
         rc = batch_write_map_reports(
             dirs, out_dir, args.freeze, loc_gt, args.skip_existing, args.verbose, item_table
         )
-        if rc != 0 or args.pack_q3lb is None:
+        if rc != 0:
             return rc
-        return pack_q3lb_from_mapdata_dir(out_dir, pack_out)
+        if args.pack_q3lb is not None or (args.output and args.output.suffix.lower() == ".q3lb"):
+            return pack_q3lb_from_mapdata_dir(out_dir, pack_out)
+        return rc
 
     if not args.input:
         parser.error("input required unless --batch")

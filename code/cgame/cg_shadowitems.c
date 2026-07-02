@@ -3,8 +3,7 @@
 cg_shadowitems.c
 
 Ghost 3D pickups when the real item is absent (cg_shadowItems bitmask).
-Data: mapdata QITM1 (v1 dropped origin, v2 spawn origin + client drop).
-Requires cg_simpleItems 0.
+Data: mapdata QITM1 v2 only (entity spawn origin + CM drop). Requires cg_simpleItems 0.
 
 Copyright (c) 2026 diwoc
 ===========================================================================
@@ -17,8 +16,8 @@ Copyright (c) 2026 diwoc
 #define CG_SHADOW_MODE_COUNT        5
 #define CG_SHADOW_MATCH_XY_SQ       (4.0f * 4.0f)
 #define CG_SHADOW_MATCH_Z           48.0f
-/* Same logical pickup pad (q3dm3 RL/PG offsets ~4 units). */
-#define CG_SHADOW_SLOT_XY_SQ        (12.0f * 12.0f)
+/* Same logical pickup pad (dual weapon spawns ~4u; row health/shards need tighter grouping). */
+#define CG_SHADOW_SLOT_XY_SQ        (3.0f * 3.0f)
 #define CG_SHADOW_SLOT_Z            64.0f
 /* Teamed map items respawn at random on server — cycle ghost preview on pad. */
 #define CG_SHADOW_SLOT_ROTATE_MS    2000
@@ -26,7 +25,13 @@ Copyright (c) 2026 diwoc
 #define CG_SHADOW_GHOST_ALPHA       80
 
 #define CG_SHADOW_ITEM_DROP_DEPTH   4096.0f
+#define CG_SHADOW_QITM1_VERSION     2
 #define CG_SHADOW_QITM_FLAG_SUSPENDED 1
+#define CG_SHADOW_ITEM_NUDGE_STEP   8.0f
+#define CG_SHADOW_ITEM_NUDGE_MAX    512.0f
+#define CG_SHADOW_ITEM_MAX_DROP_DELTA 256.0f
+/* Wider bind + anchor origin for armor/mega when map CM != server item (e.g. fatal). */
+#define CG_SHADOW_ARMOR_MATCH_XY_SQ   (24.0f * 24.0f)
 
 #define CG_SHADOW_ITEMS_TEST_DRAW   0
 
@@ -119,6 +124,9 @@ static int                      cg_shadowMatchBestEnt[CG_SHADOW_ITEM_MAX];
 static float                    cg_shadowMatchBestAbsDz[CG_SHADOW_ITEM_MAX];
 /* Item bob / scale-up phase per pickup pad (slot), not per QITM point. */
 static int                      cg_shadowSlotBobMiscTime[CG_SHADOW_ITEM_SLOT_MAX];
+/* Last seen live item origin (armor/mega); ghost stays here after pickup. */
+static vec3_t                   cg_shadowItemAnchorOrigin[CG_SHADOW_ITEM_MAX];
+static qboolean                 cg_shadowItemAnchorValid[CG_SHADOW_ITEM_MAX];
 
 static void CG_ShadowItems_SetSyncFromCent(int pointIdx, centity_t* cent);
 
@@ -213,7 +221,7 @@ static void CG_ShadowItems_TryMatchCentToPoint(
 		mapOrigin = pt->origin;
 		dx = world[0] - mapOrigin[0];
 		dy = world[1] - mapOrigin[1];
-		if (dx * dx + dy * dy > CG_SHADOW_MATCH_XY_SQ)
+		if (dx * dx + dy * dy > CG_ShadowItems_MatchXySqForModel(pt->modelindex))
 		{
 			continue;
 		}
@@ -271,42 +279,167 @@ static void CG_ShadowItems_Clear(void)
 	memset(cg_shadowModelPointStart, 0, sizeof(cg_shadowModelPointStart));
 	memset(cg_shadowModelPointCount, 0, sizeof(cg_shadowModelPointCount));
 	memset(cg_shadowSlotBobMiscTime, 0, sizeof(cg_shadowSlotBobMiscTime));
+	memset(cg_shadowItemAnchorValid, 0, sizeof(cg_shadowItemAnchorValid));
 }
 
-/*
-==================
-CG_ShadowItems_DropToFloor
+static qboolean CG_ShadowItems_UsesAnchorOrigin(int modelindex)
+{
+	gitem_t*    item;
 
-Same trace as game FinishSpawningItem (g_items.c): MASK_SOLID, ITEM_RADIUS bbox.
-==================
-*/
-static void CG_ShadowItems_DropToFloor(const vec3_t spawnOrigin, qboolean suspended, vec3_t outOrigin)
+	if (modelindex < 1 || modelindex >= bg_numItems)
+	{
+		return qfalse;
+	}
+	item = &bg_itemlist[modelindex];
+	if (!Q_stricmp(item->classname, "item_health_mega"))
+	{
+		return qtrue;
+	}
+	if (item->giType != IT_ARMOR)
+	{
+		return qfalse;
+	}
+	if (!Q_stricmp(item->classname, "item_armor_shard"))
+	{
+		return qfalse;
+	}
+	return qtrue;
+}
+
+static float CG_ShadowItems_MatchXySqForModel(int modelindex)
+{
+	if (CG_ShadowItems_UsesAnchorOrigin(modelindex))
+	{
+		return CG_SHADOW_ARMOR_MATCH_XY_SQ;
+	}
+	return CG_SHADOW_MATCH_XY_SQ;
+}
+
+static void CG_ShadowItems_RememberAnchorOrigin(int pointIdx, const vec3_t origin)
+{
+	const cg_shadowItemPoint_t* pt;
+
+	if (pointIdx < 0 || pointIdx >= CG_SHADOW_ITEM_MAX)
+	{
+		return;
+	}
+	pt = &cg_shadowItemPoints[pointIdx];
+	if (!CG_ShadowItems_UsesAnchorOrigin(pt->modelindex))
+	{
+		return;
+	}
+	VectorCopy(origin, cg_shadowItemAnchorOrigin[pointIdx]);
+	cg_shadowItemAnchorValid[pointIdx] = qtrue;
+}
+
+static qboolean CG_ShadowItems_TraceItemDrop(
+        const vec3_t start,
+        int contentsMask,
+        vec3_t outOrigin)
 {
 	trace_t     tr;
 	vec3_t      dest;
 	vec3_t      mins;
 	vec3_t      maxs;
 
-	if (suspended)
-	{
-		VectorCopy(spawnOrigin, outOrigin);
-		return;
-	}
-
 	VectorSet(mins, -ITEM_RADIUS, -ITEM_RADIUS, -ITEM_RADIUS);
 	VectorSet(maxs, ITEM_RADIUS, ITEM_RADIUS, ITEM_RADIUS);
-	VectorCopy(spawnOrigin, outOrigin);
-	dest[0] = spawnOrigin[0];
-	dest[1] = spawnOrigin[1];
-	dest[2] = spawnOrigin[2] - CG_SHADOW_ITEM_DROP_DEPTH;
+	VectorCopy(start, dest);
+	dest[2] = start[2] - CG_SHADOW_ITEM_DROP_DEPTH;
 
-	trap_CM_BoxTrace(&tr, spawnOrigin, dest, mins, maxs, 0, MASK_SOLID);
-	if (tr.startsolid)
+	trap_CM_BoxTrace(&tr, start, dest, mins, maxs, 0, contentsMask);
+	if (tr.startsolid || tr.allsolid)
 	{
-		return;
+		return qfalse;
 	}
 
 	VectorCopy(tr.endpos, outOrigin);
+	return qtrue;
+}
+
+/*
+==================
+CG_ShadowItems_DropToFloor
+
+FinishSpawningItem-style drop. Nudge up if startsolid; MASK_SOLID + MASK_PLAYERSOLID
+(highest floor) so item ghosts match pits with playerclip floors (e.g. fatal).
+==================
+*/
+static qboolean CG_ShadowItems_DropToFloor(const vec3_t spawnOrigin, qboolean suspended, vec3_t outOrigin)
+{
+	vec3_t      start;
+	vec3_t      solidHit;
+	vec3_t      playerHit;
+	vec3_t      best;
+	qboolean    haveSolid;
+	qboolean    havePlayer;
+	float       nudge;
+	float       drop;
+
+	if (suspended)
+	{
+		VectorCopy(spawnOrigin, outOrigin);
+		return qtrue;
+	}
+
+	VectorCopy(spawnOrigin, start);
+	haveSolid = qfalse;
+	havePlayer = qfalse;
+
+	for (nudge = 0.0f; nudge <= CG_SHADOW_ITEM_NUDGE_MAX; nudge += CG_SHADOW_ITEM_NUDGE_STEP)
+	{
+		if (CG_ShadowItems_TraceItemDrop(start, MASK_SOLID, solidHit))
+		{
+			haveSolid = qtrue;
+		}
+		if (CG_ShadowItems_TraceItemDrop(start, MASK_PLAYERSOLID, playerHit))
+		{
+			havePlayer = qtrue;
+		}
+
+		if (haveSolid || havePlayer)
+		{
+			break;
+		}
+
+		start[2] += CG_SHADOW_ITEM_NUDGE_STEP;
+	}
+
+	if (!haveSolid && !havePlayer)
+	{
+		VectorCopy(spawnOrigin, outOrigin);
+		return qfalse;
+	}
+
+	if (haveSolid && havePlayer)
+	{
+		if (solidHit[2] > playerHit[2])
+		{
+			VectorCopy(solidHit, best);
+		}
+		else
+		{
+			VectorCopy(playerHit, best);
+		}
+	}
+	else if (haveSolid)
+	{
+		VectorCopy(solidHit, best);
+	}
+	else
+	{
+		VectorCopy(playerHit, best);
+	}
+
+	drop = spawnOrigin[2] - best[2];
+	if (drop > CG_SHADOW_ITEM_MAX_DROP_DELTA)
+	{
+		VectorCopy(spawnOrigin, outOrigin);
+		return qfalse;
+	}
+
+	VectorCopy(best, outOrigin);
+	return qtrue;
 }
 
 static qboolean CG_ShadowItems_LoadQITM1Modes(const byte* raw, int rawLen, int pos)
@@ -359,7 +492,6 @@ static qboolean CG_ShadowItems_LoadQITM1(const byte* raw, int rawLen)
 	int                     numPoints;
 	int                     pos;
 	int                     i;
-	int                     pointSize;
 	vec3_t                  spawn;
 	qboolean                suspended;
 	cg_shadowItemPoint_t*   pt;
@@ -376,18 +508,17 @@ static qboolean CG_ShadowItems_LoadQITM1(const byte* raw, int rawLen)
 	{
 		return qfalse;
 	}
-	if (version != 1 && version != 2)
+	if (version != CG_SHADOW_QITM1_VERSION)
 	{
 		return qfalse;
 	}
 
-	pointSize = (version == 2) ? 16 : 18;
 	pos = 9;
 	CG_ShadowItems_Clear();
 
 	for (i = 0; i < numPoints; i++)
 	{
-		if (pos + pointSize > rawLen)
+		if (pos + 16 > rawLen)
 		{
 			CG_ShadowItems_Clear();
 			return qfalse;
@@ -403,18 +534,9 @@ static qboolean CG_ShadowItems_LoadQITM1(const byte* raw, int rawLen)
 		pos += 2;
 		pt->shadowCat = raw[pos];
 		pos += 1;
-		suspended = qfalse;
-		if (version == 2)
-		{
-			suspended = (raw[pos] & CG_SHADOW_QITM_FLAG_SUSPENDED) ? qtrue : qfalse;
-			pos += 1;
-			CG_ShadowItems_DropToFloor(spawn, suspended, pt->origin);
-		}
-		else
-		{
-			pos += 1;
-			VectorCopy(spawn, pt->origin);
-		}
+		suspended = (raw[pos] & CG_SHADOW_QITM_FLAG_SUSPENDED) ? qtrue : qfalse;
+		pos += 1;
+		CG_ShadowItems_DropToFloor(spawn, suspended, pt->origin);
 	}
 	cg_shadowItemCount = numPoints;
 
@@ -470,14 +592,14 @@ static int CG_ShadowItems_ModeIndex(void)
 	}
 }
 
-static qboolean CG_ShadowItems_XYMatchesMapPoint(const vec3_t world, const vec3_t mapOrigin)
+static qboolean CG_ShadowItems_XYMatchesMapPointSq(const vec3_t world, const vec3_t mapOrigin, float xySq)
 {
 	float   dx;
 	float   dy;
 
 	dx = world[0] - mapOrigin[0];
 	dy = world[1] - mapOrigin[1];
-	return (dx * dx + dy * dy <= CG_SHADOW_MATCH_XY_SQ);
+	return (dx * dx + dy * dy <= xySq);
 }
 
 static qboolean CG_ShadowItems_ItemSyncsWithPoint(centity_t* cent, const cg_shadowItemPoint_t* pt)
@@ -496,7 +618,8 @@ static qboolean CG_ShadowItems_ItemSyncsWithPoint(centity_t* cent, const cg_shad
 	{
 		return qfalse;
 	}
-	if (!CG_ShadowItems_XYMatchesMapPoint(cent->lerpOrigin, pt->origin))
+	if (!CG_ShadowItems_XYMatchesMapPointSq(cent->lerpOrigin, pt->origin,
+	        CG_ShadowItems_MatchXySqForModel(pt->modelindex)))
 	{
 		return qfalse;
 	}
@@ -513,6 +636,7 @@ static void CG_ShadowItems_SetSyncFromCent(int pointIdx, centity_t* cent)
 	VectorCopy(cent->lerpOrigin, cg_shadowItemSyncOrigin[pointIdx]);
 	cg_shadowItemPhaseEnt[pointIdx] = cent->currentState.number;
 	cg_shadowItemSyncValid[pointIdx] = qtrue;
+	CG_ShadowItems_RememberAnchorOrigin(pointIdx, cent->lerpOrigin);
 }
 
 static qboolean CG_ShadowItems_MapOriginsSameSlot(const vec3_t a, const vec3_t b)
@@ -529,6 +653,46 @@ static qboolean CG_ShadowItems_MapOriginsSameSlot(const vec3_t a, const vec3_t b
 		return qfalse;
 	}
 	if (dz > CG_SHADOW_SLOT_Z || dz < -CG_SHADOW_SLOT_Z)
+	{
+		return qfalse;
+	}
+	return qtrue;
+}
+
+static qboolean CG_ShadowItems_IsRowPickupItem(int modelindex)
+{
+	gitem_t*    item;
+
+	if (modelindex < 1 || modelindex >= bg_numItems)
+	{
+		return qfalse;
+	}
+	item = &bg_itemlist[modelindex];
+	if (!Q_stricmp(item->classname, "item_armor_shard"))
+	{
+		return qtrue;
+	}
+	if (item->giType == IT_HEALTH)
+	{
+		if (!Q_stricmp(item->classname, "item_health_mega"))
+		{
+			return qfalse;
+		}
+		return qtrue;
+	}
+	return qfalse;
+}
+
+static qboolean CG_ShadowItems_CanSharePickupSlot(
+        const cg_shadowItemPoint_t* a,
+        const cg_shadowItemPoint_t* b)
+{
+	if (!CG_ShadowItems_MapOriginsSameSlot(a->origin, b->origin))
+	{
+		return qfalse;
+	}
+	if (CG_ShadowItems_IsRowPickupItem(a->modelindex)
+	        != CG_ShadowItems_IsRowPickupItem(b->modelindex))
 	{
 		return qfalse;
 	}
@@ -565,7 +729,7 @@ static void CG_ShadowItems_BuildPickupSlots(void)
 				const cg_shadowItemPoint_t* pj;
 
 				pj = &cg_shadowItemPoints[cg_shadowItemSlotMembers[j][k]];
-				if (CG_ShadowItems_MapOriginsSameSlot(pi->origin, pj->origin))
+				if (CG_ShadowItems_CanSharePickupSlot(pi, pj))
 				{
 					slot = j;
 					break;
@@ -672,6 +836,10 @@ static int CG_ShadowItems_SlotActivePoints(int slot, int mode, int mask, int* ac
 		{
 			continue;
 		}
+		if (cg_shadowItemVisibleDraw[idx])
+		{
+			continue;
+		}
 		if (nActive >= CG_SHADOW_ITEM_SLOT_MEMBERS)
 		{
 			break;
@@ -713,8 +881,7 @@ static int CG_ShadowItems_GhostDrawAlpha(int pointIdx, int mode, int mask)
 	}
 
 	slot = cg_shadowItemSlotId[pointIdx];
-	if (slot >= 0 && slot < CG_SHADOW_ITEM_SLOT_MAX
-	        && cg_shadowItemSlotVisible[slot])
+	if (cg_shadowItemVisibleDraw[pointIdx])
 	{
 		return 0;
 	}
@@ -932,7 +1099,12 @@ static void CG_ShadowItems_DrawPoint(int pointIdx, const cg_shadowItemPoint_t* p
 	}
 
 	slot = cg_shadowItemSlotId[pointIdx];
-	if (cg_shadowItemSyncValid[pointIdx])
+	if (CG_ShadowItems_UsesAnchorOrigin(pt->modelindex)
+	        && cg_shadowItemAnchorValid[pointIdx])
+	{
+		VectorCopy(cg_shadowItemAnchorOrigin[pointIdx], drawOrigin);
+	}
+	else if (cg_shadowItemSyncValid[pointIdx])
 	{
 		VectorCopy(cg_shadowItemSyncOrigin[pointIdx], drawOrigin);
 	}
@@ -1098,7 +1270,12 @@ int CG_ShadowItems_PhaseEntForPoint(int pointIdx)
 
 void CG_ShadowItems_TouchLiveItemBob(int pointIdx, centity_t* cent)
 {
+	if (!cent)
+	{
+		return;
+	}
 	CG_ShadowItems_BindBobFromCent(pointIdx, cent);
+	CG_ShadowItems_RememberAnchorOrigin(pointIdx, cent->lerpOrigin);
 }
 
 void CG_ShadowItems_OnItemRespawnEvent(centity_t* cent)
@@ -1116,6 +1293,7 @@ void CG_ShadowItems_OnItemRespawnEvent(centity_t* cent)
 		return;
 	}
 
+	CG_ShadowItems_RememberAnchorOrigin(mapPoint, cent->lerpOrigin);
 	CG_ShadowItems_BindBobFromCent(mapPoint, cent);
 }
 
