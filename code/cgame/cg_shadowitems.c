@@ -679,6 +679,11 @@ static qboolean CG_ShadowItems_IsRowPickupItem(int modelindex)
 		{
 			return qfalse;
 		}
+		/* 25hp medkit: fixed spawn, not a row/ladder like small health or shards. */
+		if (!Q_stricmp(item->classname, "item_health"))
+		{
+			return qfalse;
+		}
 		return qtrue;
 	}
 	return qfalse;
@@ -689,6 +694,17 @@ static qboolean CG_ShadowItems_CanSharePickupSlot(
         const cg_shadowItemPoint_t* b)
 {
 	if (!CG_ShadowItems_MapOriginsSameSlot(a->origin, b->origin))
+	{
+		return qfalse;
+	}
+	if (a->modelindex < 1 || a->modelindex >= bg_numItems
+	        || b->modelindex < 1 || b->modelindex >= bg_numItems)
+	{
+		return qfalse;
+	}
+	/* item_health (25) never shares a pad (e.g. 13death_xt center shard on same entity origin). */
+	if (!Q_stricmp(bg_itemlist[a->modelindex].classname, "item_health")
+	        || !Q_stricmp(bg_itemlist[b->modelindex].classname, "item_health"))
 	{
 		return qfalse;
 	}
