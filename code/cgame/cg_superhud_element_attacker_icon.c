@@ -73,7 +73,14 @@ void CG_SHUDElementAttackerIconRoutine(void* context)
 	}
 
 	CG_SHUDFillAndFrameForElement(&element->config, element->ctx.color_origin, element->ctx.color);
-	CG_DrawHead(element->config.rect.value[0], element->config.rect.value[1], element->config.rect.value[2], element->config.rect.value[3], clientNum, element->angles);
+	if (element->config.image.isSet && element->ctx.image)
+	{
+		CG_SHUDDrawStretchPicCtx(&element->config, &element->ctx);
+	}
+	else
+	{
+		CG_DrawHead(element->config.rect.value[0], element->config.rect.value[1], element->config.rect.value[2], element->config.rect.value[3], clientNum, element->angles);
+	}
 }
 
 void CG_SHUDElementAttackerIconDestroy(void* context)

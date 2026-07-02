@@ -29,6 +29,42 @@ static vec3_t cg_mapLocOriginById[MAX_LOCATIONS];
 static qboolean cg_mapLocServerNamesCached;
 static qboolean cg_mapLocServerNamesPresent;
 
+// i hate this map
+static const char cg_q3shw14LocCfg[] =
+	"2338 617 -63 ^5MEGA\n"
+	"685 -808 56 ^3YA\n"
+	"2176 -826 -67 ^7long\n"
+	"98 -66 -67 ^1LAVA\n"
+	"1101 1520 528 ^1RED\n"
+	"1251 484 492 EYE\n"
+	"1258 401 492 EYE\n"
+	"1976 186 492 ^5BIG JUMP\n"
+	"924 -745 408 ^72st floor\n"
+	"1015 -1650 212 exit TP\n"
+	"-267 343 -263 ^1TP LAVA\n"
+	"1758 -291 -3 diagonal\n"
+	"1293 301 -71 1st floor\n"
+	"973 871 188 snipe\n"
+	"1889 1260 188 ^5MEGA snipe\n"
+	"1228 1260 188 snipe\n"
+	"1372 -1227 -55 ^850HP\n"
+	"1129 -390 -55 1st floor\n"
+	"44 -705 -67 ^3YA LOWER\n"
+	"145 -1054 -67 ^3YA LOWER\n"
+	"153 -432 -67 ^1LAVA\n"
+	"620 460 492 behind EYE\n"
+	"1369 -303 408 2st floor\n"
+	"1264 -1190 308 exit TP\n"
+	"719 -1116 323 exit TP\n"
+	"1037 -992 56 ^3YA\n"
+	"1412 -601 -55 ^850HP/^3YA\n"
+	"1412 -601 -55 ^850HP^7/^3YA\n"
+	"2224 -156 -67 long\n"
+	"1047 1085 492 ^1RED\n"
+	"955 891 492 EYE\n"
+	"1288 928 492 EYE\n"
+	"1975 629 820 hidden bones\n";
+
 static void CG_MapLocs_InvalidateServerLocationNamesCache(void)
 {
 	cg_mapLocServerNamesCached = qfalse;
@@ -55,6 +91,81 @@ static void CG_MapLocs_RefreshServerLocationNamesCache(void)
 void CG_MapLocs_NotifyLocationConfigStringChanged(void)
 {
 	CG_MapLocs_InvalidateServerLocationNamesCache();
+}
+
+static qboolean CG_MapLocs_LoadCfgText(const char* fileContent)
+{
+	const char* ptr;
+	char        line[1024];
+	int         matches;
+	const char* name;
+	int         id;
+
+	if (!fileContent || !fileContent[0])
+	{
+		return qfalse;
+	}
+
+	cg_mapLocCount = 0;
+	memset(cg_mapLocOriginValid, 0, sizeof(cg_mapLocOriginValid));
+
+	ptr = fileContent;
+	do
+	{
+		ptr = CG_LoadLine(ptr, line, sizeof(line));
+		if (!line[0] || line[0] == '/')
+		{
+			continue;
+		}
+
+		id = cg_mapLocCount + 1;
+		if (id <= 0 || id >= MAX_LOCATIONS || cg_mapLocCount >= MAX_LOCATIONS)
+		{
+			break;
+		}
+
+		matches = Q_sscanf(line, "%f %f %f %64s",
+		                   &cg_mapLocs[cg_mapLocCount].origin[0],
+		                   &cg_mapLocs[cg_mapLocCount].origin[1],
+		                   &cg_mapLocs[cg_mapLocCount].origin[2],
+		                   cg_mapLocs[cg_mapLocCount].name);
+		name = strstr(line, cg_mapLocs[cg_mapLocCount].name);
+		if (name)
+		{
+			Q_strncpyz(cg_mapLocs[cg_mapLocCount].name, name, CG_MAPLOC_NAME_LEN);
+		}
+		if (matches != 4)
+		{
+			continue;
+		}
+
+		cg_mapLocs[cg_mapLocCount].id = id;
+		cg_mapLocs[cg_mapLocCount].color = 0;
+		cg_mapLocOriginById[id][0] = cg_mapLocs[cg_mapLocCount].origin[0];
+		cg_mapLocOriginById[id][1] = cg_mapLocs[cg_mapLocCount].origin[1];
+		cg_mapLocOriginById[id][2] = cg_mapLocs[cg_mapLocCount].origin[2];
+		cg_mapLocOriginValid[id] = qtrue;
+		cg_mapLocCount++;
+	}
+	while (*ptr);
+
+	return (cg_mapLocCount > 0) ? qtrue : qfalse;
+}
+
+static qboolean CG_MapLocs_LoadEmbeddedForMap(void)
+{
+	char mapBase[MAX_QPATH];
+
+	CG_MapData_GetMapBaseName(mapBase, sizeof(mapBase));
+	if (!mapBase[0])
+	{
+		return qfalse;
+	}
+	if (Q_stricmp(mapBase, "q3shw14"))
+	{
+		return qfalse;
+	}
+	return CG_MapLocs_LoadCfgText(cg_q3shw14LocCfg);
 }
 
 static void CG_MapLocs_Clear(void)
@@ -167,6 +278,11 @@ qboolean CG_MapLocs_Load(void)
 	const byte* qlm;
 	int         qlmLen;
 
+	CG_MapLocs_Clear();
+	if (CG_MapLocs_LoadEmbeddedForMap())
+	{
+		return qtrue;
+	}
 	CG_MapLocs_Clear();
 	if (!CG_MapBundle_Section("QLM1", &qlm, &qlmLen))
 	{

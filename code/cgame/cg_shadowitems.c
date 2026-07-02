@@ -566,18 +566,8 @@ void CG_ShadowItems_Load(void)
 	(void)CG_ShadowItems_LoadQITM1(qitm, qitmLen);
 }
 
-static qboolean CG_ShadowItems_Q3mskFreezeUseFFA(void)
-{
-	return cgs.q3msk && cgs.osp.gameTypeFreeze != 0;
-}
-
 static int CG_ShadowItems_ModeIndex(void)
 {
-	if (CG_ShadowItems_Q3mskFreezeUseFFA())
-	{
-		return 0;
-	}
-
 	switch (cgs.gametype)
 	{
 	case GT_TOURNAMENT:
@@ -658,6 +648,24 @@ static qboolean CG_ShadowItems_MapOriginsSameSlot(const vec3_t a, const vec3_t b
 		return qfalse;
 	}
 	return qtrue;
+}
+
+static qboolean CG_ShadowItems_PadHasVisibleItem(const vec3_t padOrigin)
+{
+	int     i;
+
+	for (i = 0; i < cg_shadowItemCount; i++)
+	{
+		if (!cg_shadowItemVisibleDraw[i])
+		{
+			continue;
+		}
+		if (CG_ShadowItems_MapOriginsSameSlot(cg_shadowItemPoints[i].origin, padOrigin))
+		{
+			return qtrue;
+		}
+	}
+	return qfalse;
 }
 
 static qboolean CG_ShadowItems_IsRowPickupItem(int modelindex)
@@ -898,7 +906,16 @@ static int CG_ShadowItems_GhostDrawAlpha(int pointIdx, int mode, int mask)
 	}
 
 	slot = cg_shadowItemSlotId[pointIdx];
+	if (slot >= 0 && slot < CG_SHADOW_ITEM_SLOT_MAX && cg_shadowItemSlotVisible[slot])
+	{
+		return 0;
+	}
+
 	if (cg_shadowItemVisibleDraw[pointIdx])
+	{
+		return 0;
+	}
+	if (CG_ShadowItems_PadHasVisibleItem(pt->origin))
 	{
 		return 0;
 	}

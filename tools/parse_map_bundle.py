@@ -81,6 +81,7 @@ from parse_map_locations import (
     entity_would_spawn,
     entities_lump_from_bytes,
     pack_locations_binary,
+    forced_locations_for_map,
     load_custom_locations_for_map,
     parse_entity_lump,
     parse_origin,
@@ -450,7 +451,14 @@ def build_map_bundle_report(
     items_doc = build_item_report(entities, item_table, freeze)
     _apply_map_item_entity_excludes(map_name, items_doc)
     loc_doc = build_locations_report(entities, loc_gametype, freeze)
-    if not loc_doc:
+    forced_locs = forced_locations_for_map(map_name)
+    if forced_locs:
+        loc_doc = {
+            "map": map_name,
+            "location_count": len(forced_locs),
+            "locations": forced_locs,
+        }
+    elif not loc_doc:
         custom_locs = load_custom_locations_for_map(map_name)
         if custom_locs:
             loc_doc = {

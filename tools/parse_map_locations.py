@@ -408,6 +408,51 @@ def parse_custom_loc_cfg_text(text: str) -> list[dict[str, Any]]:
     return locations
 
 
+# Hardcoded locs for maps without reliable target_location in BSP (also in cgame cg_maplocs.c).
+Q3SHW14_LOC_CFG = """\
+2338 617 -63 ^5MEGA
+685 -808 56 ^3YA
+2176 -826 -67 ^7long
+98 -66 -67 ^1LAVA
+1101 1520 528 ^1RED
+1251 484 492 EYE
+1258 401 492 EYE
+1976 186 492 ^5BIG JUMP
+924 -745 408 ^72st floor
+1015 -1650 212 exit TP
+-267 343 -263 ^1TP LAVA
+1758 -291 -3 diagonal
+1293 301 -71 1st floor
+973 871 188 snipe
+1889 1260 188 ^5MEGA snipe
+1228 1260 188 snipe
+1372 -1227 -55 ^850HP
+1129 -390 -55 1st floor
+44 -705 -67 ^3YA LOWER
+145 -1054 -67 ^3YA LOWER
+153 -432 -67 ^1LAVA
+620 460 492 behind EYE
+1369 -303 408 2st floor
+1264 -1190 308 exit TP
+719 -1116 323 exit TP
+1037 -992 56 ^3YA
+1412 -601 -55 ^850HP^7/^3YA
+2224 -156 -67 long
+1047 1085 492 ^1RED
+955 891 492 EYE
+1288 928 492 EYE
+1975 629 820 hidden bones
+"""
+
+
+def forced_locations_for_map(map_name: str) -> list[dict[str, Any]] | None:
+    key = map_name.lower()
+    if key == "q3shw14":
+        locs = parse_custom_loc_cfg_text(Q3SHW14_LOC_CFG)
+        return locs if locs else None
+    return None
+
+
 def find_custom_loc_cfg_path(map_name: str) -> Path | None:
     key = map_name.lower()
     for base in (DEFAULT_GAME_LOCS_DIR, DEFAULT_QLoc64_DIR):
