@@ -562,7 +562,6 @@ snowflake
 
 altFullBrightShader
 {
-	cull none
 	sort nearest
     {
         map textures/effects/envmapghost.jpg
