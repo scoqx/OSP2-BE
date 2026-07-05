@@ -7,7 +7,9 @@
 
 
 Создано: 
-Mus1n - для Windows
+
+KONSTALKER - Для Windows
+(OUTDATED)Mus1n - для Windows
 koreanmodel - для Linux
 
 ===================================================================================
@@ -20,5 +22,6 @@ How to use:
 4. Press any key
 
 Made by:
-Mus1n - for Windows
+KONSTALKER - for Windows
+(OUTDATED)Mus1n - for Windows
 koreanmodel - for linux
