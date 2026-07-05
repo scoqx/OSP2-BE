@@ -94,7 +94,7 @@ typedef struct
 #define TEAMCHAT_WIDTH      80
 #define TEAMCHAT_HEIGHT     8
 
-#define BE_CHAT_HISTORY_LINES   128
+#define BE_CHAT_HISTORY_LINES   512
 #define BE_CHAT_LINE_CHARS      (MAX_SAY_TEXT + 64)
 
 #define BE_CHAT_MSG_SAY         0
@@ -1135,6 +1135,11 @@ typedef struct
 
 	qhandle_t   deferShader;
 
+	qhandle_t   loadingBarFill1Shader;
+	qhandle_t   loadingBarBorder1Shader;
+	qhandle_t   loadingBarFill2Shader;
+	qhandle_t   loadingBarBorder2Shader;
+
 	// gib explosions
 	qhandle_t   gibAbdomen;
 	qhandle_t   gibArm;
@@ -1703,7 +1708,6 @@ typedef struct
 #define CG_SHADOW_ITEMS_CAT_POWERUP     (1 << 4)
 #define CG_SHADOW_ITEMS_CAT_FLAG        (1 << 5)
 #define CG_SHADOW_ITEMS_CATEGORY_MASK   (CG_SHADOW_ITEMS_CAT_HEALTH | CG_SHADOW_ITEMS_CAT_ARMOR | CG_SHADOW_ITEMS_CAT_WEAPON | CG_SHADOW_ITEMS_CAT_AMMO | CG_SHADOW_ITEMS_CAT_POWERUP | CG_SHADOW_ITEMS_CAT_FLAG)
-#define CG_SHADOW_ITEMS_IGNORE_SERVER   (1 << 6)
 #define CG_BE_AUTOJUMP          (1 << 17) // 131072
 #define CG_BE_HITBOX            (1 << 18) // 262144
 
@@ -1917,8 +1921,6 @@ typedef struct
 
 	/* BE (OSP2-BE) settings - flattened from cgs.be */
 	int             beDisableFeatures;    /* server-disabled features bitmask */
-	int             beSpawnItems;           /* CS_OSP2BE_SPAWN_ITEMS (g_spawnItems bitset) */
-	qboolean        beSpawnItemsKnown;      /* qtrue if server sent CS_OSP2BE_SPAWN_ITEMS */
 	int             beTourneyMode;        /* manual tourney mode bitmask */
 	int             beTourneyLockedMaxfps;
 	int             beTourneyLockedPitch;
@@ -2501,6 +2503,7 @@ extern vmCvar_t         cg_chatWindowFontSize;
 extern vmCvar_t         cg_beLastTellSender;
 extern vmCvar_t         cg_chatWindowBgColor;
 extern vmCvar_t         cg_chatWindowBgOpaque;
+extern vmCvar_t         cg_chatWindowFavEmojis;
 extern vmCvar_t         cg_drawSpawns;
 extern vmCvar_t         cg_drawTPexit;
 extern vmCvar_t         cg_shadowItems;
@@ -2697,6 +2700,13 @@ void CG_OSPLoadEmoji(void);
 int CG_OSPEmojiSortedCount(void);
 const emoji_t* CG_OSPEmojiSortedAt(int index);
 int CG_OSPEmojiPrefixMatch(const char* plainPrefix, const emoji_t** outList, int maxOut);
+int CG_OSPEmojiPickerVisualRowCount(void);
+qboolean CG_OSPEmojiPickerRowIsHeader(int visualRow);
+const char* CG_OSPEmojiPickerRowHeaderTitle(int visualRow);
+int CG_OSPEmojiPickerRowEmojiCount(int visualRow);
+const emoji_t* CG_OSPEmojiPickerEmojiAt(int visualRow, int col);
+int CG_OSPEmojiPickerPickIndexAt(int visualRow, int col);
+const emoji_t* CG_OSPEmojiPickerAtPickIndex(int pickIndex);
 void CG_OSPEmojiList_f(void);
 void CG_OSPDrawEmojiListOverlay(void);
 
@@ -2774,6 +2784,7 @@ void CG_GetColorForHealth(int health, int armor, vec4_t hcolor, char* ccolor);
 void CG_UpdateHealthLowFlag(void);
 
 void UI_DrawProportionalString(int x, int y, const char* str, int style, vec4_t color);
+void UI_DrawProportionalStringScaled(int x, int y, const char* str, int style, vec4_t color, float scale);
 void CG_DrawRect(float x, float y, float width, float height, float size, const float* color);
 void CG_DrawSides(float x, float y, float w, float h, float size);
 void CG_DrawTopBottom(float x, float y, float w, float h, float size);
@@ -3206,16 +3217,57 @@ qboolean CG_MapBundle_QuerySections(int* version, int* qspLen, int* qitmLen, int
 const char* CG_MapBundle_DataSource(void);
 void CG_TestQ3lb_f(void);
 void CG_ShadowItems_Load(void);
+qboolean CG_ShadowItems_ClassnameFromAbbrev(const char* abbrev, const char** outClassname);
+
+#define CG_ITEM_NOTIFY_GROUP_YA             0
+#define CG_ITEM_NOTIFY_GROUP_RA             1
+/* group 2 reserved (green armor — not tracked yet) */
+#define CG_ITEM_NOTIFY_GROUP_MH             3
+#define CG_ITEM_NOTIFY_GROUP_POWERUP_BASE   4
+#define CG_ITEM_NOTIFY_MAX_GROUPS           (4 + PW_NUM_POWERUPS)
+#define CG_ITEM_NOTIFY_MAX_ENTRIES          64
+#define CG_ITEM_SPAWNS_DRAW_MAX             64
+#define CG_ITEM_SPAWNS_OVERLAY_MAX          3
+#define CG_ITEM_SPAWNS_SPOT_MAX             32
+#define CG_ITEM_SPAWNS_SPOT_MEMBERS_MAX     8
+
+typedef struct cg_spectatorItemDrawRef_s
+{
+	int trackId;
+} cg_spectatorItemDrawRef_t;
+
+typedef struct cg_spectatorItemSpotDrawRef_s
+{
+	int primaryGroup;
+	int overlayGroups[CG_ITEM_SPAWNS_OVERLAY_MAX];
+	int overlayCount;
+	int timerTrackId;
+	int sortKey;
+} cg_spectatorItemSpotDrawRef_t;
+
+void CG_SpectatorItems_OnConfigStringChanged(void);
+void CG_SpectatorItems_OnPickedUpItem(int pickerNum, int pickItemId, int nextSpawnTime,
+                                      int nextItemId);
+int CG_SpectatorItems_GetGroup(int entryIndex);
+int CG_SpectatorItems_GetNextSpawnTime(int entryIndex);
+int CG_SpectatorItems_RemainingMs(int entryIndex);
+void CG_SpectatorItems_SetHudTeamTables(qboolean hasRedTable, qboolean hasBlueTable);
+int CG_SpectatorItems_BuildDrawList(int trackSideFilter, cg_spectatorItemDrawRef_t* out, int maxOut);
+int CG_SpectatorItems_BuildSpotDrawList(int trackSideFilter, cg_spectatorItemSpotDrawRef_t* out, int maxOut);
+qhandle_t CG_SpectatorItems_IconShader(int group);
+qboolean CG_SpectatorItems_ServerCommand(void);
+void CG_ShadowItems_OnConfigStringChanged(void);
+int CG_ShadowItems_NoteLiveItem(centity_t* cent);
 void CG_AddShadowItems(void);
-int CG_ShadowItems_MapPointIndexForCent(centity_t* cent);
-int CG_ShadowItems_BobMiscTimeForPoint(int pointIdx);
 int CG_ShadowItems_PhaseEntForPoint(int pointIdx);
-void CG_ShadowItems_TouchLiveItemBob(int pointIdx, centity_t* cent);
+int CG_ShadowItems_MapPointForItemBob(centity_t* cent);
+void CG_ShadowItems_OnItemPickup(int modelindex);
 void CG_ShadowItems_OnItemRespawnEvent(centity_t* cent);
 int CG_ShadowItems_NumPoints(void);
 int CG_ShadowItems_NumPointsForMode(int mode);
 int CG_ShadowItems_ActiveModeIndex(void);
 int CG_ShadowItems_DebugEffectiveMask(void);
+int CG_ShadowItems_UsesServerLayout(void);
 void CG_ShadowItems_PrintList(int maxList);
 void CG_AddWorldItem3D(const vec3_t origin, int modelindex, int entNumber, int miscTime, qboolean shadowGhost, int shadowGhostAlpha);
 void CG_MapTPExit_Load(void);
@@ -3667,11 +3719,16 @@ void CG_BEChat_EmojiSessionClose(void);
 void CG_BEChat_EmojiOnInputChanged(beChatInput_t* edit);
 qboolean CG_BEChat_EmojiProcessKey(int keycode, beChatInput_t* edit, float maxTextW);
 qboolean CG_BEChat_EmojiAcIsActive(void);
+qboolean CG_BEChat_EmojiAcCompleteForSend(beChatInput_t* edit, float maxTextW);
+qboolean CG_BEChat_AltFavHintActive(void);
+qboolean CG_BEChat_AltIsHeld(void);
+void CG_BEChat_AltSuppressPickerOnRelease(void);
 void CG_BEChat_EmojiCursorStepLeft(beChatInput_t* edit);
 void CG_BEChat_EmojiCursorStepRight(beChatInput_t* edit);
 void CG_BEChat_EmojiBackspace(beChatInput_t* edit, float maxTextW);
 void CG_BEChat_EmojiDelete(beChatInput_t* edit, float maxTextW);
 void CG_BEChat_EmojiInsertToken(beChatInput_t* edit, const char* token, float maxTextW);
+qboolean CG_BEChat_EmojiInsertFav(beChatInput_t* edit, int slotIndex, float maxTextW);
 void CG_BEChat_EmojiDrawUI(float inputX, float inputY, float inputW, beChatInput_t* edit, const vec4_t color, int textFlags);
 qboolean CG_BEChat_EmojiMouseDown(float virtX, float virtY, beChatInput_t* edit, float maxTextW);
 qboolean CG_BEChat_EmojiPickerWheel(int wheelUp);

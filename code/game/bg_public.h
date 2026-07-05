@@ -124,7 +124,58 @@ extern "C" {
 #define CS_OSP_CUSTOM_CLIENT2                     874
 #define CS_OSP2BE_SUPPORTED                     887
 #define CS_OSP2BE_DISABLED_FEATURES             888
-#define CS_OSP2BE_SPAWN_ITEMS                   889
+#define CS_OSP2BE_ITEM_TRACK                   889
+/*
+ * Item pickup notify (OSP2BE):
+ *   servercmd  pui <cmd> <readyTime>
+ *   CS 889     v4;S,side,padIdx,id,id,...;I,id;...  (team pads + singles)
+ *
+ * itemId = PUI_ID( type, side, slot ):  type bits0-3, slot bits4-7, side bits8-9
+ * cmd    = PUI_CMD( picker, pick, next ): next bits0-9, pick bits10-19, picker bits20-25
+ *   use PUI_ID_INVALID for next when not used
+ *
+ * v4 pad segment S: items on one team spawn pad share side+padIdx (slot field in PUI_ID).
+ * First id in the segment is the default row icon; rest are badge overlays (pad order).
+ * I = single pickup not on a team pad.
+ */
+typedef enum
+{
+	PUI_MH,
+	PUI_RA,
+	PUI_YA,
+	PUI_QD,
+	PUI_BS,
+	PUI_REG,
+	PUI_INV,
+	PUI_HST,
+	PUI_FLG,
+	PUI_TYPE_COUNT,
+	PUI_ID_INVALID = 1023
+} puiType_t;
+
+#define PUI_ID( type, side, slot ) \
+	( ( ( (side) & 3 ) << 8 ) | ( ( (slot) & 0xF ) << 4 ) | ( (type) & 0xF ) )
+#define PUI_CMD( picker, pickId, nextId ) \
+	( ( ( (picker) & (MAX_CLIENTS - 1) ) << 20 ) | ( ( (pickId) & 0x3FF ) << 10 ) | ( (nextId) & 0x3FF ) )
+
+int BG_PuiIdType(int itemId);
+int BG_PuiIdSide(int itemId);
+int BG_PuiIdSlot(int itemId);
+void BG_PuiUnpackCmd(int cmd, int* picker, int* pickId, int* nextId);
+
+#define CS_OSP2BE_SHADOW_ITEMS_HDR              890
+#define CS_OSP2BE_SHADOW_ITEMS_DATA0            891
+#define CS_OSP2BE_SHADOW_ITEMS_DATA_COUNT       10
+#define CS_OSP2BE_SHADOW_ITEMS_DATA_LAST        (CS_OSP2BE_SHADOW_ITEMS_DATA0 + CS_OSP2BE_SHADOW_ITEMS_DATA_COUNT - 1)
+/*
+ * OSP2-BE cg_shadowItems — server pickup layout (optional).
+ * SI3 (legacy/metarena): CS 890 exactly "SI3"; payload only in CS 891..900.
+ * SI4: CS 890 is "SI4" + payload; CS 891..900 continue (concatenated, no ';' between CS).
+ * Group: "tok[/tok2...]@x,y,z" — coords in 0.1 units; '/' = map team slot alternatives.
+ * No SI3/SI4 in 890 (or empty 890) → client uses mapdata QITM.
+ */
+#define CS_OSP2BE_SHADOW_ITEMS_MAGIC            "SI3"
+#define CS_OSP2BE_SHADOW_ITEMS_MAGIC_SI4        "SI4"
 #define XQ3E_ALLOW_FEATURES                     1000
 
 #define CS_MAX                  (XQ3E_ALLOW_FEATURES)
@@ -774,6 +825,7 @@ gitem_t* BG_FindItemForHoldable(holdable_t pw);
 
 qboolean    BG_CanItemBeGrabbed(int gametype, const entityState_t* ent, const playerState_t* ps, qboolean disableArmorCheck);
 
+int         BG_PuiTypeFromItem(gitem_t* item);
 
 // g_dmflags->integer flags
 #define DF_NO_FALLING               8

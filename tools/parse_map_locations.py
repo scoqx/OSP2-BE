@@ -122,7 +122,17 @@ def _zip_read_member_bytes(zf: zipfile.ZipFile, member: str) -> bytes:
     raise zipfile.BadZipFile(f"unsupported compression {info.compress_type} in {member}")
 
 
-def read_bsp_bytes(path: Path, bsp_in_pk3: str | None) -> tuple[bytes, str, str]:
+# (pk3 path, inner bsp path) -> decompressed BSP bytes (batch parse).
+_PK3_BSP_BYTES_CACHE: dict[tuple[str, str], bytes] = {}
+
+
+def clear_pk3_bsp_cache() -> None:
+    _PK3_BSP_BYTES_CACHE.clear()
+
+
+def read_bsp_bytes(
+    path: Path, bsp_in_pk3: str | None, *, use_pk3_cache: bool = True
+) -> tuple[bytes, str, str]:
     """Return (file bytes, source label, map name without extension)."""
     path = path.resolve()
     suffix = path.suffix.lower()
@@ -131,7 +141,13 @@ def read_bsp_bytes(path: Path, bsp_in_pk3: str | None) -> tuple[bytes, str, str]
         with zipfile.ZipFile(path) as zf:
             inner = _resolve_bsp_in_pk3(zf, path.stem.lower(), bsp_in_pk3)
             inner = inner.replace("\\", "/")
-            data = _zip_read_member_bytes(zf, inner)
+            cache_key = (str(path), inner)
+            if use_pk3_cache and cache_key in _PK3_BSP_BYTES_CACHE:
+                data = _PK3_BSP_BYTES_CACHE[cache_key]
+            else:
+                data = _zip_read_member_bytes(zf, inner)
+                if use_pk3_cache:
+                    _PK3_BSP_BYTES_CACHE[cache_key] = data
         map_name = Path(inner).stem.lower()
         return data, f"{path}!{inner}", map_name
 
@@ -408,7 +424,7 @@ def parse_custom_loc_cfg_text(text: str) -> list[dict[str, Any]]:
     return locations
 
 
-# Hardcoded locs for maps without reliable target_location in BSP (also in cgame cg_maplocs.c).
+# Maps without target_location in BSP: injected at bundle parse time (QLM1).
 Q3SHW14_LOC_CFG = """\
 2338 617 -63 ^5MEGA
 685 -808 56 ^3YA
@@ -445,12 +461,17 @@ Q3SHW14_LOC_CFG = """\
 """
 
 
+FORCED_MAP_LOCATION_CFG: dict[str, str] = {
+    "q3shw14": Q3SHW14_LOC_CFG,
+}
+
+
 def forced_locations_for_map(map_name: str) -> list[dict[str, Any]] | None:
-    key = map_name.lower()
-    if key == "q3shw14":
-        locs = parse_custom_loc_cfg_text(Q3SHW14_LOC_CFG)
-        return locs if locs else None
-    return None
+    text = FORCED_MAP_LOCATION_CFG.get(map_name.lower())
+    if not text:
+        return None
+    locs = parse_custom_loc_cfg_text(text)
+    return locs if locs else None
 
 
 def find_custom_loc_cfg_path(map_name: str) -> Path | None:

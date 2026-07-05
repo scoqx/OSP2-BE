@@ -21,6 +21,21 @@ endif
 #############################################################################
 -include Makefile.local
 
+ifndef JOB_SLOTS
+JOB_SLOTS := $(shell nproc 2>/dev/null)
+ifeq ($(JOB_SLOTS),)
+  ifdef NUMBER_OF_PROCESSORS
+    JOB_SLOTS := $(NUMBER_OF_PROCESSORS)
+  else
+    JOB_SLOTS := $(shell getconf _NPROCESSORS_ONLN 2>/dev/null)
+  endif
+endif
+ifeq ($(JOB_SLOTS),)
+JOB_SLOTS := 8
+endif
+endif
+MAKEFLAGS += -j$(JOB_SLOTS)
+
 ifndef MOD
 MOD=osp2
 endif
@@ -74,6 +89,10 @@ export CROSS_COMPILING
 
 include config.mk
 
+ASSETS_DIR = ../../assets
+ASSETS_PACK_SHA = .assets-pack-sha
+ASSETS_PACKED_SHA = .assets-packed.sha
+
 srcs = $(foreach file,$1,$(if $(patsubst %.asm,,$(file)),$2/$(file).asm,$(file)))
 qa_asm = $(call srcs,$(QA_SRC),vm/game)
 cg_asm = $(call srcs,$(CG_SRC),vm/cgame)
@@ -90,8 +109,15 @@ endif
 
 all: dirs $(PK3)
 
+# Fast path: cgame.qvm + ui.qvm in parallel (-j); no cross-deps between modules
+cgame: vm/cgame.qvm
+ui: vm/ui.qvm
+vm: cgame ui
+
+vm/cgame.qvm vm/ui.qvm: | dirs
+
 dirs:
-	mkdir -p vm/game vm/cgame vm/ui
+	mkdir -p vm/game vm/cgame vm/cgame/chatWindow vm/cgame/superhud vm/cgame/superhud/elements vm/ui
 ifeq ($(PLATFORM),linux)
 	@if [ -f tools/q3lcc ]; then chmod +x tools/q3lcc; fi
 	@if [ -f tools/q3asm ]; then chmod +x tools/q3asm; fi
@@ -99,7 +125,7 @@ ifeq ($(PLATFORM),linux)
 	@if [ -f tools/q3rcc ]; then chmod +x tools/q3rcc; fi
 endif
 
-.PHONY: all dirs FORCE check_cvardesc check_status_infostring
+.PHONY: all vm cgame ui dirs FORCE check_cvardesc check_status_infostring
 
 check_cvardesc: FORCE
 ifeq ($(MINGW),1)
@@ -112,7 +138,7 @@ else
 	@$(PYTHON) ../../scripts/check_cvardesc_len.py
 endif
 
-check_status_infostring: FORCE ../../assets/version.txt ../../assets/version_changelog.txt
+check_status_infostring: ../../assets/version.txt ../../assets/version_changelog.txt
 ifeq ($(MINGW),1)
 	@if $(call MINGW_PY_CMD,../../scripts/check_status_infostring.py); then \
 		: ; \
@@ -125,12 +151,12 @@ endif
 
 FORCE:
 
-../../assets/version.txt: FORCE $(COMDIR)/osp_version.h
+../../assets/version.txt: $(COMDIR)/osp_version.h
 	@echo "Extracting version from $(COMDIR)/osp_version.h"
 	@grep -E '^#define OSP_VERSION "' $(COMDIR)/osp_version.h | sed -E 's/^#define OSP_VERSION "([^"]*)".*/\1/' > $@
 	@echo "Version file created: $$(cat $@)"
 
-../../assets/docs/changelog_be_r.txt: FORCE ../../changelog_be.txt
+../../assets/docs/changelog_be_r.txt: ../../changelog_be.txt
 	@echo "Reversing full changelog for UI"
 	@mkdir -p ../../assets/docs
 	@awk ' \
@@ -157,7 +183,7 @@ FORCE:
 		} \
 	' ../../changelog_be.txt > $@.tmp && mv $@.tmp $@
 
-../../assets/version_changelog.txt: FORCE ../../changelog_be.txt ../../assets/version.txt
+../../assets/version_changelog.txt: ../../changelog_be.txt ../../assets/version.txt
 	@echo "Extracting changelog for current version"
 	@VERSION_NUM=$$(cat ../../assets/version.txt | sed 's/be-//'); \
 	awk -v ver="$$VERSION_NUM" ' \
@@ -192,14 +218,28 @@ FORCE:
 		fi; \
 	fi
 
+$(ASSETS_PACK_SHA): FORCE
+	@if [ -f $(ASSETS_PACK_SHA) ] && ! find $(ASSETS_DIR) -type f -newer $(ASSETS_PACK_SHA) -print -quit | grep -q .; then \
+		: ; \
+	else \
+		find $(ASSETS_DIR) -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $$1}' > $(ASSETS_PACK_SHA).tmp && mv $(ASSETS_PACK_SHA).tmp $(ASSETS_PACK_SHA); \
+	fi
+
 #$(PK3): vm/qagame.qvm vm/cgame.qvm vm/ui.qvm
-$(PK3): check_status_infostring vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt
+$(PK3): check_cvardesc check_status_infostring vm/cgame.qvm vm/ui.qvm ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt $(ASSETS_PACK_SHA)
 	@echo "Creating package with version files..."
 	@echo "Version: $$(cat ../../assets/version.txt)"
-	@$(7Z) $@ vm/*.qvm vm/*.jts vm/*.map ../../assets/*
+	@FULL=0; \
+	if [ ! -f $@ ]; then FULL=1; fi; \
+	$(7Z) $@ vm/*.qvm vm/*.jts vm/*.map; \
+	if [ "$$FULL" = 1 ] || [ ! -f $(ASSETS_PACKED_SHA) ] || ! cmp -s $(ASSETS_PACK_SHA) $(ASSETS_PACKED_SHA) 2>/dev/null; then \
+		echo "Updating assets in pk3 (mx=9, threads: $(7Z_MT))..."; \
+		$(7Z) $@ $(ASSETS_DIR)/*; \
+		cp $(ASSETS_PACK_SHA) $(ASSETS_PACKED_SHA); \
+	fi
 
 
-cc = cd vm/$1 && $(Q3LCC) $2 -o $(notdir $@).tmp ../../$< && mv $(notdir $@).tmp $(notdir $@)
+cc = mkdir -p $(dir $@) && $(Q3LCC) $2 -o $@ $<
 qa_cc = $(call cc,game,$(QA_CFLAGS))
 cg_cc = $(call cc,cgame,$(CG_CFLAGS))
 ui_cc = $(call cc,ui,$(UI_CFLAGS))
@@ -207,7 +247,7 @@ ui_cc = $(call cc,ui,$(UI_CFLAGS))
 #vm/qagame.qvm: $(qa_asm)
 #	$(Q3ASM) -o $@ $(qa_asm)
 
-vm/cgame.qvm: check_cvardesc $(cg_asm)
+vm/cgame.qvm: $(cg_asm)
 	$(Q3ASM) -o $@ $(cg_asm)
 
 vm/ui.qvm: $(ui_asm)
@@ -221,6 +261,19 @@ vm/cgame/%.asm: $(QADIR)/%.c
 
 vm/cgame/%.asm: $(CGDIR)/%.c
 	$(cg_cc)
+
+# chatWindow/*.c: compile from $(CGDIR) so q3cpp resolves cgame/game includes like flat cgame sources
+vm/cgame/chatWindow/%.asm: $(CGDIR)/chatWindow/%.c
+	mkdir -p $(dir $@)
+	cd $(CGDIR) && $(Q3LCC_BIN) -DQ3_VM -S -Wf-g $(CG_CHATWINDOW_CFLAGS) -o $(abspath $@) chatWindow/$*.c
+
+vm/cgame/superhud/%.asm: $(CGDIR)/superhud/%.c
+	mkdir -p $(dir $@)
+	cd $(CGDIR) && $(Q3LCC_BIN) -DQ3_VM -S -Wf-g $(CG_SUPERHUD_CFLAGS) -o $(abspath $@) superhud/$*.c
+
+vm/cgame/superhud/elements/%.asm: $(CGDIR)/superhud/elements/%.c
+	mkdir -p $(dir $@)
+	cd $(CGDIR) && $(Q3LCC_BIN) -DQ3_VM -S -Wf-g $(CG_SUPERHUD_ELEMENT_CFLAGS) -o $(abspath $@) superhud/elements/$*.c
 
 vm/cgame/%.asm: $(COMDIR)/%.c
 	$(cg_cc)
@@ -238,4 +291,4 @@ vm/ui/%.asm: $(COMDIR)/%.c
 	@touch $@
 
 clean:
-	$(RM) -rf *.pk3 vm/ ../cgame/*.asm ../game/*.asm ../ui/*.asm
+	$(RM) -rf *.pk3 vm/ ../cgame/*.asm ../game/*.asm ../ui/*.asm $(ASSETS_PACKED_SHA)

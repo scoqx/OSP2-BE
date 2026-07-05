@@ -121,7 +121,6 @@ static void CG_MapTPExit_AddTeleportModel(const cg_tpExitPoint_t* pt)
 {
 	refEntity_t re;
 	vec3_t      angles;
-	byte        rgba[4];
 
 	if (!cgs.media.teleportEffectModel || !cgs.media.teleporterStarsShader)
 	{
@@ -135,11 +134,10 @@ static void CG_MapTPExit_AddTeleportModel(const cg_tpExitPoint_t* pt)
 	/* shaderTime 0: tcMod scroll uses refdef.time (do not set to cg.time each frame) */
 	re.renderfx = RF_LIGHTING_ORIGIN | RF_NOSHADOW;
 
-	rgba[0] = 255.0f;
-	rgba[1] = 255.0f;
-	rgba[2] = 255.0f;
-	rgba[3] = 77;
-	*(int*)re.shaderRGBA = *(int*)rgba;
+	re.shaderRGBA[0] = 255;
+	re.shaderRGBA[1] = 255;
+	re.shaderRGBA[2] = 255;
+	re.shaderRGBA[3] = 77;
 
 	VectorCopy(pt->origin, re.origin);
 	re.origin[2] -= 24.0f;

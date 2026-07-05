@@ -251,7 +251,7 @@ endef
 
 define DO_CGAME_CC
 $(echo_cmd) "CGAME_CC $<"
-$(Q)$(CC) $(MOD_CFLAGS) -DCGAME $(SHLIBCFLAGS) $(CFLAGS) $(OPTIMIZE) -o $@ -c $<
+$(Q)$(CC) $(MOD_CFLAGS) -DCGAME -I$(CGDIR) -I$(CGDIR)/chatWindow -I$(CGDIR)/superhud $(SHLIBCFLAGS) $(CFLAGS) $(OPTIMIZE) -o $@ -c $<
 endef
 
 define DO_UI_CC
@@ -323,6 +323,9 @@ makedirs:
 	@if [ ! -d $(B) ];then $(MKDIR) $(B);fi
 	@if [ ! -d $(B)/$(MOD) ];then $(MKDIR) $(B)/$(MOD);fi
 	@if [ ! -d $(B)/$(MOD)/cgame ];then $(MKDIR) $(B)/$(MOD)/cgame;fi
+	@if [ ! -d $(B)/$(MOD)/cgame/chatWindow ];then $(MKDIR) $(B)/$(MOD)/cgame/chatWindow;fi
+	@if [ ! -d $(B)/$(MOD)/cgame/superhud ];then $(MKDIR) $(B)/$(MOD)/cgame/superhud;fi
+	@if [ ! -d $(B)/$(MOD)/cgame/superhud/elements ];then $(MKDIR) $(B)/$(MOD)/cgame/superhud/elements;fi
 	@if [ ! -d $(B)/$(MOD)/qcommon ];then $(MKDIR) $(B)/$(MOD)/qcommon;fi
 	@if [ ! -d $(B)/$(MOD)/game ];then $(MKDIR) $(B)/$(MOD)/game;fi
 	@if [ ! -d $(B)/$(MOD)/ui ];then $(MKDIR) $(B)/$(MOD)/ui;fi
@@ -344,6 +347,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_mapbundle.o \
   $(B)/$(MOD)/cgame/cg_spawns.o \
   $(B)/$(MOD)/cgame/cg_shadowitems.o \
+  $(B)/$(MOD)/cgame/cg_spectatoritems.o \
   $(B)/$(MOD)/cgame/cg_tpexit.o \
   $(B)/$(MOD)/cgame/cg_globalpos.o \
   $(B)/$(MOD)/cgame/cg_worldflags.o \
@@ -377,65 +381,73 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_teamtasks_utils.o \
   $(B)/$(MOD)/cgame/cg_teamtasks_draw.o \
   $(B)/$(MOD)/cgame/cg_teamtasks_selwheel.o \
-  $(B)/$(MOD)/cgame/cg_superhud.o \
-  $(B)/$(MOD)/cgame/cg_superhud_configparser.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_ammomessage.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_attacker_icon.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_attacker_name.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_chat.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_flagstatus.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_followmessage.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_fps.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_fragmessage.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_gametime.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_gametype.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_grid.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_itempickup.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_itempickupicon.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_localtime.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_location.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_name.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_ng.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_ngp.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_obituaries.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_powerup.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_pred.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_rankmessage.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_recordmessage.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_reward.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_sbab.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_sbac.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_sbai.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_sbamb.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_sbamc.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_sbami.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_sbhb.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_sbhc.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_sbhi.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_score.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_timelimit.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_specmessage.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_speed.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_target_name.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_target_status.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_team.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_teamcount.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_tempAcc.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_vmw.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_warmupinfo.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_roundwarmup.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_laststanding.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_weaponlist.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_weapon_stats.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_player_stats.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_player_name.o \
-  $(B)/$(MOD)/cgame/cg_superhud_element_teamtasks.o \
-  $(B)/$(MOD)/cgame/cg_superhud_private.o \
-  $(B)/$(MOD)/cgame/cg_superhud_util.o \
+  $(B)/$(MOD)/cgame/superhud/superhud.o \
+  $(B)/$(MOD)/cgame/superhud/superhud_configparser.o \
+  $(B)/$(MOD)/cgame/superhud/superhud_private.o \
+  $(B)/$(MOD)/cgame/superhud/superhud_util.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_ammomessage.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_attacker_icon.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_attacker_name.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_chat.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_flagstatus.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_followmessage.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_fps.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_fragmessage.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_gametime.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_gametype.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_grid.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_itempickup.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_itempickupicon.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_spectator_itempickups.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_spectator_itemspawns.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_localtime.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_location.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_name.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_ng.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_ngp.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_obituaries.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_powerup.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_pred.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_rankmessage.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_recordmessage.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_reward.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_sbab.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_sbac.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_sbai.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_sbamb.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_sbamc.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_sbami.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_sbhb.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_sbhc.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_sbhi.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_score.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_timelimit.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_specmessage.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_speed.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_target_name.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_target_status.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_team.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_teamcount.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_tempAcc.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_vmw.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_warmupinfo.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_roundwarmup.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_laststanding.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_weaponlist.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_weapon_stats.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_player_stats.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_player_name.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_teamtasks.o \
   $(B)/$(MOD)/cgame/cg_be_util.o \
   $(B)/$(MOD)/cgame/cg_be_stats.o \
-  $(B)/$(MOD)/cgame/cg_be_chatwindow.o \
-  $(B)/$(MOD)/cgame/cg_be_chatwindow_emoji.o \
+  $(B)/$(MOD)/cgame/chatWindow/be_chatwindow.o \
+  $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_state.o \
+  $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_persist.o \
+  $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_cmdac.o \
+  $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_history.o \
+  $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_input.o \
+  $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_emoji.o \
+  $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_emoji_picker.o \
   $(B)/$(MOD)/cgame/cg_brightitems.o \
   $(B)/$(MOD)/cgame/beinfo_cfg.o \
   $(B)/$(MOD)/cgame/osp_fonts.o \

@@ -700,9 +700,9 @@ void CG_TestQ3lb_f(void)
 			          modeNames[itemMode], CG_ShadowItems_NumPointsForMode(itemMode));
 		}
 		CG_TestQ3lb_PrintModeCounts("all", CG_ShadowItems_NumPointsForMode);
-		CG_Printf("    cvars: cg_shadowItems=^3%i^7 mask=^3%i^7 spawnItems=^3%i^7 cg_simpleItems=^3%i^7\n",
+		CG_Printf("    cvars: cg_shadowItems=^3%i^7 mask=^3%i^7 serverSI3=^3%i^7 cg_simpleItems=^3%i^7\n",
 		          cg_shadowItems.integer, CG_ShadowItems_DebugEffectiveMask(),
-		          cgs.beSpawnItems, cg_simpleItems.integer);
+		          CG_ShadowItems_UsesServerLayout(), cg_simpleItems.integer);
 	}
 
 	CG_Printf("  locations (QLM1): ^2%i^7 zones", CG_MapLocs_NumZones());

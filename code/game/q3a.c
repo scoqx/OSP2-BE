@@ -406,13 +406,16 @@ void q3a_WalkMove(void) {
       wishspeed = pm->ps->speed * phy_crouch_scale;
     }
   }
-  // clamp the speed lower if wading or walking on the bottom
+  // clamp wishspeed when in water above ankles while on ground (waterlevel 2-3)
   if (pm->waterlevel) {
     float waterScale;
-    waterScale = pm->waterlevel / 3.0;
-    waterScale = 1.0 - (1.0 - phy_water_scale) * waterScale;
-    if (wishspeed > pm->ps->speed * waterScale) {
-      wishspeed = pm->ps->speed * waterScale;
+
+    if (pm->waterlevel != 1) {
+      waterScale = pm->waterlevel / 3.0;
+      waterScale = 1.0 - (1.0 - phy_water_scale) * waterScale;
+      if (wishspeed > pm->ps->speed * waterScale) {
+        wishspeed = pm->ps->speed * waterScale;
+      }
     }
   }
 

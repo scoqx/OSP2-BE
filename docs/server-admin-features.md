@@ -27,14 +27,20 @@ set pmove_autohop "1"      // Включить, игроки не могут о�
 set pmove_autohop "2"      // Включить, игроки могут управлять
 ```
 
-#### CS_OSP2BE_SPAWN_ITEMS (Configstring 889)
+#### CS_OSP2BE_SHADOW_ITEMS (Configstring 890–900)
 
-- **Описание:** Bitset разрешённых групп спавна для клиентов OSP2-BE; совпадает с **`g_spawnItems`**. Подробнее: `docs/server-admin-control.md` (раздел CS 889).
-- **Серверный cvar:** `g_spawnItems`
+- **Описание:** Layout для `cg_shadowItems`. **SI3:** 890=`SI3`, данные 891–900. **SI4:** 890=`SI4`+payload, далее 891–900. Иначе QITM. См. `docs/server-admin-control.md`.
+
+#### CS_OSP2BE_ITEM_TRACK (Configstring 889) — PUI / спектаторский HUD
+
+- **Описание:** Каталог пикапов для таймеров и уведомлений о подборе у зрителей (SuperHUD `Spectator_ItemSpawns*`, `ItemPickups1–8`). Сервер задаёт **CS 889** (`v4;…`) и при подборе шлёт **`pui <cmd> <readyTime>`** только клиентам в режиме зрителя.
+- **Формат CS 889:** `v4;S,side,padIdx,id[,id…];I,id;…` — сегменты `S` (team pad) и `I` (одиночный). **id** = `(side<<8)|(slot<<4)|type` (типы 0–8: MH, RA, YA, Quad, BS, Regen, Invis, Haste, Flight).
+- **Команда `pui`:** `cmd = (clientNum<<20)|(pickId<<10)|nextId`, **nextId** `1023` если нет явного «следующего»; **readyTime** — `serverTime` респавна. Рассылка — только спектаторам (`TEAM_SPECTATOR`), не broadcast `-1`.
+- Подробно: `docs/server-admin-control.md` (раздел CS 889).
 
 #### CS_OSP2BE_TOURNEY_MODE (Configstring — в разработке)
 
-- **Описание:** Серверная битовая маска ограничений для турнирного режима (номер configstring может отличаться от 889).
+- **Описание:** Серверная битовая маска ограничений для турнирного режима (номер configstring уточняется отдельно от 889).
 - **Битовая маска:**
   - `1` - fps lock
   - `2` - disable mouse scripts

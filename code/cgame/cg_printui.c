@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_printui.c -- printui console command and drawing functions
 
 #include "cg_local.h"
-#include "cg_superhud.h"
+#include "superhud.h"
 
 /*
 =================
@@ -95,6 +95,73 @@ static qboolean CG_IsValidNumber(const char* str)
 	}
 
 	return qtrue;
+}
+
+/*
+=================
+CG_PrintUITokenIsCoordinate
+
+True if token is a plain numeric x/y value (not 8x12, not a word).
+=================
+*/
+static qboolean CG_PrintUITokenIsCoordinate(const char* str)
+{
+	const char* p;
+	qboolean sawDot;
+
+	if (!str || !*str)
+	{
+		return qfalse;
+	}
+
+	p = str;
+	if (*p == '+' || *p == '-')
+	{
+		p++;
+	}
+
+	if (*p < '0' || *p > '9')
+	{
+		return qfalse;
+	}
+
+	sawDot = qfalse;
+	while (*p)
+	{
+		if (*p == '.')
+		{
+			if (sawDot)
+			{
+				return qfalse;
+			}
+			sawDot = qtrue;
+		}
+		else if (*p < '0' || *p > '9')
+		{
+			return qfalse;
+		}
+		p++;
+	}
+
+	return qtrue;
+}
+
+/*
+=================
+CG_PrintUIArgsArePositionPair
+
+True if argv[posIdx] and argv[posIdx+1] are both coordinates.
+=================
+*/
+static qboolean CG_PrintUIArgsArePositionPair(int argc, int posIdx)
+{
+	if (posIdx + 1 >= argc)
+	{
+		return qfalse;
+	}
+
+	return CG_PrintUITokenIsCoordinate(CG_Argv(posIdx)) &&
+	       CG_PrintUITokenIsCoordinate(CG_Argv(posIdx + 1));
 }
 
 /*
@@ -646,6 +713,7 @@ void CG_PrintUI_f(void)
 		CG_Printf("^7example:  ^3printui ^2\"There's Example\" t1^7\n");
 		CG_Printf("^7example:  ^3printui ^2\"Of Print UI\" t2^7\n");
 		CG_Printf("^92. Options: ^332 ^7rows of printui are available\n");
+		CG_Printf("  ^5<^2x^5> <^2y^5>^7 - screen position (e.g., ^2320 200^7)\n");
 		CG_Printf("  ^5c^2<color>^7 - text color (e.g., ^2cWhite^7, ^2c7^7, ^2cFF^7)\n");
 		CG_Printf("  ^5cs^2<color>^7 - shadow color\n");
 		CG_Printf("  ^5<^2w^5>^2x<^2h^5>^7 - text size (e.g., ^210x14^7)\n");
@@ -864,16 +932,11 @@ void CG_PrintUI_f(void)
 				for (i = 2; i < argc; i++)
 				{
 					char nextArg[MAX_TOKEN_CHARS];
-					float testNum;
-					char* endPtr;
 
 					Q_strncpyz(nextArg, CG_Argv(i), sizeof(nextArg));
-					testNum = atof(nextArg);
-					endPtr = nextArg;
-					while (*endPtr == ' ' || *endPtr == '\t') endPtr++;
 
-					// Check if numeric or template - if so, stop here
-					if ((testNum != 0.0f || (*endPtr >= '0' && *endPtr <= '9') || *endPtr == '-' || *endPtr == '+') ||
+					// Stop before x y pair or template (digits in text are allowed)
+					if (CG_PrintUIArgsArePositionPair(argc, i) ||
 					        Q_stricmp(nextArg, "t1") == 0 || Q_stricmp(nextArg, "t2") == 0)
 					{
 						textArgEnd = i - 1;
@@ -951,19 +1014,12 @@ void CG_PrintUI_f(void)
 				if (i + 1 < argc)
 				{
 					char nextArg[MAX_TOKEN_CHARS];
-					float testNum;
-					char* endPtr;
 
 					Q_strncpyz(nextArg, CG_Argv(i + 1), sizeof(nextArg));
-					testNum = atof(nextArg);
-					endPtr = nextArg;
-					while (*endPtr == ' ' || *endPtr == '\t') endPtr++;
 
-					// Check if numeric or template
-					if ((testNum != 0.0f || (*endPtr >= '0' && *endPtr <= '9') || *endPtr == '-' || *endPtr == '+') ||
+					if (CG_PrintUIArgsArePositionPair(argc, i + 1) ||
 					        Q_stricmp(nextArg, "t1") == 0 || Q_stricmp(nextArg, "t2") == 0)
 					{
-						// Stop here, this was the last text argument
 						textArgEnd = i;
 						break;
 					}
@@ -1065,6 +1121,7 @@ void CG_PrintUI_f(void)
 		CG_Printf("^2Example: printui \"There's Example\" t1^7\n");
 		CG_Printf("^2Example: printui \"Of Print UI\" t2^7\n");
 		CG_Printf("Options:\n");
+		CG_Printf("  <x> <y> - screen position (e.g., ^2320 200^7)\n");
 		CG_Printf("  c<color> - text color (e.g., cWhite, c7, cFF)\n");
 		CG_Printf("  cs<color> - shadow color\n");
 		CG_Printf("  <w>x<h> - text size (e.g., 10x14)\n");
@@ -1112,26 +1169,16 @@ void CG_PrintUI_f(void)
 		Q_strncpyz(arg, CG_Argv(textArgEnd + 1), sizeof(arg));
 		if (Q_stricmp(arg, "t1") != 0 && Q_stricmp(arg, "t2") != 0)
 		{
-			// Not a template, parse x and y
-			x = atof(CG_Argv(textArgEnd + 1));
-			y = atof(CG_Argv(textArgEnd + 2));
-			hasPos = qtrue;
-		}
-	}
-	else if (textArgEnd + 1 < argc)
-	{
-		// Check if next argument after text is a template
-		Q_strncpyz(arg, CG_Argv(textArgEnd + 1), sizeof(arg));
-		if (Q_stricmp(arg, "t1") != 0 && Q_stricmp(arg, "t2") != 0)
-		{
-			// Not a template, but we need y too, so this is an error case
-			x = atof(CG_Argv(textArgEnd + 1));
-			y = 0.0f;
+			if (CG_PrintUIArgsArePositionPair(argc, textArgEnd + 1))
+			{
+				x = atof(CG_Argv(textArgEnd + 1));
+				y = atof(CG_Argv(textArgEnd + 2));
+				hasPos = qtrue;
+			}
 		}
 	}
 	else
 	{
-		// Default values if not provided
 		x = 0.0f;
 		y = 0.0f;
 	}

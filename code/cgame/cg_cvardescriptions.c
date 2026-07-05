@@ -476,7 +476,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_plasmaColor", "Self/teammate plasma bolt and impact color. Empty — default.\n \"^2color^7\" - name, digit, hex, T or E" },
 	{ "cg_enemyPlasmaColor", "Enemy plasma bolt and impact color. Empty — default.\n \"^2color^7\" - name, digit, hex, T or E" },
 	{ "cg_shudStyle", "SuperHUD layout variant for ^3visflags^7 ^2style1^7-^2style4^7. Reloads HUD when changed.\n  ^21^7 - style1\n  ^22^7 - style2\n  ^23^7 - style3\n  ^24^7 - style4\nRequires ^3cg_shud^7 ^21^7." },
-	{ "cg_chatWindow", "In-game chat window (^3/enterchat^7). Bitmask:\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - keep open after sending\n  ^24^7 - no history backgound\n  ^28^7 - separate duplicate messages" },
+	{ "cg_chatWindow", "In-game chat window (^3/enterchat^7). Bitmask:\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - keep open after sending\n  ^24^7 - no history backgound\n  ^28^7 - separate duplicate messages\n  ^216^7 - hide emoji hint bar" },
 	{ "cg_chatWindowMessageTime", "How long recent chat lines stay visible in the closed-window overlay. Set ^20^7 to hide timed overlay." },
 	{ "cg_chatWindowPos", "Chat window position as ^2X Y^7." },
 	{ "cg_chatWindowSize", "Chat window size as ^2width height^7." },
@@ -486,7 +486,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_muteWorldSounds", "Mute some map sounds. Set ^20^7 to disable." },
 	{ "cg_drawSpawns", "Map spawn points. Bitmask:\n  ^21^7 - ghost models\n  ^22^7 - plasma markers\n  ^24^7 - neutral white (no team tint on mark/plasma/dlight)" },
 	{ "cg_drawTPexit", "Teleporter exit markers. Set ^21^7 to enable. Set ^20^7 to disable." },
-	{ "cg_shadowItems", "Ghost 3D pickups when the real item is absent. Set ^20^7 to disable. Bitmask:\n  ^21^7 - health\n  ^22^7 - armor\n  ^24^7 - weapons\n  ^28^7 - ammo\n  ^216^7 - powerups and holdables\n  ^232^7 - flags\n  ^264^7 - ignore server spawn mask" },
+	{ "cg_shadowItems", "Ghost 3D pickups when the real item is absent. Set ^20^7 to disable. Bitmask:\n  ^21^7 - health\n  ^22^7 - armor\n  ^24^7 - weapons\n  ^28^7 - ammo\n  ^216^7 - powerups and holdables\n  ^232^7 - flags." },
 	{ "cg_worldFlags", "CTF flag position indicators. Set ^20^7 to disable. Bitmask:\n  ^21^7 - world 2D icons\n  ^22^7 - off-screen border HUD markers" },
 };
 

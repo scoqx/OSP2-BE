@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_event.c -- handle entity events at snapshot or playerstate transitions
 
 #include "cg_local.h"
-#include "cg_superhud.h"
+#include "superhud.h"
 
 //==========================================================================
 
@@ -1020,6 +1020,8 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 				{
 					CG_ItemPickup(index);
 				}
+
+				CG_ShadowItems_OnItemPickup(index);
 			}
 			break;
 
@@ -1053,6 +1055,8 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 						CG_ItemPickup(index);
 					}
 				}
+
+				CG_ShadowItems_OnItemPickup(index);
 			}
 			break;
 

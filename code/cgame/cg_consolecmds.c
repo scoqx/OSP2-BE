@@ -24,7 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // executed by a key binding
 
 #include "cg_local.h"
-#include "cg_superhud.h"
+#include "superhud.h"
 
 #define MODIFSTR_SIZE 256
 qboolean modifState[5];
@@ -937,9 +937,45 @@ void CG_PrintPlayerIDs_f(void)
 	}
 }
 
-void CG_TeamTaskClients_f(void)
+static qboolean CG_TeamTaskClientOnTeam(int clientNum, team_t team)
+{
+	clientInfo_t* ci;
+
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return qfalse;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid)
+	{
+		return qfalse;
+	}
+
+	return (ci->team == team || ci->rt == team) ? qtrue : qfalse;
+}
+
+static void CG_TeamTaskClientsPrintTeam(const char* teamLabel, team_t team)
 {
 	int p;
+
+	CG_Printf("^9Team Task Support Status (%s^9 team):\n", teamLabel);
+	CG_Printf("^7| ^3%2s ^7| ^5%32s ^7| ^3%10s\n", "ID", "Player name", "Supports team tasks");
+	CG_Printf("^7------------------------------------------------------------------------------\n");
+
+	for (p = 0; p < MAX_CLIENTS; ++p)
+	{
+		if (CG_TeamTaskClientOnTeam(p, team))
+		{
+			CG_Printf("^7| ^3%2d ^7| %32s ^7| %s\n", p, cgs.clientinfo[p].name_clean,
+			          CG_ClientSupportsTeamTask(p) ? "^2Yes" : "^1No");
+		}
+	}
+	CG_Printf("\n");
+}
+
+void CG_TeamTaskClients_f(void)
+{
 	team_t myTeam;
 
 	// Check if gametype is team-based
@@ -960,29 +996,15 @@ void CG_TeamTaskClients_f(void)
 		return;
 	}
 
-	myTeam = cgs.clientinfo[cg.clientNum].team;
-
-	if (myTeam == TEAM_SPECTATOR)
+	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
 	{
-		CG_Printf("You are a spectator.\n");
+		CG_TeamTaskClientsPrintTeam("^1RED", TEAM_RED);
+		CG_TeamTaskClientsPrintTeam("^4BLUE", TEAM_BLUE);
 		return;
 	}
 
-	// Print team members
-	CG_Printf("^9Team Task Support Status (%s^9 team):\n",
-	          myTeam == TEAM_RED ? "^1RED" : "^4BLUE");
-	CG_Printf("^7| ^3%2s ^7| ^5%32s ^7| ^3%10s\n", "ID", "Player name", "Supports team tasks");
-	CG_Printf("^7------------------------------------------------------------------------------\n");
-
-	for (p = 0; p < MAX_CLIENTS; ++p)
-	{
-		if (cgs.clientinfo[p].infoValid && cgs.clientinfo[p].team == myTeam)
-		{
-			CG_Printf("^7| ^3%2d ^7| %32s ^7| %s\n", p, cgs.clientinfo[p].name_clean,
-			          CG_ClientSupportsTeamTask(p) ? "^2Yes" : "^1No");
-		}
-	}
-	CG_Printf("\n");
+	myTeam = cgs.clientinfo[cg.clientNum].team;
+	CG_TeamTaskClientsPrintTeam(myTeam == TEAM_RED ? "^1RED" : "^4BLUE", myTeam);
 }
 
 void CG_Fonts_f(void)

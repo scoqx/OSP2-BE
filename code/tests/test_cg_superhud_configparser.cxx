@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
-#include "../cgame/cg_superhud_private.h"
+#include "../cgame/superhud/superhud_private.h"
 #include "../qcommon/qcommon.h"
 
 namespace

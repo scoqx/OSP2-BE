@@ -1,59 +1,73 @@
 #!/usr/bin/env python3
 r"""
-parse_map_bundle.py — mapdata для OSP2-BE (спавны QSP1, shadow-пикапы QITM1, локации QLM1, tpexit QTX1).
+parse_map_bundle.py — сбор mapdata OSP2-BE (QSP1 спавны, QITM1 shadow-пикапы, QLM1 локации, QTX1 tpexit).
 
-Как клиент грузит данные (cgame)
---------------------------------
-1) mapdata/<имя_карты>.q3lb — приоритет (локальный тест), затем mapdata/mapdata.q3lb.
-2) Если карты нет в архиве или blob пустой:
-   - mapdata/<имя_карты>.qmap  (бинарный QMAP)
-   - mapdata/<имя_карты>.q3lb  (мини-архив на одну карту)
+Запуск из корня репозитория (cd C:\git\OSP2-PBE)
+=================================================
 
-Файлы кладут в pk3 мода или в отдельный pk3: mapdata/...
+  python tools/parse_map_bundle.py
 
-Одна карта (доп. mapdata для игрока / маппер)
----------------------------------------------
-  python parse_map_bundle.py C:\maps\mymap.bsp
-      → assets/mapdata/mymap.qmap (бинарь, имя = имя карты)
+  Полная пересборка: parse + pack-direct в assets/mapdata/mapdata.q3lb
+  (параллель cpu_count-1, без JSON на диск). Подробный лог: -v.
 
-  python parse_map_bundle.py mymap.pk3 -o D:\Quake3\osp\mapdata\mymap.qmap
-
-  python parse_map_bundle.py mymap.bsp -o mapdata\mymap.q3lb
-
-Расширения -o:
-  .qmap  — бинарный QMAP (для игры)
-  .q3lb  — один map в Q3LB
-  .json  — только для правки; в игре не читается
-  каталог — пишет <имя_карты>.qmap внутрь
-
-Пакет mod / все карты
+Другие частые команды
 ---------------------
-  python parse_map_bundle.py
-      Полный пересбор с нуля: все карты → backup/mapdata/*.qmap (JSON),
-      затем assets/mapdata/mapdata.q3lb (один файл для pk3).
 
-  python parse_map_bundle.py --batch -o backup/mapdata
-      Только JSON .qmap на карту (без q3lb).
+  python tools/parse_map_bundle.py C:\maps\ts_ca1.bsp
+      Одна карта → assets/mapdata/ts_ca1.qmap (бинарь для игры).
 
-  python parse_map_bundle.py --batch --pack-q3lb
-      JSON в backup/mapdata, затем assets/mapdata/mapdata.q3lb
+  python tools/parse_map_bundle.py C:\maps\ts_ca1.bsp -o D:\Quake3\baseq3\mapdata\ts_ca1.qmap
+      Явный путь вывода (.qmap / .q3lb / .json или каталог).
 
-  python parse_map_bundle.py --pack-q3lb backup/mapdata -o assets/mapdata/mapdata.q3lb
-      Пересобрать q3lb из уже готовых .qmap/.json
+  python tools/parse_map_bundle.py --batch -o backup/mapdata
+      Только JSON .qmap по картам, без mapdata.q3lb.
 
-Прочее
-------
-  --freeze          правила freeze для спавнов/локаций
-  --loc-gametype    gametype для target_location (default: ctf)
-  --pk3-dir DIR     доп. папки с pk3 (можно несколько; идут после стандартных)
+  python tools/parse_map_bundle.py --batch --pack-q3lb
+      JSON в backup/mapdata + пересборка assets/mapdata/mapdata.q3lb.
 
-Скан по умолчанию (--batch): baseq3 → osp → C:\\maps (позже перекрывает раньше).
-  QITM1 v2 only — spawn origin + flags; drop в cgame (CM). Пересобери mapdata.q3lb текущим скриптом.
-  MAP_ITEM_ENTITY_EXCLUDE — точки QITM, выкидываемые по индексу entity на карте.
-  Локации без target_location в BSP: assets/locs/<map>.cfg (как locs/<map>.cfg в игре).
-  -v                подробный лог
+  python tools/parse_map_bundle.py --pack-q3lb backup/mapdata -o assets/mapdata/mapdata.q3lb
+      Упаковать q3lb из уже готовых .qmap / .json.
 
-Запуск из корня репозитория OSP2-PBE:  python tools/parse_map_bundle.py ...
+Флаги: --freeze, --loc-gametype (default ctf), --pk3-dir DIR (можно несколько), -v (лог).
+
+Что получается на выходе
+------------------------
+
+  .qmap   — бинарный QMAP, читает cgame (основной формат для одной карты).
+  .q3lb   — архив на одну карту или общий mapdata.q3lb.
+  .json   — только для правки руками; клиент не грузит.
+
+  -o каталог  →  <имя_карты>.qmap внутри каталога.
+
+Как клиент ищет mapdata
+-----------------------
+
+  1. mapdata/<имя>.q3lb (локальный тест, приоритет)
+  2. mapdata/mapdata.q3lb (общий pk3)
+  3. mapdata/<имя>.qmap, если в q3lb нет карты или blob пустой
+
+  Положить в pk3 мода: mapdata/...
+
+Скан карт (--batch без аргумента)
+---------------------------------
+
+  Папки по умолчанию (позже перекрывает раньше): baseq3 → osp → C:\maps.
+  Доп. каталоги: --pk3-dir.
+
+Ручные правки в этом файле (константы)
+--------------------------------------
+
+  MAP_ITEM_ENTITY_EXCLUDE — убрать точку QITM по индексу entity в BSP.
+  MAP_ITEM_SPAWN_OVERRIDES — зафиксировать so/sf пикапа (обход drop в cgame), напр. ts_ca1.
+
+Локации без target_location в BSP
+-----------------------------------
+
+  assets/locs/<map>.cfg  или  forced_locations в tools/parse_map_locations.py (QLM1 при bundle).
+
+  QITM1 v3: spawn origin (so), team slot (tsk); drop до пола — в cgame (CM), не в парсере.
+
+  Batch: один проход BSP/entities, кэш pk3, pack-direct и --jobs (см. docstring).
 """
 
 from __future__ import annotations
@@ -61,10 +75,13 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
 import struct
 import sys
 import time
+import zipfile
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -86,6 +103,7 @@ from parse_map_locations import (
     parse_entity_lump,
     parse_origin,
     read_bsp_bytes,
+    clear_pk3_bsp_cache,
     simulate_gentity_slots,
     _spawn_int,
 )
@@ -94,7 +112,7 @@ from parse_map_spawns import (
     Q3LB_MAGIC,
     SPAWN_DOC_VERSION,
     GAMETYPE_POOL_NAMES,
-    build_spawn_report,
+    build_spawn_report_from_entities,
     collect_spawn_jobs,
     pack_qsp1_binary,
     parse_angles,
@@ -199,16 +217,33 @@ def _fmt_origin_xyz(ox: float, oy: float, oz: float) -> list[float | int]:
     return [int(v) if float(v).is_integer() else v for v in (ox, oy, oz)]
 
 
+def _team_slot_master_indices(entities: list[dict[str, str]]) -> list[int]:
+    """First entity index per map ``team`` string (G_FindTeams master order in lump)."""
+    team_first: dict[str, int] = {}
+    keys: list[int] = []
+    for idx, ent in enumerate(entities):
+        team = (ent.get("team") or "").strip()
+        if not team:
+            keys.append(idx)
+            continue
+        if team not in team_first:
+            team_first[team] = idx
+        keys.append(team_first[team])
+    return keys
+
+
 def apply_item_spawn_metadata(
     points: list[dict[str, Any]],
     entities: list[dict[str, str]],
 ) -> None:
-    """QITM v2: spawn origin + suspended; drop is done in cgame (CM trace)."""
+    """QITM v3: spawn origin, suspended, team slot key (tsk)."""
+    team_keys = _team_slot_master_indices(entities)
     for pt in points:
         ent = entities[pt["e"]]
         ox, oy, oz = pt["o"]
         ox, oy, oz = float(ox), float(oy), float(oz)
         pt["so"] = _fmt_origin_xyz(ox, oy, oz)
+        pt["tsk"] = team_keys[pt["e"]]
         if bool(_spawn_int(ent, "spawnflags", 0) & 1):
             pt["sf"] = 1
         elif "sf" in pt:
@@ -239,7 +274,8 @@ MAP_ITEM_ENTITY_EXCLUDE: dict[str, frozenset[int]] = {
 MAP_DOC_VERSION = 1
 QMAP_MAGIC = b"QMAP"
 QMAP_VERSION = 2
-QITM1_VERSION = 2
+QITM1_VERSION = 3
+QITM1_VERSION_V2 = 2
 QITM1_FLAG_SUSPENDED = 1
 
 IT_HEALTH = 1
@@ -256,6 +292,19 @@ SHADOW_CAT_WEAPON = 4
 SHADOW_CAT_AMMO = 8
 SHADOW_CAT_POWERUP = 16
 SHADOW_CAT_FLAG = 32
+
+# match_xy + radius (XY), optional classname, fixed spawn origin, suspended skips cgame drop.
+MAP_ITEM_SPAWN_OVERRIDES: dict[str, list[dict[str, Any]]] = {
+    "ts_ca1": [
+        {
+            "match_xy": (1120.0, -416.0),
+            "radius": 64.0,
+            "sc": SHADOW_CAT_HEALTH,
+            "so": (1120.0, -416.0, -370.0),
+            "suspended": True,
+        },
+    ],
+}
 
 GTYPE_TO_SHADOW = {
     IT_HEALTH: SHADOW_CAT_HEALTH,
@@ -374,6 +423,7 @@ def build_item_report(
     entities: list[dict[str, str]],
     item_table: dict[str, tuple[int, int, int]],
     freeze: bool,
+    map_name: str = "",
 ) -> dict[str, Any]:
     points: list[dict[str, Any]] = []
     for idx, ent in enumerate(entities):
@@ -384,6 +434,8 @@ def build_item_report(
             points.append(row)
 
     apply_item_spawn_metadata(points, entities)
+    if map_name:
+        _apply_map_item_spawn_overrides(map_name, points, entities)
 
     modes: dict[str, Any] = {}
     for gt, name in GAMETYPE_POOL_NAMES.items():
@@ -392,6 +444,40 @@ def build_item_report(
         modes[name] = {"spawned": spawned_pi}
 
     return {"points": points, "modes": modes}
+
+
+def _apply_map_item_spawn_overrides(
+    map_name: str,
+    points: list[dict[str, Any]],
+    entities: list[dict[str, str]],
+) -> None:
+    rules = MAP_ITEM_SPAWN_OVERRIDES.get(map_name.lower())
+    if not rules:
+        return
+    for pt in points:
+        ent = entities[pt["e"]]
+        ox, oy, _oz = pt["o"]
+        ox, oy = float(ox), float(oy)
+        for rule in rules:
+            if rule.get("sc") is not None and int(pt.get("sc", 0)) != int(rule["sc"]):
+                continue
+            match_cn = rule.get("classname")
+            if match_cn and ent.get("classname") != match_cn:
+                continue
+            mx, my = rule["match_xy"]
+            radius = float(rule.get("radius", 64.0))
+            dx = ox - mx
+            dy = oy - my
+            if dx * dx + dy * dy > radius * radius:
+                continue
+            so = rule["so"]
+            pt["so"] = _fmt_origin_xyz(float(so[0]), float(so[1]), float(so[2]))
+            pt["o"] = list(pt["so"])
+            if rule.get("suspended"):
+                pt["sf"] = 1
+            elif "sf" in pt:
+                del pt["sf"]
+            break
 
 
 def _apply_map_item_entity_excludes(map_name: str, items_doc: dict[str, Any]) -> None:
@@ -443,12 +529,13 @@ def build_map_bundle_report(
     if item_table is None:
         item_table = _load_item_table(BG_MISC)
 
-    spawn_doc = build_spawn_report(map_path, freeze, bsp_in_pk3)
     bsp_bytes, source, map_name = read_bsp_bytes(map_path, bsp_in_pk3)
     lump = entities_lump_from_bytes(bsp_bytes, source)
     entities = parse_entity_lump(lump)
 
-    items_doc = build_item_report(entities, item_table, freeze)
+    spawn_doc = build_spawn_report_from_entities(entities, source, map_name, freeze)
+
+    items_doc = build_item_report(entities, item_table, freeze, map_name)
     _apply_map_item_entity_excludes(map_name, items_doc)
     loc_doc = build_locations_report(entities, loc_gametype, freeze)
     forced_locs = forced_locations_for_map(map_name)
@@ -508,8 +595,9 @@ def pack_qitm1_binary(items_doc: dict[str, Any]) -> bytes:
         mi = int(pt["mi"])
         sc = int(pt.get("sc", 0)) & 0xFF
         flags = QITM1_FLAG_SUSPENDED if pt.get("sf") else 0
+        tsk = int(pt.get("tsk", pt.get("e", pi)))
         chunks.append(
-            struct.pack("<fffHBB", float(ox), float(oy), float(oz), mi, sc, flags)
+            struct.pack("<fffHBBH", float(ox), float(oy), float(oz), mi, sc, flags, tsk)
         )
 
     for mode_name in MODE_ORDER:
@@ -621,12 +709,6 @@ def pack_q3lb_from_mapdata_dir(src_dir: Path, out_path: Path) -> int:
             print(f"warn: skip {path.name}: {exc}", file=sys.stderr)
             continue
         entries.append((map_name, blob))
-        if n % 50 == 0 or n == total:
-            tag = _progress_index_tag(n)
-            print(f"\r{tag} pack read {n}/{total}...", end="", file=sys.stderr, flush=True)
-
-    if total:
-        print(file=sys.stderr)
 
     if not entries:
         print("error: no valid .qmap files", file=sys.stderr)
@@ -650,6 +732,81 @@ def pack_q3lb_from_mapdata_dir(src_dir: Path, out_path: Path) -> int:
     return 0
 
 
+_worker_item_table: dict[str, tuple[int, int, int]] | None = None
+
+
+def _batch_worker_init(bg_misc_path: str) -> None:
+    global _worker_item_table
+    _worker_item_table = _load_item_table(Path(bg_misc_path))
+
+
+def _batch_worker_parse(
+    payload: tuple[str, str, str | None, str, bool, int, bool, str, bool],
+) -> tuple[str, bytes | None, str, str]:
+    """Returns (map_name, qmap_blob|None, status, label). status: ok | skip_exist | skip_empty | error:…"""
+    global _worker_item_table
+    (
+        map_name,
+        path_s,
+        inner,
+        label,
+        freeze,
+        loc_gametype,
+        skip_existing,
+        out_dir_s,
+        write_json,
+    ) = payload
+    if skip_existing and write_json:
+        out_path = Path(out_dir_s) / f"{map_name}.qmap"
+        if out_path.is_file():
+            return map_name, None, "skip_exist", label
+    try:
+        path = Path(path_s)
+        table = _worker_item_table
+        if table is None:
+            table = _load_item_table(BG_MISC)
+        doc = build_map_bundle_report(path, freeze, loc_gametype, inner, table)
+    except (ValueError, OSError, zipfile.BadZipFile) as exc:
+        return map_name, None, f"error:{exc}", label
+
+    n_spawn = len(doc.get("spawns", {}).get("points") or [])
+    n_item = len(doc.get("items", {}).get("points") or [])
+    n_loc = len((doc.get("locations") or {}).get("locations") or [])
+    if n_spawn == 0 and n_item == 0 and n_loc == 0:
+        return map_name, None, "skip_empty", label
+
+    blob = pack_qmap1_binary(doc)
+    if write_json:
+        out_path = Path(out_dir_s) / f"{map_name}.qmap"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(
+            json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+    return map_name, blob, "ok", label
+
+
+def pack_q3lb_bytes(entries: list[tuple[str, bytes]]) -> bytes:
+    chunks = [Q3LB_MAGIC, struct.pack("<H", len(entries))]
+    for map_name, blob in entries:
+        name_b = map_name.lower().encode("utf-8")
+        if len(name_b) > 255:
+            raise ValueError(f"map name too long: {map_name}")
+        chunks.append(struct.pack("<B", len(name_b)))
+        chunks.append(name_b)
+        chunks.append(struct.pack("<I", len(blob)))
+        chunks.append(blob)
+    return b"".join(chunks)
+
+
+def write_q3lb_file(out_path: Path, entries: list[tuple[str, bytes]]) -> int:
+    out_path = out_path.resolve()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_bytes(pack_q3lb_bytes(entries))
+    print(f"packed {len(entries)} maps -> {out_path}", file=sys.stderr)
+    return 0
+
+
 def batch_write_map_reports(
     quake_dirs: list[Path],
     out_dir: Path,
@@ -658,63 +815,123 @@ def batch_write_map_reports(
     skip_existing: bool,
     verbose: bool,
     item_table: dict[str, tuple[int, int, int]],
+    *,
+    jobs: int = 1,
+    pack_direct: bool = False,
+    pack_out: Path | None = None,
 ) -> int:
     out_dir = out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+    clear_pk3_bsp_cache()
 
-    jobs = collect_batch_jobs(quake_dirs)
-    if not jobs:
+    job_map = collect_batch_jobs(quake_dirs)
+    if not job_map:
         print("error: no maps/*.bsp found", file=sys.stderr)
         return 1
+
+    write_json = not pack_direct
+    if pack_direct:
+        if skip_existing:
+            print("note: --skip-existing ignored with pack-direct", file=sys.stderr)
+        skip_existing = False
+
+    sorted_maps = sorted(job_map.keys())
+    total = len(sorted_maps)
+    workers = max(1, int(jobs))
+
+    if verbose:
+        print(
+            f"scanning {total} unique maps -> {out_dir}"
+            + (f" (workers={workers})" if workers > 1 else ""),
+            file=sys.stderr,
+        )
+        if pack_direct:
+            print(f"pack-direct -> {pack_out or DEFAULT_BUNDLE_PATH}", file=sys.stderr)
+
+    payloads: list[tuple[str, str, str | None, str, bool, int, bool, str, bool]] = []
+    for map_name in sorted_maps:
+        label, path, inner, _ = job_map[map_name]
+        payloads.append(
+            (
+                map_name,
+                str(path.resolve()),
+                inner,
+                label,
+                freeze,
+                loc_gametype,
+                skip_existing,
+                str(out_dir),
+                write_json,
+            )
+        )
 
     written = 0
     skipped = 0
     skipped_exist = 0
     skipped_empty = 0
+    q3lb_entries: list[tuple[str, bytes]] = []
 
-    print(f"scanning {len(jobs)} unique maps -> {out_dir}", file=sys.stderr)
-
-    sorted_maps = sorted(jobs.keys())
-
-    for index, map_name in enumerate(sorted_maps, 1):
-        tag = _progress_index_tag(index)
-        label, path, inner, _ = jobs[map_name]
-        out_path = out_dir / f"{map_name}.qmap"
-        if skip_existing and out_path.is_file():
+    def _consume_result(
+        map_name: str, blob: bytes | None, status: str, label: str, tag: str
+    ) -> None:
+        nonlocal written, skipped, skipped_exist, skipped_empty
+        if status == "skip_exist":
             skipped_exist += 1
-            continue
-        try:
-            doc = build_map_bundle_report(path, freeze, loc_gametype, inner, item_table)
-        except (ValueError, OSError, zipfile.BadZipFile) as exc:
-            skipped += 1
-            print(f"{tag} skip {map_name} ({label}): {exc}", file=sys.stderr)
-            continue
-
-        n_spawn = len(doc.get("spawns", {}).get("points") or [])
-        n_item = len(doc.get("items", {}).get("points") or [])
-        n_loc = len((doc.get("locations") or {}).get("locations") or [])
-        if n_spawn == 0 and n_item == 0 and n_loc == 0:
+            return
+        if status == "skip_empty":
             skipped_empty += 1
             if verbose:
                 print(f"{tag} skip {map_name}: empty bundle ({label})", file=sys.stderr)
-            continue
+            return
+        if status.startswith("error:"):
+            skipped += 1
+            print(f"{tag} skip {map_name} ({label}): {status[6:]}", file=sys.stderr)
+            return
+        if status == "ok" and blob is not None:
+            written += 1
+            q3lb_entries.append((map_name, blob))
+            if verbose:
+                print(f"{tag} {map_name}: ok <- {label}", file=sys.stderr)
 
-        out_path.write_text(
-            json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + "\n",
-            encoding="utf-8",
-        )
-        written += 1
-        print(
-            f"{tag} {map_name}: wrote {out_path.name} "
-            f"(spawns={n_spawn} items={n_item} locs={n_loc}) <- {label}",
-            file=sys.stderr,
-        )
+    if workers <= 1:
+        _batch_worker_init(str(BG_MISC.resolve()))
+        for index, payload in enumerate(payloads, 1):
+            tag = _progress_index_tag(index)
+            _consume_result(*_batch_worker_parse(payload), tag)
+    else:
+        with ProcessPoolExecutor(
+            max_workers=workers,
+            initializer=_batch_worker_init,
+            initargs=(str(BG_MISC.resolve()),),
+        ) as pool:
+            future_map = {
+                pool.submit(_batch_worker_parse, p): (i, p[0])
+                for i, p in enumerate(payloads, 1)
+            }
+            for fut in as_completed(future_map):
+                index, _ = future_map[fut]
+                tag = _progress_index_tag(index)
+                try:
+                    result = fut.result()
+                except Exception as exc:
+                    skipped += 1
+                    print(f"{tag} worker failed: {exc}", file=sys.stderr)
+                    continue
+                _consume_result(*result, tag)
 
     print(
         f"done: {written} written, {skipped_exist} already present, "
         f"{skipped_empty} empty, {skipped} errors",
         file=sys.stderr,
     )
+
+    if pack_direct:
+        if not q3lb_entries:
+            return 1
+        q3lb_entries.sort(key=lambda e: e[0])
+        target = (pack_out or DEFAULT_BUNDLE_PATH).resolve()
+        return write_q3lb_file(target, q3lb_entries)
+
     return 0 if written or skipped_exist else 1
 
 
@@ -725,16 +942,19 @@ def run_default_full_rebuild(
     freeze: bool = False,
     verbose: bool = False,
     pk3_dirs: list[Path] | None = None,
+    jobs: int | None = None,
 ) -> int:
     out_dir = DEFAULT_OUT_DIR.resolve()
     pack_out = DEFAULT_BUNDLE_PATH.resolve()
     scan_dirs = pk3_dirs if pk3_dirs else DEFAULT_MAP_DIRS
+    if jobs is None:
+        jobs = max(1, (os.cpu_count() or 4) - 1)
 
-    print("full mapdata rebuild (default, no CLI args)", file=sys.stderr)
-    print(f"  1/2 parse maps -> {out_dir}", file=sys.stderr)
-    print(f"  2/2 pack Q3LB -> {pack_out}", file=sys.stderr)
+    if verbose:
+        print("full mapdata rebuild (default, no CLI args)", file=sys.stderr)
+        print(f"  pack-direct workers={jobs} -> {pack_out}", file=sys.stderr)
 
-    rc = batch_write_map_reports(
+    return batch_write_map_reports(
         scan_dirs,
         out_dir,
         freeze,
@@ -742,10 +962,10 @@ def run_default_full_rebuild(
         skip_existing=False,
         verbose=verbose,
         item_table=item_table,
+        jobs=jobs,
+        pack_direct=True,
+        pack_out=pack_out,
     )
-    if rc != 0:
-        return rc
-    return pack_q3lb_from_mapdata_dir(out_dir, pack_out)
 
 
 def write_single_map_qmap(out_path: Path, map_name: str, doc: dict[str, Any]) -> None:
@@ -780,7 +1000,7 @@ def write_single_map_q3lb(out_path: Path, map_name: str, doc: dict[str, Any]) ->
 def main() -> int:
     if len(sys.argv) == 1:
         item_table = _load_item_table(BG_MISC)
-        return run_default_full_rebuild(item_table, GT_CTF)
+        return run_default_full_rebuild(item_table, GT_CTF, verbose=False)
 
     parser = argparse.ArgumentParser(
         description="Сбор mapdata (spawns, shadow items, locations, tpexit) для OSP2-BE.",
@@ -821,7 +1041,19 @@ def main() -> int:
         help="Gametype для фильтров target_location в locs (по умолчанию: ctf)",
     )
     parser.add_argument("--skip-existing", action="store_true", help="В --batch не перезаписывать существующие .qmap")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Подробный вывод")
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Процессов в --batch (default: 1; без args — cpu_count-1)",
+    )
+    parser.add_argument(
+        "--pack-direct",
+        action="store_true",
+        help="--batch: QMAP в память → q3lb, без JSON на диск",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Подробный вывод по картам")
     parser.add_argument(
         "--pack-q3lb",
         type=Path,
@@ -851,23 +1083,45 @@ def main() -> int:
         dirs = args.pk3_dirs if args.pk3_dirs else DEFAULT_MAP_DIRS
         if args.pack_q3lb is not None:
             out_dir = args.pack_q3lb.resolve()
-            pack_out = (
-                args.output.resolve()
-                if args.output
-                else DEFAULT_BUNDLE_PATH.resolve()
-            )
         elif args.output and args.output.suffix.lower() == ".q3lb":
             out_dir = DEFAULT_OUT_DIR.resolve()
+        elif args.output:
+            out_dir = args.output.resolve()
+        else:
+            out_dir = DEFAULT_OUT_DIR.resolve()
+
+        if args.output and args.output.suffix.lower() == ".q3lb":
+            pack_out = args.output.resolve()
+        elif args.output and args.pack_q3lb is not None:
             pack_out = args.output.resolve()
         else:
-            out_dir = args.output.resolve() if args.output else DEFAULT_OUT_DIR.resolve()
             pack_out = DEFAULT_BUNDLE_PATH.resolve()
-        rc = batch_write_map_reports(
-            dirs, out_dir, args.freeze, loc_gt, args.skip_existing, args.verbose, item_table
+
+        want_q3lb = args.pack_q3lb is not None or (
+            args.output is not None and args.output.suffix.lower() == ".q3lb"
         )
+        pack_direct = bool(args.pack_direct or want_q3lb)
+        batch_jobs = args.jobs
+        if batch_jobs == 1 and (pack_direct or want_q3lb):
+            batch_jobs = max(1, (os.cpu_count() or 4) - 1)
+
+        rc = batch_write_map_reports(
+            dirs,
+            out_dir,
+            args.freeze,
+            loc_gt,
+            args.skip_existing,
+            args.verbose,
+            item_table,
+            jobs=batch_jobs,
+            pack_direct=pack_direct,
+            pack_out=pack_out if pack_direct else None,
+        )
+        if pack_direct:
+            return rc
         if rc != 0:
             return rc
-        if args.pack_q3lb is not None or (args.output and args.output.suffix.lower() == ".q3lb"):
+        if want_q3lb:
             return pack_q3lb_from_mapdata_dir(out_dir, pack_out)
         return rc
 

@@ -974,3 +974,14 @@ SuperHUD:
 02.07.2026 be v1.06a3
 * cg_shadowItems fix
 + ChatWindow alias for '%'
+
+04.07.2026 be v1.06b
++ Reworked Auto Updater for Windows by KONSTALKER (check version before download)
++ cg_chatWindowFavEmojis - use ALT + 0-9 for quick-paste selected emoji
++ Loading screen - loading bar; visual fix for icons
++ Emojis: beer, beers, banana, peach, cinema, crab, leaf, moai, monkey, chicken, rat, sloth, xDPlode
+* ChatWindow - improvements
+* PrintUI - fix
+:Upcoming Server-Side Features on metarena.ru
++ Shadow Items - layout in CS 890–900 (cg_shadowItems) for maximum precise
++ Picked-up items (PUI) - CS 889 + pui cmd; SuperHUD Spectator_ItemSpawns* / ItemPickups1–8

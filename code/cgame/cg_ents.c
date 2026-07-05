@@ -770,16 +770,19 @@ static void CG_Item(centity_t* cent)
 		int     mapPoint;
 		int     phaseEnt;
 
-		mapPoint = CG_ShadowItems_MapPointIndexForCent(cent);
-		if (mapPoint >= 0)
+		mapPoint = -1;
+		if (!cg_simpleItems.integer && CG_ShadowItems_NumPoints() > 0 && !CG_OSPIsGameTypeCA(cgs.gametype))
 		{
-			CG_ShadowItems_TouchLiveItemBob(mapPoint, cent);
-			phaseEnt = CG_ShadowItems_PhaseEntForPoint(mapPoint);
+			if (cg_shadowItems.integer)
+			{
+				mapPoint = CG_ShadowItems_NoteLiveItem(cent);
+			}
+			else
+			{
+				mapPoint = CG_ShadowItems_MapPointForItemBob(cent);
+			}
 		}
-		else
-		{
-			phaseEnt = cent->currentState.number;
-		}
+		phaseEnt = (mapPoint >= 0) ? CG_ShadowItems_PhaseEntForPoint(mapPoint) : cent->currentState.number;
 		CG_AddWorldItem3D(cent->lerpOrigin, itemNum, phaseEnt, cent->miscTime, qfalse, 0);
 	}
 }

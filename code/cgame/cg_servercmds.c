@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
-#include "cg_superhud.h"
+#include "superhud.h"
 
 static int xstats1_received_count = 0;
 static int last_xstats1_sequence = -1;
@@ -634,12 +634,15 @@ static void CG_ConfigStringModified(void)
 			CG_UpdateBeFeatures();
 			CG_UpdateDamageInfoAllowed();
 			break;
-		case CS_OSP2BE_SPAWN_ITEMS:
-			cgs.beSpawnItems = atoi(str);
-			cgs.beSpawnItemsKnown = qtrue;
+		case CS_OSP2BE_ITEM_TRACK:
+			CG_SpectatorItems_OnConfigStringChanged();
 			break;
 		default:
-			if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
+			if (num >= CS_OSP2BE_SHADOW_ITEMS_HDR && num <= CS_OSP2BE_SHADOW_ITEMS_DATA_LAST)
+			{
+				CG_ShadowItems_OnConfigStringChanged();
+			}
+			else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 			{
 				cgs.gameModels[num - CS_MODELS] = trap_R_RegisterModel(str);
 			}
@@ -813,6 +816,8 @@ static void CG_MapRestart(void)
 	}
 
 	cg.scoreFadeTime = 0;
+
+	CG_SpectatorItems_OnConfigStringChanged();
 
 	CG_OSPWStatsUp_f();
 
@@ -1804,6 +1809,14 @@ void CG_ServerCommand(void)
 			if (cmd[1] == 's' && cmd[2] == 'o' && cmd[3] == 'h' && cmd[4] == 't' && cmd[5] == 'u' && cmd[6] == 'a' && cmd[7] == '\0')
 			{
 				return;
+			}
+			/* "pui" — packed item pickup notify (metarena) */
+			if (cmd[1] == 'u' && cmd[2] == 'i' && cmd[3] == '\0')
+			{
+				if (CG_SpectatorItems_ServerCommand())
+				{
+					return;
+				}
 			}
 			break;
 

@@ -2848,6 +2848,46 @@ void UI_DrawProportionalString(int x, int y, const char* str, int style, vec4_t 
 	UI_DrawProportionalString2(x, y, str, color, sizeScale, cgs.media.charsetProp);
 }
 
+/*
+=================
+UI_DrawProportionalStringScaled
+=================
+*/
+void UI_DrawProportionalStringScaled(int x, int y, const char* str, int style, vec4_t color, float scale)
+{
+	vec4_t  drawcolor;
+	int     width;
+	float   sizeScale;
+
+	sizeScale = UI_ProportionalSizeScale(style) * scale;
+
+	switch (style & UI_FORMATMASK)
+	{
+		case UI_CENTER:
+			width = UI_ProportionalStringWidth(str) * sizeScale;
+			x -= width * 0.5f;
+			break;
+
+		case UI_RIGHT:
+			width = UI_ProportionalStringWidth(str) * sizeScale;
+			x -= width;
+			break;
+
+		case UI_LEFT:
+		default:
+			break;
+	}
+
+	if (style & UI_DROPSHADOW)
+	{
+		drawcolor[0] = drawcolor[1] = drawcolor[2] = 0;
+		drawcolor[3] = color[3];
+		UI_DrawProportionalString2(x + 2, y + 2, str, drawcolor, sizeScale, cgs.media.charsetProp);
+	}
+
+	UI_DrawProportionalString2(x, y, str, color, sizeScale, cgs.media.charsetProp);
+}
+
 #endif // Q3STATIC
 
 static qboolean CG_OSPCharHexToInt(char c, int* out)

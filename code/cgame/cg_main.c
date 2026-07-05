@@ -607,6 +607,7 @@ vmCvar_t        cg_chatWindowFont;
 vmCvar_t        cg_chatWindowFontSize;
 vmCvar_t        cg_chatWindowBgColor;
 vmCvar_t        cg_chatWindowBgOpaque;
+vmCvar_t        cg_chatWindowFavEmojis;
 vmCvar_t        cg_drawSpawns;
 vmCvar_t        cg_drawTPexit;
 vmCvar_t        cg_shadowItems;
@@ -1119,6 +1120,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_chatWindowFontSize, "cg_chatWindowFontSize", "6 10", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowFontSize },
 	{ &cg_chatWindowBgColor, "cg_chatWindowBgColor", "000000", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgColor },
 	{ &cg_chatWindowBgOpaque, "cg_chatWindowBgOpaque", "0.25", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgOpaque },
+	{ &cg_chatWindowFavEmojis, "cg_chatWindowFavEmojis", "smile rofl wtf death fist leaf shit Shhh moai impressive", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_drawSpawns, "cg_drawSpawns", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_drawTPexit, "cg_drawTPexit", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_shadowItems, "cg_shadowItems", "0", CVAR_ARCHIVE | CVAR_NEW },
@@ -2948,6 +2950,11 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cgs.serverCommandSequence = serverCommandSequence;
 
 	// load a few needed things before we do any screen updates
+	cgs.media.loadingBarFill1Shader = trap_R_RegisterShaderNoMip("gfx/2d/hudres/rounded/bar_fill1");
+	cgs.media.loadingBarBorder1Shader = trap_R_RegisterShaderNoMip("gfx/2d/hudres/rounded/bar_border1");
+	cgs.media.loadingBarFill2Shader = trap_R_RegisterShaderNoMip("gfx/2d/hudres/rounded/bar_fill2");
+	cgs.media.loadingBarBorder2Shader = trap_R_RegisterShaderNoMip("gfx/2d/hudres/rounded/bar_border2");
+
 	cgs.media.charsetShader1        = trap_R_RegisterShader("gfx/2d/bigchars1");
 	cgs.media.charsetShader       = trap_R_RegisterShader("gfx/2d/bigchars");
 	cgs.media.whiteShader           = trap_R_RegisterShader("white");
@@ -3150,9 +3157,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		// CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)));
 
 		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
-		s = CG_ConfigString(CS_OSP2BE_SPAWN_ITEMS);
-		cgs.beSpawnItems = atoi(s);
-		cgs.beSpawnItemsKnown = (s[0] != '\0') ? qtrue : qfalse;
+
+		CG_ShadowItems_OnConfigStringChanged();
+		CG_SpectatorItems_OnConfigStringChanged();
 
 		/* cache damageInfoAllowed - gametype, fpsclassico, custom_client_2, beDisableFeatures all known */
 		CG_UpdateDamageInfoAllowed();

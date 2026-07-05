@@ -740,6 +740,50 @@ teleporterStars
 	}
 }
 
+gfx/2d/hudres/rounded/bar_fill1
+{
+	nopicmip
+	{
+		map gfx/2d/hudres/rounded/bar_fill1.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+gfx/2d/hudres/rounded/bar_border1
+{
+	nopicmip
+	{
+		map gfx/2d/hudres/rounded/bar_border1.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+gfx/2d/hudres/rounded/bar_fill2
+{
+	nopicmip
+	{
+		map gfx/2d/hudres/rounded/bar_fill2.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+gfx/2d/hudres/rounded/bar_border2
+{
+	nopicmip
+	{
+		map gfx/2d/hudres/rounded/bar_border2.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
 models/players/spawn
 {
 	deformVertexes wave 100 sin 0 0 0 0

@@ -927,6 +927,18 @@ void CG_DrawOldTourneyScoreboard(void)
 static void CG_ScoreboardDrawTeamTaskSupportIcon(float headX, float headY, int clientNum)
 {
 	static const vec4_t teamTaskSupportColor = { 0.0f, 1.0f, 0.0f, 1.0f };
+	clientInfo_t* ci;
+
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	if (!CG_IS_LOCAL_CLIENT_SPECTATOR() && CG_IS_ENEMY_SIMPLE(ci))
+	{
+		return;
+	}
 
 	if (!cgs.media.circleShader || !CG_ClientSupportsTeamTask(clientNum))
 	{

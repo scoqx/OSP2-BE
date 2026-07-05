@@ -1,4 +1,4 @@
-#include "cg_superhud.h"
+#include "superhud.h"
 #include "cg_local.h"
 
 int global_handicap; // unused?

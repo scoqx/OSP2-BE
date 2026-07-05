@@ -4,6 +4,9 @@
 #define CG_EMOJI_PATH "gfx/emoji"
 #define CG_EMOJI_CONFIG_NAME "gfx/emoji/emoji.cfg"
 #define CG_EMOJI_HASH_SIZE 512
+#define CG_EMOJI_PICKER_COLS 8
+#define CG_EMOJI_PICKER_MAX_CATEGORIES 16
+#define CG_EMOJI_PICKER_VIS_ROWS_MAX 256
 
 typedef struct emojiTable_s emojiTable_t;
 
@@ -16,6 +19,19 @@ struct emojiTable_s
 
 static  emojiTable_t* emojiTable[CG_EMOJI_HASH_SIZE];
 static qboolean emojiLoaded = qfalse;
+
+typedef struct emojiPickerVisRow_s
+{
+	qboolean        isHeader;
+	char            headerTitle[64];
+	int             emojiCount;
+	const emoji_t*  emojis[CG_EMOJI_PICKER_COLS];
+	int             pickIndex[CG_EMOJI_PICKER_COLS];
+} emojiPickerVisRow_t;
+
+static emojiPickerVisRow_t emojiPickerVisRows[CG_EMOJI_PICKER_VIS_ROWS_MAX];
+static int emojiPickerVisRowCount;
+static int emojiPickerCategoryCount;
 static qboolean emojiOverlayActive = qfalse;
 static int emojiOverlayStartTime = 0;
 static int emojiOverlayDuration = 120000;
@@ -490,21 +506,229 @@ static qboolean CG_OSPEmojiIsCharAllowed(char c)
 
 }
 
+static void CG_OSPEmojiTrimLine(char* line)
+{
+	char* start;
+	int len;
+
+	if (!line)
+	{
+		return;
+	}
+
+	start = line;
+	while (*start == ' ' || *start == '\t')
+	{
+		start++;
+	}
+
+	if (start != line)
+	{
+		memmove(line, start, strlen(start) + 1);
+	}
+
+	len = strlen(line);
+	while (len > 0 && (line[len - 1] == ' ' || line[len - 1] == '\t'))
+	{
+		line[--len] = '\0';
+	}
+}
+
+static void CG_OSPEmojiPickerLayoutReset(void)
+{
+	emojiPickerVisRowCount = 0;
+	emojiPickerCategoryCount = 0;
+}
+
+static void CG_OSPEmojiPickerLayoutAddHeader(const char* title)
+{
+	emojiPickerVisRow_t* row;
+
+	if (!title || !title[0] || emojiPickerVisRowCount >= CG_EMOJI_PICKER_VIS_ROWS_MAX)
+	{
+		return;
+	}
+
+	if (emojiPickerCategoryCount >= CG_EMOJI_PICKER_MAX_CATEGORIES)
+	{
+		return;
+	}
+
+	emojiPickerCategoryCount++;
+
+	row = &emojiPickerVisRows[emojiPickerVisRowCount++];
+	row->isHeader = qtrue;
+	Q_strncpyz(row->headerTitle, title, sizeof(row->headerTitle));
+	row->emojiCount = 0;
+}
+
+static void CG_OSPEmojiPickerLayoutAddEmoji(const emoji_t* em, int pickIndex)
+{
+	emojiPickerVisRow_t* row;
+	int col;
+
+	if (!em || emojiPickerVisRowCount >= CG_EMOJI_PICKER_VIS_ROWS_MAX)
+	{
+		return;
+	}
+
+	row = NULL;
+	if (emojiPickerVisRowCount > 0)
+	{
+		row = &emojiPickerVisRows[emojiPickerVisRowCount - 1];
+		if (row->isHeader || row->emojiCount >= CG_EMOJI_PICKER_COLS)
+		{
+			row = NULL;
+		}
+	}
+
+	if (!row)
+	{
+		row = &emojiPickerVisRows[emojiPickerVisRowCount++];
+		row->isHeader = qfalse;
+		row->headerTitle[0] = '\0';
+		row->emojiCount = 0;
+	}
+
+	col = row->emojiCount;
+	row->emojis[col] = em;
+	row->pickIndex[col] = pickIndex;
+	row->emojiCount++;
+}
+
+static const emoji_t* CG_OSPEmojiFindPlainName(const char* plainName)
+{
+	char token[MAX_NAME_LENGTH];
+
+	if (!plainName || !plainName[0])
+	{
+		return NULL;
+	}
+
+	Com_sprintf(token, sizeof(token), "%c%s%c", EMOJI_CHAR, plainName, EMOJI_CHAR);
+	return CG_OSPGetEmoji(token);
+}
+
+static qboolean CG_OSPEmojiParseCategoryTitle(char* line, char* titleOut, int titleSize)
+{
+	const char* p;
+
+	if (!line || !titleOut || titleSize <= 0)
+	{
+		return qfalse;
+	}
+
+	if (Q_stricmpn(line, "category", 8) != 0)
+	{
+		return qfalse;
+	}
+
+	p = line + 8;
+	if (*p != '\0' && *p != ' ' && *p != '\t')
+	{
+		return qfalse;
+	}
+
+	while (*p == ' ' || *p == '\t')
+	{
+		p++;
+	}
+
+	if (!*p)
+	{
+		return qfalse;
+	}
+
+	Q_strncpyz(titleOut, p, titleSize);
+	return qtrue;
+}
+
+static void CG_OSPEmojiParseConfigLine(char* line, int* nextPickIndex)
+{
+	const char* title;
+	const char* name_begin;
+	const char* name_end;
+	char plainName[MAX_INFO_VALUE];
+	char categoryTitle[64];
+	int name_size;
+	const emoji_t* em;
+
+	if (!line || !line[0])
+	{
+		return;
+	}
+
+	if (line[0] == '#')
+	{
+		return;
+	}
+
+	if (line[0] == '/' && line[1] == '/')
+	{
+		return;
+	}
+
+	if (CG_OSPEmojiParseCategoryTitle(line, categoryTitle, sizeof(categoryTitle)))
+	{
+		CG_OSPEmojiPickerLayoutAddHeader(categoryTitle);
+		return;
+	}
+
+	if (line[0] == '@')
+	{
+		title = line + 1;
+		while (*title == ' ' || *title == '\t')
+		{
+			title++;
+		}
+		if (*title)
+		{
+			CG_OSPEmojiPickerLayoutAddHeader(title);
+		}
+		return;
+	}
+
+	name_begin = CG_OSPStringFindIfChar(line, line + strlen(line), CG_OSPEmojiIsCharAllowed);
+	name_end = CG_OSPStringFindIfNotChar(name_begin, line + strlen(line), CG_OSPEmojiIsCharAllowed);
+	name_size = name_end - name_begin;
+	if (name_size <= 0)
+	{
+		return;
+	}
+
+	if (name_size >= (int)sizeof(plainName))
+	{
+		name_size = (int)sizeof(plainName) - 1;
+	}
+	memcpy(plainName, name_begin, name_size);
+	plainName[name_size] = '\0';
+
+	CG_OSPAddEmoji(plainName);
+	em = CG_OSPEmojiFindPlainName(plainName);
+	if (em)
+	{
+		CG_OSPEmojiPickerLayoutAddEmoji(em, *nextPickIndex);
+		(*nextPickIndex)++;
+	}
+}
+
 /*
 =================
 CG_OSPLoadEmoji
 
 Loads all tokens from gfx/emoji/emoji.cfg (once per cgame session).
+Picker categories: "category Title" or "@Title" (max 16). # and // comments.
 =================
 */
 void CG_OSPLoadEmoji(void)
 {
 	char text[16384];
-	const char* begin;
+	const char* cursor;
 	const char* end;
-	char emoji_name[MAX_INFO_VALUE];
+	char line[MAX_INFO_VALUE];
 	fileHandle_t filehandle;
 	int file_size;
+	int pickIndex;
 
 	if (emojiLoaded)
 	{
@@ -512,6 +736,8 @@ void CG_OSPLoadEmoji(void)
 	}
 
 	emojiLoaded = qtrue;
+	CG_OSPEmojiPickerLayoutReset();
+	pickIndex = 0;
 
 	file_size = trap_FS_FOpenFile(CG_EMOJI_CONFIG_NAME, &filehandle, 0);
 	if (file_size <= 0)
@@ -527,26 +753,36 @@ void CG_OSPLoadEmoji(void)
 	{
 		trap_FS_Read(text, file_size, filehandle);
 		trap_FS_FCloseFile(filehandle);
-		/* Split file content to strings */
-		begin = &text[0];
+		text[file_size] = '\0';
+
+		cursor = &text[0];
 		end = &text[file_size];
-		while (begin < end)
+		while (cursor < end)
 		{
-			const char* name_begin;
-			const char* name_end;
-			int name_size;
+			const char* lineEnd;
+			int lineLen;
 
-			name_begin = CG_OSPStringFindIfChar(begin, end, CG_OSPEmojiIsCharAllowed);
-			name_end = CG_OSPStringFindIfNotChar(name_begin, end, CG_OSPEmojiIsCharAllowed);
-
-			name_size = name_end - name_begin;
-			if (name_size > 0)
+			lineEnd = cursor;
+			while (lineEnd < end && *lineEnd != '\n' && *lineEnd != '\r')
 			{
-				memcpy(emoji_name, name_begin, name_size);
-				emoji_name[name_size] = 0;
-				CG_OSPAddEmoji(emoji_name);
+				lineEnd++;
 			}
-			begin = name_end;
+
+			lineLen = lineEnd - cursor;
+			if (lineLen >= (int)sizeof(line))
+			{
+				lineLen = (int)sizeof(line) - 1;
+			}
+			memcpy(line, cursor, lineLen);
+			line[lineLen] = '\0';
+			CG_OSPEmojiTrimLine(line);
+			CG_OSPEmojiParseConfigLine(line, &pickIndex);
+
+			cursor = lineEnd;
+			while (cursor < end && (*cursor == '\n' || *cursor == '\r'))
+			{
+				cursor++;
+			}
 		}
 	}
 }
@@ -645,4 +881,108 @@ int CG_OSPEmojiPrefixMatch(const char* plainPrefix, const emoji_t** outList, int
 	}
 
 	return count;
+}
+
+int CG_OSPEmojiPickerVisualRowCount(void)
+{
+	if (!emojiLoaded)
+	{
+		CG_OSPLoadEmoji();
+	}
+	return emojiPickerVisRowCount;
+}
+
+qboolean CG_OSPEmojiPickerRowIsHeader(int visualRow)
+{
+	if (visualRow < 0 || visualRow >= emojiPickerVisRowCount)
+	{
+		return qfalse;
+	}
+	return emojiPickerVisRows[visualRow].isHeader;
+}
+
+const char* CG_OSPEmojiPickerRowHeaderTitle(int visualRow)
+{
+	if (visualRow < 0 || visualRow >= emojiPickerVisRowCount ||
+	        !emojiPickerVisRows[visualRow].isHeader)
+	{
+		return "";
+	}
+	return emojiPickerVisRows[visualRow].headerTitle;
+}
+
+int CG_OSPEmojiPickerRowEmojiCount(int visualRow)
+{
+	if (visualRow < 0 || visualRow >= emojiPickerVisRowCount ||
+	        emojiPickerVisRows[visualRow].isHeader)
+	{
+		return 0;
+	}
+	return emojiPickerVisRows[visualRow].emojiCount;
+}
+
+const emoji_t* CG_OSPEmojiPickerEmojiAt(int visualRow, int col)
+{
+	emojiPickerVisRow_t* row;
+
+	if (visualRow < 0 || visualRow >= emojiPickerVisRowCount)
+	{
+		return NULL;
+	}
+
+	row = &emojiPickerVisRows[visualRow];
+	if (row->isHeader || col < 0 || col >= row->emojiCount)
+	{
+		return NULL;
+	}
+
+	return row->emojis[col];
+}
+
+int CG_OSPEmojiPickerPickIndexAt(int visualRow, int col)
+{
+	emojiPickerVisRow_t* row;
+
+	if (visualRow < 0 || visualRow >= emojiPickerVisRowCount)
+	{
+		return -1;
+	}
+
+	row = &emojiPickerVisRows[visualRow];
+	if (row->isHeader || col < 0 || col >= row->emojiCount)
+	{
+		return -1;
+	}
+
+	return row->pickIndex[col];
+}
+
+const emoji_t* CG_OSPEmojiPickerAtPickIndex(int pickIndex)
+{
+	int row;
+	int col;
+	emojiPickerVisRow_t* visRow;
+
+	if (pickIndex < 0)
+	{
+		return NULL;
+	}
+
+	for (row = 0; row < emojiPickerVisRowCount; ++row)
+	{
+		visRow = &emojiPickerVisRows[row];
+		if (visRow->isHeader)
+		{
+			continue;
+		}
+		for (col = 0; col < visRow->emojiCount; ++col)
+		{
+			if (visRow->pickIndex[col] == pickIndex)
+			{
+				return visRow->emojis[col];
+			}
+		}
+	}
+
+	return NULL;
 }

@@ -1606,3 +1606,83 @@ void BG_PlayerStateToEntityStateExtraPolate(playerState_t* ps, entityState_t* s,
 	s->loopSound = ps->loopSound;
 	s->generic1 = ps->generic1;
 }
+
+
+int BG_PuiTypeFromItem(gitem_t* item)
+{
+	if (!item)
+	{
+		return -1;
+	}
+
+	if (!Q_stricmp(item->classname, "item_health_mega"))
+	{
+		return PUI_MH;
+	}
+	if (!Q_stricmp(item->classname, "item_armor_body"))
+	{
+		return PUI_RA;
+	}
+	if (!Q_stricmp(item->classname, "item_armor_combat"))
+	{
+		return PUI_YA;
+	}
+
+	if (item->giType == IT_POWERUP)
+	{
+		switch (item->giTag)
+		{
+			case PW_QUAD:
+				return PUI_QD;
+			case PW_BATTLESUIT:
+				return PUI_BS;
+			case PW_REGEN:
+				return PUI_REG;
+			case PW_INVIS:
+				return PUI_INV;
+			case PW_HASTE:
+				return PUI_HST;
+			case PW_FLIGHT:
+				return PUI_FLG;
+			default:
+				break;
+		}
+	}
+
+	return -1;
+}
+
+
+int BG_PuiIdType(int itemId)
+{
+	return itemId & 0xF;
+}
+
+
+int BG_PuiIdSide(int itemId)
+{
+	return (itemId >> 8) & 3;
+}
+
+
+int BG_PuiIdSlot(int itemId)
+{
+	return (itemId >> 4) & 0xF;
+}
+
+
+void BG_PuiUnpackCmd(int cmd, int* picker, int* pickId, int* nextId)
+{
+	if (picker)
+	{
+		*picker = (cmd >> 20) & (MAX_CLIENTS - 1);
+	}
+	if (pickId)
+	{
+		*pickId = (cmd >> 10) & 0x3FF;
+	}
+	if (nextId)
+	{
+		*nextId = cmd & 0x3FF;
+	}
+}

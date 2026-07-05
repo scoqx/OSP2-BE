@@ -372,15 +372,12 @@ def build_pools_for_gametype(
     return pools
 
 
-def build_spawn_report(
-    map_path: Path,
+def build_spawn_report_from_entities(
+    entities: list[dict[str, str]],
+    source: str,
+    map_name: str,
     freeze: bool,
-    bsp_in_pk3: str | None = None,
 ) -> dict[str, Any]:
-    bsp_bytes, source, map_name = read_bsp_bytes(map_path, bsp_in_pk3)
-    lump = entities_lump_from_bytes(bsp_bytes, source)
-    entities = parse_entity_lump(lump)
-
     points: list[dict[str, Any]] = []
     raw_by_class: dict[str, int] = {}
     for idx, ent in enumerate(entities):
@@ -413,6 +410,17 @@ def build_spawn_report(
     if raw_by_class:
         doc["counts"] = raw_by_class
     return doc
+
+
+def build_spawn_report(
+    map_path: Path,
+    freeze: bool,
+    bsp_in_pk3: str | None = None,
+) -> dict[str, Any]:
+    bsp_bytes, source, map_name = read_bsp_bytes(map_path, bsp_in_pk3)
+    lump = entities_lump_from_bytes(bsp_bytes, source)
+    entities = parse_entity_lump(lump)
+    return build_spawn_report_from_entities(entities, source, map_name, freeze)
 
 
 def build_spawn_report_debug(

@@ -1549,3 +1549,157 @@ gfx/emoji/dogface
     rgbgen vertex
   }
 }
+
+gfx/emoji/beers
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/beers.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/banana
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/banana.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/beer
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/beer.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/chicken
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/chicken.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/crab
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/crab.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/leaf
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/leaf.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/moai
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/moai.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/monkey
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/monkey.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/peach
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/peach.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/rat
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/rat.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/shrimp
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/shrimp.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/sloth
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/sloth.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/cinema
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/cinema.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}
+
+gfx/emoji/xDPlode
+{
+    nopicmip
+    nomipmaps
+  {
+    map gfx/emoji/xDPlode.png
+    blendfunc blend
+    rgbgen vertex
+  }
+}

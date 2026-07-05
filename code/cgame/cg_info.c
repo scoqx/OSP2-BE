@@ -25,13 +25,208 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 
 #define MAX_LOADING_PLAYER_ICONS    16
-#define MAX_LOADING_ITEM_ICONS      26
+#define MAX_LOADING_ITEM_ICONS      32
+
+#define LOADING_PLAYER_ICON_SIZE    48.0f
+#define LOADING_ITEM_ICON_SIZE      24.0f
+#define LOADING_ICON_MARGIN_X       16.0f
+#define LOADING_ICON_MARGIN_BOTTOM  12.0f
+#define LOADING_ICON_ROW_GAP        6.0f
+#define LOADING_ICON_GAP            2.0f
+#define LOADING_ITEM_ICON_STEP      (LOADING_ITEM_ICON_SIZE + LOADING_ICON_GAP)
+#define LOADING_PLAYER_ICON_STEP    (LOADING_PLAYER_ICON_SIZE + LOADING_ICON_GAP)
+
+#define LOADING_INFO_FONT_SCALE     0.8f
+#define LOADING_INFO_LINE_HEIGHT    ((int)(PROP_HEIGHT * LOADING_INFO_FONT_SCALE + 0.5f))
+
+#define LOADING_STATUS_Y            (128 - 32)
+
+#define LOADING_PROGRESS_COLLISION  0.05f
+#define LOADING_PROGRESS_SOUNDS     0.10f
+#define LOADING_PROGRESS_GRAPHICS   0.12f
+#define LOADING_PROGRESS_MAPNAME    0.14f
+#define LOADING_PROGRESS_GAME_MEDIA 0.16f
+#define LOADING_PROGRESS_ITEMS_END  0.78f
+#define LOADING_PROGRESS_EMOJI      0.88f
+#define LOADING_PROGRESS_CLIENTS    0.80f
+#define LOADING_PROGRESS_CLIENTS_END 0.96f
+#define LOADING_PROGRESS_DONE       1.0f
+
+typedef enum
+{
+	LOADING_PROGRESS_PHASE_NONE = 0,
+	LOADING_PROGRESS_PHASE_ITEMS,
+	LOADING_PROGRESS_PHASE_CLIENTS
+} loadingProgressPhase_t;
 
 static int          loadingPlayerIconCount;
 static int          loadingItemIconCount;
 static qhandle_t    loadingPlayerIcons[MAX_LOADING_PLAYER_ICONS];
 static qhandle_t    loadingItemIcons[MAX_LOADING_ITEM_ICONS];
 
+static float                    loadingBarFraction;
+static loadingProgressPhase_t   loadingProgressPhase;
+static int                      loadingItemsExpected;
+static int                      loadingItemsReported;
+static int                      loadingClientsExpected;
+static int                      loadingClientsReported;
+
+
+static void CG_DrawLoadingPicSquare(float x, float y, float w, float h, qhandle_t shader)
+{
+	float   ax;
+	float   ay;
+	float   aw;
+	float   ah;
+
+	ax = x * cgs.screenXScale + cgs.screenXBias;
+	ay = y * cgs.screenYScale + cgs.screenYBias;
+	aw = w * cgs.screenXScale;
+	ah = h * cgs.screenYScale;
+	trap_R_DrawStretchPic(ax, ay, aw, ah, 0, 0, 1, 1, shader);
+}
+
+static float CG_LoadingIconBaseX(void)
+{
+	return cgs.screenXmin + LOADING_ICON_MARGIN_X;
+}
+
+static int CG_LoadingItemIconsPerRow(void)
+{
+	int     perRow;
+	float   rowWidth;
+
+	rowWidth = (cgs.screenXmax - cgs.screenXmin) - LOADING_ICON_MARGIN_X * 2.0f - LOADING_ITEM_ICON_SIZE;
+	perRow = (int)(rowWidth / LOADING_ITEM_ICON_STEP) + 1;
+	if (perRow < 1)
+	{
+		perRow = 1;
+	}
+	return perRow;
+}
+
+static void CG_LoadingProgressSet(float fraction)
+{
+	if (fraction > loadingBarFraction)
+	{
+		loadingBarFraction = fraction;
+	}
+}
+
+static int CG_LoadingCountMapItems(void)
+{
+	char    items[MAX_ITEMS + 1];
+	int     i;
+	int     count;
+
+	count = 0;
+	strcpy(items, CG_ConfigString(CS_ITEMS));
+	for (i = 1; i < bg_numItems; i++)
+	{
+		if (items[i] == '1' || cg_buildScript.integer)
+		{
+			count++;
+		}
+	}
+	if (count < 1)
+	{
+		count = 1;
+	}
+	return count;
+}
+
+static int CG_LoadingCountActiveClients(void)
+{
+	int     i;
+	int     count;
+
+	count = 0;
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		if (CG_ConfigString(CS_PLAYERS + i)[0])
+		{
+			count++;
+		}
+	}
+	if (count < 1)
+	{
+		count = 1;
+	}
+	return count;
+}
+
+static void CG_DrawLoadingProgressBarPic(float x, float y, float w, float h, float texS2,
+        const vec4_t color, qhandle_t shader)
+{
+	if (!shader || w <= 0.0f || h <= 0.0f)
+	{
+		return;
+	}
+
+	trap_R_SetColor(color);
+	CG_AdjustFrom640(&x, &y, &w, &h);
+	trap_R_DrawStretchPic(x, y, w, h, 0.0f, 0.0f, texS2, 1.0f, shader);
+	trap_R_SetColor(NULL);
+}
+
+static void CG_DrawLoadingProgressBar(void)
+{
+	vec4_t  barColor;
+	vec4_t  shadowColor;
+	float   x;
+	float   y;
+	float   w;
+	float   h;
+	float   fillW;
+	float   fraction;
+
+	if (loadingBarFraction <= 0.0f)
+	{
+		return;
+	}
+
+	if (!cgs.media.loadingBarBorder1Shader || !cgs.media.loadingBarFill1Shader)
+	{
+		return;
+	}
+
+	w = 240.0f;
+	h = 12.0f;
+	x = (640.0f - w) * 0.5f;
+	if (Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "sv_cheats")[0] == '1')
+	{
+		y = LOADING_STATUS_Y + 68.0f;
+	}
+	else
+	{
+		y = LOADING_STATUS_Y + 76.0f;
+	}
+
+	fraction = loadingBarFraction;
+	if (fraction > 1.0f)
+	{
+		fraction = 1.0f;
+	}
+	fillW = w * fraction;
+
+	/* Same offset as UI_DROPSHADOW in UI_DrawProportionalString (+2, +2). */
+	Vector4Set(shadowColor, 0.0f, 0.0f, 0.0f, 1.0f);
+	CG_DrawLoadingProgressBarPic(x + 2.0f, y + 2.0f, w, h, 1.0f, shadowColor,
+	                             cgs.media.loadingBarBorder1Shader);
+	if (fillW > 0.0f)
+	{
+		shadowColor[3] = 1.0f;
+		CG_DrawLoadingProgressBarPic(x + 2.0f, y + 2.0f, fillW, h, fraction, shadowColor,
+		                              cgs.media.loadingBarFill1Shader);
+	}
+
+	Vector4Set(barColor, 1.0f, 1.0f, 1.0f, 1.0f);
+	CG_DrawLoadingProgressBarPic(x, y, w, h, 1.0f, barColor, cgs.media.loadingBarBorder1Shader);
+	if (fillW > 0.0f)
+	{
+		CG_DrawLoadingProgressBarPic(x, y, fillW, h, fraction, barColor, cgs.media.loadingBarFill1Shader);
+	}
+}
 
 /*
 ===================
@@ -41,24 +236,31 @@ CG_DrawLoadingIcons
 static void CG_DrawLoadingIcons(void)
 {
 	int     n;
-	int     x, y;
+	float   x;
+	float   bottomItemY;
+	float   playerY;
 
-	for (n = 0; n < loadingPlayerIconCount; n++)
-	{
-		x = 16 + n * 78;
-		y = 324 - 40;
-		CG_DrawPicOld(x, y, 64, 64, loadingPlayerIcons[n]);
-	}
+	bottomItemY = 480.0f - LOADING_ICON_MARGIN_BOTTOM - LOADING_ITEM_ICON_SIZE;
 
 	for (n = 0; n < loadingItemIconCount; n++)
 	{
-		y = 400 - 40;
-		if (n >= 13)
-		{
-			y += 40;
-		}
-		x = 16 + n % 13 * 48;
-		CG_DrawPicOld(x, y, 32, 32, loadingItemIcons[n]);
+		x = CG_LoadingIconBaseX() + (float)n * LOADING_ITEM_ICON_STEP;
+		CG_DrawLoadingPicSquare(x, bottomItemY, LOADING_ITEM_ICON_SIZE, LOADING_ITEM_ICON_SIZE, loadingItemIcons[n]);
+	}
+
+	if (loadingItemIconCount > 0)
+	{
+		playerY = bottomItemY - LOADING_ICON_ROW_GAP - LOADING_PLAYER_ICON_SIZE;
+	}
+	else
+	{
+		playerY = 480.0f - LOADING_ICON_MARGIN_BOTTOM - LOADING_PLAYER_ICON_SIZE;
+	}
+
+	for (n = 0; n < loadingPlayerIconCount; n++)
+	{
+		x = CG_LoadingIconBaseX() + (float)n * LOADING_PLAYER_ICON_STEP;
+		CG_DrawLoadingPicSquare(x, playerY, LOADING_PLAYER_ICON_SIZE, LOADING_PLAYER_ICON_SIZE, loadingPlayerIcons[n]);
 	}
 }
 
@@ -72,6 +274,82 @@ CG_LoadingString
 void CG_LoadingString(const char* s)
 {
 	Q_strncpyz(cg.infoScreenText, s, sizeof(cg.infoScreenText));
+
+	if (!s[0])
+	{
+		CG_LoadingProgressSet(LOADING_PROGRESS_DONE);
+	}
+	else if (!Q_stricmp(s, "collision map"))
+	{
+		loadingProgressPhase = LOADING_PROGRESS_PHASE_NONE;
+		loadingPlayerIconCount = 0;
+		loadingItemIconCount = 0;
+		CG_LoadingProgressSet(LOADING_PROGRESS_COLLISION);
+	}
+	else if (!Q_stricmp(s, "sounds"))
+	{
+		CG_LoadingProgressSet(LOADING_PROGRESS_SOUNDS);
+	}
+	else if (!Q_stricmp(s, "graphics"))
+	{
+		loadingProgressPhase = LOADING_PROGRESS_PHASE_NONE;
+		CG_LoadingProgressSet(LOADING_PROGRESS_GRAPHICS);
+	}
+	else if (cgs.mapname[0] && !Q_stricmp(s, cgs.mapname))
+	{
+		CG_LoadingProgressSet(LOADING_PROGRESS_MAPNAME);
+	}
+	else if (!Q_stricmp(s, "game media"))
+	{
+		loadingProgressPhase = LOADING_PROGRESS_PHASE_ITEMS;
+		loadingItemsReported = 0;
+		loadingItemsExpected = CG_LoadingCountMapItems();
+		CG_LoadingProgressSet(LOADING_PROGRESS_GAME_MEDIA);
+	}
+	else if (!Q_stricmp(s, "emoji"))
+	{
+		loadingProgressPhase = LOADING_PROGRESS_PHASE_NONE;
+		CG_LoadingProgressSet(LOADING_PROGRESS_EMOJI);
+	}
+	else if (!Q_stricmp(s, "clients"))
+	{
+		loadingProgressPhase = LOADING_PROGRESS_PHASE_CLIENTS;
+		loadingClientsReported = 0;
+		loadingClientsExpected = CG_LoadingCountActiveClients();
+		if (loadingBarFraction < LOADING_PROGRESS_CLIENTS)
+		{
+			CG_LoadingProgressSet(LOADING_PROGRESS_CLIENTS);
+		}
+	}
+	else if (loadingProgressPhase == LOADING_PROGRESS_PHASE_ITEMS)
+	{
+		loadingItemsReported++;
+		if (loadingItemsReported > loadingItemsExpected)
+		{
+			loadingItemsReported = loadingItemsExpected;
+		}
+		CG_LoadingProgressSet(LOADING_PROGRESS_GAME_MEDIA +
+		                      (LOADING_PROGRESS_ITEMS_END - LOADING_PROGRESS_GAME_MEDIA) *
+		                      (float)loadingItemsReported / (float)loadingItemsExpected);
+	}
+	else if (loadingProgressPhase == LOADING_PROGRESS_PHASE_CLIENTS)
+	{
+		float   start;
+
+		loadingClientsReported++;
+		if (loadingClientsReported > loadingClientsExpected)
+		{
+			loadingClientsReported = loadingClientsExpected;
+		}
+		start = loadingBarFraction;
+		if (start < LOADING_PROGRESS_CLIENTS)
+		{
+			start = LOADING_PROGRESS_CLIENTS;
+		}
+		CG_LoadingProgressSet(start +
+		                      (LOADING_PROGRESS_CLIENTS_END - start) *
+		                      (float)loadingClientsReported / (float)loadingClientsExpected);
+	}
 
 	trap_UpdateScreen();
 }
@@ -87,7 +365,7 @@ void CG_LoadingItem(int itemNum)
 
 	item = &bg_itemlist[itemNum];
 
-	if (item->icon && loadingItemIconCount < MAX_LOADING_ITEM_ICONS)
+	if (item->icon && loadingItemIconCount < CG_LoadingItemIconsPerRow())
 	{
 		loadingItemIcons[loadingItemIconCount++] = trap_R_RegisterShaderNoMip(item->icon);
 	}
@@ -200,12 +478,12 @@ void CG_DrawInformation(void)
 	// screen to write into
 	if (cg.infoScreenText[0])
 	{
-		UI_DrawProportionalString(320, 128 - 32, va("Loading... %s", cg.infoScreenText),
+		UI_DrawProportionalString(320, LOADING_STATUS_Y, va("Loading... %s", cg.infoScreenText),
 		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
 	}
 	else
 	{
-		UI_DrawProportionalString(320, 128 - 32, "Awaiting snapshot...",
+		UI_DrawProportionalString(320, LOADING_STATUS_Y, "Awaiting snapshot...",
 		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
 	}
 
@@ -247,21 +525,24 @@ void CG_DrawInformation(void)
 	}
 
 	// map-specific message (long map name)
+	y -= (PROP_HEIGHT - LOADING_INFO_LINE_HEIGHT) + 6;
 	s = CG_ConfigString(CS_MESSAGE);
 	if (s[0])
 	{
-		UI_DrawProportionalString(320, y, s,
-		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
-		y += PROP_HEIGHT;
+		UI_DrawProportionalStringScaled(320, y, s,
+		                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+		                                LOADING_INFO_FONT_SCALE);
+		y += LOADING_INFO_LINE_HEIGHT;
 	}
 
 	// cheats warning
 	s = Info_ValueForKey(sysInfo, "sv_cheats");
 	if (s[0] == '1')
 	{
-		UI_DrawProportionalString(320, y, "CHEATS ARE ENABLED",
-		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
-		y += PROP_HEIGHT;
+		UI_DrawProportionalStringScaled(320, y, "CHEATS ARE ENABLED",
+		                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+		                                LOADING_INFO_FONT_SCALE);
+		y += LOADING_INFO_LINE_HEIGHT;
 	}
 
 	// game type
@@ -286,16 +567,18 @@ void CG_DrawInformation(void)
 			s = "Unknown Gametype";
 			break;
 	}
-	UI_DrawProportionalString(320, y, s,
-	                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
-	y += PROP_HEIGHT;
+	UI_DrawProportionalStringScaled(320, y, s,
+	                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+	                                LOADING_INFO_FONT_SCALE);
+	y += LOADING_INFO_LINE_HEIGHT;
 
 	value = atoi(Info_ValueForKey(info, "timelimit"));
 	if (value)
 	{
-		UI_DrawProportionalString(320, y, va("timelimit %i", value),
-		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
-		y += PROP_HEIGHT;
+		UI_DrawProportionalStringScaled(320, y, va("timelimit %i", value),
+		                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+		                                LOADING_INFO_FONT_SCALE);
+		y += LOADING_INFO_LINE_HEIGHT;
 	}
 
 	if (cgs.gametype < GT_CTF)
@@ -303,9 +586,10 @@ void CG_DrawInformation(void)
 		value = atoi(Info_ValueForKey(info, "fraglimit"));
 		if (value)
 		{
-			UI_DrawProportionalString(320, y, va("fraglimit %i", value),
-			                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
-			y += PROP_HEIGHT;
+			UI_DrawProportionalStringScaled(320, y, va("fraglimit %i", value),
+			                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+			                                LOADING_INFO_FONT_SCALE);
+			y += LOADING_INFO_LINE_HEIGHT;
 		}
 	}
 
@@ -314,9 +598,10 @@ void CG_DrawInformation(void)
 		value = atoi(Info_ValueForKey(info, "capturelimit"));
 		if (value)
 		{
-			UI_DrawProportionalString(320, y, va("capturelimit %i", value),
-			                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
-			y += PROP_HEIGHT;
+			UI_DrawProportionalStringScaled(320, y, va("capturelimit %i", value),
+			                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+			                                LOADING_INFO_FONT_SCALE);
+			y += LOADING_INFO_LINE_HEIGHT;
 		}
 	}
 
@@ -333,4 +618,6 @@ void CG_DrawInformation(void)
 	                    SCREEN_WIDTH,
 	                    DS_HRIGHT | DS_PROPORTIONAL | DS_SHADOW,
 	                    cgFontIndices.infoVersion, NULL, NULL, NULL);
+
+	CG_DrawLoadingProgressBar();
 }

@@ -15,46 +15,51 @@ CG_SRC = \
  bg_slidemove bg_pmove bg_lib bg_misc \
  core slidemove q3a vq1 vjk vq4 \
  q_math q_shared cg_ospconfig cg_osputil cg_osphud cg_unlagged cg_playerscolors\
- cg_localevents cg_customloc cg_maplocs cg_mapbundle cg_spawns cg_shadowitems cg_tpexit cg_globalpos cg_worldflags cg_cvardescriptions common\
- cg_superhud cg_superhud_configparser cg_superhud_util cg_superhud_private\
- cg_superhud_element_fps \
- cg_superhud_element_sbhc cg_superhud_element_sbhi cg_superhud_element_sbhb \
- cg_superhud_element_sbac cg_superhud_element_sbai cg_superhud_element_sbab \
- cg_superhud_element_sbamc cg_superhud_element_sbami cg_superhud_element_sbamb \
- cg_superhud_element_target_name cg_superhud_element_target_status \
- cg_superhud_element_vmw \
- cg_superhud_element_attacker_name cg_superhud_element_attacker_icon \
- cg_superhud_element_fragmessage \
- cg_superhud_element_rankmessage \
- cg_superhud_element_ng cg_superhud_element_ngp \
- cg_superhud_element_pred \
- cg_superhud_element_speed \
- cg_superhud_element_localtime cg_superhud_element_gametime \
- cg_superhud_element_ammomessage \
- cg_superhud_element_chat \
- cg_superhud_element_specmessage cg_superhud_element_followmessage \
- cg_superhud_element_itempickup cg_superhud_element_itempickupicon \
- cg_superhud_element_teamcount \
- cg_superhud_element_flagstatus \
- cg_superhud_element_powerup \
- cg_superhud_element_name \
- cg_superhud_element_score \
- cg_superhud_element_reward \
- cg_superhud_element_recordmessage \
- cg_superhud_element_team \
- cg_superhud_element_weaponlist \
- cg_superhud_element_obituaries \
- cg_superhud_element_warmupinfo cg_superhud_element_gametype cg_superhud_element_location \
- cg_superhud_element_tempAcc \
- cg_superhud_element_weapon_stats cg_superhud_element_player_stats cg_superhud_element_player_name \
- cg_superhud_element_grid \
- cg_superhud_element_teamtasks \
- cg_superhud_element_roundwarmup \
- cg_superhud_element_laststanding \
- cg_superhud_element_timelimit \
+ cg_localevents cg_customloc cg_maplocs cg_mapbundle cg_spawns cg_shadowitems cg_spectatoritems cg_tpexit cg_globalpos cg_worldflags cg_cvardescriptions common\
+ superhud/superhud superhud/superhud_configparser superhud/superhud_util superhud/superhud_private\
+ superhud/elements/element_fps \
+ superhud/elements/element_sbhc superhud/elements/element_sbhi superhud/elements/element_sbhb \
+ superhud/elements/element_sbac superhud/elements/element_sbai superhud/elements/element_sbab \
+ superhud/elements/element_sbamc superhud/elements/element_sbami superhud/elements/element_sbamb \
+ superhud/elements/element_target_name superhud/elements/element_target_status \
+ superhud/elements/element_vmw \
+ superhud/elements/element_attacker_name superhud/elements/element_attacker_icon \
+ superhud/elements/element_fragmessage \
+ superhud/elements/element_rankmessage \
+ superhud/elements/element_ng superhud/elements/element_ngp \
+ superhud/elements/element_pred \
+ superhud/elements/element_speed \
+ superhud/elements/element_localtime superhud/elements/element_gametime \
+ superhud/elements/element_ammomessage \
+ superhud/elements/element_chat \
+ superhud/elements/element_specmessage superhud/elements/element_followmessage \
+ superhud/elements/element_itempickup superhud/elements/element_itempickupicon \
+ superhud/elements/element_spectator_itemspawns superhud/elements/element_spectator_itempickups \
+ superhud/elements/element_teamcount \
+ superhud/elements/element_flagstatus \
+ superhud/elements/element_powerup \
+ superhud/elements/element_name \
+ superhud/elements/element_score \
+ superhud/elements/element_reward \
+ superhud/elements/element_recordmessage \
+ superhud/elements/element_team \
+ superhud/elements/element_weaponlist \
+ superhud/elements/element_obituaries \
+ superhud/elements/element_warmupinfo superhud/elements/element_gametype superhud/elements/element_location \
+ superhud/elements/element_tempAcc \
+ superhud/elements/element_weapon_stats superhud/elements/element_player_stats superhud/elements/element_player_name \
+ superhud/elements/element_grid \
+ superhud/elements/element_teamtasks \
+ superhud/elements/element_roundwarmup \
+ superhud/elements/element_laststanding \
+ superhud/elements/element_timelimit \
  l_crc \
  cg_chatfilter cg_crosshair \
- cg_be_util cg_be_stats cg_be_chatwindow cg_be_chatwindow_emoji cg_brightitems beinfo_cfg osp_fonts \
+ cg_be_util cg_be_stats \
+ chatWindow/be_chatwindow chatWindow/be_chatwindow_state chatWindow/be_chatwindow_persist chatWindow/be_chatwindow_cmdac \
+ chatWindow/be_chatwindow_history chatWindow/be_chatwindow_input \
+ chatWindow/be_chatwindow_emoji chatWindow/be_chatwindow_emoji_picker \
+ cg_brightitems beinfo_cfg osp_fonts \
  cg_emoji
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \
