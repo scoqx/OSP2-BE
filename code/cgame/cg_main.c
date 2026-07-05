@@ -1102,7 +1102,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_numbersSet, "cg_numbersSet", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_numbersSet },
 	{ &cg_oldFlags, "cg_oldFlags", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_oldFlags },
 	{ &cg_drawBrightItems, "cg_drawBrightItems", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
-	{ &cg_brightItemsOpaque, "cg_brightItemsOpaque", "0.8", CVAR_ARCHIVE },
+	{ &cg_brightItemsOpaque, "cg_brightItemsOpaque", "0.8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_brightItemsOpaque },
 	{ &cg_myFootsteps, "cg_myFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_teamFootsteps, "cg_teamFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_enemyFootsteps, "cg_enemyFootsteps", "-1", CVAR_ARCHIVE | CVAR_NEW },
@@ -2681,6 +2681,7 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_teamTaskThemeColor");
 
 	CG_CvarTouch("cg_brightWeaponsOpaque");
+	CG_CvarTouch("cg_brightItemsOpaque");
 
 	CG_CvarTouch("cg_gunX");
 	CG_CvarTouch("cg_gunY");

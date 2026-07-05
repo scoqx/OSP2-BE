@@ -399,19 +399,57 @@ void CG_BeinfoApplyBrightColor(const char* classname, float r, float g, float b,
 	CG_BeinfoBrightItemOverride(classname, r, g, b, a);
 }
 
+static float CG_GetBrightItemOpacity(int itemNum)
+{
+	const float* bc;
+	float        op;
+
+	if (itemNum < 1 || itemNum >= MAX_ITEMS)
+	{
+		return 1.0f;
+	}
+
+	bc = cgs.beBrightItemsColor[itemNum];
+	if (cgs.beBrightItemsBeinfoSet[itemNum])
+	{
+		op = bc[3];
+	}
+	else
+	{
+		op = cg_brightItemsOpaque.value;
+	}
+
+	if (op < 0.0f)
+	{
+		op = 0.0f;
+	}
+	else if (op > 1.0f)
+	{
+		op = 1.0f;
+	}
+
+	return op;
+}
+
 qhandle_t CG_SelectBrightItemsShader(int gitype)
 {
 	if (gitype == IT_TEAM)
 	{
 		if (cg_drawBrightItems.integer == 2)
 		{
-			return cgs.media.flagBrightAltShader;
+			if (cgs.media.flagBrightAltShader)
+			{
+				return cgs.media.flagBrightAltShader;
+			}
 		}
 		return cgs.media.flagBrightShader;
 	}
 	if (cg_drawBrightItems.integer == 2)
 	{
-		return cgs.media.altFullBrightShader;
+		if (cgs.media.altFullBrightShader)
+		{
+			return cgs.media.altFullBrightShader;
+		}
 	}
 	return cgs.media.fullBrightShader;
 }
@@ -445,27 +483,27 @@ qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum, int gitype)
 	}
 
 	bc = cgs.beBrightItemsColor[itemNum];
-	if (cgs.beBrightItemsBeinfoSet[itemNum])
-	{
-		op = bc[3];
-	}
-	else
-	{
-		op = cg_brightItemsOpaque.value;
-	}
-	if (op < 0.0f)
-	{
-		op = 0.0f;
-	}
-	else if (op > 1.0f)
-	{
-		op = 1.0f;
-	}
+	op = CG_GetBrightItemOpacity(itemNum);
 
 	ent->customShader = CG_SelectBrightItemsShader(gitype);
-	ent->shaderRGBA[0] = (byte)(255 * bc[0]);
-	ent->shaderRGBA[1] = (byte)(255 * bc[1]);
-	ent->shaderRGBA[2] = (byte)(255 * bc[2]);
+	{
+		float r;
+		float g;
+		float b;
+
+		r = bc[0];
+		g = bc[1];
+		b = bc[2];
+		if (r <= 0.0f && g <= 0.0f && b <= 0.0f)
+		{
+			r = 1.0f;
+			g = 1.0f;
+			b = 1.0f;
+		}
+		ent->shaderRGBA[0] = (byte)(255 * r);
+		ent->shaderRGBA[1] = (byte)(255 * g);
+		ent->shaderRGBA[2] = (byte)(255 * b);
+	}
 	ent->shaderRGBA[3] = (byte)(255 * op);
 	return qtrue;
 }

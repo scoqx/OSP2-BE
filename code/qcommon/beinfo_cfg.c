@@ -592,9 +592,16 @@ static qboolean BeinfoCfg_ParseBrightColorValues(char** text, float* r, float* g
 	}
 
 	*r = (float)atof(token);
-	return BeinfoCfg_ParseFloatToken(text, g) &&
-	       BeinfoCfg_ParseFloatToken(text, b) &&
-	       BeinfoCfg_ParseFloatToken(text, a);
+	if (!BeinfoCfg_ParseFloatToken(text, g) || !BeinfoCfg_ParseFloatToken(text, b))
+	{
+		return qfalse;
+	}
+	if (BeinfoCfg_ParseFloatToken(text, a))
+	{
+		return qtrue;
+	}
+	*a = 1.0f;
+	return qtrue;
 }
 
 static void BeinfoCfg_HandleBrightColorKey(const char* key, char** text)

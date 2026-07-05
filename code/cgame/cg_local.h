@@ -4015,6 +4015,7 @@ void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_brightWeaponsOpaque(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_brightItemsOpaque(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskMarkTime(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart);

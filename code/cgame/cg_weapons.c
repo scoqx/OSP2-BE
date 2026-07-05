@@ -1970,13 +1970,28 @@ void CG_InitBrightWeaponsColors(void)
 
 static float CG_GetBrightWeaponOpacity(int weaponNum)
 {
+	float op;
+
 	if (weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS &&
 	        cgs.beBrightWeaponsBeinfoSet[weaponNum])
 	{
-		return cgs.beBrightWeaponsBeinfoOpaque[weaponNum];
+		op = cgs.beBrightWeaponsBeinfoOpaque[weaponNum];
+	}
+	else
+	{
+		op = cg_brightWeaponsOpaque.value;
 	}
 
-	return cg_brightWeaponsOpaque.value;
+	if (op < 0.0f)
+	{
+		op = 0.0f;
+	}
+	else if (op > 1.0f)
+	{
+		op = 1.0f;
+	}
+
+	return op;
 }
 
 void CG_SetWeaponBrightColor(refEntity_t* gun, int weaponNum)
@@ -2015,12 +2030,16 @@ qhandle_t CG_SelectBrightWeaponsShader(void)
 {
 	if (cg_brightWeaponsShader.integer == 2)
 	{
-		return cgs.media.altFullBrightShader;
+		if (cgs.media.altFullBrightShader)
+		{
+			return cgs.media.altFullBrightShader;
+		}
 	}
-	else
+	if (cgs.media.fullBrightShader)
 	{
 		return cgs.media.fullBrightShader;
 	}
+	return cgs.media.firstPersonGun;
 }
 
 void CG_ApplyBrightBrassIfNeeded(localEntity_t* le)
@@ -2110,13 +2129,11 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	qboolean continuousWeaponFiring;
 	int drawGunFlags;
 	int railChamberFlags;
-	int brightWeaponsShaderType;
 	float brightWeaponOpacity;
 
 	/* --- cvars (hot path: 64 players * 60 FPS) --- */
 	drawGunFlags = cg_drawGun.integer;
 	railChamberFlags = cg_railCustomChamber.integer;
-	brightWeaponsShaderType = cg_brightWeaponsShader.integer;
 
 	/* --- who we're drawing: own gun, enemy, teammate, spectate follow --- */
 	isOwnGun = ps && cent->currentState.number == cg.clientNum;
@@ -2250,7 +2267,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			gun.shaderRGBA[2] = (byte)(255 * bc[2]);
 			gun.shaderRGBA[3] = (byte)(255 * brightWeaponOpacity);
 			usedBrightColor = qtrue;
-			gun.customShader = (brightWeaponsShaderType == 2) ? cgs.media.altFullBrightShader : cgs.media.fullBrightShader;
+			gun.customShader = CG_SelectBrightWeaponsShader();
 		}
 	}
 	/* --- ghost gun (cg_gunColor / cg_gunOpaque) --- */
@@ -2459,7 +2476,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 				barrel.shaderRGBA[1] = (byte)(255 * bc[1]);
 				barrel.shaderRGBA[2] = (byte)(255 * bc[2]);
 				barrel.shaderRGBA[3] = (byte)(255 * brightWeaponOpacity);
-				barrel.customShader = (brightWeaponsShaderType == 2) ? cgs.media.altFullBrightShader : cgs.media.fullBrightShader;
+				barrel.customShader = CG_SelectBrightWeaponsShader();
 			}
 			else if (ghostGun)
 			{

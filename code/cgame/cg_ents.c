@@ -646,8 +646,7 @@ void CG_AddWorldItem3D(const vec3_t inOrigin, int modelindex, int entNumber, int
 			w = item->giTag;
 			if (w > WP_NONE && w < WP_NUM_WEAPONS)
 			{
-				ent.customShader = (cg_brightWeaponsShader.integer == 2) ?
-				                   cgs.media.altFullBrightShader : cgs.media.fullBrightShader;
+				ent.customShader = CG_SelectBrightWeaponsShader();
 				CG_SetWeaponBrightColorWorld(&ent, w);
 				usedBrightItem = qtrue;
 			}
