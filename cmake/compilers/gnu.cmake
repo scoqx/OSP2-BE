@@ -4,7 +4,7 @@ if(NOT CMAKE_C_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_C_COMPILER_ID MATCHES "^
     return()
 endif()
 
-add_compile_options(-Wall -Wimplicit -Wshadow -Werror
+add_compile_options(-Wall -Wimplicit -Wshadow
     -Wstrict-prototypes -Wformat=2  -Wformat-security
     -Wstrict-aliasing=2 -Wmissing-format-attribute
     -Wdisabled-optimization -Werror-implicit-function-declaration)

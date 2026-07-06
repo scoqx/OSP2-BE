@@ -1,12 +1,14 @@
-set(MOD_NAME OSP2)
-set(MOD_VERSION 0.06)
+set(MOD_NAME OSP2BE)
+set(MOD_VERSION 1.06)
+set(MOD_VERSION_FULL "1.06b1")
 
 set(BASEGAME osp)
 
-set(OSP_VERSION "${MOD_VERSION}-test")
+set(OSP_VERSION "be-${MOD_VERSION_FULL}")
 set(OSP_CLIENT "1008_OSP2_${OSP_VERSION}")
-set(OSP_PAKNAME "zz-osp-pak8.pk3")
+set(OSP_PAKNAME "zz-osp-pak8be.pk3")
 
 set(CGAME_MODULE cgame)
+set(UI_MODULE ui)
 
 set(ASSETS_LOCATION ${CMAKE_SOURCE_DIR}/assets)
