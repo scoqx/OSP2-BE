@@ -91,6 +91,17 @@ doinclude(Tokenrow *trp)
 		if ((fd = open(iname, 0)) >= 0)
 			break;
 	}
+
+	// q3cpp does not handle nested includes, skipping source file's base
+	// directories for some reason. Here, we make sure those directories
+	// are handled
+	if (fd < 0) {
+		strcpy(iname, basepath(cursource->filename));
+		strcat(iname, "/");
+		strcat(iname, fname);
+		fd = open(iname, 0);
+	}
+
 	if ( Mflag>1 || (!angled&&Mflag==1) ) {
 		write(1,objname,strlen(objname));
 		write(1,iname,strlen(iname));
@@ -103,7 +114,7 @@ doinclude(Tokenrow *trp)
 		genline();
 	} else {
 		trp->tp = trp->bp+2;
-		error(ERROR, "Could not find include file %r", trp);
+		error(ERROR, "Could not find include file %r. I've tried looking it at\n%s\n%s", trp, iname, basepath(cursource->filename));
 	}
 	return;
 syntax:
