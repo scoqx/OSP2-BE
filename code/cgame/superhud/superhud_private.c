@@ -1,5 +1,5 @@
 #include "superhud_private.h"
-#include "../qcommon/qcommon.h"
+#include "../../qcommon/qcommon.h"
 
 superhudGlobalContext_t superhudGlobalContext;
 

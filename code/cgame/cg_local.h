@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef CG_LOCAL_H
 #define CG_LOCAL_H
 #include "../qcommon/q_shared.h"
-#include "../qcommon/osp_version.h"
 #include "tr_types.h"
 #include "../game/bg_public.h"
 #include "cg_public.h"
@@ -2623,6 +2622,8 @@ void QDECL CG_PrintOnce(const char* msg, ...);
 void CG_StartMusic(void);
 
 void CG_UpdateCvars(int maxEntries);
+
+int CG_LowAmmoThresholdFor(int weapon);
 
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);

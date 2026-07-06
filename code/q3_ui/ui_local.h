@@ -4,7 +4,6 @@
 #define __UI_LOCAL_H__
 
 #include "../game/q_shared.h"
-#include "../qcommon/osp_version.h"
 #include "../cgame/tr_types.h"
 //NOTE: include the ui_public.h from the new UI
 #include "../ui/ui_public.h" // bk001205 - yes, do have to use this
@@ -717,6 +716,9 @@ typedef struct
 	int                 menuBgStyleModCount;
 	qboolean            engineFontAtlas;
 } uiStatic_t;
+
+qboolean UI_OSPCharHexToInt(char c, int* out);
+qboolean UI_Hex16GetColor(const char* str, float* color);
 
 extern void         UI_Init(void);
 extern void         UI_Shutdown(void);

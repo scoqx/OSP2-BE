@@ -104,7 +104,7 @@ typedef struct teamTaskFilterTableNode_s
 
 #define CG_TEAMTASKFILTER_MAX 128
 
-static teamTaskFilterTableNode_t filterNames[CG_TEAMTASKFILTER_MAX];
+extern teamTaskFilterTableNode_t filterNames[CG_TEAMTASKFILTER_MAX];
 
 static teamTaskFilterTableNode_t* CG_TeamTaskFilterFindName(const char* name)
 {

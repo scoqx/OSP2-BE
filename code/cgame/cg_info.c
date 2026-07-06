@@ -609,7 +609,7 @@ void CG_DrawInformation(void)
 	}
 
 	// Draw OSP2-BE version in bottom right corner
-	versionPtr = OSP_VERSION;
+	versionPtr = XSTRINGIFY(OSP_VERSION);
 	if (Q_strncmp(versionPtr, "be-", 3) == 0)
 	{
 		versionPtr += 3; // Skip "be-" prefix

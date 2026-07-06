@@ -37,6 +37,17 @@
 
  **********************************************************************/
 
+// CMake passes OSP2 configuration, like version or osp_client, through
+// defines via compiler flags. Unfortunately, it lacks capability to
+// create define with string literal content, so it's rather raw symbols.
+// Q3LCC does not have this problem.
+#ifdef Q3_VM
+#define XSTRINGIFY(x) x
+#else
+#define XSTRINGIFY(x) STRINGIFY(x)
+#define STRINGIFY(x) #x
+#endif
+
 #ifdef Q3_VM
 
 #include "bg_lib.h"

@@ -1490,6 +1490,13 @@ Prints a message only once per unique message string within a time window.
 Uses a hash-based tracking system with timestamps to allow re-printing after a delay.
 ================
 */
+#ifdef __GNUC__
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 1, 2)))
+#else
+__attribute__((format(printf, 1, 2)))
+#endif
+#endif
 void QDECL CG_PrintOnce(const char* msg, ...)
 {
 	typedef struct
@@ -3201,7 +3208,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		}
 	}
 
-	CG_Printf("\n^7Loaded [^9OSP2-BE^7] client version: ^9%s\n", OSP_VERSION);
+	CG_Printf("\n^7Loaded [^9OSP2-BE^7] client version: ^9%s\n", XSTRINGIFY(OSP_VERSION));
 
 	CG_OSPPrintTime_f();
 

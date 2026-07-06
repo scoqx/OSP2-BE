@@ -513,8 +513,6 @@ void UI_DrawBannerString(int x, int y, const char* str, int style, vec4_t color)
 	UI_DrawBannerString2(x, y, str, color);
 }
 
-static qboolean UI_Hex16GetColor(const char* str, float* color);
-
 int UI_ProportionalStringWidth(const char* str)
 {
 	const char*     s;
@@ -953,7 +951,7 @@ void UI_DrawProportionalString_AutoWrapped(int x, int y, int xmax, int ystep, co
 UI_DrawString2
 =================
 */
-static qboolean UI_OSPCharHexToInt(char c, int* out)
+qboolean UI_OSPCharHexToInt(char c, int* out)
 {
 	if (c >= '0' && c <= '9')
 	{
@@ -973,7 +971,7 @@ static qboolean UI_OSPCharHexToInt(char c, int* out)
 	return qfalse;
 }
 
-static qboolean UI_Hex16GetColor(const char* str, float* color)
+qboolean UI_Hex16GetColor(const char* str, float* color)
 {
 	int d1;
 	int d2;

@@ -24,7 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // active (after loading) gameplay
 
 #include "cg_local.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 
 int sortedTeamPlayers[TEAM_MAXOVERLAY];
 int numSortedTeamPlayers;
@@ -3157,7 +3157,7 @@ void CG_OSPDrawNewCredits(void)
 	// version
 	CG_OSPDrawStringNew(
 	    x + w - 2, y,
-	    OSP_VERSION,
+	    XSTRINGIFY(OSP_VERSION),
 	    colorBlack,
 	    NULL,
 	    6, 8,

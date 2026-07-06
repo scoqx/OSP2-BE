@@ -1,6 +1,6 @@
 #include "superhud_private.h"
-#include "cg_local.h"
-#include "../qcommon/qcommon.h"
+#include "../cg_local.h"
+#include "../../qcommon/qcommon.h"
 
 
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseColor(configFileInfo_t* finfo, superhudConfig_t* config);
@@ -84,7 +84,7 @@ static const superHUDConfigCommand_t superHUDConfigItemCommands[] =
 	{ "borderColor2", CG_SHUDConfigCommandParseBorderColor2 },
 	{ "style", CG_SHUDConfigCommandParseStyle },
 	{ "weaponMaxValue", CG_SHUDConfigCommandParseWeaponMaxValue },
-	{ NULL, NULL, NULL },
+	{ NULL, NULL }
 };
 
 qboolean is_shud_parser_initialized = qfalse;

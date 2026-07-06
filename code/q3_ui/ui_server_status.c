@@ -3799,7 +3799,7 @@ static const char* UI_ServerStatus_LocalVersionCompareString(void)
 {
 	const char*     v;
 
-	v = OSP_VERSION;
+	v = XSTRINGIFY(OSP_VERSION);
 	if (!Q_strncmp(v, "be-", 3))
 	{
 		return v + 3;

@@ -9,7 +9,7 @@ Copyright (c) 2026 diwoc
 */
 
 #include "cg_local.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 #include "../game/bg_public.h"
 
 #define CG_WORLDFLAGS_WORLD         1

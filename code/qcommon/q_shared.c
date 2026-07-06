@@ -26,6 +26,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <intrin.h>
 #endif
 
+vec_t VectorDistance(vec3_t a, vec3_t b) {
+  return (vec_t)sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
+}
 /*
 ==================
 COM_GenerateHashValue

@@ -1,6 +1,6 @@
 #include "superhud_private.h"
-#include "cg_local.h"
-#include "../qcommon/qcommon.h"
+#include "../cg_local.h"
+#include "../../qcommon/qcommon.h"
 
 typedef struct
 {

@@ -30,13 +30,6 @@ typedef struct timepos_s
 	vec3_t pos;
 } timepos_t;
 
-static vec_t VectorDistance(vec3_t a, vec3_t b)
-{
-	return (vec_t)sqrt((a[0] - b[0]) * (a[0] - b[0]) +
-	                   (a[1] - b[1]) * (a[1] - b[1]) +
-	                   (a[2] - b[2]) * (a[2] - b[2]));
-}
-
 static void CG_LinearInterpolation(timepos_t* positions, vec3_t out, float f)
 {
 	int i;

@@ -1,7 +1,7 @@
 
-#include "cg_local.h"
+#include "../../cg_local.h"
 #include "../superhud_private.h"
-#include "../qcommon/qcommon.h"
+#include "../../../qcommon/qcommon.h"
 
 #define TEAM_STYLE2_GAP           1.0f
 #define TEAM_STYLE2_HP_HFRAC      0.75f

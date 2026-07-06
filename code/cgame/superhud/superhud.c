@@ -1,6 +1,6 @@
-#include "cg_local.h"
+#include "../cg_local.h"
 #include "superhud.h"
-#include "../qcommon/qcommon.h"
+#include "../../qcommon/qcommon.h"
 #include "superhud_private.h"
 
 static superhudElement_t* elementsHead;

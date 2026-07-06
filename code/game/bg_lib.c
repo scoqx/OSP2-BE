@@ -2,10 +2,9 @@
 //
 // bg_lib,c -- standard C library replacement routines used by code
 // compiled for the virtual machine
+#include "../qcommon/q_shared.h"
 
 #ifdef Q3_VM
-
-#include "../qcommon/q_shared.h"
 
 /*-
  * Copyright (c) 1992, 1993

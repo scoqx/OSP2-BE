@@ -756,6 +756,8 @@ void ByteToDir(int b, vec3_t dir);
 
 #endif
 
+vec_t VectorDistance(vec3_t a, vec3_t b);
+
 #ifdef __LCC__
 #ifdef VectorCopy
 #undef VectorCopy
