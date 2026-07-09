@@ -1,11 +1,16 @@
-04.07.2026 be v1.06b1
-+ Reworked Auto Updater for Windows by KONSTALKER (check version before download)
-+ cg_chatWindowFavEmojis - use ALT + 0-9 for quick-paste selected emoji
-+ Loading screen - loading bar; visual fix for icons
-+ Emojis: beer, beers, banana, peach, cinema, crab, leaf, moai, monkey, chicken, rat, sloth, xDPlode
-* ChatWindow - improvements
-* PrintUI - fix
-:Upcoming Server-Side Features on metarena.ru
-+ Shadow Items - layout in CS 890–900 (cg_shadowItems) for maximum precise
-+ Picked-up items (PUI) - CS 889 + pui cmd; SuperHUD Spectator_ItemSpawns* / ItemPickups1–8
-+ BrightShader 2 opaque fix (items and weapons)
+08.07.2026 be v1.06c-beta
++ cg_oldFloatSprites (foe/ballon)
++ cg_scoreboardDrawPowerUps 3
++ Draw powerups in team indicator / hud markers
+* EmojiWindow quick scrolling (CTRL+scroll)
++ PowerUps in Team Indicator and Hud markers
++ alphaGen vertex for PowerUp icons
+* beStats tourney fix
+* Shadow Items / PUI - Rework
+SuperHUD:
+  + Obituaries drop powerUp/flag icon for ally
+  * TeamTask element icons color fix
+  * cg_drawTimer 0 improvements
+UI:
+  + ui_banner 0
+  + ui_favouriteServer "IP:PORT"

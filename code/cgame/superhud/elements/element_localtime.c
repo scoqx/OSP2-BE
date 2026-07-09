@@ -47,6 +47,14 @@ void CG_SHUDElementLocalTimeRoutine(void* context)
 	shudElementLocalTime_t* element = (shudElementLocalTime_t*)context;
 	qtime_t qtime;
 
+	if (element->type == SHUD_ELEMENT_LOCAL_TIME &&
+	        cg_drawTimer.integer == 0 && !CG_IS_LOCAL_CLIENT_SPECTATOR())
+	{
+		Q_strncpyz(element->s, "XX:XX", MAX_QPATH);
+		CG_SHUDTextPrint(&element->config, &element->ctx);
+		return;
+	}
+
 	if (cg.time - element->timePrev > 1000)
 	{
 		element->timePrev = cg.time;
@@ -72,7 +80,6 @@ void CG_SHUDElementLocalTimeRoutine(void* context)
 			}
 			else
 			{
-				// 24-hour format (default)
 				Com_sprintf(element->s, MAX_QPATH, "%02d:%02d", qtime.tm_hour, qtime.tm_min);
 			}
 		}
@@ -93,8 +100,8 @@ void CG_SHUDElementLocalTimeRoutine(void* context)
 				            qtime.tm_year + 1900
 				           );
 		}
-
 	}
+
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }
 

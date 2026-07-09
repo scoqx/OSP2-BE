@@ -148,7 +148,7 @@ icons/dye/teleporter
 	{
 		map icons/dye/teleporter.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 icons/dye/medkit
@@ -157,7 +157,7 @@ icons/dye/medkit
 	{
 		map icons/dye/medkit.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -171,7 +171,7 @@ icons/dye/envirosuit
 	{
 		map icons/dye/envirosuit.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 icons/dye/quad
@@ -181,7 +181,7 @@ icons/dye/quad
 	{
 		map icons/dye/quad.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 icons/dye/haste
@@ -190,7 +190,7 @@ icons/dye/haste
 	{
 		map icons/dye/haste.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 icons/dye/invis
@@ -199,7 +199,7 @@ icons/dye/invis
 	{
 		map icons/dye/invis.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 icons/dye/regen
@@ -208,7 +208,7 @@ icons/dye/regen
 	{
 		map icons/dye/regen.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 icons/dye/flight
@@ -217,7 +217,7 @@ icons/dye/flight
 	{
 		map icons/dye/flight.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -263,7 +263,7 @@ icons/dye/iconw_gauntlet
 	{
 		map icons/dye/iconw_gauntlet.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 icons/dye/iconw_machinegun
@@ -272,7 +272,7 @@ icons/dye/iconw_machinegun
 	{
 		map icons/dye/iconw_machinegun.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 icons/dye/iconw_rocket
@@ -281,7 +281,7 @@ icons/dye/iconw_rocket
 	{
 		map icons/dye/iconw_rocket.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -291,8 +291,7 @@ icons/dye/iconw_shotgun
 	{
 		map icons/dye/iconw_shotgun.tga
 		blendFunc blend
-rgbgen vertex
-		rgbgen identitylighting
+		rgbgen vertex
 	}
 }
 
@@ -302,7 +301,7 @@ icons/dye/iconw_grenade
 	{
 		map icons/dye/iconw_grenade.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -312,7 +311,7 @@ icons/dye/iconw_lightning
 	{
 		map icons/dye/iconw_lightning.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -322,7 +321,7 @@ icons/dye/iconw_plasma
 	{
 		map icons/dye/iconw_plasma.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -332,7 +331,7 @@ icons/dye/iconw_railgun
 	{
 		map icons/dye/iconw_railgun.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -342,7 +341,7 @@ icons/dye/iconw_bfg
 	{
 		map icons/dye/iconw_bfg.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -352,7 +351,7 @@ icons/dye/iconw_grapple
 	{
 		map icons/dye/iconw_grapple.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -365,7 +364,7 @@ icons/dye/icona_machinegun
 	{
 		map icons/dye/icona_machinegun.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 icons/dye/icona_rocket
@@ -374,7 +373,7 @@ icons/dye/icona_rocket
 	{
 		map icons/dye/icona_rocket.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -395,7 +394,7 @@ icons/dye/icona_grenade
 	{
 		map icons/dye/icona_grenade.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -405,7 +404,7 @@ icons/dye/icona_lightning
 	{
 		map icons/dye/icona_lightning.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -415,7 +414,7 @@ icons/dye/icona_plasma
 	{
 		map icons/dye/icona_plasma.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -425,7 +424,7 @@ icons/dye/icona_railgun
 	{
 		map icons/dye/icona_railgun.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -435,7 +434,7 @@ icons/dye/icona_bfg
 	{
 		map icons/dye/icona_bfg.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -449,7 +448,7 @@ icons/dye/iconr_shard
 	{
 		map icons/dye/iconr_shard.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -459,7 +458,7 @@ icons/dye/iconr_yellow
 	{
 		map icons/dye/iconr_yellow.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -469,7 +468,7 @@ icons/dye/iconr_red
 	{
 		map icons/dye/iconr_red.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -482,7 +481,7 @@ icons/dye/iconh_green
 	{
 		map icons/dye/iconh_green.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -492,7 +491,7 @@ icons/dye/iconh_yellow
 	{
 		map icons/dye/iconh_yellow.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -502,7 +501,7 @@ icons/dye/iconh_red
 	{
 		map icons/dye/iconh_red.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
         //{
 	//	clampmap icons/dye/iconh_red2.tga
@@ -517,7 +516,7 @@ icons/dye/iconh_mega
 	{
 		map icons/dye/iconh_mega.tga
 		blendFunc blend
-rgbgen vertex
+		rgbgen vertex
 	}
 }
 
@@ -576,5 +575,3 @@ models/flags/flag2Fullbright2
 	    alphaGen entity
     }
 }
-
-//===================================================

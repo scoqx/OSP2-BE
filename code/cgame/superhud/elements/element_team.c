@@ -271,8 +271,12 @@ void CG_SHUDElementTeamRoutine(void* context)
 
 			do
 			{
-				if (ci->powerups & (1 << k))
+				if (ci->teamPowerups & (1 << k))
 				{
+					if (k == PW_BATTLESUIT && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+					{
+						continue;
+					}
 					gi = BG_FindItemForPowerup(k);
 					if (gi)
 					{
@@ -303,8 +307,12 @@ void CG_SHUDElementTeamRoutine(void* context)
 					CG_SHUDDrawStretchPicCtx(&element->config, &element->ctxPowerup);
 					break;
 				}
-				else if (ci->powerups & (1 << k))
+				else if (ci->teamPowerups & (1 << k))
 				{
+					if (k == PW_BATTLESUIT && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+					{
+						continue;
+					}
 					gi = BG_FindItemForPowerup(k);
 					if (gi)
 					{

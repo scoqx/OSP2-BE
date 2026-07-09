@@ -17,10 +17,9 @@ void CG_SHUDEventTeamChat(const char* message, int senderClientNum);
 void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen);
 void CG_SHUDEventTeamTask(int sender, int taskType, qboolean isPickup);
 void CG_SHUDRefreshSpectatorItemSpawnsTeamTables(void);
+qboolean CG_SHUDHasSpectatorItemSpawnsElements(void);
 void CG_SHUDEventSpectatorItemPickup(int pickerClient, int group);
 void CG_SHUDEventTempAccuracy(int weapon, float accuracy);
-
-void CG_SHUDChatRestore(void);
 
 void CG_SHUDChatRestore(void);
 

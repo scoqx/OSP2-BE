@@ -33,41 +33,38 @@ void CG_SHUDElementItemPickupRoutine(void* context)
 
 	visible = CG_SHUDGetFadeColor(element->ctx.color_origin, element->ctx.color, &element->config, cg.itemPickupTime);
 
-	if (visible)
+	if (visible && bg_itemlist[cg.itemPickup].pickup_name)
 	{
-		int         mins, seconds, tens;
-		int         msec;
-		if (cg_countdownTimer.integer)
+		if (element->config.style.isSet && element->config.style.value == 3)
 		{
-			msec = CG_GetRemainingGameTimeMsec(qtrue);
+			element->ctx.text = bg_itemlist[cg.itemPickup].pickup_name;
 		}
 		else
 		{
-			msec = cg.itemPickupTime - cgs.levelStartTime;
-		}
+			int msec;
+			char timeBuf[16];
 
-		seconds = msec / 1000;
-		mins = seconds / 60;
-		seconds -= mins * 60;
-		tens = seconds / 10;
-		seconds -= tens * 10;
-		if (bg_itemlist[cg.itemPickup].pickup_name)
-		{
-			if (element->config.style.value == 2)
+			if (cg_countdownTimer.integer)
 			{
-				element->ctx.text = va("%i:%i%i", mins, tens, seconds); // only time
-			}
-			else if (element->config.style.value == 3)
-			{
-				element->ctx.text = va("%s", bg_itemlist[cg.itemPickup].pickup_name); // only name
+				msec = CG_GetRemainingGameTimeMsec(qtrue);
 			}
 			else
 			{
-				element->ctx.text = va("%i:%i%i %s", mins, tens, seconds, bg_itemlist[cg.itemPickup].pickup_name);
+				msec = cg.itemPickupTime - cgs.levelStartTime;
 			}
 
-			CG_SHUDTextPrint(&element->config, &element->ctx);
+			SHUD_WRITE_MATCH_TIME_STR(timeBuf, sizeof(timeBuf), msec);
+			if (element->config.style.isSet && element->config.style.value == 2)
+			{
+				element->ctx.text = timeBuf;
+			}
+			else
+			{
+				element->ctx.text = va("%s %s", timeBuf, bg_itemlist[cg.itemPickup].pickup_name);
+			}
 		}
+
+		CG_SHUDTextPrint(&element->config, &element->ctx);
 	}
 }
 

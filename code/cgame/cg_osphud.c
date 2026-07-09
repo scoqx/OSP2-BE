@@ -2189,8 +2189,12 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 						px -= w;
 						break;
 					}
-					else if (ci->powerups & (1 << k))
+					else if (ci->teamPowerups & (1 << k))
 					{
+						if (k == PW_BATTLESUIT && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+						{
+							continue;
+						}
 						gi = BG_FindItemForPowerup(k);
 						if (gi)
 						{

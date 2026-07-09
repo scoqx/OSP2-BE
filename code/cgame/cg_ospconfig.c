@@ -1,5 +1,6 @@
 #include "cg_local.h"
 #include "../game/bg_local.h"
+#include "superhud/superhud.h"
 
 
 
@@ -144,9 +145,66 @@ void CG_OSPUpdateUserInfo(qboolean arg)
 	trap_SendClientCommand(va("%s %d %d %d %d %d %d %d\n", cmd, cl_maxpackets.integer, snaps.integer, cl_timenudge.integer, customLocationsEnabled, flags, cg_autoAction.integer, using_jpeg));
 }
 
+void CG_OSPEnforceCustomClientSettings(void)
+{
+	if (cgs.localServer)
+	{
+		return;
+	}
+	
+	if (cgs.osp.custom_client & OSP_CUSTOM_CLIENT_TIMER_FLAG)
+	{
+		if (cg_drawTimer.integer)
+		{
+			CG_PrintOnce("^3The timer has been disabled.\n");
+			trap_Cvar_Set("cg_drawTimer", "0");
+		}
+	}
+
+	// trap_Cvar_Update(&cg_altLightning);
+	// trap_Cvar_Update(&cg_enableOSPHUD);
+
+	// if ((cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG) == 0)
+	// {
+	// 	if (cg_altPlasma.integer || cg_altGrenades.integer || cg_altLightning.integer)
+	// 	{
+
+	// 	}
+	// }
+
+	// if ((cgs.osp.custom_client & OSP_CUSTOM_CLIENT_OSP_HUD_FLAG) == 0)
+	// {
+	// 	if (cg_enableOSPHUD.integer && !(cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE))
+	// 	{
+	// 		CG_Printf("^3The OSP-based HUD has been disabled.\n");
+	// 		trap_Cvar_Set("cg_enableOSPHUD", "0"); 			// lol
+	// 	}
+	// }
+
+}
+
+/* CS 889 (CS_OSP2BE_TOURNEY_RESTRICTIONS) */
+void CG_BETourneyRestrict(void)
+{
+	int fps;
+
+	if (cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK)
+	{
+		trap_Cvar_Update(&com_maxfps);
+		fps = com_maxfps.integer;
+		if (fps != 125 && fps != 250)
+		{
+			fps = fps > 250 ? 250 : 125;
+		}
+		cgs.beTourneyLockedMaxfps = fps;
+		CG_OSP2BEOnComMaxfpsChanged(com_maxfps.integer);
+	}
+}
+
 void CG_OSPCvarsRestrictValues(void)
 {
 	qboolean changed = qfalse;
+
 	if (cg_trueLightning.integer > 1)
 	{
 		trap_Cvar_Set("cg_trueLightning", "1");
@@ -253,11 +311,25 @@ void CG_OSPConfigMaxTimenudgeSet(int value)
 	CG_CvarTouch("cl_timenudge");
 }
 
-// Supported OSP2-BE server
-// void CG_OSPSupportedBEServer(qboolean value)
-// {
-//  cgs.beSupportedServer = value;
-// }
+/* Supported OSP2-BE server (CS 887) */
+void CG_OSPSupportedBEServer(qboolean value)
+{
+	cgs.beSupportedServer = value;
+}
+
+void CG_BEUpdateUserInfo(void)
+{
+	int spectatorHud;
+
+	if (cg.demoPlayback)
+	{
+		return;
+	}
+	
+	spectatorHud = CG_SHUDHasSpectatorItemSpawnsElements() ? 1 : 0;
+	trap_SendClientCommand(va("beinfo %d %d %d %d %d %d %d %d\n",
+	        spectatorHud, cg_respawnWeapon.integer, 0, 0, 0, 0, 0, 0));
+}
 
 // Disable be features
 void CG_OSPConfigDisableBEFeatures(int value)
@@ -267,77 +339,36 @@ void CG_OSPConfigDisableBEFeatures(int value)
 	CG_UpdateBeFeatures();
 }
 
-static int CG_OSP2BEManualTourneyMode(void)
-{
-	/* Temporary: tourney-mode logic is kept, but external drivers are disabled. */
-	return 0;
-}
-
-void CG_OSP2BEConfigTourneyModeSet(int value)
-{
-	(void)value;
-	cgs.beTourneyMode = CG_OSP2BEManualTourneyMode();
-	trap_Cvar_Update(&com_maxfps);
-	trap_Cvar_Update(&cl_pitchspeed);
-	trap_Cvar_Update(&cl_yawspeed);
-	if (cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK)
-	{
-		cgs.beTourneyLockedMaxfps = com_maxfps.integer;
-	}
-	if (cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_DISABLE_MOUSE_SCRIPTS)
-	{
-		cgs.beTourneyLockedPitch = cl_pitchspeed.integer;
-		cgs.beTourneyLockedYaw = cl_yawspeed.integer;
-	}
-}
-
-void CG_OSP2BEConfigTourneyModeRefresh(void)
-{
-	CG_OSP2BEConfigTourneyModeSet(0);
-}
-
-static qboolean CG_OSP2BECanChangeMaxfpsInTourney(void)
-{
-	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK))
-	{
-		return qtrue;
-	}
-	if (cg.warmup)
-	{
-		return qtrue;
-	}
-	if (!cg.snap)
-	{
-		return qtrue;
-	}
-	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
-	{
-		return qtrue;
-	}
-	return qfalse;
-}
-
-void CG_OSP2BEOnWarmupEnded(void)
-{
-	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK))
-	{
-		return;
-	}
-	trap_Cvar_Update(&com_maxfps);
-	cgs.beTourneyLockedMaxfps = com_maxfps.integer;
-}
-
 void CG_OSP2BEOnComMaxfpsChanged(int value)
 {
+	int allowed;
+	int canChange;
+
 	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK))
 	{
 		return;
 	}
-	if (CG_OSP2BECanChangeMaxfpsInTourney())
+
+	allowed = value;
+	if (allowed != 125 && allowed != 250)
 	{
-		cgs.beTourneyLockedMaxfps = value;
+		allowed = allowed > 250 ? 250 : 125;
+	}
+
+	canChange = (cg.warmup || !cg.snap ||
+	             cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR);
+
+	if (canChange)
+	{
+		if (allowed != value)
+		{
+			trap_SendConsoleCommand(va("set com_maxfps %i\n", allowed));
+			CG_PrintOnce("^3com_maxfps^7 must be ^2125^7 or ^2250^7 in tournament mode.\n");
+		}
+		cgs.beTourneyLockedMaxfps = allowed;
 		return;
 	}
+
 	if (value != cgs.beTourneyLockedMaxfps)
 	{
 		trap_SendConsoleCommand(va("set com_maxfps %i\n", cgs.beTourneyLockedMaxfps));
@@ -345,29 +376,6 @@ void CG_OSP2BEOnComMaxfpsChanged(int value)
 	}
 }
 
-void CG_OSP2BEOnPitchspeedChanged(int value)
-{
-	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_DISABLE_MOUSE_SCRIPTS))
-	{
-		return;
-	}
-	if (value != cgs.beTourneyLockedPitch)
-	{
-		trap_Cvar_Set("cl_pitchspeed", va("%d", cgs.beTourneyLockedPitch));
-	}
-}
-
-void CG_OSP2BEOnYawspeedChanged(int value)
-{
-	if (!(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_DISABLE_MOUSE_SCRIPTS))
-	{
-		return;
-	}
-	if (value != cgs.beTourneyLockedYaw)
-	{
-		trap_Cvar_Set("cl_yawspeed", va("%d", cgs.beTourneyLockedYaw));
-	}
-}
 /*
  * Unknown cs 0x368
  */
@@ -391,6 +399,7 @@ void CG_OSPConfigCustomClientSet(int value)
 {
 	cgs.osp.custom_client = value;
 	CG_CvarTouch("cg_shud");
+	CG_OSPEnforceCustomClientSettings();
 }
 
 /*
@@ -399,6 +408,7 @@ void CG_OSPConfigCustomClientSet(int value)
 void CG_OSPConfigCustomClient2Set(int value)
 {
 	cgs.osp.custom_client_2 = value;
+	CG_UpdateDamageInfoAllowed();
 }
 
 /*

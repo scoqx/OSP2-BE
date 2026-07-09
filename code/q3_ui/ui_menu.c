@@ -40,12 +40,14 @@ typedef struct
 	menutext_s      mods;
 	menutext_s      exit;
 
-	qhandle_t       bannerModel;     /* standard banner (ui_banner != 2) */
+	qhandle_t       bannerModel;     /* standard banner (ui_banner == 1) */
 	qhandle_t       bannerModelNew;  /* new banner (ui_banner == 2) */
 } mainmenu_t;
 
 
 static mainmenu_t s_main;
+static float s_mainMenuLastFavShift = -1.0f;
+static qboolean s_mainMenuTeamArena;
 
 typedef struct
 {
@@ -54,6 +56,69 @@ typedef struct
 } errorMessage_t;
 
 static errorMessage_t s_errorMessage;
+
+/*
+=================
+Main_MenuSetPTextY
+=================
+*/
+static void Main_MenuSetPTextY(menutext_s* t, int y)
+{
+	float   sizeScale;
+	int     x;
+	int     w;
+	int     h;
+
+	sizeScale = UI_ProportionalSizeScale(t->style);
+	x = t->generic.x;
+	w = UI_ProportionalStringWidth(t->string) * sizeScale;
+	h = PROP_HEIGHT * sizeScale;
+
+	t->generic.y = y;
+	t->generic.top = y;
+	t->generic.bottom = y + h;
+
+	if (t->generic.flags & QMF_CENTER_JUSTIFY)
+	{
+		x -= w / 2;
+	}
+
+	t->generic.left = x - PROP_GAP_WIDTH * sizeScale;
+	t->generic.right = x + w + PROP_GAP_WIDTH * sizeScale;
+}
+
+/*
+=================
+Main_MenuUpdateFavLayout
+=================
+*/
+static void Main_MenuUpdateFavLayout(float shift)
+{
+	int     y;
+	int     spacing;
+
+	y = 134 + (int)shift;
+	spacing = MAIN_MENU_VERTICAL_SPACING;
+
+	Main_MenuSetPTextY(&s_main.singleplayer, y);
+	y += spacing;
+	Main_MenuSetPTextY(&s_main.multiplayer, y);
+	y += spacing;
+	Main_MenuSetPTextY(&s_main.setup, y);
+	y += spacing;
+	Main_MenuSetPTextY(&s_main.demos, y);
+	y += spacing;
+	if (s_mainMenuTeamArena)
+	{
+		Main_MenuSetPTextY(&s_main.teamArena, y);
+		y += spacing;
+	}
+	Main_MenuSetPTextY(&s_main.cinematics, y);
+	y += spacing;
+	Main_MenuSetPTextY(&s_main.mods, y);
+	y += spacing;
+	Main_MenuSetPTextY(&s_main.exit, y);
+}
 
 /*
 =================
@@ -82,6 +147,24 @@ static sfxHandle_t Main_MenuKey(int key)
 	}
 
 	if (UI_ServerStatus_IsModal())
+	{
+		return 0;
+	}
+
+	if (UI_FavouriteServer_HandleKey(key))
+	{
+		if (key == K_ESCAPE)
+		{
+			return menu_out_sound;
+		}
+
+		if (key == K_MOUSE1)
+		{
+			return menu_move_sound;
+		}
+	}
+
+	if (UI_FavouriteServer_IsModal())
 	{
 		return 0;
 	}
@@ -261,6 +344,11 @@ static void Main_MenuDrawBannerScene(void)
 	float           adjust;
 	float           x, y, w, h;
 
+	if (!ui_banner.integer)
+	{
+		return;
+	}
+
 	memset(&refdef, 0, sizeof(refdef));
 
 	refdef.rdflags = RDF_NOWORLDMODEL;
@@ -353,11 +441,25 @@ Main_MenuDraw
 
 static void Main_MenuDraw(void)
 {
+	float   shift;
+
+	UI_FavouriteServer_Tick();
+	UI_FavouriteServer_OnMainMenuDraw();
+
+	shift = UI_FavouriteServer_GetMenuShift();
+	if (shift != s_mainMenuLastFavShift)
+	{
+		Main_MenuUpdateFavLayout(shift);
+		s_mainMenuLastFavShift = shift;
+	}
+
 	Main_MenuDrawBannerScene();
 
 	Menu_Draw(&s_main.menu);
 
 	Main_MenuDrawFooter();
+
+	UI_FavouriteServer_Draw();
 
 	UI_ServerStatus_DrawBar();
 }
@@ -449,6 +551,8 @@ void UI_MainMenu(void)
 	s_main.menu.fullscreen = qtrue;
 	s_main.menu.wrapAround = qtrue;
 	s_main.menu.showlogo = qtrue;
+
+	s_mainMenuLastFavShift = -1.0f;
 
 	y = 134;
 	s_main.singleplayer.generic.type        = MTYPE_PTEXT;
@@ -542,6 +646,8 @@ void UI_MainMenu(void)
 	s_main.exit.color                       = uis.themeColor;
 	s_main.exit.style                       = style;
 
+	s_mainMenuTeamArena = teamArena;
+
 	Menu_AddItem(&s_main.menu,  &s_main.singleplayer);
 	Menu_AddItem(&s_main.menu,  &s_main.multiplayer);
 	Menu_AddItem(&s_main.menu,  &s_main.setup);
@@ -554,9 +660,13 @@ void UI_MainMenu(void)
 	Menu_AddItem(&s_main.menu,  &s_main.mods);
 	Menu_AddItem(&s_main.menu,  &s_main.exit);
 
+	Main_MenuUpdateFavLayout(UI_FavouriteServer_GetMenuShift());
+	s_mainMenuLastFavShift = UI_FavouriteServer_GetMenuShift();
+
 	trap_Key_SetCatcher(KEYCATCH_UI);
 	uis.menusp = 0;
 	UI_PushMenu(&s_main.menu);
 
+	UI_FavouriteServer_FetchOnMainMenu();
 	UI_ServerStatus_FetchOnMainMenu();
 }

@@ -124,19 +124,20 @@ extern "C" {
 #define CS_OSP_CUSTOM_CLIENT2                     874
 #define CS_OSP2BE_SUPPORTED                     887
 #define CS_OSP2BE_DISABLED_FEATURES             888
-#define CS_OSP2BE_ITEM_TRACK                   889
+#define CS_OSP2BE_TOURNEY_RESTRICTIONS			889
+#define CS_OSP2BE_ITEM_CATALOG0                890
+#define CS_OSP2BE_ITEM_CATALOG_COUNT           10
+#define CS_OSP2BE_ITEM_CATALOG_LAST            (CS_OSP2BE_ITEM_CATALOG0 + CS_OSP2BE_ITEM_CATALOG_COUNT - 1)
 /*
- * Item pickup notify (OSP2BE):
+ * Item catalog (OSP2BE): CS 890..899 concatenated (10 KiB max).
+ * Leading digit <mode> — bitmask: 1=shadow catalog, 2=PUI pickups, 3=both.
+ * Wire: <seg>|<seg>|...  seg = <abbrev>[/<abbrev>...];<x>,<y>,<z>[,<side>]
+ *   x,y,z deci-units (origin * 10); side 0 neutral 1 red 2 blue (CTF, server classify)
+ *   PUI segments in CTF include side; shadow-only segments omit side
+ *   team pad: puiAbbrevs;x,y,z and/or shadowAbbrevs;x,y,z (master origin)
+ *   trackId = 0..63 left-to-right among PUI-mappable abbrevs only
  *   servercmd  pui <cmd> <readyTime>
- *   CS 889     v4;S,side,padIdx,id,id,...;I,id;...  (team pads + singles)
- *
- * itemId = PUI_ID( type, side, slot ):  type bits0-3, slot bits4-7, side bits8-9
- * cmd    = PUI_CMD( picker, pick, next ): next bits0-9, pick bits10-19, picker bits20-25
- *   use PUI_ID_INVALID for next when not used
- *
- * v4 pad segment S: items on one team spawn pad share side+padIdx (slot field in PUI_ID).
- * First id in the segment is the default row icon; rest are badge overlays (pad order).
- * I = single pickup not on a team pad.
+ *   next unused: PUI_ID_INVALID (64)
  */
 typedef enum
 {
@@ -150,7 +151,7 @@ typedef enum
 	PUI_HST,
 	PUI_FLG,
 	PUI_TYPE_COUNT,
-	PUI_ID_INVALID = 1023
+	PUI_ID_INVALID = 64
 } puiType_t;
 
 #define PUI_ID( type, side, slot ) \
@@ -163,19 +164,6 @@ int BG_PuiIdSide(int itemId);
 int BG_PuiIdSlot(int itemId);
 void BG_PuiUnpackCmd(int cmd, int* picker, int* pickId, int* nextId);
 
-#define CS_OSP2BE_SHADOW_ITEMS_HDR              890
-#define CS_OSP2BE_SHADOW_ITEMS_DATA0            891
-#define CS_OSP2BE_SHADOW_ITEMS_DATA_COUNT       10
-#define CS_OSP2BE_SHADOW_ITEMS_DATA_LAST        (CS_OSP2BE_SHADOW_ITEMS_DATA0 + CS_OSP2BE_SHADOW_ITEMS_DATA_COUNT - 1)
-/*
- * OSP2-BE cg_shadowItems — server pickup layout (optional).
- * SI3 (legacy/metarena): CS 890 exactly "SI3"; payload only in CS 891..900.
- * SI4: CS 890 is "SI4" + payload; CS 891..900 continue (concatenated, no ';' between CS).
- * Group: "tok[/tok2...]@x,y,z" — coords in 0.1 units; '/' = map team slot alternatives.
- * No SI3/SI4 in 890 (or empty 890) → client uses mapdata QITM.
- */
-#define CS_OSP2BE_SHADOW_ITEMS_MAGIC            "SI3"
-#define CS_OSP2BE_SHADOW_ITEMS_MAGIC_SI4        "SI4"
 #define XQ3E_ALLOW_FEATURES                     1000
 
 #define CS_MAX                  (XQ3E_ALLOW_FEATURES)
@@ -871,6 +859,16 @@ typedef enum
 	// by setting eType to ET_EVENTS + eventNum
 	// this avoids having to set eFlags and eventNum
 } entityType_t;
+
+// KillConfirm sentinel tag.
+// The server stamps this reserved value into entityState_t::otherEntityNum on
+// both the ET_ITEM kill-confirm token and its ET_GENERAL helper (ring) entity.
+// Clients identify them by ( otherEntityNum == KILLCONFIRM_MARKER ) plus eType,
+// reading the team from generic1. Model-path independent; a real
+// item_armor_shard has otherEntityNum == 0, so it never collides.
+// otherEntityNum is a 10-bit entity-number field (0..MAX_GENTITIES-1); 666 fits
+// and stays below ENTITYNUM_WORLD, so it cannot clash with engine-reserved ids.
+#define KILLCONFIRM_MARKER 666
 
 /* calculated by modulus.c for appropriate dividers */
 #define TMOD_004  4272943

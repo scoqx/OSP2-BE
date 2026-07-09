@@ -959,6 +959,69 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 	trap_R_AddRefEntityToScene(&ent);
 }
 
+/*
+===================
+CG_DrawPulseMarker
+
+Pulsing copy of a HUD border marker sprite (e.g. the friend arrow), positioned at
+the same screen-edge point as CG_HudBorderMarker but scaled by pulseScale (scales
+in place). Only drawn when origin is off-screen. color includes the final alpha.
+===================
+*/
+void CG_DrawPulseMarker(vec3_t origin, float markerRadius, float pulseScale, const vec4_t color, qhandle_t shader, int baseAngle)
+{
+	vec3_t dir;
+	float front, left, up;
+	vec3_t flu;
+	vec3_t worldPos;
+	float hfov_x;
+	float tanX;
+	float phi;
+	float posRadius;
+	refEntity_t ent;
+
+	if (!shader)
+	{
+		return;
+	}
+
+	hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
+	tanX = tan(hfov_x);
+	posRadius = 0.5f * markerRadius * tanX;
+	if (posRadius < 0.1f)
+	{
+		posRadius = 0.1f;
+	}
+
+	if (!CG_ComputeHudBorderWorldPos(origin, posRadius, 1.0f, worldPos))
+	{
+		return;
+	}
+
+	VectorSubtract(origin, cg.refdef.vieworg, dir);
+	front = DotProduct(dir, cg.refdef.viewaxis[0]);
+	left = DotProduct(dir, cg.refdef.viewaxis[1]);
+	up = DotProduct(dir, cg.refdef.viewaxis[2]);
+	flu[0] = front;
+	flu[1] = left;
+	flu[2] = up;
+	phi = atan2(-flu[2], flu[1]);
+
+	memset(&ent, 0, sizeof(ent));
+	ent.reType = RT_SPRITE;
+	ent.renderfx = RF_FIRST_PERSON;
+	ent.rotation = phi / (float)M_PI * 180.0f + (float)baseAngle;
+	ent.radius = posRadius * pulseScale;
+	ent.customShader = shader;
+	ent.shaderRGBA[0] = (byte)(color[0] * 255.0f);
+	ent.shaderRGBA[1] = (byte)(color[1] * 255.0f);
+	ent.shaderRGBA[2] = (byte)(color[2] * 255.0f);
+	ent.shaderRGBA[3] = (byte)(color[3] * 255.0f);
+	VectorCopy(worldPos, ent.origin);
+
+	trap_R_AddRefEntityToScene(&ent);
+}
+
 void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 {
 	teamTaskMark_t* mark;

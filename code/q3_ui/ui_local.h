@@ -377,6 +377,27 @@ void UI_ServerStatus_Secheck2Begin(const char* target);
 void UI_ServerStatus_Secheck2BeginDual(const char* target, const char* targetAlt);
 
 //
+// ui_favourite_server.c
+//
+void UI_FavouriteServer_FetchOnMainMenu(void);
+void UI_FavouriteServer_CheckCvarChanged(void);
+void UI_FavouriteServer_Tick(void);
+void UI_FavouriteServer_PingPoll(void);
+void UI_FavouriteServer_LanJobBegin(const char* target);
+qboolean UI_FavouriteServer_LanJobTick(void);
+void UI_FavouriteServer_LanJobTimeout(void);
+void UI_FavouriteServer_NotifyLanJobComplete(void);
+void UI_FavouriteServer_IssueStatus(void);
+void UI_FavouriteServer_IssuePingCmd(void);
+void UI_FavouriteServer_Draw(void);
+qboolean UI_FavouriteServer_HandleKey(int key);
+float UI_FavouriteServer_GetMenuShift(void);
+qboolean UI_FavouriteServer_IsVisible(void);
+qboolean UI_FavouriteServer_IsExpanded(void);
+qboolean UI_FavouriteServer_IsModal(void);
+void UI_FavouriteServer_OnMainMenuDraw(void);
+
+//
 // ui_connect.c
 //
 extern void UI_DrawConnectScreen(qboolean overlay);
@@ -643,6 +664,8 @@ extern void         UI_FillRect(float x, float y, float width, float height, con
 extern void         UI_DrawRect(float x, float y, float width, float height, const float* color);
 extern void         UI_UpdateScreen(void);
 extern void         UI_LANJobsTick(void);
+extern void         UI_LANJob_RequestFavouriteServer(const char* target);
+extern void         UI_LANJob_CancelQueuedFavourite(void);
 extern void         UI_SetColor(const float* rgba);
 extern void         UI_LerpColor(vec4_t a, vec4_t b, vec4_t c, float t);
 extern void         UI_DrawBannerString(int x, int y, const char* str, int style, vec4_t color);
@@ -749,6 +772,7 @@ int             trap_GetConfigString(int index, char* buff, int buffsize);
 int             trap_LAN_GetServerCount(int source);
 void            trap_LAN_GetServerAddressString(int source, int n, char* buf, int buflen);
 void            trap_LAN_GetServerInfo(int source, int n, char* buf, int buflen);
+int             trap_LAN_AddServer(int source, const char* name, const char* addr);
 qboolean        trap_LAN_UpdateVisiblePings(int source);
 int             trap_LAN_GetPingQueueCount(void);
 void            trap_LAN_SaveCachedServers(void);

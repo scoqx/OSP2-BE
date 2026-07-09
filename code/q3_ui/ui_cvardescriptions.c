@@ -19,7 +19,7 @@ static uiCvarDescriptionTable_t uiCvarDescriptionTable[] =
 	{ "ui_shudListFont", "Font for the SuperHUD config file list in the in-game menu. Font index; use ^3/fonts^7 to list available fonts." },
 	{ "ui_beCreditsFont", "Font for the BE credits screen. Font index; use ^3/fonts^7 to list available fonts." },
 	{ "ui_framesFullscreen", "Menu frame layout.\n  ^20^7 - classic framed layout\n  ^21^7 - fullscreen frames" },
-	{ "ui_banner", "Main menu banner.\n  ^21^7 - default\n  ^22^7 - alternative (supports ^3ui_bannerColor^7)" },
+	{ "ui_banner", "Main menu banner.\n  ^20^7 - disabled\n  ^21^7 - default\n  ^22^7 - alternative (supports ^3ui_bannerColor^7)" },
 	{ "ui_bannerColor", "Alternative banner color.\n \"^2color^7\" - color name, digit or hex" },
 	{ "ui_pallete_type", "Color picker palette mode index. Set from the in-menu color picker." },
 	{ "ui_beStatusFont", "Font for the main menu BE status bar and changelog panel. Font index; use ^3/fonts^7 to list available fonts." },

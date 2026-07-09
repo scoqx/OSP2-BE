@@ -8,10 +8,10 @@
 # !/assets/
 # !.cursorignore
 
-# # В assets видеть только два конфига, подпапки и остальное — игнор
-# assets/*
-# !/assets/OSP2.cfg
-# !/assets/OSP2English.cfg
+# # # В assets видеть только два конфига, подпапки и остальное — игнор
+# # assets/*
+# # !/assets/OSP2.cfg
+# # !/assets/OSP2English.cfg
 
 # # Внутри build показывать только файлы в build/vm и build/library, без вложенных папок
 # !build/qvm/*

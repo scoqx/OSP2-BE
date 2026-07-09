@@ -16,9 +16,13 @@ typedef struct
 	superhudTextContext_t ctx;
 	int trackSideFilter;
 	qboolean iconOnRight;
+	float maxTextW;
 	char printBuf[64];
 	cg_spectatorItemSpotDrawRef_t drawRefs[CG_ITEM_SPAWNS_DRAW_MAX];
 } shudElementSpectatorItemSpawns_t;
+
+static float CG_SHUDElementSpectatorItemSpawnsMaxTextWidth(shudElementSpectatorItemSpawns_t* element,
+        float charW, float charH);
 
 static void* CG_SHUDElementSpectatorItemSpawnsCreateFilter(const superhudConfig_t* config, int trackSideFilter)
 {
@@ -31,6 +35,13 @@ static void* CG_SHUDElementSpectatorItemSpawnsCreateFilter(const superhudConfig_
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	/* rowY = top for icon; text Y is set per row (vertical align in row) */
 	element->ctx.flags &= ~(DS_VTOP | DS_VCENTER | DS_VBOTTOM);
+
+	/* config-dependent (constant per element), so measure the widest label once here */
+	if (element->config.fontsize.isSet)
+	{
+		element->maxTextW = CG_SHUDElementSpectatorItemSpawnsMaxTextWidth(element,
+		                    element->config.fontsize.value[0], element->config.fontsize.value[1]);
+	}
 
 	return element;
 }
@@ -48,34 +59,6 @@ void* CG_SHUDElementSpectatorItemSpawnsRedCreate(const superhudConfig_t* config)
 void* CG_SHUDElementSpectatorItemSpawnsBlueCreate(const superhudConfig_t* config)
 {
 	return CG_SHUDElementSpectatorItemSpawnsCreateFilter(config, 2);
-}
-
-static float CG_SHUDElementSpectatorItemSpawnsWideIconWidthRatio(void)
-{
-	if (cgs.glconfig.vidWidth <= 0)
-	{
-		return 1.0f;
-	}
-
-	return (cgs.glconfig.vidHeight * 640.0f) / (cgs.glconfig.vidWidth * 480.0f);
-}
-
-static float CG_SHUDElementSpectatorItemSpawnsIconDrawX(float layoutX, float iconSize, qboolean iconOnRight)
-{
-	float ratio;
-
-	if (!iconOnRight)
-	{
-		return layoutX;
-	}
-
-	ratio = CG_SHUDElementSpectatorItemSpawnsWideIconWidthRatio();
-	if (ratio >= 1.0f)
-	{
-		return layoutX;
-	}
-
-	return layoutX + iconSize * (1.0f - ratio);
 }
 
 static void CG_SHUDElementSpectatorItemSpawnsResolveRect(const superhudConfig_t* cfg,
@@ -190,66 +173,6 @@ static void CG_SHUDElementSpectatorItemSpawnsRowGeometry(float baseX, float rowW
 	{
 		*iconX = baseX + rowWidth - pad - iconSize;
 		*textCellX = baseX + pad;
-	}
-}
-
-static void CG_SHUDElementSpectatorItemSpawnsApplyTextHFlags(shudElementSpectatorItemSpawns_t* element,
-        superhudAlignH_t h)
-{
-	element->ctx.flags &= ~(DS_HLEFT | DS_HCENTER | DS_HRIGHT);
-
-	switch (h)
-	{
-		default:
-		case SUPERHUD_ALIGNH_LEFT:
-			element->ctx.flags |= DS_HLEFT;
-			break;
-		case SUPERHUD_ALIGNH_CENTER:
-			element->ctx.flags |= DS_HCENTER;
-			break;
-		case SUPERHUD_ALIGNH_RIGHT:
-			element->ctx.flags |= DS_HRIGHT;
-			break;
-	}
-}
-
-static float CG_SHUDElementSpectatorItemSpawnsTextAnchorX(superhudAlignH_t h, float textCellX, float textCellW)
-{
-	switch (h)
-	{
-		default:
-		case SUPERHUD_ALIGNH_LEFT:
-			return textCellX;
-		case SUPERHUD_ALIGNH_CENTER:
-			return textCellX + textCellW * 0.5f;
-		case SUPERHUD_ALIGNH_RIGHT:
-			return textCellX + textCellW;
-	}
-}
-
-static float CG_SHUDElementSpectatorItemSpawnsTextRowY(const superhudConfig_t* cfg,
-        float rowY, float iconSize, float charH)
-{
-	superhudAlignV_t v;
-
-	if (cfg->alignV.isSet)
-	{
-		v = cfg->alignV.value;
-	}
-	else
-	{
-		v = SUPERHUD_ALIGNV_CENTER;
-	}
-
-	switch (v)
-	{
-		default:
-		case SUPERHUD_ALIGNV_TOP:
-			return rowY;
-		case SUPERHUD_ALIGNV_CENTER:
-			return rowY + (iconSize - charH) * 0.5f;
-		case SUPERHUD_ALIGNV_BOTTOM:
-			return rowY + iconSize - charH;
 	}
 }
 
@@ -436,7 +359,6 @@ void CG_SHUDElementSpectatorItemSpawnsRoutine(void* context)
 	float rowStep;
 	float gap;
 	float minInner;
-	float maxTextW;
 	float textCellX;
 	float textCellW;
 	float rowIconX;
@@ -444,9 +366,11 @@ void CG_SHUDElementSpectatorItemSpawnsRoutine(void* context)
 	float iconY;
 	float textRowY;
 	float textX;
+	float textYOffset;
 	float blockH;
 	float drawIconX;
 	superhudAlignH_t textAlignH;
+	superhudAlignV_t textAlignV;
 	int count;
 	int i;
 	int spawnTime;
@@ -461,10 +385,10 @@ void CG_SHUDElementSpectatorItemSpawnsRoutine(void* context)
 
 	element = (shudElementSpectatorItemSpawns_t*)context;
 
-	if (!CG_IS_LOCAL_CLIENT_SPECTATOR())
-	{
-		return;
-	}
+	// if (!CG_IS_LOCAL_CLIENT_SPECTATOR())
+	// {
+	// 	return;
+	// }
 
 	if (!element->config.rect.isSet)
 	{
@@ -492,8 +416,7 @@ void CG_SHUDElementSpectatorItemSpawnsRoutine(void* context)
 	rowStep = iconSize + SHUD_ITEMSPAWNS_ROW_PAD;
 	iconOnRight = element->iconOnRight;
 
-	maxTextW = CG_SHUDElementSpectatorItemSpawnsMaxTextWidth(element, charW, charH);
-	minInner = SHUD_ITEMSPAWNS_EDGE_PAD * 2.0f + iconSize + SHUD_ITEMSPAWNS_MIN_GAP + maxTextW;
+	minInner = SHUD_ITEMSPAWNS_EDGE_PAD * 2.0f + iconSize + SHUD_ITEMSPAWNS_MIN_GAP + element->maxTextW;
 	gap = SHUD_ITEMSPAWNS_MIN_GAP;
 	if (rowWidth <= 0.0f)
 	{
@@ -510,12 +433,63 @@ void CG_SHUDElementSpectatorItemSpawnsRoutine(void* context)
 
 	textAlignH = CG_SHUDElementSpectatorItemSpawnsEffectiveTextAlign(&element->config, iconOnRight);
 	CG_SHUDElementSpectatorItemSpawnsRowGeometry(baseX, rowWidth, iconSize, gap, SHUD_ITEMSPAWNS_EDGE_PAD,
-	        iconOnRight, maxTextW, &rowIconX, &textCellX, &textCellW);
+	        iconOnRight, element->maxTextW, &rowIconX, &textCellX, &textCellW);
 
 	CG_SHUDElementSpectatorItemSpawnsDrawBlock(&element->config, baseX, baseY, rowWidth, blockH);
 
 	CG_SHUDConfigPickColor_Init(&element->config, element->ctx.color);
 	Vector4Copy(element->ctx.color, iconColor);
+
+	/* text H-align flags, text anchor X and icon draw X are the same for every row: resolve once */
+	element->ctx.flags &= ~(DS_HLEFT | DS_HCENTER | DS_HRIGHT | DS_VTOP | DS_VCENTER | DS_VBOTTOM);
+	if (textAlignH == SUPERHUD_ALIGNH_CENTER)
+	{
+		element->ctx.flags |= DS_HCENTER;
+		textX = textCellX + textCellW * 0.5f;
+	}
+	else if (textAlignH == SUPERHUD_ALIGNH_RIGHT)
+	{
+		element->ctx.flags |= DS_HRIGHT;
+		textX = textCellX + textCellW;
+	}
+	else
+	{
+		element->ctx.flags |= DS_HLEFT;
+		textX = textCellX;
+	}
+
+	textAlignV = element->config.alignV.isSet ? element->config.alignV.value : SUPERHUD_ALIGNV_CENTER;
+	if (textAlignV == SUPERHUD_ALIGNV_TOP)
+	{
+		textYOffset = 0.0f;
+	}
+	else if (textAlignV == SUPERHUD_ALIGNV_BOTTOM)
+	{
+		textYOffset = iconSize - charH;
+	}
+	else
+	{
+		textYOffset = (iconSize - charH) * 0.5f;
+	}
+
+	drawIconX = rowIconX;
+	if (iconOnRight)
+	{
+		float ratio;
+
+		if (cgs.glconfig.vidWidth <= 0)
+		{
+			ratio = 1.0f;
+		}
+		else
+		{
+			ratio = (cgs.glconfig.vidHeight * 640.0f) / (cgs.glconfig.vidWidth * 480.0f);
+		}
+		if (ratio < 1.0f)
+		{
+			drawIconX = rowIconX + iconSize * (1.0f - ratio);
+		}
+	}
 
 	rowY = baseY + SHUD_ITEMSPAWNS_EDGE_PAD;
 	for (i = 0; i < count; i++)
@@ -530,10 +504,8 @@ void CG_SHUDElementSpectatorItemSpawnsRoutine(void* context)
 
 		shader = CG_SpectatorItems_IconShader(group);
 		iconY = rowY;
-		drawIconX = rowIconX;
 		if (shader)
 		{
-			drawIconX = CG_SHUDElementSpectatorItemSpawnsIconDrawX(rowIconX, iconSize, iconOnRight);
 			CG_SHUDElementSpectatorItemSpawnsDrawIcon(drawIconX, iconY, iconSize, iconColor, shader);
 		}
 
@@ -550,7 +522,14 @@ void CG_SHUDElementSpectatorItemSpawnsRoutine(void* context)
 					sec = (ms + 999) / 1000;
 					if (sec >= 1)
 					{
-						Com_sprintf(num, sizeof(num), "%i", sec);
+						if (cg_drawTimer.integer == 0 && !CG_IS_LOCAL_CLIENT_SPECTATOR())
+						{
+							Q_strncpyz(num, "XX", sizeof(num));
+						}
+						else
+						{
+							Com_sprintf(num, sizeof(num), "%i", sec);
+						}
 						CG_SHUDElementSpectatorItemSpawnsFormatLine(element, num, element->printBuf,
 						        sizeof(element->printBuf));
 					}
@@ -560,20 +539,17 @@ void CG_SHUDElementSpectatorItemSpawnsRoutine(void* context)
 
 		if (element->printBuf[0])
 		{
-			CG_SHUDElementSpectatorItemSpawnsApplyTextHFlags(element, textAlignH);
-			textX = CG_SHUDElementSpectatorItemSpawnsTextAnchorX(textAlignH, textCellX, textCellW);
-			textRowY = CG_SHUDElementSpectatorItemSpawnsTextRowY(&element->config, rowY, iconSize, charH);
+			textRowY = rowY + textYOffset;
 
 			element->ctx.text = element->printBuf;
 			element->ctx.coord.named.x = textX;
 			element->ctx.coord.named.y = textRowY;
 			element->ctx.coord.named.w = charW;
 			element->ctx.coord.named.h = charH;
-			element->ctx.flags &= ~(DS_VTOP | DS_VCENTER | DS_VBOTTOM);
 			CG_SHUDTextPrint(&element->config, &element->ctx);
 		}
 
-		if (shader && spot->overlayCount > 0)
+		if (spot->overlayCount > 0)
 		{
 			CG_SHUDElementSpectatorItemSpawnsDrawSpotBadges(rowIconX, iconY, iconSize, iconColor, spot);
 		}

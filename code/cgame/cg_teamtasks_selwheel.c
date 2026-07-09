@@ -563,6 +563,66 @@ int CG_GetSelwheelIconAtPosition(float x, float y)
 
 /*
 =================
+CG_SelwheelIconColor
+
+Pick the draw color for a selection wheel icon.
+Priority: unavailable (dark gray) -> tHere (theme, whitened) -> tYes/tNo (green/red)
+-> highlighted (white) -> idle (gray). tYes/tNo and idle are dimmed by 'grayBase'.
+'hereWhiten' and 'grayBase' differ between the center icon and the ring icons.
+=================
+*/
+static void CG_SelwheelIconColor(const char* cmd, qboolean highlighted, qboolean unavailable,
+                                 float hereWhiten, float grayBase, vec4_t out)
+{
+	/* Unavailable (not alive / observing other) commands are dark gray, except tWarn and tHere */
+	if (unavailable && cmd[0] != '\0' &&
+	        Q_stricmp(cmd, "tWarn") && Q_stricmp(cmd, "tHere"))
+	{
+		Vector4Set(out, 0.3f, 0.3f, 0.3f, 1.0f);
+		return;
+	}
+
+	/* tHere uses the theme color, whitened */
+	if (cmd[0] != '\0' && !Q_stricmp(cmd, "tHere"))
+	{
+		Vector4Copy(cg.teamMarkers.teamTaskThemeColor, out);
+		CG_ColorWhitenSmart(out, NULL, hereWhiten);
+		return;
+	}
+
+	/* tYes / tNo get a green / red tint */
+	if (cmd[0] != '\0' && !Q_stricmp(cmd, "tYes"))
+	{
+		Vector4Set(out, 0.7f, 1.0f, 0.7f, 1.0f);
+	}
+	else if (cmd[0] != '\0' && !Q_stricmp(cmd, "tNo"))
+	{
+		Vector4Set(out, 1.0f, 0.7f, 0.7f, 1.0f);
+	}
+	else if (highlighted)
+	{
+		/* Selected / hovered generic icon - white */
+		Vector4Set(out, 1.0f, 1.0f, 1.0f, 1.0f);
+		return;
+	}
+	else
+	{
+		/* Idle generic icon - gray */
+		Vector4Set(out, grayBase, grayBase, grayBase, 1.0f);
+		return;
+	}
+
+	/* Dim tYes/tNo to the surrounding gray when not highlighted */
+	if (!highlighted)
+	{
+		out[0] *= grayBase;
+		out[1] *= grayBase;
+		out[2] *= grayBase;
+	}
+}
+
+/*
+=================
 CG_DrawSelwheelIcons
 
 Draw team task icons in a circle around the ttwheel mark
@@ -575,7 +635,6 @@ void CG_DrawSelwheelIcons(void)
 	float iconRadius;
 	float iconSize;
 	float backgroundSize;
-	vec4_t iconColor;
 	vec4_t backgroundColor;
 	float iconX;
 	float iconY;
@@ -663,12 +722,6 @@ void CG_DrawSelwheelIcons(void)
 			);
 		}
 	}
-
-	// Icon color
-	iconColor[0] = 1.0f;
-	iconColor[1] = 1.0f;
-	iconColor[2] = 1.0f;
-	iconColor[3] = 1.0f;
 
 	// Background color (use theme color with alpha 0.3)
 	backgroundColor[0] = cg.teamMarkers.teamTaskThemeColor[0];
@@ -787,6 +840,7 @@ void CG_DrawSelwheelIcons(void)
 			float smartIconX;
 			float smartIconY;
 			vec4_t smartIconColor;
+			vec4_t iconDrawColor;
 
 			CG_GetScreenCenter(&centerIconX, &centerIconY);
 			centerIconSize = iconSize * 1.2f; // Larger center icon
@@ -830,40 +884,12 @@ void CG_DrawSelwheelIcons(void)
 				    centerShader);
 			}
 
-			// Draw center icon
-			// Use gray color for non-selected element, white for selected
-			// Special handling for tHere: use theme color with whitening 0.8
-			// If player is not alive, make unavailable commands gray (except tWarn and tHere)
-			if (cg.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-			        !Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tHere"))
-			{
-				// tHere element - use theme color with whitening 0.8
-				vec4_t hereColor;
-				Vector4Copy(cg.teamMarkers.teamTaskThemeColor, hereColor);
-				CG_ColorWhitenSmart(hereColor, NULL, 0.5f);
-				trap_R_SetColor(hereColor);
-			}
-			else if ((isNotAlive || isObservingOther) && cg.teamMarkers.ttwheelElementCommands[0][0] != '\0' &&
-			         Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tWarn") &&
-			         Q_stricmp(cg.teamMarkers.ttwheelElementCommands[0], "tHere"))
-			{
-				// Unavailable (not alive or observing other) and command is not tWarn or tHere - use dark gray
-				vec4_t darkGrayColor;
-				Vector4Set(darkGrayColor, 0.3f, 0.3f, 0.3f, 1.0f);
-				trap_R_SetColor(darkGrayColor);
-			}
-			else if (hoveredIcon == 0 || cg.teamMarkers.ttwheelSelectedIcon == 0)
-			{
-				// Element is selected - use white color
-				trap_R_SetColor(iconColor);
-			}
-			else
-			{
-				// Element is not selected - use gray color
-				vec4_t grayColor;
-				Vector4Set(grayColor, 0.75f, 0.75f, 0.75f, 1.0f);
-				trap_R_SetColor(grayColor);
-			}
+			// Draw center icon (tHere whiten 0.5, idle gray 0.75)
+			CG_SelwheelIconColor(cg.teamMarkers.ttwheelElementCommands[0],
+			                     hoveredIcon == 0 || cg.teamMarkers.ttwheelSelectedIcon == 0,
+			                     isNotAlive || isObservingOther,
+			                     0.5f, 0.75f, iconDrawColor);
+			trap_R_SetColor(iconDrawColor);
 			trap_R_DrawStretchPic(
 			    centerIconX - centerIconSize * 0.5f,
 			    centerIconY - centerIconSize * 0.5f,
@@ -928,6 +954,7 @@ void CG_DrawSelwheelIcons(void)
 	for (; i < cg.teamMarkers.ttwheelElementCount; i++)
 	{
 		qhandle_t currentShader;
+		vec4_t iconDrawColor;
 
 		/* Update pickup icon in real-time if this is pickup command */
 		if (cg.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
@@ -1013,40 +1040,12 @@ void CG_DrawSelwheelIcons(void)
 			    currentShader);
 		}
 
-		// Draw icon
-		// Use gray color for non-selected elements, white for selected
-		// Special handling for tHere: use theme color with whitening 0.8
-		// If player is not alive, make unavailable commands gray (except tWarn and tHere)
-		if (cg.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-		        !Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tHere"))
-		{
-			// tHere element - use theme color with whitening 0.8
-			vec4_t hereColor;
-			Vector4Copy(cg.teamMarkers.teamTaskThemeColor, hereColor);
-			CG_ColorWhitenSmart(hereColor, NULL, 0.8f);
-			trap_R_SetColor(hereColor);
-		}
-		else if ((isNotAlive || isObservingOther) && cg.teamMarkers.ttwheelElementCommands[i][0] != '\0' &&
-		         Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tWarn") &&
-		         Q_stricmp(cg.teamMarkers.ttwheelElementCommands[i], "tHere"))
-		{
-			// Unavailable (not alive or observing other) and command is not tWarn or tHere - use dark gray
-			vec4_t darkGrayColor;
-			Vector4Set(darkGrayColor, 0.3f, 0.3f, 0.3f, 1.0f);
-			trap_R_SetColor(darkGrayColor);
-		}
-		else if (hoveredIcon == i || cg.teamMarkers.ttwheelSelectedIcon == i)
-		{
-			// Element is selected - use white color
-			trap_R_SetColor(iconColor);
-		}
-		else
-		{
-			// Element is not selected - use gray color
-			vec4_t grayColor;
-			Vector4Set(grayColor, 0.6f, 0.6f, 0.6f, 1.0f);
-			trap_R_SetColor(grayColor);
-		}
+		// Draw icon (tHere whiten 0.8, idle gray 0.6)
+		CG_SelwheelIconColor(cg.teamMarkers.ttwheelElementCommands[i],
+		                     hoveredIcon == i || cg.teamMarkers.ttwheelSelectedIcon == i,
+		                     isNotAlive || isObservingOther,
+		                     0.8f, 0.6f, iconDrawColor);
+		trap_R_SetColor(iconDrawColor);
 		trap_R_DrawStretchPic(
 		    adjustedX - adjustedSize * 0.5f,
 		    adjustedY - adjustedSize * 0.5f,

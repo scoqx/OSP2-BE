@@ -662,6 +662,8 @@ qboolean CG_BEChat_EmojiInsertFav(beChatInput_t* edit, int slotIndex, float maxT
 		return qfalse;
 	}
 
+	beChatEmoji.favHintFlashIndex = slotIndex;
+	beChatEmoji.favHintFlashTime = cg.time;
 	CG_BEChat_EmojiInsertToken(edit, em->name, maxTextW);
 	return qtrue;
 }

@@ -11,23 +11,46 @@ or (at your option) any later version.
 ===========================================================================
 */
 
+/*
+ * Spectator item pickup / spawn HUD (CS 890-899 PUI catalog + `pui` cmd).
+ *
+ * The server (metarena g_items_catalogue.c) already does the heavy lifting:
+ * it classifies CTF sides, groups co-located items into a single segment
+ * (abbrevs joined by '/'), and assigns trackId left-to-right across the
+ * emitted abbrevs. So the client just mirrors that: one PUI segment == one
+ * spot, side is taken from the wire, and trackId numbering follows the same
+ * left-to-right order. No client-side flag geometry or pad reconstruction.
+ */
+
 #include "cg_local.h"
 #include "superhud.h"
+#include "../qcommon/qcommon.h"
 
 typedef struct
 {
 	qboolean active;
 	int itemId;
 	int group;
-	int slotIdx;
 	int nextSpawnTime;
 	int trackSide;
 	int csOrder;
-	int hudPadGroup;
-	int padOrder;
+	int padIx;
+	int padIy;
+	int padIz;
+	qboolean havePadCoords;
 } cg_spectatorItemEntry_t;
 
+typedef struct
+{
+	int side;
+	int csOrder;
+	int memberCount;
+	int members[CG_ITEM_SPAWNS_SPOT_MEMBERS_MAX];
+} cg_spectatorItemSpot_t;
+
 static cg_spectatorItemEntry_t cg_spectatorItems[CG_ITEM_NOTIFY_MAX_ENTRIES];
+static cg_spectatorItemSpot_t cg_spectatorItemSpots[CG_ITEM_SPAWNS_SPOT_MAX];
+static int cg_spectatorItemSpotCount;
 static qboolean cg_spectatorItemsHudRedTable;
 static qboolean cg_spectatorItemsHudBlueTable;
 
@@ -64,38 +87,20 @@ static cg_spectatorItemEntry_t* CG_SpectatorItems_Entry(int entryIndex)
 	return &cg_spectatorItems[entryIndex];
 }
 
-static cg_spectatorItemEntry_t* CG_SpectatorItems_EntryByItemId(int itemId)
+static cg_spectatorItemEntry_t* CG_SpectatorItems_EntryByTrackId(int trackId)
 {
-	int i;
-
-	if (itemId < 0 || itemId >= PUI_ID_INVALID)
+	if (!CG_SpectatorItems_ValidTrackId(trackId))
 	{
 		return NULL;
 	}
-
-	for (i = 0; i < CG_ITEM_NOTIFY_MAX_ENTRIES; i++)
+	if (!cg_spectatorItems[trackId].active)
 	{
-		if (cg_spectatorItems[i].active && cg_spectatorItems[i].itemId == itemId)
-		{
-			return &cg_spectatorItems[i];
-		}
+		return NULL;
 	}
-	return NULL;
+	return &cg_spectatorItems[trackId];
 }
 
-static int CG_SpectatorItems_AllocEntry(void)
-{
-	int i;
-
-	for (i = 0; i < CG_ITEM_NOTIFY_MAX_ENTRIES; i++)
-	{
-		if (!cg_spectatorItems[i].active)
-		{
-			return i;
-		}
-	}
-	return -1;
-}
+static int CG_SpectatorItems_ResolveItemNum(int group);
 
 static int CG_SpectatorItems_PowerupSortOrder(int pwTag)
 {
@@ -178,97 +183,37 @@ static qboolean CG_SpectatorItems_PuiTypeToGroup(int type, int* outGroup)
 	}
 }
 
-static qboolean CG_SpectatorItems_ApplyItemId(int itemId, int csOrder, int hudPadGroup, int padOrder)
+static qboolean CG_SpectatorItems_ApplyTrack(int trackId, int group, int side, int csOrder,
+        qboolean havePadCoords, int padIx, int padIy, int padIz)
 {
-	int type;
-	int side;
-	int slot;
-	int group;
-	int entryIndex;
 	cg_spectatorItemEntry_t* e;
 
-	if (itemId < 0 || itemId >= PUI_ID_INVALID)
+	if (!CG_SpectatorItems_ValidTrackId(trackId) || !(cgs.itemCatalogMode & 2))
+	{
+		return qfalse;
+	}
+	if (side < 0 || side > 2)
+	{
+		return qfalse;
+	}
+	if (cg_spectatorItems[trackId].active)
 	{
 		return qfalse;
 	}
 
-	if (CG_SpectatorItems_EntryByItemId(itemId))
-	{
-		return qfalse;
-	}
-
-	type = BG_PuiIdType(itemId);
-	side = BG_PuiIdSide(itemId);
-	slot = BG_PuiIdSlot(itemId);
-
-	if (type < 0 || type >= PUI_TYPE_COUNT || side < 0 || side > 2)
-	{
-		return qfalse;
-	}
-
-	if (!CG_SpectatorItems_PuiTypeToGroup(type, &group))
-	{
-		return qfalse;
-	}
-
-	entryIndex = CG_SpectatorItems_AllocEntry();
-	if (entryIndex < 0)
-	{
-		return qfalse;
-	}
-
-	e = &cg_spectatorItems[entryIndex];
+	e = &cg_spectatorItems[trackId];
 	memset(e, 0, sizeof(*e));
 	e->active = qtrue;
-	e->itemId = itemId;
+	e->itemId = trackId;
 	e->group = group;
-	e->slotIdx = slot;
 	e->trackSide = side;
 	e->nextSpawnTime = 0;
 	e->csOrder = csOrder;
-	e->hudPadGroup = hudPadGroup;
-	e->padOrder = padOrder;
+	e->havePadCoords = havePadCoords;
+	e->padIx = padIx;
+	e->padIy = padIy;
+	e->padIz = padIz;
 	return qtrue;
-}
-
-static int CG_SpectatorItems_DisplayOrderKey(const cg_spectatorItemEntry_t* e)
-{
-	int tier;
-
-	if (!e)
-	{
-		return 999999;
-	}
-
-	tier = CG_SpectatorItems_GroupTier(e->group);
-	/* mh, ra, ya, powerups (metarena abbrevOrder / shadow abbrevs); then idx; n/r/b side */
-	return tier * 4096 + e->slotIdx * 16 + e->trackSide;
-}
-
-static int CG_SpectatorItems_DrawRefCompare(const void* a, const void* b)
-{
-	const cg_spectatorItemDrawRef_t* refA;
-	const cg_spectatorItemDrawRef_t* refB;
-	cg_spectatorItemEntry_t* entryA;
-	cg_spectatorItemEntry_t* entryB;
-	int keyA;
-	int keyB;
-
-	refA = (const cg_spectatorItemDrawRef_t*)a;
-	refB = (const cg_spectatorItemDrawRef_t*)b;
-	entryA = CG_SpectatorItems_Entry(refA->trackId);
-	entryB = CG_SpectatorItems_Entry(refB->trackId);
-	if (!entryA || !entryB)
-	{
-		return 0;
-	}
-	keyA = CG_SpectatorItems_DisplayOrderKey(entryA);
-	keyB = CG_SpectatorItems_DisplayOrderKey(entryB);
-	if (keyA != keyB)
-	{
-		return keyA - keyB;
-	}
-	return refA->trackId - refB->trackId;
 }
 
 typedef struct
@@ -290,7 +235,7 @@ static void CG_SpectatorItems_RestoreSavedSpawn(const cg_spectatorItemSavedSpawn
 		return;
 	}
 
-	e = CG_SpectatorItems_EntryByItemId(saved->itemId);
+	e = CG_SpectatorItems_EntryByTrackId(saved->itemId);
 	if (!e)
 	{
 		return;
@@ -302,101 +247,170 @@ static void CG_SpectatorItems_RestoreSavedSpawn(const cg_spectatorItemSavedSpawn
 static void CG_SpectatorItems_Clear(void)
 {
 	memset(cg_spectatorItems, 0, sizeof(cg_spectatorItems));
+	cg_spectatorItemSpotCount = 0;
 }
 
-static qboolean CG_SpectatorItems_ParseFlatItemId(const char* tok, int* csOrder)
+static int CG_SpectatorItems_PuiTypeFromAbbrev(const char* abbrev)
 {
-	int itemId;
+	const char* classname;
+	gitem_t*    item;
+	int         i;
 
-	itemId = atoi(tok);
-	if (itemId < 0 || itemId >= PUI_ID_INVALID)
+	if (!abbrev || !abbrev[0])
 	{
-		return qfalse;
+		return -1;
 	}
-	if (CG_SpectatorItems_ApplyItemId(itemId, *csOrder, -1, 0))
+	if (!CG_ShadowItems_ClassnameFromAbbrev(abbrev, &classname))
 	{
-		(*csOrder)++;
-		return qtrue;
+		return -1;
 	}
-	return qfalse;
+	for (i = 1; i < bg_numItems; i++)
+	{
+		item = &bg_itemlist[i];
+		if (!Q_stricmp(item->classname, classname))
+		{
+			return BG_PuiTypeFromItem(item);
+		}
+	}
+	return -1;
 }
 
-static qboolean CG_SpectatorItems_ParseV4Segment(char* segment, int* csOrder)
+static void CG_SpectatorItems_BuildCatalogPayload(char* buf, int bufSize)
 {
-	char* tok;
-	int side;
-	int padIdx;
-	int hudPadGroup;
-	int padOrder;
-	int itemId;
+	const char* chunk;
+	int         i;
 
-	if (!segment || !segment[0] || !csOrder)
+	buf[0] = '\0';
+	for (i = 0; i < CS_OSP2BE_ITEM_CATALOG_COUNT; i++)
 	{
-		return qfalse;
-	}
-
-	if (segment[0] == 'I' && segment[1] == ',')
-	{
-		return CG_SpectatorItems_ParseFlatItemId(segment + 2, csOrder);
-	}
-
-	if (segment[0] != 'S' || segment[1] != ',')
-	{
-		return qfalse;
-	}
-
-	tok = segment + 2;
-	side = atoi(tok);
-	tok = strchr(tok, ',');
-	if (!tok)
-	{
-		return qfalse;
-	}
-	tok++;
-	padIdx = atoi(tok);
-	if (side < 0 || side > 2 || padIdx < 0 || padIdx > 15)
-	{
-		return qfalse;
-	}
-
-	hudPadGroup = (side << 4) | padIdx;
-	padOrder = 0;
-
-	for (;;)
-	{
-		tok = strchr(tok, ',');
-		if (!tok)
+		chunk = CG_ConfigString(CS_OSP2BE_ITEM_CATALOG0 + i);
+		if (!chunk[0])
 		{
+			continue;
+		}
+		if (buf[0] && (int)strlen(buf) + (int)strlen(chunk) >= bufSize - 1)
+		{
+			CG_Printf(S_COLOR_RED "ERROR: item catalog client payload overflow\n");
 			break;
 		}
-		tok++;
-		if (!tok[0])
-		{
-			break;
-		}
+		Q_strcat(buf, bufSize, chunk);
+	}
+}
 
-		itemId = atoi(tok);
-		if (itemId >= 0 && itemId < PUI_ID_INVALID)
+/*
+ * One wire segment == one physical spot. Every PUI-mappable abbrev gets its
+ * own tracked entry, numbered left-to-right (matching the server trackId
+ * contract). Items joined by '/' share the spot (drawn as overlays); the
+ * server already tells us the side, so no flag-distance guessing here.
+ */
+static void CG_SpectatorItems_ParseCatalogSegment(char* segment, int* csOrder, int* nextTrackId)
+{
+	char*       semi;
+	char*       tok;
+	char*       slash;
+	int         ix;
+	int         iy;
+	int         iz;
+	int         side;
+	int         type;
+	int         group;
+	qboolean    hasCoords;
+	cg_spectatorItemSpot_t* spot;
+
+	if (!segment || !segment[0] || !csOrder || !nextTrackId)
+	{
+		return;
+	}
+
+	side = 0;
+	ix = iy = iz = 0;
+	hasCoords = qfalse;
+	semi = strchr(segment, ';');
+	if (semi)
+	{
+		*semi = '\0';
+		semi++;
+		if (Q_sscanf(semi, "%d,%d,%d,%d", &ix, &iy, &iz, &side) == 4)
 		{
-			if (CG_SpectatorItems_ApplyItemId(itemId, *csOrder, hudPadGroup, padOrder))
+			if (side < 0 || side > 2)
 			{
-				(*csOrder)++;
-				padOrder++;
+				return;
 			}
+			hasCoords = qtrue;
+		}
+		else if (Q_sscanf(semi, "%d,%d,%d", &ix, &iy, &iz) == 3)
+		{
+			/* server only omits side outside CTF, where every spot is neutral */
+			side = 0;
+			hasCoords = qtrue;
+		}
+		else if (Q_sscanf(semi, "%d", &side) != 1 || side < 0 || side > 2)
+		{
+			return;
 		}
 	}
 
-	return (padOrder > 0);
+	if (!segment[0] || cg_spectatorItemSpotCount >= CG_ITEM_SPAWNS_SPOT_MAX)
+	{
+		return;
+	}
+
+	spot = NULL;
+	tok = segment;
+	while (tok && tok[0])
+	{
+		slash = strchr(tok, '/');
+		if (slash)
+		{
+			*slash = '\0';
+		}
+
+		type = CG_SpectatorItems_PuiTypeFromAbbrev(tok);
+		if (type >= 0 && type < PUI_TYPE_COUNT
+		        && CG_SpectatorItems_PuiTypeToGroup(type, &group)
+		        && CG_SpectatorItems_ApplyTrack(*nextTrackId, group, side, *csOrder,
+		                                        hasCoords, ix, iy, iz))
+		{
+			if (!spot)
+			{
+				spot = &cg_spectatorItemSpots[cg_spectatorItemSpotCount];
+				spot->side = side;
+				spot->csOrder = *csOrder;
+				spot->memberCount = 0;
+			}
+			if (spot->memberCount < CG_ITEM_SPAWNS_SPOT_MEMBERS_MAX)
+			{
+				spot->members[spot->memberCount++] = *nextTrackId;
+			}
+			(*nextTrackId)++;
+			(*csOrder)++;
+		}
+
+		if (slash)
+		{
+			tok = slash + 1;
+		}
+		else
+		{
+			tok = NULL;
+		}
+	}
+
+	if (spot)
+	{
+		cg_spectatorItemSpotCount++;
+	}
 }
 
 static void CG_SpectatorItems_ParseConfigString(const char* str)
 {
-	char buf[MAX_STRING_CHARS];
+	char buf[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
 	char* parse;
 	char* segment;
 	cg_spectatorItemSavedSpawn_t saved[CG_ITEM_NOTIFY_MAX_ENTRIES];
 	int savedCount;
 	int csOrder;
+	int nextTrackId;
 	int i;
 
 	savedCount = 0;
@@ -418,31 +432,29 @@ static void CG_SpectatorItems_ParseConfigString(const char* str)
 
 	if (!str || !str[0])
 	{
-		return;
-	}
-
-	if (Q_stricmpn(str, "v4", 2) != 0 || (str[2] != '\0' && str[2] != ';'))
-	{
+		cgs.itemCatalogMode = 0;
 		return;
 	}
 
 	Q_strncpyz(buf, str, sizeof(buf));
 	parse = buf;
-	parse += 2;
-	if (*parse == ';')
+	cgs.itemCatalogMode = 1;
+	if (parse[0] >= '1' && parse[0] <= '3')
 	{
+		cgs.itemCatalogMode = parse[0] - '0';
 		parse++;
 	}
 
 	csOrder = 0;
+	nextTrackId = 0;
 	while (*parse)
 	{
 		segment = parse;
-		while (*parse && *parse != ';')
+		while (*parse && *parse != '|')
 		{
 			parse++;
 		}
-		if (*parse == ';')
+		if (*parse == '|')
 		{
 			*parse = '\0';
 			parse++;
@@ -450,7 +462,7 @@ static void CG_SpectatorItems_ParseConfigString(const char* str)
 
 		if (segment[0])
 		{
-			CG_SpectatorItems_ParseV4Segment(segment, &csOrder);
+			CG_SpectatorItems_ParseCatalogSegment(segment, &csOrder, &nextTrackId);
 		}
 	}
 
@@ -462,54 +474,30 @@ static void CG_SpectatorItems_ParseConfigString(const char* str)
 
 void CG_SpectatorItems_OnConfigStringChanged(void)
 {
+	char payload[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
+
 	CG_SHUDRefreshSpectatorItemSpawnsTeamTables();
-	CG_SpectatorItems_ParseConfigString(CG_ConfigString(CS_OSP2BE_ITEM_TRACK));
+	CG_SpectatorItems_BuildCatalogPayload(payload, sizeof(payload));
+	CG_SpectatorItems_ParseConfigString(payload);
 }
 
-static cg_spectatorItemEntry_t* CG_SpectatorItems_PadNextEntry(const cg_spectatorItemEntry_t* pick)
+qboolean CG_SpectatorItems_GetTrackPadCoords(int trackId, int* ix, int* iy, int* iz)
 {
 	cg_spectatorItemEntry_t* e;
-	cg_spectatorItemEntry_t* successor;
-	cg_spectatorItemEntry_t* wrap;
-	int bestOrder;
-	int minOrder;
-	int i;
 
-	if (!pick || pick->hudPadGroup < 0)
+	if (!ix || !iy || !iz || !CG_SpectatorItems_ValidTrackId(trackId))
 	{
-		return NULL;
+		return qfalse;
 	}
-
-	successor = NULL;
-	wrap = NULL;
-	bestOrder = 999999999;
-	minOrder = 999999999;
-
-	for (i = 0; i < CG_ITEM_NOTIFY_MAX_ENTRIES; i++)
+	e = CG_SpectatorItems_EntryByTrackId(trackId);
+	if (!e || !e->havePadCoords)
 	{
-		e = &cg_spectatorItems[i];
-		if (!e->active || e->hudPadGroup != pick->hudPadGroup || e == pick)
-		{
-			continue;
-		}
-
-		if (e->padOrder > pick->padOrder && e->padOrder < bestOrder)
-		{
-			bestOrder = e->padOrder;
-			successor = e;
-		}
-		if (e->padOrder < minOrder)
-		{
-			minOrder = e->padOrder;
-			wrap = e;
-		}
+		return qfalse;
 	}
-
-	if (successor)
-	{
-		return successor;
-	}
-	return wrap;
+	*ix = e->padIx;
+	*iy = e->padIy;
+	*iz = e->padIz;
+	return qtrue;
 }
 
 void CG_SpectatorItems_OnPickedUpItem(int pickerNum, int pickItemId, int nextSpawnTime,
@@ -519,13 +507,13 @@ void CG_SpectatorItems_OnPickedUpItem(int pickerNum, int pickItemId, int nextSpa
 	cg_spectatorItemEntry_t* next;
 	qboolean haveNext;
 
-	if (pickItemId < 0 || pickItemId >= PUI_ID_INVALID)
+	if (pickItemId < 0 || pickItemId >= CG_ITEM_NOTIFY_MAX_ENTRIES)
 	{
 		return;
 	}
 
-	haveNext = (nextItemId >= 0 && nextItemId < PUI_ID_INVALID && nextItemId != pickItemId);
-	pick = CG_SpectatorItems_EntryByItemId(pickItemId);
+	haveNext = (nextItemId >= 0 && nextItemId < CG_ITEM_NOTIFY_MAX_ENTRIES);
+	pick = CG_SpectatorItems_EntryByTrackId(pickItemId);
 
 	if (pick && pick->active && pickerNum >= 0 && pickerNum < MAX_CLIENTS)
 	{
@@ -535,20 +523,24 @@ void CG_SpectatorItems_OnPickedUpItem(int pickerNum, int pickItemId, int nextSpa
 	next = NULL;
 	if (haveNext)
 	{
-		next = CG_SpectatorItems_EntryByItemId(nextItemId);
-	}
-	if (!next && pick && pick->hudPadGroup >= 0 && nextSpawnTime > 0)
-	{
-		next = CG_SpectatorItems_PadNextEntry(pick);
+		next = CG_SpectatorItems_EntryByTrackId(nextItemId);
 	}
 
 	if (next)
 	{
+		int     modelindex;
+
 		if (pick)
 		{
 			pick->nextSpawnTime = 0;
 		}
 		next->nextSpawnTime = nextSpawnTime;
+
+		modelindex = CG_SpectatorItems_ResolveItemNum(next->group);
+		if (modelindex > 0)
+		{
+			CG_ShadowItems_OnServerNextItem(modelindex, nextItemId);
+		}
 	}
 	else if (pick)
 	{
@@ -594,8 +586,25 @@ int CG_SpectatorItems_RemainingMs(int entryIndex)
 
 static int CG_SpectatorItems_ResolveItemNum(int group)
 {
+	static int cache[CG_ITEM_NOTIFY_MAX_GROUPS];
+	static qboolean cacheInit;
+	int itemNum;
 	gitem_t* gi;
 	gitem_t* it;
+
+	if (!cacheInit)
+	{
+		for (itemNum = 0; itemNum < CG_ITEM_NOTIFY_MAX_GROUPS; itemNum++)
+		{
+			cache[itemNum] = -1;
+		}
+		cacheInit = qtrue;
+	}
+
+	if (group >= 0 && group < CG_ITEM_NOTIFY_MAX_GROUPS && cache[group] != -1)
+	{
+		return cache[group];
+	}
 
 	gi = NULL;
 	switch (group)
@@ -638,11 +647,12 @@ static int CG_SpectatorItems_ResolveItemNum(int group)
 			break;
 	}
 
-	if (!gi)
+	itemNum = gi ? ITEM_INDEX(gi) : 0;
+	if (group >= 0 && group < CG_ITEM_NOTIFY_MAX_GROUPS)
 	{
-		return 0;
+		cache[group] = itemNum;
 	}
-	return ITEM_INDEX(gi);
+	return itemNum;
 }
 
 qhandle_t CG_SpectatorItems_IconShader(int group)
@@ -664,29 +674,34 @@ qhandle_t CG_SpectatorItems_IconShader(int group)
 	return cg_items[itemNum].icon;
 }
 
-static qboolean CG_SpectatorItems_EntryPassesSideFilter(const cg_spectatorItemEntry_t* e, int trackSideFilter)
+/*
+ * A spot carries a single side (all its members come from one wire segment),
+ * so the HUD side filter applies per spot. -1 is the generic element and
+ * routes neutral/leftover sides depending on which team tables exist.
+ */
+static qboolean CG_SpectatorItems_SpotPassesSideFilter(const cg_spectatorItemSpot_t* spot, int trackSideFilter)
 {
-	if (!e || !e->active)
+	if (!spot || spot->memberCount <= 0)
 	{
 		return qfalse;
 	}
 
 	if (trackSideFilter >= 0)
 	{
-		return (e->trackSide == trackSideFilter);
+		return (spot->side == trackSideFilter);
 	}
 
 	if (cg_spectatorItemsHudRedTable && cg_spectatorItemsHudBlueTable)
 	{
-		return (e->trackSide == 0);
+		return (spot->side == 0);
 	}
 	if (cg_spectatorItemsHudRedTable)
 	{
-		return (e->trackSide != 1);
+		return (spot->side != 1);
 	}
 	if (cg_spectatorItemsHudBlueTable)
 	{
-		return (e->trackSide != 2);
+		return (spot->side != 2);
 	}
 
 	return qtrue;
@@ -742,22 +757,45 @@ static void CG_SpectatorItems_SpotAddOverlay(int* groups, int* overlayOrders, in
 	(*count)++;
 }
 
+static int CG_SpectatorItems_SpotBestGroupTier(const int* members, int memberCount)
+{
+	int bestTier;
+	int m;
+	cg_spectatorItemEntry_t* member;
+
+	bestTier = 999999;
+	for (m = 0; m < memberCount; m++)
+	{
+		member = CG_SpectatorItems_Entry(members[m]);
+		if (!member)
+		{
+			continue;
+		}
+		if (CG_SpectatorItems_GroupTier(member->group) < bestTier)
+		{
+			bestTier = CG_SpectatorItems_GroupTier(member->group);
+		}
+	}
+	return bestTier;
+}
+
 static int CG_SpectatorItems_SpotPickPrimaryTrack(const int* members, int memberCount)
 {
 	int primaryTrack;
 	int countdownTrack;
 	int liveTrack;
-	int bestPadOrder;
+	int bestTier;
 	int bestRemaining;
 	int bestSpawnTime;
 	int m;
 	int ms;
+	int tier;
 	cg_spectatorItemEntry_t* member;
 
 	primaryTrack = members[0];
 	countdownTrack = -1;
 	liveTrack = -1;
-	bestPadOrder = 999999999;
+	bestTier = 999999;
 	bestRemaining = 0;
 	bestSpawnTime = 0;
 
@@ -787,9 +825,10 @@ static int CG_SpectatorItems_SpotPickPrimaryTrack(const int* members, int member
 			}
 		}
 
-		if (member->padOrder < bestPadOrder)
+		tier = CG_SpectatorItems_GroupTier(member->group);
+		if (tier < bestTier)
 		{
-			bestPadOrder = member->padOrder;
+			bestTier = tier;
 			primaryTrack = members[m];
 		}
 	}
@@ -807,91 +846,27 @@ static int CG_SpectatorItems_SpotPickPrimaryTrack(const int* members, int member
 
 int CG_SpectatorItems_BuildSpotDrawList(int trackSideFilter, cg_spectatorItemSpotDrawRef_t* out, int maxOut)
 {
-	typedef struct
-	{
-		int padGroup;
-		int members[CG_ITEM_SPAWNS_SPOT_MEMBERS_MAX];
-		int memberCount;
-	} spotAccum_t;
-
-	spotAccum_t spots[CG_ITEM_SPAWNS_SPOT_MAX];
-	int spotCount;
-	int trackId;
-	int i;
+	cg_spectatorItemSpot_t* spot;
+	cg_spectatorItemEntry_t* member;
+	cg_spectatorItemSpotDrawRef_t* ref;
 	int s;
 	int m;
+	int ms;
 	int count;
-	cg_spectatorItemEntry_t* e;
-	cg_spectatorItemEntry_t* member;
-	spotAccum_t* spot;
-	cg_spectatorItemSpotDrawRef_t* ref;
 	int primaryTrack;
 	int bestRemaining;
 	int overlayOrders[CG_ITEM_SPAWNS_OVERLAY_MAX];
 
-	if (!out || maxOut <= 0)
+	if (!out || maxOut <= 0 || !(cgs.itemCatalogMode & 2))
 	{
 		return 0;
 	}
 
-	memset(spots, 0, sizeof(spots));
-	spotCount = 0;
-
-	for (trackId = 0; trackId < CG_ITEM_NOTIFY_MAX_ENTRIES; trackId++)
-	{
-		e = &cg_spectatorItems[trackId];
-		if (!CG_SpectatorItems_EntryPassesSideFilter(e, trackSideFilter))
-		{
-			continue;
-		}
-
-		if (e->hudPadGroup < 0)
-		{
-			if (spotCount >= CG_ITEM_SPAWNS_SPOT_MAX)
-			{
-				continue;
-			}
-			spot = &spots[spotCount];
-			spot->padGroup = -1 - trackId;
-			spot->memberCount = 1;
-			spot->members[0] = trackId;
-			spotCount++;
-			continue;
-		}
-
-		spot = NULL;
-		for (s = 0; s < spotCount; s++)
-		{
-			if (spots[s].padGroup == e->hudPadGroup)
-			{
-				spot = &spots[s];
-				break;
-			}
-		}
-
-		if (!spot)
-		{
-			if (spotCount >= CG_ITEM_SPAWNS_SPOT_MAX)
-			{
-				continue;
-			}
-			spot = &spots[spotCount];
-			spot->padGroup = e->hudPadGroup;
-			spotCount++;
-		}
-
-		if (spot->memberCount < CG_ITEM_SPAWNS_SPOT_MEMBERS_MAX)
-		{
-			spot->members[spot->memberCount] = trackId;
-			spot->memberCount++;
-		}
-	}
-
 	count = 0;
-	for (s = 0; s < spotCount && count < maxOut; s++)
+	for (s = 0; s < cg_spectatorItemSpotCount && count < maxOut; s++)
 	{
-		spot = &spots[s];
-		if (spot->memberCount <= 0)
+		spot = &cg_spectatorItemSpots[s];
+		if (!CG_SpectatorItems_SpotPassesSideFilter(spot, trackSideFilter))
 		{
 			continue;
 		}
@@ -903,19 +878,23 @@ int CG_SpectatorItems_BuildSpotDrawList(int trackSideFilter, cg_spectatorItemSpo
 
 		for (m = 0; m < spot->memberCount; m++)
 		{
-			i = CG_SpectatorItems_RemainingMs(spot->members[m]);
-			if (i <= 0)
+			ms = CG_SpectatorItems_RemainingMs(spot->members[m]);
+			if (ms <= 0)
 			{
 				continue;
 			}
-			if (ref->timerTrackId < 0 || i < bestRemaining)
+			if (ref->timerTrackId < 0 || ms < bestRemaining)
 			{
-				bestRemaining = i;
+				bestRemaining = ms;
 				ref->timerTrackId = spot->members[m];
 			}
 		}
 
 		primaryTrack = CG_SpectatorItems_SpotPickPrimaryTrack(spot->members, spot->memberCount);
+		if (ref->timerTrackId >= 0 && CG_SpectatorItems_RemainingMs(ref->timerTrackId) > 0)
+		{
+			primaryTrack = ref->timerTrackId;
+		}
 
 		member = CG_SpectatorItems_Entry(primaryTrack);
 		if (!member)
@@ -924,20 +903,22 @@ int CG_SpectatorItems_BuildSpotDrawList(int trackSideFilter, cg_spectatorItemSpo
 		}
 
 		ref->primaryGroup = member->group;
-		ref->sortKey = CG_SpectatorItems_DisplayOrderKey(member);
+		ref->sortKey = CG_SpectatorItems_SpotBestGroupTier(spot->members, spot->memberCount) * 4096
+		               + spot->side * 1024 + (spot->csOrder & 1023);
 
-		if (spot->memberCount > 1 && spot->padGroup >= 0)
+		for (m = 0; m < spot->memberCount; m++)
 		{
-			for (m = 0; m < spot->memberCount; m++)
+			member = CG_SpectatorItems_Entry(spot->members[m]);
+			if (!member)
 			{
-				member = CG_SpectatorItems_Entry(spot->members[m]);
-				if (!member || member->group == ref->primaryGroup)
-				{
-					continue;
-				}
-				CG_SpectatorItems_SpotAddOverlay(ref->overlayGroups, overlayOrders, &ref->overlayCount,
-				                               member->group, member->padOrder);
+				continue;
 			}
+			if (member->group == ref->primaryGroup)
+			{
+				continue;
+			}
+			CG_SpectatorItems_SpotAddOverlay(ref->overlayGroups, overlayOrders, &ref->overlayCount,
+			                                 member->group, member->csOrder);
 		}
 
 		count++;
@@ -946,41 +927,6 @@ int CG_SpectatorItems_BuildSpotDrawList(int trackSideFilter, cg_spectatorItemSpo
 	if (count > 1)
 	{
 		qsort(out, count, sizeof(out[0]), CG_SpectatorItems_SpotDrawRefCompare);
-	}
-
-	return count;
-}
-
-int CG_SpectatorItems_BuildDrawList(int trackSideFilter, cg_spectatorItemDrawRef_t* out, int maxOut)
-{
-	int trackId;
-	int count;
-	cg_spectatorItemEntry_t* e;
-
-	if (!out || maxOut <= 0)
-	{
-		return 0;
-	}
-
-	count = 0;
-	for (trackId = 0; trackId < CG_ITEM_NOTIFY_MAX_ENTRIES; trackId++)
-	{
-		e = &cg_spectatorItems[trackId];
-		if (!CG_SpectatorItems_EntryPassesSideFilter(e, trackSideFilter))
-		{
-			continue;
-		}
-		if (count >= maxOut)
-		{
-			break;
-		}
-		out[count].trackId = trackId;
-		count++;
-	}
-
-	if (count > 1)
-	{
-		qsort(out, count, sizeof(out[0]), CG_SpectatorItems_DrawRefCompare);
 	}
 
 	return count;
@@ -999,11 +945,11 @@ qboolean CG_SpectatorItems_ServerCommand(void)
 
 	if (cmd[0] == 'p' && cmd[1] == 'u' && cmd[2] == 'i' && cmd[3] == '\0')
 	{
-		int packed;
 		int nextSpawnTime;
 		int pickerNum;
 		int pickId;
 		int nextId;
+		int packed;
 
 		argc = trap_Argc();
 		if (argc >= 3)
@@ -1011,8 +957,7 @@ qboolean CG_SpectatorItems_ServerCommand(void)
 			packed = atoi(CG_Argv(1));
 			nextSpawnTime = atoi(CG_Argv(2));
 			BG_PuiUnpackCmd(packed, &pickerNum, &pickId, &nextId);
-
-			if (pickId >= 0 && pickId < PUI_ID_INVALID)
+			if (pickId >= 0 && pickId < CG_ITEM_NOTIFY_MAX_ENTRIES)
 			{
 				CG_SpectatorItems_OnPickedUpItem(pickerNum, pickId, nextSpawnTime, nextId);
 			}

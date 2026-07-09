@@ -862,13 +862,16 @@ static void CG_PowerupTimerSounds(void)
 	int     i;
 	int     t;
 	int     tBs;
+	qboolean roundWarmupActive;
 	static int cg_prevBattleSuitEnd;
 	static int cg_prevRoundStartState;
 	static int cg_roundWarmupBsEndTime;
 
+	roundWarmupActive = (qboolean)(cgs.q3mskRoundWarmup && cgs.roundStartState == 2);
+
 	if (cg_debugServer.integer == 1)
 	{
-		if (cg_prevRoundStartState != cgs.roundStartState)
+		if (cgs.q3mskRoundWarmup && cg_prevRoundStartState != cgs.roundStartState)
 		{
 			if (cg_prevRoundStartState == 2 && cgs.roundStartState == 1 && cg_roundWarmupBsEndTime > 0)
 			{
@@ -890,8 +893,8 @@ static void CG_PowerupTimerSounds(void)
 	}
 
 	/* Round warmup "0": battlesuit timer ended while in warmup */
-	if (cg_roundSound.integer == 2 && cgs.media.roundWarmup0Sound &&
-	        cgs.roundStartState == 2 && cg_prevBattleSuitEnd > 0)
+	if (roundWarmupActive && cg_roundSound.integer == 2 && cgs.media.roundWarmup0Sound &&
+	        cg_prevBattleSuitEnd > 0)
 	{
 		tBs = cg.snap->ps.powerups[PW_BATTLESUIT];
 		if ((cg_prevBattleSuitEnd > cg.oldTime && cg_prevBattleSuitEnd <= cg.time) ||
@@ -901,7 +904,7 @@ static void CG_PowerupTimerSounds(void)
 		}
 	}
 
-	if (cg_debugServer.integer == 1 && cgs.roundStartState == 2 && cg_prevBattleSuitEnd > 0)
+	if (roundWarmupActive && cg_debugServer.integer == 1 && cg_prevBattleSuitEnd > 0)
 	{
 		tBs = cg.snap->ps.powerups[PW_BATTLESUIT];
 		if ((cg_prevBattleSuitEnd > cg.oldTime && cg_prevBattleSuitEnd <= cg.time) ||
@@ -931,7 +934,7 @@ static void CG_PowerupTimerSounds(void)
 
 			sfx = cgs.media.wearOffSound;
 
-			if (cgs.roundStartState == 2 && i == PW_BATTLESUIT)
+			if (roundWarmupActive && i == PW_BATTLESUIT)
 			{
 				if (cg_roundSound.integer == 0)
 				{
@@ -1409,6 +1412,13 @@ static void CG_ClientInfoUpdateFrame(void)
 
 	if (!cg.snap)
 		return;
+
+	if (cg.allyBattlesuitHideUntil > 0 && cg.time >= cg.allyBattlesuitHideUntil)
+	{
+		cg.allyBattlesuitHideUntil = 0;
+	}
+	cg.hideAllyBattlesuitUi = (qboolean)(cg.allyBattlesuitWarmupHide ||
+	                                     (cg.allyBattlesuitHideUntil > cg.time));
 
 	// Get main stats
 	CG_HealthColorFromStats(

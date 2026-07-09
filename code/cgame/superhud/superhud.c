@@ -853,6 +853,32 @@ void CG_SHUDRefreshSpectatorItemSpawnsTeamTables(void)
 	CG_SpectatorItems_SetHudTeamTables(hasItemSpawnsRed, hasItemSpawnsBlue);
 }
 
+qboolean CG_SHUDHasSpectatorItemSpawnsElements(void)
+{
+	superhudElement_t* el;
+
+	for (el = elementsHead; el; el = el->next)
+	{
+		if (!el->element.name)
+		{
+			continue;
+		}
+		if (Q_stricmp(el->element.name, "Spectator_ItemSpawns") == 0)
+		{
+			return qtrue;
+		}
+		if (Q_stricmp(el->element.name, "Spectator_ItemSpawnsRed") == 0)
+		{
+			return qtrue;
+		}
+		if (Q_stricmp(el->element.name, "Spectator_ItemSpawnsBlue") == 0)
+		{
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
 void CG_SHUDLoadConfig(qboolean silent)
 {
 	if (!CG_SHUDLoadConfigPrivate(ch_file.string, silent))
@@ -867,6 +893,10 @@ void CG_SHUDLoadConfig(qboolean silent)
 	else
 	{
 		CG_SHUDChatRestore();
+		if (cgs.beSupportedServer)
+		{
+			CG_BEUpdateUserInfo();
+		}
 	}
 }
 
@@ -1038,6 +1068,9 @@ void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen
 {
 	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 	superhudObituariesEntry_t* entry = &ctx->obituaries.line[ctx->obituaries.index % SHUD_MAX_OBITUARIES_LINES];
+	clientInfo_t* ci;
+	int dropMask;
+	int flagMask;
 
 	memset(entry, 0, sizeof(*entry));
 
@@ -1048,6 +1081,47 @@ void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen
 	entry->time = cg.time;
 	entry->attackerTeam = cgs.clientinfo[attacker].team;
 	entry->targetTeam = cgs.clientinfo[target].team;
+
+	if (target >= 0 && target < MAX_CLIENTS && cgs.gametype >= GT_TEAM)
+	{
+		ci = &cgs.clientinfo[target];
+
+		dropMask = cg.obituaryDropMask[target];
+		if (!dropMask)
+		{
+			dropMask = ci->teamPowerups & CG_OBITUARY_DROP_PU_MASK;
+		}
+		if (dropMask & (1 << PW_BATTLESUIT) && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+		{
+			dropMask &= ~(1 << PW_BATTLESUIT);
+		}
+		entry->droppedPowerups = dropMask;
+
+		if (cgs.gametype == GT_CTF)
+		{
+			if (cg.obituaryDropFlagTeam[target] != TEAM_FREE)
+			{
+				entry->droppedFlagTeam = cg.obituaryDropFlagTeam[target];
+			}
+			else if (ci->infoValid &&
+			         (!CG_CACHED_IS_ENEMY_CI(ci) || CG_IS_LOCAL_CLIENT_SPECTATOR()))
+			{
+				flagMask = ci->teamPowerups & ((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG));
+				if (flagMask & (1 << PW_REDFLAG))
+				{
+					entry->droppedFlagTeam = TEAM_RED;
+				}
+				else if (flagMask & (1 << PW_BLUEFLAG))
+				{
+					entry->droppedFlagTeam = TEAM_BLUE;
+				}
+			}
+		}
+
+		cg.obituaryDropMask[target] = 0;
+		cg.obituaryDropFlagTeam[target] = TEAM_FREE;
+	}
+
 	entry->runtime.isInitialized = qfalse;
 
 	++ctx->obituaries.index;

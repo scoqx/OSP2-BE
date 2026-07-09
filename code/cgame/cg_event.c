@@ -308,6 +308,7 @@ static void CG_Obituary(entityState_t* ent)
 		CG_OSPObituaryFreeze(ent, targetName);
 		return;
 	}
+
 	CG_SHUDEventObituaries(attacker, target, mod, qfalse);
 	// check for single client messages
 	switch (mod)
@@ -1021,7 +1022,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 					CG_ItemPickup(index);
 				}
 
-				CG_ShadowItems_OnItemPickup(index);
+				CG_ShadowItems_OnItemPickup(index, position);
 			}
 			break;
 
@@ -1056,7 +1057,10 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 					}
 				}
 
-				CG_ShadowItems_OnItemPickup(index);
+				if (cg.snap)
+				{
+					CG_ShadowItems_OnItemPickup(index, cg.snap->ps.origin);
+				}
 			}
 			break;
 

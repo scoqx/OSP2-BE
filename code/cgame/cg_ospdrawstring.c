@@ -602,7 +602,10 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 	int shadowEnabled;
 	int i;
 	int index;
+	int pass;
+	int passCount;
 	text_command_t* curr;
+	float startAx;
 
 	shadowEnabled = (flags & DS_SHADOW) && (shadowColor != NULL) && (shadowColor[3] != 0.0f);
 	if (shadowEnabled)
@@ -638,100 +641,152 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 	}
 
 	vidWidth = (float)cgs.glconfig.vidWidth;
-	trap_R_SetColor(color);
+	startAx = ax;
+	passCount = shadowEnabled ? 2 : 1;
 
-	for (i = 0; i < stopIdx; i++)
+	for (pass = 0; pass < passCount; pass++)
 	{
-		curr = &text_commands[i];
-		switch (curr->type)
+		fade = 1.0f;
+		if (setColor)
 		{
-			case OSP_TEXT_CMD_CHAR:
-				index = curr->value.character;
-				if (index < 0)
-				{
-					index += 256;
-				}
-				fm = &metrics[(unsigned char)index];
-				if (proportional)
-				{
-					tc = fm->tc_prop;
-					aw1 = fm->width * aw;
-				}
-				else
-				{
-					tc = fm->tc_mono;
-					aw1 = aw;
-				}
+			Vector4Copy(setColor, color);
+			maxAlpha = setColor[3];
+		}
+		else
+		{
+			Vector4Copy(colorWhite, color);
+			maxAlpha = 1.0f;
+		}
+		if (shadowEnabled)
+		{
+			VectorCopy(shadowColor, shadowCol);
+			ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
+		}
+		ax = startAx;
 
-				if (shadowEnabled)
-				{
-					trap_R_SetColor(shadowCol);
-					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
-					trap_R_SetColor(color);
-				}
-				trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+		if (shadowEnabled && pass == 0)
+		{
+			trap_R_SetColor(shadowCol);
+		}
+		else
+		{
+			trap_R_SetColor(color);
+		}
 
-				ax += ospstr_metric_advance(fm, aw, proportional);
-				if (ax >= vidWidth)
-				{
-					return;
-				}
-				break;
+		for (i = 0; i < stopIdx; i++)
+		{
+			curr = &text_commands[i];
+			switch (curr->type)
+			{
+				case OSP_TEXT_CMD_CHAR:
+					index = curr->value.character;
+					if (index < 0)
+					{
+						index += 256;
+					}
+					fm = &metrics[(unsigned char)index];
+					if (proportional)
+					{
+						tc = fm->tc_prop;
+						aw1 = fm->width * aw;
+					}
+					else
+					{
+						tc = fm->tc_mono;
+						aw1 = aw;
+					}
 
-			case OSP_TEXT_CMD_SHADER:
-				aw1 = ah;
-				if (shadowEnabled)
-				{
-					trap_R_SetColor(shadowCol);
-					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, 0, 0, 1, 1, curr->value.shader);
-				}
-				Vector4Copy(colorWhite, emojiColor);
-				emojiColor[3] = color[3];
-				trap_R_SetColor(emojiColor);
-				trap_R_DrawStretchPic(ax, ay, aw1, ah, 0, 0, 1, 1, curr->value.shader);
-				trap_R_SetColor(color);
-				ax += aw1;
-				if (ax >= vidWidth)
-				{
-					return;
-				}
-				break;
+					if (shadowEnabled && pass == 0)
+					{
+						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					}
+					else
+					{
+						trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					}
 
-			case OSP_TEXT_CMD_SHADOW_COLOR:
-				VectorCopy(curr->value.color, shadowCol);
-				ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
-				break;
+					ax += ospstr_metric_advance(fm, aw, proportional);
+					if (ax >= vidWidth)
+					{
+						break;
+					}
+					break;
 
-			case OSP_TEXT_CMD_FADE:
-				fade = curr->value.fade;
-				color[3] = fade;
-				if (color[3] > maxAlpha)
-				{
-					color[3] = maxAlpha;
-				}
-				if (shadowEnabled)
-				{
+				case OSP_TEXT_CMD_SHADER:
+					aw1 = ah;
+					if (shadowEnabled && pass == 0)
+					{
+						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, 0, 0, 1, 1, curr->value.shader);
+					}
+					else
+					{
+						Vector4Copy(colorWhite, emojiColor);
+						emojiColor[3] = color[3];
+						trap_R_SetColor(emojiColor);
+						trap_R_DrawStretchPic(ax, ay, aw1, ah, 0, 0, 1, 1, curr->value.shader);
+						trap_R_SetColor(color);
+					}
+					ax += aw1;
+					if (ax >= vidWidth)
+					{
+						break;
+					}
+					break;
+
+				case OSP_TEXT_CMD_SHADOW_COLOR:
+					VectorCopy(curr->value.color, shadowCol);
 					ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
-				}
-				trap_R_SetColor(color);
-				break;
+					if (shadowEnabled && pass == 0)
+					{
+						trap_R_SetColor(shadowCol);
+					}
+					break;
 
-			case OSP_TEXT_CMD_TEXT_COLOR:
-				VectorCopy(curr->value.color, color);
-				color[3] = fade;
-				if (color[3] > maxAlpha)
-				{
-					color[3] = maxAlpha;
-				}
-				if (shadowEnabled)
-				{
-					ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
-				}
-				trap_R_SetColor(color);
-				break;
+				case OSP_TEXT_CMD_FADE:
+					fade = curr->value.fade;
+					color[3] = fade;
+					if (color[3] > maxAlpha)
+					{
+						color[3] = maxAlpha;
+					}
+					if (shadowEnabled)
+					{
+						ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
+					}
+					if (shadowEnabled && pass == 0)
+					{
+						trap_R_SetColor(shadowCol);
+					}
+					else
+					{
+						trap_R_SetColor(color);
+					}
+					break;
 
-			default:
-				break;
+				case OSP_TEXT_CMD_TEXT_COLOR:
+					VectorCopy(curr->value.color, color);
+					color[3] = fade;
+					if (color[3] > maxAlpha)
+					{
+						color[3] = maxAlpha;
+					}
+					if (shadowEnabled)
+					{
+						ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
+					}
+					if (shadowEnabled && pass == 0)
+					{
+						trap_R_SetColor(shadowCol);
+					}
+					else
+					{
+						trap_R_SetColor(color);
+					}
+					break;
+
+				default:
+					break;
+			}
 		}
 	}
 }
@@ -1048,39 +1103,62 @@ static void ospstr_draw_plain_mono(const char* string, float ax, float ay, float
 
 	chars = 0;
 	usedW = 0.0f;
-	trap_R_SetColor(color);
 	s = (const unsigned char*)string;
-	while (*s)
 	{
-		if (widthIsChars)
+		int pass;
+		int passCount;
+		float ax0;
+
+		passCount = shadowEnabled ? 2 : 1;
+		ax0 = ax;
+		for (pass = 0; pass < passCount; pass++)
 		{
-			chars++;
-			if (chars > maxChars)
+			if (shadowEnabled && pass == 0)
 			{
-				break;
+				trap_R_SetColor(shadowColor);
+			}
+			else
+			{
+				trap_R_SetColor(color);
+			}
+			ax = ax0;
+			chars = 0;
+			usedW = 0.0f;
+			s = (const unsigned char*)string;
+			while (*s)
+			{
+				if (widthIsChars)
+				{
+					chars++;
+					if (chars > maxChars)
+					{
+						break;
+					}
+				}
+				if (!widthIsChars && maxWidth > 0.0f && (usedW + aw) > maxWidth && *s != '.')
+				{
+					break;
+				}
+
+				fm = &metrics[*s];
+				tc = fm->tc_mono;
+				if (shadowEnabled && pass == 0)
+				{
+					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw, ah, tc[0], tc[1], tc[2], tc[3], sh);
+				}
+				else
+				{
+					trap_R_DrawStretchPic(ax, ay, aw, ah, tc[0], tc[1], tc[2], tc[3], sh);
+				}
+				ax += aw;
+				usedW += aw;
+				if (ax >= vidWidth)
+				{
+					break;
+				}
+				s++;
 			}
 		}
-		if (!widthIsChars && maxWidth > 0.0f && (usedW + aw) > maxWidth && *s != '.')
-		{
-			break;
-		}
-
-		fm = &metrics[*s];
-		tc = fm->tc_mono;
-		if (shadowEnabled)
-		{
-			trap_R_SetColor(shadowColor);
-			trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw, ah, tc[0], tc[1], tc[2], tc[3], sh);
-			trap_R_SetColor(color);
-		}
-		trap_R_DrawStretchPic(ax, ay, aw, ah, tc[0], tc[1], tc[2], tc[3], sh);
-		ax += aw;
-		usedW += aw;
-		if (ax >= vidWidth)
-		{
-			break;
-		}
-		s++;
 	}
 }
 
@@ -1099,42 +1177,65 @@ static void ospstr_draw_plain_prop(const char* string, float ax, float ay, float
 
 	chars = 0;
 	usedW = 0.0f;
-	trap_R_SetColor(color);
 	s = (const unsigned char*)string;
-	while (*s)
 	{
-		if (widthIsChars)
+		int pass;
+		int passCount;
+		float ax0;
+
+		passCount = shadowEnabled ? 2 : 1;
+		ax0 = ax;
+		for (pass = 0; pass < passCount; pass++)
 		{
-			chars++;
-			if (chars > maxChars)
+			if (shadowEnabled && pass == 0)
 			{
-				break;
+				trap_R_SetColor(shadowColor);
+			}
+			else
+			{
+				trap_R_SetColor(color);
+			}
+			ax = ax0;
+			chars = 0;
+			usedW = 0.0f;
+			s = (const unsigned char*)string;
+			while (*s)
+			{
+				if (widthIsChars)
+				{
+					chars++;
+					if (chars > maxChars)
+					{
+						break;
+					}
+				}
+
+				fm = &metrics[*s];
+				advance = ospstr_metric_advance(fm, aw, 1);
+				if (!widthIsChars && maxWidth > 0.0f && (usedW + advance) > maxWidth && *s != '.')
+				{
+					break;
+				}
+
+				tc = fm->tc_prop;
+				aw1 = fm->width * aw;
+				if (shadowEnabled && pass == 0)
+				{
+					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+				}
+				else
+				{
+					trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+				}
+				ax += advance;
+				usedW += advance;
+				if (ax >= vidWidth)
+				{
+					break;
+				}
+				s++;
 			}
 		}
-
-		fm = &metrics[*s];
-		advance = ospstr_metric_advance(fm, aw, 1);
-		if (!widthIsChars && maxWidth > 0.0f && (usedW + advance) > maxWidth && *s != '.')
-		{
-			break;
-		}
-
-		tc = fm->tc_prop;
-		aw1 = fm->width * aw;
-		if (shadowEnabled)
-		{
-			trap_R_SetColor(shadowColor);
-			trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
-			trap_R_SetColor(color);
-		}
-		trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
-		ax += advance;
-		usedW += advance;
-		if (ax >= vidWidth)
-		{
-			break;
-		}
-		s++;
 	}
 }
 

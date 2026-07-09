@@ -37,23 +37,26 @@ Get team color for frozen mark (ally or enemy)
 Returns qtrue if color was set, qfalse otherwise
 =================
 */
-static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolean isAlly)
+static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolean isAlly, int clientNum)
 {
 	int myRealTeam;
+	team_t colorTeam;
 
 	myRealTeam = cgs.clientinfo[cg.clientNum].team;
+	if (myRealTeam != TEAM_RED && myRealTeam != TEAM_BLUE)
+	{
+		myRealTeam = cgs.beMyTeam;
+	}
 
-	/* Determine which team color to use and copy it */
 	if (isAlly)
 	{
-		/* Use own team color */
-		if (myRealTeam == TEAM_RED)
+		if (myRealTeam == TEAM_RED || myRealTeam == TEAM_BLUE)
 		{
-			VectorCopy(cgs.beRedTeamColor, color);
+			colorTeam = myRealTeam;
 		}
-		else if (myRealTeam == TEAM_BLUE)
+		else if (clientNum >= 0 && clientNum < MAX_CLIENTS)
 		{
-			VectorCopy(cgs.beBlueTeamColor, color);
+			colorTeam = cgs.clientinfo[clientNum].team;
 		}
 		else
 		{
@@ -62,14 +65,28 @@ static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolea
 	}
 	else
 	{
-		/* Use enemy team color */
 		if (myRealTeam == TEAM_RED)
 		{
-			VectorCopy(cgs.beBlueTeamColor, color);
+			colorTeam = TEAM_BLUE;
 		}
 		else if (myRealTeam == TEAM_BLUE)
 		{
-			VectorCopy(cgs.beRedTeamColor, color);
+			colorTeam = TEAM_RED;
+		}
+		else if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+		{
+			if (cgs.clientinfo[clientNum].team == TEAM_RED)
+			{
+				colorTeam = TEAM_BLUE;
+			}
+			else if (cgs.clientinfo[clientNum].team == TEAM_BLUE)
+			{
+				colorTeam = TEAM_RED;
+			}
+			else
+			{
+				return qfalse;
+			}
 		}
 		else
 		{
@@ -77,7 +94,19 @@ static qboolean CG_GetTeamColorForFrozenMark(int markType, vec4_t color, qboolea
 		}
 	}
 
-	/* Apply whitening (called once for all valid cases) */
+	if (colorTeam == TEAM_RED)
+	{
+		VectorCopy(cgs.beRedTeamColor, color);
+	}
+	else if (colorTeam == TEAM_BLUE)
+	{
+		VectorCopy(cgs.beBlueTeamColor, color);
+	}
+	else
+	{
+		return qfalse;
+	}
+
 	CG_ColorWhitenSmart(color, NULL, 0.4f);
 	return qtrue;
 }
@@ -346,7 +375,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			else
 			{
 				/* World marker color is own team color */
-				if (!CG_GetTeamColorForFrozenMark(markType, color, qtrue))
+				if (!CG_GetTeamColorForFrozenMark(markType, color, qtrue, clientNum))
 				{
 					CG_SetWhiteColor(color);
 				}
@@ -362,7 +391,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			else
 			{
 				/* World marker color is enemy team color */
-				if (!CG_GetTeamColorForFrozenMark(markType, color, qfalse))
+				if (!CG_GetTeamColorForFrozenMark(markType, color, qfalse, clientNum))
 				{
 					CG_SetWhiteColor(color);
 				}
@@ -378,7 +407,7 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 			else
 			{
 				/* World marker color is own team color (HERE_DEAD is always for own team) */
-				if (!CG_GetTeamColorForFrozenMark(markType, color, qtrue))
+				if (!CG_GetTeamColorForFrozenMark(markType, color, qtrue, clientNum))
 				{
 					CG_SetWhiteColor(color);
 				}
@@ -804,7 +833,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 			{
 				isAlly = (mark->markType == TEAMTASK_FROZEN_ALLY);
 			}
-			if (!CG_GetTeamColorForFrozenMark(mark->markType, pulseColor, isAlly))
+			if (!CG_GetTeamColorForFrozenMark(mark->markType, pulseColor, isAlly, mark->clientNum))
 			{
 				Vector4Copy(color, pulseColor);
 			}

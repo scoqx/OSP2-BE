@@ -589,22 +589,25 @@ static void CG_WorldFlags_UpdateDropState(qboolean redFlag, cg_worldFlagState_t*
 
 	powerup = redFlag ? PW_REDFLAG : PW_BLUEFLAG;
 
-	if (flagStatus == 0)
+	if (flagStatus != 2)
 	{
 		CG_WorldFlags_ClearDrop(st);
 		return;
 	}
 
-	if (flagStatus == 1)
+	if (CG_WorldFlags_AnyClientHasPowerup(powerup))
 	{
-		if (st->dropValid && CG_WorldFlags_AnyClientHasPowerup(powerup))
-		{
-			CG_WorldFlags_ClearDrop(st);
-		}
+		CG_WorldFlags_ClearDrop(st);
 		return;
 	}
 
-	if (flagStatus == 2 && CG_WorldFlags_FindDroppedFlagOrigin(redFlag, entOrigin))
+	if (cg.snap && cg.snap->ps.powerups[powerup])
+	{
+		CG_WorldFlags_ClearDrop(st);
+		return;
+	}
+
+	if (CG_WorldFlags_FindDroppedFlagOrigin(redFlag, entOrigin))
 	{
 		VectorCopy(entOrigin, st->origin);
 		st->dropValid = qtrue;
@@ -822,8 +825,8 @@ static float CG_WorldFlags_ComputeAlpha(const vec3_t origin)
 		{
 			coreFade = 0.0f;
 		}
-		/* Full fade at crosshair (center), same as cg_teamIndicatorFade 1 */
-		fade = coreFade;
+		/* Fade toward crosshair (center); minimum 0.1 at center */
+		fade = 0.05f + 0.95f * coreFade;
 	}
 	return fade;
 }
@@ -856,7 +859,7 @@ static void CG_WorldFlags_RadiusToScreenIconSize(const vec3_t origin, float* ico
 	{
 		*iconH = 12.0f * CG_WORLDFLAGS_WORLD_ICON_SCALE;
 	}
-	*iconW = *iconH * 0.75f;
+	*iconW = *iconH * 0.65f;
 }
 
 static void CG_WorldFlags_DrawWorldPic2D(const vec3_t origin, qhandle_t shader, const vec4_t color)
@@ -1024,7 +1027,7 @@ static void CG_WorldFlags_DrawOneFlag(qboolean redFlag, const vec3_t baseOrigin,
 
 	CG_WorldFlags_GetFlagColor(redFlag, color);
 	Vector4Copy(color, takenColor);
-	takenColor[3] = 0.5f;
+	takenColor[3] = 0.75f;
 
 	atBase = (flagStatus == 0);
 
@@ -1051,7 +1054,7 @@ static void CG_WorldFlags_DrawOneFlag(qboolean redFlag, const vec3_t baseOrigin,
 		}
 	}
 
-	if (!atBase && st->dropValid)
+	if (!atBase && flagStatus == 2 && st->dropValid)
 	{
 		qboolean drawWorldDrop;
 		qboolean drawBorderDrop;

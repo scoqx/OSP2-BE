@@ -2026,6 +2026,8 @@ void CG_NewClientInfo(int clientNum)
 	{
 		CG_ClearSupportsTeamTask(clientNum);
 		memset(ci, 0, sizeof(*ci));
+		cg.obituaryDropMask[clientNum] = 0;
+		cg.obituaryDropFlagTeam[clientNum] = TEAM_FREE;
 		if (!cg.demoPlayback)
 		{
 			if (cg.scoresRequestTime + 2000 < cg.time)
@@ -3934,6 +3936,71 @@ void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clien
 		color[3] *= alphaScale;
 		CG_HudBorderMarker(origin, color, cg_friendHudMarkerSize.value * sz,
 		                   isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader, baseAngle);
+
+		/* Powerup pulse: duplicate of the marker arrow, powerup-colored, staggered so several are distinguishable */
+		{
+			static const int puList[6] = { PW_QUAD, PW_BATTLESUIT, PW_HASTE, PW_INVIS, PW_REGEN, PW_FLIGHT };
+			int puCount;
+			int k;
+
+			puCount = 0;
+			for (k = 0; k < 6; k++)
+			{
+				if (ci->teamPowerups & (1 << puList[k]))
+				{
+					if (puList[k] == PW_BATTLESUIT && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+					{
+						continue;
+					}
+					puCount++;
+				}
+			}
+
+			if (puCount > 0)
+			{
+				float baseRadius = cg_friendHudMarkerSize.value * sz;
+				qhandle_t arrowShader = isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader;
+				int slot = 0;
+
+				for (k = 0; k < 6; k++)
+				{
+					const float* puRgb;
+					vec4_t pulseColor;
+					float phase;
+					float decay;
+					float pulseScale;
+
+					if (!(ci->teamPowerups & (1 << puList[k])))
+						continue;
+
+					if (puList[k] == PW_BATTLESUIT && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+						continue;
+
+					phase = (float)((cg.time + slot * (POWERUP_BLINK_TIME / puCount)) % POWERUP_BLINK_TIME) / (float)POWERUP_BLINK_TIME;
+					slot++;
+
+					/* Heartbeat: pop in big/bright at beat start, then shrink and fade */
+					decay = 1.0f - phase;
+					pulseScale = 1.0f + 0.5f * decay; /* max ~1.5x (smaller than the world icon pop) */
+
+					switch (puList[k])
+					{
+						case PW_QUAD:       puRgb = colorCyan; break;
+						case PW_BATTLESUIT: puRgb = colorOrange; break;
+						case PW_HASTE:      puRgb = colorYellow; break;
+						case PW_INVIS:      puRgb = colorWhite; break;
+						case PW_REGEN:      puRgb = colorRed; break;
+						default:            puRgb = colorMagenta; break;
+					}
+
+					pulseColor[0] = puRgb[0];
+					pulseColor[1] = puRgb[1];
+					pulseColor[2] = puRgb[2];
+					pulseColor[3] = 0.55f * alphaScale * decay;
+					CG_DrawPulseMarker(origin, baseRadius, pulseScale, pulseColor, arrowShader, baseAngle);
+				}
+			}
+		}
 	}
 }
 

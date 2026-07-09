@@ -893,22 +893,26 @@ void CG_BEStatsBuildBonusStats(BEStatToken_t tokens[32][12], int* rowOut)
 	char buf[MAX_TOKEN_LEN];
 	char armorText[MAX_TOKEN_LEN];
 	char healthText[MAX_TOKEN_LEN];
+	qboolean statsHidden = CG_OSPIsStatsHidden(qtrue, qtrue);
 
 	// Armor
 	buf[0] = '\0';
-	if (s->ga > 0)
-		Com_sprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%d ^2GA^7", s->ga);
-	if (s->ya > 0)
-		Com_sprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s%d ^3YA^7", buf[0] ? " " : "", s->ya);
-	if (s->ra > 0)
-		Com_sprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s%d ^1RA^7", buf[0] ? " " : "", s->ra);
+	if (!statsHidden)
+	{
+		if (s->ga > 0)
+			Com_sprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%d ^2GA^7", s->ga);
+		if (s->ya > 0)
+			Com_sprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s%d ^3YA^7", buf[0] ? " " : "", s->ya);
+		if (s->ra > 0)
+			Com_sprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s%d ^1RA^7", buf[0] ? " " : "", s->ra);
+	}
 	if (buf[0])
 		Com_sprintf(armorText, sizeof(armorText), "(%s)", buf);
 	else
 		armorText[0] = '\0';
 
 	// Health
-	if (s->megahealth > 0)
+	if (!statsHidden && s->megahealth > 0)
 		Com_sprintf(healthText, sizeof(healthText), "(%d ^5MH^7)", s->megahealth);
 	else
 		healthText[0] = '\0';
@@ -920,10 +924,16 @@ void CG_BEStatsBuildBonusStats(BEStatToken_t tokens[32][12], int* rowOut)
 	if (set->statsStyle == 2)
 	{
 		char givenReceived[32];
-		Com_sprintf(givenReceived, sizeof(givenReceived), "^2%d^7/^1%d", (int)s->dmgGiven, (int)s->dmgReceived);
+		if (statsHidden)
+			Com_sprintf(givenReceived, sizeof(givenReceived), "^2XX^7/^1XX");
+		else
+			Com_sprintf(givenReceived, sizeof(givenReceived), "^2%d^7/^1%d", (int)s->dmgGiven, (int)s->dmgReceived);
 
 		CG_BEStatsSetTokenLabel(tokens, row, 0, givenReceived, beStatsSettings.defaultColor);
-		CG_BEStatsSetTokenValueFloat(tokens, row, 2, "%.2f", s->damageRatio, beStatsSettings.colorY);
+		if (statsHidden)
+			CG_BEStatsSetTokenLabel(tokens, row, 2, "XX", beStatsSettings.colorY);
+		else
+			CG_BEStatsSetTokenValueFloat(tokens, row, 2, "%.2f", s->damageRatio, beStatsSettings.colorY);
 		row++;
 	}
 	else // Style 1
@@ -931,30 +941,48 @@ void CG_BEStatsBuildBonusStats(BEStatToken_t tokens[32][12], int* rowOut)
 
 
 		CG_BEStatsSetTokenLabel(tokens, row, 0, "Damage Given:", beStatsSettings.colorY);
-		CG_BEStatsSetTokenValueInt(tokens, row, 2, "%d", (int)s->dmgGiven, beStatsSettings.defaultColor);
+		if (statsHidden)
+			CG_BEStatsSetTokenLabel(tokens, row, 2, "XX", beStatsSettings.defaultColor);
+		else
+			CG_BEStatsSetTokenValueInt(tokens, row, 2, "%d", (int)s->dmgGiven, beStatsSettings.defaultColor);
 
 		CG_BEStatsSetTokenLabel(tokens, row, 3, "Armor:", beStatsSettings.colorG);
-		CG_BEStatsSetTokenValueInt(tokens, row, 4, "%d", s->armor, beStatsSettings.defaultColor);
+		if (statsHidden)
+			CG_BEStatsSetTokenLabel(tokens, row, 4, "XX", beStatsSettings.defaultColor);
+		else
+			CG_BEStatsSetTokenValueInt(tokens, row, 4, "%d", s->armor, beStatsSettings.defaultColor);
 		CG_BEStatsSetTokenLabel(tokens, row, 5, armorText, beStatsSettings.defaultColor);
 		row++;
 
 		CG_BEStatsSetTokenLabel(tokens, row, 0, "Damage Recvd:", beStatsSettings.colorY);
-		CG_BEStatsSetTokenValueInt(tokens, row, 2, "%d", (int)s->dmgReceived, beStatsSettings.defaultColor);
+		if (statsHidden)
+			CG_BEStatsSetTokenLabel(tokens, row, 2, "XX", beStatsSettings.defaultColor);
+		else
+			CG_BEStatsSetTokenValueInt(tokens, row, 2, "%d", (int)s->dmgReceived, beStatsSettings.defaultColor);
 
 		CG_BEStatsSetTokenLabel(tokens, row, 3, "Health:", beStatsSettings.colorG);
-		CG_BEStatsSetTokenValueInt(tokens, row, 4, "%d", s->health, beStatsSettings.defaultColor);
+		if (statsHidden)
+			CG_BEStatsSetTokenLabel(tokens, row, 4, "XX", beStatsSettings.defaultColor);
+		else
+			CG_BEStatsSetTokenValueInt(tokens, row, 4, "%d", s->health, beStatsSettings.defaultColor);
 		CG_BEStatsSetTokenLabel(tokens, row, 5, healthText, beStatsSettings.defaultColor);
 		row++;
 
 		CG_BEStatsSetTokenLabel(tokens, row, 0, "Damage Ratio:", beStatsSettings.colorY);
-		CG_BEStatsSetTokenValueFloat(tokens, row, 2, "%.2f", s->damageRatio, beStatsSettings.defaultColor);
+		if (statsHidden)
+			CG_BEStatsSetTokenLabel(tokens, row, 2, "XX", beStatsSettings.defaultColor);
+		else
+			CG_BEStatsSetTokenValueFloat(tokens, row, 2, "%.2f", s->damageRatio, beStatsSettings.defaultColor);
 		row++;
 	}
 
 	if (cgs.gametype == GT_TEAM && set->statsStyle != 2)
 	{
 		CG_BEStatsSetTokenLabel(tokens, row, 0, "Team Damage:", beStatsSettings.colorR);
-		CG_BEStatsSetTokenValueInt(tokens, row, 2, "%d", s->teamDamage, beStatsSettings.defaultColor);
+		if (statsHidden)
+			CG_BEStatsSetTokenLabel(tokens, row, 2, "XX", beStatsSettings.defaultColor);
+		else
+			CG_BEStatsSetTokenValueInt(tokens, row, 2, "%d", s->teamDamage, beStatsSettings.defaultColor);
 		row++;
 	}
 

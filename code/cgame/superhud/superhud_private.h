@@ -474,6 +474,31 @@ typedef struct
         memcpy(&E->config, CFG, sizeof((E)->config)); \
     }while(0)
 
+#define SHUD_WRITE_MATCH_TIME_STR(buf, buflen, msecIn) \
+	do { \
+		if (cg_drawTimer.integer == 0 && !CG_IS_LOCAL_CLIENT_SPECTATOR()) \
+		{ \
+			Q_strncpyz((buf), "XX:XX", (buflen)); \
+		} \
+		else \
+		{ \
+			int _mt_msec = (msecIn); \
+			int _mt_sec; \
+			int _mt_min; \
+			int _mt_tens; \
+			if (_mt_msec < 0) \
+			{ \
+				_mt_msec = -_mt_msec; \
+			} \
+			_mt_sec = _mt_msec / 1000; \
+			_mt_min = _mt_sec / 60; \
+			_mt_sec -= _mt_min * 60; \
+			_mt_tens = _mt_sec / 10; \
+			_mt_sec -= _mt_tens * 10; \
+			Com_sprintf((buf), (buflen), "%i:%i%i", _mt_min, _mt_tens, _mt_sec); \
+		} \
+	} while (0)
+
 void CG_SHUDParserInit(void);
 const superHUDConfigElement_t* CG_SHUDFindConfigElementItem(const char* name);
 const superHUDConfigCommand_t* CG_SHUDFindConfigCommandItem(const char* name);
@@ -931,6 +956,8 @@ typedef struct
 	int targetTeam;
 	int mod;
 	qboolean unfrozen;
+	int droppedPowerups;
+	int droppedFlagTeam;
 	struct
 	{
 		qboolean isInitialized;
@@ -944,6 +971,10 @@ typedef struct
 		float baseX;
 		float attackerWidth;
 		float targetWidth;
+		float droppedPuWidth;
+		int droppedPuCount;
+		qhandle_t droppedPuShaders[6];
+		vec4_t droppedFlagColor;
 		float spacing;
 		int maxNameLenPix;
 	} runtime;

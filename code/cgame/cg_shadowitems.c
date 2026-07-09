@@ -3,7 +3,7 @@
 cg_shadowitems.c
 
 Ghost 3D pickups when the real item is absent (cg_shadowItems bitmask).
-Data: server CS 890-900 (SI3 or SI4) when valid, else mapdata QITM1 v2/v3. Requires cg_simpleItems 0.
+Data: server CS 890-899 for shadow coords when present (authoritative); QITM fallback when no server catalog. Requires cg_simpleItems 0.
 
 Copyright (c) 2026 diwoc
 ===========================================================================
@@ -19,10 +19,13 @@ Copyright (c) 2026 diwoc
 /* Map team slot / SI3 group — not proximity merge. */
 #define CG_SHADOW_QITM1_VERSION     3
 #define CG_SHADOW_QITM1_VERSION_V2  2
-#define CG_SHADOW_SERVER_PAYLOAD_SIZE (MAX_STRING_CHARS * CS_OSP2BE_SHADOW_ITEMS_DATA_COUNT + 4)
+#define CG_SHADOW_SERVER_PAYLOAD_SIZE (MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT + 4)
 /* Teamed map items respawn at random on server — cycle ghost preview on pad. */
 #define CG_SHADOW_SLOT_ROTATE_MS    2000
+#define CG_SHADOW_SLOT_CROSSFADE_MS 400
 #define CG_SHADOW_GHOST_ALPHA       80
+#define CG_SHADOW_PICKUP_MATCH_SQ   (96.0f * 96.0f)
+#define CG_SHADOW_SERVER_MATCH_XY_SQ (64.0f * 64.0f)
 
 #define CG_SHADOW_ITEM_DROP_DEPTH   4096.0f
 #define CG_SHADOW_QITM_FLAG_SUSPENDED 1
@@ -87,13 +90,29 @@ static const cg_shadowItemAbbrev_t cg_shadowItemAbbrevTable[] =
 	{ "qd", "item_quad" },
 	{ "bs", "item_enviro" },
 	{ "hst", "item_haste" },
-	{ "inv", "item_invisibility" },
+	{ "inv", "item_invis" },
 	{ "reg", "item_regen" },
 	{ "flg", "item_flight" },
 	{ "med", "holdable_medkit" },
 	{ "tp", "holdable_teleporter" },
 	{ "rfl", "team_CTF_redflag" },
 	{ "bfl", "team_CTF_blueflag" },
+	{ "ng", "weapon_nailgun" },
+	{ "pl", "weapon_prox_launcher" },
+	{ "cg", "weapon_chaingun" },
+	{ "na", "ammo_nails" },
+	{ "mn", "ammo_mines" },
+	{ "ab", "ammo_belt" },
+	{ "kk", "holdable_kamikaze" },
+	{ "pt", "holdable_portal" },
+	{ "hv", "holdable_invulnerability" },
+	{ "sc", "item_scout" },
+	{ "gd", "item_guard" },
+	{ "db", "item_doubler" },
+	{ "ar", "item_ammoregen" },
+	{ "rc", "item_redcube" },
+	{ "bc", "item_bluecube" },
+	{ "nf", "team_CTF_neutralflag" },
 	{ NULL, NULL }
 };
 
@@ -241,7 +260,7 @@ static qboolean CG_ShadowItems_ParseServerGroup(char* groupStr, int teamSlotKey)
 	int         iz;
 	int         modelindex;
 
-	at = Q_strrchr(groupStr, '@');
+	at = Q_strrchr(groupStr, ';');
 	if (!at)
 	{
 		return qfalse;
@@ -297,59 +316,31 @@ static void CG_ShadowItems_MarkAllPointsActive(void)
 static void CG_ShadowItems_Clear(void);
 static void CG_ShadowItems_BuildPickupSlots(void);
 static void CG_ShadowItems_BuildModelBuckets(void);
+static void CG_ShadowItems_RebuildTrackSlotMap(void);
 
-static qboolean CG_ShadowItems_TryLoadServerConfigstrings(void)
+static qboolean CG_ShadowItems_TryLoadCatalogConfigstrings(void)
 {
 	char            payload[CG_SHADOW_SERVER_PAYLOAD_SIZE];
-	const char*     hdr;
 	const char*     chunk;
-	char*           pad;
-	char*           nextPad;
+	char*           seg;
+	char*           nextSeg;
 	int             i;
 	int             len;
 	int             serverSlotKey;
-	qboolean        haveLayout;
 
-	hdr = CG_ConfigString(CS_OSP2BE_SHADOW_ITEMS_HDR);
-	CG_ShadowItems_Clear();
-	cg_shadowItemsFromServer = qfalse;
-
-	haveLayout = qfalse;
 	payload[0] = '\0';
 	len = 0;
 
-	if (!hdr || !hdr[0])
+	for (i = 0; i < CS_OSP2BE_ITEM_CATALOG_COUNT; i++)
 	{
-		CG_ShadowItems_Clear();
-		return qfalse;
-	}
-
-	if (!Q_stricmp(hdr, CS_OSP2BE_SHADOW_ITEMS_MAGIC))
-	{
-		haveLayout = qtrue;
-	}
-	else if (!Q_stricmpn(hdr, CS_OSP2BE_SHADOW_ITEMS_MAGIC_SI4, 3) && hdr[3])
-	{
-		haveLayout = qtrue;
-		Q_strncpyz(payload, hdr + 3, sizeof(payload));
-		len = (int)strlen(payload);
-	}
-
-	if (!haveLayout)
-	{
-		CG_ShadowItems_Clear();
-		return qfalse;
-	}
-
-	for (i = 0; i < CS_OSP2BE_SHADOW_ITEMS_DATA_COUNT; i++)
-	{
-		chunk = CG_ConfigString(CS_OSP2BE_SHADOW_ITEMS_DATA0 + i);
+		chunk = CG_ConfigString(CS_OSP2BE_ITEM_CATALOG0 + i);
 		if (!chunk[0])
 		{
-			break;
+			continue;
 		}
 		if (len > 0 && len + (int)strlen(chunk) >= (int)sizeof(payload) - 1)
 		{
+			CG_Printf(S_COLOR_RED "ERROR: item catalog client payload overflow\n");
 			break;
 		}
 		Q_strcat(payload, sizeof(payload), chunk);
@@ -358,23 +349,42 @@ static qboolean CG_ShadowItems_TryLoadServerConfigstrings(void)
 
 	if (len <= 0)
 	{
-		CG_ShadowItems_Clear();
 		return qfalse;
 	}
 
-	pad = payload;
-	serverSlotKey = 1;
-	while (pad && pad[0])
 	{
-		nextPad = strchr(pad, ';');
-		if (nextPad)
+		int     catalogMode;
+
+		catalogMode = 1;
+		if (payload[0] >= '1' && payload[0] <= '3')
 		{
-			*nextPad = '\0';
-			nextPad++;
+			catalogMode = payload[0] - '0';
 		}
-		CG_ShadowItems_ParseServerGroup(pad, serverSlotKey);
+		if (!(catalogMode & 1))
+		{
+			return qfalse;
+		}
+	}
+
+	CG_ShadowItems_Clear();
+
+	seg = payload;
+	if (seg[0] >= '1' && seg[0] <= '3')
+	{
+		seg++;
+	}
+	serverSlotKey = 1;
+	while (seg && seg[0])
+	{
+		nextSeg = strchr(seg, '|');
+		if (nextSeg)
+		{
+			*nextSeg = '\0';
+			nextSeg++;
+		}
+		CG_ShadowItems_ParseServerGroup(seg, serverSlotKey);
 		serverSlotKey++;
-		pad = nextPad;
+		seg = nextSeg;
 	}
 
 	if (cg_shadowItemCount <= 0)
@@ -383,10 +393,6 @@ static qboolean CG_ShadowItems_TryLoadServerConfigstrings(void)
 		return qfalse;
 	}
 
-	cg_shadowItemsFromServer = qtrue;
-	CG_ShadowItems_MarkAllPointsActive();
-	CG_ShadowItems_BuildPickupSlots();
-	CG_ShadowItems_BuildModelBuckets();
 	return qtrue;
 }
 
@@ -409,6 +415,8 @@ static int                      cg_shadowSlotBobMiscTime[CG_SHADOW_ITEM_SLOT_MAX
 /* Multi-item slot ghost rotation: start at picked item, phase from pickup time. */
 static int                      cg_shadowSlotRotateBaseTime[CG_SHADOW_ITEM_SLOT_MAX];
 static int                      cg_shadowSlotRotateLead[CG_SHADOW_ITEM_SLOT_MAX];
+static qboolean                 cg_shadowSlotServerSync[CG_SHADOW_ITEM_SLOT_MAX];
+static int                      cg_shadowTrackSlot[CG_ITEM_NOTIFY_MAX_ENTRIES];
 /* Last seen live item origin (armor/mega); ghost stays here after pickup. */
 static vec3_t                   cg_shadowItemAnchorOrigin[CG_SHADOW_ITEM_MAX];
 static qboolean                 cg_shadowItemAnchorValid[CG_SHADOW_ITEM_MAX];
@@ -451,6 +459,8 @@ static void CG_ShadowItems_Clear(void)
 	memset(cg_shadowSlotBobMiscTime, 0, sizeof(cg_shadowSlotBobMiscTime));
 	memset(cg_shadowSlotRotateBaseTime, 0, sizeof(cg_shadowSlotRotateBaseTime));
 	memset(cg_shadowSlotRotateLead, 0, sizeof(cg_shadowSlotRotateLead));
+	memset(cg_shadowSlotServerSync, 0, sizeof(cg_shadowSlotServerSync));
+	memset(cg_shadowTrackSlot, 0xff, sizeof(cg_shadowTrackSlot));
 	memset(cg_shadowItemAnchorValid, 0, sizeof(cg_shadowItemAnchorValid));
 }
 
@@ -686,7 +696,6 @@ static qboolean CG_ShadowItems_LoadQITM1(const byte* raw, int rawLen)
 
 	pos = 9;
 	CG_ShadowItems_Clear();
-	cg_shadowItemsFromServer = qfalse;
 
 	for (i = 0; i < numPoints; i++)
 	{
@@ -726,30 +735,172 @@ static qboolean CG_ShadowItems_LoadQITM1(const byte* raw, int rawLen)
 		return qfalse;
 	}
 
-	CG_ShadowItems_BuildPickupSlots();
-	CG_ShadowItems_BuildModelBuckets();
 	return qtrue;
 }
 
+/*
+==================
+CG_ShadowItems_EnrichTeamSlotKeysFromQITM
+
+Server catalog carries no team-slot grouping; borrow it from the packed QITM
+layout by XY proximity. LoadQITM1 overwrites the point array, so the catalog is
+snapshotted first and restored afterwards (with the enriched keys).
+==================
+*/
+static void CG_ShadowItems_EnrichTeamSlotKeysFromQITM(const byte* qitm, int qitmLen)
+{
+	cg_shadowItemPoint_t    catalogCopy[CG_SHADOW_ITEM_MAX];
+	int                     catalogCopyCount;
+	int                     qitmCount;
+	int                     i;
+	int                     j;
+	int                     bestKey;
+	float                   dx;
+	float                   dy;
+	float                   distSq;
+	float                   bestDistSq;
+
+	catalogCopyCount = cg_shadowItemCount;
+	if (catalogCopyCount > CG_SHADOW_ITEM_MAX)
+	{
+		catalogCopyCount = CG_SHADOW_ITEM_MAX;
+	}
+	memcpy(catalogCopy, cg_shadowItemPoints, catalogCopyCount * sizeof(catalogCopy[0]));
+
+	if (!CG_ShadowItems_LoadQITM1(qitm, qitmLen))
+	{
+		memcpy(cg_shadowItemPoints, catalogCopy, catalogCopyCount * sizeof(catalogCopy[0]));
+		cg_shadowItemCount = catalogCopyCount;
+		return;
+	}
+
+	qitmCount = cg_shadowItemCount;
+	for (i = 0; i < catalogCopyCount; i++)
+	{
+		bestKey = 0;
+		bestDistSq = CG_SHADOW_SERVER_MATCH_XY_SQ + 1.0f;
+		for (j = 0; j < qitmCount; j++)
+		{
+			dx = catalogCopy[i].origin[0] - cg_shadowItemPoints[j].origin[0];
+			dy = catalogCopy[i].origin[1] - cg_shadowItemPoints[j].origin[1];
+			distSq = dx * dx + dy * dy;
+			if (distSq < bestDistSq)
+			{
+				bestDistSq = distSq;
+				bestKey = cg_shadowItemPoints[j].teamSlotKey;
+			}
+		}
+		if (bestKey > 0 && bestDistSq <= CG_SHADOW_SERVER_MATCH_XY_SQ)
+		{
+			catalogCopy[i].teamSlotKey = bestKey;
+		}
+	}
+
+	memcpy(cg_shadowItemPoints, catalogCopy, catalogCopyCount * sizeof(catalogCopy[0]));
+	cg_shadowItemCount = catalogCopyCount;
+}
+
+/*
+==================
+CG_ShadowItems_Reload
+
+Single pipeline: fill points from one source (server catalog is authoritative,
+QITM bundle is the fallback), then build the shared derived structures. The only
+per-source differences are the origin of the points and the cg_shadowItemsFromServer
+flag (which drives anchor/armor handling in BuildModelBuckets and server rotation).
+==================
+*/
 static void CG_ShadowItems_Reload(void)
 {
-	const byte* qitm;
-	int         qitmLen;
+	const byte*     qitm;
+	int             qitmLen;
+	qboolean        haveQitm;
 
-	if (CG_ShadowItems_TryLoadServerConfigstrings())
+	haveQitm = CG_MapBundle_Section("QITM", &qitm, &qitmLen);
+
+	if (CG_ShadowItems_TryLoadCatalogConfigstrings())
+	{
+		cg_shadowItemsFromServer = qtrue;
+		if (haveQitm)
+		{
+			CG_ShadowItems_EnrichTeamSlotKeysFromQITM(qitm, qitmLen);
+		}
+		CG_ShadowItems_MarkAllPointsActive();
+	}
+	else
+	{
+		cg_shadowItemsFromServer = qfalse;
+		if (!haveQitm || !CG_ShadowItems_LoadQITM1(qitm, qitmLen))
+		{
+			CG_ShadowItems_Clear();
+			return;
+		}
+	}
+
+	CG_ShadowItems_BuildPickupSlots();
+	CG_ShadowItems_BuildModelBuckets();
+	CG_ShadowItems_RebuildTrackSlotMap();
+}
+
+static int CG_ShadowItems_FindSlotByPadOrigin(const vec3_t padOrigin)
+{
+	int     slot;
+	int     s;
+	float   bestDistSq;
+	float   dx;
+	float   dy;
+	float   distSq;
+
+	slot = -1;
+	bestDistSq = CG_SHADOW_SERVER_MATCH_XY_SQ + 1.0f;
+	for (s = 0; s < cg_shadowItemSlotCount; s++)
+	{
+		dx = padOrigin[0] - cg_shadowSlotDrawOrigin[s][0];
+		dy = padOrigin[1] - cg_shadowSlotDrawOrigin[s][1];
+		distSq = dx * dx + dy * dy;
+		if (distSq > CG_SHADOW_SERVER_MATCH_XY_SQ)
+		{
+			continue;
+		}
+		if (slot < 0 || distSq < bestDistSq)
+		{
+			bestDistSq = distSq;
+			slot = s;
+		}
+	}
+	return slot;
+}
+
+static void CG_ShadowItems_RebuildTrackSlotMap(void)
+{
+	int     trackId;
+	int     ix;
+	int     iy;
+	int     iz;
+	int     slot;
+	vec3_t  padOrigin;
+
+	memset(cg_shadowTrackSlot, 0xff, sizeof(cg_shadowTrackSlot));
+	if (!cg_shadowItemSlotCount)
 	{
 		return;
 	}
 
-	CG_ShadowItems_Clear();
-	cg_shadowItemsFromServer = qfalse;
-
-	if (!CG_MapBundle_Section("QITM", &qitm, &qitmLen))
+	for (trackId = 0; trackId < CG_ITEM_NOTIFY_MAX_ENTRIES; trackId++)
 	{
-		return;
+		if (!CG_SpectatorItems_GetTrackPadCoords(trackId, &ix, &iy, &iz))
+		{
+			continue;
+		}
+		padOrigin[0] = ix * 0.1f;
+		padOrigin[1] = iy * 0.1f;
+		padOrigin[2] = iz * 0.1f;
+		slot = CG_ShadowItems_FindSlotByPadOrigin(padOrigin);
+		if (slot >= 0)
+		{
+			cg_shadowTrackSlot[trackId] = slot;
+		}
 	}
-
-	(void)CG_ShadowItems_LoadQITM1(qitm, qitmLen);
 }
 
 void CG_ShadowItems_Load(void)
@@ -1007,6 +1158,7 @@ static int CG_ShadowItems_MatchCent(centity_t* cent, int mask, int visibleDraw)
 			{
 				cg_shadowSlotBobMiscTime[slot] = cent->miscTime;
 				cg_shadowItemSlotVisible[slot] = qtrue;
+				cg_shadowSlotServerSync[slot] = qfalse;
 			}
 			else if (visibleDraw == 0 || visibleDraw < 0)
 			{
@@ -1033,8 +1185,16 @@ static int CG_ShadowItems_GhostAlpha(int pointIdx, int mode, int mask)
 	int     k;
 	int     idx;
 	int     lead;
+	int     myShowIdx;
+	int     elapsed;
+	int     phaseMs;
 	int     tick;
-	int     showIdx;
+	int     fadePos;
+	int     currentShow;
+	int     nextShow;
+	int     alpha;
+	int     crossStart;
+	float   fade;
 	const cg_shadowItemPoint_t* pt;
 
 	if (pointIdx < 0 || pointIdx >= cg_shadowItemCount
@@ -1063,7 +1223,7 @@ static int CG_ShadowItems_GhostAlpha(int pointIdx, int mode, int mask)
 	}
 
 	nActive = 0;
-	showIdx = -1;
+	myShowIdx = -1;
 	for (k = 0; k < n; k++)
 	{
 		idx = cg_shadowItemSlotMembers[slot][k];
@@ -1081,18 +1241,28 @@ static int CG_ShadowItems_GhostAlpha(int pointIdx, int mode, int mask)
 		}
 		if (idx == pointIdx)
 		{
-			showIdx = nActive;
+			myShowIdx = nActive;
 		}
 		nActive++;
 	}
 
-	if (nActive <= 0)
+	if (nActive <= 0 || myShowIdx < 0)
 	{
 		return 0;
 	}
 	if (nActive == 1)
 	{
-		return (showIdx == 0) ? CG_SHADOW_GHOST_ALPHA : 0;
+		return CG_SHADOW_GHOST_ALPHA;
+	}
+
+	if (cg_shadowSlotServerSync[slot])
+	{
+		lead = cg_shadowSlotRotateLead[slot];
+		if (lead < 0 || lead >= nActive)
+		{
+			lead = 0;
+		}
+		return (myShowIdx == lead) ? CG_SHADOW_GHOST_ALPHA : 0;
 	}
 
 	lead = cg_shadowSlotRotateLead[slot];
@@ -1100,13 +1270,40 @@ static int CG_ShadowItems_GhostAlpha(int pointIdx, int mode, int mask)
 	{
 		lead = 0;
 	}
-	tick = (cg.time - cg_shadowSlotRotateBaseTime[slot]) / CG_SHADOW_SLOT_ROTATE_MS;
-	if (tick < 0)
+
+	elapsed = cg.time - cg_shadowSlotRotateBaseTime[slot];
+	if (elapsed < 0)
 	{
-		tick = 0;
+		elapsed = 0;
 	}
 
-	return (showIdx == ((lead + tick) % nActive)) ? CG_SHADOW_GHOST_ALPHA : 0;
+	phaseMs = elapsed % (nActive * CG_SHADOW_SLOT_ROTATE_MS);
+	tick = phaseMs / CG_SHADOW_SLOT_ROTATE_MS;
+	fadePos = phaseMs % CG_SHADOW_SLOT_ROTATE_MS;
+	currentShow = (lead + tick) % nActive;
+	nextShow = (lead + tick + 1) % nActive;
+	crossStart = CG_SHADOW_SLOT_ROTATE_MS - CG_SHADOW_SLOT_CROSSFADE_MS;
+	alpha = 0;
+
+	if (myShowIdx == currentShow)
+	{
+		if (fadePos < crossStart || CG_SHADOW_SLOT_CROSSFADE_MS <= 0)
+		{
+			alpha = CG_SHADOW_GHOST_ALPHA;
+		}
+		else
+		{
+			fade = (float)(fadePos - crossStart) / (float)CG_SHADOW_SLOT_CROSSFADE_MS;
+			alpha = (int)((float)CG_SHADOW_GHOST_ALPHA * (1.0f - fade));
+		}
+	}
+	else if (myShowIdx == nextShow && CG_SHADOW_SLOT_CROSSFADE_MS > 0 && fadePos >= crossStart)
+	{
+		fade = (float)(fadePos - crossStart) / (float)CG_SHADOW_SLOT_CROSSFADE_MS;
+		alpha = (int)((float)CG_SHADOW_GHOST_ALPHA * fade);
+	}
+
+	return alpha;
 }
 
 static void CG_ShadowItems_BuildModelBuckets(void)
@@ -1342,7 +1539,72 @@ int CG_ShadowItems_MapPointForItemBob(centity_t* cent)
 	return CG_ShadowItems_MatchCent(cent, CG_SHADOW_ITEMS_CATEGORY_MASK, -1);
 }
 
-void CG_ShadowItems_OnItemPickup(int modelindex)
+void CG_ShadowItems_OnServerNextItem(int modelindex, int trackId)
+{
+	int     mode;
+	int     mask;
+	int     slot;
+	int     n;
+	int     k;
+	int     idx;
+	int     ord;
+
+	if (!cg_shadowItems.integer || cg_simpleItems.integer || !CG_ShadowItems_GameAllows())
+	{
+		return;
+	}
+	if (!cg_shadowItemsFromServer)
+	{
+		return;
+	}
+	if (modelindex < 1 || modelindex >= bg_numItems)
+	{
+		return;
+	}
+	if (trackId < 0 || trackId >= CG_ITEM_NOTIFY_MAX_ENTRIES || !cg_shadowItemCount)
+	{
+		return;
+	}
+
+	mode = CG_ShadowItems_ModeIndex();
+	mask = CG_ShadowItems_EffectiveMask();
+	if (!(mask & CG_ShadowItems_CatFromModelindex(modelindex)))
+	{
+		return;
+	}
+
+	slot = cg_shadowTrackSlot[trackId];
+	if (slot < 0 || slot >= CG_SHADOW_ITEM_SLOT_MAX)
+	{
+		return;
+	}
+
+	n = cg_shadowItemSlotMemberCount[slot];
+	ord = 0;
+	for (k = 0; k < n; k++)
+	{
+		idx = cg_shadowItemSlotMembers[slot][k];
+		if (!cg_shadowPointActive[mode][idx])
+		{
+			continue;
+		}
+		if (!(mask & cg_shadowItemPoints[idx].shadowCat))
+		{
+			continue;
+		}
+		if (cg_shadowItemPoints[idx].modelindex == modelindex)
+		{
+			cg_shadowSlotRotateLead[slot] = ord;
+			cg_shadowSlotServerSync[slot] = qtrue;
+			cg_shadowSlotRotateBaseTime[slot] = cg.time;
+			cg_shadowSlotBobMiscTime[slot] = cg.time;
+			return;
+		}
+		ord++;
+	}
+}
+
+void CG_ShadowItems_OnItemPickup(int modelindex, const vec3_t playerOrigin)
 {
 	int     mode;
 	int     mask;
@@ -1352,18 +1614,27 @@ void CG_ShadowItems_OnItemPickup(int modelindex)
 	int     idx;
 	int     n;
 	int     ord;
+	int     bestPoint;
+	float   bestDistSq;
+	float   dx;
+	float   dy;
+	float   dz;
+	float   distSq;
 
 	if (!cg_shadowItems.integer || cg_simpleItems.integer || !CG_ShadowItems_GameAllows())
 	{
 		return;
 	}
-	if (modelindex < 1 || modelindex >= bg_numItems)
+	if (modelindex < 1 || modelindex >= bg_numItems || !playerOrigin)
 	{
 		return;
 	}
 
 	mode = CG_ShadowItems_ModeIndex();
 	mask = CG_ShadowItems_EffectiveMask();
+
+	bestPoint = -1;
+	bestDistSq = CG_SHADOW_PICKUP_MATCH_SQ + 1.0f;
 
 	for (i = 0; i < cg_shadowItemCount; i++)
 	{
@@ -1372,37 +1643,57 @@ void CG_ShadowItems_OnItemPickup(int modelindex)
 			continue;
 		}
 		slot = cg_shadowItemSlotId[i];
-		n = cg_shadowItemSlotMemberCount[slot];
+		n = (slot >= 0 && slot < CG_SHADOW_ITEM_SLOT_MAX)
+		    ? cg_shadowItemSlotMemberCount[slot] : 0;
 		if (slot < 0 || slot >= CG_SHADOW_ITEM_SLOT_MAX || n <= 1)
 		{
 			continue;
 		}
 
-		ord = 0;
-		for (k = 0; k < n; k++)
+		dx = playerOrigin[0] - cg_shadowSlotDrawOrigin[slot][0];
+		dy = playerOrigin[1] - cg_shadowSlotDrawOrigin[slot][1];
+		dz = playerOrigin[2] - cg_shadowSlotDrawOrigin[slot][2];
+		distSq = dx * dx + dy * dy + dz * dz;
+		if (distSq > CG_SHADOW_PICKUP_MATCH_SQ)
 		{
-			idx = cg_shadowItemSlotMembers[slot][k];
-			if (!cg_shadowPointActive[mode][idx])
-			{
-				continue;
-			}
-			if (!(mask & cg_shadowItemPoints[idx].shadowCat))
-			{
-				continue;
-			}
-			if (cg_shadowItemVisibleDraw[idx])
-			{
-				continue;
-			}
-			if (idx == i)
-			{
-				cg_shadowSlotRotateLead[slot] = ord;
-				cg_shadowSlotRotateBaseTime[slot] = cg.time;
-				cg_shadowSlotBobMiscTime[slot] = cg.time;
-				break;
-			}
-			ord++;
+			continue;
 		}
+		if (bestPoint < 0 || distSq < bestDistSq)
+		{
+			bestDistSq = distSq;
+			bestPoint = i;
+		}
+	}
+
+	if (bestPoint < 0)
+	{
+		return;
+	}
+
+	slot = cg_shadowItemSlotId[bestPoint];
+	n = cg_shadowItemSlotMemberCount[slot];
+
+	ord = 0;
+	for (k = 0; k < n; k++)
+	{
+		idx = cg_shadowItemSlotMembers[slot][k];
+		if (!cg_shadowPointActive[mode][idx])
+		{
+			continue;
+		}
+		if (!(mask & cg_shadowItemPoints[idx].shadowCat))
+		{
+			continue;
+		}
+		if (idx == bestPoint)
+		{
+			cg_shadowSlotRotateLead[slot] = ord;
+			cg_shadowSlotServerSync[slot] = qfalse;
+			cg_shadowSlotRotateBaseTime[slot] = cg.time;
+			cg_shadowSlotBobMiscTime[slot] = cg.time;
+			break;
+		}
+		ord++;
 	}
 }
 

@@ -37,8 +37,19 @@ sprites/foe
 	nomipmaps
 	nopicmip
 	{
-		map sprites/foe2.tga
+	map sprites/foe2.tga
     blendFunc GL_ONE GL_ONE
+    rgbgen entity
+	}
+}
+
+sprites/foeNew2
+{
+	nomipmaps
+	nopicmip
+	{
+	map sprites/foeNew.tga
+    blendfunc blend
     rgbgen entity
 	}
 }
@@ -179,8 +190,9 @@ ObituariesSkull {
 	nopicmip
     {
         map icons/obituaries/ObituariesSkull.tga
-        blendfunc blend
-        rgbgen vertex
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        rgbGen identity
+		alphaGen vertex
     }
 }
 
@@ -191,6 +203,7 @@ ObituariesFallenCrashed {
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
 }
 
@@ -201,6 +214,7 @@ ObituariesFalling {
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
 }
 
@@ -210,7 +224,8 @@ ObituariesDrowned {
         map icons/obituaries/drowned.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
-        rgbGen identity
+        rgbGen identity	
+		alphaGen vertex
     }
 }
 
@@ -221,6 +236,7 @@ ObituariesLava {
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
 }
 
@@ -231,6 +247,7 @@ ObituariesTelefrag {
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
 }
 
@@ -241,6 +258,7 @@ ObituariesMelted {
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
 }
 
@@ -251,12 +269,14 @@ ObituariesRocketDirect {
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
     {
         map icons/obituaries/targetHit.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
 }
 
@@ -267,12 +287,14 @@ ObituariesGrenadeDirect {
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
     {
         map icons/obituaries/targetHit.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
 }
 
@@ -283,12 +305,14 @@ ObituariesPlasmaDirect {
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
     {
         map icons/obituaries/targetHit.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
 }
 
@@ -299,15 +323,136 @@ ObituariesBFGDirect {
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
     {
         map icons/obituaries/targetHit.tga
         blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
         depthWrite
         rgbGen identity
+		alphaGen vertex
     }
 }
 
+ObituariesDroppedEnvirosuit
+{
+	nopicmip
+	{
+		map icons/envirosuit.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen identity
+		alphaGen	vertex
+	}
+    {
+       map icons/obituaries/droppedPu.tga
+       blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+       rgbGen identity
+       alphaGen vertex
+    }
+}
+
+ObituariesDroppedQuad
+{
+	nopicmip
+	{
+		map icons/quad.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen identity
+		alphaGen vertex
+
+	}
+    {
+       map icons/obituaries/droppedPu.tga
+       blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+       rgbGen identity
+       alphaGen vertex
+    }
+}
+
+ObituariesDroppedHaste
+{
+	nopicmip
+	{
+		map icons/haste.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen identity
+		alphaGen vertex
+	}
+    {
+       map icons/obituaries/droppedPu.tga
+       blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+       rgbGen identity
+       alphaGen vertex
+    }
+}
+
+ObituariesDroppedInvis
+{
+	nopicmip
+	{
+		map icons/invis.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen identity
+		alphaGen vertex
+	}
+    {
+       map icons/obituaries/droppedPu.tga
+       blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+       rgbGen identity
+       alphaGen vertex
+    }
+}
+
+ObituariesDroppedRegen
+{
+	nopicmip
+	{
+		map icons/regen.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen identity
+		alphaGen vertex
+	}
+    {
+       map icons/obituaries/droppedPu.tga
+       blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+       rgbGen identity
+       alphaGen vertex
+    }
+}
+
+ObituariesDroppedFlight
+{
+	nopicmip
+	{
+		map icons/flight.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen identity
+		alphaGen vertex
+	}
+    {
+       map icons/obituaries/droppedPu.tga
+       blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+       rgbGen identity
+       alphaGen vertex
+    }
+}
+
+ObituariesDroppedFlag
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/teamTasks/flag.tga
+		blendfunc blend
+		rgbgen vertex
+	}
+	{
+		map icons/obituaries/droppedPu.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen identity
+		alphaGen vertex
+	}
+}
 
 hboxNew
 {
@@ -803,3 +948,76 @@ models/players/spawn
 		tcmod scroll 1 .1
 	}
 }
+
+sprites/balloonNew2
+{
+	nomipmaps
+	nopicmip
+	{
+		map sprites/balloonNew.tga
+		blendfunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		alphaGen	vertex
+	}
+}
+
+
+
+//
+// powerup icons
+//
+icons/envirosuit
+{
+	nopicmip
+	{
+		map icons/envirosuit.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		alphaGen	vertex
+	}
+}
+icons/quad
+{
+	nopicmip
+	{
+		map icons/quad.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		alphaGen	vertex
+	}
+}
+icons/haste
+{
+	nopicmip
+	{
+		map icons/haste.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		alphaGen	vertex
+	}
+}
+icons/invis
+{
+	nopicmip
+	{
+		map icons/invis.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		alphaGen	vertex
+	}
+}
+icons/regen
+{
+	nopicmip
+	{
+		map icons/regen.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		alphaGen	vertex
+	}
+}
+icons/flight
+{
+	nopicmip
+	{
+		map icons/flight.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		alphaGen	vertex
+	}
+}
+
+//===================================================

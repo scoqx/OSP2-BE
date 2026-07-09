@@ -133,6 +133,10 @@ void CG_SetInitialSnapshot(snapshot_t* snap)
 			CG_OSPUpdateUserInfo(qtrue);
 		}
 	}
+	if (cgs.beSupportedServer)
+	{
+		CG_BEUpdateUserInfo();
+	}
 	if (cgs.osp.numberOfStringsMotd && (!cg.demoPlayback || !cg_NoMOTDDisplayDuringDemo.integer))
 	{
 		CG_OSPMoTD_f();

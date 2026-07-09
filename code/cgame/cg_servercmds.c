@@ -156,6 +156,45 @@ static void CG_ParseDstatus(void)
 		cg.predictedDeadInFreeze[i] = -1;
 }
 
+static void CG_ApplyRoundWarmupConfig(void)
+{
+	const char* val;
+	int newState;
+	int oldState;
+
+	CG_Q3MSK_ROUND_WARMUP_UPDATE();
+
+	newState = 0;
+	if (cgs.q3mskRoundWarmup && !atoi(CG_ConfigString(CS_WARMUP)))
+	{
+		val = Info_ValueForKey(CG_ConfigString(CS_SERVERINFO), "Score_Time");
+		if (val[0] == 'W' || val[0] == 'w')
+		{
+			newState = 2;
+		}
+		else if (val[0] == 'S' || val[0] == 's')
+		{
+			newState = 1;
+		}
+	}
+	oldState = cgs.roundStartState;
+	if (newState == oldState)
+	{
+		return;
+	}
+	cgs.roundStartState = newState;
+	if (oldState == 2 && newState != 2 && cg.allyBattlesuitWarmupHide)
+	{
+		cg.allyBattlesuitHideUntil = cg.time + CG_ALLY_BS_TINFO_INTERVAL_MS;
+	}
+	if (newState != 2)
+	{
+		cg.allyBattlesuitWarmupHide = qfalse;
+	}
+	cg.hideAllyBattlesuitUi = (qboolean)(cg.allyBattlesuitWarmupHide ||
+	                                     (cg.allyBattlesuitHideUntil > cg.time));
+}
+
 /*
 =================
 CG_ParseTeamInfo
@@ -165,8 +204,17 @@ CG_ParseTeamInfo
 static void CG_ParseTeamInfo(void)
 {
 	int     i;
+	int     j;
 	int     client;
+	int     allyBsCount;
+	int     numDeaths;
+	int     dropMask;
+	int     deathClients[TEAM_MAXOVERLAY];
+	int     deathOldPowerups[TEAM_MAXOVERLAY];
 	clientInfo_t* ci;
+
+	numDeaths = 0;
+	allyBsCount = 0;
 
 	numSortedTeamPlayers = atoi(CG_Argv(1));
 	if (numSortedTeamPlayers > TEAM_MAXOVERLAY)
@@ -178,6 +226,7 @@ static void CG_ParseTeamInfo(void)
 	{
 		int oldHealth;
 		int oldArmor;
+		int oldTeamPowerups;
 
 		client = atoi(CG_Argv(i * 6 + 2));
 
@@ -191,11 +240,25 @@ static void CG_ParseTeamInfo(void)
 		}
 		oldHealth = ci->health;
 		oldArmor = ci->armor;
+		oldTeamPowerups = ci->teamPowerups;
 		ci->location = atoi(CG_Argv(i * 6 + 3));
 		ci->health = atoi(CG_Argv(i * 6 + 4));
 		ci->armor = atoi(CG_Argv(i * 6 + 5));
 		ci->curWeapon = atoi(CG_Argv(i * 6 + 6));
-		ci->powerups = atoi(CG_Argv(i * 6 + 7));
+		ci->teamPowerups = atoi(CG_Argv(i * 6 + 7));
+
+		if (oldHealth > 0 && ci->health <= 0)
+		{
+			deathClients[numDeaths] = client;
+			deathOldPowerups[numDeaths] = oldTeamPowerups;
+			numDeaths++;
+		}
+
+		if (cgs.q3mskRoundWarmup && cgs.roundStartState == 2 &&
+		        (ci->teamPowerups & (1 << PW_BATTLESUIT)))
+		{
+			allyBsCount++;
+		}
 
 		CG_HealthColorFromStats(ci->health, ci->armor, cg.healthColorByClient[client],
 		                        &cg.allyHealthBand[client]);
@@ -232,6 +295,48 @@ static void CG_ParseTeamInfo(void)
 					cg.allyHealthBlinkMidLow[client] =
 					    (qboolean)(cg.allyHealthBand[client] == CG_HEALTH_BAND_LOW);
 				}
+			}
+		}
+	}
+
+	if (cgs.q3mskRoundWarmup && cgs.roundStartState == 2)
+	{
+		cg.allyBattlesuitWarmupHide = (qboolean)(allyBsCount >= 2);
+	}
+	else
+	{
+		cg.allyBattlesuitWarmupHide = qfalse;
+	}
+	if (cg.allyBattlesuitHideUntil > 0 && cg.time >= cg.allyBattlesuitHideUntil)
+	{
+		cg.allyBattlesuitHideUntil = 0;
+	}
+	cg.hideAllyBattlesuitUi = (qboolean)(cg.allyBattlesuitWarmupHide ||
+	                                     (cg.allyBattlesuitHideUntil > cg.time));
+
+	for (j = 0; j < numDeaths; j++)
+	{
+		client = deathClients[j];
+		ci = &cgs.clientinfo[client];
+
+		dropMask = deathOldPowerups[j] & CG_OBITUARY_DROP_PU_MASK;
+		if (dropMask & (1 << PW_BATTLESUIT) && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+		{
+			dropMask &= ~(1 << PW_BATTLESUIT);
+		}
+		cg.obituaryDropMask[client] = dropMask;
+
+		if (cgs.gametype == GT_CTF &&
+		        (!CG_CACHED_IS_ENEMY_CI(ci) || CG_IS_LOCAL_CLIENT_SPECTATOR()))
+		{
+			dropMask = deathOldPowerups[j] & ((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG));
+			if (dropMask & (1 << PW_REDFLAG))
+			{
+				cg.obituaryDropFlagTeam[client] = TEAM_RED;
+			}
+			else if (dropMask & (1 << PW_BLUEFLAG))
+			{
+				cg.obituaryDropFlagTeam[client] = TEAM_BLUE;
 			}
 		}
 	}
@@ -281,34 +386,14 @@ void CG_ParseServerinfo(void)
 	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
 	// cgs.isOspServer = (Info_ValueForKey(info, "g_unlagged")[0] != '\0') ? qfalse : qtrue;
 
-	/* Parse Score_Time: Started -> 1, Warmup -> 2, else -> 0.
-	 * Round warmup is separate from the normal pre-match warmup. */
-	val = Info_ValueForKey(info, "Score_Time");
-	{
-		int newState = 0;
-
-		if (!atoi(CG_ConfigString(CS_WARMUP)))
-		{
-			if (val[0] == 'S' || val[0] == 's')
-			{
-				newState = 1;
-			}
-			else if (val[0] == 'W' || val[0] == 'w')
-			{
-				newState = 2;
-			}
-		}
-
-		if (newState != cgs.roundStartState)
-		{
-			cgs.roundStartState = newState;
-		}
-	}
+	CG_ApplyRoundWarmupConfig();
 
 	/* CG_SetServerSettingsBE inlined - enableBreath from CS_SYSTEMINFO */
 	/* g_enableBreath: disabled only when value is exactly "0" */
 	val = Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "g_enableBreath");
 	cgs.beServerEnableBreath = (val[0] == '\0' || val[0] != '0' || val[1] != '\0') ? 1 : 0;
+
+	cgs.killConfirmMode = atoi(Info_ValueForKey(info, "g_killConfirm"));
 }
 
 /*
@@ -448,30 +533,18 @@ static void CG_ConfigStringModified(void)
 				CG_InitTeamTaskMarkers();
 				if (cg_exec_warmupEnded.string[0])
 					trap_SendConsoleCommand(cg_exec_warmupEnded.string);
-				str = Info_ValueForKey(CG_ConfigString(CS_SERVERINFO), "Score_Time");
-				if (str[0] == 'W' || str[0] == 'w')
-				{
-					cgs.roundStartState = 2;
-				}
-				else if (str[0] == 'S' || str[0] == 's')
-				{
-					cgs.roundStartState = 1;
-				}
-				else
-				{
-					cgs.roundStartState = 0;
-				}
 			}
 			else if (warmup > 0 && cg.warmup <= 0)
 			{
 				trap_S_StartLocalSound(cgs.media.countPrepareSound, CHAN_ANNOUNCER);
-				cgs.roundStartState = 0;
 			}
-			/* if (warmup == 0 && cg.warmup > 0)
+			if (warmup == 0 && cg.warmup > 0 && (cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK))
 			{
-				CG_OSP2BEOnWarmupEnded();
-			} */
+				trap_Cvar_Update(&com_maxfps);
+				cgs.beTourneyLockedMaxfps = (com_maxfps.integer >= 250) ? 250 : 125;
+			}
 			cg.warmup = warmup;
+			CG_ApplyRoundWarmupConfig();
 		}
 		break;
 		case CS_SCORES1:
@@ -608,8 +681,7 @@ static void CG_ConfigStringModified(void)
 			CG_OSPCvarsRestrictValues();
 			break;
 		case CS_OSP_CUSTOM_CLIENT2:
-			cgs.osp.custom_client_2 = atoi(str);
-			CG_UpdateDamageInfoAllowed();
+			CG_OSPConfigCustomClient2Set(atoi(str));
 			break;
 		case CS_OSP_SERVER_MODE:
 			CG_OSPConfigModeSet(atoi(str));
@@ -620,26 +692,29 @@ static void CG_ConfigStringModified(void)
 
 			value = atoi(str);
 			cgs.osp.gameTypeFreeze = (value == 2) ? 2 : (value != 0);
+			CG_ApplyRoundWarmupConfig();
 		}
 		break;
 		case CS_SHADERSTATE:
 			CG_ShaderStateChanged();
 			break;
-		// case CS_OSP2BE_SUPPORTED:
-		//  cgs.beSupportedServer = atoi(str);
-		//  break;
+		case CS_OSP2BE_SUPPORTED:
+			CG_OSPSupportedBEServer(atoi(str) ? qtrue : qfalse);
+			break;
 		case CS_OSP2BE_DISABLED_FEATURES:
 			cgs.beDisableFeatures = atoi(str);
 			CG_PrintDisabledFeatures(qfalse);
 			CG_UpdateBeFeatures();
 			CG_UpdateDamageInfoAllowed();
 			break;
-		case CS_OSP2BE_ITEM_TRACK:
-			CG_SpectatorItems_OnConfigStringChanged();
+		case CS_OSP2BE_TOURNEY_RESTRICTIONS:
+			cgs.beTourneyMode = atoi(str);
+			CG_BETourneyRestrict();
 			break;
 		default:
-			if (num >= CS_OSP2BE_SHADOW_ITEMS_HDR && num <= CS_OSP2BE_SHADOW_ITEMS_DATA_LAST)
+			if (num >= CS_OSP2BE_ITEM_CATALOG0 && num <= CS_OSP2BE_ITEM_CATALOG_LAST)
 			{
+				CG_SpectatorItems_OnConfigStringChanged();
 				CG_ShadowItems_OnConfigStringChanged();
 			}
 			else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
@@ -828,6 +903,11 @@ static void CG_MapRestart(void)
 	if (cgs.osp.isOSPv1)
 	{
 		CG_OSPUpdateUserInfo(qtrue);
+	}
+
+	if (cgs.beSupportedServer)
+	{
+		CG_BEUpdateUserInfo();
 	}
 
 	// we really should clear more parts of cg here and stop sounds
@@ -1993,6 +2073,15 @@ void CG_ServerCommand(void)
 			if (cmd[1] == 's' && cmd[2] == 'c' && cmd[3] == 'r' && cmd[4] == 'e' && cmd[5] == 'e' &&
 			        cmd[6] == 'n' && cmd[7] == 's' && cmd[8] == 'h' && cmd[9] == 'o' && cmd[10] == 'o' && cmd[11] == 't' && cmd[12] == '\0')
 			{
+				return;
+			}
+			break;
+
+		case 'k':
+			/* "kc" — kill confirm grant (metarena server) */
+			if (cmd[1] == 'c' && cmd[2] == '\0')
+			{
+				CG_KillConfirm_HandleServerCmd(CG_Argv(1));
 				return;
 			}
 			break;

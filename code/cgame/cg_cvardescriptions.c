@@ -374,7 +374,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_scoreboardRtColors", "Color of the red team scoreboard. ^3cg_scoreboardBE^7 must be enabled \n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Yellow^7\", \"^2T E T^7\", \"^20099FF 99FF00 99FF00^7\" or \"^24 Red 4^7\"." },
 	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Blue^7\", \"^2E T E^7\", \"^20099FF 99FF00 20099FF^7\" or \"^24 Red 2^7\"." },
 	{ "cg_scoreboardSpecColor", "Color of the spectator scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color>^7 separated by space. Second argument is optional. Supports T/E (team/enemy)." },
-	{ "cg_scoreboardDrawPowerUps", "Draw colored frame on scoreboard for players who have active powerups. Set ^20^7 to disable\n  ^21^7 - full frame\n  ^12^7 - left border only" },
+	{ "cg_scoreboardDrawPowerUps", "Show powerups on scoreboard for players who have active powerups. Set ^20^7 to disable\n  ^21^7 - full frame\n  ^22^7 - left border only\n  ^23^7 - powerup icon instead of player ID" },
 	{ "cg_bestats_style", "Style of the battle statistics display.\n  ^21^7 - default\n  ^22^7 - minimized" },
 	{ "cg_bestats_textSize", "Size of the battle statistics text. First number is character width, second is height.\n  ^2W H" },
 	{ "cg_bestats_font", "Font selection used for battle statistics. Font index; use ^3/fonts^7 to list available fonts." },
@@ -488,6 +488,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_drawTPexit", "Teleporter exit markers. Set ^21^7 to enable. Set ^20^7 to disable." },
 	{ "cg_shadowItems", "Ghost 3D pickups when the real item is absent. Set ^20^7 to disable. Bitmask:\n  ^21^7 - health\n  ^22^7 - armor\n  ^24^7 - weapons\n  ^28^7 - ammo\n  ^216^7 - powerups and holdables\n  ^232^7 - flags." },
 	{ "cg_worldFlags", "CTF flag position indicators. Set ^20^7 to disable. Bitmask:\n  ^21^7 - world 2D icons\n  ^22^7 - off-screen border HUD markers" },
+	{ "cg_oldFloatSprites", "Foe marker and talk balloon sprite set. Requires ^3vid_restart^7.\n  ^20^7 - new\n  ^21^7 - old" },
 };
 
 

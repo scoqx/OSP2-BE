@@ -700,7 +700,7 @@ void CG_TestQ3lb_f(void)
 			          modeNames[itemMode], CG_ShadowItems_NumPointsForMode(itemMode));
 		}
 		CG_TestQ3lb_PrintModeCounts("all", CG_ShadowItems_NumPointsForMode);
-		CG_Printf("    cvars: cg_shadowItems=^3%i^7 mask=^3%i^7 serverSI3=^3%i^7 cg_simpleItems=^3%i^7\n",
+		CG_Printf("    cvars: cg_shadowItems=^3%i^7 mask=^3%i^7 serverCatalog=^3%i^7 cg_simpleItems=^3%i^7\n",
 		          cg_shadowItems.integer, CG_ShadowItems_DebugEffectiveMask(),
 		          CG_ShadowItems_UsesServerLayout(), cg_simpleItems.integer);
 	}

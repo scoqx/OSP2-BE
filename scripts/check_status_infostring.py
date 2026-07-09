@@ -95,7 +95,7 @@ def parse_version_changelog_file(text: str) -> tuple[str, str]:
     if not lines:
         return "", ""
     header = lines[0].strip()
-    match = re.search(r"\bv([0-9]+\.[0-9]+[a-zA-Z0-9]*)", header, re.I)
+    match = re.search(r"\bv([0-9]+\.[0-9]+[a-zA-Z0-9-]*)", header, re.I)
     file_ver = normalize_version(match.group(1)) if match else ""
     body_lines = [ln.rstrip() for ln in lines[1:]]
     while body_lines and not body_lines[-1].strip():

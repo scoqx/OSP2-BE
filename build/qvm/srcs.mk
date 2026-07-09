@@ -15,7 +15,7 @@ CG_SRC = \
  bg_slidemove bg_pmove bg_lib bg_misc \
  core slidemove q3a vq1 vjk vq4 \
  q_math q_shared cg_ospconfig cg_osputil cg_osphud cg_unlagged cg_playerscolors\
- cg_localevents cg_customloc cg_maplocs cg_mapbundle cg_spawns cg_shadowitems cg_spectatoritems cg_tpexit cg_globalpos cg_worldflags cg_cvardescriptions common\
+ cg_localevents cg_customloc cg_maplocs cg_mapbundle cg_spawns cg_shadowitems cg_killconfirm cg_spectatoritems cg_tpexit cg_globalpos cg_worldflags cg_cvardescriptions common\
  superhud/superhud superhud/superhud_configparser superhud/superhud_util superhud/superhud_private\
  superhud/elements/element_fps \
  superhud/elements/element_sbhc superhud/elements/element_sbhi superhud/elements/element_sbhb \
@@ -64,7 +64,7 @@ CG_SRC = \
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \
 ui_gameinfo beinfo_cfg osp_fonts ui_atoms ui_cvardescriptions ui_colorparse ui_cinematics ui_connect ui_controls2 ui_demo2 \
-ui_md5 ui_status_sign ui_server_status \
+ui_md5 ui_status_sign ui_server_status ui_fav_server_parse ui_favourite_server \
 ui_mfield ui_credits ui_credits2 ui_menu ui_ingame ui_confirm ui_setup ui_options \
 ui_display ui_sound ui_network ui_playermodel ui_players ui_playersettings \
 ui_preferences ui_qmenu ui_serverinfo ui_servers2 ui_sparena ui_colorpicker \

@@ -233,7 +233,7 @@ static float CG_BEChat_AltFavHintAlpha(void)
 		if (elapsed >= BE_EMOJI_TIP_FADE_MS)
 		{
 			beChatEmoji.favHintFadingOut = qfalse;
-			beChatWindow.altFavHintShown = qfalse;
+			beChatWindow.ctrlFavHintShown = qfalse;
 			return 0.0f;
 		}
 		alpha = 1.0f - ((float)elapsed / (float)BE_EMOJI_TIP_FADE_MS);
@@ -245,18 +245,18 @@ static float CG_BEChat_AltFavHintAlpha(void)
 		return 0.0f;
 	}
 
-	if (beChatWindow.altDownSince <= 0)
+	if (beChatWindow.ctrlDownSince <= 0)
 	{
 		return 0.0f;
 	}
 
-	elapsed = cg.time - beChatWindow.altDownSince - BE_CHAT_ALT_FAV_HINT_DELAY_MS;
+	elapsed = cg.time - beChatWindow.ctrlDownSince;
 	if (elapsed < 0)
 	{
-		return 0.0f;
+		elapsed = 0;
 	}
 
-	beChatWindow.altFavHintShown = qtrue;
+	beChatWindow.ctrlFavHintShown = qtrue;
 	if (elapsed >= BE_EMOJI_TIP_FADE_MS)
 	{
 		return 1.0f;
@@ -277,7 +277,7 @@ static void CG_BEChat_AltFavHintFadePoll(void)
 		return;
 	}
 
-	if (beChatWindow.altFavHintShown)
+	if (beChatWindow.ctrlFavHintShown)
 	{
 		beChatEmoji.favHintHideStartTime = cg.time;
 		beChatEmoji.favHintFadingOut = qtrue;
@@ -472,7 +472,7 @@ static float CG_BEChat_EmojiFavHintUpdateLayout(float inputX, float inputY, int 
 	beChatEmoji.favHintCount = 0;
 
 	if (!CG_BEChat_AltFavHintActive() && !beChatEmoji.favHintFadingOut &&
-	        !beChatWindow.altFavHintShown)
+	        !beChatWindow.ctrlFavHintShown)
 	{
 		return 0.0f;
 	}
@@ -553,8 +553,6 @@ static qboolean CG_BEChat_EmojiFavHintMouseDown(float virtX, float virtY,
 	}
 
 	beChatWindow.sentHistBrowse = -1;
-	beChatEmoji.favHintFlashIndex = slot;
-	beChatEmoji.favHintFlashTime = cg.time;
 	CG_BEChat_EmojiInsertFav(edit, slot, maxTextW);
 	CG_BEChat_AltSuppressPickerOnRelease();
 	CG_BEChat_InputClampScroll(edit, maxTextW);
@@ -675,6 +673,8 @@ static void CG_BEChat_EmojiLayoutPickerPanel(void)
 }
 qboolean CG_BEChat_EmojiPickerWheel(int wheelUp)
 {
+	int step;
+
 	if (!beChatEmoji.pickerOpen)
 	{
 		return qfalse;
@@ -682,13 +682,15 @@ qboolean CG_BEChat_EmojiPickerWheel(int wheelUp)
 
 	CG_BEChat_EmojiLayoutPickerPanel();
 
+	step = trap_Key_IsDown(K_CTRL) ? BE_CHAT_SCROLL_CTRL_STEP : 1;
+
 	if (wheelUp)
 	{
-		beChatEmoji.pickerScroll--;
+		beChatEmoji.pickerScroll -= step;
 	}
 	else
 	{
-		beChatEmoji.pickerScroll++;
+		beChatEmoji.pickerScroll += step;
 	}
 
 	if (beChatEmoji.pickerScroll < 0)

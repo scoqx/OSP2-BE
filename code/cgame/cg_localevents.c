@@ -66,6 +66,11 @@ void CG_ParseCvarTwoFloats(const cvarTable_t* cvart, float* out1, float* out2)
 	}
 }
 
+void CG_LocalEventCvarChanged_cg_drawTimer(cvarTable_t* cvart)
+{
+	CG_OSPEnforceCustomClientSettings();
+}
+
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
 {
 	// if ((cg_drawTeamOverlay.integer > 0) ||
@@ -134,8 +139,7 @@ void CG_LocalEventCvarChanged_cl_timenudge(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_com_maxfps(cvarTable_t* cvart)
 {
-	/* CG_OSP2BEOnComMaxfpsChanged(cvart->vmCvar->integer); */
-	// (void)cvart;
+	CG_OSP2BEOnComMaxfpsChanged(cvart->vmCvar->integer);
 }
 
 void CG_LocalEventCvarChanged_ch_recordMessage(cvarTable_t* cvart)
@@ -1352,6 +1356,14 @@ void CG_LocalEventCvarChanged_cg_exec_gametype(cvarTable_t* cvart)
 	}
 }
 
+void CG_LocalEventCvarChanged_cg_respawnWeapon(cvarTable_t* cvart)
+{
+	if (cgs.beSupportedServer)
+	{
+		CG_BEUpdateUserInfo();
+	}
+}
+
 void CG_LocalEventCvarChanged_cg_brightWeaponsOpaque(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(0, 1, cvart->vmCvar->value);
@@ -1428,18 +1440,6 @@ void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart)
 		trap_Cvar_Set(cvart->cvarName, "24");
 		CG_PrintOnce("^3cg_simpleItemsRadius^7 is out of range, set to ^224^7\n");
 	}
-}
-
-void CG_LocalEventCvarChanged_cl_pitchspeed(cvarTable_t* cvart)
-{
-	/* CG_OSP2BEOnPitchspeedChanged(cvart->vmCvar->integer); */
-	// (void)cvart;
-}
-
-void CG_LocalEventCvarChanged_cl_yawSpeed(cvarTable_t* cvart)
-{
-	/* CG_OSP2BEOnYawspeedChanged(cvart->vmCvar->integer); */
-	// (void)cvart;
 }
 
 void CG_LocalEventCvarChanged_cg_entityOverpolate(cvarTable_t* cvart)

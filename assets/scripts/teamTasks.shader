@@ -34,9 +34,10 @@ teamTasks_skull
 	nomipmaps
 	nopicmip
 	{
-		map icons/obituaries/ObituariesSkull.tga
-		blendfunc blend
-		rgbgen vertex
+        map icons/obituaries/ObituariesSkull.tga
+        blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+        rgbGen identity
+		alphaGen vertex
 	}
 }
 

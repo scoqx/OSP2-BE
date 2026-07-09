@@ -8,6 +8,7 @@
 #include "ui_local.h"
 #include "ui_status_sign.h"
 #include "ui_server_status.h"
+#include "ui_fav_server.h"
 
 uiStatic_t      uis;
 qboolean        m_entersound;       // after a frame, so caching won't disrupt the sound
@@ -1706,7 +1707,7 @@ void UI_MouseEvent(int dx, int dy)
 	else if (uis.cursory > uis.screenYmax)
 		uis.cursory = uis.screenYmax;
 
-	if (UI_ServerStatus_IsModal())
+	if (UI_ServerStatus_IsModal() || UI_FavouriteServer_IsModal())
 	{
 		return;
 	}
@@ -1815,12 +1816,17 @@ void UI_Cache_f(void)
 
 #define UI_LANJOB_ADDRESSLENGTH	64
 #define UI_LANJOB_WAIT_MS		3000
+#define UI_FAV_LANJOB_WAIT_MS	6000
 
 typedef enum
 {
 	UI_LANJOB_NONE = 0,
-	UI_LANJOB_SERVER_STATUS
+	UI_LANJOB_SERVER_STATUS,
+	UI_LANJOB_FAVOURITE_SERVER
 } ui_lanjob_t;
+
+static qboolean		ui_lanJobFavQueued;
+static char			ui_lanJobFavQueuedAddr[UI_LANJOB_ADDRESSLENGTH];
 
 static struct
 {
@@ -1912,10 +1918,34 @@ static void UI_LANJob_EnsurePingForChangelog(void)
 	trap_Cmd_ExecuteText(EXEC_NOW, va("ping %s\n", UI_LANJob_ActiveTarget()));
 }
 
+static void UI_LANJob_TryStartQueuedFavourite(void);
+static void UI_LANJob_BeginFavouriteServer(const char* target);
+static void UI_LANJob_TickFavouriteServer(void);
+
+static void UI_LANJob_TryStartQueuedFavourite(void)
+{
+	if (!ui_lanJobFavQueued)
+	{
+		return;
+	}
+
+	ui_lanJobFavQueued = qfalse;
+	UI_LANJob_BeginFavouriteServer(ui_lanJobFavQueuedAddr);
+}
+
 static void UI_LANJob_Complete(void)
 {
-	UI_ServerStatus_NotifyFetchCycleComplete();
+	if (ui_lanJob.job == UI_LANJOB_SERVER_STATUS)
+	{
+		UI_ServerStatus_NotifyFetchCycleComplete();
+	}
+	else if (ui_lanJob.job == UI_LANJOB_FAVOURITE_SERVER)
+	{
+		UI_FavouriteServer_NotifyLanJobComplete();
+	}
+
 	UI_LANJob_Reset();
+	UI_LANJob_TryStartQueuedFavourite();
 }
 
 static void UI_LANJob_IssueServerStatus(void)
@@ -2026,8 +2056,79 @@ static void UI_LANJob_TickServerStatus(void)
 	trap_LAN_UpdateVisiblePings(AS_LOCAL);
 }
 
+static void UI_LANJob_BeginFavouriteServer(const char* target)
+{
+	if (!target || !target[0])
+	{
+		return;
+	}
+
+	UI_LANJob_Reset();
+	ui_lanJob.job = UI_LANJOB_FAVOURITE_SERVER;
+	Q_strncpyz(ui_lanJob.target, target, sizeof(ui_lanJob.target));
+	ui_lanJob.deadline = trap_Milliseconds() + UI_FAV_LANJOB_WAIT_MS;
+	ui_lanJob.pingIssued = qtrue;
+	UI_FavouriteServer_LanJobBegin(target);
+	trap_LAN_AddServer(AS_FAVORITES, target, target);
+	trap_LAN_UpdateVisiblePings(AS_FAVORITES);
+	UI_FavouriteServer_IssueStatus();
+	UI_FavouriteServer_IssuePingCmd();
+}
+
+void UI_LANJob_RequestFavouriteServer(const char* target)
+{
+	if (!target || !target[0])
+	{
+		return;
+	}
+
+	UI_FavouriteServer_LanJobBegin(target);
+
+	if (ui_lanJob.job == UI_LANJOB_FAVOURITE_SERVER)
+	{
+		return;
+	}
+
+	if (ui_lanJob.job != UI_LANJOB_NONE)
+	{
+		ui_lanJobFavQueued = qtrue;
+		Q_strncpyz(ui_lanJobFavQueuedAddr, target, sizeof(ui_lanJobFavQueuedAddr));
+		return;
+	}
+
+	UI_LANJob_BeginFavouriteServer(target);
+}
+
+void UI_LANJob_CancelQueuedFavourite(void)
+{
+	ui_lanJobFavQueued = qfalse;
+	ui_lanJobFavQueuedAddr[0] = '\0';
+}
+
+static void UI_LANJob_TickFavouriteServer(void)
+{
+	trap_LAN_UpdateVisiblePings(AS_LOCAL);
+	UI_LANJob_CapturePingInfo();
+	if (ui_lanJob.hasPingInfo)
+	{
+		UI_FavouriteServer_ApplyPingInfo(ui_lanJob.pingInfo);
+	}
+
+	if (UI_FavouriteServer_LanJobTick())
+	{
+		UI_LANJob_Complete();
+	}
+}
+
 static void UI_LANJob_OnTimeout(void)
 {
+	if (ui_lanJob.job == UI_LANJOB_FAVOURITE_SERVER)
+	{
+		UI_FavouriteServer_LanJobTimeout();
+		UI_LANJob_Complete();
+		return;
+	}
+
 	if (UI_LANJob_TryBeginAlternate())
 	{
 		return;
@@ -2058,7 +2159,14 @@ static void UI_LANJob_Tick(void)
 		return;
 	}
 
-	UI_LANJob_TickServerStatus();
+	if (ui_lanJob.job == UI_LANJOB_SERVER_STATUS)
+	{
+		UI_LANJob_TickServerStatus();
+	}
+	else if (ui_lanJob.job == UI_LANJOB_FAVOURITE_SERVER)
+	{
+		UI_LANJob_TickFavouriteServer();
+	}
 }
 
 /*
@@ -2070,7 +2178,9 @@ Poll pending trap_LAN_* jobs (server status fetch). Runs with or without UI key 
 */
 void UI_LANJobsTick(void)
 {
+	UI_FavouriteServer_CheckCvarChanged();
 	UI_LANJob_Tick();
+	UI_FavouriteServer_PingPoll();
 }
 
 void UI_ServerStatus_Secheck2Begin(const char* target)

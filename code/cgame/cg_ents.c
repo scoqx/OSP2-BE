@@ -514,6 +514,8 @@ void CG_AddWorldItem3D(const vec3_t inOrigin, int modelindex, int entNumber, int
 	float           frac;
 	int             ghostAlpha;
 
+	ghostAlpha = shadowGhost ? shadowGhostAlpha : 0;
+
 	itemNum = modelindex;
 	if (itemNum < 1 || itemNum >= bg_numItems)
 	{
@@ -529,7 +531,6 @@ void CG_AddWorldItem3D(const vec3_t inOrigin, int modelindex, int entNumber, int
 		return;
 	}
 
-	ghostAlpha = shadowGhostAlpha;
 	if (shadowGhost && ghostAlpha <= 0)
 	{
 		ghostAlpha = 77;
@@ -774,12 +775,9 @@ static void CG_Item(centity_t* cent)
 		{
 			if (cg_shadowItems.integer)
 			{
-				mapPoint = CG_ShadowItems_NoteLiveItem(cent);
+				CG_ShadowItems_NoteLiveItem(cent);
 			}
-			else
-			{
-				mapPoint = CG_ShadowItems_MapPointForItemBob(cent);
-			}
+			mapPoint = CG_ShadowItems_MapPointForItemBob(cent);
 		}
 		phaseEnt = (mapPoint >= 0) ? CG_ShadowItems_PhaseEntForPoint(mapPoint) : cent->currentState.number;
 		CG_AddWorldItem3D(cent->lerpOrigin, itemNum, phaseEnt, cent->miscTime, qfalse, 0);
@@ -1400,6 +1398,15 @@ static void CG_AddCEntity(centity_t* cent)
 
 	// add automatic effects
 	CG_EntityEffects(cent);
+
+	// kill-confirm entities (token draw / helper ring hide) are dispatched here,
+	// keeping CG_Item and CG_General free of kill-confirm logic. The marker
+	// pre-filter avoids calling the handler for ordinary entities.
+	if (cgs.killConfirmMode && cent->currentState.otherEntityNum == KILLCONFIRM_MARKER
+	        && CG_KillConfirm_HandleEntity(cent))
+	{
+		return;
+	}
 
 	switch (cent->currentState.eType)
 	{

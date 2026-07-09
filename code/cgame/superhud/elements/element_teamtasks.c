@@ -115,10 +115,6 @@ static void CG_SHUDElementTeamTasksUpdatePosition(shudElementTeamTasks_t* elemen
 
 static void CG_SHUDElementTeamTasksInitializeRuntime(shudElementTeamTasks_t* element, superhudTeamTasksEntry_t* entry)
 {
-	int msec;
-	int seconds;
-	int mins;
-	int tens;
 	clientInfo_t* ci;
 
 	entry->runtime.maxVisibleChars = 13;
@@ -126,17 +122,7 @@ static void CG_SHUDElementTeamTasksInitializeRuntime(shudElementTeamTasks_t* ele
 	entry->runtime.maxNameLenPix = (element->config.rect.value[2] - (element->config.rect.value[3] + entry->runtime.spacing * 2)) / 2;
 
 	/* Calculate game time when task was sent */
-	msec = entry->gameTime;
-	if (msec < 0)
-	{
-		msec *= -1;
-	}
-	seconds = msec / 1000;
-	mins = seconds / 60;
-	seconds -= mins * 60;
-	tens = seconds / 10;
-	seconds -= tens * 10;
-	Com_sprintf(entry->runtime.timeString, sizeof(entry->runtime.timeString), "%i:%i%i", mins, tens, seconds);
+	SHUD_WRITE_MATCH_TIME_STR(entry->runtime.timeString, sizeof(entry->runtime.timeString), entry->gameTime);
 
 	/* Get icon */
 	entry->runtime.iconShader = CG_SHUDTeamTaskGetTaskIcon(entry->taskType, entry->isPickup);
@@ -391,6 +377,26 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 		element->ctxIcon.coord.named.w = element->ctxIcon.coord.named.h * 0.75f;
 		Vector4Copy(element->ctxIcon.color_origin, element->ctxIcon.color);
 		CG_SHUDConfigPickColor_Runtime(&element->config, element->ctxIcon.color);
+		{
+			qhandle_t markShader;
+			vec4_t markColor;
+
+			CG_GetTeamTaskMarkerShaderAndColor(entry->taskType, &markShader, markColor, qfalse, entry->sender, entry->isPickup, NULL);
+			/* Snowflake (frozenFoeTag): FROZEN_ALLY, FROZEN_ENEMY, HERE_DEAD in freeze mode */
+			if (markShader == cgs.media.frozenFoeTagShader)
+			{
+				element->ctxIcon.color[0] = markColor[0];
+				element->ctxIcon.color[1] = markColor[1];
+				element->ctxIcon.color[2] = markColor[2];
+			}
+			else if (entry->taskType == TEAMTASK_YES || entry->taskType == TEAMTASK_NO ||
+			         entry->taskType == TEAMTASK_MEDIC)
+			{
+				element->ctxIcon.color[0] = markColor[0];
+				element->ctxIcon.color[1] = markColor[1];
+				element->ctxIcon.color[2] = markColor[2];
+			}
+		}
 		if (fadeScale != 1.0f)
 		{
 			element->ctxIcon.color[3] *= fadeScale;

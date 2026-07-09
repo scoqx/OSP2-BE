@@ -165,6 +165,11 @@ void CG_SHUDElementRoundWarmupRoutine(void* context)
 	char tmp[256];
 	qboolean visible;
 
+	if (!cgs.q3mskRoundWarmup)
+	{
+		return;
+	}
+
 	element->ctx.text = NULL;
 
 	if (element->lastRoundStartState != cgs.roundStartState)

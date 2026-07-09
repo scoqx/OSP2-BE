@@ -29,10 +29,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 int sortedTeamPlayers[TEAM_MAXOVERLAY];
 int numSortedTeamPlayers;
 
-char systemChat[256];
-char teamChat1[256];
-char teamChat2[256];
-
 int frameTime = 0;
 
 int statsInfo[24];
@@ -642,7 +638,6 @@ void CG_DrawStatusBar(void)
 	vec3_t      origin;
 	static float colors[4][4] =
 	{
-//		{ 0.2, 1.0, 0.2, 1.0 } , { 1.0, 0.2, 0.2, 1.0 }, {0.5, 0.5, 0.5, 1} };
 		{ 1.0f, 0.69f, 0.0f, 1.0f },    // normal
 		{ 1.0f, 0.2f, 0.2f, 1.0f },     // low health
 		{ 0.5f, 0.5f, 0.5f, 1.0f },     // weapon firing
@@ -974,8 +969,6 @@ void CG_DrawTimer2(void)
 		if (msec < 0) msec *= -1;
 	}
 
-	// if (msec < 0) msec *= -1;
-
 	seconds = msec / 1000;
 	mins = seconds / 60;
 	seconds -= mins * 60;
@@ -1122,8 +1115,6 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 				if (len > lwidth)
 					len = lwidth;
 
-//				xx = x + TINYCHAR_WIDTH * 2 + TINYCHAR_WIDTH * pwidth +
-//					((lwidth/2 - len/2) * TINYCHAR_WIDTH);
 				xx = x + TINYCHAR_WIDTH * 2 + TINYCHAR_WIDTH * pwidth;
 				CG_DrawStringExt(xx, y,
 				                 p, hcolor, qfalse, qfalse, TINYCHAR_WIDTH, TINYCHAR_HEIGHT,
@@ -1173,8 +1164,12 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 			}
 			for (j = 0; j <= PW_NUM_POWERUPS; j++)
 			{
-				if (ci->powerups & (1 << j))
+				if (ci->teamPowerups & (1 << j))
 				{
+					if (j == PW_BATTLESUIT && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+					{
+						continue;
+					}
 
 					item = BG_FindItemForPowerup(j);
 
@@ -1199,7 +1194,6 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 	}
 
 	return ret_y;
-//#endif
 }
 
 
@@ -2979,28 +2973,6 @@ void CG_DrawWarmupShud(void)
 	}
 }
 
-// static void CG_DrawTestFont(const char* font)
-// {
-//  const int offs_x = (SCREEN_WIDTH - 320) / 2;
-//  const int offs_y = (SCREEN_HEIGHT - 320) / 2;
-//  int x, y;
-//  char to_print[2];
-//  unsigned char c = 0;
-//  to_print[1] = 0;
-//  CG_FontSelect(CG_FontIndexFromName(font));
-//  for (y = 0; y < 16; ++y)
-//  {
-//      for (x = 0; x < 16; ++x)
-//      {
-//          to_print[0] = (char)c;
-//          c++;
-//          if (to_print[0] == 0) to_print[0] = ' ';
-//          CG_OSPDrawString(offs_x + x * 20, offs_y + y * 20, to_print, colorWhite, 16, 16, 4 * 16, DS_HCENTER | DS_PROPORTIONAL, NULL);
-//      }
-//  }
-
-// }
-
 /*
 ===
 New credits
@@ -3466,7 +3438,7 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 	}
 
 	if (cgs.gametype == GT_CTF && !CG_CACHED_IS_ENEMY_CI(ci) && cg_drawIcons.integer && cgs.media.teamTasksFlag &&
-	        (ci->powerups & ((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG))))
+	        (ci->teamPowerups & ((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG))))
 	{
 		vec4_t flagColor;
 		float flagSizeH = h;
@@ -3474,7 +3446,7 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		float flagX = headX - (flagSizeW * 0.5f);
 		float flagY = headY - (flagSizeH * 0.5f);
 
-		if (ci->powerups & (1 << PW_REDFLAG))
+		if (ci->teamPowerups & (1 << PW_REDFLAG))
 		{
 			Vector4Copy(cgs.beRedTeamColor, flagColor);
 		}
@@ -3484,6 +3456,107 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		}
 		flagColor[3] = nameColor[3];
 		CG_DrawPicWithColor(flagX, flagY, flagSizeW, flagSizeH, flagColor, cgs.media.teamTasksFlag);
+	}
+
+	/* Powerup icons over indicator: horizontal row with a 1s heartbeat pulse (POWERUP_BLINK_TIME) */
+	if (!markerDead)
+	{
+		static const int puList[6] = { PW_QUAD, PW_BATTLESUIT, PW_HASTE, PW_INVIS, PW_REGEN, PW_FLIGHT };
+		int puCount;
+		int k;
+
+		puCount = 0;
+		for (k = 0; k < 6; k++)
+		{
+			if (ci->teamPowerups & (1 << puList[k]))
+			{
+				if (puList[k] == PW_BATTLESUIT && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+				{
+					continue;
+				}
+				puCount++;
+			}
+		}
+
+		if (puCount > 0)
+		{
+			float puH = h;
+			float puW = h * 0.75f;
+			float puGap = puW * 0.25f;
+			float puStride = puW + puGap;
+			float rowX = headX - (puCount * puW + (puCount - 1) * puGap) * 0.5f;
+			float rowY = headY - puH * 1.25f;
+			float phase = (float)(cg.time % POWERUP_BLINK_TIME) / (float)POWERUP_BLINK_TIME;
+			float decay = 1.0f - phase;             /* 1 at beat start -> 0 at end */
+			float pulseFade = decay;                /* pops in at full alpha, fades out */
+			float pulseScale = 1.0f + 0.8f * decay; /* starts big (1.8x), shrinks to 1.0 */
+			int slot = 0;
+			vec4_t iconColor;
+			vec4_t pulseColor;
+
+			for (k = 0; k < 6; k++)
+			{
+				qhandle_t shader;
+				float cx;
+				float cy;
+				int dyeItemNum = 0;
+
+				if (!(ci->teamPowerups & (1 << puList[k])))
+					continue;
+
+				if (puList[k] == PW_BATTLESUIT && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+					continue;
+
+				switch (puList[k])
+				{
+					case PW_QUAD:
+					case PW_BATTLESUIT:
+					{
+						/* Quad/BS use the dye icon path so cg_quadDamageColor/cg_battleSuitColor tint applies (allies are teammates) */
+						gitem_t* item = BG_FindItemForPowerup(puList[k]);
+						if (item)
+						{
+							dyeItemNum = (int)(item - bg_itemlist);
+							CG_RegisterItemVisuals(dyeItemNum);
+							shader = CG_DyeFlagResolveInverseIcon(dyeItemNum, cg_items[dyeItemNum].icon);
+						}
+						else
+						{
+							shader = (puList[k] == PW_QUAD) ? cgs.media.quadDamageIcon : cgs.media.battleSuitIcon;
+						}
+						break;
+					}
+					case PW_HASTE:     shader = cgs.media.hasteIcon; break;
+					case PW_INVIS:     shader = cgs.media.invisIcon; break;
+					case PW_REGEN:     shader = cgs.media.regenIcon; break;
+					default:           shader = cgs.media.flightIcon; break;
+				}
+
+				cx = rowX + slot * puStride + puW * 0.5f;
+				cy = rowY + puH * 0.5f;
+				slot++;
+
+				if (!shader)
+					continue;
+
+				/* Base icon color; team-tint quad/BS when their color cvar is set */
+				Vector4Set(iconColor, 1.0f, 1.0f, 1.0f, nameColor[3]);
+				if (dyeItemNum)
+					CG_ModulateVec4ForCustomItemDyeIconForClient(dyeItemNum, clientNum, iconColor);
+
+				/* Pulse copy behind: grows and fades out over the cycle */
+				if (pulseFade > 0.0f)
+				{
+					float pw2 = puW * pulseScale;
+					float ph2 = puH * pulseScale;
+					Vector4Set(pulseColor, iconColor[0], iconColor[1], iconColor[2], nameColor[3] * pulseFade);
+					CG_DrawPicWithColor(cx - pw2 * 0.5f, cy - ph2 * 0.5f, pw2, ph2, pulseColor, shader);
+				}
+
+				/* Static icon on top */
+				CG_DrawPicWithColor(cx - puW * 0.5f, cy - puH * 0.5f, puW, puH, iconColor, shader);
+			}
+		}
 	}
 
 	if (hasName)
@@ -4047,24 +4120,6 @@ static void CG_Draw2D(void)
 }
 
 
-static void CG_DrawTourneyScoreboard(void)
-{
-	CG_DrawOldTourneyScoreboard();
-}
-
-
-/*
-=====================
-CG_DrawBefore2D
-
-No-op: logic merged into CG_Draw2D (single entry, one cvar cache).
-Kept for API compatibility.
-=====================
-*/
-void CG_DrawBefore2D(void)
-{
-}
-
 /*
 =====================
 CG_DrawActive
@@ -4088,7 +4143,7 @@ void CG_DrawActive(stereoFrame_t stereoView)
 	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR &&
 	        (cg.snap->ps.pm_flags & PMF_SCOREBOARD))
 	{
-		CG_DrawTourneyScoreboard();
+		CG_DrawOldTourneyScoreboard();
 		return;
 	}
 
@@ -4155,7 +4210,7 @@ void CG_DrawActive(stereoFrame_t stereoView)
 		VectorCopy(baseOrg, cg.refdef.vieworg);
 	}
 
-	/* Unified 2D: before-2D + main HUD (single entry, cached cvars, flat branches) */
+	/* Unified 2D HUD (single entry, cached cvars, flat branches) */
 	CG_Draw2D();
 	CG_OSPDrawEmojiListOverlay();
 	CG_BEChat_Draw();

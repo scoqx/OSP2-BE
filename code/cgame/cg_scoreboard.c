@@ -75,6 +75,10 @@ vec4_t scoreboard_specColor = {0.66, 0.66, 0.66, 1};
 #define SB_TIME_X           (SB_SCORELINE_X + 17 * BIGCHAR_WIDTH + 8) // width 5
 #define SB_NAME_X           (SB_SCORELINE_X + 22 * BIGCHAR_WIDTH) // width 15
 
+static qboolean CG_ScoreboardShowClientPowerups(const clientInfo_t* ci);
+static void CG_OSPDrawPowerupFrame(int x, int y, const clientInfo_t* ci);
+static qboolean CG_ScoreboardDrawPowerupIcons(float x, float y, float w, float h, const clientInfo_t* ci);
+
 // The new and improved score board
 //
 // In cases where the number of clients is high, the score board heads are interleaved
@@ -434,6 +438,11 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 	else
 		CG_DrawHead(headx, y, 16, 16, score->client, headAngles);
 
+	if (cg_scoreboardDrawPowerUps.integer == 1 || cg_scoreboardDrawPowerUps.integer == 2)
+	{
+		CG_OSPDrawPowerupFrame(0, y, ci);
+	}
+
 	if (score->ping == -1)
 	{
 		Com_sprintf(string, sizeof(string), "^2 connecting^7    ");
@@ -503,7 +512,12 @@ void CG_BEDrawClientScore(int y, score_t* score, float* color, float fade, qbool
 		            640 - SB_SCORELINE_X - bWidth, bHeight + 1, hcolor);
 	}
 
-	if (cg_scoreboardShowId.integer)
+	if (cg_scoreboardDrawPowerUps.integer == 3 &&
+	        CG_ScoreboardDrawPowerupIcons(10.0f, y + 4.0f, 10.0f, 10.0f, ci))
+	{
+		/* powerup icon drawn in place of player id */
+	}
+	else if (cg_scoreboardShowId.integer)
 	{
 		int idX = 20 + ICON_SIZE + 8;
 		char playerID[MAX_QPATH];
@@ -1071,19 +1085,46 @@ void CG_OSPDrawClientScore(int x, int y, const score_t* score, const float* colo
 	return;
 }
 
+/*
+=================
+CG_ScoreboardShowClientPowerups
+=================
+Non-flag scoreboard powerups: allies only when playing; everyone when local spectator.
+CTF flag models are drawn separately and are not gated here.
+*/
+static qboolean CG_ScoreboardShowClientPowerups(const clientInfo_t* ci)
+{
+	const clientInfo_t* localCi;
+
+	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
+	{
+		return qtrue;
+	}
+
+	localCi = &cgs.clientinfo[cg.clientNum];
+	if (CG_OSPIsGameTypeCA(cgs.gametype))
+	{
+		return (localCi->rt == ci->rt);
+	}
+	if (cgs.gametype >= GT_TEAM)
+	{
+		return (localCi->team == ci->team);
+	}
+
+	return (ci == localCi);
+}
+
 static void CG_OSPDrawPowerupFrame(int x, int y, const clientInfo_t* ci)
 {
 	vec4_t borderSize;
 	qboolean drawAny = qfalse;
-
-	team_t myTeam = cgs.clientinfo[cg.clientNum].team;
 
 	float x1 = (float)x + 8;
 	float y1 = (float)y;
 	float w1 = 304.0f;
 	float h1 = 17.0f;
 
-	if (myTeam != TEAM_SPECTATOR && ci->team != myTeam && ci->team != TEAM_SPECTATOR)
+	if (!CG_ScoreboardShowClientPowerups(ci))
 	{
 		return;
 	}
@@ -1106,7 +1147,7 @@ static void CG_OSPDrawPowerupFrame(int x, int y, const clientInfo_t* ci)
 		CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorCyan, qtrue);
 	}
 
-	if (ci->powerups & (1 << PW_BATTLESUIT))
+	if ((ci->powerups & (1 << PW_BATTLESUIT)) && !CG_HIDE_ALLY_BATTLESUIT_UI(ci))
 	{
 		x1 += borderSize[0];
 		y1 += borderSize[1];
@@ -1162,6 +1203,50 @@ static void CG_OSPDrawPowerupFrame(int x, int y, const clientInfo_t* ci)
 	}
 }
 
+static qboolean CG_ScoreboardDrawPowerupIcons(float x, float y, float w, float h, const clientInfo_t* ci)
+{
+	int powerups = ci->powerups;
+	qboolean drawAny = qfalse;
+
+	if (!CG_ScoreboardShowClientPowerups(ci))
+	{
+		return qfalse;
+	}
+
+	if (powerups & (1 << PW_QUAD))
+	{
+		CG_OSPDrawPic(x, y, w, h, cgs.media.quadDamageIcon);
+		drawAny = qtrue;
+	}
+	if ((powerups & (1 << PW_BATTLESUIT)) && !CG_HIDE_ALLY_BATTLESUIT_UI(ci))
+	{
+		CG_OSPDrawPic(x, y, w, h, cgs.media.battleSuitIcon);
+		drawAny = qtrue;
+	}
+	if (powerups & (1 << PW_HASTE))
+	{
+		CG_OSPDrawPic(x, y, w, h, cgs.media.hasteIcon);
+		drawAny = qtrue;
+	}
+	if (powerups & (1 << PW_INVIS))
+	{
+		CG_OSPDrawPic(x, y, w, h, cgs.media.invisIcon);
+		drawAny = qtrue;
+	}
+	if (powerups & (1 << PW_REGEN))
+	{
+		CG_OSPDrawPic(x, y, w, h, cgs.media.regenIcon);
+		drawAny = qtrue;
+	}
+	if (powerups & (1 << PW_FLIGHT))
+	{
+		CG_OSPDrawPic(x, y, w, h, cgs.media.flightIcon);
+		drawAny = qtrue;
+	}
+
+	return drawAny;
+}
+
 
 void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* color, float fade)
 {
@@ -1201,7 +1286,7 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 	}
 	trap_R_SetColor(NULL);
 
-	if (cg_scoreboardDrawPowerUps.integer)
+	if (cg_scoreboardDrawPowerUps.integer == 1 || cg_scoreboardDrawPowerUps.integer == 2)
 	{
 		CG_OSPDrawPowerupFrame(x, y, ci);
 	}
@@ -1211,7 +1296,11 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 		proportional = DS_PROPORTIONAL;
 	}
 
-	if (cg_scoreboardShowId.integer)
+	if (cg_scoreboardDrawPowerUps.integer == 3 && CG_ScoreboardDrawPowerupIcons(x + 10, y + 4, 10.0f, 10.0f, ci))
+	{
+		/* powerup icon drawn in place of player id */
+	}
+	else if (cg_scoreboardShowId.integer)
 	{
 		Com_sprintf(string, 1024, "%i", score->client);
 		CG_OSPDrawStringNew(x + 20, y + 4, string, colorWhite, colorBlack, lWidth, lHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
@@ -1532,6 +1621,10 @@ qboolean CG_OSPDrawScoretable(void)
 			{
 				tmpArgStr = "THW";
 			}
+			else if (cgs.killConfirmMode)
+			{
+				tmpArgStr = "CFM";
+			}
 			else
 			{
 				tmpArgStr = "NET";
@@ -1553,6 +1646,10 @@ qboolean CG_OSPDrawScoretable(void)
 			if (cgs.osp.gameTypeFreeze != 0)
 			{
 				tmpArgStr = "THW";
+			}
+			else if (cgs.killConfirmMode)
+			{
+				tmpArgStr = "CFM";
 			}
 			else
 			{
@@ -1867,7 +1964,7 @@ void CG_OSPDrawScoreHeader(float baseX, float y, vec4_t colorBody, vec4_t colorB
 {
 	const char* label1 = "Score";
 	const char* label2 = (cgs.gametype == GT_TEAM)
-	                     ? (cgs.osp.gameTypeFreeze ? "THW" : "NET")
+	                     ? (cgs.osp.gameTypeFreeze ? "THW" : (cgs.killConfirmMode ? "CFM" : "NET"))
 	                     : "PL";
 	const char* label3 = "Ping";
 	const char* label4 = "Min";

@@ -333,10 +333,13 @@ void CG_BEChat_Close(void)
 	beChatWindow.historyScroll = 0;
 	beChatWindow.repeatKey = -1;
 	memset(beChatWindow.keyDown, 0, sizeof(beChatWindow.keyDown));
-	beChatWindow.altFavHintShown = qfalse;
 	beChatWindow.altDownSince = 0;
 	beChatWindow.altLastTrapTime = 0;
 	beChatWindow.altPrevDown = qfalse;
+	beChatWindow.ctrlFavHintShown = qfalse;
+	beChatWindow.ctrlDownSince = 0;
+	beChatWindow.ctrlLastTrapTime = 0;
+	beChatWindow.ctrlPrevDown = qfalse;
 	beChatWindow.sbDragging = qfalse;
 	beChatMouse1Prev = qfalse;
 	beChatWindow.helpHover = qfalse;
@@ -425,13 +428,17 @@ static void CG_BEChat_OpenEx(qboolean teamDest)
 	CG_BEChat_InputClear(&beChatWindow.input);
 	CG_BEChat_EmojiSessionOpen();
 	beChatWindow.altFavUsed = qfalse;
-	beChatWindow.altFavHintShown = qfalse;
 	beChatWindow.altPrevDown = trap_Key_IsDown(K_ALT) ? qtrue : qfalse;
 	beChatWindow.altDownSince = beChatWindow.altPrevDown ? cg.time : 0;
 	beChatWindow.altLastTrapTime = beChatWindow.altPrevDown ? cg.time : 0;
+	beChatWindow.ctrlPrevDown = trap_Key_IsDown(K_CTRL) ? qtrue : qfalse;
+	beChatWindow.ctrlDownSince = beChatWindow.ctrlPrevDown ? cg.time : 0;
+	beChatWindow.ctrlLastTrapTime = beChatWindow.ctrlPrevDown ? cg.time : 0;
+	beChatWindow.ctrlFavHintShown = qfalse;
 	beChatWindow.phantomKey0Seq = 0;
 	memset(beChatWindow.keyDown, 0, sizeof(beChatWindow.keyDown));
 	beChatWindow.keyDown[K_ALT] = beChatWindow.altPrevDown;
+	beChatWindow.keyDown[K_CTRL] = beChatWindow.ctrlPrevDown;
 	beChatWindow.repeatKey = -1;
 	{
 		float winX;
@@ -1525,18 +1532,18 @@ static qboolean CG_BEChat_FavEmojiSlotFromDigit(char digit, int* outSlot)
 }
 qboolean CG_BEChat_AltIsHeld(void)
 {
-	if (beChatWindow.latchCloseKey == K_ALT)
+	if (beChatWindow.latchCloseKey == K_CTRL)
 	{
 		return qfalse;
 	}
 
-	if (trap_Key_IsDown(K_ALT))
+	if (trap_Key_IsDown(K_CTRL))
 	{
 		return qtrue;
 	}
 
-	if (beChatWindow.keyDown[K_ALT] &&
-	        cg.time - beChatWindow.altLastTrapTime < BE_CHAT_ALT_TRAP_GRACE_MS)
+	if (beChatWindow.keyDown[K_CTRL] &&
+	        cg.time - beChatWindow.ctrlLastTrapTime < BE_CHAT_CTRL_TRAP_GRACE_MS)
 	{
 		return qtrue;
 	}
@@ -1545,8 +1552,6 @@ qboolean CG_BEChat_AltIsHeld(void)
 }
 qboolean CG_BEChat_AltFavHintActive(void)
 {
-	int heldMs;
-
 	if (cg_chatWindow.integer & BE_CHAT_NO_ALT_FAV_HINT_BIT)
 	{
 		return qfalse;
@@ -1557,17 +1562,7 @@ qboolean CG_BEChat_AltFavHintActive(void)
 		return qfalse;
 	}
 
-	if (beChatWindow.altDownSince <= 0)
-	{
-		return qfalse;
-	}
-
-	heldMs = cg.time - beChatWindow.altDownSince;
-	if (heldMs < 0)
-	{
-		heldMs = 0;
-	}
-	if (heldMs < BE_CHAT_ALT_FAV_HINT_DELAY_MS)
+	if (beChatWindow.ctrlDownSince <= 0)
 	{
 		return qfalse;
 	}
@@ -1629,7 +1624,6 @@ static qboolean CG_BEChat_FavEmojiResolveSlot(int key, char ch, int* outSlot)
 static qboolean CG_BEChat_ApplyFavEmojiSlot(int slot, float maxTextW)
 {
 	beChatWindow.sentHistBrowse = -1;
-	beChatWindow.altFavUsed = qtrue;
 	CG_BEChat_EmojiInsertFav(&beChatWindow.input, slot, maxTextW);
 	CG_BEChat_InputClampScroll(&beChatWindow.input, maxTextW);
 	return qtrue;
@@ -1720,9 +1714,19 @@ static qboolean CG_BEChat_FavEmojiKeyToDigit(int key, char* outDigit)
 		return qfalse;
 	}
 }
+static qboolean CG_BEChat_FavEmojiScrollArrowKey(int key)
+{
+	return (key == K_UPARROW || key == K_DOWNARROW ||
+	        key == K_KP_UPARROW || key == K_KP_DOWNARROW);
+}
 static qboolean CG_BEChat_TryFavEmojiKeyOnEdge(int key, char digit, float maxTextW)
 {
 	int slot;
+
+	if (trap_Key_IsDown(K_CTRL) && CG_BEChat_FavEmojiScrollArrowKey(key))
+	{
+		return qfalse;
+	}
 
 	if (!CG_BEChat_AltIsHeld())
 	{
@@ -1741,6 +1745,11 @@ static qboolean CG_BEChat_TryFavEmojiKeyOnEdge(int key, char digit, float maxTex
 static qboolean CG_BEChat_TryFavEmojiKey(int key, char digit, float maxTextW)
 {
 	int slot;
+
+	if (trap_Key_IsDown(K_CTRL) && CG_BEChat_FavEmojiScrollArrowKey(key))
+	{
+		return qfalse;
+	}
 
 	if (!CG_BEChat_AltIsHeld())
 	{
@@ -1823,9 +1832,15 @@ static qboolean CG_BEChat_TryFavEmojiFromProcessKey(int key, char ch, float maxT
 static void CG_BEChat_AltSessionEnd(void)
 {
 	beChatWindow.keyDown[K_ALT] = qfalse;
-	beChatWindow.altFavHintShown = qfalse;
 	beChatWindow.altDownSince = 0;
 	beChatWindow.altLastTrapTime = 0;
+}
+static void CG_BEChat_CtrlFavSessionEnd(void)
+{
+	beChatWindow.keyDown[K_CTRL] = qfalse;
+	beChatWindow.ctrlFavHintShown = qfalse;
+	beChatWindow.ctrlDownSince = 0;
+	beChatWindow.ctrlLastTrapTime = 0;
 }
 static void CG_BEChat_PollAltPicker(void)
 {
@@ -1848,7 +1863,13 @@ static void CG_BEChat_PollAltPicker(void)
 		}
 	}
 
-	altDown = CG_BEChat_AltIsHeld();
+	altDown = trap_Key_IsDown(K_ALT) ? qtrue : qfalse;
+	if (!altDown && beChatWindow.keyDown[K_ALT] &&
+	        cg.time - beChatWindow.altLastTrapTime < BE_CHAT_ALT_TRAP_GRACE_MS)
+	{
+		altDown = qtrue;
+	}
+
 	if (altDown)
 	{
 		if (!beChatWindow.altPrevDown && beChatWindow.altDownSince <= 0)
@@ -1858,7 +1879,7 @@ static void CG_BEChat_PollAltPicker(void)
 	}
 	else if (beChatWindow.altPrevDown)
 	{
-		if (!beChatWindow.altFavUsed && !beChatWindow.altFavHintShown)
+		if (!beChatWindow.altFavUsed)
 		{
 			CG_BEChat_EmojiTogglePicker();
 		}
@@ -1866,6 +1887,41 @@ static void CG_BEChat_PollAltPicker(void)
 		CG_BEChat_AltSessionEnd();
 	}
 	beChatWindow.altPrevDown = altDown;
+}
+static void CG_BEChat_PollCtrlFav(void)
+{
+	qboolean ctrlDown;
+
+	if (beChatWindow.latchCloseKey == K_CTRL)
+	{
+		beChatWindow.ctrlPrevDown = trap_Key_IsDown(K_CTRL) ? qtrue : qfalse;
+		beChatWindow.keyDown[K_CTRL] = beChatWindow.ctrlPrevDown;
+		return;
+	}
+
+	if (trap_Key_IsDown(K_CTRL))
+	{
+		beChatWindow.ctrlLastTrapTime = cg.time;
+		beChatWindow.keyDown[K_CTRL] = qtrue;
+		if (beChatWindow.ctrlDownSince <= 0)
+		{
+			beChatWindow.ctrlDownSince = cg.time;
+		}
+	}
+
+	ctrlDown = CG_BEChat_AltIsHeld();
+	if (ctrlDown)
+	{
+		if (!beChatWindow.ctrlPrevDown && beChatWindow.ctrlDownSince <= 0)
+		{
+			beChatWindow.ctrlDownSince = cg.time;
+		}
+	}
+	else if (beChatWindow.ctrlPrevDown)
+	{
+		CG_BEChat_CtrlFavSessionEnd();
+	}
+	beChatWindow.ctrlPrevDown = ctrlDown;
 }
 static qboolean CG_BEChat_KeySupportsRepeat(int key)
 {
@@ -2072,6 +2128,11 @@ static qboolean CG_BEChat_RepeatFavEmojiIfAlt(int key, float maxTextW)
 	int slot;
 
 	if (!CG_BEChat_AltIsHeld())
+	{
+		return qfalse;
+	}
+
+	if (trap_Key_IsDown(K_CTRL) && CG_BEChat_FavEmojiScrollArrowKey(key))
 	{
 		return qfalse;
 	}
@@ -2501,6 +2562,7 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 	maxTextW = CG_BEChat_InputFieldMaxWidth();
 
 	CG_BEChat_PollAltPicker();
+	CG_BEChat_PollCtrlFav();
 
 	CG_BEChat_ScrollbarLayoutUpdate();
 	beChatMouse1Prev = trap_Key_IsDown(K_MOUSE1);
@@ -2520,10 +2582,20 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 		{
 			beChatWindow.keyDown[K_ALT] = qtrue;
 		}
+		if (beChatWindow.keyDown[K_CTRL] &&
+		        cg.time - beChatWindow.ctrlLastTrapTime < BE_CHAT_CTRL_TRAP_GRACE_MS)
+		{
+			beChatWindow.keyDown[K_CTRL] = qtrue;
+		}
 		beChatWindow.altPrevDown = trap_Key_IsDown(K_ALT) ? qtrue : qfalse;
 		if (beChatWindow.altPrevDown && !beChatWindow.altDownSince)
 		{
 			beChatWindow.altDownSince = cg.time;
+		}
+		beChatWindow.ctrlPrevDown = trap_Key_IsDown(K_CTRL) ? qtrue : qfalse;
+		if (beChatWindow.ctrlPrevDown && !beChatWindow.ctrlDownSince)
+		{
+			beChatWindow.ctrlDownSince = cg.time;
 		}
 		return;
 	}
@@ -2578,36 +2650,24 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 	{
 		if (CG_BEChat_KeyEdge(K_UPARROW))
 		{
-			if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_UPARROW, '8', maxTextW))
-			{
-				CG_BEChat_Scroll(1);
-				CG_BEChat_BeginRepeat(K_UPARROW);
-			}
+			CG_BEChat_Scroll(1);
+			CG_BEChat_BeginRepeat(K_UPARROW);
 		}
 		else if (CG_BEChat_KeyEdge(K_KP_UPARROW))
 		{
-			if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_UPARROW, '8', maxTextW))
-			{
-				CG_BEChat_Scroll(1);
-				CG_BEChat_BeginRepeat(K_KP_UPARROW);
-			}
+			CG_BEChat_Scroll(1);
+			CG_BEChat_BeginRepeat(K_KP_UPARROW);
 		}
 
 		if (CG_BEChat_KeyEdge(K_DOWNARROW))
 		{
-			if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_DOWNARROW, '2', maxTextW))
-			{
-				CG_BEChat_Scroll(-1);
-				CG_BEChat_BeginRepeat(K_DOWNARROW);
-			}
+			CG_BEChat_Scroll(-1);
+			CG_BEChat_BeginRepeat(K_DOWNARROW);
 		}
 		else if (CG_BEChat_KeyEdge(K_KP_DOWNARROW))
 		{
-			if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_DOWNARROW, '2', maxTextW))
-			{
-				CG_BEChat_Scroll(-1);
-				CG_BEChat_BeginRepeat(K_KP_DOWNARROW);
-			}
+			CG_BEChat_Scroll(-1);
+			CG_BEChat_BeginRepeat(K_KP_DOWNARROW);
 		}
 	}
 
@@ -2808,6 +2868,20 @@ void CG_BEChat_KeyEvent(int key, qboolean down)
 			return;
 		}
 
+		if (k == K_CTRL)
+		{
+			if (beChatWindow.latchCloseKey != K_CTRL)
+			{
+				beChatWindow.keyDown[K_CTRL] = qtrue;
+				beChatWindow.ctrlLastTrapTime = cg.time;
+				if (beChatWindow.ctrlDownSince <= 0)
+				{
+					beChatWindow.ctrlDownSince = cg.time;
+				}
+			}
+			return;
+		}
+
 		if (k == 0)
 		{
 			if (cg.time >= beChatWindow.inputGraceUntil)
@@ -2870,6 +2944,10 @@ void CG_BEChat_KeyEvent(int key, qboolean down)
 			beChatMouse1Prev = qfalse;
 		}
 		if (k == K_ALT)
+		{
+			return;
+		}
+		if (k == K_CTRL)
 		{
 			return;
 		}
