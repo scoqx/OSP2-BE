@@ -371,16 +371,16 @@ static int CG_MapSpawns_ModeIndex(void)
 
 	switch (cgs.gametype)
 	{
-	case GT_TOURNAMENT:
-		return 1;
-	case GT_SINGLE_PLAYER:
-		return 2;
-	case GT_TEAM:
-		return 3;
-	case GT_CTF:
-		return 4;
-	default:
-		return 0;
+		case GT_TOURNAMENT:
+			return 1;
+		case GT_SINGLE_PLAYER:
+			return 2;
+		case GT_TEAM:
+			return 3;
+		case GT_CTF:
+			return 4;
+		default:
+			return 0;
 	}
 }
 
@@ -447,22 +447,22 @@ static void CG_MapSpawns_BuildMarkGeom(cg_spawnPoint_t* pt)
 	{
 		switch (i)
 		{
-		case 0:
-			VectorMA(origin, -radius, axis[1], corner);
-			VectorMA(corner, -radius, axis[2], corner);
-			break;
-		case 1:
-			VectorMA(origin, radius, axis[1], corner);
-			VectorMA(corner, -radius, axis[2], corner);
-			break;
-		case 2:
-			VectorMA(origin, radius, axis[1], corner);
-			VectorMA(corner, radius, axis[2], corner);
-			break;
-		default:
-			VectorMA(origin, -radius, axis[1], corner);
-			VectorMA(corner, radius, axis[2], corner);
-			break;
+			case 0:
+				VectorMA(origin, -radius, axis[1], corner);
+				VectorMA(corner, -radius, axis[2], corner);
+				break;
+			case 1:
+				VectorMA(origin, radius, axis[1], corner);
+				VectorMA(corner, -radius, axis[2], corner);
+				break;
+			case 2:
+				VectorMA(origin, radius, axis[1], corner);
+				VectorMA(corner, radius, axis[2], corner);
+				break;
+			default:
+				VectorMA(origin, -radius, axis[1], corner);
+				VectorMA(corner, radius, axis[2], corner);
+				break;
 		}
 
 		VectorSubtract(corner, pt->origin, pt->markCornerOfs[i]);

@@ -1814,9 +1814,9 @@ void UI_Cache_f(void)
 }
 
 
-#define UI_LANJOB_ADDRESSLENGTH	64
-#define UI_LANJOB_WAIT_MS		3000
-#define UI_FAV_LANJOB_WAIT_MS	6000
+#define UI_LANJOB_ADDRESSLENGTH 64
+#define UI_LANJOB_WAIT_MS       3000
+#define UI_FAV_LANJOB_WAIT_MS   6000
 
 typedef enum
 {
@@ -1825,20 +1825,20 @@ typedef enum
 	UI_LANJOB_FAVOURITE_SERVER
 } ui_lanjob_t;
 
-static qboolean		ui_lanJobFavQueued;
-static char			ui_lanJobFavQueuedAddr[UI_LANJOB_ADDRESSLENGTH];
+static qboolean     ui_lanJobFavQueued;
+static char         ui_lanJobFavQueuedAddr[UI_LANJOB_ADDRESSLENGTH];
 
 static struct
 {
-	ui_lanjob_t		job;
-	char			target[UI_LANJOB_ADDRESSLENGTH];
-	char			targetAlt[UI_LANJOB_ADDRESSLENGTH];
-	qboolean		dual;
-	qboolean		tryAlt;
-	int				deadline;
-	char			pingInfo[MAX_INFO_STRING];
-	qboolean		hasPingInfo;
-	qboolean		pingIssued;
+	ui_lanjob_t     job;
+	char            target[UI_LANJOB_ADDRESSLENGTH];
+	char            targetAlt[UI_LANJOB_ADDRESSLENGTH];
+	qboolean        dual;
+	qboolean        tryAlt;
+	int             deadline;
+	char            pingInfo[MAX_INFO_STRING];
+	qboolean        hasPingInfo;
+	qboolean        pingIssued;
 } ui_lanJob;
 
 static void UI_LANJob_Reset(void)
@@ -1865,10 +1865,10 @@ static const char* UI_LANJob_ActiveTarget(void)
 
 static void UI_LANJob_CapturePingInfo(void)
 {
-	char	adrstr[UI_LANJOB_ADDRESSLENGTH];
-	char	info[MAX_INFO_STRING];
-	int		i;
-	int		time;
+	char    adrstr[UI_LANJOB_ADDRESSLENGTH];
+	char    info[MAX_INFO_STRING];
+	int     i;
+	int     time;
 
 	if (!UI_LANJob_ActiveTarget()[0])
 	{
@@ -2002,8 +2002,8 @@ static qboolean UI_LANJob_TryBeginAlternate(void)
 
 static void UI_LANJob_TickServerStatus(void)
 {
-	char	status[BIG_INFO_STRING];
-	int		ret;
+	char    status[BIG_INFO_STRING];
+	int     ret;
 
 	ret = trap_LAN_ServerStatus(UI_LANJob_ActiveTarget(), status, sizeof(status));
 	if (ret && status[0])

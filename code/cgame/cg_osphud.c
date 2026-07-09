@@ -2964,7 +2964,7 @@ static float CG_OSPDrawPowerups(float x, float y)
 			}
 
 			CG_DrawClientPowerupIconOld(x + 64.0f, y + ICON_SIZE / 2.0f - size / 2.0f,
-			              size, size, sorted[i], ps->clientNum);
+			                            size, size, sorted[i], ps->clientNum);
 		}
 	}
 	trap_R_SetColor(NULL);

@@ -341,7 +341,7 @@ extern int UI_OSPTextFitLineWidth640(const char* lineStart, const char* lineEnd,
                                      int proportional, float maxWidth640);
 extern float UI_OSPCharWidth640(char sym, float charWidth, int proportional);
 extern int UI_OSPTextCountWrappedLines640(const char* text, float charWidth, int proportional,
-                                           float maxWidth640);
+        float maxWidth640);
 extern void UI_OSPDrawFrame(float x, float y, float w, float h, vec4_t borderSize, vec4_t color, qboolean inner);
 extern text_command_t* UI_CompileText(const char* text);
 extern void UI_CompiledTextDestroy(text_command_t* root);

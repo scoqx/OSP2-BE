@@ -430,7 +430,7 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 
 	isFrozenTinfo = CG_ClientInfoIsFreezeTinfoFrozen(ci);
 	if ((ci->health <= 0 && !isFrozenTinfo) ||
-	    (cg.teamMarkers.drawTeamTasks && cg.teamMarkers.clientHasOverhead[clientNum]))
+	        (cg.teamMarkers.drawTeamTasks && cg.teamMarkers.clientHasOverhead[clientNum]))
 	{
 		return;
 	}
@@ -438,7 +438,7 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 	if (isFrozenTinfo)
 	{
 		if (!cg.teamMarkers.clientHasFrozenAllyMarkNear[clientNum] &&
-		    (cg_drawFriend.integer == 2 || cg_teamFrozenFoe.integer || cg_drawFriend.integer == 1))
+		        (cg_drawFriend.integer == 2 || cg_teamFrozenFoe.integer || cg_drawFriend.integer == 1))
 		{
 			if (!useTeamFrozen && cg_teamFrozenFoe.integer)
 			{

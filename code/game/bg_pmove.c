@@ -2534,9 +2534,12 @@ void Pmove(pmove_t* pmove)
 		pmove->cmd.serverTime = pmove->ps->commandTime + msec;
 		pmove->movetype = phy_movetype.integer;
 
-		if (pmove->movetype >= 0 && cgs.osdf_signature) {
+		if (pmove->movetype >= 0 && cgs.osdf_signature)
+		{
 			phy_PmoveSingle(pmove);
-		} else {
+		}
+		else
+		{
 			PmoveSingle(pmove);
 		}
 

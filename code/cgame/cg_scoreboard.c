@@ -1588,7 +1588,7 @@ qboolean CG_OSPDrawScoretable(void)
 	else if (cg.killerName[0])
 	{
 		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f, y, va("Fragged by %s", cg.killerName), colorWhite, colorBlack, 8, 12, SCREEN_WIDTH, DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW, cgFontIndices.scoreboard, NULL, NULL, NULL);
-		//		CG_DrawBigString(SCREEN_WIDTH / 2.0f, y, va("Fragged by %s", cg.killerName), *color[0], DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW, 2);
+		//      CG_DrawBigString(SCREEN_WIDTH / 2.0f, y, va("Fragged by %s", cg.killerName), *color[0], DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW, 2);
 	}
 
 

@@ -845,7 +845,7 @@ static void CG_WorldFlags_RadiusToScreenIconSize(const vec3_t origin, float* ico
 	lifted[2] += 48.0f + CG_WORLDFLAGS_Z_LIFT;
 
 	worldRadius = CG_FloatSpriteRadiusAtDist(spriteOrigin, 1.0f,
-	        CG_WORLDFLAGS_FLOAT_MAX_DIST, CG_WORLDFLAGS_Z_LIFT);
+	              CG_WORLDFLAGS_FLOAT_MAX_DIST, CG_WORLDFLAGS_Z_LIFT);
 	dist = Distance(lifted, cg.refdef.vieworg);
 	if (dist < 1.0f)
 	{
@@ -994,7 +994,7 @@ static void CG_WorldFlags_DrawPoint(const vec3_t origin, qhandle_t shader, const
 		CG_WorldFlags_DrawWorldPic2D(origin, shader, color);
 	}
 	if (allowBorder && (!(CG_WorldToScreen(origin, &x, &y)) ||
-	        x < 0.0f || x >= SCREEN_WIDTH || y < 0.0f || y >= SCREEN_HEIGHT))
+	                    x < 0.0f || x >= SCREEN_WIDTH || y < 0.0f || y >= SCREEN_HEIGHT))
 	{
 		CG_WorldFlags_DrawBorder(origin, color, borderShader);
 	}

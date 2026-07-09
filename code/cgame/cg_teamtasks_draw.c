@@ -1416,7 +1416,7 @@ static void CG_ProcessCommonMarkData(teamTaskMark_t* mark, float t,
 	}
 
 	if ((constants->teamTaskFlags & CG_TEAMTASK_SHOWWITHOUTHOVER)
-	    && !((mark->isOverhead && mark->clientNum == cg.clientNum) || shouldDisplayAsOverhead))
+	        && !((mark->isOverhead && mark->clientNum == cg.clientNum) || shouldDisplayAsOverhead))
 	{
 		qboolean showLabel;
 
@@ -1426,7 +1426,7 @@ static void CG_ProcessCommonMarkData(teamTaskMark_t* mark, float t,
 			showLabel = qtrue;
 		}
 		if ((constants->teamTaskFlags & CG_TEAMTASK_SHOWNAME)
-		    && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
+		        && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 		{
 			showLabel = qtrue;
 		}

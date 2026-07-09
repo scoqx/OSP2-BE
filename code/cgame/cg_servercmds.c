@@ -366,10 +366,10 @@ void CG_ParseServerinfo(void)
 	cgs.fraglimit = atoi(Info_ValueForKey(info, "fraglimit"));
 
 	// This is for all OSDF-based mods
-	cgs.osdf_signature = atoi( Info_ValueForKey(info, "osdf_signature") );
+	cgs.osdf_signature = atoi(Info_ValueForKey(info, "osdf_signature"));
 
 	// Metarena-specific
-	cgs.phy_cpm_crouchslide_time = atoi( Info_ValueForKey(info, "phy_cpm_crouchslide_time") );
+	cgs.phy_cpm_crouchslide_time = atoi(Info_ValueForKey(info, "phy_cpm_crouchslide_time"));
 
 	cgs.capturelimit = atoi(Info_ValueForKey(info, "capturelimit"));
 	timelimitVal = atoi(Info_ValueForKey(info, "timelimit"));

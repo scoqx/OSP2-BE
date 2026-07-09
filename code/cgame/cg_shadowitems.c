@@ -511,9 +511,9 @@ static void CG_ShadowItems_RememberAnchorOrigin(int pointIdx, const vec3_t origi
 }
 
 static qboolean CG_ShadowItems_TraceItemDrop(
-        const vec3_t start,
-        int contentsMask,
-        vec3_t outOrigin)
+    const vec3_t start,
+    int contentsMask,
+    vec3_t outOrigin)
 {
 	trace_t     tr;
 	vec3_t      dest;
@@ -917,22 +917,22 @@ static int CG_ShadowItems_ModeIndex(void)
 {
 	switch (cgs.gametype)
 	{
-	case GT_TOURNAMENT:
-		return 1;
-	case GT_SINGLE_PLAYER:
-		return 2;
-	case GT_TEAM:
-		return 3;
-	case GT_CTF:
-		return 4;
-	default:
-		return 0;
+		case GT_TOURNAMENT:
+			return 1;
+		case GT_SINGLE_PLAYER:
+			return 2;
+		case GT_TEAM:
+			return 3;
+		case GT_CTF:
+			return 4;
+		default:
+			return 0;
 	}
 }
 
 static qboolean CG_ShadowItems_CanSharePickupSlot(
-        const cg_shadowItemPoint_t* a,
-        const cg_shadowItemPoint_t* b)
+    const cg_shadowItemPoint_t* a,
+    const cg_shadowItemPoint_t* b)
 {
 	if (a->modelindex < 1 || a->modelindex >= bg_numItems
 	        || b->modelindex < 1 || b->modelindex >= bg_numItems)

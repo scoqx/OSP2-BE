@@ -177,7 +177,7 @@ CG_SpawnEffect
 Player teleporting in or out
 ==================
 */
-refEntity_t *CG_SpawnEffect(vec3_t org, qboolean firstPerson)
+refEntity_t* CG_SpawnEffect(vec3_t org, qboolean firstPerson)
 {
 	localEntity_t*   le;
 	refEntity_t*     re;

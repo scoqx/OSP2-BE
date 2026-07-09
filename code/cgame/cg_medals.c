@@ -287,7 +287,7 @@ static int CG_MedalFrameIndex(int startTime, int durationMsec)
 	return slot;
 }
 
- void CG_MedalResolveFrame(qhandle_t medalShader, int startTime, int durationMsec, qhandle_t* outShader, vec4_t outTc)
+void CG_MedalResolveFrame(qhandle_t medalShader, int startTime, int durationMsec, qhandle_t* outShader, vec4_t outTc)
 {
 	int type;
 	int frameIndex;

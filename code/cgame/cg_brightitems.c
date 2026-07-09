@@ -346,7 +346,7 @@ void CG_InitBrightItemsColors(void)
 		if (numDefaults < BRIGHT_DEFAULTS_HASH_MAX)
 		{
 			brightDefaultHash[numDefaults] = Com_GenerateHashValue(
-			        itemBrightColorDefaults[j].classname, BRIGHT_CLASSNAME_HASH_SIZE);
+			                                     itemBrightColorDefaults[j].classname, BRIGHT_CLASSNAME_HASH_SIZE);
 			numDefaults++;
 		}
 	}

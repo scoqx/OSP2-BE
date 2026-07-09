@@ -7,7 +7,7 @@ ui_favServer_t  ui_favServer;
 char            ui_favLastStatus[BIG_INFO_STRING];
 
 static qboolean UI_Fav_ParseSettingLine(const char* line, const char* key,
-        char* value, int valueSize)
+                                        char* value, int valueSize)
 {
 	const char*     p;
 	int             keyLen;
@@ -335,7 +335,7 @@ static void UI_Fav_ApplyInfoString(const char* infostring)
 	if (s[0])
 	{
 		ui_favServer.numTeamBlue = UI_Fav_ParseTeamSlotIds(s, ui_favServer.teamBlue,
-		                                UI_FAV_MAX_TEAM_SLOTS);
+		                           UI_FAV_MAX_TEAM_SLOTS);
 		if (ui_favServer.numTeamBlue > 0)
 		{
 			ui_favServer.teamMode = qtrue;
@@ -346,7 +346,7 @@ static void UI_Fav_ApplyInfoString(const char* infostring)
 	if (s[0])
 	{
 		ui_favServer.numTeamRed = UI_Fav_ParseTeamSlotIds(s, ui_favServer.teamRed,
-		                               UI_FAV_MAX_TEAM_SLOTS);
+		                          UI_FAV_MAX_TEAM_SLOTS);
 		if (ui_favServer.numTeamRed > 0)
 		{
 			ui_favServer.teamMode = qtrue;
@@ -474,14 +474,14 @@ static void UI_Fav_ParseStatus(const char* status)
 			ui_favServer.gametype = atoi(value);
 		}
 		else if (UI_Fav_ParseTeamSlotsLine(line, "Players_Blue",
-		             ui_favServer.teamBlue, UI_FAV_MAX_TEAM_SLOTS,
-		             &ui_favServer.numTeamBlue))
+		                                   ui_favServer.teamBlue, UI_FAV_MAX_TEAM_SLOTS,
+		                                   &ui_favServer.numTeamBlue))
 		{
 			ui_favServer.teamMode = qtrue;
 		}
 		else if (UI_Fav_ParseTeamSlotsLine(line, "Players_Red",
-		             ui_favServer.teamRed, UI_FAV_MAX_TEAM_SLOTS,
-		             &ui_favServer.numTeamRed))
+		                                   ui_favServer.teamRed, UI_FAV_MAX_TEAM_SLOTS,
+		                                   &ui_favServer.numTeamRed))
 		{
 			ui_favServer.teamMode = qtrue;
 		}
@@ -617,7 +617,7 @@ qboolean UI_FavouriteServer_StatusIsComplete(const char* status)
 	}
 
 	return (qboolean)(UI_FavouriteServer_StatusHasPlayersSection(status) ||
-	                    strstr(status, "Server settings:") != NULL);
+	                  strstr(status, "Server settings:") != NULL);
 }
 
 const ui_favPlayer_t* UI_FavouriteServer_FindPlayer(int num)

@@ -151,7 +151,7 @@ void CG_OSPEnforceCustomClientSettings(void)
 	{
 		return;
 	}
-	
+
 	if (cgs.osp.custom_client & OSP_CUSTOM_CLIENT_TIMER_FLAG)
 	{
 		if (cg_drawTimer.integer)
@@ -166,19 +166,19 @@ void CG_OSPEnforceCustomClientSettings(void)
 
 	// if ((cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG) == 0)
 	// {
-	// 	if (cg_altPlasma.integer || cg_altGrenades.integer || cg_altLightning.integer)
-	// 	{
+	//  if (cg_altPlasma.integer || cg_altGrenades.integer || cg_altLightning.integer)
+	//  {
 
-	// 	}
+	//  }
 	// }
 
 	// if ((cgs.osp.custom_client & OSP_CUSTOM_CLIENT_OSP_HUD_FLAG) == 0)
 	// {
-	// 	if (cg_enableOSPHUD.integer && !(cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE))
-	// 	{
-	// 		CG_Printf("^3The OSP-based HUD has been disabled.\n");
-	// 		trap_Cvar_Set("cg_enableOSPHUD", "0"); 			// lol
-	// 	}
+	//  if (cg_enableOSPHUD.integer && !(cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE))
+	//  {
+	//      CG_Printf("^3The OSP-based HUD has been disabled.\n");
+	//      trap_Cvar_Set("cg_enableOSPHUD", "0");          // lol
+	//  }
 	// }
 
 }
@@ -325,10 +325,10 @@ void CG_BEUpdateUserInfo(void)
 	{
 		return;
 	}
-	
+
 	spectatorHud = CG_SHUDHasSpectatorItemSpawnsElements() ? 1 : 0;
 	trap_SendClientCommand(va("beinfo %d %d %d %d %d %d %d %d\n",
-	        spectatorHud, cg_respawnWeapon.integer, 0, 0, 0, 0, 0, 0));
+	                          spectatorHud, cg_respawnWeapon.integer, 0, 0, 0, 0, 0, 0));
 }
 
 // Disable be features

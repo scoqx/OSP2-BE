@@ -297,7 +297,7 @@ static float ospstr_measure_commands(const text_command_t* cmd, int stopIdx, con
 }
 
 static float ospstr_get_symbol_width(const text_command_t* cmd, int index, const cg_osp_font_metric_t* metrics,
-                                       float aw, float ah, int proportional)
+                                     float aw, float ah, int proportional)
 {
 	if (cmd[index].type == OSP_TEXT_CMD_SHADER)
 	{
@@ -1003,20 +1003,20 @@ static float ospstr_rich_slice_measure_fit(const char* start, const char* end, i
 					from += 2;
 					continue;
 				case '^':
-					{
-						const cg_osp_font_metric_t* fm;
+				{
+					const cg_osp_font_metric_t* fm;
 
-						fm = &metrics[(unsigned char)'^'];
-						gw = OSPSTR_GLYPH_W((*fm), aw, proportional);
-					}
-					if (limitWidth && ax + gw > limitPx)
-					{
-						goto done;
-					}
-					ax += gw;
-					lastFit = from + 1;
-					from += 1;
-					continue;
+					fm = &metrics[(unsigned char)'^'];
+					gw = OSPSTR_GLYPH_W((*fm), aw, proportional);
+				}
+				if (limitWidth && ax + gw > limitPx)
+				{
+					goto done;
+				}
+				ax += gw;
+				lastFit = from + 1;
+				from += 1;
+				continue;
 				case 'X':
 				case 'x':
 					from += 8;
@@ -1343,7 +1343,7 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		if (needWidth)
 		{
 			expectedLength = ospstr_plain_measure(string, metrics, aw, proportional,
-			                                    widthIsChars ? 0.0f : mw, maxWidth, widthIsChars);
+			                                      widthIsChars ? 0.0f : mw, maxWidth, widthIsChars);
 		}
 
 		if (flags & (DS_HCENTER | DS_HRIGHT))

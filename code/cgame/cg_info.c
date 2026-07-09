@@ -217,7 +217,7 @@ static void CG_DrawLoadingProgressBar(void)
 	{
 		shadowColor[3] = 1.0f;
 		CG_DrawLoadingProgressBarPic(x + 2.0f, y + 2.0f, fillW, h, fraction, shadowColor,
-		                              cgs.media.loadingBarFill1Shader);
+		                             cgs.media.loadingBarFill1Shader);
 	}
 
 	Vector4Set(barColor, 1.0f, 1.0f, 1.0f, 1.0f);

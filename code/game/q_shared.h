@@ -1009,21 +1009,22 @@ typedef struct usercmd_s
 //   Stores extracted pmove data for the cg module
 //   It is cleared before the client's call to Pmove() inside cg_predict.c
 //   Renamed from state_t
-typedef struct {
-  float g_squared;  // gravity squared.  0 when not on slick.
-  float v_squared;  // norm velocity squared (starts as previous_velocity)
-  float vf_squared; // norm velocity (friction), squared
-  float a_squared;  // Accel squared
-  float v;          // norm Velocity (starts as previous_velocity)
-  float vf;         // this frame's norm velocity
-  float a; // Accel corresponding to this frame (airaccel, groundaccel, etc)
-           // Extracted from walkmove, airmove, etc
-  float wishspeed; // Wishspeed, as calculated in Pmove().   Extracted from
-                   // X_Accelerate()
-  // pm specific
-  int movetype;  // Physics movetype index
-  int tracemask; // Collides against these types of surfaces
-  usercmd_t cmd;
+typedef struct
+{
+	float g_squared;  // gravity squared.  0 when not on slick.
+	float v_squared;  // norm velocity squared (starts as previous_velocity)
+	float vf_squared; // norm velocity (friction), squared
+	float a_squared;  // Accel squared
+	float v;          // norm Velocity (starts as previous_velocity)
+	float vf;         // this frame's norm velocity
+	float a; // Accel corresponding to this frame (airaccel, groundaccel, etc)
+	// Extracted from walkmove, airmove, etc
+	float wishspeed; // Wishspeed, as calculated in Pmove().   Extracted from
+	// X_Accelerate()
+	// pm specific
+	int movetype;  // Physics movetype index
+	int tracemask; // Collides against these types of surfaces
+	usercmd_t cmd;
 } pmoveData_t; // TODO: Get this data out of pm. Should be extern for all CG
 //:::::::::::::::::
 //::OSDF end

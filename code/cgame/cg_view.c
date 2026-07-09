@@ -1203,11 +1203,11 @@ Check for changes in player stats and print them to console
 // */
 // static void CG_ClientInfoUpdateLocalHealth(void)
 // {
-// 	CG_HealthColorFromStats(
-// 	    cg.snap->ps.stats[STAT_HEALTH],
-// 	    cg.snap->ps.stats[STAT_ARMOR],
-// 	    cg.healthColorLocal
-// 	);
+//  CG_HealthColorFromStats(
+//      cg.snap->ps.stats[STAT_HEALTH],
+//      cg.snap->ps.stats[STAT_ARMOR],
+//      cg.healthColorLocal
+//  );
 // }
 
 /*
@@ -1422,10 +1422,10 @@ static void CG_ClientInfoUpdateFrame(void)
 
 	// Get main stats
 	CG_HealthColorFromStats(
-		cg.snap->ps.stats[STAT_HEALTH],
-		cg.snap->ps.stats[STAT_ARMOR],
-		cg.healthColorLocal,
-		NULL
+	    cg.snap->ps.stats[STAT_HEALTH],
+	    cg.snap->ps.stats[STAT_ARMOR],
+	    cg.healthColorLocal,
+	    NULL
 	);
 
 	teamMode = (cgs.gametype >= GT_TEAM);
@@ -1457,8 +1457,8 @@ static void CG_ClientInfoUpdateFrame(void)
 	}
 
 	cg.realNumClients = CG_ClientInfoUpdateEnemyViewFrame(teamMode, gtAllEnemies,
-	                      swapPwEnemy, isCA, isSpectator, spectFollowPOV,
-	                      myRealTeam, myStateTeam, followTeam, followCi);
+	                    swapPwEnemy, isCA, isSpectator, spectFollowPOV,
+	                    myRealTeam, myStateTeam, followTeam, followCi);
 
 	if (teamMode)
 		CG_ClientInfoUpdateHealthBlinkPhases();

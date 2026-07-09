@@ -161,8 +161,8 @@ vmCvar_t           cg_smoothClients;
 vmCvar_t           cg_cameraMode;
 vmCvar_t           pmove_fixed;
 vmCvar_t           pmove_msec;
-vmCvar_t		   phy_movetype;
-vmCvar_t		   phy_snapVectors;
+vmCvar_t           phy_movetype;
+vmCvar_t           phy_snapVectors;
 vmCvar_t           cg_noTaunt;
 vmCvar_t           cg_noProjectileTrail;
 vmCvar_t           cg_oldRail;
@@ -556,7 +556,7 @@ vmCvar_t        cg_entityOverpolate;
 // vmCvar_t        cg_snow;
 
 vmCvar_t        cg_healthBarStyle;
-vmCvar_t		cg_teamHealthBar;
+vmCvar_t        cg_teamHealthBar;
 vmCvar_t        cg_emojiListFont;
 vmCvar_t        cg_emojiListBgColor;
 vmCvar_t        cg_emojiListOpaque;
@@ -1888,15 +1888,15 @@ static const char* CG_NumberShaderPrefix(void)
 {
 	switch (cg_numbersSet.integer)
 	{
-	case 2:
-		return "gfx/2d/customnumbers/elite/";
-	case 3:
-		return "gfx/2d/customnumbers/eternal/";
-	case 4:
-		return "gfx/2d/customnumbers/odyssey/";
-	case 1:
-	default:
-		return "gfx/2d/numbers/";
+		case 2:
+			return "gfx/2d/customnumbers/elite/";
+		case 3:
+			return "gfx/2d/customnumbers/eternal/";
+		case 4:
+			return "gfx/2d/customnumbers/odyssey/";
+		case 1:
+		default:
+			return "gfx/2d/numbers/";
 	}
 }
 

@@ -31,7 +31,7 @@
 
 #include "../qcommon/q_shared.h"
 
-extern pmove_t *pm;
+extern pmove_t* pm;
 extern pml_t pml;
 
 #if 1
@@ -45,7 +45,7 @@ extern float pm_spectatorfriction;
 
 extern int c_pmove;
 
-void trap_SnapVector(float *v);
+void trap_SnapVector(float* v);
 
 void PM_AddEvent(int newEvent);
 void PM_AddTouchEnt(int entityNum);
@@ -59,7 +59,7 @@ void PM_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 LIB_ONLY_STATIC void PM_Friction(void);
 LIB_ONLY_STATIC void PM_Accelerate(vec3_t wishdir, float wishspeed,
                                    float accel);
-LIB_ONLY_STATIC float PM_CmdScale(usercmd_t *cmd);
+LIB_ONLY_STATIC float PM_CmdScale(usercmd_t* cmd);
 LIB_ONLY_STATIC void PM_SetMovementDir(void);
 LIB_ONLY_STATIC qboolean PM_CheckJump(void);
 LIB_ONLY_STATIC qboolean PM_CheckWaterJump(void);
@@ -77,7 +77,7 @@ LIB_ONLY_STATIC void PM_CrashLand(void);
 /*
 void PM_CheckStuck(void);
 */
-LIB_ONLY_STATIC int PM_CorrectAllSolid(trace_t *trace);
+LIB_ONLY_STATIC int PM_CorrectAllSolid(trace_t* trace);
 LIB_ONLY_STATIC void PM_GroundTraceMissed(void);
 LIB_ONLY_STATIC void PM_Footsteps(void);
 LIB_ONLY_STATIC void PM_WaterEvents(void);
@@ -86,7 +86,7 @@ LIB_ONLY_STATIC void PM_TorsoAnimation(void);
 LIB_ONLY_STATIC void PM_Weapon(void);
 LIB_ONLY_STATIC void PM_Animate(void);
 
-void PM_UpdateViewAngles(playerState_t *ps, const usercmd_t *cmd);
+void PM_UpdateViewAngles(playerState_t* ps, const usercmd_t* cmd);
 LIB_ONLY_STATIC void PM_CheckDuck(void);
 LIB_ONLY_STATIC void PM_FlyMove(void);
 LIB_ONLY_STATIC void PM_DropTimers(void);

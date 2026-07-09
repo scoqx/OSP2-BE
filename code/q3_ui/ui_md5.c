@@ -120,17 +120,17 @@ static void UI_MD5_FinalCtx(unsigned char digest[16], ui_md5_ctx_t* ctx)
 #define UI_MD5_ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
 
 #define UI_MD5_FF(a, b, c, d, x, s, ac) \
-	{ (a) += UI_MD5_F((b), (c), (d)) + (x) + (unsigned int)(ac); \
-	  (a) = UI_MD5_ROTATE_LEFT((a), (s)); (a) += (b); }
+    { (a) += UI_MD5_F((b), (c), (d)) + (x) + (unsigned int)(ac); \
+      (a) = UI_MD5_ROTATE_LEFT((a), (s)); (a) += (b); }
 #define UI_MD5_GG(a, b, c, d, x, s, ac) \
-	{ (a) += UI_MD5_G((b), (c), (d)) + (x) + (unsigned int)(ac); \
-	  (a) = UI_MD5_ROTATE_LEFT((a), (s)); (a) += (b); }
+    { (a) += UI_MD5_G((b), (c), (d)) + (x) + (unsigned int)(ac); \
+      (a) = UI_MD5_ROTATE_LEFT((a), (s)); (a) += (b); }
 #define UI_MD5_HH(a, b, c, d, x, s, ac) \
-	{ (a) += UI_MD5_H((b), (c), (d)) + (x) + (unsigned int)(ac); \
-	  (a) = UI_MD5_ROTATE_LEFT((a), (s)); (a) += (b); }
+    { (a) += UI_MD5_H((b), (c), (d)) + (x) + (unsigned int)(ac); \
+      (a) = UI_MD5_ROTATE_LEFT((a), (s)); (a) += (b); }
 #define UI_MD5_II(a, b, c, d, x, s, ac) \
-	{ (a) += UI_MD5_I((b), (c), (d)) + (x) + (unsigned int)(ac); \
-	  (a) = UI_MD5_ROTATE_LEFT((a), (s)); (a) += (b); }
+    { (a) += UI_MD5_I((b), (c), (d)) + (x) + (unsigned int)(ac); \
+      (a) = UI_MD5_ROTATE_LEFT((a), (s)); (a) += (b); }
 
 static void UI_MD5_Transform(unsigned int state[4], const unsigned char block[64])
 {

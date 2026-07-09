@@ -3031,7 +3031,7 @@ qboolean CG_PlasmaColorForOwner(int owner, vec4_t color)
 	}
 
 	if (CG_OSPIsGameTypeCA(cgs.gametype) || !CG_CACHED_IS_ENEMY_NUM(owner)
-	    || (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */))
+	        || (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */))
 	{
 		if (!cg_plasmaColor.string[0])
 		{

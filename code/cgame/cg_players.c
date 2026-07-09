@@ -3985,12 +3985,24 @@ void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clien
 
 					switch (puList[k])
 					{
-						case PW_QUAD:       puRgb = colorCyan; break;
-						case PW_BATTLESUIT: puRgb = colorOrange; break;
-						case PW_HASTE:      puRgb = colorYellow; break;
-						case PW_INVIS:      puRgb = colorWhite; break;
-						case PW_REGEN:      puRgb = colorRed; break;
-						default:            puRgb = colorMagenta; break;
+						case PW_QUAD:
+							puRgb = colorCyan;
+							break;
+						case PW_BATTLESUIT:
+							puRgb = colorOrange;
+							break;
+						case PW_HASTE:
+							puRgb = colorYellow;
+							break;
+						case PW_INVIS:
+							puRgb = colorWhite;
+							break;
+						case PW_REGEN:
+							puRgb = colorRed;
+							break;
+						default:
+							puRgb = colorMagenta;
+							break;
 					}
 
 					pulseColor[0] = puRgb[0];

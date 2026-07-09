@@ -120,17 +120,61 @@ static void UI_ColorParse_OSPColorFromNumber(int number, vec4_t out)
 	{
 		switch (number)
 		{
-			case 0: red = 1.0f; green = 1.0f; blue = 1.0f; break;
-			case 1: red = 1.0f; green = 0.2f; blue = 0.2f; break;
-			case 2: red = 0.2f; green = 1.0f; blue = 0.2f; break;
-			case 3: red = 1.0f; green = 1.0f; blue = 0.1f; break;
-			case 4: red = 0.2f; green = 0.2f; blue = 1.0f; break;
-			case 5: red = 0.1f; green = 1.0f; blue = 1.0f; break;
-			case 6: red = 1.0f; green = 0.1f; blue = 1.0f; break;
-			case 7: red = 1.0f; green = 0.59f; blue = 0.12f; break;
-			case 8: red = 0.65f; green = 0.2f; blue = 0.65f; break;
-			case 9: red = 0.6f; green = 0.6f; blue = 1.0f; break;
-			default: red = 1.0f; green = 1.0f; blue = 1.0f; break;
+			case 0:
+				red = 1.0f;
+				green = 1.0f;
+				blue = 1.0f;
+				break;
+			case 1:
+				red = 1.0f;
+				green = 0.2f;
+				blue = 0.2f;
+				break;
+			case 2:
+				red = 0.2f;
+				green = 1.0f;
+				blue = 0.2f;
+				break;
+			case 3:
+				red = 1.0f;
+				green = 1.0f;
+				blue = 0.1f;
+				break;
+			case 4:
+				red = 0.2f;
+				green = 0.2f;
+				blue = 1.0f;
+				break;
+			case 5:
+				red = 0.1f;
+				green = 1.0f;
+				blue = 1.0f;
+				break;
+			case 6:
+				red = 1.0f;
+				green = 0.1f;
+				blue = 1.0f;
+				break;
+			case 7:
+				red = 1.0f;
+				green = 0.59f;
+				blue = 0.12f;
+				break;
+			case 8:
+				red = 0.65f;
+				green = 0.2f;
+				blue = 0.65f;
+				break;
+			case 9:
+				red = 0.6f;
+				green = 0.6f;
+				blue = 1.0f;
+				break;
+			default:
+				red = 1.0f;
+				green = 1.0f;
+				blue = 1.0f;
+				break;
 		}
 	}
 

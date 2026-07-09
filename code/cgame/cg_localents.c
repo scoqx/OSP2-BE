@@ -1007,8 +1007,8 @@ void CG_AddDamagePlum(localEntity_t* le)
 
 	VectorCopy(le->pos.trBase, origin);
 
-	origin[2]+= 4.0f;
-	
+	origin[2] += 4.0f;
+
 	VectorSubtract(cg.refdef.vieworg, origin, dir);
 	CrossProduct(dir, up, vec);
 	VectorNormalize(vec);

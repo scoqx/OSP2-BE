@@ -90,7 +90,7 @@ static float UI_ServerStatus_DrawMultilineFullChangelog(float panelX, float y, f
         float versionRowW, const char* text, float clipTop, float clipBottom,
         const char* skipLineStart, float skipClipTop, float skipClipBottom);
 static void UI_ServerStatus_DrawText(float x, float y, const char* text, vec4_t color, int flags,
-        float charW, float charH);
+                                     float charW, float charH);
 static void UI_ServerStatus_DrawTextWidth(float x, float y, const char* text, vec4_t color,
         int flags, int maxWidth640, float charW, float charH);
 static void UI_ServerStatus_DrawScrollbar(float x, float y, float w, float h, float contentH,
@@ -1457,7 +1457,7 @@ static qboolean UI_ServerStatus_TryLoadUnreleasedChangelogFromFull(void)
 			                                       sizeof(uiServerStatus.changelogBody));
 			UI_ServerStatus_ParseChangelogHeaderMeta(uiServerStatus.changelogHeader);
 			uiServerStatus.changelogReady = (qboolean)(uiServerStatus.changelogBody[0] != '\0' ||
-			                                           uiServerStatus.changelogHeader[0] != '\0');
+			                                uiServerStatus.changelogHeader[0] != '\0');
 			return uiServerStatus.changelogReady;
 		}
 
@@ -1621,7 +1621,7 @@ static float UI_ServerStatus_FullChangelogBodyContentHeight(float textW, float b
 			lineTop = bodyY - scroll + lineY;
 			lineBottom = lineTop + UI_STATUS_CHAR_HEIGHT;
 			hiddenInBody = UI_ServerStatus_FullChangelogVersionHiddenInBody(physicalLineStart,
-			        lineTop, lineBottom, skipClipTop, skipClipBottom);
+			               lineTop, lineBottom, skipClipTop, skipClipBottom);
 			if (UI_ServerStatus_FullChangelogVersionHiddenReserveHeight(hiddenInBody))
 			{
 				lineY += UI_STATUS_CHAR_HEIGHT;
@@ -1807,7 +1807,7 @@ static void UI_ServerStatus_ClampChangelogScroll(float bodyH, float contentH)
 	if (UI_STATUS_CHAR_HEIGHT > 0.0f)
 	{
 		ui_statusChangelogScroll = (float)((int)(ui_statusChangelogScroll / UI_STATUS_CHAR_HEIGHT + 0.5f))
-		                          * UI_STATUS_CHAR_HEIGHT;
+		                           * UI_STATUS_CHAR_HEIGHT;
 		if (ui_statusChangelogScroll > maxScroll)
 		{
 			ui_statusChangelogScroll = maxScroll;
@@ -1888,26 +1888,26 @@ static qboolean UI_ServerStatus_ChangelogLineMarkerColor(char c, vec4_t out)
 {
 	switch (c)
 	{
-	case '*':
-		out[0] = 1.0f;
-		out[1] = 1.0f;
-		out[2] = 0.4f;
-		out[3] = 1.0f;
-		return qtrue;
-	case '+':
-		out[0] = 0.4f;
-		out[1] = 1.0f;
-		out[2] = 0.4f;
-		out[3] = 1.0f;
-		return qtrue;
-	case '-':
-		out[0] = 1.0f;
-		out[1] = 0.4f;
-		out[2] = 0.4f;
-		out[3] = 1.0f;
-		return qtrue;
-	default:
-		return qfalse;
+		case '*':
+			out[0] = 1.0f;
+			out[1] = 1.0f;
+			out[2] = 0.4f;
+			out[3] = 1.0f;
+			return qtrue;
+		case '+':
+			out[0] = 0.4f;
+			out[1] = 1.0f;
+			out[2] = 0.4f;
+			out[3] = 1.0f;
+			return qtrue;
+		case '-':
+			out[0] = 1.0f;
+			out[1] = 0.4f;
+			out[2] = 0.4f;
+			out[3] = 1.0f;
+			return qtrue;
+		default:
+			return qfalse;
 	}
 }
 
@@ -2322,7 +2322,7 @@ static float UI_ServerStatus_DrawMultilineFullChangelog(float panelX, float y, f
 			lineTop = lineY;
 			lineBottom = lineY + UI_STATUS_CHAR_HEIGHT;
 			hiddenInBody = UI_ServerStatus_FullChangelogVersionHiddenInBody(physicalLineStart,
-			        lineTop, lineBottom, skipClipTop, skipClipBottom);
+			               lineTop, lineBottom, skipClipTop, skipClipBottom);
 			drawLine = (qboolean)(!hiddenInBody && lineBottom > clipTop && lineTop < clipBottom);
 
 			if (drawLine)
@@ -2515,8 +2515,8 @@ static void UI_ServerStatus_ScrollbarDragUpdate(float panelX, float panelY, floa
 	}
 
 	contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY,
-	        panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED,
-	        panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
+	           panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED,
+	           panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
 	sbH = bodyH;
 	sbY = bodyY;
 	my = uis.cursory;
@@ -2566,8 +2566,8 @@ static qboolean UI_ServerStatus_HandleScrollbarMouse(float panelX, float panelY,
 	}
 
 	contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY,
-	        panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED,
-	        panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
+	           panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED,
+	           panelY + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
 	UI_ServerStatus_ClampChangelogScroll(bodyH, contentH);
 
 	sbW = UI_STATUS_SCROLLBAR_WIDTH;
@@ -2633,7 +2633,7 @@ static void UI_ServerStatus_ScrollByDelta(float delta)
 	}
 
 	contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY,
-	        y + UI_STATUS_BAR_HEIGHT_COLLAPSED, y + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
+	           y + UI_STATUS_BAR_HEIGHT_COLLAPSED, y + UI_STATUS_BAR_HEIGHT_COLLAPSED * 2.0f);
 	UI_ServerStatus_ScrollChangelog(delta, bodyH, contentH);
 }
 
@@ -2661,7 +2661,7 @@ static void UI_ServerStatus_DrawTextWidth(float x, float y, const char* text, ve
 }
 
 static void UI_ServerStatus_DrawText(float x, float y, const char* text, vec4_t color, int flags,
-        float charW, float charH)
+                                     float charW, float charH)
 {
 	UI_ServerStatus_DrawTextWidth(x, y, text, color, flags, SCREEN_WIDTH, charW, charH);
 }
@@ -2843,7 +2843,7 @@ static void UI_ServerStatus_DrawFullChangelogButton(float x, float y, float w, f
 			textColor[2] = 1.0f;
 		}
 		else
-		{			
+		{
 			textColor[0] = 0.55f;
 			textColor[1] = 0.55f;
 			textColor[2] = 0.55f;
@@ -3192,7 +3192,7 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 			{
 				UI_ServerStatus_ChangelogLayoutEx(w, bodyH, y, bodyY, &textW, &needScroll);
 				contentH = UI_ServerStatus_ChangelogContentHeightEx(textW, bodyY, row2Y,
-				        row2Bottom);
+				           row2Bottom);
 			}
 			else
 			{
@@ -3219,8 +3219,8 @@ static void UI_ServerStatus_DrawBarPanel(float x, float y, float w, float h, con
 			else if (uiServerStatus.changelogBody[0])
 			{
 				UI_ServerStatus_DrawMultilineClipped(x + UI_STATUS_PANEL_PAD, contentY, textW,
-				                                    uiServerStatus.changelogBody, text_color_normal,
-				                                    DS_HLEFT, bodyClipTop, bodyClipBottom);
+				                                     uiServerStatus.changelogBody, text_color_normal,
+				                                     DS_HLEFT, bodyClipTop, bodyClipBottom);
 			}
 
 			if (needScroll && UI_ServerStatus_ScrollbarActive())
@@ -3518,7 +3518,7 @@ void UI_ServerStatus_FetchOnMainMenu(void)
 
 	UI_ServerStatus_FetchPrepare();
 	UI_ServerStatus_Secheck2BeginDual(UI_BeinfoCfg_GetStatusServerPrimary(),
-	        UI_BeinfoCfg_GetStatusServerAlternate());
+	                                  UI_BeinfoCfg_GetStatusServerAlternate());
 }
 
 void UI_ServerStatus_OnFetchTimeout(void)

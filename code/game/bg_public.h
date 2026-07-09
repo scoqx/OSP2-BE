@@ -124,7 +124,7 @@ extern "C" {
 #define CS_OSP_CUSTOM_CLIENT2                     874
 #define CS_OSP2BE_SUPPORTED                     887
 #define CS_OSP2BE_DISABLED_FEATURES             888
-#define CS_OSP2BE_TOURNEY_RESTRICTIONS			889
+#define CS_OSP2BE_TOURNEY_RESTRICTIONS          889
 #define CS_OSP2BE_ITEM_CATALOG0                890
 #define CS_OSP2BE_ITEM_CATALOG_COUNT           10
 #define CS_OSP2BE_ITEM_CATALOG_LAST            (CS_OSP2BE_ITEM_CATALOG0 + CS_OSP2BE_ITEM_CATALOG_COUNT - 1)
@@ -155,9 +155,9 @@ typedef enum
 } puiType_t;
 
 #define PUI_ID( type, side, slot ) \
-	( ( ( (side) & 3 ) << 8 ) | ( ( (slot) & 0xF ) << 4 ) | ( (type) & 0xF ) )
+    ( ( ( (side) & 3 ) << 8 ) | ( ( (slot) & 0xF ) << 4 ) | ( (type) & 0xF ) )
 #define PUI_CMD( picker, pickId, nextId ) \
-	( ( ( (picker) & (MAX_CLIENTS - 1) ) << 20 ) | ( ( (pickId) & 0x3FF ) << 10 ) | ( (nextId) & 0x3FF ) )
+    ( ( ( (picker) & (MAX_CLIENTS - 1) ) << 20 ) | ( ( (pickId) & 0x3FF ) << 10 ) | ( (nextId) & 0x3FF ) )
 
 int BG_PuiIdType(int itemId);
 int BG_PuiIdSide(int itemId);
@@ -279,7 +279,7 @@ typedef struct
 	//::OSDF modded
 	int movetype;           // Physics type selection from cvar. Latch protected
 	float overbounce_scale; // Amount of overbounce scale to apply. Default
-	                        // OVERCLIP = 1.001f
+	// OVERCLIP = 1.001f
 	pmoveData_t pmd;        // Stores extracted pmove data needed outside of pmove
 	//::OSDF end
 } pmove_t;

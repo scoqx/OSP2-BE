@@ -1187,8 +1187,8 @@ typedef struct
 	qhandle_t   shadowItemFlagShader;
 	qhandle_t   flagBrightShader;
 	qhandle_t   flagBrightAltShader;
-	qhandle_t	spawnModelShader;
-	qhandle_t	spawnMarkPlasmaShader;
+	qhandle_t   spawnModelShader;
+	qhandle_t   spawnMarkPlasmaShader;
 
 	qhandle_t   unk_media_60;
 	qhandle_t   unk_media_61;
@@ -1872,7 +1872,7 @@ typedef struct
 	char            redTeam[MAX_QPATH];
 	char            blueTeam[MAX_QPATH];
 	// qboolean        isOspServer;            // g_unlagged is not osp
-											   // I'm not sure how to distinguish OSP and baseq3a servers
+	// I'm not sure how to distinguish OSP and baseq3a servers
 
 	int             voteTime;
 	int             voteYes;
@@ -2447,25 +2447,25 @@ extern vmCvar_t         uc_sensitivity;
 extern vmCvar_t         cg_teamTaskIconMinSize;
 extern vmCvar_t         cg_noExplosions;
 extern vmCvar_t         cg_noItemUseSound;
-extern vmCvar_t			cg_hitSoundsQC;
-extern vmCvar_t			cg_brightWeaponsShader;
-extern vmCvar_t			teamoverlay2;
-extern vmCvar_t			cg_friendsWallhackFrozen;
-extern vmCvar_t			cg_teleportEffect;
-extern vmCvar_t			cg_infoVersionFont;
+extern vmCvar_t         cg_hitSoundsQC;
+extern vmCvar_t         cg_brightWeaponsShader;
+extern vmCvar_t         teamoverlay2;
+extern vmCvar_t         cg_friendsWallhackFrozen;
+extern vmCvar_t         cg_teleportEffect;
+extern vmCvar_t         cg_infoVersionFont;
 extern vmCvar_t         cl_reconnectArgs;
-extern vmCvar_t			cg_altRail;
-extern vmCvar_t			cg_altRailBeefy;
-extern vmCvar_t			cg_teamTaskNewSounds;
-extern vmCvar_t			cg_teamTaskVersion;
-extern vmCvar_t			cg_railFix;
-extern vmCvar_t			cg_freezeSoundFix;
+extern vmCvar_t         cg_altRail;
+extern vmCvar_t         cg_altRailBeefy;
+extern vmCvar_t         cg_teamTaskNewSounds;
+extern vmCvar_t         cg_teamTaskVersion;
+extern vmCvar_t         cg_railFix;
+extern vmCvar_t         cg_freezeSoundFix;
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         cg_infoDetail;
 extern vmCvar_t         cg_enhancedInterpolation;
 extern vmCvar_t         cg_entityOverpolate;
 extern vmCvar_t         cg_healthBarStyle;
-extern vmCvar_t			cg_teamHealthBar;
+extern vmCvar_t         cg_teamHealthBar;
 extern vmCvar_t         cg_emojiListFont;
 extern vmCvar_t         cg_emojiListBgColor;
 extern vmCvar_t         cg_emojiListOpaque;
@@ -2482,11 +2482,11 @@ extern vmCvar_t         cg_floatSpriteMinSize;
 extern vmCvar_t         cg_altLightningColor;
 extern vmCvar_t         cg_teamLightningColor;
 extern vmCvar_t         cg_enemyLightningColor;
-extern vmCvar_t			cg_enemyAltLightning;
-extern vmCvar_t			cg_teamAltLightning;
-extern vmCvar_t			cg_muteMyJump;
-extern vmCvar_t			cg_muteWorldSounds;
-extern vmCvar_t			cg_disableTextEffects;
+extern vmCvar_t         cg_enemyAltLightning;
+extern vmCvar_t         cg_teamAltLightning;
+extern vmCvar_t         cg_muteMyJump;
+extern vmCvar_t         cg_muteWorldSounds;
+extern vmCvar_t         cg_disableTextEffects;
 extern vmCvar_t         cg_fragEffectTime;
 extern vmCvar_t         cg_fragEffectColor;
 extern vmCvar_t         cg_fragEffect;
@@ -2926,7 +2926,7 @@ void CG_UpdateAllClientsInfo(void);
 /* Round warmup state is valid only on q3msk freeze team (GT_TEAM, freeze). */
 #define CG_Q3MSK_ROUND_WARMUP() (cgs.q3mskRoundWarmup)
 #define CG_Q3MSK_ROUND_WARMUP_UPDATE() \
-	cgs.q3mskRoundWarmup = (qboolean)(cgs.q3msk && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+    cgs.q3mskRoundWarmup = (qboolean)(cgs.q3msk && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
 /* In non-team modes (FFA, Tournament, SP) everyone except self is enemy; else use team/rt */
 #define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype < GT_TEAM) ? 1 : ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team))))
 #define CG_CACHED_IS_ENEMY_NUM(n) (((n) >= 0 && (n) < MAX_CLIENTS) ? cg.isEnemyView[(n)] : qfalse)
@@ -2935,7 +2935,7 @@ void CG_UpdateAllClientsInfo(void);
 #define CG_CACHED_IS_ENEMY_POWERUP_CI(ci) CG_CACHED_IS_ENEMY_POWERUP_NUM((int)((ci) - cgs.clientinfo))
 /* Enemy from current view: per-frame cache in CG_ClientInfoUpdateFrame; hot paths use CG_CACHED_IS_ENEMY_* */
 #define CG_HIDE_ALLY_BATTLESUIT_UI(ci) \
-	(!CG_CACHED_IS_ENEMY_CI(ci) && cg.hideAllyBattlesuitUi)
+    (!CG_CACHED_IS_ENEMY_CI(ci) && cg.hideAllyBattlesuitUi)
 qboolean CG_IsWarmup(void);
 qboolean CG_IsIntermission(void);
 
@@ -2967,9 +2967,9 @@ void CG_Beam(centity_t* cent);
 void CG_AdjustPositionForMover(const vec3_t in, int moverNum, int fromTime, int toTime, vec3_t out, vec3_t angles_in, vec3_t angles_out);
 
 void CG_PositionEntityOnTag(refEntity_t* entity, const refEntity_t* parent,
-	qhandle_t parentModel, char* tagName);
-	void CG_PositionRotatedEntityOnTag(refEntity_t* entity, const refEntity_t* parent,
-		qhandle_t parentModel, char* tagName);		
+                            qhandle_t parentModel, char* tagName);
+void CG_PositionRotatedEntityOnTag(refEntity_t* entity, const refEntity_t* parent,
+                                   qhandle_t parentModel, char* tagName);
 
 qboolean CG_IsKillerGhostBody(const entityState_t* s);
 
@@ -3084,7 +3084,7 @@ localEntity_t* CG_SmokePuff(const vec3_t p,
                             int leFlags,
                             qhandle_t hShader);
 void CG_BubbleTrail(vec3_t start, vec3_t end, float spacing);
-refEntity_t     *CG_SpawnEffect(vec3_t org, qboolean firstPerson);
+refEntity_t*     CG_SpawnEffect(vec3_t org, qboolean firstPerson);
 void CG_ScorePlum(int client, vec3_t org, int score);
 void CG_DamagePlum(int client, vec3_t org, int damage);
 void CG_ParseClientDamagePlum(playerState_t* ps, playerState_t* ops);
@@ -3626,8 +3626,8 @@ extern int statsInfo[24];
 #define OSP_CUSTOM_CLIENT_MAXFPS_FLAG          (1 << 5) // 32
 
 // OSP Custom client 2
-#define OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO		(1 << 0) // 1
-#define OSP_CUSTOM_CLIENT_2_MAXFPS_RESTRICTED	(1 << 1) // 2
+#define OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO     (1 << 0) // 1
+#define OSP_CUSTOM_CLIENT_2_MAXFPS_RESTRICTED   (1 << 1) // 2
 
 
 #define OSP_CUSTOM_CLIENT_2_IS_OPTION_ENABLED(BIT) (cgs.osp.custom_client_2 & BIT)
@@ -3643,8 +3643,8 @@ void CG_OSPCvarsRestrictValues(void);
 qboolean CG_OSPIsGameTypeFreeze(void);
 qboolean CG_ClientInfoIsFreezeTinfoFrozen(const clientInfo_t* ci);
 #define CG_OBITUARY_DROP_PU_MASK \
-	((1 << PW_QUAD) | (1 << PW_BATTLESUIT) | (1 << PW_HASTE) | \
-	 (1 << PW_INVIS) | (1 << PW_REGEN) | (1 << PW_FLIGHT))
+    ((1 << PW_QUAD) | (1 << PW_BATTLESUIT) | (1 << PW_HASTE) | \
+     (1 << PW_INVIS) | (1 << PW_REGEN) | (1 << PW_FLIGHT))
 
 qboolean CG_OSPIsGameTypeTDM(void);
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup);

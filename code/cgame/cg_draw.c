@@ -1532,7 +1532,7 @@ static float CG_DrawPowerups(float y)
 			}
 
 			CG_DrawClientPowerupIconOld(640 - size, y + ICON_SIZE / 2 - size / 2,
-			              size, size, sorted[i], ps->clientNum);
+			                            size, size, sorted[i], ps->clientNum);
 		}
 	}
 	trap_R_SetColor(NULL);
@@ -3526,10 +3526,18 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 						}
 						break;
 					}
-					case PW_HASTE:     shader = cgs.media.hasteIcon; break;
-					case PW_INVIS:     shader = cgs.media.invisIcon; break;
-					case PW_REGEN:     shader = cgs.media.regenIcon; break;
-					default:           shader = cgs.media.flightIcon; break;
+					case PW_HASTE:
+						shader = cgs.media.hasteIcon;
+						break;
+					case PW_INVIS:
+						shader = cgs.media.invisIcon;
+						break;
+					case PW_REGEN:
+						shader = cgs.media.regenIcon;
+						break;
+					default:
+						shader = cgs.media.flightIcon;
+						break;
 				}
 
 				cx = rowX + slot * puStride + puW * 0.5f;

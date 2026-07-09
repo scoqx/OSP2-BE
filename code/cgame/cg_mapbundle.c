@@ -129,13 +129,13 @@ static qboolean CG_MapBundle_StorePayload(const byte* raw, int rawLen, const cha
 }
 
 static qboolean CG_MapBundle_ParseHeader(
-        const byte* raw,
-        int rawLen,
-        int* qspLen,
-        int* qitmLen,
-        int* qlmLen,
-        int* qtxLen,
-        int* headerSize)
+    const byte* raw,
+    int rawLen,
+    int* qspLen,
+    int* qitmLen,
+    int* qlmLen,
+    int* qtxLen,
+    int* headerSize)
 {
 	int     version;
 

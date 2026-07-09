@@ -10,12 +10,12 @@ ui_status_sign.h — mod_sig check (matches q3-status-emulator status_sign.py)
 void UI_StatusSign_CopyInfostringOnly(const char* status, char* out, int outSize);
 
 void UI_StatusSign_BuildPayload(
-	const char* version,
-	const char* flags,
-	const char* sivj,
-	const char* date,
-	char* payload,
-	int payloadSize);
+    const char* version,
+    const char* flags,
+    const char* sivj,
+    const char* date,
+    char* payload,
+    int payloadSize);
 
 void UI_StatusSign_BuildPayloadFromInfo(const char* info, char* payload, int payloadSize);
 

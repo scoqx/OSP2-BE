@@ -59,12 +59,12 @@ void UI_StatusSign_CopyInfostringOnly(const char* status, char* out, int outSize
 }
 
 void UI_StatusSign_BuildPayload(
-	const char* version,
-	const char* flags,
-	const char* sivj,
-	const char* date,
-	char* payload,
-	int payloadSize)
+    const char* version,
+    const char* flags,
+    const char* sivj,
+    const char* date,
+    char* payload,
+    int payloadSize)
 {
 	if (!version)
 	{
@@ -168,11 +168,11 @@ static qboolean UI_StatusSign_HexEqual(const char* a, const char* b)
 }
 
 qboolean UI_StatusSign_VerifyInfo(
-	const char* info,
-	char* payloadOut,
-	int payloadSize,
-	char* computedSig,
-	int computedSigSize)
+    const char* info,
+    char* payloadOut,
+    int payloadSize,
+    char* computedSig,
+    int computedSigSize)
 {
 	char            modSig[64];
 	char            infostring[MAX_INFO_STRING];
