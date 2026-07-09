@@ -2107,6 +2107,11 @@ void UI_LANJob_CancelQueuedFavourite(void)
 
 static void UI_LANJob_TickFavouriteServer(void)
 {
+	if (UI_ArenaServers_IsRefreshing())
+	{
+		return;
+	}
+
 	trap_LAN_UpdateVisiblePings(AS_LOCAL);
 	UI_LANJob_CapturePingInfo();
 	if (ui_lanJob.hasPingInfo)

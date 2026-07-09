@@ -24,6 +24,9 @@ static uiCvarDescriptionTable_t uiCvarDescriptionTable[] =
 	{ "ui_pallete_type", "Color picker palette mode index. Set from the in-menu color picker." },
 	{ "ui_beStatusFont", "Font for the main menu BE status bar and changelog panel. Font index; use ^3/fonts^7 to list available fonts." },
 	{ "ui_beStatusBorderColor", "Border color for the main menu BE status bar and changelog panel. Clear cvar to hide borders.\n \"^2color^7\" - color name, digit or hex" },
+	{ "ui_favouriteServerFont", "Font for the main menu favourite server panel. Font index; use ^3/fonts^7 to list available fonts." },
+	{ "ui_favouriteServerBgColor", "Background color for the main menu favourite server panel. Clear cvar to disable background.\n \"^2color^7\" - color name, digit or hex" },
+	{ "ui_favouriteServerBgOpaque", "Background opacity for the main menu favourite server panel. Requires ^3ui_favouriteServerBgColor^7.\n  ^20.0^7 - ^21.0^7" },
 };
 
 static const int uiCvarDescriptionTableSize = sizeof(uiCvarDescriptionTable) / sizeof(uiCvarDescriptionTable[0]);

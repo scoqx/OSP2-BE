@@ -293,7 +293,7 @@ static void UI_Fav_ApplyInfoString(const char* infostring)
 	{
 		Q_strncpyz(fullMap, s, sizeof(fullMap));
 		Q_CleanStr(fullMap);
-		Q_strupr(fullMap);
+		Q_strlwr(fullMap);
 		Q_strncpyz(ui_favServer.mapname, fullMap, sizeof(ui_favServer.mapname));
 		Q_strncpyz(ui_favServer.mapnameLevelshot, fullMap,
 		           sizeof(ui_favServer.mapnameLevelshot));
@@ -455,7 +455,7 @@ static void UI_Fav_ParseStatus(const char* status)
 		{
 			Q_strncpyz(ui_favServer.mapname, value, sizeof(ui_favServer.mapname));
 			Q_CleanStr(ui_favServer.mapname);
-			Q_strupr(ui_favServer.mapname);
+			Q_strlwr(ui_favServer.mapname);
 			Q_strncpyz(ui_favServer.mapnameLevelshot, ui_favServer.mapname,
 			           sizeof(ui_favServer.mapnameLevelshot));
 		}
@@ -562,7 +562,7 @@ void UI_FavouriteServer_ApplyPingInfo(const char* info)
 	{
 		Q_strncpyz(fullMap, s, sizeof(fullMap));
 		Q_CleanStr(fullMap);
-		Q_strupr(fullMap);
+		Q_strlwr(fullMap);
 		Q_strncpyz(ui_favServer.mapname, fullMap, sizeof(ui_favServer.mapname));
 		Q_strncpyz(ui_favServer.mapnameLevelshot, fullMap,
 		           sizeof(ui_favServer.mapnameLevelshot));

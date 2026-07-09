@@ -1003,3 +1003,5 @@ SuperHUD:
 UI:
   + ui_banner 0
   + ui_favouriteServer "IP:PORT"
+  + ui_favouriteServerFont
+  + ui_favouriteServerBgColor

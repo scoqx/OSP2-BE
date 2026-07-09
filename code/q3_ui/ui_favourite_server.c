@@ -43,6 +43,11 @@ static int              ui_favJobStartMs;
 
 static qboolean UI_FavouriteServer_MarkAvailable(void);
 
+static qboolean UI_FavouriteServer_LanPingAllowed(void)
+{
+	return (qboolean)!UI_ArenaServers_IsRefreshing();
+}
+
 static void UI_FavouriteServer_ReadCvar(char* out, int outSize)
 {
 	if (!out || outSize < 1)
@@ -93,7 +98,7 @@ static void UI_FavouriteServer_ResetState(void)
 
 void UI_FavouriteServer_IssueStatus(void)
 {
-	if (!ui_favServer.address[0])
+	if (!ui_favServer.address[0] || !UI_FavouriteServer_LanPingAllowed())
 	{
 		return;
 	}
@@ -110,7 +115,7 @@ void UI_FavouriteServer_IssueStatus(void)
 
 void UI_FavouriteServer_IssuePingCmd(void)
 {
-	if (!ui_favServer.address[0])
+	if (!ui_favServer.address[0] || !UI_FavouriteServer_LanPingAllowed())
 	{
 		return;
 	}
@@ -182,22 +187,6 @@ static qboolean UI_FavouriteServer_AddressMatch(const char* pingAdr, const char*
 	}
 
 	return qfalse;
-}
-
-static qboolean UI_FavouriteServer_MapnameMatch(const char* infoMap)
-{
-	char    fullMap[MAX_QPATH];
-
-	if (!infoMap || !infoMap[0] || !ui_favServer.mapname[0])
-	{
-		return qfalse;
-	}
-
-	Q_strncpyz(fullMap, infoMap, sizeof(fullMap));
-	Q_CleanStr(fullMap);
-	Q_strupr(fullMap);
-
-	return (qboolean)(!Q_stricmp(fullMap, ui_favServer.mapname));
 }
 
 static void UI_FavouriteServer_CapturePingFromList(int source)
@@ -274,44 +263,6 @@ static qboolean UI_FavouriteServer_PingInFlight(void)
 	return qfalse;
 }
 
-static void UI_FavouriteServer_CapturePingByMapname(void)
-{
-	char    adrstr[UI_FAV_ADDR_LENGTH];
-	char    info[MAX_INFO_STRING];
-	int     i;
-	int     time;
-
-	if (!ui_favServer.mapname[0])
-	{
-		return;
-	}
-
-	for (i = 0; i < MAX_PINGREQUESTS; i++)
-	{
-		trap_LAN_GetPing(i, adrstr, sizeof(adrstr), &time);
-		if (!adrstr[0] || !time)
-		{
-			continue;
-		}
-
-		trap_LAN_GetPingInfo(i, info, sizeof(info));
-		if (!info[0])
-		{
-			continue;
-		}
-
-		if (!UI_FavouriteServer_MapnameMatch(Info_ValueForKey(info, "mapname")))
-		{
-			continue;
-		}
-
-		UI_FavouriteServer_ApplyPingInfo(info);
-		ui_favPingMatched = qtrue;
-		trap_LAN_ClearPing(i);
-		return;
-	}
-}
-
 static void UI_FavouriteServer_CapturePingInfo(void)
 {
 	char    adrstr[UI_FAV_ADDR_LENGTH];
@@ -319,7 +270,7 @@ static void UI_FavouriteServer_CapturePingInfo(void)
 	int     i;
 	int     time;
 
-	if (!ui_favServer.address[0])
+	if (!ui_favServer.address[0] || !UI_FavouriteServer_LanPingAllowed())
 	{
 		return;
 	}
@@ -345,19 +296,20 @@ static void UI_FavouriteServer_CapturePingInfo(void)
 		trap_LAN_GetPingInfo(i, info, sizeof(info));
 		if (!info[0])
 		{
-			trap_LAN_ClearPing(i);
+			if (UI_FavouriteServer_LanPingAllowed())
+			{
+				trap_LAN_ClearPing(i);
+			}
 			continue;
 		}
 
 		UI_FavouriteServer_ApplyPingInfo(info);
 		ui_favPingMatched = qtrue;
-		trap_LAN_ClearPing(i);
+		if (UI_FavouriteServer_LanPingAllowed())
+		{
+			trap_LAN_ClearPing(i);
+		}
 		return;
-	}
-
-	if (!ui_favPingMatched)
-	{
-		UI_FavouriteServer_CapturePingByMapname();
 	}
 
 	if (ui_favServer.clients <= 0)
@@ -375,7 +327,8 @@ static void UI_FavouriteServer_EnsurePing(void)
 {
 	int     now;
 
-	if (!ui_favServer.address[0] || ui_favPingMatched)
+	if (!ui_favServer.address[0] || ui_favPingMatched ||
+	        !UI_FavouriteServer_LanPingAllowed())
 	{
 		return;
 	}
@@ -471,7 +424,7 @@ static void UI_FavouriteServer_PassivePoll(void)
 	int             now;
 	char            status[BIG_INFO_STRING];
 
-	if (!ui_favServer.address[0])
+	if (!ui_favServer.address[0] || !UI_FavouriteServer_LanPingAllowed())
 	{
 		return;
 	}
@@ -570,8 +523,8 @@ static void UI_FavouriteServer_EnsureFonts(void)
 		UI_LoadFonts();
 	}
 
-	trap_Cvar_Update(&ui_beStatusFont);
-	fontIndex = UI_FontIndexFromCvar(&ui_beStatusFont);
+	trap_Cvar_Update(&ui_favouriteServerFont);
+	fontIndex = UI_FontIndexFromCvar(&ui_favouriteServerFont);
 	if (!UI_FontAvailable(fontIndex))
 	{
 		fontIndex = 2;
@@ -599,6 +552,54 @@ static qboolean UI_FavouriteServer_GetBorderColor(vec4_t borderColor)
 	{
 		Vector4Copy(colorWhite, borderColor);
 	}
+	return qtrue;
+}
+
+static qboolean UI_FavouriteServer_BgColorEmpty(const char* str)
+{
+	int     i;
+
+	if (!str || !str[0])
+	{
+		return qtrue;
+	}
+
+	for (i = 0; str[i]; i++)
+	{
+		if (str[i] != ' ' && str[i] != '\t')
+		{
+			return qfalse;
+		}
+	}
+
+	return qtrue;
+}
+
+static qboolean UI_FavouriteServer_GetBgColor(vec4_t bgColor)
+{
+	trap_Cvar_Update(&ui_favouriteServerBgColor);
+	trap_Cvar_Update(&ui_favouriteServerBgOpaque);
+
+	if (UI_FavouriteServer_BgColorEmpty(ui_favouriteServerBgColor.string))
+	{
+		return qfalse;
+	}
+
+	if (!UI_ParseColorStr(ui_favouriteServerBgColor.string, bgColor))
+	{
+		return qfalse;
+	}
+
+	bgColor[3] = ui_favouriteServerBgOpaque.value;
+	if (bgColor[3] < 0.0f)
+	{
+		bgColor[3] = 0.0f;
+	}
+	else if (bgColor[3] > 1.0f)
+	{
+		bgColor[3] = 1.0f;
+	}
+
 	return qtrue;
 }
 
@@ -767,6 +768,11 @@ qboolean UI_FavouriteServer_LanJobTick(void)
 	char            status[BIG_INFO_STRING];
 	int             now;
 
+	if (!UI_FavouriteServer_LanPingAllowed())
+	{
+		return qfalse;
+	}
+
 	now = trap_Milliseconds();
 	trap_LAN_UpdateVisiblePings(AS_LOCAL);
 	UI_FavouriteServer_ReadTrapStatus(status, sizeof(status));
@@ -796,7 +802,7 @@ void UI_FavouriteServer_PingPoll(void)
 {
 	char    status[BIG_INFO_STRING];
 
-	if (!ui_favServer.address[0])
+	if (!ui_favServer.address[0] || !UI_FavouriteServer_LanPingAllowed())
 	{
 		return;
 	}
@@ -935,11 +941,10 @@ void UI_FavouriteServer_Draw(void)
 	UI_FavouriteServer_EnsureFonts();
 	UI_FavouriteServer_PanelRect(&panelX, &panelY, &panelW, &panelH);
 
-	bg[0] = 0.0f;
-	bg[1] = 0.0f;
-	bg[2] = 0.0f;
-	bg[3] = 0.25f;
-	UI_FillRect(panelX, panelY, panelW, panelH, bg);
+	if (UI_FavouriteServer_GetBgColor(bg))
+	{
+		UI_FillRect(panelX, panelY, panelW, panelH, bg);
+	}
 
 	if (UI_FavouriteServer_GetBorderColor(borderColor))
 	{

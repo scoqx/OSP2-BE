@@ -2160,3 +2160,8 @@ void UI_ArenaServersMenu(void)
 	ArenaServers_MenuInit();
 	UI_PushMenu(&g_arenaservers.menu);
 }
+
+qboolean UI_ArenaServers_IsRefreshing(void)
+{
+	return g_arenaservers.refreshservers;
+}

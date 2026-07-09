@@ -99,6 +99,9 @@ UI_CVAR(ui_beStatusBorderColor, "ui_beStatusBorderColor", "White", CVAR_ARCHIVE)
 UI_CVAR(ui_beStatusChecked, "ui_beStatusChecked", "0", CVAR_TEMP | CVAR_NOTABCOMPLETE | CVAR_NORESTART)
 
 UI_CVAR(ui_favouriteServer, "ui_favouriteServer", "", CVAR_ARCHIVE)
+UI_CVAR(ui_favouriteServerFont, "ui_favouriteServerFont", "19", CVAR_ARCHIVE)
+UI_CVAR(ui_favouriteServerBgColor, "ui_favouriteServerBgColor", "0", CVAR_ARCHIVE)
+UI_CVAR(ui_favouriteServerBgOpaque, "ui_favouriteServerBgOpaque", "0.25", CVAR_ARCHIVE)
 
 UI_CVAR(ui_menuBgStyle, "ui_menuBgStyle", "1", CVAR_ARCHIVE)
 UI_CVAR(ui_menuDarken, "ui_menuDarken", "0", CVAR_ARCHIVE)
