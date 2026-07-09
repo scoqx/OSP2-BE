@@ -1,4 +1,4 @@
-09.07.2026 be v1.06c-beta
+09.07.2026 be v1.06c
 + cg_oldFloatSprites (foe/ballon)
 + cg_scoreboardDrawPowerUps 3
 + Draw powerups in team indicator / hud markers
