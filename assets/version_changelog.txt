@@ -3,7 +3,6 @@
 + cg_scoreboardDrawPowerUps 3
 + Draw powerups in team indicator / hud markers
 * EmojiWindow quick scrolling (CTRL+scroll)
-+ PowerUps in Team Indicator and Hud markers
 + alphaGen vertex for PowerUp icons
 * beStats tourney fix
 * Shadow Items / PUI - Rework
