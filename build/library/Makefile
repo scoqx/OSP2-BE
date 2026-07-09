@@ -564,6 +564,7 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/ui_saveconfig.o \
   $(B)/$(MOD)/ui/ui_serverinfo.o \
   $(B)/$(MOD)/ui/ui_server_status.o \
+  $(B)/$(MOD)/ui/ui_fav_server_parse.o \
   $(B)/$(MOD)/ui/ui_favourite_server.o \
   $(B)/$(MOD)/ui/ui_servers2.o \
   $(B)/$(MOD)/ui/ui_status_sign.o \
