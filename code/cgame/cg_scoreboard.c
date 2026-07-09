@@ -150,10 +150,12 @@ static qboolean CG_ScoreboardDrawClientPowerups(int frameX, int y, float frameW,
 			Vector4Copy(defaultBorderSize, borderSize);
 		}
 
+		CG_AdjustFrom640(&x1, &y1, &w1, &h1);
+
 		if (powerups & (1 << PW_QUAD))
 		{
 			drawAny = qtrue;
-			CG_OSPDrawFrameAdjusted(x1, y1, w1, h1, borderSize, colorCyan, qtrue);
+			CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorCyan, qtrue);
 		}
 
 		if ((powerups & (1 << PW_BATTLESUIT)) && !CG_HIDE_ALLY_BATTLESUIT_UI(ci))
@@ -163,7 +165,7 @@ static qboolean CG_ScoreboardDrawClientPowerups(int frameX, int y, float frameW,
 			w1 -= borderSize[0] + borderSize[2];
 			h1 -= borderSize[1] + borderSize[3];
 			drawAny = qtrue;
-			CG_OSPDrawFrameAdjusted(x1, y1, w1, h1, borderSize, colorOrange, qtrue);
+			CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorOrange, qtrue);
 		}
 
 		if (powerups & (1 << PW_HASTE))
@@ -173,7 +175,7 @@ static qboolean CG_ScoreboardDrawClientPowerups(int frameX, int y, float frameW,
 			w1 -= borderSize[0] + borderSize[2];
 			h1 -= borderSize[1] + borderSize[3];
 			drawAny = qtrue;
-			CG_OSPDrawFrameAdjusted(x1, y1, w1, h1, borderSize, colorYellow, qtrue);
+			CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorYellow, qtrue);
 		}
 
 		if (powerups & (1 << PW_INVIS))
@@ -183,7 +185,7 @@ static qboolean CG_ScoreboardDrawClientPowerups(int frameX, int y, float frameW,
 			w1 -= borderSize[0] + borderSize[2];
 			h1 -= borderSize[1] + borderSize[3];
 			drawAny = qtrue;
-			CG_OSPDrawFrameAdjusted(x1, y1, w1, h1, borderSize, colorWhite, qtrue);
+			CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorWhite, qtrue);
 		}
 
 		if (powerups & (1 << PW_REGEN))
@@ -193,7 +195,7 @@ static qboolean CG_ScoreboardDrawClientPowerups(int frameX, int y, float frameW,
 			w1 -= borderSize[0] + borderSize[2];
 			h1 -= borderSize[1] + borderSize[3];
 			drawAny = qtrue;
-			CG_OSPDrawFrameAdjusted(x1, y1, w1, h1, borderSize, colorRed, qtrue);
+			CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorRed, qtrue);
 		}
 
 		if (powerups & (1 << PW_FLIGHT))
@@ -203,7 +205,7 @@ static qboolean CG_ScoreboardDrawClientPowerups(int frameX, int y, float frameW,
 			w1 -= borderSize[0] + borderSize[2];
 			h1 -= borderSize[1] + borderSize[3];
 			drawAny = qtrue;
-			CG_OSPDrawFrameAdjusted(x1, y1, w1, h1, borderSize, colorMagenta, qtrue);
+			CG_OSPDrawFrame(x1, y1, w1, h1, borderSize, colorMagenta, qtrue);
 		}
 
 		(void)drawAny;
