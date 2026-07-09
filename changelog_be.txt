@@ -987,7 +987,7 @@ SuperHUD:
 + Picked-up items (PUI) - CS 889 + pui cmd; SuperHUD Spectator_ItemSpawns* / ItemPickups1–8
 + BrightShader 2 opaque fix (items and weapons)
 
-09.07.2026 be v1.06c
+09.07.2026 be v1.06c1
 + cg_oldFloatSprites (foe/ballon)
 + cg_scoreboardDrawPowerUps 3
 + Draw powerups in team indicator / hud markers
