@@ -1,6 +1,6 @@
-11.07.2026 be v1.06d
-* OSDF predict fix + code improvements
-* vq3/CPMA predict fix
+11.07.2026 be v1.06d2
+* OSDF predict fix
+* VQ3/CPMA predict fix
 + pmove_accurate
 + pmove_float
 
