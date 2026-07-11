@@ -57,7 +57,7 @@ CG_SRC = \
  cg_chatfilter cg_crosshair \
  cg_be_util cg_be_stats \
  chatWindow/be_chatwindow chatWindow/be_chatwindow_state chatWindow/be_chatwindow_persist chatWindow/be_chatwindow_cmdac \
- chatWindow/be_chatwindow_history chatWindow/be_chatwindow_input \
+ chatWindow/be_admincmds chatWindow/be_chatwindow_history chatWindow/be_chatwindow_input \
  chatWindow/be_chatwindow_emoji chatWindow/be_chatwindow_emoji_picker \
  cg_brightitems beinfo_cfg osp_fonts \
  cg_emoji

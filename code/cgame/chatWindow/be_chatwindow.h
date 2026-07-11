@@ -127,7 +127,18 @@ typedef struct
 #define BE_CHAT_CMD_AC_MODE_MUTE_COMMIT     5
 #define BE_CHAT_CMD_AC_MODE_UNMUTE_COMMIT   6
 #define BE_CHAT_CMD_AC_MODE_PLAIN_CMD       7
+#define BE_CHAT_CMD_AC_MODE_BANG_CMD        8
 
+#define BE_ADMIN_CMD_MAX  64
+#define BE_ADMIN_CMD_LEN  24
+
+typedef struct
+{
+	int         count;
+	char        cmds[BE_ADMIN_CMD_MAX][BE_ADMIN_CMD_LEN];
+} beAdminCmdList_t;
+
+extern beAdminCmdList_t beAdminCmdList;
 
 typedef struct
 {
@@ -167,6 +178,10 @@ extern const char* beChatHelpTipLines[BE_CHAT_HELP_TIP_LINE_COUNT];
 
 qboolean CG_BEChat_ConsoleBlocksInput(void);
 void CG_BEChat_CmdAcClear(void);
+void CG_BEAdminCmd_Clear(void);
+void CG_BEAdminCmd_Register(const char* token);
+void CG_BEAdminCmd_FillEntries(const char* prefix, int prefixLen);
+qboolean CG_BEAdminCmd_IsTokenValid(const char* token);
 void CG_BEChat_CmdAcRefresh(beChatInput_t* edit);
 void CG_BEChat_CmdAcComplete(beChatInput_t* edit, float maxTextW);
 void CG_BEChat_ResetDestMode(void);

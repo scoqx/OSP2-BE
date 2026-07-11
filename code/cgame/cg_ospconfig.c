@@ -428,7 +428,10 @@ void CG_OSPConfigModeSet(int value)
 	{
 		cgs.osp.server_mode = OSP_SERVER_MODE_VQ3;
 	}
-	CG_OSPSetMode(cgs.osp.server_mode);
+	if (cgs.pmove_phy_movetype < 0)
+	{
+		CG_OSPSetMode(cgs.osp.server_mode);
+	}
 }
 
 /*

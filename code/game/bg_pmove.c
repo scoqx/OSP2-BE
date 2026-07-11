@@ -26,8 +26,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/q_shared.h"
 #include "bg_public.h"
 #include "bg_local.h"
-#include "../cgame/cg_local.h"
-#include "local.h"
 
 pmove_t*     pm; //-V707
 pml_t       pml;
@@ -972,14 +970,20 @@ void PM_WalkMove(void)
 	{
 		float   waterScale;
 
-		if (pm->waterlevel != 1)
+		waterScale = pm->waterlevel / 3.0;
+
+		if (pm->waterlevel == 1)
 		{
-			waterScale = pm->waterlevel / 3.0;
-			waterScale = 1.0 - (1.0 - pm_swimScale) * waterScale;
-			if (wishspeed > pm->ps->speed * waterScale)
-			{
-				wishspeed = pm->ps->speed * waterScale;
-			}
+			waterScale = 1.0f - (1.0f - modeSwimScale2) * waterScale;
+		}
+		else
+		{
+			waterScale = 1.0f - (1.0f - modeSwimScale1) * waterScale;
+		}
+
+		if (wishspeed > pm->ps->speed * waterScale)
+		{
+			wishspeed = pm->ps->speed * waterScale;
 		}
 	}
 
@@ -1225,7 +1229,19 @@ void PM_CrashLand(void)
 	// want to take damage or play a crunch sound
 	if (!(pml.groundTrace.surfaceFlags & SURF_NODAMAGE))
 	{
-		if (delta > 60)
+		// ruthless: not standard OSP pmove — soften fall sounds when DF_NO_FALLING
+		if (pm->noFallDamage)
+		{
+			if (delta > 7)
+			{
+				PM_AddEvent(EV_FALL_SHORT);
+			}
+			else if (pm->noFootsteps == 0)
+			{
+				PM_AddEvent(PM_FootstepForSurface());
+			}
+		}
+		else if (delta > 60)
 		{
 			PM_AddEvent(EV_FALL_FAR);
 		}
@@ -2239,6 +2255,53 @@ PmoveSingle
 */
 void trap_SnapVector(float* v);
 
+void PM_FinalizeVelocity(int do_snap)
+{
+	if (pm->pmove_accurate && pm->ps->stats[STAT_HEALTH] > 0)
+	{
+		if (VectorLengthSquared(pm->ps->velocity) < 0.25f)
+		{
+			VectorClear(pm->ps->velocity);
+		}
+		else
+		{
+			int i;
+			float fac;
+			float fps;
+
+			if (pm->pmove_accurate == 1) {
+				fps = 75.0f;
+			}
+			else if (pm->pmove_accurate == 2) {
+				fps = 125.0f;
+			}
+			else {
+				fps = 75.0f;
+			}
+
+			fac = (float)pml.msec / (1000.0f / (float)fps);
+			for (i = 0; i < 3; ++i)
+			{
+				if (fabs(pm->ps->velocity[i] - pml.previous_velocity[i]) > 0.5f / fac)
+				{
+					if (pm->ps->velocity[i] < 0)
+					{
+						pm->ps->velocity[i] -= 0.5f * fac;
+					}
+					else
+					{
+						pm->ps->velocity[i] += 0.5f * fac;
+					}
+				}
+			}
+		}
+	}
+	else if (!pm->pmove_float && do_snap)
+	{
+		trap_SnapVector(pm->ps->velocity);
+	}
+}
+
 void PmoveSingle(pmove_t* pmove)
 {
 	pm = pmove;
@@ -2479,9 +2542,69 @@ void PmoveSingle(pmove_t* pmove)
 	PM_WaterEvents();
 
 	// snap some parts of playerstate to save network bandwidth
-	trap_SnapVector(pm->ps->velocity);
+	if (pm->pmove_accurate || pm->pmove_float)
+	{
+		PM_FinalizeVelocity(1);
+	}
+	else
+	{
+		trap_SnapVector(pm->ps->velocity);
+	}
 }
 
+/*
+================
+PmoveEx
+================
+*/
+void PmoveEx(pmove_t* pmove, void (*single)(pmove_t* pmove))
+{
+	int         finalTime;
+
+	finalTime = pmove->cmd.serverTime;
+
+	if (finalTime < pmove->ps->commandTime)
+	{
+		PM_CheckDuck();
+		return; // should not happen
+	}
+
+	if (finalTime > pmove->ps->commandTime + 1000)
+	{
+		pmove->ps->commandTime = finalTime - 1000;
+	}
+
+	pmove->ps->pmove_framecount = (pmove->ps->pmove_framecount + 1) & ((1 << PS_PMOVEFRAMECOUNTBITS) - 1);
+
+	while (pmove->ps->commandTime != finalTime)
+	{
+		int     msec;
+
+		msec = finalTime - pmove->ps->commandTime;
+
+		if (pmove->pmove_fixed)
+		{
+			if (msec > pmove->pmove_msec)
+			{
+				msec = pmove->pmove_msec;
+			}
+		}
+		else
+		{
+			if (msec > 66)
+			{
+				msec = 66;
+			}
+		}
+		pmove->cmd.serverTime = pmove->ps->commandTime + msec;
+		single(pmove);
+
+		if (pmove->ps->pm_flags & PMF_JUMP_HELD)
+		{
+			pmove->cmd.upmove = 20;
+		}
+	}
+}
 
 /*
 ================
@@ -2532,23 +2655,11 @@ void Pmove(pmove_t* pmove)
 			}
 		}
 		pmove->cmd.serverTime = pmove->ps->commandTime + msec;
-		pmove->movetype = phy_movetype.integer;
-
-		if (pmove->movetype >= 0 && cgs.osdf_signature)
-		{
-			phy_PmoveSingle(pmove);
-		}
-		else
-		{
-			PmoveSingle(pmove);
-		}
+		PmoveSingle(pmove);
 
 		if (pmove->ps->pm_flags & PMF_JUMP_HELD)
 		{
 			pmove->cmd.upmove = 20;
 		}
 	}
-
-	//PM_CheckStuck();
-
 }

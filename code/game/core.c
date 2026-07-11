@@ -104,6 +104,13 @@ static void phy_reset(void); // bottom of this file
 
 // Initialize Physics Values
 int phy_initialized = qfalse;
+static int phy_prev_movetype = -1;
+
+void phy_invalidate(void)
+{
+	phy_initialized = qfalse;
+	phy_prev_movetype = -1;
+}
 void phy_init(int movetype)
 {
 	// Reset all values, in case each init function is missing any
@@ -569,7 +576,21 @@ static void core_CrashLand(void)
 	// SURF_NODAMAGE is used for bounce pads where you don't ever take damage or play a crunch sound
 	if (!(pml.groundTrace.surfaceFlags & SURF_NODAMAGE))
 	{
-		if (delta > 60)
+		if (pm->noFallDamage)
+		{
+			if (delta > 7)
+			{
+				if (!pm->ps->stats[STAT_RAMPSLIDE])
+				{
+					PM_AddEvent(EV_FALL_SHORT);
+				}
+			}
+			else if (pm->noFootsteps == 0)
+			{
+				PM_AddEvent(PM_FootstepForSurface());
+			}
+		}
+		else if (delta > 60)
 		{
 			PM_AddEvent(EV_FALL_FAR);
 		}
@@ -1151,12 +1172,10 @@ void phy_PmoveSingle(pmove_t* pmove)
 // Behavior happens inside each function
 void phy_move(pmove_t* pmove)
 {
-	static int prev_movetype = -1;
-
-	if (prev_movetype != pmove->movetype)
+	if (phy_prev_movetype != pmove->movetype)
 	{
 		phy_initialized = qfalse;
-		prev_movetype = pmove->movetype;
+		phy_prev_movetype = pmove->movetype;
 		phy_init(pmove->movetype);
 	}
 

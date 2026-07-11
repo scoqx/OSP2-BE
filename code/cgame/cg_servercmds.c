@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
 #include "superhud.h"
+#include "chatWindow/be_chatwindow.h"
 
 static int xstats1_received_count = 0;
 static int last_xstats1_sequence = -1;
@@ -345,6 +346,49 @@ static void CG_ParseTeamInfo(void)
 
 /*
 ================
+CG_ParseSysteminfo
+
+Sync phy_movetype from CS_SYSTEMINFO.
+================
+*/
+void CG_ParseSysteminfo(void)
+{
+	const char* info;
+	const char* val;
+	int         movetype;
+
+	info = CG_ConfigString(CS_SYSTEMINFO);
+
+	val = Info_ValueForKey(info, "phy_movetype");
+	movetype = val[0] ? atoi(val) : -1;
+
+	trap_Cvar_Set("phy_movetype", va("%i", movetype));
+
+	val = Info_ValueForKey(info, "g_snapVectors");
+	trap_Cvar_Set("g_snapVectors", val[0] ? val : "0");
+
+	val = Info_ValueForKey(info, "pmove_float");
+	trap_Cvar_Set("pmove_float", val[0] ? val : "0");
+
+	val = Info_ValueForKey(info, "pmove_accurate");
+	trap_Cvar_Set("pmove_accurate", val[0] ? val : "0");
+
+	trap_Cvar_Update(&phy_movetype);
+	trap_Cvar_Update(&phy_snapVectors);
+	trap_Cvar_Update(&pmove_float);
+	trap_Cvar_Update(&pmove_accurate);
+
+	cgs.pmove_phy_movetype = movetype;
+	CG_PmovePhysicsUpdate();
+
+	if (cgs.pmove_phy_movetype < 0)
+	{
+		CG_OSPSetMode(cgs.osp.server_mode);
+	}
+}
+
+/*
+================
 CG_ParseServerinfo
 
 This is called explicitly when the gamestate is first received,
@@ -369,7 +413,13 @@ void CG_ParseServerinfo(void)
 	cgs.osdf_signature = atoi(Info_ValueForKey(info, "osdf_signature"));
 
 	// Metarena-specific
-	cgs.phy_cpm_crouchslide_time = atoi(Info_ValueForKey(info, "phy_cpm_crouchslide_time"));
+	{
+		const char* crouchslideVal;
+
+		crouchslideVal = Info_ValueForKey(info, "phy_cpm_crouchslide_time");
+		trap_Cvar_Set("phy_cpm_crouchslide_time", (crouchslideVal[0] && atoi(crouchslideVal) > 0) ? crouchslideVal : "1000");
+		trap_Cvar_Update(&phy_cpm_crouchslide_time);
+	}
 
 	cgs.capturelimit = atoi(Info_ValueForKey(info, "capturelimit"));
 	timelimitVal = atoi(Info_ValueForKey(info, "timelimit"));
@@ -394,6 +444,8 @@ void CG_ParseServerinfo(void)
 	cgs.beServerEnableBreath = (val[0] == '\0' || val[0] != '0' || val[1] != '\0') ? 1 : 0;
 
 	cgs.killConfirmMode = atoi(Info_ValueForKey(info, "g_killConfirm"));
+
+	CG_ParseSysteminfo();
 }
 
 /*
@@ -520,6 +572,7 @@ static void CG_ConfigStringModified(void)
 			CG_ParseServerinfo();
 			break;
 		case CS_SYSTEMINFO:
+			CG_ParseSysteminfo();
 			break;
 		case CS_WARMUP:
 		{
@@ -871,6 +924,7 @@ static void CG_MapRestart(void)
 	CG_InitLocalEntities();
 	CG_InitMarkPolys();
 	CG_ClearParticles();
+	CG_BEAdminCmd_Clear();
 
 	// make sure the "3 frags left" warnings play again
 	cg.fraglimitWarnings = 0;
@@ -2282,7 +2336,6 @@ void CG_ServerCommand(void)
 				const char* part;
 				char buffer[2048];
 				char* token;
-				int i;
 				qboolean valid;
 
 				part = CG_Argv(1);
@@ -2292,21 +2345,11 @@ void CG_ServerCommand(void)
 				{
 					if (token[0] != '\0')
 					{
-						valid = qtrue;
-						for (i = 0; token[i]; ++i)
-						{
-							if (!((token[i] >= 'a' && token[i] <= 'z') ||
-							        (token[i] >= 'A' && token[i] <= 'Z') ||
-							        (token[i] >= '0' && token[i] <= '9') ||
-							        (token[i] == '_')))
-							{
-								valid = qfalse;
-								break;
-							}
-						}
+						valid = CG_BEAdminCmd_IsTokenValid(token);
 						if (valid)
 						{
 							trap_AddCommand(token);
+							CG_BEAdminCmd_Register(token);
 						}
 					}
 					token = Q_strtok(NULL, "/");

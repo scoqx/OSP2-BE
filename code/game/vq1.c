@@ -55,7 +55,7 @@ void vq1_init()
 	// Jump
 	phy_jump_auto          = qtrue;
 	phy_jump_type          = VQ3;
-	phy_jump_velocity      = NOSNAP_JUMP_VELOCITY;
+	phy_jump_velocity      = JUMP_VELOCITY;
 	phy_step_maxvel        = phy_jump_velocity;
 	phy_jump_scalar        = 0.5;
 }
@@ -505,7 +505,6 @@ void vq1_move(pmove_t* pmove)
 
 	if (phy_snapVectors.integer)
 	{
-		// Snap vertical velocity only, to preserve default max jump height
-		pm->ps->velocity[2] = floor(pm->ps->velocity[2] + 0.5f);
+		trap_SnapVector(pm->ps->velocity);
 	}
 }

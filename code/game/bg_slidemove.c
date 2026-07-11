@@ -346,7 +346,7 @@ void PM_StepSlideMove(qboolean gravity)
 	}
 	if (trace.fraction < 1.0)
 	{
-		if (pm->ps->stats[STAT_OSP_10] && pm->movetype < 0)
+		if (pm->ps->stats[STAT_OSP_10])
 		{
 			PM_ClipVelocityOSP(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP);
 		}

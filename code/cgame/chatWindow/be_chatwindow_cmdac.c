@@ -179,6 +179,34 @@ void CG_BEChat_CmdAcRefresh(beChatInput_t* edit)
 		return;
 	}
 
+	if (edit->buffer[0] == '!')
+	{
+		int i;
+
+		if (beAdminCmdList.count < 1)
+		{
+			return;
+		}
+
+		if (cursor < 1)
+		{
+			return;
+		}
+		for (i = 0; i < cursor; i++)
+		{
+			if (buf[i] == ' ')
+			{
+				return;
+			}
+		}
+		prefixLen = cursor;
+		beChatCmdAc.mode = BE_CHAT_CMD_AC_MODE_BANG_CMD;
+		beChatCmdAc.replaceFrom = 0;
+		beChatCmdAc.replaceTo = cursor;
+		CG_BEAdminCmd_FillEntries(buf, prefixLen);
+		return;
+	}
+
 	if (CG_BEChat_LineCmdChannelOpen() && edit->buffer[0] != '/')
 	{
 		int i;
@@ -1239,6 +1267,10 @@ qboolean CG_BEChat_CmdAcProcessKey(int keycode, beChatInput_t* edit, float maxTe
 		{
 			CG_BEChat_CmdAcTabSlashCommand(edit, maxTextW);
 		}
+		else if (beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_BANG_CMD)
+		{
+			CG_BEChat_CmdAcComplete(edit, maxTextW);
+		}
 		else
 		{
 			CG_BEChat_CmdAcComplete(edit, maxTextW);
@@ -1403,7 +1435,8 @@ void CG_BEChat_CmdAcDraw(float inputX, float inputY, beChatInput_t* edit,
 		drawGhost = qtrue;
 	}
 	else if (beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_SLASH_CMD ||
-	         beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_PLAIN_CMD)
+	         beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_PLAIN_CMD ||
+	         beChatCmdAc.mode == BE_CHAT_CMD_AC_MODE_BANG_CMD)
 	{
 		Q_strncpyz(ghostBuf, " ", sizeof(ghostBuf));
 		ghostLen = 1;

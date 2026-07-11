@@ -257,7 +257,7 @@ static void CG_TellAttacker_f(void)
 
 int CG_LastTellSenderClientNum(void)
 {
-	trap_Cvar_Update(&cg_beLastTellSender);
+	// trap_Cvar_Update(&cg_beLastTellSender);
 	if (!cg_beLastTellSender.string[0])
 	{
 		return -1;

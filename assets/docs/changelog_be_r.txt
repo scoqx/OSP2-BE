@@ -1,3 +1,9 @@
+11.07.2026 be v1.06d
+* OSDF predict fix + code improvements
+* vq3/CPMA predict fix
++ pmove_accurate
++ pmove_float
+
 09.07.2026 be v1.06c1
 + cg_oldFloatSprites (foe/ballon)
 + cg_scoreboardDrawPowerUps 3
@@ -15,6 +21,7 @@ UI:
   + ui_favouriteServer "IP:PORT"
   + ui_favouriteServerFont
   + ui_favouriteServerBgColor
+
 
 04.07.2026 be v1.06b1
 + Reworked Auto Updater for Windows by KONSTALKER (check version before download)

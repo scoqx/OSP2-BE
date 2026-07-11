@@ -125,7 +125,6 @@ qboolean CG_BEChat_EmojiFavTokenAt(int index, char* out, int outSize)
 		return qfalse;
 	}
 
-	trap_Cvar_Update(&cg_chatWindowFavEmojis);
 	s = cg_chatWindowFavEmojis.string;
 	if (!s || !s[0])
 	{

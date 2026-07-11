@@ -445,6 +445,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_state.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_persist.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_cmdac.o \
+  $(B)/$(MOD)/cgame/chatWindow/be_admincmds.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_history.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_input.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_emoji.o \

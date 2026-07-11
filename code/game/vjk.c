@@ -301,7 +301,6 @@ void vjk_move(pmove_t* pmove)
 
 	if (phy_snapVectors.integer)
 	{
-		// snap some parts of playerstate to save network bandwidth
 		trap_SnapVector(pm->ps->velocity);
 	}
 }

@@ -301,6 +301,11 @@ void CG_LocalEventCvarChanged_pmove_fixed(cvarTable_t* cvart)
 	}
 }
 
+void CG_LocalEventCvarChanged_phy_movetype(cvarTable_t* cvart)
+{
+	CG_PmovePhysicsUpdate();
+}
+
 void CG_LocalEventCvarChanged_cg_hitSounds(cvarTable_t* cvart)
 {
 	if (!cgs.damageInfoAllowed && cg_hitSounds.integer)

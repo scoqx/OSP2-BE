@@ -46,6 +46,7 @@ extern float pm_spectatorfriction;
 extern int c_pmove;
 
 void trap_SnapVector(float* v);
+void PM_FinalizeVelocity(int do_snap);
 
 void PM_AddEvent(int newEvent);
 void PM_AddTouchEnt(int entityNum);

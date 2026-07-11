@@ -241,7 +241,7 @@ typedef enum
 #define PMF_ALL_TIMES   (PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_KNOCKBACK)
 
 #define MAXTOUCH    32
-typedef struct
+typedef struct pmove_s
 {
 	// state (in / out)
 	playerState_t*   ps;
@@ -251,6 +251,7 @@ typedef struct
 	int         tracemask;          // collide against these types of surfaces
 	int         debugLevel;         // if set, diagnostic output will be printed
 	qboolean    noFootsteps;        // if the game is setup for no footsteps by the server
+	qboolean    noFallDamage;       // DF_NO_FALLING from server dmflags
 	qboolean    gauntletHit;        // true if a gauntlet attack would actually hit something
 
 	int         framecount;
@@ -269,6 +270,8 @@ typedef struct
 	// for fixed msec Pmove
 	int         pmove_fixed;
 	int         pmove_msec;
+	int         pmove_float;
+	int         pmove_accurate;
 
 	// callbacks to test the world
 	// these will be different functions during game and cgame
@@ -286,7 +289,9 @@ typedef struct
 
 // if a full pmove isn't done on the client, you can just update the angles
 void PM_UpdateViewAngles(playerState_t* ps, const usercmd_t* cmd);
+void PmoveSingle(pmove_t* pmove);
 void Pmove(pmove_t* pmove);
+void PmoveEx(pmove_t* pmove, void (*single)(pmove_t* pmove));
 
 //===================================================================================
 

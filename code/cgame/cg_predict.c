@@ -26,171 +26,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // It also handles local physics interaction, like fragments bouncing off walls
 
 #include "cg_local.h"
+#include "../game/local.h"
+#include "../game/bg_local.h"
 
 static  pmove_t     cg_pmove;
+
+static void CG_PmovePhysicsResetBaseGlobals(void)
+{
+	extern float pm_spectatorfriction;
+
+	pm_stopspeed = 100.0f;
+	pm_duckScale = 0.25f;
+	pm_swimScale = 0.50f;
+	pm_wadeScale = 0.70f;
+	pm_accelerate = 10.0f;
+	pm_airaccelerate = 1.0f;
+	pm_wateraccelerate = 4.0f;
+	pm_flyaccelerate = 8.0f;
+	pm_friction = 6.0f;
+	pm_waterfriction = 1.0f;
+	pm_flightfriction = 3.0f;
+	pm_spectatorfriction = 5.0f;
+}
 
 static  int         cg_numSolidEntities;
 static  centity_t*   cg_solidEntities[MAX_ENTITIES_IN_SNAPSHOT];
 static  int         cg_numTriggerEntities;
 static  centity_t*   cg_triggerEntities[MAX_ENTITIES_IN_SNAPSHOT];
 
-#define ABS(x) ((x) < 0 ? (-(x)) : (x))
-
-#ifdef __GNUC__
-__attribute__((unused))
-#endif
-static int IsUnacceptableError(playerState_t* ps, playerState_t* pps)
-{
-	vec3_t delta;
-	int i;
-
-	if (pps->pm_type != ps->pm_type ||
-	        pps->pm_flags != ps->pm_flags ||
-	        pps->pm_time != ps->pm_time)
-	{
-		return 1;
-	}
-
-	VectorSubtract(pps->origin, ps->origin, delta);
-	if (VectorLengthSquared(delta) > 0.1f * 0.1f)
-	{
-		if (cg_showmiss.integer)
-		{
-			CG_Printf("delta: %.2f  ", VectorLength(delta));
-		}
-		return 2;
-	}
-
-	VectorSubtract(pps->velocity, ps->velocity, delta);
-	if (VectorLengthSquared(delta) > 0.1f * 0.1f)
-	{
-		if (cg_showmiss.integer)
-		{
-			CG_Printf("delta: %.2f  ", VectorLength(delta));
-		}
-		return 3;
-	}
-
-	if (pps->weaponTime != ps->weaponTime ||
-	        pps->gravity != ps->gravity ||
-	        pps->speed != ps->speed ||
-	        pps->delta_angles[0] != ps->delta_angles[0] ||
-	        pps->delta_angles[1] != ps->delta_angles[1] ||
-	        pps->delta_angles[2] != ps->delta_angles[2] ||
-	        pps->groundEntityNum != ps->groundEntityNum)
-	{
-		return 4;
-	}
-
-	if (pps->legsTimer != ps->legsTimer ||
-	        pps->legsAnim != ps->legsAnim ||
-	        pps->torsoTimer != ps->torsoTimer ||
-	        pps->torsoAnim != ps->torsoAnim ||
-	        pps->movementDir != ps->movementDir)
-	{
-		return 5;
-	}
-
-	VectorSubtract(pps->grapplePoint, ps->grapplePoint, delta);
-	if (VectorLengthSquared(delta) > 0.1f * 0.1f)
-	{
-		return 6;
-	}
-
-	if (pps->eFlags != ps->eFlags)
-	{
-		return 7;
-	}
-
-	if (pps->eventSequence != ps->eventSequence)
-	{
-		return 8;
-	}
-
-	for (i = 0; i < MAX_PS_EVENTS; i++)
-	{
-		if (pps->events[i] != ps->events[i] ||
-		        pps->eventParms[i] != ps->eventParms[i])
-		{
-			return 9;
-		}
-	}
-
-	if (pps->externalEvent != ps->externalEvent ||
-	        pps->externalEventParm != ps->externalEventParm ||
-	        pps->externalEventTime != ps->externalEventTime)
-	{
-		return 10;
-	}
-
-	if (pps->clientNum != ps->clientNum ||
-	        pps->weapon != ps->weapon ||
-	        pps->weaponstate != ps->weaponstate)
-	{
-		return 11;
-	}
-
-	if (ABS(pps->viewangles[0] - ps->viewangles[0]) > 1.0f ||
-	        ABS(pps->viewangles[1] - ps->viewangles[1]) > 1.0f ||
-	        ABS(pps->viewangles[2] - ps->viewangles[2]) > 1.0f)
-	{
-		return 12;
-	}
-
-	if (pps->viewheight != ps->viewheight)
-	{
-		return 13;
-	}
-
-	if (pps->damageEvent != ps->damageEvent ||
-	        pps->damageYaw != ps->damageYaw ||
-	        pps->damagePitch != ps->damagePitch ||
-	        pps->damageCount != ps->damageCount)
-	{
-		return 14;
-	}
-
-	for (i = 0; i < MAX_STATS; i++)
-	{
-		if (pps->stats[i] != ps->stats[i])
-		{
-			return 15;
-		}
-	}
-
-	for (i = 0; i < MAX_PERSISTANT; i++)
-	{
-		if (pps->persistant[i] != ps->persistant[i])
-		{
-			return 16;
-		}
-	}
-
-	for (i = 0; i < MAX_POWERUPS; i++)
-	{
-		if (pps->powerups[i] != ps->powerups[i])
-		{
-			return 17;
-		}
-	}
-
-	for (i = 0; i < MAX_WEAPONS; i++)
-	{
-		if (pps->ammo[i] != ps->ammo[i])
-		{
-			return 18;
-		}
-	}
-
-	if (pps->generic1 != ps->generic1 ||
-	        pps->loopSound != ps->loopSound ||
-	        pps->jumppad_ent != ps->jumppad_ent)
-	{
-		return 19;
-	}
-
-	return 0;
-}
 /*
 ====================
 CG_BuildSolidList
@@ -626,6 +489,48 @@ static vec_t VectorDistance(vec3_t a, vec3_t b)
 	return (vec_t)sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
 }
 
+/*
+=================
+CG_PmovePhysicsUpdate
+
+Select client predict pmove step once per serverinfo / phy_movetype change.
+=================
+*/
+void CG_PmovePhysicsUpdate(void)
+{
+	static int last_phy_movetype = -2;
+	static int last_g_snapVectors = -2;
+	int         movetype;
+
+	trap_Cvar_Update(&phy_movetype);
+	trap_Cvar_Update(&phy_snapVectors);
+	movetype = phy_movetype.integer;
+
+	if (movetype >= 0)
+	{
+		if (last_phy_movetype < 0)
+		{
+			CG_PmovePhysicsResetBaseGlobals();
+		}
+		if (last_phy_movetype != movetype || last_g_snapVectors != phy_snapVectors.integer)
+		{
+			phy_invalidate();
+		}
+		cgs.pmove_phy_movetype = movetype;
+	}
+	else
+	{
+		if (last_phy_movetype >= 0)
+		{
+			CG_OSPSetMode(cgs.osp.server_mode);
+		}
+		cgs.pmove_phy_movetype = -1;
+	}
+
+	last_phy_movetype = movetype;
+	last_g_snapVectors = phy_snapVectors.integer;
+}
+
 void CG_PredictPlayerState(void)
 {
 	int         cmdNum, current;
@@ -677,6 +582,7 @@ void CG_PredictPlayerState(void)
 		cg_pmove.tracemask &= ~CONTENTS_BODY;   // spectators can fly through bodies
 	}
 	cg_pmove.noFootsteps = (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE) || (cgs.dmflags & DF_NO_FOOTSTEPS) > 0;
+	cg_pmove.noFallDamage = (cgs.dmflags & DF_NO_FALLING) > 0;
 
 	// save the state before the pmove so we can detect transitions
 	oldPlayerState = cg.predictedPlayerState;
@@ -727,6 +633,16 @@ void CG_PredictPlayerState(void)
 
 	cg_pmove.pmove_fixed = pmove_fixed.integer;// | cg_pmove_fixed.integer;
 	cg_pmove.pmove_msec = pmove_msec.integer;
+	if (cgs.pmove_phy_movetype >= 0)
+	{
+		cg_pmove.pmove_float = pmove_float.integer;
+		cg_pmove.pmove_accurate = pmove_accurate.integer;
+	}
+	else
+	{
+		cg_pmove.pmove_float = 0;
+		cg_pmove.pmove_accurate = 0;
+	}
 
 	// run cmds
 	moved = qfalse;
@@ -784,7 +700,17 @@ void CG_PredictPlayerState(void)
 				{
 					if (!VectorCompare(oldPlayerState.origin, adjusted))
 					{
-						CG_Printf("prediction error %.3f\n", VectorDistance(oldPlayerState.origin, adjusted) * (float)(1000 / (cg.time - cg_pmove.cmd.serverTime)));
+						int     dt;
+
+						dt = cg.time - cg_pmove.cmd.serverTime;
+						if (dt > 0)
+						{
+							CG_Printf("prediction error %.3f\n", VectorDistance(oldPlayerState.origin, adjusted) * (1000.0f / (float)dt));
+						}
+						else
+						{
+							CG_Printf("prediction error %.3f\n", VectorDistance(oldPlayerState.origin, adjusted));
+						}
 					}
 				}
 				VectorSubtract(oldPlayerState.origin, adjusted, delta);
@@ -832,7 +758,17 @@ void CG_PredictPlayerState(void)
 		}
 
 		// run the Pmove
-		Pmove(&cg_pmove);
+		if (cgs.pmove_phy_movetype >= 0)
+		{
+			cg_pmove.movetype = cgs.pmove_phy_movetype;
+			PmoveEx(&cg_pmove, phy_PmoveSingle);
+		}
+		else
+		{
+			cg_pmove.movetype = 0;
+			memset(&cg_pmove.pmd, 0, sizeof(cg_pmove.pmd));
+			Pmove(&cg_pmove);
+		}
 
 		moved = qtrue;
 

@@ -1,17 +1,5 @@
-09.07.2026 be v1.06c1
-+ cg_oldFloatSprites (foe/ballon)
-+ cg_scoreboardDrawPowerUps 3
-+ Draw powerups in team indicator / hud markers
-* EmojiWindow quick scrolling (CTRL+scroll)
-+ alphaGen vertex for PowerUp icons
-* beStats tourney fix
-* Shadow Items / PUI - Rework
-SuperHUD:
-  + Obituaries drop powerUp/flag icon for ally
-  * TeamTask element icons color fix
-  * cg_drawTimer 0 improvements
-UI:
-  + ui_banner 0
-  + ui_favouriteServer "IP:PORT"
-  + ui_favouriteServerFont
-  + ui_favouriteServerBgColor
+11.07.2026 be v1.06d
+* OSDF predict fix + code improvements
+* vq3/CPMA predict fix
++ pmove_accurate
++ pmove_float

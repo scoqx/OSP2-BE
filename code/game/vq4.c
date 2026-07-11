@@ -51,7 +51,7 @@ void vq4_init()
 	phy_input_scalefix         = qtrue;
 	phy_jump_type              = VQ3;
 	phy_jump_auto              = qtrue;
-	phy_jump_velocity          = NOSNAP_JUMP_VELOCITY;
+	phy_jump_velocity          = JUMP_VELOCITY;
 	phy_step_maxvel            = phy_jump_velocity;
 	// Crouchslide
 	phy_crouchslide_friction   = 0;
@@ -575,11 +575,9 @@ void vq4_move(pmove_t* pmove)
 	PM_Footsteps();
 	// entering / leaving water splashes
 	PM_WaterEvents();
-	// snap some parts of playerstate to save network bandwidth
 	if (phy_snapVectors.integer)
 	{
-		trap_SnapVector(pm->ps->velocity);    // Default Q3 behavior
+		trap_SnapVector(pm->ps->velocity);
 	}
-	// else                  { pm->ps->velocity[2] = floor(pm->ps->velocity[2] + 0.5f); } // No snapzones. Always snap vertical velocity, to preserve default max jump height
 	// if (!(pml.walking) && pm->debugLevel) { Com_Printf("%i:Moved.Trigger\n", c_pmove); }
 }

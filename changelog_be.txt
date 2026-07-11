@@ -1004,3 +1004,9 @@ UI:
   + ui_favouriteServer "IP:PORT"
   + ui_favouriteServerFont
   + ui_favouriteServerBgColor
+
+11.07.2026 be v1.06d
+* OSDF predict fix + code improvements
+* vq3/CPMA predict fix
++ pmove_accurate
++ pmove_float

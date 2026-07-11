@@ -163,6 +163,8 @@ vmCvar_t           pmove_fixed;
 vmCvar_t           pmove_msec;
 vmCvar_t           phy_movetype;
 vmCvar_t           phy_snapVectors;
+vmCvar_t           phy_cpm_crouchslide_time;
+vmCvar_t           phy_overbounce_fix;
 vmCvar_t           cg_noTaunt;
 vmCvar_t           cg_noProjectileTrail;
 vmCvar_t           cg_oldRail;
@@ -610,6 +612,8 @@ vmCvar_t        cg_drawTPexit;
 vmCvar_t        cg_shadowItems;
 vmCvar_t        cg_worldFlags;
 vmCvar_t        cg_oldFloatSprites;
+vmCvar_t        pmove_float;
+vmCvar_t        pmove_accurate;
 
 cgFontIndices_t cgFontIndices;
 
@@ -704,8 +708,10 @@ cvarTable_t cvarTable[] =
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT },
 	{ &pmove_fixed, "pmove_fixed", "0", 0, CG_LocalEventCvarChanged_pmove_fixed},
 	{ &pmove_msec, "pmove_msec", "8",  },
-	{ &phy_movetype, "phy_movetype", "-1", CVAR_SYSTEMINFO },
+	{ &phy_movetype, "phy_movetype", "-1", CVAR_SYSTEMINFO | CVAR_ROM, CG_LocalEventCvarChanged_phy_movetype },
 	{ &phy_snapVectors, "g_snapVectors", "0", CVAR_SYSTEMINFO },
+	{ &phy_cpm_crouchslide_time, "phy_cpm_crouchslide_time", "1000", CVAR_ROM },
+	{ &phy_overbounce_fix, "phy_overbounce_fix", "1", CVAR_ARCHIVE },
 	{ &cg_noTaunt, "cg_noTaunt", "0", CVAR_ARCHIVE },
 	{ &cg_noProjectileTrail, "cg_noProjectileTrail", "0", CVAR_ARCHIVE },
 	{ &cg_oldRail, "cg_oldRail", "1", CVAR_ARCHIVE },
@@ -1122,6 +1128,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_shadowItems, "cg_shadowItems", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_worldFlags, "cg_worldFlags", "3", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_oldFloatSprites, "cg_oldFloatSprites", "1", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
+	{ &pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO | CVAR_NEW },
+	{ &pmove_accurate, "pmove_accurate", "0", CVAR_SYSTEMINFO | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -2953,6 +2961,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	int          i;
 	// clear everything
 	memset(&cgs, 0, sizeof(cgs));
+	cgs.pmove_phy_movetype = -1;
 	memset(&cg, 0, sizeof(cg));
 	cg.teamMarkerStackCacheTime = -1;
 	for (i = 0; i < MAX_CLIENTS; i++)
@@ -3297,6 +3306,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_RegisterGraphics();
 
 	CG_UpdateCvars(cvarTableSize);
+	CG_PmovePhysicsUpdate();
 
 	if (cg_chatWindow.integer)
 	{

@@ -165,6 +165,7 @@ extern int phy_rampslide_speedmin; // Minimum vertical speed at which rampslides
 
 // Initialize
 void phy_init(int movetype); // Calls all other initializer functions
+void phy_invalidate(void);
 void cpm_init(void);
 void vq1_init(void);
 void vq3_init(void);

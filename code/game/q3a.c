@@ -42,7 +42,7 @@ void cpm_init()
 	phy_water_scale         = pm_swimScale;
 	phy_water_friction      = 0.5;
 	// New
-	phy_snapvelocity        = 0;
+	phy_snapvelocity        = phy_snapVectors.integer;
 	phy_input_scalefix      = qfalse;
 	phy_ground_basespeed    = 320;
 	phy_ground_accel        = 15;
@@ -71,7 +71,7 @@ void cpm_init()
 	phy_jump_type           = CPM;
 	phy_jump_timebuffer     = 400;
 	phy_jump_dj_velocity    = 100;
-	phy_jump_velocity       = NOSNAP_JUMP_VELOCITY;
+	phy_jump_velocity       = JUMP_VELOCITY;
 	phy_step_maxvel         = phy_jump_velocity + phy_jump_dj_velocity;
 }
 
@@ -92,12 +92,12 @@ void vq3_init()
 	phy_water_scale        = pm_swimScale;
 	phy_water_friction     = pm_waterfriction;
 	// New
-	phy_snapvelocity       = 0;
+	phy_snapvelocity       = phy_snapVectors.integer;
 	phy_input_scalefix     = qfalse;
 	phy_aircontrol         = qfalse;
 	phy_jump_type          = VQ3;
 	phy_jump_auto          = qfalse;
-	phy_jump_velocity      = NOSNAP_JUMP_VELOCITY;
+	phy_jump_velocity      = JUMP_VELOCITY;
 
 }
 
@@ -118,7 +118,7 @@ void cq3_init()
 	phy_water_scale         = pm_swimScale;
 	phy_water_friction      = 0.5;
 	// Math quirks
-	phy_snapvelocity        = 0;
+	phy_snapvelocity        = phy_snapVectors.integer;
 	phy_input_scalefix      = qfalse;
 	// Ground movement
 	phy_ground_basespeed    = 320;
@@ -141,7 +141,7 @@ void cq3_init()
 	phy_jump_type           = CPM;
 	phy_jump_timebuffer     = 400;
 	phy_jump_dj_velocity    = 100;
-	phy_jump_velocity       = NOSNAP_JUMP_VELOCITY;
+	phy_jump_velocity       = JUMP_VELOCITY;
 	phy_step_maxvel         = phy_jump_velocity + phy_jump_dj_velocity;
 }
 
@@ -301,7 +301,11 @@ void q3a_AirMove(void)
 
 		if (phy_movetype.integer == CPM)
 		{
-			crouchslide_time = cgs.phy_cpm_crouchslide_time;
+			crouchslide_time = phy_cpm_crouchslide_time.integer;
+			if (crouchslide_time <= 0)
+			{
+				crouchslide_time = 1000;
+			}
 		}
 		else
 		{
@@ -585,7 +589,7 @@ void q3a_move(pmove_t* pmove)
 	// set groundentity
 	core_GroundTrace();
 
-	if (pml.groundPlane)
+	if (pml.groundPlane && phy_overbounce_fix.integer)
 	{
 		PM_OneSidedClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal, pm->ps->velocity, OVERCLIP);
 	}
@@ -637,12 +641,10 @@ void q3a_move(pmove_t* pmove)
 	PM_Footsteps();
 	// entering / leaving water splashes
 	PM_WaterEvents();
-	// Snapzones: Snap some parts of playerstate to save network bandwidth
 	if (phy_snapVectors.integer)
 	{
-		trap_SnapVector(pm->ps->velocity);    // Default Q3 behavior
+		trap_SnapVector(pm->ps->velocity);
 	}
-	// else                  { pm->ps->velocity[2] = floor(pm->ps->velocity[2] + 0.5f); } // No snapzones. Always snap vertical velocity, to preserve default max jump height
 }
 void cpm_move(pmove_t* pmove)
 {

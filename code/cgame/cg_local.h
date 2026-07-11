@@ -644,7 +644,6 @@ typedef struct
 // occurs, and they will have visible effects for #define STEP_TIME or whatever msec after
 
 #define MAX_PREDICTED_EVENTS    16
-#define NUM_SAVED_STATES (CMD_BACKUP + 2)
 
 // Token Bucket for anti-flood
 typedef struct
@@ -1009,11 +1008,6 @@ typedef struct
 	// refEntity_t     testModelEntity;
 	// char            testModelName[MAX_QPATH];
 	// qboolean        testGun;
-
-	int         lastPredictedCommand;
-	int         lastServerTime;
-	playerState_t savedPmoveStates[NUM_SAVED_STATES];
-	int         stateHead, stateTail;
 
 	/* BE frame/session state (was cgs.be.*) */
 	int         beFollowingMe;
@@ -1971,7 +1965,7 @@ typedef struct
 	qboolean        q3mskRoundWarmup; /* q3msk freeze team round warmup active */
 	qboolean        fpsclassico;  // fpsclasico.com
 	qboolean        osdf_signature;
-	int             phy_cpm_crouchslide_time;
+	int             pmove_phy_movetype; /* -1: PmoveSingle, >=0: phy_PmoveSingle movetype */
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
 	int             itemCatalogMode; /* CS 890 leading digit: 1=shadows 2=pickups 3=both */
@@ -2103,6 +2097,8 @@ extern vmCvar_t           pmove_fixed;
 extern vmCvar_t           pmove_msec;
 extern vmCvar_t           phy_movetype;
 extern vmCvar_t           phy_snapVectors;
+extern vmCvar_t           phy_cpm_crouchslide_time;
+extern vmCvar_t           phy_overbounce_fix;
 extern vmCvar_t           cg_noTaunt;
 extern vmCvar_t           cg_noProjectileTrail;
 extern vmCvar_t           cg_oldRail;
@@ -2520,6 +2516,8 @@ extern vmCvar_t         cg_drawTPexit;
 extern vmCvar_t         cg_shadowItems;
 extern vmCvar_t         cg_worldFlags;
 extern vmCvar_t         cg_oldFloatSprites;
+extern vmCvar_t         pmove_float;
+extern vmCvar_t         pmove_accurate;
 
 
 
@@ -2927,6 +2925,7 @@ void CG_UpdateAllClientsInfo(void);
 #define CG_Q3MSK_ROUND_WARMUP() (cgs.q3mskRoundWarmup)
 #define CG_Q3MSK_ROUND_WARMUP_UPDATE() \
     cgs.q3mskRoundWarmup = (qboolean)(cgs.q3msk && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+void CG_PmovePhysicsUpdate(void);
 /* In non-team modes (FFA, Tournament, SP) everyone except self is enemy; else use team/rt */
 #define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype < GT_TEAM) ? 1 : ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team))))
 #define CG_CACHED_IS_ENEMY_NUM(n) (((n) >= 0 && (n) < MAX_CLIENTS) ? cg.isEnemyView[(n)] : qfalse)
@@ -3187,6 +3186,7 @@ void CG_OSPWStatsUp_f(void);
 #define CG_CHAT_TEAM_ENABLED 2
 void CG_ExecuteNewServerCommands(int latestSequence);
 void CG_ParseServerinfo(void);
+void CG_ParseSysteminfo(void);
 void CG_SetConfigValues(void);
 void CG_ShaderStateChanged(void);
 void CG_RemoveChatEscapeChar(char* text);
@@ -3662,6 +3662,7 @@ void CG_OSPConfigClanBaseTDMSet(qboolean value);
 void CG_OSPConfigCustomClientSet(int value);
 void CG_OSPConfigCustomClient2Set(int value);
 void CG_OSPConfigModeSet(int value);
+void CG_OSPSetMode(int value);
 void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
 void CG_OSP2BEOnComMaxfpsChanged(int value);
@@ -3928,6 +3929,7 @@ void CG_LocalEventCvarChanged_cg_teamModel(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_handicap(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_s_ambient(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_pmove_fixed(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_phy_movetype(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_hitSounds(cvarTable_t* cvart);
 
 void CG_LocalEventCvarChanged_cg_playerModelColors(cvarTable_t* cvart);

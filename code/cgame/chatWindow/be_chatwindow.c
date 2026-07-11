@@ -100,6 +100,7 @@ void CG_BEChat_UpdateFontSizeFromCvar(void)
 }
 void CG_BEChat_Init(void)
 {
+	CG_BEAdminCmd_Clear();
 	memset(&beChatWindow, 0, sizeof(beChatWindow));
 	beChatWindow.input.widthInChars = BE_CHAT_INPUT_CHARS;
 	beChatWindow.repeatKey = -1;
