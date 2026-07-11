@@ -385,10 +385,10 @@ void CG_SHUDElementSpectatorItemSpawnsRoutine(void* context)
 
 	element = (shudElementSpectatorItemSpawns_t*)context;
 
-	// if (!CG_IS_LOCAL_CLIENT_SPECTATOR())
-	// {
-	// 	return;
-	// }
+	if (!CG_IS_LOCAL_CLIENT_SPECTATOR())
+	{
+		return;
+	}
 
 	if (!element->config.rect.isSet)
 	{
