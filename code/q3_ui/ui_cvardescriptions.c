@@ -8,7 +8,6 @@ typedef struct
 
 static uiCvarDescriptionTable_t uiCvarDescriptionTable[] =
 {
-	{ "ui_infoDetail", "Detail shader draw type in menu.\n  ^20^7 - disabled\n  ^21^7 - default\n  ^22^7 - fullscreen" },
 	{ "ui_menuBgStyle", "Menu background display mode.\n  ^21^7 - standard (main menu and submenus use different backgrounds)\n  ^22^7 - entire UI uses the main menu background image" },
 	{ "ui_menuDarken", "Darken menu background overlay. ^20^7 - none, up to ^21^7 - fully dark" },
 	{ "ui_forceGamma", "Force ^3r_gamma^7 to ^21^7 while in menus. Set ^20^7 to disable." },

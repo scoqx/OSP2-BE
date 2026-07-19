@@ -130,7 +130,7 @@ void CG_UpdateFontIndices(void)
 	newVal = CG_FontIndexFromCvar(&cg_centerMessagesFont);
 	if (newVal != cgFontIndices.centerMessages)
 		cgFontIndices.centerMessages = newVal;
-	newVal = CG_FontIndexFromCvar(&cg_infoVersionFont);
+	newVal = CG_FontIndexFromCvar(&be_infoVersionFont);
 	if (newVal != cgFontIndices.infoVersion)
 		cgFontIndices.infoVersion = newVal;
 	newVal = CG_FontIndexFromCvar(&cg_bestats_font);

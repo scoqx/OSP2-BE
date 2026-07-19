@@ -59,11 +59,11 @@ CG_SRC = \
  chatWindow/be_chatwindow chatWindow/be_chatwindow_state chatWindow/be_chatwindow_persist chatWindow/be_chatwindow_cmdac \
  chatWindow/be_admincmds chatWindow/be_chatwindow_history chatWindow/be_chatwindow_input \
  chatWindow/be_chatwindow_emoji chatWindow/be_chatwindow_emoji_picker \
- cg_brightitems beinfo_cfg osp_fonts \
+ cg_brightitems beinfo_cfg osp_fonts engine_fonts be_font_shadow \
  cg_emoji
 UI_SRC = \
  ui_main $(UIDIR)/ui_syscalls.asm \
-ui_gameinfo beinfo_cfg osp_fonts ui_atoms ui_cvardescriptions ui_colorparse ui_cinematics ui_connect ui_controls2 ui_demo2 \
+ui_gameinfo beinfo_cfg osp_fonts engine_fonts be_font_shadow ui_atoms ui_cvardescriptions ui_colorparse ui_cinematics ui_connect ui_controls2 ui_demo2 \
 ui_md5 ui_status_sign ui_server_status ui_fav_server_parse ui_favourite_server \
 ui_mfield ui_credits ui_credits2 ui_menu ui_ingame ui_confirm ui_setup ui_options \
 ui_display ui_sound ui_network ui_playermodel ui_players ui_playersettings \

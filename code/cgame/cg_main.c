@@ -517,7 +517,7 @@ vmCvar_t        cg_exec_tdm;
 vmCvar_t        cg_exec_ca;
 vmCvar_t        cg_exec_ctf;
 vmCvar_t        cg_exec_freeze;
-/* vmCvar_t        cg_autoHop; */
+vmCvar_t        cg_autoHop;
 vmCvar_t        cg_damagePlums;
 vmCvar_t        cg_damagePlumSize;
 vmCvar_t        cg_damagePlumsWeapons;
@@ -544,7 +544,7 @@ vmCvar_t        cg_noExplosions;
 vmCvar_t        cg_noItemUseSound;
 vmCvar_t        cg_friendsWallhackFrozen;
 vmCvar_t        cg_teleportEffect;
-vmCvar_t        cg_infoVersionFont;
+vmCvar_t        be_infoVersionFont;
 vmCvar_t        cl_reconnectArgs;
 vmCvar_t        cg_altRail;
 vmCvar_t        cg_altRailBeefy;
@@ -552,7 +552,7 @@ vmCvar_t        cg_teamTaskNewSounds;
 vmCvar_t        cg_teamTaskVersion;
 vmCvar_t        cg_railFix;
 vmCvar_t        cg_freezeSoundFix;
-vmCvar_t           cg_infoDetail;
+vmCvar_t        be_infoDetail;
 vmCvar_t        cg_enhancedInterpolation;
 vmCvar_t        cg_entityOverpolate;
 // vmCvar_t        cg_snow;
@@ -607,6 +607,7 @@ vmCvar_t        cg_chatWindowFontSize;
 vmCvar_t        cg_chatWindowBgColor;
 vmCvar_t        cg_chatWindowBgOpaque;
 vmCvar_t        cg_chatWindowFavEmojis;
+vmCvar_t        cg_chatWindowNumLock;
 vmCvar_t        cg_drawSpawns;
 vmCvar_t        cg_drawTPexit;
 vmCvar_t        cg_shadowItems;
@@ -614,6 +615,10 @@ vmCvar_t        cg_worldFlags;
 vmCvar_t        cg_oldFloatSprites;
 vmCvar_t        pmove_float;
 vmCvar_t        pmove_accurate;
+vmCvar_t        be_fontShadowOffset;
+vmCvar_t        be_ttfShadowOffset;
+vmCvar_t        be_ttfScale;
+vmCvar_t        be_ttfFontOffset;
 
 cgFontIndices_t cgFontIndices;
 
@@ -936,17 +941,17 @@ cvarTable_t cvarTable[] =
 	{ &cg_teamIndicatorBgOpaque, "cg_teamIndicatorBgOpaque", "0.2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorBgOpaque },
 	{ &cg_teamIndicatorOffset, "cg_teamIndicatorOffset", "12", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorOffset },
 	{ &cg_teamIndicatorMaxLength, "cg_teamIndicatorMaxLength", "13", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorMaxLength },
-	{ &cg_teamIndicatorFont, "cg_teamIndicatorFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFont, },
+	{ &cg_teamIndicatorFont, "cg_teamIndicatorfont", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFont, },
 	{ &cg_scoreboardBE, "cg_scoreboardBE", "0", CVAR_ARCHIVE, },
-	{ &cg_scoreboardFont, "cg_scoreboardFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardFont },
-	{ &cg_centerMessagesFont, "cg_centerMessagesFont", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_centerMessagesFont },
+	{ &cg_scoreboardFont, "cg_scoreboardfont", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_scoreboardFont },
+	{ &cg_centerMessagesFont, "cg_centerMessagesFont", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_centerMessagesFont },
 	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE },
 	{ &cg_railCustomChamber, "cg_railCustomChamber", "1", CVAR_ARCHIVE },
 	{ &cg_altGrenadesColor, "cg_altGrenadesColor", "7", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altGrenadesColor },
 	{ &cg_enemyGrenadesColor, "cg_enemyGrenadesColor", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyGrenadesColor },
 	{ &cg_itemFx, "cg_itemFx", "7", CVAR_ARCHIVE },
 	{ &cg_bubbleTrail, "cg_bubbleTrail", "1", CVAR_ARCHIVE },
-	{ &cg_gibs, "cg_gibs", "2", CVAR_ARCHIVE },
+	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE },
 	{ &cg_ignoreServerMessages, "cg_ignoreServerMessages", "0", CVAR_ARCHIVE },
 	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE },
 	{ &cg_healthColor, "cg_healthColor", "Yellow", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_healthColor },
@@ -963,7 +968,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_drawAccuracy, "cg_drawAccuracy", "4", CVAR_ARCHIVE },
 	{ &cg_accuracyFontSize, "cg_accuracyFontSize", "10 14", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_accuracyFontSize },
 	{ &cg_accuracyIconSize, "cg_accuracyIconSize", "18", CVAR_ARCHIVE },
-	{ &cg_accuracyFont, "cg_accuracyFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_accuracyFont, },
+	{ &cg_accuracyFont, "cg_accuracyfont", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_accuracyFont, },
 	{ &ch_crosshairActionColorLow,  "ch_crosshairActionColorLow", "white",  CVAR_ARCHIVE, CG_LocalEventCvarChanged_ch_crosshairActionColor },
 	{ &ch_crosshairActionColorMid,  "ch_crosshairActionColorMid", "yellow",  CVAR_ARCHIVE, CG_LocalEventCvarChanged_ch_crosshairActionColor },
 	{ &ch_crosshairActionColorHigh,  "ch_crosshairActionColorHigh", "orange",  CVAR_ARCHIVE, CG_LocalEventCvarChanged_ch_crosshairActionColor },
@@ -981,7 +986,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_scoreboardDrawPowerUps, "cg_scoreboardDrawPowerUps", "3", CVAR_ARCHIVE },
 	{ &cg_bestats_style, "cg_bestats_style", "1", CVAR_ARCHIVE },
 	{ &cg_bestats_textSize, "cg_bestats_textSize", "6 8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_textSize },
-	{ &cg_bestats_font, "cg_bestats_font", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_font },
+	{ &cg_bestats_font, "cg_bestats_font", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_font },
 	{ &cg_bestats_pos, "cg_bestats_pos", "4 320", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_pos },
 	{ &cg_bestats_bgColor, "cg_bestats_bgColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_bestats_bgColor },
 	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.7", CVAR_ARCHIVE },
@@ -1018,7 +1023,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
 	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
-	/* { &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop}, */  /* autohop commented out */
+	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop},
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
 	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "5000", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
@@ -1027,7 +1032,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_teamTaskOpaque, "cg_teamTaskOpaque", "0.7", CVAR_ARCHIVE },
 	{ &cg_teamTaskFade, "cg_teamTaskFade", "0.5", CVAR_ARCHIVE },
 	{ &cg_teamTaskFadeRadius, "cg_teamTaskFadeRadius", "128", CVAR_ARCHIVE },
-	{ &cg_teamTaskFont, "cg_teamTaskFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskFont, },
+	{ &cg_teamTaskFont, "cg_teamTaskfont", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskFont, },
 	{ &cg_teamTaskWheel, "cg_teamTaskWheel", "12", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
 	{ &cg_teamTaskWheelSet, "cg_teamTaskWheelSet", "defence here medic smart yes no warn pickup", CVAR_ARCHIVE, CG_LocalEventCvarChanged_ReloadTeamTaskWheel },
 	{ &cg_teamTaskWheelSensitivity, "cg_teamTaskWheelSensitivity", "3.0", CVAR_ARCHIVE },
@@ -1062,7 +1067,6 @@ cvarTable_t cvarTable[] =
 	{ &cg_noItemUseSound, "cg_noItemUseSound", "0", CVAR_ARCHIVE },
 	{ &cg_friendsWallhackFrozen, "cg_friendsWallhackFrozen", "1", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teleportEffect, "cg_teleportEffect", "1", CVAR_ARCHIVE },
-	{ &cg_infoVersionFont, "cg_infoVersionFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_infoVersionFont },
 	{ &cl_reconnectArgs, "cl_reconnectArgs", "", CVAR_ARCHIVE_ND | CVAR_NOTABCOMPLETE | CVAR_NORESTART, },
 	{ &cg_altRail, "cg_altRail", "0", CVAR_ARCHIVE | CVAR_UPDATED },
 	{ &cg_altRailBeefy, "cg_altRailBeefy", "0", CVAR_ARCHIVE },
@@ -1070,12 +1074,11 @@ cvarTable_t cvarTable[] =
 	// { &cg_teamTaskVersion, "cg_teamTaskVersion", "0", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_railFix, "cg_railFix", "0", CVAR_ARCHIVE },
 	{ &cg_freezeSoundFix, "cg_freezeSoundFix", "", CVAR_ARCHIVE },
-	{ &cg_infoDetail, "cg_infoDetail", "1", CVAR_ARCHIVE },
 	{ &cg_enhancedInterpolation, "cg_enhancedInterpolation", "0", CVAR_ARCHIVE },
 	{ &cg_entityOverpolate, "cg_entityOverpolate", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_entityOverpolate },
 	{ &cg_healthBarStyle, "cg_healthBarStyle", "10", CVAR_ARCHIVE },
 	{ &cg_teamHealthBar, "cg_teamHealthBar", "0", CVAR_ARCHIVE },
-	{ &cg_emojiListFont, "cg_emojiListFont", "2", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListFont },
+	{ &cg_emojiListFont, "cg_emojiListfont", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListFont },
 	{ &cg_emojiListBgColor, "cg_emojiListBgColor", "00000A", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListBgColor },
 	{ &cg_emojiListOpaque, "cg_emojiListOpaque", "0.8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_emojiListOpaque },
 	{ &cg_battleSuitColor, "cg_battleSuitColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_battleSuitColor },
@@ -1118,7 +1121,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_chatWindowMessageTime, "cg_chatWindowMessageTime", "3000", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_chatWindowPos, "cg_chatWindowPos", "140 300", CVAR_ARCHIVE | CVAR_NEW },
 	{ &cg_chatWindowSize, "cg_chatWindowSize", "360 120", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_chatWindowFont, "cg_chatWindowFont", "2", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowFont },
+	{ &cg_chatWindowFont, "cg_chatWindowfont", "19", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowFont },
 	{ &cg_chatWindowFontSize, "cg_chatWindowFontSize", "6 10", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowFontSize },
 	{ &cg_chatWindowBgColor, "cg_chatWindowBgColor", "000000", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgColor },
 	{ &cg_chatWindowBgOpaque, "cg_chatWindowBgOpaque", "0.25", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgOpaque },
@@ -1130,6 +1133,13 @@ cvarTable_t cvarTable[] =
 	{ &cg_oldFloatSprites, "cg_oldFloatSprites", "1", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
 	{ &pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO | CVAR_NEW },
 	{ &pmove_accurate, "pmove_accurate", "0", CVAR_SYSTEMINFO | CVAR_NEW },
+	{ &cg_chatWindowNumLock, "cg_chatWindowNumLock", "1", CVAR_ARCHIVE | CVAR_NEW },
+	{ &be_fontShadowOffset, "be_fontShadowOffset", "0.1 0.1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_be_fontShadowOffset },
+	{ &be_ttfShadowOffset, "be_ttfShadowOffset", "0.1 0.1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_be_ttfShadowOffset },
+	{ &be_ttfScale, "be_ttfScale", "1", CVAR_ARCHIVE | CVAR_NEW, NULL },
+	{ &be_ttfFontOffset, "be_ttfFontOffset", "0", CVAR_ARCHIVE | CVAR_NEW, NULL },
+	{ &be_infoVersionFont, "be_infoVersionFont", "19", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_be_infoVersionFont },
+	{ &be_infoDetail, "be_infoDetail", "1", CVAR_ARCHIVE },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
 
 };
@@ -1850,6 +1860,8 @@ static void CG_RegisterSounds(void)
 	// Countdown sounds
 	cgs.media.roundWarmup321Sound = trap_S_RegisterSound("sound/feedback/321.wav", qtrue);
 	cgs.media.roundWarmup0Sound = trap_S_RegisterSound("sound/feedback/0.wav", qtrue);
+
+	cgs.media.lastStandingSound = trap_S_RegisterSound("sound/feedback/laststanding.wav", qtrue);
 
 }
 
@@ -2667,7 +2679,7 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_teamIndicatorFont");
 	CG_CvarTouch("cg_scoreboardFont");
 	CG_CvarTouch("cg_centerMessagesFont");
-	CG_CvarTouch("cg_infoVersionFont");
+	CG_CvarTouch("be_infoVersionFont");
 	CG_CvarTouch("cg_numbersSet");
 
 	CG_CvarTouch("cg_altGrenadesColor");
@@ -2702,8 +2714,10 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_bestats_bgColor");
 
 	CG_CvarTouch("cg_accuracyFontSize");
+	CG_CvarTouch("be_fontShadowOffset");
+	CG_CvarTouch("be_ttfShadowOffset");
 
-	/* CG_CvarTouch("cg_autoHop"); */  /* autohop commented out */
+	CG_CvarTouch("cg_autoHop");
 	CG_CvarTouch("cg_teamTaskFont");
 	CG_CvarTouch("cg_teamTaskThemeColor");
 
@@ -3068,6 +3082,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	// init fonts
 	CG_LoadFonts();
+	CG_EngineFonts_Init();
 
 	// get the gamestate from the client system
 	trap_GetGameState(&cgs.gameState);

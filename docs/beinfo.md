@@ -1,10 +1,19 @@
 # beinfo.cfg
 
-Опционально в pk3/моде: `beconfigs/beinfo.cfg`. UI читает блок `ui` при старте.
+Опционально в pk3/моде: `beconfigs/beinfo.cfg`. UI читает блок `ui` при старте; `ttfFonts` читают и UI, и cgame.
 
 ```
 AddVar
 {
+    ttfFonts
+    {
+        roboto
+        {
+            scale 1.15;
+            offset 0.05;
+        }
+    }
+
     ui
     {
         be_statusServer1 = 127.0.0.1:27888;
@@ -18,6 +27,19 @@ AddVar
 }
 ```
 
+## ttfFonts (UI + cgame)
+
+Per-font оптический `scale` / вертикальный `offset` для TTF (bare name из `fonts.cfg`).
+
+| Ключ | По умолчанию | Clamp |
+|------|----------------|-------|
+| `scale` | `1` | `0.25`–`2` |
+| `offset` | `0` | `-1`–`1` (доля высоты ячейки; `>0` вниз) |
+
+Если шрифт есть в `ttfFonts` — значения из beInfo **перезаписывают** `be_ttfScale` / `be_ttfFontOffset`. Cvars действуют только для TTF без записи (глобальный дефолт / live-тест).
+
+## ui
+
 | Ключ (в `ui`) | По умолчанию |
 |---------------|----------------|
 | `be_statusServer1` | `127.0.0.1:27888` |
@@ -25,7 +47,9 @@ AddVar
 
 Значение: `хост:порт`.
 
-Блок `cgame` (cgame): `brightcolor_<classname> …` — цвет предмета или `brightcolor_weapon_<name>` (как в `bg_misc.c`).
+## cgame
+
+Блок `cgame`: `brightcolor_<classname> …` — цвет предмета или `brightcolor_weapon_<name>` (как в `bg_misc.c`).
 
 Значение цвета (один из форматов):
 

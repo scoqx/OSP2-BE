@@ -4,17 +4,30 @@
 # Лучше поместить файл в osp/beconfigs вне пака мода (*.pk3)
 # Опционально. Если файла нет — всё работает как обычно.
 #
+#   ttfFonts — per-font настройки (bare name/fonts.cfg); 
+#		ключи scale / offset / shadowOffset перезаписывают
+#   	be_ttfScale / be_ttfFontOffset / be_ttfShadowOffset
 #   cgame  — brightcolor_<name> R G B A  или  RRGGBB / RRGGBBAA (hex, напр. FF00FF10)
-#			предметы: cg_drawBrightItems; 
-#			оружие: cg_drawBrightWeapons;
+#		предметы: cg_drawBrightItems; 
+#		ружие: cg_drawBrightWeapons;
 #
 # brightcolor_* применяется только когда нет «своего» цвета:
-#   item_quad / item_enviro — пока пусты cg_quadDamageColor / cg_battleSuitColor
-#   флаги — только cg_oldFlags bit 1 (старые модели: 1 и 3); при 0/2 — dye, team colors
+#   	item_quad / item_enviro — пока пусты cg_quadDamageColor / cg_battleSuitColor
+#   	флаги — только cg_oldFlags bit 1 (старые модели: 1 и 3); при 0/2 — dye, team colors
 # =============================================================================
 
 AddVar
 {
+	ttfFonts
+	{
+		Cookie
+		{
+			scale 1.45;
+			ffset -0.05;
+			shadowOffset 0.05 0.05;
+		}
+	}
+
 	ui
 	{
 

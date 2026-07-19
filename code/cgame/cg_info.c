@@ -447,7 +447,6 @@ void CG_DrawInformation(void)
 	int         y;
 	int         value;
 	qhandle_t   levelshot;
-	qhandle_t   detail;
 	char        buf[1024];
 	char        versionStr[64];
 	const char* versionPtr;
@@ -464,12 +463,16 @@ void CG_DrawInformation(void)
 	trap_R_SetColor(NULL);
 	CG_DrawPicOld(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, levelshot);
 
-	// blend a detail texture over it (cg_infoDetail 2 = one image full screen, else tiled)
-	detail = trap_R_RegisterShader("levelShotDetail");
-	if (cg_infoDetail.integer == 2)
-		trap_R_DrawStretchPic(0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, 0, 0, 1, 1, detail);
-	else
-		trap_R_DrawStretchPic(0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, 0, 0, 2.5, 2, detail);
+	// blend a detail texture over it (be_infoDetail: 0 off, 1 tiled, 2 fullscreen)
+	if (be_infoDetail.integer != 0)
+	{
+		qhandle_t detail;
+		detail = trap_R_RegisterShader("levelShotDetail");
+		if (be_infoDetail.integer == 2)
+			trap_R_DrawStretchPic(0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, 0, 0, 1, 1, detail);
+		else
+			trap_R_DrawStretchPic(0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, 0, 0, 2.5, 2, detail);
+	}
 
 	// draw the icons of things as they are loaded
 	CG_DrawLoadingIcons();

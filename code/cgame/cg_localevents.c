@@ -1,5 +1,6 @@
 #include "superhud.h"
 #include "cg_local.h"
+#include "../qcommon/be_font_shadow.h"
 
 int global_handicap; // unused?
 //	void         (*onChanged)(cvarTable_t *cvart);
@@ -179,21 +180,19 @@ void CG_LocalEventCvarChanged_cg_autoAction(cvarTable_t* cvart)
 	}
 }
 
-/* autohop commented out
 void CG_LocalEventCvarChanged_cg_autoHop(cvarTable_t* cvart)
 {
-    if (cgs.beAutohop == 0)
-    {
-        CG_PrintOnce("^1Auto-hop not supported\n");
-        trap_Cvar_Set("cg_autoHop", "0");
-    }
-    else if (cgs.beAutohop == 1)
-    {
-        CG_PrintOnce("^3Auto-hop controlled by server\n");
-        trap_Cvar_Set("cg_autoHop", "1");
-    }
+	if (cgs.beAutohop == 0)
+	{
+		// CG_PrintOnce("^1Auto-hop not supported\n");
+		trap_Cvar_Set("cg_autoHop", "0");
+	}
+	else if (cgs.beAutohop == 1)
+	{
+		// CG_PrintOnce("^3Auto-hop controlled by server\n");
+		trap_Cvar_Set("cg_autoHop", "1");
+	}
 }
-*/
 void CG_LocalEventCvarChanged_snaps(cvarTable_t* cvart)
 {
 	if (cgs.osp.nextCvarsUpdateTime)
@@ -724,6 +723,16 @@ void CG_LocalEventCvarChanged_cg_accuracyFontSize(cvarTable_t* cvart)
 	}
 	CG_ParseCvarTwoFloats(cvart, &cgs.beAccuracyFontSize[0], &cgs.beAccuracyFontSize[1]);
 }
+void CG_LocalEventCvarChanged_be_fontShadowOffset(cvarTable_t* cvart)
+{
+	(void)cvart;
+	BeFontShadow_UpdateBitmap(be_fontShadowOffset.string);
+}
+void CG_LocalEventCvarChanged_be_ttfShadowOffset(cvarTable_t* cvart)
+{
+	(void)cvart;
+	BeFontShadow_UpdateTtf(be_ttfShadowOffset.string);
+}
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart)
 {
 	int fontIndex;
@@ -744,13 +753,13 @@ void CG_LocalEventCvarChanged_cg_centerMessagesFont(cvarTable_t* cvart)
 	}
 	CG_UpdateFontIndices();
 }
-void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart)
+void CG_LocalEventCvarChanged_be_infoVersionFont(cvarTable_t* cvart)
 {
 	int fontIndex;
 	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
 	if (!CG_FontAvailable(fontIndex))
 	{
-		trap_Cvar_Set("cg_infoVersionFont", "2");
+		trap_Cvar_Set("be_infoVersionFont", "2");
 	}
 	CG_UpdateFontIndices();
 }

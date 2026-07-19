@@ -73,7 +73,10 @@ void CG_BuildSolidList(void)
 	cg_numSolidEntities = 0;
 	cg_numTriggerEntities = 0;
 
-	if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport)
+	/* Do not bridge snaps across respawn / follow — OSP oscillates old/new on spawn++ */
+	if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport
+	        && cg.nextSnap->ps.clientNum == cg.snap->ps.clientNum
+	        && cg.nextSnap->ps.persistant[PERS_SPAWN_COUNT] == cg.snap->ps.persistant[PERS_SPAWN_COUNT])
 	{
 		snap = cg.nextSnap;
 	}
@@ -611,7 +614,10 @@ void CG_PredictPlayerState(void)
 	// the server time is beyond our current cg.time,
 	// because predicted player positions are going to
 	// be ahead of everything else anyway
-	if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport)
+	/* Same SPAWN_COUNT/clientNum as snap — avoid predict thrash across freeze spawn++ */
+	if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport
+	        && cg.nextSnap->ps.clientNum == cg.snap->ps.clientNum
+	        && cg.nextSnap->ps.persistant[PERS_SPAWN_COUNT] == cg.snap->ps.persistant[PERS_SPAWN_COUNT])
 	{
 		cg.predictedPlayerState = cg.nextSnap->ps;
 		cg.physicsTime = cg.nextSnap->serverTime;
@@ -635,6 +641,29 @@ void CG_PredictPlayerState(void)
 	cg_pmove.pmove_msec = pmove_msec.integer;
 	cg_pmove.pmove_float = pmove_float.integer;
 	cg_pmove.pmove_accurate = pmove_accurate.integer;
+
+	/* g_movement 2 → QL bg path; 0/1 stay on OSP CS 806 globals + autohop */
+	if (cgs.beMovement == 2)
+	{
+		cg_pmove.pmove_movement = MOVEMENT_QL;
+		cg_pmove.pmove_autohop = 1;
+	}
+	else
+	{
+		cg_pmove.pmove_movement = MOVEMENT_VQ3;
+		if (cgs.beAutohop == 0)
+		{
+			cg_pmove.pmove_autohop = 0;
+		}
+		else if (cgs.beAutohop == 1)
+		{
+			cg_pmove.pmove_autohop = 1;
+		}
+		else
+		{
+			cg_pmove.pmove_autohop = cg_autoHop.integer;
+		}
+	}
 
 	// run cmds
 	moved = qfalse;
@@ -750,7 +779,7 @@ void CG_PredictPlayerState(void)
 		}
 
 		// run the Pmove
-		if (cgs.pmove_phy_movetype >= 0)
+		if (cgs.pmove_phy_movetype >= 0 && cgs.beMovement != 2)
 		{
 			cg_pmove.movetype = cgs.pmove_phy_movetype;
 			PmoveEx(&cg_pmove, phy_PmoveSingle);

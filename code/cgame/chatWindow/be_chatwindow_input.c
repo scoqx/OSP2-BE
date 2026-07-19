@@ -479,6 +479,59 @@ static void CG_BEChat_CursorWordRight(beChatInput_t* edit)
 		}
 	}
 }
+static void CG_BEChat_DeleteBufRange(beChatInput_t* edit, int start, int end, float maxTextW)
+{
+	int tail;
+
+	if (!edit || start < 0 || end <= start)
+	{
+		return;
+	}
+
+	tail = strlen(edit->buffer) - end;
+	if (tail < 0)
+	{
+		tail = 0;
+	}
+
+	memmove(edit->buffer + start, edit->buffer + end, tail + 1);
+	edit->cursor = start;
+	if (edit->scroll > edit->cursor)
+	{
+		edit->scroll = edit->cursor;
+	}
+	beChatWindow.sentHistBrowse = -1;
+	CG_BEChat_EmojiOnInputChanged(edit);
+	CG_BEChat_InputClampScroll(edit, maxTextW);
+}
+static void CG_BEChat_DeleteWordLeft(beChatInput_t* edit, float maxTextW)
+{
+	int end;
+
+	end = edit->cursor;
+	if (end <= 0)
+	{
+		return;
+	}
+
+	CG_BEChat_CursorWordLeft(edit);
+	CG_BEChat_DeleteBufRange(edit, edit->cursor, end, maxTextW);
+}
+static void CG_BEChat_DeleteWordRight(beChatInput_t* edit, float maxTextW)
+{
+	int start;
+	int end;
+
+	start = edit->cursor;
+	CG_BEChat_CursorWordRight(edit);
+	end = edit->cursor;
+	if (end <= start)
+	{
+		return;
+	}
+
+	CG_BEChat_DeleteBufRange(edit, start, end, maxTextW);
+}
 void CG_BEChat_InputKeyDown(beChatInput_t* edit, int key, float maxTextW)
 {
 	int len;
@@ -503,6 +556,18 @@ void CG_BEChat_InputKeyDown(beChatInput_t* edit, int key, float maxTextW)
 		{
 			CG_BEChat_CursorWordRight(edit);
 			CG_BEChat_InputClampScroll(edit, maxTextW);
+			CG_BEChat_CmdAcRefresh(edit);
+			return;
+		}
+		if (key == K_BACKSPACE)
+		{
+			CG_BEChat_DeleteWordLeft(edit, maxTextW);
+			CG_BEChat_CmdAcRefresh(edit);
+			return;
+		}
+		if (key == K_DEL || key == K_KP_DEL)
+		{
+			CG_BEChat_DeleteWordRight(edit, maxTextW);
 			CG_BEChat_CmdAcRefresh(edit);
 			return;
 		}

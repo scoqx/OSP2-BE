@@ -14,6 +14,12 @@ void BeinfoCfg_Load(void);
 const char* BeinfoCfg_GetStatusServerPrimary(void);
 const char* BeinfoCfg_GetStatusServerAlternate(void);
 
+/* Per-font TTF tune from ttfFonts { }. qtrue if name has an entry (scale/offset filled). */
+qboolean BeinfoCfg_GetTtfFontTune(const char* name, float* scale, float* offset);
+
+/* Per-font TTF shadow from ttfFonts { }. qtrue only if shadowOffset was set for name. */
+qboolean BeinfoCfg_GetTtfFontShadow(const char* name, float* offX, float* offY);
+
 #if defined(CGAME)
 void BeinfoCfg_SetBrightColorHandler(beinfoBrightColorFn_t fn);
 #endif

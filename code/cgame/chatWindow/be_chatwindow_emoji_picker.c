@@ -249,10 +249,10 @@ static float CG_BEChat_AltFavHintAlpha(void)
 		return 0.0f;
 	}
 
-	elapsed = cg.time - beChatWindow.ctrlDownSince;
+	elapsed = cg.time - beChatWindow.ctrlDownSince - BE_CHAT_ALT_FAV_HINT_DELAY_MS;
 	if (elapsed < 0)
 	{
-		elapsed = 0;
+		return 0.0f;
 	}
 
 	beChatWindow.ctrlFavHintShown = qtrue;
@@ -553,7 +553,6 @@ static qboolean CG_BEChat_EmojiFavHintMouseDown(float virtX, float virtY,
 
 	beChatWindow.sentHistBrowse = -1;
 	CG_BEChat_EmojiInsertFav(edit, slot, maxTextW);
-	CG_BEChat_AltSuppressPickerOnRelease();
 	CG_BEChat_InputClampScroll(edit, maxTextW);
 	return qtrue;
 }
@@ -1197,10 +1196,6 @@ qboolean CG_BEChat_EmojiMouseDown(float virtX, float virtY, beChatInput_t* edit,
 		beChatEmoji.cellFlashTime = cg.time;
 		CG_BEChat_EmojiInsertToken(edit, em->name, maxTextW);
 		CG_BEChat_InputClampScroll(edit, maxTextW);
-		if (CG_BEChat_AltFavHintActive())
-		{
-			CG_BEChat_AltSuppressPickerOnRelease();
-		}
 	}
 	return qtrue;
 }

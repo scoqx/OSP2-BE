@@ -27,6 +27,7 @@
 
 #define BE_CHAT_REPEAT_DELAY_MS     500
 #define BE_CHAT_REPEAT_INTERVAL_MS  50
+#define BE_CHAT_ALT_FAV_HINT_DELAY_MS   500
 #define BE_CHAT_ALT_TRAP_GRACE_MS       50
 #define BE_CHAT_CTRL_TRAP_GRACE_MS      50
 #define BE_CHAT_SCROLL_CTRL_STEP    4
@@ -84,7 +85,7 @@ typedef struct
 	qboolean    helpTipFadingOut;
 	int         helpTipHideStartTime;
 	int         latchCloseKey; /* key held at open (bind); repeat press closes */
-	qboolean    altFavUsed; /* ALT hold: emoji picked — skip picker toggle on release */
+	qboolean    altFavUsed; /* ALT hold: emoji/fav UI used — skip picker toggle on release */
 	qboolean    altPrevDown; /* previous frame ALT state for release edge */
 	int         altDownSince; /* cg.time when current ALT hold began; 0 if up */
 	int         altLastTrapTime; /* last cg.time trap saw ALT down */

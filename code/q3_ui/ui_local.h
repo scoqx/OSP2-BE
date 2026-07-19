@@ -650,6 +650,7 @@ typedef struct
 	vec4_t              bannerColor;
 	int                 menuBgStyle;
 	int                 menuBgStyleModCount;
+	qboolean            engineFontAtlas;
 } uiStatic_t;
 
 extern void         UI_Init(void);
@@ -797,6 +798,7 @@ void            trap_CL_UI_RankUserRequestLogout(void);
 
 #ifndef Q3_VM
 int             trap_UI_GetValue_Q3E(int cmd, char* value, int valueSize, const char* key);
+int             trap_UI_RegisterFontAtlas_Q3E(int cmd, const char* faceName, int pointSize, const char* alphabet, fontAtlasInfo_t* out);
 int             trap_UI_SetDescription_Q3E(int cmd, const char* name, const char* description);
 #endif
 

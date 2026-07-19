@@ -15,8 +15,6 @@ Copyright (c) 2026 diwoc
 
 extern qboolean cg_keyCapsLockOnAvail;
 
-static void CG_BEChat_BeginRepeat(int key);
-
 qboolean CG_BEChat_ConsoleBlocksInput(void)
 {
 	if (trap_Key_GetCatcher() & KEYCATCH_CONSOLE)
@@ -1329,27 +1327,41 @@ static void CG_BEChat_SendInput(void)
 		CG_BEChat_Close();
 	}
 }
+static qboolean CG_BEChat_FavNumLockDigits(void)
+{
+	return (cg_chatWindowNumLock.integer != 0);
+}
 static void CG_BEChat_HandleScrollKey(int key)
 {
+	int step;
+
+	/* Pad-fav mode: CTRL+arrows/Pg are favorites, not scroll */
+	if (trap_Key_IsDown(K_CTRL) && !CG_BEChat_FavNumLockDigits())
+	{
+		return;
+	}
+
+	step = trap_Key_IsDown(K_CTRL) ? BE_CHAT_SCROLL_CTRL_STEP : 1;
+
 	if (key == K_PGUP || key == K_KP_PGUP)
 	{
-		CG_BEChat_Scroll(1);
+		CG_BEChat_Scroll(step);
 		return;
 	}
 	if (key == K_PGDN || key == K_KP_PGDN)
 	{
-		CG_BEChat_Scroll(-1);
+		CG_BEChat_Scroll(-step);
 		return;
 	}
 	if (trap_Key_IsDown(K_CTRL))
 	{
 		if (key == K_UPARROW || key == K_KP_UPARROW)
 		{
-			CG_BEChat_Scroll(1);
+			CG_BEChat_Scroll(BE_CHAT_SCROLL_CTRL_STEP);
 		}
 		else if (key == K_DOWNARROW || key == K_KP_DOWNARROW)
 		{
-			CG_BEChat_Scroll(-1);
+			CG_BEChat_Scroll(-BE_CHAT_SCROLL_CTRL_STEP);
 		}
 	}
 }
@@ -1533,6 +1545,7 @@ static qboolean CG_BEChat_FavEmojiSlotFromDigit(char digit, int* outSlot)
 }
 qboolean CG_BEChat_AltIsHeld(void)
 {
+	/* Fav-emoji modifier is CTRL (name kept for API compatibility). */
 	if (beChatWindow.latchCloseKey == K_CTRL)
 	{
 		return qfalse;
@@ -1553,6 +1566,8 @@ qboolean CG_BEChat_AltIsHeld(void)
 }
 qboolean CG_BEChat_AltFavHintActive(void)
 {
+	int heldMs;
+
 	if (cg_chatWindow.integer & BE_CHAT_NO_ALT_FAV_HINT_BIT)
 	{
 		return qfalse;
@@ -1564,6 +1579,16 @@ qboolean CG_BEChat_AltFavHintActive(void)
 	}
 
 	if (beChatWindow.ctrlDownSince <= 0)
+	{
+		return qfalse;
+	}
+
+	heldMs = cg.time - beChatWindow.ctrlDownSince;
+	if (heldMs < 0)
+	{
+		heldMs = 0;
+	}
+	if (heldMs < BE_CHAT_ALT_FAV_HINT_DELAY_MS)
 	{
 		return qfalse;
 	}
@@ -1638,6 +1663,12 @@ static qboolean CG_BEChat_FavEmojiKeyToDigit(int key, char* outDigit)
 			*outDigit = (char)key;
 		}
 		return qtrue;
+	}
+
+	/* NumLock 1: digits only. NumLock 0: KP-layout (arrows/Home/PgUp/…) */
+	if (CG_BEChat_FavNumLockDigits())
+	{
+		return qfalse;
 	}
 
 	switch (key)
@@ -1715,20 +1746,83 @@ static qboolean CG_BEChat_FavEmojiKeyToDigit(int key, char* outDigit)
 		return qfalse;
 	}
 }
-static qboolean CG_BEChat_FavEmojiScrollArrowKey(int key)
+static qboolean CG_BEChat_KeySupportsRepeat(int key)
 {
-	return (key == K_UPARROW || key == K_DOWNARROW ||
-	        key == K_KP_UPARROW || key == K_KP_DOWNARROW);
+	if (key == K_ESCAPE || key == K_ENTER || key == K_KP_ENTER)
+	{
+		return qfalse;
+	}
+
+	if (key == K_PGUP || key == K_PGDN)
+	{
+		return qtrue;
+	}
+
+	if (key == K_UPARROW || key == K_DOWNARROW || key == K_KP_UPARROW || key == K_KP_DOWNARROW)
+	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			return qtrue;
+		}
+		if (key == K_KP_UPARROW || key == K_KP_DOWNARROW)
+		{
+			return qtrue;
+		}
+		return CG_BEChat_EmojiAcIsActive() || CG_BEChat_CmdAcIsActive() ||
+		       CG_BEChat_SentHistCanNavigate();
+	}
+
+	if (key >= 32 && key < 127)
+	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			if (key == 'a' || key == 'A' || key == 'e' || key == 'E' ||
+			        key == 'l' || key == 'L' || key == 'v' || key == 'V')
+			{
+				return qfalse;
+			}
+		}
+		return qtrue;
+	}
+
+	switch (key)
+	{
+	case K_BACKSPACE:
+	case K_DEL:
+	case K_KP_DEL:
+	case K_LEFTARROW:
+	case K_KP_LEFTARROW:
+	case K_RIGHTARROW:
+	case K_KP_RIGHTARROW:
+	case K_HOME:
+	case K_KP_HOME:
+	case K_END:
+	case K_KP_END:
+	case K_KP_5:
+	case K_KP_INS:
+	case K_KP_UPARROW:
+	case K_KP_DOWNARROW:
+	case K_KP_PGUP:
+	case K_KP_PGDN:
+		return qtrue;
+	default:
+		return qfalse;
+	}
+}
+static void CG_BEChat_BeginRepeat(int key)
+{
+	if (!CG_BEChat_KeySupportsRepeat(key))
+	{
+		return;
+	}
+
+	beChatWindow.repeatKey = key;
+	beChatWindow.repeatNextTime = cg.time + BE_CHAT_REPEAT_DELAY_MS;
 }
 static qboolean CG_BEChat_TryFavEmojiKeyOnEdge(int key, char digit, float maxTextW)
 {
 	int slot;
 
-	if (trap_Key_IsDown(K_CTRL) && CG_BEChat_FavEmojiScrollArrowKey(key))
-	{
-		return qfalse;
-	}
-
 	if (!CG_BEChat_AltIsHeld())
 	{
 		return qfalse;
@@ -1737,34 +1831,6 @@ static qboolean CG_BEChat_TryFavEmojiKeyOnEdge(int key, char digit, float maxTex
 	if (!CG_BEChat_FavEmojiSlotFromDigit(digit, &slot))
 	{
 		return qfalse;
-	}
-
-	CG_BEChat_ApplyFavEmojiSlot(slot, maxTextW);
-	CG_BEChat_BeginRepeat(key);
-	return qtrue;
-}
-static qboolean CG_BEChat_TryFavEmojiKey(int key, char digit, float maxTextW)
-{
-	int slot;
-
-	if (trap_Key_IsDown(K_CTRL) && CG_BEChat_FavEmojiScrollArrowKey(key))
-	{
-		return qfalse;
-	}
-
-	if (!CG_BEChat_AltIsHeld())
-	{
-		return qfalse;
-	}
-
-	if (!CG_BEChat_FavEmojiSlotFromDigit(digit, &slot))
-	{
-		return qfalse;
-	}
-
-	if (!CG_BEChat_KeyEdge(key))
-	{
-		return qtrue;
 	}
 
 	CG_BEChat_ApplyFavEmojiSlot(slot, maxTextW);
@@ -1780,9 +1846,10 @@ static qboolean CG_BEChat_HandlePhantomKey0Fav(float maxTextW)
 	static const char probeDigits[4] = { '2', '2', '8', '8' };
 	int i;
 	int slot;
-	char digit;
 
-	if (!CG_BEChat_AltIsHeld())
+	/* Some engines deliver keycode 0 for KP up/down; resolve via IsDown only.
+	 * Never guess 2/8 by alternating — that caused Ctrl+2/8 flicker. */
+	if (CG_BEChat_FavNumLockDigits() || !CG_BEChat_AltIsHeld())
 	{
 		return qfalse;
 	}
@@ -1802,15 +1869,7 @@ static qboolean CG_BEChat_HandlePhantomKey0Fav(float maxTextW)
 		}
 	}
 
-	digit = (beChatWindow.phantomKey0Seq & 1) ? '8' : '2';
-	beChatWindow.phantomKey0Seq++;
-	if (!CG_BEChat_FavEmojiSlotFromDigit(digit, &slot))
-	{
-		return qfalse;
-	}
-
-	CG_BEChat_ApplyFavEmojiSlot(slot, maxTextW);
-	return qtrue;
+	return qfalse;
 }
 static qboolean CG_BEChat_TryFavEmojiFromProcessKey(int key, char ch, float maxTextW)
 {
@@ -1889,7 +1948,7 @@ static void CG_BEChat_PollAltPicker(void)
 	}
 	beChatWindow.altPrevDown = altDown;
 }
-static void CG_BEChat_PollCtrlFav(void)
+static void CG_BEChat_PollCtrlLatch(void)
 {
 	qboolean ctrlDown;
 
@@ -1924,79 +1983,6 @@ static void CG_BEChat_PollCtrlFav(void)
 	}
 	beChatWindow.ctrlPrevDown = ctrlDown;
 }
-static qboolean CG_BEChat_KeySupportsRepeat(int key)
-{
-	if (key == K_ESCAPE || key == K_ENTER || key == K_KP_ENTER)
-	{
-		return qfalse;
-	}
-
-	if (key == K_PGUP || key == K_PGDN)
-	{
-		return qtrue;
-	}
-
-	if (key == K_UPARROW || key == K_DOWNARROW || key == K_KP_UPARROW || key == K_KP_DOWNARROW)
-	{
-		if (trap_Key_IsDown(K_CTRL))
-		{
-			return qtrue;
-		}
-		if (key == K_KP_UPARROW || key == K_KP_DOWNARROW)
-		{
-			return qtrue;
-		}
-		return CG_BEChat_EmojiAcIsActive() || CG_BEChat_CmdAcIsActive() ||
-		       CG_BEChat_SentHistCanNavigate();
-	}
-
-	if (key >= 32 && key < 127)
-	{
-		if (trap_Key_IsDown(K_CTRL))
-		{
-			if (key == 'a' || key == 'A' || key == 'e' || key == 'E' ||
-			        key == 'l' || key == 'L' || key == 'v' || key == 'V')
-			{
-				return qfalse;
-			}
-		}
-		return qtrue;
-	}
-
-	switch (key)
-	{
-	case K_BACKSPACE:
-	case K_DEL:
-	case K_KP_DEL:
-	case K_LEFTARROW:
-	case K_KP_LEFTARROW:
-	case K_RIGHTARROW:
-	case K_KP_RIGHTARROW:
-	case K_HOME:
-	case K_KP_HOME:
-	case K_END:
-	case K_KP_END:
-	case K_KP_5:
-	case K_KP_INS:
-	case K_KP_UPARROW:
-	case K_KP_DOWNARROW:
-	case K_KP_PGUP:
-	case K_KP_PGDN:
-		return qtrue;
-	default:
-		return qfalse;
-	}
-}
-static void CG_BEChat_BeginRepeat(int key)
-{
-	if (!CG_BEChat_KeySupportsRepeat(key))
-	{
-		return;
-	}
-
-	beChatWindow.repeatKey = key;
-	beChatWindow.repeatNextTime = cg.time + BE_CHAT_REPEAT_DELAY_MS;
-}
 static void CG_BEChat_KpDigitKey(int key, char digit, float maxTextW)
 {
 	if (!digit)
@@ -2004,8 +1990,13 @@ static void CG_BEChat_KpDigitKey(int key, char digit, float maxTextW)
 		return;
 	}
 
-	if (CG_BEChat_TryFavEmojiKey(key, digit, maxTextW))
+	if (trap_Key_IsDown(K_CTRL))
 	{
+		/* Pad-fav mode only inserts on key edge — never while merely holding Ctrl */
+		if (!CG_BEChat_FavNumLockDigits() && CG_BEChat_KeyEdge(key))
+		{
+			CG_BEChat_TryFavEmojiKeyOnEdge(key, digit, maxTextW);
+		}
 		return;
 	}
 
@@ -2133,11 +2124,6 @@ static qboolean CG_BEChat_RepeatFavEmojiIfAlt(int key, float maxTextW)
 		return qfalse;
 	}
 
-	if (trap_Key_IsDown(K_CTRL) && CG_BEChat_FavEmojiScrollArrowKey(key))
-	{
-		return qfalse;
-	}
-
 	if (CG_BEChat_FavEmojiKeyToDigit(key, &digit))
 	{
 		ch = digit;
@@ -2170,13 +2156,21 @@ static void CG_BEChat_RepeatKeyAction(int key, float maxTextW)
 
 	if (key == K_PGUP)
 	{
-		CG_BEChat_Scroll(1);
+		if (trap_Key_IsDown(K_CTRL) && !CG_BEChat_FavNumLockDigits())
+		{
+			return;
+		}
+		CG_BEChat_Scroll(trap_Key_IsDown(K_CTRL) ? BE_CHAT_SCROLL_CTRL_STEP : 1);
 		return;
 	}
 
 	if (key == K_PGDN)
 	{
-		CG_BEChat_Scroll(-1);
+		if (trap_Key_IsDown(K_CTRL) && !CG_BEChat_FavNumLockDigits())
+		{
+			return;
+		}
+		CG_BEChat_Scroll(trap_Key_IsDown(K_CTRL) ? -BE_CHAT_SCROLL_CTRL_STEP : -1);
 		return;
 	}
 
@@ -2203,16 +2197,16 @@ static void CG_BEChat_RepeatKeyAction(int key, float maxTextW)
 		}
 	}
 
-	if (trap_Key_IsDown(K_CTRL))
+	if (trap_Key_IsDown(K_CTRL) && CG_BEChat_FavNumLockDigits())
 	{
 		if (key == K_UPARROW || key == K_KP_UPARROW)
 		{
-			CG_BEChat_Scroll(1);
+			CG_BEChat_Scroll(BE_CHAT_SCROLL_CTRL_STEP);
 			return;
 		}
 		if (key == K_DOWNARROW || key == K_KP_DOWNARROW)
 		{
-			CG_BEChat_Scroll(-1);
+			CG_BEChat_Scroll(-BE_CHAT_SCROLL_CTRL_STEP);
 			return;
 		}
 	}
@@ -2250,6 +2244,14 @@ static void CG_BEChat_RepeatKeyAction(int key, float maxTextW)
 
 	if (key == K_KP_LEFTARROW)
 	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			if (CG_BEChat_FavNumLockDigits())
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_KP_LEFTARROW, maxTextW);
+			}
+			return;
+		}
 		CG_BEChat_InputChar(&beChatWindow.input, '4', maxTextW);
 		return;
 	}
@@ -2262,6 +2264,14 @@ static void CG_BEChat_RepeatKeyAction(int key, float maxTextW)
 
 	if (key == K_KP_RIGHTARROW)
 	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			if (CG_BEChat_FavNumLockDigits())
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_KP_RIGHTARROW, maxTextW);
+			}
+			return;
+		}
 		CG_BEChat_InputChar(&beChatWindow.input, '6', maxTextW);
 		return;
 	}
@@ -2274,6 +2284,14 @@ static void CG_BEChat_RepeatKeyAction(int key, float maxTextW)
 
 	if (key == K_KP_HOME)
 	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			if (CG_BEChat_FavNumLockDigits())
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_HOME, maxTextW);
+			}
+			return;
+		}
 		CG_BEChat_InputChar(&beChatWindow.input, '7', maxTextW);
 		return;
 	}
@@ -2286,6 +2304,14 @@ static void CG_BEChat_RepeatKeyAction(int key, float maxTextW)
 
 	if (key == K_KP_END)
 	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			if (CG_BEChat_FavNumLockDigits())
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_END, maxTextW);
+			}
+			return;
+		}
 		CG_BEChat_InputChar(&beChatWindow.input, '1', maxTextW);
 		return;
 	}
@@ -2304,24 +2330,56 @@ static void CG_BEChat_RepeatKeyAction(int key, float maxTextW)
 
 	if (key == K_KP_UPARROW)
 	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			if (CG_BEChat_FavNumLockDigits())
+			{
+				CG_BEChat_Scroll(BE_CHAT_SCROLL_CTRL_STEP);
+			}
+			return;
+		}
 		CG_BEChat_InputChar(&beChatWindow.input, '8', maxTextW);
 		return;
 	}
 
 	if (key == K_KP_DOWNARROW)
 	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			if (CG_BEChat_FavNumLockDigits())
+			{
+				CG_BEChat_Scroll(-BE_CHAT_SCROLL_CTRL_STEP);
+			}
+			return;
+		}
 		CG_BEChat_InputChar(&beChatWindow.input, '2', maxTextW);
 		return;
 	}
 
 	if (key == K_KP_PGUP)
 	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			if (CG_BEChat_FavNumLockDigits())
+			{
+				CG_BEChat_Scroll(BE_CHAT_SCROLL_CTRL_STEP);
+			}
+			return;
+		}
 		CG_BEChat_InputChar(&beChatWindow.input, '9', maxTextW);
 		return;
 	}
 
 	if (key == K_KP_PGDN)
 	{
+		if (trap_Key_IsDown(K_CTRL))
+		{
+			if (CG_BEChat_FavNumLockDigits())
+			{
+				CG_BEChat_Scroll(-BE_CHAT_SCROLL_CTRL_STEP);
+			}
+			return;
+		}
 		CG_BEChat_InputChar(&beChatWindow.input, '3', maxTextW);
 		return;
 	}
@@ -2563,7 +2621,7 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 	maxTextW = CG_BEChat_InputFieldMaxWidth();
 
 	CG_BEChat_PollAltPicker();
-	CG_BEChat_PollCtrlFav();
+	CG_BEChat_PollCtrlLatch();
 
 	CG_BEChat_ScrollbarLayoutUpdate();
 	beChatMouse1Prev = trap_Key_IsDown(K_MOUSE1);
@@ -2627,48 +2685,188 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 
 	if (CG_BEChat_KeyEdge(K_PGUP))
 	{
-		if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_PGUP, '9', maxTextW))
+		if (trap_Key_IsDown(K_CTRL) && !CG_BEChat_FavNumLockDigits() &&
+		        CG_BEChat_TryFavEmojiKeyOnEdge(K_PGUP, '9', maxTextW))
 		{
-			CG_BEChat_Scroll(1);
+			/* pad-fav mode */
+		}
+		else
+		{
+			CG_BEChat_Scroll(trap_Key_IsDown(K_CTRL) ? BE_CHAT_SCROLL_CTRL_STEP : 1);
 			CG_BEChat_BeginRepeat(K_PGUP);
 		}
 	}
 
-	CG_BEChat_KpDigitKey(K_KP_PGUP, '9', maxTextW);
+	if (!trap_Key_IsDown(K_CTRL))
+	{
+		CG_BEChat_KpDigitKey(K_KP_PGUP, '9', maxTextW);
+	}
+	else if (!CG_BEChat_FavNumLockDigits())
+	{
+		CG_BEChat_KpDigitKey(K_KP_PGUP, '9', maxTextW);
+	}
+	else if (CG_BEChat_KeyEdge(K_KP_PGUP))
+	{
+		CG_BEChat_Scroll(BE_CHAT_SCROLL_CTRL_STEP);
+		CG_BEChat_BeginRepeat(K_KP_PGUP);
+	}
 
 	if (CG_BEChat_KeyEdge(K_PGDN))
 	{
-		if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_PGDN, '3', maxTextW))
+		if (trap_Key_IsDown(K_CTRL) && !CG_BEChat_FavNumLockDigits() &&
+		        CG_BEChat_TryFavEmojiKeyOnEdge(K_PGDN, '3', maxTextW))
 		{
-			CG_BEChat_Scroll(-1);
+			/* pad-fav mode */
+		}
+		else
+		{
+			CG_BEChat_Scroll(trap_Key_IsDown(K_CTRL) ? -BE_CHAT_SCROLL_CTRL_STEP : -1);
 			CG_BEChat_BeginRepeat(K_PGDN);
 		}
 	}
 
-	CG_BEChat_KpDigitKey(K_KP_PGDN, '3', maxTextW);
+	if (!trap_Key_IsDown(K_CTRL))
+	{
+		CG_BEChat_KpDigitKey(K_KP_PGDN, '3', maxTextW);
+	}
+	else if (!CG_BEChat_FavNumLockDigits())
+	{
+		CG_BEChat_KpDigitKey(K_KP_PGDN, '3', maxTextW);
+	}
+	else if (CG_BEChat_KeyEdge(K_KP_PGDN))
+	{
+		CG_BEChat_Scroll(-BE_CHAT_SCROLL_CTRL_STEP);
+		CG_BEChat_BeginRepeat(K_KP_PGDN);
+	}
 
 	if (trap_Key_IsDown(K_CTRL))
 	{
-		if (CG_BEChat_KeyEdge(K_UPARROW))
+		if (!CG_BEChat_FavNumLockDigits())
 		{
-			CG_BEChat_Scroll(1);
-			CG_BEChat_BeginRepeat(K_UPARROW);
-		}
-		else if (CG_BEChat_KeyEdge(K_KP_UPARROW))
-		{
-			CG_BEChat_Scroll(1);
-			CG_BEChat_BeginRepeat(K_KP_UPARROW);
-		}
+			if (CG_BEChat_KeyEdge(K_UPARROW))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_UPARROW, '8', maxTextW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_UPARROW))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_UPARROW, '8', maxTextW);
+			}
 
-		if (CG_BEChat_KeyEdge(K_DOWNARROW))
-		{
-			CG_BEChat_Scroll(-1);
-			CG_BEChat_BeginRepeat(K_DOWNARROW);
+			if (CG_BEChat_KeyEdge(K_DOWNARROW))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_DOWNARROW, '2', maxTextW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_DOWNARROW))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_DOWNARROW, '2', maxTextW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_LEFTARROW))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_LEFTARROW, '4', maxTextW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_LEFTARROW))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_LEFTARROW, '4', maxTextW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_RIGHTARROW))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_RIGHTARROW, '6', maxTextW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_RIGHTARROW))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_RIGHTARROW, '6', maxTextW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_HOME))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_HOME, '7', maxTextW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_HOME))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_HOME, '7', maxTextW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_END))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_END, '1', maxTextW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_END))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_END, '1', maxTextW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_INS))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_INS, '0', maxTextW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_INS))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_INS, '0', maxTextW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_KP_5))
+			{
+				CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_5, '5', maxTextW);
+			}
 		}
-		else if (CG_BEChat_KeyEdge(K_KP_DOWNARROW))
+		else
 		{
-			CG_BEChat_Scroll(-1);
-			CG_BEChat_BeginRepeat(K_KP_DOWNARROW);
+			if (CG_BEChat_KeyEdge(K_UPARROW))
+			{
+				CG_BEChat_Scroll(BE_CHAT_SCROLL_CTRL_STEP);
+				CG_BEChat_BeginRepeat(K_UPARROW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_UPARROW))
+			{
+				CG_BEChat_Scroll(BE_CHAT_SCROLL_CTRL_STEP);
+				CG_BEChat_BeginRepeat(K_KP_UPARROW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_DOWNARROW))
+			{
+				CG_BEChat_Scroll(-BE_CHAT_SCROLL_CTRL_STEP);
+				CG_BEChat_BeginRepeat(K_DOWNARROW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_DOWNARROW))
+			{
+				CG_BEChat_Scroll(-BE_CHAT_SCROLL_CTRL_STEP);
+				CG_BEChat_BeginRepeat(K_KP_DOWNARROW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_LEFTARROW))
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_LEFTARROW, maxTextW);
+				CG_BEChat_BeginRepeat(K_LEFTARROW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_LEFTARROW))
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_KP_LEFTARROW, maxTextW);
+				CG_BEChat_BeginRepeat(K_KP_LEFTARROW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_RIGHTARROW))
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_RIGHTARROW, maxTextW);
+				CG_BEChat_BeginRepeat(K_RIGHTARROW);
+			}
+			else if (CG_BEChat_KeyEdge(K_KP_RIGHTARROW))
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_KP_RIGHTARROW, maxTextW);
+				CG_BEChat_BeginRepeat(K_KP_RIGHTARROW);
+			}
+
+			if (CG_BEChat_KeyEdge(K_HOME) || CG_BEChat_KeyEdge(K_KP_HOME))
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_HOME, maxTextW);
+				CG_BEChat_BeginRepeat(K_HOME);
+			}
+			if (CG_BEChat_KeyEdge(K_END) || CG_BEChat_KeyEdge(K_KP_END))
+			{
+				CG_BEChat_InputKeyDown(&beChatWindow.input, K_END, maxTextW);
+				CG_BEChat_BeginRepeat(K_END);
+			}
 		}
 	}
 
@@ -2679,39 +2877,33 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 
 	if (CG_BEChat_KeyEdge(K_UPARROW) && !trap_Key_IsDown(K_CTRL))
 	{
-		if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_UPARROW, '8', maxTextW))
+		if (CG_BEChat_SentHistProcessKey(K_UPARROW, maxTextW))
 		{
-			if (CG_BEChat_SentHistProcessKey(K_UPARROW, maxTextW))
-			{
-				CG_BEChat_BeginRepeat(K_UPARROW);
-			}
-			else if (CG_BEChat_CmdAcProcessKey(K_UPARROW, &beChatWindow.input, maxTextW))
-			{
-				CG_BEChat_BeginRepeat(K_UPARROW);
-			}
-			else if (CG_BEChat_EmojiProcessKey(K_UPARROW, &beChatWindow.input, maxTextW))
-			{
-				CG_BEChat_BeginRepeat(K_UPARROW);
-			}
+			CG_BEChat_BeginRepeat(K_UPARROW);
+		}
+		else if (CG_BEChat_CmdAcProcessKey(K_UPARROW, &beChatWindow.input, maxTextW))
+		{
+			CG_BEChat_BeginRepeat(K_UPARROW);
+		}
+		else if (CG_BEChat_EmojiProcessKey(K_UPARROW, &beChatWindow.input, maxTextW))
+		{
+			CG_BEChat_BeginRepeat(K_UPARROW);
 		}
 	}
 
 	if (CG_BEChat_KeyEdge(K_DOWNARROW) && !trap_Key_IsDown(K_CTRL))
 	{
-		if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_DOWNARROW, '2', maxTextW))
+		if (CG_BEChat_SentHistProcessKey(K_DOWNARROW, maxTextW))
 		{
-			if (CG_BEChat_SentHistProcessKey(K_DOWNARROW, maxTextW))
-			{
-				CG_BEChat_BeginRepeat(K_DOWNARROW);
-			}
-			else if (CG_BEChat_CmdAcProcessKey(K_DOWNARROW, &beChatWindow.input, maxTextW))
-			{
-				CG_BEChat_BeginRepeat(K_DOWNARROW);
-			}
-			else if (CG_BEChat_EmojiProcessKey(K_DOWNARROW, &beChatWindow.input, maxTextW))
-			{
-				CG_BEChat_BeginRepeat(K_DOWNARROW);
-			}
+			CG_BEChat_BeginRepeat(K_DOWNARROW);
+		}
+		else if (CG_BEChat_CmdAcProcessKey(K_DOWNARROW, &beChatWindow.input, maxTextW))
+		{
+			CG_BEChat_BeginRepeat(K_DOWNARROW);
+		}
+		else if (CG_BEChat_EmojiProcessKey(K_DOWNARROW, &beChatWindow.input, maxTextW))
+		{
+			CG_BEChat_BeginRepeat(K_DOWNARROW);
 		}
 	}
 
@@ -2732,16 +2924,16 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 		CG_BEChat_BeginRepeat(K_KP_DEL);
 	}
 
-	CG_BEChat_KpDigitKey(K_KP_LEFTARROW, '4', maxTextW);
-	if (CG_BEChat_KeyEdge(K_LEFTARROW))
+	if (!trap_Key_IsDown(K_CTRL))
 	{
-		CG_BEChat_InputKeyDown(&beChatWindow.input, K_LEFTARROW, maxTextW);
-		CG_BEChat_BeginRepeat(K_LEFTARROW);
-	}
+		CG_BEChat_KpDigitKey(K_KP_LEFTARROW, '4', maxTextW);
+		if (CG_BEChat_KeyEdge(K_LEFTARROW))
+		{
+			CG_BEChat_InputKeyDown(&beChatWindow.input, K_LEFTARROW, maxTextW);
+			CG_BEChat_BeginRepeat(K_LEFTARROW);
+		}
 
-	if (CG_BEChat_KeyEdge(K_KP_RIGHTARROW))
-	{
-		if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_KP_RIGHTARROW, '6', maxTextW))
+		if (CG_BEChat_KeyEdge(K_KP_RIGHTARROW))
 		{
 			if (CG_BEChat_CmdAcProcessKey(K_KP_RIGHTARROW, &beChatWindow.input, maxTextW))
 			{
@@ -2757,10 +2949,7 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 				CG_BEChat_BeginRepeat(K_KP_RIGHTARROW);
 			}
 		}
-	}
-	if (CG_BEChat_KeyEdge(K_RIGHTARROW))
-	{
-		if (!CG_BEChat_TryFavEmojiKeyOnEdge(K_RIGHTARROW, '6', maxTextW))
+		if (CG_BEChat_KeyEdge(K_RIGHTARROW))
 		{
 			if (CG_BEChat_CmdAcProcessKey(K_RIGHTARROW, &beChatWindow.input, maxTextW))
 			{
@@ -2776,26 +2965,23 @@ void CG_BEChat_Frame(stereoFrame_t stereoView)
 				CG_BEChat_BeginRepeat(K_RIGHTARROW);
 			}
 		}
-	}
 
-	CG_BEChat_KpDigitKey(K_KP_HOME, '7', maxTextW);
-	if (CG_BEChat_KeyEdge(K_HOME))
-	{
-		CG_BEChat_InputKeyDown(&beChatWindow.input, K_HOME, maxTextW);
-		CG_BEChat_BeginRepeat(K_HOME);
-	}
+		CG_BEChat_KpDigitKey(K_KP_HOME, '7', maxTextW);
+		if (CG_BEChat_KeyEdge(K_HOME))
+		{
+			CG_BEChat_InputKeyDown(&beChatWindow.input, K_HOME, maxTextW);
+			CG_BEChat_BeginRepeat(K_HOME);
+		}
 
-	CG_BEChat_KpDigitKey(K_KP_END, '1', maxTextW);
-	if (CG_BEChat_KeyEdge(K_END))
-	{
-		CG_BEChat_InputKeyDown(&beChatWindow.input, K_END, maxTextW);
-		CG_BEChat_BeginRepeat(K_END);
-	}
+		CG_BEChat_KpDigitKey(K_KP_END, '1', maxTextW);
+		if (CG_BEChat_KeyEdge(K_END))
+		{
+			CG_BEChat_InputKeyDown(&beChatWindow.input, K_END, maxTextW);
+			CG_BEChat_BeginRepeat(K_END);
+		}
 
-	CG_BEChat_KpDigitKey(K_KP_5, '5', maxTextW);
-	CG_BEChat_KpDigitKey(K_KP_INS, '0', maxTextW);
-	if (!trap_Key_IsDown(K_CTRL))
-	{
+		CG_BEChat_KpDigitKey(K_KP_5, '5', maxTextW);
+		CG_BEChat_KpDigitKey(K_KP_INS, '0', maxTextW);
 		CG_BEChat_KpDigitKey(K_KP_UPARROW, '8', maxTextW);
 		CG_BEChat_KpDigitKey(K_KP_DOWNARROW, '2', maxTextW);
 	}

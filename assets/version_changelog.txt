@@ -1,5 +1,14 @@
-11.07.2026 be v1.06d2
-* OSDF predict fix
-* VQ3/CPMA predict fix
-+ pmove_accurate
-+ pmove_float
+19.07.2026 be v1.06e
++ ttf fonts support (Engine not released yet)
++ be_fontShadowOffset
++ be_ttfShadowOffset 
++ be_ttfScale
++ beInfo.cfg ttfFont individual scale/offset 'beconfigs/beinfo.cfg.example'
++ fonts/Cookie.ttf
+* cg_infoVersionFont + ui_infoVersionFont -> be_infoVersionFont
+* cg_infoDetail + ui_infoDetail -> be_infoDetail
++ cg_enemyModel/teamModel - /pm or /fb support (keep player model, force colorable skin)
++ cg_chatWindowNumLock
++ bones/cadavre/hunter/sarge_wins.wav sounds
+* SHUD 'laststanding' element style 1 - laststanding.wav
+* Changed cvars default font to Conthrax (19)

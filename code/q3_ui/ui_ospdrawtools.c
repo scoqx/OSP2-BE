@@ -7,6 +7,9 @@ Adapted from cgame/cg_drawtools.c
 
 #include "ui_local.h"
 #include "../qcommon/osp_fonts.h"
+#include "../qcommon/engine_fonts.h"
+#include "../qcommon/be_font_shadow.h"
+#include "../qcommon/beinfo_cfg.h"
 
 /* Memory allocation - use static buffers for C89 compatibility */
 static text_command_t ui_compileTextBuffer[OSP_TEXT_CMD_MAX];
@@ -32,14 +35,107 @@ typedef struct
 	qhandle_t       shader[ MAX_FONT_SHADERS ];
 	int             shaderThreshold[ MAX_FONT_SHADERS ];
 	int             shaderCount;
+	qboolean        isTtf;
+	char            ttfPath[MAX_QPATH];
 } font_t;
 
-#define MAX_FONTS 32
+#define MAX_FONTS 48
 static font_t fonts[MAX_FONTS];
 static char customFontNames[MAX_FONTS - OSP_BUILTIN_FONT_COUNT][MAX_QPATH];
+static char engTtfNames[ENG_FONTS_MAX_TTF][MAX_QPATH];
 static int fonts_num = OSP_BUILTIN_FONT_COUNT;
+static int bitmap_fonts_num = OSP_BUILTIN_FONT_COUNT;
+static int ui_engTtfNameIdx;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
+static int ui_selectedFontIndex;
+
+/* Engine atlas bind for measure/draw */
+static const fontAtlasInfo_t* ui_ospstr_eng;
+static float                  ui_ospstr_engUnit;
+static float                  ui_ospstr_engDrawUnit; /* unit * scale — ink + prop advance */
+static float                  ui_ospstr_engYBias; /* scale-center + offset * ah */
+static float                  ui_ospstr_engAsc;
+
+/* Resolved TTF tune by fontIndex (beInfo override or cvars). */
+static float ui_ospstr_ttfTuneScale[ENG_FONTS_FONT_INDEX_MAX];
+static float ui_ospstr_ttfTuneOffset[ENG_FONTS_FONT_INDEX_MAX];
+static float ui_ospstr_ttfShadowOffX[ENG_FONTS_FONT_INDEX_MAX];
+static float ui_ospstr_ttfShadowOffY[ENG_FONTS_FONT_INDEX_MAX];
+static int   ui_ospstr_ttfTuneScaleMod = -1;
+static int   ui_ospstr_ttfTuneOffMod = -1;
+static int   ui_ospstr_ttfShadowMod = -1;
+static int   ui_ospstr_ttfTuneFontCount = -1;
+/* Current font shadow (set in BindEngine for TTF hotpath). */
+static float ui_ospstr_curTtfShadowX = 0.1f;
+static float ui_ospstr_curTtfShadowY = 0.1f;
+
+static void UI_Ospstr_EnsureTtfTune(void)
+{
+	int i;
+	int n;
+
+	if (ui_ospstr_ttfTuneScaleMod == be_ttfScale.modificationCount &&
+	        ui_ospstr_ttfTuneOffMod == be_ttfFontOffset.modificationCount &&
+	        ui_ospstr_ttfShadowMod == be_ttfShadowOffset.modificationCount &&
+	        ui_ospstr_ttfTuneFontCount == fonts_num)
+	{
+		return;
+	}
+
+	BeFontShadow_UpdateTtf(be_ttfShadowOffset.string);
+
+	n = fonts_num;
+	if (n > ENG_FONTS_FONT_INDEX_MAX)
+	{
+		n = ENG_FONTS_FONT_INDEX_MAX;
+	}
+
+	for (i = 0; i < n; i++)
+	{
+		float       s;
+		float       off;
+		float       shX;
+		float       shY;
+		const char* name;
+
+		s = be_ttfScale.value;
+		off = be_ttfFontOffset.value;
+		shX = be_ttfShadowOffX;
+		shY = be_ttfShadowOffY;
+		name = fonts[i].name;
+		if (fonts[i].isTtf && name && name[0])
+		{
+			float tuneS;
+			float tuneOff;
+			float tuneShX;
+			float tuneShY;
+
+			if (BeinfoCfg_GetTtfFontTune(name, &tuneS, &tuneOff))
+			{
+				s = tuneS;
+				off = tuneOff;
+			}
+			if (BeinfoCfg_GetTtfFontShadow(name, &tuneShX, &tuneShY))
+			{
+				shX = tuneShX;
+				shY = tuneShY;
+			}
+		}
+		ui_ospstr_ttfTuneScale[i] = Com_Clamp(0.25f, 2.0f, s);
+		ui_ospstr_ttfTuneOffset[i] = Com_Clamp(-1.0f, 1.0f, off);
+		ui_ospstr_ttfShadowOffX[i] = shX;
+		ui_ospstr_ttfShadowOffY[i] = shY;
+	}
+
+	ui_ospstr_ttfTuneScaleMod = be_ttfScale.modificationCount;
+	ui_ospstr_ttfTuneOffMod = be_ttfFontOffset.modificationCount;
+	ui_ospstr_ttfShadowMod = be_ttfShadowOffset.modificationCount;
+	ui_ospstr_ttfTuneFontCount = fonts_num;
+}
+
+static float UI_Ospstr_GlyphAdvance(unsigned char ch, float aw, int proportional);
+static void UI_Ospstr_BindEngine(int fontIndex, float aw, float ah, int proportional);
 
 /* Border sizes */
 vec4_t defaultBorderSize = {1, 1, 1, 1};
@@ -386,6 +482,11 @@ qboolean UI_FontLoaded(int index)
 		return qfalse;
 	}
 
+	if (fonts[index].isTtf)
+	{
+		return (uis.engineFontAtlas && EngFonts_Info(index, 16.0f) != NULL) ? qtrue : qfalse;
+	}
+
 	/* Loaded fonts always have at least one registered shader image. */
 	if (fonts[index].shaderCount > 0)
 	{
@@ -406,6 +507,7 @@ void UI_FontSelect(int index)
 
 		font = &fonts[index];
 		metrics = &font->metrics[0];
+		ui_selectedFontIndex = index;
 	}
 }
 
@@ -942,6 +1044,12 @@ static void UI_LoadCustomFonts(void)
 
 		Q_strncpyz(fontPath, token, sizeof(fontPath));
 
+		/* TTF lines reserved later via EngFonts_AppendFaces. */
+		if (EngFonts_FontCfgIsTtfEntry(fontName, fontPath))
+		{
+			continue;
+		}
+
 		if (fonts_num >= MAX_FONTS)
 		{
 			trap_Print(va(S_COLOR_YELLOW "UI_LoadCustomFonts: maximum number of fonts (%d) reached, skipping '%s'\n", MAX_FONTS, fontName));
@@ -986,6 +1094,8 @@ static void UI_LoadCustomFonts(void)
 
 		Q_strncpyz(customFontNames[customFontIndex], fontName, sizeof(customFontNames[customFontIndex]));
 		fonts[fonts_num].name = customFontNames[customFontIndex];
+		fonts[fonts_num].isTtf = qfalse;
+		fonts[fonts_num].ttfPath[0] = '\0';
 
 		/* Store font index before loading */
 		fonts_num++;
@@ -1010,6 +1120,166 @@ static void UI_LoadCustomFonts(void)
 	}
 }
 
+typedef qboolean (uiEng_GetValue_t)(char* value, int valueSize, const char* key);
+typedef int (uiEng_RegisterFontAtlas_t)(const char* faceName, int pointSize, const char* alphabet, fontAtlasInfo_t* out);
+
+static qboolean UI_EngFonts_GetValue(const char* key, char* out, int outSize)
+{
+	char addrBuf[MAX_CVAR_VALUE_STRING];
+
+	trap_Cvar_VariableStringBuffer("//trap_GetValue", addrBuf, sizeof(addrBuf));
+	if (!addrBuf[0])
+	{
+		return qfalse;
+	}
+
+#ifdef Q3_VM
+	{
+		int addr;
+		uiEng_GetValue_t* trap_GetValue;
+
+		addr = atoi(addrBuf);
+		addr = ~addr;
+		trap_GetValue = (uiEng_GetValue_t*)addr;
+		return trap_GetValue(out, outSize, key);
+	}
+#else
+	{
+		int getValueFuncId;
+
+		getValueFuncId = atoi(addrBuf);
+		return trap_UI_GetValue_Q3E(getValueFuncId, out, outSize, key);
+	}
+#endif
+}
+
+static int UI_EngFonts_RegisterAtlas(int cmd, const char* face, int pointSize,
+                                     const char* alphabet, fontAtlasInfo_t* out)
+{
+#ifdef Q3_VM
+	uiEng_RegisterFontAtlas_t* reg;
+	int addr;
+
+	if (cmd == 0)
+	{
+		return 0;
+	}
+	addr = ~cmd;
+	reg = (uiEng_RegisterFontAtlas_t*)addr;
+	return reg(face, pointSize, alphabet, out);
+#else
+	if (cmd == 0)
+	{
+		return 0;
+	}
+	return trap_UI_RegisterFontAtlas_Q3E(cmd, face, pointSize, alphabet, out);
+#endif
+}
+
+static void UI_EngFonts_CvarBuffer(const char* name, char* buf, int size)
+{
+	trap_Cvar_VariableStringBuffer(name, buf, size);
+}
+
+static int UI_EngFonts_FSOpen(const char* qpath, fileHandle_t* f, fsMode_t mode)
+{
+	return trap_FS_FOpenFile(qpath, f, mode);
+}
+
+static int UI_EngFonts_FSRead(void* buffer, int len, fileHandle_t f)
+{
+	trap_FS_Read(buffer, len, f);
+	return len;
+}
+
+static void UI_EngFonts_FSClose(fileHandle_t f)
+{
+	trap_FS_FCloseFile(f);
+}
+
+static void UI_EngFonts_Print(const char* msg)
+{
+	trap_Print(msg);
+}
+
+static qboolean UI_FontIsTtf(int index)
+{
+	if (index < 0 || index >= fonts_num)
+	{
+		return qfalse;
+	}
+	return fonts[index].isTtf;
+}
+
+static const char* UI_FontTtfPath(int index)
+{
+	if (index < 0 || index >= fonts_num || !fonts[index].isTtf)
+	{
+		return NULL;
+	}
+	return fonts[index].ttfPath;
+}
+
+static qboolean UI_EngFonts_HasName(const char* bareName)
+{
+	int i;
+
+	for (i = 0; i < fonts_num; i++)
+	{
+		if (fonts[i].name && !Q_stricmp(fonts[i].name, bareName))
+		{
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+static qboolean UI_EngFonts_AddTtf(const char* bareName, const char* ttfPath)
+{
+	if (ui_engTtfNameIdx >= ENG_FONTS_MAX_TTF || fonts_num >= MAX_FONTS)
+	{
+		return qfalse;
+	}
+
+	Q_strncpyz(engTtfNames[ui_engTtfNameIdx], bareName, sizeof(engTtfNames[ui_engTtfNameIdx]));
+	fonts[fonts_num].name = engTtfNames[ui_engTtfNameIdx];
+	fonts[fonts_num].isTtf = qtrue;
+	fonts[fonts_num].shaderCount = 0;
+	Com_Memset(fonts[fonts_num].metrics, 0, sizeof(fonts[fonts_num].metrics));
+	Q_strncpyz(fonts[fonts_num].ttfPath, ttfPath, sizeof(fonts[fonts_num].ttfPath));
+	fonts_num++;
+	ui_engTtfNameIdx++;
+	return qtrue;
+}
+
+static void UI_EngineFonts_Init(void)
+{
+	EngFonts_Hooks hooks;
+
+	Com_Memset(&hooks, 0, sizeof(hooks));
+	hooks.getValue = UI_EngFonts_GetValue;
+	hooks.registerAtlas = UI_EngFonts_RegisterAtlas;
+	hooks.cvarBuffer = UI_EngFonts_CvarBuffer;
+	hooks.fsOpen = UI_EngFonts_FSOpen;
+	hooks.fsRead = UI_EngFonts_FSRead;
+	hooks.fsClose = UI_EngFonts_FSClose;
+	hooks.print = UI_EngFonts_Print;
+	EngFonts_SetHooks(&hooks);
+
+	EngFonts_Invalidate();
+	uis.engineFontAtlas = EngFonts_Probe();
+	if (!uis.engineFontAtlas)
+	{
+		return;
+	}
+
+	fonts_num = bitmap_fonts_num;
+	ui_engTtfNameIdx = 0;
+	Com_Memset(engTtfNames, 0, sizeof(engTtfNames));
+	EngFonts_AppendFaces(UI_EngFonts_AddTtf, UI_EngFonts_HasName, MAX_FONTS, fonts_num);
+	EngFonts_Preload(fonts_num, UI_FontIsTtf, UI_FontTtfPath);
+}
+
 void UI_LoadFonts(void)
 {
 	int i;
@@ -1017,9 +1287,13 @@ void UI_LoadFonts(void)
 	UI_InitFontNames();
 	for (i = 0; i < OSP_BUILTIN_FONT_COUNT; i++)
 	{
+		fonts[i].isTtf = qfalse;
+		fonts[i].ttfPath[0] = '\0';
 		UI_LoadFont(&fonts[i], ospBuiltinFonts[i].cfgPath);
 	}
 	UI_LoadCustomFonts();
+	bitmap_fonts_num = fonts_num;
+	UI_EngineFonts_Init();
 }
 
 /* Helper functions for compiled text */
@@ -1040,15 +1314,7 @@ static int CompiledStringSize(const text_command_t* cmd)
 
 static float GetSymbolSize(char sym, qboolean proportional, float charWidth)
 {
-	const font_metric_t* fm;
-	fm = &metrics[(unsigned char)sym];
-
-	if (proportional)
-	{
-		return (fm->space1 + fm->space2) * charWidth;
-	}
-
-	return charWidth;
+	return UI_Ospstr_GlyphAdvance((unsigned char)sym, charWidth, proportional ? 1 : 0);
 }
 
 float UI_OSPCharWidth640(char sym, float charWidth, int proportional)
@@ -1174,6 +1440,106 @@ int UI_OSPTextCountWrappedLines640(const char* text, float charWidth, int propor
 	return lines;
 }
 
+static void UI_Ospstr_BindEngine(int fontIndex, float aw, float ah, int proportional)
+{
+	const fontAtlasInfo_t* engFont;
+	float                  need;
+	float                  ref;
+
+	if (!uis.engineFontAtlas || fontIndex < 0 || !fonts[fontIndex].isTtf)
+	{
+		ui_ospstr_eng = NULL;
+		ui_ospstr_engUnit = 1.0f;
+		ui_ospstr_engDrawUnit = 1.0f;
+		ui_ospstr_engYBias = 0.0f;
+		ui_ospstr_engAsc = ah * 0.75f;
+		return;
+	}
+
+	if (proportional)
+	{
+		need = ah;
+	}
+	else if (aw > ah)
+	{
+		need = aw;
+	}
+	else
+	{
+		need = ah;
+	}
+
+	engFont = EngFonts_Info(fontIndex, need);
+	ui_ospstr_eng = engFont;
+	if (!engFont)
+	{
+		ui_ospstr_engUnit = 1.0f;
+		ui_ospstr_engDrawUnit = 1.0f;
+		ui_ospstr_engYBias = 0.0f;
+		ui_ospstr_engAsc = ah * 0.75f;
+		return;
+	}
+
+	ref = engFont->lineHeight;
+	if (ref < 1.0f)
+	{
+		ref = 64.0f;
+	}
+	ui_ospstr_engUnit = ah / ref;
+	if (ui_ospstr_engUnit <= 0.0f)
+	{
+		ui_ospstr_engUnit = 1.0f;
+	}
+	{
+		float s;
+		float off;
+
+		UI_Ospstr_EnsureTtfTune();
+		if (fontIndex >= 0 && fontIndex < ENG_FONTS_FONT_INDEX_MAX)
+		{
+			s = ui_ospstr_ttfTuneScale[fontIndex];
+			off = ui_ospstr_ttfTuneOffset[fontIndex];
+			ui_ospstr_curTtfShadowX = ui_ospstr_ttfShadowOffX[fontIndex];
+			ui_ospstr_curTtfShadowY = ui_ospstr_ttfShadowOffY[fontIndex];
+		}
+		else
+		{
+			s = Com_Clamp(0.25f, 2.0f, be_ttfScale.value);
+			off = Com_Clamp(-1.0f, 1.0f, be_ttfFontOffset.value);
+			ui_ospstr_curTtfShadowX = be_ttfShadowOffX;
+			ui_ospstr_curTtfShadowY = be_ttfShadowOffY;
+		}
+		ui_ospstr_engDrawUnit = ui_ospstr_engUnit * s;
+		ui_ospstr_engYBias = ah * ((s - 1.0f) * 0.5f + off);
+	}
+
+	if (engFont->ascender > 0.0f)
+	{
+		ui_ospstr_engAsc = engFont->ascender * ui_ospstr_engUnit;
+	}
+	else
+	{
+		ui_ospstr_engAsc = ah * 0.75f;
+	}
+}
+
+static float UI_Ospstr_GlyphAdvance(unsigned char ch, float aw, int proportional)
+{
+	if (ui_ospstr_eng)
+	{
+		if (proportional)
+		{
+			return ui_ospstr_eng->glyphs[ch].xSkip * ui_ospstr_engDrawUnit;
+		}
+		return aw;
+	}
+	if (proportional)
+	{
+		return (metrics[ch].space1 + metrics[ch].space2) * aw;
+	}
+	return aw;
+}
+
 static float DrawCompiledStringLength(const text_command_t* cmd, float aw, int proportional)
 {
 	const font_metric_t* fm;
@@ -1182,6 +1548,7 @@ static float DrawCompiledStringLength(const text_command_t* cmd, float aw, int p
 	int i;
 	const text_command_t* curr;
 	int screenWidth;
+	unsigned char ch;
 
 	ax = 0;
 	screenWidth = uis.screenXmax - uis.screenXmin;
@@ -1195,15 +1562,23 @@ static float DrawCompiledStringLength(const text_command_t* cmd, float aw, int p
 
 		if (curr->type == OSP_TEXT_CMD_CHAR)
 		{
-			fm = &metrics[(unsigned char)curr->value.character ];
-			if (proportional)
+			ch = (unsigned char)curr->value.character;
+			if (ui_ospstr_eng)
 			{
-				ax += fm->space1 * aw;
-				x_end = ax + fm->space2 * aw;
+				x_end = ax + UI_Ospstr_GlyphAdvance(ch, aw, proportional);
 			}
 			else
 			{
-				x_end = ax + aw;
+				fm = &metrics[ch];
+				if (proportional)
+				{
+					ax += fm->space1 * aw;
+					x_end = ax + fm->space2 * aw;
+				}
+				else
+				{
+					x_end = ax + aw;
+				}
 			}
 
 			if (x_end >= screenWidth)
@@ -1222,13 +1597,13 @@ static float DrawCompiledStringLength(const text_command_t* cmd, float aw, int p
 
 static float RestrictCompiledString(text_command_t* cmd, float charWidth, int proportional, float toWidth)
 {
-	const font_metric_t* fm;
 	float x_end;
 	float ax;
 	int i;
 	int size;
 	text_command_t* curr;
 	qboolean restricted;
+	unsigned char ch;
 
 	ax = 0;
 	restricted = qfalse;
@@ -1244,16 +1619,8 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, int pr
 
 		if (curr->type == OSP_TEXT_CMD_CHAR)
 		{
-			fm = &metrics[(unsigned char)curr->value.character ];
-			if (proportional)
-			{
-				ax += fm->space1 * charWidth;
-				x_end = ax + fm->space2 * charWidth;
-			}
-			else
-			{
-				x_end = ax + charWidth;
-			}
+			ch = (unsigned char)curr->value.character;
+			x_end = ax + UI_Ospstr_GlyphAdvance(ch, charWidth, proportional);
 
 			if (x_end > toWidth)
 			{
@@ -1452,6 +1819,7 @@ void UI_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	ah = charHeight;
 
 	proportional = (flags & DS_PROPORTIONAL) ? 1 : 0;
+	UI_Ospstr_BindEngine(ui_selectedFontIndex, aw, ah, proportional);
 	hasBorder = (border != NULL) ? 1 : 0;
 	expectedLenght = 0.0f;
 
@@ -1493,12 +1861,16 @@ void UI_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		ay -= ah;
 	}
 
-	sh = font->shader[0]; /* low-res shader by default */
-	for (i = 1; i < font->shaderCount; i++)
+	sh = 0;
+	if (!ui_ospstr_eng)
 	{
-		if (ah >= font->shaderThreshold[i])
+		sh = font->shader[0]; /* low-res shader by default */
+		for (i = 1; i < font->shaderCount; i++)
 		{
-			sh = font->shader[i];
+			if (ah >= font->shaderThreshold[i])
+			{
+				sh = font->shader[i];
+			}
 		}
 	}
 
@@ -1517,8 +1889,29 @@ void UI_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	shadowEnabled = (flags & DS_SHADOW) && (shadowColor[3] != 0.0f);
 	if (shadowEnabled)
 	{
-		xx_add = charWidth / 10.0f;
-		yy_add = xx_add;
+		static int lastBmMod = -1;
+		static int lastTtfMod = -1;
+
+		if (be_fontShadowOffset.modificationCount != lastBmMod)
+		{
+			lastBmMod = be_fontShadowOffset.modificationCount;
+			BeFontShadow_UpdateBitmap(be_fontShadowOffset.string);
+		}
+		if (be_ttfShadowOffset.modificationCount != lastTtfMod)
+		{
+			lastTtfMod = be_ttfShadowOffset.modificationCount;
+			BeFontShadow_UpdateTtf(be_ttfShadowOffset.string);
+		}
+		if (ui_ospstr_eng)
+		{
+			xx_add = aw * ui_ospstr_curTtfShadowX;
+			yy_add = aw * ui_ospstr_curTtfShadowY;
+		}
+		else
+		{
+			xx_add = aw * be_fontShadowOffX;
+			yy_add = aw * be_fontShadowOffY;
+		}
 		VectorCopy(shadowColor, shadowCol);
 		shadowFade = shadowColor[3];
 		shadowCol[3] = shadowFade;
@@ -1543,44 +1936,70 @@ void UI_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 			case OSP_TEXT_CMD_CHAR:
 			{
 				int index;
+				const fontAtlasGlyph_t* g;
+				float gw, gh, gy;
+
 				index = curr->value.character;
 				if (index < 0)
 					index += 256;
-				fm = &metrics[(unsigned char)index];
 
-				if (proportional)
+				if (ui_ospstr_eng)
 				{
-					tc = fm->tc_prop;
-					aw1 = fm->width * aw;
+					g = &ui_ospstr_eng->glyphs[(unsigned char)index];
+					if (g->glyph)
+					{
+						gw = (float)g->imageWidth * ui_ospstr_engDrawUnit;
+						gh = (float)g->imageHeight * ui_ospstr_engDrawUnit;
+						gy = ay + ui_ospstr_engAsc - (float)g->top * ui_ospstr_engDrawUnit + ui_ospstr_engYBias;
+
+						if (shadowEnabled)
+						{
+							trap_R_SetColor(shadowCol);
+							trap_R_DrawStretchPic(ax + xx_add, gy + yy_add, gw, gh, g->s, g->t, g->s2, g->t2, g->glyph);
+						}
+						trap_R_SetColor(color);
+						trap_R_DrawStretchPic(ax, gy, gw, gh, g->s, g->t, g->s2, g->t2, g->glyph);
+					}
+					ax += UI_Ospstr_GlyphAdvance((unsigned char)index, aw, proportional);
 				}
 				else
 				{
-					tc = fm->tc_mono;
-					aw1 = aw;
-				}
+					fm = &metrics[(unsigned char)index];
 
-				/* Draw shadow */
-				if (shadowEnabled)
-				{
-					trap_R_SetColor(shadowCol);
-					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
-				}
+					if (proportional)
+					{
+						tc = fm->tc_prop;
+						aw1 = fm->width * aw;
+					}
+					else
+					{
+						tc = fm->tc_mono;
+						aw1 = aw;
+					}
 
-				/* Draw character */
-				trap_R_SetColor(color);
-				trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					/* Draw shadow */
+					if (shadowEnabled)
+					{
+						trap_R_SetColor(shadowCol);
+						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					}
 
-				/* Update position */
-				if (proportional)
-				{
-					ax += fm->space1 * aw;
-					x_end = ax + fm->space2 * aw;
+					/* Draw character */
+					trap_R_SetColor(color);
+					trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+
+					/* Update position */
+					if (proportional)
+					{
+						ax += fm->space1 * aw;
+						x_end = ax + fm->space2 * aw;
+					}
+					else
+					{
+						x_end = ax + aw;
+					}
+					ax = x_end;
 				}
-				else
-				{
-					x_end = ax + aw;
-				}
-				ax = x_end;
 			}
 			break;
 

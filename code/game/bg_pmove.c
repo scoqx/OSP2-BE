@@ -46,6 +46,16 @@ float   pm_waterfriction = 1.0f;
 float   pm_flightfriction = 3.0f;
 float   pm_spectatorfriction = 5.0f;
 
+/* Quake Live VQ3-ruleset defaults (from ioquakelive / ruthless) */
+const float pm_ql_jumpvelocity = 275.0f;
+const float pm_ql_jumpvelocityscaleadd = 0.4f;
+const float pm_ql_jumpvelocitytimethreshold = 500.0f;
+const float pm_ql_jumptimedeltamin = 100.0f;
+const float pm_ql_bunnyHopOveraccel = 0.55f;
+const float pm_ql_airStepFriction = 0.03f;
+const int   pm_ql_StepJump = 1;
+const float pm_ql_StepHeight = 22.0f;
+
 int     c_pmove = 0;
 
 
@@ -296,11 +306,54 @@ Handles user intended acceleration
 */
 void PM_Accelerate(vec3_t wishdir, float wishspeed, float accel)
 {
-#if 1
-	// q2 style
 	int         i;
 	float       addspeed, accelspeed, currentspeed;
+	float       speed2d, maxspeed, maxspeed2;
+	float       overaccel;
 
+	/* QL bunny-hop overacceleration (ioquakelive default) */
+	if (pm->pmove_movement == MOVEMENT_QL)
+	{
+		currentspeed = DotProduct(pm->ps->velocity, wishdir);
+		addspeed = wishspeed - currentspeed;
+		speed2d = sqrt(pm->ps->velocity[0] * pm->ps->velocity[0]
+		               + pm->ps->velocity[1] * pm->ps->velocity[1]);
+		maxspeed = (float)pm->ps->speed;
+		maxspeed2 = maxspeed + maxspeed;
+
+		if (addspeed > 0)
+		{
+			accelspeed = accel * pml.frametime * wishspeed;
+			if (accelspeed > addspeed)
+			{
+				accelspeed = addspeed;
+			}
+			pm->ps->velocity[0] += accelspeed * wishdir[0];
+			pm->ps->velocity[1] += accelspeed * wishdir[1];
+			pm->ps->velocity[2] += accelspeed * wishdir[2];
+			return;
+		}
+
+		if (pm->ps->movementDir == 0 && maxspeed > 0.0f && speed2d <= maxspeed2)
+		{
+			overaccel = pm_ql_bunnyHopOveraccel;
+			if (speed2d > maxspeed)
+			{
+				if (speed2d > maxspeed2)
+				{
+					speed2d = maxspeed2;
+				}
+				overaccel = ((maxspeed2 - speed2d) / maxspeed) * pm_ql_bunnyHopOveraccel;
+			}
+			pm->ps->velocity[0] += overaccel * wishdir[0];
+			pm->ps->velocity[1] += overaccel * wishdir[1];
+			pm->ps->velocity[2] += overaccel * wishdir[2];
+		}
+		return;
+	}
+
+#if 1
+	// q2 style
 	currentspeed = DotProduct(pm->ps->velocity, wishdir);
 	addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0)
@@ -318,23 +371,25 @@ void PM_Accelerate(vec3_t wishdir, float wishspeed, float accel)
 		pm->ps->velocity[i] += accelspeed * wishdir[i];
 	}
 #else
-	// proper way (avoids strafe jump maxspeed bug), but feels bad
-	vec3_t      wishVelocity;
-	vec3_t      pushDir;
-	float       pushLen;
-	float       canPush;
-
-	VectorScale(wishdir, wishspeed, wishVelocity);
-	VectorSubtract(wishVelocity, pm->ps->velocity, pushDir);
-	pushLen = VectorNormalize(pushDir);
-
-	canPush = accel * pml.frametime * wishspeed;
-	if (canPush > pushLen)
 	{
-		canPush = pushLen;
-	}
+		// proper way (avoids strafe jump maxspeed bug), but feels bad
+		vec3_t      wishVelocity;
+		vec3_t      pushDir;
+		float       pushLen;
+		float       canPush;
 
-	VectorMA(pm->ps->velocity, canPush, pushDir, pm->ps->velocity);
+		VectorScale(wishdir, wishspeed, wishVelocity);
+		VectorSubtract(wishVelocity, pm->ps->velocity, pushDir);
+		pushLen = VectorNormalize(pushDir);
+
+		canPush = accel * pml.frametime * wishspeed;
+		if (canPush > pushLen)
+		{
+			canPush = pushLen;
+		}
+
+		VectorMA(pm->ps->velocity, canPush, pushDir, pm->ps->velocity);
+	}
 #endif
 }
 
@@ -441,6 +496,74 @@ void PM_SetMovementDir(void)
 
 /*
 =============
+PM_GetStepSize / PM_WouldQlJump / PM_DoQlJump
+
+Quake Live VQ3-ruleset (ioquakelive): STAT_TIME_LASTJUMP holds absolute
+cmd.serverTime stamp (same wire slot as server DEV_STAT_JUMPTIME).
+=============
+*/
+float PM_GetStepSize(void)
+{
+	if (pm->pmove_movement == MOVEMENT_QL)
+	{
+		return pm_ql_StepHeight;
+	}
+	return (float)STEPSIZE;
+}
+
+qboolean PM_WouldQlJump(void)
+{
+	if (pm->ps->pm_flags & PMF_RESPAWNED)
+	{
+		return qfalse;
+	}
+	if (pm->cmd.upmove < 10)
+	{
+		return qfalse;
+	}
+
+	if ((float)(pm->cmd.serverTime - pm->ps->stats[STAT_TIME_LASTJUMP])
+	        < pm_ql_jumptimedeltamin)
+	{
+		return qfalse;
+	}
+
+	if (pm->pmove_autohop || !(pm->ps->pm_flags & PMF_JUMP_HELD))
+	{
+		return qtrue;
+	}
+
+	pm->cmd.upmove = 0;
+	return qfalse;
+}
+
+void PM_DoQlJump(void)
+{
+	float jumpVel;
+	float timeDelta;
+
+	pml.groundPlane = qfalse;
+	pml.walking = qfalse;
+	pm->ps->pm_flags |= PMF_JUMP_HELD;
+	pm->ps->groundEntityNum = ENTITYNUM_NONE;
+
+	jumpVel = pm_ql_jumpvelocity;
+	timeDelta = (float)(pm->cmd.serverTime - pm->ps->stats[STAT_TIME_LASTJUMP]);
+	if (timeDelta > 0.0f && timeDelta < pm_ql_jumpvelocitytimethreshold)
+	{
+		float factor = ((pm_ql_jumpvelocitytimethreshold - timeDelta)
+		                / pm_ql_jumpvelocitytimethreshold) * pm_ql_jumpvelocityscaleadd + 1.0f;
+		jumpVel *= factor;
+	}
+
+	pm->ps->velocity[2] = jumpVel;
+	pm->ps->stats[STAT_TIME_LASTJUMP] = pm->cmd.serverTime;
+
+	PM_AddEvent(EV_JUMP);
+}
+
+/*
+=============
 PM_CheckJump
 =============
 */
@@ -457,8 +580,28 @@ qboolean PM_CheckJump(void)
 		return qfalse;
 	}
 
-	// must wait for jump to be released
-	if (pm->ps->pm_flags & PMF_JUMP_HELD)
+	if (pm->pmove_movement == MOVEMENT_QL)
+	{
+		if (!PM_WouldQlJump())
+		{
+			return qfalse;
+		}
+		PM_DoQlJump();
+		if (pm->cmd.forwardmove >= 0)
+		{
+			PM_ForceLegsAnim(LEGS_JUMP);
+			pm->ps->pm_flags &= ~PMF_BACKWARDS_JUMP;
+		}
+		else
+		{
+			PM_ForceLegsAnim(LEGS_JUMPB);
+			pm->ps->pm_flags |= PMF_BACKWARDS_JUMP;
+		}
+		return qtrue;
+	}
+
+	// must wait for jump to be released (unless pmove_autohop)
+	if ((pm->ps->pm_flags & PMF_JUMP_HELD) && !pm->pmove_autohop)
 	{
 		// clear upmove so cmdscale doesn't lower running speed
 		pm->cmd.upmove = 0;

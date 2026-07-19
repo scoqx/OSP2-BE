@@ -1,7 +1,5 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
-#include "beinfo_cfg.h"
-
 #if defined(CGAME)
 #include "../cgame/cg_local.h"
 #elif defined(Q3UI) || defined(UI)
@@ -10,9 +8,12 @@
 #error beinfo_cfg.c requires CGAME or Q3UI/UI
 #endif
 
+#include "beinfo_cfg.h"
+
 #define BEINFO_CFG_FILE               "beconfigs/beinfo.cfg"
 #define BEINFO_CFG_READ_MAX           4096
 #define BEINFO_CFG_STATUS_ADDR_MAX    64
+#define BEINFO_TTF_FONTS_MAX          16
 
 #define BEINFO_CFG_DEFAULT_STATUS_PRIMARY     "141.98.86.110:27888"
 #define BEINFO_CFG_DEFAULT_STATUS_ALTERNATE   "83.69.233.52:27888"
@@ -25,6 +26,22 @@ static char     beinfo_statusServer1[BEINFO_CFG_STATUS_ADDR_MAX];
 static char     beinfo_statusServer2[BEINFO_CFG_STATUS_ADDR_MAX];
 static qboolean beinfo_hasStatusServer1;
 static qboolean beinfo_hasStatusServer2;
+
+#define BEINFO_TTF_SHADOW_OFF_MIN -0.25f
+#define BEINFO_TTF_SHADOW_OFF_MAX  0.25f
+
+typedef struct
+{
+	char     name[MAX_QPATH];
+	float    scale;
+	float    offset;
+	float    shadowOffX;
+	float    shadowOffY;
+	qboolean hasShadowOffset;
+} beinfoTtfFontTune_t;
+
+static beinfoTtfFontTune_t beinfo_ttfFonts[BEINFO_TTF_FONTS_MAX];
+static int                 beinfo_ttfFontCount;
 
 #if defined(CGAME)
 static beinfoBrightColorFn_t beinfo_brightColorHandler;
@@ -470,6 +487,185 @@ static void BeinfoCfg_SkipBracedBlock(char** text)
 	}
 }
 
+static void BeinfoCfg_ParseTtfFontEntry(char** text, const char* fontName)
+{
+	char*                token;
+	char                 tokenBuf[MAX_TOKEN_CHARS];
+	beinfoTtfFontTune_t* slot;
+	float                scale;
+	float                offset;
+	float                shadowOffX;
+	float                shadowOffY;
+	qboolean             hasShadowOffset;
+
+	if (!text || !*text || !fontName || !fontName[0])
+	{
+		return;
+	}
+
+	token = COM_ParseExt(text, qtrue);
+	if (!token[0] || strcmp(token, "{"))
+	{
+		return;
+	}
+
+	if (beinfo_ttfFontCount >= BEINFO_TTF_FONTS_MAX)
+	{
+		/* Consume body; keep existing entries. */
+		int depth = 1;
+		while (depth > 0)
+		{
+			token = COM_ParseExt(text, qtrue);
+			if (!token[0])
+			{
+				break;
+			}
+			if (!strcmp(token, "{"))
+			{
+				depth++;
+			}
+			else if (!strcmp(token, "}"))
+			{
+				depth--;
+			}
+		}
+		return;
+	}
+
+	scale = 1.0f;
+	offset = 0.0f;
+	shadowOffX = 0.1f;
+	shadowOffY = 0.1f;
+	hasShadowOffset = qfalse;
+
+	while (1)
+	{
+		if (beinfo_pendingToken[0])
+		{
+			Q_strncpyz(tokenBuf, beinfo_pendingToken, sizeof(tokenBuf));
+			beinfo_pendingToken[0] = '\0';
+			token = tokenBuf;
+		}
+		else
+		{
+			token = COM_ParseExt(text, qtrue);
+			if (!token[0])
+			{
+				break;
+			}
+		}
+		if (!strcmp(token, "}"))
+		{
+			break;
+		}
+
+		if (!Q_stricmp(token, "scale"))
+		{
+			token = COM_ParseExt(text, qtrue);
+			if (!token[0] || !strcmp(token, "}") || !strcmp(token, "{"))
+			{
+				if (token[0] && (!strcmp(token, "}") || !strcmp(token, "{")))
+				{
+					BeinfoCfg_PendingPush(token);
+				}
+				break;
+			}
+			scale = (float)atof(token);
+		}
+		else if (!Q_stricmp(token, "offset"))
+		{
+			token = COM_ParseExt(text, qtrue);
+			if (!token[0] || !strcmp(token, "}") || !strcmp(token, "{"))
+			{
+				if (token[0] && (!strcmp(token, "}") || !strcmp(token, "{")))
+				{
+					BeinfoCfg_PendingPush(token);
+				}
+				break;
+			}
+			offset = (float)atof(token);
+		}
+		else if (!Q_stricmp(token, "shadowOffset"))
+		{
+			token = COM_ParseExt(text, qtrue);
+			if (!token[0] || !strcmp(token, "}") || !strcmp(token, "{"))
+			{
+				if (token[0] && (!strcmp(token, "}") || !strcmp(token, "{")))
+				{
+					BeinfoCfg_PendingPush(token);
+				}
+				break;
+			}
+			if (!BeinfoCfg_TokenLooksNumeric(token))
+			{
+				BeinfoCfg_PendingPush(token);
+				continue;
+			}
+			shadowOffX = Com_Clamp(BEINFO_TTF_SHADOW_OFF_MIN, BEINFO_TTF_SHADOW_OFF_MAX,
+			        (float)atof(token));
+			shadowOffY = shadowOffX;
+			token = COM_ParseExt(text, qtrue);
+			if (token[0] && BeinfoCfg_TokenLooksNumeric(token))
+			{
+				shadowOffY = Com_Clamp(BEINFO_TTF_SHADOW_OFF_MIN, BEINFO_TTF_SHADOW_OFF_MAX,
+				        (float)atof(token));
+			}
+			else if (token[0])
+			{
+				BeinfoCfg_PendingPush(token);
+			}
+			hasShadowOffset = qtrue;
+		}
+		else
+		{
+			/* Unknown key: skip one argument if present. */
+			BeinfoCfg_SkipKeyArguments(text);
+		}
+	}
+
+	slot = &beinfo_ttfFonts[beinfo_ttfFontCount];
+	Q_strncpyz(slot->name, fontName, sizeof(slot->name));
+	slot->scale = scale;
+	slot->offset = offset;
+	slot->shadowOffX = shadowOffX;
+	slot->shadowOffY = shadowOffY;
+	slot->hasShadowOffset = hasShadowOffset;
+	beinfo_ttfFontCount++;
+}
+
+static void BeinfoCfg_ParseTtfFontsBlock(char** text)
+{
+	char* token;
+	char  fontName[MAX_QPATH];
+
+	if (!text || !*text)
+	{
+		return;
+	}
+
+	token = COM_ParseExt(text, qtrue);
+	if (!token[0] || strcmp(token, "{"))
+	{
+		return;
+	}
+
+	while (1)
+	{
+		token = COM_ParseExt(text, qtrue);
+		if (!token[0])
+		{
+			break;
+		}
+		if (!strcmp(token, "}"))
+		{
+			break;
+		}
+
+		Q_strncpyz(fontName, token, sizeof(fontName));
+		BeinfoCfg_ParseTtfFontEntry(text, fontName);
+	}
+}
+
 #if defined(Q3UI) || defined(UI)
 static void BeinfoCfg_ParseUiBlock(char** text)
 {
@@ -749,6 +945,10 @@ static void BeinfoCfg_ParseAddVarBlock(char** text)
 			BeinfoCfg_SkipBracedBlock(text);
 #endif
 		}
+		else if (!Q_stricmp(token, "ttfFonts"))
+		{
+			BeinfoCfg_ParseTtfFontsBlock(text);
+		}
 		else
 		{
 			BeinfoCfg_SkipBracedBlock(text);
@@ -798,6 +998,8 @@ void BeinfoCfg_Load(void)
 	beinfo_hasStatusServer2 = qfalse;
 	beinfo_statusServer1[0] = '\0';
 	beinfo_statusServer2[0] = '\0';
+	beinfo_ttfFontCount = 0;
+	Com_Memset(beinfo_ttfFonts, 0, sizeof(beinfo_ttfFonts));
 
 	len = trap_FS_FOpenFile(BEINFO_CFG_FILE, &f, FS_READ);
 	if (len <= 0)
@@ -838,4 +1040,58 @@ const char* BeinfoCfg_GetStatusServerAlternate(void)
 		return beinfo_statusServer2;
 	}
 	return BEINFO_CFG_DEFAULT_STATUS_ALTERNATE;
+}
+
+qboolean BeinfoCfg_GetTtfFontTune(const char* name, float* scale, float* offset)
+{
+	int i;
+
+	if (scale)
+	{
+		*scale = 1.0f;
+	}
+	if (offset)
+	{
+		*offset = 0.0f;
+	}
+	if (!name || !name[0] || !scale || !offset)
+	{
+		return qfalse;
+	}
+
+	for (i = 0; i < beinfo_ttfFontCount; i++)
+	{
+		if (!Q_stricmp(beinfo_ttfFonts[i].name, name))
+		{
+			*scale = beinfo_ttfFonts[i].scale;
+			*offset = beinfo_ttfFonts[i].offset;
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+qboolean BeinfoCfg_GetTtfFontShadow(const char* name, float* offX, float* offY)
+{
+	int i;
+
+	if (!name || !name[0] || !offX || !offY)
+	{
+		return qfalse;
+	}
+
+	for (i = 0; i < beinfo_ttfFontCount; i++)
+	{
+		if (!Q_stricmp(beinfo_ttfFonts[i].name, name))
+		{
+			if (!beinfo_ttfFonts[i].hasShadowOffset)
+			{
+				return qfalse;
+			}
+			*offX = beinfo_ttfFonts[i].shadowOffX;
+			*offY = beinfo_ttfFonts[i].shadowOffY;
+			return qtrue;
+		}
+	}
+	return qfalse;
 }

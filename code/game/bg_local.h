@@ -64,6 +64,7 @@ typedef struct
 	vec3_t      previous_origin;
 	vec3_t      previous_velocity;
 	int         previous_waterlevel;
+	int         stepJumpFlag;   /* QL: step-triggered jump */
 } pml_t;
 
 extern  pmove_t*     pm;//-V707
@@ -119,8 +120,15 @@ void PM_ClipVelocityOSP(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 void PM_AddTouchEnt(int entityNum);
 void PM_AddEvent(int newEvent);
 
+float       PM_GetStepSize(void);
+qboolean    PM_WouldQlJump(void);
+void        PM_DoQlJump(void);
+
 qboolean    PM_SlideMove(qboolean gravity);
 void        PM_StepSlideMove(qboolean gravity);
+
+extern const float  pm_ql_airStepFriction;
+extern const int    pm_ql_StepJump;
 
 
 #ifdef __cplusplus

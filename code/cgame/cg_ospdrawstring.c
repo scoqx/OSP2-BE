@@ -6,8 +6,189 @@ Single-pass parse; plain-text fast path; static command buffer.
 */
 
 #include "cg_local.h"
+#include "../qcommon/be_font_shadow.h"
+#include "../qcommon/beinfo_cfg.h"
+#include "../qcommon/engine_fonts.h"
 
 static text_command_t ospstr_cmdbuf[OSP_TEXT_CMD_MAX];
+
+/* Module-local engine font context for measure/draw (cgame is single-threaded). */
+static const fontAtlasInfo_t* ospstr_eng;
+static float                  ospstr_engUnit;
+static float                  ospstr_engDrawUnit; /* unit * scale — ink + prop advance */
+static float                  ospstr_engAsc; /* ascender * unit — once per string */
+static float                  ospstr_engYBias; /* scale-center(ah) + offset*screenYScale */
+
+/* Resolved TTF tune by fontIndex (beInfo override or cvars). */
+static float ospstr_ttfTuneScale[ENG_FONTS_FONT_INDEX_MAX];
+static float ospstr_ttfTuneOffset[ENG_FONTS_FONT_INDEX_MAX];
+static float ospstr_ttfShadowOffX[ENG_FONTS_FONT_INDEX_MAX];
+static float ospstr_ttfShadowOffY[ENG_FONTS_FONT_INDEX_MAX];
+static int   ospstr_ttfTuneScaleMod = -1;
+static int   ospstr_ttfTuneOffMod = -1;
+static int   ospstr_ttfShadowMod = -1;
+static int   ospstr_ttfTuneFontCount = -1;
+/* Current font shadow (set in bind_engine for TTF hotpath). */
+static float ospstr_curTtfShadowX = 0.1f;
+static float ospstr_curTtfShadowY = 0.1f;
+
+static void ospstr_ensure_ttf_tune(void)
+{
+	int i;
+	int n;
+
+	if (ospstr_ttfTuneScaleMod == be_ttfScale.modificationCount &&
+	        ospstr_ttfTuneOffMod == be_ttfFontOffset.modificationCount &&
+	        ospstr_ttfShadowMod == be_ttfShadowOffset.modificationCount &&
+	        ospstr_ttfTuneFontCount == CG_GetFontCount())
+	{
+		return;
+	}
+
+	n = CG_GetFontCount();
+	if (n > ENG_FONTS_FONT_INDEX_MAX)
+	{
+		n = ENG_FONTS_FONT_INDEX_MAX;
+	}
+
+	for (i = 0; i < n; i++)
+	{
+		float       s;
+		float       off;
+		float       shX;
+		float       shY;
+		const char* name;
+
+		s = be_ttfScale.value;
+		off = be_ttfFontOffset.value;
+		shX = be_ttfShadowOffX;
+		shY = be_ttfShadowOffY;
+		name = CG_GetFontName(i);
+		if (CG_FontIsTtf(i) && name && name[0])
+		{
+			float tuneS;
+			float tuneOff;
+			float tuneShX;
+			float tuneShY;
+
+			if (BeinfoCfg_GetTtfFontTune(name, &tuneS, &tuneOff))
+			{
+				s = tuneS;
+				off = tuneOff;
+			}
+			if (BeinfoCfg_GetTtfFontShadow(name, &tuneShX, &tuneShY))
+			{
+				shX = tuneShX;
+				shY = tuneShY;
+			}
+		}
+		ospstr_ttfTuneScale[i] = Com_Clamp(0.25f, 2.0f, s);
+		ospstr_ttfTuneOffset[i] = Com_Clamp(-1.0f, 1.0f, off);
+		ospstr_ttfShadowOffX[i] = shX;
+		ospstr_ttfShadowOffY[i] = shY;
+	}
+
+	ospstr_ttfTuneScaleMod = be_ttfScale.modificationCount;
+	ospstr_ttfTuneOffMod = be_ttfFontOffset.modificationCount;
+	ospstr_ttfShadowMod = be_ttfShadowOffset.modificationCount;
+	ospstr_ttfTuneFontCount = CG_GetFontCount();
+}
+
+/* Inline width/advance — no CALL in measure/draw loops. */
+#define OSPSTR_GLYPH_W(metrics, ch, aw, prop) \
+	(ospstr_eng \
+		? ((prop) ? (ospstr_eng->glyphs[(unsigned char)(ch)].xSkip * ospstr_engDrawUnit) : (aw)) \
+		: ((prop) ? (((metrics)[(unsigned char)(ch)].space1 + (metrics)[(unsigned char)(ch)].space2) * (aw)) : (aw)))
+
+/*
+================
+ospstr_bind_engine
+
+Flat: early reject if no atlas; else pick tier + cache unit/asc. One CALL per string.
+================
+*/
+static void ospstr_bind_engine(int fontIndex, float aw, float ah, int proportional)
+{
+	const fontAtlasInfo_t* font;
+	float                  need;
+	float                  ref;
+
+	if (!cgs.engineFontAtlas)
+	{
+		ospstr_eng = NULL;
+		ospstr_engUnit = 1.0f;
+		ospstr_engDrawUnit = 1.0f;
+		ospstr_engYBias = 0.0f;
+		ospstr_engAsc = ah * 0.75f;
+		return;
+	}
+
+	if (proportional)
+	{
+		need = ah;
+	}
+	else if (aw > ah)
+	{
+		need = aw;
+	}
+	else
+	{
+		need = ah;
+	}
+
+	font = CG_EngineFontInfo(fontIndex, need);
+	ospstr_eng = font;
+	if (!font)
+	{
+		ospstr_engUnit = 1.0f;
+		ospstr_engDrawUnit = 1.0f;
+		ospstr_engYBias = 0.0f;
+		ospstr_engAsc = ah * 0.75f;
+		return;
+	}
+
+	ref = font->lineHeight;
+	if (ref < 1.0f)
+	{
+		ref = 64.0f;
+	}
+	ospstr_engUnit = ah / ref;
+	if (ospstr_engUnit <= 0.0f)
+	{
+		ospstr_engUnit = 1.0f;
+	}
+	{
+		float s;
+		float off;
+
+		ospstr_ensure_ttf_tune();
+		if (fontIndex >= 0 && fontIndex < ENG_FONTS_FONT_INDEX_MAX)
+		{
+			s = ospstr_ttfTuneScale[fontIndex];
+			off = ospstr_ttfTuneOffset[fontIndex];
+			ospstr_curTtfShadowX = ospstr_ttfShadowOffX[fontIndex];
+			ospstr_curTtfShadowY = ospstr_ttfShadowOffY[fontIndex];
+		}
+		else
+		{
+			s = Com_Clamp(0.25f, 2.0f, be_ttfScale.value);
+			off = Com_Clamp(-1.0f, 1.0f, be_ttfFontOffset.value);
+			ospstr_curTtfShadowX = be_ttfShadowOffX;
+			ospstr_curTtfShadowY = be_ttfShadowOffY;
+		}
+		ospstr_engDrawUnit = ospstr_engUnit * s;
+		ospstr_engYBias = ah * ((s - 1.0f) * 0.5f + off);
+	}
+
+	if (font->ascender >= 1.0f)
+	{
+		ospstr_engAsc = font->ascender * ospstr_engUnit;
+	}
+	else
+	{
+		ospstr_engAsc = ah * 0.75f;
+	}
+}
 
 static qboolean ospstr_is_plain(const char* string, int flags)
 {
@@ -34,32 +215,9 @@ static qboolean ospstr_is_plain(const char* string, int flags)
 	return qtrue;
 }
 
-static float ospstr_glyph_width(const cg_osp_font_metric_t* metrics, int ch, float aw, int proportional)
-{
-	const cg_osp_font_metric_t* fm;
-
-	fm = &metrics[(unsigned char)ch];
-	if (proportional)
-	{
-		return (fm->space1 + fm->space2) * aw;
-	}
-	return aw;
-}
-
-#define OSPSTR_GLYPH_W(fm, aw, prop) ((prop) ? (((fm).space1 + (fm).space2) * (aw)) : (aw))
-
 static float ospstr_shader_width(float ah)
 {
 	return ah;
-}
-
-static float ospstr_metric_advance(const cg_osp_font_metric_t* fm, float aw, int proportional)
-{
-	if (proportional)
-	{
-		return (fm->space1 + fm->space2) * aw;
-	}
-	return aw;
 }
 
 static qboolean ospstr_is_palette_color_char(char c)
@@ -278,7 +436,7 @@ static float ospstr_measure_commands(const text_command_t* cmd, int stopIdx, con
 	{
 		if (cmd[i].type == OSP_TEXT_CMD_CHAR)
 		{
-			ax += ospstr_glyph_width(metrics, cmd[i].value.character, aw, proportional);
+			ax += OSPSTR_GLYPH_W(metrics, cmd[i].value.character, aw, proportional);
 			if (ax >= vidWidth)
 			{
 				break;
@@ -305,7 +463,7 @@ static float ospstr_get_symbol_width(const text_command_t* cmd, int index, const
 	}
 	if (cmd[index].type == OSP_TEXT_CMD_CHAR)
 	{
-		return ospstr_glyph_width(metrics, cmd[index].value.character, aw, proportional);
+		return OSPSTR_GLYPH_W(metrics, cmd[index].value.character, aw, proportional);
 	}
 	return 0.0f;
 }
@@ -333,15 +491,22 @@ static int ospstr_restrict_pixels(text_command_t* cmd, int stopIdx, const cg_osp
 		curr = &cmd[i];
 		if (curr->type == OSP_TEXT_CMD_CHAR)
 		{
-			fm = &metrics[(unsigned char)curr->value.character];
-			if (proportional)
+			if (ospstr_eng)
 			{
-				ax += fm->space1 * aw;
-				x_end = ax + fm->space2 * aw;
+				x_end = ax + OSPSTR_GLYPH_W(metrics, curr->value.character, aw, proportional);
 			}
 			else
 			{
-				x_end = ax + aw;
+				fm = &metrics[(unsigned char)curr->value.character];
+				if (proportional)
+				{
+					ax += fm->space1 * aw;
+					x_end = ax + fm->space2 * aw;
+				}
+				else
+				{
+					x_end = ax + aw;
+				}
 			}
 			if (x_end > toWidth)
 			{
@@ -371,7 +536,7 @@ static int ospstr_restrict_pixels(text_command_t* cmd, int stopIdx, const cg_osp
 		float dotSize;
 		float prevSize;
 
-		dotSize = ospstr_glyph_width(metrics, '.', aw, proportional);
+		dotSize = OSPSTR_GLYPH_W(metrics, '.', aw, proportional);
 		prevSize = ospstr_get_symbol_width(cmd, i - 1, metrics, aw, ah, proportional);
 		if ((ax - prevSize + dotSize) <= toWidth)
 		{
@@ -610,8 +775,16 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 	shadowEnabled = (flags & DS_SHADOW) && (shadowColor != NULL) && (shadowColor[3] != 0.0f);
 	if (shadowEnabled)
 	{
-		xx_add = aw / 10.0f;
-		yy_add = xx_add;
+		if (ospstr_eng)
+		{
+			xx_add = aw * ospstr_curTtfShadowX;
+			yy_add = aw * ospstr_curTtfShadowY;
+		}
+		else
+		{
+			xx_add = aw * be_fontShadowOffX;
+			yy_add = aw * be_fontShadowOffY;
+		}
 		VectorCopy(shadowColor, shadowCol);
 		shadowFade = shadowColor[3];
 	}
@@ -684,28 +857,70 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 					{
 						index += 256;
 					}
-					fm = &metrics[(unsigned char)index];
-					if (proportional)
+					if (ospstr_eng)
 					{
-						tc = fm->tc_prop;
-						aw1 = fm->width * aw;
+						{
+							const fontAtlasGlyph_t* g;
+							float                   gw;
+							float                   gh;
+							float                   gy;
+
+							g = &ospstr_eng->glyphs[(unsigned char)index];
+							if (g->glyph)
+							{
+								gw = (float)g->imageWidth * ospstr_engDrawUnit;
+								gh = (float)g->imageHeight * ospstr_engDrawUnit;
+								gy = ay + ospstr_engAsc - (float)g->top * ospstr_engDrawUnit + ospstr_engYBias;
+								if (gw < 0.0f)
+								{
+									gw = 0.0f;
+								}
+								if (!proportional && gw < 1.0f && aw > 0.0f)
+								{
+									gw = aw;
+								}
+								if (gh < 1.0f)
+								{
+									gh = ah;
+									gy = ay;
+								}
+								if (shadowEnabled && pass == 0)
+								{
+									trap_R_DrawStretchPic(ax + xx_add, gy + yy_add, gw, gh, g->s, g->t, g->s2, g->t2, g->glyph);
+								}
+								else
+								{
+									trap_R_DrawStretchPic(ax, gy, gw, gh, g->s, g->t, g->s2, g->t2, g->glyph);
+								}
+							}
+						}
+						ax += OSPSTR_GLYPH_W(metrics, index, aw, proportional);
 					}
 					else
 					{
-						tc = fm->tc_mono;
-						aw1 = aw;
-					}
+						fm = &metrics[(unsigned char)index];
+						if (proportional)
+						{
+							tc = fm->tc_prop;
+							aw1 = fm->width * aw;
+						}
+						else
+						{
+							tc = fm->tc_mono;
+							aw1 = aw;
+						}
 
-					if (shadowEnabled && pass == 0)
-					{
-						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
-					}
-					else
-					{
-						trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
-					}
+						if (shadowEnabled && pass == 0)
+						{
+							trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+						}
+						else
+						{
+							trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+						}
 
-					ax += ospstr_metric_advance(fm, aw, proportional);
+						ax += proportional ? (fm->space1 + fm->space2) * aw : aw;
+					}
 					if (ax >= vidWidth)
 					{
 						break;
@@ -811,7 +1026,7 @@ static float ospstr_plain_measure(const char* string, const cg_osp_font_metric_t
 				break;
 			}
 		}
-		ax += ospstr_glyph_width(metrics, *s, aw, proportional);
+		ax += OSPSTR_GLYPH_W(metrics, *s, aw, proportional);
 		if (!widthIsChars && maxWidth > 0.0f && ax > maxWidth)
 		{
 			break;
@@ -844,10 +1059,7 @@ static float ospstr_plain_slice_measure(const unsigned char* start, const unsign
 	s = start;
 	while (s < end && *s)
 	{
-		const cg_osp_font_metric_t* fm;
-
-		fm = &metrics[*s];
-		ax += OSPSTR_GLYPH_W((*fm), aw, proportional);
+		ax += OSPSTR_GLYPH_W(metrics, *s, aw, proportional);
 		s++;
 	}
 	return ax;
@@ -872,10 +1084,7 @@ static int ospstr_plain_slice_fit_bytes(const unsigned char* start, const unsign
 	s = start;
 	while (s < end && *s)
 	{
-		const cg_osp_font_metric_t* fm;
-
-		fm = &metrics[*s];
-		gw = OSPSTR_GLYPH_W((*fm), aw, proportional);
+		gw = OSPSTR_GLYPH_W(metrics, *s, aw, proportional);
 		if (ax + gw > limitPx)
 		{
 			break;
@@ -1003,12 +1212,7 @@ static float ospstr_rich_slice_measure_fit(const char* start, const char* end, i
 					from += 2;
 					continue;
 				case '^':
-				{
-					const cg_osp_font_metric_t* fm;
-
-					fm = &metrics[(unsigned char)'^'];
-					gw = OSPSTR_GLYPH_W((*fm), aw, proportional);
-				}
+				gw = OSPSTR_GLYPH_W(metrics, '^', aw, proportional);
 				if (limitWidth && ax + gw > limitPx)
 				{
 					goto done;
@@ -1044,12 +1248,7 @@ static float ospstr_rich_slice_measure_fit(const char* start, const char* end, i
 			}
 		}
 
-		{
-			const cg_osp_font_metric_t* fm;
-
-			fm = &metrics[(unsigned char)from[0]];
-			gw = OSPSTR_GLYPH_W((*fm), aw, proportional);
-		}
+		gw = OSPSTR_GLYPH_W(metrics, (unsigned char)from[0], aw, proportional);
 		if (limitWidth && ax + gw > limitPx)
 		{
 			break;
@@ -1087,7 +1286,15 @@ static void ospstr_slice_setup(float charWidth, float charHeight, int flags, int
 	}
 	CG_AdjustFrom640(NULL, NULL, aw, ah);
 	*proportional = (flags & DS_PROPORTIONAL) ? 1 : 0;
-	*metrics = CG_OSPFontMetricsPtr(fontIndex);
+	ospstr_bind_engine(fontIndex, *aw, *ah, *proportional);
+	if (ospstr_eng)
+	{
+		*metrics = NULL;
+	}
+	else
+	{
+		*metrics = CG_OSPFontMetricsPtr(fontIndex);
+	}
 }
 
 static void ospstr_draw_plain_mono(const char* string, float ax, float ay, float aw, float ah,
@@ -1140,15 +1347,54 @@ static void ospstr_draw_plain_mono(const char* string, float ax, float ay, float
 					break;
 				}
 
-				fm = &metrics[*s];
-				tc = fm->tc_mono;
-				if (shadowEnabled && pass == 0)
+				if (ospstr_eng)
 				{
-					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					const fontAtlasGlyph_t* g;
+					float                   gw;
+					float                   gh;
+					float                   gy;
+
+					g = &ospstr_eng->glyphs[*s];
+					if (g->glyph)
+					{
+						gw = (float)g->imageWidth * ospstr_engDrawUnit;
+						gh = (float)g->imageHeight * ospstr_engDrawUnit;
+						gy = ay + ospstr_engAsc - (float)g->top * ospstr_engDrawUnit + ospstr_engYBias;
+						if (gw < 0.0f)
+						{
+							gw = 0.0f;
+						}
+						if (gw < 1.0f && aw > 0.0f)
+						{
+							gw = aw;
+						}
+						if (gh < 1.0f)
+						{
+							gh = ah;
+							gy = ay;
+						}
+						if (shadowEnabled && pass == 0)
+						{
+							trap_R_DrawStretchPic(ax + xx_add, gy + yy_add, gw, gh, g->s, g->t, g->s2, g->t2, g->glyph);
+						}
+						else
+						{
+							trap_R_DrawStretchPic(ax, gy, gw, gh, g->s, g->t, g->s2, g->t2, g->glyph);
+						}
+					}
 				}
 				else
 				{
-					trap_R_DrawStretchPic(ax, ay, aw, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					fm = &metrics[*s];
+					tc = fm->tc_mono;
+					if (shadowEnabled && pass == 0)
+					{
+						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					}
+					else
+					{
+						trap_R_DrawStretchPic(ax, ay, aw, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					}
 				}
 				ax += aw;
 				usedW += aw;
@@ -1210,22 +1456,62 @@ static void ospstr_draw_plain_prop(const char* string, float ax, float ay, float
 					}
 				}
 
-				fm = &metrics[*s];
-				advance = ospstr_metric_advance(fm, aw, 1);
-				if (!widthIsChars && maxWidth > 0.0f && (usedW + advance) > maxWidth && *s != '.')
+				if (ospstr_eng)
 				{
-					break;
-				}
+					const fontAtlasGlyph_t* g;
+					float                   gw;
+					float                   gh;
+					float                   gy;
 
-				tc = fm->tc_prop;
-				aw1 = fm->width * aw;
-				if (shadowEnabled && pass == 0)
-				{
-					trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					advance = ospstr_eng->glyphs[*s].xSkip * ospstr_engDrawUnit;
+					if (!widthIsChars && maxWidth > 0.0f && (usedW + advance) > maxWidth && *s != '.')
+					{
+						break;
+					}
+					g = &ospstr_eng->glyphs[*s];
+					if (g->glyph)
+					{
+						gw = (float)g->imageWidth * ospstr_engDrawUnit;
+						gh = (float)g->imageHeight * ospstr_engDrawUnit;
+						gy = ay + ospstr_engAsc - (float)g->top * ospstr_engDrawUnit + ospstr_engYBias;
+						if (gw < 0.0f)
+						{
+							gw = 0.0f;
+						}
+						if (gh < 1.0f)
+						{
+							gh = ah;
+							gy = ay;
+						}
+						if (shadowEnabled && pass == 0)
+						{
+							trap_R_DrawStretchPic(ax + xx_add, gy + yy_add, gw, gh, g->s, g->t, g->s2, g->t2, g->glyph);
+						}
+						else
+						{
+							trap_R_DrawStretchPic(ax, gy, gw, gh, g->s, g->t, g->s2, g->t2, g->glyph);
+						}
+					}
 				}
 				else
 				{
-					trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					fm = &metrics[*s];
+					advance = (fm->space1 + fm->space2) * aw;
+					if (!widthIsChars && maxWidth > 0.0f && (usedW + advance) > maxWidth && *s != '.')
+					{
+						break;
+					}
+
+					tc = fm->tc_prop;
+					aw1 = fm->width * aw;
+					if (shadowEnabled && pass == 0)
+					{
+						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					}
+					else
+					{
+						trap_R_DrawStretchPic(ax, ay, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
+					}
 				}
 				ax += advance;
 				usedW += advance;
@@ -1261,8 +1547,16 @@ static void ospstr_draw_plain(const char* string, float ax, float ay, float aw, 
 	vidWidth = (float)cgs.glconfig.vidWidth;
 	if (shadowEnabled)
 	{
-		xx_add = aw / 10.0f;
-		yy_add = xx_add;
+		if (ospstr_eng)
+		{
+			xx_add = aw * ospstr_curTtfShadowX;
+			yy_add = aw * ospstr_curTtfShadowY;
+		}
+		else
+		{
+			xx_add = aw * be_fontShadowOffX;
+			yy_add = aw * be_fontShadowOffY;
+		}
 		Vector4Copy(shadowColor, shadowCol);
 		ospstr_update_shadow_alpha(shadowCol, shadowColor[3], color[3]);
 	}
@@ -1314,14 +1608,22 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 
 	CG_AdjustFrom640(&x, &y, &charWidth, &charHeight);
 
-	metrics = CG_OSPFontMetricsPtr(fontIndex);
-	sh = CG_OSPFontShaderForHeight(fontIndex, charHeight);
-
 	ax = x;
 	ay = y;
 	aw = charWidth;
 	ah = charHeight;
 	proportional = (flags & DS_PROPORTIONAL) ? 1 : 0;
+	ospstr_bind_engine(fontIndex, aw, ah, proportional);
+	if (ospstr_eng)
+	{
+		metrics = NULL;
+		sh = 0;
+	}
+	else
+	{
+		metrics = CG_OSPFontMetricsPtr(fontIndex);
+		sh = CG_OSPFontShaderForHeight(fontIndex, charHeight);
+	}
 	hasBorder = (border != NULL) ? 1 : 0;
 	widthIsChars = (flags & DS_MAX_WIDTH_IS_CHARS) ? 1 : 0;
 	expectedLength = 0.0f;
@@ -1425,7 +1727,15 @@ float CG_OSPDrawStringNewTextWidth(const char* string, float charWidth, float ch
 	CG_AdjustFrom640(NULL, NULL, &aw, &ah);
 
 	proportional = (flags & DS_PROPORTIONAL) ? 1 : 0;
-	metrics = CG_OSPFontMetricsPtr(fontIndex);
+	ospstr_bind_engine(fontIndex, aw, ah, proportional);
+	if (ospstr_eng)
+	{
+		metrics = NULL;
+	}
+	else
+	{
+		metrics = CG_OSPFontMetricsPtr(fontIndex);
+	}
 
 	if (ospstr_is_plain(string, flags))
 	{

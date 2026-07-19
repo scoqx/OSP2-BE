@@ -772,10 +772,11 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 		CG_DamageFeedback(ps->damageYaw, ps->damagePitch, ps->damageCount);
 	}
 
-	// respawning
+	/* respawning — sync ops like clientNum so CheckLocalSounds sees no fake deltas across spawn++ */
 	if (ps->persistant[PERS_SPAWN_COUNT] != ops->persistant[PERS_SPAWN_COUNT])
 	{
 		CG_Respawn();
+		*ops = *ps;
 	}
 
 	if (cg.mapRestart)

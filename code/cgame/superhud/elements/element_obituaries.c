@@ -104,17 +104,31 @@ static void CG_SHUDElementObituariesUpdatePosition(shudElementObituaries_t* elem
 		}
 	}
 
-	CG_FontSelect(element->ctxAttacker.fontIndex); // update font metrics to make right calculation
 	if (showAttacker)
 	{
-		entry->runtime.attackerWidth = CG_OSPDrawStringLenPix(entry->runtime.attackerName, element->config.fontsize.value[0], element->ctxAttacker.flags, entry->runtime.maxNameLenPix);
+		entry->runtime.attackerWidth = CG_OSPDrawStringNewTextWidth(entry->runtime.attackerName,
+		                              element->config.fontsize.value[0],
+		                              element->config.fontsize.value[1],
+		                              element->ctxAttacker.flags,
+		                              element->ctxAttacker.fontIndex);
+		if (entry->runtime.attackerWidth > (float)entry->runtime.maxNameLenPix)
+		{
+			entry->runtime.attackerWidth = (float)entry->runtime.maxNameLenPix;
+		}
 	}
 	else
 	{
 		entry->runtime.attackerWidth = 0;
 	}
-	CG_FontSelect(element->ctxTarget.fontIndex);
-	entry->runtime.targetWidth = CG_OSPDrawStringLenPix(entry->runtime.targetName, element->config.fontsize.value[0], element->ctxTarget.flags, entry->runtime.maxNameLenPix);
+	entry->runtime.targetWidth = CG_OSPDrawStringNewTextWidth(entry->runtime.targetName,
+	                             element->config.fontsize.value[0],
+	                             element->config.fontsize.value[1],
+	                             element->ctxTarget.flags,
+	                             element->ctxTarget.fontIndex);
+	if (entry->runtime.targetWidth > (float)entry->runtime.maxNameLenPix)
+	{
+		entry->runtime.targetWidth = (float)entry->runtime.maxNameLenPix;
+	}
 
 	totalWidth = entry->runtime.attackerWidth + entry->runtime.spacing +
 	             iconW + entry->runtime.spacing * 2 +

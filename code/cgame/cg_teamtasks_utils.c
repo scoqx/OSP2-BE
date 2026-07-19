@@ -648,6 +648,10 @@ qboolean CG_TeamTaskShouldUseDeadHereWarn(void)
 	{
 		return qtrue;
 	}
+	if (CG_IS_LOCAL_CLIENT_1STPOS_FROZEN())
+	{
+		return qtrue;
+	}
 	if (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
 	{
 		if (cg.snap->ps.stats[STAT_HEALTH] <= 0)

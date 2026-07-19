@@ -273,6 +273,10 @@ typedef struct pmove_s
 	int         pmove_float;
 	int         pmove_accurate;
 
+	/* Devotion / ruthless: g_movement SYSTEMINFO (0=VQ3, 1=CPM via OSP mode, 2=QL) */
+	int         pmove_movement;
+	int         pmove_autohop;
+
 	// callbacks to test the world
 	// these will be different functions during game and cgame
 	void (*trace)(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask);
@@ -286,6 +290,14 @@ typedef struct pmove_s
 	pmoveData_t pmd;        // Stores extracted pmove data needed outside of pmove
 	//::OSDF end
 } pmove_t;
+
+/* Match ruthless g_movement public values for BE predict */
+typedef enum
+{
+	MOVEMENT_VQ3 = 0,
+	MOVEMENT_CPM = 1,   /* OSP/CS 806 promode; bg uses OSP globals when not QL */
+	MOVEMENT_QL = 2     /* QL VQ3-ruleset */
+} movement_t;
 
 // if a full pmove isn't done on the client, you can just update the angles
 void PM_UpdateViewAngles(playerState_t* ps, const usercmd_t* cmd);

@@ -292,6 +292,7 @@ void PM_StepSlideMove(qboolean gravity)
 //	vec3_t       delta, delta2;
 	vec3_t      up, down;
 	float       stepSize;
+	float       actualStepHeight;
 
 	VectorCopy(pm->ps->origin, start_o);
 	VectorCopy(pm->ps->velocity, start_v);
@@ -305,8 +306,138 @@ void PM_StepSlideMove(qboolean gravity)
 		return;
 	}
 
+	actualStepHeight = PM_GetStepSize();
+
+	/* Quake Live step / airstep / stepjump (match ioquakelive) */
+	if (pm->pmove_movement == MOVEMENT_QL)
+	{
+		vec3_t pred;
+		float delta;
+		float dot;
+
+		VectorMA(start_o, pml.frametime, start_v, pred);
+
+		if (!pml.groundPlane)
+		{
+			vec3_t predDown;
+
+			pm->trace(&trace, start_o, pm->mins, pm->maxs, pred,
+			          pm->ps->clientNum, pm->tracemask);
+			VectorCopy(trace.endpos, predDown);
+			predDown[2] -= actualStepHeight;
+			pm->trace(&trace, trace.endpos, pm->mins, pm->maxs, predDown,
+			          pm->ps->clientNum, pm->tracemask);
+			/* Rising: require walkable floor under pred (rejects wall flush) */
+			if (start_v[2] > 0 && (trace.fraction == 1.0 ||
+			                       trace.plane.normal[2] < 0.7f))
+			{
+				return;
+			}
+		}
+
+		VectorCopy(start_o, up);
+		up[2] += actualStepHeight;
+		pm->trace(&trace, start_o, pm->mins, pm->maxs, up,
+		          pm->ps->clientNum, pm->tracemask);
+		if (trace.allsolid)
+		{
+			return;
+		}
+
+		stepSize = trace.endpos[2] - start_o[2];
+		VectorCopy(trace.endpos, pm->ps->origin);
+		VectorCopy(start_v, pm->ps->velocity);
+		PM_SlideMove(gravity);
+
+		VectorCopy(pm->ps->origin, down);
+		down[2] -= stepSize;
+		pm->trace(&trace, pm->ps->origin, pm->mins, pm->maxs, down,
+		          pm->ps->clientNum, pm->tracemask);
+		if (!trace.allsolid)
+		{
+			VectorCopy(trace.endpos, pm->ps->origin);
+		}
+
+		if (trace.fraction < 1.0)
+		{
+			dot = DotProduct(pm->ps->velocity, trace.plane.normal);
+			if (dot < 0.0f || (dot >= 0.0f && dot < 0.001f))
+			{
+				PM_ClipVelocity(pm->ps->velocity, trace.plane.normal,
+				                pm->ps->velocity, OVERCLIP);
+			}
+		}
+
+		/* Validate step crossed geometry before friction / stepjump / sounds */
+		pm->trace(&trace, start_o, pm->mins, pm->maxs, pm->ps->origin,
+		          pm->ps->clientNum, pm->tracemask);
+		if (trace.fraction < 1.0)
+		{
+			delta = pm->ps->origin[2] - start_o[2];
+
+			if (!pml.groundPlane && delta > 0 && start_v[2] > 0)
+			{
+				float dampen = 1.0f - pm_ql_airStepFriction;
+				pm->ps->velocity[0] *= dampen;
+				pm->ps->velocity[1] *= dampen;
+			}
+
+			/* Stepjump uses same WouldJump/min-delta as ioquakelive */
+			if (pm_ql_StepJump && pm->ps->pm_type == PM_NORMAL
+			        && delta > 0 && pm->waterlevel < 2
+			        && PM_WouldQlJump())
+			{
+				vec3_t sjUp, sjDown;
+				trace_t sjTrace;
+
+				VectorCopy(pred, sjUp);
+				sjUp[2] += actualStepHeight;
+				VectorCopy(pred, sjDown);
+				sjDown[2] -= actualStepHeight;
+				pm->trace(&sjTrace, sjUp, pm->mins, pm->maxs, sjDown,
+				          pm->ps->clientNum, pm->tracemask);
+				if (!sjTrace.startsolid && !sjTrace.allsolid
+				        && sjTrace.plane.normal[2] >= 0.7f)
+				{
+					pml.stepJumpFlag = 1;
+					PM_DoQlJump();
+					pml.stepJumpFlag = 0;
+					if (pm->cmd.forwardmove >= 0)
+					{
+						pm->ps->pm_flags &= ~PMF_BACKWARDS_JUMP;
+					}
+					else
+					{
+						pm->ps->pm_flags |= PMF_BACKWARDS_JUMP;
+					}
+				}
+			}
+
+			if (delta > 2)
+			{
+				if (delta < 7)
+				{
+					PM_AddEvent(EV_STEP_4);
+				}
+				else if (delta < 11)
+				{
+					PM_AddEvent(EV_STEP_8);
+				}
+				else if (delta < 15)
+				{
+					PM_AddEvent(EV_STEP_12);
+				}
+				else
+				{
+					PM_AddEvent(EV_STEP_16);
+				}
+			}
+		}
+		return;
+	}
+
 	VectorCopy(start_o, down);
-	down[2] -= STEPSIZE;
+	down[2] -= actualStepHeight;
 	pm->trace(&trace, start_o, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask);
 	VectorSet(up, 0, 0, 1);
 	// never step up when you still have up velocity
@@ -316,7 +447,7 @@ void PM_StepSlideMove(qboolean gravity)
 	}
 
 	VectorCopy(start_o, up);
-	up[2] += STEPSIZE;
+	up[2] += actualStepHeight;
 
 	// test the player position if they were a stepheight higher
 	pm->trace(&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);

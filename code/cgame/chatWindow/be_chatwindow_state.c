@@ -34,7 +34,7 @@ const char* beChatHelpTipLines[BE_CHAT_HELP_TIP_LINE_COUNT] =
 	"^2Esc^7  close without sending",
 	"^2Tab^7  switch global and team chat",
 	"^2Alt^7  emoji picker; type :name, then ^2Tab^7",
-	"Scroll: ^2wheel^7, ^2PgUp^7 / ^2PgDn^7, ^2Ctrl+Up^7 / ^2Ctrl+Down^7",
-	"Slash line: /tell, /reply, /mute, /unmute, or player name",
+	"^2Ctrl+0-9^7 fav (or pad if ^2cg_chatWindowNumLock 0^7); ^2Ctrl+arrows^7 nav when NumLock 1",
+	"Slash: /tell /reply; ^2Ctrl+Backspace/Del^7 delete word",
 	"^2Up^7 / ^2Down^7  last sent (empty input) or autocomplete",
 };

@@ -237,13 +237,13 @@ void UI_DrawConnectScreen(qboolean overlay)
 			}
 		}
 
-		if (ui_infoDetail.integer != 0)
+		if (be_infoDetail.integer != 0)
 		{
 			qhandle_t detail;
 			detail = trap_R_RegisterShaderNoMip("levelShotDetail");
 			if (detail)
 			{
-				if (ui_infoDetail.integer == 2)
+				if (be_infoDetail.integer == 2)
 					trap_R_DrawStretchPic(0, 0, (float)uis.glconfig.vidWidth, (float)uis.glconfig.vidHeight, 0, 0, 1, 1, detail);
 				else
 					trap_R_DrawStretchPic(0, 0, (float)uis.glconfig.vidWidth, (float)uis.glconfig.vidHeight, 0, 0, 2.5f, 2, detail);

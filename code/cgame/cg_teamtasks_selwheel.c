@@ -654,8 +654,9 @@ void CG_DrawSelwheelIcons(void)
 		return;
 	}
 
-	/* Check if player is not alive (dead, spectator, or free float) */
-	isNotAlive = CG_IS_DEAD() || CG_IS_LOCAL_CLIENT_SPECTATOR() || CG_IsClientFreeFloat();
+	/* Check if player is not alive (dead, spectator, free float, or freeze death-cam) */
+	isNotAlive = CG_IS_DEAD() || CG_IS_LOCAL_CLIENT_SPECTATOR() || CG_IsClientFreeFloat()
+	             || CG_IS_LOCAL_CLIENT_1STPOS_FROZEN();
 	/* When observing another player (local client not on screen), same icons unavailable as when dead */
 	isObservingOther = !CG_IS_LOCAL_CLIENT_ON_SCREEN();
 
@@ -1710,11 +1711,28 @@ void CG_SelwheelMarkStop(void)
 	// Send command based on selected icon
 	if (selectedIcon >= 0 && selectedIcon < cg.teamMarkers.ttwheelElementCount)
 	{
+		qboolean isNotAlive;
+		qboolean isObservingOther;
+		qboolean cmdAllowed;
+		const char *cmd;
+
+		isNotAlive = CG_IS_DEAD() || CG_IS_LOCAL_CLIENT_SPECTATOR() || CG_IsClientFreeFloat()
+		             || CG_IS_LOCAL_CLIENT_1STPOS_FROZEN();
+		isObservingOther = !CG_IS_LOCAL_CLIENT_ON_SCREEN();
+		cmd = cg.teamMarkers.ttwheelElementCommands[selectedIcon];
+		cmdAllowed = qtrue;
+		if ((isNotAlive || isObservingOther) && cmd[0] != '\0'
+		        && Q_stricmp(cmd, "tWarn") && Q_stricmp(cmd, "tHere"))
+		{
+			/* Dead / freeze death-cam / observing: only tHere and tWarn */
+			cmdAllowed = qfalse;
+		}
+
 		// Send console command first (add semicolon if not present)
-		if (cg.teamMarkers.ttwheelElementCommands[selectedIcon][0] != '\0')
+		if (cmdAllowed && cmd[0] != '\0')
 		{
 			int cmdLen;
-			Q_strncpyz(commandStr, cg.teamMarkers.ttwheelElementCommands[selectedIcon], sizeof(commandStr));
+			Q_strncpyz(commandStr, cmd, sizeof(commandStr));
 			// Ensure command ends with semicolon
 			cmdLen = strlen(commandStr);
 			if (cmdLen > 0 && commandStr[cmdLen - 1] != ';')
@@ -1726,7 +1744,7 @@ void CG_SelwheelMarkStop(void)
 		}
 
 		// Call the action callback for this element
-		if (cg.teamMarkers.ttwheelElementActions[selectedIcon])
+		if (cmdAllowed && cg.teamMarkers.ttwheelElementActions[selectedIcon])
 		{
 			cg.teamMarkers.ttwheelElementActions[selectedIcon]();
 		}

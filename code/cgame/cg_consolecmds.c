@@ -257,13 +257,37 @@ static void CG_TellAttacker_f(void)
 
 int CG_LastTellSenderClientNum(void)
 {
-	// trap_Cvar_Update(&cg_beLastTellSender);
-	if (!cg_beLastTellSender.string[0])
+	int clientNum;
+	int i;
+	const char* s;
+
+	/* cvarTable_temp is not auto-updated — must sync manually */
+	trap_Cvar_Update(&cg_beLastTellSender);
+	s = cg_beLastTellSender.string;
+	if (!s[0])
 	{
 		return -1;
 	}
 
-	return CG_ChatClientNumFromSenderName(cg_beLastTellSender.string);
+	/* Prefer numeric client slot stored by CG_SetLastTellSenderClientNum */
+	for (i = 0; s[i]; i++)
+	{
+		if (s[i] < '0' || s[i] > '9')
+		{
+			break;
+		}
+	}
+	if (i > 0 && s[i] == '\0')
+	{
+		clientNum = atoi(s);
+		if (clientNum >= 0 && clientNum < MAX_CLIENTS && cgs.clientinfo[clientNum].infoValid)
+		{
+			return clientNum;
+		}
+		return -1;
+	}
+
+	return CG_ChatClientNumFromSenderName(s);
 }
 
 void CG_SetLastTellSenderClientNum(int clientNum)
@@ -271,10 +295,12 @@ void CG_SetLastTellSenderClientNum(int clientNum)
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
 	{
 		trap_Cvar_Set("cg_beLastTellSender", "");
+		trap_Cvar_Update(&cg_beLastTellSender);
 		return;
 	}
 
 	trap_Cvar_Set("cg_beLastTellSender", va("%i", clientNum));
+	trap_Cvar_Update(&cg_beLastTellSender);
 }
 
 void CG_SetLastTellSenderName(const char* name)
@@ -282,10 +308,12 @@ void CG_SetLastTellSenderName(const char* name)
 	if (!name || !name[0])
 	{
 		trap_Cvar_Set("cg_beLastTellSender", "");
+		trap_Cvar_Update(&cg_beLastTellSender);
 		return;
 	}
 
 	trap_Cvar_Set("cg_beLastTellSender", name);
+	trap_Cvar_Update(&cg_beLastTellSender);
 }
 
 qboolean CG_SendReplyMessage(const char* message)
@@ -1129,6 +1157,10 @@ void CG_ShowFont_f(void)
 
 	if (trap_Argc() < 2)
 	{
+		if (cgs.osp.testFont[0])
+		{
+			CG_Printf("Font preview off\n");
+		}
 		cgs.osp.testFont[0] = 0;
 		return;
 	}
@@ -1145,7 +1177,11 @@ void CG_ShowFont_f(void)
 	{
 		/* Fallback: use argument as font name */
 		Com_sprintf(cgs.osp.testFont, MAX_QPATH, "%s", arg);
+		fontName = arg;
 	}
+
+	CG_Printf("Showing font ^3%s^7 (index ^2%d^7). ^3/showfont^7 to hide. ^3/fonts^7 to list.\n",
+	          fontName, fontIndex);
 }
 
 
@@ -1185,6 +1221,11 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 		return;
 	}
 	if (CG_IS_DEAD())
+	{
+		return;
+	}
+	/* Freeze death-cam: only tHere/tWarn dead path (AtPosition) */
+	if (CG_IS_LOCAL_CLIENT_1STPOS_FROZEN())
 	{
 		return;
 	}
@@ -1272,6 +1313,11 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	{
 		return;
 	}
+	/* Freeze death-cam: only tHere/tWarn dead path (AtPosition) */
+	if (CG_IS_LOCAL_CLIENT_1STPOS_FROZEN())
+	{
+		return;
+	}
 	/* Check if we are in spectator/following mode */
 	if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
 	{
@@ -1352,6 +1398,16 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 		}
 	}
 	if (!ignoreDead && CG_IS_DEAD())
+	{
+		return;
+	}
+	/*
+	 * Freeze death-cam: only tHere/tWarn dead templates (server also rewrites).
+	 * Blocks smart/pickup/crosshair spam while pinned on ice.
+	 */
+	if (CG_IS_LOCAL_CLIENT_1STPOS_FROZEN()
+	        && templateID != TEAMTASK_HERE_DEAD
+	        && templateID != TEAMTASK_WARN_DEAD)
 	{
 		return;
 	}

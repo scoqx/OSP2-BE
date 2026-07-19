@@ -300,7 +300,7 @@ static void UI_DrawErrorScreenInfoVersion(void)
 		UI_LoadFonts();
 	}
 
-	fontIndex = UI_FontIndexFromCvar(&ui_infoVersionFont);
+	fontIndex = UI_FontIndexFromCvar(&be_infoVersionFont);
 	if (!UI_FontAvailable(fontIndex))
 	{
 		fontIndex = 2;

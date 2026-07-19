@@ -28,6 +28,13 @@ parse_map_bundle.py — сбор mapdata OSP2-BE (QSP1 спавны, QITM1 shado
   python tools/parse_map_bundle.py --pack-q3lb backup/mapdata -o assets/mapdata/mapdata.q3lb
       Упаковать q3lb из уже готовых .qmap / .json.
 
+  python tools/parse_map_bundle.py --patch-aliases
+      Добавить ALIA stubs в mapdata.q3lb: имена из C:\\maps, чьи entity lump
+      совпадают с картами из bak / уже лежащими в q3lb (без дубля QMAP).
+
+  python tools/parse_map_bundle.py --patch-aliases --dry-run
+      Только показать, какие ALIA были бы добавлены.
+
 Флаги: --freeze, --loc-gametype (default ctf), --pk3-dir DIR (можно несколько), -v (лог).
 
 Что получается на выходе
@@ -73,6 +80,7 @@ parse_map_bundle.py — сбор mapdata OSP2-BE (QSP1 спавны, QITM1 shado
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -81,6 +89,7 @@ import struct
 import sys
 import time
 import zipfile
+from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
@@ -118,6 +127,10 @@ from parse_map_spawns import (
     parse_angles,
     _filter_mask,
 )
+
+ALIA_MAGIC = b"ALIA"
+DEFAULT_ALIAS_MAPS_DIR = Path(r"C:\maps")
+DEFAULT_ALIAS_BAK_DIR = Path(r"C:\maps\bak")
 
 TPEXIT_DOC_VERSION = 1
 QTX1_VERSION = 1
@@ -714,23 +727,19 @@ def pack_q3lb_from_mapdata_dir(src_dir: Path, out_path: Path) -> int:
         print("error: no valid .qmap files", file=sys.stderr)
         return 1
 
-    chunks = [Q3LB_MAGIC, struct.pack("<H", len(entries))]
+    filtered: list[tuple[str, bytes]] = []
     for map_name, blob in entries:
-        name_b = map_name.encode("utf-8")
-        if len(name_b) > 255:
+        if len(map_name.encode("utf-8")) > 255:
             print(f"warn: skip {map_name}: name too long", file=sys.stderr)
             continue
-        chunks.append(struct.pack("<B", len(name_b)))
-        chunks.append(name_b)
-        chunks.append(struct.pack("<I", len(blob)))
-        chunks.append(blob)
+        filtered.append((map_name, blob))
+    if not filtered:
+        print("error: no valid .qmap files after name filter", file=sys.stderr)
+        return 1
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_bytes(b"".join(chunks))
-    print(f"packed {len(entries)} maps -> {out_path}", file=sys.stderr)
+    rc = write_q3lb_file(out_path, filtered)
     print("install: mapdata/mapdata.q3lb in mod pk3 (assets/mapdata/)", file=sys.stderr)
-    return 0
-
+    return rc
 
 _worker_item_table: dict[str, tuple[int, int, int]] | None = None
 
@@ -786,6 +795,76 @@ def _batch_worker_parse(
     return map_name, blob, "ok", label
 
 
+def pack_alia_blob(target_map: str) -> bytes:
+    """Tiny Q3LB entry blob: ALIA + u8 len + target name (lowercase)."""
+    target_b = target_map.lower().encode("utf-8")
+    if not target_b or len(target_b) > 255:
+        raise ValueError(f"invalid ALIA target: {target_map!r}")
+    return ALIA_MAGIC + struct.pack("<B", len(target_b)) + target_b
+
+
+def parse_alia_blob(blob: bytes) -> str | None:
+    if len(blob) < 5 or blob[:4] != ALIA_MAGIC:
+        return None
+    target_len = blob[4]
+    if target_len <= 0 or 5 + target_len > len(blob):
+        return None
+    return blob[5 : 5 + target_len].decode("utf-8", errors="replace")
+
+
+def is_alia_blob(blob: bytes) -> bool:
+    return parse_alia_blob(blob) is not None
+
+
+def read_q3lb_entries(path: Path) -> list[tuple[str, bytes]]:
+    data = path.read_bytes()
+    if len(data) < 6 or data[:4] != Q3LB_MAGIC:
+        raise ValueError(f"{path}: not Q3LB")
+    n_maps = struct.unpack_from("<H", data, 4)[0]
+    off = 6
+    entries: list[tuple[str, bytes]] = []
+    for _ in range(n_maps):
+        if off >= len(data):
+            raise ValueError(f"{path}: truncated Q3LB header")
+        name_len = data[off]
+        off += 1
+        if name_len <= 0 or off + name_len + 4 > len(data):
+            raise ValueError(f"{path}: bad entry name at {off}")
+        name = data[off : off + name_len].decode("utf-8", errors="replace")
+        off += name_len
+        blob_len = struct.unpack_from("<I", data, off)[0]
+        off += 4
+        if blob_len <= 0 or off + blob_len > len(data):
+            raise ValueError(f"{path}: bad blob for {name}")
+        blob = data[off : off + blob_len]
+        off += blob_len
+        entries.append((name, blob))
+    return entries
+
+
+def dedupe_q3lb_entries_by_blob_hash(
+    entries: list[tuple[str, bytes]],
+) -> list[tuple[str, bytes]]:
+    """Keep first QMAP per sha1(blob); later identical QMAPs become ALIA stubs."""
+    canonical_by_hash: dict[bytes, str] = {}
+    out: list[tuple[str, bytes]] = []
+    aliases: list[tuple[str, bytes]] = []
+
+    for map_name, blob in sorted(entries, key=lambda e: e[0]):
+        if is_alia_blob(blob):
+            aliases.append((map_name, blob))
+            continue
+        digest = hashlib.sha1(blob).digest()
+        canon = canonical_by_hash.get(digest)
+        if canon is None:
+            canonical_by_hash[digest] = map_name
+            out.append((map_name, blob))
+        elif canon != map_name:
+            aliases.append((map_name, pack_alia_blob(canon)))
+    out.extend(aliases)
+    return out
+
+
 def pack_q3lb_bytes(entries: list[tuple[str, bytes]]) -> bytes:
     chunks = [Q3LB_MAGIC, struct.pack("<H", len(entries))]
     for map_name, blob in entries:
@@ -802,8 +881,172 @@ def pack_q3lb_bytes(entries: list[tuple[str, bytes]]) -> bytes:
 def write_q3lb_file(out_path: Path, entries: list[tuple[str, bytes]]) -> int:
     out_path = out_path.resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_bytes(pack_q3lb_bytes(entries))
-    print(f"packed {len(entries)} maps -> {out_path}", file=sys.stderr)
+    packed = dedupe_q3lb_entries_by_blob_hash(entries)
+    out_path.write_bytes(pack_q3lb_bytes(packed))
+    n_alia = sum(1 for _, b in packed if is_alia_blob(b))
+    print(
+        f"packed {len(packed)} maps ({n_alia} ALIA) -> {out_path}",
+        file=sys.stderr,
+    )
+    return 0
+
+
+def _entity_lump_raw(bsp_data: bytes) -> bytes:
+    if len(bsp_data) < 8 + 8 or bsp_data[:4] != b"IBSP":
+        raise ValueError("not IBSP")
+    off, length = struct.unpack_from("<ii", bsp_data, 8)
+    if off < 0 or length < 0 or off + length > len(bsp_data):
+        raise ValueError("invalid entities lump")
+    return bsp_data[off : off + length]
+
+
+def entity_lump_sha1(bsp_data: bytes) -> str:
+    return hashlib.sha1(_entity_lump_raw(bsp_data)).hexdigest()
+
+
+def _iter_pk3_bsp_maps(pk3_path: Path) -> list[tuple[str, bytes]]:
+    """Return (bsp_stem, bsp_bytes) for every maps/*.bsp in pk3."""
+    out: list[tuple[str, bytes]] = []
+    with zipfile.ZipFile(pk3_path) as zf:
+        for name in zf.namelist():
+            norm = name.replace("\\", "/")
+            low = norm.lower()
+            if not low.startswith("maps/") or not low.endswith(".bsp"):
+                continue
+            if low.count("/") != 1:
+                continue
+            stem = Path(norm).stem.lower()
+            out.append((stem, zf.read(name)))
+    return out
+
+
+def scan_dirs_entity_hashes(dirs: list[Path]) -> dict[str, str]:
+    """map_stem -> sha1(entity lump). Later dirs override earlier for same stem."""
+    name_to_hash: dict[str, str] = {}
+    for d in dirs:
+        if not d.is_dir():
+            continue
+        for pk3 in sorted(d.glob("*.pk3")):
+            try:
+                maps = _iter_pk3_bsp_maps(pk3)
+            except (OSError, zipfile.BadZipFile) as exc:
+                print(f"warn: skip {pk3.name}: {exc}", file=sys.stderr)
+                continue
+            for stem, bsp in maps:
+                try:
+                    name_to_hash[stem] = entity_lump_sha1(bsp)
+                except ValueError as exc:
+                    print(f"warn: {pk3.name}!{stem}: {exc}", file=sys.stderr)
+    return name_to_hash
+
+
+def _prefer_alias_target(alias_name: str, targets: list[str]) -> str | None:
+    """
+    Among same-hash q3lb names, pick the one that best matches alias_name by
+    shared name prefix (e.g. aerowalk_b -> aerowalk, not oxodm16).
+    Returns None if still ambiguous.
+    """
+    ranked: list[tuple[float, str]] = []
+    for t in targets:
+        if alias_name == t:
+            ranked.append((1000.0 + len(t), t))
+        elif alias_name.startswith(t + "_") or alias_name.startswith(t + "-"):
+            ranked.append((float(len(t)), t))
+        elif len(t) >= 4 and alias_name.startswith(t):
+            ranked.append((len(t) - 0.5, t))
+    if not ranked:
+        return None
+    ranked.sort(key=lambda x: (-x[0], x[1]))
+    if len(ranked) > 1 and ranked[0][0] == ranked[1][0]:
+        return None
+    return ranked[0][1]
+
+
+def build_content_aliases(
+    name_to_hash: dict[str, str],
+    q3lb_canonical: set[str],
+) -> tuple[list[tuple[str, str]], list[str]]:
+    """
+    Return (aliases, skips).
+    Alias A->B only if hash(A)==hash(B), A not in q3lb.
+    If several B candidates: prefer longest name-prefix match; else skip.
+    """
+    hash_to_names: dict[str, list[str]] = defaultdict(list)
+    for name, digest in name_to_hash.items():
+        hash_to_names[digest].append(name)
+
+    aliases: list[tuple[str, str]] = []
+    skips: list[str] = []
+
+    for name, digest in sorted(name_to_hash.items()):
+        if name in q3lb_canonical:
+            continue
+        targets = sorted({n for n in hash_to_names[digest] if n in q3lb_canonical and n != name})
+        if not targets:
+            continue
+        if len(targets) == 1:
+            aliases.append((name, targets[0]))
+            continue
+        preferred = _prefer_alias_target(name, targets)
+        if preferred:
+            aliases.append((name, preferred))
+        else:
+            skips.append(f"{name}: ambiguous targets {targets}")
+
+    return aliases, skips
+
+
+def patch_q3lb_aliases(
+    q3lb_path: Path,
+    maps_dir: Path,
+    bak_dir: Path,
+    *,
+    dry_run: bool = False,
+) -> int:
+    q3lb_path = q3lb_path.resolve()
+    entries = read_q3lb_entries(q3lb_path)
+    existing_names = {n for n, _ in entries}
+    canonical = {n for n, b in entries if not is_alia_blob(b)}
+
+    name_to_hash = scan_dirs_entity_hashes([bak_dir, maps_dir])
+    aliases, skips = build_content_aliases(name_to_hash, canonical)
+
+    for msg in skips:
+        print(f"skip: {msg}", file=sys.stderr)
+
+    added: list[tuple[str, str]] = []
+    for alias_name, target in aliases:
+        if alias_name in existing_names:
+            continue
+        if target not in canonical:
+            print(f"skip: {alias_name} -> {target}: target missing in q3lb", file=sys.stderr)
+            continue
+        added.append((alias_name, target))
+
+    if not added:
+        print("no new ALIA entries to add", file=sys.stderr)
+        return 0
+
+    for alias_name, target in added:
+        print(f"ALIA {alias_name} -> {target}", file=sys.stderr)
+
+    if dry_run:
+        print(f"dry-run: would add {len(added)} aliases to {q3lb_path}", file=sys.stderr)
+        return 0
+
+    new_entries = list(entries)
+    for alias_name, target in added:
+        new_entries.append((alias_name, pack_alia_blob(target)))
+
+    if len(new_entries) > 1024:
+        print(
+            f"error: would exceed CG_MAPDATA_Q3LB_MAX_MAPS (1024): {len(new_entries)}",
+            file=sys.stderr,
+        )
+        return 1
+
+    q3lb_path.write_bytes(pack_q3lb_bytes(new_entries))
+    print(f"patched {q3lb_path}: +{len(added)} ALIA (total {len(new_entries)})", file=sys.stderr)
     return 0
 
 
@@ -1062,6 +1305,28 @@ def main() -> int:
         metavar="SRC_DIR",
         help="Собрать SRC_DIR/*.qmap|.json в mapdata.q3lb (-o задаёт выходной q3lb)",
     )
+    parser.add_argument(
+        "--patch-aliases",
+        action="store_true",
+        help="Дописать ALIA stubs в q3lb по совпадению entity lump (C:\\maps vs bak)",
+    )
+    parser.add_argument(
+        "--alias-maps-dir",
+        type=Path,
+        default=DEFAULT_ALIAS_MAPS_DIR,
+        help="Каталог с переименованными pk3 (default: C:\\maps)",
+    )
+    parser.add_argument(
+        "--alias-bak-dir",
+        type=Path,
+        default=DEFAULT_ALIAS_BAK_DIR,
+        help="Каталог с оригиналами для fingerprint (default: C:\\maps\\bak)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="С --patch-aliases: только показать алиасы, не писать файл",
+    )
     args = parser.parse_args()
 
     loc_gt = {
@@ -1073,6 +1338,15 @@ def main() -> int:
     }[args.loc_gametype]
 
     item_table = _load_item_table(BG_MISC)
+
+    if args.patch_aliases:
+        q3lb = args.output.resolve() if args.output else DEFAULT_BUNDLE_PATH.resolve()
+        return patch_q3lb_aliases(
+            q3lb,
+            args.alias_maps_dir.resolve(),
+            args.alias_bak_dir.resolve(),
+            dry_run=bool(args.dry_run),
+        )
 
     if args.pack_q3lb is not None and not args.batch:
         src = args.pack_q3lb.resolve()

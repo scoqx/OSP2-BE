@@ -1556,6 +1556,34 @@ typedef struct
 	char name[MAX_QPATH];
 } fontInfo_t;
 
+/* Extension: cached FreeType atlas (trap_R_RegisterFontAtlas_Q3E) */
+#define FONT_ATLAS_MAX_PAGES 8
+typedef struct
+{
+	int height;
+	int top;
+	int xSkip;
+	int imageWidth;
+	int imageHeight;
+	float s;
+	float t;
+	float s2;
+	float t2;
+	qhandle_t glyph;
+} fontAtlasGlyph_t;
+
+typedef struct
+{
+	fontAtlasGlyph_t glyphs[GLYPHS_PER_FONT];
+	qhandle_t atlases[FONT_ATLAS_MAX_PAGES];
+	int atlasCount;
+	float lineHeight;
+	float ascender;
+	float descender;
+	int pointSize;
+	char name[MAX_QPATH];
+} fontAtlasInfo_t;
+
 #define Square(x) ((x)*(x))
 
 // real time

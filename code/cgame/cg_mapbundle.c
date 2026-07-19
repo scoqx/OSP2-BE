@@ -5,6 +5,7 @@ cg_mapbundle.c
 Unified map bundle: mapdata/<map>.q3lb overrides mapdata/mapdata.q3lb when present.
   Per-map file is tried first (local testing); then the main Q3LB pack.
   QSP1 spawns, QITM1 shadow pickups, QLM1 locations, QTX1 teleporter exits (QMAP v2).
+  ALIA stubs redirect a map name to another entry's QMAP (same geometry, no blob dup).
 
 Copyright (c) 2026 diwoc
 ===========================================================================
@@ -16,6 +17,8 @@ Copyright (c) 2026 diwoc
 #define CG_MAPBUNDLE_PATH       "mapdata/mapdata.q3lb"
 #define CG_MAPBUNDLE_PERMAP     "mapdata/%s.q3lb"
 #define CG_MAPBUNDLE_PAYLOAD_MAX (64 * 1024)
+/* ALIA stub: "ALIA" + u8 targetLen + targetName — same-geometry rename without QMAP dup */
+#define CG_MAPBUNDLE_ALIA_MAX_PASS 2
 
 static byte*    cg_mapBundlePayload;
 static int      cg_mapBundlePayloadLen;
@@ -25,6 +28,30 @@ static char     cg_mapBundleSource[MAX_QPATH];
 static int CG_MapBundle_ReadLE32(const byte* p)
 {
 	return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+}
+
+static qboolean CG_MapBundle_ParseAlia(const byte* blob, int blobLen, char* targetOut, int targetSize)
+{
+	int     targetLen;
+
+	if (!blob || !targetOut || targetSize <= 1 || blobLen < 5)
+	{
+		return qfalse;
+	}
+	if (blob[0] != 'A' || blob[1] != 'L' || blob[2] != 'I' || blob[3] != 'A')
+	{
+		return qfalse;
+	}
+
+	targetLen = blob[4];
+	if (targetLen <= 0 || targetLen >= targetSize || 5 + targetLen > blobLen)
+	{
+		return qfalse;
+	}
+
+	memcpy(targetOut, blob + 5, targetLen);
+	targetOut[targetLen] = '\0';
+	return qtrue;
 }
 
 static qboolean CG_MapBundle_MapNameMatches(const char* mapBase, const byte* name, int nameLen)
@@ -230,71 +257,105 @@ static qboolean CG_MapBundle_LoadFromBundleFile(const char* bundlePath, const ch
 	byte            header[6];
 	int             nMaps;
 	int             i;
+	int             pass;
 	byte            nameLen;
 	byte            nameBuf[MAX_QPATH];
 	byte            lenBuf[4];
 	int             blobLen;
+	char            lookup[MAX_QPATH];
+	char            aliaTarget[MAX_QPATH];
 
-	fileSize = trap_FS_FOpenFile(bundlePath, &fh, FS_READ);
-	if (fileSize <= 0 || !fh)
+	if (!bundlePath || !mapBase || !mapBase[0])
 	{
 		return qfalse;
 	}
 
-	trap_FS_Read(header, 6, fh);
-	if (header[0] != 'Q' || header[1] != '3' || header[2] != 'L' || header[3] != 'B')
-	{
-		trap_FS_FCloseFile(fh);
-		return qfalse;
-	}
+	Q_strncpyz(lookup, mapBase, sizeof(lookup));
 
-	nMaps = header[4] | (header[5] << 8);
-	if (nMaps <= 0 || nMaps > CG_MAPDATA_Q3LB_MAX_MAPS)
+	for (pass = 0; pass < CG_MAPBUNDLE_ALIA_MAX_PASS; pass++)
 	{
-		trap_FS_FCloseFile(fh);
-		return qfalse;
-	}
-
-	for (i = 0; i < nMaps; i++)
-	{
-		trap_FS_Read(&nameLen, 1, fh);
-		if (nameLen <= 0 || nameLen >= MAX_QPATH)
+		fileSize = trap_FS_FOpenFile(bundlePath, &fh, FS_READ);
+		if (fileSize <= 0 || !fh)
 		{
-			trap_FS_FCloseFile(fh);
 			return qfalse;
 		}
-		trap_FS_Read(nameBuf, nameLen, fh);
-		trap_FS_Read(lenBuf, 4, fh);
-		blobLen = CG_MapBundle_ReadLE32(lenBuf);
-		if (blobLen <= 0 || blobLen > CG_MAPBUNDLE_PAYLOAD_MAX)
+
+		trap_FS_Read(header, 6, fh);
+		if (header[0] != 'Q' || header[1] != '3' || header[2] != 'L' || header[3] != 'B')
 		{
 			trap_FS_FCloseFile(fh);
 			return qfalse;
 		}
 
-		if (CG_MapBundle_MapNameMatches(mapBase, nameBuf, nameLen))
+		nMaps = header[4] | (header[5] << 8);
+		if (nMaps <= 0 || nMaps > CG_MAPDATA_Q3LB_MAX_MAPS)
 		{
-			byte*   payload;
-			qboolean ok;
+			trap_FS_FCloseFile(fh);
+			return qfalse;
+		}
 
-			payload = (byte*)Z_Malloc(blobLen);
-			if (!payload)
+		for (i = 0; i < nMaps; i++)
+		{
+			trap_FS_Read(&nameLen, 1, fh);
+			if (nameLen <= 0 || nameLen >= MAX_QPATH)
 			{
 				trap_FS_FCloseFile(fh);
 				return qfalse;
 			}
-			trap_FS_Read(payload, blobLen, fh);
-			ok = CG_MapBundle_ParseQMAP(payload, blobLen)
-			     && CG_MapBundle_StorePayload(payload, blobLen, mapBase, bundlePath);
-			Z_Free(payload);
-			trap_FS_FCloseFile(fh);
-			return ok;
+			trap_FS_Read(nameBuf, nameLen, fh);
+			trap_FS_Read(lenBuf, 4, fh);
+			blobLen = CG_MapBundle_ReadLE32(lenBuf);
+			if (blobLen <= 0 || blobLen > CG_MAPBUNDLE_PAYLOAD_MAX)
+			{
+				trap_FS_FCloseFile(fh);
+				return qfalse;
+			}
+
+			if (CG_MapBundle_MapNameMatches(lookup, nameBuf, nameLen))
+			{
+				byte*           payload;
+				qboolean        ok;
+
+				payload = (byte*)Z_Malloc(blobLen);
+				if (!payload)
+				{
+					trap_FS_FCloseFile(fh);
+					return qfalse;
+				}
+				trap_FS_Read(payload, blobLen, fh);
+				trap_FS_FCloseFile(fh);
+
+				if (CG_MapBundle_ParseAlia(payload, blobLen, aliaTarget, sizeof(aliaTarget)))
+				{
+					Z_Free(payload);
+					/* One hop only: ALIA -> QMAP. Do not chain aliases. */
+					if (pass + 1 >= CG_MAPBUNDLE_ALIA_MAX_PASS
+					        || !aliaTarget[0]
+					        || !Q_stricmp(aliaTarget, lookup))
+					{
+						return qfalse;
+					}
+					Q_strncpyz(lookup, aliaTarget, sizeof(lookup));
+					break;
+				}
+
+				ok = CG_MapBundle_ParseQMAP(payload, blobLen)
+				     && CG_MapBundle_StorePayload(payload, blobLen, mapBase, bundlePath);
+				Z_Free(payload);
+				return ok;
+			}
+
+			CG_MapBundle_SkipBytes(fh, blobLen);
 		}
 
-		CG_MapBundle_SkipBytes(fh, blobLen);
+		if (i >= nMaps)
+		{
+			trap_FS_FCloseFile(fh);
+			return qfalse;
+		}
+		/* Matched ALIA: reopen and look up target name. */
 	}
 
-	trap_FS_FCloseFile(fh);
 	return qfalse;
 }
 

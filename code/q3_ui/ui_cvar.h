@@ -93,8 +93,8 @@ UI_CVAR(cl_reconnectArgs, "cl_reconnectArgs", "", CVAR_ARCHIVE_ND | CVAR_NOTABCO
 UI_CVAR(uc_sensitivity, "uc_sensitivity", "5.0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE)
 UI_CVAR(uc_shudBindsList, "uc_shudBindsList", "", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE)
 
-UI_CVAR(ui_beCreditsFont, "ui_beCreditsFont", "2", CVAR_ARCHIVE)
-UI_CVAR(ui_beStatusFont, "ui_beStatusFont", "2", CVAR_ARCHIVE)
+UI_CVAR(ui_beCreditsFont, "ui_beCreditsFont", "19", CVAR_ARCHIVE)
+UI_CVAR(ui_beStatusFont, "ui_beStatusFont", "19", CVAR_ARCHIVE)
 UI_CVAR(ui_beStatusBorderColor, "ui_beStatusBorderColor", "White", CVAR_ARCHIVE)
 UI_CVAR(ui_beStatusChecked, "ui_beStatusChecked", "0", CVAR_TEMP | CVAR_NOTABCOMPLETE | CVAR_NORESTART)
 
@@ -111,12 +111,17 @@ UI_CVAR(ui_themeColor, "ui_themeColor", "red", CVAR_ARCHIVE)
 UI_CVAR(ui_themeColor2, "ui_themeColor2", "orange", CVAR_ARCHIVE)
 UI_CVAR(ui_selectionColor, "ui_selectionColor", "yellow", CVAR_ARCHIVE)
 UI_CVAR(ui_serverNameThemeColor, "ui_serverNameThemeColor", "0", CVAR_ARCHIVE | CVAR_LATCH)
-UI_CVAR(ui_shudListFont, "ui_shudListFont", "2", CVAR_ARCHIVE)
+UI_CVAR(ui_shudListFont, "ui_shudListFont", "19", CVAR_ARCHIVE)
 UI_CVAR(ui_framesFullscreen, "ui_framesFullscreen", "0", CVAR_ARCHIVE)
 UI_CVAR(ui_banner, "ui_banner", "1", CVAR_ARCHIVE)
 UI_CVAR(ui_bannerColor, "ui_bannerColor", "1", CVAR_ARCHIVE)
-UI_CVAR(ui_infoDetail, "ui_infoDetail", "0", CVAR_ARCHIVE)
-UI_CVAR(ui_infoVersionFont, "ui_infoVersionFont", "2", CVAR_ARCHIVE)
+UI_CVAR(be_infoVersionFont, "be_infoVersionFont", "19", CVAR_ARCHIVE)
+UI_CVAR(be_infoDetail, "be_infoDetail", "1", CVAR_ARCHIVE)
+
+UI_CVAR(be_fontShadowOffset, "be_fontShadowOffset", "0.1 0.1", CVAR_ARCHIVE)
+UI_CVAR(be_ttfShadowOffset, "be_ttfShadowOffset", "0.1 0.1", CVAR_ARCHIVE)
+UI_CVAR(be_ttfScale, "be_ttfScale", "1", CVAR_ARCHIVE)
+UI_CVAR(be_ttfFontOffset, "be_ttfFontOffset", "0", CVAR_ARCHIVE)
 
 
 #undef UI_CVAR

@@ -1597,6 +1597,8 @@ typedef struct
 	sfxHandle_t roundWarmup321Sound;
 	sfxHandle_t roundWarmup0Sound;
 
+	sfxHandle_t lastStandingSound;
+
 } cgMedia_t;
 
 typedef struct osp_decal_s
@@ -1951,6 +1953,7 @@ typedef struct
 	beChatWindowMetrics_t beChatMetrics;
 	customWeaponStats_t beWeaponStats[WP_NUM_WEAPONS];
 	qboolean        beSupportedServer;
+	qboolean        engineFontAtlas;    /* trap_R_RegisterFontAtlas_Q3E available + TTF preloaded */
 	vec3_t          beBrightWeaponsColor[WP_NUM_WEAPONS];
 	qboolean        beBrightWeaponsBeinfoSet[WP_NUM_WEAPONS];
 	float           beBrightWeaponsBeinfoOpaque[WP_NUM_WEAPONS];
@@ -1959,7 +1962,8 @@ typedef struct
 	team_t          beMyTeam;
 	int             beServerEnableBreath;
 	int             killConfirmMode;      /* g_killConfirm from CS_SERVERINFO */
-	// int             beAutohop;  /* 0=no pmove_autohop in cs, 1=present and not controllable, 2=controllable */
+	int             beAutohop;   /* pmove_autohop SYSTEMINFO: 0=off, 1=forced, 2=client cg_autoHop */
+	int             beMovement;  /* g_movement SYSTEMINFO: 0=VQ3, 1=CPM, 2=QL */
 
 	qboolean        q3msk;        // Q3msk.net
 	qboolean        q3mskRoundWarmup; /* q3msk freeze team round warmup active */
@@ -2109,7 +2113,7 @@ extern vmCvar_t           cg_altLightning;
 extern vmCvar_t           cg_altPlasma;
 extern vmCvar_t           cg_ammoCheck;
 extern vmCvar_t           cg_autoAction;
-/* extern vmCvar_t           cg_autoHop; */  /* autohop commented out */
+extern vmCvar_t           cg_autoHop;
 extern vmCvar_t           cg_clientLog;
 extern vmCvar_t           cg_crosshairPulse;
 extern vmCvar_t           cg_customLoc;
@@ -2448,7 +2452,7 @@ extern vmCvar_t         cg_brightWeaponsShader;
 extern vmCvar_t         teamoverlay2;
 extern vmCvar_t         cg_friendsWallhackFrozen;
 extern vmCvar_t         cg_teleportEffect;
-extern vmCvar_t         cg_infoVersionFont;
+extern vmCvar_t         be_infoVersionFont;
 extern vmCvar_t         cl_reconnectArgs;
 extern vmCvar_t         cg_altRail;
 extern vmCvar_t         cg_altRailBeefy;
@@ -2457,7 +2461,7 @@ extern vmCvar_t         cg_teamTaskVersion;
 extern vmCvar_t         cg_railFix;
 extern vmCvar_t         cg_freezeSoundFix;
 // extern vmCvar_t          cg_snow;
-extern vmCvar_t         cg_infoDetail;
+extern vmCvar_t         be_infoDetail;
 extern vmCvar_t         cg_enhancedInterpolation;
 extern vmCvar_t         cg_entityOverpolate;
 extern vmCvar_t         cg_healthBarStyle;
@@ -2511,6 +2515,7 @@ extern vmCvar_t         cg_beLastTellSender;
 extern vmCvar_t         cg_chatWindowBgColor;
 extern vmCvar_t         cg_chatWindowBgOpaque;
 extern vmCvar_t         cg_chatWindowFavEmojis;
+extern vmCvar_t         cg_chatWindowNumLock;
 extern vmCvar_t         cg_drawSpawns;
 extern vmCvar_t         cg_drawTPexit;
 extern vmCvar_t         cg_shadowItems;
@@ -2518,6 +2523,10 @@ extern vmCvar_t         cg_worldFlags;
 extern vmCvar_t         cg_oldFloatSprites;
 extern vmCvar_t         pmove_float;
 extern vmCvar_t         pmove_accurate;
+extern vmCvar_t         be_fontShadowOffset;
+extern vmCvar_t         be_ttfShadowOffset;
+extern vmCvar_t         be_ttfScale;
+extern vmCvar_t         be_ttfFontOffset;
 
 
 
@@ -2775,6 +2784,12 @@ enum
 void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxChars, int flags);
 
 void CG_LoadFonts(void);
+void CG_AppendEngineTtfFonts(void);
+qboolean CG_FontIsTtf(int index);
+const char* CG_FontTtfPath(int index);
+
+void CG_EngineFonts_Init(void);
+const fontAtlasInfo_t* CG_EngineFontInfo(int fontIndex, float charHeight);
 
 void CG_DrawStringExt(int x, int y, const char* string, const float* setColor,
                       qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars);
@@ -2920,6 +2935,7 @@ void CG_UpdateAllClientsInfo(void);
 #define CG_IS_DEAD() (cg.snap && (cg.snap->ps.pm_type == PM_DEAD || cg.snap->ps.pm_type == PM_SPINTERMISSION))
 #define CG_IS_LOCAL_CLIENT_SPECTATOR() ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 #define CG_IS_LOCAL_CLIENT_ON_SCREEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
+#define CG_IS_LOCAL_CLIENT_1STPOS_FROZEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum && cg.snap->ps.pm_type == PM_FREEZE)
 #define CG_IS_FROZEN_ENTITY(cent) ((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && ((cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS))
 /* Round warmup state is valid only on q3msk freeze team (GT_TEAM, freeze). */
 #define CG_Q3MSK_ROUND_WARMUP() (cgs.q3mskRoundWarmup)
@@ -3375,6 +3391,7 @@ void        trap_Print(const char* fmt);
 
 // Use them as wrappers, pass acquired function address to `cmd` to make actual call.
 int     trap_CG_GetValue_Q3E(int cmd, char* value, int valueSize, const char* key);
+int     trap_CG_RegisterFontAtlas_Q3E(int cmd, const char* faceName, int pointSize, const char* alphabet, fontAtlasInfo_t* out);
 int     trap_CG_SetDescription_Q3E(int cmd, const char* name, const char* description);
 int     trap_IsRecordingDemo_Q3E(int cmd);
 int     trap_Key_CapsLockOn_Q3E(int cmd);
@@ -3907,7 +3924,7 @@ void CG_LocalEventCvarChanged_cg_followpowerup(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_followkiller(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_followviewcam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_autoAction(cvarTable_t* cvart);
-/* void CG_LocalEventCvarChanged_cg_autoHop(cvarTable_t* cvart); */  /* autohop commented out */
+void CG_LocalEventCvarChanged_cg_autoHop(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_snaps(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_useScreenShotJPEG(cvarTable_t* cvart);
 
@@ -4000,7 +4017,7 @@ void CG_LocalEventCvarChanged_cg_teamIndicatorFontSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_scoreboardFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart);
-void CG_LocalEventCvarChanged_cg_infoVersionFont(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_be_infoVersionFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_emojiListFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_chatWindowFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_chatWindowFontSize(cvarTable_t* cvart);
@@ -4022,6 +4039,8 @@ void CG_LocalEventCvarChanged_cg_redTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_blueTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_myTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_accuracyFontSize(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_be_fontShadowOffset(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_be_ttfShadowOffset(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_accuracyFont(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeam(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_markTeamColor(cvarTable_t* cvart);

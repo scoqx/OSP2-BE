@@ -10,6 +10,7 @@ USER INTERFACE MAIN
 
 
 #include "ui_local.h"
+#include "../qcommon/be_font_shadow.h"
 
 
 /*
@@ -258,6 +259,9 @@ void UI_RegisterCvars(void)
 
 	// Scan beconfigs/ directory for customConfig_*.cfg files
 	UI_ScanCustomConfigFiles();
+
+	BeFontShadow_UpdateBitmap(be_fontShadowOffset.string);
+	BeFontShadow_UpdateTtf(be_ttfShadowOffset.string);
 }
 
 /*

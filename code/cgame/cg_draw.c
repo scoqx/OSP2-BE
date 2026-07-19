@@ -4036,6 +4036,61 @@ static void CG_DrawDamageFrame(void)
 
 /*
 =================
+CG_DrawTestFont
+
+On-screen glyph grid for /showfont <name|index>. Uses CG_OSPDrawStringNew
+so both OSP bitmap fonts and engine TTF fonts preview correctly.
+=================
+*/
+static void CG_DrawTestFont(const char* font)
+{
+	const int offs_x = (SCREEN_WIDTH - 320) / 2;
+	const int offs_y = (SCREEN_HEIGHT - 320) / 2;
+	const int flags = DS_HCENTER | DS_PROPORTIONAL;
+	int fontIndex;
+	int x, y;
+	char to_print[2];
+	unsigned char c;
+
+	fontIndex = CG_FontIndexFromName(font);
+	c = 0;
+	to_print[1] = 0;
+
+	CG_OSPDrawStringNew(
+	    SCREEN_WIDTH / 2.0f, offs_y - 24.0f,
+	    va("^7%s^7  (^3%d^7)", font, fontIndex),
+	    colorWhite, colorBlack,
+	    10.0f, 12.0f,
+	    SCREEN_WIDTH,
+	    DS_HCENTER | DS_PROPORTIONAL | DS_SHADOW,
+	    fontIndex,
+	    NULL, NULL, NULL);
+
+	for (y = 0; y < 16; ++y)
+	{
+		for (x = 0; x < 16; ++x)
+		{
+			to_print[0] = (char)c;
+			c++;
+			if (to_print[0] == 0)
+			{
+				to_print[0] = ' ';
+			}
+			CG_OSPDrawStringNew(
+			    (float)(offs_x + x * 20), (float)(offs_y + y * 20),
+			    to_print,
+			    colorWhite, NULL,
+			    16.0f, 16.0f,
+			    64,
+			    flags,
+			    fontIndex,
+			    NULL, NULL, NULL);
+		}
+	}
+}
+
+/*
+=================
 CG_Draw2D
 =================
 */
@@ -4046,6 +4101,12 @@ static void CG_Draw2D(void)
 
 	if (!cg_draw2D.integer)
 		return;
+
+	if (cgs.osp.testFont[0])
+	{
+		CG_DrawTestFont(cgs.osp.testFont);
+		return;
+	}
 
 	CG_DrawDamageFrame();
 

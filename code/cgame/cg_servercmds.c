@@ -1325,19 +1325,18 @@ static void CG_OSPPrintXStats(void)
 			if (green_armor == 0)
 			{
 				char_ptr1 = "^2(^7";
-				char_ptr2 = "";
 			}
 			else
 			{
 				char_ptr1 = " ";
-				if (red_armor != 0)
-				{
-					char_ptr2 = "^7,";
-				}
-				else
-				{
-					char_ptr2 = "^2)";
-				}
+			}
+			if (red_armor != 0)
+			{
+				char_ptr2 = "^7,";
+			}
+			else
+			{
+				char_ptr2 = "^2)";
 			}
 			strcat(tmp_str, va("%s%d ^3YA%s", char_ptr1, yellow_armor, char_ptr2));
 		}

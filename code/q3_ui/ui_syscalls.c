@@ -27,6 +27,11 @@ int trap_UI_GetValue_Q3E(int cmd, char* value, int valueSize, const char* key)
 	return syscall(cmd, value, valueSize, key);
 }
 
+int trap_UI_RegisterFontAtlas_Q3E(int cmd, const char* faceName, int pointSize, const char* alphabet, fontAtlasInfo_t* out)
+{
+	return syscall(cmd, faceName, pointSize, alphabet, out);
+}
+
 int trap_UI_SetDescription_Q3E(int cmd, const char* name, const char* description)
 {
 	return syscall(cmd, name, description);

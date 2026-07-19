@@ -1521,6 +1521,52 @@ static qboolean CG_SkinExists(const char* modelName, const char* skinName)
 	return qtrue;
 }
 
+/*
+ * True if cvar is skin-only override: "/pm" or "/fb" (keep player's model, force skin).
+ */
+static qboolean CG_IsSkinOnlyOverride(const char* s)
+{
+	if (!s || s[0] != '/' || !s[1])
+	{
+		return qfalse;
+	}
+	return (Q_stricmp(s + 1, "pm") == 0 || Q_stricmp(s + 1, "fb") == 0) ? qtrue : qfalse;
+}
+
+/*
+ * Build "modelName/forcedSkin" from a configstring model path (e.g. "visor/red" -> "visor/pm").
+ */
+static void CG_BuildModelWithForcedSkin(char* out, int outSize, const char* cfgModel, const char* forcedSkin)
+{
+	char tmp[MAX_QPATH];
+	char* slash;
+
+	Q_strncpyz(tmp, cfgModel && cfgModel[0] ? cfgModel : "sarge", sizeof(tmp));
+	slash = strchr(tmp, '/');
+	if (slash)
+	{
+		*slash = 0;
+	}
+	if (!tmp[0])
+	{
+		Q_strncpyz(tmp, "sarge", sizeof(tmp));
+	}
+	Com_sprintf(out, outSize, "%s/%s", tmp, forcedSkin);
+}
+
+static void CG_ApplySkinOnlyOverride(char* bodyBuf, int bodyBufSize, char* headBuf, int headBufSize,
+                                    const char* override, const char* cfgModel, const char* cfgHModel,
+                                    const char** resultModel, const char** resultHModel)
+{
+	const char* skin = override + 1; /* skip '/' */
+
+	CG_BuildModelWithForcedSkin(bodyBuf, bodyBufSize, cfgModel, skin);
+	CG_BuildModelWithForcedSkin(headBuf, headBufSize,
+	                            (cfgHModel && cfgHModel[0]) ? cfgHModel : cfgModel, skin);
+	*resultModel = bodyBuf;
+	*resultHModel = headBuf;
+}
+
 static void CG_UpdateModelFromString(char* modelName, char* skinName, const char* resultModelString, qboolean isOurClient, team_t team)
 {
 	const char* nameModel;
@@ -1603,6 +1649,8 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 {
 	char modelName[MAX_QPATH];
 	char headModelName[MAX_QPATH];
+	char skinOnlyBody[MAX_QPATH];
+	char skinOnlyHead[MAX_QPATH];
 	const char* resultModelString = "keel/pm";
 	const char* resultHModelString = "keel/pm";
 	const char* cfgModelString = Info_ValueForKey(config, "model");
@@ -1657,8 +1705,18 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 			}
 			else if (enemyModelString)
 			{
-				resultModelString = enemyModelString;
-				resultHModelString = enemyModelString;
+				if (CG_IsSkinOnlyOverride(enemyModelString))
+				{
+					CG_ApplySkinOnlyOverride(skinOnlyBody, sizeof(skinOnlyBody),
+					                         skinOnlyHead, sizeof(skinOnlyHead),
+					                         enemyModelString, cfgModelString, cfgHModelString,
+					                         &resultModelString, &resultHModelString);
+				}
+				else
+				{
+					resultModelString = enemyModelString;
+					resultHModelString = enemyModelString;
+				}
 			}
 			else if (forceModelString)
 			{
@@ -1724,8 +1782,18 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 				}
 				else if (teamModelString)
 				{
-					resultModelString = teamModelString;
-					resultHModelString = teamModelString;
+					if (CG_IsSkinOnlyOverride(teamModelString))
+					{
+						CG_ApplySkinOnlyOverride(skinOnlyBody, sizeof(skinOnlyBody),
+						                         skinOnlyHead, sizeof(skinOnlyHead),
+						                         teamModelString, cfgModelString, cfgHModelString,
+						                         &resultModelString, &resultHModelString);
+					}
+					else
+					{
+						resultModelString = teamModelString;
+						resultHModelString = teamModelString;
+					}
 				}
 				else if (forceModelString)
 				{
@@ -1747,8 +1815,18 @@ static void CG_ClientInfoUpdateModel(clientInfo_t* ci, qboolean isOurClient, qbo
 				}
 				else if (enemyModelString)
 				{
-					resultModelString = enemyModelString;
-					resultHModelString = enemyModelString;
+					if (CG_IsSkinOnlyOverride(enemyModelString))
+					{
+						CG_ApplySkinOnlyOverride(skinOnlyBody, sizeof(skinOnlyBody),
+						                         skinOnlyHead, sizeof(skinOnlyHead),
+						                         enemyModelString, cfgModelString, cfgHModelString,
+						                         &resultModelString, &resultHModelString);
+					}
+					else
+					{
+						resultModelString = enemyModelString;
+						resultHModelString = enemyModelString;
+					}
 				}
 				else if (forceModelString)
 				{
@@ -3201,7 +3279,9 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 		if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
 		{
 			int frozenClientNum = cent->currentState.otherEntityNum;
-			if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS && !cg.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum])
+			if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS
+			        && !(frozenClientNum == cg.clientNum && CG_IS_LOCAL_CLIENT_1STPOS_FROZEN())
+			        && !cg.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum])
 			{
 				if (!useTeamFrozen)
 					friendShader = cgs.media.frozenFoeTagShader;
@@ -4033,6 +4113,10 @@ static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clie
 
 	isFrozen = CG_IS_FROZEN_ENTITY(cent);
 	if ((cent->currentState.eFlags & EF_DEAD) && !isFrozen)
+		return;
+	/* Own ice: no HUD marker while pinned in freeze death-cam */
+	if (isFrozen && cent->currentState.otherEntityNum == cg.clientNum
+	        && CG_IS_LOCAL_CLIENT_1STPOS_FROZEN())
 		return;
 
 	CG_FriendHudMarkerAtOrigin(cent->lerpOrigin, ci, clientNum, isFrozen, useTeamFrozen, useTeamFoeWh, 270, 1.0f);

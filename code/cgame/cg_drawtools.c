@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
 #include "../qcommon/osp_fonts.h"
+#include "../qcommon/engine_fonts.h"
 
 
 typedef struct OSP_ClientFont_t
@@ -1000,18 +1001,45 @@ typedef struct
 	qhandle_t       shader[ MAX_FONT_SHADERS ];
 	int             shaderThreshold[ MAX_FONT_SHADERS ];
 	int             shaderCount;
+	qboolean        isTtf;
+	char            ttfPath[MAX_QPATH];
 } font_t;
 
-#define MAX_FONTS 32
+#define MAX_FONTS 48
 static font_t fonts[MAX_FONTS];
 static char customFontNames[MAX_FONTS - OSP_BUILTIN_FONT_COUNT][MAX_QPATH];
+static char engTtfNames[16][MAX_QPATH];
 static int fonts_num = OSP_BUILTIN_FONT_COUNT;
+static int bitmap_fonts_num = OSP_BUILTIN_FONT_COUNT;
 static const font_t* font = &fonts[0];
 static const font_metric_t* metrics = &fonts[0].metrics[0];
 
 int CG_GetFontCount(void)
 {
 	return fonts_num;
+}
+
+int CG_GetBitmapFontCount(void)
+{
+	return bitmap_fonts_num;
+}
+
+qboolean CG_FontIsTtf(int index)
+{
+	if (index < 0 || index >= fonts_num)
+	{
+		return qfalse;
+	}
+	return fonts[index].isTtf;
+}
+
+const char* CG_FontTtfPath(int index)
+{
+	if (index < 0 || index >= fonts_num || !fonts[index].isTtf)
+	{
+		return NULL;
+	}
+	return fonts[index].ttfPath;
 }
 
 static void CG_InitFontNames(void)
@@ -1549,6 +1577,12 @@ static void CG_LoadCustomFonts(void)
 
 		Q_strncpyz(fontPath, token, sizeof(fontPath));
 
+		/* TTF lines (name name): reserved later in CG_AppendEngineTtfFonts. */
+		if (EngFonts_FontCfgIsTtfEntry(fontName, fontPath))
+		{
+			continue;
+		}
+
 		if (fonts_num >= MAX_FONTS)
 		{
 			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: maximum number of fonts (%d) reached, skipping '%s'\n", MAX_FONTS, fontName);
@@ -1575,7 +1609,6 @@ static void CG_LoadCustomFonts(void)
 			continue;
 		}
 
-		/* Check if file exists using trap_FS_FOpenFile */
 		{
 			fileHandle_t testFile;
 			trap_FS_FOpenFile(fontPath, &testFile, FS_READ);
@@ -1589,22 +1622,20 @@ static void CG_LoadCustomFonts(void)
 
 		Q_strncpyz(customFontNames[customFontIndex], fontName, sizeof(customFontNames[customFontIndex]));
 		fonts[fonts_num].name = customFontNames[customFontIndex];
+		fonts[fonts_num].isTtf = qfalse;
+		fonts[fonts_num].ttfPath[0] = '\0';
 
-		/* Store font index before loading */
 		fonts_num++;
 		customFontIndex++;
 
-		/* Load font - CG_LoadFont will print errors if file doesn't exist */
 		CG_LoadFont(&fonts[fonts_num - 1], fontPath);
 
-		/* Check if font was loaded successfully by verifying shaderCount > 0 */
 		if (fonts[fonts_num - 1].shaderCount > 0)
 		{
 			CG_Printf("Custom font '%s' registered from '%s'\n", fontName, fontPath);
 		}
 		else
 		{
-			/* Font loading failed, revert the increment */
 			CG_Printf(S_COLOR_YELLOW "CG_LoadCustomFonts: Failed to load font '%s' from '%s'\n", fontName, fontPath);
 			fonts_num--;
 			customFontIndex--;
@@ -1620,11 +1651,176 @@ void CG_LoadFonts(void)
 	CG_InitFontNames();
 	for (i = 0; i < OSP_BUILTIN_FONT_COUNT; i++)
 	{
+		fonts[i].isTtf = qfalse;
+		fonts[i].ttfPath[0] = '\0';
 		CG_LoadFont(&fonts[i], ospBuiltinFonts[i].cfgPath);
 	}
 	CG_LoadCustomFonts();
+	bitmap_fonts_num = fonts_num;
 }
 
+/*
+================
+CG engine font hooks / append / init
+================
+*/
+typedef qboolean (cgEng_GetValue_t)(char* value, int valueSize, const char* key);
+typedef int (cgEng_RegisterFontAtlas_t)(const char* faceName, int pointSize, const char* alphabet, fontAtlasInfo_t* out);
+
+static int cg_engTtfNameIdx;
+
+static qboolean CG_EngFonts_GetValue(const char* key, char* out, int outSize)
+{
+	char addrBuf[MAX_CVAR_VALUE_STRING];
+
+	trap_Cvar_VariableStringBuffer("//trap_GetValue", addrBuf, sizeof(addrBuf));
+	if (!addrBuf[0])
+	{
+		return qfalse;
+	}
+
+#ifdef Q3_VM
+	{
+		int addr;
+		cgEng_GetValue_t* trap_GetValue;
+
+		addr = atoi(addrBuf);
+		addr = ~addr;
+		trap_GetValue = (cgEng_GetValue_t*)addr;
+		return trap_GetValue(out, outSize, key);
+	}
+#else
+	{
+		int getValueFuncId;
+
+		getValueFuncId = atoi(addrBuf);
+		return trap_CG_GetValue_Q3E(getValueFuncId, out, outSize, key);
+	}
+#endif
+}
+
+static int CG_EngFonts_RegisterAtlas(int cmd, const char* face, int pointSize,
+                                     const char* alphabet, fontAtlasInfo_t* out)
+{
+#ifdef Q3_VM
+	cgEng_RegisterFontAtlas_t* reg;
+	int addr;
+
+	if (cmd == 0)
+	{
+		return 0;
+	}
+	addr = ~cmd;
+	reg = (cgEng_RegisterFontAtlas_t*)addr;
+	return reg(face, pointSize, alphabet, out);
+#else
+	if (cmd == 0)
+	{
+		return 0;
+	}
+	return trap_CG_RegisterFontAtlas_Q3E(cmd, face, pointSize, alphabet, out);
+#endif
+}
+
+static void CG_EngFonts_CvarBuffer(const char* name, char* buf, int size)
+{
+	trap_Cvar_VariableStringBuffer(name, buf, size);
+}
+
+static int CG_EngFonts_FSOpen(const char* qpath, fileHandle_t* f, fsMode_t mode)
+{
+	return trap_FS_FOpenFile(qpath, f, mode);
+}
+
+static int CG_EngFonts_FSRead(void* buffer, int len, fileHandle_t f)
+{
+	trap_FS_Read(buffer, len, f);
+	return len;
+}
+
+static void CG_EngFonts_FSClose(fileHandle_t f)
+{
+	trap_FS_FCloseFile(f);
+}
+
+static void CG_EngFonts_Print(const char* msg)
+{
+	CG_Printf("%s", msg);
+}
+
+static qboolean CG_EngFonts_HasName(const char* bareName)
+{
+	int i;
+
+	for (i = 0; i < fonts_num; i++)
+	{
+		if (fonts[i].name && !Q_stricmp(fonts[i].name, bareName))
+		{
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+static qboolean CG_EngFonts_AddTtf(const char* bareName, const char* ttfPath)
+{
+	if (cg_engTtfNameIdx >= (int)ARRAY_LEN(engTtfNames) || fonts_num >= MAX_FONTS)
+	{
+		return qfalse;
+	}
+
+	Q_strncpyz(engTtfNames[cg_engTtfNameIdx], bareName, sizeof(engTtfNames[cg_engTtfNameIdx]));
+	fonts[fonts_num].name = engTtfNames[cg_engTtfNameIdx];
+	fonts[fonts_num].isTtf = qtrue;
+	fonts[fonts_num].shaderCount = 0;
+	Com_Memset(fonts[fonts_num].metrics, 0, sizeof(fonts[fonts_num].metrics));
+	Q_strncpyz(fonts[fonts_num].ttfPath, ttfPath, sizeof(fonts[fonts_num].ttfPath));
+	fonts_num++;
+	cg_engTtfNameIdx++;
+	return qtrue;
+}
+
+void CG_AppendEngineTtfFonts(void)
+{
+	fonts_num = bitmap_fonts_num;
+	cg_engTtfNameIdx = 0;
+	Com_Memset(engTtfNames, 0, sizeof(engTtfNames));
+	EngFonts_AppendFaces(CG_EngFonts_AddTtf, CG_EngFonts_HasName, MAX_FONTS, fonts_num);
+}
+
+void CG_EngineFonts_Init(void)
+{
+	EngFonts_Hooks hooks;
+
+	Com_Memset(&hooks, 0, sizeof(hooks));
+	hooks.getValue = CG_EngFonts_GetValue;
+	hooks.registerAtlas = CG_EngFonts_RegisterAtlas;
+	hooks.cvarBuffer = CG_EngFonts_CvarBuffer;
+	hooks.fsOpen = CG_EngFonts_FSOpen;
+	hooks.fsRead = CG_EngFonts_FSRead;
+	hooks.fsClose = CG_EngFonts_FSClose;
+	hooks.print = CG_EngFonts_Print;
+	EngFonts_SetHooks(&hooks);
+
+	EngFonts_Invalidate();
+	cgs.engineFontAtlas = EngFonts_Probe();
+	if (!cgs.engineFontAtlas)
+	{
+		return;
+	}
+
+	CG_AppendEngineTtfFonts();
+	EngFonts_Preload(CG_GetFontCount(), CG_FontIsTtf, CG_FontTtfPath);
+}
+
+const fontAtlasInfo_t* CG_EngineFontInfo(int fontIndex, float charHeight)
+{
+	if (!cgs.engineFontAtlas)
+	{
+		return NULL;
+	}
+	return EngFonts_Info(fontIndex, charHeight);
+}
 
 static float DrawStringLength(const char* string, float ax, float aw, float max_ax, int proportional)
 {

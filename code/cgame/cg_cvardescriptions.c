@@ -36,7 +36,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "ch_weaponListFlash", "^1Not working" },
 	*/
 	{ "cg_autoAction", "Automatically performs actions at certain points in the game. Bitmask:\n  1 - Save stats to a local text file at the end of a match.\n  2 - End-level screenshot\n  4 - Automatically records a match\n  8 - Team's weapon stats\n  16 - All players' weapon stats" },
-	{ "cg_enemyModel", "Select model for enemies. Use ^2/pm^7 (e.g. Sarge/pm) models to apply enemy colors." },
+	{ "cg_enemyModel", "Enemy player model. Format: ^2model/skin^7 (e.g. \"^2keel/pm^7\").\n  ^2/pm^7 - colorable skin (use ^3cg_enemyModelColors^7)\n  ^2/fb^7 - fullbright skin\nSet \"^2/pm^7\" or \"^2/fb^7\" to keep each player's model and force that skin." },
 	{ "cg_autoswitch", "Automatically switches to the picked-up weapon. Set ^20^7 to disable autoswitching." },
 	{ "cg_drawGun", "First person view weapon appearence. Bitmask:\n  ^20^7 - hidden\n  ^21^7 - default\n  ^22^7 - no movement animation\n  ^23^7 - qlive style (preset, not bitmask)\n  ^24^7 - no switch animation\n  ^28^7 - no fire animation\n  ^216^7 - ghost shader" },
 	{ "cg_zoomfov", "Field of view while zooming - degrees" },
@@ -158,7 +158,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_enableBreath", "Draw player's breath puff. Set ^20^7 to disable." },
 	{ "cg_enemyColors", "Select enemy model(/pm) and rail colors. Settings in ^3cg_enemyModelColors^7 and ^3cg_enemyRailColors^7 overrides this.\nSet 4 Colors in a row. Order: Rail Head Body Legs.\nExample: \"^20000^7\", \"^2iqii^7\" or use ^2hex^7. Supports T/E (team/enemy)." },
 	{ "cg_teamColors", "Select team model(/pm) and rail colors. Settings in ^3cg_teamModelColors^7 and ^3cg_teamRailColors^7 overrides this.\nSet 4 Colors in a row. Order: Rail Head Body Legs.\nExample: \"^20000^7\", \"^2iqii^7\" or use ^2hex^7. Supports T/E (team/enemy)." },
-	{ "cg_teamModel", "Select model for teammates. Use ^2/pm^7 (e.g. Sarge/pm) models to apply team colors." },
+	{ "cg_teamModel", "Teammate player model. Format: ^2model/skin^7 (e.g. \"^2slash/pm^7\").\n  ^2/pm^7 - colorable skin (use ^3cg_teamModelColors^7)\n  ^2/fb^7 - fullbright skin\nSet \"^2/pm^7\" or \"^2/fb^7\" to keep each player's model and force that skin." },
 	{ "cg_execVstr", "Specifies a string to exec after connecting to a server.  OSP performs\n'<string>' on the value of this variable.\nHelpful for +zoom scripts for thin-shaft, as an example." },
 	{ "cg_fallKick", "Enables camera shake effect when landing from a fall. Set to ^20^7 to disable." },
 	{ "cg_followkiller", "Allows client to auto-switch to killer of chased player. Cool for specing in-eyes 1v1 matches, and cool for viewcam player specing in team games.\nSet ^20^7 to disable." },
@@ -434,7 +434,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	// { "cg_teamTaskVersion", "Team task coordinate range. ^20^7 - old bounds ±3000 (compat with old clients)\n  ^21^7 - new bounds ±4096 (fixes offset on large maps). All clients on server must use same value." },
 	{ "cg_railFix", "Fix rail trail start point. Set ^20^7 to disable." },
 	{ "cg_freezeSoundFix", "Replace freeze sound with alternative sound. Set ^20^7 to disable." },
-	{ "cg_infoDetail", "Detail shader draw type\n  ^21^7 - default\n  ^22^7 - fullscreen" },
+	{ "be_infoDetail", "Detail shader draw type (loading / connect).\n  ^20^7 - disabled\n  ^21^7 - default\n  ^22^7 - fullscreen" },
 	{ "cg_enhancedInterpolation", "Enhanced (polynomial) interpolation for other players' positions. Set ^21^7 to enable. Use ^3cg_entityOverpolate^7 to tune offset." },
 	{ "cg_entityOverpolate", "Interpolation offset when ^3cg_enhancedInterpolation^7 is ^21^7. Range ^2-1^7 to ^21^7 (slight forward extrapolation). Set ^20^7 for default." },
 	{ "cg_healthBarStyle", "Health bar style, bitmask. Frame applies everywhere; text color and shadow only for standard overlay and teamIndicator (not SuperHUD).\n  ^20^7 - no modifiers\n  ^21^7 - white frame\n  ^22^7 - black frame\n  ^24^7 - black text\n  ^28^7 - text shadow" },
@@ -489,6 +489,13 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_shadowItems", "Ghost 3D pickups when the real item is absent. Set ^20^7 to disable. Bitmask:\n  ^21^7 - health\n  ^22^7 - armor\n  ^24^7 - weapons\n  ^28^7 - ammo\n  ^216^7 - powerups and holdables\n  ^232^7 - flags." },
 	{ "cg_worldFlags", "CTF flag position indicators. Set ^20^7 to disable. Bitmask:\n  ^21^7 - world 2D icons\n  ^22^7 - off-screen border HUD markers" },
 	{ "cg_oldFloatSprites", "Foe marker and talk balloon sprite set. Requires ^3vid_restart^7.\n  ^20^7 - new\n  ^21^7 - old" },
+	{ "pmove_float", "Disable integer velocity snap. Set ^21^7 for full float physics. Requires server ^3systeminfo^7 support." },
+	{ "pmove_accurate", "Accurate movement physics with velocity quantization. Set ^20^7 for vanilla integer snap (when ^3pmove_float^7 is ^20^7)." },
+	{ "be_fontShadowOffset", "OSP bitmap font shadow offset.\n  ^2-0.25^7-^20.25^7" },
+	{ "be_ttfShadowOffset", "TTF font shadow offset.\n  ^2-0.25^7-^20.25^7" },
+	{ "cg_chatWindowNumLock", "Favorite emoji key layout in chat window (^3/enterchat^7).\n  ^21^7 - Ctrl+0-9 for favorites (Ctrl+arrows navigate)\n  ^20^7 - NumPad layout (arrows/Home/PgUp…)" },
+	{ "be_ttfScale", "TTF optical glyph scale. Cell height unchanged.\n  ^20.25^7 - ^22^7" },
+	{ "be_ttfFontOffset", "TTF vertical glyph offset (fraction of cell height).\n  ^2-1^7 - ^21^7" },
 };
 
 
