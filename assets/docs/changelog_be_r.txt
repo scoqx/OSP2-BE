@@ -2,7 +2,7 @@
 + cg_numbersSet 5 (trinity), 6 (Cookie)
 + cg_damageDraw 3 (trinity)
 + ttf fix
-* q3a.space extended support:
+* q3a.space advanced support:
   + UI/esc Call vote menu
   + Q3LB (maplocs, spawn/teleport points)
 
