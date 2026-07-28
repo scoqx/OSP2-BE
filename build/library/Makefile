@@ -256,7 +256,7 @@ endef
 
 define DO_UI_CC
 $(echo_cmd) "UI_CC $<"
-$(Q)$(CC) $(MOD_CFLAGS) -DUI $(SHLIBCFLAGS) $(CFLAGS) $(OPTIMIZE) -o $@ -c $<
+$(Q)$(CC) $(MOD_CFLAGS) -DUI -I$(UIDIR) $(SHLIBCFLAGS) $(CFLAGS) $(OPTIMIZE) -o $@ -c $<
 endef
 
 #############################################################################
@@ -392,6 +392,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/superhud/elements/element_chat.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_flagstatus.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_followmessage.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_spectators.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_fps.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_fragmessage.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_gametime.o \
@@ -553,6 +554,13 @@ UIOBJ_ = \
   $(B)/$(MOD)/ui/engine_fonts.o \
   $(B)/$(MOD)/ui/be_font_shadow.o \
   $(B)/$(MOD)/ui/ui_ingame.o \
+  $(B)/$(MOD)/ui/ui_votemenu.o \
+  $(B)/$(MOD)/ui/ui_votemenu_map.o \
+  $(B)/$(MOD)/ui/ui_votemenu_kick.o \
+  $(B)/$(MOD)/ui/ui_votemenu_gametype.o \
+  $(B)/$(MOD)/ui/ui_votemenu_fraglimit.o \
+  $(B)/$(MOD)/ui/ui_votemenu_timelimit.o \
+  $(B)/$(MOD)/ui/ui_votemenu_custom.o \
   $(B)/$(MOD)/ui/ui_loadconfig.o \
   $(B)/$(MOD)/ui/ui_menu.o \
   $(B)/$(MOD)/ui/ui_mfield.o \

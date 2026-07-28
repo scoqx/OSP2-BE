@@ -20,6 +20,8 @@ Copyright (c) 2026 diwoc
 #define CG_SHADOW_QITM1_VERSION     3
 #define CG_SHADOW_QITM1_VERSION_V2  2
 #define CG_SHADOW_SERVER_PAYLOAD_SIZE (MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT + 4)
+
+static char cg_shadowCatalogPayload[CG_SHADOW_SERVER_PAYLOAD_SIZE];
 /* Teamed map items respawn at random on server — cycle ghost preview on pad. */
 #define CG_SHADOW_SLOT_ROTATE_MS    2000
 #define CG_SHADOW_SLOT_CROSSFADE_MS 400
@@ -320,7 +322,6 @@ static void CG_ShadowItems_RebuildTrackSlotMap(void);
 
 static qboolean CG_ShadowItems_TryLoadCatalogConfigstrings(void)
 {
-	char            payload[CG_SHADOW_SERVER_PAYLOAD_SIZE];
 	const char*     chunk;
 	char*           seg;
 	char*           nextSeg;
@@ -328,7 +329,7 @@ static qboolean CG_ShadowItems_TryLoadCatalogConfigstrings(void)
 	int             len;
 	int             serverSlotKey;
 
-	payload[0] = '\0';
+	cg_shadowCatalogPayload[0] = '\0';
 	len = 0;
 
 	for (i = 0; i < CS_OSP2BE_ITEM_CATALOG_COUNT; i++)
@@ -338,13 +339,13 @@ static qboolean CG_ShadowItems_TryLoadCatalogConfigstrings(void)
 		{
 			continue;
 		}
-		if (len > 0 && len + (int)strlen(chunk) >= (int)sizeof(payload) - 1)
+		if (len > 0 && len + (int)strlen(chunk) >= (int)sizeof(cg_shadowCatalogPayload) - 1)
 		{
 			CG_Printf(S_COLOR_RED "ERROR: item catalog client payload overflow\n");
 			break;
 		}
-		Q_strcat(payload, sizeof(payload), chunk);
-		len = (int)strlen(payload);
+		Q_strcat(cg_shadowCatalogPayload, sizeof(cg_shadowCatalogPayload), chunk);
+		len = (int)strlen(cg_shadowCatalogPayload);
 	}
 
 	if (len <= 0)
@@ -355,10 +356,10 @@ static qboolean CG_ShadowItems_TryLoadCatalogConfigstrings(void)
 	{
 		int     catalogMode;
 
-		catalogMode = 1;
-		if (payload[0] >= '1' && payload[0] <= '3')
+		catalogMode = BG_ItemCatalogParseMode(cg_shadowCatalogPayload[0]);
+		if (catalogMode < 0)
 		{
-			catalogMode = payload[0] - '0';
+			catalogMode = 1;
 		}
 		if (!(catalogMode & 1))
 		{
@@ -368,8 +369,8 @@ static qboolean CG_ShadowItems_TryLoadCatalogConfigstrings(void)
 
 	CG_ShadowItems_Clear();
 
-	seg = payload;
-	if (seg[0] >= '1' && seg[0] <= '3')
+	seg = cg_shadowCatalogPayload;
+	if (BG_ItemCatalogParseMode(seg[0]) >= 0)
 	{
 		seg++;
 	}
@@ -382,8 +383,12 @@ static qboolean CG_ShadowItems_TryLoadCatalogConfigstrings(void)
 			*nextSeg = '\0';
 			nextSeg++;
 		}
-		CG_ShadowItems_ParseServerGroup(seg, serverSlotKey);
-		serverSlotKey++;
+		/* skip spawn / tp-exit catalog segments */
+		if (Q_strncmp(seg, "sp;", 3) && Q_strncmp(seg, "tde;", 4))
+		{
+			CG_ShadowItems_ParseServerGroup(seg, serverSlotKey);
+			serverSlotKey++;
+		}
 		seg = nextSeg;
 	}
 
@@ -740,74 +745,13 @@ static qboolean CG_ShadowItems_LoadQITM1(const byte* raw, int rawLen)
 
 /*
 ==================
-CG_ShadowItems_EnrichTeamSlotKeysFromQITM
-
-Server catalog carries no team-slot grouping; borrow it from the packed QITM
-layout by XY proximity. LoadQITM1 overwrites the point array, so the catalog is
-snapshotted first and restored afterwards (with the enriched keys).
-==================
-*/
-static void CG_ShadowItems_EnrichTeamSlotKeysFromQITM(const byte* qitm, int qitmLen)
-{
-	cg_shadowItemPoint_t    catalogCopy[CG_SHADOW_ITEM_MAX];
-	int                     catalogCopyCount;
-	int                     qitmCount;
-	int                     i;
-	int                     j;
-	int                     bestKey;
-	float                   dx;
-	float                   dy;
-	float                   distSq;
-	float                   bestDistSq;
-
-	catalogCopyCount = cg_shadowItemCount;
-	if (catalogCopyCount > CG_SHADOW_ITEM_MAX)
-	{
-		catalogCopyCount = CG_SHADOW_ITEM_MAX;
-	}
-	memcpy(catalogCopy, cg_shadowItemPoints, catalogCopyCount * sizeof(catalogCopy[0]));
-
-	if (!CG_ShadowItems_LoadQITM1(qitm, qitmLen))
-	{
-		memcpy(cg_shadowItemPoints, catalogCopy, catalogCopyCount * sizeof(catalogCopy[0]));
-		cg_shadowItemCount = catalogCopyCount;
-		return;
-	}
-
-	qitmCount = cg_shadowItemCount;
-	for (i = 0; i < catalogCopyCount; i++)
-	{
-		bestKey = 0;
-		bestDistSq = CG_SHADOW_SERVER_MATCH_XY_SQ + 1.0f;
-		for (j = 0; j < qitmCount; j++)
-		{
-			dx = catalogCopy[i].origin[0] - cg_shadowItemPoints[j].origin[0];
-			dy = catalogCopy[i].origin[1] - cg_shadowItemPoints[j].origin[1];
-			distSq = dx * dx + dy * dy;
-			if (distSq < bestDistSq)
-			{
-				bestDistSq = distSq;
-				bestKey = cg_shadowItemPoints[j].teamSlotKey;
-			}
-		}
-		if (bestKey > 0 && bestDistSq <= CG_SHADOW_SERVER_MATCH_XY_SQ)
-		{
-			catalogCopy[i].teamSlotKey = bestKey;
-		}
-	}
-
-	memcpy(cg_shadowItemPoints, catalogCopy, catalogCopyCount * sizeof(catalogCopy[0]));
-	cg_shadowItemCount = catalogCopyCount;
-}
-
-/*
-==================
 CG_ShadowItems_Reload
 
 Single pipeline: fill points from one source (server catalog is authoritative,
 QITM bundle is the fallback), then build the shared derived structures. The only
 per-source differences are the origin of the points and the cg_shadowItemsFromServer
 flag (which drives anchor/armor handling in BuildModelBuckets and server rotation).
+Catalog team pads are already encoded on the wire (| vs /); do not overlay QITM keys.
 ==================
 */
 static void CG_ShadowItems_Reload(void)
@@ -821,10 +765,6 @@ static void CG_ShadowItems_Reload(void)
 	if (CG_ShadowItems_TryLoadCatalogConfigstrings())
 	{
 		cg_shadowItemsFromServer = qtrue;
-		if (haveQitm)
-		{
-			CG_ShadowItems_EnrichTeamSlotKeysFromQITM(qitm, qitmLen);
-		}
 		CG_ShadowItems_MarkAllPointsActive();
 	}
 	else
@@ -849,6 +789,7 @@ static int CG_ShadowItems_FindSlotByPadOrigin(const vec3_t padOrigin)
 	float   bestDistSq;
 	float   dx;
 	float   dy;
+	float   dz;
 	float   distSq;
 
 	slot = -1;
@@ -859,6 +800,11 @@ static int CG_ShadowItems_FindSlotByPadOrigin(const vec3_t padOrigin)
 		dy = padOrigin[1] - cg_shadowSlotDrawOrigin[s][1];
 		distSq = dx * dx + dy * dy;
 		if (distSq > CG_SHADOW_SERVER_MATCH_XY_SQ)
+		{
+			continue;
+		}
+		dz = padOrigin[2] - cg_shadowSlotDrawOrigin[s][2];
+		if (dz > CG_SHADOW_MATCH_Z || dz < -CG_SHADOW_MATCH_Z)
 		{
 			continue;
 		}

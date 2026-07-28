@@ -338,7 +338,7 @@ void CG_SHUDElementTeamRoutine(void* context)
 				}
 				else
 				{
-					element->ctxLocation.text = CG_ConfigString(CS_LOCATIONS + ci->location);
+					element->ctxLocation.text = CG_LocationName(ci->location);
 				}
 			}
 			if (!element->ctxLocation.text || *element->ctxLocation.text == 0)

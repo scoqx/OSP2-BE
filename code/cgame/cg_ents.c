@@ -831,6 +831,7 @@ static void CG_Missile(centity_t* cent)
 	{
 		weapon->missileTrailFunc(cent, weapon);
 	}
+
 	// add dynamic light
 	if (weapon->missileDlight)
 	{

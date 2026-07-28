@@ -3586,8 +3586,8 @@ void CG_MissileHitPlayer(int weapon, vec3_t origin, vec3_t dir, int entityNum)
 {
 	CG_Bleed(origin, entityNum);
 
-	// some weapons will make an explosion with the blood, while
-	// others will just make the blood
+	/* some weapons will make an explosion with the blood, while
+	   others will just make the blood */
 	switch (weapon)
 	{
 		case WP_GRENADE_LAUNCHER:

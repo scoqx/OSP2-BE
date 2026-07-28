@@ -275,8 +275,6 @@ typedef struct
 
 //=================================================
 
-
-
 // centity_t have a direct corespondence with gentity_t in the game, but
 // only the entityState_t is directly communicated to the cgame
 typedef struct centity_s
@@ -529,7 +527,7 @@ typedef struct
 
 	int             medkitUsageTime;
 
-	qboolean        globalPos;      /* tinfo zone origin from mapdata QLM1 */
+	qboolean        globalPos;      /* zone (QLM1) origin for global WH */
 	vec3_t          globalPosOrigin;
 } clientInfo_t;
 
@@ -1209,6 +1207,7 @@ typedef struct
 	qhandle_t   selectShader;
 	qhandle_t   viewBloodShader;
 	qhandle_t   damageIndicatorCenter;
+	qhandle_t   vignetteShader;
 	qhandle_t   tracerShader;
 	qhandle_t   crosshairShader[NUM_CROSSHAIRS];
 	qhandle_t   crosshairShader45[NUM_CROSSHAIRS];
@@ -1962,17 +1961,19 @@ typedef struct
 	team_t          beMyTeam;
 	int             beServerEnableBreath;
 	int             killConfirmMode;      /* g_killConfirm from CS_SERVERINFO */
+	int             sv_fps;      /* CS_SYSTEMINFO sv_fps; default 20 if missing */
 	int             beAutohop;   /* pmove_autohop SYSTEMINFO: 0=off, 1=forced, 2=client cg_autoHop */
 	int             beMovement;  /* g_movement SYSTEMINFO: 0=VQ3, 1=CPM, 2=QL */
 
 	qboolean        q3msk;        // Q3msk.net
-	qboolean        q3mskRoundWarmup; /* q3msk freeze team round warmup active */
+	qboolean        ruthless;     /* q3a.space* hostname (colors ignored) */
+	qboolean        q3mskRoundWarmup; /* q3msk/ruthless freeze team round warmup active */
 	qboolean        fpsclassico;  // fpsclasico.com
 	qboolean        osdf_signature;
 	int             pmove_phy_movetype; /* -1: PmoveSingle, >=0: phy_PmoveSingle movetype */
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
-	int             itemCatalogMode; /* CS 890 leading digit: 1=shadows 2=pickups 3=both */
+	int             itemCatalogMode; /* CS 890 leading hex nibble: bitmask 1=shadow 2=pui 4=spawns 8=tpexit */
 } cgs_t;
 
 /* Crosshair colors/distance (top-level global) */
@@ -2628,6 +2629,8 @@ float CG_DrawLagometer(float pos);
 void CG_SetCvarDescription(const char* name, const char* description);
 qboolean CG_IsRecordingDemo(void);
 qboolean CG_KeyCapsLockOn(void);
+void CG_DamageBorderVignette(void);
+void CG_DamageBorderVignetteLowHealth(float alpha);
 
 
 //
@@ -2672,8 +2675,6 @@ void CG_DrawDyeFlagPicOld(float x, float y, float w, float h, int team, qhandle_
 void CG_DrawClientPowerupIconOld(float x, float y, float w, float h, int powerup, int clientNum);
 void CG_ModulateVec4ForCustomItemDyeIcon(int itemNum, vec4_t color);
 void CG_ModulateVec4ForCustomItemDyeIconForClient(int itemNum, int clientNum, vec4_t color);
-
-int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth);
 
 void CG_OSPDrawStringPrepare(const char* from, char* to, int size);
 void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background);
@@ -2937,10 +2938,11 @@ void CG_UpdateAllClientsInfo(void);
 #define CG_IS_LOCAL_CLIENT_ON_SCREEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
 #define CG_IS_LOCAL_CLIENT_1STPOS_FROZEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum && cg.snap->ps.pm_type == PM_FREEZE)
 #define CG_IS_FROZEN_ENTITY(cent) ((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && ((cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS))
-/* Round warmup state is valid only on q3msk freeze team (GT_TEAM, freeze). */
+/* Round warmup: q3msk or ruthless freeze team (GT_TEAM, freeze). */
 #define CG_Q3MSK_ROUND_WARMUP() (cgs.q3mskRoundWarmup)
 #define CG_Q3MSK_ROUND_WARMUP_UPDATE() \
-    cgs.q3mskRoundWarmup = (qboolean)(cgs.q3msk && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+    cgs.q3mskRoundWarmup = (qboolean)((cgs.q3msk || cgs.ruthless) && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
+void CG_UpdateRuthlessFromServerinfo(void);
 void CG_PmovePhysicsUpdate(void);
 /* In non-team modes (FFA, Tournament, SP) everyone except self is enemy; else use team/rt */
 #define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype < GT_TEAM) ? 1 : ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team))))
@@ -3229,6 +3231,9 @@ void CG_CustomLocationsLoad(void);
 qboolean CG_MapLocs_Load(void);
 void CG_MapSpawns_Load(void);
 qboolean CG_MapSpawns_LoadQSP1Binary(const byte* raw, int rawLen);
+qboolean CG_MapSpawns_LoadFromCatalog(const char* payload);
+qboolean CG_MapSpawns_FromServer(void);
+qboolean CG_MapSpawns_FromMapdata(void);
 qboolean CG_MapSpawns_GetFlagStandOrigin(qboolean redFlag, vec3_t out);
 void CG_AddMapSpawns(void);
 int CG_MapSpawns_NumPoints(void);
@@ -3301,17 +3306,24 @@ void CG_KillConfirm_AddQuadOverlay(const refEntity_t* baseEnt, int team);
 void CG_KillConfirm_HandleServerCmd(const char* action);
 void CG_AddWorldItem3D(const vec3_t origin, int modelindex, int entNumber, int miscTime, qboolean shadowGhost, int shadowGhostAlpha);
 void CG_MapTPExit_Load(void);
+qboolean CG_MapTPExit_LoadFromCatalog(const char* payload);
+qboolean CG_MapTPExit_FromServer(void);
+qboolean CG_MapTPExit_FromMapdata(void);
 void CG_AddMapTPExits(void);
 int CG_MapTPExit_NumPoints(void);
 const char* CG_MapTPExit_DataSource(void);
 void CG_MapTPExit_PrintList(int maxList);
+void CG_MapCatalog_OnConfigStringChanged(void);
 qboolean CG_MapLocs_GetById(int id, vec3_t origin, char* name, int nameSize);
 qboolean CG_MapLocs_Count(void);
+qboolean CG_MapLocs_HasLocalZones(void);
+void CG_MapLocs_ApplyServerOrigins(void);
 qboolean CG_MapLocs_ServerHasLocationNames(void);
 void CG_MapLocs_NotifyLocationConfigStringChanged(void);
 int CG_MapLocs_NumZones(void);
 const char* CG_MapLocs_DataSource(void);
 void CG_MapLocs_PrintList(int maxList);
+const char *CG_LocationName(int locationId);
 void CG_ClearTeamGlobalPosFrame(void);
 
 void CG_WorldFlags_Reset(void);

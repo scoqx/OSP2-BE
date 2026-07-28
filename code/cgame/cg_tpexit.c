@@ -21,10 +21,15 @@ typedef struct
 
 static cg_tpExitPoint_t cg_tpExitPoints[CG_TPEXIT_MAX_POINTS];
 static int cg_tpExitPointCount;
+static qboolean cg_tpExitFromMapdata;
+static qboolean cg_tpExitFromServer;
+static char cg_tpExitCatalogParseBuf[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
 
 static void CG_MapTPExit_Clear(void)
 {
 	cg_tpExitPointCount = 0;
+	cg_tpExitFromMapdata = qfalse;
+	cg_tpExitFromServer = qfalse;
 }
 
 static int CG_MapTPExit_ReadLE16(const byte* p)
@@ -101,6 +106,8 @@ static qboolean CG_MapTPExit_LoadQTX1Binary(const byte* raw, int rawLen)
 		pos += 2;
 	}
 
+	cg_tpExitFromMapdata = qtrue;
+	cg_tpExitFromServer = qfalse;
 	return qtrue;
 }
 
@@ -115,6 +122,107 @@ void CG_MapTPExit_Load(void)
 		return;
 	}
 	(void)CG_MapTPExit_LoadQTX1Binary(qtx, qtxLen);
+}
+
+/*
+ * Inject teleporter exits from OSP2BE catalog (mode bit 8).
+ * Only when local QTX1 is absent.
+ */
+qboolean CG_MapTPExit_LoadFromCatalog(const char* payload)
+{
+	char*       parse;
+	char*       segment;
+	char*       nextSeg;
+	char*       semi;
+	int         catalogMode;
+	int         ix, iy, iz, yaw;
+	cg_tpExitPoint_t* pt;
+
+	if (cg_tpExitFromMapdata)
+	{
+		return qfalse;
+	}
+	if (!payload || !payload[0])
+	{
+		if (cg_tpExitFromServer)
+		{
+			CG_MapTPExit_Clear();
+		}
+		return qfalse;
+	}
+
+	Q_strncpyz(cg_tpExitCatalogParseBuf, payload, sizeof(cg_tpExitCatalogParseBuf));
+	parse = cg_tpExitCatalogParseBuf;
+	catalogMode = BG_ItemCatalogParseMode(parse[0]);
+	if (catalogMode < 0)
+	{
+		catalogMode = 0;
+	}
+	else
+	{
+		parse++;
+	}
+	if (!(catalogMode & 8))
+	{
+		if (cg_tpExitFromServer)
+		{
+			CG_MapTPExit_Clear();
+		}
+		return qfalse;
+	}
+
+	CG_MapTPExit_Clear();
+
+	while (parse && parse[0])
+	{
+		nextSeg = strchr(parse, '|');
+		if (nextSeg)
+		{
+			*nextSeg = '\0';
+			nextSeg++;
+		}
+		segment = parse;
+		parse = nextSeg;
+
+		if (Q_strncmp(segment, "tde;", 4))
+		{
+			continue;
+		}
+		semi = segment + 4;
+		if (Q_sscanf(semi, "%d,%d,%d,%d", &ix, &iy, &iz, &yaw) != 4)
+		{
+			continue;
+		}
+		if (cg_tpExitPointCount >= CG_TPEXIT_MAX_POINTS)
+		{
+			break;
+		}
+
+		pt = &cg_tpExitPoints[cg_tpExitPointCount++];
+		pt->origin[0] = ix / 10.0f;
+		pt->origin[1] = iy / 10.0f;
+		pt->origin[2] = iz / 10.0f;
+		pt->yaw = (float)yaw;
+	}
+
+	if (!cg_tpExitPointCount)
+	{
+		return qfalse;
+	}
+
+	cg_tpExitFromServer = qtrue;
+	cg_tpExitFromMapdata = qfalse;
+	return qtrue;
+}
+
+qboolean CG_MapTPExit_FromServer(void)
+{
+	return cg_tpExitFromServer;
+}
+
+qboolean CG_MapTPExit_FromMapdata(void)
+{
+	return cg_tpExitFromMapdata;
 }
 
 static void CG_MapTPExit_AddTeleportModel(const cg_tpExitPoint_t* pt)
@@ -177,6 +285,10 @@ const char* CG_MapTPExit_DataSource(void)
 	if (!cg_tpExitPointCount)
 	{
 		return NULL;
+	}
+	if (cg_tpExitFromServer)
+	{
+		return "server";
 	}
 	return CG_MapBundle_DataSource();
 }

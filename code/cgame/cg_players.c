@@ -3971,7 +3971,7 @@ void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clien
 		return;
 	if (clientNum == cg.snap->ps.clientNum)
 		return;
-	if (ci->team != cg.snap->ps.persistant[PERS_TEAM])
+	if (!ci->infoValid || ci->team != cg.snap->ps.persistant[PERS_TEAM])
 		return;
 
 	if (!isFrozen && ci->health <= 0)

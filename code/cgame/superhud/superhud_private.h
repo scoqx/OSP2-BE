@@ -640,6 +640,10 @@ void* CG_SHUDElementFollowMessageCreate(const superhudConfig_t* config);
 void CG_SHUDElementFollowMessageRoutine(void* context);
 void CG_SHUDElementFollowMessageDestroy(void* context);
 
+void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config);
+void CG_SHUDElementSpectatorsRoutine(void* context);
+void CG_SHUDElementSpectatorsDestroy(void* context);
+
 void* CG_SHUDElementGameTimeCreate(const superhudConfig_t* config);
 void CG_SHUDElementGameTimeRoutine(void* context);
 void CG_SHUDElementGameTimeDestroy(void* context);

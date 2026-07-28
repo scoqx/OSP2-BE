@@ -879,6 +879,24 @@ qboolean CG_SHUDHasSpectatorItemSpawnsElements(void)
 	return qfalse;
 }
 
+qboolean CG_SHUDHasSpectatorsElements(void)
+{
+	superhudElement_t* el;
+
+	for (el = elementsHead; el; el = el->next)
+	{
+		if (!el->element.name)
+		{
+			continue;
+		}
+		if (Q_stricmp(el->element.name, "spectators") == 0)
+		{
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
 void CG_SHUDLoadConfig(qboolean silent)
 {
 	if (!CG_SHUDLoadConfigPrivate(ch_file.string, silent))

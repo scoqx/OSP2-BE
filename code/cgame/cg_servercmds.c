@@ -348,7 +348,7 @@ static void CG_ParseTeamInfo(void)
 ================
 CG_ParseSysteminfo
 
-Sync phy_movetype from CS_SYSTEMINFO.
+Sync phy_movetype / sv_fps from CS_SYSTEMINFO.
 ================
 */
 void CG_ParseSysteminfo(void)
@@ -356,8 +356,17 @@ void CG_ParseSysteminfo(void)
 	const char* info;
 	const char* val;
 	int         movetype;
+	int         fps;
 
 	info = CG_ConfigString(CS_SYSTEMINFO);
+
+	val = Info_ValueForKey(info, "sv_fps");
+	fps = val[0] ? atoi(val) : 0;
+	if (fps < 1)
+	{
+		fps = 20;
+	}
+	cgs.sv_fps = fps;
 
 	val = Info_ValueForKey(info, "phy_movetype");
 	movetype = val[0] ? atoi(val) : -1;
@@ -428,6 +437,9 @@ void CG_ParseServerinfo(void)
 	cgs.maxclients = atoi(Info_ValueForKey(info, "sv_maxclients"));
 	val = Info_ValueForKey(info, "mapname");
 	Com_sprintf(cgs.mapname, sizeof(cgs.mapname), "maps/%s.bsp", val);
+	/* Pure client: engine ROM mapname stays "nomap"; sync from serverinfo (Quake3e Cvar_SetSafe allows ROM). */
+	if (!cgs.localServer)
+		trap_Cvar_Set("mapname", val);
 	val = Info_ValueForKey(info, "g_redTeam");
 	Q_strncpyz(cgs.redTeam, val, sizeof(cgs.redTeam));
 	trap_Cvar_Set("g_redTeam", cgs.redTeam);
@@ -436,6 +448,7 @@ void CG_ParseServerinfo(void)
 	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
 	// cgs.isOspServer = (Info_ValueForKey(info, "g_unlagged")[0] != '\0') ? qfalse : qtrue;
 
+	CG_UpdateRuthlessFromServerinfo();
 	CG_ApplyRoundWarmupConfig();
 
 	/* CG_SetServerSettingsBE inlined - enableBreath from CS_SYSTEMINFO */
@@ -593,7 +606,6 @@ static void CG_ConfigStringModified(void)
 			}
 			if (warmup == 0 && cg.warmup > 0 && (cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK))
 			{
-				trap_Cvar_Update(&com_maxfps);
 				cgs.beTourneyLockedMaxfps = (com_maxfps.integer >= 250) ? 250 : 125;
 			}
 			cg.warmup = warmup;
@@ -769,6 +781,7 @@ static void CG_ConfigStringModified(void)
 			{
 				CG_SpectatorItems_OnConfigStringChanged();
 				CG_ShadowItems_OnConfigStringChanged();
+				CG_MapCatalog_OnConfigStringChanged();
 			}
 			else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 			{
@@ -947,6 +960,7 @@ static void CG_MapRestart(void)
 	cg.scoreFadeTime = 0;
 
 	CG_SpectatorItems_OnConfigStringChanged();
+	CG_MapCatalog_OnConfigStringChanged();
 
 	CG_OSPWStatsUp_f();
 
@@ -1213,6 +1227,7 @@ static void CG_OSPPrintXStats(void)
 	wstats_condition = atoi(CG_Argv(index++));
 
 	Q_strncpyz(&str[0], cgs.clientinfo[client_id].name, 32);
+	Q_CleanStr(str);
 
 	CG_Printf(va("\n^7Accuracy info for: ^3%s^7\n\n", str));
 	CG_Printf("Weapon          Accrcy Hits/Atts Kills Deaths Pickup Drops\n");
@@ -1433,7 +1448,9 @@ static void CG_InjectCustomLoc(char* str, int size)
 
 void CG_BEParseStatsInfo(void)
 {
-	static int lastStatsInfo[OSP_STATS_NUM] = { 0 };
+	enum { BE_STATSINFO_MAX_ARGS = OSP_STATS_NUM + 4 * WP_NUM_WEAPONS };
+	static int lastArgs[BE_STATSINFO_MAX_ARGS];
+	static int lastArgCount = 0;
 	char args[1024];
 	int i, weaponIndex, arg_cnt;
 	int hits, shots, kills, deaths;
@@ -1446,6 +1463,8 @@ void CG_BEParseStatsInfo(void)
 	int wins;
 	int losses;
 	int totalArgs = trap_Argc();
+	int numValues = totalArgs - 1;
+	int value;
 	qboolean changed = qfalse;
 	newStatsInfo_t* ws;
 	cgs_osp_t* osp;
@@ -1457,19 +1476,30 @@ void CG_BEParseStatsInfo(void)
 	// Don't leave garbage; useful when totalArgs < OSP_STATS_NUM
 	memset(statsInfo, 0, sizeof(statsInfo));
 
-	for (i = 0; i < totalArgs - 1 && i < OSP_STATS_NUM; i++)
+	if (numValues < 0)
+		numValues = 0;
+	if (numValues > BE_STATSINFO_MAX_ARGS)
+		numValues = BE_STATSINFO_MAX_ARGS;
+
+	/* Full packet dirty-check (header + weapon quads); header-only missed shots-only. */
+	if (numValues != lastArgCount)
+		changed = qtrue;
+
+	for (i = 0; i < numValues; i++)
 	{
 		trap_Argv(i + 1, args, sizeof(args));
-		statsInfo[i] = atoi(args);
-
-		if (statsInfo[i] != lastStatsInfo[i])
+		value = atoi(args);
+		if (i < OSP_STATS_NUM)
+			statsInfo[i] = value;
+		if (value != lastArgs[i])
 			changed = qtrue;
+		lastArgs[i] = value;
 	}
 
 	if (!changed)
 		return;
 
-	memcpy(lastStatsInfo, statsInfo, sizeof(statsInfo));
+	lastArgCount = numValues;
 
 	if (osp->gameTypeFreeze)
 	{
@@ -1888,6 +1918,167 @@ static void CG_WrapPlayerNameInParentheses(char* text, int textSize)
 
 /*
 =================
+CG_IsMapNameChar
+
+Q3VM has no isalnum from libc.
+=================
+*/
+static qboolean CG_IsMapNameChar(char c)
+{
+	return ((c >= '0' && c <= '9')
+	        || (c >= 'a' && c <= 'z')
+	        || (c >= 'A' && c <= 'Z')
+	        || c == '-' || c == '_' || c == '+') ? qtrue : qfalse;
+}
+
+/*
+=================
+CG_ParseMappage
+
+Bridge server map pages to UI (CALL VOTE map menu).
+Supports mappage (10 maps) and mappagel (30 maps).
+=================
+*/
+static void CG_ParseMappage(void)
+{
+	char maplist[MAX_CVAR_VALUE_STRING];
+	const char* temp;
+	const char* c;
+	const char* cmd;
+	int i;
+	int nummaps;
+	int pagenum;
+	int cvarNum;
+	int cvarMaps;
+
+	cmd = CG_Argv(0);
+	nummaps = (!Q_stricmp(cmd, "mappagel")) ? 30 : 10;
+
+	temp = CG_Argv(1);
+	/* Allow leading '-' so empty Recommended can send -1. */
+	c = temp;
+	if (*c == '-')
+	{
+		++c;
+	}
+	if (!*c)
+	{
+		CG_Printf("Error: empty pagenum in mappage from server\n");
+		return;
+	}
+	for (; *c; ++c)
+	{
+		if (*c < '0' || *c > '9')
+		{
+			CG_Printf("Error: illegal character %c in mappage from server\n", *c);
+			return;
+		}
+	}
+	pagenum = atoi(temp);
+	/* Negative page = empty list sentinel from server. */
+	if (pagenum < 0)
+	{
+		trap_Cvar_Set("ui_mappage_pagenum", "-1");
+		trap_Cvar_Set("ui_mappage_nmaps", va("%i", nummaps));
+		maplist[0] = '\0';
+		cvarNum = 0;
+		cvarMaps = 0;
+		for (i = 0; i < nummaps; i++)
+		{
+			if (cvarMaps == 7)
+			{
+				trap_Cvar_Set(va("ui_mappage_page%i", cvarNum), maplist);
+				++cvarNum;
+				cvarMaps = 0;
+				maplist[0] = '\0';
+			}
+			Q_strcat(maplist, sizeof(maplist), "--- ");
+			++cvarMaps;
+		}
+		trap_Cvar_Set(va("ui_mappage_page%i", cvarNum), maplist);
+		trap_SendConsoleCommand("ui_mappage_update\n");
+		return;
+	}
+	trap_Cvar_Set("ui_mappage_pagenum", va("%i", pagenum));
+	trap_Cvar_Set("ui_mappage_nmaps", va("%i", nummaps));
+
+	maplist[0] = '\0';
+	cvarNum = 0;
+	cvarMaps = 0;
+	for (i = 2; i < nummaps + 2; i++)
+	{
+		if (cvarMaps == 7)
+		{
+			trap_Cvar_Set(va("ui_mappage_page%i", cvarNum), maplist);
+			++cvarNum;
+			cvarMaps = 0;
+			maplist[0] = '\0';
+		}
+		temp = CG_Argv(i);
+		for (c = temp; *c; ++c)
+		{
+			if (!CG_IsMapNameChar(*c))
+			{
+				CG_Printf("Error: illegal character %c in mappage from server\n", *c);
+				return;
+			}
+		}
+		if (strlen(temp) < 1)
+		{
+			temp = "---";
+		}
+		Q_strcat(maplist, sizeof(maplist), va("%s ", temp));
+		++cvarMaps;
+	}
+	trap_Cvar_Set(va("ui_mappage_page%i", cvarNum), maplist);
+	trap_SendConsoleCommand("ui_mappage_update\n");
+}
+
+/*
+=================
+CG_ParseVoteLimits
+
+Server → client callvote limit templates (not SERVERINFO).
+  votelimits "<fraglist>" "<timelist>" [promode] [instagib] [quad] [freeze] [aim]
+Lists use /N/ tokens, e.g. /10/20/30/50/100/
+Optional trailing 0/1 mode flags (merged formerly-separate votemodes).
+=================
+*/
+static void CG_ParseVoteLimits(void)
+{
+	trap_Cvar_Set("ui_voteFraglimits", CG_Argv(1));
+	trap_Cvar_Set("ui_voteTimelimits", CG_Argv(2));
+	/* Extended form: modes packed into the same reliable command. */
+	if (trap_Argc() >= 8)
+	{
+		trap_Cvar_Set("ui_voteModePromode", CG_Argv(3));
+		trap_Cvar_Set("ui_voteModeInstagib", CG_Argv(4));
+		trap_Cvar_Set("ui_voteModeQuad", CG_Argv(5));
+		trap_Cvar_Set("ui_voteModeFreeze", CG_Argv(6));
+		trap_Cvar_Set("ui_voteModeAim", CG_Argv(7));
+	}
+}
+
+/*
+=================
+CG_ParseVoteModes
+
+  votemodes <promode> <instagib> <quad> <freeze> <aim>
+Each 0/1 = currently enabled on server.
+Kept for older servers that still send a separate command.
+=================
+*/
+static void CG_ParseVoteModes(void)
+{
+	trap_Cvar_Set("ui_voteModePromode", CG_Argv(1));
+	trap_Cvar_Set("ui_voteModeInstagib", CG_Argv(2));
+	trap_Cvar_Set("ui_voteModeQuad", CG_Argv(3));
+	trap_Cvar_Set("ui_voteModeFreeze", CG_Argv(4));
+	trap_Cvar_Set("ui_voteModeAim", CG_Argv(5));
+}
+
+/*
+=================
 CG_ServerCommand
 
 The string has been tokenized and can be retrieved with
@@ -2233,6 +2424,15 @@ void CG_ServerCommand(void)
 			}
 			break;
 
+		case 'l':
+			/* "locs" — server location origins by CS_LOCATIONS id */
+			if (cmd[1] == 'o' && cmd[2] == 'c' && cmd[3] == 's' && cmd[4] == '\0')
+			{
+				CG_MapLocs_ApplyServerOrigins();
+				return;
+			}
+			break;
+
 		case 's':
 			/* sset, scmds - char comparison (no Q_stricmp) */
 			/* "scores" */
@@ -2365,6 +2565,15 @@ void CG_ServerCommand(void)
 				CG_MapRestart();
 				return;
 			}
+			/* mappage / mappagel — CALL VOTE map list from server */
+			if (cmd[1] == 'a' && cmd[2] == 'p' && cmd[3] == 'p' && cmd[4] == 'a' && cmd[5] == 'g' && cmd[6] == 'e')
+			{
+				if (cmd[7] == '\0' || (cmd[7] == 'l' && cmd[8] == '\0'))
+				{
+					CG_ParseMappage();
+					return;
+				}
+			}
 			break;
 
 		case 'r':
@@ -2384,6 +2593,18 @@ void CG_ServerCommand(void)
 			break;
 
 		case 'v':
+			/* votelimits — CALL VOTE frag/timelimit templates from server */
+			if ( !Q_stricmp( cmd, "votelimits" ) )
+			{
+				CG_ParseVoteLimits();
+				return;
+			}
+			/* votemodes — CALL VOTE mode on/off state from server */
+			if ( !Q_stricmp( cmd, "votemodes" ) )
+			{
+				CG_ParseVoteModes();
+				return;
+			}
 			/* "viewactive" - does something, check first */
 			if (cmd[1] == 'i' && cmd[2] == 'e' && cmd[3] == 'w' && cmd[4] == 'a' && cmd[5] == 'c' &&
 			        cmd[6] == 't' && cmd[7] == 'i' && cmd[8] == 'v' && cmd[9] == 'e' && cmd[10] == '\0')

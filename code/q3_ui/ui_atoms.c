@@ -9,7 +9,6 @@
 #include "ui_status_sign.h"
 #include "ui_server_status.h"
 #include "ui_fav_server.h"
-
 uiStatic_t      uis;
 qboolean        m_entersound;       // after a frame, so caching won't disrupt the sound
 
@@ -1772,7 +1771,6 @@ char* UI_Cvar_VariableString(const char* var_name)
 	return buffer;
 }
 
-
 /*
 =================
 UI_Cache
@@ -2276,6 +2274,12 @@ qboolean UI_ConsoleCommand(int realTime)
 	if (Q_stricmp(cmd, "ui_cdkey") == 0)
 	{
 		UI_CDKeyMenu_f();
+		return qtrue;
+	}
+
+	if (Q_stricmp(cmd, "ui_mappage_update") == 0)
+	{
+		UI_VoteMapMenuInternal();
 		return qtrue;
 	}
 

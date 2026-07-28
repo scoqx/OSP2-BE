@@ -320,15 +320,56 @@ void CG_OSPSupportedBEServer(qboolean value)
 void CG_BEUpdateUserInfo(void)
 {
 	int spectatorHud;
+	int freezeLook;       /* BE_INFO_FREEZE_LOOK — unused */
+	int callvoteMaplist;  /* BE_INFO_CALLVOTE_MAPLIST */
+	int extendedAwards;   /* BE_INFO_EXTENDED_AWARDS */
+	int mapdata;          /* BE_INFO_MAPDATA */
 
 	if (cg.demoPlayback)
 	{
 		return;
 	}
 
-	spectatorHud = CG_SHUDHasSpectatorItemSpawnsElements() ? 1 : 0;
+	spectatorHud = 0;
+	if (CG_SHUDHasSpectatorItemSpawnsElements())
+	{
+		spectatorHud |= 1; /* BE_SPECTATOR_HUD_PICKUPS */
+	}
+	if (CG_SHUDHasSpectatorsElements())
+	{
+		spectatorHud |= 2; /* BE_SPECTATOR_HUD_SPECTATORS */
+	}
+	freezeLook = 0;
+	callvoteMaplist = 1;
+	extendedAwards = 0;
+
+	mapdata = 0;
+	if (cg_shadowItems.integer)
+	{
+		mapdata |= 1; /* BE_MAPDATA_SHADOW */
+	}
+	if (spectatorHud & 1)
+	{
+		mapdata |= 2; /* BE_MAPDATA_PUI */
+	}
+	/* Need bits: missing local mapdata only — independent of draw cvars */
+	if (!CG_MapSpawns_FromMapdata())
+	{
+		mapdata |= 4; /* BE_MAPDATA_NEED_SPAWNS */
+	}
+	if (!CG_MapTPExit_FromMapdata())
+	{
+		mapdata |= 8; /* BE_MAPDATA_NEED_TPEXITS */
+	}
+	if (!CG_MapLocs_HasLocalZones())
+	{
+		mapdata |= 16; /* BE_MAPDATA_NEED_LOCS */
+	}
+
 	trap_SendClientCommand(va("beinfo %d %d %d %d %d %d %d %d\n",
-	                          spectatorHud, cg_respawnWeapon.integer, 0, 0, 0, 0, 0, 0));
+	                          spectatorHud, cg_respawnWeapon.integer,
+	                          freezeLook, callvoteMaplist, extendedAwards,
+	                          0, mapdata, 0));
 }
 
 // Disable be features

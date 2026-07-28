@@ -63,6 +63,11 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | Score_NME                     | Очки врага/команды или лидирующего игрока.                   |
 | Score_OWN                     | Собственные очки или очки своей команды.                     |
 | Specmessage                   | Сообщение SPECTATOR.                                         |
+| Spectators                    | Ники наблюдателей за вами/наблюдаемым                        |
+| Spectator_ItemSpawns          | Таймеры респавна предметов (спек).                           |
+| Spectator_ItemSpawnsRed       | Таймеры респавна предметов красной стороны (спек).           |
+| Spectator_ItemSpawnsBlue      | Таймеры респавна предметов синей стороны (спек).             |
+| Spectator_ItemPickups1 - 8    | Лента подборов предметов (спек).                             |
 | StatusBar_ArmorBar            | Полоска брони.                                               |
 | StatusBar_ArmorCount          | Счетчик брони.                                               |
 | StatusBar_ArmorIcon           | Иконка брони.                                                |
@@ -100,6 +105,11 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | playerStats_damage_ratio      | Коэфициент урона                                             |
 | player_name                   | Имя игрока                                                   |
 | recordingdemo                 | Индикатор записи демо (REC).                                 |
+| roundwarmup_text              | Текст разминки раунда                                        |
+| roundwarmup_time              | Таймер до начала раунда                                      |
+| roundwarmup_fight             | Начало раунда                                                |
+| laststanding                  | Последний живой в команде (только Freeze Tag).               |
+
 
 ## Команды
 
@@ -131,8 +141,8 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | Monospace     |                | Использовать моноширинную печать.                         |
 | Rect          | x y w h        | Координаты и размер элемента.                             |
 | Text          | string         | Текстовая строка.                                         |
-| Textalign     | L/C/R          | Выравнивание текста лево/центр/право.                     |
-| Textstyle     | flags          | Флаги текста. 1 - без тени.                               |
+| textalign     | L/C/R          | Выравнивание текста лево/центр/право.                     |
+| textstyle     | flags          | Флаги текста. 1 - без тени.                               |
 | Time          | milliseconds   | Время отображения на экране.                              |
 | Style         | flags          | Стиль элемента - цифра                                    |
 | VisFlags      | string         | Изменить дефолтные настройки видимости                    |
@@ -237,6 +247,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 ### StatusBar_HealthCount StatusBar_ArmorCount 
 
 - Style 1 - цвет значений задаётся через `color` для > healthMid и `color2` для < healthMid
+- Style 2 - Ограничивает вывод значением 999
 
 ### Score_Limit, Timelimit
 
@@ -325,6 +336,11 @@ execute { cg_fov 100; exec myconfig.cfg }
 - Советую использовать смещение -0.5 -0.5
 - Color - основной цвет линий сетки.
 - Color2 (опционально) - второстепенный цвет. Если задан, линии сетки будут чередоваться между основным цветом (Color) и второстепенным (Color2).
+- Style 1 - выводит подписи только вдоль верхнего и левого края сетки.
+  - Текст считывается автоматически из шага сетки: по горизонтали — rect.w, по вертикали — rect.h.
+  - Размер шрифта принудительно вычисляется как rect.w / 4 и rect.h / 2.5.
+  - Выбор шрифта осуществляется через `font`.
+  - `text` игнорируется для этого режима.
 
 ## localtime
 
@@ -340,14 +356,41 @@ execute { cg_fov 100; exec myconfig.cfg }
 - Можно задать своё изображение через `image "image/shader path"`.
 - Можно задать текст через `text "text"`.
 
-## FlagStatus_CARRY
+## FlagStatus_OWN / FlagStatus_NME / FlagStatus_CARRY
 
-- Можно задать свою иконку: `image "icons/your_icon.tga"` (или путь к shader).
+- `FlagStatus_OWN` / `FlagStatus_NME` — статус флага своей и вражеской команды (на базе, у игрока, брошен); вид иконки зависит от состояния.
+- `FlagStatus_CARRY` — только пока вы несёте флаг; всегда одна и та же картинка (без состояний база/брошен). Какой флаг несёте (красный, синий, нейтральный), определяется автоматически.
+- Для `FlagStatus_CARRY` можно задать свою иконку: `image "icons/your_icon.tga"` (или путь к shader). Без `image` используется стандартная иконка флага. Цвет — `color`, размер и выравнивание — `rect`, `imageAlignh`, `imageAlignv`.
 
 ## FPS
 
-- Style 1 -  число FPS без суффикса "fps"
+- Style 1 - число FPS без суффикса "fps"
+
+## spectators
+
+- style 2 - убрать надпись "Spectators:"
+
+## Spectator_ItemSpawns / Spectator_ItemSpawnsRed / Spectator_ItemSpawnsBlue
+
+- Таймеры респавна предметов для зрителя.
+- `Spectator_ItemSpawns` — все стороны; `Red` / `Blue` — фильтр по стороне.
+
+## Spectator_ItemPickups1 - Spectator_ItemPickups8
+
+- Лента подборов предметов для зрителя. Сообщение появляется сначала в `Spectator_ItemPickups1` и сдвигается в следующие элементы.
 
 ## team1-16 (team overlay)
 - Style 1 - компактный режим, выводится только ник и здоровье
 - rect x y w h - аргумент w задаёт ширину области, в пределах которой отображается ник
+
+## roundwarmup_fight roundwarmup_text
+- Есть возможность задать свой текст через { text "Your text"; }
+
+## roundwarmup_time
+- Style 1 - вывод времени без 'sec'
+- Style 2 - цвет времени изменяется по мере приближения к 0
+
+## laststanding
+- Текст по умолчанию: `The Last Standing`. Свой текст или картинка — как у **roundwarmup_text** / **roundwarmup_fight** (`text`, `image`).
+- `time` — длительность показа в мс с момента появления; без `time` — пока условие выполняется.
+- `style 1` — звук `sound/feedback/laststanding.wav` при появлении (один раз за эпизод).

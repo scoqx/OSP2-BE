@@ -1914,6 +1914,10 @@ static const char* CG_NumberShaderPrefix(void)
 			return "gfx/2d/customnumbers/eternal/";
 		case 4:
 			return "gfx/2d/customnumbers/odyssey/";
+		case 5:
+			return "gfx/2d/customnumbers/trinity/";
+		case 6:
+			return "gfx/2d/customnumbers/cookie/";
 		case 1:
 		default:
 			return "gfx/2d/numbers/";
@@ -1967,6 +1971,7 @@ static void CG_RegisterGraphics(void)
 
 	cgs.media.viewBloodShader = trap_R_RegisterShader("viewBloodBlend");
 	cgs.media.damageIndicatorCenter = trap_R_RegisterShaderNoMip("damageIndicator2");
+	cgs.media.vignetteShader = trap_R_RegisterShader("gfx/vignette");
 
 	cgs.media.deferShader = trap_R_RegisterShaderNoMip("gfx/2d/defer.tga");
 
@@ -2962,6 +2967,19 @@ qboolean CG_AdminNameEqualsRateX7(const char* s)
 }
 
 /*
+ * Ruthless servers: cleaned sv_hostname starts with "q3a.space" (case-insensitive).
+ */
+void CG_UpdateRuthlessFromServerinfo(void)
+{
+	char hostname[MAX_INFO_VALUE];
+
+	Q_strncpyz(hostname, Info_ValueForKey(CG_ConfigString(CS_SERVERINFO), "sv_hostname"),
+	           sizeof(hostname));
+	Q_CleanStr(hostname);
+	cgs.ruthless = (qboolean)(Q_stricmpn(hostname, "q3a.space", 9) == 0);
+}
+
+/*
 =================
 CG_Init
 
@@ -3034,8 +3052,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	BeinfoCfg_SetBrightColorHandler(CG_BeinfoApplyBrightColor);
 	BeinfoCfg_Load();
 
-	/* Update cached font indices and be_features */
-	CG_UpdateFontIndices();
+	/* be_features before fonts; font indices after CG_LoadFonts (bitmap + TTF) */
 	CG_UpdateBeFeatures();
 
 	CG_InitConsoleCommands();
@@ -3080,9 +3097,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cgs.screenYmin = 0.0 - (cgs.screenYBias / cgs.screenYScale);
 	cgs.screenYmax = 480.0 + (cgs.screenYBias / cgs.screenYScale);
 
-	// init fonts
+	/* bitmap + TTF (CG_EngineFonts_Init inside); indices after faces exist */
 	CG_LoadFonts();
-	CG_EngineFonts_Init();
+	CG_UpdateFontIndices();
 
 	// get the gamestate from the client system
 	trap_GetGameState(&cgs.gameState);
@@ -3102,7 +3119,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cgs.levelStartTime = atoi(s);
 
 	CG_ParseServerinfo();
-	/* fpsclassico, q3msk known at connect - inline, run once */
+	/* fpsclassico, q3msk, ruthless known at connect - inline, run once */
 	{
 		const char* serverStr;
 		const char* adminPrefix;
@@ -3116,6 +3133,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		{
 			cgs.q3msk = qtrue;
 		}
+		CG_UpdateRuthlessFromServerinfo();
 	}
 	/* teamoverlay - fpsclassico known at connect, run once; only in team gametypes */
 	if (cgs.gametype >= GT_TEAM)
@@ -3207,6 +3225,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 		CG_SpectatorItems_OnConfigStringChanged();
 		CG_ShadowItems_OnConfigStringChanged();
+		CG_MapCatalog_OnConfigStringChanged();
 
 		{
 			const char* st;

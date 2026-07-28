@@ -86,11 +86,21 @@ static void CG_SHUDElementTeamTasksUpdatePosition(shudElementTeamTasks_t* elemen
 	float senderWidth;
 	float eventNameWidth;
 
-	CG_FontSelect(element->ctxSender.fontIndex);
-	senderWidth = CG_OSPDrawStringLenPix(entry->runtime.senderName, element->config.fontsize.value[0], element->ctxSender.flags, entry->runtime.maxNameLenPix);
+	senderWidth = CG_OSPDrawStringNewTextWidth(entry->runtime.senderName,
+	              element->config.fontsize.value[0],
+	              element->config.fontsize.value[1],
+	              element->ctxSender.flags,
+	              element->ctxSender.fontIndex);
+	if (senderWidth > (float)entry->runtime.maxNameLenPix)
+	{
+		senderWidth = (float)entry->runtime.maxNameLenPix;
+	}
 
-	CG_FontSelect(element->ctxEventName.fontIndex);
-	eventNameWidth = CG_OSPDrawStringLenPix(entry->runtime.eventName, element->config.fontsize.value[0], element->ctxEventName.flags, 0);
+	eventNameWidth = CG_OSPDrawStringNewTextWidth(entry->runtime.eventName,
+	                 element->config.fontsize.value[0],
+	                 element->config.fontsize.value[1],
+	                 element->ctxEventName.flags,
+	                 element->ctxEventName.fontIndex);
 
 	entry->runtime.senderWidth = senderWidth;
 	entry->runtime.eventNameWidth = eventNameWidth;

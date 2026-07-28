@@ -25,8 +25,8 @@ INGAME MENU
 #define ID_RESTART              16
 #define ID_QUIT                 17
 #define ID_RESUME               18
-#define ID_TEAMORDERS           19
 #define ID_SUPERHUD             20
+#define ID_VOTE                 21
 
 
 typedef struct
@@ -41,7 +41,7 @@ typedef struct
 	menutext_s      restart;
 	menutext_s      addbots;
 	menutext_s      removebots;
-	menutext_s      teamorders;
+	menutext_s      vote;
 	menutext_s      quit;
 	menutext_s      resume;
 	menutext_s      superhud;
@@ -133,8 +133,8 @@ void InGame_Event(void* ptr, int notification)
 			UI_RemoveBotsMenu();
 			break;
 
-		case ID_TEAMORDERS:
-			UI_TeamOrdersMenu();
+		case ID_VOTE:
+			UI_VoteMenuMenu();
 			break;
 
 		case ID_RESUME:
@@ -152,9 +152,7 @@ InGame_MenuInit
 void InGame_MenuInit(void)
 {
 	int     y;
-	uiClientState_t cs;
 	char    info[MAX_INFO_STRING];
-	int     team;
 
 	memset(&s_ingame, 0, sizeof(ingamemenu_t));
 
@@ -218,29 +216,20 @@ void InGame_MenuInit(void)
 	}
 
 	y += INGAME_MENU_VERTICAL_SPACING;
-	s_ingame.teamorders.generic.type        = MTYPE_PTEXT;
-	s_ingame.teamorders.generic.flags       = QMF_CENTER_JUSTIFY | QMF_PULSEIFFOCUS;
-	s_ingame.teamorders.generic.x           = 320;
-	s_ingame.teamorders.generic.y           = y;
-	s_ingame.teamorders.generic.id          = ID_TEAMORDERS;
-	s_ingame.teamorders.generic.callback    = InGame_Event;
-	s_ingame.teamorders.string              = "TEAM ORDERS";
-	s_ingame.teamorders.color               = uis.themeColor;
-	s_ingame.teamorders.style               = UI_CENTER | UI_SMALLFONT;
-
-	if (trap_Cvar_VariableValue("ui_gametype") < GT_TEAM)
+	s_ingame.vote.generic.type          = MTYPE_PTEXT;
+	s_ingame.vote.generic.flags         = QMF_CENTER_JUSTIFY | QMF_PULSEIFFOCUS;
+	s_ingame.vote.generic.x             = 320;
+	s_ingame.vote.generic.y             = y;
+	s_ingame.vote.generic.id            = ID_VOTE;
+	s_ingame.vote.generic.callback      = InGame_Event;
+	s_ingame.vote.string                = "CALL VOTE";
+	s_ingame.vote.color                 = uis.themeColor;
+	s_ingame.vote.style                 = UI_CENTER | UI_SMALLFONT;
+	trap_GetConfigString(CS_SERVERINFO, info, MAX_INFO_STRING);
+	if (atoi(Info_ValueForKey(info, "g_allowVote")) == 0
+	        || trap_Cvar_VariableValue("ui_gametype") == GT_SINGLE_PLAYER)
 	{
-		s_ingame.teamorders.generic.flags |= QMF_GRAYED;
-	}
-	else
-	{
-		trap_GetClientState(&cs);
-		trap_GetConfigString(CS_PLAYERS + cs.clientNum, info, MAX_INFO_STRING);
-		team = atoi(Info_ValueForKey(info, "t"));
-		if (team == TEAM_SPECTATOR)
-		{
-			s_ingame.teamorders.generic.flags |= QMF_GRAYED;
-		}
+		s_ingame.vote.generic.flags |= QMF_GRAYED;
 	}
 
 	y += INGAME_MENU_VERTICAL_SPACING;
@@ -328,7 +317,7 @@ void InGame_MenuInit(void)
 	Menu_AddItem(&s_ingame.menu, &s_ingame.team);
 	Menu_AddItem(&s_ingame.menu, &s_ingame.addbots);
 	Menu_AddItem(&s_ingame.menu, &s_ingame.removebots);
-	Menu_AddItem(&s_ingame.menu, &s_ingame.teamorders);
+	Menu_AddItem(&s_ingame.menu, &s_ingame.vote);
 	Menu_AddItem(&s_ingame.menu, &s_ingame.setup);
 	Menu_AddItem(&s_ingame.menu, &s_ingame.superhud);
 	Menu_AddItem(&s_ingame.menu, &s_ingame.server);

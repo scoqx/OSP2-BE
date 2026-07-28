@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-be_font_shadow.c — parse be_fontShadowOffset / be_ttfShadowOffset (cgame + ui)
+be_font_shadow.c - parse be_fontShadowOffset / be_ttfShadowOffset (cgame + ui)
 ===========================================================================
 */
 

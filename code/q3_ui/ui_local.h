@@ -205,6 +205,34 @@ typedef struct
 	float*          color;
 } menutext_s;
 
+// voteflags serverinfo bitmask (RatMod CALL VOTE UI)
+#define VF_map_restart  1
+#define VF_nextmap      2
+#define VF_map          4
+#define VF_g_gametype   8
+#define VF_clientkick   16
+#define VF_g_doWarmup   32
+#define VF_timelimit    64
+#define VF_fraglimit    128
+#define VF_custom       256
+#define VF_shuffle      512
+#define VF_promode      1024
+#define VF_instagib     2048
+#define VF_quad         4096
+#define VF_freeze       8192
+#define VF_aim          16384
+#define VF_setnextmap   32768
+
+#define MAX_MAPNAME_LENGTH 32
+#define MAPPAGE_NUM 30
+
+typedef struct {
+	int pagenumber;
+	char mapname[MAPPAGE_NUM][MAX_MAPNAME_LENGTH];
+} t_mappage;
+
+extern t_mappage mappage;
+
 extern void         Menu_Cache(void);
 extern void         Menu_Focus(menucommon_s* m);
 extern void         Menu_AddItem(menuframework_s* menu, void* item);
@@ -351,6 +379,43 @@ extern void UI_CompiledTextDestroy(text_command_t* root);
 //
 extern void InGame_Cache(void);
 extern void UI_InGameMenu(void);
+
+//
+// ui_votemenu.c
+//
+extern void UI_VoteMenuMenu(void);
+
+//
+// ui_votemenu_fraglimit.c
+//
+extern void UI_VoteFraglimitMenu(void);
+
+//
+// ui_votemenu_timelimit.c
+//
+extern void UI_VoteTimelimitMenu(void);
+
+//
+// ui_votemenu_gametype.c
+//
+extern void UI_VoteGametypeMenu(void);
+
+//
+// ui_votemenu_kick.c
+//
+extern void UI_VoteKickMenu(void);
+
+//
+// ui_votemenu_map.c
+//
+extern void UI_VoteMapMenu(void);
+extern void UI_VoteSetNextMapMenu(void);
+extern void UI_VoteMapMenuInternal(void);
+
+//
+// ui_votemenu_custom.c
+//
+extern void UI_VoteCustomMenu(void);
 
 //
 // ui_confirm.c

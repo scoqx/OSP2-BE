@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-be_font_shadow.h — shared bitmap/TTF text shadow offset cache (cgame + ui)
+be_font_shadow.h - shared bitmap/TTF text shadow offset cache (cgame + ui)
 ===========================================================================
 */
 

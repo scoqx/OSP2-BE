@@ -98,7 +98,7 @@ localEntity_t*   CG_AllocLocalEntity(void)
 
 	memset(le, 0, sizeof(*le));
 
-	// link into the active list
+	/* link into the active list */
 	le->next = cg_activeLocalEntities.next;
 	le->prev = &cg_activeLocalEntities;
 	cg_activeLocalEntities.next->prev = le;

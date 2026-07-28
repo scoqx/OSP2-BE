@@ -2166,7 +2166,7 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 						}
 						else
 						{
-							location = CG_ConfigString(CS_LOCATIONS + ci->location);
+							location = CG_LocationName(ci->location);
 						}
 					}
 					if (!location || *location == 0)

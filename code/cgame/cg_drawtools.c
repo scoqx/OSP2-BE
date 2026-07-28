@@ -1657,6 +1657,7 @@ void CG_LoadFonts(void)
 	}
 	CG_LoadCustomFonts();
 	bitmap_fonts_num = fonts_num;
+	CG_EngineFonts_Init();
 }
 
 /*
@@ -3380,28 +3381,6 @@ static float RestrictCompiledString(text_command_t* cmd, float charWidth, qboole
 	}
 
 	return ax;
-}
-
-int CG_OSPDrawStringLenPix(const char* string, float charWidth, int flags, int toWidth)
-{
-	int rez;
-	text_command_t* text_commands;
-
-	if (!string)
-	{
-		return 0;
-	}
-
-	text_commands = CG_CompileText(string, flags);
-	if (!text_commands)
-	{
-		return 0;
-	}
-
-	RestrictCompiledString(text_commands, charWidth, flags & DS_PROPORTIONAL, toWidth);
-	rez = DrawCompiledStringLength(text_commands, charWidth, flags & DS_PROPORTIONAL);
-	CG_CompiledTextDestroy(text_commands);
-	return rez;
 }
 
 

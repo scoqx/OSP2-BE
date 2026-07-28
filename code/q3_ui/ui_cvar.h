@@ -123,5 +123,13 @@ UI_CVAR(be_ttfShadowOffset, "be_ttfShadowOffset", "0.1 0.1", CVAR_ARCHIVE)
 UI_CVAR(be_ttfScale, "be_ttfScale", "1", CVAR_ARCHIVE)
 UI_CVAR(be_ttfFontOffset, "be_ttfFontOffset", "0", CVAR_ARCHIVE)
 
+UI_CVAR(ui_mappage_pagenum, "ui_mappage_pagenum", "0", CVAR_ROM)
+UI_CVAR(ui_mappage_nmaps, "ui_mappage_nmaps", "10", CVAR_ROM)
+UI_CVAR(ui_mappage_page0, "ui_mappage_page0", "", CVAR_ROM)
+UI_CVAR(ui_mappage_page1, "ui_mappage_page1", "", CVAR_ROM)
+UI_CVAR(ui_mappage_page2, "ui_mappage_page2", "", CVAR_ROM)
+UI_CVAR(ui_mappage_page3, "ui_mappage_page3", "", CVAR_ROM)
+UI_CVAR(ui_mappage_page4, "ui_mappage_page4", "", CVAR_ROM)
+UI_CVAR(ui_mappage_page5, "ui_mappage_page5", "", CVAR_ROM)
 
 #undef UI_CVAR

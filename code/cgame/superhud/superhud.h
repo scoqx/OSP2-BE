@@ -18,6 +18,7 @@ void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen
 void CG_SHUDEventTeamTask(int sender, int taskType, qboolean isPickup);
 void CG_SHUDRefreshSpectatorItemSpawnsTeamTables(void);
 qboolean CG_SHUDHasSpectatorItemSpawnsElements(void);
+qboolean CG_SHUDHasSpectatorsElements(void);
 void CG_SHUDEventSpectatorItemPickup(int pickerClient, int group);
 void CG_SHUDEventTempAccuracy(int weapon, float accuracy);
 

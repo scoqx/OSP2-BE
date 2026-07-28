@@ -126,12 +126,16 @@ extern "C" {
 #define CS_OSP2BE_DISABLED_FEATURES             888
 #define CS_OSP2BE_TOURNEY_RESTRICTIONS          889
 #define CS_OSP2BE_ITEM_CATALOG0                890
-#define CS_OSP2BE_ITEM_CATALOG_COUNT           10
+#define CS_OSP2BE_ITEM_CATALOG_COUNT           20
 #define CS_OSP2BE_ITEM_CATALOG_LAST            (CS_OSP2BE_ITEM_CATALOG0 + CS_OSP2BE_ITEM_CATALOG_COUNT - 1)
 /*
- * Item catalog (OSP2BE): CS 890..899 concatenated (10 KiB max).
- * Leading digit <mode> — bitmask: 1=shadow catalog, 2=PUI pickups, 3=both.
- * Wire: <seg>|<seg>|...  seg = <abbrev>[/<abbrev>...];<x>,<y>,<z>[,<side>]
+ * Item catalog (OSP2BE): CS 890..909 concatenated (20 KiB max).
+ * Leading <mode> — one hex nibble (0-9a-f), bitmask:
+ *   1=shadow catalog, 2=PUI pickups, 4=spawns, 8=tp exits.
+ * Wire: <seg>|<seg>|...
+ *   item/PUI: <abbrev>[/<abbrev>...];<x>,<y>,<z>[,<side>]
+ *   spawn:    sp;<x>,<y>,<z>,<yaw>,<sf>,<count>,<role>,<team>
+ *   tp exit:  tde;<x>,<y>,<z>,<yaw>
  *   x,y,z deci-units (origin * 10); side 0 neutral 1 red 2 blue (CTF, server classify)
  *   PUI segments in CTF include side; shadow-only segments omit side
  *   team pad: puiAbbrevs;x,y,z and/or shadowAbbrevs;x,y,z (master origin)
@@ -163,6 +167,8 @@ int BG_PuiIdType(int itemId);
 int BG_PuiIdSide(int itemId);
 int BG_PuiIdSlot(int itemId);
 void BG_PuiUnpackCmd(int cmd, int* picker, int* pickId, int* nextId);
+char BG_ItemCatalogModeChar(int mode);
+int BG_ItemCatalogParseMode(char c);
 
 #define XQ3E_ALLOW_FEATURES                     1000
 

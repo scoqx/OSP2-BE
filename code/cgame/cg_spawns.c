@@ -58,6 +58,10 @@ typedef struct
 
 static cg_spawnPoint_t cg_spawnPoints[CG_SPAWN_MAX_POINTS];
 static int cg_spawnPointCount;
+static qboolean cg_spawnPointsFromMapdata;
+static qboolean cg_spawnPointsFromServer;
+static char cg_mapCatalogPayload[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
+static char cg_mapCatalogParseBuf[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
 static int cg_spawnModeIndices[CG_SPAWN_MODE_COUNT][CG_SPAWN_MAX_POINTS];
 static int cg_spawnModeCount[CG_SPAWN_MODE_COUNT];
 static cg_spawnModelPose_t      cg_spawnModelPose[CG_SPAWN_MAX_POINTS];
@@ -72,8 +76,8 @@ static int      cg_spawnPlasmaNextPulseTime;
 static int      cg_spawnPlasmaPrevDrawMode;
 
 static void CG_MapSpawns_ResetPlasmaPulse(void);
-
 static void CG_MapSpawns_BuildMarkGeom(cg_spawnPoint_t* pt);
+static int CG_MapSpawns_ModeIndex(void);
 
 static qboolean CG_MapSpawns_IsEnabled(void)
 {
@@ -102,6 +106,8 @@ static qboolean CG_MapSpawns_UseTeamTint(void)
 static void CG_MapSpawns_Clear(void)
 {
 	cg_spawnPointCount = 0;
+	cg_spawnPointsFromMapdata = qfalse;
+	cg_spawnPointsFromServer = qfalse;
 	memset(cg_spawnModeCount, 0, sizeof(cg_spawnModeCount));
 	cg_spawnPoseValid = qfalse;
 	CG_MapSpawns_ResetPlasmaPulse();
@@ -318,6 +324,8 @@ qboolean CG_MapSpawns_LoadQSP1Binary(const byte* raw, int rawLen)
 		CG_MapSpawns_BuildMarkGeom(&cg_spawnPoints[i]);
 	}
 
+	cg_spawnPointsFromMapdata = qtrue;
+	cg_spawnPointsFromServer = qfalse;
 	return qtrue;
 }
 
@@ -354,6 +362,152 @@ void CG_MapSpawns_Load(void)
 		return;
 	}
 	(void)CG_MapSpawns_LoadQSP1Binary(qsp, qspLen);
+}
+
+/*
+ * Inject spawn points from OSP2BE catalog (mode bit 4).
+ * Only when local QSP1 is absent. All points go into the active gametype pool.
+ */
+qboolean CG_MapSpawns_LoadFromCatalog(const char* payload)
+{
+	char*       parse;
+	char*       segment;
+	char*       nextSeg;
+	char*       semi;
+	int         catalogMode;
+	int         ix, iy, iz, yaw, sf, count, role, team;
+	int         mode;
+	int         i;
+	cg_spawnPoint_t* pt;
+
+	if (cg_spawnPointsFromMapdata)
+	{
+		return qfalse;
+	}
+	if (!payload || !payload[0])
+	{
+		if (cg_spawnPointsFromServer)
+		{
+			CG_MapSpawns_Clear();
+		}
+		return qfalse;
+	}
+
+	Q_strncpyz(cg_mapCatalogParseBuf, payload, sizeof(cg_mapCatalogParseBuf));
+	parse = cg_mapCatalogParseBuf;
+	catalogMode = BG_ItemCatalogParseMode(parse[0]);
+	if (catalogMode < 0)
+	{
+		catalogMode = 0;
+	}
+	else
+	{
+		parse++;
+	}
+	if (!(catalogMode & 4))
+	{
+		if (cg_spawnPointsFromServer)
+		{
+			CG_MapSpawns_Clear();
+		}
+		return qfalse;
+	}
+
+	CG_MapSpawns_Clear();
+	mode = CG_MapSpawns_ModeIndex();
+
+	while (parse && parse[0])
+	{
+		nextSeg = strchr(parse, '|');
+		if (nextSeg)
+		{
+			*nextSeg = '\0';
+			nextSeg++;
+		}
+		segment = parse;
+		parse = nextSeg;
+
+		if (Q_strncmp(segment, "sp;", 3))
+		{
+			continue;
+		}
+		semi = segment + 3;
+		if (Q_sscanf(semi, "%d,%d,%d,%d,%d,%d,%d,%d",
+		             &ix, &iy, &iz, &yaw, &sf, &count, &role, &team) != 8)
+		{
+			continue;
+		}
+		if (cg_spawnPointCount >= CG_SPAWN_MAX_POINTS)
+		{
+			break;
+		}
+		if (role < 0 || role > 6 || team < 0 || team > 3)
+		{
+			continue;
+		}
+
+		pt = &cg_spawnPoints[cg_spawnPointCount];
+		pt->origin[0] = ix / 10.0f;
+		pt->origin[1] = iy / 10.0f;
+		pt->origin[2] = iz / 10.0f;
+		pt->yaw = (float)yaw;
+		pt->spawnflags = sf;
+		pt->count = count;
+		pt->role = role;
+		pt->team = team;
+		CG_MapSpawns_BuildMarkGeom(pt);
+
+		i = cg_spawnPointCount;
+		cg_spawnModeIndices[mode][cg_spawnModeCount[mode]++] = i;
+		cg_spawnPointCount++;
+	}
+
+	if (!cg_spawnPointCount)
+	{
+		return qfalse;
+	}
+
+	cg_spawnPointsFromServer = qtrue;
+	cg_spawnPointsFromMapdata = qfalse;
+	return qtrue;
+}
+
+qboolean CG_MapSpawns_FromServer(void)
+{
+	return cg_spawnPointsFromServer;
+}
+
+qboolean CG_MapSpawns_FromMapdata(void)
+{
+	return cg_spawnPointsFromMapdata;
+}
+
+void CG_MapCatalog_OnConfigStringChanged(void)
+{
+	const char* chunk;
+	int         i;
+	int         len;
+
+	cg_mapCatalogPayload[0] = '\0';
+	len = 0;
+	for (i = 0; i < CS_OSP2BE_ITEM_CATALOG_COUNT; i++)
+	{
+		chunk = CG_ConfigString(CS_OSP2BE_ITEM_CATALOG0 + i);
+		if (!chunk[0])
+		{
+			continue;
+		}
+		if (len > 0 && len + (int)strlen(chunk) >= (int)sizeof(cg_mapCatalogPayload) - 1)
+		{
+			CG_Printf(S_COLOR_RED "ERROR: item catalog client payload overflow\n");
+			break;
+		}
+		Q_strcat(cg_mapCatalogPayload, sizeof(cg_mapCatalogPayload), chunk);
+		len = (int)strlen(cg_mapCatalogPayload);
+	}
+
+	(void)CG_MapSpawns_LoadFromCatalog(cg_mapCatalogPayload);
+	(void)CG_MapTPExit_LoadFromCatalog(cg_mapCatalogPayload);
 }
 
 static qboolean CG_MapSpawns_Q3mskFreezeUseFFA(void)
@@ -816,6 +970,10 @@ const char* CG_MapSpawns_DataSource(void)
 	if (!cg_spawnPointCount)
 	{
 		return NULL;
+	}
+	if (cg_spawnPointsFromServer)
+	{
+		return "server";
 	}
 	return CG_MapBundle_DataSource();
 }

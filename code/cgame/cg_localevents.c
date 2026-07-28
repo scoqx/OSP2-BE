@@ -1466,7 +1466,7 @@ void CG_LocalEventCvarChanged_cg_numbersSet(cvarTable_t* cvart)
 	int set;
 
 	set = cvart->vmCvar->integer;
-	if (set != 1 && set != 2 && set != 3 && set != 4)
+	if (set != 1 && set != 2 && set != 3 && set != 4 && set != 5 && set != 6)
 	{
 		trap_Cvar_Set("cg_numbersSet", "1");
 		return;

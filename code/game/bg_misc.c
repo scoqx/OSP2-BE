@@ -1686,3 +1686,31 @@ void BG_PuiUnpackCmd(int cmd, int* picker, int* pickId, int* nextId)
 		*nextId = cmd & 0x3FF;
 	}
 }
+
+char BG_ItemCatalogModeChar(int mode)
+{
+	mode &= 15;
+	if (mode < 10)
+	{
+		return (char)('0' + mode);
+	}
+	return (char)('a' + (mode - 10));
+}
+
+/* Returns mode 0..15, or -1 if c is not a hex nibble. */
+int BG_ItemCatalogParseMode(char c)
+{
+	if (c >= '0' && c <= '9')
+	{
+		return c - '0';
+	}
+	if (c >= 'a' && c <= 'f')
+	{
+		return 10 + (c - 'a');
+	}
+	if (c >= 'A' && c <= 'F')
+	{
+		return 10 + (c - 'A');
+	}
+	return -1;
+}

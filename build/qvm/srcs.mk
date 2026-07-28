@@ -33,6 +33,7 @@ CG_SRC = \
  superhud/elements/element_ammomessage \
  superhud/elements/element_chat \
  superhud/elements/element_specmessage superhud/elements/element_followmessage \
+ superhud/elements/element_spectators \
  superhud/elements/element_itempickup superhud/elements/element_itempickupicon \
  superhud/elements/element_spectator_itemspawns superhud/elements/element_spectator_itempickups \
  superhud/elements/element_teamcount \
@@ -72,5 +73,7 @@ ui_superhudconfig ui_ospdrawtools ui_advanced \
 ui_specifyserver ui_sppostgame ui_splevel ui_spskill ui_startserver ui_team \
 ui_video ui_addbots ui_removebots ui_teamorders ui_loadconfig ui_saveconfig \
 ui_cdkey ui_mods \
+ui_votemenu ui_votemenu_map ui_votemenu_kick ui_votemenu_gametype \
+ui_votemenu_fraglimit ui_votemenu_timelimit ui_votemenu_custom \
  bg_misc bg_lib \
  q_math q_shared \

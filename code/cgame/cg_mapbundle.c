@@ -528,6 +528,7 @@ void CG_MapBundle_LoadAllMapData(void)
 	CG_MapSpawns_Load();
 	CG_ShadowItems_Load();
 	CG_MapTPExit_Load();
+	CG_MapCatalog_OnConfigStringChanged();
 	CG_WorldFlags_Reset();
 }
 

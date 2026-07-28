@@ -1025,3 +1025,11 @@ UI:
 + bones/cadavre/hunter/sarge_wins.wav sounds
 * SHUD 'laststanding' element style 1 - laststanding.wav
 * Changed cvars default font to Conthrax (19)
+
+19.07.2026 be v1.06f
++ cg_numbersSet 5 (trinity), 6 (Cookie)
++ cg_damageDraw 3 (trinity)
++ ttf fix
+* q3a.space extended support:
+  + UI/esc Call vote menu
+  + Q3LB (maplocs, spawn/teleport points)

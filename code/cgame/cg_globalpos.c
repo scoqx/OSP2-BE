@@ -2,8 +2,7 @@
 ===========================================================================
 cg_globalpos.c
 
-Team tinfo zone positions (globalPos) when the server exposes location CS
-and mapdata QLM1 is loaded.
+Team global WH positions: tinfo zone id + mapdata QLM1.
 
 Copyright (c) 2026 diwoc
 ===========================================================================
@@ -423,7 +422,11 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 		return;
 	}
 
-	if (!ci->infoValid || !ci->globalPos || CG_CACHED_IS_ENEMY_CI(ci) || ci->team == TEAM_SPECTATOR)
+	if (!ci->globalPos)
+	{
+		return;
+	}
+	if (ci->infoValid && (CG_CACHED_IS_ENEMY_CI(ci) || ci->team == TEAM_SPECTATOR))
 	{
 		return;
 	}
@@ -534,7 +537,11 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 		}
 
 		ci = &cgs.clientinfo[i];
-		if (!ci->infoValid || !ci->globalPos)
+		if (!ci->globalPos)
+		{
+			continue;
+		}
+		if (ci->infoValid && (CG_CACHED_IS_ENEMY_CI(ci) || ci->team == TEAM_SPECTATOR))
 		{
 			continue;
 		}
@@ -613,7 +620,7 @@ void CG_DrawGlobalPosFriendHudMarkers(void)
 			}
 
 			ci = &cgs.clientinfo[i];
-			if (!ci->infoValid || !ci->globalPos)
+			if (!ci->globalPos)
 			{
 				continue;
 			}
@@ -621,7 +628,7 @@ void CG_DrawGlobalPosFriendHudMarkers(void)
 			{
 				continue;
 			}
-			if (CG_CACHED_IS_ENEMY_CI(ci) || ci->team == TEAM_SPECTATOR)
+			if (ci->infoValid && (CG_CACHED_IS_ENEMY_CI(ci) || ci->team == TEAM_SPECTATOR))
 			{
 				continue;
 			}

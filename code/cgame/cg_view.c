@@ -677,7 +677,7 @@ static void CG_DamageBlendBlob(void)
 	int         maxTime;
 	refEntity_t     ent;
 
-	if (cg_damageDraw.integer < 1 || cg_damageDraw.integer > 3)
+	if (cg_damageDraw.integer < 1 || cg_damageDraw.integer > 2)
 	{
 		return;
 	}
@@ -747,6 +747,167 @@ static void CG_DamageBlendBlob(void)
 	}
 
 	trap_R_AddRefEntityToScene(&ent);
+}
+
+
+/*
+===============
+CG_DrawVignetteBorder
+
+Draws the vignette texture as an 8-piece border (4 corners + 4 edges).
+===============
+*/
+static void CG_DrawVignetteBorder(float alpha, float damageIntensity, qboolean directional)
+{
+	float   coverage;
+	int     borderBase;
+	int     leftBorder, rightBorder, topBorder, bottomBorder;
+	int     innerWidth, innerHeight;
+	float   leftWeight, rightWeight, topWeight, bottomWeight;
+	vec4_t  red;
+	int     x, y, w, h;
+	const float UV_EDGE_H = 0.21f;
+	const float UV_EDGE_V = 0.30f;
+
+	if (alpha <= 0.0f || damageIntensity <= 0.0f)
+	{
+		return;
+	}
+
+	coverage = damageIntensity / 4.0f;
+	borderBase = (int)(coverage * cg.refdef.height);
+	if (borderBase < 1)
+	{
+		borderBase = 1;
+	}
+
+	if (directional)
+	{
+		leftWeight = 1.0f - cg.damageX;
+		rightWeight = 1.0f + cg.damageX;
+		topWeight = 1.0f + cg.damageY;
+		bottomWeight = 1.0f - cg.damageY;
+	}
+	else
+	{
+		leftWeight = rightWeight = topWeight = bottomWeight = 1.0f;
+	}
+
+	leftBorder = (int)(borderBase * leftWeight);
+	rightBorder = (int)(borderBase * rightWeight);
+	topBorder = (int)(borderBase * topWeight);
+	bottomBorder = (int)(borderBase * bottomWeight);
+
+	innerWidth = cg.refdef.width - leftBorder - rightBorder;
+	innerHeight = cg.refdef.height - topBorder - bottomBorder;
+
+	red[0] = 1.0f;
+	red[1] = 0.0f;
+	red[2] = 0.0f;
+	red[3] = alpha;
+
+	trap_R_SetColor(red);
+
+	x = cg.refdef.x;
+	y = cg.refdef.y;
+	w = cg.refdef.width;
+	h = cg.refdef.height;
+
+	if (leftBorder > 0 && topBorder > 0)
+	{
+		trap_R_DrawStretchPic(x, y, leftBorder, topBorder,
+		                      0.0f, 0.0f, UV_EDGE_H, UV_EDGE_V, cgs.media.vignetteShader);
+	}
+	if (rightBorder > 0 && topBorder > 0)
+	{
+		trap_R_DrawStretchPic(x + w - rightBorder, y, rightBorder, topBorder,
+		                      1.0f - UV_EDGE_H, 0.0f, 1.0f, UV_EDGE_V, cgs.media.vignetteShader);
+	}
+	if (leftBorder > 0 && bottomBorder > 0)
+	{
+		trap_R_DrawStretchPic(x, y + h - bottomBorder, leftBorder, bottomBorder,
+		                      0.0f, 1.0f - UV_EDGE_V, UV_EDGE_H, 1.0f, cgs.media.vignetteShader);
+	}
+	if (rightBorder > 0 && bottomBorder > 0)
+	{
+		trap_R_DrawStretchPic(x + w - rightBorder, y + h - bottomBorder, rightBorder, bottomBorder,
+		                      1.0f - UV_EDGE_H, 1.0f - UV_EDGE_V, 1.0f, 1.0f, cgs.media.vignetteShader);
+	}
+	if (leftBorder > 0 && innerHeight > 0)
+	{
+		trap_R_DrawStretchPic(x, y + topBorder, leftBorder, innerHeight,
+		                      0.0f, UV_EDGE_V, UV_EDGE_H, 1.0f - UV_EDGE_V, cgs.media.vignetteShader);
+	}
+	if (rightBorder > 0 && innerHeight > 0)
+	{
+		trap_R_DrawStretchPic(x + w - rightBorder, y + topBorder, rightBorder, innerHeight,
+		                      1.0f - UV_EDGE_H, UV_EDGE_V, 1.0f, 1.0f - UV_EDGE_V, cgs.media.vignetteShader);
+	}
+	if (topBorder > 0 && innerWidth > 0)
+	{
+		trap_R_DrawStretchPic(x + leftBorder, y, innerWidth, topBorder,
+		                      UV_EDGE_H, 0.0f, 1.0f - UV_EDGE_H, UV_EDGE_V, cgs.media.vignetteShader);
+	}
+	if (bottomBorder > 0 && innerWidth > 0)
+	{
+		trap_R_DrawStretchPic(x + leftBorder, y + h - bottomBorder, innerWidth, bottomBorder,
+		                      UV_EDGE_H, 1.0f - UV_EDGE_V, 1.0f - UV_EDGE_H, 1.0f, cgs.media.vignetteShader);
+	}
+
+	trap_R_SetColor(NULL);
+}
+
+/*
+===============
+CG_DamageBorderVignette
+
+Hit damage vignette border (cg_damageDraw 3). Opacity via cg_damageFrameOpaque.
+===============
+*/
+void CG_DamageBorderVignette(void)
+{
+	int     t, maxTime;
+	float   alpha, damageIntensity;
+
+	if (cg.renderingThirdPerson || !cg.damageValue)
+	{
+		return;
+	}
+
+	maxTime = DAMAGE_TIME;
+	t = cg.time - cg.damageTime;
+	if (t <= 0 || t >= maxTime)
+	{
+		return;
+	}
+
+	alpha = (1.0f - ((float)t / maxTime)) * cg_damageFrameOpaque.value;
+
+	damageIntensity = (cg.damageValue - 5.0f) / 5.0f;
+	if (damageIntensity < 0.2f)
+	{
+		damageIntensity = 0.2f;
+	}
+
+	CG_DrawVignetteBorder(alpha, damageIntensity, qtrue);
+}
+
+/*
+===============
+CG_DamageBorderVignetteLowHealth
+
+Low-health pulsing vignette (cg_damageDraw 3 + cg_damageDrawFrame bit 4).
+===============
+*/
+void CG_DamageBorderVignetteLowHealth(float alpha)
+{
+	if (cg.renderingThirdPerson)
+	{
+		return;
+	}
+
+	/* Medium hit coverage, uniform sides */
+	CG_DrawVignetteBorder(alpha, 0.5f, qfalse);
 }
 
 

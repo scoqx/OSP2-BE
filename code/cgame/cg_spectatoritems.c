@@ -404,7 +404,7 @@ static void CG_SpectatorItems_ParseCatalogSegment(char* segment, int* csOrder, i
 
 static void CG_SpectatorItems_ParseConfigString(const char* str)
 {
-	char buf[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
+	static char buf[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
 	char* parse;
 	char* segment;
 	cg_spectatorItemSavedSpawn_t saved[CG_ITEM_NOTIFY_MAX_ENTRIES];
@@ -438,10 +438,13 @@ static void CG_SpectatorItems_ParseConfigString(const char* str)
 
 	Q_strncpyz(buf, str, sizeof(buf));
 	parse = buf;
-	cgs.itemCatalogMode = 1;
-	if (parse[0] >= '1' && parse[0] <= '3')
+	cgs.itemCatalogMode = BG_ItemCatalogParseMode(parse[0]);
+	if (cgs.itemCatalogMode < 0)
 	{
-		cgs.itemCatalogMode = parse[0] - '0';
+		cgs.itemCatalogMode = 1;
+	}
+	else
+	{
 		parse++;
 	}
 
@@ -460,7 +463,7 @@ static void CG_SpectatorItems_ParseConfigString(const char* str)
 			parse++;
 		}
 
-		if (segment[0])
+		if (segment[0] && Q_strncmp(segment, "sp;", 3) && Q_strncmp(segment, "tde;", 4))
 		{
 			CG_SpectatorItems_ParseCatalogSegment(segment, &csOrder, &nextTrackId);
 		}
@@ -474,7 +477,7 @@ static void CG_SpectatorItems_ParseConfigString(const char* str)
 
 void CG_SpectatorItems_OnConfigStringChanged(void)
 {
-	char payload[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
+	static char payload[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
 
 	CG_SHUDRefreshSpectatorItemSpawnsTeamTables();
 	CG_SpectatorItems_BuildCatalogPayload(payload, sizeof(payload));

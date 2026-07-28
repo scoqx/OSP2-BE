@@ -40,7 +40,7 @@ void CG_SHUDElementLocationRoutine(void* context)
 	}
 	else
 	{
-		newLocation = CG_ConfigString(CS_LOCATIONS + ci->location);
+		newLocation = CG_LocationName(ci->location);
 	}
 	if (!newLocation || *newLocation == 0)
 	{

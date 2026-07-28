@@ -109,20 +109,39 @@ static void CG_SHUDElementSpectatorItemPickupsUpdatePosition(shudElementSpectato
 	float pickerWidth;
 	float timeWidth;
 	float fontW;
+	float fontH;
 
 	fontW = element->ctxPicker.coord.named.w;
+	fontH = element->ctxPicker.coord.named.h;
 	if (fontW <= 0.0f)
 	{
 		fontW = element->config.fontsize.value[0];
 	}
+	if (fontH <= 0.0f)
+	{
+		fontH = element->config.fontsize.value[1];
+	}
 
-	CG_FontSelect(element->ctxPicker.fontIndex);
-	pickerWidth = CG_OSPDrawStringLenPix(entry->runtime.pickerName, fontW,
-	                                     element->ctxPicker.flags, entry->runtime.maxNameLenPix);
+	pickerWidth = CG_OSPDrawStringNewTextWidth(entry->runtime.pickerName,
+	              fontW, fontH, element->ctxPicker.flags, element->ctxPicker.fontIndex);
+	if (pickerWidth > (float)entry->runtime.maxNameLenPix)
+	{
+		pickerWidth = (float)entry->runtime.maxNameLenPix;
+	}
 
-	CG_FontSelect(element->ctxTime.fontIndex);
-	timeWidth = CG_OSPDrawStringLenPix(entry->runtime.timeString, fontW,
-	                                   element->ctxTime.flags, 0);
+	fontW = element->ctxTime.coord.named.w;
+	fontH = element->ctxTime.coord.named.h;
+	if (fontW <= 0.0f)
+	{
+		fontW = element->config.fontsize.value[0];
+	}
+	if (fontH <= 0.0f)
+	{
+		fontH = element->config.fontsize.value[1];
+	}
+
+	timeWidth = CG_OSPDrawStringNewTextWidth(entry->runtime.timeString,
+	            fontW, fontH, element->ctxTime.flags, element->ctxTime.fontIndex);
 
 	entry->runtime.pickerWidth = pickerWidth;
 	entry->runtime.timeWidth = timeWidth;

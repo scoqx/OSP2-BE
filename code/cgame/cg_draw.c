@@ -1041,7 +1041,7 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 	lwidth = 0;
 	for (i = 1; i < MAX_LOCATIONS; i++)
 	{
-		p = CG_ConfigString(CS_LOCATIONS + i);
+		p = CG_LocationName(i);
 		if (p && *p)
 		{
 			len = CG_DrawStrlen(p);
@@ -1108,7 +1108,7 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 
 			if (lwidth)
 			{
-				p = CG_ConfigString(CS_LOCATIONS + ci->location);
+				p = CG_LocationName(ci->location);
 				if (!p || !*p)
 					p = "unknown";
 				len = CG_DrawStrlen(p);
@@ -2987,7 +2987,7 @@ void CG_OSPDrawNewCredits(void)
 	float x = 100.0f;
 	float y = 80.0f;
 	float w = 440.0f;
-	float h = 328.0f;
+	float h = 342.0f;
 	float charHeight = 14, charWidth = 8;
 	float textX = (w / 2) + x;
 	float textY = y + 2.0f;
@@ -3025,6 +3025,7 @@ void CG_OSPDrawNewCredits(void)
 		"Q3 1.16n X-Mod   ^Bhttps://github.com/navgg/Quake-3-1.16n-extensions",
 		"Nemesis 1.16n   ^Bhttps://github.com/dledmonds/quake3-nemesis-1.16n",
 		"CPMA   ^Bhttps://playmorepromode.com/",
+		"Trinity   ^Bhttps://github.com/ernie/trinity",
 		NULL
 	};
 	static int startTime = 0;
@@ -4007,6 +4008,18 @@ Draws both health low overlay and damage frame based on cvars and game state.
 static void CG_DrawDamageFrame(void)
 {
 	vec4_t damageColor, damageRed, borderSizeOriginal;
+
+	/* Vignette mode: replaces blood/indicator; skip manual hit frames (bits 1|2) */
+	if (cg_damageDraw.integer == 3)
+	{
+		if ((cg_damageDrawFrame.integer & 4) && cg.beIsHealthLow)
+		{
+			float damagePulse = sin((float)cg.time * 2.0f * M_PI / 2000.0f) * 0.2f + 0.4f;
+			CG_DamageBorderVignetteLowHealth(damagePulse * cg_damageFrameOpaque.value);
+		}
+		CG_DamageBorderVignette();
+		return;
+	}
 
 	// Health low overlay (pulsing red frame)
 	if ((cg_damageDrawFrame.integer & 4) && cg.beIsHealthLow)
