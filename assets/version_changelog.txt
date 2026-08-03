@@ -1,5 +1,4 @@
-19.07.2026 be v1.06f1
-+ cg_enemyAltShadowColor                  
+19.07.2026 be v1.07a
 + cg_playerXray
 + cg_myTeam/cg_spectPov sounds/messages fix
 + cg_kcEnemyColor, cg_kcTeamColor ('Kill Confirm' gametype)
@@ -8,8 +7,9 @@
 + ttf fix
 SuperHUD:
   * Mirage's configs updated
-  + 'centerMessage', 'respawnmessage', 'killconfirm', 'teamRed1-8', 'teamBlue1-8',
+  + 'centerMessage', 'killconfirm', 'teamRed1-8', 'teamBlue1-8',
   + 'thaw_own', 'thaw_freezing', 'thaw_own_bar', 'thaw_freezing_bar' elements
+  + team* style2 - QL Like
   + various fixes
 * q3a.space advanced support:
   + UI/esc Call vote menu
@@ -17,6 +17,3 @@ SuperHUD:
   + SuperHUD teamRed/teamBlue elements
   + kill confirm support
   + movement predict
-  + Missile predict (local player)
-  + Fullmap team wallhack support
-

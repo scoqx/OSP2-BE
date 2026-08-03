@@ -597,11 +597,9 @@ static void CG_SHUDElementTeamRoutineStyle2(shudElementTeam_t* element, clientIn
 	}
 	else
 	{
-		element->ctxPowerup.image = cg_weapons[ci->curWeapon].ammoIcon ?
-		                           cg_weapons[ci->curWeapon].ammoIcon : cgs.media.deferShader;
-		CG_SHUDDrawStretchPic(element->ctxPowerup.coord, element->ctxPowerup.coordPicture,
-		                      white, element->ctxPowerup.image);
+		qboolean drewPowerup = qfalse;
 
+		/* Status square: powerups only when any are present; weapon is fallback */
 		k = 0;
 		do
 		{
@@ -617,10 +615,19 @@ static void CG_SHUDElementTeamRoutineStyle2(shudElementTeam_t* element, clientIn
 					element->ctxPowerup.image = trap_R_RegisterShader(gi->icon);
 					CG_SHUDDrawStretchPic(element->ctxPowerup.coord, element->ctxPowerup.coordPicture,
 					                      white, element->ctxPowerup.image);
+					drewPowerup = qtrue;
 				}
 			}
 		}
 		while (++k < 16);
+
+		if (!drewPowerup)
+		{
+			element->ctxPowerup.image = cg_weapons[ci->curWeapon].ammoIcon ?
+			                           cg_weapons[ci->curWeapon].ammoIcon : cgs.media.deferShader;
+			CG_SHUDDrawStretchPic(element->ctxPowerup.coord, element->ctxPowerup.coordPicture,
+			                      white, element->ctxPowerup.image);
+		}
 	}
 
 	/* Followed: white inner frame. Else damage blink: red only (beHealthLowColor),

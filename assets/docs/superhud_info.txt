@@ -386,7 +386,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 
 ## team1-16 (team overlay)
 - Style 1 - компактный режим, выводится только ник и здоровье
-- Style 2 - квадрат статуса (HxH) + ник (name_clean, белый) поверх HP-бара (0–75% высоты строки) и полоска брони (77–100%). Полосы: два слоя alpha 0.33/0.66, max 100. `color` — HP, `color2` — броня (по умолчанию цвет команды / FFA белый). Иконка: оружие+powerup / skull / снежинка (freeze вне warmup). У followed-игрока — белая inner-рамка 1px на квадрате.
+- Style 2 - QL-like. `color` — HP, `color2` — AP.
 - rect x y w h - аргумент w задаёт ширину области ника (style 0/1) или блока ника/полос (style 2); h — высота строки (у style 2 ещё размер квадрата)
 
 ## teamRed1-8 / teamBlue1-8
