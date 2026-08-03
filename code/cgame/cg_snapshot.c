@@ -60,6 +60,14 @@ cent->nextState is moved to cent->currentState and events are fired
 */
 void CG_TransitionEntity(centity_t* cent)
 {
+	if (!cent->interpolate &&
+	        cent->nextState.eType == ET_MISSILE &&
+	        cent->nextState.weapon == WP_PLASMAGUN &&
+	        cent->nextState.otherEntityNum == cg.predictedPlayerState.clientNum)
+	{
+		CG_DebugServerOnMissileAppear(&cent->nextState);
+	}
+
 	cent->currentState = cent->nextState;
 	cent->currentValid = qtrue;
 

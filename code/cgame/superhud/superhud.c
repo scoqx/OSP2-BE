@@ -389,10 +389,15 @@ static void CG_SHUDFillFrameContext(superhudFrameContext_t* fc)
 	gt = cgs.gametype;
 	fc->pm_type = pm_type;
 	fc->currentWeapon = cg.snap ? cg.snap->ps.weapon : WP_NONE;
+	/*
+	 * Free-float only (PM_SPECTATOR): hide player HUD without SE_SPECT.
+	 * Chase uses the followed PS (pm_type NORMAL/DEAD/…) so StatusBar etc. still draw.
+	 * TeamRed/Blue routines still gate on CG_IS_LOCAL_CLIENT_SPECTATOR().
+	 */
+	fc->is_spectator = (cg.snap && cg.snap->ps.pm_type == PM_SPECTATOR) ? qtrue : qfalse;
 	fc->is_dead = (pm_type == PM_DEAD || pm_type == PM_FREEZE);
 	fc->is_intermission = (pm_type == PM_INTERMISSION);
 	fc->is_team_game = (gt >= GT_TEAM);
-	fc->is_spectator = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
 	fc->is_scores = cg.scoreBoardShowing;
 	fc->is_warmup = (cg.warmup != 0) ? qtrue : qfalse;
 	fc->demo_playback = cg.demoPlayback;
@@ -575,14 +580,17 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename, qboolean silent)
 
 			is_execute = (Q_stricmp(statusElement.item->name, "execute") == 0) || (Q_stricmp(statusElement.item->name, "exec") == 0);
 
-			// Check for team overlay elements (team1-team16)
+			/* Check for team overlay elements (team1-team16, teamRed1-8, teamBlue1-8) */
 			if (statusElement.item && statusElement.item->name &&
 			        Q_stricmpn(statusElement.item->name, "team", 4) == 0)
 			{
 				const char* name = statusElement.item->name;
-				// Check if it's team1-team16 (single or double digit)
 				if ((name[4] >= '1' && name[4] <= '9') ||
 				        (name[4] == '1' && name[5] >= '0' && name[5] <= '6'))
+				{
+					hasTeamElements = qtrue;
+				}
+				else if (Q_stricmpn(name, "teamRed", 7) == 0 || Q_stricmpn(name, "teamBlue", 8) == 0)
 				{
 					hasTeamElements = qtrue;
 				}
@@ -715,6 +723,26 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename, qboolean silent)
 				newElementLast->element.context = newElementLast->element.create(&newElementLast->config);
 
 				CG_SHUDUpdateVisflags(&newElementLast->element, &newElementLast->config);
+
+				/* !default visflags replace table bits — keep spectator/dead for team overlays */
+				if (newElementLast->element.name)
+				{
+					const char* elName = newElementLast->element.name;
+
+					if (Q_stricmpn(elName, "teamRed", 7) == 0
+					        || Q_stricmpn(elName, "teamBlue", 8) == 0)
+					{
+						newElementLast->element.visibility |= SE_TEAM_ONLY | SE_SPECT | SE_DEAD;
+						newElementLast->element.visibilityNeg &= ~(SE_TEAM_ONLY | SE_SPECT | SE_DEAD);
+					}
+					else if (Q_stricmpn(elName, "team", 4) == 0
+					         && elName[4] >= '1' && elName[4] <= '9')
+					{
+						/* team1-16: FFA/TOURNEY + spectator (no SE_TEAM_ONLY) */
+						newElementLast->element.visibility |= SE_SPECT | SE_DEAD;
+						newElementLast->element.visibilityNeg &= ~(SE_SPECT | SE_DEAD);
+					}
+				}
 
 				if (newElementLast->element.context)
 				{
@@ -856,6 +884,7 @@ void CG_SHUDRefreshSpectatorItemSpawnsTeamTables(void)
 qboolean CG_SHUDHasSpectatorItemSpawnsElements(void)
 {
 	superhudElement_t* el;
+	const char* name;
 
 	for (el = elementsHead; el; el = el->next)
 	{
@@ -863,15 +892,15 @@ qboolean CG_SHUDHasSpectatorItemSpawnsElements(void)
 		{
 			continue;
 		}
-		if (Q_stricmp(el->element.name, "Spectator_ItemSpawns") == 0)
+		name = el->element.name;
+		if (Q_stricmp(name, "Spectator_ItemSpawns") == 0
+		        || Q_stricmp(name, "Spectator_ItemSpawnsRed") == 0
+		        || Q_stricmp(name, "Spectator_ItemSpawnsBlue") == 0)
 		{
 			return qtrue;
 		}
-		if (Q_stricmp(el->element.name, "Spectator_ItemSpawnsRed") == 0)
-		{
-			return qtrue;
-		}
-		if (Q_stricmp(el->element.name, "Spectator_ItemSpawnsBlue") == 0)
+		/* Spectator_ItemPickups1-8 also need pui / catalog pickups bit */
+		if (Q_stricmpn(name, "Spectator_ItemPickups", 21) == 0)
 		{
 			return qtrue;
 		}
@@ -890,6 +919,32 @@ qboolean CG_SHUDHasSpectatorsElements(void)
 			continue;
 		}
 		if (Q_stricmp(el->element.name, "spectators") == 0)
+		{
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+qboolean CG_SHUDHasTeamRedBlueElements(void)
+{
+	superhudElement_t* el;
+	const char* name;
+
+	for (el = elementsHead; el; el = el->next)
+	{
+		if (!el->element.name)
+		{
+			continue;
+		}
+		name = el->element.name;
+		if (Q_stricmpn(name, "teamRed", 7) == 0
+		        || Q_stricmpn(name, "teamBlue", 8) == 0)
+		{
+			return qtrue;
+		}
+		/* team1-team16 (digit after "team"; not teamRed/Blue/Task/…) */
+		if (Q_stricmpn(name, "team", 4) == 0 && name[4] >= '1' && name[4] <= '9')
 		{
 			return qtrue;
 		}
@@ -930,7 +985,10 @@ void CG_SHUDRoutine(void)
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
 	{
-		CG_OSPDrawCenterString();
+		if (!CG_SHUDHasCenterMessage())
+		{
+			CG_OSPDrawCenterString();
+		}
 	}
 
 	CG_SHUDFillFrameContext(fc);
@@ -974,6 +1032,16 @@ void CG_SHUDEventFrag(const char* message)
 		ctx->rankmessage.time = 0;
 		ctx->rankmessage.message[0] = 0;
 	}
+}
+
+void CG_SHUDEventKillConfirm(qboolean confirmed)
+{
+	superhudGlobalContext_t* ctx = &superhudGlobalContext;
+
+	Q_strncpyz(ctx->killconfirm.message,
+	           confirmed ? "Kill Confirmed!" : "Kill Returned!",
+	           sizeof(ctx->killconfirm.message));
+	ctx->killconfirm.time = cg.time;
 }
 
 static void CG_SHUDChatLineSave(const char* message, int index)
@@ -1104,34 +1172,42 @@ void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen
 	{
 		ci = &cgs.clientinfo[target];
 
-		dropMask = cg.obituaryDropMask[target];
-		if (!dropMask)
+		/*
+		 * Thaw is not a death: freeze already armed obituaryDropMask via tinfo
+		 * HP->0 (often after the freeze-death line already used teamPowerups).
+		 * Never paint drops/flags on unfreeze; still clear leftover masks.
+		 */
+		if (!unfrozen)
 		{
-			dropMask = ci->teamPowerups & CG_OBITUARY_DROP_PU_MASK;
-		}
-		if (dropMask & (1 << PW_BATTLESUIT) && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
-		{
-			dropMask &= ~(1 << PW_BATTLESUIT);
-		}
-		entry->droppedPowerups = dropMask;
-
-		if (cgs.gametype == GT_CTF)
-		{
-			if (cg.obituaryDropFlagTeam[target] != TEAM_FREE)
+			dropMask = cg.obituaryDropMask[target];
+			if (!dropMask)
 			{
-				entry->droppedFlagTeam = cg.obituaryDropFlagTeam[target];
+				dropMask = ci->teamPowerups & CG_OBITUARY_DROP_PU_MASK;
 			}
-			else if (ci->infoValid &&
-			         (!CG_CACHED_IS_ENEMY_CI(ci) || CG_IS_LOCAL_CLIENT_SPECTATOR()))
+			if (dropMask & (1 << PW_BATTLESUIT) && CG_HIDE_ALLY_BATTLESUIT_UI(ci))
 			{
-				flagMask = ci->teamPowerups & ((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG));
-				if (flagMask & (1 << PW_REDFLAG))
+				dropMask &= ~(1 << PW_BATTLESUIT);
+			}
+			entry->droppedPowerups = dropMask;
+
+			if (cgs.gametype == GT_CTF)
+			{
+				if (cg.obituaryDropFlagTeam[target] != TEAM_FREE)
 				{
-					entry->droppedFlagTeam = TEAM_RED;
+					entry->droppedFlagTeam = cg.obituaryDropFlagTeam[target];
 				}
-				else if (flagMask & (1 << PW_BLUEFLAG))
+				else if (ci->infoValid &&
+				         (!CG_CACHED_IS_ENEMY_CI(ci) || CG_IS_LOCAL_CLIENT_SPECTATOR()))
 				{
-					entry->droppedFlagTeam = TEAM_BLUE;
+					flagMask = ci->teamPowerups & ((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG));
+					if (flagMask & (1 << PW_REDFLAG))
+					{
+						entry->droppedFlagTeam = TEAM_RED;
+					}
+					else if (flagMask & (1 << PW_BLUEFLAG))
+					{
+						entry->droppedFlagTeam = TEAM_BLUE;
+					}
 				}
 			}
 		}

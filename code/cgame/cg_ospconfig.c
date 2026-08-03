@@ -33,6 +33,44 @@ qboolean CG_ClientInfoIsFreezeTinfoFrozen(const clientInfo_t* ci)
 	return qtrue;
 }
 
+/*
+=================
+CG_ClientMarkerIsFrozen
+
+Team indicator / stack: prefer freeze-body or live model in snap; tinfo only when
+no drawable player (teamProxy / globalPos). Avoids stale tinfo after thaw.
+=================
+*/
+qboolean CG_ClientMarkerIsFrozen(const clientInfo_t* ci)
+{
+	centity_t* cent;
+	int clientNum;
+
+	if (!ci || !ci->infoValid)
+	{
+		return qfalse;
+	}
+	if (ci->isFrozenEnt)
+	{
+		return qtrue;
+	}
+
+	clientNum = (int)(ci - cgs.clientinfo);
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return CG_ClientInfoIsFreezeTinfoFrozen(ci);
+	}
+
+	cent = &cg_entities[clientNum];
+	if (cent->currentValid && cent->currentState.eType == ET_PLAYER
+	        && !CG_IS_TEAM_PROXY(cent))
+	{
+		return qfalse;
+	}
+
+	return CG_ClientInfoIsFreezeTinfoFrozen(ci);
+}
+
 qboolean CG_OSPIsGameTypeTDM()
 {
 	return cgs.gametype == GT_TEAM && !(cgs.osp.gameTypeFreeze);
@@ -323,6 +361,7 @@ void CG_BEUpdateUserInfo(void)
 	int freezeLook;       /* BE_INFO_FREEZE_LOOK — unused */
 	int callvoteMaplist;  /* BE_INFO_CALLVOTE_MAPLIST */
 	int extendedAwards;   /* BE_INFO_EXTENDED_AWARDS */
+	int teamProxy;        /* BE_INFO_TEAM_PROXY */
 	int mapdata;          /* BE_INFO_MAPDATA */
 
 	if (cg.demoPlayback)
@@ -339,9 +378,22 @@ void CG_BEUpdateUserInfo(void)
 	{
 		spectatorHud |= 2; /* BE_SPECTATOR_HUD_SPECTATORS */
 	}
+	/* bit 4: full tInfo for spectators (teamIndicator PI_SPECTATOR, drawFriend bit 4, and/or team1-16/teamRed/teamBlue) */
+	if ((cg_teamIndicator.integer & PI_SPECTATOR) || CG_DrawFriendForSpecs() || CG_SHUDHasTeamRedBlueElements())
+	{
+		spectatorHud |= 4; /* BE_SPECTATOR_HUD_TEAM_INDICATOR */
+	}
 	freezeLook = 0;
 	callvoteMaplist = 1;
 	extendedAwards = 0;
+
+	teamProxy = 0;
+	if (cgs.gametype >= GT_TEAM
+	        && ((cg_teamIndicator.integer != 0)
+	            || (cg_friendsWallhack.integer & (CG_FRIENDS_WALLHACK_TEAM_INDICATOR | CG_FRIENDS_WALLHACK_GLOBAL_POS))))
+	{
+		teamProxy = 1;
+	}
 
 	mapdata = 0;
 	if (cg_shadowItems.integer)
@@ -369,7 +421,7 @@ void CG_BEUpdateUserInfo(void)
 	trap_SendClientCommand(va("beinfo %d %d %d %d %d %d %d %d\n",
 	                          spectatorHud, cg_respawnWeapon.integer,
 	                          freezeLook, callvoteMaplist, extendedAwards,
-	                          0, mapdata, 0));
+	                          teamProxy, mapdata, 0));
 }
 
 // Disable be features

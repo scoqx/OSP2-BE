@@ -254,6 +254,12 @@ static void CG_ParseTeamInfo(void)
 			deathOldPowerups[numDeaths] = oldTeamPowerups;
 			numDeaths++;
 		}
+		else if (oldHealth <= 0 && ci->health > 0)
+		{
+			/* Thaw / respawn in tinfo: drop mask is for the prior freeze-death only */
+			cg.obituaryDropMask[client] = 0;
+			cg.obituaryDropFlagTeam[client] = TEAM_FREE;
+		}
 
 		if (cgs.q3mskRoundWarmup && cgs.roundStartState == 2 &&
 		        (ci->teamPowerups & (1 << PW_BATTLESUIT)))
@@ -350,7 +356,7 @@ CG_ParseSysteminfo
 
 Sync phy_movetype / sv_fps from CS_SYSTEMINFO.
 ================
-*/
+ */
 void CG_ParseSysteminfo(void)
 {
 	const char* info;
@@ -457,6 +463,8 @@ void CG_ParseServerinfo(void)
 	cgs.beServerEnableBreath = (val[0] == '\0' || val[0] != '0' || val[1] != '\0') ? 1 : 0;
 
 	cgs.killConfirmMode = atoi(Info_ValueForKey(info, "g_killConfirm"));
+	cgs.ratFlags = atoi(Info_ValueForKey(info, "g_altFlags"));
+	CG_CvarTouch("cl_timenudge");
 
 	CG_ParseSysteminfo();
 }
@@ -495,6 +503,9 @@ void CG_SetConfigValues(void)
 		cgs.osp.osp_teamcount1 = atoi(CG_ConfigString(CS_REDPLAYERALIVE));
 		cgs.osp.osp_teamcount2 = atoi(CG_ConfigString(CS_BLUEPLAYERALIVE));
 	}
+
+	cgs.osp.lastStandingSoundPlayed1 = (cgs.osp.osp_teamcount1 == 1);
+	cgs.osp.lastStandingSoundPlayed2 = (cgs.osp.osp_teamcount2 == 1);
 
 	cgs.levelStartTime = atoi(CG_ConfigString(CS_LEVEL_START_TIME));
 	if (cgs.gametype == GT_CTF)
@@ -633,11 +644,15 @@ static void CG_ConfigStringModified(void)
 				{
 					osp->osp_teamcount1 = -1;
 					Q_sscanf(str, "%i %i", &newScore, &osp->osp_teamcount1);
+					if (osp->osp_teamcount1 != 1)
+						osp->lastStandingSoundPlayed1 = qfalse;
 				}
 				else
 				{
 					osp->osp_teamcount2 = -1;
 					Q_sscanf(str, "%i %i", &newScore, &osp->osp_teamcount2);
+					if (osp->osp_teamcount2 != 1)
+						osp->lastStandingSoundPlayed2 = qfalse;
 				}
 			}
 			if (cgs.gametype == GT_TEAM && CG_OSPIsGameTypeFreeze() && *prevScore != newScore)
@@ -652,12 +667,16 @@ static void CG_ConfigStringModified(void)
 			if (cgs.fpsclassico)
 			{
 				cgs.osp.osp_teamcount1 = atoi(str);
+				if (cgs.osp.osp_teamcount1 != 1)
+					cgs.osp.lastStandingSoundPlayed1 = qfalse;
 			}
 			break;
 		case CS_BLUEPLAYERALIVE:
 			if (cgs.fpsclassico)
 			{
 				cgs.osp.osp_teamcount2 = atoi(str);
+				if (cgs.osp.osp_teamcount2 != 1)
+					cgs.osp.lastStandingSoundPlayed2 = qfalse;
 			}
 			break;
 		case CS_LEVEL_START_TIME:
@@ -776,6 +795,40 @@ static void CG_ConfigStringModified(void)
 			cgs.beTourneyMode = atoi(str);
 			CG_BETourneyRestrict();
 			break;
+		case CS_OSP2BE_MISSILE_PREDICT:
+		{
+			int enabled = 0;
+			int prestep = 0;
+			int rl = 0, pg = 0, bfg = 0;
+			int fromPos = 1;
+			int n;
+
+			cgs.missilePredictEnabled = qfalse;
+			cgs.missilePrestep = 0;
+			cgs.missilePredictFromPos = 1;
+			cgs.missilePredictRlSpeed = 0;
+			cgs.missilePredictPgSpeed = 0;
+			cgs.missilePredictBfgSpeed = 0;
+			n = 0;
+			if (str && str[0])
+			{
+				n = Q_sscanf(str, "%i %i %i %i %i %i", &enabled, &prestep, &rl, &pg, &bfg, &fromPos);
+			}
+			if (n >= 5 && enabled)
+			{
+				cgs.missilePredictEnabled = qtrue;
+				cgs.missilePrestep = prestep;
+				cgs.missilePredictRlSpeed = rl;
+				cgs.missilePredictPgSpeed = pg;
+				cgs.missilePredictBfgSpeed = bfg;
+				cgs.missilePredictFromPos = (n >= 6) ? (fromPos ? 1 : 0) : 1;
+			}
+			else
+			{
+				memset(cg_predictedMissiles, 0, sizeof(cg_predictedMissiles));
+			}
+		}
+		break;
 		default:
 			if (num >= CS_OSP2BE_ITEM_CATALOG0 && num <= CS_OSP2BE_ITEM_CATALOG_LAST)
 			{
@@ -2079,6 +2132,194 @@ static void CG_ParseVoteModes(void)
 
 /*
 =================
+CG_MyTeamMatchTeamWord
+
+Case-insensitive match of team name "red"/"blue" at s.
+Requires a non-alpha character after the word (or end of string).
+Returns matched length (3 or 4), or 0. Sets *isRed when matched.
+=================
+*/
+static int CG_MyTeamMatchTeamWord(const char* s, qboolean* isRed)
+{
+	char c0;
+	char c1;
+	char c2;
+	char c3;
+	char after;
+
+	if (!s || !s[0] || !s[1] || !s[2])
+	{
+		return 0;
+	}
+
+	c0 = (char)tolower((unsigned char)s[0]);
+	c1 = (char)tolower((unsigned char)s[1]);
+	c2 = (char)tolower((unsigned char)s[2]);
+
+	if (c0 == 'r' && c1 == 'e' && c2 == 'd')
+	{
+		after = s[3];
+		if (after && Q_isalpha((unsigned char)after))
+		{
+			return 0;
+		}
+		if (isRed)
+		{
+			*isRed = qtrue;
+		}
+		return 3;
+	}
+
+	if (!s[3])
+	{
+		return 0;
+	}
+
+	c3 = (char)tolower((unsigned char)s[3]);
+	if (c0 == 'b' && c1 == 'l' && c2 == 'u' && c3 == 'e')
+	{
+		after = s[4];
+		if (after && Q_isalpha((unsigned char)after))
+		{
+			return 0;
+		}
+		if (isRed)
+		{
+			*isRed = qfalse;
+		}
+		return 4;
+	}
+
+	return 0;
+}
+
+/*
+=================
+CG_MyTeamEmitSwappedTeamWord
+
+Emit RED<->BLUE replacement, preserving source case style
+(ALLCAPS / Title / lower).
+=================
+*/
+static void CG_MyTeamEmitSwappedTeamWord(char* out, int* o, int outSize, const char* src, int len, qboolean wasRed)
+{
+	const char* repl;
+	int         replLen;
+	int         i;
+	int         style; /* 0 lower, 1 title, 2 upper */
+	int         allUpper;
+
+	if (wasRed)
+	{
+		repl = "blue";
+		replLen = 4;
+	}
+	else
+	{
+		repl = "red";
+		replLen = 3;
+	}
+
+	allUpper = 1;
+	for (i = 0; i < len; i++)
+	{
+		if (src[i] < 'A' || src[i] > 'Z')
+		{
+			allUpper = 0;
+			break;
+		}
+	}
+
+	if (allUpper)
+	{
+		style = 2;
+	}
+	else if (src[0] >= 'A' && src[0] <= 'Z')
+	{
+		style = 1;
+	}
+	else
+	{
+		style = 0;
+	}
+
+	for (i = 0; i < replLen && *o < outSize - 1; i++)
+	{
+		char c;
+
+		c = repl[i];
+		if (style == 2 || (style == 1 && i == 0))
+		{
+			c = (char)(c - 'a' + 'A');
+		}
+		out[(*o)++] = c;
+	}
+}
+
+/*
+=================
+CG_RemapMyTeamAnnounce
+
+cg_myTeam visual swap for server announces:
+- swap RED/BLUE words (any case)
+- swap ^1/^4 only when immediately followed by that team word
+  (so stats reds like ^1DR / ^1Suicides stay red)
+=================
+*/
+static void CG_RemapMyTeamAnnounce(const char* in, char* out, int outSize)
+{
+	int i;
+	int o;
+
+	i = 0;
+	o = 0;
+	while (in[i] && o < outSize - 5)
+	{
+		qboolean isRed;
+		int      wordLen;
+
+		/* Color paired with team name: ^1RED / ^4Blue / etc. */
+		if (in[i] == '^' && (in[i + 1] == '1' || in[i + 1] == '4'))
+		{
+			wordLen = CG_MyTeamMatchTeamWord(in + i + 2, &isRed);
+			if (wordLen > 0)
+			{
+				/* Only remap when color matches the team word */
+				if ((in[i + 1] == '1' && isRed) || (in[i + 1] == '4' && !isRed))
+				{
+					out[o++] = '^';
+					out[o++] = isRed ? '4' : '1';
+					CG_MyTeamEmitSwappedTeamWord(out, &o, outSize, in + i + 2, wordLen, isRed);
+					i += 2 + wordLen;
+					continue;
+				}
+			}
+			/* Unrelated ^1/^4 (stats, errors) — leave as-is */
+			out[o++] = in[i++];
+			out[o++] = in[i++];
+			continue;
+		}
+
+		/* Standalone team word (e.g. "Red hit the fraglimit.") */
+		wordLen = CG_MyTeamMatchTeamWord(in + i, &isRed);
+		if (wordLen > 0)
+		{
+			/* Require word start: previous char must not be a letter */
+			if (i == 0 || !Q_isalpha((unsigned char)in[i - 1]))
+			{
+				CG_MyTeamEmitSwappedTeamWord(out, &o, outSize, in + i, wordLen, isRed);
+				i += wordLen;
+				continue;
+			}
+		}
+
+		out[o++] = in[i++];
+	}
+	out[o] = '\0';
+}
+
+/*
+=================
 CG_ServerCommand
 
 The string has been tokenized and can be retrieved with
@@ -2108,6 +2349,9 @@ void CG_ServerCommand(void)
 			if (cmd[1] == 'r' && cmd[2] == 'i' && cmd[3] == 'n' && cmd[4] == 't' && cmd[5] == '\0')
 			{
 				const char* had_pos;
+				const char* out;
+				qboolean swap;
+				char remapped[1024];
 
 				Q_strncpyz(text, CG_Argv(1), sizeof(text));
 				CG_RemoveChatEscapeChar(text);
@@ -2126,7 +2370,27 @@ void CG_ServerCommand(void)
 					return;
 				}
 
-				CG_Printf("%s", text);
+				/* cg_myTeam visual swap: remap team names in announces (GT_TEAM+) */
+				swap = (cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR || cg_spectPOV.integer) &&
+				       ((cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
+				        (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED));
+				out = text;
+				if (swap && cgs.gametype >= GT_TEAM)
+				{
+					CG_RemapMyTeamAnnounce(text, remapped, sizeof(remapped));
+					out = remapped;
+				}
+
+				if (cg_debugCon.integer)
+				{
+					char rawBuf[MAX_STRING_CHARS];
+					CG_StringMakeEscapeCharRAW(out, rawBuf, sizeof(rawBuf));
+					CG_Printf("%s", rawBuf);
+				}
+				else
+				{
+					CG_Printf("%s", out);
+				}
 				return;
 			}
 			/* psohtua - no-op, check last */
@@ -2169,7 +2433,20 @@ void CG_ServerCommand(void)
 				meatArg = strstr(arg, "Enjoy the Meat");
 				if (!meatArg)
 				{
-					CG_CenterPrint(arg, 120, SMALLCHAR_WIDTH);
+					qboolean swap;
+
+					swap = (cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR || cg_spectPOV.integer) &&
+					       ((cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
+					        (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED));
+					if (swap && cgs.gametype >= GT_TEAM)
+					{
+						CG_RemapMyTeamAnnounce(arg, text, sizeof(text));
+						CG_CenterPrint(text, 120, SMALLCHAR_WIDTH);
+					}
+					else
+					{
+						CG_CenterPrint(arg, 120, SMALLCHAR_WIDTH);
+					}
 					return;
 				}
 

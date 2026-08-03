@@ -705,7 +705,7 @@ static void core_Rampslide(vec3_t startVel, trace_t trace)
 {
 	qboolean slick       = (pml.groundTrace.surfaceFlags & SURF_SLICK)  ? qtrue : qfalse;
 	qboolean knockback   = (pm->ps->pm_flags & PMF_TIME_KNOCKBACK)      ? qtrue : qfalse;
-	qboolean crouchslide = (pm->ps->stats[STAT_TIME_CROUCHSLIDE] > 0)   ? qtrue : qfalse;
+	qboolean crouchslide = (pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK) ? qtrue : qfalse;
 	qboolean slide       = (slick || knockback || crouchslide)          ? qtrue : qfalse;
 	qboolean style1      = (phy_rampslide_type == VQ1 && slide)         ? qtrue : qfalse;
 	qboolean style2      = (phy_rampslide_type == VQ2)                  ? qtrue : qfalse;
@@ -733,7 +733,7 @@ static void core_SlideReflect(vec3_t startOrigin, vec3_t startVel, qboolean grav
 
 	qboolean stepped       = (trace.endpos[2] > startOrigin[2] + (startVel[2] * pml.frametime)) ? qtrue : qfalse;
 	qboolean movingUp      = (startVel[2] > 0)                ? qtrue : qfalse;
-	qboolean noRampslide   = (!pm->ps->stats[STAT_RAMPSLIDE]) ? qtrue : qfalse;
+	qboolean noRampslide   = (!(pm->ps->pm_flags & PMF_RAMPSLIDE)) ? qtrue : qfalse;
 	qboolean noJumpInput   = (!(pm->cmd.upmove > 10))         ? qtrue : qfalse;
 
 	qboolean jumpstyle2    = (phy_jump_type == 2) ? qtrue : qfalse;

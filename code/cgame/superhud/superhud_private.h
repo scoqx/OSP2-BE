@@ -580,6 +580,15 @@ void* CG_SHUDElementFragMessageCreate(const superhudConfig_t* config);
 void CG_SHUDElementFragMessageRoutine(void* context);
 void CG_SHUDElementFragMessageDestroy(void* context);
 
+void* CG_SHUDElementKillConfirmCreate(const superhudConfig_t* config);
+void CG_SHUDElementKillConfirmRoutine(void* context);
+void CG_SHUDElementKillConfirmDestroy(void* context);
+
+void* CG_SHUDElementCenterMessageCreate(const superhudConfig_t* config);
+void CG_SHUDElementCenterMessageRoutine(void* context);
+void CG_SHUDElementCenterMessageDestroy(void* context);
+qboolean CG_SHUDHasCenterMessage(void);
+
 void* CG_SHUDElementRankMessageCreate(const superhudConfig_t* config);
 void CG_SHUDElementRankMessageRoutine(void* context);
 void CG_SHUDElementRankMessageDestroy(void* context);
@@ -639,6 +648,10 @@ void CG_SHUDElementRecordMessageDestroy(void* context);
 void* CG_SHUDElementFollowMessageCreate(const superhudConfig_t* config);
 void CG_SHUDElementFollowMessageRoutine(void* context);
 void CG_SHUDElementFollowMessageDestroy(void* context);
+
+void* CG_SHUDElementRespawnMessageCreate(const superhudConfig_t* config);
+void CG_SHUDElementRespawnMessageRoutine(void* context);
+void CG_SHUDElementRespawnMessageDestroy(void* context);
 
 void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config);
 void CG_SHUDElementSpectatorsRoutine(void* context);
@@ -745,6 +758,22 @@ void* CG_SHUDElementTeam13Create(const superhudConfig_t* config);
 void* CG_SHUDElementTeam14Create(const superhudConfig_t* config);
 void* CG_SHUDElementTeam15Create(const superhudConfig_t* config);
 void* CG_SHUDElementTeam16Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamRed1Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamRed2Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamRed3Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamRed4Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamRed5Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamRed6Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamRed7Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamRed8Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamBlue1Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamBlue2Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamBlue3Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamBlue4Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamBlue5Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamBlue6Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamBlue7Create(const superhudConfig_t* config);
+void* CG_SHUDElementTeamBlue8Create(const superhudConfig_t* config);
 void CG_SHUDElementTeamRoutine(void* context);
 void CG_SHUDElementTeamDestroy(void* context);
 
@@ -832,6 +861,16 @@ void CG_SHUDElementRoundWarmupDestroy(void* context);
 void* CG_SHUDElementLastStandingCreate(const superhudConfig_t* config);
 void CG_SHUDElementLastStandingRoutine(void* context);
 void CG_SHUDElementLastStandingDestroy(void* context);
+
+void* CG_SHUDElementThawOwnCreate(const superhudConfig_t* config);
+void* CG_SHUDElementThawFreezingCreate(const superhudConfig_t* config);
+void CG_SHUDElementThawRoutine(void* context);
+void CG_SHUDElementThawDestroy(void* context);
+
+void* CG_SHUDElementThawOwnBarCreate(const superhudConfig_t* config);
+void* CG_SHUDElementThawFreezingBarCreate(const superhudConfig_t* config);
+void CG_SHUDElementThawBarRoutine(void* context);
+void CG_SHUDElementThawBarDestroy(void* context);
 
 /*
  * cg_superhud_util.c
@@ -1001,6 +1040,8 @@ typedef struct
 	{
 		qboolean isInitialized;
 		qhandle_t iconShader;
+		qboolean useMarkColor; /* yes/no/medic/frozen: color captured at mark time */
+		vec4_t iconColor;
 		vec4_t senderColor;
 		char senderName[MAX_QPATH];
 		char eventName[MAX_QPATH];
@@ -1066,6 +1107,11 @@ typedef struct
 		int time;
 		char message[256];
 	} fragmessage;
+	struct
+	{
+		int time;
+		char message[256];
+	} killconfirm;
 	struct
 	{
 		int time;

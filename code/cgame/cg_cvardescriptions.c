@@ -233,7 +233,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_lightningSilent", "Disables hit sound when using lightning gun. Set ^20^7 to enable sound." },
 	{ "cg_lightningHide", "Disables lightning gun beam rendering. Set ^20^7 to show beam." },
 	{ "cg_delag", "Select rendering mode for shots at predicted positions instead of crosshair target.\nPurely visual; does not affect server hit processing.\n  ^20^7 - disabled\n  ^21^7 - Lightning Gun and Railgun\n  ^22^7 - Lightning Gun only\n  ^24^7 - Railgun only" },
-	{ "cg_projectileNudge", "Compensates for lag when rendering rockets/plasma. Renders projectiles slightly ahead, as the server sees them.\n  ^20^7 - disabled\n  ^21^7 - enemy projectiles\n  ^22^7 - own projectiles\n  ^23^7 - both, enemy and own projectiles." },
+	{ "cg_projectileNudge", "Lag compensate rockets/plasma (draw ahead).\n  ^20^7 - off\n  ^21^7 - enemy\n  ^22^7 - own\n  ^23^7 - both\nOwn (^22^7) skipped if server missile predict is on." },
 	{ "cg_hideScores", "Hides the scoreboard for the XQ3E client to prevent double rendering\n  ^20^7 - disabled\n  ^21^7 - enabled" },
 	{ "cg_deadBodyBlack", "Dead body color\n  ^20^7 - default\n  ^21^7 - light gray\n  ^22^7 - gray\n  ^23^7 - dark gray" },
 	{ "cg_spectGlow", "Highlights players when spectating. Set ^20^7 to disable." },
@@ -321,7 +321,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_altShadow", "Alternative shadow. Uses shaders markShadowNew, markShadowNew#, where # is a number from 2 to 17\n  0 - disabled\n  1-16 for customization. " },
 	{ "cg_altShadowColor", "Color of the ^3cg_altShadow^7.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_scoreboardShowId", "Display player IDs on the scoreboard. Set ^20^7 to hide." },
-	{ "cg_drawFriend", "Show marker above teammate:\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - frozenFoe only" },
+	{ "cg_drawFriend", "Show marker above teammate:\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - frozenFoe only\nBitmask:\n  ^24^7 - same for spectators (e.g. ^25^7 = enabled+spec, ^26^7 = frozen+spec)" },
 	{ "cg_teamIndicator", "Draw player indicator over ally. Set ^20^7 to disable.\nBitmask:\n  ^21^7 - name\n  ^22^7 - name, color via ^3cg_teamIndicatorColor^7\n  ^24^7 - HP/AP text\n  ^28^7 - frozen info\n  ^216^7 - status icon\n  ^232^7 - spectator mode\n  ^264^7 - HP/AP bar" },
 	{ "cg_teamIndicatorAdjust", "Font scaling for the indicator\n  ^20.5^7 - ^22^7" },
 	{ "cg_teamIndicatorColor", "Indicator text color. For ^3cg_teamIndicator ^22^7\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
@@ -370,6 +370,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_friendHudMarkerMaxScale", "Maximum additional scale factor based on distance (applied to base size)." },
 	{ "cg_friendHudMarkerMinScale", "Minimum scale factor based on distance." },
 	{ "cg_friendsWallhack", "Teammate wallhack and map positions. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - foe marker through walls\n  ^22^7 - ^3team indicator^7 through walls\n  ^24^7 - allies global pos" },
+	{ "cg_playerXray", "Player silhouettes through walls. In-game: teammates only; spect/demo: all. Bitmask:\n  ^21^7 - on\n  ^22^7 - model colors\n  ^24^7 - bright weapon colors" },
 	{ "cg_drawHudMarkers", "Display teammate markers on the HUD. Set ^20 ^7to disable." },
 	{ "cg_scoreboardRtColors", "Color of the red team scoreboard. ^3cg_scoreboardBE^7 must be enabled \n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Yellow^7\", \"^2T E T^7\", \"^20099FF 99FF00 99FF00^7\" or \"^24 Red 4^7\"." },
 	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Blue^7\", \"^2E T E^7\", \"^20099FF 99FF00 20099FF^7\" or \"^24 Red 2^7\"." },
@@ -496,6 +497,9 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_chatWindowNumLock", "Favorite emoji key layout in chat window (^3/enterchat^7).\n  ^21^7 - Ctrl+0-9 for favorites (Ctrl+arrows navigate)\n  ^20^7 - NumPad layout (arrows/Home/PgUp…)" },
 	{ "be_ttfScale", "TTF optical glyph scale. Cell height unchanged.\n  ^20.25^7 - ^22^7" },
 	{ "be_ttfFontOffset", "TTF vertical glyph offset (fraction of cell height).\n  ^2-1^7 - ^21^7" },
+	{ "cg_kcEnemyColor", "Kill confirm token Quad color for enemies. Empty uses team colors.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
+	{ "cg_kcTeamColor", "Kill confirm token Quad color for teammates. Empty uses team colors.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
+	{ "cg_enemyAltShadowColor", "Color of ^3cg_altShadow^7 for enemies. Empty uses ^3cg_altShadowColor^7.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 };
 
 

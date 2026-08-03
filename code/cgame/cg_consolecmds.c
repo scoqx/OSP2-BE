@@ -531,6 +531,10 @@ void CG_OSPClientVersion_f(void)
 void CG_OSPClientConfig_f(void)
 {
 	const char* physics = "VQ3";
+	const char* conf;
+	const char* val;
+	const char* serverinfo;
+	const char* systeminfo;
 
 	if (cgs.osp.server_mode & 1)
 	{
@@ -541,22 +545,73 @@ void CG_OSPClientConfig_f(void)
 		physics = "CQ3";
 	}
 
-
 	CG_Printf("^5OSP2 Server-forced settings:\n", OSP_VERSION);
 	CG_Printf("    ^3OSP2-BE ^3Supported server:    %s\n", CG_YES_NO_STR(cgs.beSupportedServer));
 	CG_Printf("    ^3Physics:                     ^2%s\n", physics);
-	CG_Printf("    ^3Alternative weapons:         %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG));
-	CG_Printf("    ^3Timer(deprecated):           %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_TIMER_FLAG));
-	CG_Printf("    ^3FPS restriction:             %s\n", CG_YES_NO_STR(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK));
-	// CG_Printf("    ^3Damage info:                 %s\n", CG_YES_NO_STR(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO));
-	CG_Printf("    ^3Damage info:                 %s\n", CG_LOL(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO));
-	CG_Printf("    ^3Pmove allowed:               %s\n", CG_YES_NO_STR(cgs.osp.allow_pmove));
-	CG_Printf("    ^3Timenudge minimum:           ^3%s\n", cgs.osp.serverConfigMinimumTimenudge ? va("%i", cgs.osp.serverConfigMinimumTimenudge) : "-");
-	CG_Printf("    ^3Timenudge maximum:           ^3%s\n", cgs.osp.serverConfigMaximumTimenudge ? va("%i", cgs.osp.serverConfigMaximumTimenudge) : "-");
-	CG_Printf("    ^3Maxpackets minimum:          ^3%s\n", cgs.osp.serverConfigMinimumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
-	CG_Printf("    ^3Maxpackets maximum:          ^3%s\n", cgs.osp.serverConfigMaximumMaxpackets ? va("%i", cgs.osp.serverConfigMinimumMaxpackets) : "-");
-	// CG_Printf("    ^3FriendsWallhack (BE):        %s\n", CG_LOL_R(cgs.beDisableFeatures));
 
+	conf = CG_ConfigString(CS_OSP_CUSTOM_CLIENT);
+	if (conf && conf[0])
+	{
+		CG_Printf("    ^3Alternative weapons:         %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_ALT_WEAPON_FLAG));
+		CG_Printf("    ^3Timer(deprecated):           %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_TIMER_FLAG));
+	}
+
+	conf = CG_ConfigString(CS_OSP2BE_TOURNEY_RESTRICTIONS);
+	if (conf && conf[0])
+	{
+		CG_Printf("    ^3FPS restriction:             %s\n", CG_YES_NO_STR(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK));
+	}
+
+	conf = CG_ConfigString(CS_OSP_CUSTOM_CLIENT2);
+	if (conf && conf[0])
+	{
+		CG_Printf("    ^3Damage info:                 %s\n", CG_LOL(cgs.osp.custom_client_2 & OSP_CUSTOM_CLIENT_2_ENABLE_DMG_INFO));
+	}
+
+	conf = CG_ConfigString(CS_OSP_ALLOW_PMOVE);
+	if (conf && conf[0])
+	{
+		CG_Printf("    ^3Pmove allowed:               %s\n", CG_YES_NO_STR(cgs.osp.allow_pmove));
+	}
+
+	if (cgs.osp.serverConfigMinimumTimenudge)
+	{
+		CG_Printf("    ^3Timenudge minimum:           ^3%i\n", cgs.osp.serverConfigMinimumTimenudge);
+	}
+	if (cgs.osp.serverConfigMaximumTimenudge)
+	{
+		CG_Printf("    ^3Timenudge maximum:           ^3%i\n", cgs.osp.serverConfigMaximumTimenudge);
+	}
+	if (cgs.osp.serverConfigMinimumMaxpackets)
+	{
+		CG_Printf("    ^3Maxpackets minimum:          ^3%i\n", cgs.osp.serverConfigMinimumMaxpackets);
+	}
+	if (cgs.osp.serverConfigMaximumMaxpackets)
+	{
+		CG_Printf("    ^3Maxpackets maximum:          ^3%i\n", cgs.osp.serverConfigMaximumMaxpackets);
+	}
+
+	serverinfo = CG_ConfigString(CS_SERVERINFO);
+	val = Info_ValueForKey(serverinfo, "g_altFlags");
+	if (val[0])
+	{
+		CG_Printf("    ^3Overbounce:                  %s\n", CG_YES_NO_STR(!(cgs.ratFlags & RAT_NOOVERBOUNCE)));
+		CG_Printf("    ^3Pass-through walls:          %s\n", CG_YES_NO_STR(cgs.ratFlags & RAT_NOINVISWALLS));
+		CG_Printf("    ^3Pass-through enemies:        %s\n", CG_YES_NO_STR(cgs.ratFlags & RAT_PASSENEMIES));
+		CG_Printf("    ^3Pass-through allies:         %s\n", CG_YES_NO_STR(cgs.ratFlags & RAT_PASSALLIES));
+	}
+
+	systeminfo = CG_ConfigString(CS_SYSTEMINFO);
+	val = Info_ValueForKey(systeminfo, "pmove_float");
+	if (val[0])
+	{
+		CG_Printf("    ^3pmove_float:                 ^3%s\n", val);
+	}
+	val = Info_ValueForKey(systeminfo, "pmove_accurate");
+	if (val[0])
+	{
+		CG_Printf("    ^3pmove_accurate:              ^3%s\n", val);
+	}
 }
 
 void CG_OSPDrawNewCredits_f(void)
@@ -2303,6 +2358,7 @@ void CG_BEHelp_f(void)
 		CG_BEHelp_PrintFeature("cg_friendsWallhack", CG_BE_TEAM_FOE_WH, "Show teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_drawHudMarkers", CG_BE_HUD_MARKERS, "Display teammate markers on the HUD", 0);
 		CG_BEHelp_PrintFeature("cg_drawHitBox", CG_BE_HITBOX, "Draw enemy hitboxes", 0);
+		CG_BEHelp_PrintFeature("cg_playerXray", CG_BE_TEAM_FOE_WH, "Player silhouettes through walls. In-game: teammates only; spect/demo: all. Bitmask: 1=on, 2=model colors, 4=bright weapon colors", 0);
 		CG_BEHelp_PrintFeature("cg_friendsWallhackFrozen", CG_BE_TEAM_FROZEN, "Show frozen teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);
 		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color override", 0);

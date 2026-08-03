@@ -219,7 +219,7 @@ static qboolean q3a_CheckJump(void)
 		pm->ps->pm_flags |=  PMF_BACKWARDS_JUMP;
 	}
 	// Reset crouchslide
-	pm->ps->stats[STAT_TIME_CROUCHSLIDE] = 0;
+	pm->ps->stats[STAT_OSDF_PACK] &= ~OSDF_CROUCH_MASK;
 	// We have jumped
 	if (pm->debugLevel)
 	{
@@ -297,7 +297,7 @@ void q3a_AirMove(void)
 	int crouchslide_time;
 
 	{
-		time = pm->ps->stats[STAT_TIME_CROUCHSLIDE];
+		time = pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK;
 
 		if (phy_movetype.integer == CPM)
 		{
@@ -312,7 +312,8 @@ void q3a_AirMove(void)
 			crouchslide_time = phy_crouchslide_timemax;
 		}
 
-		pm->ps->stats[STAT_TIME_CROUCHSLIDE] = IntMax(time + pml.msec * phy_crouchslide_framecount, crouchslide_time);
+		time = IntMax(time + pml.msec * phy_crouchslide_framecount, crouchslide_time);
+		pm->ps->stats[STAT_OSDF_PACK] = (pm->ps->stats[STAT_OSDF_PACK] & ~OSDF_CROUCH_MASK) | (time & OSDF_CROUCH_MASK);
 	}
 
 	core_Friction();
@@ -503,7 +504,7 @@ void q3a_WalkMove(void)
 		}
 	}
 
-	crouchslide = (pm->ps->pm_flags & PMF_DUCKED && pm->ps->stats[STAT_TIME_CROUCHSLIDE] > 0) ? qtrue : qfalse;
+	crouchslide = (pm->ps->pm_flags & PMF_DUCKED && (pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK) > 0) ? qtrue : qfalse;
 
 	// when a player gets hit, they temporarily lose full control, which allows them to be moved a bit
 	if ((pml.groundTrace.surfaceFlags & SURF_SLICK || pm->ps->pm_flags & PMF_TIME_KNOCKBACK)

@@ -1259,28 +1259,27 @@ void CG_SHUDBarPrint(const superhudConfig_t* cfg, superhudBarContext_t* ctx, flo
 
 team_t CG_SHUDGetOurActiveTeam(void)
 {
-	const qboolean is_freeze = CG_OSPIsGameTypeFreeze();
+	team_t our_team;
 
-	team_t our_team = TEAM_FREE;
-	if (is_freeze)
-	{
+	if (CG_OSPIsGameTypeFreeze())
 		our_team = cgs.clientinfo[cg.clientNum].rt;
-	}
 	else
-	{
 		our_team = cgs.clientinfo[cg.clientNum].team;
-	}
+
+	/* spectPOV 0: no chase team POV */
+	if (our_team == TEAM_SPECTATOR && !cg_spectPOV.integer)
+		return TEAM_SPECTATOR;
+
+	/* beMyTeam = viewed player (UpdateMyTeam); covers play + spectPOV chase */
+	if (cgs.beMyTeam == TEAM_RED || cgs.beMyTeam == TEAM_BLUE)
+		return cgs.beMyTeam;
 
 	if (our_team == TEAM_SPECTATOR)
 	{
-		if (is_freeze)
-		{
+		if (CG_OSPIsGameTypeFreeze())
 			our_team = cgs.clientinfo[cg.snap->ps.clientNum].rt;
-		}
 		else
-		{
 			our_team = cgs.clientinfo[cg.snap->ps.clientNum].team;
-		}
 	}
 	return our_team;
 }

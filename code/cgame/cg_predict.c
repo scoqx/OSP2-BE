@@ -133,6 +133,25 @@ static void CG_ClipMoveToEntities(const vec3_t start, const vec3_t mins, const v
 			continue;
 		}
 
+		/* g_passPlayers: skip players we may pass through (movement traces only) */
+		if ((mask & CONTENTS_BODY) && !(mask & CONTENTS_CORPSE)
+		        && ent->number < MAX_CLIENTS
+		        && (cgs.ratFlags & (RAT_PASSENEMIES | RAT_PASSALLIES))
+		        && (cgs.ratFlags & (RAT_PASSENEMIES | RAT_PASSALLIES)) != (RAT_PASSENEMIES | RAT_PASSALLIES))
+		{
+			if (cgs.ratFlags & RAT_PASSENEMIES)
+			{
+				if (CG_IS_ENEMY_SIMPLE(&cgs.clientinfo[ent->number]))
+				{
+					continue;
+				}
+			}
+			else if (!CG_IS_ENEMY_SIMPLE(&cgs.clientinfo[ent->number]))
+			{
+				continue;
+			}
+		}
+
 		if (ent->solid == SOLID_BMODEL)
 		{
 			// special value for bmodel
@@ -584,6 +603,14 @@ void CG_PredictPlayerState(void)
 	{
 		cg_pmove.tracemask &= ~CONTENTS_BODY;   // spectators can fly through bodies
 	}
+	if (cgs.ratFlags & RAT_NOINVISWALLS)
+	{
+		cg_pmove.tracemask &= ~CONTENTS_PLAYERCLIP;
+	}
+	if ((cgs.ratFlags & (RAT_PASSENEMIES | RAT_PASSALLIES)) == (RAT_PASSENEMIES | RAT_PASSALLIES))
+	{
+		cg_pmove.tracemask &= ~CONTENTS_BODY;
+	}
 	cg_pmove.noFootsteps = (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE) || (cgs.dmflags & DF_NO_FOOTSTEPS) > 0;
 	cg_pmove.noFallDamage = (cgs.dmflags & DF_NO_FALLING) > 0;
 
@@ -641,6 +668,7 @@ void CG_PredictPlayerState(void)
 	cg_pmove.pmove_msec = pmove_msec.integer;
 	cg_pmove.pmove_float = pmove_float.integer;
 	cg_pmove.pmove_accurate = pmove_accurate.integer;
+	cg_pmove.pmove_ratflags = cgs.ratFlags;
 
 	/* g_movement 2 → QL bg path; 0/1 stay on OSP CS 806 globals + autohop */
 	if (cgs.beMovement == 2)
@@ -778,17 +806,55 @@ void CG_PredictPlayerState(void)
 			cg_pmove.cmd.serverTime = ((cg_pmove.cmd.serverTime + pmove_msec.integer - 1) / pmove_msec.integer) * pmove_msec.integer;
 		}
 
-		// run the Pmove
-		if (cgs.pmove_phy_movetype >= 0 && cgs.beMovement != 2)
+		/* Missile predict: stash muzzle only on attack frames for RL/PG/BFG */
 		{
-			cg_pmove.movetype = cgs.pmove_phy_movetype;
-			PmoveEx(&cg_pmove, phy_PmoveSingle);
-		}
-		else
-		{
-			cg_pmove.movetype = 0;
-			memset(&cg_pmove.pmd, 0, sizeof(cg_pmove.pmd));
-			Pmove(&cg_pmove);
+			qboolean stashFire = qfalse;
+			int oldEventSeq = 0;
+
+			if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
+			        && (cg_pmove.cmd.buttons & BUTTON_ATTACK))
+			{
+				int w = cg.predictedPlayerState.weapon;
+
+				if (w == WP_ROCKET_LAUNCHER || w == WP_PLASMAGUN || w == WP_BFG)
+				{
+					VectorCopy(cg.predictedPlayerState.origin, cg.missileFireOriginOld);
+					oldEventSeq = cg.predictedPlayerState.eventSequence;
+					stashFire = qtrue;
+				}
+			}
+
+			// run the Pmove
+			if (cgs.pmove_phy_movetype >= 0 && cgs.beMovement != 2)
+			{
+				cg_pmove.movetype = cgs.pmove_phy_movetype;
+				PmoveEx(&cg_pmove, phy_PmoveSingle);
+			}
+			else
+			{
+				cg_pmove.movetype = 0;
+				memset(&cg_pmove.pmd, 0, sizeof(cg_pmove.pmd));
+				Pmove(&cg_pmove);
+			}
+
+			if (stashFire && cg.predictedPlayerState.eventSequence != oldEventSeq)
+			{
+				int ev = cg.predictedPlayerState.events[oldEventSeq & (MAX_PS_EVENTS - 1)];
+
+				if (ev != EV_FIRE_WEAPON
+				        && cg.predictedPlayerState.eventSequence > oldEventSeq + 1)
+				{
+					ev = cg.predictedPlayerState.events[(oldEventSeq + 1) & (MAX_PS_EVENTS - 1)];
+				}
+				if (ev == EV_FIRE_WEAPON)
+				{
+					VectorCopy(cg.predictedPlayerState.origin, cg.missileFireOriginNew);
+					VectorCopy(cg.predictedPlayerState.viewangles, cg.missileFireAngles);
+					cg.missileFireViewHeight = cg.predictedPlayerState.viewheight;
+					cg.missileFireTime = cg_pmove.cmd.serverTime;
+					cg.missileFireValid = qtrue;
+				}
+			}
 		}
 
 		moved = qtrue;

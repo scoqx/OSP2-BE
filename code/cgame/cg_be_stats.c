@@ -365,6 +365,7 @@ static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCo
 	const newStatsInfo_t* s = &cgs.newStats;
 	int style = cg_bestats_style.integer;  // global cvar/setting
 	qboolean isFreeze = cgs.osp.gameTypeFreeze;
+	qboolean isKillConfirm = cgs.killConfirmMode;
 
 	if (outCols == NULL)
 	{
@@ -382,12 +383,16 @@ static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCo
 		{
 			CG_BEStatsSetTokenLabel(tokens, 0, col, "Thws", beStatsSettings.colorC);
 		}
+		else if (isKillConfirm)
+		{
+			CG_BEStatsSetTokenLabel(tokens, 0, col, "CFM", beStatsSettings.colorC);
+		}
 		col++;
 		// Values
 		col = 0;
 		CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->score, beStatsSettings.defaultColor);
 		CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->kills, beStatsSettings.defaultColor);
-		if (isFreeze)
+		if (isFreeze || isKillConfirm)
 		{
 			CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->losses, beStatsSettings.defaultColor);
 		}
@@ -427,11 +432,18 @@ static void CG_BEStatsBuildGeneral_Team(BEStatToken_t tokens[32][12], int* outCo
 		// Kills
 		CG_BEStatsSetTokenLabel(tokens, 0, col, "Klls", beStatsSettings.colorG);
 		CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->kills, beStatsSettings.defaultColor);
-		// Thaws
+		// Thaws / Confirms
 		if (isFreeze)
 		{
 			CG_BEStatsSetTokenLabel(tokens, 0, col, "Thaws", beStatsSettings.colorC);
 			CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->losses, beStatsSettings.defaultColor);
+		}
+		else if (isKillConfirm)
+		{
+			CG_BEStatsSetTokenLabel(tokens, 0, col, "CFM", beStatsSettings.colorC);
+			CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->losses, beStatsSettings.defaultColor);
+			CG_BEStatsSetTokenLabel(tokens, 0, col, "Rtrn", beStatsSettings.colorG);
+			CG_BEStatsSetTokenValueInt(tokens, 1, col++, "%d", s->returns, beStatsSettings.defaultColor);
 		}
 		// Death
 		CG_BEStatsSetTokenLabel(tokens, 0, col, "Dths", beStatsSettings.colorR);

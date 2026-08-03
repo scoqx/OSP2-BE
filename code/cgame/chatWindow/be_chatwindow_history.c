@@ -781,41 +781,18 @@ float CG_BEChat_HistoryTextWidth(int* outDisplayRows, qboolean timeFilter)
 	float w;
 	float wFull;
 	float winW;
-	int visible;
 	int total;
 
-	visible = CG_BEChat_VisibleHistoryLines();
 	CG_BEChat_WindowLayout(NULL, NULL, &winW, NULL);
 	wFull = winW - BECHAT_PAD * 2.0f;
-
-	if (beChatWindow.open)
+	/* Always reserve scrollbar gutter so wrap matches fade / enterchat / +showchat. */
+	w = wFull - BECHAT_SB_W - BECHAT_SB_GAP;
+	if (w < BECHAT_CHAR_W * 2.0f)
 	{
-		float wNarrow;
-
-		wNarrow = wFull - BECHAT_SB_W - BECHAT_SB_GAP;
-		if (wNarrow < BECHAT_CHAR_W * 2.0f)
-		{
-			wNarrow = BECHAT_CHAR_W * 2.0f;
-		}
-		CG_BEChat_EnsureRowsCache(wNarrow, timeFilter);
-		total = beChatRowsCacheTotal;
-		if (total > visible)
-		{
-			w = wNarrow;
-		}
-		else
-		{
-			CG_BEChat_EnsureRowsCache(wFull, timeFilter);
-			total = beChatRowsCacheTotal;
-			w = wFull;
-		}
+		w = BECHAT_CHAR_W * 2.0f;
 	}
-	else
-	{
-		CG_BEChat_EnsureRowsCache(wFull, timeFilter);
-		total = beChatRowsCacheTotal;
-		w = wFull;
-	}
+	CG_BEChat_EnsureRowsCache(w, timeFilter);
+	total = beChatRowsCacheTotal;
 
 	if (outDisplayRows)
 	{

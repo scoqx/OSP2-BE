@@ -108,7 +108,12 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | roundwarmup_text              | Текст разминки раунда                                        |
 | roundwarmup_time              | Таймер до начала раунда                                      |
 | roundwarmup_fight             | Начало раунда                                                |
-| laststanding                  | Последний живой в команде (только Freeze Tag).               |
+| laststanding                  | Последний живой в команде                                    |
+| thaw_own                      | Свой % разморозки, пока заморожен                            |
+| thaw_freezing                 | % разморозки другого                                         |
+| thaw_own_bar                  | Полоска своего % разморозки                                  |
+| thaw_freezing_bar             | Полоска % разморозки другого                                 |
+| respawnmessage                | Таймер респауна: до attack и до force (не freeze)            |
 
 
 ## Команды
@@ -271,7 +276,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 - key6show - скрывать если не нажата кнопка +shudkey6
 - key7show - скрывать если не нажата кнопка +shudkey7
 - key8show - скрывать если не нажата кнопка +shudkey8
-- showempty - показывать пустые значения `для  элементов: weapon/player stats, tempAcc, Score_NME, StatusBar_ArmorCount`
+- showempty - показывать пустые значения `для  элементов: weapon/player stats, tempAcc, Score_NME, StatusBar_ArmorCount, thaw_freezing_bar`
 - gt_ffa - скрывать при режиме игры каждый сам за себя (Free for all)
 - gt_tourney -  скрывать при турнирном режиме игры (дуэли)
 - gt_tdm -  скрывать при командном режиме игры. Только team death match
@@ -381,7 +386,13 @@ execute { cg_fov 100; exec myconfig.cfg }
 
 ## team1-16 (team overlay)
 - Style 1 - компактный режим, выводится только ник и здоровье
-- rect x y w h - аргумент w задаёт ширину области, в пределах которой отображается ник
+- Style 2 - квадрат статуса (HxH) + ник (name_clean, белый) поверх HP-бара (0–75% высоты строки) и полоска брони (77–100%). Полосы: два слоя alpha 0.33/0.66, max 100. `color` — HP, `color2` — броня (по умолчанию цвет команды / FFA белый). Иконка: оружие+powerup / skull / снежинка (freeze вне warmup). У followed-игрока — белая inner-рамка 1px на квадрате.
+- rect x y w h - аргумент w задаёт ширину области ника (style 0/1) или блока ника/полос (style 2); h — высота строки (у style 2 ещё размер квадрата)
+
+## teamRed1-8 / teamBlue1-8
+- Как team1-8, но показывают красную и синюю команды отдельно — только когда вы в спектаторах.
+- Нужны team-режим, `cg_drawTeamOverlay` и сервер OSP2-BE.
+- Параметры (style, rect и т.д.) — как у team1-8.
 
 ## roundwarmup_fight roundwarmup_text
 - Есть возможность задать свой текст через { text "Your text"; }
@@ -393,4 +404,26 @@ execute { cg_fov 100; exec myconfig.cfg }
 ## laststanding
 - Текст по умолчанию: `The Last Standing`. Свой текст или картинка — как у **roundwarmup_text** / **roundwarmup_fight** (`text`, `image`).
 - `time` — длительность показа в мс с момента появления; без `time` — пока условие выполняется.
-- `style 1` — звук `sound/feedback/laststanding.wav` при появлении (один раз за эпизод).
+- `style 1` — звук `sound/feedback/laststanding.wav` когда число живых в команде становится 1 (не при повторном показе HUD).
+
+## thaw_own / thaw_freezing
+- Только на OSP2-BE серверах (`beSupportedServer` / CS 887).
+- `text` / `image` — как у **laststanding**.
+- `style 1` — только ally-thaw (скрыть авто); для `thaw_own`.
+
+## thaw_own_bar / thaw_freezing_bar
+- Только на OSP2-BE серверах (`beSupportedServer` / CS 887).
+- Как StatusBar_*Bar (`doublebar`, `direction`, `color`/`color2`, …).
+- `style` bitmask: `1` — ally-thaw (own); `2` — overlay doublebar; `3` — оба.
+- `visflags showempty` — пустой bar при 0% (`thaw_freezing_bar`; у own и так при 0%).
+
+## respawnmessage
+- Только на OSP2-BE серверах (`beSupportedServer` / CS 887).
+- Пока мёртв вне freeze: `Respawn in A (B)` — A до ручного респауна, B до forceRespawn.
+- Без force: `Respawn in A`. Можно жать fire: `Respawn (B)` или `Respawn`.
+- Время: ≥3 с — целое; <3 с — одна десятая (`2.9` …).
+- Не показывается в freezetag (`CG_OSPIsGameTypeFreeze`).
+- Default `visflags dead`.
+
+## centermessage
+- Rect (3 аргумент) — сколько символов в строке до переноса; при `0` — 40.

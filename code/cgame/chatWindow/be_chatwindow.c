@@ -2427,12 +2427,6 @@ static void CG_BEChat_PollKeyRepeat(float maxTextW)
 		return;
 	}
 
-	if (CG_BEChat_FavEmojiKeyToDigit(key, NULL) && !CG_BEChat_AltIsHeld())
-	{
-		beChatWindow.repeatKey = -1;
-		return;
-	}
-
 	if ((key == K_UPARROW || key == K_DOWNARROW) &&
 	        trap_Key_IsDown(K_CTRL) == qfalse &&
 	        !CG_BEChat_EmojiAcIsActive() && !CG_BEChat_CmdAcIsActive() &&
@@ -3388,14 +3382,7 @@ void CG_BEChat_Draw(void)
 	bg[3] = cg_chatWindowBgOpaque.value;
 	if (!(cg_chatWindow.integer & BE_CHAT_INPUT_ONLY_BG_BIT))
 	{
-		float bgH;
-
-		bgH = h;
-		if (beChatWindow.historyOnly)
-		{
-			bgH -= BECHAT_INPUT_ROW_H;
-		}
-		CG_FillRect(x, y, w, bgH, bg);
+		CG_FillRect(x, y, w, h, bg);
 	}
 
 	visible = CG_BEChat_VisibleHistoryLines();

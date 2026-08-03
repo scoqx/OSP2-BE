@@ -392,9 +392,11 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/superhud/elements/element_chat.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_flagstatus.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_followmessage.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_respawnmessage.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_spectators.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_fps.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_fragmessage.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_killconfirm.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_gametime.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_gametype.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_grid.o \
@@ -435,6 +437,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/superhud/elements/element_warmupinfo.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_roundwarmup.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_laststanding.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_thaw.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_weaponlist.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_weapon_stats.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_player_stats.o \

@@ -13,7 +13,6 @@ typedef struct
 	int index;
 } shudElementTeamTasks_t;
 
-static qhandle_t CG_SHUDTeamTaskGetTaskIcon(int taskType, qboolean isPickup);
 static void CG_SHUDTeamTaskGetTaskName(int taskType, char* name, int maxlen, qboolean isPickup);
 
 static void* CG_SHUDElementTeamTasksCreate(const superhudConfig_t* config, int line)
@@ -134,8 +133,26 @@ static void CG_SHUDElementTeamTasksInitializeRuntime(shudElementTeamTasks_t* ele
 	/* Calculate game time when task was sent */
 	SHUD_WRITE_MATCH_TIME_STR(entry->runtime.timeString, sizeof(entry->runtime.timeString), entry->gameTime);
 
-	/* Get icon */
-	entry->runtime.iconShader = CG_SHUDTeamTaskGetTaskIcon(entry->taskType, entry->isPickup);
+	/* Icon + mark color once (medic HP color matches world/overhead mark) */
+	{
+		qhandle_t markShader;
+		vec4_t markColor;
+
+		CG_GetTeamTaskMarkerShaderAndColor(entry->taskType, &markShader, markColor, qfalse,
+		                                   entry->sender, entry->isPickup, NULL);
+		entry->runtime.iconShader = markShader;
+		if (markShader == cgs.media.frozenFoeTagShader ||
+		        entry->taskType == TEAMTASK_YES || entry->taskType == TEAMTASK_NO ||
+		        entry->taskType == TEAMTASK_MEDIC)
+		{
+			Vector4Copy(markColor, entry->runtime.iconColor);
+			entry->runtime.useMarkColor = qtrue;
+		}
+		else
+		{
+			entry->runtime.useMarkColor = qfalse;
+		}
+	}
 
 	/* Get sender name */
 	if (entry->sender >= 0 && entry->sender < MAX_CLIENTS)
@@ -387,25 +404,11 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 		element->ctxIcon.coord.named.w = element->ctxIcon.coord.named.h * 0.75f;
 		Vector4Copy(element->ctxIcon.color_origin, element->ctxIcon.color);
 		CG_SHUDConfigPickColor_Runtime(&element->config, element->ctxIcon.color);
+		if (entry->runtime.useMarkColor)
 		{
-			qhandle_t markShader;
-			vec4_t markColor;
-
-			CG_GetTeamTaskMarkerShaderAndColor(entry->taskType, &markShader, markColor, qfalse, entry->sender, entry->isPickup, NULL);
-			/* Snowflake (frozenFoeTag): FROZEN_ALLY, FROZEN_ENEMY, HERE_DEAD in freeze mode */
-			if (markShader == cgs.media.frozenFoeTagShader)
-			{
-				element->ctxIcon.color[0] = markColor[0];
-				element->ctxIcon.color[1] = markColor[1];
-				element->ctxIcon.color[2] = markColor[2];
-			}
-			else if (entry->taskType == TEAMTASK_YES || entry->taskType == TEAMTASK_NO ||
-			         entry->taskType == TEAMTASK_MEDIC)
-			{
-				element->ctxIcon.color[0] = markColor[0];
-				element->ctxIcon.color[1] = markColor[1];
-				element->ctxIcon.color[2] = markColor[2];
-			}
+			element->ctxIcon.color[0] = entry->runtime.iconColor[0];
+			element->ctxIcon.color[1] = entry->runtime.iconColor[1];
+			element->ctxIcon.color[2] = entry->runtime.iconColor[2];
 		}
 		if (fadeScale != 1.0f)
 		{
@@ -422,15 +425,6 @@ void CG_SHUDElementTeamTasksRoutine(void* context)
 	CG_SHUDTextPrintNew(&element->config, &element->ctxEventName, qfalse);
 }
 
-
-static qhandle_t CG_SHUDTeamTaskGetTaskIcon(int taskType, qboolean isPickup)
-{
-	qhandle_t shader;
-	vec4_t color;
-
-	CG_GetTeamTaskMarkerShaderAndColor(taskType, &shader, color, qfalse, -1, isPickup, NULL);
-	return shader;
-}
 
 static void CG_SHUDTeamTaskGetTaskName(int taskType, char* name, int maxlen, qboolean isPickup)
 {

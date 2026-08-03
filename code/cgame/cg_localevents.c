@@ -116,6 +116,19 @@ void CG_LocalEventCvarChanged_cl_maxpackets(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cl_timenudge(cvarTable_t* cvart)
 {
+	if (cgs.ratFlags & RAT_NOTIMENUDGE)
+	{
+		if (cl_timenudge.integer != 0)
+		{
+			CG_Printf("^3Server-imposed timenudge disabled.  Adjusting...\n");
+			trap_Cvar_Set("cl_timenudge", "0");
+		}
+		if (cgs.osp.nextCvarsUpdateTime == 0)
+		{
+			cgs.osp.nextCvarsUpdateTime = (cg.time + 1200);
+		}
+		return;
+	}
 	if (cgs.osp.serverConfigMinimumTimenudge)
 	{
 		if (cgs.osp.serverConfigMinimumTimenudge > cl_timenudge.integer)
@@ -626,6 +639,24 @@ void CG_LocalEventCvarChanged_cg_altShadowColor(cvarTable_t* cvart)
 {
 	CG_LocalEventCvarParseColor(cvart, cg.beAltShadowColor);
 }
+void CG_LocalEventCvarChanged_cg_enemyAltShadowColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cg.enemyAltShadowColorEnabled = qfalse;
+		return;
+	}
+	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beEnemyAltShadowColor))
+	{
+		cg.enemyAltShadowColorEnabled = qtrue;
+	}
+	else
+	{
+		Com_Printf("^1Color is wrong, default value used\n");
+		cg.enemyAltShadowColorEnabled = qfalse;
+		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+	}
+}
 void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart)
 {
 	cvart->vmCvar->value = Com_Clamp(0.5f, 2, cvart->vmCvar->value);
@@ -908,6 +939,42 @@ void CG_LocalEventCvarChanged_cg_enemyQuadDamageColor(cvarTable_t* cvart)
 	{
 		Com_Printf("^1Color is wrong, default value used\n");
 		cg.enemyQuadDamageColorEnabled = qfalse;
+		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+	}
+}
+void CG_LocalEventCvarChanged_cg_kcEnemyColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cg.kcEnemyColorEnabled = qfalse;
+		return;
+	}
+	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beKcEnemyColor))
+	{
+		cg.kcEnemyColorEnabled = qtrue;
+	}
+	else
+	{
+		Com_Printf("^1Color is wrong, default value used\n");
+		cg.kcEnemyColorEnabled = qfalse;
+		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
+	}
+}
+void CG_LocalEventCvarChanged_cg_kcTeamColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cg.kcTeamColorEnabled = qfalse;
+		return;
+	}
+	if (CG_ParseColorStr(cvart->vmCvar->string, cg.beKcTeamColor))
+	{
+		cg.kcTeamColorEnabled = qtrue;
+	}
+	else
+	{
+		Com_Printf("^1Color is wrong, default value used\n");
+		cg.kcTeamColorEnabled = qfalse;
 		trap_Cvar_Set(cvart->cvarName, cvart->defaultString);
 	}
 }
@@ -1350,6 +1417,8 @@ void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart)
 	/* When cg_spectPOV changes, refresh all client info so models and teams update for spectator POV */
 	if (cvart->vmCvar == &cg_spectPOV)
 		CG_UpdateAllClientsInfo();
+	if (cvart->vmCvar == &cg_teamIndicator || cvart->vmCvar == &cg_drawFriend)
+		CG_BEUpdateUserInfo();
 }
 
 void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart)

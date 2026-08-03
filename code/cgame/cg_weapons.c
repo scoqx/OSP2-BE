@@ -2375,6 +2375,8 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		else
 		{
 			trap_R_AddRefEntityToScene(&gun);
+			if (!ps && CG_PlayerSpecXrayActive())
+				CG_PlayerSpecXrayAddWeapon(&gun, weaponNum);
 			if (pwBattle)
 			{
 				if (useEnemyMono)
@@ -2496,6 +2498,8 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			else
 			{
 				trap_R_AddRefEntityToScene(&barrel);
+				if (!ps && CG_PlayerSpecXrayActive())
+					CG_PlayerSpecXrayAddWeapon(&barrel, weaponNum);
 				if (pwBattle)
 				{
 					if (useEnemyMono)

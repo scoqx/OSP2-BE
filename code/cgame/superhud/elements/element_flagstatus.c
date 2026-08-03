@@ -88,7 +88,7 @@ void CG_SHUDElementFlagStatusRoutine(void* context)
 	}
 	else
 	{
-		team = cgs.clientinfo[cg.snap->ps.clientNum].team;
+		team = CG_SHUDGetOurActiveTeam();
 	}
 
 	if (element->flagType == SHUDFLTYPE_NME)

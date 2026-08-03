@@ -55,6 +55,13 @@ static qboolean outlineCachedDraw;
 static qhandle_t outlineCachedShader;
 static byte outlineCachedColorBytes[4];
 
+/* Player X-ray draw cache (CG_PlayerSpecXrayBegin / per body part) */
+static centity_t* lastXrayCent;
+static qboolean xrayCachedDraw;
+static byte xrayCachedLegsRGBA[4];
+static byte xrayCachedTorsoRGBA[4];
+static byte xrayCachedHeadRGBA[4];
+
 //unknown variable
 int global_viewlistFirstOption = 0;
 /*
@@ -3113,9 +3120,10 @@ static void CG_PlayerPowerups(centity_t* cent)
 
 /*
 ===============
-CG_AddFloatSpriteAtOrigin
+CG_FloatSpriteRadiusAtDist / CG_AddFloatSpriteAtOriginParams
 
-World-space float sprite (friend arrow, talk balloon, etc.) at a player origin.
+World-space float sprite radius and draw. WH uses image-path registration
+(e.g. sprites/foe2.tga), not RF_DEPTHHACK / custom shader scripts.
 ===============
 */
 float CG_FloatSpriteRadiusAtDist(vec3_t worldOrigin, float minSize, int maxDist, float zLift)
@@ -3151,6 +3159,8 @@ void CG_AddFloatSpriteAtOriginParams(vec3_t worldOrigin, int subjectClientNum, q
 {
 	int             rf;
 	refEntity_t     ent;
+	vec3_t          delta;
+	float           dist;
 	float           radius;
 	byte            alphaByte;
 
@@ -3179,7 +3189,20 @@ void CG_AddFloatSpriteAtOriginParams(vec3_t worldOrigin, int subjectClientNum, q
 	ent.reType = RT_SPRITE;
 	ent.customShader = shader;
 
-	radius = CG_FloatSpriteRadiusAtDist(worldOrigin, minSize, maxDist, zLift);
+	if (minSize <= 0.0f)
+	{
+		minSize = 1.0f;
+	}
+	radius = 10.0f * minSize;
+	if (maxDist > 0)
+	{
+		VectorSubtract(ent.origin, cg.refdef.vieworg, delta);
+		dist = (float)VectorLength(delta);
+		if (dist >= (float)maxDist)
+		{
+			radius *= dist / (float)maxDist;
+		}
+	}
 	ent.radius = radius;
 	ent.renderfx = rf;
 
@@ -3200,29 +3223,6 @@ void CG_AddFloatSpriteAtOriginParams(vec3_t worldOrigin, int subjectClientNum, q
 	trap_R_AddRefEntityToScene(&ent);
 }
 
-void CG_AddFloatSpriteAtOrigin(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale, float zLift)
-{
-	float  minSize;
-	int    maxDist;
-
-	if (useFloatSpriteCvars)
-	{
-		minSize = cg_floatSpriteMinSize.value;
-		maxDist = cg_floatSpriteMaxDist.integer;
-	}
-	else
-	{
-		minSize = 1.0f;
-		maxDist = 0;
-	}
-	CG_AddFloatSpriteAtOriginParams(worldOrigin, subjectClientNum, shader, color, minSize, maxDist, alphaScale, zLift);
-}
-
-static void CG_PlayerFloatSprite(centity_t* cent, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale)
-{
-	CG_AddFloatSpriteAtOrigin(cent->lerpOrigin, cent->currentState.number, shader, color, useFloatSpriteCvars, alphaScale, 0.0f);
-}
-
 /*
 ===============
 CG_PlayerSprites
@@ -3237,6 +3237,7 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 	qhandle_t     friendShader = 0;
 	float*       friendColor = NULL;   /* vec4_t decays to float*; avoid vec4_t* for LCC */
 	qboolean     hasOverhead = cg.teamMarkers.drawTeamTasks && cg.teamMarkers.clientHasOverhead[clientNum];
+	int          drawMode;
 
 	if (hasOverhead)
 	{
@@ -3245,13 +3246,15 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 
 	if (cent->currentState.eFlags & EF_CONNECTION)
 	{
-		CG_PlayerFloatSprite(cent, cgs.media.connectionShader, NULL, qfalse, 1.0f);
+		CG_AddFloatSpriteAtOriginParams(cent->lerpOrigin, cent->currentState.number,
+		                                cgs.media.connectionShader, NULL, 1.0f, 0, 1.0f, 0.0f);
 		return;
 	}
 
 	if (cent->currentState.eFlags & EF_TALK)
 	{
-		CG_PlayerFloatSprite(cent, cgs.media.balloonShader, NULL, qfalse, 1.0f);
+		CG_AddFloatSpriteAtOriginParams(cent->lerpOrigin, cent->currentState.number,
+		                                cgs.media.balloonShader, NULL, 1.0f, 0, 1.0f, 0.0f);
 		return;
 	}
 
@@ -3272,40 +3275,163 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 			rewardShader = cgs.media.medalCapture;
 	}
 
-	if (!rewardShader && cg_drawFriend.integer && !(cent->currentState.eFlags & EF_DEAD) &&
-	        !CG_IsKillerGhostBody(&cent->currentState) &&
-	        cg.snap->ps.persistant[PERS_TEAM] == ci->team && cgs.gametype >= GT_TEAM)
+	drawMode = CG_DrawFriendMode();
+	if (!rewardShader && drawMode && !(cent->currentState.eFlags & EF_DEAD) &&
+	        !CG_IsKillerGhostBody(&cent->currentState) && cgs.gametype >= GT_TEAM)
 	{
-		if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
+		qboolean isSpec;
+		qboolean showFriend;
+
+		isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
+		         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+		showFriend = (!isSpec && cg.snap->ps.persistant[PERS_TEAM] == ci->team) ||
+		             (isSpec && CG_DrawFriendForSpecs() && ci->team != TEAM_SPECTATOR);
+
+		if (showFriend)
 		{
-			int frozenClientNum = cent->currentState.otherEntityNum;
-			if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS
-			        && !(frozenClientNum == cg.clientNum && CG_IS_LOCAL_CLIENT_1STPOS_FROZEN())
-			        && !cg.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum])
+			if (cg_teamFrozenFoe.integer && cgs.osp.gameTypeFreeze && cent->currentState.powerups & (1 << PW_BATTLESUIT) && cent->currentState.weapon == WP_NONE)
 			{
-				if (!useTeamFrozen)
-					friendShader = cgs.media.frozenFoeTagShader;
-				else if (useTeamFoeWh && (cg_friendsWallhack.integer & 1) && cg_friendsWallhackFrozen.integer && useTeamFrozen)
-					friendShader = cg_friendsWallhackFrozen.integer ? cgs.media.frozenFoeTagShaderWallhack : cgs.media.frozenFoeTagShader;
-				else
-					friendShader = cgs.media.frozenFoeTagShader;
+				int frozenClientNum = cent->currentState.otherEntityNum;
+				if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS
+				        && !(frozenClientNum == cg.clientNum && CG_IS_LOCAL_CLIENT_1STPOS_FROZEN())
+				        && !cg.teamMarkers.clientHasFrozenAllyMarkNear[frozenClientNum])
+				{
+					if (!useTeamFrozen)
+						friendShader = cgs.media.frozenFoeTagShader;
+					else if (useTeamFoeWh && (cg_friendsWallhack.integer & 1) && cg_friendsWallhackFrozen.integer && useTeamFrozen)
+						friendShader = cgs.media.frozenFoeTagShaderWallhack;
+					else
+						friendShader = cgs.media.frozenFoeTagShader;
+				}
 			}
-		}
-		else if (cg_drawFriend.integer != 2)
-		{
-			friendShader = (useTeamFoeWh && (cg_friendsWallhack.integer & 1)) ? cgs.media.friendShaderWallhack : cgs.media.friendShader;
-			friendColor = ((cg_healthColorLevels.integer & 2) || ci->health <= 0) ? NULL : (float*)cg.healthColorByClient[clientNum];
+			else if (drawMode != 2)
+			{
+				friendShader = (useTeamFoeWh && (cg_friendsWallhack.integer & 1)) ?
+				               cgs.media.friendShaderWallhack : cgs.media.friendShader;
+				friendColor = ((cg_healthColorLevels.integer & 2) || ci->health <= 0) ? NULL : (float*)cg.healthColorByClient[clientNum];
+			}
 		}
 	}
 
 	if (rewardShader)
 	{
-		CG_PlayerFloatSprite(cent, rewardShader, NULL, qfalse, 1.0f);
+		CG_AddFloatSpriteAtOriginParams(cent->lerpOrigin, cent->currentState.number,
+		                                rewardShader, NULL, 1.0f, 0, 1.0f, 0.0f);
 	}
 	else if (friendShader)
 	{
-		CG_PlayerFloatSprite(cent, friendShader, friendColor, qtrue, 1.0f);
+		CG_AddFloatSpriteAtOriginParams(cent->lerpOrigin, cent->currentState.number,
+		                                friendShader, friendColor,
+		                                cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer,
+		                                1.0f, 0.0f);
 	}
+}
+
+/*
+===============
+CG_TeamProxyDrawFriendMarkers
+
+Out-of-PVS lean proxy: same friend float sprite + border HUD marker as CG_Player,
+without drawing a model. Owner is otherEntityNum.
+===============
+*/
+void CG_TeamProxyDrawFriendMarkers(centity_t* cent)
+{
+	clientInfo_t* ci;
+	int clientNum;
+	int drawMode;
+	qboolean useTeamFrozen;
+	qboolean useTeamFoeWh;
+	qboolean isSpec;
+	qboolean showFriend;
+	qboolean isFrozen;
+	qboolean useWhSprite;
+	qhandle_t friendShader;
+	float* friendColor;
+
+	if (!cent || !cg.snap)
+	{
+		return;
+	}
+
+	clientNum = cent->currentState.otherEntityNum;
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid)
+	{
+		return;
+	}
+	if (ci->team == TEAM_SPECTATOR && (cgs.gametype < GT_CA || ci->rt == TEAM_SPECTATOR))
+	{
+		return;
+	}
+
+	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
+	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
+	isFrozen = CG_ClientInfoIsFreezeTinfoFrozen(ci);
+	/* Proxy is out of PVS — treat team-indicator WH (bit 2) like foe WH (bit 1). */
+	useWhSprite = useTeamFoeWh &&
+	              ((cg_friendsWallhack.integer & 1) || (cg_friendsWallhack.integer & 2));
+
+	/* Float sprite — do not require tinfo health (proxy means ally is active). */
+	friendShader = 0;
+	friendColor = NULL;
+	drawMode = CG_DrawFriendMode();
+	if (drawMode
+	        && !(cg.teamMarkers.drawTeamTasks && cg.teamMarkers.clientHasOverhead[clientNum])
+	        && cgs.gametype >= GT_TEAM)
+	{
+		isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
+		         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+		showFriend = isSpec ? CG_DrawFriendForSpecs() : !CG_CACHED_IS_ENEMY_CI(ci);
+
+		if (showFriend)
+		{
+			if (isFrozen)
+			{
+				if (!(clientNum == cg.clientNum && CG_IS_LOCAL_CLIENT_1STPOS_FROZEN())
+				        && !cg.teamMarkers.clientHasFrozenAllyMarkNear[clientNum]
+				        && (drawMode == 2 || cg_teamFrozenFoe.integer || drawMode == 1))
+				{
+					if (useWhSprite && cg_friendsWallhackFrozen.integer && useTeamFrozen
+					        && cgs.media.frozenFoeTagShaderWallhack)
+					{
+						friendShader = cgs.media.frozenFoeTagShaderWallhack;
+					}
+					else
+					{
+						friendShader = cgs.media.frozenFoeTagShader;
+					}
+				}
+			}
+			else if (drawMode != 2)
+			{
+				if (useWhSprite && cgs.media.friendShaderWallhack)
+				{
+					friendShader = cgs.media.friendShaderWallhack;
+				}
+				else
+				{
+					friendShader = cgs.media.friendShader;
+				}
+				friendColor = ((cg_healthColorLevels.integer & 2) || ci->health <= 0) ?
+				              NULL : (float*)cg.healthColorByClient[clientNum];
+			}
+		}
+	}
+
+	if (friendShader)
+	{
+		CG_AddFloatSpriteAtOriginParams(cent->lerpOrigin, clientNum, friendShader, friendColor,
+		                                cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer,
+		                                1.0f, 0.0f);
+	}
+
+	CG_FriendHudMarkerAtOriginExt(cent->lerpOrigin, ci, clientNum, isFrozen, useTeamFrozen, useTeamFoeWh, 270, 1.0f, qtrue);
 }
 
 void CG_AddRefEntityFrozenPlayer(refEntity_t* ent, entityState_t* state, int team)
@@ -3373,6 +3499,11 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 		    trap_R_AddRefEntityToScene( ent );
 		}
 		else {*/
+		if (state->eFlags & EF_PASSPLAYER)
+		{
+			/* ghost instead of skin; shaderRGBA already legs/torso/head colors */
+			ent->customShader = cgs.media.passPlayerShader;
+		}
 		trap_R_AddRefEntityToScene(ent);
 		//}
 
@@ -3433,6 +3564,20 @@ void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int tea
 		if (powerups & (1 << PW_REGEN))
 		{
 			if (((cg.time / 100) % 10) == 1)
+			{
+				ent->customShader = cgs.media.regenShader;
+				trap_R_AddRefEntityToScene(ent);
+			}
+		}
+		if (!(powerups & (1 << PW_REGEN) && ((cg.time / 100) % 10) == 1) &&
+		    state->clientNum >= 0 && state->clientNum < MAX_CLIENTS &&
+		    state->clientNum != cg.snap->ps.clientNum)
+		{
+			/* one-tick regen flash when another player uses medkit */
+			const clientInfo_t* medCi = &cgs.clientinfo[state->clientNum];
+			int medAge = cg.time - medCi->medkitUsageTime;
+
+			if (medCi->medkitUsageTime && medAge >= 0 && medAge < 100)
 			{
 				ent->customShader = cgs.media.regenShader;
 				trap_R_AddRefEntityToScene(ent);
@@ -3783,9 +3928,19 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	}
 	if (useAltShadow && shadowAlt)
 	{
-		shadowColor[0] = cg.beAltShadowColor[0];
-		shadowColor[1] = cg.beAltShadowColor[1];
-		shadowColor[2] = cg.beAltShadowColor[2];
+		if (cg.enemyAltShadowColorEnabled &&
+		    CG_CACHED_IS_ENEMY_POWERUP_NUM(cent->currentState.clientNum))
+		{
+			shadowColor[0] = cg.beEnemyAltShadowColor[0];
+			shadowColor[1] = cg.beEnemyAltShadowColor[1];
+			shadowColor[2] = cg.beEnemyAltShadowColor[2];
+		}
+		else
+		{
+			shadowColor[0] = cg.beAltShadowColor[0];
+			shadowColor[1] = cg.beAltShadowColor[1];
+			shadowColor[2] = cg.beAltShadowColor[2];
+		}
 		shadowTrace.fraction = shadowTrace.fraction - 0.1875f;
 		if (shadowTrace.fraction < 0.0f)
 			shadowTrace.fraction = 0.0f;
@@ -3911,6 +4066,11 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 		outlineCachedColorBytes[2] = 0;
 		outlineCachedColorBytes[3] = 0;
 
+		if (cent->currentState.eFlags & EF_PASSPLAYER)
+		{
+			return;
+		}
+
 		clientNum = cent->currentState.clientNum;
 		if (useOutline && clientNum >= 0 && clientNum < MAX_CLIENTS)
 		{
@@ -3955,7 +4115,245 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 	}
 }
 
-void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clientNum, qboolean isFrozen, qboolean useTeamFrozen, qboolean useTeamFoeWh, int baseAngle, float alphaScale)
+/*
+===============
+CG_SpecXrayPackRGBA
+Pack RGB floats into byte RGBA with fixed 0.15 alpha (38).
+===============
+*/
+static void CG_SpecXrayPackRGBA(const float* rgb, byte* out)
+{
+	float tmpf;
+
+	tmpf = 255.0f * rgb[0];
+	out[0] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+	tmpf = 255.0f * rgb[1];
+	out[1] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+	tmpf = 255.0f * rgb[2];
+	out[2] = (byte)(tmpf > 255.0f ? 255 : tmpf);
+	out[3] = 38;
+}
+
+/*
+===============
+CG_PlayerSpecXrayFullyVisible
+4 traces from view to near AABB corner + 3 edge neighbors (solid-encoded hitbox: stand or crouch).
+All clear => fully visible.
+===============
+*/
+static qboolean CG_PlayerSpecXrayFullyVisible(centity_t* cent)
+{
+	vec3_t start;
+	vec3_t end;
+	vec3_t mins;
+	vec3_t maxs;
+	trace_t trace;
+	int i;
+	int passEnt;
+	int x, zd, zu;
+	int nx, ny, nz;
+	int bx, by, bz;
+
+	if (!cg.snap)
+		return qtrue;
+
+	mins[0] = -15.0f;
+	mins[1] = -15.0f;
+	mins[2] = -24.0f;
+	maxs[0] = 15.0f;
+	maxs[1] = 15.0f;
+	maxs[2] = 32.0f;
+
+	if (cent->currentState.number == cg.predictedPlayerState.clientNum)
+	{
+		maxs[2] = cg.predictedPlayerState.viewheight + 6;
+	}
+	else if (cent->currentState.solid)
+	{
+		x = (cent->currentState.solid & 255);
+		zd = ((cent->currentState.solid >> 8) & 255);
+		zu = ((cent->currentState.solid >> 16) & 255) - 32;
+		mins[0] = mins[1] = -(float)x;
+		maxs[0] = maxs[1] = (float)x;
+		mins[2] = -(float)zd;
+		maxs[2] = (float)zu;
+	}
+
+	/* inset so feet-in-floor / brush contact does not count as occluded */
+	mins[0] += 4.0f;
+	mins[1] += 4.0f;
+	mins[2] += 4.0f;
+	maxs[0] -= 4.0f;
+	maxs[1] -= 4.0f;
+	maxs[2] -= 4.0f;
+
+	passEnt = cg.snap->ps.clientNum;
+	VectorCopy(cg.refdef.vieworg, start);
+
+	/* near corner toward camera (1 → maxs, 0 → mins) + 3 edge neighbors */
+	nx = (start[0] >= cent->lerpOrigin[0]);
+	ny = (start[1] >= cent->lerpOrigin[1]);
+	nz = (start[2] >= cent->lerpOrigin[2]);
+
+	for (i = 0; i < 4; i++)
+	{
+		bx = nx;
+		by = ny;
+		bz = nz;
+		if (i == 1)
+			bx ^= 1;
+		else if (i == 2)
+			by ^= 1;
+		else if (i == 3)
+			bz ^= 1;
+		end[0] = cent->lerpOrigin[0] + (bx ? maxs[0] : mins[0]);
+		end[1] = cent->lerpOrigin[1] + (by ? maxs[1] : mins[1]);
+		end[2] = cent->lerpOrigin[2] + (bz ? maxs[2] : mins[2]);
+		CG_Trace(&trace, start, vec3_origin, vec3_origin, end, passEnt, CONTENTS_SOLID);
+		if (trace.fraction < 1.0f)
+			return qfalse;
+	}
+	return qtrue;
+}
+
+/*
+===============
+CG_PlayerSpecXrayAdd
+RF_DEPTHHACK silhouette through walls. Caller skips when fully visible (traces).
+===============
+*/
+static void CG_PlayerSpecXrayAdd(refEntity_t* ent, const byte* rgba)
+{
+	int savedRenderfx;
+
+	savedRenderfx = ent->renderfx;
+	ent->customShader = cgs.media.specXrayShader;
+	*(int*)ent->shaderRGBA = *(int*)rgba;
+	ent->renderfx = savedRenderfx | RF_DEPTHHACK;
+	trap_R_AddRefEntityToScene(ent);
+	ent->customShader = 0;
+	ent->renderfx = savedRenderfx;
+}
+
+/*
+===============
+CG_PlayerSpecXrayActive
+True if SpecXrayBegin enabled silhouette for the current player this frame.
+===============
+*/
+qboolean CG_PlayerSpecXrayActive(void)
+{
+	return xrayCachedDraw;
+}
+
+/*
+===============
+CG_PlayerSpecXrayAddWeapon
+Weapon/barrel silhouette. Default = model (torso) color; cg_playerXray bit 4 = bright weapon colors.
+===============
+*/
+void CG_PlayerSpecXrayAddWeapon(refEntity_t* ent, int weaponNum)
+{
+	byte rgba[4];
+
+	if (!xrayCachedDraw || !ent)
+		return;
+
+	if ((cg_playerXray.integer & 4) && weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
+		CG_SpecXrayPackRGBA(cgs.beBrightWeaponsColor[weaponNum], rgba);
+	else
+		*(int*)rgba = *(int*)xrayCachedTorsoRGBA;
+
+	CG_PlayerSpecXrayAdd(ent, rgba);
+}
+
+/*
+===============
+CG_PlayerSpecXrayBegin
+Compute X-ray silhouette state once per cent.
+Spect/demo: all players. In-game: teammates only.
+===============
+*/
+static void CG_PlayerSpecXrayBegin(centity_t* cent)
+{
+	int clientNum;
+	const clientInfo_t* ci;
+	const float* teamColor;
+	float whiteColor[3];
+
+	if (cent == lastXrayCent)
+		return;
+
+	lastXrayCent = cent;
+	xrayCachedDraw = qfalse;
+
+	if (!cgs.media.specXrayShader)
+		return;
+	if (!cg_playerXray.integer || !CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH))
+		return;
+	if (cent->currentState.eFlags & EF_PASSPLAYER)
+		return;
+	if (cent->currentState.eFlags & EF_DEAD)
+		return;
+	if (cent->currentState.powerups & (1 << PW_INVIS))
+		return;
+	if (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE &&
+	        (cent->currentState.powerups & (1 << PW_BATTLESUIT)))
+		return;
+	if (cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson)
+		return;
+
+	clientNum = cent->currentState.clientNum;
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+		return;
+
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid)
+		return;
+
+	/* playing: teammates only (FFA has none); spect/demo: everyone */
+	if (!cg.demoPlayback && !CG_IS_LOCAL_CLIENT_SPECTATOR() && CG_IS_ENEMY_SIMPLE(ci))
+		return;
+
+	/* fully visible => no depthhack overlay on the normal skin */
+	if (CG_PlayerSpecXrayFullyVisible(cent))
+		return;
+
+	xrayCachedDraw = qtrue;
+
+	/* bit 2: cg_enemyModelColors / cg_teamModelColors (ci->colors); else team tint (FFA=white) */
+	if (cg_playerXray.integer & 2)
+	{
+		CG_SpecXrayPackRGBA(ci->colors.legs, xrayCachedLegsRGBA);
+		CG_SpecXrayPackRGBA(ci->colors.torso, xrayCachedTorsoRGBA);
+		CG_SpecXrayPackRGBA(ci->colors.head, xrayCachedHeadRGBA);
+	}
+	else
+	{
+		whiteColor[0] = 1.0f;
+		whiteColor[1] = 1.0f;
+		whiteColor[2] = 1.0f;
+		if (ci->team == TEAM_RED)
+			teamColor = cgs.beRedTeamColor;
+		else if (ci->team == TEAM_BLUE)
+			teamColor = cgs.beBlueTeamColor;
+		else
+			teamColor = whiteColor;
+		CG_SpecXrayPackRGBA(teamColor, xrayCachedLegsRGBA);
+		*(int*)xrayCachedTorsoRGBA = *(int*)xrayCachedLegsRGBA;
+		*(int*)xrayCachedHeadRGBA = *(int*)xrayCachedLegsRGBA;
+	}
+}
+
+/*
+===============
+CG_FriendHudMarkerAtOriginExt
+
+proxyForceAlive: team-proxy ents are only sent while the ally is active; do not
+require tinfo health (may still be 0 before first tinfo).
+===============
+*/
+void CG_FriendHudMarkerAtOriginExt(vec3_t origin, const clientInfo_t* ci, int clientNum, qboolean isFrozen, qboolean useTeamFrozen, qboolean useTeamFoeWh, int baseAngle, float alphaScale, qboolean proxyForceAlive)
 {
 	qboolean friendVisible;
 	vec3_t start;
@@ -3971,10 +4369,19 @@ void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clien
 		return;
 	if (clientNum == cg.snap->ps.clientNum)
 		return;
-	if (!ci->infoValid || ci->team != cg.snap->ps.persistant[PERS_TEAM])
+	if (!ci->infoValid)
 		return;
+	if (proxyForceAlive)
+	{
+		if (CG_CACHED_IS_ENEMY_CI(ci))
+			return;
+	}
+	else if (ci->team != cg.snap->ps.persistant[PERS_TEAM])
+	{
+		return;
+	}
 
-	if (!isFrozen && ci->health <= 0)
+	if (!proxyForceAlive && !isFrozen && ci->health <= 0)
 		return;
 
 	friendVisible = qtrue;
@@ -3992,7 +4399,11 @@ void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clien
 		}
 	}
 	if (!friendVisible && !(useTeamFoeWh && (isFrozen ? ((cg_friendsWallhack.integer & 1) && cg_friendsWallhackFrozen.integer && useTeamFrozen) : (cg_friendsWallhack.integer & 1)) && (!isFrozen || (useTeamFrozen && cg_friendsWallhackFrozen.integer))))
-		return;
+	{
+		/* Team-proxy: bit 2 (teamIndicator WH) also counts as through-walls. */
+		if (!(proxyForceAlive && useTeamFoeWh && (cg_friendsWallhack.integer & 2)))
+			return;
+	}
 	if (isFrozen && !friendVisible && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen))
 		return;
 
@@ -4119,7 +4530,7 @@ static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clie
 	        && CG_IS_LOCAL_CLIENT_1STPOS_FROZEN())
 		return;
 
-	CG_FriendHudMarkerAtOrigin(cent->lerpOrigin, ci, clientNum, isFrozen, useTeamFrozen, useTeamFoeWh, 270, 1.0f);
+	CG_FriendHudMarkerAtOriginExt(cent->lerpOrigin, ci, clientNum, isFrozen, useTeamFrozen, useTeamFoeWh, 270, 1.0f, qfalse);
 }
 
 /*
@@ -4203,6 +4614,7 @@ void CG_Player(centity_t* cent)
 	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 
 	CG_PlayerOutlineBegin(cent, useOutline, useMarkTeammate, outlineIsEnemy);
+	CG_PlayerSpecXrayBegin(cent);
 
 	renderfx = 0;
 
@@ -4338,6 +4750,8 @@ void CG_Player(centity_t* cent)
 		*(int*)legs.shaderRGBA = *(int*)outlineCachedColorBytes;
 		trap_R_AddRefEntityToScene(&legs);
 	}
+	if (xrayCachedDraw)
+		CG_PlayerSpecXrayAdd(&legs, xrayCachedLegsRGBA);
 
 	if (!ci->legsModel)
 	{
@@ -4383,6 +4797,8 @@ void CG_Player(centity_t* cent)
 		*(int*)torso.shaderRGBA = *(int*)outlineCachedColorBytes;
 		trap_R_AddRefEntityToScene(&torso);
 	}
+	if (xrayCachedDraw)
+		CG_PlayerSpecXrayAdd(&torso, xrayCachedTorsoRGBA);
 
 	if (!ci->torsoModel)
 	{
@@ -4432,6 +4848,8 @@ void CG_Player(centity_t* cent)
 		*(int*)head.shaderRGBA = *(int*)outlineCachedColorBytes;
 		trap_R_AddRefEntityToScene(&head);
 	}
+	if (xrayCachedDraw)
+		CG_PlayerSpecXrayAdd(&head, xrayCachedHeadRGBA);
 
 	CG_AddPlayerWeapon(&torso, NULL, cent, ci->team);
 

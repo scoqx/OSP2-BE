@@ -95,37 +95,39 @@ static void CG_SHUDElementNameGetPair1vs1(const char** own, const char** nme)
 static void CG_SHUDElementNameGetPairTeam(const char** own, const char** nme)
 {
 	team_t our_team;
-	if (cgs.osp.gameTypeFreeze)
-	{
-		our_team = cgs.clientinfo[cg.clientNum].rt;
-	}
-	else
-	{
-		our_team = cgs.clientinfo[cg.clientNum].team;
-	}
+	qboolean swap;
 
-	if (our_team == TEAM_SPECTATOR)
-	{
-		if (cgs.osp.gameTypeFreeze)
-		{
-			our_team = cgs.clientinfo[cg.snap->ps.clientNum].rt;
-		}
-		else
-		{
-			our_team = cgs.clientinfo[cg.snap->ps.clientNum].team;
-		}
-	}
+	our_team = CG_SHUDGetOurActiveTeam();
+	swap = (cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR || cg_spectPOV.integer) &&
+	       ((cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
+	        (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED));
 
 	switch (our_team)
 	{
 		case TEAM_SPECTATOR:
 		case TEAM_RED:
-			*own = "Red";
-			*nme = "Blue";
+			if (swap)
+			{
+				*own = "Blue";
+				*nme = "Red";
+			}
+			else
+			{
+				*own = "Red";
+				*nme = "Blue";
+			}
 			break;
 		case TEAM_BLUE:
-			*own = "Blue";
-			*nme = "Red";
+			if (swap)
+			{
+				*own = "Red";
+				*nme = "Blue";
+			}
+			else
+			{
+				*own = "Blue";
+				*nme = "Red";
+			}
 			break;
 		case TEAM_FREE:
 		case TEAM_4:

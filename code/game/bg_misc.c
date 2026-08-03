@@ -1063,6 +1063,20 @@ qboolean BG_CanItemBeGrabbed(int gametype, const entityState_t* ent, const playe
 			return BG_CanAmmoBeGrabbed(item->giTag, ps);
 
 		case IT_ARMOR:
+			/* Kill-confirm tokens: always grabable by living team players. */
+			if (ent->otherEntityNum == KILLCONFIRM_MARKER)
+			{
+				if (ps->stats[STAT_HEALTH] <= 0)
+				{
+					return qfalse;
+				}
+				if (ps->persistant[PERS_TEAM] != TEAM_RED
+				        && ps->persistant[PERS_TEAM] != TEAM_BLUE)
+				{
+					return qfalse;
+				}
+				return qtrue;
+			}
 			if (!disableArmorCheck)
 			{
 				BG_CanArmorBeGrabbed(item, ps);

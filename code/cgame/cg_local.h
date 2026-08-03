@@ -194,6 +194,11 @@ typedef struct
 #define CG_FRIENDS_WALLHACK_TEAM_INDICATOR 2
 #define CG_FRIENDS_WALLHACK_GLOBAL_POS    4
 
+/* cg_drawFriend: low bits 0/1/2 mode; bit 4 = show selected markers for spectators */
+#define CG_DRAW_FRIEND_SPECTATOR 4
+#define CG_DrawFriendMode()     (cg_drawFriend.integer & ~CG_DRAW_FRIEND_SPECTATOR)
+#define CG_DrawFriendForSpecs() ((cg_drawFriend.integer & CG_DRAW_FRIEND_SPECTATOR) != 0)
+
 #define DRAW_REWARDS_NOICON (1 << 1)
 #define DRAW_REWARDS_NOSPRITE (1 << 2)
 #define DRAW_REWARDS_NOSOUND (1 << 3)
@@ -529,6 +534,7 @@ typedef struct
 
 	qboolean        globalPos;      /* zone (QLM1) origin for global WH */
 	vec3_t          globalPosOrigin;
+	int             teamProxyEntity; /* lean out-of-PVS proxy ent (>= MAX_CLIENTS), or -1 */
 } clientInfo_t;
 
 
@@ -1024,6 +1030,8 @@ typedef struct
 	vec4_t      beTeamOutlineColor;
 	vec4_t      beAltBloodColor;
 	vec4_t      beAltShadowColor;
+	vec4_t      beEnemyAltShadowColor;
+	qboolean    enemyAltShadowColorEnabled;
 	vec4_t      beAltGrenadesColor;
 	vec4_t      beEnemyGrenadesColor;
 	vec4_t      bePlasmaColor;
@@ -1038,6 +1046,10 @@ typedef struct
 	qboolean    quadDamageColorEnabled;
 	qboolean    quadDamageCustomColor;
 	qboolean    battleSuitCustomColor;
+	vec4_t      beKcEnemyColor;
+	qboolean    kcEnemyColorEnabled;
+	vec4_t      beKcTeamColor;
+	qboolean    kcTeamColorEnabled;
 	vec4_t      beFragEffectColor;
 	vec4_t      beHealthColor;
 	vec4_t      beHealthLowColor;
@@ -1063,6 +1075,14 @@ typedef struct
 	printUI_t   printui[CG_PRINTUI_MAX];
 	int         printuiActiveCount;
 	int         printuiActiveIndices[CG_PRINTUI_MAX];
+
+	/* Stashed during predict Pmove when EV_FIRE_WEAPON (projectile) fires */
+	qboolean    missileFireValid;
+	int         missileFireTime;
+	int         missileFireViewHeight;
+	vec3_t      missileFireOriginOld; /* pre-pmove origin (fromPos 0) */
+	vec3_t      missileFireOriginNew; /* post-pmove origin (fromPos 1) */
+	vec3_t      missileFireAngles;
 
 } cg_t;
 
@@ -1174,9 +1194,11 @@ typedef struct
 	qhandle_t   grappleRopeShader;
 	qhandle_t   firstPersonGun;
 	qhandle_t   fullBrightShader;
+	qhandle_t   specXrayShader;
 	qhandle_t   altFullBrightShader;
 	qhandle_t   shadowItemShader;
 	qhandle_t   shadowItemFlagShader;
+	qhandle_t   passPlayerShader;
 	qhandle_t   flagBrightShader;
 	qhandle_t   flagBrightAltShader;
 	qhandle_t   spawnModelShader;
@@ -1793,6 +1815,8 @@ typedef struct cgs_osp_s
 	qhandle_t unknown_variable_999;
 	int osp_teamcount1;
 	int osp_teamcount2;
+	qboolean lastStandingSoundPlayed1;
+	qboolean lastStandingSoundPlayed2;
 	qhandle_t unknown_variable_1002;
 	qhandle_t pingPrintTime;
 	float pingMs;
@@ -1964,6 +1988,13 @@ typedef struct
 	int             sv_fps;      /* CS_SYSTEMINFO sv_fps; default 20 if missing */
 	int             beAutohop;   /* pmove_autohop SYSTEMINFO: 0=off, 1=forced, 2=client cg_autoHop */
 	int             beMovement;  /* g_movement SYSTEMINFO: 0=VQ3, 1=CPM, 2=QL */
+	int             ratFlags;    /* g_altFlags from CS_SERVERINFO */
+	qboolean        missilePredictEnabled; /* CS_OSP2BE_MISSILE_PREDICT enabled */
+	int             missilePrestep;
+	int             missilePredictFromPos; /* 0=oldOrigin, 1=current (g_delagMissileFromPos) */
+	int             missilePredictRlSpeed;
+	int             missilePredictPgSpeed;
+	int             missilePredictBfgSpeed;
 
 	qboolean        q3msk;        // Q3msk.net
 	qboolean        ruthless;     /* q3a.space* hostname (colors ignored) */
@@ -2528,6 +2559,12 @@ extern vmCvar_t         be_fontShadowOffset;
 extern vmCvar_t         be_ttfShadowOffset;
 extern vmCvar_t         be_ttfScale;
 extern vmCvar_t         be_ttfFontOffset;
+extern vmCvar_t         cg_debugCon;
+extern vmCvar_t         cg_kcEnemyColor;
+extern vmCvar_t         cg_kcTeamColor;
+extern vmCvar_t         cg_enemyAltShadowColor;
+extern vmCvar_t         cg_playerXray;
+
 
 
 
@@ -2918,6 +2955,8 @@ enum
 //
 void CG_Player(centity_t* cent);
 void CG_ResetPlayerEntity(centity_t* cent);
+qboolean CG_PlayerSpecXrayActive(void);
+void CG_PlayerSpecXrayAddWeapon(refEntity_t* ent, int weaponNum);
 void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int team);
 void CG_NewClientInfo(int clientNum);
 sfxHandle_t CG_CustomSound(int clientNum, const char* soundName);
@@ -2937,7 +2976,8 @@ void CG_UpdateAllClientsInfo(void);
 #define CG_IS_LOCAL_CLIENT_SPECTATOR() ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 #define CG_IS_LOCAL_CLIENT_ON_SCREEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
 #define CG_IS_LOCAL_CLIENT_1STPOS_FROZEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum && cg.snap->ps.pm_type == PM_FREEZE)
-#define CG_IS_FROZEN_ENTITY(cent) ((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && ((cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS))
+#define CG_IS_FROZEN_ENTITY(cent) ((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && ((cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS) && (cent)->currentState.otherEntityNum2 != TEAM_PROXY_MARKER)
+#define CG_IS_TEAM_PROXY(cent) ((cent)->currentState.eType == ET_PLAYER && ((cent) - cg_entities >= MAX_CLIENTS) && (cent)->currentState.otherEntityNum2 == TEAM_PROXY_MARKER && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum < MAX_CLIENTS)
 /* Round warmup: q3msk or ruthless freeze team (GT_TEAM, freeze). */
 #define CG_Q3MSK_ROUND_WARMUP() (cgs.q3mskRoundWarmup)
 #define CG_Q3MSK_ROUND_WARMUP_UPDATE() \
@@ -2951,8 +2991,10 @@ void CG_PmovePhysicsUpdate(void);
 #define CG_CACHED_IS_ENEMY_POWERUP_NUM(n) (((n) >= 0 && (n) < MAX_CLIENTS) ? cg.isEnemyPowerupVisual[(n)] : qfalse)
 #define CG_CACHED_IS_ENEMY_POWERUP_CI(ci) CG_CACHED_IS_ENEMY_POWERUP_NUM((int)((ci) - cgs.clientinfo))
 /* Enemy from current view: per-frame cache in CG_ClientInfoUpdateFrame; hot paths use CG_CACHED_IS_ENEMY_* */
+/* Specs see both teams; hide warmup BS for everyone. In-game: allies only. */
 #define CG_HIDE_ALLY_BATTLESUIT_UI(ci) \
-    (!CG_CACHED_IS_ENEMY_CI(ci) && cg.hideAllyBattlesuitUi)
+    (cg.hideAllyBattlesuitUi && \
+     (CG_IS_LOCAL_CLIENT_SPECTATOR() || !CG_CACHED_IS_ENEMY_CI(ci)))
 qboolean CG_IsWarmup(void);
 qboolean CG_IsIntermission(void);
 
@@ -3218,6 +3260,7 @@ qboolean CG_ClientSupportsTeamTask(int clientNum);
 void CG_Respawn(void);
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
 void CG_DebugServerOnFireWeapon(int weapon);
+void CG_DebugServerOnMissileAppear(const entityState_t* es);
 void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
 
@@ -3347,8 +3390,8 @@ void CG_DrawGlobalPosFriendHudMarkers(void);
 float CG_FloatSpriteRadiusAtDist(vec3_t worldOrigin, float minSize, int maxDist, float zLift);
 void CG_AddFloatSpriteAtOriginParams(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color,
                                      float minSize, int maxDist, float alphaScale, float zLift);
-void CG_AddFloatSpriteAtOrigin(vec3_t worldOrigin, int subjectClientNum, qhandle_t shader, vec4_t color, qboolean useFloatSpriteCvars, float alphaScale, float zLift);
-void CG_FriendHudMarkerAtOrigin(vec3_t origin, const clientInfo_t* ci, int clientNum, qboolean isFrozen, qboolean useTeamFrozen, qboolean useTeamFoeWh, int baseAngle, float alphaScale);
+void CG_FriendHudMarkerAtOriginExt(vec3_t origin, const clientInfo_t* ci, int clientNum, qboolean isFrozen, qboolean useTeamFrozen, qboolean useTeamFoeWh, int baseAngle, float alphaScale, qboolean proxyForceAlive);
+void CG_TeamProxyDrawFriendMarkers(centity_t* cent);
 const char* CG_CustomLocationsGetName(const float* pos);
 void CG_CustomLocationsSetLocation(const char* info, vec3_t loc);
 qboolean CG_CustomLocationsTeamChatCode(const char* str, vec3_t cloc, char** cloc_begin, char** cloc_end);
@@ -3671,6 +3714,7 @@ void CG_OSPCvarsRestrictValues(void);
 #define CG_OSPIsGameTypeCA(gt) ((gt) >= GT_CA)
 qboolean CG_OSPIsGameTypeFreeze(void);
 qboolean CG_ClientInfoIsFreezeTinfoFrozen(const clientInfo_t* ci);
+qboolean CG_ClientMarkerIsFrozen(const clientInfo_t* ci);
 #define CG_OBITUARY_DROP_PU_MASK \
     ((1 << PW_QUAD) | (1 << PW_BATTLESUIT) | (1 << PW_HASTE) | \
      (1 << PW_INVIS) | (1 << PW_REGEN) | (1 << PW_FLIGHT))
@@ -3816,6 +3860,20 @@ if(!TESTPTR){\
 // cg_unlagged.c
 //
 void CG_PredictWeaponEffects(centity_t* cent);
+void CG_AddPredictedMissiles(void);
+
+#define MAX_PREDICTED_MISSILES 32
+typedef struct
+{
+	qboolean     active;
+	int          weapon;
+	int          removeTime;
+	trajectory_t pos;
+	vec3_t       lastOrigin;
+	qboolean     exploded;
+	vec3_t       explosionOrigin;
+} predictedMissile_t;
+extern predictedMissile_t cg_predictedMissiles[MAX_PREDICTED_MISSILES];
 
 //
 // cg_playerscolors.c
@@ -4014,6 +4072,7 @@ void CG_LocalEventCvarChanged_cg_railRingsRotation(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_railRingsSpacing(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_railRingsSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_altShadowColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_enemyAltShadowColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorAdjust(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_teamIndicatorOpaque(cvarTable_t* cvart);
@@ -4080,6 +4139,8 @@ void CG_LocalEventCvarChanged_cg_battleSuitColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyBattleSuitColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_quadDamageColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_enemyQuadDamageColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_kcEnemyColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_kcTeamColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_fragEffectColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_numbersSet(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_oldFlags(cvarTable_t* cvart);

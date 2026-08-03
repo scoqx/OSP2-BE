@@ -16,26 +16,36 @@ Copyright (c) 2026 diwoc
 =================
 CG_GlobalPosFriendMarkersAllowed
 
-Playing team client with map tinfo locations (not local/snap spectator).
+Team game with map tinfo locations. Playing clients always; spectators when
+cg_drawFriend bit 4 is set.
 =================
 */
 static qboolean CG_GlobalPosFriendMarkersAllowed(void)
 {
+	qboolean isSpec;
+
 	if (!cg.snap || !cg.teamTinfoLocations || cgs.gametype < GT_TEAM)
 	{
 		return qfalse;
 	}
-	if (CG_IS_LOCAL_CLIENT_SPECTATOR())
+	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
+	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+	if (isSpec)
 	{
-		return qfalse;
-	}
-	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
-	{
-		return qfalse;
+		return CG_DrawFriendForSpecs() ? qtrue : qfalse;
 	}
 	return qtrue;
 }
 
+/*
+=================
+CG_ClientHasDrawablePlayerEntity
+
+True when a live/freeze ET_PLAYER is in the snapshot and CG_Player will draw it
+(float sprites + HUD markers included). Team proxy is NOT drawable — it only
+supplies origin for markers drawn separately.
+=================
+*/
 static qboolean CG_ClientHasDrawablePlayerEntity(int clientNum)
 {
 	clientInfo_t* ci;
@@ -73,6 +83,10 @@ static qboolean CG_ClientHasDrawablePlayerEntity(int clientNum)
 	{
 		return qfalse;
 	}
+	if (CG_IS_TEAM_PROXY(cent))
+	{
+		return qfalse;
+	}
 
 	return qtrue;
 }
@@ -93,15 +107,9 @@ void CG_UpdateTeamGlobalPosFrame(void)
 {
 	int i;
 	clientInfo_t* ci;
+	qboolean isSpec;
 
 	if (!cg.snap)
-	{
-		CG_ClearTeamGlobalPosFrame();
-		return;
-	}
-
-	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ||
-	        CG_IS_LOCAL_CLIENT_SPECTATOR())
 	{
 		CG_ClearTeamGlobalPosFrame();
 		return;
@@ -112,6 +120,9 @@ void CG_UpdateTeamGlobalPosFrame(void)
 		CG_ClearTeamGlobalPosFrame();
 		return;
 	}
+
+	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
+	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
 
 	cg.teamTinfoLocations = qtrue;
 
@@ -124,8 +135,8 @@ void CG_UpdateTeamGlobalPosFrame(void)
 		{
 			continue;
 		}
-		/* Same ally/enemy as team indicator (per-frame cache), not raw team/rt */
-		if (CG_CACHED_IS_ENEMY_CI(ci))
+		/* Playing: allies only. Spectator: all non-spectator players. */
+		if (!isSpec && CG_CACHED_IS_ENEMY_CI(ci))
 		{
 			continue;
 		}
@@ -140,6 +151,17 @@ void CG_UpdateTeamGlobalPosFrame(void)
 		if (CG_ClientHasDrawablePlayerEntity(i))
 		{
 			continue;
+		}
+		if (ci->teamProxyEntity >= 0 && ci->teamProxyEntity < MAX_GENTITIES)
+		{
+			centity_t* proxyCent;
+
+			proxyCent = &cg_entities[ci->teamProxyEntity];
+			if (proxyCent->currentValid && CG_IS_TEAM_PROXY(proxyCent)
+			        && proxyCent->currentState.otherEntityNum == i)
+			{
+				continue;
+			}
 		}
 		if (CG_MapLocs_GetById(ci->location, ci->globalPosOrigin, NULL, 0))
 		{
@@ -166,7 +188,8 @@ qboolean CG_ClientTeamMarkerOrigin(int clientNum, vec3_t out)
 		{
 			cent = &cg_entities[ci->frozenEntity];
 			if (cent->currentValid && cent->currentState.eType == ET_PLAYER &&
-			        cent->currentState.otherEntityNum == clientNum)
+			        cent->currentState.otherEntityNum == clientNum &&
+			        !CG_IS_TEAM_PROXY(cent))
 			{
 				VectorCopy(cent->lerpOrigin, out);
 				return qtrue;
@@ -176,7 +199,19 @@ qboolean CG_ClientTeamMarkerOrigin(int clientNum, vec3_t out)
 	else
 	{
 		cent = &cg_entities[clientNum];
-		if (cent->currentValid && cent->currentState.eType == ET_PLAYER)
+		if (cent->currentValid && cent->currentState.eType == ET_PLAYER
+		        && !CG_IS_TEAM_PROXY(cent))
+		{
+			VectorCopy(cent->lerpOrigin, out);
+			return qtrue;
+		}
+	}
+
+	if (ci->teamProxyEntity >= 0 && ci->teamProxyEntity < MAX_GENTITIES)
+	{
+		cent = &cg_entities[ci->teamProxyEntity];
+		if (cent->currentValid && CG_IS_TEAM_PROXY(cent)
+		        && cent->currentState.otherEntityNum == clientNum)
 		{
 			VectorCopy(cent->lerpOrigin, out);
 			return qtrue;
@@ -217,13 +252,11 @@ static int CG_TeamMarkerStackSortKey(int clientNum)
 {
 	clientInfo_t* ci;
 	centity_t* cent;
-	qboolean frozenTinfo;
 	qboolean dead;
 
 	ci = &cgs.clientinfo[clientNum];
-	frozenTinfo = ci->globalPos && CG_ClientInfoIsFreezeTinfoFrozen(ci);
 
-	if (ci->isFrozenEnt || frozenTinfo)
+	if (CG_ClientMarkerIsFrozen(ci))
 	{
 		return 1;
 	}
@@ -409,9 +442,11 @@ void CG_EnsureTeamMarkerStackCache(qboolean gameModeNotSpectator)
 }
 
 static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, qboolean* wantShow,
-        qhandle_t* friendShader, float** friendColor, qboolean useTeamFoeWh, qboolean useTeamFrozen)
+        qhandle_t* friendShader, float** friendColor, qboolean useTeamFoeWh, qboolean useTeamFrozen,
+        qboolean isSpec)
 {
 	qboolean isFrozenTinfo;
+	int drawMode;
 
 	*wantShow = qfalse;
 	*friendShader = 0;
@@ -426,7 +461,11 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 	{
 		return;
 	}
-	if (ci->infoValid && (CG_CACHED_IS_ENEMY_CI(ci) || ci->team == TEAM_SPECTATOR))
+	if (ci->infoValid && ci->team == TEAM_SPECTATOR)
+	{
+		return;
+	}
+	if (ci->infoValid && !isSpec && CG_CACHED_IS_ENEMY_CI(ci))
 	{
 		return;
 	}
@@ -438,10 +477,11 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 		return;
 	}
 
+	drawMode = CG_DrawFriendMode();
 	if (isFrozenTinfo)
 	{
 		if (!cg.teamMarkers.clientHasFrozenAllyMarkNear[clientNum] &&
-		        (cg_drawFriend.integer == 2 || cg_teamFrozenFoe.integer || cg_drawFriend.integer == 1))
+		        (drawMode == 2 || cg_teamFrozenFoe.integer || drawMode == 1))
 		{
 			if (!useTeamFrozen && cg_teamFrozenFoe.integer)
 			{
@@ -459,7 +499,7 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 			}
 		}
 	}
-	else if (cg_drawFriend.integer != 2)
+	else if (drawMode != 2)
 	{
 		*friendShader = (useTeamFoeWh && (cg_friendsWallhack.integer & 1)) ?
 		                cgs.media.friendShaderWallhack : cgs.media.friendShader;
@@ -470,36 +510,6 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 	*wantShow = (*friendShader != 0);
 }
 
-static float CG_GlobalPosFloatSpriteStackStep(const vec3_t origin)
-{
-	vec3_t entOrigin;
-	vec3_t delta;
-	float minSize;
-	float radius;
-	float dist;
-	int maxDist;
-
-	minSize = cg_floatSpriteMinSize.value;
-	if (minSize <= 0.0f)
-	{
-		minSize = 1.0f;
-	}
-	radius = 10.0f * minSize;
-	VectorCopy(origin, entOrigin);
-	entOrigin[2] += 48.0f;
-	maxDist = cg_floatSpriteMaxDist.integer;
-	if (maxDist > 0)
-	{
-		VectorSubtract(entOrigin, cg.refdef.vieworg, delta);
-		dist = (float)VectorLength(delta);
-		if (dist >= (float)maxDist)
-		{
-			radius *= dist / (float)maxDist;
-		}
-	}
-	return 0.6f * (radius * 2.0f);
-}
-
 void CG_AddGlobalPosFriendFloatSprites(void)
 {
 	int i;
@@ -507,19 +517,22 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 	qboolean      useTeamFoeWh;
 	qboolean      useTeamFrozen;
 	qboolean      wantShow;
+	qboolean      isSpec;
 	qhandle_t     friendShader;
 	float*        friendColor;
 	vec3_t        spriteOrigin;
 
-	if (!cg_drawFriend.integer || !CG_GlobalPosFriendMarkersAllowed())
+	if (!CG_DrawFriendMode() || !CG_GlobalPosFriendMarkersAllowed())
 	{
 		return;
 	}
 
+	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
+	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
 	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
 
-	CG_EnsureTeamMarkerStackCache(qtrue);
+	CG_EnsureTeamMarkerStackCache(!isSpec);
 
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
@@ -541,7 +554,11 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 		{
 			continue;
 		}
-		if (ci->infoValid && (CG_CACHED_IS_ENEMY_CI(ci) || ci->team == TEAM_SPECTATOR))
+		if (ci->infoValid && ci->team == TEAM_SPECTATOR)
+		{
+			continue;
+		}
+		if (ci->infoValid && !isSpec && CG_CACHED_IS_ENEMY_CI(ci))
 		{
 			continue;
 		}
@@ -550,11 +567,14 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 		n = CG_TeamMarkerStackEffectiveSize(i);
 		if (n > 1)
 		{
-			step = CG_GlobalPosFloatSpriteStackStep(ci->globalPosOrigin);
+			step = 0.6f * (CG_FloatSpriteRadiusAtDist(ci->globalPosOrigin,
+			               cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer, 0.0f) * 2.0f);
 			spriteOrigin[2] += ((n - 1) * 2 - (n - 1)) * (step * 0.5f);
 		}
 		CG_WorldFlags_GetStackDropFlagColor(i, dropColor);
-		CG_AddFloatSpriteAtOrigin(spriteOrigin, i, cgs.media.teamTasksFlag, dropColor, qtrue, GLOBAL_POS_DRAW_ALPHA, 0.0f);
+		CG_AddFloatSpriteAtOriginParams(spriteOrigin, i, cgs.media.teamTasksFlag, dropColor,
+		                                cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer,
+		                                GLOBAL_POS_DRAW_ALPHA, 0.0f);
 	}
 
 	for (i = 0; i < MAX_CLIENTS; i++)
@@ -570,7 +590,7 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 
 		ci = &cgs.clientinfo[i];
 		CG_GlobalPosFriendFloatSpritePick(i, ci, &wantShow, &friendShader, &friendColor,
-		                                  useTeamFoeWh, useTeamFrozen);
+		                                  useTeamFoeWh, useTeamFrozen, isSpec);
 		if (!wantShow)
 		{
 			continue;
@@ -581,11 +601,14 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 		if (n > 1)
 		{
 			idx = cg.teamMarkerStackIndex[i];
-			step = CG_GlobalPosFloatSpriteStackStep(ci->globalPosOrigin);
+			step = 0.6f * (CG_FloatSpriteRadiusAtDist(ci->globalPosOrigin,
+			               cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer, 0.0f) * 2.0f);
 			spriteOrigin[2] += (idx * 2 - (n - 1)) * (step * 0.5f);
 		}
 
-		CG_AddFloatSpriteAtOrigin(spriteOrigin, i, friendShader, friendColor, qtrue, GLOBAL_POS_DRAW_ALPHA, 0.0f);
+		CG_AddFloatSpriteAtOriginParams(spriteOrigin, i, friendShader, friendColor,
+		                                cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer,
+		                                GLOBAL_POS_DRAW_ALPHA, 0.0f);
 	}
 }
 
@@ -595,17 +618,20 @@ void CG_DrawGlobalPosFriendHudMarkers(void)
 	clientInfo_t* ci;
 	qboolean useTeamFrozen;
 	qboolean useTeamFoeWh;
+	qboolean isSpec;
 
 	if (!CG_GlobalPosFriendMarkersAllowed())
 	{
 		return;
 	}
 
+	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
+	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
 	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
 	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 
 	{
-		CG_EnsureTeamMarkerStackCache(qtrue);
+		CG_EnsureTeamMarkerStackCache(!isSpec);
 
 		for (i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -628,7 +654,11 @@ void CG_DrawGlobalPosFriendHudMarkers(void)
 			{
 				continue;
 			}
-			if (ci->infoValid && (CG_CACHED_IS_ENEMY_CI(ci) || ci->team == TEAM_SPECTATOR))
+			if (ci->infoValid && ci->team == TEAM_SPECTATOR)
+			{
+				continue;
+			}
+			if (ci->infoValid && !isSpec && CG_CACHED_IS_ENEMY_CI(ci))
 			{
 				continue;
 			}
@@ -649,7 +679,7 @@ void CG_DrawGlobalPosFriendHudMarkers(void)
 			{
 				angle = 270;
 			}
-			CG_FriendHudMarkerAtOrigin(ci->globalPosOrigin, ci, i, isFrozenTinfo, useTeamFrozen, useTeamFoeWh, angle, GLOBAL_POS_DRAW_ALPHA);
+			CG_FriendHudMarkerAtOriginExt(ci->globalPosOrigin, ci, i, isFrozenTinfo, useTeamFrozen, useTeamFoeWh, angle, GLOBAL_POS_DRAW_ALPHA, qfalse);
 		}
 	}
 }

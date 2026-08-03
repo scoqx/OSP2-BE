@@ -78,11 +78,12 @@ static qboolean vjk_CheckJump(void)
 	                && VectorLength2D(pm->ps->velocity) > phy_ground_basespeed * 1.5);
 	if (canHoldBoost)
 	{
-		pm->ps->stats[STAT_JUMP_HOLDBOOST] += phy_jump_hb_amount;
+		pm->ps->stats[STAT_OSDF_PACK] = (pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK)
+			| ((((pm->ps->stats[STAT_OSDF_PACK] >> OSDF_BOOST_SHIFT) + phy_jump_hb_amount) & OSDF_CROUCH_MASK) << OSDF_BOOST_SHIFT);
 	}
 	else
 	{
-		pm->ps->stats[STAT_JUMP_HOLDBOOST] = 0;
+		pm->ps->stats[STAT_OSDF_PACK] &= OSDF_CROUCH_MASK;
 	}
 
 	// Else: Can jump. Do jump behavior
@@ -93,7 +94,7 @@ static qboolean vjk_CheckJump(void)
 	// ups * frametime = upf
 	if (canHoldBoost)
 	{
-		pm->ps->velocity[2] = phy_jump_velocity + pm->ps->stats[STAT_JUMP_HOLDBOOST]; // Base jumpvel + stored boost
+		pm->ps->velocity[2] = phy_jump_velocity + (pm->ps->stats[STAT_OSDF_PACK] >> OSDF_BOOST_SHIFT); // Base jumpvel + stored boost
 	}
 	else
 	{
@@ -205,7 +206,7 @@ void vjk_WalkMove(void)
 		}
 	}
 	// when a player gets hit, they temporarily lose full control, which allows them to be moved a bit
-	crouchslide = (pm->ps->pm_flags & PMF_DUCKED && pm->ps->stats[STAT_TIME_CROUCHSLIDE] > 0) ? qtrue : qfalse;
+	crouchslide = (pm->ps->pm_flags & PMF_DUCKED && (pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK) > 0) ? qtrue : qfalse;
 	if (pml.groundTrace.surfaceFlags & SURF_SLICK || pm->ps->pm_flags & PMF_TIME_KNOCKBACK)
 	{
 		accelerate = phy_air_accel;
@@ -257,8 +258,8 @@ void vjk_move(pmove_t* pmove)
 	if (VectorLength2D(pm->ps->velocity) < pm->ps->speed * 1.5) // TODO: Fix this. upmove is 0 in some frames when holding jump
 	{
 		// if (pm->cmd.upmove < 10 || VectorLength2D(pm->ps->velocity) < pm->ps->speed*1.5) {
-		// if (pm->ps->stats[STAT_JUMP_HOLDBOOST]) { Com_Printf("%i: Removed holdboost\n", c_pmove); }
-		pm->ps->stats[STAT_JUMP_HOLDBOOST] = 0;  // Remove holdboost when not holding jump this frame, or too slow
+		// if (pm->ps->stats[STAT_OSDF_PACK] >> OSDF_BOOST_SHIFT) { Com_Printf("%i: Removed holdboost\n", c_pmove); }
+		pm->ps->stats[STAT_OSDF_PACK] &= OSDF_CROUCH_MASK;  // Remove holdboost when not holding jump this frame, or too slow
 	}
 	if (pm->ps->powerups[PW_FLIGHT])
 	{

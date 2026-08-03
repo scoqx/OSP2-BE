@@ -96,10 +96,13 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 
 	if (element->type == SHUD_ELEMENT_TARGETSTATUS_TEXT)
 	{
-		vec4_t hcolor;
 		char s[1024];
+		float fadeAlpha;
 
-		Vector4Copy(cg.healthColorByClient[cg.crosshairClientNum], hcolor);
+		/* Keep fade alpha from CG_SHUDGetFadeColor; health color supplies RGB only */
+		fadeAlpha = element->textCtx.color[3];
+		VectorCopy(cg.healthColorByClient[cg.crosshairClientNum], element->textCtx.color);
+		element->textCtx.color[3] = fadeAlpha;
 
 		if (element->config.style.isSet && element->config.style.value == 1)
 		{
@@ -111,14 +114,7 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 		}
 
 		element->textCtx.text = s;
-
-		VectorCopy(hcolor, element->textCtx.color);
-		if (element->config.color.isSet)
-		{
-			element->textCtx.color[3] = element->config.color.value.rgba[3];
-		}
 		CG_SHUDTextPrintNew(&element->config, &element->textCtx, qfalse);
-
 		element->textCtx.text = NULL;
 	}
 	else
@@ -126,11 +122,8 @@ void CG_SHUDElementTargetStatusRoutine(void* context)
 		float barAlpha;
 		superhudConfig_t frameCfg;
 
+		/* Alpha already includes config color + SuperHUD fade */
 		barAlpha = element->textCtx.color[3];
-		if (element->config.color.isSet)
-		{
-			barAlpha *= element->config.color.value.rgba[3];
-		}
 
 		CG_SHUDBarMakeContext(&element->config, &element->barCtx, TARGET_STATUS_BAR_MAX_HP);
 

@@ -1679,7 +1679,7 @@ qboolean CG_OSPDrawScoretable(void)
 		}
 		else
 		{
-			if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) // regular TDM
+			if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze() && !cgs.killConfirmMode) // regular TDM
 			{
 				tmpStr = va("^1Players  AvgPing");
 				CG_OSPDrawString(104, 64, tmpStr, colorWhite, 8, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
@@ -1689,6 +1689,13 @@ qboolean CG_OSPDrawScoretable(void)
 			else if (CG_OSPIsGameTypeFreeze()) // Freeze Tag
 			{
 				tmpStr = va("^1Scores   Thaws Players");
+				CG_OSPDrawString(80, 64, tmpStr, colorWhite, 8, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+				Com_sprintf(string, 128, " %3i %3i  %2i", sumScoresRed, sumThawsRed, drewRed);
+				CG_OSPDrawString(64, 80, string, colorWhite, 16, 20, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+			}
+			else if (cgs.killConfirmMode) // Kill Confirm
+			{
+				tmpStr = va("^1Scores    CFM Players");
 				CG_OSPDrawString(80, 64, tmpStr, colorWhite, 8, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 				Com_sprintf(string, 128, " %3i %3i  %2i", sumScoresRed, sumThawsRed, drewRed);
 				CG_OSPDrawString(64, 80, string, colorWhite, 16, 20, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
@@ -1707,7 +1714,7 @@ qboolean CG_OSPDrawScoretable(void)
 			Com_sprintf(string, 128, "^3%3i^7  %2i  %3i", sumScoresBlue, drewBlue, sumPingBlue / drewBlue);
 			CG_OSPDrawString(436, 80, string, colorWhite, 16, 20, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 		}
-		else if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze()) // regular TDM
+		else if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze() && !cgs.killConfirmMode) // regular TDM
 		{
 			tmpStr = va("^4Players  AvgPing");
 			CG_OSPDrawString(424, 64, tmpStr, colorWhite, 8, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
@@ -1717,6 +1724,13 @@ qboolean CG_OSPDrawScoretable(void)
 		else if (CG_OSPIsGameTypeFreeze()) // Freeze Tag
 		{
 			tmpStr = va("^4Scores   Thaws Players");
+			CG_OSPDrawString(400, 64, tmpStr, colorWhite, 8, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+			Com_sprintf(string, 128, " %3i %3i  %2i", sumScoresBlue, sumThawsBlue, drewBlue);
+			CG_OSPDrawString(384, 80, string, colorWhite, 16, 20, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
+		}
+		else if (cgs.killConfirmMode) // Kill Confirm
+		{
+			tmpStr = va("^4Scores    CFM Players");
 			CG_OSPDrawString(400, 64, tmpStr, colorWhite, 8, 16, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
 			Com_sprintf(string, 128, " %3i %3i  %2i", sumScoresBlue, sumThawsBlue, drewBlue);
 			CG_OSPDrawString(384, 80, string, colorWhite, 16, 20, SCREEN_WIDTH, DS_HLEFT | DS_SHADOW, NULL);
@@ -1897,7 +1911,7 @@ static void CG_OSPDrawTeamSummary(
 		posX[count] = titlePos3X;
 		count++;
 	}
-	else if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze())
+	else if (cgs.gametype == GT_TEAM && !CG_OSPIsGameTypeFreeze() && !cgs.killConfirmMode)
 	{
 		labels[count] = "Players";
 		Com_sprintf(values[count], sizeof(values[count]), "%i", drewPlayers);
@@ -1909,14 +1923,14 @@ static void CG_OSPDrawTeamSummary(
 		posX[count] = titlePos3X;
 		count++;
 	}
-	else if (CG_OSPIsGameTypeFreeze())
+	else if (CG_OSPIsGameTypeFreeze() || cgs.killConfirmMode)
 	{
 		labels[count] = "Scores";
 		Com_sprintf(values[count], sizeof(values[count]), "%i", sumScores);
 		posX[count] = titlePos1X;
 		count++;
 
-		labels[count] = "Thaws";
+		labels[count] = cgs.killConfirmMode ? "CFM" : "Thaws";
 		Com_sprintf(values[count], sizeof(values[count]), "%i", sumThaws);
 		posX[count] = titlePos2X;
 		count++;

@@ -128,6 +128,8 @@ extern "C" {
 #define CS_OSP2BE_ITEM_CATALOG0                890
 #define CS_OSP2BE_ITEM_CATALOG_COUNT           20
 #define CS_OSP2BE_ITEM_CATALOG_LAST            (CS_OSP2BE_ITEM_CATALOG0 + CS_OSP2BE_ITEM_CATALOG_COUNT - 1)
+/* BE-only: "1 <prestep> <rlSpeed> <pgSpeed> <bfgSpeed>" when client missile predict is on */
+#define CS_OSP2BE_MISSILE_PREDICT              910
 /*
  * Item catalog (OSP2BE): CS 890..909 concatenated (20 KiB max).
  * Leading <mode> — one hex nibble (0-9a-f), bitmask:
@@ -232,6 +234,7 @@ typedef enum
 // pmove->pm_flags
 #define PMF_DUCKED          1
 #define PMF_JUMP_HELD       2
+#define PMF_RAMPSLIDE       4       // OSDF rampslide active
 #define PMF_BACKWARDS_JUMP  8       // go into backwards land
 #define PMF_BACKWARDS_RUN   16      // coast down to backwards run
 #define PMF_TIME_LAND       32      // pm_time is time before rejump
@@ -282,6 +285,7 @@ typedef struct pmove_s
 	/* Devotion / ruthless: g_movement SYSTEMINFO (0=VQ3, 1=CPM via OSP mode, 2=QL) */
 	int         pmove_movement;
 	int         pmove_autohop;
+	int         pmove_ratflags;     /* g_altFlags from serverinfo */
 
 	// callbacks to test the world
 	// these will be different functions during game and cgame
@@ -338,12 +342,48 @@ typedef enum
 	STAT_OSP_10 = 10,
 	STAT_WEAPON_DELAY = 11,
 
-	// OSDF
+	// OSDF: pack = crouchslide low16 | holdboost high16 (same wire index as STAT_OSP_10)
+	STAT_OSDF_PACK = 10,
 	STAT_TIME_LASTJUMP = 12,
-	STAT_TIME_CROUCHSLIDE = 10,
-	STAT_RAMPSLIDE = 13,
-	STAT_JUMP_HOLDBOOST = 14
+	STAT_EXTFLAGS = 13,		/* reserved wire slot (ruthless bot debug, etc.) */
+	STAT_JUMP_HOLDBOOST = 14,
+	/* g_freeze (ruthless): own progress% + thawing% — see BE_CUSTOM_* */
+	STAT_BE_CUSTOM = 15
 } statIndex_t;
+
+#define OSDF_CROUCH_MASK 0xFFFF
+#define OSDF_BOOST_SHIFT 16
+
+/*
+ * STAT_BE_CUSTOM (stats[15]):
+ *
+ * Freeze (BE_CUSTOM_FLAG / bit15):
+ *   bit15 = active, bit7 = ally thawing me,
+ *   bits0-6 = own thaw 0-100 (frozen only; alive = 0),
+ *   bits8-14 = thawing-other 0-100
+ * Alive: OWN=0, FREEZING=who I thaw. Frozen: OWN=mine;
+ * FREEZING=watched player's thawing while following.
+ *
+ * Non-freeze death (bit15 always 0):
+ *   bits0-6 = canTenths 0..127 until attack/use respawn
+ *   bits7-14 = forceTenths 0..255 until forceRespawn
+ * Mutual exclusion with freeze thaw pack.
+ */
+#define BE_CUSTOM_FLAG			0x8000
+#define BE_CUSTOM_ALLY			0x0080
+#define BE_CUSTOM_U16(v)		((unsigned)(v) & 0xFFFFu)
+#define BE_CUSTOM_ACTIVE(v)		(BE_CUSTOM_U16(v) & BE_CUSTOM_FLAG)
+#define BE_CUSTOM_OWN_THAW(v)		(BE_CUSTOM_ACTIVE(v) ? (int)(BE_CUSTOM_U16(v) & 0x7Fu) : 0)
+#define BE_CUSTOM_ALLY_THAWING(v)	(BE_CUSTOM_ACTIVE(v) && (BE_CUSTOM_U16(v) & BE_CUSTOM_ALLY))
+#define BE_CUSTOM_THAWING(v)		(BE_CUSTOM_ACTIVE(v) ? (int)((BE_CUSTOM_U16(v) >> 8) & 0x7Fu) : 0)
+#define BE_CUSTOM_PACK(own, thaw, ally)	(BE_CUSTOM_FLAG \
+	| ((own) & 0x7F) \
+	| ((ally) ? BE_CUSTOM_ALLY : 0) \
+	| (((thaw) & 0x7F) << 8))
+
+#define RESPAWN_TIMER_CAN(v)		(BE_CUSTOM_ACTIVE(v) ? 0 : (int)(BE_CUSTOM_U16(v) & 0x7Fu))
+#define RESPAWN_TIMER_FORCE(v)		(BE_CUSTOM_ACTIVE(v) ? 0 : (int)((BE_CUSTOM_U16(v) >> 7) & 0xFFu))
+#define RESPAWN_TIMER_PACK(can, force)	((((force) & 0xFF) << 7) | ((can) & 0x7F))
 
 
 // player_state->persistant[] indexes
@@ -373,6 +413,8 @@ typedef enum
 
 // entityState_t->eFlags
 #define EF_DEAD             0x00000001      // don't draw a foe marker over players with EF_DEAD
+#define EF_TICKING          0x00000002      /* prox (unused) / g_passPlayers overlap ghost */
+#define EF_PASSPLAYER       EF_TICKING      /* alias: networked bit1 */
 #define EF_TELEPORT_BIT     0x00000004      // toggled every time the origin abruptly changes
 #define EF_AWARD_EXCELLENT  0x00000008      // draw an excellent sprite
 #define EF_PLAYER_EVENT     0x00000010
@@ -463,6 +505,8 @@ typedef enum
 #define PLAYEREVENT_DENIEDREWARD        0x0001
 #define PLAYEREVENT_GAUNTLETREWARD      0x0002
 #define PLAYEREVENT_HOLYSHIT            0x0004
+#define PLAYEREVENT_KC_CONFIRM          0x0008  /* kill-confirm: enemy token pickup */
+#define PLAYEREVENT_KC_RETURN           0x0010  /* kill-confirm: ally token return */
 
 // entityState_t->event values
 // entity events are for effects that take place reletive
@@ -892,6 +936,42 @@ typedef enum
 // otherEntityNum is a 10-bit entity-number field (0..MAX_GENTITIES-1); 666 fits
 // and stays below ENTITYNUM_WORLD, so it cannot clash with engine-reserved ids.
 #define KILLCONFIRM_MARKER 666
+
+/* Team proxy sentinel (entityState_t::otherEntityNum2). Owner in otherEntityNum.
+ * Lean out-of-PVS ally position for OSP2-BE teamIndicator / friends WH. */
+#define TEAM_PROXY_MARKER 667
+
+/* g_altFlags->integer — autoparsed from various ratmod cvars (bit-compatible with devotion/ruthless) */
+#define RAT_EASYPICKUP          (1 << 0)
+#define RAT_POWERUPGLOWS        (1 << 1)
+#define RAT_SCREENSHAKE         (1 << 2)
+#define RAT_PREDICTMISSILES     (1 << 3)
+#define RAT_FASTSWITCH          (1 << 4)
+#define RAT_FASTWEAPONS         (1 << 5)
+#define RAT_RAMPJUMP            (1 << 7)
+#define RAT_ALLOWFORCEDMODELS   (1 << 8)
+#define RAT_FRIENDSWALLHACK     (1 << 9)
+#define RAT_SPECSHOWZOOM        (1 << 10)
+#define RAT_BRIGHTSHELL         (1 << 11)
+#define RAT_NEWSHOTGUN          (1 << 12)
+#define RAT_ADDITIVEJUMP        (1 << 13)
+#define RAT_NOTIMENUDGE         (1 << 14)
+#define RAT_FLAGINDICATOR       (1 << 15)
+#define RAT_REGULARFOOTSTEPS    (1 << 16)
+#define RAT_NOINVISWALLS        (1 << 17)
+#define RAT_NOBOBUP             (1 << 18)
+#define RAT_FASTSWIM            (1 << 19)
+#define RAT_SWINGGRAPPLE        (1 << 20)
+#define RAT_BRIGHTOUTLINE       (1 << 21)
+#define RAT_BRIGHTMODEL         (1 << 22)
+#define RAT_SMOOTHSTAIRS        (1 << 23)
+#define RAT_NOOVERBOUNCE        (1 << 24)
+#define RAT_FREEZETAG           (1 << 25)
+#define RAT_CROUCHSLIDE         (1 << 26)
+#define RAT_SLIDEMODE           (1 << 27)
+#define RAT_FORCETAUNTS         (1 << 28)
+#define RAT_PASSENEMIES         (1 << 29)   /* g_passPlayers & 1 */
+#define RAT_PASSALLIES          (1 << 30)   /* g_passPlayers & 2 */
 
 /* calculated by modulus.c for appropriate dividers */
 #define TMOD_004  4272943

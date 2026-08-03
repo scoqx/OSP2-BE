@@ -57,7 +57,8 @@ void CG_UpdateBeFeatures(void)
 		beFlags = 0, changed = qtrue;
 	else
 	{
-		if (cg_friendsWallhack.integer & (CG_FRIENDS_WALLHACK_FOE | CG_FRIENDS_WALLHACK_TEAM_INDICATOR | CG_FRIENDS_WALLHACK_GLOBAL_POS))
+		if ((cg_friendsWallhack.integer & (CG_FRIENDS_WALLHACK_FOE | CG_FRIENDS_WALLHACK_TEAM_INDICATOR | CG_FRIENDS_WALLHACK_GLOBAL_POS))
+		        || cg_playerXray.integer)
 			beFlags |= CG_BE_TEAM_FOE_WH, changed = qtrue;
 		if (cg_altGrenades.integer == 2 || cg_altGrenades.integer == 3)
 			beFlags |= CG_BE_ALT_GRENADES, changed = qtrue;
@@ -164,7 +165,7 @@ void CG_PrintDisabledFeatures(qboolean request)
 		qboolean first = qtrue;
 		if (value & CG_BE_TEAM_FOE_WH)
 		{
-			Q_strcat(buffer, sizeof(buffer), first ? "Team wh" : ", team wh");
+			Q_strcat(buffer, sizeof(buffer), first ? "Team wh / Player xray" : ", team wh / Player xray");
 			first = qfalse;
 		}
 		if (value & CG_BE_MODELSOUND)

@@ -80,7 +80,7 @@ jobs:
         run: |
           cd build/qvm
           make ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt
-      
+
       - name: build-qvm
         working-directory: build/qvm
         run: |
@@ -98,20 +98,6 @@ jobs:
           if-no-files-found: error
           retention-days: 5
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: cgame-linux
-          path: build/library/build/release-linux-x86_64/osp2/cgamex86_64.so
-          if-no-files-found: error
-          retention-days: 5
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ui-linux
-          path: build/library/build/release-linux-x86_64/osp2/uix86_64.so
-          if-no-files-found: error
-          retention-days: 5
-
       - name: Package Linux libraries for website
         run: |
           cd build/library/build/release-linux-x86_64/osp2
@@ -124,28 +110,18 @@ jobs:
           if-no-files-found: error
           retention-days: 5
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: version-files
-          path: |
-            assets/version.txt
-            assets/version_changelog.txt
-          if-no-files-found: error
-          retention-days: 5
-
   verify-build-artifacts:
-    needs: [linux, mingw]
+    needs: [linux]
     if: >-
       github.ref == 'refs/heads/master' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      needs.linux.result == 'success' &&
-      needs.mingw.result == 'success'
+      needs.linux.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v8
 
-      - name: Verify QVM pack and both library packages
+      - name: Verify QVM pack and Linux library package
         run: |
           set -e
           missing=0
@@ -159,13 +135,6 @@ jobs:
           }
           check "qvm-linux/zz-osp-pak8be.pk3"
           check "osp2-be-linux/osp2-be-linux.tar.gz"
-          check "cgame-linux/cgamex86_64.so"
-          check "ui-linux/uix86_64.so"
-          check "osp2-be-win/osp2-be-win.zip"
-          check "cgame-win/cgamex86_64.dll"
-          check "ui-win/uix86_64.dll"
-          check "version-files/version.txt"
-          check "version-files/version_changelog.txt"
           if [ "$missing" -ne 0 ]; then
             echo "Build artifact verification failed"
             exit 1
@@ -190,79 +159,8 @@ jobs:
           prerelease: false
           files: |
             qvm-linux/zz-osp-pak8be.pk3
-            cgame-linux/cgamex86_64.so
-            ui-linux/uix86_64.so
-            cgame-win/cgamex86_64.dll
-            ui-win/uix86_64.dll
+            osp2-be-linux/osp2-be-linux.tar.gz
           generate_release_notes: false
-
-  mingw:
-    name: MinGW GCC
-    needs: sync-version-assets
-    if: always() && (needs.sync-version-assets.result == 'success' || needs.sync-version-assets.result == 'skipped')
-    runs-on: windows-2022
-
-    defaults:
-      run:
-        shell: bash
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-          ref: master
-          fetch-depth: 0
-
-      - name: Pull latest after version sync
-        if: needs.sync-version-assets.result == 'success'
-        run: git pull --ff-only origin master
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-
-      - name: Create version files
-        run: |
-          cd build/qvm
-          make ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt
-
-      - name: build-qvm
-        working-directory: build/qvm
-        run: |
-          make
-
-      - name: build-dll
-        working-directory: build/library
-        run: |
-          make MOD=osp2
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: cgame-win
-          path: build/library/build/release-mingw64-x86_64/osp2/cgamex86_64.dll
-          if-no-files-found: error
-          retention-days: 5
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ui-win
-          path: build/library/build/release-mingw64-x86_64/osp2/uix86_64.dll
-          if-no-files-found: error
-          retention-days: 5
-
-      - name: Package Windows libraries for website
-        run: |
-          cd build/library/build/release-mingw64-x86_64/osp2
-          if [ -f ../../../osp2-be-win.zip ]; then rm ../../../osp2-be-win.zip; fi
-          ../../../../qvm/tools/7za.exe a -tzip -mx=0 ../../../osp2-be-win.zip cgamex86_64.dll uix86_64.dll
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: osp2-be-win
-          path: build/library/osp2-be-win.zip
-          if-no-files-found: error
-          retention-days: 5
 
   deploy-to-gh-pages:
     needs: [verify-build-artifacts]
@@ -291,7 +189,7 @@ jobs:
             find artifacts -type f 2>/dev/null | head -20 || echo "No files found in artifacts"
             echo ""
             echo "=== Looking for specific files ==="
-            for file in "zz-osp-pak8be.pk3" "osp2-be-linux.tar.gz" "osp2-be-win.zip" "version.txt" "version_changelog.txt"; do
+            for file in "zz-osp-pak8be.pk3" "osp2-be-linux.tar.gz"; do
               found=$(find artifacts -name "$file" -type f 2>/dev/null | head -1)
               if [ -n "$found" ]; then
                 echo "Found: $file -> $found ($(du -h "$found" | cut -f1))"
@@ -312,7 +210,7 @@ jobs:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           path: target-repo
 
-      - name: Checkout source repo for config files
+      - name: Checkout source repo for config and version files
         uses: actions/checkout@v6
         with:
           ref: master
@@ -323,83 +221,63 @@ jobs:
           set -euo pipefail
           mkdir -p target-repo/assets
           copy_fail=0
-          
-          # Function to find and copy file
+
           find_and_copy() {
             local filename="$1"
             local dest="$2"
             local found_file
-            
-            # Try multiple possible locations
+
             found_file=$(find artifacts -name "$filename" -type f 2>/dev/null | head -1)
-            
+
             if [ -n "$found_file" ] && [ -f "$found_file" ]; then
               cp "$found_file" "$dest"
               echo "Copied: $found_file -> $dest ($(du -h "$dest" | cut -f1))"
               return 0
             fi
-            
+
             echo "ERROR: $filename not found in artifacts"
             copy_fail=1
             return 1
           }
-          
-          # Copy Linux QVM (zz-osp-pak8be.pk3)
+
           find_and_copy "zz-osp-pak8be.pk3" "target-repo/assets/zz-osp-pak8be.pk3" || true
-          
-          # Copy Linux libraries archive (osp2-be-linux.tar.gz)
           find_and_copy "osp2-be-linux.tar.gz" "target-repo/assets/osp2-be-linux.tar.gz" || true
-          
-          # Copy Windows libraries archive (osp2-be-win.zip)
-          find_and_copy "osp2-be-win.zip" "target-repo/assets/osp2-be-win.zip" || true
-          
-          # Copy version files
-          find_and_copy "version.txt" "target-repo/assets/version.txt" || true
-          find_and_copy "version_changelog.txt" "target-repo/assets/version_changelog.txt" || true
-          
+
           if [ "$copy_fail" -ne 0 ]; then
             echo "ERROR: Required build artifacts missing; refusing to update website"
             exit 1
           fi
-          
-          # Copy config files from source repo (always copy, fail if missing)
-          if [ -f source-repo/assets/OSP2.cfg ]; then
-            cp source-repo/assets/OSP2.cfg target-repo/assets/OSP2.cfg
-            echo "Copied: OSP2.cfg"
-          else
-            echo "Error: OSP2.cfg not found in source-repo/assets/"
-          fi
-          
-          if [ -f source-repo/assets/OSP2English.cfg ]; then
-            cp source-repo/assets/OSP2English.cfg target-repo/assets/OSP2English.cfg
-            echo "Copied: OSP2English.cfg"
-          else
-            echo "Error: OSP2English.cfg not found in source-repo/assets/"
-          fi
-          
-          if [ -f source-repo/changelog_be.txt ]; then
-            cp source-repo/changelog_be.txt target-repo/assets/changelog_be.txt
-            echo "Copied: changelog_be.txt"
-          else
-            echo "Error: changelog_be.txt not found in source-repo/"
-          fi
-          
-          # List all copied files
+
+          for src_dst in \
+            "source-repo/assets/version.txt:target-repo/assets/version.txt" \
+            "source-repo/assets/version_changelog.txt:target-repo/assets/version_changelog.txt" \
+            "source-repo/assets/OSP2.cfg:target-repo/assets/OSP2.cfg" \
+            "source-repo/assets/OSP2English.cfg:target-repo/assets/OSP2English.cfg" \
+            "source-repo/changelog_be.txt:target-repo/assets/changelog_be.txt"; do
+            src="${src_dst%%:*}"
+            dst="${src_dst##*:}"
+            if [ -f "$src" ]; then
+              cp "$src" "$dst"
+              echo "Copied: $src -> $dst"
+            else
+              echo "Error: $src not found"
+            fi
+          done
+
           echo ""
           echo "=== Files in target-repo/assets ==="
           ls -lh target-repo/assets/ || echo "Assets directory is empty"
           echo ""
           echo "=== File count ==="
           ls -1 target-repo/assets/ | wc -l || echo "0"
-          
-          # Verify critical files are present
+
           echo ""
           echo "=== Verification of critical files ==="
-          for file in "zz-osp-pak8be.pk3" "osp2-be-linux.tar.gz" "osp2-be-win.zip"; do
+          for file in "zz-osp-pak8be.pk3" "osp2-be-linux.tar.gz"; do
             if [ -f "target-repo/assets/$file" ]; then
-              echo "✓ $file exists ($(du -h target-repo/assets/$file | cut -f1))"
+              echo "OK: $file exists ($(du -h target-repo/assets/$file | cut -f1))"
             else
-              echo "✗ $file MISSING!"
+              echo "MISSING: $file"
             fi
           done
 
@@ -411,21 +289,20 @@ jobs:
             echo "ERROR: assets directory does not exist!"
             exit 1
           fi
-          
+
           echo "Files found:"
           ls -lh assets/ || echo "No files found"
-          
+
           required_files=(
             "zz-osp-pak8be.pk3"
             "osp2-be-linux.tar.gz"
-            "osp2-be-win.zip"
             "version.txt"
             "version_changelog.txt"
             "OSP2.cfg"
             "OSP2English.cfg"
             "changelog_be.txt"
           )
-          
+
           missing_files=()
           for file in "${required_files[@]}"; do
             if [ ! -f "assets/$file" ]; then
@@ -435,12 +312,12 @@ jobs:
               echo "OK: $file exists ($(du -h assets/$file | cut -f1))"
             fi
           done
-          
+
           if [ ${#missing_files[@]} -gt 0 ]; then
             echo "ERROR: Some required files are missing!"
             exit 1
           fi
-          
+
           echo "=== File verification complete ==="
 
       - name: Commit and push changes
@@ -448,35 +325,28 @@ jobs:
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          
-          # Show git status before adding
+
           echo "=== Git status before add ==="
           git status
-          
-          # Force add all files in assets directory
+
           git add -A -f assets/
-          
-          # Explicitly add all expected files to ensure they are tracked
-          for file in "osp2-be-linux.tar.gz" "osp2-be-win.zip" "zz-osp-pak8be.pk3" "version.txt" "version_changelog.txt" "OSP2.cfg" "OSP2English.cfg" "changelog_be.txt"; do
+
+          for file in "osp2-be-linux.tar.gz" "zz-osp-pak8be.pk3" "version.txt" "version_changelog.txt" "OSP2.cfg" "OSP2English.cfg" "changelog_be.txt"; do
             if [ -f "assets/$file" ]; then
               git add -f "assets/$file"
               echo "Added: assets/$file"
             fi
           done
-          
-          # Show git status after adding
+
           echo "=== Git status after add ==="
           git status
-          
-          # Show what will be committed
+
           echo "=== Files staged for commit ==="
           git diff --cached --name-only || echo "No staged files"
-          
-          # Show diff to see what changed
+
           echo "=== Changes to be committed ==="
           git diff --cached --stat || echo "No changes"
-          
-          # Check if there are any changes (check both staged and working directory)
+
           has_changes=false
           if [ -n "$(git diff --cached --name-only)" ]; then
             has_changes=true
@@ -486,7 +356,7 @@ jobs:
             has_changes=true
             echo "Working directory changes detected"
           fi
-          
+
           if [ "$has_changes" = "true" ]; then
             echo "Changes detected, committing..."
             git commit -m "Update build artifacts, version files and configs [auto]"
@@ -507,8 +377,7 @@ jobs:
             echo "=== Git log (last 3 commits) ==="
             git log -3 --oneline
           fi
-          
-          # Verify files are present
+
           echo ""
           echo "=== Final verification: files in assets ==="
           ls -lh assets/ || echo "Assets directory is empty or missing"

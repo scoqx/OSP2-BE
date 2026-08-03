@@ -33,6 +33,7 @@ CG_SRC = \
  superhud/elements/element_ammomessage \
  superhud/elements/element_chat \
  superhud/elements/element_specmessage superhud/elements/element_followmessage \
+ superhud/elements/element_respawnmessage \
  superhud/elements/element_spectators \
  superhud/elements/element_itempickup superhud/elements/element_itempickupicon \
  superhud/elements/element_spectator_itemspawns superhud/elements/element_spectator_itempickups \
@@ -54,6 +55,9 @@ CG_SRC = \
  superhud/elements/element_roundwarmup \
  superhud/elements/element_laststanding \
  superhud/elements/element_timelimit \
+ superhud/elements/element_thaw \
+ superhud/elements/element_killconfirm \
+ superhud/elements/element_centermessage \
  l_crc \
  cg_chatfilter cg_crosshair \
  cg_be_util cg_be_stats \

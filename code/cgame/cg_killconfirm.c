@@ -28,6 +28,22 @@ static int CG_KillConfirm_TokenTeam(const entityState_t* es)
 	return 0;
 }
 
+static const float* CG_KillConfirm_TokenColor(int team)
+{
+	qboolean isTeam;
+
+	isTeam = (team == cgs.beMyTeam);
+	if (isTeam && cg.kcTeamColorEnabled)
+	{
+		return cg.beKcTeamColor;
+	}
+	if (!isTeam && cg.kcEnemyColorEnabled)
+	{
+		return cg.beKcEnemyColor;
+	}
+	return (team == TEAM_RED) ? cgs.beRedTeamColor : cgs.beBlueTeamColor;
+}
+
 qboolean CG_KillConfirm_ApplyItemStyle(refEntity_t* ent, int team)
 {
 	const float* tc;
@@ -37,7 +53,7 @@ qboolean CG_KillConfirm_ApplyItemStyle(refEntity_t* ent, int team)
 		return qfalse;
 	}
 
-	tc = (team == TEAM_RED) ? cgs.beRedTeamColor : cgs.beBlueTeamColor;
+	tc = CG_KillConfirm_TokenColor(team);
 	if (cgs.media.altFullBrightShader)
 	{
 		ent->customShader = cgs.media.altFullBrightShader;
@@ -59,7 +75,7 @@ void CG_KillConfirm_AddQuadOverlay(const refEntity_t* baseEnt, int team)
 		return;
 	}
 
-	tc = (team == TEAM_RED) ? cgs.beRedTeamColor : cgs.beBlueTeamColor;
+	tc = CG_KillConfirm_TokenColor(team);
 	ent = *baseEnt;
 	ent.customShader = cgs.media.quadShaderDye;
 	ent.shaderRGBA[0] = (byte)(tc[0] * 255.0f);

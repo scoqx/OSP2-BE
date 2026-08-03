@@ -185,6 +185,17 @@ fBrightItems
 	}
 }
 
+specXrayOccluded
+{
+	nopicmip
+	{
+		map $whiteimage
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen entity
+		alphaGen entity
+	}
+}
+
 // obituaries
 ObituariesSkull {
 	nopicmip
@@ -735,6 +746,19 @@ beShadowItem
 beShadowItemFlag
 {
 	cull none
+	sort nearest
+	{
+		map textures/effects/envmapghost.jpg
+		blendfunc GL_SRC_ALPHA GL_ONE
+		tcmod rotate 30
+		tcmod scroll 1 .1
+		rgbGen entity
+		alphaGen entity
+	}
+}
+
+bePassPlayer
+{
 	sort nearest
 	{
 		map textures/effects/envmapghost.jpg

@@ -93,7 +93,7 @@ static void vq4_Friction(void)
 			if (!(pm->ps->pm_flags & PMF_TIME_KNOCKBACK))   // if getting knocked back, no friction
 			{
 				qboolean crouch      = (pm->ps->pm_flags & PMF_DUCKED) ? qtrue : qfalse;
-				qboolean crouchslide = (crouch && pm->ps->stats[STAT_TIME_CROUCHSLIDE] > 0) ? qtrue : qfalse;
+				qboolean crouchslide = (crouch && (pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK) > 0) ? qtrue : qfalse;
 				qboolean recovering  = (crouch && pm->cmd.upmove == 0) ? qtrue : qfalse;
 				control = speed < phy_stopspeed ? phy_stopspeed : speed;
 				if (crouchslide || recovering)
@@ -148,7 +148,7 @@ static qboolean vq4_CheckJump(void)
 		pm->cmd.upmove = 0; // clear upmove so cmdscale doesn't lower running speed
 		return qfalse;
 	}
-	if (pm->ps->stats[STAT_RAMPSLIDE])
+	if (pm->ps->pm_flags & PMF_RAMPSLIDE)
 	{
 		return qfalse;    // We are rampsliding
 	}
@@ -173,7 +173,7 @@ static qboolean vq4_CheckJump(void)
 		pm->ps->pm_flags |=  PMF_BACKWARDS_JUMP;
 	}
 	// Reset crouchslide
-	pm->ps->stats[STAT_TIME_CROUCHSLIDE] = 0;
+	pm->ps->stats[STAT_OSDF_PACK] &= ~OSDF_CROUCH_MASK;
 	// We have jumped
 	if (pm->debugLevel)
 	{
@@ -242,8 +242,9 @@ void vq4_AirMove(void)
 	// if (notCrouch && movingDown) {
 	// if (movingDown) {
 	{
-		time = pm->ps->stats[STAT_TIME_CROUCHSLIDE];
-		pm->ps->stats[STAT_TIME_CROUCHSLIDE] = IntMax(time + pml.msec * phy_crouchslide_framecount, phy_crouchslide_timemax);
+		time = pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK;
+		time = IntMax(time + pml.msec * phy_crouchslide_framecount, phy_crouchslide_timemax);
+		pm->ps->stats[STAT_OSDF_PACK] = (pm->ps->stats[STAT_OSDF_PACK] & ~OSDF_CROUCH_MASK) | (time & OSDF_CROUCH_MASK);
 	}
 
 	vq4_Friction();
@@ -372,7 +373,7 @@ void vq4_WalkMove(void)
 			}
 		}
 	}
-	crouchslide = (pm->ps->pm_flags & PMF_DUCKED && pm->ps->stats[STAT_TIME_CROUCHSLIDE] > 0) ? qtrue : qfalse;
+	crouchslide = (pm->ps->pm_flags & PMF_DUCKED && (pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK) > 0) ? qtrue : qfalse;
 	if (pml.groundTrace.surfaceFlags & SURF_SLICK || pm->ps->pm_flags & PMF_TIME_KNOCKBACK)
 	{
 		// when a player gets hit, they temporarily lose full control, which allows them to be moved a bit
@@ -428,15 +429,18 @@ void vq4_DropTimers(void)
 		}
 	}
 	// drop crouchslide timer
-	if (pm->ps->stats[STAT_TIME_CROUCHSLIDE])
 	{
-		if (pml.msec >= pm->ps->stats[STAT_TIME_CROUCHSLIDE])
+		int crouch = pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK;
+		if (crouch)
 		{
-			pm->ps->stats[STAT_TIME_CROUCHSLIDE]  = 0;
-		}
-		else
-		{
-			pm->ps->stats[STAT_TIME_CROUCHSLIDE] -= pml.msec;
+			if (pml.msec >= crouch)
+			{
+				pm->ps->stats[STAT_OSDF_PACK] &= ~OSDF_CROUCH_MASK;
+			}
+			else
+			{
+				pm->ps->stats[STAT_OSDF_PACK] = (pm->ps->stats[STAT_OSDF_PACK] & ~OSDF_CROUCH_MASK) | ((crouch - pml.msec) & OSDF_CROUCH_MASK);
+			}
 		}
 	}
 	// drop animation counter
@@ -496,7 +500,7 @@ static void vq4_CheckDuck(void)
 
 	if (pm->cmd.upmove < 0)   // duck
 	{
-		qboolean cantFeetraise = (pml.groundPlane || pm->ps->stats[STAT_RAMPSLIDE]) ? qtrue : qfalse;
+		qboolean cantFeetraise = (pml.groundPlane || (pm->ps->pm_flags & PMF_RAMPSLIDE)) ? qtrue : qfalse;
 		pm->mins[2] = (cantFeetraise) ? pm->mins[2] : MINS_Z + phy_crouch_feetraise; // Keep it the same on the ground. Else apply feetraise
 		pm->ps->pm_flags |= PMF_DUCKED;
 	}

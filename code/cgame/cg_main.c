@@ -619,6 +619,12 @@ vmCvar_t        be_fontShadowOffset;
 vmCvar_t        be_ttfShadowOffset;
 vmCvar_t        be_ttfScale;
 vmCvar_t        be_ttfFontOffset;
+vmCvar_t        cg_debugCon;
+vmCvar_t        cg_kcEnemyColor;
+vmCvar_t        cg_kcTeamColor;
+vmCvar_t        cg_enemyAltShadowColor;
+vmCvar_t        cg_playerXray;
+
 
 cgFontIndices_t cgFontIndices;
 
@@ -932,7 +938,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_altShadow, "cg_altShadow", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_altShadowColor, "cg_altShadowColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altShadowColor },
 	{ &cg_scoreboardShowId, "cg_scoreboardShowId", "0", CVAR_ARCHIVE },
-	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE },
+	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teamIndicator, "cg_teamIndicator", "10", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teamIndicatorAdjust, "cg_teamIndicatorAdjust", "0.9", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorAdjust },
 	{ &cg_teamIndicatorColor, "cg_teamIndicatorColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorColor },
@@ -1117,30 +1123,35 @@ cvarTable_t cvarTable[] =
 	{ &cg_plasmaColor, "cg_plasmaColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_plasmaColor },
 	{ &cg_enemyPlasmaColor, "cg_enemyPlasmaColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyPlasmaColor },
 	{ &cg_shudStyle, "cg_shudStyle", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_shudStyle },
-	{ &cg_chatWindow, "cg_chatWindow", "0", CVAR_ARCHIVE | CVAR_NEW },
+	{ &cg_chatWindow, "cg_chatWindow", "0", CVAR_ARCHIVE },
 	{ &cg_chatWindowMessageTime, "cg_chatWindowMessageTime", "3000", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_chatWindowPos, "cg_chatWindowPos", "140 300", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_chatWindowSize, "cg_chatWindowSize", "360 120", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_chatWindowFont, "cg_chatWindowfont", "19", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowFont },
-	{ &cg_chatWindowFontSize, "cg_chatWindowFontSize", "6 10", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowFontSize },
-	{ &cg_chatWindowBgColor, "cg_chatWindowBgColor", "000000", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgColor },
-	{ &cg_chatWindowBgOpaque, "cg_chatWindowBgOpaque", "0.25", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_chatWindowBgOpaque },
+	{ &cg_chatWindowPos, "cg_chatWindowPos", "140 300", CVAR_ARCHIVE },
+	{ &cg_chatWindowSize, "cg_chatWindowSize", "360 120", CVAR_ARCHIVE },
+	{ &cg_chatWindowFont, "cg_chatWindowfont", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_chatWindowFont },
+	{ &cg_chatWindowFontSize, "cg_chatWindowFontSize", "6 10", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_chatWindowFontSize },
+	{ &cg_chatWindowBgColor, "cg_chatWindowBgColor", "000000", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_chatWindowBgColor },
+	{ &cg_chatWindowBgOpaque, "cg_chatWindowBgOpaque", "0.25", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_chatWindowBgOpaque },
 	{ &cg_chatWindowFavEmojis, "cg_chatWindowFavEmojis", "smile rofl wtf death fist leaf shit Shhh moai impressive", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_drawSpawns, "cg_drawSpawns", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_drawTPexit, "cg_drawTPexit", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_shadowItems, "cg_shadowItems", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_worldFlags, "cg_worldFlags", "3", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_oldFloatSprites, "cg_oldFloatSprites", "1", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
-	{ &pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO | CVAR_NEW },
-	{ &pmove_accurate, "pmove_accurate", "0", CVAR_SYSTEMINFO | CVAR_NEW },
+	{ &cg_drawSpawns, "cg_drawSpawns", "0", CVAR_ARCHIVE },
+	{ &cg_drawTPexit, "cg_drawTPexit", "0", CVAR_ARCHIVE },
+	{ &cg_shadowItems, "cg_shadowItems", "0", CVAR_ARCHIVE },
+	{ &cg_worldFlags, "cg_worldFlags", "3", CVAR_ARCHIVE },
+	{ &cg_oldFloatSprites, "cg_oldFloatSprites", "1", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO },
+	{ &pmove_accurate, "pmove_accurate", "0", CVAR_SYSTEMINFO },
 	{ &cg_chatWindowNumLock, "cg_chatWindowNumLock", "1", CVAR_ARCHIVE | CVAR_NEW },
 	{ &be_fontShadowOffset, "be_fontShadowOffset", "0.1 0.1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_be_fontShadowOffset },
 	{ &be_ttfShadowOffset, "be_ttfShadowOffset", "0.1 0.1", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_be_ttfShadowOffset },
 	{ &be_ttfScale, "be_ttfScale", "1", CVAR_ARCHIVE | CVAR_NEW, NULL },
 	{ &be_ttfFontOffset, "be_ttfFontOffset", "0", CVAR_ARCHIVE | CVAR_NEW, NULL },
 	{ &be_infoVersionFont, "be_infoVersionFont", "19", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_be_infoVersionFont },
-	{ &be_infoDetail, "be_infoDetail", "1", CVAR_ARCHIVE },
+	{ &be_infoDetail, "be_infoDetail", "1", CVAR_ARCHIVE | CVAR_NEW },
 	// { &be_run, "be_run", "0", CVAR_ARCHIVE },
+	{ &cg_debugCon, "cg_debugCon", "0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE },
+	{ &cg_kcEnemyColor, "cg_kcEnemyColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_kcEnemyColor },
+	{ &cg_kcTeamColor, "cg_kcTeamColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_kcTeamColor },
+	{ &cg_enemyAltShadowColor, "cg_enemyAltShadowColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyAltShadowColor },
+	{ &cg_playerXray, "cg_playerXray", "6", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 
 };
 
@@ -2042,9 +2053,11 @@ static void CG_RegisterGraphics(void)
 
 	cgs.media.firstPersonGun = trap_R_RegisterShader("firstPersonGun");
 	cgs.media.fullBrightShader = trap_R_RegisterShader("fBrightItems");
+	cgs.media.specXrayShader = trap_R_RegisterShader("specXrayOccluded");
 	cgs.media.altFullBrightShader = trap_R_RegisterShader("altFullBrightShader");
 	cgs.media.shadowItemShader = trap_R_RegisterShader("beShadowItem");
 	cgs.media.shadowItemFlagShader = trap_R_RegisterShader("beShadowItemFlag");
+	cgs.media.passPlayerShader = trap_R_RegisterShader("bePassPlayer");
 	cgs.media.flagBrightShader = trap_R_RegisterShader("models/flags/flag2Fullbright");
 	cgs.media.flagBrightAltShader = trap_R_RegisterShader("models/flags/flag2Fullbright2");
 	cgs.media.spawnModelShader = trap_R_RegisterShader("models/players/spawn");
@@ -2648,6 +2661,7 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_teamOutlineColor");
 	CG_CvarTouch("cg_altBloodColor");
 	CG_CvarTouch("cg_altShadowColor");
+	CG_CvarTouch("cg_enemyAltShadowColor");
 
 	CG_CvarTouch("ch_crosshairDecorOpaque");
 	CG_CvarTouch("ch_crosshairOpaque");
@@ -2695,6 +2709,8 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_enemyBattleSuitColor");
 	CG_CvarTouch("cg_quadDamageColor");
 	CG_CvarTouch("cg_enemyQuadDamageColor");
+	CG_CvarTouch("cg_kcEnemyColor");
+	CG_CvarTouch("cg_kcTeamColor");
 	CG_CvarTouch("cg_fragEffectColor");
 
 	CG_CvarTouch("cg_healthColor");
@@ -3223,6 +3239,36 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
 
+		{
+			const char* mp = CG_ConfigString(CS_OSP2BE_MISSILE_PREDICT);
+			int enabled = 0;
+			int prestep = 0;
+			int rl = 0, pg = 0, bfg = 0;
+			int fromPos = 1;
+			int n;
+
+			cgs.missilePredictEnabled = qfalse;
+			cgs.missilePrestep = 0;
+			cgs.missilePredictFromPos = 1;
+			cgs.missilePredictRlSpeed = 0;
+			cgs.missilePredictPgSpeed = 0;
+			cgs.missilePredictBfgSpeed = 0;
+			n = 0;
+			if (mp && mp[0])
+			{
+				n = Q_sscanf(mp, "%i %i %i %i %i %i", &enabled, &prestep, &rl, &pg, &bfg, &fromPos);
+			}
+			if (n >= 5 && enabled)
+			{
+				cgs.missilePredictEnabled = qtrue;
+				cgs.missilePrestep = prestep;
+				cgs.missilePredictRlSpeed = rl;
+				cgs.missilePredictPgSpeed = pg;
+				cgs.missilePredictBfgSpeed = bfg;
+				cgs.missilePredictFromPos = (n >= 6) ? (fromPos ? 1 : 0) : 1;
+			}
+		}
+
 		CG_SpectatorItems_OnConfigStringChanged();
 		CG_ShadowItems_OnConfigStringChanged();
 		CG_MapCatalog_OnConfigStringChanged();
@@ -3366,6 +3412,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_InitPlayerColors();
 
 	CG_InitLocalEntities();
+	memset(cg_predictedMissiles, 0, sizeof(cg_predictedMissiles));
 
 	CG_InitMarkPolys();
 

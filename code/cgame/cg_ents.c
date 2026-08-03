@@ -206,8 +206,9 @@ static void CG_EntityEffects(centity_t* cent)
 	}
 
 
-	// constant light glow
-	if (cent->currentState.constantLight)
+	// constant light glow (skip for kill-confirm tokens — BE draws them tinted)
+	if (cent->currentState.constantLight
+	        && !(cgs.killConfirmMode && cent->currentState.otherEntityNum == KILLCONFIRM_MARKER))
 	{
 		int     cl;
 		int     i, r, g, b;
@@ -809,6 +810,35 @@ static void CG_Missile(centity_t* cent)
 	}
 	weapon = &cg_weapons[s1->weapon];
 
+	/* Drop matching predicted bolt when network missile arrives (Devotion-style) */
+	if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
+	        && s1->otherEntityNum == cg.clientNum
+	        && (s1->weapon == WP_ROCKET_LAUNCHER
+	            || s1->weapon == WP_PLASMAGUN
+	            || s1->weapon == WP_BFG))
+	{
+		int i;
+		int fps = cgs.sv_fps > 0 ? cgs.sv_fps : 20;
+		int window = (int)(1.5f * 1000 / fps);
+
+		for (i = 0; i < MAX_PREDICTED_MISSILES; i++)
+		{
+			predictedMissile_t* pm = &cg_predictedMissiles[i];
+
+			if (!pm->active || pm->weapon != s1->weapon)
+			{
+				continue;
+			}
+			if (s1->pos.trTime - window > pm->pos.trTime
+			        || s1->pos.trTime + window < pm->pos.trTime)
+			{
+				continue;
+			}
+			pm->active = qfalse;
+			break;
+		}
+	}
+
 	// calculate the axis
 	VectorCopy(s1->angles, cent->lerpAngles);
 
@@ -1185,6 +1215,28 @@ static void CG_InterpolateEntityPosition(centity_t* cent)
 	if (cg.nextSnap == NULL)
 		CG_Error("CG_InterpoateEntityPosition: cg.nextSnap == NULL");
 
+	f = cg.frameInterpolation + cg_entityOverpolate.value / (float)(cg.nextSnap->serverTime - cg.snap->serverTime);
+
+	/*
+	 * Team proxy shares owner clientNum — do not write enhanced-interp history
+	 * (would corrupt the live player's slot) or poly-predict from it.
+	 */
+	if (CG_IS_TEAM_PROXY(cent))
+	{
+		BG_EvaluateTrajectory(&cent->currentState.pos, cg.snap->serverTime, current);
+		BG_EvaluateTrajectory(&cent->nextState.pos, cg.nextSnap->serverTime, next);
+		cent->lerpOrigin[0] = current[0] + f * (next[0] - current[0]);
+		cent->lerpOrigin[1] = current[1] + f * (next[1] - current[1]);
+		cent->lerpOrigin[2] = current[2] + f * (next[2] - current[2]);
+
+		BG_EvaluateTrajectory(&cent->currentState.apos, cg.snap->serverTime, current);
+		BG_EvaluateTrajectory(&cent->nextState.apos, cg.nextSnap->serverTime, next);
+		cent->lerpAngles[0] = LerpAngle(current[0], next[0], f);
+		cent->lerpAngles[1] = LerpAngle(current[1], next[1], f);
+		cent->lerpAngles[2] = LerpAngle(current[2], next[2], f);
+		return;
+	}
+
 	client = cent->currentState.clientNum;
 	if (timeStates[client] != cg.snap->serverTime)
 	{
@@ -1193,8 +1245,6 @@ static void CG_InterpolateEntityPosition(centity_t* cent)
 		prevStates[client] = currStates[client];
 		currStates[client] = cent->currentState.pos;
 	}
-
-	f = cg.frameInterpolation + cg_entityOverpolate.value / (float)(cg.nextSnap->serverTime - cg.snap->serverTime);
 
 	BG_EvaluateTrajectory(&cent->currentState.pos, cg.snap->serverTime, positions[1].pos);
 	BG_EvaluateTrajectory(&cent->nextState.pos, cg.nextSnap->serverTime, positions[2].pos);
@@ -1246,6 +1296,13 @@ static void CG_CalcEntityLerpPositions(centity_t* cent)
 		}
 	}
 
+	/* Team proxy ents live at >= MAX_CLIENTS — still snapshot-lerp like players. */
+	if (CG_IS_TEAM_PROXY(cent))
+	{
+		cent->currentState.pos.trType = TR_INTERPOLATE;
+		cent->nextState.pos.trType = TR_INTERPOLATE;
+	}
+
 	if (cent->interpolate && cent->currentState.pos.trType == TR_INTERPOLATE)
 	{
 		CG_InterpolateEntityPosition(cent);
@@ -1270,12 +1327,16 @@ static void CG_CalcEntityLerpPositions(centity_t* cent)
 			serverTick = cg.nextSnap->serverTime - cg.snap->serverTime;
 		}
 		// if it's one of ours
-		if ((cent->currentState.otherEntityNum) == cg.clientNum && (cg_projectileNudge.integer & 2))
+		if ((cent->currentState.otherEntityNum) == cg.clientNum
+		        && ((cg_projectileNudge.integer & 2)
+		            || ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled)))
 		{
-			// extrapolate one server frame's worth - this will correct for tiny
-			// visual inconsistencies introduced by backward-reconciling all players
-			// one server frame before running projectiles
+			// +1 server frame — same clock as CG_AddPredictedMissiles (Devotion)
 			timeshift = serverTick;
+			if (timeshift <= 0)
+			{
+				timeshift = cgs.sv_fps > 0 ? (1000 / cgs.sv_fps) : 50;
+			}
 		}
 		// if it's not, and it's not a grenade launcher
 		else if ((cent->currentState.weapon != WP_GRENADE_LAUNCHER) && (cg_projectileNudge.integer & 1))
@@ -1397,6 +1458,20 @@ static void CG_AddCEntity(centity_t* cent)
 	// calculate the current origin
 	CG_CalcEntityLerpPositions(cent);
 
+	/* Lean ally position proxy — feed markers, do not draw a player model. */
+	if (CG_IS_TEAM_PROXY(cent))
+	{
+		int owner;
+
+		owner = cent->currentState.otherEntityNum;
+		if (owner >= 0 && owner < MAX_CLIENTS)
+		{
+			cgs.clientinfo[owner].teamProxyEntity = (int)(cent - cg_entities);
+			CG_TeamProxyDrawFriendMarkers(cent);
+		}
+		return;
+	}
+
 	// add automatic effects
 	CG_EntityEffects(cent);
 
@@ -1469,6 +1544,13 @@ void CG_AddPacketEntities(void)
 	static int          lastFrameTime = 0;
 	static int          lastSpectatorTarget = -1;
 	int                 currentSpectatorTarget;
+	int                 i;
+
+	/* Stale team-proxy links cleared; CG_AddCEntity re-sets for ents in this snap. */
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		cgs.clientinfo[i].teamProxyEntity = -1;
+	}
 
 	/* Spectator target change: only when cg_spectPOV and new frame */
 	if (cg_spectPOV.integer && cg.time != lastFrameTime)

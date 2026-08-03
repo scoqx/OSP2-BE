@@ -371,7 +371,7 @@ void new_GroundTrace(void)
 	vec3_t  point;
 	float spd;
 	trace_t trace;
-	pm->ps->stats[STAT_RAMPSLIDE] = qfalse; // Init rampslide state
+	pm->ps->pm_flags &= ~PMF_RAMPSLIDE; // Init rampslide state
 	// Trace the player bbox down -0.25
 	VectorSet(point, pm->ps->origin[0], pm->ps->origin[1], pm->ps->origin[2] - 0.25);
 	pm->trace(&trace, pm->ps->origin, pm->mins, pm->maxs, point, pm->ps->clientNum, pm->tracemask);
@@ -448,7 +448,7 @@ void new_GroundTrace(void)
 		if (phy_rampslide && canRampslide)   // Set rampsliding if enabled and conditions are met
 		{
 			pml.walking = qfalse; // Switch it back to midair for rampslides
-			pm->ps->stats[STAT_RAMPSLIDE] = qtrue;
+			pm->ps->pm_flags |= PMF_RAMPSLIDE;
 			slick     = (pml.groundTrace.surfaceFlags & SURF_SLICK)  ? qtrue : qfalse;
 			knockback = (pm->ps->pm_flags & PMF_TIME_KNOCKBACK)      ? qtrue : qfalse;
 			slide     = (slick || knockback)                         ? qtrue : qfalse;
@@ -497,7 +497,7 @@ void new_GroundTrace(void)
 			pm->ps->pm_time = 250;
 		}
 	}
-	if (!pm->ps->stats[STAT_RAMPSLIDE])
+	if (!(pm->ps->pm_flags & PMF_RAMPSLIDE))
 	{
 		pm->ps->groundEntityNum = trace.entityNum; // Store collided entity as groundEntity
 	}
@@ -580,7 +580,7 @@ static void core_CrashLand(void)
 		{
 			if (delta > 7)
 			{
-				if (!pm->ps->stats[STAT_RAMPSLIDE])
+				if (!(pm->ps->pm_flags & PMF_RAMPSLIDE))
 				{
 					PM_AddEvent(EV_FALL_SHORT);
 				}
@@ -603,7 +603,7 @@ static void core_CrashLand(void)
 		}
 		else if (delta > 7)
 		{
-			if (!pm->ps->stats[STAT_RAMPSLIDE])
+			if (!(pm->ps->pm_flags & PMF_RAMPSLIDE))
 			{
 				PM_AddEvent(EV_FALL_SHORT);    // Don't do fallshort sound during rampsliding
 			}
@@ -733,7 +733,7 @@ void core_Friction(void)
 			if (!(pm->ps->pm_flags & PMF_TIME_KNOCKBACK))   // if getting knocked back, no friction
 			{
 				qboolean crouch      = (pm->ps->pm_flags & PMF_DUCKED) ? qtrue : qfalse;
-				qboolean crouchslide = (crouch && pm->ps->stats[STAT_TIME_CROUCHSLIDE] > 0) ? qtrue : qfalse;
+				qboolean crouchslide = (crouch && (pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK) > 0) ? qtrue : qfalse;
 				qboolean recovering  = (crouch && pm->cmd.upmove == 0) ? qtrue : qfalse;
 				control = speed < phy_stopspeed ? phy_stopspeed : speed;
 				if (crouchslide || recovering)
@@ -838,15 +838,18 @@ void core_Weapon(void)
 	{
 		if (!(pm->ps->pm_flags & PMF_USE_ITEM_HELD))
 		{
-			if (bg_itemlist[pm->ps->stats[STAT_HOLDABLE_ITEM]].giTag == HI_MEDKIT
+			int holdable = pm->ps->stats[STAT_HOLDABLE_ITEM];
+
+			if (holdable > 0 && holdable < bg_numItems
+			        && bg_itemlist[holdable].giTag == HI_MEDKIT
 			        && pm->ps->stats[STAT_HEALTH] >= (pm->ps->stats[STAT_MAX_HEALTH] + 25))
 			{
 				// don't use medkit if at max health
 			}
-			else
+			else if (holdable > 0 && holdable < bg_numItems)
 			{
 				pm->ps->pm_flags |= PMF_USE_ITEM_HELD;
-				PM_AddEvent(EV_USE_ITEM0 + bg_itemlist[pm->ps->stats[STAT_HOLDABLE_ITEM]].giTag);
+				PM_AddEvent(EV_USE_ITEM0 + bg_itemlist[holdable].giTag);
 				pm->ps->stats[STAT_HOLDABLE_ITEM] = 0;
 			}
 			return;
@@ -990,21 +993,10 @@ void core_Weapon(void)
 #endif
 	}
 
-#ifdef TEAMARENA
-	if (bg_itemlist[pm->ps->stats[STAT_PERSISTANT_POWERUP]].giTag == PW_SCOUT)
-	{
-		addTime /= 1.5;
-	}
-	else if (bg_itemlist[pm->ps->stats[STAT_PERSISTANT_POWERUP]].giTag == PW_AMMOREGEN)
+	if (pm->ps->powerups[PW_HASTE])
 	{
 		addTime /= 1.3;
 	}
-	else
-#endif
-		if (pm->ps->powerups[PW_HASTE])
-		{
-			addTime /= 1.3;
-		}
 
 	pm->ps->weaponTime += addTime;
 }

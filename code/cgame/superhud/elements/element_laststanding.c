@@ -105,6 +105,8 @@ void CG_SHUDElementLastStandingRoutine(void* context)
 {
 	shudElementLastStanding_t* element = (shudElementLastStanding_t*)context;
 	qboolean active;
+	team_t team;
+	qboolean* soundPlayed;
 
 	element->ctx.text = NULL;
 
@@ -121,9 +123,16 @@ void CG_SHUDElementLastStandingRoutine(void* context)
 	{
 		element->wasActive = qtrue;
 		element->appearTime = cg.time;
-		if (element->config.style.isSet && element->config.style.value == 1 && cgs.media.lastStandingSound)
+	}
+
+	if (element->config.style.isSet && element->config.style.value == 1 && cgs.media.lastStandingSound)
+	{
+		team = cgs.clientinfo[cg.snap->ps.clientNum].team;
+		soundPlayed = (team == TEAM_RED) ? &cgs.osp.lastStandingSoundPlayed1 : &cgs.osp.lastStandingSoundPlayed2;
+		if (!*soundPlayed)
 		{
 			trap_S_StartLocalSound(cgs.media.lastStandingSound, CHAN_LOCAL_SOUND);
+			*soundPlayed = qtrue;
 		}
 	}
 

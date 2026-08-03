@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // when the snapshot transitions like all the other entities
 
 #include "cg_local.h"
+#include "superhud.h"
 
 /* Map weapon index -> exec cvar; no cgs copy, read cvar.string at use */
 static const vmCvar_t* const execWeaponCvars[WP_NUM_WEAPONS] =
@@ -83,6 +84,50 @@ static int cg_debugShotWeapon;
 static int cg_debugIntervalLastTime;
 static int cg_debugIntervalLastWeapon;
 
+/* cg_debugServer 5: predicted plasma muzzle queue for spawn-offset log */
+#define CG_DEBUG_PLASMA_QUEUE 8
+#define CG_DEBUG_PLASMA_STALE_MS 1000
+
+typedef struct
+{
+	vec3_t muzzle;
+	int fireTime;
+} cg_debugPlasmaFire_t;
+
+static cg_debugPlasmaFire_t cg_debugPlasmaQueue[CG_DEBUG_PLASMA_QUEUE];
+static int cg_debugPlasmaHead;
+static int cg_debugPlasmaCount;
+
+static void CG_DebugServerClearPlasmaQueue(void)
+{
+	cg_debugPlasmaHead = 0;
+	cg_debugPlasmaCount = 0;
+}
+
+static void CG_DebugServerPushPlasmaFire(void)
+{
+	playerState_t* ps;
+	vec3_t forward;
+	vec3_t muzzle;
+	int slot;
+
+	ps = &cg.predictedPlayerState;
+	AngleVectors(ps->viewangles, forward, NULL, NULL);
+	VectorCopy(ps->origin, muzzle);
+	muzzle[2] += ps->viewheight;
+	VectorMA(muzzle, 14, forward, muzzle);
+
+	if (cg_debugPlasmaCount >= CG_DEBUG_PLASMA_QUEUE)
+	{
+		cg_debugPlasmaHead = (cg_debugPlasmaHead + 1) % CG_DEBUG_PLASMA_QUEUE;
+		cg_debugPlasmaCount--;
+	}
+	slot = (cg_debugPlasmaHead + cg_debugPlasmaCount) % CG_DEBUG_PLASMA_QUEUE;
+	VectorCopy(muzzle, cg_debugPlasmaQueue[slot].muzzle);
+	cg_debugPlasmaQueue[slot].fireTime = cg.time;
+	cg_debugPlasmaCount++;
+}
+
 /*
 ==============
 CG_DebugServerOnFireWeapon
@@ -90,6 +135,19 @@ CG_DebugServerOnFireWeapon
 */
 void CG_DebugServerOnFireWeapon(int weapon)
 {
+	if (cg_debugServer.integer == 5)
+	{
+		cg_debugIntervalLastTime = 0;
+		cg_debugIntervalLastWeapon = WP_NONE;
+		if (weapon == WP_PLASMAGUN)
+		{
+			CG_DebugServerPushPlasmaFire();
+		}
+		return;
+	}
+
+	CG_DebugServerClearPlasmaQueue();
+
 	if (cg_debugServer.integer != 3)
 	{
 		cg_debugIntervalLastTime = 0;
@@ -107,6 +165,65 @@ void CG_DebugServerOnFireWeapon(int weapon)
 	}
 	cg_debugIntervalLastTime = cg.time;
 	cg_debugIntervalLastWeapon = weapon;
+}
+
+/*
+==============
+CG_DebugServerOnMissileAppear
+==============
+*/
+void CG_DebugServerOnMissileAppear(const entityState_t* es)
+{
+	vec3_t appear;
+	vec3_t predMuzzle;
+	float distPred;
+	float distBase;
+	float muzzleDelta;
+	int trAge;
+	int atTime;
+
+	if (cg_debugServer.integer != 5 || !es || !cg.snap)
+	{
+		return;
+	}
+	if (es->eType != ET_MISSILE || es->weapon != WP_PLASMAGUN)
+	{
+		return;
+	}
+	if (es->otherEntityNum != cg.predictedPlayerState.clientNum)
+	{
+		return;
+	}
+
+	/* drop stale FIFO entries */
+	while (cg_debugPlasmaCount > 0)
+	{
+		if (cg.time - cg_debugPlasmaQueue[cg_debugPlasmaHead].fireTime <= CG_DEBUG_PLASMA_STALE_MS)
+		{
+			break;
+		}
+		cg_debugPlasmaHead = (cg_debugPlasmaHead + 1) % CG_DEBUG_PLASMA_QUEUE;
+		cg_debugPlasmaCount--;
+	}
+	if (cg_debugPlasmaCount <= 0)
+	{
+		return;
+	}
+
+	VectorCopy(cg_debugPlasmaQueue[cg_debugPlasmaHead].muzzle, predMuzzle);
+	cg_debugPlasmaHead = (cg_debugPlasmaHead + 1) % CG_DEBUG_PLASMA_QUEUE;
+	cg_debugPlasmaCount--;
+
+	/* early-add uses nextSnap; TransitionSnapshot has snap==nextSnap until cleared */
+	atTime = cg.nextSnap ? cg.nextSnap->serverTime : cg.snap->serverTime;
+	BG_EvaluateTrajectory(&es->pos, atTime, appear);
+	distPred = Distance(appear, predMuzzle);
+	distBase = Distance(appear, es->pos.trBase);
+	muzzleDelta = Distance(es->pos.trBase, predMuzzle);
+	trAge = atTime - es->pos.trTime;
+
+	CG_Printf("Plasma offset: appear ^5%.0f^7u from pred, ^5%.0f^7u from trBase, muzzle delta ^5%.0f^7u, trAge ^5%d^7ms ping ^5%d^7\n",
+	          distPred, distBase, muzzleDelta, trAge, (int)cgs.osp.pingMs);
 }
 
 /*
@@ -671,6 +788,30 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 		{
 			trap_S_StartLocalSound(cgs.media.holyShitSound, CHAN_ANNOUNCER);
 		}
+		else if ((ps->persistant[PERS_PLAYEREVENTS] & PLAYEREVENT_KC_CONFIRM) !=
+		         (ops->persistant[PERS_PLAYEREVENTS] & PLAYEREVENT_KC_CONFIRM))
+		{
+			if (cgs.killConfirmMode)
+			{
+				/* Normal shard pickup sound comes from EV_ITEM_PICKUP.
+				 * Custom announcer TBD:
+				 * trap_S_StartLocalSound(cgs.media.captureYourTeamSound, CHAN_ANNOUNCER);
+				 */
+				CG_SHUDEventKillConfirm(qtrue);
+			}
+		}
+		else if ((ps->persistant[PERS_PLAYEREVENTS] & PLAYEREVENT_KC_RETURN) !=
+		         (ops->persistant[PERS_PLAYEREVENTS] & PLAYEREVENT_KC_RETURN))
+		{
+			if (cgs.killConfirmMode)
+			{
+				/* Normal shard pickup sound comes from EV_ITEM_PICKUP.
+				 * Custom announcer TBD:
+				 * trap_S_StartLocalSound(cgs.media.deniedSound, CHAN_ANNOUNCER);
+				 */
+				CG_SHUDEventKillConfirm(qfalse);
+			}
+		}
 		reward = qtrue;
 	}
 
@@ -831,6 +972,11 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	{
 		cg_debugIntervalLastTime = 0;
 		cg_debugIntervalLastWeapon = WP_NONE;
+	}
+
+	if (cg_debugServer.integer != 5)
+	{
+		CG_DebugServerClearPlasmaQueue();
 	}
 
 	// Exec on weapon

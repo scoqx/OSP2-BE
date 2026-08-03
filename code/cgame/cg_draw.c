@@ -3279,8 +3279,7 @@ static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameMode
 		return qfalse;
 	}
 
-	allyFrozenForVis = ci->isFrozenEnt ||
-	                   (ci->globalPos && CG_ClientInfoIsFreezeTinfoFrozen(ci));
+	allyFrozenForVis = CG_ClientMarkerIsFrozen(ci);
 
 	friendVisible = qtrue;
 	needVis = ((cg_friendsWallhack.integer & 2) == 0) ||
@@ -3322,11 +3321,9 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 	float fade;
 	float* pLift;
 	qboolean markerDead;
-	qboolean markerFrozenTinfo;
 	qboolean markerFrozen;
 
-	markerFrozenTinfo = ci->globalPos && CG_ClientInfoIsFreezeTinfoFrozen(ci);
-	markerFrozen = ci->isFrozenEnt || markerFrozenTinfo;
+	markerFrozen = CG_ClientMarkerIsFrozen(ci);
 	markerDead = markerFrozen ? qfalse :
 	             (ci->globalPos ? (ci->health <= 0) :
 	              ((cent->currentValid && cent->currentState.eType == ET_PLAYER) &&
@@ -3578,7 +3575,7 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		Vector4Set(border, 0.0f, 0.0f, 0.0f, 0.0f);
 		Vector4Set(borderColor, 0.0f, 0.0f, 0.0f, 0.0f);
 		Vector4Set(shadowColorWithAlpha, 0.0f, 0.0f, 0.0f, nameColor[3]);
-		if (ci->isFrozenEnt || markerFrozenTinfo)
+		if (markerFrozen)
 		{
 			border[3] = 1.0f;
 			Vector4Copy(colorCyan, borderColor);
