@@ -9,7 +9,7 @@ SuperHUD:
   * Mirage's configs updated
   + 'centerMessage', 'killconfirm', 'teamRed1-8', 'teamBlue1-8',
   + 'thaw_own', 'thaw_freezing', 'thaw_own_bar', 'thaw_freezing_bar' elements
-  + team* style2 - QL Like
+  + 'team'* elements style2 - QL Like
   + various fixes
 * q3a.space advanced support:
   + UI/esc Call vote menu
