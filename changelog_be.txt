@@ -1026,7 +1026,7 @@ UI:
 * SHUD 'laststanding' element style 1 - laststanding.wav
 * Changed cvars default font to Conthrax (19)
 
-19.07.2026 be v1.07a
+19.07.2026 be v1.07a1
 + cg_playerXray
 + cg_myTeam/cg_spectPov sounds/messages fix
 + cg_kcEnemyColor, cg_kcTeamColor ('Kill Confirm' gametype)
@@ -1034,6 +1034,7 @@ UI:
 + cg_damageDraw 3 (trinity)
 + ttf fix
 SuperHUD:
+  * Roamer.cfg updated
   * Mirage's configs updated
   + 'centerMessage', 'killconfirm', 'teamRed1-8', 'teamBlue1-8',
   + 'thaw_own', 'thaw_freezing', 'thaw_own_bar', 'thaw_freezing_bar' elements
