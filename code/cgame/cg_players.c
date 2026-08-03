@@ -3383,7 +3383,8 @@ void CG_TeamProxyDrawFriendMarkers(centity_t* cent)
 	drawMode = CG_DrawFriendMode();
 	if (drawMode
 	        && !(cg.teamMarkers.drawTeamTasks && cg.teamMarkers.clientHasOverhead[clientNum])
-	        && cgs.gametype >= GT_TEAM)
+	        && (cgs.gametype >= GT_TEAM || CG_IS_LOCAL_CLIENT_SPECTATOR()
+	            || (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)))
 	{
 		isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
 		         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);

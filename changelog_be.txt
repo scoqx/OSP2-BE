@@ -1026,7 +1026,7 @@ UI:
 * SHUD 'laststanding' element style 1 - laststanding.wav
 * Changed cvars default font to Conthrax (19)
 
-19.07.2026 be v1.07a1
+19.07.2026 be v1.07a2
 + cg_playerXray
 + cg_myTeam/cg_spectPov sounds/messages fix
 + cg_kcEnemyColor, cg_kcTeamColor ('Kill Confirm' gametype)

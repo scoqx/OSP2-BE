@@ -394,6 +394,15 @@ void CG_BEUpdateUserInfo(void)
 	{
 		teamProxy = 1;
 	}
+	else if (cgs.gametype < GT_TEAM
+	         && CG_IS_LOCAL_CLIENT_SPECTATOR()
+	         && (((cg_teamIndicator.integer & PI_SPECTATOR) != 0)
+	             || CG_DrawFriendForSpecs()
+	             || (cg_friendsWallhack.integer & (CG_FRIENDS_WALLHACK_TEAM_INDICATOR | CG_FRIENDS_WALLHACK_GLOBAL_POS))))
+	{
+		/* FFA/non-team: spectators only — living players must not opt into all-player proxies. */
+		teamProxy = 1;
+	}
 
 	mapdata = 0;
 	if (cg_shadowItems.integer)
