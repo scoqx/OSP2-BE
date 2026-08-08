@@ -242,6 +242,8 @@ typedef struct
 	{
 		int value;
 		int valueNeg;
+		int valueExt;
+		int valueNegExt;
 		qboolean isSet;
 	} visflags;
 	struct
@@ -358,6 +360,16 @@ typedef enum
 #define SE_WARMUP (1U << 31)
 #define SE_WARMUP_STR "warmup"
 
+/* Extended visflags (second bitmask; main SE_* uses all 32 bits) */
+#define SE_ENTERCHAT (1 << 0)
+#define SE_ENTERCHAT_STR "enterchat"
+#define SE_SHOWCHAT (1 << 1)
+#define SE_SHOWCHAT_STR "showchat"
+#define SE_PRINTUI (1 << 2)
+#define SE_PRINTUI_STR "printui"
+#define SE_BESTATS (1 << 3)
+#define SE_BESTATS_STR "bestats"
+
 #define SE_SHUD_STYLE1 (1 << 0)
 #define SE_SHUD_STYLE1_STR "style1"
 #define SE_SHUD_STYLE2 (1 << 1)
@@ -391,6 +403,8 @@ typedef struct superHUDConfigElement_s
 	int order;
 	qboolean isFragmessage;
 	int visibilityNeg;
+	int visibilityExt;
+	int visibilityNegExt;
 } superHUDConfigElement_t;
 
 typedef struct superhudElementDictMember_s
@@ -404,6 +418,7 @@ superhudElementDictMember_t;
  * Visibility data for one HUD element (filled at config load, read each frame).
  *
  * vflags / vflagsNeg — copy of element visflags (see SE_* in this header).
+ * vflagsExt / vflagsNegExt — extended visflags (enterchat/showchat/printui/bestats).
  *
  * showInIntermission, showWhenDead, showWhenSpect — without the matching positive
  * visflags bit the element is hidden in that state (default HUD behavior).
@@ -415,6 +430,8 @@ typedef struct
 {
 	int vflags;
 	int vflagsNeg;
+	int vflagsExt;
+	int vflagsNegExt;
 	int frameChecks;
 	qboolean showInIntermission;
 	qboolean showWhenDead;
@@ -443,6 +460,10 @@ typedef struct
 	qboolean is_spectator;
 	qboolean is_scores;
 	qboolean is_warmup;
+	qboolean is_enterchat;
+	qboolean is_showchat;
+	qboolean is_printui;
+	qboolean is_bestats;
 	qboolean demo_playback;
 } superhudFrameContext_t;
 

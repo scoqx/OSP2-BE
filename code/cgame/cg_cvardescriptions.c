@@ -500,6 +500,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_kcEnemyColor", "Kill confirm token Quad color for enemies. Empty uses team colors.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_kcTeamColor", "Kill confirm token Quad color for teammates. Empty uses team colors.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_enemyAltShadowColor", "Color of ^3cg_altShadow^7 for enemies. Empty uses ^3cg_altShadowColor^7.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
+	{ "cg_teamTaskSentPos", "Position of own team task sent marker at top of screen (tHere, tPickup, etc.).\n  ^2X^7 - X only (Y stays ^220^7)\n  ^2X Y^7 - both coordinates\nDefault: ^2320 20^7" },
 };
 
 

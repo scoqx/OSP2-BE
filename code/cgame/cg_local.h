@@ -736,6 +736,8 @@ typedef struct cgs_teamMarkers_s
 	float       teamTaskScale;
 	float       teamTaskIconMinSize;
 	float       teamTaskOpaque;
+	float       sentPosX; /* cached cg_teamTaskSentPos X (own FP overhead icon) */
+	float       sentPosY; /* cached cg_teamTaskSentPos Y */
 	int         hudMarkerMaxDistInt;
 	float       hudMarkerMaxDistValue;
 	float       hudMarkerMaxScale;
@@ -902,6 +904,7 @@ typedef struct
 	qboolean    showScores;
 	qboolean    showAccuracy;
 	qboolean    showWStats;
+	qboolean    beStatsShowing; /* BEStats window actually drawn this frame (like scoreBoardShowing) */
 	qboolean    scoreBoardShowing;
 	int         scoreFadeTime;
 	char        killerName[MAX_NAME_LENGTH];
@@ -2564,6 +2567,7 @@ extern vmCvar_t         cg_kcEnemyColor;
 extern vmCvar_t         cg_kcTeamColor;
 extern vmCvar_t         cg_enemyAltShadowColor;
 extern vmCvar_t         cg_playerXray;
+extern vmCvar_t         cg_teamTaskSentPos;
 
 
 
@@ -2910,6 +2914,8 @@ void CG_RegisterMedalAnimationShaders(void);
 void CG_MedalResolveFrame(qhandle_t medalShader, int startTime, int durationMsec, qhandle_t* outShader, vec4_t outTc);
 void CG_DrawWarmup(void);
 void CG_ScanForCrosshairEntity(void);
+qboolean CG_CrosshairTargetIsTeamAlly(const clientInfo_t* ci);
+qboolean CG_CrosshairTeamHealthAllowed(void);
 qboolean CG_CrosshairSolidClearToPoint(const vec3_t start, const vec3_t endPoint);
 qboolean CG_CrosshairInspectingWorldPoint(const vec3_t worldPoint, float radius);
 int CG_CrosshairTarget(vec3_t itemPos);
@@ -3196,6 +3202,7 @@ void CG_DrawInformation(void);
 qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
 void CG_BEStatsShowStatsInfo(void);
+qboolean CG_BEStatsIsShowing(void);
 void CG_RefillStatsRequestTokens(void);
 qboolean CG_TrySendStatsRequest(void);
 void CG_AddStatsRequestToken(void);
@@ -3359,8 +3366,6 @@ void CG_MapTPExit_PrintList(int maxList);
 void CG_MapCatalog_OnConfigStringChanged(void);
 qboolean CG_MapLocs_GetById(int id, vec3_t origin, char* name, int nameSize);
 qboolean CG_MapLocs_Count(void);
-qboolean CG_MapLocs_HasLocalZones(void);
-void CG_MapLocs_ApplyServerOrigins(void);
 qboolean CG_MapLocs_ServerHasLocationNames(void);
 void CG_MapLocs_NotifyLocationConfigStringChanged(void);
 int CG_MapLocs_NumZones(void);
@@ -3793,6 +3798,8 @@ void CG_BEChat_Draw(void);
 void CG_BEChat_Frame(stereoFrame_t stereoView);
 void CG_BEChat_EventHandling(int type);
 qboolean CG_BEChat_IsOpen(void);
+qboolean CG_BEChat_IsEnterChat(void);
+qboolean CG_BEChat_IsShowChat(void);
 void CG_BEChat_f(void);
 void CG_BEChat_Team_f(void);
 void CG_BEChat_ShowHistoryDown_f(void);

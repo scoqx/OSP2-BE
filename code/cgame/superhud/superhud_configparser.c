@@ -602,16 +602,21 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 	char c;
 	int flags = 0;
 	int flagsNeg = 0;
+	int flagsExt = 0;
+	int flagsNegExt = 0;
 	int styleFlags = 0;
 	int styleFlagsNeg = 0;
 
 	config->visflags.isSet = qfalse;
 	config->visflags.valueNeg = 0;
+	config->visflags.valueExt = 0;
+	config->visflags.valueNegExt = 0;
 
 	do
 	{
 		qboolean negate;
 		int* flagTarget;
+		int* flagTargetExt;
 
 		status = CG_SHUDConfigSkipSCN(finfo);
 		if (status != SUPERHUD_CONFIG_OK)
@@ -633,6 +638,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 		}
 
 		flagTarget = negate ? &flagsNeg : &flags;
+		flagTargetExt = negate ? &flagsNegExt : &flagsExt;
 
 		if (CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHUD_STYLE1_STR, SE_SHUD_STYLE1, negate ? &styleFlagsNeg : &styleFlags) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHUD_STYLE2_STR, SE_SHUD_STYLE2, negate ? &styleFlagsNeg : &styleFlags) ||
@@ -669,7 +675,11 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WEAPON_BFG_STR, SE_WEAPON_BFG, flagTarget) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_HEALTH_LOW_STR, SE_HEALTH_LOW, flagTarget) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_WARMUP_STR, SE_WARMUP, flagTarget) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHOW_EMPTY_STR, SE_SHOW_EMPTY, flagTarget)
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHOW_EMPTY_STR, SE_SHOW_EMPTY, flagTarget) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_ENTERCHAT_STR, SE_ENTERCHAT, flagTargetExt) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_SHOWCHAT_STR, SE_SHOWCHAT, flagTargetExt) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_PRINTUI_STR, SE_PRINTUI, flagTargetExt) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_BESTATS_STR, SE_BESTATS, flagTargetExt)
 		   )
 		{
 			++flagsFound;
@@ -695,6 +705,8 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 		config->visflags.isSet = qtrue;
 		config->visflags.value = flags;
 		config->visflags.valueNeg = flagsNeg;
+		config->visflags.valueExt = flagsExt;
+		config->visflags.valueNegExt = flagsNegExt;
 	}
 
 	if (styleFlags != 0 || styleFlagsNeg != 0)

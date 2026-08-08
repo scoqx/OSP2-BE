@@ -951,7 +951,9 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 
 			// boing sound at origin, jump sound on player
 			trap_S_StartSound(cent->lerpOrigin, -1, CHAN_VOICE, cgs.media.jumpPadSound);
-			if (!cg_muteMyJump.integer || !cg.snap || es->number != cg.snap->ps.clientNum)
+			/* Ice remnant entityNum is not a client — *jump1 resolves wrong (beep). Pad only. */
+			if (!CG_IS_FROZEN_ENTITY(cent)
+			    && (!cg_muteMyJump.integer || !cg.snap || es->number != cg.snap->ps.clientNum))
 			{
 				trap_S_StartSound(NULL, es->number, CHAN_VOICE, CG_CustomSound(es->number, "*jump1.wav"));
 			}

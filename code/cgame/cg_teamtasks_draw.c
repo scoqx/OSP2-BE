@@ -603,6 +603,29 @@ void CG_TeamTaskUpdateFrame(void)
 	tm->teamTaskScale = cg_teamTaskScale.value;
 	tm->teamTaskIconMinSize = cg_teamTaskIconMinSize.value;
 	tm->teamTaskOpaque = cg_teamTaskOpaque.value;
+	/* cg_teamTaskSentPos: "X" or "X Y"; default 320 20 (current hardcode) */
+	{
+		char buffer[MAX_CVAR_VALUE_STRING];
+		char* tokenA;
+		char* tokenB;
+
+		tm->sentPosX = SCREEN_WIDTH * 0.5f;
+		tm->sentPosY = 20.0f;
+		if (cg_teamTaskSentPos.string[0])
+		{
+			Q_strncpyz(buffer, cg_teamTaskSentPos.string, sizeof(buffer));
+			tokenA = Q_strtok(buffer, " \t");
+			tokenB = Q_strtok(NULL, " \t");
+			if (tokenA)
+			{
+				tm->sentPosX = (float)atoi(tokenA);
+			}
+			if (tokenB)
+			{
+				tm->sentPosY = (float)atoi(tokenB);
+			}
+		}
+	}
 	tm->hudMarkerMaxDistInt = cg_teamTaskHudMarkerMaxDist.integer;
 	tm->hudMarkerMaxDistValue = cg_teamTaskHudMarkerMaxDist.value;
 	tm->hudMarkerMaxScale = cg_teamTaskHudMarkerMaxScale.value;
@@ -1075,9 +1098,12 @@ Fixed position at top center of screen — 2D HUD only, no world render
 static void CG_ProcessOverheadMark(teamTaskMark_t* mark, const teamTaskMarkConstants_t* constants,
                                    teamTaskMarkRenderData_t* renderData)
 {
-	/* First person view - fixed position at top center of screen */
-	renderData->x = SCREEN_WIDTH * 0.5f;
-	renderData->y = 20.0f; /* Fixed position from top */
+	cgs_teamMarkers_t* tm;
+
+	tm = &cg.teamMarkers;
+	/* First person view — position from cg_teamTaskSentPos (cached) */
+	renderData->x = tm->sentPosX;
+	renderData->y = tm->sentPosY;
 
 	/* Fixed size for own overhead icons */
 	renderData->h = 10.0f * constants->scale;
@@ -1479,13 +1505,16 @@ static qboolean CG_ProcessTeamTaskMark(teamTaskMark_t* mark, int markIndex,
 		return qfalse;
 	}
 
-	/* Skip ally death mark while team overlay reports they are alive */
+	/* Skip ally death mark while team overlay reports they are alive.
+	 * Freeze death-cam may keep STAT_HEALTH > 0; ice / deadInFreeze still count as dead. */
 	if (mark->markType == TEAMTASK_PLAYERDEAD && mark->clientNum >= 0 && mark->clientNum < MAX_CLIENTS)
 	{
 		clientInfo_t* deadCi;
 
 		deadCi = &cgs.clientinfo[mark->clientNum];
-		if (deadCi->health > 0)
+		if (deadCi->health > 0
+		        && !deadCi->isFrozenEnt
+		        && !CG_GetDeadInFreeze(mark->clientNum))
 		{
 			return qfalse;
 		}
@@ -1909,8 +1938,8 @@ void CG_DrawTeamTaskMarks(void)
 		{
 			teamTaskMarkRenderData_t overheadRenderData;
 
-			overheadRenderData.x = SCREEN_WIDTH * 0.5f;
-			overheadRenderData.y = 20.0f;
+			overheadRenderData.x = tm->sentPosX;
+			overheadRenderData.y = tm->sentPosY;
 			overheadRenderData.h = 10.0f * constants.scale;
 			overheadRenderData.w = overheadRenderData.h * 0.75f;
 			overheadRenderData.iconW = overheadRenderData.w * 4;

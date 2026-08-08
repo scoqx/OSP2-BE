@@ -26,7 +26,6 @@ static cg_mapLoc_t cg_mapLocs[MAX_LOCATIONS];
 static int cg_mapLocCount;
 static qboolean cg_mapLocOriginValid[MAX_LOCATIONS];
 static vec3_t cg_mapLocOriginById[MAX_LOCATIONS];
-static int cg_mapLocServerOriginCount;
 static qboolean cg_mapLocServerNamesCached;
 static qboolean cg_mapLocServerNamesPresent;
 
@@ -70,7 +69,6 @@ void CG_MapLocs_NotifyLocationConfigStringChanged(void)
 static void CG_MapLocs_Clear(void)
 {
 	cg_mapLocCount = 0;
-	cg_mapLocServerOriginCount = 0;
 	memset(cg_mapLocOriginValid, 0, sizeof(cg_mapLocOriginValid));
 	CG_MapLocs_InvalidateServerLocationNamesCache();
 }
@@ -225,51 +223,7 @@ qboolean CG_MapLocs_GetById(int id, vec3_t origin, char* name, int nameSize)
 
 qboolean CG_MapLocs_Count(void)
 {
-	return (cg_mapLocCount > 0 || cg_mapLocServerOriginCount > 0) ? qtrue : qfalse;
-}
-
-qboolean CG_MapLocs_HasLocalZones(void)
-{
 	return (cg_mapLocCount > 0) ? qtrue : qfalse;
-}
-
-/*
- * locs <id> <x10> <y10> <z10> ... — server origins aligned with CS_LOCATIONS ids.
- * Ignored when local QLM1 zones are already loaded.
- */
-void CG_MapLocs_ApplyServerOrigins(void)
-{
-	int argc;
-	int i;
-	int id;
-	int ix, iy, iz;
-
-	if (cg_mapLocCount > 0)
-	{
-		return;
-	}
-
-	argc = trap_Argc();
-	/* cmd + groups of 4 */
-	for (i = 1; i + 3 < argc; i += 4)
-	{
-		id = atoi(CG_Argv(i));
-		ix = atoi(CG_Argv(i + 1));
-		iy = atoi(CG_Argv(i + 2));
-		iz = atoi(CG_Argv(i + 3));
-		if (id <= 0 || id >= MAX_LOCATIONS)
-		{
-			continue;
-		}
-		if (!cg_mapLocOriginValid[id])
-		{
-			cg_mapLocServerOriginCount++;
-		}
-		cg_mapLocOriginById[id][0] = ix / 10.0f;
-		cg_mapLocOriginById[id][1] = iy / 10.0f;
-		cg_mapLocOriginById[id][2] = iz / 10.0f;
-		cg_mapLocOriginValid[id] = qtrue;
-	}
 }
 
 qboolean CG_MapLocs_ServerHasLocationNames(void)
@@ -291,10 +245,6 @@ const char* CG_MapLocs_DataSource(void)
 	if (cg_mapLocCount > 0)
 	{
 		return CG_MapBundle_DataSource();
-	}
-	if (cg_mapLocServerOriginCount > 0)
-	{
-		return "server";
 	}
 	return NULL;
 }

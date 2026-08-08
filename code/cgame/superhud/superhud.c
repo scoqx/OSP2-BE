@@ -47,8 +47,16 @@ static void CG_SHUDUpdateVisflags(superHUDConfigElement_t* element, const superh
 {
 	if (element && config && config->visflags.isSet)
 	{
-		element->visibility = config->visflags.value;
-		element->visibilityNeg = config->visflags.valueNeg;
+		/* Merge HUD config visflags with element-table defaults (do not replace).
+		 * Positive config bits are ORed; negated bits clear defaults and set Neg. */
+		element->visibility =
+		    (element->visibility | config->visflags.value) & ~config->visflags.valueNeg;
+		element->visibilityNeg =
+		    (element->visibilityNeg | config->visflags.valueNeg) & ~config->visflags.value;
+		element->visibilityExt =
+		    (element->visibilityExt | config->visflags.valueExt) & ~config->visflags.valueNegExt;
+		element->visibilityNegExt =
+		    (element->visibilityNegExt | config->visflags.valueNegExt) & ~config->visflags.valueExt;
 	}
 }
 
@@ -119,6 +127,10 @@ static qboolean CG_SHUDVisflagsAreGametypeOnly(int vflags, int vflagsNeg)
 #define SHUD_FCHK_HEALTH    (1 << 7)
 #define SHUD_FCHK_WARMUP    (1 << 8)
 #define SHUD_FCHK_WEAPON    (1 << 9)
+#define SHUD_FCHK_ENTERCHAT (1 << 10)
+#define SHUD_FCHK_SHOWCHAT  (1 << 11)
+#define SHUD_FCHK_PRINTUI   (1 << 12)
+#define SHUD_FCHK_BESTATS   (1 << 13)
 
 /*
  * Cache visflags on the element once at config load (after visibility is copied from config).
@@ -127,13 +139,19 @@ static void CG_SHUDElementVisPrepare(superhudElement_t* el)
 {
 	int vflags;
 	int vflagsNeg;
+	int vflagsExt;
+	int vflagsNegExt;
 	int combined;
+	int combinedExt;
 	int frameChecks;
 	superhudElementVis_t* vis;
 
 	vflags = el->element.visibility;
 	vflagsNeg = el->element.visibilityNeg;
+	vflagsExt = el->element.visibilityExt;
+	vflagsNegExt = el->element.visibilityNegExt;
 	combined = vflags | vflagsNeg;
+	combinedExt = vflagsExt | vflagsNegExt;
 	frameChecks = 0;
 
 	if (vflags & SE_KEY_ANY)
@@ -176,10 +194,28 @@ static void CG_SHUDElementVisPrepare(superhudElement_t* el)
 	{
 		frameChecks |= SHUD_FCHK_WEAPON;
 	}
+	if (combinedExt & SE_ENTERCHAT)
+	{
+		frameChecks |= SHUD_FCHK_ENTERCHAT;
+	}
+	if (combinedExt & SE_SHOWCHAT)
+	{
+		frameChecks |= SHUD_FCHK_SHOWCHAT;
+	}
+	if (combinedExt & SE_PRINTUI)
+	{
+		frameChecks |= SHUD_FCHK_PRINTUI;
+	}
+	if (combinedExt & SE_BESTATS)
+	{
+		frameChecks |= SHUD_FCHK_BESTATS;
+	}
 
 	vis = &el->vis;
 	vis->vflags = vflags;
 	vis->vflagsNeg = vflagsNeg;
+	vis->vflagsExt = vflagsExt;
+	vis->vflagsNegExt = vflagsNegExt;
 	vis->frameChecks = frameChecks;
 	vis->showInIntermission = (vflags & SE_IM) != 0 && (vflagsNeg & SE_IM) == 0;
 	vis->showWhenDead = (vflags & SE_DEAD) != 0 && (vflagsNeg & SE_DEAD) == 0;
@@ -195,12 +231,16 @@ static qboolean CG_SHUDElementVisible(const superhudElement_t* el, const superhu
 	const superhudElementVis_t* vis;
 	int vflags;
 	int vflagsNeg;
+	int vflagsExt;
+	int vflagsNegExt;
 	int frameChecks;
 	qboolean is_spectator_for_element;
 
 	vis = &el->vis;
 	vflags = vis->vflags;
 	vflagsNeg = vis->vflagsNeg;
+	vflagsExt = vis->vflagsExt;
+	vflagsNegExt = vis->vflagsNegExt;
 	frameChecks = vis->frameChecks;
 
 	if (fc->is_intermission && !vis->showInIntermission)
@@ -306,6 +346,50 @@ static qboolean CG_SHUDElementVisible(const superhudElement_t* el, const superhu
 			return qfalse;
 		}
 	}
+	if (frameChecks & SHUD_FCHK_ENTERCHAT)
+	{
+		if ((vflagsExt & SE_ENTERCHAT) && !fc->is_enterchat)
+		{
+			return qfalse;
+		}
+		if ((vflagsNegExt & SE_ENTERCHAT) && fc->is_enterchat)
+		{
+			return qfalse;
+		}
+	}
+	if (frameChecks & SHUD_FCHK_SHOWCHAT)
+	{
+		if ((vflagsExt & SE_SHOWCHAT) && !fc->is_showchat)
+		{
+			return qfalse;
+		}
+		if ((vflagsNegExt & SE_SHOWCHAT) && fc->is_showchat)
+		{
+			return qfalse;
+		}
+	}
+	if (frameChecks & SHUD_FCHK_PRINTUI)
+	{
+		if ((vflagsExt & SE_PRINTUI) && !fc->is_printui)
+		{
+			return qfalse;
+		}
+		if ((vflagsNegExt & SE_PRINTUI) && fc->is_printui)
+		{
+			return qfalse;
+		}
+	}
+	if (frameChecks & SHUD_FCHK_BESTATS)
+	{
+		if ((vflagsExt & SE_BESTATS) && !fc->is_bestats)
+		{
+			return qfalse;
+		}
+		if ((vflagsNegExt & SE_BESTATS) && fc->is_bestats)
+		{
+			return qfalse;
+		}
+	}
 
 	return qtrue;
 }
@@ -400,6 +484,10 @@ static void CG_SHUDFillFrameContext(superhudFrameContext_t* fc)
 	fc->is_team_game = (gt >= GT_TEAM);
 	fc->is_scores = cg.scoreBoardShowing;
 	fc->is_warmup = (cg.warmup != 0) ? qtrue : qfalse;
+	fc->is_enterchat = CG_BEChat_IsEnterChat();
+	fc->is_showchat = CG_BEChat_IsShowChat();
+	fc->is_printui = (cg.printuiActiveCount != 0) ? qtrue : qfalse;
+	fc->is_bestats = cg.beStatsShowing;
 	fc->demo_playback = cg.demoPlayback;
 
 	fc->weaponVis = 0;
@@ -724,26 +812,6 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename, qboolean silent)
 
 				CG_SHUDUpdateVisflags(&newElementLast->element, &newElementLast->config);
 
-				/* !default visflags replace table bits — keep spectator/dead for team overlays */
-				if (newElementLast->element.name)
-				{
-					const char* elName = newElementLast->element.name;
-
-					if (Q_stricmpn(elName, "teamRed", 7) == 0
-					        || Q_stricmpn(elName, "teamBlue", 8) == 0)
-					{
-						newElementLast->element.visibility |= SE_TEAM_ONLY | SE_SPECT | SE_DEAD;
-						newElementLast->element.visibilityNeg &= ~(SE_TEAM_ONLY | SE_SPECT | SE_DEAD);
-					}
-					else if (Q_stricmpn(elName, "team", 4) == 0
-					         && elName[4] >= '1' && elName[4] <= '9')
-					{
-						/* team1-16: FFA/TOURNEY + spectator (no SE_TEAM_ONLY) */
-						newElementLast->element.visibility |= SE_SPECT | SE_DEAD;
-						newElementLast->element.visibilityNeg &= ~(SE_SPECT | SE_DEAD);
-					}
-				}
-
 				if (newElementLast->element.context)
 				{
 					++numberOfElementsCreated;
@@ -991,6 +1059,12 @@ void CG_SHUDRoutine(void)
 		}
 	}
 
+	/*
+	 * beStatsShowing like scoreBoardShowing: whether the BEStats window is on screen,
+	 * not merely +wstats held. Set before visflags; paint after elements (on top).
+	 */
+	cg.beStatsShowing = CG_BEStatsIsShowing();
+
 	CG_SHUDFillFrameContext(fc);
 	be_health_low = cg.beIsHealthLow;
 
@@ -1002,7 +1076,7 @@ void CG_SHUDRoutine(void)
 		}
 		last = last->next;
 	}
-	if (cg.showWStats)
+	if (cg.beStatsShowing)
 	{
 		CG_BEStatsShowStatsInfo();
 	}

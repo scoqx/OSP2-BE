@@ -84,27 +84,35 @@ static int cg_debugShotWeapon;
 static int cg_debugIntervalLastTime;
 static int cg_debugIntervalLastWeapon;
 
-/* cg_debugServer 5: predicted plasma muzzle queue for spawn-offset log */
-#define CG_DEBUG_PLASMA_QUEUE 8
-#define CG_DEBUG_PLASMA_STALE_MS 1000
+/* cg_debugServer 5: predicted muzzle queue for missile spawn-offset log */
+#define CG_DEBUG_MISSILE_QUEUE 8
+#define CG_DEBUG_MISSILE_STALE_MS 1000
 
 typedef struct
 {
 	vec3_t muzzle;
 	int fireTime;
-} cg_debugPlasmaFire_t;
+} cg_debugMissileFire_t;
 
-static cg_debugPlasmaFire_t cg_debugPlasmaQueue[CG_DEBUG_PLASMA_QUEUE];
-static int cg_debugPlasmaHead;
-static int cg_debugPlasmaCount;
+static cg_debugMissileFire_t cg_debugMissileQueue[CG_DEBUG_MISSILE_QUEUE];
+static int cg_debugMissileHead;
+static int cg_debugMissileCount;
 
-static void CG_DebugServerClearPlasmaQueue(void)
+static qboolean CG_DebugServerIsMissileWeapon(int weapon)
 {
-	cg_debugPlasmaHead = 0;
-	cg_debugPlasmaCount = 0;
+	return (weapon == WP_GRENADE_LAUNCHER
+	        || weapon == WP_ROCKET_LAUNCHER
+	        || weapon == WP_PLASMAGUN
+	        || weapon == WP_BFG) ? qtrue : qfalse;
 }
 
-static void CG_DebugServerPushPlasmaFire(void)
+static void CG_DebugServerClearMissileQueue(void)
+{
+	cg_debugMissileHead = 0;
+	cg_debugMissileCount = 0;
+}
+
+static void CG_DebugServerPushMissileFire(void)
 {
 	playerState_t* ps;
 	vec3_t forward;
@@ -117,15 +125,15 @@ static void CG_DebugServerPushPlasmaFire(void)
 	muzzle[2] += ps->viewheight;
 	VectorMA(muzzle, 14, forward, muzzle);
 
-	if (cg_debugPlasmaCount >= CG_DEBUG_PLASMA_QUEUE)
+	if (cg_debugMissileCount >= CG_DEBUG_MISSILE_QUEUE)
 	{
-		cg_debugPlasmaHead = (cg_debugPlasmaHead + 1) % CG_DEBUG_PLASMA_QUEUE;
-		cg_debugPlasmaCount--;
+		cg_debugMissileHead = (cg_debugMissileHead + 1) % CG_DEBUG_MISSILE_QUEUE;
+		cg_debugMissileCount--;
 	}
-	slot = (cg_debugPlasmaHead + cg_debugPlasmaCount) % CG_DEBUG_PLASMA_QUEUE;
-	VectorCopy(muzzle, cg_debugPlasmaQueue[slot].muzzle);
-	cg_debugPlasmaQueue[slot].fireTime = cg.time;
-	cg_debugPlasmaCount++;
+	slot = (cg_debugMissileHead + cg_debugMissileCount) % CG_DEBUG_MISSILE_QUEUE;
+	VectorCopy(muzzle, cg_debugMissileQueue[slot].muzzle);
+	cg_debugMissileQueue[slot].fireTime = cg.time;
+	cg_debugMissileCount++;
 }
 
 /*
@@ -139,14 +147,14 @@ void CG_DebugServerOnFireWeapon(int weapon)
 	{
 		cg_debugIntervalLastTime = 0;
 		cg_debugIntervalLastWeapon = WP_NONE;
-		if (weapon == WP_PLASMAGUN)
+		if (CG_DebugServerIsMissileWeapon(weapon))
 		{
-			CG_DebugServerPushPlasmaFire();
+			CG_DebugServerPushMissileFire();
 		}
 		return;
 	}
 
-	CG_DebugServerClearPlasmaQueue();
+	CG_DebugServerClearMissileQueue();
 
 	if (cg_debugServer.integer != 3)
 	{
@@ -181,12 +189,13 @@ void CG_DebugServerOnMissileAppear(const entityState_t* es)
 	float muzzleDelta;
 	int trAge;
 	int atTime;
+	int weapon;
 
 	if (cg_debugServer.integer != 5 || !es || !cg.snap)
 	{
 		return;
 	}
-	if (es->eType != ET_MISSILE || es->weapon != WP_PLASMAGUN)
+	if (es->eType != ET_MISSILE || !CG_DebugServerIsMissileWeapon(es->weapon))
 	{
 		return;
 	}
@@ -195,24 +204,26 @@ void CG_DebugServerOnMissileAppear(const entityState_t* es)
 		return;
 	}
 
+	weapon = es->weapon;
+
 	/* drop stale FIFO entries */
-	while (cg_debugPlasmaCount > 0)
+	while (cg_debugMissileCount > 0)
 	{
-		if (cg.time - cg_debugPlasmaQueue[cg_debugPlasmaHead].fireTime <= CG_DEBUG_PLASMA_STALE_MS)
+		if (cg.time - cg_debugMissileQueue[cg_debugMissileHead].fireTime <= CG_DEBUG_MISSILE_STALE_MS)
 		{
 			break;
 		}
-		cg_debugPlasmaHead = (cg_debugPlasmaHead + 1) % CG_DEBUG_PLASMA_QUEUE;
-		cg_debugPlasmaCount--;
+		cg_debugMissileHead = (cg_debugMissileHead + 1) % CG_DEBUG_MISSILE_QUEUE;
+		cg_debugMissileCount--;
 	}
-	if (cg_debugPlasmaCount <= 0)
+	if (cg_debugMissileCount <= 0)
 	{
 		return;
 	}
 
-	VectorCopy(cg_debugPlasmaQueue[cg_debugPlasmaHead].muzzle, predMuzzle);
-	cg_debugPlasmaHead = (cg_debugPlasmaHead + 1) % CG_DEBUG_PLASMA_QUEUE;
-	cg_debugPlasmaCount--;
+	VectorCopy(cg_debugMissileQueue[cg_debugMissileHead].muzzle, predMuzzle);
+	cg_debugMissileHead = (cg_debugMissileHead + 1) % CG_DEBUG_MISSILE_QUEUE;
+	cg_debugMissileCount--;
 
 	/* early-add uses nextSnap; TransitionSnapshot has snap==nextSnap until cleared */
 	atTime = cg.nextSnap ? cg.nextSnap->serverTime : cg.snap->serverTime;
@@ -222,8 +233,8 @@ void CG_DebugServerOnMissileAppear(const entityState_t* es)
 	muzzleDelta = Distance(es->pos.trBase, predMuzzle);
 	trAge = atTime - es->pos.trTime;
 
-	CG_Printf("Plasma offset: appear ^5%.0f^7u from pred, ^5%.0f^7u from trBase, muzzle delta ^5%.0f^7u, trAge ^5%d^7ms ping ^5%d^7\n",
-	          distPred, distBase, muzzleDelta, trAge, (int)cgs.osp.pingMs);
+	CG_Printf("%s offset: appear ^5%.0f^7u from pred, ^5%.0f^7u from trBase, muzzle delta ^5%.0f^7u, trAge ^5%d^7ms ping ^5%d^7\n",
+	          weaponNames[weapon], distPred, distBase, muzzleDelta, trAge, (int)cgs.osp.pingMs);
 }
 
 /*
@@ -976,7 +987,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 
 	if (cg_debugServer.integer != 5)
 	{
-		CG_DebugServerClearPlasmaQueue();
+		CG_DebugServerClearMissileQueue();
 	}
 
 	// Exec on weapon

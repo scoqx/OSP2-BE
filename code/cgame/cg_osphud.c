@@ -3829,7 +3829,6 @@ static void CG_OSPDrawCrosshairNames(void)
 
 	ci = &cgs.clientinfo[cg.crosshairClientNum];
 
-
 	CG_OSPGetClientFontSize(&cf_CrosshairNames, &w, &h);
 	delta_time = (float)(cg.time - cg.crosshairClientTime);
 	if ((1000.0f - delta_time) < 200.0)
@@ -3847,7 +3846,7 @@ static void CG_OSPDrawCrosshairNames(void)
 
 			CG_OSPDrawStringOld((int)(320.0f - (len / 2.0f)), 170, ci->name, w, h, NULL, 0, 0);
 
-			if (ci->team != TEAM_FREE && ci->team == cg.snap->ps.persistant[PERS_TEAM] && ch_TeamCrosshairHealth.integer != 0 && !(cg.snap->ps.pm_flags & PMF_FOLLOW) && !(ci->health == 0 && ci->armor == 0))
+			if (CG_CrosshairTargetIsTeamAlly(ci) && ch_TeamCrosshairHealth.integer != 0 && CG_CrosshairTeamHealthAllowed() && !(ci->health == 0 && ci->armor == 0))
 			{
 				int w2;
 				int h2;
@@ -3905,7 +3904,7 @@ static void CG_OSPDrawCrosshairNames(void)
 			wTeamChar = wStatusChar;
 
 			y = 480 - hStatusChar - (cg_teamChatHeight.integer * hTeamChar) - h;
-			if (ci->team && ci->team == cg.snap->ps.persistant[PERS_TEAM] && ch_TeamCrosshairHealth.integer != 0 && !(cg.snap->ps.pm_flags & PMF_FOLLOW) && !(ci->health == 0 && ci->armor == 0))
+			if (CG_CrosshairTargetIsTeamAlly(ci) && ch_TeamCrosshairHealth.integer != 0 && CG_CrosshairTeamHealthAllowed() && !(ci->health == 0 && ci->armor == 0))
 			{
 				int x_name;
 				int x_health = 0;
@@ -4316,7 +4315,7 @@ void CG_OSPHUDRoutine(void)
 		{
 			CG_OSPDrawCenterString();
 		}
-		if (cg.showWStats)
+		if (CG_BEStatsIsShowing())
 		{
 			CG_BEStatsShowStatsInfo();
 		}

@@ -624,6 +624,7 @@ vmCvar_t        cg_kcEnemyColor;
 vmCvar_t        cg_kcTeamColor;
 vmCvar_t        cg_enemyAltShadowColor;
 vmCvar_t        cg_playerXray;
+vmCvar_t        cg_teamTaskSentPos;
 
 
 cgFontIndices_t cgFontIndices;
@@ -1152,6 +1153,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_kcTeamColor, "cg_kcTeamColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_kcTeamColor },
 	{ &cg_enemyAltShadowColor, "cg_enemyAltShadowColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyAltShadowColor },
 	{ &cg_playerXray, "cg_playerXray", "6", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
+	{ &cg_teamTaskSentPos, "cg_teamTaskSentPos", "320 20", CVAR_ARCHIVE | CVAR_NEW },
 
 };
 

@@ -1241,6 +1241,23 @@ qboolean CG_GetDeadInFreeze(int clientNum)
 
 #define STATS_REQUEST_PERIODIC_MS 1500
 
+/*
+ * True when the BEStats window is (or will be) on screen this frame.
+ * Same gates as CG_BEStatsShowStatsInfo before DrawWindow — not raw +wstats key alone.
+ */
+qboolean CG_BEStatsIsShowing(void)
+{
+	if (cgs.fpsclassico)
+	{
+		return qfalse;
+	}
+	if (!cg.showWStats)
+	{
+		return qfalse;
+	}
+	return qtrue;
+}
+
 void CG_BEStatsShowStatsInfo(void)
 {
 	int row = 0;
@@ -1249,6 +1266,8 @@ void CG_BEStatsShowStatsInfo(void)
 	qboolean        viewing_other;
 	qboolean        target_changed;
 	qboolean        periodic_send;
+
+	cg.beStatsShowing = qfalse;
 
 	if (cgs.fpsclassico)
 	{
@@ -1287,6 +1306,7 @@ void CG_BEStatsShowStatsInfo(void)
 	CG_BEStatsBuildWeaponStats(tokens, &row);
 	// Bonus
 	CG_BEStatsBuildBonusStats(tokens, &row);
-	// Draw
+	// Draw — mark visible only when the window is actually painted
+	cg.beStatsShowing = qtrue;
 	CG_BEStatsDrawWindow(tokens, row);
 }

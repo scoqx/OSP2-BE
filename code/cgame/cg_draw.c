@@ -2141,6 +2141,84 @@ CROSSHAIR
 
 /*
 =================
+CG_CrosshairViewTeam
+Team for ally filters under crosshair. Spectator chase uses followed player.
+=================
+*/
+static team_t CG_CrosshairViewTeam(void)
+{
+	int followNum;
+
+	if (!cg.snap)
+	{
+		return TEAM_SPECTATOR;
+	}
+	if (CG_IS_LOCAL_CLIENT_SPECTATOR() && (cg.snap->ps.pm_flags & PMF_FOLLOW))
+	{
+		followNum = cg.snap->ps.clientNum;
+		if (followNum >= 0 && followNum < MAX_CLIENTS)
+		{
+			return cgs.clientinfo[followNum].team;
+		}
+	}
+	if (cgs.osp.gameTypeFreeze
+	        && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	{
+		followNum = cg.snap->ps.clientNum;
+		if (followNum >= 0 && followNum < MAX_CLIENTS)
+		{
+			return cgs.clientinfo[followNum].team;
+		}
+	}
+	return (team_t)cg.snap->ps.persistant[PERS_TEAM];
+}
+
+/*
+=================
+CG_CrosshairTargetIsTeamAlly
+=================
+*/
+qboolean CG_CrosshairTargetIsTeamAlly(const clientInfo_t* ci)
+{
+	team_t viewTeam;
+
+	if (!ci || !cg.snap)
+	{
+		return qfalse;
+	}
+	if (ci->team == TEAM_FREE || ci->team == TEAM_SPECTATOR)
+	{
+		return qfalse;
+	}
+	viewTeam = CG_CrosshairViewTeam();
+	if (viewTeam == TEAM_FREE || viewTeam == TEAM_SPECTATOR)
+	{
+		return qfalse;
+	}
+	return (qboolean)(ci->team == viewTeam);
+}
+
+/*
+=================
+CG_CrosshairTeamHealthAllowed
+Allow teammate HP/AP under crosshair. Follow is OK only for spectators.
+=================
+*/
+qboolean CG_CrosshairTeamHealthAllowed(void)
+{
+	if (!cg.snap)
+	{
+		return qfalse;
+	}
+	if (!(cg.snap->ps.pm_flags & PMF_FOLLOW))
+	{
+		return qtrue;
+	}
+	return CG_IS_LOCAL_CLIENT_SPECTATOR();
+}
+
+/*
+=================
 CG_ScanForCrosshairEntity
 =================
 */
@@ -2167,10 +2245,33 @@ void CG_ScanForCrosshairEntity(void)
 		if (cgs.osp.gameTypeFreeze && trace.entityNum < MAX_GENTITIES)
 		{
 			centity_t* centp = &cg_entities[trace.entityNum];
-			if (centp->currentState.powerups & (1 << PW_BATTLESUIT))
+			int frozenClientNum;
+			clientInfo_t* ci;
+
+			frozenClientNum = centp->currentState.otherEntityNum;
+			if (frozenClientNum >= 0 && frozenClientNum < MAX_CLIENTS)
 			{
-				cg.crosshairClientNum = centp->currentState.otherEntityNum;
-				cg.crosshairClientTime = cg.time;
+				ci = &cgs.clientinfo[frozenClientNum];
+				if (ci->infoValid && ci->isFrozenEnt)
+				{
+					if (cg_drawCrosshairNames.integer == 2)
+					{
+						if (cgs.gametype <= GT_SINGLE_PLAYER ||
+						        (cgs.gametype >= GT_TEAM && CG_CACHED_IS_ENEMY_CI(ci)))
+						{
+							return;
+						}
+					}
+					else if (cg_drawCrosshairNames.integer == 3)
+					{
+						if (cgs.gametype >= GT_TEAM && !CG_CACHED_IS_ENEMY_CI(ci))
+						{
+							return;
+						}
+					}
+					cg.crosshairClientNum = frozenClientNum;
+					cg.crosshairClientTime = cg.time;
+				}
 			}
 		}
 		return;
@@ -2179,8 +2280,8 @@ void CG_ScanForCrosshairEntity(void)
 // draw only team names
 	if (cg_drawCrosshairNames.integer == 2)
 	{
-		if (cgs.clientinfo[trace.entityNum].team != cg.snap->ps.persistant[PERS_TEAM] ||
-		        (cgs.gametype <= GT_SINGLE_PLAYER))
+		if (cgs.gametype <= GT_SINGLE_PLAYER ||
+		        !CG_CrosshairTargetIsTeamAlly(&cgs.clientinfo[trace.entityNum]))
 		{
 			return;
 		}
@@ -2194,7 +2295,7 @@ void CG_ScanForCrosshairEntity(void)
 		}
 		else
 		{
-			if (cgs.clientinfo[trace.entityNum].team == cg.snap->ps.persistant[PERS_TEAM])
+			if (CG_CrosshairTargetIsTeamAlly(&cgs.clientinfo[trace.entityNum]))
 			{
 				return;
 			}
@@ -2206,7 +2307,7 @@ void CG_ScanForCrosshairEntity(void)
 	{
 		if (cgs.gametype >= GT_TEAM)
 		{
-			if (cgs.clientinfo[trace.entityNum].team == cg.snap->ps.persistant[PERS_TEAM])
+			if (CG_CrosshairTargetIsTeamAlly(&cgs.clientinfo[trace.entityNum]))
 			{
 				// ally — show in team games
 			}
@@ -2681,7 +2782,7 @@ void CG_OSPDrawIntermission()
 	CG_OSPSetColor(NULL);
 	CG_DrawPicOld(590.0f, 430.f, 50.0f, 50.0f, cgs.media.blender180Shader);
 
-	if (cg.showWStats)
+	if (CG_BEStatsIsShowing())
 	{
 		CG_BEStatsShowStatsInfo();
 	}
@@ -3273,10 +3374,35 @@ static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameMode
 		return qfalse;
 	}
 
-	isEnemy = (ci->isFrozenEnt || !gameModeNotSpectator) ? CG_CACHED_IS_ENEMY_CI(ci) : qfalse;
-	if (isEnemy && (!isSpec || !(cg_teamIndicator.integer & PI_SPECTATOR)))
+	/* Follow without PI_SPECTATOR: only teammates of the viewed player (ignore isEnemyView / spectPOV). */
+	if (isSpec && !(cg_teamIndicator.integer & PI_SPECTATOR))
 	{
-		return qfalse;
+		clientInfo_t* followCi;
+		int followTeam;
+		int otherTeam;
+		qboolean isCA;
+
+		followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+		if (!followCi->infoValid)
+		{
+			return qfalse;
+		}
+		isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+		followTeam = isCA ? followCi->rt : followCi->team;
+		otherTeam = isCA ? ci->rt : ci->team;
+		if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
+		{
+			return qfalse;
+		}
+		isEnemy = qfalse;
+	}
+	else
+	{
+		isEnemy = (ci->isFrozenEnt || !gameModeNotSpectator) ? CG_CACHED_IS_ENEMY_CI(ci) : qfalse;
+		if (isEnemy && (!isSpec || !(cg_teamIndicator.integer & PI_SPECTATOR)))
+		{
+			return qfalse;
+		}
 	}
 
 	allyFrozenForVis = CG_ClientMarkerIsFrozen(ci);
@@ -3302,7 +3428,7 @@ static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameMode
 }
 
 static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, clientInfo_t* ci, vec3_t markerOrigin,
-        qboolean hasName, qboolean hasSpectator, qboolean hasStats, qboolean hasStatsBars, qboolean hasIcon,
+        qboolean hasName, qboolean hasStats, qboolean hasStatsBars, qboolean hasIcon,
         qboolean isSpec, float invFadeRadius, int indicatorFadeRadiusSq)
 {
 	vec3_t headPos;
@@ -3605,7 +3731,7 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		    borderColor
 		);
 	}
-	if ((isSpec && hasSpectator) || cgs.beMarkedTeam[clientNum])
+	if (isSpec || cgs.beMarkedTeam[clientNum])
 	{
 		vec4_t teamColor;
 		float rectW = w * 2.0f;
@@ -3613,7 +3739,7 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		float rectX = headX - (rectW * 0.5f);
 		float rectY = headY + h - rectH;
 
-		if (isSpec && hasSpectator)
+		if (isSpec)
 		{
 			if (ci->team == TEAM_RED)
 			{
@@ -3733,8 +3859,8 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 	qboolean gameModeNotSpectator;
 	qboolean useTeamFrozen;
 	qboolean isSpec;
+	qboolean isFollowSpec;
 	qboolean hasName;
-	qboolean hasSpectator;
 	qboolean hasStats;
 	qboolean hasStatsBars;
 	qboolean hasIcon;
@@ -3750,23 +3876,28 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 	{
 		return;
 	}
+
+	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR();
+	isFollowSpec = isSpec && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+	               cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS;
+
 	if (cgs.gametype < GT_TEAM)
 	{
-		if (!CG_IS_LOCAL_CLIENT_SPECTATOR() || !(cg_teamIndicator.integer & PI_SPECTATOR))
+		/* FFA: still requires PI_SPECTATOR (no teammate concept). */
+		if (!isSpec || !(cg_teamIndicator.integer & PI_SPECTATOR))
 		{
 			return;
 		}
 	}
-	else if (CG_IS_LOCAL_CLIENT_SPECTATOR() && !(cg_teamIndicator.integer & PI_SPECTATOR))
+	else if (isSpec && !(cg_teamIndicator.integer & PI_SPECTATOR) && !isFollowSpec)
 	{
+		/* Free-spec without bit 32: no indicators. Follow-spec: allies of viewed player. */
 		return;
 	}
 
 	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
-	gameModeNotSpectator = !CG_IS_LOCAL_CLIENT_SPECTATOR();
-	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR();
+	gameModeNotSpectator = !isSpec;
 	hasName = (cg_teamIndicator.integer & (PI_NAME_CLEAN | PI_NAME)) != 0;
-	hasSpectator = (cg_teamIndicator.integer & PI_SPECTATOR) != 0;
 	hasStats = (cg_teamIndicator.integer & PI_STATS) != 0;
 	hasStatsBars = (cg_teamIndicator.integer & PI_STATS_BARS) != 0;
 	hasIcon = (cg_teamIndicator.integer & PI_ICON) != 0;
@@ -3806,7 +3937,7 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 		}
 
 		ci = &cgs.clientinfo[i];
-		CG_DrawTeamIndicatorForClient(i, cent, ci, markerOrigin, hasName, hasSpectator, hasStats, hasStatsBars, hasIcon,
+		CG_DrawTeamIndicatorForClient(i, cent, ci, markerOrigin, hasName, hasStats, hasStatsBars, hasIcon,
 		                              isSpec, invFadeRadius, indicatorFadeRadiusSq);
 	}
 }

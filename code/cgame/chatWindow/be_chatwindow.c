@@ -3446,6 +3446,14 @@ qboolean CG_BEChat_IsOpen(void)
 {
 	return beChatWindow.open;
 }
+qboolean CG_BEChat_IsEnterChat(void)
+{
+	return (beChatWindow.open && !beChatWindow.historyOnly) ? qtrue : qfalse;
+}
+qboolean CG_BEChat_IsShowChat(void)
+{
+	return (beChatWindow.open && beChatWindow.historyOnly) ? qtrue : qfalse;
+}
 void CG_BEChat_f(void)
 {
 	CG_BEChat_OpenEx(qfalse);

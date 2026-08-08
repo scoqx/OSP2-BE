@@ -1032,6 +1032,7 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	qboolean playerAvailable;
 	qboolean isOverheadMark;
 	qboolean isHereWarnDead;
+	qboolean isTopSlotMark;
 
 	if (!cg.teamMarkers.teamTaskEnabled || !markType)
 		return;
@@ -1063,18 +1064,23 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 	isOverheadMark = (markType == TEAMTASK_YES || markType == TEAMTASK_NO ||
 	                  markType == TEAMTASK_MEDIC || markType == TEAMTASK_HERE_ALIVE);
 	isHereWarnDead = (markType == TEAMTASK_HERE_DEAD || markType == TEAMTASK_WARN_DEAD);
+	/* Top/overhead slot: own FP overlay + overhead sprites — one active per client */
+	isTopSlotMark = (isOverheadMark || toClient == 1 ||
+	                 markType == TEAMTASK_HERE_FLAG || isHereWarnDead);
 	if (clientNum >= 0 && clientNum < MAX_CLIENTS && cg.teamMarkers.numTeamTaskMarks > 0)
 	{
 		writeIndex = 0;
 		for (i = 0; i < cg.teamMarkers.numTeamTaskMarks; i++)
 		{
 			mark = &cg.teamMarkers.teamTaskMarks[i];
-			/* Remove: same client+type, same client+overhead (if adding overhead), same client+PLAYERDEAD (if adding HERE/WARN_DEAD), same client+HERE/WARN_DEAD (if adding) */
+			/* Remove: same client+type, same client top-slot group, PLAYERDEAD when adding HERE/WARN_DEAD */
 			if (mark->clientNum == clientNum &&
 			        (mark->markType == markType ||
-			         (isOverheadMark && mark->isOverhead) ||
-			         (isHereWarnDead && mark->markType == TEAMTASK_PLAYERDEAD) ||
-			         (isHereWarnDead && (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))))
+			         (isTopSlotMark && (mark->isOverhead || mark->isPickup ||
+			                           mark->markType == TEAMTASK_HERE_FLAG ||
+			                           mark->markType == TEAMTASK_HERE_DEAD ||
+			                           mark->markType == TEAMTASK_WARN_DEAD)) ||
+			         (isHereWarnDead && mark->markType == TEAMTASK_PLAYERDEAD)))
 			{
 				continue;
 			}

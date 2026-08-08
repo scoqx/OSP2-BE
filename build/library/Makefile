@@ -389,6 +389,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/superhud/elements/element_ammomessage.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_attacker_icon.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_attacker_name.o \
+  $(B)/$(MOD)/cgame/superhud/elements/element_centermessage.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_chat.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_flagstatus.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_followmessage.o \

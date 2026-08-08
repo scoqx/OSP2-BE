@@ -369,6 +369,11 @@ void CG_BEUpdateUserInfo(void)
 		return;
 	}
 
+	if (!cgs.beSupportedServer)
+	{
+		return;
+	}
+
 	spectatorHud = 0;
 	if (CG_SHUDHasSpectatorItemSpawnsElements())
 	{
@@ -378,8 +383,9 @@ void CG_BEUpdateUserInfo(void)
 	{
 		spectatorHud |= 2; /* BE_SPECTATOR_HUD_SPECTATORS */
 	}
-	/* bit 4: full tInfo for spectators (teamIndicator PI_SPECTATOR, drawFriend bit 4, and/or team1-16/teamRed/teamBlue) */
-	if ((cg_teamIndicator.integer & PI_SPECTATOR) || CG_DrawFriendForSpecs() || CG_SHUDHasTeamRedBlueElements())
+	/* bit 4: full tInfo for spectators (any teamIndicator, drawFriend bit 4, and/or team1-16/teamRed/teamBlue).
+	 * Nonzero teamIndicator covers follow-spec ally indicators without PI_SPECTATOR. */
+	if (cg_teamIndicator.integer || CG_DrawFriendForSpecs() || CG_SHUDHasTeamRedBlueElements())
 	{
 		spectatorHud |= 4; /* BE_SPECTATOR_HUD_TEAM_INDICATOR */
 	}
@@ -421,10 +427,6 @@ void CG_BEUpdateUserInfo(void)
 	if (!CG_MapTPExit_FromMapdata())
 	{
 		mapdata |= 8; /* BE_MAPDATA_NEED_TPEXITS */
-	}
-	if (!CG_MapLocs_HasLocalZones())
-	{
-		mapdata |= 16; /* BE_MAPDATA_NEED_LOCS */
 	}
 
 	trap_SendClientCommand(va("beinfo %d %d %d %d %d %d %d %d\n",

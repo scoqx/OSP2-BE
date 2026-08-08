@@ -1026,7 +1026,7 @@ UI:
 * SHUD 'laststanding' element style 1 - laststanding.wav
 * Changed cvars default font to Conthrax (19)
 
-19.07.2026 be v1.07a2
+03.08.2026 be v1.07a3
 + cg_playerXray
 + cg_myTeam/cg_spectPov sounds/messages fix
 + cg_kcEnemyColor, cg_kcTeamColor ('Kill Confirm' gametype)
@@ -1046,3 +1046,11 @@ SuperHUD:
   + SuperHUD teamRed/teamBlue elements
   + kill confirm support
   + movement predict
+
+07.08.2026 be v1.07b1
++ cg_teamTaskSentPos
++ Votemenu fix
+SuperHUD:
+  + warden.cfg, om3n.cfg - by The Warden
+  + visflags: enterchat, showchat, printui, bestats (and !inverses)
+  * Spectator_ItemSpawns: alignh C horizontal layout

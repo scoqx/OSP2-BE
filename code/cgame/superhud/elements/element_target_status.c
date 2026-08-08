@@ -25,23 +25,9 @@ static qboolean CG_SHUDElementTargetStatusShouldDraw(clientInfo_t* ci)
 	if (cg.renderingThirdPerson != 0) return qfalse;
 	if (global_viewlistFirstOption > 1) return qfalse;
 	if (cg.crosshairClientTime == 0) return qfalse;
-
-	if (!((ci->team == cg.snap->ps.persistant[PERS_TEAM]) || (cgs.osp.gameTypeFreeze && ci->team == cgs.clientinfo[cg.snap->ps.clientNum].team)))
-	{
-		return qfalse;
-	}
-	if (ci->team == TEAM_FREE || ci->team != cg.snap->ps.persistant[PERS_TEAM])
-	{
-		return qfalse;
-	}
-	if (cg.snap->ps.pm_flags & PMF_FOLLOW)
-	{
-		return qfalse;
-	}
-	if (ci->health == 0 && ci->armor == 0)
-	{
-		return qfalse;
-	}
+	if (!CG_CrosshairTargetIsTeamAlly(ci)) return qfalse;
+	if (!CG_CrosshairTeamHealthAllowed()) return qfalse;
+	if (ci->health == 0 && ci->armor == 0) return qfalse;
 	return qtrue;
 }
 

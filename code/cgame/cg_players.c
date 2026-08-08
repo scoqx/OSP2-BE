@@ -1428,6 +1428,21 @@ do_aim_point:
 static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new)
 {
 	qboolean modelUnchanged;
+	qboolean preserveTinfo;
+	int savedHealth, savedArmor, savedLocation, savedCurWeapon, savedTeamPowerups;
+
+	/* tinfo-only fields are not in configstrings; keep them across refresh so
+	 * team overlay / teamRed/Blue do not flash dead until the next tinfo
+	 * (e.g. spectOrigModel / spectPOV follow switch → CG_UpdateAllClientsInfo). */
+	preserveTinfo = old->infoValid;
+	if (preserveTinfo)
+	{
+		savedHealth = old->health;
+		savedArmor = old->armor;
+		savedLocation = old->location;
+		savedCurWeapon = old->curWeapon;
+		savedTeamPowerups = old->teamPowerups;
+	}
 
 	/* Skip heavy model/skin/sounds load when model and skin names did not change (e.g. refresh of other clients in CG_UpdateOtherClientsInfo). */
 	modelUnchanged = old->infoValid &&
@@ -1473,6 +1488,14 @@ static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new)
 		memcpy(old->animations, saved.animations, sizeof(old->animations));
 		memcpy(old->sounds, saved.sounds, sizeof(old->sounds));
 		memcpy(old->headOffset, saved.headOffset, sizeof(old->headOffset));
+		if (preserveTinfo)
+		{
+			old->health = savedHealth;
+			old->armor = savedArmor;
+			old->location = savedLocation;
+			old->curWeapon = savedCurWeapon;
+			old->teamPowerups = savedTeamPowerups;
+		}
 		old->infoValid = qtrue;
 		return;
 	}
@@ -1481,6 +1504,14 @@ static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new)
 
 	new->infoValid = qtrue;
 	memcpy(old, new, sizeof(clientInfo_t));
+	if (preserveTinfo)
+	{
+		old->health = savedHealth;
+		old->armor = savedArmor;
+		old->location = savedLocation;
+		old->curWeapon = savedCurWeapon;
+		old->teamPowerups = savedTeamPowerups;
+	}
 }
 
 
@@ -4119,10 +4150,10 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 /*
 ===============
 CG_SpecXrayPackRGBA
-Pack RGB floats into byte RGBA with fixed 0.15 alpha (38).
+Pack RGB floats into byte RGBA. Default alpha 0.15 (38); PW_INVIS uses 0.07 (18).
 ===============
 */
-static void CG_SpecXrayPackRGBA(const float* rgb, byte* out)
+static void CG_SpecXrayPackRGBA(const float* rgb, byte* out, byte alpha)
 {
 	float tmpf;
 
@@ -4132,7 +4163,7 @@ static void CG_SpecXrayPackRGBA(const float* rgb, byte* out)
 	out[1] = (byte)(tmpf > 255.0f ? 255 : tmpf);
 	tmpf = 255.0f * rgb[2];
 	out[2] = (byte)(tmpf > 255.0f ? 255 : tmpf);
-	out[3] = 38;
+	out[3] = alpha;
 }
 
 /*
@@ -4261,7 +4292,7 @@ void CG_PlayerSpecXrayAddWeapon(refEntity_t* ent, int weaponNum)
 		return;
 
 	if ((cg_playerXray.integer & 4) && weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS)
-		CG_SpecXrayPackRGBA(cgs.beBrightWeaponsColor[weaponNum], rgba);
+		CG_SpecXrayPackRGBA(cgs.beBrightWeaponsColor[weaponNum], rgba, xrayCachedTorsoRGBA[3]);
 	else
 		*(int*)rgba = *(int*)xrayCachedTorsoRGBA;
 
@@ -4281,6 +4312,8 @@ static void CG_PlayerSpecXrayBegin(centity_t* cent)
 	const clientInfo_t* ci;
 	const float* teamColor;
 	float whiteColor[3];
+	qboolean hasInvis;
+	byte alpha;
 
 	if (cent == lastXrayCent)
 		return;
@@ -4295,8 +4328,6 @@ static void CG_PlayerSpecXrayBegin(centity_t* cent)
 	if (cent->currentState.eFlags & EF_PASSPLAYER)
 		return;
 	if (cent->currentState.eFlags & EF_DEAD)
-		return;
-	if (cent->currentState.powerups & (1 << PW_INVIS))
 		return;
 	if (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE &&
 	        (cent->currentState.powerups & (1 << PW_BATTLESUIT)))
@@ -4316,18 +4347,20 @@ static void CG_PlayerSpecXrayBegin(centity_t* cent)
 	if (!cg.demoPlayback && !CG_IS_LOCAL_CLIENT_SPECTATOR() && CG_IS_ENEMY_SIMPLE(ci))
 		return;
 
-	/* fully visible => no depthhack overlay on the normal skin */
-	if (CG_PlayerSpecXrayFullyVisible(cent))
+	hasInvis = (cent->currentState.powerups & (1 << PW_INVIS)) != 0;
+	/* fully visible => no depthhack overlay on the normal skin; invis always needs silhouette */
+	if (!hasInvis && CG_PlayerSpecXrayFullyVisible(cent))
 		return;
 
 	xrayCachedDraw = qtrue;
+	alpha = hasInvis ? 18 : 38; /* 0.07 vs 0.15 */
 
 	/* bit 2: cg_enemyModelColors / cg_teamModelColors (ci->colors); else team tint (FFA=white) */
 	if (cg_playerXray.integer & 2)
 	{
-		CG_SpecXrayPackRGBA(ci->colors.legs, xrayCachedLegsRGBA);
-		CG_SpecXrayPackRGBA(ci->colors.torso, xrayCachedTorsoRGBA);
-		CG_SpecXrayPackRGBA(ci->colors.head, xrayCachedHeadRGBA);
+		CG_SpecXrayPackRGBA(ci->colors.legs, xrayCachedLegsRGBA, alpha);
+		CG_SpecXrayPackRGBA(ci->colors.torso, xrayCachedTorsoRGBA, alpha);
+		CG_SpecXrayPackRGBA(ci->colors.head, xrayCachedHeadRGBA, alpha);
 	}
 	else
 	{
@@ -4340,7 +4373,7 @@ static void CG_PlayerSpecXrayBegin(centity_t* cent)
 			teamColor = cgs.beBlueTeamColor;
 		else
 			teamColor = whiteColor;
-		CG_SpecXrayPackRGBA(teamColor, xrayCachedLegsRGBA);
+		CG_SpecXrayPackRGBA(teamColor, xrayCachedLegsRGBA, alpha);
 		*(int*)xrayCachedTorsoRGBA = *(int*)xrayCachedLegsRGBA;
 		*(int*)xrayCachedHeadRGBA = *(int*)xrayCachedLegsRGBA;
 	}

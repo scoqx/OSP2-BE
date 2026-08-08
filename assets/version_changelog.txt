@@ -1,20 +1,7 @@
-19.07.2026 be v1.07a2
-+ cg_playerXray
-+ cg_myTeam/cg_spectPov sounds/messages fix
-+ cg_kcEnemyColor, cg_kcTeamColor ('Kill Confirm' gametype)
-+ cg_numbersSet 5 (trinity), 6 (Cookie)
-+ cg_damageDraw 3 (trinity)
-+ ttf fix
+07.08.2026 be v1.07b1
++ cg_teamTaskSentPos
++ Votemenu fix
 SuperHUD:
-  * Roamer.cfg updated
-  * Mirage's configs updated
-  + 'centerMessage', 'killconfirm', 'teamRed1-8', 'teamBlue1-8',
-  + 'thaw_own', 'thaw_freezing', 'thaw_own_bar', 'thaw_freezing_bar' elements
-  + 'team'* elements style2 - QL Like
-  + various fixes
-* q3a.space advanced support:
-  + UI/esc Call vote menu
-  + Q3LB (maplocs, spawn/teleport points)
-  + SuperHUD teamRed/teamBlue elements
-  + kill confirm support
-  + movement predict
+  + warden.cfg, om3n.cfg - by The Warden
+  + visflags: enterchat, showchat, printui, bestats (and !inverses)
+  * Spectator_ItemSpawns: alignh C horizontal layout

@@ -266,6 +266,10 @@ execute { cg_fov 100; exec myconfig.cfg }
 - spectator - видно в режиме спектатора
 - dead - видно если игрок мертв
 - warmup - видно во время разминки (warmup)
+- enterchat - видно когда открыт /enterchat
+- showchat - видно когда открыт +showchat (история чата)
+- printui - видно когда на экране есть активный PrintUI
+- bestats - видно когда на экране отображается окно BEStats (+wstats / autoaction)
 - demohide - скрывать в режиме просмотра демо
 - scoreshide - скрывать в режиме просмотра счета
 - key1show - скрывать если не нажата кнопка +shudkey1
@@ -379,6 +383,10 @@ execute { cg_fov 100; exec myconfig.cfg }
 
 - Таймеры респавна предметов для зрителя.
 - `Spectator_ItemSpawns` — все стороны; `Red` / `Blue` — фильтр по стороне.
+- По умолчанию вертикально: `rect w` — ширина, `rect h` — отступ между ячейками (`0` = 2). Значение по вертикали всегда по центру иконки.
+- Вертикально: `alignh L`/`R` — иконка слева/справа (без alignh: у Blue справа, иначе слева). `alignv` — только якорь блока (T/C/B).
+- `alignh C` — горизонтально: `rect x` — центр блока, `rect w` — отступ, `rect h` — высота ячейки.
+- Горизонтально: `alignv T`/`C` — иконка сверху, значение снизу; `alignv B` — наоборот.
 
 ## Spectator_ItemPickups1 - Spectator_ItemPickups8
 
@@ -402,28 +410,23 @@ execute { cg_fov 100; exec myconfig.cfg }
 - Style 2 - цвет времени изменяется по мере приближения к 0
 
 ## laststanding
-- Текст по умолчанию: `The Last Standing`. Свой текст или картинка — как у **roundwarmup_text** / **roundwarmup_fight** (`text`, `image`).
-- `time` — длительность показа в мс с момента появления; без `time` — пока условие выполняется.
-- `style 1` — звук `sound/feedback/laststanding.wav` когда число живых в команде становится 1 (не при повторном показе HUD).
+- Текст по умолчанию: `The Last Standing`. Свой текст/картинка — `text` / `image` (как у roundwarmup_*).
+- `time` — длительность показа в мс; без `time` — пока условие активно.
+- `style 1` — звук `sound/feedback/laststanding.wav` при появлении.
 
 ## thaw_own / thaw_freezing
-- Только на OSP2-BE серверах (`beSupportedServer` / CS 887).
-- `text` / `image` — как у **laststanding**.
-- `style 1` — только ally-thaw (скрыть авто); для `thaw_own`.
+- Только на OSP2-BE серверах.
+- `text` / `image` — как у laststanding.
+- `style 1` (`thaw_own`) — только разморозка союзником (скрыть авто).
 
 ## thaw_own_bar / thaw_freezing_bar
-- Только на OSP2-BE серверах (`beSupportedServer` / CS 887).
-- Как StatusBar_*Bar (`doublebar`, `direction`, `color`/`color2`, …).
-- `style` bitmask: `1` — ally-thaw (own); `2` — overlay doublebar; `3` — оба.
-- `visflags showempty` — пустой bar при 0% (`thaw_freezing_bar`; у own и так при 0%).
+- Только на OSP2-BE серверах. Параметры — как у StatusBar_*Bar.
+- `style 1` — только ally-thaw (own); `2` — doublebar overlay; `3` — оба.
+- `visflags showempty` — пустой bar при 0% (для `thaw_freezing_bar`).
 
 ## respawnmessage
-- Только на OSP2-BE серверах (`beSupportedServer` / CS 887).
-- Пока мёртв вне freeze: `Respawn in A (B)` — A до ручного респауна, B до forceRespawn.
-- Без force: `Respawn in A`. Можно жать fire: `Respawn (B)` или `Respawn`.
-- Время: ≥3 с — целое; <3 с — одна десятая (`2.9` …).
-- Не показывается в freezetag (`CG_OSPIsGameTypeFreeze`).
-- Default `visflags dead`.
+- Только на OSP2-BE серверах.
+- Пока мёртв: таймер до респауна атакой и до принудительного (`Respawn in A (B)` и короткие варианты).
 
 ## centermessage
 - Rect (3 аргумент) — сколько символов в строке до переноса; при `0` — 40.

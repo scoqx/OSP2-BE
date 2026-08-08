@@ -555,8 +555,9 @@ static void CG_SHUDElementTeamRoutineStyle2(shudElementTeam_t* element, clientIn
 		Vector4Copy(hpColor, apColor);
 	}
 
-	/* Low threshold: both bars use beHealthLowColor when total HP+AP <= cg_healthLow */
-	if (cg_healthColorLevels.integer && ci->health > 0 &&
+	/* Low threshold: both bars use beHealthLowColor when total HP+AP <= cg_healthLow
+	 * (only while local client is in-game — not spectator) */
+	if (!isSpectator && cg_healthColorLevels.integer && ci->health > 0 &&
 	        CG_GetTotalHitPoints(ci->health, ci->armor) <= cg_healthLow.integer)
 	{
 		VectorCopy(cg.beHealthLowColor, hpColor);
@@ -795,39 +796,57 @@ void CG_SHUDElementTeamRoutine(void* context)
 	CG_SHUDTextPrint(&element->config, &element->ctxName);
 
 	// draw health and armor
-	if (cg_teamHealthBar.integer >= 1)
 	{
-		float barX;
+		vec4_t barColor;
+		vec4_t* barColorSrc;
+		int clientNum;
 
-		barX = element->ctxHealthArmor.coord.named.x;
-		if (element->alignRight)
+		clientNum = sortedTeamPlayers[index];
+		/* Spectators: skip healthLow red — use FULL-band color instead */
+		if (isSpectator && cg.allyHealthBand[clientNum] == CG_HEALTH_BAND_LOW)
 		{
-			barX -= (float)element->ctxHealthArmor.width;
+			CG_HealthColorFromAllyBand(CG_HEALTH_BAND_FULL, barColor);
+			barColorSrc = &barColor;
 		}
-		CG_DrawHealthBar(barX,
-		                 element->config.rect.value[1],
-		                 (float)element->ctxHealthArmor.width,
-		                 element->config.rect.value[3],
-		                 ci->health, ci->armor, element->config.color.value.rgba[3],
-		                 (cg_teamHealthBar.integer == 2) ? element->ctxHealthArmor.fontIndex : -1, qfalse,
-		                 &cg.healthColorByClient[sortedTeamPlayers[index]], qtrue);
-	}
-	else
-	{
-		Vector4Copy(cg.healthColorByClient[sortedTeamPlayers[index]], element->ctxHealthArmor.color);
-		element->ctxHealthArmor.text = va("%3i/%i", ci->health, ci->armor);
+		else
+		{
+			barColorSrc = &cg.healthColorByClient[clientNum];
+		}
 
-		CG_OSPDrawStringNew(element->ctxHealthArmor.coord.named.x,
-		                    element->ctxHealthArmor.coord.named.y,
-		                    element->ctxHealthArmor.text,
-		                    element->ctxHealthArmor.color,
-		                    element->ctxHealthArmor.shadowColor,
-		                    element->ctxHealthArmor.coord.named.w,
-		                    element->ctxHealthArmor.coord.named.h,
-		                    SCREEN_WIDTH,
-		                    element->ctxHealthArmor.flags,
-		                    element->ctxHealthArmor.fontIndex,
-		                    NULL, NULL, NULL);
+		if (cg_teamHealthBar.integer >= 1)
+		{
+			float barX;
+
+			barX = element->ctxHealthArmor.coord.named.x;
+			if (element->alignRight)
+			{
+				barX -= (float)element->ctxHealthArmor.width;
+			}
+			CG_DrawHealthBar(barX,
+			                 element->config.rect.value[1],
+			                 (float)element->ctxHealthArmor.width,
+			                 element->config.rect.value[3],
+			                 ci->health, ci->armor, element->config.color.value.rgba[3],
+			                 (cg_teamHealthBar.integer == 2) ? element->ctxHealthArmor.fontIndex : -1, qfalse,
+			                 barColorSrc, qtrue);
+		}
+		else
+		{
+			Vector4Copy(*barColorSrc, element->ctxHealthArmor.color);
+			element->ctxHealthArmor.text = va("%3i/%i", ci->health, ci->armor);
+
+			CG_OSPDrawStringNew(element->ctxHealthArmor.coord.named.x,
+			                    element->ctxHealthArmor.coord.named.y,
+			                    element->ctxHealthArmor.text,
+			                    element->ctxHealthArmor.color,
+			                    element->ctxHealthArmor.shadowColor,
+			                    element->ctxHealthArmor.coord.named.w,
+			                    element->ctxHealthArmor.coord.named.h,
+			                    SCREEN_WIDTH,
+			                    element->ctxHealthArmor.flags,
+			                    element->ctxHealthArmor.fontIndex,
+			                    NULL, NULL, NULL);
+		}
 	}
 
 	if (element->config.style.isSet && element->config.style.value == 1)

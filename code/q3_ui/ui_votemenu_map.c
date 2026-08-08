@@ -117,6 +117,8 @@ struct maplist_s filtered_list;
 struct maplist_s maplists[MAPPAGE_TYPE_NUM];
 
 struct maplist_s *current_list;
+/* Last applied filter text; MTYPE_FIELD never fires QM_ACTIVATED on typing. */
+static char last_filter[MAX_EDIT_LINE];
 
 static void InitMappage(void) {
     int i;
@@ -238,16 +240,22 @@ void Maplist_RequestNextPage( struct maplist_s *list ) {
 }
 
 
+static void VoteMapMenu_ApplyFilter( void ) {
+	trap_Cvar_Set( "ui_mapvote_filter", va("%s", s_votemenu_map.filter.field.buffer));
+	trap_Cvar_Set( "ui_mapvote_sort", va("%i", s_votemenu_map.sort.curvalue));
+	Q_strncpyz( last_filter, s_votemenu_map.filter.field.buffer, sizeof(last_filter) );
+	s_votemenu_map.pagenum = 0;
+	s_votemenu_map.currentmap = -1;
+	UpdateFilter();
+	UI_VoteMapMenu_Update();
+}
+
 static void VoteMapMenu_FilterEvent( void* ptr, int event ) {
 	if (event != QM_ACTIVATED ) {
 		return;
 	}
-	trap_Cvar_Set( "ui_mapvote_filter", va("%s", s_votemenu_map.filter.field.buffer));
-	trap_Cvar_Set( "ui_mapvote_sort", va("%i", s_votemenu_map.sort.curvalue));
-	ResetMaplist();
-	//s_votemenu_map.pagenum = 0;
-	//s_votemenu_map.currentmap = 0;
-	//UI_VoteMapMenu_Update();
+	/* Sort radiobutton; filter text is applied from Draw when buffer changes. */
+	VoteMapMenu_ApplyFilter();
 }
 
 static void UI_VoteMapMenu_PreviousPageEvent( void* ptr, int event ) {
@@ -300,7 +308,11 @@ UI_VoteMapMenu_Draw
 =================
 */
 static void UI_VoteMapMenu_Draw( void ) {
-	// standard menu drawing
+	/* Apply map name filter as the user types (field never sends QM_ACTIVATED). */
+	if (strcmp(last_filter, s_votemenu_map.filter.field.buffer)) {
+		VoteMapMenu_ApplyFilter();
+	}
+
 	Menu_Draw( &s_votemenu_map.menu );
 
 	UI_DrawString( 630, 70, va("%s (%i maps)", current_list->loaded_all ? "Done" : "Loading", current_list->num_maps ), UI_RIGHT|UI_SMALLFONT, color_white );
@@ -816,6 +828,7 @@ static void UI_VoteMapMenu_Open( qboolean setnext ) {
     trap_Cvar_VariableStringBuffer( "ui_mapvote_filter", 
 		    s_votemenu_map.filter.field.buffer,
 		    sizeof(s_votemenu_map.filter.field.buffer));
+    Q_strncpyz( last_filter, s_votemenu_map.filter.field.buffer, sizeof(last_filter) );
 
     getmappage_cmd = getmappage_all_cmd;
 

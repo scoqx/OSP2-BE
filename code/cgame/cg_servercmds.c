@@ -2701,15 +2701,6 @@ void CG_ServerCommand(void)
 			}
 			break;
 
-		case 'l':
-			/* "locs" — server location origins by CS_LOCATIONS id */
-			if (cmd[1] == 'o' && cmd[2] == 'c' && cmd[3] == 's' && cmd[4] == '\0')
-			{
-				CG_MapLocs_ApplyServerOrigins();
-				return;
-			}
-			break;
-
 		case 's':
 			/* sset, scmds - char comparison (no Q_stricmp) */
 			/* "scores" */
