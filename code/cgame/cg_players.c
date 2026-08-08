@@ -1429,7 +1429,7 @@ static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new)
 {
 	qboolean modelUnchanged;
 	qboolean preserveTinfo;
-	int savedHealth, savedArmor, savedLocation, savedCurWeapon, savedTeamPowerups;
+	int savedHealth = 0, savedArmor = 0, savedLocation = 0, savedCurWeapon = 0, savedTeamPowerups = 0;
 
 	/* tinfo-only fields are not in configstrings; keep them across refresh so
 	 * team overlay / teamRed/Blue do not flash dead until the next tinfo
