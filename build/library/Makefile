@@ -445,6 +445,8 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/superhud/elements/element_player_name.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_teamtasks.o \
   $(B)/$(MOD)/cgame/cg_be_util.o \
+  $(B)/$(MOD)/cgame/cg_be_auth.o \
+  $(B)/$(MOD)/cgame/cg_be_autologin.o \
   $(B)/$(MOD)/cgame/cg_be_stats.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_state.o \

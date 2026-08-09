@@ -2340,6 +2340,13 @@ void CG_ServerCommand(void)
 	{
 		return;
 	}
+
+	if (!Q_stricmp(cmd, "altoken") || !Q_stricmp(cmd, "altoken_rot"))
+	{
+		CG_BE_Autologin_ServerCommand(cmd);
+		return;
+	}
+
 	ignoreMask = cg_ignoreServerMessages.integer;
 
 	switch (cmd[0])

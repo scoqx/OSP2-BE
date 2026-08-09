@@ -1669,6 +1669,11 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		return;
 	}
 
+	if (!cg_beAuthFrameDone)
+	{
+		CG_BE_AuthFrame();
+	}
+
 	cg.numItemEntityIndices = 0;
 
 	// let the client system know what our weapon and zoom settings are

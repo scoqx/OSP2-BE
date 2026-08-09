@@ -346,10 +346,23 @@ typedef enum
 	STAT_OSDF_PACK = 10,
 	STAT_TIME_LASTJUMP = 12,
 	STAT_EXTFLAGS = 13,		/* reserved wire slot (ruthless bot debug, etc.) */
-	STAT_JUMP_HOLDBOOST = 14,
+	STAT_BE_AUTH = 14,		/* OSP2-BE hidden connect challenge (owner PS only) */
 	/* g_freeze (ruthless): own progress% + thawing% — see BE_CUSTOM_* */
 	STAT_BE_CUSTOM = 15
 } statIndex_t;
+
+#define STAT_JUMP_HOLDBOOST	STAT_BE_AUTH	/* legacy name; unused by OSDF */
+
+/* Quiet usercmd bits for BE auth response (no pmove side effects). */
+#define BUTTON_BE_AUTH0		(1 << 14)	/* +button14 = response bit 0 */
+#define BUTTON_BE_AUTH1		(1 << 15)	/* +button15 = response bit 1 */
+
+#define BE_AUTH_SECRET		0xBEA0717u
+#define BE_AUTH_NUM_BITS	8
+#define BE_AUTH_TIMEOUT_MS	5000
+
+/* Mix(challenge) -> 8-bit response; shared by game + cgame. */
+unsigned	BG_BE_AuthResponse(unsigned challenge);
 
 #define OSDF_CROUCH_MASK 0xFFFF
 #define OSDF_BOOST_SHIFT 16

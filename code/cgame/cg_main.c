@@ -3072,6 +3072,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	/* be_features before fonts; font indices after CG_LoadFonts (bitmap + TTF) */
 	CG_UpdateBeFeatures();
+	CG_BE_AuthReset();
 
 	CG_InitConsoleCommands();
 	CG_BEChat_Init();

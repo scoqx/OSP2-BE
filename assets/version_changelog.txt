@@ -1,4 +1,5 @@
-07.08.2026 be v1.07b1
+07.08.2026 be v1.07b2
++ Q3A.SPACE Autologin
 + cg_teamTaskSentPos
 + Votemenu fix
 SuperHUD:

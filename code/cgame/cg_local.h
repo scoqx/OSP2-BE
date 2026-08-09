@@ -3416,6 +3416,22 @@ void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2)
 int CG_GetRemainingGameTimeMsec(qboolean forItemPickup);
 void CG_ColorWhitenSmart(vec3_t rgb, float* alpha, float strength);
 void CG_Get_f(void);
+
+//
+//cg_be_auth.c
+//
+extern qboolean cg_beAuthFrameDone;
+void CG_BE_AuthReset(void);
+void CG_BE_AuthFrame(void);
+qboolean CG_BE_AuthReady(void);
+
+//
+//cg_be_autologin.c
+//
+void CG_BE_AutologinReset(void);
+void CG_BE_AutologinFrame(void);
+void CG_BE_Autologin_ServerCommand(const char *cmd);
+
 //
 //cg_be_stats
 //

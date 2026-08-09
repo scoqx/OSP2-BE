@@ -1728,3 +1728,22 @@ int BG_ItemCatalogParseMode(char c)
 	}
 	return -1;
 }
+
+/*
+===============
+BG_BE_AuthResponse
+
+Lightweight mix of connect challenge + compile-time secret -> BE_AUTH_NUM_BITS bits.
+Not crypto; raises the bar vs spoofing osp_client alone.
+===============
+*/
+unsigned BG_BE_AuthResponse(unsigned challenge)
+{
+	unsigned x;
+
+	x = (challenge ^ BE_AUTH_SECRET) * 0x45d9f3bu;
+	x ^= x >> 16;
+	x *= 0x119de1f3u;
+	x ^= x >> 16;
+	return x & ((1u << BE_AUTH_NUM_BITS) - 1u);
+}
