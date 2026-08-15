@@ -634,7 +634,7 @@ static qboolean teamoverlay2_registered = qfalse;
 
 cvarTable_t cvarTable[] =
 {
-	{ &osp_client, "osp_client", "1008_OSP2_"OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
+	{ &osp_client, "osp_client", XSTRINGIFY(OSP_CLIENT), CVAR_USERINFO | CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
@@ -1457,6 +1457,13 @@ void CG_PrintLog(char* msg)
 	}
 }
 
+#ifdef __GNUC__
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 1, 2)))
+#else
+__attribute__((format(printf, 1, 2)))
+#endif
+#endif
 void QDECL CG_Printf(const char* msg, ...)
 {
 	va_list     argptr;
@@ -1541,6 +1548,11 @@ void QDECL CG_PrintOnce(const char* msg, ...)
 
 #ifdef __GNUC__
 __attribute__((noreturn))
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 1, 2)))
+#else
+__attribute__((format(printf, 1, 2)))
+#endif
 #endif
 void QDECL CG_Error(const char* msg, ...)
 {
@@ -1563,6 +1575,11 @@ void QDECL CG_Error(const char* msg, ...)
 
 #ifdef __GNUC__
 __attribute__((noreturn))
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 2, 3)))
+#else
+__attribute__((format(printf, 2, 3)))
+#endif
 #endif
 void QDECL Com_Error(int level, const char* error, ...)
 {
@@ -1576,6 +1593,13 @@ void QDECL Com_Error(int level, const char* error, ...)
 	CG_Error("%s", text);
 }
 
+#ifdef __GNUC__
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 1, 2)))
+#else
+__attribute__((format(printf, 1, 2)))
+#endif
+#endif
 void QDECL Com_Printf(const char* msg, ...)
 {
 	va_list     argptr;
@@ -1618,7 +1642,7 @@ static void CG_RegisterItemSounds(int itemNum)
 {
 	gitem_t*         item;
 	char            data[MAX_QPATH];
-	char*            s, *start;
+	char*            s, * start;
 	int             len;
 
 	item = &bg_itemlist[ itemNum ];
@@ -2490,8 +2514,6 @@ static void CG_RegisterGraphics(void)
 
 	CG_ClearParticles();
 }
-
-
 
 /*
 =======================

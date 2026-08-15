@@ -271,7 +271,7 @@ static void CG_InterpolatePlayerState(qboolean grabAngles)
 	float           f;
 	int             i;
 	playerState_t*   out;
-	snapshot_t*      prev, *next;
+	snapshot_t*      prev, * next;
 
 	out = &cg.predictedPlayerState;
 	prev = cg.snap;
