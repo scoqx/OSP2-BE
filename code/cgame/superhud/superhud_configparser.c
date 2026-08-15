@@ -43,7 +43,7 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseStyle(configFileInfo
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseShadowColor(configFileInfo_t* finfo, superhudConfig_t* config);
 static superhudConfigParseStatus_t CG_SHUDConfigCommandParseWeaponMaxValue(configFileInfo_t* finfo, superhudConfig_t* config);
 
-static superHUDConfigCommand_t superHUDConfigItemCommands[] =
+static const superHUDConfigCommand_t superHUDConfigItemCommands[] =
 {
 	{ "alignh", CG_SHUDConfigCommandParseAlighH },
 	{ "alignv", CG_SHUDConfigCommandParseAlighV },
@@ -87,6 +87,8 @@ static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 	{ NULL, NULL, NULL },
 };
 
+qboolean is_shud_parser_initialized = qfalse;
+
 #define CG_SHUD_CONFIG_INFO_IS_TEXT_CHARACTER(CCC) \
        ((CCC >= 'a' && CCC <= 'z') \
       || (CCC >= 'A' && CCC <= 'Z') \
@@ -114,8 +116,14 @@ static superHUDConfigCommand_t superHUDConfigItemCommands[] =
 
 #define SHUD_CONFIG_ITEMS_DICT_SIZE   256
 
+typedef struct superHUDConfigItemCommandsDictItem_s
+{
+	const superHUDConfigCommand_t* command;
+	struct superHUDConfigItemCommandsDictItem_s* next;
+} superHUDConfigItemCommandsDictItem_t;
+
 static superhudElementDictMember_t* superHUDConfigItemElementsDict[SHUD_CONFIG_ITEMS_DICT_SIZE];
-static superHUDConfigCommand_t* superHUDConfigItemCommandsDict[SHUD_CONFIG_ITEMS_DICT_SIZE];
+static superHUDConfigItemCommandsDictItem_t* superHUDConfigItemCommandsDict[SHUD_CONFIG_ITEMS_DICT_SIZE];
 
 const superHUDConfigElement_t* CG_SHUDFindConfigElementItem(const char* name)
 {
@@ -132,13 +140,17 @@ const superHUDConfigElement_t* CG_SHUDFindConfigElementItem(const char* name)
 
 const superHUDConfigCommand_t* CG_SHUDFindConfigCommandItem(const char* name)
 {
-	const superHUDConfigCommand_t* target = superHUDConfigItemCommandsDict[Com_GenerateHashValue(name, SHUD_CONFIG_ITEMS_DICT_SIZE)];
+	superHUDConfigItemCommandsDictItem_t* target = superHUDConfigItemCommandsDict[Com_GenerateHashValue(name, SHUD_CONFIG_ITEMS_DICT_SIZE)];
 
-	while (target && Q_stricmp(name, target->name))
+	while (target && target->command && Q_stricmp(name, target->command->name))
 	{
 		target = target->next;
 	}
-	return target;
+	if (target && target->command)
+	{
+		return target->command;
+	}
+	return NULL;
 }
 
 /*
@@ -2062,15 +2074,16 @@ qboolean CG_SHUDFileInfoSkipElementBody(configFileInfo_t* cfi)
 void CG_SHUDParserInit(void)
 {
 	int i = 0;
-	static qboolean initialized = qfalse;
 	const superHUDConfigElement_t* e;
 	const superHUDConfigElement_t* root;
 
-
-	if (initialized)
+	if (is_shud_parser_initialized)
 	{
 		return;
 	}
+
+	memset(superHUDConfigItemElementsDict, 0, sizeof(superhudElementDictMember_t*)*SHUD_CONFIG_ITEMS_DICT_SIZE);
+	memset(superHUDConfigItemCommandsDict, 0, sizeof(superHUDConfigItemCommandsDictItem_t*)*SHUD_CONFIG_ITEMS_DICT_SIZE);
 
 	CG_SHUDAvailableElementsInit();
 
@@ -2113,8 +2126,8 @@ void CG_SHUDParserInit(void)
 	i = 0;
 	while (superHUDConfigItemCommands[i].name)
 	{
-		superHUDConfigCommand_t** target = NULL;
-		superHUDConfigCommand_t* collision = NULL;
+		superHUDConfigItemCommandsDictItem_t** target = NULL;
+		superHUDConfigItemCommandsDictItem_t* collision = NULL;
 
 		unsigned long hash = Com_GenerateHashValue(superHUDConfigItemCommands[i].name, SHUD_CONFIG_ITEMS_DICT_SIZE);
 
@@ -2122,7 +2135,10 @@ void CG_SHUDParserInit(void)
 		target = &superHUDConfigItemCommandsDict[hash];
 		if (*target == NULL)
 		{
-			*target = &superHUDConfigItemCommands[i];
+			*target = Z_Malloc(sizeof(superHUDConfigItemCommandsDictItem_t));
+			OSP_MEMORY_CHECK(*target);
+			(*target)->command = &superHUDConfigItemCommands[i];
+			(*target)->next = NULL;
 		}
 		else
 		{
@@ -2132,12 +2148,58 @@ void CG_SHUDParserInit(void)
 			{
 				collision = collision->next;
 			}
-			collision->next = &superHUDConfigItemCommands[i];
+			collision->next = Z_Malloc(sizeof(superHUDConfigItemCommandsDictItem_t));
+			OSP_MEMORY_CHECK(collision->next);
+			collision->next->command = &superHUDConfigItemCommands[i];
+			collision->next->next = NULL;
 		}
 		++i;
 	}
 
-	initialized = qtrue;
+	is_shud_parser_initialized = qtrue;
+}
+
+/*
+ * Разрушение парсера
+ */
+void CG_SHUDParserTeardown(void)
+{
+	int i;
+
+	for (i = 0; i < SHUD_CONFIG_ITEMS_DICT_SIZE; ++i)
+	{
+		if (superHUDConfigItemElementsDict[i])
+		{
+			superhudElementDictMember_t* next = NULL;
+			superhudElementDictMember_t* tmp;
+			next = superHUDConfigItemElementsDict[i];
+			//free collisions too
+			while (next)
+			{
+				tmp = next;
+				next = next->next;
+				Z_Free(tmp);
+			}
+			superHUDConfigItemElementsDict[i] = NULL;
+		}
+
+		if (superHUDConfigItemCommandsDict[i])
+		{
+			superHUDConfigItemCommandsDictItem_t* next = NULL;
+			superHUDConfigItemCommandsDictItem_t* tmp;
+			next = superHUDConfigItemCommandsDict[i];
+			//free collisions too
+			while (next)
+			{
+				tmp = next;
+				next = next->next;
+				Z_Free(tmp);
+			}
+			superHUDConfigItemCommandsDict[i] = NULL;
+		}
+	}
+
+	is_shud_parser_initialized = qfalse;
 }
 
 /*

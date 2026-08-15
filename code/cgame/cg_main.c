@@ -2499,7 +2499,7 @@ CG_BuildSpectatorString
 
 =======================
 */
-void CG_BuildSpectatorString()
+void CG_BuildSpectatorString(void)
 {
 	int i;
 	cg.spectatorList[0] = 0;

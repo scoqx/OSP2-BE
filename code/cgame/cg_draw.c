@@ -2730,7 +2730,7 @@ qboolean CG_DrawIntermission(void)
 	return result;
 }
 
-void CG_OSPDrawIntermission()
+void CG_OSPDrawIntermission(void)
 {
 	int i;
 
