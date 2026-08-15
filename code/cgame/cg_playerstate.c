@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // when the snapshot transitions like all the other entities
 
 #include "cg_local.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 
 /* Map weapon index -> exec cvar; no cgs copy, read cvar.string at use */
 static const vmCvar_t* const execWeaponCvars[WP_NUM_WEAPONS] =

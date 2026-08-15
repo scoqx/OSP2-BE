@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 #include "chatWindow/be_chatwindow.h"
 
 static int xstats1_received_count = 0;

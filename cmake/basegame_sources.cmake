@@ -50,12 +50,12 @@ set(CGAME_SOURCES
     ${SOURCE_DIR}/cgame/cg_mapbundle.c
     ${SOURCE_DIR}/cgame/cg_spawns.c
     ${SOURCE_DIR}/cgame/cg_shadowitems.c
+    ${SOURCE_DIR}/cgame/cg_killconfirm.c
     ${SOURCE_DIR}/cgame/cg_spectatoritems.c
     ${SOURCE_DIR}/cgame/cg_tpexit.c
     ${SOURCE_DIR}/cgame/cg_globalpos.c
     ${SOURCE_DIR}/cgame/cg_worldflags.c
     ${SOURCE_DIR}/cgame/cg_cvardescriptions.c
-
     ${SOURCE_DIR}/cgame/superhud/superhud.c
     ${SOURCE_DIR}/cgame/superhud/superhud_configparser.c
     ${SOURCE_DIR}/cgame/superhud/superhud_util.c
@@ -87,6 +87,8 @@ set(CGAME_SOURCES
     ${SOURCE_DIR}/cgame/superhud/elements/element_chat.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_specmessage.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_followmessage.c
+    ${SOURCE_DIR}/cgame/superhud/elements/element_respawnmessage.c
+    ${SOURCE_DIR}/cgame/superhud/elements/element_spectators.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_itempickup.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_itempickupicon.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_spectator_itemspawns.c
@@ -113,23 +115,26 @@ set(CGAME_SOURCES
     ${SOURCE_DIR}/cgame/superhud/elements/element_roundwarmup.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_laststanding.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_timelimit.c
-
+    ${SOURCE_DIR}/cgame/superhud/elements/element_thaw.c
+    ${SOURCE_DIR}/cgame/superhud/elements/element_killconfirm.c
+    ${SOURCE_DIR}/cgame/superhud/elements/element_centermessage.c
     ${SOURCE_DIR}/cgame/cg_chatfilter.c
     ${SOURCE_DIR}/cgame/cg_crosshair.c
     ${SOURCE_DIR}/cgame/cg_be_util.c
+    ${SOURCE_DIR}/cgame/cg_be_auth.c
+    ${SOURCE_DIR}/cgame/cg_be_autologin.c
     ${SOURCE_DIR}/cgame/cg_be_stats.c
     ${SOURCE_DIR}/cgame/cg_brightitems.c
     ${SOURCE_DIR}/cgame/cg_emoji.c
-
     ${SOURCE_DIR}/cgame/chatWindow/be_chatwindow.c
     ${SOURCE_DIR}/cgame/chatWindow/be_chatwindow_state.c
     ${SOURCE_DIR}/cgame/chatWindow/be_chatwindow_persist.c
     ${SOURCE_DIR}/cgame/chatWindow/be_chatwindow_cmdac.c
+    ${SOURCE_DIR}/cgame/chatWindow/be_admincmds.c
     ${SOURCE_DIR}/cgame/chatWindow/be_chatwindow_history.c
     ${SOURCE_DIR}/cgame/chatWindow/be_chatwindow_input.c
     ${SOURCE_DIR}/cgame/chatWindow/be_chatwindow_emoji.c
     ${SOURCE_DIR}/cgame/chatWindow/be_chatwindow_emoji_picker.c
-
     ${BOTHGAMES_SOURCES}
 )
 
@@ -146,6 +151,8 @@ set(UI_SOURCES
     ${SOURCE_DIR}/q3_ui/ui_md5.c
     ${SOURCE_DIR}/q3_ui/ui_status_sign.c
     ${SOURCE_DIR}/q3_ui/ui_server_status.c
+    ${SOURCE_DIR}/q3_ui/ui_fav_server_parse.c
+    ${SOURCE_DIR}/q3_ui/ui_favourite_server.c
     ${SOURCE_DIR}/q3_ui/ui_mfield.c
     ${SOURCE_DIR}/q3_ui/ui_credits.c
     ${SOURCE_DIR}/q3_ui/ui_credits2.c
@@ -183,6 +190,13 @@ set(UI_SOURCES
     ${SOURCE_DIR}/q3_ui/ui_saveconfig.c
     ${SOURCE_DIR}/q3_ui/ui_cdkey.c
     ${SOURCE_DIR}/q3_ui/ui_mods.c
+    ${SOURCE_DIR}/q3_ui/ui_votemenu.c
+    ${SOURCE_DIR}/q3_ui/ui_votemenu_map.c
+    ${SOURCE_DIR}/q3_ui/ui_votemenu_kick.c
+    ${SOURCE_DIR}/q3_ui/ui_votemenu_gametype.c
+    ${SOURCE_DIR}/q3_ui/ui_votemenu_fraglimit.c
+    ${SOURCE_DIR}/q3_ui/ui_votemenu_timelimit.c
+    ${SOURCE_DIR}/q3_ui/ui_votemenu_custom.c
     ${SOURCE_DIR}/game/bg_lib.c
     ${SOURCE_DIR}/game/bg_misc.c
 )
@@ -196,6 +210,8 @@ set(COMMON_HEADERS
     ${SOURCE_DIR}/qcommon/qcommon.h
     ${SOURCE_DIR}/qcommon/qfiles.h
     ${SOURCE_DIR}/qcommon/surfaceflags.h
+    ${SOURCE_DIR}/qcommon/engine_fonts.h
+    ${SOURCE_DIR}/qcommon/be_font_shadow.h
     ${SOURCE_DIR}/qcommon/osp_fonts.h
 )
 
@@ -227,6 +243,7 @@ set(UI_HEADERS
     ${SOURCE_DIR}/q3_ui/ui_colorpicker.h
     ${SOURCE_DIR}/q3_ui/ui_status_sign.h
     ${SOURCE_DIR}/q3_ui/ui_server_status.h
+    ${SOURCE_DIR}/q3_ui/ui_fav_server.h
 
     ${COMMON_HEADERS}
 )
@@ -243,6 +260,8 @@ set(GAME_MODULE_SHARED_SOURCES
     ${SOURCE_DIR}/qcommon/q_math.c
     ${SOURCE_DIR}/qcommon/q_shared.c
     ${SOURCE_DIR}/qcommon/beinfo_cfg.c
+    ${SOURCE_DIR}/qcommon/engine_fonts.c
+    ${SOURCE_DIR}/qcommon/be_font_shadow.c
     ${SOURCE_DIR}/qcommon/osp_fonts.c
 )
 

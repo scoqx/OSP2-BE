@@ -545,7 +545,7 @@ void CG_OSPClientConfig_f(void)
 		physics = "CQ3";
 	}
 
-	CG_Printf("^5OSP2 Server-forced settings:\n", OSP_VERSION);
+	CG_Printf("^5OSP2 Server-forced settings:\n", XSTRINGIFY(OSP_VERSION));
 	CG_Printf("    ^3OSP2-BE ^3Supported server:    %s\n", CG_YES_NO_STR(cgs.beSupportedServer));
 	CG_Printf("    ^3Physics:                     ^2%s\n", physics);
 
