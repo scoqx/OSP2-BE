@@ -1803,22 +1803,12 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_OSPUpdateUserInfo(qfalse);
 	}
 
-	/* +autojump: cg_autoJumpStyle 1 = alternate every frame; 2 = JUMP_HELD release/press (CVAR_LATCH) */
+	/* +autojump held: alternate +moveup/-moveup every frame; only when BE feature autojump enabled */
 	if (cg.turboupHeld && CG_BE_FEATURE_ENABLED(CG_BE_AUTOJUMP))
 	{
-		if (cg_autoJumpStyle.integer == 2)
-		{
-			if (cg.predictedPlayerState.pm_flags & PMF_JUMP_HELD)
-				trap_SendConsoleCommand("-moveup");
-			else
-				trap_SendConsoleCommand("+moveup");
-		}
+		if (cg.clientFrame & 1)
+			trap_SendConsoleCommand("+moveup");
 		else
-		{
-			if (cg.clientFrame & 1)
-				trap_SendConsoleCommand("+moveup");
-			else
-				trap_SendConsoleCommand("-moveup");
-		}
+			trap_SendConsoleCommand("-moveup");
 	}
 }

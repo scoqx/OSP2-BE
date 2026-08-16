@@ -637,7 +637,6 @@ vmCvar_t        cg_enemyAltShadowColor;
 vmCvar_t        cg_playerXray;
 vmCvar_t        cg_specMode;
 vmCvar_t        cg_teamTaskSentPos;
-vmCvar_t        cg_autoJumpStyle;
 
 
 cgFontIndices_t cgFontIndices;
@@ -1013,6 +1012,15 @@ cvarTable_t cvarTable[] =
 	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.7", CVAR_ARCHIVE },
 	{ &cg_bestats_spacingAdjust, "cg_bestats_spacingAdjust", "1", CVAR_ARCHIVE },
 	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "0", CVAR_ARCHIVE },
+	{ &cg_roundStats_autoaction, "cg_roundStats_autoaction", "1", CVAR_ARCHIVE },
+	{ &cg_roundStats_textSize, "cg_roundStats_textSize", "6 8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_textSize },
+	{ &cg_roundStats_font, "cg_roundStats_font", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_font },
+	{ &cg_roundStats_pos, "cg_roundStats_pos", "200 120", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_pos },
+	{ &cg_roundStats_bgColor, "cg_roundStats_bgColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_bgColor },
+	{ &cg_roundStats_bgOpaque, "cg_roundStats_bgOpaque", "0.7", CVAR_ARCHIVE },
+	{ &cg_roundStats_borderColor, "cg_roundStats_borderColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_borderColor },
+	{ &cg_roundStats_spacingAdjust, "cg_roundStats_spacingAdjust", "1", CVAR_ARCHIVE },
+	{ &cg_roundStats_widthCutoff, "cg_roundStats_widthCutoff", "0", CVAR_ARCHIVE },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFade },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE, },
 	{ &be_features, "be_features", "", CVAR_ROM },
@@ -1170,16 +1178,6 @@ cvarTable_t cvarTable[] =
 	{ &cg_playerXray, "cg_playerXray", "6", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	{ &cg_specMode, "cg_specMode", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teamTaskSentPos, "cg_teamTaskSentPos", "320 20", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_roundStats_autoaction, "cg_roundStats_autoaction", "1", CVAR_ARCHIVE },
-	{ &cg_roundStats_textSize, "cg_roundStats_textSize", "6 8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_textSize },
-	{ &cg_roundStats_font, "cg_roundStats_font", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_font },
-	{ &cg_roundStats_pos, "cg_roundStats_pos", "200 120", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_pos },
-	{ &cg_roundStats_bgColor, "cg_roundStats_bgColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_bgColor },
-	{ &cg_roundStats_bgOpaque, "cg_roundStats_bgOpaque", "0.7", CVAR_ARCHIVE },
-	{ &cg_roundStats_borderColor, "cg_roundStats_borderColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_borderColor },
-	{ &cg_roundStats_spacingAdjust, "cg_roundStats_spacingAdjust", "1", CVAR_ARCHIVE },
-	{ &cg_roundStats_widthCutoff, "cg_roundStats_widthCutoff", "0", CVAR_ARCHIVE },
-	{ &cg_autoJumpStyle, "cg_autoJumpStyle", "2", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NEW },
 
 };
 
