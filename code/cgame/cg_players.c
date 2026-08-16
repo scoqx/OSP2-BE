@@ -4141,86 +4141,18 @@ static void CG_HitBoxAddQuad(qhandle_t shader, polyVert_t verts[4],
 	trap_R_AddPolyToScene(shader, 4, verts);
 }
 
-static void CG_AddCylinderHitBox(centity_t* cent, float minsZ, float maxsZ, float halfXY,
-                                 qhandle_t hitboxShaderEdge, qhandle_t hitboxShaderSide)
+/* Vertical cylinder mesh only (16-gon sides + caps). */
+static void CG_HitBoxDrawVertCylinder(const vec3_t origin, float bodyR, float z0, float z1,
+                                      qhandle_t hitboxShaderEdge, qhandle_t hitboxShaderSide)
 {
 	polyVert_t verts[4];
 	vec3_t topRing[CG_HB_SIDES];
 	vec3_t botRing[CG_HB_SIDES];
-	vec3_t origin;
-	float bodyR, bodyH, feetZ, bodyZ1;
-	float standExtent;
 	float ang, ca, sa;
 	int i, i2;
 
-	VectorCopy(cent->lerpOrigin, origin);
-
-	if (cgs.hbMode == 3)
-	{
-		/* Metarena/OSDF: cylinder from AABB * g_playerCylinderHitboxScale */
-		if (halfXY < 1.0f)
-		{
-			halfXY = 15.0f;
-		}
-		bodyR = halfXY * cgs.hbScale;
-		if (bodyR < 1.0f)
-		{
-			bodyR = 1.0f;
-		}
-		feetZ = origin[2] + minsZ;
-		bodyZ1 = origin[2] + maxsZ;
-		if (bodyZ1 < feetZ + 1.0f)
-		{
-			bodyZ1 = feetZ + 1.0f;
-		}
-	}
-	else
-	{
-		/* Ruthless/Devotion: absolute g_hb_wide / g_hb_hgh */
-		bodyH = cgs.hbHgh;
-		bodyR = cgs.hbWide;
-		if (bodyR < 1.0f)
-		{
-			bodyR = 1.0f;
-		}
-		if (bodyH < 1.0f)
-		{
-			bodyH = 1.0f;
-		}
-
-		feetZ = origin[2] + minsZ;
-
-		/* Crouch: scale rest height like server */
-		standExtent = 32.0f - minsZ;
-		if (standExtent < 1.0f)
-		{
-			standExtent = 56.0f;
-		}
-		if (maxsZ < 32.0f)
-		{
-			bodyH = bodyH * ((maxsZ - minsZ) / standExtent);
-			if (bodyH < 1.0f)
-			{
-				bodyH = 1.0f;
-			}
-		}
-
-		/* Body: feet + g_hb_hgh (match server; no anim lift — Q3 jump leaves model above box) */
-		{
-			float bodyZ0;
-
-			bodyZ0 = feetZ;
-			bodyZ1 = bodyZ0 + bodyH;
-			if (bodyZ1 < bodyZ0 + 1.0f)
-			{
-				bodyZ1 = bodyZ0 + 1.0f;
-			}
-		}
-	}
-
 	CG_HitBoxFillVertsColor(verts);
 
-	/* Body 16-gon — full radius (same as server cylinder) */
 	for (i = 0; i < CG_HB_SIDES; i++)
 	{
 		ang = (float)i * (2.0f * M_PI / (float)CG_HB_SIDES);
@@ -4228,10 +4160,10 @@ static void CG_AddCylinderHitBox(centity_t* cent, float minsZ, float maxsZ, floa
 		sa = sin(ang);
 		botRing[i][0] = origin[0] + ca * bodyR;
 		botRing[i][1] = origin[1] + sa * bodyR;
-		botRing[i][2] = feetZ;
+		botRing[i][2] = z0;
 		topRing[i][0] = botRing[i][0];
 		topRing[i][1] = botRing[i][1];
-		topRing[i][2] = bodyZ1;
+		topRing[i][2] = z1;
 	}
 
 	for (i = 0; i < CG_HB_SIDES; i++)
@@ -4246,14 +4178,82 @@ static void CG_AddCylinderHitBox(centity_t* cent, float minsZ, float maxsZ, floa
 			vec3_t centerTop, centerBot;
 			centerTop[0] = origin[0];
 			centerTop[1] = origin[1];
-			centerTop[2] = bodyZ1;
+			centerTop[2] = z1;
 			centerBot[0] = origin[0];
 			centerBot[1] = origin[1];
-			centerBot[2] = feetZ;
+			centerBot[2] = z0;
 			CG_HitBoxAddQuad(hitboxShaderEdge, verts, centerTop, topRing[i], topRing[i2], centerTop);
 			CG_HitBoxAddQuad(hitboxShaderEdge, verts, centerBot, botRing[i2], botRing[i], centerBot);
 		}
 	}
+}
+
+/*
+ * Mode 1 = Ruthless CS "1 <wide> <hgh>" — absolute radius/height.
+ * Mode 3 = Metarena CS "<scale>" — radius = 15 * scale (ignore solid XY; server may
+ * briefly network scaled bounds after G_HitScanTrace). Height from solid Z.
+ */
+static void CG_AddCylinderHitBox(centity_t* cent, float minsZ, float maxsZ,
+                                 qhandle_t hitboxShaderEdge, qhandle_t hitboxShaderSide)
+{
+	vec3_t origin;
+	float bodyR, bodyH, z0, z1;
+	float standExtent;
+
+	VectorCopy(cent->lerpOrigin, origin);
+
+	if (cgs.hbMode == 3)
+	{
+		bodyR = 15.0f * cgs.hbScale;
+		if (bodyR < 1.0f)
+		{
+			bodyR = 1.0f;
+		}
+		z0 = origin[2] + minsZ;
+		z1 = origin[2] + maxsZ;
+		if (z1 < z0 + 1.0f)
+		{
+			z1 = z0 + 1.0f;
+		}
+	}
+	else
+	{
+		/* Mode 1: match server G_PlayerHbBuild */
+		bodyH = cgs.hbHgh;
+		bodyR = cgs.hbWide;
+		if (bodyR < 1.0f)
+		{
+			bodyR = 1.0f;
+		}
+		if (bodyH < 1.0f)
+		{
+			bodyH = 1.0f;
+		}
+
+		z0 = origin[2] + minsZ;
+
+		standExtent = 32.0f - minsZ;
+		if (standExtent < 1.0f)
+		{
+			standExtent = 56.0f;
+		}
+		if (maxsZ < 32.0f)
+		{
+			bodyH = bodyH * ((maxsZ - minsZ) / standExtent);
+			if (bodyH < 1.0f)
+			{
+				bodyH = 1.0f;
+			}
+		}
+
+		z1 = z0 + bodyH;
+		if (z1 < z0 + 1.0f)
+		{
+			z1 = z0 + 1.0f;
+		}
+	}
+
+	CG_HitBoxDrawVertCylinder(origin, bodyR, z0, z1, hitboxShaderEdge, hitboxShaderSide);
 }
 
 void CG_AddHitBox(centity_t* cent, team_t team)
@@ -4336,12 +4336,12 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		hitboxShaderSide = cgs.osp.hboxShader_nocull;
 	}
 
-	/* Cylinder only with valid CS 911 params; otherwise always AABB cube */
+	/* CS 911: mode 1 "1 wide hgh" (Ruthless); mode 3 "<scale>" (Metarena). Else AABB. */
 	if (cgs.hbEnabled &&
 	    ((cgs.hbMode == 1 && cgs.hbWide > 0.0f && cgs.hbHgh > 0.0f) ||
 	     (cgs.hbMode == 3 && cgs.hbScale > 0.0f)))
 	{
-		CG_AddCylinderHitBox(cent, mins[2], maxs[2], maxs[0], hitboxShaderEdge, hitboxShaderSide);
+		CG_AddCylinderHitBox(cent, mins[2], maxs[2], hitboxShaderEdge, hitboxShaderSide);
 		return;
 	}
 
