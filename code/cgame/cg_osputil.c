@@ -624,14 +624,24 @@ void CG_UpdateVisualTeamColors(team_t realTeam)
 	{
 		Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
 		Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+		Vector4Copy(cgs.beRedTeamColor, scoreboard_rtColor);
+		Vector4Copy(cgs.beBlueTeamColor, scoreboard_btColor);
+		s_lastVisualRealTeam = realTeam;
+		s_lastVisualCgMyTeam = cg_myTeam.integer;
 		return;
 	}
 
-	/* Spectator or unknown team: keep base colors */
+	/* Spectator or unknown team: keep base colors.
+	   Must update cache + scoreboard_* so rejoining a team cannot hit a stale
+	   remap cache and skip cg_myTeam swap. */
 	if (realTeam != TEAM_RED && realTeam != TEAM_BLUE)
 	{
 		Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
 		Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+		Vector4Copy(cgs.beRedTeamColor, scoreboard_rtColor);
+		Vector4Copy(cgs.beBlueTeamColor, scoreboard_btColor);
+		s_lastVisualRealTeam = realTeam;
+		s_lastVisualCgMyTeam = cg_myTeam.integer;
 		return;
 	}
 
