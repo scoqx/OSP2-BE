@@ -467,6 +467,11 @@ void CG_ParseServerinfo(void)
 	CG_CvarTouch("cl_timenudge");
 
 	CG_ParseSysteminfo();
+
+	if (cgs.fpsclassico)
+	{
+		CG_ApplyUnfreezePhysFromServerinfo();
+	}
 }
 
 /*
@@ -614,6 +619,11 @@ static void CG_ConfigStringModified(void)
 			else if (warmup > 0 && cg.warmup <= 0)
 			{
 				trap_S_StartLocalSound(cgs.media.countPrepareSound, CHAN_ANNOUNCER);
+				/* New CA round warmup — clear auto-draw flag; keep last snapshot + Supported */
+				if (CG_OSPIsGameTypeCA(cgs.gametype))
+				{
+					cg.roundStatsReceived = qfalse;
+				}
 			}
 			if (warmup == 0 && cg.warmup > 0 && (cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK))
 			{
@@ -783,19 +793,29 @@ static void CG_ConfigStringModified(void)
 			CG_ShaderStateChanged();
 			break;
 		case CS_OSP2BE_SUPPORTED:
+			if (cgs.fpsclassico)
+			{
+				break;
+			}
 			CG_OSPSupportedBEServer(atoi(str) ? qtrue : qfalse);
 			break;
 		case CS_OSP2BE_DISABLED_FEATURES:
-			cgs.beDisableFeatures = atoi(str);
-			CG_PrintDisabledFeatures(qfalse);
-			CG_UpdateBeFeatures();
+			CG_OSPConfigDisableBEFeatures(atoi(str));
 			CG_UpdateDamageInfoAllowed();
 			break;
 		case CS_OSP2BE_TOURNEY_RESTRICTIONS:
+			if (cgs.fpsclassico)
+			{
+				break;
+			}
 			cgs.beTourneyMode = atoi(str);
 			CG_BETourneyRestrict();
 			break;
 		case CS_OSP2BE_MISSILE_PREDICT:
+			if (cgs.fpsclassico)
+			{
+				break;
+			}
 		{
 			int enabled = 0;
 			int prestep = 0;
@@ -829,12 +849,22 @@ static void CG_ConfigStringModified(void)
 			}
 		}
 		break;
+		case CS_OSP2BE_HITBOX:
+			if (cgs.fpsclassico)
+			{
+				break;
+			}
+			CG_ParseHitboxConfigString(str);
+			break;
 		default:
 			if (num >= CS_OSP2BE_ITEM_CATALOG0 && num <= CS_OSP2BE_ITEM_CATALOG_LAST)
 			{
-				CG_SpectatorItems_OnConfigStringChanged();
-				CG_ShadowItems_OnConfigStringChanged();
-				CG_MapCatalog_OnConfigStringChanged();
+				if (!cgs.fpsclassico)
+				{
+					CG_SpectatorItems_OnConfigStringChanged();
+					CG_ShadowItems_OnConfigStringChanged();
+					CG_MapCatalog_OnConfigStringChanged();
+				}
 			}
 			else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 			{
@@ -1499,6 +1529,138 @@ static void CG_InjectCustomLoc(char* str, int size)
 	}
 }
 
+/*
+=================
+CG_ParseRoundStats
+
+Server: roundstats <myDG> <myDT> <cn> <dg> <dt> <gMask> <tMask> [gDmg...] [tDmg...] ...
+Personalized pairwise damage with sparse weapon masks.
+=================
+*/
+static void CG_ParseRoundStatsWeaponDmgs(int *argIndex, int totalArgs, int mask, int *weapOut)
+{
+	int w;
+
+	memset(weapOut, 0, sizeof(int) * WP_NUM_WEAPONS);
+	for (w = WP_NONE + 1; w < WP_NUM_WEAPONS; w++)
+	{
+		char buf[32];
+
+		if (!(mask & (1 << w)))
+		{
+			continue;
+		}
+		if (*argIndex >= totalArgs)
+		{
+			return;
+		}
+		trap_Argv(*argIndex, buf, sizeof(buf));
+		(*argIndex)++;
+		weapOut[w] = atoi(buf);
+	}
+}
+
+static void CG_ParseRoundStats(void)
+{
+	int totalArgs;
+	int i;
+	int count;
+	char buf[32];
+
+	totalArgs = trap_Argc();
+	memset(cg.roundStats, 0, sizeof(cg.roundStats));
+	cg.roundStatsCount = 0;
+	cg.roundStatsMyGiven = 0;
+	cg.roundStatsMyTaken = 0;
+
+	if (totalArgs < 3)
+	{
+		cg.roundStatsReceived = qtrue;
+		cg.roundStatsSupported = qtrue;
+		return;
+	}
+
+	trap_Argv(1, buf, sizeof(buf));
+	cg.roundStatsMyGiven = atoi(buf);
+	trap_Argv(2, buf, sizeof(buf));
+	cg.roundStatsMyTaken = atoi(buf);
+
+	count = 0;
+	i = 3;
+	while (i + 4 < totalArgs && count < ROUNDSTATS_MAX_ENTRIES)
+	{
+		roundStatsEntry_t *e = &cg.roundStats[count];
+
+		trap_Argv(i, buf, sizeof(buf));
+		e->clientNum = atoi(buf);
+		trap_Argv(i + 1, buf, sizeof(buf));
+		e->dmgGiven = atoi(buf);
+		trap_Argv(i + 2, buf, sizeof(buf));
+		e->dmgTaken = atoi(buf);
+		trap_Argv(i + 3, buf, sizeof(buf));
+		e->weapGivenMask = atoi(buf);
+		trap_Argv(i + 4, buf, sizeof(buf));
+		e->weapTakenMask = atoi(buf);
+		i += 5;
+
+		CG_ParseRoundStatsWeaponDmgs(&i, totalArgs, e->weapGivenMask, e->weapGiven);
+		CG_ParseRoundStatsWeaponDmgs(&i, totalArgs, e->weapTakenMask, e->weapTaken);
+		count++;
+	}
+
+	cg.roundStatsCount = count;
+	cg.roundStatsReceived = qtrue;
+	cg.roundStatsSupported = qtrue;
+
+	if (cg_roundStats_autoaction.integer)
+	{
+		cg.roundStatsShow = qtrue;
+		cg.roundStatsShowTime = cg.time;
+		cg.roundStatsShowUntilIm = cg.intermissionStarted ? qtrue : qfalse;
+	}
+}
+
+/*
+=================
+CG_ParseRoundStatsAll
+
+Server: roundstatsall <clientNum> <dmgGiven> <dmgTaken> ...
+Match totals (sum of CA rounds). Not cleared on round warmup.
+=================
+*/
+static void CG_ParseRoundStatsAll(void)
+{
+	int totalArgs;
+	int i;
+	int count;
+	char buf[32];
+
+	totalArgs = trap_Argc();
+	if (totalArgs < 4)
+	{
+		cg.roundStatsAllCount = 0;
+		cg.roundStatsAllReceived = qtrue;
+		cg.roundStatsSupported = qtrue;
+		return;
+	}
+
+	count = 0;
+	for (i = 1; i + 2 < totalArgs && count < MAX_CLIENTS; i += 3)
+	{
+		trap_Argv(i, buf, sizeof(buf));
+		cg.roundStatsAll[count].clientNum = atoi(buf);
+		trap_Argv(i + 1, buf, sizeof(buf));
+		cg.roundStatsAll[count].dmgGiven = atoi(buf);
+		trap_Argv(i + 2, buf, sizeof(buf));
+		cg.roundStatsAll[count].dmgTaken = atoi(buf);
+		count++;
+	}
+
+	cg.roundStatsAllCount = count;
+	cg.roundStatsAllReceived = qtrue;
+	cg.roundStatsSupported = qtrue;
+}
+
 void CG_BEParseStatsInfo(void)
 {
 	enum { BE_STATSINFO_MAX_ARGS = OSP_STATS_NUM + 4 * WP_NUM_WEAPONS };
@@ -1862,6 +2024,235 @@ static void CG_InsertChatColor(char* text, int textSize, char colorChar)
 	memcpy(newText + colorInsertPos + 2, text + colorInsertPos, textLen - colorInsertPos + 1); /* Copy rest including null terminator */
 
 	Q_strncpyz(text, newText, textSize);
+}
+
+/*
+=================
+CG_ReplacePlayerNameInChat
+
+Replace player name in chat message with replacement name if cg_giveName is enabled.
+=================
+*/
+static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
+{
+	const char* colonPos;
+	const clientInfo_t* ci;
+	const char* replacementName;
+
+	if (!cg_giveName.integer)
+	{
+		return;
+	}
+
+	/* Validate clientNum */
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+
+	/* Never replace name for local player */
+	if (clientNum == cg.clientNum)
+	{
+		return;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	if (!ci->infoValid)
+	{
+		return;
+	}
+
+	/* Find colon position */
+	colonPos = strchr(text, ':');
+	if (!colonPos)
+	{
+		return;
+	}
+
+	/* Check if this player has a replacement name */
+	/* Replacement names end with '*' character in name_clean */
+	{
+		int nameCleanLen;
+		char replacementNameClean[MAX_QPATH];
+		char tempName[MAX_QPATH];
+		const char* nameInCiName;
+		const char* nameStart;
+		const char* nameEnd;
+		int nameWithColorLen;
+
+		nameCleanLen = strlen(ci->name_clean);
+
+		/* Check if name_clean ends with '*' (replacement marker) */
+		if (nameCleanLen == 0 || ci->name_clean[nameCleanLen - 1] != '*')
+		{
+			return;
+		}
+
+		/* Player has replacement name */
+		/* Extract replacement name from name_clean (without the '*' marker) */
+		Q_strncpyz(replacementNameClean, ci->name_clean, sizeof(replacementNameClean));
+		if (nameCleanLen > 0 && replacementNameClean[nameCleanLen - 1] == '*')
+		{
+			replacementNameClean[nameCleanLen - 1] = 0; /* Remove '*' */
+		}
+
+		/* Check if ci->name starts with replacement name (no ID/XID prefixes) */
+		/* If it does, we can use it directly (it should be in format ^Xname^0*) */
+		if (strstr(ci->name, replacementNameClean) == ci->name ||
+		        (ci->name[0] == '^' && strstr(ci->name + 2, replacementNameClean) == ci->name + 2))
+		{
+			/* ci->name contains replacement name directly, extract it without ^0* */
+			nameEnd = strstr(ci->name, "^0*");
+			if (nameEnd)
+			{
+				/* Extract name up to (but not including) "^0*" to preserve color code */
+				nameWithColorLen = nameEnd - ci->name;
+				if (nameWithColorLen > 0 && nameWithColorLen < sizeof(tempName) - 3)
+				{
+					memcpy(tempName, ci->name, nameWithColorLen);
+					tempName[nameWithColorLen] = 0;
+					/* Add ^7 at the end for chat to reset color */
+					Q_strcat(tempName, sizeof(tempName), "^7");
+					replacementName = tempName;
+				}
+				else
+				{
+					/* Fallback: use replacementNameClean with default color */
+					Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
+					replacementName = tempName;
+				}
+			}
+			else
+			{
+				/* Fallback: use replacementNameClean with default color */
+				Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
+				replacementName = tempName;
+			}
+		}
+		else
+		{
+			/* ci->name has ID/XID prefixes, find the replacement name in it */
+			nameInCiName = strstr(ci->name, replacementNameClean);
+			if (nameInCiName)
+			{
+				/* Find the start of the name (go back to find color code) */
+				nameStart = nameInCiName;
+				/* Go back to find the color code (^X where X is 0-9) */
+				while (nameStart > ci->name && nameStart[-1] != '^' && nameStart[-1] != ':' && nameStart[-1] != ']' && nameStart[-1] != '[')
+				{
+					nameStart--;
+				}
+				/* If we found '^', verify it's a color code and include it */
+				if (nameStart > ci->name && nameStart[-1] == '^' && nameStart[0] >= '0' && nameStart[0] <= '9')
+				{
+					nameStart--; /* Include the '^' (color digit is already at nameStart[0]) */
+				}
+
+				/* Find where the name ends (before '^0*' sequence) */
+				nameEnd = strstr(nameInCiName, "^0*");
+				if (nameEnd)
+				{
+					/* Extract name up to (but not including) "^0*" to preserve color code */
+					nameWithColorLen = nameEnd - nameStart;
+					if (nameWithColorLen > 0 && nameWithColorLen < sizeof(tempName) - 3)
+					{
+						memcpy(tempName, nameStart, nameWithColorLen);
+						tempName[nameWithColorLen] = 0;
+						/* Add ^7 at the end for chat to reset color */
+						Q_strcat(tempName, sizeof(tempName), "^7");
+						replacementName = tempName;
+					}
+					else
+					{
+						/* Fallback: use replacementNameClean with default color */
+						Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
+						replacementName = tempName;
+					}
+				}
+				else
+				{
+					/* Fallback: use replacementNameClean with default color */
+					Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
+					replacementName = tempName;
+				}
+			}
+			else
+			{
+				/* Fallback: use replacementNameClean with default color */
+				Com_sprintf(tempName, sizeof(tempName), "^7%s^7", replacementNameClean);
+				replacementName = tempName;
+			}
+		}
+
+		/* Build new message: preserve prefix + replacement name + colon + rest of message */
+		{
+			char newText[1024];
+			int replacementLen;
+			int restLen;
+			const char* restOfMessage;
+			const char* nameStartInText;
+			int prefixLen;
+
+			restOfMessage = colonPos + 1; /* Skip colon */
+			restLen = strlen(restOfMessage);
+			replacementLen = strlen(replacementName);
+
+			/* Check if there's a prefix like "(team) " at the start */
+			nameStartInText = NULL;
+			if (text[0] == '(')
+			{
+				/* Find the closing parenthesis and space after it */
+				nameStartInText = strchr(text, ')');
+				if (nameStartInText && nameStartInText[1] == ' ')
+				{
+					prefixLen = nameStartInText - text + 2; /* Include ") " */
+				}
+				else
+				{
+					prefixLen = 0;
+				}
+			}
+			else
+			{
+				prefixLen = 0;
+			}
+
+			/* Copy prefix if present, then add replacement name */
+			if (prefixLen > 0 && prefixLen < sizeof(newText) - 1)
+			{
+				/* Copy prefix to newText */
+				memcpy(newText, text, prefixLen);
+				newText[prefixLen] = 0;
+
+				/* Append replacement name, colon, and rest of message */
+				if (prefixLen + replacementLen + 1 + restLen < sizeof(newText))
+				{
+					Com_sprintf(newText + prefixLen, sizeof(newText) - prefixLen, "%s:%s", replacementName, restOfMessage);
+					Q_strncpyz(text, newText, textSize);
+				}
+			}
+			else
+			{
+				/* No prefix, just replace name */
+				if (replacementLen + 1 + restLen < sizeof(newText))
+				{
+					/* Copy tell prefix if present (special case for tell messages) */
+					if (text[0] == 25 && (text[1] == '(' || text[1] == '['))
+					{
+						newText[0] = text[0];
+						newText[1] = text[1];
+						Com_sprintf(newText + 2, sizeof(newText) - 2, "%s:%s", replacementName, restOfMessage);
+					}
+					else
+					{
+						Com_sprintf(newText, sizeof(newText), "%s:%s", replacementName, restOfMessage);
+					}
+
+					Q_strncpyz(text, newText, textSize);
+				}
+			}
+		}
+	}
 }
 
 /*
@@ -2551,6 +2942,11 @@ void CG_ServerCommand(void)
 
 				CG_RemoveChatEscapeChar(text);
 
+				if (senderClientNum >= 0)
+				{
+					CG_ReplacePlayerNameInChat(text, 1024, senderClientNum);
+				}
+
 				if (isTellMessage)
 				{
 					/* Insert magenta color (^6) for tell messages */
@@ -2662,6 +3058,11 @@ void CG_ServerCommand(void)
 				}
 
 				CG_RemoveChatEscapeChar(text);
+
+				if (senderClientNum >= 0)
+				{
+					CG_ReplacePlayerNameInChat(text, 1024, senderClientNum);
+				}
 
 				/* Wrap player name in parentheses for team chat (after removing escape chars) */
 				CG_WrapPlayerNameInParentheses(text, 1024);
@@ -2852,6 +3253,23 @@ void CG_ServerCommand(void)
 			break;
 
 		case 'r':
+			/* "roundstatsall" before "roundstats" (longer prefix) */
+			if (cmd[1] == 'o' && cmd[2] == 'u' && cmd[3] == 'n' && cmd[4] == 'd' &&
+			        cmd[5] == 's' && cmd[6] == 't' && cmd[7] == 'a' && cmd[8] == 't' &&
+			        cmd[9] == 's' && cmd[10] == 'a' && cmd[11] == 'l' && cmd[12] == 'l' &&
+			        cmd[13] == '\0')
+			{
+				CG_ParseRoundStatsAll();
+				return;
+			}
+			/* "roundstats" */
+			if (cmd[1] == 'o' && cmd[2] == 'u' && cmd[3] == 'n' && cmd[4] == 'd' &&
+			        cmd[5] == 's' && cmd[6] == 't' && cmd[7] == 'a' && cmd[8] == 't' &&
+			        cmd[9] == 's' && cmd[10] == '\0')
+			{
+				CG_ParseRoundStats();
+				return;
+			}
 			/* remapShader - camelCase, use Q_stricmp for safety */
 			if (Q_stricmp(cmd, "remapShader") == 0)
 			{

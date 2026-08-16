@@ -96,7 +96,8 @@ void CG_UpdateBeFeatures(void)
 	}
 
 	cgs.beFeaturesEnabled = beFlags & ~cgs.beDisableFeatures;
-	if (changed)
+	/* On fpsclassico keep be_features out of userinfo (safe / sticky USERINFO) */
+	if (changed && !cgs.fpsclassico)
 		trap_Cvar_Set("be_features", va("%d", beFlags));
 	if (!cgs.beEnabled || (cgs.beDisableFeatures & CG_BE_MODELSOUND))
 		CG_ClearForcedSounds();
@@ -137,6 +138,9 @@ void CG_UpdateFontIndices(void)
 	newVal = CG_FontIndexFromCvar(&cg_bestats_font);
 	if (newVal != cgFontIndices.bestats)
 		cgFontIndices.bestats = newVal;
+	newVal = CG_FontIndexFromCvar(&cg_roundStats_font);
+	if (newVal != cgFontIndices.roundStats)
+		cgFontIndices.roundStats = newVal;
 	newVal = CG_FontIndexFromCvar(&cg_emojiListFont);
 	if (newVal != cgFontIndices.emojiList)
 		cgFontIndices.emojiList = newVal;
@@ -145,9 +149,45 @@ void CG_UpdateFontIndices(void)
 		cgFontIndices.chatWindow = newVal;
 }
 
+int CG_ApplyFpsclassicoDisableMask(int raw)
+{
+	if (!cgs.fpsclassico)
+	{
+		return raw;
+	}
+	/* fpsclassico: only team WH / hitbox may be server-blocked; ignore other CS 888 bits */
+	return raw & (CG_BE_TEAM_FOE_WH | CG_BE_HITBOX);
+}
+
 void CG_PrintDisabledFeatures(qboolean request)
 {
 	int value = cgs.beDisableFeatures;
+
+	if (cgs.fpsclassico)
+	{
+		if (value & (CG_BE_TEAM_FOE_WH | CG_BE_HITBOX))
+		{
+			char buffer[256] = "   [^9OSP2-BE^7] ^1Disabled^7 features: ";
+			qboolean first = qtrue;
+
+			if (value & CG_BE_TEAM_FOE_WH)
+			{
+				Q_strcat(buffer, sizeof(buffer), first ? "Team wh / Player xray" : ", team wh / Player xray");
+				first = qfalse;
+			}
+			if (value & CG_BE_HITBOX)
+			{
+				Q_strcat(buffer, sizeof(buffer), first ? "Hitbox" : ", hitbox");
+			}
+			CG_Printf("%s\n", buffer);
+		}
+		else if (request)
+		{
+			CG_Printf("   [^9OSP2-BE^7] All features enabled.\n");
+		}
+		return;
+	}
+
 	if (value == 0)
 	{
 		if (request)
@@ -251,6 +291,11 @@ void CG_PrintDisabledFeatures(qboolean request)
 		if (value & CG_BE_AUTOJUMP)
 		{
 			Q_strcat(buffer, sizeof(buffer), first ? "Autojump" : ", autojump");
+			first = qfalse;
+		}
+		if (value & CG_BE_HITBOX)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Hitbox" : ", hitbox");
 			first = qfalse;
 		}
 		// if (value & CG_BE_FREEZE_SOUND_FIX)
@@ -607,4 +652,52 @@ void CG_Get_f(void)
 
 	/* Free allocated memory */
 	Z_Free(fileContent);
+}
+
+/*
+================
+CG_ParseHitboxConfigString
+
+CS_OSP2BE_HITBOX (911):
+  Ruthless: "1 <wide> <hgh>" — body cylinder only (head removed; legacy "2 ..." same)
+  Metarena/OSDF: single-token "<scale>" (>0 = cylinder AABB*scale; "0"/empty/ambiguous = AABB cube)
+================
+*/
+void CG_ParseHitboxConfigString(const char* str)
+{
+	int enabled = 0;
+	float wide = 0, hgh = 0, scale = 0;
+	char junk[64];
+	int n = 0;
+
+	cgs.hbEnabled = qfalse;
+	cgs.hbMode = 0;
+	cgs.hbWide = 0;
+	cgs.hbHgh = 0;
+	cgs.hbScale = 0;
+
+	if (!str || !str[0])
+	{
+		return;
+	}
+
+	n = Q_sscanf(str, "%i %f %f", &enabled, &wide, &hgh);
+	/* Mode 1 = current body-only; mode 2 accepted as legacy alias (old no-head) */
+	if (n >= 3 && (enabled == 1 || enabled == 2))
+	{
+		cgs.hbEnabled = qtrue;
+		cgs.hbMode = 1;
+		cgs.hbWide = wide;
+		cgs.hbHgh = hgh;
+		return;
+	}
+
+	/* Exactly one float token: metarena g_playerCylinderHitboxScale */
+	junk[0] = '\0';
+	if (Q_sscanf(str, "%f %s", &scale, junk) == 1 && scale > 0.0f)
+	{
+		cgs.hbEnabled = qtrue;
+		cgs.hbMode = 3;
+		cgs.hbScale = scale;
+	}
 }

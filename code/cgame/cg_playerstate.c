@@ -607,8 +607,6 @@ static void CG_PlayHitSound(sfxHandle_t sound, playerState_t* ps, playerState_t*
 	trap_S_StartLocalSound(sound, CHAN_LOCAL_SOUND);
 }
 
-
-
 /*
 ==================
 CG_DamageSound
@@ -638,6 +636,40 @@ void CG_DamageSound(playerState_t* ps, playerState_t* ops)
 	}
 }
 
+/* UnFreeZe: PERS_ATTACKEE_ARMOR = (health << 8) | armor; pitch by remaining durability */
+static sfxHandle_t CG_PickUnfreezeHitSound(int health, int armor)
+{
+	sfxHandle_t sfx;
+
+	if ((armor > 132 && health > 68) ||
+	    (armor > 66 && health > 134) ||
+	    (armor > 34 && health > 166))
+	{
+		sfx = cgs.media.hitSoundHighArmor;
+		if (!sfx)
+			sfx = cgs.media.hitHighSound;
+		if (!sfx)
+			sfx = cgs.media.hitSounds[3];
+		if (!sfx)
+			sfx = cgs.media.hitSound;
+		return sfx;
+	}
+	if ((armor > 66 && health > 34) ||
+	    (armor > 34 && health > 66) ||
+	    (health > 100))
+	{
+		sfx = cgs.media.hitSoundLowArmor;
+		if (!sfx)
+			sfx = cgs.media.hitLowSound;
+		if (!sfx)
+			sfx = cgs.media.hitSounds[1];
+		if (!sfx)
+			sfx = cgs.media.hitSound;
+		return sfx;
+	}
+	return cgs.media.hitSound;
+}
+
 void CG_HitSound(playerState_t* ps, playerState_t* ops)
 {
 	static int delayedDmg = 0;
@@ -646,6 +678,32 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 	int deltaTime  = cg.time - cgs.osp.lastHitTime;
 	int hits    = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
 	int lgcd    = ops->powerups[PW_HASTE] ? 25 : 50; //lg ms cooldown, do we really need 25ms for haste?
+
+	/* fpsclassico / UnFreeZe: hithi/hitlo/hit by remaining HP/armor; no stack/LG defer */
+	if (cgs.fpsclassico)
+	{
+		const int atta = ps->persistant[PERS_ATTACKEE_ARMOR];
+		int armor;
+		int health;
+
+		if (!hits)
+			return;
+
+		if (hits < 0)
+		{
+			cgs.osp.lastHitTime = cg.time;
+			cgs.osp.lastHitDamage = 0;
+			CG_PlayHitSound(cgs.media.hitTeamSound, ps, ops);
+			return;
+		}
+
+		armor = atta & 0xff;
+		health = (atta >> 8) & 0xff;
+		cgs.osp.lastHitTime = cg.time;
+		cgs.osp.lastHitDamage = hits;
+		CG_PlayHitSound(CG_PickUnfreezeHitSound(health, armor), ps, ops);
+		return;
+	}
 
 	if (!hits && !delayedDmg)
 	{
@@ -850,7 +908,7 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 	}
 
 	// timelimit warnings
-	if (cgs.timelimit > 0)
+	if (cgs.timelimit > 0 && !cg.warmup)
 	{
 		int     msec;
 

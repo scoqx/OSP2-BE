@@ -9,6 +9,7 @@ typedef struct
 	float baseX;
 	float baseY;
 	float lineH;
+	int maxRows; /* rect h: max player name rows; 0 = unlimited */
 } shudElementSpectators_t;
 
 void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config)
@@ -25,6 +26,11 @@ void* CG_SHUDElementSpectatorsCreate(const superhudConfig_t* config)
 	element->lineH = element->config.fontsize.isSet
 	                 ? element->config.fontsize.value[1]
 	                 : element->ctx.coord.named.h;
+	element->maxRows = 0;
+	if (element->config.rect.isSet && element->config.rect.value[3] > 0.0f)
+	{
+		element->maxRows = (int)element->config.rect.value[3];
+	}
 
 	return element;
 }
@@ -34,6 +40,7 @@ void CG_SHUDElementSpectatorsRoutine(void* context)
 	shudElementSpectators_t* element = (shudElementSpectators_t*)context;
 	int ids[MAX_CLIENTS];
 	int count;
+	int visible;
 	int i;
 	int line;
 	int totalLines;
@@ -66,8 +73,14 @@ void CG_SHUDElementSpectatorsRoutine(void* context)
 		return;
 	}
 
+	visible = count;
+	if (element->maxRows > 0 && visible > element->maxRows)
+	{
+		visible = element->maxRows;
+	}
+
 	showHeader = !(element->config.style.isSet && element->config.style.value == 2);
-	totalLines = count + (showHeader ? 1 : 0);
+	totalLines = visible + (showHeader ? 1 : 0);
 	lineH = element->lineH;
 	if (lineH <= 0.0f)
 	{
@@ -108,7 +121,7 @@ void CG_SHUDElementSpectatorsRoutine(void* context)
 		line++;
 	}
 
-	for (i = 0; i < count; i++)
+	for (i = 0; i < visible; i++)
 	{
 		element->ctx.coord.named.x = element->baseX;
 		element->ctx.coord.named.y = startY + line * lineH;

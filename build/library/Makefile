@@ -448,6 +448,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/cg_be_auth.o \
   $(B)/$(MOD)/cgame/cg_be_autologin.o \
   $(B)/$(MOD)/cgame/cg_be_stats.o \
+  $(B)/$(MOD)/cgame/cg_round_stats.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_state.o \
   $(B)/$(MOD)/cgame/chatWindow/be_chatwindow_persist.o \

@@ -74,18 +74,15 @@ void CG_LocalEventCvarChanged_cg_drawTimer(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
 {
-	// if ((cg_drawTeamOverlay.integer > 0) ||
-	//         ((!(cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE)) &&
-	//          (ch_TeamCrosshairHealth.integer > 0 || ch_crosshairTeamInfo.integer > 0)))
-	// {
-	//  trap_Cvar_Set("teamoverlay", "1");
-	// }
-	// else
-	// {
-	//  trap_Cvar_Set("teamoverlay", "0");
-	// }
-	// We are using tinfo not only in team overlay
-	trap_Cvar_Set("teamoverlay", "1");
+	/* UnFreeZe: teamoverlay2 mirrors drawTeamOverlay; OSP/BE: keep teamoverlay for tinfo */
+	if (cgs.fpsclassico)
+	{
+		trap_Cvar_Set("teamoverlay2", cg_drawTeamOverlay.integer > 0 ? "1" : "0");
+	}
+	else
+	{
+		trap_Cvar_Set("teamoverlay", "1");
+	}
 }
 
 void CG_LocalEventCvarChanged_cl_maxpackets(cvarTable_t* cvart)
@@ -1411,13 +1408,61 @@ void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart)
 	}
 }
 
+void CG_LocalEventCvarChanged_cg_roundStats_font(cvarTable_t* cvart)
+{
+	int fontIndex;
+	fontIndex = CG_FontIndexFromCvar(cvart->vmCvar);
+	if (!CG_FontAvailable(fontIndex))
+	{
+		trap_Cvar_Set("cg_roundStats_font", "0");
+	}
+	CG_UpdateFontIndices();
+}
+
+void CG_LocalEventCvarChanged_cg_roundStats_pos(cvarTable_t* cvart)
+{
+	CG_ParseCvarTwoFloats(cvart, &cg.roundStatsSettings.x, &cg.roundStatsSettings.y);
+}
+
+void CG_LocalEventCvarChanged_cg_roundStats_textSize(cvarTable_t* cvart)
+{
+	CG_ParseCvarTwoFloats(cvart, &cg.roundStatsSettings.textSize[0], &cg.roundStatsSettings.textSize[1]);
+}
+
+void CG_LocalEventCvarChanged_cg_roundStats_bgColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cg.roundStatsSettings.bgColorIsSet = qfalse;
+	}
+	else
+	{
+		CG_LocalEventCvarParseColor(cvart, cg.roundStatsSettings.bgColor);
+		cg.roundStatsSettings.bgColorIsSet = qtrue;
+	}
+}
+
+void CG_LocalEventCvarChanged_cg_roundStats_borderColor(cvarTable_t* cvart)
+{
+	if (!cvart->vmCvar->string[0])
+	{
+		cg.roundStatsSettings.borderColorIsSet = qfalse;
+	}
+	else
+	{
+		CG_LocalEventCvarParseColor(cvart, cg.roundStatsSettings.borderColor);
+		cg.roundStatsSettings.borderColorIsSet = qtrue;
+	}
+}
+
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart)
 {
 	CG_UpdateBeFeatures();
 	/* When cg_spectPOV changes, refresh all client info so models and teams update for spectator POV */
 	if (cvart->vmCvar == &cg_spectPOV)
 		CG_UpdateAllClientsInfo();
-	if (cvart->vmCvar == &cg_teamIndicator || cvart->vmCvar == &cg_drawFriend)
+	if (cvart->vmCvar == &cg_teamIndicator || cvart->vmCvar == &cg_drawFriend ||
+	        cvart->vmCvar == &cg_specMode)
 		CG_BEUpdateUserInfo();
 }
 

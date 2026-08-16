@@ -329,6 +329,11 @@ static qboolean CG_ShadowItems_TryLoadCatalogConfigstrings(void)
 	int             len;
 	int             serverSlotKey;
 
+	if (cgs.fpsclassico)
+	{
+		return qfalse;
+	}
+
 	cg_shadowCatalogPayload[0] = '\0';
 	len = 0;
 
@@ -856,6 +861,10 @@ void CG_ShadowItems_Load(void)
 
 void CG_ShadowItems_OnConfigStringChanged(void)
 {
+	if (cgs.fpsclassico)
+	{
+		return;
+	}
 	CG_ShadowItems_Reload();
 }
 

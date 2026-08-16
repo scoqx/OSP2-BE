@@ -101,6 +101,18 @@ powerups/quadRed
 	// }
 }
 
+powerups/quadWeaponRed
+{
+	deformVertexes wave 100 sin 0.5 0 0 0
+	{
+		map textures/effects/quadmapred.tga
+		blendfunc GL_ONE GL_ONE
+		tcGen environment
+		tcmod rotate 30
+		tcmod scroll 1 .1
+	}
+}
+
 models/powerups/instant/quadDye
 {
 	//{

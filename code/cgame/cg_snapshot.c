@@ -34,9 +34,11 @@ CG_ResetEntity
 */
 static void CG_ResetEntity(centity_t* cent)
 {
-	// if the previous snapshot this entity was updated in is at least
-	// an event window back in time then we can reset the previous event
-	if (cent->snapShotTime < cg.time - EVENT_VALID_MSEC)
+	// Temp-entity slots (ET_EVENTS+) can be reused within EVENT_VALID_MSEC
+	// (e.g. LG damage plums then rail). Always allow the new event to fire.
+	// For normal entities, only reset after the event window.
+	if (cent->currentState.eType >= ET_EVENTS ||
+	        cent->snapShotTime < cg.time - EVENT_VALID_MSEC)
 	{
 		cent->previousEvent = 0;
 	}

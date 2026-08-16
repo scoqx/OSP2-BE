@@ -159,6 +159,41 @@ static void CG_Viewpos_f(void)
 	          (int)cg.refdefViewAngles[YAW]);
 }
 
+/*
+=================
+CG_GetRoundStatsInfo_f
+
+Request CA round damage aggregates from the server.
+Clear Received until reply so empty UI is not shown.
+=================
+*/
+static void CG_GetRoundStatsInfo_f(void)
+{
+	if (cg.demoPlayback)
+	{
+		return;
+	}
+	cg.roundStatsReceived = qfalse;
+	trap_SendClientCommand("getroundstatsinfo");
+}
+
+/*
+=================
+CG_GetRoundStatsAllInfo_f
+
+Request CA match-total damage aggregates from the server.
+=================
+*/
+static void CG_GetRoundStatsAllInfo_f(void)
+{
+	if (cg.demoPlayback)
+	{
+		return;
+	}
+	cg.roundStatsAllReceived = qfalse;
+	trap_SendClientCommand("getroundstatsallinfo");
+}
+
 
 
 void CG_ScoresDown_f(void)
@@ -556,10 +591,13 @@ void CG_OSPClientConfig_f(void)
 		CG_Printf("    ^3Timer(deprecated):           %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_TIMER_FLAG));
 	}
 
-	conf = CG_ConfigString(CS_OSP2BE_TOURNEY_RESTRICTIONS);
-	if (conf && conf[0])
+	if (!cgs.fpsclassico)
 	{
-		CG_Printf("    ^3FPS restriction:             %s\n", CG_YES_NO_STR(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK));
+		conf = CG_ConfigString(CS_OSP2BE_TOURNEY_RESTRICTIONS);
+		if (conf && conf[0])
+		{
+			CG_Printf("    ^3FPS restriction:             %s\n", CG_YES_NO_STR(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK));
+		}
 	}
 
 	conf = CG_ConfigString(CS_OSP_CUSTOM_CLIENT2);
@@ -656,6 +694,26 @@ void CG_OSPWStatsUp_f(void)
 {
 	cg.showWStats = qfalse;
 	CG_BEStatsResetInit();
+}
+
+/*
+=================
+CG_RoundStatsDown_f / CG_RoundStatsUp_f
+
++roundstats / -roundstats — show last cached CA round damage table.
+Does not request data from the server.
+=================
+*/
+void CG_RoundStatsDown_f(void)
+{
+	if (!cg.roundStatsSupported)
+		return;
+	cg.roundStatsHold = qtrue;
+}
+
+void CG_RoundStatsUp_f(void)
+{
+	cg.roundStatsHold = qfalse;
 }
 
 void CG_ShudChatDown_f(void)
@@ -1457,12 +1515,13 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 		return;
 	}
 	/*
-	 * Freeze death-cam: only tHere/tWarn dead templates (server also rewrites).
+	 * Freeze death-cam: tHere/tWarn dead + PLAYERDEAD (server also rewrites/allows).
 	 * Blocks smart/pickup/crosshair spam while pinned on ice.
 	 */
 	if (CG_IS_LOCAL_CLIENT_1STPOS_FROZEN()
 	        && templateID != TEAMTASK_HERE_DEAD
-	        && templateID != TEAMTASK_WARN_DEAD)
+	        && templateID != TEAMTASK_WARN_DEAD
+	        && templateID != TEAMTASK_PLAYERDEAD)
 	{
 		return;
 	}
@@ -2358,7 +2417,7 @@ void CG_BEHelp_f(void)
 		CG_BEHelp_PrintFeature("cg_friendsWallhack", CG_BE_TEAM_FOE_WH, "Show teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_drawHudMarkers", CG_BE_HUD_MARKERS, "Display teammate markers on the HUD", 0);
 		CG_BEHelp_PrintFeature("cg_drawHitBox", CG_BE_HITBOX, "Draw enemy hitboxes", 0);
-		CG_BEHelp_PrintFeature("cg_playerXray", CG_BE_TEAM_FOE_WH, "Player silhouettes through walls. In-game: teammates only; spect/demo: all. Bitmask: 1=on, 2=model colors, 4=bright weapon colors", 0);
+		CG_BEHelp_PrintFeature("cg_playerXray", CG_BE_TEAM_FOE_WH, "Player silhouettes through walls. In-game: teammates only. Bitmask: 1=on, 2=model colors, 4=bright weapons, 8=spect/demo all (else follow=allies of viewed)", 0);
 		CG_BEHelp_PrintFeature("cg_friendsWallhackFrozen", CG_BE_TEAM_FROZEN, "Show frozen teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);
 		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color override", 0);
@@ -2517,6 +2576,8 @@ static consoleCommand_t commands[] =
 	{ "prevskin", CG_TestModelPrevSkin_f },
 #endif
 	{ "viewpos", CG_Viewpos_f },
+	{ "getroundstatsinfo", CG_GetRoundStatsInfo_f },
+	{ "getroundstatsallinfo", CG_GetRoundStatsAllInfo_f },
 	{ "testq3lb", CG_TestQ3lb_f },
 	{ "+scores", CG_ScoresDown_f },
 	{ "-scores", CG_ScoresUp_f },
@@ -2524,6 +2585,8 @@ static consoleCommand_t commands[] =
 	{ "-autojump", CG_AutoJumpUp_f },
 	{ "+wstats", CG_OSPWStatsDown_f },
 	{ "-wstats", CG_OSPWStatsUp_f },
+	{ "+roundstats", CG_RoundStatsDown_f },
+	{ "-roundstats", CG_RoundStatsUp_f },
 	{ "+zoom", CG_ZoomDown_f },
 	{ "-zoom", CG_ZoomUp_f },
 	{ "+zoomtoggle", CG_ZoomToggle_f},
@@ -2854,6 +2917,8 @@ void CG_InitConsoleCommands(void)
 	trap_AddCommand("autorecord");
 	trap_AddCommand("autoscreenshot");
 	trap_AddCommand("admin");
+	trap_AddCommand("arena");
+	trap_AddCommand("arenas");
 	trap_AddCommand("bottomshots");
 	trap_AddCommand("captains");
 	trap_AddCommand("clientversion");
@@ -2925,6 +2990,8 @@ void CG_InitConsoleCommands(void)
 	trap_AddCommand("statsblue");
 	trap_AddCommand("statsall");
 	trap_AddCommand("stats");
+	trap_AddCommand("getroundstatsinfo");
+	trap_AddCommand("getroundstatsallinfo");
 	trap_AddCommand("teamready");
 	trap_AddCommand("time");
 	trap_AddCommand("timein");

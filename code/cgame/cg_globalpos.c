@@ -17,7 +17,7 @@ Copyright (c) 2026 diwoc
 CG_GlobalPosFriendMarkersAllowed
 
 Team game with map tinfo locations. Playing clients always; spectators when
-cg_drawFriend bit 4 is set.
+cg_drawFriend bit 4, cg_specMode 2, or follow with drawFriend mode (ally markers).
 =================
 */
 static qboolean CG_GlobalPosFriendMarkersAllowed(void)
@@ -32,7 +32,16 @@ static qboolean CG_GlobalPosFriendMarkersAllowed(void)
 	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
 	if (isSpec)
 	{
-		return CG_DrawFriendForSpecs() ? qtrue : qfalse;
+		if (CG_DrawFriendForSpecs() || cg_specMode.integer == 2)
+		{
+			return qtrue;
+		}
+		if (CG_DrawFriendMode() && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+		        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+		{
+			return qtrue;
+		}
+		return qfalse;
 	}
 	return qtrue;
 }
@@ -465,7 +474,59 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 	{
 		return;
 	}
-	if (ci->infoValid && !isSpec && CG_CACHED_IS_ENEMY_CI(ci))
+	if (ci->infoValid && isSpec)
+	{
+		if (cg_specMode.integer == 2)
+		{
+			if ((cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+			        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+			{
+				clientInfo_t* followCi;
+				int followTeam;
+				int otherTeam;
+				qboolean isCA;
+
+				followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+				if (!followCi->infoValid)
+				{
+					return;
+				}
+				isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+				followTeam = isCA ? followCi->rt : followCi->team;
+				otherTeam = isCA ? ci->rt : ci->team;
+				if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
+				{
+					return;
+				}
+			}
+		}
+		else if (!CG_DrawFriendForSpecs())
+		{
+			clientInfo_t* followCi;
+			int followTeam;
+			int otherTeam;
+			qboolean isCA;
+
+			if (!(cg.snap->ps.pm_flags & PMF_FOLLOW) ||
+			        cg.snap->ps.clientNum < 0 || cg.snap->ps.clientNum >= MAX_CLIENTS)
+			{
+				return;
+			}
+			followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+			if (!followCi->infoValid)
+			{
+				return;
+			}
+			isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+			followTeam = isCA ? followCi->rt : followCi->team;
+			otherTeam = isCA ? ci->rt : ci->team;
+			if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
+			{
+				return;
+			}
+		}
+	}
+	else if (ci->infoValid && CG_CACHED_IS_ENEMY_CI(ci))
 	{
 		return;
 	}
@@ -658,7 +719,59 @@ void CG_DrawGlobalPosFriendHudMarkers(void)
 			{
 				continue;
 			}
-			if (ci->infoValid && !isSpec && CG_CACHED_IS_ENEMY_CI(ci))
+			if (ci->infoValid && isSpec)
+			{
+				if (cg_specMode.integer == 2)
+				{
+					if ((cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+					        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+					{
+						clientInfo_t* followCi;
+						int followTeam;
+						int otherTeam;
+						qboolean isCA;
+
+						followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+						if (!followCi->infoValid)
+						{
+							continue;
+						}
+						isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+						followTeam = isCA ? followCi->rt : followCi->team;
+						otherTeam = isCA ? ci->rt : ci->team;
+						if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
+						{
+							continue;
+						}
+					}
+				}
+				else if (!CG_DrawFriendForSpecs())
+				{
+					clientInfo_t* followCi;
+					int followTeam;
+					int otherTeam;
+					qboolean isCA;
+
+					if (!(cg.snap->ps.pm_flags & PMF_FOLLOW) ||
+					        cg.snap->ps.clientNum < 0 || cg.snap->ps.clientNum >= MAX_CLIENTS)
+					{
+						continue;
+					}
+					followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+					if (!followCi->infoValid)
+					{
+						continue;
+					}
+					isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+					followTeam = isCA ? followCi->rt : followCi->team;
+					otherTeam = isCA ? ci->rt : ci->team;
+					if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
+					{
+						continue;
+					}
+				}
+			}
+			else if (ci->infoValid && CG_CACHED_IS_ENEMY_CI(ci))
 			{
 				continue;
 			}

@@ -279,6 +279,7 @@ vmCvar_t           cg_lightningSilent;
 vmCvar_t           cg_lightningHide;
 
 vmCvar_t           cg_delag;
+vmCvar_t           cg_optimizePrediction;
 vmCvar_t           cg_drawHitBox;
 vmCvar_t           cg_projectileNudge;
 vmCvar_t           cg_hideScores;
@@ -466,6 +467,15 @@ vmCvar_t        cg_bestats_bgColor;
 vmCvar_t        cg_bestats_bgOpaque;
 vmCvar_t        cg_bestats_spacingAdjust;
 vmCvar_t        cg_bestats_widthCutoff;
+vmCvar_t        cg_roundStats_autoaction;
+vmCvar_t        cg_roundStats_textSize;
+vmCvar_t        cg_roundStats_font;
+vmCvar_t        cg_roundStats_pos;
+vmCvar_t        cg_roundStats_bgColor;
+vmCvar_t        cg_roundStats_bgOpaque;
+vmCvar_t        cg_roundStats_borderColor;
+vmCvar_t        cg_roundStats_spacingAdjust;
+vmCvar_t        cg_roundStats_widthCutoff;
 vmCvar_t        cg_teamIndicatorFade;
 vmCvar_t        cg_teamIndicatorFadeRadius;
 vmCvar_t        be_features;
@@ -478,6 +488,7 @@ vmCvar_t        cg_scoreboardColors;
 vmCvar_t        cg_clearOnLevelLoad;
 vmCvar_t        cg_spectPOV;
 vmCvar_t        cg_drawRealHeads;
+vmCvar_t        cg_giveName;
 vmCvar_t        cg_bestats_autoaction;
 vmCvar_t        be_run;
 vmCvar_t        cg_teamTask;
@@ -624,6 +635,7 @@ vmCvar_t        cg_kcEnemyColor;
 vmCvar_t        cg_kcTeamColor;
 vmCvar_t        cg_enemyAltShadowColor;
 vmCvar_t        cg_playerXray;
+vmCvar_t        cg_specMode;
 vmCvar_t        cg_teamTaskSentPos;
 
 
@@ -634,7 +646,7 @@ static qboolean teamoverlay2_registered = qfalse;
 
 cvarTable_t cvarTable[] =
 {
-	{ &osp_client, "osp_client", "1008_OSP2_"OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
+	{ &osp_client, "osp_client", "1008", CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
@@ -843,6 +855,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_lightningSilent, "cg_lightningSilent", "0", CVAR_ARCHIVE },
 	{ &cg_lightningHide, "cg_lightningHide", "0", CVAR_ARCHIVE },
 	{ &cg_delag, "cg_delag", "0", CVAR_ARCHIVE },
+	{ &cg_optimizePrediction, "cg_optimizePrediction", "1", CVAR_ARCHIVE },
 	{ &cg_projectileNudge, "cg_projectileNudge", "3", CVAR_ARCHIVE },
 	{ &cg_hideScores, "cg_hideScores", "0", CVAR_ARCHIVE },
 	{ &cg_deadBodyBlack, "cg_deadBodyBlack", "1", CVAR_ARCHIVE },
@@ -999,14 +1012,24 @@ cvarTable_t cvarTable[] =
 	{ &cg_bestats_bgOpaque, "cg_bestats_bgOpaque", "0.7", CVAR_ARCHIVE },
 	{ &cg_bestats_spacingAdjust, "cg_bestats_spacingAdjust", "1", CVAR_ARCHIVE },
 	{ &cg_bestats_widthCutoff, "cg_bestats_widthCutoff", "0", CVAR_ARCHIVE },
+	{ &cg_roundStats_autoaction, "cg_roundStats_autoaction", "1", CVAR_ARCHIVE },
+	{ &cg_roundStats_textSize, "cg_roundStats_textSize", "6 8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_textSize },
+	{ &cg_roundStats_font, "cg_roundStats_font", "19", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_font },
+	{ &cg_roundStats_pos, "cg_roundStats_pos", "200 120", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_pos },
+	{ &cg_roundStats_bgColor, "cg_roundStats_bgColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_bgColor },
+	{ &cg_roundStats_bgOpaque, "cg_roundStats_bgOpaque", "0.7", CVAR_ARCHIVE },
+	{ &cg_roundStats_borderColor, "cg_roundStats_borderColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_roundStats_borderColor },
+	{ &cg_roundStats_spacingAdjust, "cg_roundStats_spacingAdjust", "1", CVAR_ARCHIVE },
+	{ &cg_roundStats_widthCutoff, "cg_roundStats_widthCutoff", "0", CVAR_ARCHIVE },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFade },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE, },
-	{ &be_features, "be_features", "", CVAR_ROM | CVAR_USERINFO },
-	{ &compilation_build, "compilation_build", "", CVAR_ROM | CVAR_USERINFO },
+	{ &be_features, "be_features", "", CVAR_ROM },
+	{ &compilation_build, "compilation_build", "", CVAR_ROM },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE /* | CVAR_USERINFO */, CG_LocalEventBeFeaturesChanged },
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE },
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_drawRealHeads, "cg_drawRealHeads", "0", CVAR_ARCHIVE },
+	{ &cg_giveName, "cg_giveName", "0", CVAR_ARCHIVE },
 	{ &cg_bestats_autoaction, "cg_bestats_autoaction", "1", CVAR_ARCHIVE },
 	{ &cg_zoomAutoReset, "cg_zoomAutoReset", "3", CVAR_ARCHIVE },
 	{ &cg_smoothDucking, "cg_smoothDucking", "1", CVAR_ARCHIVE },
@@ -1027,10 +1050,10 @@ cvarTable_t cvarTable[] =
 	{ &cg_exec_ca, "cg_exec_ca", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_ctf, "cg_exec_ctf", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_freeze, "cg_exec_freeze", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
+	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
-	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
-	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop},
+	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE },
+	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_autoHop},
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
 	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "5000", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
@@ -1153,6 +1176,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_kcTeamColor, "cg_kcTeamColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_kcTeamColor },
 	{ &cg_enemyAltShadowColor, "cg_enemyAltShadowColor", "", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventCvarChanged_cg_enemyAltShadowColor },
 	{ &cg_playerXray, "cg_playerXray", "6", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
+	{ &cg_specMode, "cg_specMode", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teamTaskSentPos, "cg_teamTaskSentPos", "320 20", CVAR_ARCHIVE | CVAR_NEW },
 
 };
@@ -1768,6 +1792,21 @@ static void CG_RegisterSounds(void)
 		cgs.media.hitSounds[2] = trap_S_RegisterSound("sound/feedback/hit75QC.wav", qfalse);
 		cgs.media.hitSounds[3] = trap_S_RegisterSound("sound/feedback/hit100QC.wav", qfalse);
 	}
+	/* UnFreeZe hitsounds: hithi / hitlo (fallback if pk3 absent) */
+	cgs.media.hitSoundHighArmor = trap_S_RegisterSound("sound/feedback/hithi.wav", qfalse);
+	if (!cgs.media.hitSoundHighArmor)
+		cgs.media.hitSoundHighArmor = cgs.media.hitHighSound;
+	if (!cgs.media.hitSoundHighArmor)
+		cgs.media.hitSoundHighArmor = cgs.media.hitSounds[3];
+	if (!cgs.media.hitSoundHighArmor)
+		cgs.media.hitSoundHighArmor = cgs.media.hitSound;
+	cgs.media.hitSoundLowArmor = trap_S_RegisterSound("sound/feedback/hitlo.wav", qfalse);
+	if (!cgs.media.hitSoundLowArmor)
+		cgs.media.hitSoundLowArmor = cgs.media.hitLowSound;
+	if (!cgs.media.hitSoundLowArmor)
+		cgs.media.hitSoundLowArmor = cgs.media.hitSounds[1];
+	if (!cgs.media.hitSoundLowArmor)
+		cgs.media.hitSoundLowArmor = cgs.media.hitSound;
 	// QC incoming damage sound
 	cgs.media.gotDamageSounds[0] = trap_S_RegisterSound("sound/feedback/damage_qc25.wav", qfalse);
 	cgs.media.gotDamageSounds[1] = trap_S_RegisterSound("sound/feedback/damage_qc50.wav", qfalse);
@@ -2279,6 +2318,7 @@ static void CG_RegisterGraphics(void)
 			cgs.media.friendShaderWallhack = trap_R_RegisterShader("sprites/foe2");
 		}
 		cgs.media.redQuadShader = trap_R_RegisterShader("powerups/quadRed");
+		cgs.media.redQuadWeaponShader = trap_R_RegisterShader("powerups/quadWeaponRed");
 		cgs.media.circleShader = trap_R_RegisterShader("gfx/2d/hudres/rec");
 	}
 
@@ -2736,6 +2776,12 @@ void CG_InitCvars(void)
 	CG_CvarTouch("cg_bestats_font");
 	CG_CvarTouch("cg_bestats_bgColor");
 
+	CG_CvarTouch("cg_roundStats_textSize");
+	CG_CvarTouch("cg_roundStats_pos");
+	CG_CvarTouch("cg_roundStats_font");
+	CG_CvarTouch("cg_roundStats_bgColor");
+	CG_CvarTouch("cg_roundStats_borderColor");
+
 	CG_CvarTouch("cg_accuracyFontSize");
 	CG_CvarTouch("be_fontShadowOffset");
 	CG_CvarTouch("be_ttfShadowOffset");
@@ -3146,6 +3192,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		if (strstr(serverStr, "administrator") || strstr(serverStr, "adminless"))
 		{
 			cgs.fpsclassico = qtrue;
+			CG_ApplyUnfreezePhysFromServerinfo();
 		}
 		adminPrefix = strstr(serverStr, ".Admin\\");
 		if (strstr(serverStr, ".Admin\\X") || (adminPrefix && CG_AdminNameEqualsRateX7(adminPrefix + 7)))
@@ -3154,29 +3201,35 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		}
 		CG_UpdateRuthlessFromServerinfo();
 	}
-	/* teamoverlay - fpsclassico known at connect, run once; only in team gametypes */
-	if (cgs.gametype >= GT_TEAM)
+	/* USERINFO: safe-by-default; reveal BE keys only when not fpsclassico */
+	if (cgs.fpsclassico)
 	{
-		if (cgs.fpsclassico)
+		CG_ApplyFpsclassicoSafeUserInfo();
+	}
+	else
+	{
+		CG_RevealBeUserInfo();
+	}
+	/* teamoverlay: UnFreeZe uses teamoverlay2 synced to drawTeamOverlay; OSP uses teamoverlay */
+	if (cgs.fpsclassico)
+	{
+		if (!teamoverlay2_registered)
 		{
-			if (!teamoverlay2_registered)
-			{
-				trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "1", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
-				teamoverlay2_registered = qtrue;
-			}
-			trap_Cvar_Set("teamoverlay2", "1");
-			trap_Cvar_Update(&teamoverlay2);
+			trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "0", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
+			teamoverlay2_registered = qtrue;
 		}
-		else
+		trap_Cvar_Set("teamoverlay2", cg_drawTeamOverlay.integer > 0 ? "1" : "0");
+		trap_Cvar_Update(&teamoverlay2);
+	}
+	else if (cgs.gametype >= GT_TEAM)
+	{
+		if (!teamoverlay_registered)
 		{
-			if (!teamoverlay_registered)
-			{
-				trap_Cvar_Register(&teamoverlay, "teamoverlay", "1", CVAR_USERINFO | CVAR_ROM);
-				teamoverlay_registered = qtrue;
-			}
-			trap_Cvar_Set("teamoverlay", "1");
-			trap_Cvar_Update(&teamoverlay);
+			trap_Cvar_Register(&teamoverlay, "teamoverlay", "1", CVAR_USERINFO | CVAR_ROM);
+			teamoverlay_registered = qtrue;
 		}
+		trap_Cvar_Set("teamoverlay", "1");
+		trap_Cvar_Update(&teamoverlay);
 	}
 
 	CG_Printf("\n^7Loaded [^9OSP2-BE^7] client version: ^9%s\n", OSP_VERSION);
@@ -3192,11 +3245,72 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		char* tmp_ptr;
 		const char* conf;
 
-		/* Before custom client / SHUD load (may send beinfo via CG_BEUpdateUserInfo) */
-		CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)) ? qtrue : qfalse);
+		/* BE CS 887–910: on fpsclassico only CS 888 team WH / hitbox block is read */
+		if (cgs.fpsclassico)
+		{
+			cgs.beSupportedServer = qfalse;
+			CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
+			cgs.beTourneyMode = 0;
+			cgs.missilePredictEnabled = qfalse;
+			cgs.missilePrestep = 0;
+			cgs.missilePredictFromPos = 1;
+			cgs.missilePredictRlSpeed = 0;
+			cgs.missilePredictPgSpeed = 0;
+			cgs.missilePredictBfgSpeed = 0;
+			cgs.hbEnabled = qfalse;
+			cgs.hbMode = 0;
+			cgs.hbWide = 0;
+			cgs.hbHgh = 0;
+			cgs.hbScale = 0;
+		}
+		else
+		{
+			/* Before custom client / SHUD load (may send beinfo via CG_BEUpdateUserInfo) */
+			CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)) ? qtrue : qfalse);
 
-		cgs.beTourneyMode = atoi(CG_ConfigString(CS_OSP2BE_TOURNEY_RESTRICTIONS));
-		CG_BETourneyRestrict();
+			cgs.beTourneyMode = atoi(CG_ConfigString(CS_OSP2BE_TOURNEY_RESTRICTIONS));
+			CG_BETourneyRestrict();
+
+			CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
+
+			{
+				const char* mp = CG_ConfigString(CS_OSP2BE_MISSILE_PREDICT);
+				int enabled = 0;
+				int prestep = 0;
+				int rl = 0, pg = 0, bfg = 0;
+				int fromPos = 1;
+				int n;
+
+				cgs.missilePredictEnabled = qfalse;
+				cgs.missilePrestep = 0;
+				cgs.missilePredictFromPos = 1;
+				cgs.missilePredictRlSpeed = 0;
+				cgs.missilePredictPgSpeed = 0;
+				cgs.missilePredictBfgSpeed = 0;
+				n = 0;
+				if (mp && mp[0])
+				{
+					n = Q_sscanf(mp, "%i %i %i %i %i %i", &enabled, &prestep, &rl, &pg, &bfg, &fromPos);
+				}
+				if (n >= 5 && enabled)
+				{
+					cgs.missilePredictEnabled = qtrue;
+					cgs.missilePrestep = prestep;
+					cgs.missilePredictRlSpeed = rl;
+					cgs.missilePredictPgSpeed = pg;
+					cgs.missilePredictBfgSpeed = bfg;
+					cgs.missilePredictFromPos = (n >= 6) ? (fromPos ? 1 : 0) : 1;
+				}
+			}
+
+			{
+				CG_ParseHitboxConfigString(CG_ConfigString(CS_OSP2BE_HITBOX));
+			}
+
+			CG_SpectatorItems_OnConfigStringChanged();
+			CG_ShadowItems_OnConfigStringChanged();
+			CG_MapCatalog_OnConfigStringChanged();
+		}
 
 		CG_OSPConfigModeSet(atoi(CG_ConfigString(CS_OSP_SERVER_MODE)));
 
@@ -3239,42 +3353,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 				cgs.osp.gameTypeFreeze = 1;
 			}
 		}
-
-		CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
-
-		{
-			const char* mp = CG_ConfigString(CS_OSP2BE_MISSILE_PREDICT);
-			int enabled = 0;
-			int prestep = 0;
-			int rl = 0, pg = 0, bfg = 0;
-			int fromPos = 1;
-			int n;
-
-			cgs.missilePredictEnabled = qfalse;
-			cgs.missilePrestep = 0;
-			cgs.missilePredictFromPos = 1;
-			cgs.missilePredictRlSpeed = 0;
-			cgs.missilePredictPgSpeed = 0;
-			cgs.missilePredictBfgSpeed = 0;
-			n = 0;
-			if (mp && mp[0])
-			{
-				n = Q_sscanf(mp, "%i %i %i %i %i %i", &enabled, &prestep, &rl, &pg, &bfg, &fromPos);
-			}
-			if (n >= 5 && enabled)
-			{
-				cgs.missilePredictEnabled = qtrue;
-				cgs.missilePrestep = prestep;
-				cgs.missilePredictRlSpeed = rl;
-				cgs.missilePredictPgSpeed = pg;
-				cgs.missilePredictBfgSpeed = bfg;
-				cgs.missilePredictFromPos = (n >= 6) ? (fromPos ? 1 : 0) : 1;
-			}
-		}
-
-		CG_SpectatorItems_OnConfigStringChanged();
-		CG_ShadowItems_OnConfigStringChanged();
-		CG_MapCatalog_OnConfigStringChanged();
 
 		{
 			const char* st;

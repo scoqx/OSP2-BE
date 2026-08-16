@@ -1210,6 +1210,8 @@ qboolean CG_TrySendDstatusRequest(void)
 {
 	int intervalMs;
 
+	if (cgs.fpsclassico)
+		return qfalse;
 	if (cg.intermissionStarted)
 		return qfalse;
 	if (!cgs.q3msk || (cgs.gametype != GT_TEAM && cgs.gametype != GT_CTF) || !cgs.osp.gameTypeFreeze)

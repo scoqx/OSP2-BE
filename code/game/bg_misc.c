@@ -27,6 +27,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../qcommon/q_shared.h"
 #include "bg_public.h"
+#include "bg_local.h"
+
+/* Defined here so UI QVM (links bg_misc, not bg_slidemove) resolves TouchJumpPad. */
+int uf_baseq3;
+int uf_osp;
+int uf_rampjump;
 
 #if defined(UI) || defined(Q3UI)
 Q_EXPORT int modePickupDistance = 36;    // default VQ3 value
@@ -1422,7 +1428,10 @@ void BG_TouchJumpPad(playerState_t* ps, entityState_t* jumppad)
 		{
 			effectNum = 1;
 		}
-		BG_AddPredictableEventToPlayerstate(EV_JUMP_PAD, effectNum, ps);
+		if (!uf_osp)
+		{
+			BG_AddPredictableEventToPlayerstate(EV_JUMP_PAD, effectNum, ps);
+		}
 	}
 	// remember hitting this jumppad this frame
 	ps->jumppad_ent = jumppad->number;

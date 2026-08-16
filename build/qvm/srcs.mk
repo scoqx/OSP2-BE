@@ -60,7 +60,7 @@ CG_SRC = \
  superhud/elements/element_centermessage \
  l_crc \
  cg_chatfilter cg_crosshair \
- cg_be_util cg_be_auth cg_be_autologin cg_be_stats \
+ cg_be_util cg_be_auth cg_be_autologin cg_be_stats cg_round_stats \
  chatWindow/be_chatwindow chatWindow/be_chatwindow_state chatWindow/be_chatwindow_persist chatWindow/be_chatwindow_cmdac \
  chatWindow/be_admincmds chatWindow/be_chatwindow_history chatWindow/be_chatwindow_input \
  chatWindow/be_chatwindow_emoji chatWindow/be_chatwindow_emoji_picker \

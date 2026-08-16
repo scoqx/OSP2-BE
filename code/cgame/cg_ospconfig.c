@@ -113,6 +113,12 @@ void CG_OSPSetMode(int value)
 {
 #define OSP_SET_MODE_VARIANT(VAL, VAL_VQ3, VAL_CQ3, VAL_PROMODE) (VAL&OSP_SERVER_MODE_PROMODE ? VAL_PROMODE : (VAL&OSP_SERVER_MODE_CQ3 ? VAL_CQ3 : VAL_VQ3))
 
+	/* UnFreeZe / fpsclassico: stock VQ3 movement + uf_* phys only (ignore OSP CS 806) */
+	if (cgs.fpsclassico)
+	{
+		value = OSP_SERVER_MODE_VQ3;
+	}
+
 	modePromodePhysKoeff               = OSP_SET_MODE_VARIANT(value, 0, 0, 100);//-V583
 	pm_friction                        = OSP_SET_MODE_VARIANT(value, 6, 6, 6);//-V583
 	modePredictionKoeff1               = OSP_SET_MODE_VARIANT(value, 0, 0, 1);//-V583
@@ -152,9 +158,73 @@ void CG_OSPSetMode(int value)
 	modeUnknown3                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 200 : 0;
 	modeUnknown4                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 100 : 0;
 	modeFPSClassico                    = cgs.fpsclassico ? 1 : 0;
+	if (cgs.fpsclassico)
+	{
+		CG_ApplyUnfreezePhysFromServerinfo();
+	}
 }
 
+/*
+=================
+CG_ApplyUnfreezePhysFromServerinfo
 
+Mirror UnFreeZe CG_ParseServerinfo phys flags for fpsclassico client predict.
+Path B (gamename=unfreeze, no g_baseq3): empty g_rampjump → rampjump ON.
+=================
+*/
+void CG_ApplyUnfreezePhysFromServerinfo(void)
+{
+	const char* info;
+	const char* gamename;
+	const char* gBaseq3;
+	const char* gOsp;
+	const char* gRampjump;
+	qboolean pathA;
+
+	uf_baseq3 = 0;
+	uf_osp = 0;
+	uf_rampjump = 0;
+	cgs.uf_baseq3 = qfalse;
+	cgs.uf_osp = qfalse;
+	cgs.uf_rampjump = qfalse;
+
+	if (!cgs.fpsclassico)
+	{
+		return;
+	}
+
+	info = CG_ConfigString(CS_SERVERINFO);
+	gamename = Info_ValueForKey(info, "gamename");
+	gBaseq3 = Info_ValueForKey(info, "g_baseq3");
+	gOsp = Info_ValueForKey(info, "g_osp");
+	gRampjump = Info_ValueForKey(info, "g_rampjump");
+
+	pathA = (!Q_stricmp(gamename, "baseq3") || !Q_stricmp(gamename, "osp")
+	         || (gBaseq3[0] && Q_stricmp(gBaseq3, "0") != 0));
+
+	if (pathA)
+	{
+		uf_baseq3 = 1;
+		if (!Q_stricmp(gamename, "osp") || (gOsp[0] && Q_stricmp(gOsp, "0") != 0))
+		{
+			uf_osp = 1;
+		}
+		uf_rampjump = (Q_stricmp(gRampjump, "1") == 0) ? 1 : 0;
+		modeFinishWeaponChangeTime = 250;
+	}
+	else
+	{
+		/* Path B — UnFreeZe.fpsclasico.de et al. */
+		uf_baseq3 = 0;
+		uf_osp = 0;
+		uf_rampjump = (!gRampjump[0] || Q_stricmp(gRampjump, "0") != 0) ? 1 : 0;
+		modeFinishWeaponChangeTime = 200;
+	}
+
+	cgs.uf_baseq3 = uf_baseq3 ? qtrue : qfalse;
+	cgs.uf_osp = uf_osp ? qtrue : qfalse;
+	cgs.uf_rampjump = uf_rampjump ? qtrue : qfalse;
+}
 
 
 void CG_OSPUpdateUserInfo(qboolean arg)
@@ -349,10 +419,81 @@ void CG_OSPConfigMaxTimenudgeSet(int value)
 	CG_CvarTouch("cl_timenudge");
 }
 
-/* Supported OSP2-BE server (CS 887) */
+/* Supported OSP2-BE server (CS 887). Trust only when gamename is osp/baseq3. */
 void CG_OSPSupportedBEServer(qboolean value)
 {
+	const char* info;
+	const char* gamename;
+
+	if (cgs.fpsclassico)
+	{
+		cgs.beSupportedServer = qfalse;
+		return;
+	}
+
+	info = CG_ConfigString(CS_SERVERINFO);
+	gamename = Info_ValueForKey(info, "gamename");
+	if (Q_stricmp(gamename, "baseq3") && Q_stricmp(gamename, "osp"))
+	{
+		cgs.beSupportedServer = qfalse;
+		return;
+	}
+
 	cgs.beSupportedServer = value;
+}
+
+/*
+=================
+CG_ApplyFpsclassicoSafeUserInfo
+
+No osp_client / BE keys in userinfo (UnFreeZe does not send osp_client).
+=================
+*/
+void CG_ApplyFpsclassicoSafeUserInfo(void)
+{
+	/* Empty removes key from userinfo if USERINFO flag stuck from a prior reveal */
+	trap_Cvar_Set("osp_client", "");
+	trap_Cvar_Update(&osp_client);
+	trap_Cvar_Set("be_features", "");
+	trap_Cvar_Update(&be_features);
+	trap_Cvar_Set("compilation_build", "");
+	trap_Cvar_Update(&compilation_build);
+	/* UnFreeZe uses teamoverlay2 only — drop OSP teamoverlay if sticky */
+	trap_Cvar_Set("teamoverlay", "");
+	trap_Cvar_Update(&teamoverlay);
+}
+
+/*
+=================
+CG_RevealBeUserInfo
+
+Not fpsclassico: publish osp_client + BE USERINFO cvars.
+=================
+*/
+void CG_RevealBeUserInfo(void)
+{
+	if (cgs.beUserinfoRevealed || cgs.fpsclassico)
+	{
+		return;
+	}
+	cgs.beUserinfoRevealed = qtrue;
+
+	trap_Cvar_Register(&osp_client, "osp_client", "1008_OSP2_" OSP_VERSION, CVAR_USERINFO | CVAR_ROM);
+	trap_Cvar_Set("osp_client", "1008_OSP2_" OSP_VERSION);
+	trap_Cvar_Update(&osp_client);
+
+	trap_Cvar_Register(&be_features, "be_features", "", CVAR_ROM | CVAR_USERINFO);
+	trap_Cvar_Register(&compilation_build, "compilation_build", "", CVAR_ROM | CVAR_USERINFO);
+	trap_Cvar_Register(&cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO);
+	trap_Cvar_Register(&cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO);
+	trap_Cvar_Register(&cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO);
+
+	CG_UpdateBeFeatures();
+	trap_Cvar_Update(&be_features);
+	trap_Cvar_Update(&compilation_build);
+	trap_Cvar_Update(&cg_damagePlums);
+	trap_Cvar_Update(&cg_damagePlumsWeapons);
+	trap_Cvar_Update(&cg_autoHop);
 }
 
 void CG_BEUpdateUserInfo(void)
@@ -360,11 +501,16 @@ void CG_BEUpdateUserInfo(void)
 	int spectatorHud;
 	int freezeLook;       /* BE_INFO_FREEZE_LOOK — unused */
 	int callvoteMaplist;  /* BE_INFO_CALLVOTE_MAPLIST */
-	int extendedAwards;   /* BE_INFO_EXTENDED_AWARDS */
+	int extendedAwards;   /* BE_INFO_EXTENDED_AWARDS bitmask */
 	int teamProxy;        /* BE_INFO_TEAM_PROXY */
 	int mapdata;          /* BE_INFO_MAPDATA */
 
 	if (cg.demoPlayback)
+	{
+		return;
+	}
+
+	if (cgs.fpsclassico)
 	{
 		return;
 	}
@@ -383,19 +529,22 @@ void CG_BEUpdateUserInfo(void)
 	{
 		spectatorHud |= 2; /* BE_SPECTATOR_HUD_SPECTATORS */
 	}
-	/* bit 4: full tInfo for spectators (any teamIndicator, drawFriend bit 4, and/or team1-16/teamRed/teamBlue).
+	/* bit 4: full tInfo for spectators (any teamIndicator, drawFriend mode/bit4, and/or team1-16/teamRed/teamBlue).
 	 * Nonzero teamIndicator covers follow-spec ally indicators without PI_SPECTATOR. */
-	if (cg_teamIndicator.integer || CG_DrawFriendForSpecs() || CG_SHUDHasTeamRedBlueElements())
+	if (cg_teamIndicator.integer || CG_DrawFriendMode() || CG_DrawFriendForSpecs() ||
+	        CG_SHUDHasTeamRedBlueElements())
 	{
 		spectatorHud |= 4; /* BE_SPECTATOR_HUD_TEAM_INDICATOR */
 	}
 	freezeLook = 0;
 	callvoteMaplist = 1;
-	extendedAwards = 0;
+	/* bit1 awards (off for now), bit2 = CA roundstats / roundstatsall */
+	extendedAwards = 2; /* BE_EXTENDED_CA_ROUNDSTATS */
 
 	teamProxy = 0;
 	if (cgs.gametype >= GT_TEAM
 	        && ((cg_teamIndicator.integer != 0)
+	            || CG_DrawFriendMode()
 	            || (cg_friendsWallhack.integer & (CG_FRIENDS_WALLHACK_TEAM_INDICATOR | CG_FRIENDS_WALLHACK_GLOBAL_POS))))
 	{
 		teamProxy = 1;
@@ -404,6 +553,8 @@ void CG_BEUpdateUserInfo(void)
 	         && CG_IS_LOCAL_CLIENT_SPECTATOR()
 	         && (((cg_teamIndicator.integer & PI_SPECTATOR) != 0)
 	             || CG_DrawFriendForSpecs()
+	             || CG_DrawFriendMode()
+	             || cg_specMode.integer == 2
 	             || (cg_friendsWallhack.integer & (CG_FRIENDS_WALLHACK_TEAM_INDICATOR | CG_FRIENDS_WALLHACK_GLOBAL_POS))))
 	{
 		/* FFA/non-team: spectators only — living players must not opt into all-player proxies. */
@@ -438,7 +589,7 @@ void CG_BEUpdateUserInfo(void)
 // Disable be features
 void CG_OSPConfigDisableBEFeatures(int value)
 {
-	cgs.beDisableFeatures = value;
+	cgs.beDisableFeatures = CG_ApplyFpsclassicoDisableMask(value);
 	CG_PrintDisabledFeatures(qfalse);
 	CG_UpdateBeFeatures();
 }
@@ -569,6 +720,9 @@ qboolean CG_IsClientFreeFloat(void)
 
 qboolean CG_IsFollowing(void)
 {
+	if (!cg.snap)
+		return qfalse;
+
 	if (!cg.demoPlayback)
 	{
 		if (!(cg.snap->ps.pm_flags & PMF_FOLLOW))

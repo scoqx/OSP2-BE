@@ -553,6 +553,233 @@ void CG_PmovePhysicsUpdate(void)
 	last_g_snapVectors = phy_snapVectors.integer;
 }
 
+/*
+=================
+CG_IsUnacceptableError
+
+Compare snapshot playerState to a previously predicted state for incremental
+prediction (cg_optimizePrediction). Return 0 if differences are acceptable.
+Adapted from UnFreeZe / unlagged — without EF_NOPREDICT / timeResidual.
+=================
+*/
+static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolean* forceMove)
+{
+	vec3_t delta;
+	int i, n, v0;
+
+	if (pps->pm_time != ps->pm_time ||
+	        pps->pm_type != ps->pm_type ||
+	        pps->pm_flags != ps->pm_flags)
+	{
+		return 1;
+	}
+
+	VectorSubtract(pps->origin, ps->origin, delta);
+	if (VectorLengthSquared(delta) > (cgs.fpsclassico ? 0.0625f : (0.01f * 0.01f)))
+	{
+		if (cg_showmiss.integer > 2)
+		{
+			CG_Printf("origin delta: %.2f  ", VectorLength(delta));
+		}
+		return 2;
+	}
+
+	VectorSubtract(pps->velocity, ps->velocity, delta);
+	if (VectorLengthSquared(delta) > (cgs.fpsclassico ? 0.0625f : (0.01f * 0.01f)))
+	{
+		if (cg_showmiss.integer > 2)
+		{
+			CG_Printf("velocity delta: %.2f  ", VectorLength(delta));
+		}
+		return 3;
+	}
+
+	if (pps->weaponTime != ps->weaponTime ||
+	        pps->gravity != ps->gravity ||
+	        pps->speed != ps->speed ||
+	        pps->delta_angles[0] != ps->delta_angles[0] ||
+	        pps->delta_angles[1] != ps->delta_angles[1] ||
+	        pps->delta_angles[2] != ps->delta_angles[2] ||
+	        pps->groundEntityNum != ps->groundEntityNum)
+	{
+		if (cg_showmiss.integer > 1)
+		{
+			CG_Printf("%i %i %i %i => %i %i %i %i",
+			          pps->weaponTime, pps->gravity, pps->speed, pps->groundEntityNum,
+			          ps->weaponTime, ps->gravity, ps->speed, ps->groundEntityNum);
+		}
+		return 4;
+	}
+
+	if (pps->torsoAnim != ps->torsoAnim && (ps->torsoAnim & ~ANIM_TOGGLEBIT) == TORSO_GESTURE)
+	{
+		for (n = 0; n < NUM_SAVED_STATES; n++)
+		{
+			cg.savedPmoveStates[n].torsoAnim = ps->torsoAnim;
+			cg.savedPmoveStates[n].torsoTimer = ps->torsoTimer;
+		}
+	}
+
+	if (pps->legsTimer != ps->legsTimer || pps->legsAnim != ps->legsAnim ||
+	        pps->torsoTimer != ps->torsoTimer || pps->torsoAnim != ps->torsoAnim ||
+	        pps->movementDir != ps->movementDir)
+	{
+		return 5;
+	}
+
+	VectorSubtract(pps->grapplePoint, ps->grapplePoint, delta);
+	if (VectorLengthSquared(delta) > 0.01f * 0.01f)
+	{
+		return 6;
+	}
+
+	if (pps->eFlags != ps->eFlags)
+	{
+		if (cg_showmiss.integer > 1)
+		{
+			CG_Printf("eFlags %i => %i", pps->eFlags, ps->eFlags);
+		}
+		return 7;
+	}
+
+	if (pps->eventSequence != ps->eventSequence)
+	{
+		return 8;
+	}
+
+	for (i = 0; i < MAX_PS_EVENTS; i++)
+	{
+		if (pps->events[i] != ps->events[i])
+		{
+			if (cg_showmiss.integer > 1)
+			{
+				CG_Printf("event[%i] %i => %i\n", i, pps->events[i], ps->events[i]);
+			}
+			return 9;
+		}
+		if (pps->eventParms[i] != ps->eventParms[i])
+		{
+			if (cg_showmiss.integer > 1)
+			{
+				CG_Printf("eventParms[%i] %i => %i\n", i, pps->eventParms[i], ps->eventParms[i]);
+			}
+			return 9;
+		}
+	}
+
+	if (pps->externalEvent != ps->externalEvent ||
+	        pps->externalEventParm != ps->externalEventParm ||
+	        pps->externalEventTime != ps->externalEventTime)
+	{
+		return 10;
+	}
+
+	if (pps->clientNum != ps->clientNum ||
+	        pps->weapon != ps->weapon ||
+	        pps->weaponstate != ps->weaponstate)
+	{
+		return 11;
+	}
+
+	if (fabs(AngleDelta(ps->viewangles[0], pps->viewangles[0])) > 1.0f ||
+	        fabs(AngleDelta(ps->viewangles[1], pps->viewangles[1])) > 1.0f ||
+	        fabs(AngleDelta(ps->viewangles[2], pps->viewangles[2])) > 1.0f)
+	{
+		return 12;
+	}
+
+	if (pps->viewheight != ps->viewheight)
+	{
+		return 13;
+	}
+
+	if (pps->damageEvent != ps->damageEvent ||
+	        pps->damageYaw != ps->damageYaw ||
+	        pps->damagePitch != ps->damagePitch ||
+	        pps->damageCount != ps->damageCount)
+	{
+		if (cg_showmiss.integer > 1)
+		{
+			CG_Printf("dmg %i %i %i %i >= %i %i %i %i\n",
+			          pps->damageEvent, pps->damageYaw, pps->damagePitch, pps->damageCount,
+			          ps->damageEvent, ps->damageYaw, ps->damagePitch, ps->damageCount);
+		}
+		return 14;
+	}
+
+	for (i = 0; i < MAX_STATS; i++)
+	{
+		if (i == STAT_CLIENTS_READY)
+		{
+			for (n = 0; n < NUM_SAVED_STATES; n++)
+			{
+				cg.savedPmoveStates[n].stats[i] = ps->stats[i];
+			}
+			continue;
+		}
+		if (pps->stats[i] != ps->stats[i])
+		{
+			if (cg_showmiss.integer > 1)
+			{
+				CG_Printf("stats[%i] %i => %i ", i, pps->stats[i], ps->stats[i]);
+			}
+			return 15;
+		}
+	}
+
+	for (i = 0; i < MAX_PERSISTANT; i++)
+	{
+		if (pps->persistant[i] != ps->persistant[i])
+		{
+			if (i >= PERS_TEAM && i <= PERS_PLAYEREVENTS)
+			{
+				if (cg_showmiss.integer > 1)
+				{
+					CG_Printf("persistant[%i] %i => %i ", i, pps->persistant[i], ps->persistant[i]);
+				}
+				return 16;
+			}
+			v0 = ps->persistant[i];
+			for (n = 0; n < NUM_SAVED_STATES; n++)
+			{
+				cg.savedPmoveStates[n].persistant[i] = v0;
+			}
+			*forceMove = qtrue;
+		}
+	}
+
+	for (i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (pps->ammo[i] != ps->ammo[i])
+		{
+			if (cg_showmiss.integer > 1)
+			{
+				CG_Printf("ammo[%i] %i => %i ", i, pps->ammo[i], ps->ammo[i]);
+			}
+			return 18;
+		}
+	}
+
+	if (pps->generic1 != ps->generic1 || pps->loopSound != ps->loopSound)
+	{
+		return 19;
+	}
+
+	for (i = 0; i < MAX_POWERUPS; i++)
+	{
+		if (pps->powerups[i] != ps->powerups[i])
+		{
+			if (cg_showmiss.integer > 1)
+			{
+				CG_Printf("powerups[%i] %i => %i ", i, pps->powerups[i], ps->powerups[i]);
+			}
+			return 20;
+		}
+	}
+
+	return 0;
+}
+
 void CG_PredictPlayerState(void)
 {
 	int         cmdNum, current;
@@ -560,6 +787,7 @@ void CG_PredictPlayerState(void)
 	qboolean    moved;
 	usercmd_t   oldestCmd;
 	usercmd_t   latestCmd;
+	int         stateIndex = 0, predictCmd = 0;
 
 	cg.hyperspace = qfalse; // will be set if touching a trigger_teleport
 
@@ -612,7 +840,6 @@ void CG_PredictPlayerState(void)
 		cg_pmove.tracemask &= ~CONTENTS_BODY;
 	}
 	cg_pmove.noFootsteps = (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE) || (cgs.dmflags & DF_NO_FOOTSTEPS) > 0;
-	cg_pmove.noFallDamage = (cgs.dmflags & DF_NO_FALLING) > 0;
 
 	// save the state before the pmove so we can detect transitions
 	oldPlayerState = cg.predictedPlayerState;
@@ -670,32 +897,85 @@ void CG_PredictPlayerState(void)
 	cg_pmove.pmove_accurate = pmove_accurate.integer;
 	cg_pmove.pmove_ratflags = cgs.ratFlags;
 
-	/* g_movement 2 → QL bg path; 0/1 stay on OSP CS 806 globals + autohop */
-	if (cgs.beMovement == 2)
+	cg_pmove.pmove_movement = MOVEMENT_VQ3;
+	if (cgs.beAutohop == 0)
 	{
-		cg_pmove.pmove_movement = MOVEMENT_QL;
+		cg_pmove.pmove_autohop = 0;
+	}
+	else if (cgs.beAutohop == 1)
+	{
 		cg_pmove.pmove_autohop = 1;
 	}
 	else
 	{
-		cg_pmove.pmove_movement = MOVEMENT_VQ3;
-		if (cgs.beAutohop == 0)
+		cg_pmove.pmove_autohop = cg_autoHop.integer;
+	}
+
+	moved = qfalse;
+
+	/*
+	 * Incremental predict (UnFreeZe / unlagged cg_optimizePrediction):
+	 * between snapshots replay saved playerStates; Pmove only new cmds.
+	 */
+	if (cg_optimizePrediction.integer)
+	{
+		if (cg.nextFrameTeleport || cg.thisFrameTeleport)
 		{
-			cg_pmove.pmove_autohop = 0;
+			cg.lastPredictedCommand = 0;
+			cg.stateTail = cg.stateHead;
+			predictCmd = current - CMD_BACKUP + 1;
 		}
-		else if (cgs.beAutohop == 1)
+		else if (cg.physicsTime == cg.lastServerTime)
 		{
-			cg_pmove.pmove_autohop = 1;
+			predictCmd = cg.lastPredictedCommand + 1;
 		}
 		else
 		{
-			cg_pmove.pmove_autohop = cg_autoHop.integer;
+			int i;
+			int errorcode;
+			qboolean error = qtrue;
+
+			for (i = cg.stateHead; i != cg.stateTail; i = (i + 1) % NUM_SAVED_STATES)
+			{
+				if (cg.savedPmoveStates[i].commandTime != cg.predictedPlayerState.commandTime)
+				{
+					continue;
+				}
+				errorcode = CG_IsUnacceptableError(&cg.predictedPlayerState, &cg.savedPmoveStates[i], &moved);
+				if (errorcode)
+				{
+					if (cg_showmiss.integer > 1)
+					{
+						CG_Printf("errorcode %d at %d\n", errorcode, cg.time);
+					}
+					break;
+				}
+
+				*cg_pmove.ps = cg.savedPmoveStates[i];
+				cg.stateHead = (i + 1) % NUM_SAVED_STATES;
+				predictCmd = cg.lastPredictedCommand + 1;
+				error = qfalse;
+				break;
+			}
+
+			if (error)
+			{
+				cg.lastPredictedCommand = 0;
+				cg.stateTail = cg.stateHead;
+				predictCmd = current - CMD_BACKUP + 1;
+			}
 		}
+		cg.lastServerTime = cg.physicsTime;
+		stateIndex = cg.stateHead;
 	}
 
-	// run cmds
-	moved = qfalse;
-	for (cmdNum = current - CMD_BACKUP + 1 ; cmdNum <= current ; cmdNum++)
+	cmdNum = current - CMD_BACKUP + 1;
+	if (cmdNum < 0)
+	{
+		cmdNum = 0;
+	}
+
+	for (; cmdNum <= current; cmdNum++)
 	{
 		// get the command
 		trap_GetUserCmd(cmdNum, &cg_pmove.cmd);
@@ -806,11 +1086,14 @@ void CG_PredictPlayerState(void)
 			cg_pmove.cmd.serverTime = ((cg_pmove.cmd.serverTime + pmove_msec.integer - 1) / pmove_msec.integer) * pmove_msec.integer;
 		}
 
-		/* Missile predict: stash muzzle only on attack frames for RL/PG/BFG */
+		if (!cg_optimizePrediction.integer ||
+		        cmdNum >= predictCmd ||
+		        (stateIndex + 1) % NUM_SAVED_STATES == cg.stateHead)
 		{
 			qboolean stashFire = qfalse;
 			int oldEventSeq = 0;
 
+			/* Missile predict: stash muzzle only on attack frames for RL/PG/BFG */
 			if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
 			        && (cg_pmove.cmd.buttons & BUTTON_ATTACK))
 			{
@@ -825,7 +1108,7 @@ void CG_PredictPlayerState(void)
 			}
 
 			// run the Pmove
-			if (cgs.pmove_phy_movetype >= 0 && cgs.beMovement != 2)
+			if (cgs.pmove_phy_movetype >= 0)
 			{
 				cg_pmove.movetype = cgs.pmove_phy_movetype;
 				PmoveEx(&cg_pmove, phy_PmoveSingle);
@@ -855,12 +1138,28 @@ void CG_PredictPlayerState(void)
 					cg.missileFireValid = qtrue;
 				}
 			}
+
+			CG_TouchTriggerPrediction();
+
+			if (cg_optimizePrediction.integer)
+			{
+				cg.lastPredictedCommand = cmdNum;
+
+				if ((stateIndex + 1) % NUM_SAVED_STATES != cg.stateHead)
+				{
+					cg.savedPmoveStates[stateIndex] = *cg_pmove.ps;
+					stateIndex = (stateIndex + 1) % NUM_SAVED_STATES;
+					cg.stateTail = stateIndex;
+				}
+			}
+		}
+		else
+		{
+			*cg_pmove.ps = cg.savedPmoveStates[stateIndex];
+			stateIndex = (stateIndex + 1) % NUM_SAVED_STATES;
 		}
 
 		moved = qtrue;
-
-		// add push trigger movement effects
-		CG_TouchTriggerPrediction();
 
 		// check for predictable events that changed from previous predictions
 		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);

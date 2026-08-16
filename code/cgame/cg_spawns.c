@@ -488,6 +488,14 @@ void CG_MapCatalog_OnConfigStringChanged(void)
 	int         i;
 	int         len;
 
+	if (cgs.fpsclassico)
+	{
+		cg_mapCatalogPayload[0] = '\0';
+		(void)CG_MapSpawns_LoadFromCatalog("");
+		(void)CG_MapTPExit_LoadFromCatalog("");
+		return;
+	}
+
 	cg_mapCatalogPayload[0] = '\0';
 	len = 0;
 	for (i = 0; i < CS_OSP2BE_ITEM_CATALOG_COUNT; i++)

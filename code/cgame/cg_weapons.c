@@ -2352,6 +2352,10 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 			{
 				quadGunShader = cgs.media.quadWeaponShaderDye;
 			}
+			else if (!ps && team == TEAM_RED && cgs.media.redQuadWeaponShader)
+			{
+				quadGunShader = cgs.media.redQuadWeaponShader;
+			}
 			else
 			{
 				quadGunShader = cgs.media.quadWeaponShader;
@@ -3034,8 +3038,9 @@ qboolean CG_PlasmaColorForOwner(int owner, vec4_t color)
 		return qfalse;
 	}
 
-	if (CG_OSPIsGameTypeCA(cgs.gametype) || !CG_CACHED_IS_ENEMY_NUM(owner)
-	        || (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */))
+	if ((!cgs.beSupportedServer
+	     && (CG_OSPIsGameTypeCA(cgs.gametype) || cgs.gametype == GT_TOURNAMENT))
+	    || !CG_CACHED_IS_ENEMY_NUM(owner))
 	{
 		if (!cg_plasmaColor.string[0])
 		{

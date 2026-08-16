@@ -192,6 +192,12 @@ execute { cg_fov 100; exec myconfig.cfg }
 
 - При color "E" или "T" - `color2` регулирует прозрачность (color2 0 0 0 1) где 1 - прозрачность. 
 
+### Text
+
+- `text "..."` — кастомная строка (PreDecorate/PostDecorate и другие элементы с `text`).
+- `^cT` / `^cE` — цвет своей / вражеской команды (только для значения `text "..."`).
+- Пример: `text "^cE ENEMY ^cT TEAM";`
+
 ### ItemPickup
 
 - Style 2 - вывод времени подбора предмета (без названия предмета)
@@ -378,6 +384,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 ## spectators
 
 - style 2 - убрать надпись "Spectators:"
+- `rect h` — максимум строк с никами (0 = без лимита). Заголовок не считается.
 
 ## Spectator_ItemSpawns / Spectator_ItemSpawnsRed / Spectator_ItemSpawnsBlue
 

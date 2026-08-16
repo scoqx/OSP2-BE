@@ -130,6 +130,11 @@ extern "C" {
 #define CS_OSP2BE_ITEM_CATALOG_LAST            (CS_OSP2BE_ITEM_CATALOG0 + CS_OSP2BE_ITEM_CATALOG_COUNT - 1)
 /* BE-only: "1 <prestep> <rlSpeed> <pgSpeed> <bfgSpeed>" when client missile predict is on */
 #define CS_OSP2BE_MISSILE_PREDICT              910
+/* CS 911 player damage hitbox (shared slot):
+ *   Ruthless/Devotion: "1 <wide> <hgh>" — body cylinder only (head removed; legacy mode 2 = same)
+ *   Metarena/OSDF:     single-token "<scale>" (>0 = cylinder AABB*scale; "0"/empty = AABB cube) */
+#define CS_OSP2BE_HITBOX                       911
+
 /*
  * Item catalog (OSP2BE): CS 890..909 concatenated (20 KiB max).
  * Leading <mode> — one hex nibble (0-9a-f), bitmask:
@@ -260,7 +265,6 @@ typedef struct pmove_s
 	int         tracemask;          // collide against these types of surfaces
 	int         debugLevel;         // if set, diagnostic output will be printed
 	qboolean    noFootsteps;        // if the game is setup for no footsteps by the server
-	qboolean    noFallDamage;       // DF_NO_FALLING from server dmflags
 	qboolean    gauntletHit;        // true if a gauntlet attack would actually hit something
 
 	int         framecount;
@@ -282,9 +286,9 @@ typedef struct pmove_s
 	int         pmove_float;
 	int         pmove_accurate;
 
-	/* Devotion / ruthless: g_movement SYSTEMINFO (0=VQ3, 1=CPM via OSP mode, 2=QL) */
+	/* movement_t selector; client sets from CS 806 (OSP_SERVER_MODE_*) */
 	int         pmove_movement;
-	int         pmove_autohop;
+	int         pmove_autohop;      /* predict-only; QL forces 1 locally */
 	int         pmove_ratflags;     /* g_altFlags from serverinfo */
 
 	// callbacks to test the world
@@ -301,13 +305,17 @@ typedef struct pmove_s
 	//::OSDF end
 } pmove_t;
 
-/* Match ruthless g_movement public values for BE predict */
+/* Internal pmove selectors; public g_movement cvar maps to CS 806 on server */
 typedef enum
 {
 	MOVEMENT_VQ3 = 0,
-	MOVEMENT_CPM = 1,   /* OSP/CS 806 promode; bg uses OSP globals when not QL */
-	MOVEMENT_QL = 2     /* QL VQ3-ruleset */
+	MOVEMENT_CPM_DEFRAG = 1,
+	MOVEMENT_CQ3 = 2,
+	MOVEMENT_CPM_CPMA = 3,
+	MOVEMENT_RM = 4
 } movement_t;
+
+#define MOVEMENT_PUBLIC_MAX	MOVEMENT_CQ3
 
 // if a full pmove isn't done on the client, you can just update the angles
 void PM_UpdateViewAngles(playerState_t* ps, const usercmd_t* cmd);
@@ -337,7 +345,7 @@ typedef enum
 	STAT_CLIENTS_READY = 5,             // bit mask of clients wishing to exit the intermission (FIXME: configstring?)
 	STAT_MAX_HEALTH = 6,                // health / armor limit, changable by handicap
 	STAT_OSP_PHYS = 7,
-	STAT_RAIL_DELAY = 8,
+	STAT_RAIL_DELAY = 8,                /* UnFreeZe phys DJ timer when uf_rampjump (STAT_UNFREEZE_PHYS) */
 	STAT_ARMOR_TYPE = 9,                //aromor: red/green/yellow
 	STAT_OSP_10 = 10,
 	STAT_WEAPON_DELAY = 11,
@@ -345,11 +353,14 @@ typedef enum
 	// OSDF: pack = crouchslide low16 | holdboost high16 (same wire index as STAT_OSP_10)
 	STAT_OSDF_PACK = 10,
 	STAT_TIME_LASTJUMP = 12,
-	STAT_EXTFLAGS = 13,		/* reserved wire slot (ruthless bot debug, etc.) */
+	STAT_EXTFLAGS = 13,		/* EXTFL_* */
 	STAT_BE_AUTH = 14,		/* OSP2-BE hidden connect challenge (owner PS only) */
 	/* g_freeze (ruthless): own progress% + thawing% — see BE_CUSTOM_* */
 	STAT_BE_CUSTOM = 15
 } statIndex_t;
+
+/* UnFreeZe cgame uses ps->stats[8] for rampjump doublejump window (same index as STAT_RAIL_DELAY). */
+#define STAT_UNFREEZE_PHYS	STAT_RAIL_DELAY
 
 #define STAT_JUMP_HOLDBOOST	STAT_BE_AUTH	/* legacy name; unused by OSDF */
 

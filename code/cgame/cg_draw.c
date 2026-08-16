@@ -2786,6 +2786,10 @@ void CG_OSPDrawIntermission()
 	{
 		CG_BEStatsShowStatsInfo();
 	}
+	if (CG_RoundStatsIsShowing())
+	{
+		CG_RoundStatsShow();
+	}
 }
 
 /*
@@ -3374,8 +3378,45 @@ static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameMode
 		return qfalse;
 	}
 
+	/* cg_specMode 2: free-spec all; follow >= GT_TEAM viewed team; follow FFA none */
+	if (isSpec && cg_specMode.integer == 2)
+	{
+		qboolean isFollow;
+
+		isFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+		           cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS;
+		if (isFollow)
+		{
+			clientInfo_t* followCi;
+			int followTeam;
+			int otherTeam;
+			qboolean isCA;
+
+			if (cgs.gametype < GT_TEAM)
+			{
+				return qfalse;
+			}
+			followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+			if (!followCi->infoValid)
+			{
+				return qfalse;
+			}
+			isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+			followTeam = isCA ? followCi->rt : followCi->team;
+			otherTeam = isCA ? ci->rt : ci->team;
+			if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
+			{
+				return qfalse;
+			}
+			isEnemy = qfalse;
+		}
+		else
+		{
+			isEnemy = (ci->isFrozenEnt || !gameModeNotSpectator) ? CG_CACHED_IS_ENEMY_CI(ci) : qfalse;
+		}
+	}
 	/* Follow without PI_SPECTATOR: only teammates of the viewed player (ignore isEnemyView / spectPOV). */
-	if (isSpec && !(cg_teamIndicator.integer & PI_SPECTATOR))
+	else if (isSpec && !(cg_teamIndicator.integer & PI_SPECTATOR))
 	{
 		clientInfo_t* followCi;
 		int followTeam;
@@ -3883,15 +3924,27 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 
 	if (cgs.gametype < GT_TEAM)
 	{
-		/* FFA: still requires PI_SPECTATOR (no teammate concept). */
-		if (!isSpec || !(cg_teamIndicator.integer & PI_SPECTATOR))
+		/* FFA: PI_SPECTATOR, or cg_specMode 2 free-spec (follow shows none). */
+		if (!isSpec)
+		{
+			return;
+		}
+		if (cg_specMode.integer == 2)
+		{
+			if (isFollowSpec)
+			{
+				return;
+			}
+		}
+		else if (!(cg_teamIndicator.integer & PI_SPECTATOR))
 		{
 			return;
 		}
 	}
-	else if (isSpec && !(cg_teamIndicator.integer & PI_SPECTATOR) && !isFollowSpec)
+	else if (isSpec && !(cg_teamIndicator.integer & PI_SPECTATOR) && !isFollowSpec &&
+	         cg_specMode.integer != 2)
 	{
-		/* Free-spec without bit 32: no indicators. Follow-spec: allies of viewed player. */
+		/* Free-spec without bit 32 / mode 2: no indicators. Follow-spec: allies of viewed player. */
 		return;
 	}
 
@@ -4286,6 +4339,8 @@ static void CG_Draw2D(void)
 	if (cg_enableOSPHUD.integer)
 	{
 		CG_OSPHUDRoutine();
+		if (CG_RoundStatsIsShowing())
+			CG_RoundStatsShow();
 		return;
 	}
 	if (cg.snap->ps.pm_type == PM_INTERMISSION)
@@ -4327,6 +4382,9 @@ static void CG_Draw2D(void)
 	cg.scoreBoardShowing = CG_DrawIntermission();
 	if (cg.scoreBoardShowing == qfalse)
 		CG_OSPDrawCenterString();
+	/* skipIm / mid-round: DrawIntermission does not run; still paint timed roundstats */
+	if (!cg.intermissionStarted && CG_RoundStatsIsShowing())
+		CG_RoundStatsShow();
 }
 
 

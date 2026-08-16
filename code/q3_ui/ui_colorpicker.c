@@ -365,7 +365,7 @@ static void UI_ColorPicker_OSPColorFromNumber(int number, vec4_t out)
 	green = 1.0f;
 	blue = 1.0f;
 
-	if (number >= 10 && number < 34)
+	if (number >= 10 && number < 33)
 	{
 		tmp = ((360.0 * (double)number) - 3600.0) / 24.0;
 		sixtyRadians = 60.0 * M_PI / 180.0;
@@ -444,6 +444,21 @@ static void UI_ColorPicker_OSPColorFromNumber(int number, vec4_t out)
 				red = 0.6f;
 				green = 0.6f;
 				blue = 1.0f;
+				break;
+			case 33: /* x — bright magenta (Quake3e) */
+				red = 1.0f;
+				green = 0.0f;
+				blue = 0.26795f;
+				break;
+			case 34: /* y — white */
+				red = 1.0f;
+				green = 1.0f;
+				blue = 1.0f;
+				break;
+			case 35: /* z — grey */
+				red = 0.5f;
+				green = 0.5f;
+				blue = 0.5f;
 				break;
 			default:
 				red = 1.0f;

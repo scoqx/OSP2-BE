@@ -566,6 +566,9 @@ void CG_DrawInformation(void)
 		case GT_CTF:
 			s = "Capture The Flag";
 			break;
+		case GT_CA:
+			s = "CLAN ARENA";
+			break;
 		default:
 			s = "Unknown Gametype";
 			break;

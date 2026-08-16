@@ -1055,3 +1055,22 @@ SuperHUD:
   + warden.cfg, om3n.cfg - by The Warden
   + visflags: enterchat, showchat, printui, bestats (and !inverses)
   * Spectator_ItemSpawns: alignh C horizontal layout
+
+17.08.2026 be v1.07c-beta
++ cg_giveName restored
++ cg_optimizePrediction 0/1
++ cg_specMode 1/2
++ cg_drawFriend fix (spec team)                             
+* cg_playerXray: bit 8 - all players
++ ^cT and ^cE as color codes in PUI
++ Banners replace (requires server support)
++ Red team quad damage weapon fix
+* Loading Screen "UNKNOWN GAMETYPE" (CA) fix 
+SuperHUD:
+  + visflags console, menu
+  * Mirage's configs updated
+  + ^cT and ^cE as color codes in 'text' parameter
+FPSClassico:
+  + movement predict
+  + projectile predict
+  + hitsound fix

@@ -46,17 +46,27 @@ float   pm_waterfriction = 1.0f;
 float   pm_flightfriction = 3.0f;
 float   pm_spectatorfriction = 5.0f;
 
-/* Quake Live VQ3-ruleset defaults (from ioquakelive / ruthless) */
-const float pm_ql_jumpvelocity = 275.0f;
-const float pm_ql_jumpvelocityscaleadd = 0.4f;
-const float pm_ql_jumpvelocitytimethreshold = 500.0f;
-const float pm_ql_jumptimedeltamin = 100.0f;
-const float pm_ql_bunnyHopOveraccel = 0.55f;
-const float pm_ql_airStepFriction = 0.03f;
-const int   pm_ql_StepJump = 1;
-const float pm_ql_StepHeight = 22.0f;
-
 int     c_pmove = 0;
+
+/*
+===================
+PM_GravityApply
+
+Mode 3: snap@125 fall uses g*15/16 only while falling (vz < 0),
+keeping jump height at full ps->gravity on ascent.
+===================
+*/
+int PM_GravityApply(void)
+{
+	int g = pm->ps->gravity;
+
+	if (pm->pmove_accurate == 3 && pm->ps->stats[STAT_HEALTH] > 0
+	    && pm->ps->velocity[2] < 0)
+	{
+		return (g * 15) / 16;
+	}
+	return g;
+}
 
 
 /*
@@ -308,49 +318,6 @@ void PM_Accelerate(vec3_t wishdir, float wishspeed, float accel)
 {
 	int         i;
 	float       addspeed, accelspeed, currentspeed;
-	float       speed2d, maxspeed, maxspeed2;
-	float       overaccel;
-
-	/* QL bunny-hop overacceleration (ioquakelive default) */
-	if (pm->pmove_movement == MOVEMENT_QL)
-	{
-		currentspeed = DotProduct(pm->ps->velocity, wishdir);
-		addspeed = wishspeed - currentspeed;
-		speed2d = sqrt(pm->ps->velocity[0] * pm->ps->velocity[0]
-		               + pm->ps->velocity[1] * pm->ps->velocity[1]);
-		maxspeed = (float)pm->ps->speed;
-		maxspeed2 = maxspeed + maxspeed;
-
-		if (addspeed > 0)
-		{
-			accelspeed = accel * pml.frametime * wishspeed;
-			if (accelspeed > addspeed)
-			{
-				accelspeed = addspeed;
-			}
-			pm->ps->velocity[0] += accelspeed * wishdir[0];
-			pm->ps->velocity[1] += accelspeed * wishdir[1];
-			pm->ps->velocity[2] += accelspeed * wishdir[2];
-			return;
-		}
-
-		if (pm->ps->movementDir == 0 && maxspeed > 0.0f && speed2d <= maxspeed2)
-		{
-			overaccel = pm_ql_bunnyHopOveraccel;
-			if (speed2d > maxspeed)
-			{
-				if (speed2d > maxspeed2)
-				{
-					speed2d = maxspeed2;
-				}
-				overaccel = ((maxspeed2 - speed2d) / maxspeed) * pm_ql_bunnyHopOveraccel;
-			}
-			pm->ps->velocity[0] += overaccel * wishdir[0];
-			pm->ps->velocity[1] += overaccel * wishdir[1];
-			pm->ps->velocity[2] += overaccel * wishdir[2];
-		}
-		return;
-	}
 
 #if 1
 	// q2 style
@@ -496,70 +463,12 @@ void PM_SetMovementDir(void)
 
 /*
 =============
-PM_GetStepSize / PM_WouldQlJump / PM_DoQlJump
-
-Quake Live VQ3-ruleset (ioquakelive): STAT_TIME_LASTJUMP holds absolute
-cmd.serverTime stamp (same wire slot as server DEV_STAT_JUMPTIME).
+PM_GetStepSize
 =============
 */
 float PM_GetStepSize(void)
 {
-	if (pm->pmove_movement == MOVEMENT_QL)
-	{
-		return pm_ql_StepHeight;
-	}
 	return (float)STEPSIZE;
-}
-
-qboolean PM_WouldQlJump(void)
-{
-	if (pm->ps->pm_flags & PMF_RESPAWNED)
-	{
-		return qfalse;
-	}
-	if (pm->cmd.upmove < 10)
-	{
-		return qfalse;
-	}
-
-	if ((float)(pm->cmd.serverTime - pm->ps->stats[STAT_TIME_LASTJUMP])
-	        < pm_ql_jumptimedeltamin)
-	{
-		return qfalse;
-	}
-
-	if (pm->pmove_autohop || !(pm->ps->pm_flags & PMF_JUMP_HELD))
-	{
-		return qtrue;
-	}
-
-	pm->cmd.upmove = 0;
-	return qfalse;
-}
-
-void PM_DoQlJump(void)
-{
-	float jumpVel;
-	float timeDelta;
-
-	pml.groundPlane = qfalse;
-	pml.walking = qfalse;
-	pm->ps->pm_flags |= PMF_JUMP_HELD;
-	pm->ps->groundEntityNum = ENTITYNUM_NONE;
-
-	jumpVel = pm_ql_jumpvelocity;
-	timeDelta = (float)(pm->cmd.serverTime - pm->ps->stats[STAT_TIME_LASTJUMP]);
-	if (timeDelta > 0.0f && timeDelta < pm_ql_jumpvelocitytimethreshold)
-	{
-		float factor = ((pm_ql_jumpvelocitytimethreshold - timeDelta)
-		                / pm_ql_jumpvelocitytimethreshold) * pm_ql_jumpvelocityscaleadd + 1.0f;
-		jumpVel *= factor;
-	}
-
-	pm->ps->velocity[2] = jumpVel;
-	pm->ps->stats[STAT_TIME_LASTJUMP] = pm->cmd.serverTime;
-
-	PM_AddEvent(EV_JUMP);
 }
 
 /*
@@ -580,26 +489,6 @@ qboolean PM_CheckJump(void)
 		return qfalse;
 	}
 
-	if (pm->pmove_movement == MOVEMENT_QL)
-	{
-		if (!PM_WouldQlJump())
-		{
-			return qfalse;
-		}
-		PM_DoQlJump();
-		if (pm->cmd.forwardmove >= 0)
-		{
-			PM_ForceLegsAnim(LEGS_JUMP);
-			pm->ps->pm_flags &= ~PMF_BACKWARDS_JUMP;
-		}
-		else
-		{
-			PM_ForceLegsAnim(LEGS_JUMPB);
-			pm->ps->pm_flags |= PMF_BACKWARDS_JUMP;
-		}
-		return qtrue;
-	}
-
 	// must wait for jump to be released (unless pmove_autohop)
 	if ((pm->ps->pm_flags & PMF_JUMP_HELD) && !pm->pmove_autohop)
 	{
@@ -614,23 +503,41 @@ qboolean PM_CheckJump(void)
 
 	pm->ps->groundEntityNum = ENTITYNUM_NONE;
 
-	if (modePredictionKoeff1 != 0 && pm->ps->velocity[2] > 0)
+	if (uf_rampjump)
 	{
+		/* UnFreeZe path B (fpsclasico): additive jump + stats[8] window */
 		pm->ps->velocity[2] += JUMP_VELOCITY;
+		if (pm->ps->velocity[2] < JUMP_VELOCITY)
+		{
+			pm->ps->velocity[2] = JUMP_VELOCITY;
+		}
+		if (pm->ps->stats[STAT_UNFREEZE_PHYS] > 0)
+		{
+			pm->ps->velocity[2] += 100;
+		}
+		pm->ps->stats[STAT_UNFREEZE_PHYS] = 400;
 	}
 	else
 	{
-		pm->ps->velocity[2] = JUMP_VELOCITY;
-	}
-
-	if (modePromodePhysKoeff != 0)
-	{
-		if (pm->ps->stats[STAT_OSP_PHYS] > 0)
+		/* Default OSP / VQ3 / Promode — unchanged */
+		if (modePredictionKoeff1 != 0 && pm->ps->velocity[2] > 0)
 		{
-			pm->ps->velocity[2] += modePromodePhysKoeff;
-			pm->ps->stats[STAT_OSP_10] = 1;
+			pm->ps->velocity[2] += JUMP_VELOCITY;
 		}
-		pm->ps->stats[STAT_OSP_PHYS] = 400;
+		else
+		{
+			pm->ps->velocity[2] = JUMP_VELOCITY;
+		}
+
+		if (modePromodePhysKoeff != 0)
+		{
+			if (pm->ps->stats[STAT_OSP_PHYS] > 0)
+			{
+				pm->ps->velocity[2] += modePromodePhysKoeff;
+				pm->ps->stats[STAT_OSP_10] = 1;
+			}
+			pm->ps->stats[STAT_OSP_PHYS] = 400;
+		}
 	}
 	PM_AddEvent(EV_JUMP);
 
@@ -716,7 +623,7 @@ void PM_WaterJumpMove(void)
 
 	PM_StepSlideMove(qtrue);
 
-	pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
+	pm->ps->velocity[2] -= PM_GravityApply() * pml.frametime;
 	if (pm->ps->velocity[2] < 0)
 	{
 		// cancel as soon as we are falling down again
@@ -812,7 +719,7 @@ void PM_WaterMove(void)
 		vel = VectorLength(pm->ps->velocity);
 		// slide along the ground plane
 		PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
-		                pm->ps->velocity, OVERCLIP);
+		                pm->ps->velocity, pm_overclip);
 
 		VectorNormalize(pm->ps->velocity);
 		VectorScale(pm->ps->velocity, vel, pm->ps->velocity);
@@ -952,7 +859,12 @@ void PM_AirMove(void)
 	wishspeed *= scale;
 	wishspeedOrig = wishspeed;
 
-	if (DotProduct(pm->ps->velocity, wishvel) < 0)
+	if (uf_rampjump)
+	{
+		/* UnFreeZe path B: stock air accel only (no OSP promode strafe / air control) */
+		accel = pm_airaccelerate;
+	}
+	else if (DotProduct(pm->ps->velocity, wishvel) < 0)
 	{
 		accel = modePromode_pm_airaccelerate_1;
 	}
@@ -961,7 +873,7 @@ void PM_AirMove(void)
 		accel = pm_airaccelerate;
 	}
 
-	if (pm->ps->movementDir == 2 || pm->ps->movementDir == 6)
+	if (!uf_rampjump && (pm->ps->movementDir == 2 || pm->ps->movementDir == 6))
 	{
 		if (wishspeed > modeWishspeedLimit)
 		{
@@ -972,7 +884,7 @@ void PM_AirMove(void)
 	// not on ground, so little effect on velocity
 	PM_Accelerate(wishdir, wishspeed, accel);
 
-	if (modePredictionKoeff2)
+	if (!uf_rampjump && modePredictionKoeff2)
 	{
 		PM_AirControl(pm, wishdir, wishspeedOrig);
 	}
@@ -983,7 +895,7 @@ void PM_AirMove(void)
 	if (pml.groundPlane)
 	{
 		PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
-		                pm->ps->velocity, OVERCLIP);
+		                pm->ps->velocity, pm_overclip);
 	}
 
 #if 0
@@ -1082,8 +994,8 @@ void PM_WalkMove(void)
 	pml.right[2] = 0;
 
 	// project the forward and right directions onto the ground plane
-	PM_ClipVelocity(pml.forward, pml.groundTrace.plane.normal, pml.forward, OVERCLIP);
-	PM_ClipVelocity(pml.right, pml.groundTrace.plane.normal, pml.right, OVERCLIP);
+	PM_ClipVelocity(pml.forward, pml.groundTrace.plane.normal, pml.forward, pm_overclip);
+	PM_ClipVelocity(pml.right, pml.groundTrace.plane.normal, pml.right, pm_overclip);
 	//
 	VectorNormalize(pml.forward);
 	VectorNormalize(pml.right);
@@ -1148,7 +1060,7 @@ void PM_WalkMove(void)
 
 	if ((pml.groundTrace.surfaceFlags & SURF_SLICK) || pm->ps->pm_flags & PMF_TIME_KNOCKBACK)
 	{
-		pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
+		pm->ps->velocity[2] -= PM_GravityApply() * pml.frametime;
 	}
 	else
 	{
@@ -1160,7 +1072,7 @@ void PM_WalkMove(void)
 
 	// slide along the ground plane
 	PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
-	                pm->ps->velocity, OVERCLIP);
+	                pm->ps->velocity, pm_overclip);
 
 	// don't decrease velocity when going up or down a slope
 	VectorNormalize(pm->ps->velocity);
@@ -1323,7 +1235,7 @@ void PM_CrashLand(void)
 	// calculate the exact velocity on landing
 	dist = pm->ps->origin[2] - pml.previous_origin[2];
 	vel = pml.previous_velocity[2];
-	acc = -pm->ps->gravity;
+	acc = -PM_GravityApply();
 
 	a = acc / 2;
 	b = vel;
@@ -1372,19 +1284,7 @@ void PM_CrashLand(void)
 	// want to take damage or play a crunch sound
 	if (!(pml.groundTrace.surfaceFlags & SURF_NODAMAGE))
 	{
-		// ruthless: not standard OSP pmove — soften fall sounds when DF_NO_FALLING
-		if (pm->noFallDamage)
-		{
-			if (delta > 7)
-			{
-				PM_AddEvent(EV_FALL_SHORT);
-			}
-			else if (pm->noFootsteps == 0)
-			{
-				PM_AddEvent(PM_FootstepForSurface());
-			}
-		}
-		else if (delta > 60)
+		if (delta > 60)
 		{
 			PM_AddEvent(EV_FALL_FAR);
 		}
@@ -2083,7 +1983,7 @@ void PM_Weapon(void)
 		pm->ps->pm_flags &= ~PMF_USE_ITEM_HELD;
 	}
 
-	if (pm->ps->stats[STAT_RAIL_DELAY] > 0)
+	if (!uf_rampjump && pm->ps->stats[STAT_RAIL_DELAY] > 0)
 	{
 		pm->ps->stats[STAT_RAIL_DELAY] -= pml.msec;
 	}
@@ -2121,7 +2021,7 @@ void PM_Weapon(void)
 		return;
 	}
 
-	if (pm->ps->weapon == WP_RAILGUN && pm->ps->stats[STAT_RAIL_DELAY] > 0)
+	if (!uf_rampjump && pm->ps->weapon == WP_RAILGUN && pm->ps->stats[STAT_RAIL_DELAY] > 0)
 	{
 		return;
 	}
@@ -2217,7 +2117,11 @@ void PM_Weapon(void)
 			{
 				addTime = 1500;
 			}
-			pm->ps->stats[STAT_RAIL_DELAY] = 1500;
+			/* stats[8] is UnFreeZe phys timer when uf_rampjump — do not clobber */
+			if (!uf_rampjump)
+			{
+				pm->ps->stats[STAT_RAIL_DELAY] = 1500;
+			}
 			break;
 		case WP_BFG:
 			addTime = 200;
@@ -2240,7 +2144,10 @@ void PM_Weapon(void)
 	{
 		addTime /= 1.3f;
 		pm->ps->stats[STAT_WEAPON_DELAY] /= 1.3f;
-		pm->ps->stats[STAT_RAIL_DELAY] /= 1.3;
+		if (!uf_rampjump)
+		{
+			pm->ps->stats[STAT_RAIL_DELAY] /= 1.3;
+		}
 	}
 
 	pm->ps->weaponTime += addTime;
@@ -2402,6 +2309,12 @@ void PM_FinalizeVelocity(int do_snap)
 {
 	if (pm->pmove_accurate && pm->ps->stats[STAT_HEALTH] > 0)
 	{
+		/* Mode 3: float velocity + gravity scaled to 15/16 in Pmove
+		 * (≈ snap@125 fall). No boost/trim nudge. */
+		if (pm->pmove_accurate == 3)
+		{
+			return;
+		}
 		if (VectorLengthSquared(pm->ps->velocity) < 0.25f)
 		{
 			VectorClear(pm->ps->velocity);
@@ -2448,6 +2361,9 @@ void PM_FinalizeVelocity(int do_snap)
 void PmoveSingle(pmove_t* pmove)
 {
 	pm = pmove;
+
+	/* Hot path: resolve UnFreeZe overclip once; default stays OVERCLIP (1.001). */
+	pm_overclip = uf_rampjump ? 1.0f : OVERCLIP;
 
 	// this counter lets us debug movement problems with a journal
 	// by setting a conditional breakpoint fot the previous frame
@@ -2616,7 +2532,7 @@ void PmoveSingle(pmove_t* pmove)
 	// remove overbounce
 	if (pml.groundPlane && (pm->pmove_ratflags & RAT_NOOVERBOUNCE))
 	{
-		PM_OneSidedClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal, pm->ps->velocity, OVERCLIP);
+		PM_OneSidedClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal, pm->ps->velocity, pm_overclip);
 	}
 
 	if (pm->ps->pm_type == PM_DEAD)
@@ -2626,13 +2542,23 @@ void PmoveSingle(pmove_t* pmove)
 
 	PM_DropTimers();
 
-	if (pm->ps->stats[STAT_OSP_PHYS] > 0)
+	if (uf_rampjump)
 	{
-		pm->ps->stats[STAT_OSP_PHYS] -= pml.msec;
+		if (pm->ps->stats[STAT_UNFREEZE_PHYS] > 0)
+		{
+			pm->ps->stats[STAT_UNFREEZE_PHYS] -= pml.msec;
+		}
 	}
-	else if (pm->ps->stats[STAT_OSP_10])
+	else
 	{
-		pm->ps->stats[STAT_OSP_10] = 0;
+		if (pm->ps->stats[STAT_OSP_PHYS] > 0)
+		{
+			pm->ps->stats[STAT_OSP_PHYS] -= pml.msec;
+		}
+		else if (pm->ps->stats[STAT_OSP_10])
+		{
+			pm->ps->stats[STAT_OSP_10] = 0;
+		}
 	}
 
 	if (pm->ps->powerups[PW_FLIGHT])
@@ -2685,7 +2611,15 @@ void PmoveSingle(pmove_t* pmove)
 	PM_WaterEvents();
 
 	// snap some parts of playerstate to save network bandwidth
-	if (pm->pmove_accurate || pm->pmove_float)
+	if (modeFPSClassico && !uf_baseq3)
+	{
+		/* UnFreeZe path B: float velocity (unless server asked float/accurate finalize) */
+		if (pm->pmove_accurate || pm->pmove_float)
+		{
+			PM_FinalizeVelocity(1);
+		}
+	}
+	else if (pm->pmove_accurate || pm->pmove_float)
 	{
 		PM_FinalizeVelocity(1);
 	}

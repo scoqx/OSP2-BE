@@ -1903,6 +1903,215 @@ static qboolean CG_PlayerNameIsInvisible(clientInfo_t* ci)
 	return qtrue;
 }
 
+/*
+ * Generate replacement name for noname/invisible/duplicate players
+ * Mix: 33% animals, 33% funny names, 34% thematic (space/demonic/sci-fi)
+ */
+static const char* replacementNames[] =
+{
+	"Darth Sumrak", "Amongus", "JustNamed", "Tiger", "Eagle", "Hawkeye", "Falcon Punch", "Shark",
+	"Fox", "Lynx-Lynx", "Panther", "Jaguar^0V12", "Coyote", "Grand_Hyena", "Asteri^0xXx", "Wolverine",
+	"Raven", "Owl", "Crow", "Vulture", "Condor", "Albatross", "PopCitizen_AUX07", "Heron",
+	"Potato", "T0mat0^1Ju1c3", "PickleRobot", "Noodle", "Waffle", "Pancake", "Donut", "HelloRazer",
+	"Chicken", "Duck", "Gosuvity", "Sakla_Norez", "Sloth", "KeeKee", "Panda", "Raccoon",
+	"Toaster", "KNWR(5)", "Blender", "senoB-suonimuL", "Vacuum", "Dishwasher", "WashingMachine", "Kettle",
+	"Fiend", "Hellhound", "PFE-12", "Scrag", "Spawn", "Revenant", "Archvile", "Titan",
+	"Daedalus", "Core", "Unsaint", "^X00FFFFQuantum", "Nanite", "WinstonSon", "Neural", "Hologram",
+	"Starfighter", "Destroyer", "Cruiser", "Frigate", "XWING", "Dreadnought", "Carrier", "Fleet",
+	"Da^3em^1on", "Hellfire", "Oh Man", "Chaos Knight", "Torment", "Inferno", "Abyss", "Johny^3Br^0a^3v^0o",
+	"DroneX", "Botoed", "Mech", "^XFF00FFPrizrak", "Golem", "Automaton", "Construct", "Lol",
+	"BladeON", "^XFFFFFFScyth3666", "Claw", "Fang", "Thorn", "SpikeOS", "Barb", "Stinger",
+	"Bobo", "Predator", "Skaarj", "Protoss", "Umieko", "Collector", "Vorcha", "Krogan"
+};
+
+#define REPLACEMENT_NAMES_COUNT (sizeof(replacementNames) / sizeof(replacementNames[0]))
+
+/*
+ * True if name_clean is a cg_giveName replacement (ends with '*')
+ */
+static qboolean CG_HasReplacementName(const clientInfo_t* ci)
+{
+	int len;
+
+	if (!ci || !ci->name_clean[0])
+	{
+		return qfalse;
+	}
+
+	len = strlen(ci->name_clean);
+	return (len > 0 && ci->name_clean[len - 1] == '*');
+}
+
+/*
+ * Check if a replacement name is already used by any client (comparison without colors).
+ * skipClientNum is excluded so a slot does not collide with its own previous name.
+ */
+static qboolean CG_IsReplacementNameUsed(const char* candidateName, int skipClientNum)
+{
+	int p;
+	char cleanCandidate[MAX_QPATH];
+	char otherClean[MAX_QPATH];
+
+	Q_strncpyz(cleanCandidate, candidateName, sizeof(cleanCandidate));
+	CG_RemoveChatEscapeCharAll(cleanCandidate);
+
+	for (p = 0; p < MAX_CLIENTS; ++p)
+	{
+		if (p == skipClientNum)
+		{
+			continue;
+		}
+
+		if (!cgs.clientinfo[p].infoValid)
+		{
+			continue;
+		}
+
+		Q_strncpyz(otherClean, cgs.clientinfo[p].name_clean, sizeof(otherClean));
+		CG_RemoveChatEscapeCharAll(otherClean);
+
+		if (!otherClean[0])
+		{
+			continue;
+		}
+
+		if (Q_stricmp(cleanCandidate, otherClean) == 0)
+		{
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+/*
+ * Extract first color code from name (format: ^digit where digit is 0-9)
+ * Returns -1 if no color code found, otherwise returns the digit (0-9)
+ */
+static int CG_ExtractFirstColorCode(const char* name)
+{
+	int i;
+
+	if (!name || !name[0])
+	{
+		return -1;
+	}
+
+	for (i = 0; name[i]; i++)
+	{
+		if (name[i] == '^' && name[i + 1] >= '0' && name[i + 1] <= '9')
+		{
+			return name[i + 1] - '0';
+		}
+	}
+
+	return -1;
+}
+
+static void CG_GenerateReplacementName(unsigned short xid, const char* originalName, int clientNum, char* outName, int outSize)
+{
+	unsigned short hash;
+	char xidStr[16];
+	char clientNumStr[16];
+	int nameIndex;
+	int colorIndex;
+	int originalColorCode;
+	const char* selectedName;
+	int attempt;
+	char tmpName[MAX_QPATH];
+
+	/* Initialize hash */
+	CRC_Init(&hash);
+
+	/* Add XID to hash */
+	Com_sprintf(xidStr, sizeof(xidStr), "%hu", xid);
+	CRC_ContinueProcessString(&hash, xidStr, strlen(xidStr));
+
+	/* Add original name to hash */
+	if (originalName && originalName[0])
+	{
+		CRC_ContinueProcessString(&hash, originalName, strlen(originalName));
+	}
+
+	/* Add clientNum to hash for uniqueness even with same XID and name */
+	Com_sprintf(clientNumStr, sizeof(clientNumStr), "%d", clientNum);
+	CRC_ContinueProcessString(&hash, clientNumStr, strlen(clientNumStr));
+
+	/* Select replacement name based on hash */
+	nameIndex = hash % REPLACEMENT_NAMES_COUNT;
+	colorIndex = (hash >> 8) % 10; /* 0-9 for ^0-^9 */
+
+	/* Try to extract color code from original name */
+	originalColorCode = CG_ExtractFirstColorCode(originalName);
+	if (originalColorCode >= 0)
+	{
+		/* Use color from original name if found */
+		colorIndex = originalColorCode;
+	}
+
+	selectedName = replacementNames[nameIndex];
+	Com_sprintf(outName, outSize, "^%d%s^0*", colorIndex, selectedName);
+
+	if (CG_IsReplacementNameUsed(outName, clientNum))
+	{
+		for (attempt = 0; attempt < REPLACEMENT_NAMES_COUNT; ++attempt)
+		{
+			nameIndex = (nameIndex + 1) % REPLACEMENT_NAMES_COUNT;
+			selectedName = replacementNames[nameIndex];
+			Com_sprintf(tmpName, sizeof(tmpName), "^%d%s^0*", colorIndex, selectedName);
+			if (!CG_IsReplacementNameUsed(tmpName, clientNum))
+			{
+				Q_strncpyz(outName, tmpName, outSize);
+				break;
+			}
+		}
+	}
+}
+
+/*
+ * Check if name should be replaced with replacement name
+ */
+static qboolean CG_ShouldReplaceWithReplacementName(int clientNum, qboolean nameIsInvisible, qboolean is_exists, const char* name_original)
+{
+	if (!cg_giveName.integer)
+	{
+		return qfalse;
+	}
+
+	/* Never replace name for local player - always keep original name */
+	if (clientNum == cg.clientNum)
+	{
+		return qfalse;
+	}
+
+	/* For value 1: replace names for all players except local player */
+	if (cg_giveName.integer == 1)
+	{
+		return qtrue;
+	}
+
+	/* For value 2: replace names only for duplicates, invisible, and NONAME */
+	if (cg_giveName.integer == 2)
+	{
+		if (nameIsInvisible)
+		{
+			return qtrue;
+		}
+
+		if (is_exists)
+		{
+			return qtrue;
+		}
+
+		if (strcmp(name_original, "^1NONAME") == 0)
+		{
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
 #define NUM_TO_HEX_CHAR(III) (((III&0x0f) < 10) ? ('0' + (III&0x0f)) : ('a' + ((III&0x0f) - 10)))
 static void CG_PlayerXIDCalc(const char* cmd, clientInfo_t* ci)
 {
@@ -1955,9 +2164,93 @@ static void CG_PlayerXIDCalc(const char* cmd, clientInfo_t* ci)
 
 /*
 ===================
+CG_PlayerNameApplyDisplay
+
+Apply replacement name and/or ID/XID formatting for one client.
+===================
+*/
+static void CG_PlayerNameApplyDisplay(clientInfo_t* ci, int clientNum, qboolean is_exists, int showID, int showXID)
+{
+	qboolean useID;
+	qboolean useXID;
+	qboolean willGetReplacementName;
+	qboolean isNoname;
+	char replacementName[MAX_QPATH];
+	char nameCodesBuf[MAX_QPATH * 2];
+	const char* displayName;
+	const char* nameForColor;
+
+	isNoname = (strcmp(ci->name_original, "^1NONAME") == 0);
+	willGetReplacementName = CG_ShouldReplaceWithReplacementName(clientNum, ci->nameIsInvisible, is_exists, ci->name_original);
+
+	useID = (showID == 1) || (showID == 2 && (is_exists || isNoname || ci->nameIsInvisible));
+	useXID = (showXID == 1) || (showXID == 2 && (is_exists || isNoname || ci->nameIsInvisible));
+
+	/* If cg_giveName handles duplicates / replacement, skip mode-2 ID/XID */
+	if (showID == 2)
+	{
+		if ((cg_giveName.integer == 2 && is_exists) || (cg_giveName.integer && willGetReplacementName))
+			useID = qfalse;
+	}
+	if (showXID == 2)
+	{
+		if ((cg_giveName.integer == 2 && is_exists) || (cg_giveName.integer && willGetReplacementName))
+			useXID = qfalse;
+	}
+
+	if (willGetReplacementName)
+	{
+		const clientInfo_t* existing = &cgs.clientinfo[clientNum];
+
+		/* Keep first assigned replacement for this slot until disconnect */
+		if (existing->infoValid && CG_HasReplacementName(existing))
+		{
+			Q_strncpyz(ci->name, existing->name, sizeof(ci->name));
+			Q_strncpyz(ci->name_clean, existing->name_clean, sizeof(ci->name_clean));
+			return;
+		}
+
+		nameForColor = ci->name_original;
+		if (ci->name[0] && CG_ExtractFirstColorCode(ci->name) >= 0)
+		{
+			nameForColor = ci->name;
+		}
+		CG_GenerateReplacementName(ci->xid, nameForColor, clientNum, replacementName, sizeof(replacementName));
+		Q_strncpyz(ci->name_clean, replacementName, sizeof(ci->name_clean));
+		CG_RemoveChatEscapeCharAll(ci->name_clean);
+		Q_strncpyz(ci->name, replacementName, sizeof(ci->name));
+		return;
+	}
+
+	if (ci->nameIsInvisible)
+	{
+		CG_StringMakeEscapeCharRAW(ci->name_original, nameCodesBuf, sizeof(nameCodesBuf));
+		displayName = nameCodesBuf;
+		if (useID && useXID)
+			Com_sprintf(ci->name, sizeof(ci->name), "[%d]^8%s^7:\'%s^7\'", clientNum, ci->xidStr, displayName);
+		else if (useXID)
+			Com_sprintf(ci->name, sizeof(ci->name), "^8%s^7:\'%s^7\'", ci->xidStr, displayName);
+		else if (useID)
+			Com_sprintf(ci->name, sizeof(ci->name), "[%d]\'%s\'", clientNum, displayName);
+		else
+			Q_strncpyz(ci->name, displayName, sizeof(ci->name));
+	}
+	else if (useID && useXID)
+		Com_sprintf(ci->name, sizeof(ci->name), "[%d]^8%s^7:%s", clientNum, ci->xidStr, ci->name_original);
+	else if (useXID)
+		Com_sprintf(ci->name, sizeof(ci->name), "^8%s^7:%s", ci->xidStr, ci->name_original);
+	else if (useID)
+		Com_sprintf(ci->name, sizeof(ci->name), "[%d]%s", clientNum, ci->name_original);
+	else
+		Q_strncpyz(ci->name, ci->name_original, sizeof(ci->name));
+}
+
+/*
+===================
 CG_PlayerNameBuildFinal
 
 OSP2-style: 0 = no ID/XID, 1 = always, 2 = only if duplicate/noname/invisible.
+Also applies cg_giveName replacement names when enabled.
 ===================
 */
 static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
@@ -1968,22 +2261,21 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 	char originalClean[MAX_QPATH];
 	int p;
 	char otherClean[MAX_QPATH];
-	char nameCodesBuf[MAX_QPATH * 2];
 	clientInfo_t* other;
-	qboolean useID;
-	qboolean useXID;
+	qboolean needDupScan;
 
 	showID = cg_playersID.integer;
 	showXID = cg_playersXID.integer;
 
-	if (showID == 0 && showXID == 0)
+	if (showID == 0 && showXID == 0 && !cg_giveName.integer)
 	{
 		Q_strncpyz(ci->name, ci->name_original, sizeof(ci->name));
 		return;
 	}
 
 	is_exists = qfalse;
-	if (showID == 2 || showXID == 2)
+	needDupScan = (showID == 2 || showXID == 2 || cg_giveName.integer == 2);
+	if (needDupScan)
 	{
 		Q_strncpyz(originalClean, ci->name_original, sizeof(originalClean));
 		CG_RemoveChatEscapeCharAll(originalClean);
@@ -1996,53 +2288,14 @@ static void CG_PlayerNameBuildFinal(clientInfo_t* ci, int clientNum)
 			if (strcmp(originalClean, otherClean) != 0)
 				continue;
 			is_exists = qtrue;
-			/* Add ID/XID to other client if not yet (like OSP2) */
+
+			/* Update other clients that share this name (ID/XID and/or giveName) */
 			other = &cgs.clientinfo[p];
-			if (strcmp(other->name_original, other->name) == 0)
-			{
-				useID = (showID != 0);
-				useXID = (showXID != 0);
-				if (other->nameIsInvisible)
-					CG_StringMakeEscapeCharRAW(other->name_original, nameCodesBuf, sizeof(nameCodesBuf));
-				if (useID && useXID)
-					Com_sprintf(other->name, sizeof(other->name), other->nameIsInvisible ?
-					            "[%d]^8%s^7:\'%s^7\'" : "[%d]^8%s^7:%s",
-					            p, other->xidStr, other->nameIsInvisible ? nameCodesBuf : other->name_original);
-				else if (useXID)
-					Com_sprintf(other->name, sizeof(other->name), other->nameIsInvisible ?
-					            "^8%s^7:\'%s^7\'" : "^8%s^7:%s",
-					            other->xidStr, other->nameIsInvisible ? nameCodesBuf : other->name_original);
-				else if (useID)
-					Com_sprintf(other->name, sizeof(other->name), other->nameIsInvisible ?
-					            "[%d]\'%s\'" : "[%d]%s",
-					            p, other->nameIsInvisible ? nameCodesBuf : other->name_original);
-			}
+			CG_PlayerNameApplyDisplay(other, p, qtrue, showID, showXID);
 		}
 	}
 
-	useID = (showID == 1) || (showID == 2 && (is_exists || (strcmp(ci->name_original, "^1NONAME") == 0) || ci->nameIsInvisible));
-	useXID = (showXID == 1) || (showXID == 2 && (is_exists || (strcmp(ci->name_original, "^1NONAME") == 0) || ci->nameIsInvisible));
-
-	if (ci->nameIsInvisible)
-	{
-		CG_StringMakeEscapeCharRAW(ci->name_original, nameCodesBuf, sizeof(nameCodesBuf));
-		if (useID && useXID)
-			Com_sprintf(ci->name, sizeof(ci->name), "[%d]^8%s^7:\'%s^7\'", clientNum, ci->xidStr, nameCodesBuf);
-		else if (useXID)
-			Com_sprintf(ci->name, sizeof(ci->name), "^8%s^7:\'%s^7\'", ci->xidStr, nameCodesBuf);
-		else if (useID)
-			Com_sprintf(ci->name, sizeof(ci->name), "[%d]\'%s\'", clientNum, nameCodesBuf);
-		else
-			Q_strncpyz(ci->name, nameCodesBuf, sizeof(ci->name));
-	}
-	else if (useID && useXID)
-		Com_sprintf(ci->name, sizeof(ci->name), "[%d]^8%s^7:%s", clientNum, ci->xidStr, ci->name_original);
-	else if (useXID)
-		Com_sprintf(ci->name, sizeof(ci->name), "^8%s^7:%s", ci->xidStr, ci->name_original);
-	else if (useID)
-		Com_sprintf(ci->name, sizeof(ci->name), "[%d]%s", clientNum, ci->name_original);
-	else
-		Q_strncpyz(ci->name, ci->name_original, sizeof(ci->name));
+	CG_PlayerNameApplyDisplay(ci, clientNum, is_exists, showID, showXID);
 }
 
 /*
@@ -3308,15 +3561,81 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 
 	drawMode = CG_DrawFriendMode();
 	if (!rewardShader && drawMode && !(cent->currentState.eFlags & EF_DEAD) &&
-	        !CG_IsKillerGhostBody(&cent->currentState) && cgs.gametype >= GT_TEAM)
+	        !CG_IsKillerGhostBody(&cent->currentState) &&
+	        (cgs.gametype >= GT_TEAM || CG_IS_LOCAL_CLIENT_SPECTATOR() ||
+	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)))
 	{
 		qboolean isSpec;
 		qboolean showFriend;
 
 		isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
 		         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
-		showFriend = (!isSpec && cg.snap->ps.persistant[PERS_TEAM] == ci->team) ||
-		             (isSpec && CG_DrawFriendForSpecs() && ci->team != TEAM_SPECTATOR);
+		if (!isSpec)
+		{
+			showFriend = (cg.snap->ps.persistant[PERS_TEAM] == ci->team);
+		}
+		else if (cg_specMode.integer == 2)
+		{
+			/* free-spec: all; follow >= GT_TEAM: viewed team; follow FFA: none */
+			if (!(cg.snap->ps.pm_flags & PMF_FOLLOW) ||
+			        cg.snap->ps.clientNum < 0 || cg.snap->ps.clientNum >= MAX_CLIENTS)
+			{
+				showFriend = (ci->team != TEAM_SPECTATOR);
+			}
+			else if (cgs.gametype < GT_TEAM)
+			{
+				showFriend = qfalse;
+			}
+			else
+			{
+				clientInfo_t* followCi;
+				int followTeam;
+				int otherTeam;
+				qboolean isCA;
+
+				followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+				if (!followCi->infoValid)
+				{
+					showFriend = qfalse;
+				}
+				else
+				{
+					isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+					followTeam = isCA ? followCi->rt : followCi->team;
+					otherTeam = isCA ? ci->rt : ci->team;
+					showFriend = (followTeam != TEAM_SPECTATOR && otherTeam == followTeam);
+				}
+			}
+		}
+		else if (CG_DrawFriendForSpecs())
+		{
+			showFriend = (ci->team != TEAM_SPECTATOR);
+		}
+		else if (cgs.gametype >= GT_TEAM && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+		         cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+		{
+			clientInfo_t* followCi;
+			int followTeam;
+			int otherTeam;
+			qboolean isCA;
+
+			followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+			if (!followCi->infoValid)
+			{
+				showFriend = qfalse;
+			}
+			else
+			{
+				isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+				followTeam = isCA ? followCi->rt : followCi->team;
+				otherTeam = isCA ? ci->rt : ci->team;
+				showFriend = (followTeam != TEAM_SPECTATOR && otherTeam == followTeam);
+			}
+		}
+		else
+		{
+			showFriend = qfalse;
+		}
 
 		if (showFriend)
 		{
@@ -3419,7 +3738,71 @@ void CG_TeamProxyDrawFriendMarkers(centity_t* cent)
 	{
 		isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
 		         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
-		showFriend = isSpec ? CG_DrawFriendForSpecs() : !CG_CACHED_IS_ENEMY_CI(ci);
+		if (!isSpec)
+		{
+			showFriend = !CG_CACHED_IS_ENEMY_CI(ci);
+		}
+		else if (cg_specMode.integer == 2)
+		{
+			if (!(cg.snap->ps.pm_flags & PMF_FOLLOW) ||
+			        cg.snap->ps.clientNum < 0 || cg.snap->ps.clientNum >= MAX_CLIENTS)
+			{
+				showFriend = (ci->team != TEAM_SPECTATOR);
+			}
+			else if (cgs.gametype < GT_TEAM)
+			{
+				showFriend = qfalse;
+			}
+			else
+			{
+				clientInfo_t* followCi;
+				int followTeam;
+				int otherTeam;
+				qboolean isCA;
+
+				followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+				if (!followCi->infoValid)
+				{
+					showFriend = qfalse;
+				}
+				else
+				{
+					isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+					followTeam = isCA ? followCi->rt : followCi->team;
+					otherTeam = isCA ? ci->rt : ci->team;
+					showFriend = (followTeam != TEAM_SPECTATOR && otherTeam == followTeam);
+				}
+			}
+		}
+		else if (CG_DrawFriendForSpecs())
+		{
+			showFriend = (ci->team != TEAM_SPECTATOR);
+		}
+		else if (cgs.gametype >= GT_TEAM && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+		         cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
+		{
+			clientInfo_t* followCi;
+			int followTeam;
+			int otherTeam;
+			qboolean isCA;
+
+			followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+			if (!followCi->infoValid)
+			{
+				showFriend = qfalse;
+			}
+			else
+			{
+				isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+				followTeam = isCA ? followCi->rt : followCi->team;
+				otherTeam = isCA ? ci->rt : ci->team;
+				showFriend = (followTeam != TEAM_SPECTATOR && otherTeam == followTeam);
+			}
+		}
+		else
+		{
+			showFriend = qfalse;
+		}
 
 		if (showFriend)
 		{
@@ -3711,6 +4094,168 @@ int CG_LightVerts(vec3_t normal, int numVerts, polyVert_t* verts)
 CG_AddHitBox
 ===============
 */
+#define CG_HB_SIDES 16
+
+static void CG_HitBoxFillVertsColor(polyVert_t verts[4])
+{
+	int i;
+
+	verts[0].st[0] = 0;
+	verts[0].st[1] = 0;
+	verts[1].st[0] = 0;
+	verts[1].st[1] = 1;
+	verts[2].st[0] = 1;
+	verts[2].st[1] = 1;
+	verts[3].st[0] = 1;
+	verts[3].st[1] = 0;
+
+	for (i = 0; i < 4; i++)
+	{
+		if (cg_hitBoxColor.integer || cg_hitBoxColor.string[0])
+		{
+			vec4_t color;
+			Vector4Copy(cg.beHitBoxColor, color);
+			color[0] *= 255;
+			color[1] *= 255;
+			color[2] *= 255;
+			color[3] *= 255;
+			Vector4Copy(color, verts[i].modulate);
+		}
+		else
+		{
+			verts[i].modulate[0] = 0;
+			verts[i].modulate[1] = 128;
+			verts[i].modulate[2] = 0;
+			verts[i].modulate[3] = 255;
+		}
+	}
+}
+
+static void CG_HitBoxAddQuad(qhandle_t shader, polyVert_t verts[4],
+                             const vec3_t a, const vec3_t b, const vec3_t c, const vec3_t d)
+{
+	VectorCopy(a, verts[0].xyz);
+	VectorCopy(b, verts[1].xyz);
+	VectorCopy(c, verts[2].xyz);
+	VectorCopy(d, verts[3].xyz);
+	trap_R_AddPolyToScene(shader, 4, verts);
+}
+
+static void CG_AddCylinderHitBox(centity_t* cent, float minsZ, float maxsZ, float halfXY,
+                                 qhandle_t hitboxShaderEdge, qhandle_t hitboxShaderSide)
+{
+	polyVert_t verts[4];
+	vec3_t topRing[CG_HB_SIDES];
+	vec3_t botRing[CG_HB_SIDES];
+	vec3_t origin;
+	float bodyR, bodyH, feetZ, bodyZ1;
+	float standExtent;
+	float ang, ca, sa;
+	int i, i2;
+
+	VectorCopy(cent->lerpOrigin, origin);
+
+	if (cgs.hbMode == 3)
+	{
+		/* Metarena/OSDF: cylinder from AABB * g_playerCylinderHitboxScale */
+		if (halfXY < 1.0f)
+		{
+			halfXY = 15.0f;
+		}
+		bodyR = halfXY * cgs.hbScale;
+		if (bodyR < 1.0f)
+		{
+			bodyR = 1.0f;
+		}
+		feetZ = origin[2] + minsZ;
+		bodyZ1 = origin[2] + maxsZ;
+		if (bodyZ1 < feetZ + 1.0f)
+		{
+			bodyZ1 = feetZ + 1.0f;
+		}
+	}
+	else
+	{
+		/* Ruthless/Devotion: absolute g_hb_wide / g_hb_hgh */
+		bodyH = cgs.hbHgh;
+		bodyR = cgs.hbWide;
+		if (bodyR < 1.0f)
+		{
+			bodyR = 1.0f;
+		}
+		if (bodyH < 1.0f)
+		{
+			bodyH = 1.0f;
+		}
+
+		feetZ = origin[2] + minsZ;
+
+		/* Crouch: scale rest height like server */
+		standExtent = 32.0f - minsZ;
+		if (standExtent < 1.0f)
+		{
+			standExtent = 56.0f;
+		}
+		if (maxsZ < 32.0f)
+		{
+			bodyH = bodyH * ((maxsZ - minsZ) / standExtent);
+			if (bodyH < 1.0f)
+			{
+				bodyH = 1.0f;
+			}
+		}
+
+		/* Body: feet + g_hb_hgh (match server; no anim lift — Q3 jump leaves model above box) */
+		{
+			float bodyZ0;
+
+			bodyZ0 = feetZ;
+			bodyZ1 = bodyZ0 + bodyH;
+			if (bodyZ1 < bodyZ0 + 1.0f)
+			{
+				bodyZ1 = bodyZ0 + 1.0f;
+			}
+		}
+	}
+
+	CG_HitBoxFillVertsColor(verts);
+
+	/* Body 16-gon — full radius (same as server cylinder) */
+	for (i = 0; i < CG_HB_SIDES; i++)
+	{
+		ang = (float)i * (2.0f * M_PI / (float)CG_HB_SIDES);
+		ca = cos(ang);
+		sa = sin(ang);
+		botRing[i][0] = origin[0] + ca * bodyR;
+		botRing[i][1] = origin[1] + sa * bodyR;
+		botRing[i][2] = feetZ;
+		topRing[i][0] = botRing[i][0];
+		topRing[i][1] = botRing[i][1];
+		topRing[i][2] = bodyZ1;
+	}
+
+	for (i = 0; i < CG_HB_SIDES; i++)
+	{
+		i2 = (i + 1) % CG_HB_SIDES;
+		CG_HitBoxAddQuad(hitboxShaderSide, verts, topRing[i], topRing[i2], botRing[i2], botRing[i]);
+	}
+	for (i = 0; i < CG_HB_SIDES; i++)
+	{
+		i2 = (i + 1) % CG_HB_SIDES;
+		{
+			vec3_t centerTop, centerBot;
+			centerTop[0] = origin[0];
+			centerTop[1] = origin[1];
+			centerTop[2] = bodyZ1;
+			centerBot[0] = origin[0];
+			centerBot[1] = origin[1];
+			centerBot[2] = feetZ;
+			CG_HitBoxAddQuad(hitboxShaderEdge, verts, centerTop, topRing[i], topRing[i2], centerTop);
+			CG_HitBoxAddQuad(hitboxShaderEdge, verts, centerBot, botRing[i2], botRing[i], centerBot);
+		}
+	}
+}
+
 void CG_AddHitBox(centity_t* cent, team_t team)
 {
 	polyVert_t verts[4];
@@ -3722,7 +4267,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	vec3_t corners[8];
 	qhandle_t hitboxShaderEdge, hitboxShaderSide;
 
-	// (KONSTALKER) hitbox offset for not render through map
+	/* (KONSTALKER) hitbox offset for not render through map */
 	const float hbox_offset = 1.0f;
 
 	if (!cg_drawHitBox.integer || !CG_BE_FEATURE_ENABLED(CG_BE_HITBOX))
@@ -3730,10 +4275,8 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		return;
 	}
 
-	// get the player's client info
 	ci = &cgs.clientinfo[cent->currentState.clientNum];
 
-	// don't draw it if it's us in first-person, for dead players, for frozen players, for invisible players
 	if ((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
 	        cent->currentState.eFlags & EF_DEAD ||
 	        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && cent->currentState.powerups & (1 << PW_BATTLESUIT)) ||
@@ -3741,7 +4284,6 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	{
 		return;
 	}
-	// don't draw it if it's a teammate, spectator or free player
 	if (cg.snap->ps.persistant[PERS_TEAM] == team &&
 	        cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR &&
 	        cg.snap->ps.persistant[PERS_TEAM] != TEAM_FREE)
@@ -3749,97 +4291,33 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		return;
 	}
 
-	// if they don't exist, forget it
 	if (!CG_CACHED_IS_ENEMY_CI(ci))
 	{
 		return;
 	}
 
-	// if it's us
 	if (cent->currentState.number == cg.predictedPlayerState.clientNum)
 	{
-		// use the view height
 		maxs[2] = cg.predictedPlayerState.viewheight + 6;
 	}
 	else
 	{
 		int x, zd, zu;
 
-		// otherwise grab the encoded bounding box
 		x = (cent->currentState.solid & 255);
 		zd = ((cent->currentState.solid >> 8) & 255);
 		zu = ((cent->currentState.solid >> 16) & 255) - 32;
+
+		/* solid==0 yields degenerate AABB after offset; use stock Q3 half-extent */
+		if (x < 1)
+		{
+			x = 15;
+		}
 
 		mins[0] = mins[1] = -x;
 		maxs[0] = maxs[1] = x;
 		mins[2] = -zd;
 		maxs[2] = zu;
-	}
-
-	// (KONSTALKER) add visual offset to hitboxes
-	mins[0] += hbox_offset;
-	mins[1] += hbox_offset;
-	mins[2] += hbox_offset;
-	maxs[0] -= hbox_offset;
-	maxs[1] -= hbox_offset;
-	maxs[2] -= hbox_offset;
-
-	// get the extents (size)
-	extx = maxs[0] - mins[0];
-	exty = maxs[1] - mins[1];
-	extz = maxs[2] - mins[2];
-
-
-	// set the polygon's texture coordinates
-	verts[0].st[0] = 0;
-	verts[0].st[1] = 0;
-	verts[1].st[0] = 0;
-	verts[1].st[1] = 1;
-	verts[2].st[0] = 1;
-	verts[2].st[1] = 1;
-	verts[3].st[0] = 1;
-	verts[3].st[1] = 0;
-
-
-	// set the polygon's vertex colors
-	for (i = 0; i < 4; i++)
-	{
-		if (cg_hitBoxColor.integer || cg_hitBoxColor.string[0])
-		{
-			vec4_t color;
-			Vector4Copy(cg.beHitBoxColor, color);
-
-			color[0] = color[0] * 255;
-			color[1] = color[1] * 255;
-			color[2] = color[2] * 255;
-			color[3] = color[3] * 255;
-
-			Vector4Copy(color, verts[i].modulate);
-		}
-		else
-		{
-			verts[i].modulate[0] = 0;
-			verts[i].modulate[1] = 128;
-			verts[i].modulate[2] = 0;
-			verts[i].modulate[3] = 255;
-		}
-	}
-
-	VectorAdd(cent->lerpOrigin, maxs, corners[3]);
-
-	VectorCopy(corners[3], corners[2]);
-	corners[2][0] -= extx;
-
-	VectorCopy(corners[2], corners[1]);
-	corners[1][1] -= exty;
-
-	VectorCopy(corners[1], corners[0]);
-	corners[0][0] += extx;
-
-	for (i = 0; i < 4; i++)
-	{
-		VectorCopy(corners[i], corners[i + 4]);
-		corners[i + 4][2] -= extz;
 	}
 
 	if (cg_drawHitBox.integer == 2)
@@ -3858,42 +4336,75 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		hitboxShaderSide = cgs.osp.hboxShader_nocull;
 	}
 
-	// top
+	/* Cylinder only with valid CS 911 params; otherwise always AABB cube */
+	if (cgs.hbEnabled &&
+	    ((cgs.hbMode == 1 && cgs.hbWide > 0.0f && cgs.hbHgh > 0.0f) ||
+	     (cgs.hbMode == 3 && cgs.hbScale > 0.0f)))
+	{
+		CG_AddCylinderHitBox(cent, mins[2], maxs[2], maxs[0], hitboxShaderEdge, hitboxShaderSide);
+		return;
+	}
+
+	mins[0] += hbox_offset;
+	mins[1] += hbox_offset;
+	mins[2] += hbox_offset;
+	maxs[0] -= hbox_offset;
+	maxs[1] -= hbox_offset;
+	maxs[2] -= hbox_offset;
+
+	extx = maxs[0] - mins[0];
+	exty = maxs[1] - mins[1];
+	extz = maxs[2] - mins[2];
+
+	CG_HitBoxFillVertsColor(verts);
+
+	VectorAdd(cent->lerpOrigin, maxs, corners[3]);
+
+	VectorCopy(corners[3], corners[2]);
+	corners[2][0] -= extx;
+
+	VectorCopy(corners[2], corners[1]);
+	corners[1][1] -= exty;
+
+	VectorCopy(corners[1], corners[0]);
+	corners[0][0] += extx;
+
+	for (i = 0; i < 4; i++)
+	{
+		VectorCopy(corners[i], corners[i + 4]);
+		corners[i + 4][2] -= extz;
+	}
+
 	VectorCopy(corners[0], verts[0].xyz);
 	VectorCopy(corners[1], verts[1].xyz);
 	VectorCopy(corners[2], verts[2].xyz);
 	VectorCopy(corners[3], verts[3].xyz);
 	trap_R_AddPolyToScene(hitboxShaderEdge, 4, verts);
 
-	// bottom
 	VectorCopy(corners[7], verts[0].xyz);
 	VectorCopy(corners[6], verts[1].xyz);
 	VectorCopy(corners[5], verts[2].xyz);
 	VectorCopy(corners[4], verts[3].xyz);
 	trap_R_AddPolyToScene(hitboxShaderEdge, 4, verts);
 
-	// top side
 	VectorCopy(corners[3], verts[0].xyz);
 	VectorCopy(corners[2], verts[1].xyz);
 	VectorCopy(corners[6], verts[2].xyz);
 	VectorCopy(corners[7], verts[3].xyz);
 	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 
-	// left side
 	VectorCopy(corners[2], verts[0].xyz);
 	VectorCopy(corners[1], verts[1].xyz);
 	VectorCopy(corners[5], verts[2].xyz);
 	VectorCopy(corners[6], verts[3].xyz);
 	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 
-	// right side
 	VectorCopy(corners[0], verts[0].xyz);
 	VectorCopy(corners[3], verts[1].xyz);
 	VectorCopy(corners[7], verts[2].xyz);
 	VectorCopy(corners[4], verts[3].xyz);
 	trap_R_AddPolyToScene(hitboxShaderSide, 4, verts);
 
-	// bottom side
 	VectorCopy(corners[1], verts[0].xyz);
 	VectorCopy(corners[0], verts[1].xyz);
 	VectorCopy(corners[4], verts[2].xyz);
@@ -4303,7 +4814,9 @@ void CG_PlayerSpecXrayAddWeapon(refEntity_t* ent, int weaponNum)
 ===============
 CG_PlayerSpecXrayBegin
 Compute X-ray silhouette state once per cent.
-Spect/demo: all players. In-game: teammates only.
+In-game: teammates only.
+Spect/demo + bit 8: all players.
+Spect/demo without bit 8: follow → allies of viewed player; free-spec/FFA → none.
 ===============
 */
 static void CG_PlayerSpecXrayBegin(centity_t* cent)
@@ -4343,9 +4856,61 @@ static void CG_PlayerSpecXrayBegin(centity_t* cent)
 	if (!ci->infoValid)
 		return;
 
-	/* playing: teammates only (FFA has none); spect/demo: everyone */
-	if (!cg.demoPlayback && !CG_IS_LOCAL_CLIENT_SPECTATOR() && CG_IS_ENEMY_SIMPLE(ci))
-		return;
+	/* playing: teammates only (FFA has none) */
+	if (!cg.demoPlayback && !CG_IS_LOCAL_CLIENT_SPECTATOR())
+	{
+		if (CG_IS_ENEMY_SIMPLE(ci))
+			return;
+	}
+	/* cg_specMode 2: free-spec all; follow >= GT_TEAM viewed team; follow FFA none */
+	else if (cg_specMode.integer == 2)
+	{
+		qboolean isFollow;
+
+		isFollow = cg.snap && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+		           cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS;
+		if (isFollow)
+		{
+			const clientInfo_t* followCi;
+			int followTeam;
+			int otherTeam;
+			qboolean isCA;
+
+			if (cgs.gametype < GT_TEAM)
+				return;
+			followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+			if (!followCi->infoValid)
+				return;
+			isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+			followTeam = isCA ? followCi->rt : followCi->team;
+			otherTeam = isCA ? ci->rt : ci->team;
+			if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
+				return;
+		}
+	}
+	/* spect/demo: bit 8 = everyone; else follow → allies of viewed player only */
+	else if (!(cg_playerXray.integer & CG_PLAYER_XRAY_SPECTATOR))
+	{
+		const clientInfo_t* followCi;
+		int followTeam;
+		int otherTeam;
+		qboolean isCA;
+		qboolean isFollow;
+
+		isFollow = cg.snap && (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+		           cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS;
+		if (!isFollow || cgs.gametype < GT_TEAM)
+			return;
+
+		followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+		if (!followCi->infoValid)
+			return;
+		isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+		followTeam = isCA ? followCi->rt : followCi->team;
+		otherTeam = isCA ? ci->rt : ci->team;
+		if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
+			return;
+	}
 
 	hasInvis = (cent->currentState.powerups & (1 << PW_INVIS)) != 0;
 	/* fully visible => no depthhack overlay on the normal skin; invis always needs silhouette */
