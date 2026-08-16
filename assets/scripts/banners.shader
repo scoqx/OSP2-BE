@@ -1,4 +1,4 @@
-// Ruthless / Mus1n map banners — canonical NEW shaders only.
+// Ruthless map banners — canonical NEW shaders only.
 // Stock map names (textures/ad_content/*, main_q3abanner, …) are NOT redefined here.
 // Server remaps those via CS_SHADERSTATE when g_mapBanners 1.
 // Layer setup matches Mus1n zz-Banners.shaderx (FX → Banner* → glow).

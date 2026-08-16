@@ -503,6 +503,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamTaskSentPos", "Position of own team task sent marker at top of screen (tHere, tPickup, etc.).\n  ^2X^7 - X only (Y stays ^220^7)\n  ^2X Y^7 - both coordinates\nDefault: ^2320 20^7" },
 	{ "cg_specMode", "Enemy markers while spectating (^3cg_teamIndicator^7, ^3cg_drawFriend^7, ^3cg_playerXray^7 — if enabled).\n  ^20^7 - default\n  ^22^7 - following a player: that team only; free camera: everyone" },
 	{ "cg_giveName", "Replace invisible, duplicate, and noname player names with names. Requires ^3vid_restart^7\n  ^20^7 - off\n  ^21^7 - on (all players)\n  ^22^7 - on (only duplicates/invisible/noname)" },
+	{ "cg_autoHopStyle", "+autojump style. Requires ^3vid_restart^7.\n  ^21^7 - alternate +moveup/-moveup every frame\n  ^22^7 - release while JUMP_HELD, press otherwise" },
 };
 
 

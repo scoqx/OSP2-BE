@@ -229,8 +229,8 @@ static void CG_ScoresUp_f(void)
 =================
 CG_AutoJumpDown_f / CG_AutoJumpUp_f
 
-+turboup: hold to alternate +moveup/-moveup every frame (turbo jump).
--turboup: release and clear moveup state.
++autojump: hold to auto jump (see cg_autoJumpStyle).
+-autojump: release and clear moveup state.
 =================
 */
 static void CG_AutoJumpDown_f(void)
@@ -240,7 +240,7 @@ static void CG_AutoJumpDown_f(void)
 		trap_SendConsoleCommand("+moveup");
 		return;
 	}
-	/* if predicted player is not us or we are crouching, don't turbo-jump: behave like normal +moveup (no per-frame alternation) */
+	/* if predicted player is not us or we are crouching, don't auto-jump: behave like normal +moveup */
 	if (cg.predictedPlayerState.clientNum != cg.clientNum || (cg.predictedPlayerState.pm_flags & PMF_DUCKED))
 	{
 		trap_SendConsoleCommand("+moveup");
@@ -2433,7 +2433,7 @@ void CG_BEHelp_f(void)
 		CG_BEHelp_PrintFeature("cg_teamTask", CG_BE_TEAMTASKS, "Team task markers", 0);
 		CG_BEHelp_PrintFeature("cg_noExplosions", CG_BE_NO_EXPLOSIONS, "Disable all projectile and weapon impact explosions", 0);
 		CG_BEHelp_PrintFeature("cg_footsteps", CG_BE_METAL_FOOTSTEPS, "Metal surface footsteps (2 = force normal footsteps)", 0);
-		CG_BEHelp_PrintFeatureCommand("+autojump", CG_BE_AUTOJUMP, "Hold to auto jump (alternate +moveup)");
+		CG_BEHelp_PrintFeatureCommand("+autojump", CG_BE_AUTOJUMP, "Hold to auto jump (cg_autoJumpStyle)");
 
 		return;
 	}
@@ -2443,7 +2443,7 @@ void CG_BEHelp_f(void)
 	/* Feature by command name (no cvar) */
 	if (!Q_stricmp(cvarName, "autojump") || !Q_stricmp(cvarName, "+autojump"))
 	{
-		CG_BEHelp_PrintFeatureCommand("+autojump", CG_BE_AUTOJUMP, "Hold to auto jump (alternate +moveup). Bind: bind KEY +autojump");
+		CG_BEHelp_PrintFeatureCommand("+autojump", CG_BE_AUTOJUMP, "Hold to auto jump (cg_autoJumpStyle). Bind: bind KEY +autojump");
 		return;
 	}
 

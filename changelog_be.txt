@@ -1056,7 +1056,8 @@ SuperHUD:
   + visflags: enterchat, showchat, printui, bestats (and !inverses)
   * Spectator_ItemSpawns: alignh C horizontal layout
 
-17.08.2026 be v1.07c1
+17.08.2026 be v1.07c2
++ cg_autoJumpStyle 1/2. 2 - fixed variant
 + cg_giveName restored
 + cg_optimizePrediction 0/1
 + cg_specMode 1/2

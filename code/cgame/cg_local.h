@@ -1069,7 +1069,7 @@ typedef struct
 	qboolean    beClientDamagePrinted;
 	globalBeStatsSettings_t beSettings;
 	qboolean    ttwheelMarkActive; /* team task wheel open (was teamMarkers.ttwheelMarkActive) */
-	qboolean    turboupHeld;       /* +turboup held: alternate +moveup/-moveup every frame */
+	qboolean    turboupHeld;       /* +autojump held; style via cg_autoJumpStyle */
 	cgs_teamMarkers_t teamMarkers;
 
 	/* BE colors (from cvars, parsed in CG_LocalEventCvarParseColor) */
@@ -2644,6 +2644,7 @@ extern vmCvar_t         cg_enemyAltShadowColor;
 extern vmCvar_t         cg_playerXray;
 extern vmCvar_t         cg_specMode;
 extern vmCvar_t         cg_teamTaskSentPos;
+extern vmCvar_t         cg_autoJumpStyle;
 
 
 
