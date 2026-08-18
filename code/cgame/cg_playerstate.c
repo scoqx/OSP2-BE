@@ -677,7 +677,11 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 
 	int deltaTime  = cg.time - cgs.osp.lastHitTime;
 	int hits    = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
-	int lgcd    = ops->powerups[PW_HASTE] ? 25 : 50; //lg ms cooldown, do we really need 25ms for haste?
+	int lgcd    = modeCpmaPmove ? 66 : 50;
+
+	if (ops->powerups[PW_HASTE]) {
+		lgcd = (int)( lgcd / 1.3f );
+	}
 
 	/* fpsclassico / UnFreeZe: hithi/hitlo/hit by remaining HP/armor; no stack/LG defer */
 	if (cgs.fpsclassico)

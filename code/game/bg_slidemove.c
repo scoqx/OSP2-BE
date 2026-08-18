@@ -27,6 +27,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "bg_local.h"
 
 int modePromodePhysKoeff; //1870ec
+int modeJumpVelocity = 270;
+int modeCpmaPmove;
 float modePromode_pm_airaccelerate_1; //3450
 int modePredictionKoeff2;   //3454
 float modePromode_pm_airaccelerate_2; //3458
@@ -328,7 +330,7 @@ void PM_StepSlideMove(qboolean gravity)
 		const int physBoost = modePromodePhysKoeff;
 
 		if (pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 || DotProduct(trace.plane.normal, up) < 0.7)
-		        && ((pm->ps->velocity[2] > (physBoost + 270)) || physStat <= 0))
+		        && ((pm->ps->velocity[2] > (physBoost + modeJumpVelocity)) || physStat <= 0))
 		{
 			return;
 		}
@@ -337,8 +339,16 @@ void PM_StepSlideMove(qboolean gravity)
 	VectorCopy(start_o, up);
 	up[2] += actualStepHeight;
 
-	// test the player position if they were a stepheight higher
-	pm->trace(&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
+	/* OSP 1.03: point test at +step (start==end). Sweep start_o->up is ioquake3;
+	   a ceiling makes fraction<1 / not allsolid and would copy into the brush. */
+	if (uf_rampjump)
+	{
+		pm->trace(&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
+	}
+	else
+	{
+		pm->trace(&trace, up, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
+	}
 	if (trace.allsolid)
 	{
 		if (pm->debugLevel)
@@ -348,9 +358,16 @@ void PM_StepSlideMove(qboolean gravity)
 		return;     // can't step up
 	}
 
-	stepSize = trace.endpos[2] - start_o[2];
-	// try slidemove from this position
-	VectorCopy(trace.endpos, pm->ps->origin);
+	if (uf_rampjump)
+	{
+		stepSize = trace.endpos[2] - start_o[2];
+		VectorCopy(trace.endpos, pm->ps->origin);
+	}
+	else
+	{
+		stepSize = actualStepHeight;
+		VectorCopy(up, pm->ps->origin);
+	}
 	VectorCopy(start_v, pm->ps->velocity);
 
 	PM_SlideMove(gravity);
@@ -368,11 +385,9 @@ void PM_StepSlideMove(qboolean gravity)
 		if (!uf_rampjump && pm->ps->stats[STAT_OSP_10])
 		{
 			PM_ClipVelocityOSP(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, pm_overclip);
+			return;
 		}
-		else
-		{
-			PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, pm_overclip);
-		}
+		PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, pm_overclip);
 	}
 
 #if 0

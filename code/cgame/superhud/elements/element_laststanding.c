@@ -55,7 +55,7 @@ static qboolean CG_SHUDElementLastStandingActive(void)
 	const clientInfo_t* ci;
 	team_t team;
 
-	if (!CG_OSPIsGameTypeFreeze() || !cg.snap || cg.warmup || cg.intermissionStarted)
+	if (!(CG_OSPIsGameTypeFreeze() || CG_OSPIsGameTypeCA(cgs.gametype)) || !cg.snap || cg.warmup || cg.intermissionStarted)
 	{
 		return qfalse;
 	}

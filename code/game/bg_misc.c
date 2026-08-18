@@ -974,6 +974,9 @@ static qboolean BG_CanArmorBeGrabbed(gitem_t* item, const playerState_t* ps)
 		case 5:
 			armorTypeItem = armorTypePlayer;
 			break;
+		case 25:
+			armorTypeItem = ARMOR_GREEN;
+			break;
 		case 50:
 			armorTypeItem = ARMOR_YELLOW;
 			break;
@@ -1085,7 +1088,10 @@ qboolean BG_CanItemBeGrabbed(int gametype, const entityState_t* ent, const playe
 			}
 			if (!disableArmorCheck)
 			{
-				BG_CanArmorBeGrabbed(item, ps);
+				if (pm_armorPromode)
+				{
+					return BG_CanArmorBeGrabbed(item, ps);
+				}
 				if (ps->stats[STAT_ARMOR] >= ps->stats[STAT_MAX_HEALTH] * 2)
 				{
 					return qfalse;

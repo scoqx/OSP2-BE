@@ -1,3 +1,7 @@
+18.08.2026 be v1.07c2
++ CPMA Promode movement/weapon prediction
+* OSP Promode predict fix
+
 17.08.2026 be v1.07c1
 + cg_giveName restored
 + cg_optimizePrediction 0/1
@@ -16,6 +20,7 @@ FPSClassico:
   + movement predict
   + projectile predict
   + hitsound fix
+
 
 07.08.2026 be v1.07b2
 + Q3A.SPACE Autologin

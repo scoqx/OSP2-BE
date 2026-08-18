@@ -1074,3 +1074,7 @@ FPSClassico:
   + movement predict
   + projectile predict
   + hitsound fix
+
+18.08.2026 be v1.07c2
++ CPMA Promode movement/weapon prediction
+* OSP Promode predict fix

@@ -522,11 +522,11 @@ qboolean PM_CheckJump(void)
 		/* Default OSP / VQ3 / Promode — unchanged */
 		if (modePredictionKoeff1 != 0 && pm->ps->velocity[2] > 0)
 		{
-			pm->ps->velocity[2] += JUMP_VELOCITY;
+			pm->ps->velocity[2] += modeJumpVelocity;
 		}
 		else
 		{
-			pm->ps->velocity[2] = JUMP_VELOCITY;
+			pm->ps->velocity[2] = modeJumpVelocity;
 		}
 
 		if (modePromodePhysKoeff != 0)
@@ -815,6 +815,37 @@ static void PM_AirControl(const pmove_t* pm, vec3_t wishdir, float wishvel)
 
 /*
 ===================
+PM_CpmaCapGroundPlaneSpeed
+
+CPMA: when sliding a steep ground plane in air, clamp xy speed to
+2 * ps->speed. (cgame AirMove after Accelerate)
+===================
+*/
+static void PM_CpmaCapGroundPlaneSpeed(void)
+{
+	float xy;
+	float cap;
+	float scale;
+
+	if (!pml.groundPlane)
+	{
+		return;
+	}
+
+	xy = pm->ps->velocity[0] * pm->ps->velocity[0] + pm->ps->velocity[1] * pm->ps->velocity[1];
+	cap = 2.0f * (float)pm->ps->speed;
+	if (xy <= cap * cap || cap <= 0)
+	{
+		return;
+	}
+
+	scale = cap / (float)sqrt(xy);
+	pm->ps->velocity[0] *= scale;
+	pm->ps->velocity[1] *= scale;
+}
+
+/*
+===================
 PM_AirMove
 
 ===================
@@ -859,6 +890,11 @@ void PM_AirMove(void)
 	wishspeed *= scale;
 	wishspeedOrig = wishspeed;
 
+	if (!uf_rampjump && modeCpmaPmove && modePredictionKoeff2)
+	{
+		PM_AirControl(pm, wishdir, wishspeedOrig);
+	}
+
 	if (uf_rampjump)
 	{
 		/* UnFreeZe path B: stock air accel only (no OSP promode strafe / air control) */
@@ -884,9 +920,14 @@ void PM_AirMove(void)
 	// not on ground, so little effect on velocity
 	PM_Accelerate(wishdir, wishspeed, accel);
 
-	if (!uf_rampjump && modePredictionKoeff2)
+	if (!uf_rampjump && !modeCpmaPmove && modePredictionKoeff2)
 	{
 		PM_AirControl(pm, wishdir, wishspeedOrig);
+	}
+
+	if (modeCpmaPmove)
+	{
+		PM_CpmaCapGroundPlaneSpeed();
 	}
 
 	// we may have a ground plane that is very steep, even
@@ -1288,7 +1329,7 @@ void PM_CrashLand(void)
 		{
 			PM_AddEvent(EV_FALL_FAR);
 		}
-		else if (delta > 40)
+		else if (delta > ((pm->pmove_accurate == 4) ? 42 : 40))
 		{
 			// this is a pain grunt, so don't play it if dead
 			if (pm->ps->stats[STAT_HEALTH] > 0)
@@ -2091,7 +2132,7 @@ void PM_Weapon(void)
 			addTime = 400; //-V1037
 			break;
 		case WP_LIGHTNING:
-			addTime = 50;
+			addTime = modeCpmaPmove ? 66 : 50;
 			break;
 		case WP_SHOTGUN:
 			addTime = 1000;
@@ -2113,6 +2154,10 @@ void PM_Weapon(void)
 			{
 				addTime = 1000;
 			}
+			else if (modeCpmaPmove)
+			{
+				addTime = 1250;
+			}
 			else
 			{
 				addTime = 1500;
@@ -2120,7 +2165,7 @@ void PM_Weapon(void)
 			/* stats[8] is UnFreeZe phys timer when uf_rampjump — do not clobber */
 			if (!uf_rampjump)
 			{
-				pm->ps->stats[STAT_RAIL_DELAY] = 1500;
+				pm->ps->stats[STAT_RAIL_DELAY] = modeCpmaPmove ? 1250 : 1500;
 			}
 			break;
 		case WP_BFG:
@@ -2328,7 +2373,7 @@ void PM_FinalizeVelocity(int do_snap)
 			if (pm->pmove_accurate == 1) {
 				fps = 75.0f;
 			}
-			else if (pm->pmove_accurate == 2) {
+			else if (pm->pmove_accurate == 2 || pm->pmove_accurate == 4) {
 				fps = 125.0f;
 			}
 			else {
@@ -2349,6 +2394,11 @@ void PM_FinalizeVelocity(int do_snap)
 						pm->ps->velocity[i] += 0.5f * fac;
 					}
 				}
+			}
+			/* Mode 4: CPMA lock — nudge then snap so vz matches vanilla 125. */
+			if (pm->pmove_accurate == 4)
+			{
+				trap_SnapVector(pm->ps->velocity);
 			}
 		}
 	}
@@ -2666,6 +2716,13 @@ void PmoveEx(pmove_t* pmove, void (*single)(pmove_t* pmove))
 				msec = pmove->pmove_msec;
 			}
 		}
+		else if (pmove->pmove_accurate == 4)
+		{
+			if (msec > 8)
+			{
+				msec = 8;
+			}
+		}
 		else
 		{
 			if (msec > 66)
@@ -2722,6 +2779,13 @@ void Pmove(pmove_t* pmove)
 			if (msec > pmove->pmove_msec)
 			{
 				msec = pmove->pmove_msec;
+			}
+		}
+		else if (pmove->pmove_accurate == 4)
+		{
+			if (msec > 8)
+			{
+				msec = 8;
 			}
 		}
 		else

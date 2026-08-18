@@ -491,7 +491,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_worldFlags", "CTF flag position indicators. Set ^20^7 to disable. Bitmask:\n  ^21^7 - world 2D icons\n  ^22^7 - off-screen border HUD markers" },
 	{ "cg_oldFloatSprites", "Foe marker and talk balloon sprite set. Requires ^3vid_restart^7.\n  ^20^7 - new\n  ^21^7 - old" },
 	{ "pmove_float", "Disable integer velocity snap. Set ^21^7 for full float physics. Requires server ^3systeminfo^7 support." },
-	{ "pmove_accurate", "Server movement lock (same physics at any FPS). Set by server.\n ^20^7 - off\n ^21^7 - like ~75 FPS\n ^22^7 - like ~125 FPS\n ^23^7 - like ~125 FPS fall, normal jump" },
+	{ "pmove_accurate", "Server movement lock (same physics at any FPS). Set by server.\n ^20^7 - off\n ^21^7 - like ~75 FPS\n ^22^7 - like ~125 FPS\n ^23^7 - like ~125 FPS fall, normal jump\n ^24^7 - CPMA lock: 8 ms / ~125 FPS chop + nudge + snap" },
 	{ "be_fontShadowOffset", "OSP bitmap font shadow offset.\n  ^2-0.25^7-^20.25^7" },
 	{ "be_ttfShadowOffset", "TTF font shadow offset.\n  ^2-0.25^7-^20.25^7" },
 	{ "cg_chatWindowNumLock", "Favorite emoji key layout in chat window (^3/enterchat^7).\n  ^21^7 - Ctrl+0-9 for favorites (Ctrl+arrows navigate)\n  ^20^7 - NumPad layout (arrows/Home/PgUp…)" },

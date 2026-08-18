@@ -1821,6 +1821,7 @@ typedef struct
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
 #define  OSP_SERVER_MODE_CQ3      2
+#define  OSP_SERVER_MODE_CPMA     4
 #define  OSP_SERVER_MODE_PROMODE_OPT1      0x11
 #define  OSP_SERVER_MODE_PROMODE_OPT2      0x21
 
@@ -3762,6 +3763,7 @@ qboolean CG_DrawIntermission(void);
 extern int modeShotgunPromode;
 extern int modeShotgunNumberOfPellets;
 extern float modeShotgunKoeff;
+extern int modeCpmaPmove;
 extern const char* weaponNames[10];
 extern const char* weaponShortNames[10];
 extern int global_viewlistFirstOption;

@@ -87,6 +87,8 @@ extern  float   pm_flightfriction;
 extern  int     c_pmove;
 
 extern int modePromodePhysKoeff; //1870ec
+extern int modeJumpVelocity;
+extern int modeCpmaPmove;
 extern float modePromode_pm_airaccelerate_1; //3450
 extern int modePredictionKoeff2;   //3454
 extern float modePromode_pm_airaccelerate_2; //3458
