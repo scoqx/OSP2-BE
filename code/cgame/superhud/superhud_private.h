@@ -373,6 +373,8 @@ typedef enum
 #define SE_CONSOLE_STR "console"
 #define SE_MENU (1 << 5)
 #define SE_MENU_STR "menu"
+#define SE_PROMODE (1 << 6)
+#define SE_PROMODE_STR "promode"
 
 #define SE_SHUD_STYLE1 (1 << 0)
 #define SE_SHUD_STYLE1_STR "style1"
@@ -422,7 +424,7 @@ superhudElementDictMember_t;
  * Visibility data for one HUD element (filled at config load, read each frame).
  *
  * vflags / vflagsNeg — copy of element visflags (see SE_* in this header).
- * vflagsExt / vflagsNegExt — extended visflags (enterchat/showchat/printui/bestats/console/menu).
+ * vflagsExt / vflagsNegExt — extended visflags (enterchat/showchat/printui/bestats/console/menu/promode).
  *
  * showInIntermission, showWhenDead, showWhenSpect — without the matching positive
  * visflags bit the element is hidden in that state (default HUD behavior).
@@ -470,6 +472,7 @@ typedef struct
 	qboolean is_bestats;
 	qboolean is_console;
 	qboolean is_menu;
+	qboolean is_promode;
 	qboolean demo_playback;
 } superhudFrameContext_t;
 

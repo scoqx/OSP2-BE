@@ -129,8 +129,6 @@ void PM_AddEvent(int newEvent);
 
 float       PM_GetStepSize(void);
 
-int         PM_GravityApply(void);
-
 qboolean    PM_SlideMove(qboolean gravity);
 void        PM_StepSlideMove(qboolean gravity);
 

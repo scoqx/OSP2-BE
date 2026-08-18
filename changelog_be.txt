@@ -1075,6 +1075,12 @@ FPSClassico:
   + projectile predict
   + hitsound fix
 
-18.08.2026 be v1.07c2
+18.08.2026 be v1.07c3
+SuperHUD:
+  * Mirage's configs fixed (fonts override removed)
+  + Visflags: promode
+  + StatusBar_ArmorIcon 'image' parameter
+  + Spectators: rect h = max name lines (0 = unlimited)
++ cg_drawSpawns autofade
 + CPMA Promode movement/weapon prediction
 * OSP Promode predict fix

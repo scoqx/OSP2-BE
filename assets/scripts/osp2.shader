@@ -848,6 +848,7 @@ sprites/spawn_mark_plasma
 		clampmap sprites/spawn_mark_plasma2.jpg
 		blendfunc GL_ONE GL_ONE
 		tcMod rotate 931
+		rgbgen entity
 	}
 }
 
@@ -970,6 +971,7 @@ models/players/spawn
 		tcGen environment
 		tcmod rotate 30
 		tcmod scroll 1 .1
+		rgbGen entity
 	}
 }
 

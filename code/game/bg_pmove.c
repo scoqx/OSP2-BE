@@ -49,27 +49,6 @@ float   pm_spectatorfriction = 5.0f;
 int     c_pmove = 0;
 
 /*
-===================
-PM_GravityApply
-
-Mode 3: snap@125 fall uses g*15/16 only while falling (vz < 0),
-keeping jump height at full ps->gravity on ascent.
-===================
-*/
-int PM_GravityApply(void)
-{
-	int g = pm->ps->gravity;
-
-	if (pm->pmove_accurate == 3 && pm->ps->stats[STAT_HEALTH] > 0
-	    && pm->ps->velocity[2] < 0)
-	{
-		return (g * 15) / 16;
-	}
-	return g;
-}
-
-
-/*
 ===============
 PM_AddEvent
 
@@ -623,7 +602,7 @@ void PM_WaterJumpMove(void)
 
 	PM_StepSlideMove(qtrue);
 
-	pm->ps->velocity[2] -= PM_GravityApply() * pml.frametime;
+	pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
 	if (pm->ps->velocity[2] < 0)
 	{
 		// cancel as soon as we are falling down again
@@ -1101,7 +1080,7 @@ void PM_WalkMove(void)
 
 	if ((pml.groundTrace.surfaceFlags & SURF_SLICK) || pm->ps->pm_flags & PMF_TIME_KNOCKBACK)
 	{
-		pm->ps->velocity[2] -= PM_GravityApply() * pml.frametime;
+		pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
 	}
 	else
 	{
@@ -1276,7 +1255,7 @@ void PM_CrashLand(void)
 	// calculate the exact velocity on landing
 	dist = pm->ps->origin[2] - pml.previous_origin[2];
 	vel = pml.previous_velocity[2];
-	acc = -PM_GravityApply();
+	acc = -pm->ps->gravity;
 
 	a = acc / 2;
 	b = vel;
@@ -1329,7 +1308,7 @@ void PM_CrashLand(void)
 		{
 			PM_AddEvent(EV_FALL_FAR);
 		}
-		else if (delta > ((pm->pmove_accurate == 4) ? 42 : 40))
+		else if (delta > 40)
 		{
 			// this is a pain grunt, so don't play it if dead
 			if (pm->ps->stats[STAT_HEALTH] > 0)
@@ -2354,12 +2333,6 @@ void PM_FinalizeVelocity(int do_snap)
 {
 	if (pm->pmove_accurate && pm->ps->stats[STAT_HEALTH] > 0)
 	{
-		/* Mode 3: float velocity + gravity scaled to 15/16 in Pmove
-		 * (≈ snap@125 fall). No boost/trim nudge. */
-		if (pm->pmove_accurate == 3)
-		{
-			return;
-		}
 		if (VectorLengthSquared(pm->ps->velocity) < 0.25f)
 		{
 			VectorClear(pm->ps->velocity);
@@ -2370,10 +2343,7 @@ void PM_FinalizeVelocity(int do_snap)
 			float fac;
 			float fps;
 
-			if (pm->pmove_accurate == 1) {
-				fps = 75.0f;
-			}
-			else if (pm->pmove_accurate == 2 || pm->pmove_accurate == 4) {
+			if (pm->pmove_accurate == 2) {
 				fps = 125.0f;
 			}
 			else {
@@ -2394,11 +2364,6 @@ void PM_FinalizeVelocity(int do_snap)
 						pm->ps->velocity[i] += 0.5f * fac;
 					}
 				}
-			}
-			/* Mode 4: CPMA lock — nudge then snap so vz matches vanilla 125. */
-			if (pm->pmove_accurate == 4)
-			{
-				trap_SnapVector(pm->ps->velocity);
 			}
 		}
 	}
@@ -2716,13 +2681,6 @@ void PmoveEx(pmove_t* pmove, void (*single)(pmove_t* pmove))
 				msec = pmove->pmove_msec;
 			}
 		}
-		else if (pmove->pmove_accurate == 4)
-		{
-			if (msec > 8)
-			{
-				msec = 8;
-			}
-		}
 		else
 		{
 			if (msec > 66)
@@ -2779,13 +2737,6 @@ void Pmove(pmove_t* pmove)
 			if (msec > pmove->pmove_msec)
 			{
 				msec = pmove->pmove_msec;
-			}
-		}
-		else if (pmove->pmove_accurate == 4)
-		{
-			if (msec > 8)
-			{
-				msec = 8;
 			}
 		}
 		else

@@ -681,7 +681,8 @@ static superhudConfigParseStatus_t CG_SHUDConfigCommandParseVisFlags(configFileI
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_PRINTUI_STR, SE_PRINTUI, flagTargetExt) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_BESTATS_STR, SE_BESTATS, flagTargetExt) ||
 		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_CONSOLE_STR, SE_CONSOLE, flagTargetExt) ||
-		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_MENU_STR, SE_MENU, flagTargetExt)
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_MENU_STR, SE_MENU, flagTargetExt) ||
+		        CG_SHUDConfigCommandParseVisFlagsVariant(finfo, SE_PROMODE_STR, SE_PROMODE, flagTargetExt)
 		   )
 		{
 			++flagsFound;

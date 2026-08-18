@@ -25,6 +25,9 @@ Copyright (c) 2026 diwoc
 #define CG_SPAWN_TEAM_INTERMISSION 3
 
 #define CG_SPAWN_MARK_RADIUS      24
+#define CG_SPAWN_HULL_XY          30.0f
+#define CG_SPAWN_FADE_DIST        94.0f
+#define CG_SPAWN_FADE_RANGE       128.0f
 
 #define CG_SPAWN_PLASMA_LAYER_SLOTS     2
 #define CG_SPAWN_PLASMA_PERIOD_MS       1500
@@ -634,7 +637,7 @@ static void CG_MapSpawns_BuildMarkGeom(cg_spawnPoint_t* pt)
 	}
 }
 
-static void CG_MapSpawns_AddGroundMark(const cg_spawnPoint_t* pt)
+static void CG_MapSpawns_AddGroundMark(const cg_spawnPoint_t* pt, float fade)
 {
 	qhandle_t   shader;
 	polyVert_t  verts[4];
@@ -657,9 +660,9 @@ static void CG_MapSpawns_AddGroundMark(const cg_spawnPoint_t* pt)
 	g = 0.5f;
 	b = 0.5f;
 	CG_MapSpawns_GetPointColor(pt, &r, &g, &b);
-	r *= 0.5f;
-	g *= 0.5f;
-	b *= 0.5f;
+	r *= 0.5f * fade;
+	g *= 0.5f * fade;
+	b *= 0.5f * fade;
 
 	for (i = 0; i < 4; i++)
 	{
@@ -669,7 +672,7 @@ static void CG_MapSpawns_AddGroundMark(const cg_spawnPoint_t* pt)
 		verts[i].modulate[0] = (byte)(r * 255.0f);
 		verts[i].modulate[1] = (byte)(g * 255.0f);
 		verts[i].modulate[2] = (byte)(b * 255.0f);
-		verts[i].modulate[3] = 255;
+		verts[i].modulate[3] = (byte)(255.0f * fade);
 	}
 
 	trap_R_AddPolyToScene(shader, 4, verts);
@@ -770,7 +773,7 @@ static void CG_MapSpawns_EnsureModelPoses(const clientInfo_t* ci)
 	cg_spawnPoseValid = qtrue;
 }
 
-static void CG_MapSpawns_AddModelAtPoint(int pointIdx, const clientInfo_t* ci, const cg_spawnPoint_t* pt)
+static void CG_MapSpawns_AddModelAtPoint(int pointIdx, const clientInfo_t* ci, const cg_spawnPoint_t* pt, float fade)
 {
 	refEntity_t             legs;
 	refEntity_t             torso;
@@ -778,6 +781,7 @@ static void CG_MapSpawns_AddModelAtPoint(int pointIdx, const clientInfo_t* ci, c
 	const animation_t*      anim;
 	const cg_spawnModelPose_t* pose;
 	byte                    rgba[4];
+	byte                    rgb;
 
 	if (!ci->legsModel || !ci->torsoModel || !ci->headModel)
 	{
@@ -788,7 +792,7 @@ static void CG_MapSpawns_AddModelAtPoint(int pointIdx, const clientInfo_t* ci, c
 		return;
 	}
 
-	CG_MapSpawns_AddGroundMark(pt);
+	CG_MapSpawns_AddGroundMark(pt, fade);
 	pose = &cg_spawnModelPose[pointIdx];
 
 	memset(&legs, 0, sizeof(legs));
@@ -806,9 +810,10 @@ static void CG_MapSpawns_AddModelAtPoint(int pointIdx, const clientInfo_t* ci, c
 	legs.frame = anim->firstFrame;
 	legs.oldframe = anim->firstFrame;
 	legs.backlerp = 0;
-	rgba[0] = 100;
-	rgba[1] = 100;
-	rgba[2] = 100;
+	rgb = (byte)(100.0f * fade);
+	rgba[0] = rgb;
+	rgba[1] = rgb;
+	rgba[2] = rgb;
 	rgba[3] = 100;
 	*(int*)legs.shaderRGBA = *(int*)rgba;
 	legs.customShader = cgs.media.spawnModelShader;
@@ -844,7 +849,7 @@ static void CG_MapSpawns_AddModelAtPoint(int pointIdx, const clientInfo_t* ci, c
 	trap_R_AddRefEntityToScene(&head);
 }
 
-static void CG_MapSpawns_DrawPlasmaAtPoint(int pointIdx, const cg_spawnPoint_t* pt)
+static void CG_MapSpawns_DrawPlasmaAtPoint(int pointIdx, const cg_spawnPoint_t* pt, float fade)
 {
 	vec3_t origin;
 	vec3_t teamRgb;
@@ -859,6 +864,9 @@ static void CG_MapSpawns_DrawPlasmaAtPoint(int pointIdx, const cg_spawnPoint_t* 
 	VectorCopy(pt->origin, origin);
 	origin[2] += 24.0f;
 	CG_MapSpawns_GetPointColor(pt, &teamRgb[0], &teamRgb[1], &teamRgb[2]);
+	teamRgb[0] *= fade;
+	teamRgb[1] *= fade;
+	teamRgb[2] *= fade;
 
 	activeLayers = 0;
 	for (layer = 0; layer < CG_SPAWN_PLASMA_LAYER_SLOTS; layer++)
@@ -891,13 +899,24 @@ void CG_AddMapSpawns(void)
 	int                 i;
 	int                 idx;
 	const cg_spawnPoint_t* pt;
+	qboolean            usePlasma;
+	qboolean            useModels;
+	float               px;
+	float               py;
+	float               fade;
+	float               fadeScale;
+	float               dx;
+	float               dy;
 
 	if (!CG_MapSpawns_IsEnabled() || !cg_spawnPointCount)
 	{
 		return;
 	}
 
-	if (CG_MapSpawns_UseModels())
+	usePlasma = CG_MapSpawns_UsePlasma();
+	useModels = CG_MapSpawns_UseModels();
+
+	if (useModels)
 	{
 		ci = &cgs.clientinfo[cg.clientNum];
 		if (!ci->infoValid)
@@ -912,7 +931,7 @@ void CG_AddMapSpawns(void)
 		return;
 	}
 
-	if (CG_MapSpawns_UsePlasma())
+	if (usePlasma)
 	{
 		if (!cg_spawnPlasmaPrevDrawMode)
 		{
@@ -924,12 +943,16 @@ void CG_AddMapSpawns(void)
 	{
 		CG_MapSpawns_ResetPlasmaPulse();
 	}
-	cg_spawnPlasmaPrevDrawMode = CG_MapSpawns_UsePlasma() ? 1 : 0;
+	cg_spawnPlasmaPrevDrawMode = usePlasma ? 1 : 0;
 
-	if (CG_MapSpawns_UseModels())
+	if (useModels)
 	{
 		CG_MapSpawns_EnsureModelPoses(ci);
 	}
+
+	px = cg.predictedPlayerState.origin[0];
+	py = cg.predictedPlayerState.origin[1];
+	fadeScale = 1.0f / CG_SPAWN_FADE_DIST;
 
 	for (i = 0; i < cg_spawnModeCount[mode]; i++)
 	{
@@ -939,17 +962,60 @@ void CG_AddMapSpawns(void)
 			continue;
 		}
 		pt = &cg_spawnPoints[idx];
-		if (!CG_MapSpawns_IsPlayableSpawnPoint(pt))
+		if (pt->role == CG_SPAWN_ROLE_FLAG_RED || pt->role == CG_SPAWN_ROLE_FLAG_BLUE
+		        || pt->role == CG_SPAWN_ROLE_INTERMISSION)
 		{
 			continue;
 		}
-		if (CG_MapSpawns_UsePlasma())
+
+		fade = 1.0f;
+		dx = px - pt->origin[0];
+		if (dx < 0.0f)
 		{
-			CG_MapSpawns_DrawPlasmaAtPoint(idx, pt);
+			dx = -dx;
 		}
-		else if (CG_MapSpawns_UseModels())
+		if (dx < CG_SPAWN_FADE_RANGE)
 		{
-			CG_MapSpawns_AddModelAtPoint(idx, ci, pt);
+			dy = py - pt->origin[1];
+			if (dy < 0.0f)
+			{
+				dy = -dy;
+			}
+			if (dy < CG_SPAWN_FADE_RANGE)
+			{
+				dx -= CG_SPAWN_HULL_XY;
+				dy -= CG_SPAWN_HULL_XY;
+				if (dx < 0.0f)
+				{
+					dx = 0.0f;
+				}
+				if (dy < 0.0f)
+				{
+					dy = 0.0f;
+				}
+				if (dx == 0.0f && dy == 0.0f)
+				{
+					continue;
+				}
+				if (dy > dx)
+				{
+					dx = dy;
+				}
+				fade = dx * fadeScale;
+				if (fade > 1.0f)
+				{
+					fade = 1.0f;
+				}
+			}
+		}
+
+		if (usePlasma)
+		{
+			CG_MapSpawns_DrawPlasmaAtPoint(idx, pt, fade);
+		}
+		else if (useModels)
+		{
+			CG_MapSpawns_AddModelAtPoint(idx, ci, pt, fade);
 		}
 	}
 }

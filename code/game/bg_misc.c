@@ -951,7 +951,6 @@ qboolean    BG_PlayerTouchesItem(playerState_t* ps, entityState_t* item, int atT
 
 static qboolean BG_CanArmorBeGrabbed(gitem_t* item, const playerState_t* ps)
 {
-	float armor;
 	int armorMax;
 	armorType_t armorTypeItem;
 	armorType_t armorTypePlayer = ps->stats[STAT_ARMOR_TYPE];
@@ -1012,9 +1011,7 @@ static qboolean BG_CanArmorBeGrabbed(gitem_t* item, const playerState_t* ps)
 		return (ps->stats[STAT_ARMOR] < armorMax);
 	}
 
-	armor = (armorKoeff[armorTypeItem] / armorKoeff[armorTypePlayer]) * armorMax;
-
-	return (ps->stats[STAT_ARMOR] < armor);
+	return (ps->stats[STAT_ARMOR] <= (int)((armorKoeff[armorTypeItem] / armorKoeff[armorTypePlayer]) * (float)armorMax));
 }
 
 static qboolean BG_CanAmmoBeGrabbed(weapon_t ammoType, const playerState_t* ps)
