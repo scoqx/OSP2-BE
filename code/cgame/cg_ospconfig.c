@@ -141,15 +141,15 @@ void CG_OSPSetMode(int value)
 		if (!cgs.fpsclassico)
 		{
 			modeGrenadeTime = 800;
-			modeFinishWeaponChangeTime = 250;
+			modeFinishWeaponChangeTime = 0;
 		}
 		else
 		{
 			modeFinishWeaponChangeTime = 200;
 			modeGrenadeTime = 600;
 		}
-		modeBeginWeaponChangeTime          = 200;
-		modePMNoAmmoTime                   = 500;
+		modeBeginWeaponChangeTime          = 0;
+		modePMNoAmmoTime                   = 100;
 		modeShotgunKoeff                   = 700;
 		modeShotgunNumberOfPellets         = 16;
 		modeMaxAmmoShotgun                 = 200;
