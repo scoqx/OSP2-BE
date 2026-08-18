@@ -333,8 +333,30 @@ CG_TouchItem
 static void CG_TouchItem(centity_t* cent)
 {
 	gitem_t*     item;
+	static int pickupEnt[8];
+	static int pickupTime[8];
+	static int pickupSlot;
+	int i;
+	int n;
 
 	if (!cg_predictItems.integer)
+	{
+		return;
+	}
+
+	// Keep predicted pickups hidden after snapshot overwrites eFlags; no second EV_ITEM_PICKUP
+	n = cent->currentState.number;
+	for (i = 0; i < 8; i++)
+	{
+		if (pickupTime[i] && pickupEnt[i] == n && pickupTime[i] <= cg.time && cg.time - pickupTime[i] < 1000)
+		{
+			cent->currentState.eFlags |= EF_NODRAW;
+			cent->nextState.eFlags |= EF_NODRAW;
+			return;
+		}
+	}
+
+	if (cent->currentState.eFlags & EF_NODRAW)
 	{
 		return;
 	}
@@ -373,9 +395,13 @@ static void CG_TouchItem(centity_t* cent)
 
 	// remove it from the frame so it won't be drawn
 	cent->currentState.eFlags |= EF_NODRAW;
+	cent->nextState.eFlags |= EF_NODRAW;
 
 	// don't touch it again this prediction
 	cent->miscTime = cg.time;
+	pickupEnt[pickupSlot] = n;
+	pickupTime[pickupSlot] = cg.time;
+	pickupSlot = (pickupSlot + 1) & 7;
 
 	// if its a weapon, give them some predicted ammo so the autoswitch will work
 	if (item->giType == IT_WEAPON)

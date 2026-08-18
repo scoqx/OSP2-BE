@@ -1075,7 +1075,9 @@ FPSClassico:
   + projectile predict
   + hitsound fix
 
-18.08.2026 be v1.07c3
+18.08.2026 be v1.07c4
+* Predict Items Sound Fix (!)
+* Predict Items blinking fix
 SuperHUD:
   * Mirage's configs fixed (fonts override removed)
   + Visflags: promode
