@@ -4,5 +4,6 @@ SuperHUD:
   + Visflags: promode
   + StatusBar_ArmorIcon 'image' parameter
   + Spectators: rect h = max name lines (0 = unlimited)
++ cg_drawSpawns autofade
 + CPMA Promode movement/weapon prediction
 * OSP Promode predict fix
