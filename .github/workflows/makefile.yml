@@ -91,12 +91,12 @@ jobs:
 
       - name: Build qvm
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Relese -DBUILD_MOD_LIBRARIES=OFF -DBUILD_MOD_PK3=ON -DBUILD_MOD_QVMS=ON -DBUILD_TESTS=OFF
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_MOD_LIBRARIES=OFF -DBUILD_MOD_PK3=ON -DBUILD_MOD_QVMS=ON -DBUILD_TESTS=OFF
           cmake --build build
   
       - name: Build native libraries
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Relese -DBUILD_MOD_LIBRARIES=ON -DBUILD_MOD_PK3=OFF -DBUILD_MOD_QVMS=OFF -DBUILD_TESTS=OFF
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_MOD_LIBRARIES=ON -DBUILD_MOD_PK3=OFF -DBUILD_MOD_QVMS=OFF -DBUILD_TESTS=OFF
           cmake --build build
 
       - uses: actions/upload-artifact@v7
@@ -114,7 +114,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: osp2-be-linux
-          path: build/library/osp2-be-linux.tar.gz
+          path: build/Release/osp/osp2-be-linux.tar.gz
           if-no-files-found: error
           retention-days: 5
 
@@ -140,12 +140,12 @@ jobs:
       - name: Package Windows libraries for website
         run: |
           cd build/Release/osp
-          ../../../tools/7za.exe a -tzip osp2-be-windows.zip cgame.dll ui.dll
+          ../../../tools/7za.exe a -tzip osp2-be-windows.zip cgamex86_64.dll uix86_64.dll
 
       - uses: actions/upload-artifact@v7
         with:
-          name: osp2_windows_mingw
-          path: build/Release/osp/*.dll
+          name: osp2-be-windows
+          path: build/Release/osp/osp2-be-windows.zip
           if-no-files-found: error
           retention-days: 5
 
