@@ -124,6 +124,7 @@ set(CGAME_SOURCES
     ${SOURCE_DIR}/cgame/cg_be_auth.c
     ${SOURCE_DIR}/cgame/cg_be_autologin.c
     ${SOURCE_DIR}/cgame/cg_be_stats.c
+    ${SOURCE_DIR}/cgame/cg_round_stats.c
     ${SOURCE_DIR}/cgame/cg_brightitems.c
     ${SOURCE_DIR}/cgame/cg_emoji.c
     ${SOURCE_DIR}/cgame/chatWindow/be_chatwindow.c

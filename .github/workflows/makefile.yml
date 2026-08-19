@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: ["master"]
+    # branches: ["master"]
     paths-ignore:
       - '**.md'
       - 'assets/docs/changelog_be_r.txt'
@@ -61,8 +61,8 @@ jobs:
           git push
 
   linux:
-    needs: sync-version-assets
-    if: always() && (needs.sync-version-assets.result == 'success' || needs.sync-version-assets.result == 'skipped')
+    # needs: sync-version-assets
+    # if: always() && (needs.sync-version-assets.result == 'success' || needs.sync-version-assets.result == 'skipped')
     runs-on: ubuntu-latest
 
     steps:
@@ -72,41 +72,80 @@ jobs:
           ref: master
           fetch-depth: 0
 
+      - name: Install dependencies
+        run: sudo apt install -y cmake 7zip
+
+      - uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '>=3.10'
+
       - name: Pull latest after version sync
         if: needs.sync-version-assets.result == 'success'
         run: git pull --ff-only origin master
 
       - name: Create version files
         run: |
-          cd build/qvm
-          make ../../assets/version.txt ../../assets/version_changelog.txt ../../assets/docs/changelog_be_r.txt
+          python3 ./tools/parse_changelog.py changelog_be.txt assets/version.txt assets/version_changelog.txt assets/docs/changelog_be_r.txt
 
-      - name: build-qvm
-        working-directory: build/qvm
+      - name: Build qvm
         run: |
-          make
-
-      - name: build-so
-        working-directory: build/library
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Relese -DBUILD_MOD_LIBRARIES=OFF -DBUILD_MOD_PK3=ON -DBUILD_MOD_QVMS=ON -DBUILD_TESTS=OFF
+          cmake --build build
+  
+      - name: Build native libraries
         run: |
-          make MOD=osp2
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Relese -DBUILD_MOD_LIBRARIES=ON -DBUILD_MOD_PK3=OFF -DBUILD_MOD_QVMS=OFF -DBUILD_TESTS=OFF
+          cmake --build build
 
       - uses: actions/upload-artifact@v7
         with:
           name: qvm-linux
-          path: build/qvm/zz-osp-pak8be.pk3
+          path: build/Release/osp/zz-osp-pak8be.pk3
           if-no-files-found: error
           retention-days: 5
 
       - name: Package Linux libraries for website
         run: |
-          cd build/library/build/release-linux-x86_64/osp2
-          tar -czf ../../../osp2-be-linux.tar.gz cgamex86_64.so uix86_64.so
+          cd build/Release/osp
+          tar -czf osp2-be-linux.tar.gz cgamex86_64.so uix86_64.so
 
       - uses: actions/upload-artifact@v7
         with:
           name: osp2-be-linux
           path: build/library/osp2-be-linux.tar.gz
+          if-no-files-found: error
+          retention-days: 5
+
+  windows-mingw:
+    name: Windows MinGW
+
+    runs-on: windows-2022
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Build native libraries
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_MOD_LIBRARIES=ON -DBUILD_MOD_PK3=OFF -DBUILD_MOD_QVMS=OFF -DBUILD_TESTS=OFF
+          cmake --build build --config Release
+
+      - name: Package Windows libraries for website
+        run: |
+          cd build/Release/osp
+          ../../../tools/7za.exe a -tzip osp2-be-windows.zip cgame.dll ui.dll
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: osp2_windows_mingw
+          path: build/Release/osp/*.dll
           if-no-files-found: error
           retention-days: 5
 

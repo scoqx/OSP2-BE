@@ -5,6 +5,7 @@ endif()
 include(utils/qvm_tools)
 include(utils/pk3)
 include(utils/set_output_dirs)
+include(utils/arch)
 include(mod)
 
 include(basegame_sources)
@@ -23,7 +24,7 @@ if(BUILD_MOD_LIBRARIES)
         PRIVATE OSP_CLIENT=${OSP_CLIENT}
     )
     target_link_libraries(      ${CGAME_MODULE_BINARY_BASEGAME} PRIVATE ${COMMON_LIBRARIES})
-    set_target_properties(      ${CGAME_MODULE_BINARY_BASEGAME} PROPERTIES OUTPUT_NAME ${CGAME_MODULE_BINARY})
+    set_target_properties(      ${CGAME_MODULE_BINARY_BASEGAME} PROPERTIES OUTPUT_NAME ${CGAME_MODULE_BINARY}${ARCH})
     set_output_dirs(            ${CGAME_MODULE_BINARY_BASEGAME} SUBDIRECTORY ${BASEGAME})
 
     add_library(                ${UI_MODULE_BINARY_BASEGAME} SHARED ${UI_SOURCES_BASEGAME} ${UI_BINARY_SOURCES})
@@ -33,7 +34,7 @@ if(BUILD_MOD_LIBRARIES)
         PRIVATE OSP_CLIENT=${OSP_CLIENT}
     )
     target_link_libraries(      ${UI_MODULE_BINARY_BASEGAME} PRIVATE ${COMMON_LIBRARIES})
-    set_target_properties(      ${UI_MODULE_BINARY_BASEGAME} PROPERTIES OUTPUT_NAME ${UI_MODULE_BINARY})
+    set_target_properties(      ${UI_MODULE_BINARY_BASEGAME} PROPERTIES OUTPUT_NAME ${UI_MODULE_BINARY}${ARCH})
     set_output_dirs(            ${UI_MODULE_BINARY_BASEGAME} SUBDIRECTORY ${BASEGAME})
 endif()
 
