@@ -9,3 +9,4 @@ SuperHUD:
 + cg_drawSpawns autofade
 + CPMA Promode movement/weapon prediction
 * OSP Promode predict fix
+

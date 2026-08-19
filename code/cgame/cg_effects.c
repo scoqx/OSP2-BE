@@ -883,7 +883,7 @@ void CG_DrawDamagePlumDigitsHorizontal(vec3_t origin, int damage, const byte rgb
 
 	memset(&ent, 0, sizeof(ent));
 	ent.reType = RT_SPRITE;
-	ent.renderfx = RF_FIRST_PERSON;
+	ent.renderfx = RF_FIRST_PERSON | RF_DEPTHHACK;
 	ent.rotation = 0.0f;
 	ent.radius = digitSize * 0.5f;
 	ent.shaderRGBA[0] = rgba[0];
@@ -946,7 +946,7 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 
 	memset(&ent, 0, sizeof(ent));
 	ent.reType = RT_SPRITE;
-	ent.renderfx = RF_FIRST_PERSON;
+	ent.renderfx = RF_FIRST_PERSON | RF_DEPTHHACK;
 	ent.rotation = phi / (float)M_PI * 180.0f + (float)baseAngle;
 	ent.radius = markerRadius;
 	ent.customShader = shader;
@@ -1009,7 +1009,7 @@ void CG_DrawPulseMarker(vec3_t origin, float markerRadius, float pulseScale, con
 
 	memset(&ent, 0, sizeof(ent));
 	ent.reType = RT_SPRITE;
-	ent.renderfx = RF_FIRST_PERSON;
+	ent.renderfx = RF_FIRST_PERSON | RF_DEPTHHACK;
 	ent.rotation = phi / (float)M_PI * 180.0f + (float)baseAngle;
 	ent.radius = posRadius * pulseScale;
 	ent.customShader = shader;

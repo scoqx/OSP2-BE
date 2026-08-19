@@ -150,7 +150,7 @@ void CG_OSPSetMode(int value)
 		}
 		modeBeginWeaponChangeTime          = 0;
 		modePMNoAmmoTime                   = 100;
-		modeShotgunKoeff                   = 700;
+		modeShotgunKoeff                   = 1000;
 		modeShotgunNumberOfPellets         = 16;
 		modeMaxAmmoShotgun                 = 200;
 		modeMaxAmmoGrenade                 = 200;

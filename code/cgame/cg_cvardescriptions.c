@@ -332,7 +332,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamIndicatorMaxLength", "Maximum allowed length of the player name in the indicator" },
 	{ "cg_teamIndicatorFontSize", "Team indicator font size. One number - width and height are the same, two numbers - width and height separately.\n  ^2W^7 or ^2W H^7" },
 	{ "cg_teamIndicatorFont", "Font selection for team indicator. Font index; use ^3/fonts^7 to list available fonts." },
-	{ "cg_scoreboardBE", "Alternative scoreboard. Set ^20^7 to use default scoreboard.\n  ^21^7 - proportional font\n  ^22^7 - old style team scores\n  ^24^7 - white titles\n  ^28^7 - team colored titles\n  ^216^7 - hide team scores\n  ^232^7 - hide Fragged by\n  ^264^7 - hide place" },
+	{ "cg_scoreboardBE", "Alt scoreboard. Set ^20^7 to use default.\n  ^21^7 - proportional font\n  ^22^7 - old team scores\n  ^24^7 - white titles\n  ^28^7 - team colored titles\n  ^216^7 - hide team scores\n  ^232^7 - hide Fragged by\n  ^264^7 - hide place\n  ^2128^7 - hide crosshair" },
 	{ "cg_scoreboardFont", "Font selection for alternative scoreboard. Font index; use ^3/fonts^7 to list available fonts." },
 	{ "cg_scoreboardScale", "Scale factor for the scoreboard size. ^21.0^7 - default size, higher values make it larger." },
 	{ "cg_centerMessagesFont", "Font selection for center messages. Font index; use ^3/fonts^7 to list available fonts." },
