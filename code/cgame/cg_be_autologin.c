@@ -464,6 +464,10 @@ void CG_BE_AutologinFrame(void)
 	{
 		return;
 	}
+	if (cgs.fpsclassico)
+	{
+		return;
+	}
 	if (!cgs.beSupportedServer)
 	{
 		return;

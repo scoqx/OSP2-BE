@@ -110,7 +110,8 @@ void CG_OSPColorFromNumber(int number, float* vector)
 	float green;
 	float blue;
 
-	if (number >= 10 && number < 34)
+	/* a-w: OSP hue wheel (indices 10-32). x/y/z match Quake3e/CPMA g_color_table. */
+	if (number >= 10 && number < 33)
 	{
 		float tmp = ((360.0 * (float)number) - 3600.0) / 24.0;
 		const float sixty_degree_rad = 60.0 * M_PI / 180.0;
@@ -172,6 +173,15 @@ void CG_OSPColorFromNumber(int number, float* vector)
 			break;
 		case 9:
 			VectorSet(vector, 0.6, 0.6, 1.0);
+			break;
+		case 33: /* x — bright magenta (Quake3e) */
+			VectorSet(vector, 1.0, 0.0, 0.26795);
+			break;
+		case 34: /* y — white */
+			VectorSet(vector, 1.0, 1.0, 1.0);
+			break;
+		case 35: /* z — grey */
+			VectorSet(vector, 0.5, 0.5, 0.5);
 			break;
 		default:
 			VectorSet(vector, 1.0, 1.0, 1.0);
@@ -614,14 +624,24 @@ void CG_UpdateVisualTeamColors(team_t realTeam)
 	{
 		Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
 		Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+		Vector4Copy(cgs.beRedTeamColor, scoreboard_rtColor);
+		Vector4Copy(cgs.beBlueTeamColor, scoreboard_btColor);
+		s_lastVisualRealTeam = realTeam;
+		s_lastVisualCgMyTeam = cg_myTeam.integer;
 		return;
 	}
 
-	/* Spectator or unknown team: keep base colors */
+	/* Spectator or unknown team: keep base colors.
+	   Must update cache + scoreboard_* so rejoining a team cannot hit a stale
+	   remap cache and skip cg_myTeam swap. */
 	if (realTeam != TEAM_RED && realTeam != TEAM_BLUE)
 	{
 		Vector4Copy(cgs.baseRedTeamColor,  cgs.beRedTeamColor);
 		Vector4Copy(cgs.baseBlueTeamColor, cgs.beBlueTeamColor);
+		Vector4Copy(cgs.beRedTeamColor, scoreboard_rtColor);
+		Vector4Copy(cgs.beBlueTeamColor, scoreboard_btColor);
+		s_lastVisualRealTeam = realTeam;
+		s_lastVisualCgMyTeam = cg_myTeam.integer;
 		return;
 	}
 
@@ -721,6 +741,8 @@ void CG_ReloadColors(void)
 		"cg_scoreboardBtColors",
 		"cg_scoreboardSpecColor",
 		"cg_bestats_bgColor",
+		"cg_roundStats_bgColor",
+		"cg_roundStats_borderColor",
 		"cg_teamTaskThemeColor",
 		"cg_teamIndicatorColor",
 		"cg_teamIndicatorBgColor",

@@ -27,6 +27,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../qcommon/q_shared.h"
 #include "bg_public.h"
+#include "bg_local.h"
+
+/* Defined here so UI QVM (links bg_misc, not bg_slidemove) resolves TouchJumpPad. */
+int uf_baseq3;
+int uf_osp;
+int uf_rampjump;
 
 #if defined(UI) || defined(Q3UI)
 Q_EXPORT int modePickupDistance = 36;    // default VQ3 value
@@ -945,7 +951,6 @@ qboolean    BG_PlayerTouchesItem(playerState_t* ps, entityState_t* item, int atT
 
 static qboolean BG_CanArmorBeGrabbed(gitem_t* item, const playerState_t* ps)
 {
-	float armor;
 	int armorMax;
 	armorType_t armorTypeItem;
 	armorType_t armorTypePlayer = ps->stats[STAT_ARMOR_TYPE];
@@ -967,6 +972,9 @@ static qboolean BG_CanArmorBeGrabbed(gitem_t* item, const playerState_t* ps)
 	{
 		case 5:
 			armorTypeItem = armorTypePlayer;
+			break;
+		case 25:
+			armorTypeItem = ARMOR_GREEN;
 			break;
 		case 50:
 			armorTypeItem = ARMOR_YELLOW;
@@ -1003,9 +1011,7 @@ static qboolean BG_CanArmorBeGrabbed(gitem_t* item, const playerState_t* ps)
 		return (ps->stats[STAT_ARMOR] < armorMax);
 	}
 
-	armor = (armorKoeff[armorTypeItem] / armorKoeff[armorTypePlayer]) * armorMax;
-
-	return (ps->stats[STAT_ARMOR] < armor);
+	return (ps->stats[STAT_ARMOR] <= (int)((armorKoeff[armorTypeItem] / armorKoeff[armorTypePlayer]) * (float)armorMax));
 }
 
 static qboolean BG_CanAmmoBeGrabbed(weapon_t ammoType, const playerState_t* ps)
@@ -1079,7 +1085,10 @@ qboolean BG_CanItemBeGrabbed(int gametype, const entityState_t* ent, const playe
 			}
 			if (!disableArmorCheck)
 			{
-				BG_CanArmorBeGrabbed(item, ps);
+				if (pm_armorPromode)
+				{
+					return BG_CanArmorBeGrabbed(item, ps);
+				}
 				if (ps->stats[STAT_ARMOR] >= ps->stats[STAT_MAX_HEALTH] * 2)
 				{
 					return qfalse;
@@ -1422,7 +1431,10 @@ void BG_TouchJumpPad(playerState_t* ps, entityState_t* jumppad)
 		{
 			effectNum = 1;
 		}
-		BG_AddPredictableEventToPlayerstate(EV_JUMP_PAD, effectNum, ps);
+		if (!uf_osp)
+		{
+			BG_AddPredictableEventToPlayerstate(EV_JUMP_PAD, effectNum, ps);
+		}
 	}
 	// remember hitting this jumppad this frame
 	ps->jumppad_ent = jumppad->number;

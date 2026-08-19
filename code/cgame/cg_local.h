@@ -198,6 +198,9 @@ typedef struct
 #define CG_DrawFriendMode()     (cg_drawFriend.integer & ~CG_DRAW_FRIEND_SPECTATOR)
 #define CG_DrawFriendForSpecs() ((cg_drawFriend.integer & CG_DRAW_FRIEND_SPECTATOR) != 0)
 
+/* cg_playerXray: bit 1 on, bit 2 model colors, bit 4 bright weapons, bit 8 spect/demo all players */
+#define CG_PLAYER_XRAY_SPECTATOR 8
+
 #define DRAW_REWARDS_NOICON (1 << 1)
 #define DRAW_REWARDS_NOSPRITE (1 << 2)
 #define DRAW_REWARDS_NOSOUND (1 << 3)
@@ -647,6 +650,7 @@ typedef struct
 // occurs, and they will have visible effects for #define STEP_TIME or whatever msec after
 
 #define MAX_PREDICTED_EVENTS    16
+#define NUM_SAVED_STATES        (CMD_BACKUP + 2)
 
 // Token Bucket for anti-flood
 typedef struct
@@ -757,6 +761,7 @@ typedef struct cgFontIndices_s
 	int centerMessages;
 	int infoVersion;
 	int bestats;
+	int roundStats;
 	int emojiList;
 	int chatWindow;
 } cgFontIndices_t;
@@ -790,6 +795,28 @@ typedef struct
 	qboolean bgColorIsSet;
 	float bgOpaque;
 } globalBeStatsSettings_t;
+
+typedef struct
+{
+	float x, y;
+	vec2_t textSize;
+	vec4_t bgColor;
+	qboolean bgColorIsSet;
+	vec4_t borderColor;
+	qboolean borderColorIsSet;
+} globalRoundStatsSettings_t;
+
+#define ROUNDSTATS_MAX_ENTRIES 16
+typedef struct
+{
+	int clientNum;
+	int dmgGiven;
+	int dmgTaken;
+	int weapGivenMask;
+	int weapTakenMask;
+	int weapGiven[WP_NUM_WEAPONS];
+	int weapTaken[WP_NUM_WEAPONS];
+} roundStatsEntry_t;
 
 /*
  * cg_t — current frame state and prediction.
@@ -904,6 +931,25 @@ typedef struct
 	qboolean    showAccuracy;
 	qboolean    showWStats;
 	qboolean    beStatsShowing; /* BEStats window actually drawn this frame (like scoreBoardShowing) */
+	/* CA round damage from server "roundstats" / "roundstatsall" */
+	qboolean    roundStatsReceived;   /* valid reply for auto-show / after request */
+	qboolean    roundStatsSupported;  /* server ever sent — allow later manual open */
+	qboolean    roundStatsShow;       /* auto window visible */
+	qboolean    roundStatsHold;       /* +roundstats held — show cached table, no server request */
+	int         roundStatsShowTime;   /* cg.time when show started */
+	qboolean    roundStatsShowUntilIm; /* qtrue = keep until intermission ends */
+	int         roundStatsMyGiven;
+	int         roundStatsMyTaken;
+	int         roundStatsCount;
+	roundStatsEntry_t roundStats[ROUNDSTATS_MAX_ENTRIES];
+	qboolean    roundStatsAllReceived; /* match totals (sum of rounds) */
+	int         roundStatsAllCount;
+	struct {
+		int clientNum;
+		int dmgGiven;
+		int dmgTaken;
+	} roundStatsAll[MAX_CLIENTS];
+	globalRoundStatsSettings_t roundStatsSettings;
 	qboolean    scoreBoardShowing;
 	int         scoreFadeTime;
 	char        killerName[MAX_NAME_LENGTH];
@@ -1085,6 +1131,12 @@ typedef struct
 	vec3_t      missileFireOriginOld; /* pre-pmove origin (fromPos 0) */
 	vec3_t      missileFireOriginNew; /* post-pmove origin (fromPos 1) */
 	vec3_t      missileFireAngles;
+
+	/* Incremental prediction (cg_optimizePrediction / UnFreeZe unlagged) */
+	int         lastPredictedCommand;
+	int         lastServerTime;
+	playerState_t savedPmoveStates[NUM_SAVED_STATES];
+	int         stateHead, stateTail;
 
 } cg_t;
 
@@ -1286,6 +1338,7 @@ typedef struct
 	qhandle_t   quadShader;
 	qhandle_t   quadShaderDye;
 	qhandle_t   redQuadShader;
+	qhandle_t   redQuadWeaponShader;
 	qhandle_t   quadWeaponShader;
 	qhandle_t   quadWeaponShaderDye;
 	qhandle_t   fragEffectShader;
@@ -1767,6 +1820,7 @@ typedef struct
 #define  OSP_SERVER_MODE_VQ3      0
 #define  OSP_SERVER_MODE_PROMODE  1
 #define  OSP_SERVER_MODE_CQ3      2
+#define  OSP_SERVER_MODE_CPMA     4
 #define  OSP_SERVER_MODE_PROMODE_OPT1      0x11
 #define  OSP_SERVER_MODE_PROMODE_OPT2      0x21
 
@@ -1978,6 +2032,7 @@ typedef struct
 	beChatWindowMetrics_t beChatMetrics;
 	customWeaponStats_t beWeaponStats[WP_NUM_WEAPONS];
 	qboolean        beSupportedServer;
+	qboolean        beUserinfoRevealed; /* BE USERINFO + full osp_client published (!fpsclassico) */
 	qboolean        engineFontAtlas;    /* trap_R_RegisterFontAtlas_Q3E available + TTF preloaded */
 	vec3_t          beBrightWeaponsColor[WP_NUM_WEAPONS];
 	qboolean        beBrightWeaponsBeinfoSet[WP_NUM_WEAPONS];
@@ -1988,8 +2043,7 @@ typedef struct
 	int             beServerEnableBreath;
 	int             killConfirmMode;      /* g_killConfirm from CS_SERVERINFO */
 	int             sv_fps;      /* CS_SYSTEMINFO sv_fps; default 20 if missing */
-	int             beAutohop;   /* pmove_autohop SYSTEMINFO: 0=off, 1=forced, 2=client cg_autoHop */
-	int             beMovement;  /* g_movement SYSTEMINFO: 0=VQ3, 1=CPM, 2=QL */
+	int             beAutohop;   /* legacy; unused — client +autojump / cg_autoHop */
 	int             ratFlags;    /* g_altFlags from CS_SERVERINFO */
 	qboolean        missilePredictEnabled; /* CS_OSP2BE_MISSILE_PREDICT enabled */
 	int             missilePrestep;
@@ -1997,11 +2051,20 @@ typedef struct
 	int             missilePredictRlSpeed;
 	int             missilePredictPgSpeed;
 	int             missilePredictBfgSpeed;
+	/* CS 911: mode 1 = ruthless body; mode 3 = metarena single-token scale; else AABB cube */
+	qboolean        hbEnabled;
+	int             hbMode;
+	float           hbWide;
+	float           hbHgh;
+	float           hbScale;
 
 	qboolean        q3msk;        // Q3msk.net
 	qboolean        ruthless;     /* q3a.space* hostname (colors ignored) */
 	qboolean        q3mskRoundWarmup; /* q3msk/ruthless freeze team round warmup active */
 	qboolean        fpsclassico;  // fpsclasico.com
+	qboolean        uf_baseq3;    /* UnFreeZe SERVERINFO path A */
+	qboolean        uf_osp;
+	qboolean        uf_rampjump;  /* default ON when gamename=unfreeze and key missing */
 	qboolean        osdf_signature;
 	int             pmove_phy_movetype; /* -1: PmoveSingle, >=0: phy_PmoveSingle movetype */
 	newStatsInfo_t newStats;
@@ -2259,6 +2322,7 @@ extern vmCvar_t           cg_lightningHide;
 extern vmCvar_t           cg_lightningHideCrosshair;
 extern vmCvar_t           cg_lightningSilent;
 extern vmCvar_t           cg_delag;
+extern vmCvar_t           cg_optimizePrediction;
 extern vmCvar_t           cg_drawHitBox;
 extern vmCvar_t           cg_projectileNudge;
 extern vmCvar_t           cg_hideScores;
@@ -2409,9 +2473,19 @@ extern vmCvar_t         cg_bestats_bgColor;
 extern vmCvar_t         cg_bestats_bgOpaque;
 extern vmCvar_t         cg_bestats_spacingAdjust;
 extern vmCvar_t         cg_bestats_widthCutoff;
+extern vmCvar_t         cg_roundStats_autoaction;
+extern vmCvar_t         cg_roundStats_textSize;
+extern vmCvar_t         cg_roundStats_font;
+extern vmCvar_t         cg_roundStats_pos;
+extern vmCvar_t         cg_roundStats_bgColor;
+extern vmCvar_t         cg_roundStats_bgOpaque;
+extern vmCvar_t         cg_roundStats_borderColor;
+extern vmCvar_t         cg_roundStats_spacingAdjust;
+extern vmCvar_t         cg_roundStats_widthCutoff;
 extern vmCvar_t         cg_teamIndicatorFade;
 extern vmCvar_t         cg_teamIndicatorFadeRadius;
 extern vmCvar_t         be_features;
+extern vmCvar_t         compilation_build;
 extern vmCvar_t         be_enabled;
 extern vmCvar_t         cg_scoreboardTextSize;
 extern vmCvar_t         cg_scoreboardScale;
@@ -2420,6 +2494,7 @@ extern vmCvar_t         cg_scoreboardColors;
 extern vmCvar_t         cg_clearOnLevelLoad;
 extern vmCvar_t         cg_spectPOV;
 extern vmCvar_t         cg_drawRealHeads;
+extern vmCvar_t         cg_giveName;
 extern vmCvar_t         cg_bestats_autoaction;
 extern vmCvar_t         cg_zoomAutoReset;
 extern vmCvar_t         cg_smoothDucking;
@@ -2440,6 +2515,7 @@ extern vmCvar_t         cg_exec_ca;
 extern vmCvar_t         cg_exec_ctf;
 extern vmCvar_t         cg_exec_freeze;
 extern vmCvar_t         cg_damagePlums;
+extern vmCvar_t         cg_damagePlumsWeapons;
 extern vmCvar_t         cg_damagePlumSize;
 extern vmCvar_t         cg_teamTaskMarkTime;
 extern vmCvar_t         cg_teamTask;
@@ -2566,6 +2642,7 @@ extern vmCvar_t         cg_kcEnemyColor;
 extern vmCvar_t         cg_kcTeamColor;
 extern vmCvar_t         cg_enemyAltShadowColor;
 extern vmCvar_t         cg_playerXray;
+extern vmCvar_t         cg_specMode;
 extern vmCvar_t         cg_teamTaskSentPos;
 
 
@@ -2822,6 +2899,7 @@ enum
 	DS_VTOP         = 0x20,// vertical top
 	DS_VCENTER      = 0x40,// vertical center
 	DS_MAX_WIDTH_IS_CHARS = 0x80,// flag for calculation
+	DS_CTE_COLOR    = 0x100,// allow ^cT/^cE team/enemy inline colors
 	DS_EMOJI        = 0x200,// allow emoji (must not overlap DS_VTOP/DS_VCENTER)
 };
 void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxChars, int flags);
@@ -3204,6 +3282,8 @@ qboolean CG_DrawOldScoreboard(void);
 void CG_DrawOldTourneyScoreboard(void);
 void CG_BEStatsShowStatsInfo(void);
 qboolean CG_BEStatsIsShowing(void);
+void CG_RoundStatsShow(void);
+qboolean CG_RoundStatsIsShowing(void);
 void CG_RefillStatsRequestTokens(void);
 qboolean CG_TrySendStatsRequest(void);
 void CG_AddStatsRequestToken(void);
@@ -3246,6 +3326,8 @@ void CG_OSPMoTD_f(void);
 void CG_ScoresDown_f(void);
 void CG_OSPWStatsDown_f(void);
 void CG_OSPWStatsUp_f(void);
+void CG_RoundStatsDown_f(void);
+void CG_RoundStatsUp_f(void);
 
 //
 // cg_servercmds.c
@@ -3412,6 +3494,7 @@ const char* CG_GetCTFLocation(int loc);
 extern cgFontIndices_t cgFontIndices;
 void CG_UpdateFontIndices(void);
 void CG_UpdateBeFeatures(void);
+void CG_ParseHitboxConfigString(const char* str);
 void cg_printsa_f(void);
 void CG_ParseCvarTwoColorsSimple(const vmCvar_t* cvar, vec4_t out1, vec4_t out2);
 int CG_GetRemainingGameTimeMsec(qboolean forItemPickup);
@@ -3681,6 +3764,7 @@ qboolean CG_DrawIntermission(void);
 extern int modeShotgunPromode;
 extern int modeShotgunNumberOfPellets;
 extern float modeShotgunKoeff;
+extern int modeCpmaPmove;
 extern const char* weaponNames[10];
 extern const char* weaponShortNames[10];
 extern int global_viewlistFirstOption;
@@ -3745,6 +3829,9 @@ qboolean CG_OSPIsGameTypeTDM(void);
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup);
 void CG_OSPUpdateUserInfo(qboolean arg);
 void CG_BEUpdateUserInfo(void);
+void CG_RevealBeUserInfo(void);
+void CG_ApplyFpsclassicoSafeUserInfo(void);
+void CG_ApplyUnfreezePhysFromServerinfo(void);
 
 void CG_OSPConfigSetMode(int value);
 void CG_OSPConfigPmoveSet(int value);
@@ -3763,6 +3850,7 @@ void CG_OSPConfigDisableBEFeatures(int value);
 void CG_OSP2BEOnComMaxfpsChanged(int value);
 void CG_OSPSupportedBEServer(qboolean value);
 void CG_PrintDisabledFeatures(qboolean request);
+int CG_ApplyFpsclassicoDisableMask(int raw);
 
 qboolean CG_IsSpectatorOnScreen(void);
 qboolean CG_IsClientFreeFloat(void);
@@ -4148,6 +4236,11 @@ void CG_LocalEventCvarChanged_cg_bestats_font(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_pos(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_textSize(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_bestats_bgColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_roundStats_font(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_roundStats_pos(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_roundStats_textSize(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_roundStats_bgColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_roundStats_borderColor(cvarTable_t* cvart);
 void CG_LocalEventBeFeaturesChanged(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_exec_weapon(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_respawnWeapon(cvarTable_t* cvart);

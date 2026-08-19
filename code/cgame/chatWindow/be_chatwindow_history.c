@@ -204,14 +204,24 @@ static void CG_BEChat_MessageDisplayText(int linesBack, char* out, int outSize)
 
 	if (!(cg_chatWindow.integer & BE_CHAT_NO_REPEAT_MERGE_BIT) && line->repeat > 1)
 	{
+		char suffix[16];
+		int avail;
+
 		if (line->repeat > 99)
 		{
-			Com_sprintf(out, outSize, "%s ^7x99+", line->text);
+			Com_sprintf(suffix, sizeof(suffix), " ^7x99+");
 		}
 		else
 		{
-			Com_sprintf(out, outSize, "%s ^7x%i", line->text, line->repeat);
+			Com_sprintf(suffix, sizeof(suffix), " ^7x%i", line->repeat);
 		}
+		avail = outSize - (int)strlen(suffix);
+		if (avail < 1)
+		{
+			avail = 1;
+		}
+		Q_strncpyz(out, line->text, avail);
+		Q_strcat(out, outSize, suffix);
 	}
 	else
 	{

@@ -910,8 +910,9 @@ static void CG_Missile(centity_t* cent)
 			{
 				const clientInfo_t* ci = &cgs.clientinfo[owner];
 
-				qboolean isAlly = CG_OSPIsGameTypeCA(cgs.gametype) || !CG_CACHED_IS_ENEMY_CI(ci)
-				                  || (cgs.gametype == GT_TOURNAMENT/*  && cgs.isOspServer */); //
+				qboolean isAlly = (!cgs.beSupportedServer
+				                   && (CG_OSPIsGameTypeCA(cgs.gametype) || cgs.gametype == GT_TOURNAMENT))
+				                  || !CG_CACHED_IS_ENEMY_CI(ci);
 
 				if (isAlly)
 				{
@@ -1312,30 +1313,43 @@ static void CG_CalcEntityLerpPositions(centity_t* cent)
 	}
 
 	// if it's a missile but not a grappling hook
-	if (cent->currentState.eType == ET_MISSILE && cent->currentState.weapon != WP_GRAPPLING_HOOK && cg_projectileNudge.integer && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR && !cg.demoPlayback)
+	if (cent->currentState.eType == ET_MISSILE && cent->currentState.weapon != WP_GRAPPLING_HOOK
+	        && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR && !cg.demoPlayback)
 	{
-		int serverTick = 0;
-		if (cg.nextSnap && cg.snap)
+		if (cgs.fpsclassico)
 		{
-			serverTick = cg.nextSnap->serverTime - cg.snap->serverTime;
-		}
-		// if it's one of ours
-		if ((cent->currentState.otherEntityNum) == cg.clientNum
-		        && ((cg_projectileNudge.integer & 2)
-		            || ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled)))
-		{
-			// +1 server frame — same clock as CG_AddPredictedMissiles (Devotion)
-			timeshift = serverTick;
-			if (timeshift <= 0)
+			/* UnFreeZe default nudge addend 0 → fixed +30ms; do not read cg_projectileNudge */
+			if (cent->currentState.otherEntityNum == cg.clientNum
+			        || cent->currentState.weapon != WP_GRENADE_LAUNCHER)
 			{
-				timeshift = cgs.sv_fps > 0 ? (1000 / cgs.sv_fps) : 50;
+				timeshift = 30;
 			}
 		}
-		// if it's not, and it's not a grenade launcher
-		else if ((cent->currentState.weapon != WP_GRENADE_LAUNCHER) && (cg_projectileNudge.integer & 1))
+		else if (cg_projectileNudge.integer)
 		{
-			// extrapolate based on cg_projectileNudge
-			timeshift = cgs.osp.pingMs + serverTick;
+			int serverTick = 0;
+			if (cg.nextSnap && cg.snap)
+			{
+				serverTick = cg.nextSnap->serverTime - cg.snap->serverTime;
+			}
+			// if it's one of ours
+			if ((cent->currentState.otherEntityNum) == cg.clientNum
+			        && ((cg_projectileNudge.integer & 2)
+			            || ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled)))
+			{
+				// +1 server frame — same clock as CG_AddPredictedMissiles (Devotion)
+				timeshift = serverTick;
+				if (timeshift <= 0)
+				{
+					timeshift = cgs.sv_fps > 0 ? (1000 / cgs.sv_fps) : 50;
+				}
+			}
+			// if it's not, and it's not a grenade launcher
+			else if ((cent->currentState.weapon != WP_GRENADE_LAUNCHER) && (cg_projectileNudge.integer & 1))
+			{
+				// extrapolate based on cg_projectileNudge
+				timeshift = cgs.osp.pingMs + serverTick;
+			}
 		}
 	}
 

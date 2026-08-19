@@ -64,7 +64,6 @@ typedef struct
 	vec3_t      previous_origin;
 	vec3_t      previous_velocity;
 	int         previous_waterlevel;
-	int         stepJumpFlag;   /* QL: step-triggered jump */
 } pml_t;
 
 extern  pmove_t*     pm;//-V707
@@ -88,6 +87,8 @@ extern  float   pm_flightfriction;
 extern  int     c_pmove;
 
 extern int modePromodePhysKoeff; //1870ec
+extern int modeJumpVelocity;
+extern int modeCpmaPmove;
 extern float modePromode_pm_airaccelerate_1; //3450
 extern int modePredictionKoeff2;   //3454
 extern float modePromode_pm_airaccelerate_2; //3458
@@ -114,6 +115,12 @@ extern int modeUnknown3;    //352c
 extern int modeUnknown4;    //3530
 extern int modeShotgunPromode;    //3514
 extern int modeFPSClassico;    // FPSClassico server flag
+/* UnFreeZe phys flags (fpsclassico predict) — set from SERVERINFO via CG_ApplyUnfreezePhysFromServerinfo */
+extern int uf_baseq3;
+extern int uf_osp;
+extern int uf_rampjump;
+/* Set once per PmoveSingle: OVERCLIP, or 1.0f when uf_rampjump (keeps ClipVelocity branch-free). */
+extern float pm_overclip;
 
 void PM_OneSidedClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 void PM_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
@@ -122,14 +129,9 @@ void PM_AddTouchEnt(int entityNum);
 void PM_AddEvent(int newEvent);
 
 float       PM_GetStepSize(void);
-qboolean    PM_WouldQlJump(void);
-void        PM_DoQlJump(void);
 
 qboolean    PM_SlideMove(qboolean gravity);
 void        PM_StepSlideMove(qboolean gravity);
-
-extern const float  pm_ql_airStepFriction;
-extern const int    pm_ql_StepJump;
 
 
 #ifdef __cplusplus

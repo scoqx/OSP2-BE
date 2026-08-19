@@ -1,8 +1,11 @@
-07.08.2026 be v1.07b2
-+ Q3A.SPACE Autologin
-+ cg_teamTaskSentPos
-+ Votemenu fix
+18.08.2026 be v1.07c5
+* Predict Items Sound Fix (!)
+* Predict Items blinking fix
 SuperHUD:
-  + warden.cfg, om3n.cfg - by The Warden
-  + visflags: enterchat, showchat, printui, bestats (and !inverses)
-  * Spectator_ItemSpawns: alignh C horizontal layout
+  * Mirage's configs fixed (fonts override removed)
+  + Visflags: promode
+  + StatusBar_ArmorIcon 'image' parameter
+  + Spectators: rect h = max name lines (0 = unlimited)
++ cg_drawSpawns autofade
++ CPMA Promode movement/weapon prediction
+* OSP Promode predict fix

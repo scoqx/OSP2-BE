@@ -1425,7 +1425,7 @@ void CG_PrintUI_f(void)
 	Vector4Copy(shadowColor, cg.printui[printuiIndex].shadowColor);
 	cg.printui[printuiIndex].charWidth = charWidth;
 	cg.printui[printuiIndex].charHeight = charHeight;
-	cg.printui[printuiIndex].flags = flags | DS_EMOJI;
+	cg.printui[printuiIndex].flags = flags | DS_EMOJI | DS_CTE_COLOR;
 	cg.printui[printuiIndex].fontIndex = fontIndex;
 	cg.printui[printuiIndex].startTime = cg.time;
 	cg.printui[printuiIndex].duration = duration;

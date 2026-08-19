@@ -131,6 +131,9 @@ static qboolean CG_SHUDVisflagsAreGametypeOnly(int vflags, int vflagsNeg)
 #define SHUD_FCHK_SHOWCHAT  (1 << 11)
 #define SHUD_FCHK_PRINTUI   (1 << 12)
 #define SHUD_FCHK_BESTATS   (1 << 13)
+#define SHUD_FCHK_CONSOLE   (1 << 14)
+#define SHUD_FCHK_MENU      (1 << 15)
+#define SHUD_FCHK_PROMODE   (1 << 16)
 
 /*
  * Cache visflags on the element once at config load (after visibility is copied from config).
@@ -209,6 +212,18 @@ static void CG_SHUDElementVisPrepare(superhudElement_t* el)
 	if (combinedExt & SE_BESTATS)
 	{
 		frameChecks |= SHUD_FCHK_BESTATS;
+	}
+	if (combinedExt & SE_CONSOLE)
+	{
+		frameChecks |= SHUD_FCHK_CONSOLE;
+	}
+	if (combinedExt & SE_MENU)
+	{
+		frameChecks |= SHUD_FCHK_MENU;
+	}
+	if (combinedExt & SE_PROMODE)
+	{
+		frameChecks |= SHUD_FCHK_PROMODE;
 	}
 
 	vis = &el->vis;
@@ -390,6 +405,39 @@ static qboolean CG_SHUDElementVisible(const superhudElement_t* el, const superhu
 			return qfalse;
 		}
 	}
+	if (frameChecks & SHUD_FCHK_CONSOLE)
+	{
+		if ((vflagsExt & SE_CONSOLE) && !fc->is_console)
+		{
+			return qfalse;
+		}
+		if ((vflagsNegExt & SE_CONSOLE) && fc->is_console)
+		{
+			return qfalse;
+		}
+	}
+	if (frameChecks & SHUD_FCHK_MENU)
+	{
+		if ((vflagsExt & SE_MENU) && !fc->is_menu)
+		{
+			return qfalse;
+		}
+		if ((vflagsNegExt & SE_MENU) && fc->is_menu)
+		{
+			return qfalse;
+		}
+	}
+	if (frameChecks & SHUD_FCHK_PROMODE)
+	{
+		if ((vflagsExt & SE_PROMODE) && !fc->is_promode)
+		{
+			return qfalse;
+		}
+		if ((vflagsNegExt & SE_PROMODE) && fc->is_promode)
+		{
+			return qfalse;
+		}
+	}
 
 	return qtrue;
 }
@@ -488,6 +536,25 @@ static void CG_SHUDFillFrameContext(superhudFrameContext_t* fc)
 	fc->is_showchat = CG_BEChat_IsShowChat();
 	fc->is_printui = (cg.printuiActiveCount != 0) ? qtrue : qfalse;
 	fc->is_bestats = cg.beStatsShowing;
+	{
+		int catcher;
+
+		catcher = trap_Key_GetCatcher();
+		fc->is_console = (catcher & KEYCATCH_CONSOLE) ? qtrue : qfalse;
+		fc->is_menu = (catcher & KEYCATCH_UI) ? qtrue : qfalse;
+	}
+	if (cgs.pmove_phy_movetype >= 0)
+	{
+		fc->is_promode = (cgs.pmove_phy_movetype == 0) ? qtrue : qfalse; /* OSDF CPM */
+	}
+	else if (cgs.fpsclassico)
+	{
+		fc->is_promode = qfalse; /* UnFreeZe/stock VQ3 */
+	}
+	else
+	{
+		fc->is_promode = (cgs.osp.server_mode & (OSP_SERVER_MODE_PROMODE | OSP_SERVER_MODE_CPMA)) ? qtrue : qfalse;
+	}
 	fc->demo_playback = cg.demoPlayback;
 
 	fc->weaponVis = 0;
@@ -1079,6 +1146,10 @@ void CG_SHUDRoutine(void)
 	if (cg.beStatsShowing)
 	{
 		CG_BEStatsShowStatsInfo();
+	}
+	if (CG_RoundStatsIsShowing())
+	{
+		CG_RoundStatsShow();
 	}
 	if (cg.ttwheelMarkActive)
 	{

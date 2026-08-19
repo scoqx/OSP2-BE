@@ -805,12 +805,22 @@ const char* CG_SHUDVaTextWithInt(superhudConfig_t* config, int value)
 
 void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 {
+	int flags;
+
 	if (!ctx->text || !ctx->text[0])
 	{
 		return;
 	}
 
 	CG_SHUDConfigPickColor_Runtime(cfg, ctx->color);
+
+	flags = ctx->flags;
+	/* Config text "..." only — pointer or same content (decor may bind create-time config*) */
+	if (cfg && cfg->text.isSet && cfg->text.value[0] &&
+	        (ctx->text == cfg->text.value || !strcmp(ctx->text, cfg->text.value)))
+	{
+		flags |= DS_CTE_COLOR;
+	}
 
 	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                    ctx->coord.named.y,
@@ -820,7 +830,7 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 	                    ctx->coord.named.w,
 	                    ctx->coord.named.h,
 	                    ctx->width,
-	                    ctx->flags,
+	                    flags,
 	                    ctx->fontIndex,
 	                    ctx->background,
 	                    ctx->border,
@@ -829,12 +839,21 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 
 void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* ctx, qboolean colorOverride)
 {
+	int flags;
+
 	if (!ctx->text || !ctx->text[0])
 	{
 		return;
 	}
 	if (colorOverride)
 		CG_SHUDConfigPickColor_Runtime(cfg, ctx->color);
+
+	flags = ctx->flags;
+	if (cfg && cfg->text.isSet && cfg->text.value[0] &&
+	        (ctx->text == cfg->text.value || !strcmp(ctx->text, cfg->text.value)))
+	{
+		flags |= DS_CTE_COLOR;
+	}
 
 	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                    ctx->coord.named.y,
@@ -844,7 +863,7 @@ void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* ctx
 	                    ctx->coord.named.w,
 	                    ctx->coord.named.h,
 	                    ctx->width,
-	                    ctx->flags,
+	                    flags,
 	                    ctx->fontIndex,
 	                    ctx->background,
 	                    ctx->border,

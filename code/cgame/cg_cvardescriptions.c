@@ -321,7 +321,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_altShadow", "Alternative shadow. Uses shaders markShadowNew, markShadowNew#, where # is a number from 2 to 17\n  0 - disabled\n  1-16 for customization. " },
 	{ "cg_altShadowColor", "Color of the ^3cg_altShadow^7.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_scoreboardShowId", "Display player IDs on the scoreboard. Set ^20^7 to hide." },
-	{ "cg_drawFriend", "Show marker above teammate:\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - frozenFoe only\nBitmask:\n  ^24^7 - same for spectators (e.g. ^25^7 = enabled+spec, ^26^7 = frozen+spec)" },
+	{ "cg_drawFriend", "Show marker above teammate:\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - frozenFoe only\nBitmask:\n  ^24^7 - all players in spectator (e.g. ^25^7 = enabled+spec, ^26^7 = frozen+spec)\nWithout bit ^24^7, follow shows allies of viewed player." },
 	{ "cg_teamIndicator", "Draw player indicator over ally. Set ^20^7 to disable.\nBitmask:\n  ^21^7 - name\n  ^22^7 - name, color via ^3cg_teamIndicatorColor^7\n  ^24^7 - HP/AP text\n  ^28^7 - frozen info\n  ^216^7 - status icon\n  ^232^7 - spectator mode\n  ^264^7 - HP/AP bar" },
 	{ "cg_teamIndicatorAdjust", "Font scaling for the indicator\n  ^20.5^7 - ^22^7" },
 	{ "cg_teamIndicatorColor", "Indicator text color. For ^3cg_teamIndicator ^22^7\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
@@ -370,7 +370,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_friendHudMarkerMaxScale", "Maximum additional scale factor based on distance (applied to base size)." },
 	{ "cg_friendHudMarkerMinScale", "Minimum scale factor based on distance." },
 	{ "cg_friendsWallhack", "Teammate wallhack and map positions. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - foe marker through walls\n  ^22^7 - ^3team indicator^7 through walls\n  ^24^7 - allies global pos" },
-	{ "cg_playerXray", "Player silhouettes through walls. In-game: teammates only; spect/demo: all. Bitmask:\n  ^21^7 - on\n  ^22^7 - model colors\n  ^24^7 - bright weapon colors" },
+	{ "cg_playerXray", "Player silhouettes through walls. In-game: teammates only. Bitmask:\n  ^21^7 - on\n  ^22^7 - model colors\n  ^24^7 - bright weapon colors\n  ^28^7 - spectator/demo: all players" },
 	{ "cg_drawHudMarkers", "Display teammate markers on the HUD. Set ^20 ^7to disable." },
 	{ "cg_scoreboardRtColors", "Color of the red team scoreboard. ^3cg_scoreboardBE^7 must be enabled \n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Yellow^7\", \"^2T E T^7\", \"^20099FF 99FF00 99FF00^7\" or \"^24 Red 4^7\"." },
 	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Blue^7\", \"^2E T E^7\", \"^20099FF 99FF00 20099FF^7\" or \"^24 Red 2^7\"." },
@@ -491,7 +491,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_worldFlags", "CTF flag position indicators. Set ^20^7 to disable. Bitmask:\n  ^21^7 - world 2D icons\n  ^22^7 - off-screen border HUD markers" },
 	{ "cg_oldFloatSprites", "Foe marker and talk balloon sprite set. Requires ^3vid_restart^7.\n  ^20^7 - new\n  ^21^7 - old" },
 	{ "pmove_float", "Disable integer velocity snap. Set ^21^7 for full float physics. Requires server ^3systeminfo^7 support." },
-	{ "pmove_accurate", "Accurate movement physics with velocity quantization. Set ^20^7 for vanilla integer snap (when ^3pmove_float^7 is ^20^7)." },
+	{ "pmove_accurate", "Server movement lock (same physics at any FPS). Set by server.\n ^20^7 - off\n ^21^7 - like ~75 FPS\n ^22^7 - like ~125 FPS" },
 	{ "be_fontShadowOffset", "OSP bitmap font shadow offset.\n  ^2-0.25^7-^20.25^7" },
 	{ "be_ttfShadowOffset", "TTF font shadow offset.\n  ^2-0.25^7-^20.25^7" },
 	{ "cg_chatWindowNumLock", "Favorite emoji key layout in chat window (^3/enterchat^7).\n  ^21^7 - Ctrl+0-9 for favorites (Ctrl+arrows navigate)\n  ^20^7 - NumPad layout (arrows/Home/PgUp…)" },
@@ -501,6 +501,8 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_kcTeamColor", "Kill confirm token Quad color for teammates. Empty uses team colors.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_enemyAltShadowColor", "Color of ^3cg_altShadow^7 for enemies. Empty uses ^3cg_altShadowColor^7.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_teamTaskSentPos", "Position of own team task sent marker at top of screen (tHere, tPickup, etc.).\n  ^2X^7 - X only (Y stays ^220^7)\n  ^2X Y^7 - both coordinates\nDefault: ^2320 20^7" },
+	{ "cg_specMode", "Enemy markers while spectating (^3cg_teamIndicator^7, ^3cg_drawFriend^7, ^3cg_playerXray^7 — if enabled).\n  ^20^7 - default\n  ^22^7 - following a player: that team only; free camera: everyone" },
+	{ "cg_giveName", "Replace invisible, duplicate, and noname player names with names. Requires ^3vid_restart^7\n  ^20^7 - off\n  ^21^7 - on (all players)\n  ^22^7 - on (only duplicates/invisible/noname)" },
 };
 
 

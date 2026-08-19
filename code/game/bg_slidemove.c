@@ -27,6 +27,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "bg_local.h"
 
 int modePromodePhysKoeff; //1870ec
+int modeJumpVelocity = 270;
+int modeCpmaPmove;
 float modePromode_pm_airaccelerate_1; //3450
 int modePredictionKoeff2;   //3454
 float modePromode_pm_airaccelerate_2; //3458
@@ -54,6 +56,7 @@ int modeUnknown3;    //352c
 int modeUnknown4;    //3530
 int modeShotgunPromode;    //3514
 int modeFPSClassico;    // FPSClassico server flag
+float pm_overclip = OVERCLIP;
 /*
 
 input: origin, velocity, bounds, groundPlane, trace function
@@ -101,7 +104,7 @@ qboolean    PM_SlideMove(qboolean gravity)
 		{
 			// slide along the ground plane
 			PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
-			                pm->ps->velocity, OVERCLIP);
+			                pm->ps->velocity, pm_overclip);
 		}
 	}
 
@@ -201,10 +204,10 @@ qboolean    PM_SlideMove(qboolean gravity)
 			}
 
 			// slide along the plane
-			PM_ClipVelocity(pm->ps->velocity, planes[i], clipVelocity, OVERCLIP);
+			PM_ClipVelocity(pm->ps->velocity, planes[i], clipVelocity, pm_overclip);
 
 			// slide along the plane
-			PM_ClipVelocity(endVelocity, planes[i], endClipVelocity, OVERCLIP);
+			PM_ClipVelocity(endVelocity, planes[i], endClipVelocity, pm_overclip);
 
 			// see if there is a second plane that the new move enters
 			for (j = 0 ; j < numplanes ; j++)
@@ -219,8 +222,8 @@ qboolean    PM_SlideMove(qboolean gravity)
 				}
 
 				// try clipping the move to the plane
-				PM_ClipVelocity(clipVelocity, planes[j], clipVelocity, OVERCLIP);
-				PM_ClipVelocity(endClipVelocity, planes[j], endClipVelocity, OVERCLIP);
+				PM_ClipVelocity(clipVelocity, planes[j], clipVelocity, pm_overclip);
+				PM_ClipVelocity(endClipVelocity, planes[j], endClipVelocity, pm_overclip);
 
 				// see if it goes back into the first clip plane
 				if (DotProduct(clipVelocity, planes[i]) >= 0)
@@ -308,149 +311,44 @@ void PM_StepSlideMove(qboolean gravity)
 
 	actualStepHeight = PM_GetStepSize();
 
-	/* Quake Live step / airstep / stepjump (match ioquakelive) */
-	if (pm->pmove_movement == MOVEMENT_QL)
-	{
-		vec3_t pred;
-		float delta;
-		float dot;
-
-		VectorMA(start_o, pml.frametime, start_v, pred);
-
-		if (!pml.groundPlane)
-		{
-			vec3_t predDown;
-
-			pm->trace(&trace, start_o, pm->mins, pm->maxs, pred,
-			          pm->ps->clientNum, pm->tracemask);
-			VectorCopy(trace.endpos, predDown);
-			predDown[2] -= actualStepHeight;
-			pm->trace(&trace, trace.endpos, pm->mins, pm->maxs, predDown,
-			          pm->ps->clientNum, pm->tracemask);
-			/* Rising: require walkable floor under pred (rejects wall flush) */
-			if (start_v[2] > 0 && (trace.fraction == 1.0 ||
-			                       trace.plane.normal[2] < 0.7f))
-			{
-				return;
-			}
-		}
-
-		VectorCopy(start_o, up);
-		up[2] += actualStepHeight;
-		pm->trace(&trace, start_o, pm->mins, pm->maxs, up,
-		          pm->ps->clientNum, pm->tracemask);
-		if (trace.allsolid)
-		{
-			return;
-		}
-
-		stepSize = trace.endpos[2] - start_o[2];
-		VectorCopy(trace.endpos, pm->ps->origin);
-		VectorCopy(start_v, pm->ps->velocity);
-		PM_SlideMove(gravity);
-
-		VectorCopy(pm->ps->origin, down);
-		down[2] -= stepSize;
-		pm->trace(&trace, pm->ps->origin, pm->mins, pm->maxs, down,
-		          pm->ps->clientNum, pm->tracemask);
-		if (!trace.allsolid)
-		{
-			VectorCopy(trace.endpos, pm->ps->origin);
-		}
-
-		if (trace.fraction < 1.0)
-		{
-			dot = DotProduct(pm->ps->velocity, trace.plane.normal);
-			if (dot < 0.0f || (dot >= 0.0f && dot < 0.001f))
-			{
-				PM_ClipVelocity(pm->ps->velocity, trace.plane.normal,
-				                pm->ps->velocity, OVERCLIP);
-			}
-		}
-
-		/* Validate step crossed geometry before friction / stepjump / sounds */
-		pm->trace(&trace, start_o, pm->mins, pm->maxs, pm->ps->origin,
-		          pm->ps->clientNum, pm->tracemask);
-		if (trace.fraction < 1.0)
-		{
-			delta = pm->ps->origin[2] - start_o[2];
-
-			if (!pml.groundPlane && delta > 0 && start_v[2] > 0)
-			{
-				float dampen = 1.0f - pm_ql_airStepFriction;
-				pm->ps->velocity[0] *= dampen;
-				pm->ps->velocity[1] *= dampen;
-			}
-
-			/* Stepjump uses same WouldJump/min-delta as ioquakelive */
-			if (pm_ql_StepJump && pm->ps->pm_type == PM_NORMAL
-			        && delta > 0 && pm->waterlevel < 2
-			        && PM_WouldQlJump())
-			{
-				vec3_t sjUp, sjDown;
-				trace_t sjTrace;
-
-				VectorCopy(pred, sjUp);
-				sjUp[2] += actualStepHeight;
-				VectorCopy(pred, sjDown);
-				sjDown[2] -= actualStepHeight;
-				pm->trace(&sjTrace, sjUp, pm->mins, pm->maxs, sjDown,
-				          pm->ps->clientNum, pm->tracemask);
-				if (!sjTrace.startsolid && !sjTrace.allsolid
-				        && sjTrace.plane.normal[2] >= 0.7f)
-				{
-					pml.stepJumpFlag = 1;
-					PM_DoQlJump();
-					pml.stepJumpFlag = 0;
-					if (pm->cmd.forwardmove >= 0)
-					{
-						pm->ps->pm_flags &= ~PMF_BACKWARDS_JUMP;
-					}
-					else
-					{
-						pm->ps->pm_flags |= PMF_BACKWARDS_JUMP;
-					}
-				}
-			}
-
-			if (delta > 2)
-			{
-				if (delta < 7)
-				{
-					PM_AddEvent(EV_STEP_4);
-				}
-				else if (delta < 11)
-				{
-					PM_AddEvent(EV_STEP_8);
-				}
-				else if (delta < 15)
-				{
-					PM_AddEvent(EV_STEP_12);
-				}
-				else
-				{
-					PM_AddEvent(EV_STEP_16);
-				}
-			}
-		}
-		return;
-	}
-
 	VectorCopy(start_o, down);
 	down[2] -= actualStepHeight;
 	pm->trace(&trace, start_o, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask);
 	VectorSet(up, 0, 0, 1);
 	// never step up when you still have up velocity
-	if (pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 || DotProduct(trace.plane.normal, up) < 0.7) && ((pm->ps->velocity[2] > (modePromodePhysKoeff + 270)) || pm->ps->stats[STAT_OSP_PHYS] <= 0))
+	if (uf_rampjump)
 	{
-		return;
+		/* UnFreeZe: stock step early-out (no stats[8] / physBoost gate in PM_StepSlideMove) */
+		if (pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 || DotProduct(trace.plane.normal, up) < 0.7))
+		{
+			return;
+		}
+	}
+	else
+	{
+		const int physStat = pm->ps->stats[STAT_OSP_PHYS];
+		const int physBoost = modePromodePhysKoeff;
+
+		if (pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 || DotProduct(trace.plane.normal, up) < 0.7)
+		        && ((pm->ps->velocity[2] > (physBoost + modeJumpVelocity)) || physStat <= 0))
+		{
+			return;
+		}
 	}
 
 	VectorCopy(start_o, up);
 	up[2] += actualStepHeight;
 
-	// test the player position if they were a stepheight higher
-	pm->trace(&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
+	/* OSP 1.03: point test at +step (start==end). Sweep start_o->up is ioquake3;
+	   a ceiling makes fraction<1 / not allsolid and would copy into the brush. */
+	if (uf_rampjump)
+	{
+		pm->trace(&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
+	}
+	else
+	{
+		pm->trace(&trace, up, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
+	}
 	if (trace.allsolid)
 	{
 		if (pm->debugLevel)
@@ -460,9 +358,16 @@ void PM_StepSlideMove(qboolean gravity)
 		return;     // can't step up
 	}
 
-	stepSize = trace.endpos[2] - start_o[2];
-	// try slidemove from this position
-	VectorCopy(trace.endpos, pm->ps->origin);
+	if (uf_rampjump)
+	{
+		stepSize = trace.endpos[2] - start_o[2];
+		VectorCopy(trace.endpos, pm->ps->origin);
+	}
+	else
+	{
+		stepSize = actualStepHeight;
+		VectorCopy(up, pm->ps->origin);
+	}
 	VectorCopy(start_v, pm->ps->velocity);
 
 	PM_SlideMove(gravity);
@@ -477,14 +382,12 @@ void PM_StepSlideMove(qboolean gravity)
 	}
 	if (trace.fraction < 1.0)
 	{
-		if (pm->ps->stats[STAT_OSP_10])
+		if (!uf_rampjump && pm->ps->stats[STAT_OSP_10])
 		{
-			PM_ClipVelocityOSP(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP);
+			PM_ClipVelocityOSP(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, pm_overclip);
+			return;
 		}
-		else
-		{
-			PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP);
-		}
+		PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, pm_overclip);
 	}
 
 #if 0

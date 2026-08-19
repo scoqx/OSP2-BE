@@ -192,6 +192,12 @@ execute { cg_fov 100; exec myconfig.cfg }
 
 - При color "E" или "T" - `color2` регулирует прозрачность (color2 0 0 0 1) где 1 - прозрачность. 
 
+### Text
+
+- `text "..."` — кастомная строка (PreDecorate/PostDecorate и другие элементы с `text`).
+- `^cT` / `^cE` — цвет своей / вражеской команды (только для значения `text "..."`).
+- Пример: `text "^cE ENEMY ^cT TEAM";`
+
 ### ItemPickup
 
 - Style 2 - вывод времени подбора предмета (без названия предмета)
@@ -268,6 +274,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 - spectator - видно в режиме спектатора
 - dead - видно если игрок мертв
 - warmup - видно во время разминки (warmup)
+- promode - видно при CPM-физике (OSDF CPM, OSP Promode, CPMA Promode)
 - enterchat - видно когда открыт /enterchat
 - showchat - видно когда открыт +showchat (история чата)
 - printui - видно когда на экране есть активный PrintUI
@@ -282,7 +289,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 - key6show - скрывать если не нажата кнопка +shudkey6
 - key7show - скрывать если не нажата кнопка +shudkey7
 - key8show - скрывать если не нажата кнопка +shudkey8
-- showempty - показывать пустые значения `для  элементов: weapon/player stats, tempAcc, Score_NME, StatusBar_ArmorCount, thaw_freezing_bar`
+- showempty - показывать пустые значения `для  элементов: weapon/player stats, tempAcc, Score_NME, StatusBar_ArmorCount, StatusBar_ArmorIcon, thaw_freezing_bar`. Для `StatusBar_ArmorIcon` белый цвет = нет типа брони.
 - gt_ffa - скрывать при режиме игры каждый сам за себя (Free for all)
 - gt_tourney -  скрывать при турнирном режиме игры (дуэли)
 - gt_tdm -  скрывать при командном режиме игры. Только team death match
@@ -380,6 +387,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 ## spectators
 
 - style 2 - убрать надпись "Spectators:"
+- `rect h` — максимум строк с никами (0 = без лимита). Заголовок не считается.
 
 ## Spectator_ItemSpawns / Spectator_ItemSpawnsRed / Spectator_ItemSpawnsBlue
 

@@ -71,6 +71,11 @@ void CG_BE_AuthFrame(void)
 		cg_beAuthFrameDone = qtrue;
 		return;
 	}
+	if (cgs.fpsclassico)
+	{
+		cg_beAuthFrameDone = qtrue;
+		return;
+	}
 	if (!cgs.beSupportedServer)
 	{
 		cg_beAuthFrameDone = qtrue;

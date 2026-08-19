@@ -1797,6 +1797,33 @@ qboolean CG_OSPDrawScoretable(void)
 	return qtrue;
 }
 
+/*
+=================
+CG_ScoreboardShouldSwapOverlays
+
+cg_myTeam 1/2 may move Rt/Bt overlays to the opposite column.
+Free spectator without spectPOV keeps default left=RED / right=BLUE.
+CA uses clientinfo.rt (same as CG_UpdateMyTeam).
+=================
+*/
+static qboolean CG_ScoreboardShouldSwapOverlays(void)
+{
+	const clientInfo_t* localCi;
+	team_t ourTeam;
+	qboolean isFreeSpectator;
+
+	if (cg.clientNum < 0 || cg.clientNum >= MAX_CLIENTS)
+		return qfalse;
+
+	localCi = &cgs.clientinfo[cg.clientNum];
+	ourTeam = CG_OSPIsGameTypeCA(cgs.gametype) ? localCi->rt : localCi->team;
+	isFreeSpectator = (ourTeam == TEAM_SPECTATOR && !cg_spectPOV.integer);
+
+	return !isFreeSpectator &&
+	       ((cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
+	        (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED));
+}
+
 void SetScoreboardColors(vec4_t* rtColorHeader, vec4_t* rtColorBody, vec4_t* btColorHeader, vec4_t* btColorBody)
 {
 	/* Base is effective team colors (scoreboard_rtColor/btColor = beRed/beBlue).
@@ -1809,14 +1836,7 @@ void SetScoreboardColors(vec4_t* rtColorHeader, vec4_t* rtColorBody, vec4_t* btC
 
 	vec4_t leftHeader, leftBody;
 	vec4_t rightHeader, rightBody;
-	const clientInfo_t* localCi = (cg.clientNum >= 0 && cg.clientNum < MAX_CLIENTS)
-	                              ? &cgs.clientinfo[cg.clientNum]
-	                              : NULL;
-	const qboolean isFreeSpectator =
-	    (localCi != NULL && localCi->team == TEAM_SPECTATOR && !cg_spectPOV.integer);
-	const qboolean swapOverlays = !isFreeSpectator &&
-	                              ((cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
-	                               (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED));
+	const qboolean swapOverlays = CG_ScoreboardShouldSwapOverlays();
 
 	/* Base: current effective team colors per column: left RED, right BLUE */
 	Vector4Copy(scoreboard_rtColor, leftHeader);
@@ -2106,9 +2126,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 	/* Title colors: per-team overrides if set, otherwise follow COLUMN body color.
 	   Rt/Bt title overlays must follow my team too when cg_myTeam is 1/2. */
 	{
-		const qboolean swapOverlays =
-		    (cg_myTeam.integer == 1 && cgs.beMyTeam == TEAM_BLUE) ||
-		    (cg_myTeam.integer == 2 && cgs.beMyTeam == TEAM_RED);
+		const qboolean swapOverlays = CG_ScoreboardShouldSwapOverlays();
 
 		if (!swapOverlays)
 		{

@@ -589,6 +589,10 @@ Check if server supports team task
 */
 qboolean CG_IsTeamTaskSupported(void)
 {
+	if (cgs.fpsclassico)
+	{
+		return qfalse;
+	}
 	return cg.teamMarkers.supportedServer;
 }
 

@@ -389,6 +389,23 @@ static int ospstr_build_commands(const char* in, int flags, text_command_t* comm
 					i++;
 					from += 8;
 					break;
+				case 'c':
+					/* ^cT / ^cE — team / enemy color (printUI / SuperHUD text only) */
+					if ((flags & DS_CTE_COLOR) && (from[2] == 'T' || from[2] == 'E'))
+					{
+						char te[2];
+
+						te[0] = from[2];
+						te[1] = '\0';
+						commands[i].type = OSP_TEXT_CMD_TEXT_COLOR;
+						if (CG_ParseColorStr(te, commands[i].value.color))
+						{
+							i++;
+						}
+						from += 3;
+						break;
+					}
+					/* fallthrough: palette letter c */
 				default:
 					if (!CG_TextControlDisabled(from[1]) && ospstr_is_palette_color_char(from[1]))
 					{
@@ -1225,6 +1242,13 @@ static float ospstr_rich_slice_measure_fit(const char* start, const char* end, i
 				case 'x':
 					from += 8;
 					continue;
+				case 'c':
+					if ((flags & DS_CTE_COLOR) && (from[2] == 'T' || from[2] == 'E'))
+					{
+						from += 3;
+						continue;
+					}
+					/* fallthrough: palette letter c */
 				default:
 					from += 2;
 					continue;

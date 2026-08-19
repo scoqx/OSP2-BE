@@ -21,7 +21,7 @@ void* CG_SHUDElementDecorCreate(const superhudConfig_t* config)
 	if (config->text.isSet)
 	{
 		CG_SHUDTextMakeContext(&element->config, &element->textCtx);
-		element->textCtx.text = config->text.value;
+		element->textCtx.text = element->config.text.value;
 		CG_SHUDFillAndFrameForText(&element->config, &element->textCtx);
 	}
 	else if (config->image.isSet)

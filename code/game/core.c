@@ -576,21 +576,7 @@ static void core_CrashLand(void)
 	// SURF_NODAMAGE is used for bounce pads where you don't ever take damage or play a crunch sound
 	if (!(pml.groundTrace.surfaceFlags & SURF_NODAMAGE))
 	{
-		if (pm->noFallDamage)
-		{
-			if (delta > 7)
-			{
-				if (!(pm->ps->pm_flags & PMF_RAMPSLIDE))
-				{
-					PM_AddEvent(EV_FALL_SHORT);
-				}
-			}
-			else if (pm->noFootsteps == 0)
-			{
-				PM_AddEvent(PM_FootstepForSurface());
-			}
-		}
-		else if (delta > 60)
+		if (delta > 60)
 		{
 			PM_AddEvent(EV_FALL_FAR);
 		}
