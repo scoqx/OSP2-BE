@@ -1,0 +1,6 @@
+*.pk3
+*.tar.gz
+*.zip
+*.so
+.DS_Store
+Thumbs.db
