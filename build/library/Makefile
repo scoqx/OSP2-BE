@@ -251,7 +251,7 @@ endef
 
 define DO_CGAME_CC
 $(echo_cmd) "CGAME_CC $<"
-$(Q)$(CC) $(MOD_CFLAGS) -DCGAME -I$(CGDIR) -I$(CGDIR)/chatWindow -I$(CGDIR)/superhud $(SHLIBCFLAGS) $(CFLAGS) $(OPTIMIZE) -o $@ -c $<
+$(Q)$(CC) $(MOD_CFLAGS) -DCGAME -I$(CGDIR) -I$(CGDIR)/chatWindow -I$(CGDIR)/superhud -I$(CGDIR)/superhud/editor $(SHLIBCFLAGS) $(CFLAGS) $(OPTIMIZE) -o $@ -c $<
 endef
 
 define DO_UI_CC
@@ -326,6 +326,7 @@ makedirs:
 	@if [ ! -d $(B)/$(MOD)/cgame/chatWindow ];then $(MKDIR) $(B)/$(MOD)/cgame/chatWindow;fi
 	@if [ ! -d $(B)/$(MOD)/cgame/superhud ];then $(MKDIR) $(B)/$(MOD)/cgame/superhud;fi
 	@if [ ! -d $(B)/$(MOD)/cgame/superhud/elements ];then $(MKDIR) $(B)/$(MOD)/cgame/superhud/elements;fi
+	@if [ ! -d $(B)/$(MOD)/cgame/superhud/editor ];then $(MKDIR) $(B)/$(MOD)/cgame/superhud/editor;fi
 	@if [ ! -d $(B)/$(MOD)/qcommon ];then $(MKDIR) $(B)/$(MOD)/qcommon;fi
 	@if [ ! -d $(B)/$(MOD)/game ];then $(MKDIR) $(B)/$(MOD)/game;fi
 	@if [ ! -d $(B)/$(MOD)/ui ];then $(MKDIR) $(B)/$(MOD)/ui;fi
@@ -386,7 +387,11 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/superhud/superhud_configparser.o \
   $(B)/$(MOD)/cgame/superhud/superhud_private.o \
   $(B)/$(MOD)/cgame/superhud/superhud_util.o \
-  $(B)/$(MOD)/cgame/superhud/superhud_editor.o \
+  $(B)/$(MOD)/cgame/superhud/editor/shud_editor.o \
+  $(B)/$(MOD)/cgame/superhud/editor/shud_editor_select.o \
+  $(B)/$(MOD)/cgame/superhud/editor/shud_editor_props.o \
+  $(B)/$(MOD)/cgame/superhud/editor/shud_editor_input.o \
+  $(B)/$(MOD)/cgame/superhud/editor/shud_editor_draw.o \
   $(B)/$(MOD)/cgame/superhud/superhud_serialize.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_ammomessage.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_attacker_icon.o \

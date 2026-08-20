@@ -271,6 +271,10 @@ vm/cgame/superhud/%.asm: $(CGDIR)/superhud/%.c
 	mkdir -p $(dir $@)
 	cd $(CGDIR) && $(Q3LCC_BIN) -DQ3_VM -S -Wf-g $(CG_SUPERHUD_CFLAGS) -o $(abspath $@) superhud/$*.c
 
+vm/cgame/superhud/editor/%.asm: $(CGDIR)/superhud/editor/%.c
+	mkdir -p $(dir $@)
+	cd $(CGDIR) && $(Q3LCC_BIN) -DQ3_VM -S -Wf-g $(CG_SUPERHUD_CFLAGS) -o $(abspath $@) superhud/editor/$*.c
+
 vm/cgame/superhud/elements/%.asm: $(CGDIR)/superhud/elements/%.c
 	mkdir -p $(dir $@)
 	cd $(CGDIR) && $(Q3LCC_BIN) -DQ3_VM -S -Wf-g $(CG_SUPERHUD_ELEMENT_CFLAGS) -o $(abspath $@) superhud/elements/$*.c
