@@ -26,6 +26,18 @@ void CG_SHUDEventTempAccuracy(int weapon, float accuracy);
 
 void CG_SHUDChatRestore(void);
 
+qboolean CG_SHUDEditorIsActive(void);
+qboolean CG_SHUDEditorShowAll(void);
+void CG_SHUDEditorToggle_f(void);
+void CG_SHUDEditorSave_f(void);
+void CG_SHUDEditorDraw(void);
+void CG_SHUDEditorKeyEvent(int key, qboolean down);
+void CG_SHUDEditorMouseEvent(int dx, int dy);
+void CG_SHUDEditorShutdown(void);
+void CG_SHUDEditorOnConfigReloaded(void);
+void CG_SHUDEditorPumpPreview(void);
+qboolean CG_SHUDSaveConfig(const char* filename);
+
 #ifdef __cplusplus
 }
 #endif

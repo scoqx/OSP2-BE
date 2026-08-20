@@ -386,6 +386,8 @@ CGOBJ_ = \
   $(B)/$(MOD)/cgame/superhud/superhud_configparser.o \
   $(B)/$(MOD)/cgame/superhud/superhud_private.o \
   $(B)/$(MOD)/cgame/superhud/superhud_util.o \
+  $(B)/$(MOD)/cgame/superhud/superhud_editor.o \
+  $(B)/$(MOD)/cgame/superhud/superhud_serialize.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_ammomessage.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_attacker_icon.o \
   $(B)/$(MOD)/cgame/superhud/elements/element_attacker_name.o \

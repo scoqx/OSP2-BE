@@ -444,11 +444,55 @@ typedef struct
 	qboolean showWhenSpect;
 } superhudElementVis_t;
 
+#define SHUD_TAB_STATUS  0
+#define SHUD_TAB_CHAT    1
+#define SHUD_TAB_COMBAT  2
+#define SHUD_TAB_SCORE   3
+#define SHUD_TAB_TEAM    4
+#define SHUD_TAB_WEAPONS 5
+#define SHUD_TAB_PLAYER  6
+#define SHUD_TAB_MISC    7
+#define SHUD_TAB_COUNT   8
+
+#define SHUD_GRP_HEALTH      0
+#define SHUD_GRP_ARMOR       1
+#define SHUD_GRP_AMMO        2
+#define SHUD_GRP_CHAT        3
+#define SHUD_GRP_OBITUARY    4
+#define SHUD_GRP_ATTACKER    5
+#define SHUD_GRP_FRAG        6
+#define SHUD_GRP_CROSSHAIR   7
+#define SHUD_GRP_PICKUP      8
+#define SHUD_GRP_MEDALS      9
+#define SHUD_GRP_SCORE       10
+#define SHUD_GRP_NAMES       11
+#define SHUD_GRP_FLAGS       12
+#define SHUD_GRP_TEAMCOUNT   13
+#define SHUD_GRP_CLOCK       14
+#define SHUD_GRP_WARMUP      15
+#define SHUD_GRP_TEAM        16
+#define SHUD_GRP_WEAPONLIST  17
+#define SHUD_GRP_POWERUP     18
+#define SHUD_GRP_WSTATS      19
+#define SHUD_GRP_PERF        20
+#define SHUD_GRP_SPEED       21
+#define SHUD_GRP_PLAYER      22
+#define SHUD_GRP_SPECT       23
+#define SHUD_GRP_TEMPACC     24
+#define SHUD_GRP_LOCATION    25
+#define SHUD_GRP_GRID        26
+#define SHUD_GRP_VOTE        27
+#define SHUD_GRP_DECOR       28
+#define SHUD_GRP_MISC        29
+#define SHUD_GRP_COUNT       30
+
 typedef struct superhudElement_s
 {
 	superHUDConfigElement_t element;
 	superhudConfig_t config;
 	superhudElementVis_t vis;
+	int tab;
+	int grp;
 	struct superhudElement_s* next;
 }
 superhudElement_t;
@@ -1223,8 +1267,29 @@ qboolean CG_SHUDVarGetString(const char* name, char* value, int maxlen);
 qboolean CG_SHUDVarGetFloat4(const char* name, float value[4]);
 
 extern superhudGlobalContext_t superhudGlobalContext;
+superhudGlobalContext_t* CG_SHUDGetContext(void);
 void CG_SHUDAvailableElementsInit(void);
 const superHUDConfigElement_t* CG_SHUDAvailableElementsGet(void);
+
+superhudElement_t* CG_SHUDGetElementsHead(void);
+void CG_SHUDRecreateElement(superhudElement_t* el);
+qboolean CG_SHUDElementIsHidden(const superhudElement_t* el);
+superhudElement_t* CG_SHUDAllocElement(const superHUDConfigElement_t* def, const superhudConfig_t* cfg);
+void CG_SHUDLinkElementAfter(superhudElement_t* after, superhudElement_t* el);
+void CG_SHUDUnlinkElement(superhudElement_t* el);
+void CG_SHUDDestroyElementNode(superhudElement_t* el);
+void CG_SHUDInsertAtChainIndex(superhudElement_t* el, int index);
+int CG_SHUDElementChainIndex(const superhudElement_t* el);
+superhudElement_t* CG_SHUDElementChainAt(int index);
+void CG_SHUDSwapWithPrev(superhudElement_t* el);
+void CG_SHUDSwapWithNext(superhudElement_t* el);
+qboolean CG_SHUDIsDefaultName(const char* name);
+qboolean CG_SHUDIsDecorName(const char* name);
+int CG_SHUDNameTab(const char* name);
+const char* CG_SHUDTabTitle(int tab);
+int CG_SHUDNameGroup(const char* name);
+const char* CG_SHUDGroupTitle(int grp);
+void CG_SHUDAssignTabs(superhudElement_t* head);
 
 int CG_SHUDGetAmmo(int wpi);
 void CG_SHUDParseWeaponMaxValue(const char* valueStr, int* maxammo, int arraySize);

@@ -4334,6 +4334,10 @@ static void CG_Draw2D(void)
 	{
 		CG_SHUDRoutine();
 		CG_DrawWarmupShud();
+		if (CG_SHUDEditorIsActive())
+		{
+			CG_SHUDEditorDraw();
+		}
 		return;
 	}
 	if (cg_enableOSPHUD.integer)

@@ -2654,6 +2654,8 @@ static consoleCommand_t commands[] =
 	{ "decalrotcounter", CG_OSPDecalRotCounter_f },
 #endif
 	{ "reloadHUD", CG_ReloadHud_f },
+	{ "shudedit", CG_SHUDEditorToggle_f },
+	{ "shudsave", CG_SHUDEditorSave_f },
 	{ "playersid", CG_PrintPlayerIDs_f },
 	{ "mute", CG_Mute_f },
 	{ "unmute", CG_UnMute_f },

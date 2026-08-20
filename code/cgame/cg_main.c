@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
 #include "../qcommon/beinfo_cfg.h"
+#include "superhud.h"
 
 int forceModelModificationCount = -1;
 
@@ -3608,8 +3609,7 @@ Called before every level change or subsystem restart
 */
 void CG_Shutdown(void)
 {
-	// some mods may need to do cleanup work here,
-	// like closing files or archiving session data
+	CG_SHUDEditorShutdown();
 }
 
 
@@ -3631,11 +3631,21 @@ void CG_EventHandling(int type)
 
 void CG_KeyEvent(int key, qboolean down)
 {
+	if (CG_SHUDEditorIsActive())
+	{
+		CG_SHUDEditorKeyEvent(key, down);
+		return;
+	}
 	CG_BEChat_KeyEvent(key, down);
 }
 
 void CG_MouseEvent(int x, int y)
 {
+	if (CG_SHUDEditorIsActive())
+	{
+		CG_SHUDEditorMouseEvent(x, y);
+		return;
+	}
 	CG_BEChat_MouseEvent(x, y);
 }
 
