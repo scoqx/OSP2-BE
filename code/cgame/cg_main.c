@@ -3210,15 +3210,15 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	{
 		CG_RevealBeUserInfo();
 	}
-	/* teamoverlay: UnFreeZe uses teamoverlay2 synced to drawTeamOverlay; OSP uses teamoverlay */
+	/* teamoverlay: UnFreeZe uses teamoverlay2 always on; OSP uses teamoverlay */
 	if (cgs.fpsclassico)
 	{
 		if (!teamoverlay2_registered)
 		{
-			trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "0", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
+			trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "1", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
 			teamoverlay2_registered = qtrue;
 		}
-		trap_Cvar_Set("teamoverlay2", cg_drawTeamOverlay.integer > 0 ? "1" : "0");
+		trap_Cvar_Set("teamoverlay2", "1");
 		trap_Cvar_Update(&teamoverlay2);
 	}
 	else if (cgs.gametype >= GT_TEAM)
