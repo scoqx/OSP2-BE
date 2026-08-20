@@ -2,8 +2,6 @@
 
 Public release artifacts for [OSP2-BE](https://q3a.space/osp2/).
 
-Do not commit binaries here. CI publishes assets to **Releases** (tag `latest`):
-
 | File | URL |
 |------|-----|
 | QVM pack | https://github.com/scoqx/osp2-be/releases/latest/download/zz-osp-pak8be.pk3 |
