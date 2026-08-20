@@ -18,9 +18,9 @@ CI publishes build/download assets to public repo **[scoqx/osp2-be](https://gith
 3. Makefile CI job `create-release` and workflow_dispatch **Deploy version files** use this secret.
 4. Version text files are also mirrored onto `scoqx/osp2-be` **main** (for the website UI; release assets lack browser CORS).
 
-### Deploy cfg to q3a.space (CI)
+### Deploy cfg + version text to q3a.space (CI)
 
-Jobs `deploy-to-q3a-space` / `deploy-cfg-to-q3a-space` **rsync** only `OSP2.cfg` and `OSP2English.cfg` into `/opt/ruthless-stats/web/osp2/assets/` (commands UI). Downloads are not copied to Moscow.
+Jobs `deploy-to-q3a-space` / `deploy-cfg-to-q3a-space` **rsync** `OSP2.cfg`, `OSP2English.cfg`, `version.txt`, `version_changelog.txt`, and `changelog_be.txt` into `/opt/ruthless-stats/web/osp2/assets/` (site UI reads these same-origin). Large downloads (pk3 / `.so`) stay on GitHub Releases only.
 
 1. GitHub **Environment** `q3a-deploy` with **Required reviewers**.
 2. Secrets: `Q3A_DEPLOY_SSH_KEY` (required); optional `Q3A_DEPLOY_HOST` (default `5.188.224.180`), `Q3A_DEPLOY_USER` (default `root`).

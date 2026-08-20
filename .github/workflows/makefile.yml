@@ -210,8 +210,8 @@ jobs:
           git commit -m "Sync version.txt, version_changelog.txt, changelog_be.txt"
           git push origin HEAD:main
 
-  # Deploy OSP2.cfg only to https://q3a.space/osp2/assets/ (commands UI).
-  # Downloads (pk3, .so, version/changelog) go to scoqx/osp2-be Releases.
+  # Deploy cfg + version text to https://q3a.space/osp2/assets/ (site UI).
+  # Large downloads (pk3, .so) go to scoqx/osp2-be Releases only.
   # Requires Environment "q3a-deploy" and secret Q3A_DEPLOY_SSH_KEY.
   deploy-to-q3a-space:
     needs: [verify-build-artifacts]
@@ -227,12 +227,15 @@ jobs:
           ref: master
           path: source-repo
 
-      - name: Stage deploy-assets (cfg only)
+      - name: Stage deploy-assets (cfg + version text for site UI)
         run: |
           set -euo pipefail
           mkdir -p deploy-assets
           cp source-repo/assets/OSP2.cfg deploy-assets/OSP2.cfg
           cp source-repo/assets/OSP2English.cfg deploy-assets/OSP2English.cfg
+          cp source-repo/assets/version.txt deploy-assets/version.txt
+          cp source-repo/assets/version_changelog.txt deploy-assets/version_changelog.txt
+          cp source-repo/changelog_be.txt deploy-assets/changelog_be.txt
           ls -lh deploy-assets/
 
       - name: Setup SSH
@@ -257,7 +260,7 @@ jobs:
           ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Rsync cfg to q3a.space
+      - name: Rsync cfg and version text to q3a.space
         run: |
           set -euo pipefail
           rsync -avz --chmod=ugo=rwX \
@@ -265,12 +268,12 @@ jobs:
             deploy-assets/ \
             "${Q3A_DEPLOY_USER}@${Q3A_DEPLOY_HOST}:${REMOTE_ASSETS}/"
 
-      - name: Verify remote cfg
+      - name: Verify remote assets
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/q3a_deploy -o IdentitiesOnly=yes \
             "${Q3A_DEPLOY_USER}@${Q3A_DEPLOY_HOST}" \
-            "test -f ${REMOTE_ASSETS}/OSP2.cfg && test -f ${REMOTE_ASSETS}/OSP2English.cfg && ls -lh ${REMOTE_ASSETS}/OSP2.cfg ${REMOTE_ASSETS}/OSP2English.cfg && curl -m 5 -sf -o /dev/null -w 'cfg=%{http_code}\n' http://127.0.0.1:8080/osp2/assets/OSP2.cfg"
+            "test -f ${REMOTE_ASSETS}/OSP2.cfg && test -f ${REMOTE_ASSETS}/version_changelog.txt && test -f ${REMOTE_ASSETS}/changelog_be.txt && ls -lh ${REMOTE_ASSETS}/OSP2.cfg ${REMOTE_ASSETS}/version_changelog.txt ${REMOTE_ASSETS}/changelog_be.txt && curl -m 5 -sf -o /dev/null -w 'changelog=%{http_code}\n' http://127.0.0.1:8080/osp2/assets/changelog_be.txt"
 
   deploy-to-status-server:
     needs: [verify-build-artifacts]
