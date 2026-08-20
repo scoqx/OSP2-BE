@@ -162,13 +162,14 @@ jobs:
             osp2-be-linux/osp2-be-linux.tar.gz
           generate_release_notes: false
 
-  deploy-to-gh-pages:
+  deploy-to-q3a-space:
     needs: [verify-build-artifacts]
     if: success()
     runs-on: ubuntu-latest
     env:
-      TARGET_REPO: konstalker/konstalker.github.io
+      TARGET_REPO: scoqx/ruthless-stats
       TARGET_BRANCH: main
+      TARGET_ASSETS_DIR: web/osp2/assets
       GIT_USER_NAME: GitHub Actions
       GIT_USER_EMAIL: actions@github.com
     steps:
@@ -216,10 +217,11 @@ jobs:
           ref: master
           path: source-repo
 
-      - name: Copy artifacts to assets folder
+      - name: Copy artifacts to web/osp2/assets
         run: |
           set -euo pipefail
-          mkdir -p target-repo/assets
+          assets_dir="target-repo/${{ env.TARGET_ASSETS_DIR }}"
+          mkdir -p "$assets_dir"
           copy_fail=0
 
           find_and_copy() {
@@ -240,8 +242,8 @@ jobs:
             return 1
           }
 
-          find_and_copy "zz-osp-pak8be.pk3" "target-repo/assets/zz-osp-pak8be.pk3" || true
-          find_and_copy "osp2-be-linux.tar.gz" "target-repo/assets/osp2-be-linux.tar.gz" || true
+          find_and_copy "zz-osp-pak8be.pk3" "$assets_dir/zz-osp-pak8be.pk3" || true
+          find_and_copy "osp2-be-linux.tar.gz" "$assets_dir/osp2-be-linux.tar.gz" || true
 
           if [ "$copy_fail" -ne 0 ]; then
             echo "ERROR: Required build artifacts missing; refusing to update website"
@@ -249,11 +251,11 @@ jobs:
           fi
 
           for src_dst in \
-            "source-repo/assets/version.txt:target-repo/assets/version.txt" \
-            "source-repo/assets/version_changelog.txt:target-repo/assets/version_changelog.txt" \
-            "source-repo/assets/OSP2.cfg:target-repo/assets/OSP2.cfg" \
-            "source-repo/assets/OSP2English.cfg:target-repo/assets/OSP2English.cfg" \
-            "source-repo/changelog_be.txt:target-repo/assets/changelog_be.txt"; do
+            "source-repo/assets/version.txt:$assets_dir/version.txt" \
+            "source-repo/assets/version_changelog.txt:$assets_dir/version_changelog.txt" \
+            "source-repo/assets/OSP2.cfg:$assets_dir/OSP2.cfg" \
+            "source-repo/assets/OSP2English.cfg:$assets_dir/OSP2English.cfg" \
+            "source-repo/changelog_be.txt:$assets_dir/changelog_be.txt"; do
             src="${src_dst%%:*}"
             dst="${src_dst##*:}"
             if [ -f "$src" ]; then
@@ -265,17 +267,17 @@ jobs:
           done
 
           echo ""
-          echo "=== Files in target-repo/assets ==="
-          ls -lh target-repo/assets/ || echo "Assets directory is empty"
+          echo "=== Files in $assets_dir ==="
+          ls -lh "$assets_dir" || echo "Assets directory is empty"
           echo ""
           echo "=== File count ==="
-          ls -1 target-repo/assets/ | wc -l || echo "0"
+          ls -1 "$assets_dir" | wc -l || echo "0"
 
           echo ""
           echo "=== Verification of critical files ==="
           for file in "zz-osp-pak8be.pk3" "osp2-be-linux.tar.gz"; do
-            if [ -f "target-repo/assets/$file" ]; then
-              echo "OK: $file exists ($(du -h target-repo/assets/$file | cut -f1))"
+            if [ -f "$assets_dir/$file" ]; then
+              echo "OK: $file exists ($(du -h "$assets_dir/$file" | cut -f1))"
             else
               echo "MISSING: $file"
             fi
@@ -283,15 +285,16 @@ jobs:
 
       - name: Verify files before commit
         run: |
-          echo "=== Verifying files in target-repo/assets ==="
+          assets_dir="${{ env.TARGET_ASSETS_DIR }}"
+          echo "=== Verifying files in target-repo/$assets_dir ==="
           cd target-repo
-          if [ ! -d assets ]; then
-            echo "ERROR: assets directory does not exist!"
+          if [ ! -d "$assets_dir" ]; then
+            echo "ERROR: $assets_dir directory does not exist!"
             exit 1
           fi
 
           echo "Files found:"
-          ls -lh assets/ || echo "No files found"
+          ls -lh "$assets_dir" || echo "No files found"
 
           required_files=(
             "zz-osp-pak8be.pk3"
@@ -305,11 +308,11 @@ jobs:
 
           missing_files=()
           for file in "${required_files[@]}"; do
-            if [ ! -f "assets/$file" ]; then
+            if [ ! -f "$assets_dir/$file" ]; then
               missing_files+=("$file")
               echo "ERROR: Required file missing: $file"
             else
-              echo "OK: $file exists ($(du -h assets/$file | cut -f1))"
+              echo "OK: $file exists ($(du -h "$assets_dir/$file" | cut -f1))"
             fi
           done
 
@@ -322,6 +325,7 @@ jobs:
 
       - name: Commit and push changes
         run: |
+          assets_dir="${{ env.TARGET_ASSETS_DIR }}"
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
@@ -329,12 +333,12 @@ jobs:
           echo "=== Git status before add ==="
           git status
 
-          git add -A -f assets/
+          git add -A -f "$assets_dir/"
 
           for file in "osp2-be-linux.tar.gz" "zz-osp-pak8be.pk3" "version.txt" "version_changelog.txt" "OSP2.cfg" "OSP2English.cfg" "changelog_be.txt"; do
-            if [ -f "assets/$file" ]; then
-              git add -f "assets/$file"
-              echo "Added: assets/$file"
+            if [ -f "$assets_dir/$file" ]; then
+              git add -f "$assets_dir/$file"
+              echo "Added: $assets_dir/$file"
             fi
           done
 
@@ -359,7 +363,7 @@ jobs:
 
           if [ "$has_changes" = "true" ]; then
             echo "Changes detected, committing..."
-            git commit -m "Update build artifacts, version files and configs [auto]"
+            git commit -m "Update OSP2-BE build artifacts for q3a.space/osp2 [auto]"
             echo "=== Commit created ==="
             git log -1 --stat
             echo "=== Pushing to ${{ env.TARGET_BRANCH }} ==="
@@ -372,15 +376,15 @@ jobs:
             echo "Changes committed and pushed successfully"
           else
             echo "No changes detected in repository"
-            echo "=== Current files in assets ==="
-            ls -lh assets/ || echo "Assets directory is empty or missing"
+            echo "=== Current files in $assets_dir ==="
+            ls -lh "$assets_dir" || echo "Assets directory is empty or missing"
             echo "=== Git log (last 3 commits) ==="
             git log -3 --oneline
           fi
 
           echo ""
-          echo "=== Final verification: files in assets ==="
-          ls -lh assets/ || echo "Assets directory is empty or missing"
+          echo "=== Final verification: files in $assets_dir ==="
+          ls -lh "$assets_dir" || echo "Assets directory is empty or missing"
 
   deploy-to-status-server:
     needs: [verify-build-artifacts]

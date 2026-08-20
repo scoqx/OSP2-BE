@@ -1,4 +1,4 @@
-name: Deploy version files to konstalker.github.io
+name: Deploy version files to q3a.space (ruthless-stats)
 
 permissions:
   contents: write
@@ -7,8 +7,9 @@ on:
   workflow_dispatch:
 
 env:
-  TARGET_REPO: konstalker/konstalker.github.io
+  TARGET_REPO: scoqx/ruthless-stats
   TARGET_BRANCH: main
+  TARGET_ASSETS_DIR: web/osp2/assets
   GIT_USER_NAME: GitHub Actions
   GIT_USER_EMAIL: actions@github.com
 
@@ -28,7 +29,7 @@ jobs:
           cd build/qvm
           make ../../assets/version.txt ../../assets/version_changelog.txt
 
-      - name: Checkout target repo konstalker.github.io
+      - name: Checkout target repo ruthless-stats
         uses: actions/checkout@v6
         with:
           repository: ${{ env.TARGET_REPO }}
@@ -38,18 +39,18 @@ jobs:
 
       - name: Copy files to target repo
         run: |
-          mkdir -p target-repo/assets
-          cp assets/version.txt target-repo/assets/version.txt
-          cp assets/version_changelog.txt target-repo/assets/version_changelog.txt
-          cp assets/OSP2.cfg target-repo/assets/OSP2.cfg
-          cp assets/OSP2English.cfg target-repo/assets/OSP2English.cfg
-          cp changelog_be.txt target-repo/assets/changelog_be.txt
+          mkdir -p "target-repo/${{ env.TARGET_ASSETS_DIR }}"
+          cp assets/version.txt "target-repo/${{ env.TARGET_ASSETS_DIR }}/version.txt"
+          cp assets/version_changelog.txt "target-repo/${{ env.TARGET_ASSETS_DIR }}/version_changelog.txt"
+          cp assets/OSP2.cfg "target-repo/${{ env.TARGET_ASSETS_DIR }}/OSP2.cfg"
+          cp assets/OSP2English.cfg "target-repo/${{ env.TARGET_ASSETS_DIR }}/OSP2English.cfg"
+          cp changelog_be.txt "target-repo/${{ env.TARGET_ASSETS_DIR }}/changelog_be.txt"
 
       - name: Commit and push to target repo
         run: |
           cd target-repo
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add assets/
-          git diff --quiet --cached || git commit -m "Update version files and assets [auto]"
+          git add "${{ env.TARGET_ASSETS_DIR }}/"
+          git diff --quiet --cached || git commit -m "Update OSP2-BE version files and assets [auto]"
           git push origin ${{ env.TARGET_BRANCH }}

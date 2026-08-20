@@ -3110,7 +3110,7 @@ void CG_OSPDrawNewCredits(void)
 	{
 		"OSP2 BLACK EDITION",
 		"by diwoc",
-		"https://scoqx.github.io/",
+		"https://q3a.space/",
 		"",
 		"Based on OSP2 by Snems",
 		"https://github.com/snems/OSP2",
