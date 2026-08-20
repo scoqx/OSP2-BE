@@ -1089,5 +1089,7 @@ SuperHUD:
 + cg_scoreboardBE 128 - hide crosshair when scoreboard opened
 * HudMarkers visual fix
 
-20.08.2026 be v1.07d
+20.08.2026 be v1.07d1
+* FPSClassico team status fix
 * Various fixes
+* SuperHUD: Mirage's configs updated
