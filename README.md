@@ -3,6 +3,14 @@
 Visit website for handy console commands search and check out Ready to play Quake 3 Compilations
 ## https://q3a.space/osp2/
 
+### Deploy to q3a.space (CI)
+
+Makefile CI job `deploy-to-q3a-space` and workflow `Deploy version files to q3a.space` **rsync over SSH** into `/opt/ruthless-stats/web/osp2/assets/` (live `https://q3a.space/osp2/assets/`). No GitHub Pages / stats-repo push.
+
+1. GitHub **Environment** `q3a-deploy` with **Required reviewers**.
+2. Secrets: `Q3A_DEPLOY_SSH_KEY` (required); optional `Q3A_DEPLOY_HOST` (default `5.188.224.180`), `Q3A_DEPLOY_USER` (default `root`).
+3. On the server, put the matching **public** key in `authorized_keys` with `restrict` + `command=` (e.g. `rrsync -wo /opt/ruthless-stats/web/osp2/assets`) so the key cannot open a full shell.
+
 ## 🔧 Contributions
 
 OSP2-BE incorporates code from several notable Quake mods and projects:
