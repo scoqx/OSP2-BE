@@ -1,7 +1,7 @@
 # OSP2-BE: Extended OSP2 version
 
-Visit website for handly console commands search and check out Ready to play Quake 3 Compilations
-## Konstalker.github.io
+Visit website for handy console commands search and check out Ready to play Quake 3 Compilations
+## https://q3a.space/osp2/
 
 ## 🔧 Contributions
 

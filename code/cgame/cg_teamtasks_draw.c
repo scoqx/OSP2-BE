@@ -953,7 +953,7 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 
 		memset(&ent, 0, sizeof(ent));
 		ent.reType = RT_SPRITE;
-		ent.renderfx = RF_FIRST_PERSON;
+		ent.renderfx = RF_FIRST_PERSON | RF_DEPTHHACK;
 
 		phi = atan2(-flu[2], flu[1]);
 		ent.rotation = phi / M_PI * 180;

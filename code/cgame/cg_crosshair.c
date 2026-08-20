@@ -311,6 +311,14 @@ void CG_DrawCrosshair(void)
 		return;
 	}
 
+	if ((cg_scoreboardBE.integer & 128) &&
+	        (cg.showScores || cg.scoreBoardShowing ||
+	         cg.predictedPlayerState.pm_type == PM_INTERMISSION ||
+	         (!cg.warmup && cg.predictedPlayerState.pm_type == PM_DEAD)))
+	{
+		return;
+	}
+
 	if (ch_drawSpeed.integer == 2)
 	{
 		CG_DrawCrosshairSpeed();

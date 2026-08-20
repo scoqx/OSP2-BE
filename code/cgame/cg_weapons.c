@@ -3808,7 +3808,13 @@ void CG_ShotgunPattern(float* origin, float* origin2, int seed, int otherEntityN
 
 	for (i = 0; i < max; ++i)
 	{
-		if (modeShotgunPromode != 0)
+		if (modeCpmaPmove)
+		{
+			/* CPMA QVM: fixed table, no Q_crandom. koeff 1000 from CG_OSPSetMode. */
+			r = 16.0f * modeShotgunKoeff * shotgunPatternMap[i++];
+			u = 16.0f * modeShotgunKoeff * shotgunPatternMap[i];
+		}
+		else if (modeShotgunPromode != 0)
 		{
 			r = 16.0f * modeShotgunKoeff * (shotgunPatternMap[i++] + (Q_crandom(&seed) / 10.0f));
 			u = 16.0f * modeShotgunKoeff * (shotgunPatternMap[i] + (Q_crandom(&seed) / 10.0f));

@@ -3,10 +3,10 @@ setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 
 set "GAME_DIR=%~dp0"
-set "OSP2_URL=https://konstalker.github.io/assets/zz-osp-pak8be.pk3"
+set "OSP2_URL=https://q3a.space/osp2/assets/zz-osp-pak8be.pk3"
 set "OSP2_FILE=!GAME_DIR!osp\zz-osp-pak8be.pk3"
-set "VERSION_URL=https://konstalker.github.io/assets/version.txt"
-set "CHANGELOG_URL=https://konstalker.github.io/assets/version_changelog.txt"
+set "VERSION_URL=https://q3a.space/osp2/assets/version.txt"
+set "CHANGELOG_URL=https://q3a.space/osp2/assets/version_changelog.txt"
 set "TEMP_VERSION=%TEMP%\osp2_version.txt"
 set "TEMP_CHANGELOG=%TEMP%\osp2_changelog.txt"
 set "EXIT_CODE=0"

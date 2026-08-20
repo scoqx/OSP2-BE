@@ -1075,7 +1075,7 @@ FPSClassico:
   + projectile predict
   + hitsound fix
 
-18.08.2026 be v1.07c5
+18.08.2026 be v1.07c6
 * Predict Items Sound Fix (!)
 * Predict Items blinking fix
 SuperHUD:
@@ -1086,3 +1086,8 @@ SuperHUD:
 + cg_drawSpawns autofade
 + CPMA Promode movement/weapon prediction
 * OSP Promode predict fix
++ cg_scoreboardBE 128 - hide crosshair when scoreboard opened
+* HudMarkers visual fix
+
+20.08.2026 be v1.07d
+* Various fixes
