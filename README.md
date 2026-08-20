@@ -3,9 +3,24 @@
 Visit website for handy console commands search and check out Ready to play Quake 3 Compilations
 ## https://q3a.space/osp2/
 
-### Deploy to q3a.space (CI)
+### Deploy downloads (GitHub Releases)
 
-Makefile CI job `deploy-to-q3a-space` and workflow `Deploy version files to q3a.space` **rsync over SSH** into `/opt/ruthless-stats/web/osp2/assets/` (live `https://q3a.space/osp2/assets/`). No GitHub Pages / stats-repo push.
+CI publishes build/download assets to public repo **[scoqx/osp2-be](https://github.com/scoqx/osp2-be)** release tag `latest`:
+
+- https://github.com/scoqx/osp2-be/releases/latest/download/zz-osp-pak8be.pk3
+- https://github.com/scoqx/osp2-be/releases/latest/download/osp2-be-linux.tar.gz
+- https://github.com/scoqx/osp2-be/releases/latest/download/version.txt
+- https://github.com/scoqx/osp2-be/releases/latest/download/version_changelog.txt
+- https://github.com/scoqx/osp2-be/releases/latest/download/changelog_be.txt
+
+1. Create a fine-grained PAT on account **scoqx** with **Contents: Read and write** on repository `scoqx/osp2-be`.
+2. Add repository secret **`OSP2_BE_RELEASE_TOKEN`** on OSP2-PBE (the value of that PAT).
+3. Makefile CI job `create-release` and workflow_dispatch **Deploy version files** use this secret.
+4. Version text files are also mirrored onto `scoqx/osp2-be` **main** (for the website UI; release assets lack browser CORS).
+
+### Deploy cfg to q3a.space (CI)
+
+Jobs `deploy-to-q3a-space` / `deploy-cfg-to-q3a-space` **rsync** only `OSP2.cfg` and `OSP2English.cfg` into `/opt/ruthless-stats/web/osp2/assets/` (commands UI). Downloads are not copied to Moscow.
 
 1. GitHub **Environment** `q3a-deploy` with **Required reviewers**.
 2. Secrets: `Q3A_DEPLOY_SSH_KEY` (required); optional `Q3A_DEPLOY_HOST` (default `5.188.224.180`), `Q3A_DEPLOY_USER` (default `root`).

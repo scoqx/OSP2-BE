@@ -20,9 +20,9 @@ ARGS="+set sv_pure 0
       +set com_skipidlogo 1"
 
 CURL='/usr/bin/curl'
-url="https://q3a.space/osp2/assets/zz-osp-pak8be.pk3"
-url_version="https://q3a.space/osp2/assets/version.txt"
-url_changelog="https://q3a.space/osp2/assets/changelog_be.txt"
+url="https://github.com/scoqx/osp2-be/releases/latest/download/zz-osp-pak8be.pk3"
+url_version="https://github.com/scoqx/osp2-be/releases/latest/download/version.txt"
+url_changelog="https://github.com/scoqx/osp2-be/releases/latest/download/changelog_be.txt"
 
 # === PATHS ===
 SCRPATH="$(cd -- "$(dirname -- "$0")" && pwd -P)"
