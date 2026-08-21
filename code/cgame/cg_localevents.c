@@ -74,10 +74,10 @@ void CG_LocalEventCvarChanged_cg_drawTimer(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
 {
-	/* UnFreeZe: teamoverlay2 mirrors drawTeamOverlay; OSP/BE: keep teamoverlay for tinfo */
+	/* UnFreeZe: teamoverlay2 always 1; OSP/BE: keep teamoverlay for tinfo */
 	if (cgs.fpsclassico)
 	{
-		trap_Cvar_Set("teamoverlay2", cg_drawTeamOverlay.integer > 0 ? "1" : "0");
+		trap_Cvar_Set("teamoverlay2", "1");
 	}
 	else
 	{

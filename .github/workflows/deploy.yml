@@ -1,22 +1,18 @@
-name: Deploy version files to q3a.space (ruthless-stats)
+# Deploy version/changelog to scoqx/osp2-be Releases + cfg to q3a.space over SSH.
+# Requires secret OSP2_BE_RELEASE_TOKEN; Environment "q3a-deploy" + Q3A_DEPLOY_SSH_KEY for cfg.
+# See README "Deploy downloads".
+
+name: Deploy version files
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   workflow_dispatch:
 
-env:
-  TARGET_REPO: scoqx/ruthless-stats
-  TARGET_BRANCH: main
-  TARGET_ASSETS_DIR: web/osp2/assets
-  GIT_USER_NAME: GitHub Actions
-  GIT_USER_EMAIL: actions@github.com
-
 jobs:
-  deploy-version:
+  publish-version-release:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout current repo (source)
         uses: actions/checkout@v6
@@ -29,28 +25,107 @@ jobs:
           cd build/qvm
           make ../../assets/version.txt ../../assets/version_changelog.txt
 
-      - name: Checkout target repo ruthless-stats
+      - name: Stage release assets
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          cp assets/version.txt release-assets/version.txt
+          cp assets/version_changelog.txt release-assets/version_changelog.txt
+          cp changelog_be.txt release-assets/changelog_be.txt
+          ls -lh release-assets/
+
+      - name: Update scoqx/osp2-be release text assets
+        uses: softprops/action-gh-release@v3
+        with:
+          repository: scoqx/osp2-be
+          token: ${{ secrets.OSP2_BE_RELEASE_TOKEN }}
+          tag_name: latest
+          name: Latest
+          prerelease: false
+          make_latest: true
+          files: |
+            release-assets/version.txt
+            release-assets/version_changelog.txt
+            release-assets/changelog_be.txt
+          generate_release_notes: false
+          body: |
+            OSP2-BE download assets. Stable URLs use `/releases/latest/download/<file>`.
+
+      - name: Mirror version text to scoqx/osp2-be main
+        env:
+          TOKEN: ${{ secrets.OSP2_BE_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/scoqx/osp2-be.git" mirror-repo
+          cp release-assets/version.txt mirror-repo/version.txt
+          cp release-assets/version_changelog.txt mirror-repo/version_changelog.txt
+          cp release-assets/changelog_be.txt mirror-repo/changelog_be.txt
+          cd mirror-repo
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add version.txt version_changelog.txt changelog_be.txt
+          if git diff --staged --quiet; then
+            echo "Version text already up to date on main"
+            exit 0
+          fi
+          git commit -m "Sync version.txt, version_changelog.txt, changelog_be.txt"
+          git push origin HEAD:main
+
+  deploy-cfg-to-q3a-space:
+    runs-on: ubuntu-latest
+    environment: q3a-deploy
+    env:
+      REMOTE_ASSETS: /opt/ruthless-stats/web/osp2/assets
+    steps:
+      - name: Checkout current repo (source)
         uses: actions/checkout@v6
         with:
-          repository: ${{ env.TARGET_REPO }}
-          ref: ${{ env.TARGET_BRANCH }}
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          path: target-repo
+          ref: master
 
-      - name: Copy files to target repo
+      - name: Stage deploy-assets (cfg + version text for site UI)
         run: |
-          mkdir -p "target-repo/${{ env.TARGET_ASSETS_DIR }}"
-          cp assets/version.txt "target-repo/${{ env.TARGET_ASSETS_DIR }}/version.txt"
-          cp assets/version_changelog.txt "target-repo/${{ env.TARGET_ASSETS_DIR }}/version_changelog.txt"
-          cp assets/OSP2.cfg "target-repo/${{ env.TARGET_ASSETS_DIR }}/OSP2.cfg"
-          cp assets/OSP2English.cfg "target-repo/${{ env.TARGET_ASSETS_DIR }}/OSP2English.cfg"
-          cp changelog_be.txt "target-repo/${{ env.TARGET_ASSETS_DIR }}/changelog_be.txt"
+          set -euo pipefail
+          mkdir -p deploy-assets
+          cp assets/OSP2.cfg deploy-assets/OSP2.cfg
+          cp assets/OSP2English.cfg deploy-assets/OSP2English.cfg
+          cp assets/version.txt deploy-assets/version.txt
+          cp assets/version_changelog.txt deploy-assets/version_changelog.txt
+          cp changelog_be.txt deploy-assets/changelog_be.txt
+          ls -lh deploy-assets/
 
-      - name: Commit and push to target repo
+      - name: Setup SSH
+        env:
+          Q3A_DEPLOY_SSH_KEY: ${{ secrets.Q3A_DEPLOY_SSH_KEY }}
+          Q3A_DEPLOY_HOST: ${{ secrets.Q3A_DEPLOY_HOST }}
+          Q3A_DEPLOY_USER: ${{ secrets.Q3A_DEPLOY_USER }}
         run: |
-          cd target-repo
-          git config user.name "${{ env.GIT_USER_NAME }}"
-          git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add "${{ env.TARGET_ASSETS_DIR }}/"
-          git diff --quiet --cached || git commit -m "Update OSP2-BE version files and assets [auto]"
-          git push origin ${{ env.TARGET_BRANCH }}
+          set -euo pipefail
+          if [ -z "${Q3A_DEPLOY_SSH_KEY:-}" ]; then
+            echo "ERROR: secret Q3A_DEPLOY_SSH_KEY is not set"
+            exit 1
+          fi
+          HOST="${Q3A_DEPLOY_HOST:-5.188.224.180}"
+          USER="${Q3A_DEPLOY_USER:-root}"
+          echo "Q3A_DEPLOY_HOST=$HOST" >> "$GITHUB_ENV"
+          echo "Q3A_DEPLOY_USER=$USER" >> "$GITHUB_ENV"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$Q3A_DEPLOY_SSH_KEY" > ~/.ssh/q3a_deploy
+          chmod 600 ~/.ssh/q3a_deploy
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Rsync cfg and version text to q3a.space
+        run: |
+          set -euo pipefail
+          rsync -avz --chmod=ugo=rwX \
+            -e "ssh -i ~/.ssh/q3a_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+            deploy-assets/ \
+            "${Q3A_DEPLOY_USER}@${Q3A_DEPLOY_HOST}:${REMOTE_ASSETS}/"
+
+      - name: Verify remote assets
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/q3a_deploy -o IdentitiesOnly=yes \
+            "${Q3A_DEPLOY_USER}@${Q3A_DEPLOY_HOST}" \
+            "test -f ${REMOTE_ASSETS}/OSP2.cfg && test -f ${REMOTE_ASSETS}/version_changelog.txt && ls -lh ${REMOTE_ASSETS}/OSP2.cfg ${REMOTE_ASSETS}/version_changelog.txt ${REMOTE_ASSETS}/changelog_be.txt && curl -m 5 -sf -o /dev/null -w 'changelog=%{http_code}\n' http://127.0.0.1:8080/osp2/assets/changelog_be.txt"
