@@ -55,15 +55,15 @@ def write_reverse_changelog(filename: str, changelog: list[str]):
 
 
 def main():
-  if len(sys.argv) < 5:
+  if len(sys.argv) < 4:
     print("Not enough arguments. Expected arguments in the order:", file=sys.stderr)
-    print("parse_changelog.py <full changelog> <version file> <latest change> <reverse changelog>", file=sys.stderr)
+    print("parse_changelog.py <full changelog> <version file> <latest change> [<reverse changelog>]", file=sys.stderr)
     sys.exit(1)
 
   full_changelog_filename = sys.argv[1]
   latest_version_filename = sys.argv[2]
   latest_change_filename = sys.argv[3]
-  reverse_changelog_filename = sys.argv[4]
+  reverse_changelog_filename = sys.argv[4] if len(sys.argv) >= 5 else None
 
   changelog = parse_changelog(full_changelog_filename)
 
@@ -73,7 +73,9 @@ def main():
 
   write_latest_version(latest_version_filename, changelog)
   write_latest_change(latest_change_filename, changelog)
-  write_reverse_changelog(reverse_changelog_filename, changelog)
+
+  if reverse_changelog_filename is not None:
+    write_reverse_changelog(reverse_changelog_filename, changelog)
 
 
 if __name__ == '__main__':

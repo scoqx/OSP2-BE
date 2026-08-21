@@ -41,12 +41,11 @@ jobs:
 
       - name: Regenerate version.txt and version_changelog.txt
         run: |
-          cd build/qvm
-          make ../../assets/version.txt ../../assets/version_changelog.txt
+          python3 ./tools/parse_changelog.py changelog_be.txt assets/version.txt assets/version_changelog.txt
           echo "=== version.txt ==="
-          cat ../../assets/version.txt
+          cat assets/version.txt
           echo "=== version_changelog.txt (line 1) ==="
-          head -1 ../../assets/version_changelog.txt
+          head -1 assets/version_changelog.txt
 
       - name: Commit and push version assets to OSP2-PBE
         run: |
@@ -174,6 +173,7 @@ jobs:
           }
           check "qvm-linux/zz-osp-pak8be.pk3"
           check "osp2-be-linux/osp2-be-linux.tar.gz"
+          check "osp2-be-windows/osp2-be-windows.zip"
           if [ "$missing" -ne 0 ]; then
             echo "Build artifact verification failed"
             exit 1
@@ -204,6 +204,7 @@ jobs:
           mkdir -p release-assets
           cp qvm-linux/zz-osp-pak8be.pk3 release-assets/zz-osp-pak8be.pk3
           cp osp2-be-linux/osp2-be-linux.tar.gz release-assets/osp2-be-linux.tar.gz
+          cp osp2-be-windows/osp2-be-windows.zip release-assets/osp2-be-windows.zip
           cp source-repo/assets/version.txt release-assets/version.txt
           cp source-repo/assets/version_changelog.txt release-assets/version_changelog.txt
           cp source-repo/changelog_be.txt release-assets/changelog_be.txt
@@ -221,6 +222,7 @@ jobs:
           files: |
             release-assets/zz-osp-pak8be.pk3
             release-assets/osp2-be-linux.tar.gz
+            release-assets/osp2-be-windows.zip
             release-assets/version.txt
             release-assets/version_changelog.txt
             release-assets/changelog_be.txt
@@ -337,12 +339,12 @@ jobs:
 
       - name: Build fresh version.txt and version_changelog.txt
         run: |
-          cd source-repo/build/qvm
-          make ../../assets/version.txt ../../assets/version_changelog.txt
+          cd source-repo
+          python3 ./tools/parse_changelog.py changelog_be.txt assets/version.txt assets/version_changelog.txt
           echo "=== version.txt ==="
-          cat ../../assets/version.txt
+          cat assets/version.txt
           echo "=== version_changelog.txt (line 1) ==="
-          head -1 ../../assets/version_changelog.txt
+          head -1 assets/version_changelog.txt
 
       - name: Checkout osp2be-status-server
         uses: actions/checkout@v6

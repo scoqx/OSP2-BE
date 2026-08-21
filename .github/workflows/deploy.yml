@@ -22,8 +22,7 @@ jobs:
 
       - name: Regenerate version.txt and version_changelog.txt
         run: |
-          cd build/qvm
-          make ../../assets/version.txt ../../assets/version_changelog.txt
+          python3 ./tools/parse_changelog.py changelog_be.txt assets/version.txt assets/version_changelog.txt
 
       - name: Stage release assets
         run: |
