@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cache Clear Service - OSP2-BE</title>
+    <link rel="icon" href="/assets/blender_180.png" type="image/png">
+    <link rel="stylesheet" href="/styles/style.css?v=1.4">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        /* Специальные стили для страницы очистки кэша */
+        .cache-clear-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+        }
+        
+        .cache-clear-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .cache-clear-icon {
+            font-size: 4rem;
+            margin-bottom: var(--spacing-lg);
+            display: block;
+        }
+        
+        .cache-clear-title {
+            font-size: 2.5rem;
+            color: var(--text-color);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .cache-clear-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        
+        .cache-clear-card {
+            background: #111111;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-large);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .cache-status {
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin: var(--spacing-lg) 0;
+            font-weight: bold;
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .cache-status.working {
+            background: rgba(33, 150, 243, 0.1);
+            color: #2196f3;
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+        
+        .cache-status.success {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .cache-status.error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        .progress-container {
+            margin: var(--spacing-lg) 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #333333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: var(--spacing-md) 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+        
+        .steps-container {
+            margin: var(--spacing-lg) 0;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            margin: var(--spacing-sm) 0;
+            border-radius: var(--border-radius);
+            background: #1a1a1a;
+            border-left: 4px solid #333333;
+            transition: var(--transition);
+        }
+        
+        .step.active {
+            border-left-color: #2196f3;
+            background: rgba(33, 150, 243, 0.1);
+        }
+        
+        .step.completed {
+            border-left-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .step.error {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+        
+        .step-icon {
+            font-size: 1.5rem;
+            margin-right: var(--spacing-md);
+            width: 30px;
+            text-align: center;
+        }
+        
+        .step-text {
+            flex: 1;
+            font-weight: bold;
+        }
+        
+        .manual-actions {
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-lg);
+            background: #1a1a1a;
+            border-radius: var(--border-radius);
+            border: 1px solid #333333;
+        }
+        
+        .manual-actions h3 {
+            color: var(--text-color);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .manual-link {
+            display: inline-block;
+            background: var(--button-bg);
+            color: var(--button-text);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: bold;
+            margin: var(--spacing-sm);
+            transition: var(--transition);
+        }
+        
+        .manual-link:hover {
+            background: var(--border-color);
+            color: var(--primary-bg);
+            transform: scale(1.05);
+        }
+        
+        /* Мобильные стили */
+        @media (max-width: 768px) {
+            .cache-clear-container {
+                padding: var(--spacing-md);
+            }
+            
+            .cache-clear-title {
+                font-size: 2rem;
+            }
+            
+            .cache-clear-icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body data-page="service">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="/en/index.html" class="logo-link">
+                    <img src="/assets/blender_180.png" alt="Logo" class="logo-img">
+                </a>
+                <a href="https://q3a.space/" class="site-link" title="q3a.space">Q3A.SPACE</a>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="/en/gallery.html" class="nav-link">Gallery</a>
+                <a href="/en/commands.html" class="nav-link">Console Commands</a>
+                <a href="/en/compilations.html" class="nav-link">Compilations</a>
+            </div>
+            
+            <div class="nav-language">
+                <a href="/ru/index.html" class="lang-link">RU</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="cache-clear-container">
+            <div class="cache-clear-header">
+                <span class="cache-clear-icon">🧹</span>
+                <h1 class="cache-clear-title">Cache Clear Service</h1>
+                <p class="cache-clear-subtitle">Complete cache and data cleanup for OSP2-BE</p>
+            </div>
+            
+            <div class="cache-clear-card">
+                <div id="status" class="cache-status working">
+                    Initializing cache cleanup...
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div id="progressText" class="progress-text">0%</div>
+                </div>
+                
+                <div class="steps-container">
+                    <div id="step1" class="step">
+                        <span class="step-icon">🔄</span>
+                        <span class="step-text">Clearing Service Worker cache...</span>
+                    </div>
+                    <div id="step2" class="step">
+                        <span class="step-icon">🗄️</span>
+                        <span class="step-text">Clearing localStorage...</span>
+                    </div>
+                    <div id="step3" class="step">
+                        <span class="step-icon">💾</span>
+                        <span class="step-text">Clearing sessionStorage...</span>
+                    </div>
+                    <div id="step4" class="step">
+                        <span class="step-icon">🗃️</span>
+                        <span class="step-text">Clearing IndexedDB...</span>
+                    </div>
+                    <div id="step5" class="step">
+                        <span class="step-icon">🌐</span>
+                        <span class="step-text">Clearing domain-specific data...</span>
+                    </div>
+                    <div id="step6" class="step">
+                        <span class="step-icon">⚙️</span>
+                        <span class="step-text">Unregistering Service Workers...</span>
+                    </div>
+                    <div id="step7" class="step">
+                        <span class="step-icon">🔄</span>
+                        <span class="step-text">Redirecting to updated page...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="manual-actions">
+                <h3>Manual Actions</h3>
+                <p>If automatic cleanup doesn't work:</p>
+                <a href="/en/index.html?nocache=1&v=manual" class="manual-link">Go to Homepage</a>
+                <a href="/ru/index.html?nocache=1&v=manual" class="manual-link">Перейти на главную</a>
+            </div>
+        </div>
+    </main>
+
+    <script src="/scripts/navigation.js"></script>
+    <script>
+        // Enhanced cache clearing with complete domain cleanup
+        class CacheClearService {
+            constructor() {
+                this.steps = [
+                    'Service Worker cache',
+                    'localStorage',
+                    'sessionStorage', 
+                    'IndexedDB',
+                    'Domain-specific data',
+                    'Service Workers',
+                    'Redirect'
+                ];
+                this.currentStep = 0;
+                this.init();
+            }
+            
+            init() {
+                this.startClearing();
+            }
+            
+            async startClearing() {
+                try {
+                    await this.clearServiceWorkerCache();
+                    await this.clearLocalStorage();
+                    await this.clearSessionStorage();
+                    await this.clearIndexedDB();
+                    await this.clearDomainSpecificData();
+                    await this.unregisterServiceWorkers();
+                    await this.redirectToUpdatedPage();
+                } catch (error) {
+                    console.error('❌ Cache clearing failed:', error);
+                    this.showError(error.message);
+                }
+            }
+            
+            updateProgress(step, status) {
+                this.currentStep = step;
+                const progress = (step / this.steps.length) * 100;
+                
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressText').textContent = Math.round(progress) + '%';
+                
+                const stepElement = document.getElementById(`step${step}`);
+                if (stepElement) {
+                    stepElement.className = `step ${status}`;
+                }
+                
+                if (status === 'completed') {
+                    stepElement.querySelector('.step-icon').textContent = '✅';
+                } else if (status === 'error') {
+                    stepElement.querySelector('.step-icon').textContent = '❌';
+                }
+            }
+            
+            async clearServiceWorkerCache() {
+                this.updateProgress(1, 'active');
+                
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+                }
+                
+                this.updateProgress(1, 'completed');
+                await this.delay(500);
+            }
+            
+            async clearLocalStorage() {
+                this.updateProgress(2, 'active');
+                
+                localStorage.clear();
+                
+                this.updateProgress(2, 'completed');
+                await this.delay(500);
+            }
+            
+            async clearSessionStorage() {
+                this.updateProgress(3, 'active');
+                
+                sessionStorage.clear();
+                
+                this.updateProgress(3, 'completed');
+                await this.delay(500);
+            }
+            
+            async clearIndexedDB() {
+                this.updateProgress(4, 'active');
+                
+                if ('indexedDB' in window) {
+                    try {
+                        const databases = await indexedDB.databases();
+                        await Promise.all(databases.map(db => {
+                            return new Promise((resolve, reject) => {
+                                const deleteReq = indexedDB.deleteDatabase(db.name);
+                                deleteReq.onsuccess = () => resolve();
+                                deleteReq.onerror = () => reject(deleteReq.error);
+                            });
+                        }));
+                        
+                    } catch (e) {
+                        
+                    }
+                }
+                
+                this.updateProgress(4, 'completed');
+                await this.delay(500);
+            }
+            
+            async clearDomainSpecificData() {
+                this.updateProgress(5, 'active');
+                
+                // Clear all cookies for the domain
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                
+                // Clear any domain-specific storage
+                try {
+                    // Clear all possible storage keys related to q3a.space
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && (key.includes('osp2') || key.includes('scoqx') || key.includes('thumbnail'))) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                    keysToRemove.forEach(key => localStorage.removeItem(key));
+                    
+                    // Clear any cached data in memory
+                    if (window.thumbnailOptimizer) {
+                        window.thumbnailOptimizer.clearCache();
+                    }
+                    
+                    
+                } catch (e) {
+                    
+                }
+                
+                this.updateProgress(5, 'completed');
+                await this.delay(500);
+            }
+            
+            async unregisterServiceWorkers() {
+                this.updateProgress(6, 'active');
+                
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(registrations.map(registration => registration.unregister()));
+                        
+                    } catch (e) {
+                        
+                    }
+                }
+                
+                this.updateProgress(6, 'completed');
+                await this.delay(500);
+            }
+            
+            async redirectToUpdatedPage() {
+                this.updateProgress(7, 'active');
+                
+                document.getElementById('status').className = 'cache-status success';
+                document.getElementById('status').textContent = 'Cache cleared successfully! Redirecting...';
+                
+                setTimeout(() => {
+                    const timestamp = new Date().getTime();
+                    window.location.href = `/en/index.html?nocache=1&v=${timestamp}&cleared=1`;
+                }, 2000);
+            }
+            
+            showError(message) {
+                document.getElementById('status').className = 'cache-status error';
+                document.getElementById('status').textContent = 'Error: ' + message;
+            }
+            
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new CacheClearService();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+{
+  "images": [
+    {
+      "src": "/images/1.jpg",
+      "title": "Screenshot 1",
+      "description": "Gameplay screenshot showing the action",
+      "order": 1
+    },
+    {
+      "src": "/images/2.jpg",
+      "title": "Screenshot 2", 
+      "description": "Another gameplay moment",
+      "order": 2
+    },
+    {
+      "src": "/images/3.jpg",
+      "title": "Screenshot 3",
+      "description": "Combat scene",
+      "order": 3
+    },
+    {
+      "src": "/images/4.jpg",
+      "title": "Screenshot 4",
+      "description": "Map overview",
+      "order": 4
+    },
+    {
+      "src": "/images/5.jpg",
+      "title": "Screenshot 5",
+      "description": "Weapon showcase",
+      "order": 5
+    },
+    {
+      "src": "/images/6.jpg",
+      "title": "Screenshot 6",
+      "description": "Player in action",
+      "order": 6
+    },
+    {
+      "src": "/images/7.jpg",
+      "title": "Screenshot 7",
+      "description": "Team battle",
+      "order": 7
+    },
+    {
+      "src": "/images/8.jpg",
+      "title": "Screenshot 8",
+      "description": "Victory moment",
+      "order": 8
+    },
+    {
+      "src": "/images/9.jpg",
+      "title": "Screenshot 9",
+      "description": "Game interface",
+      "order": 9
+    },
+    {
+      "src": "/images/10.jpg",
+      "title": "Screenshot 10",
+      "description": "Multiplayer action",
+      "order": 10
+    },
+    {
+      "src": "/images/11.jpg",
+      "title": "Screenshot 11",
+      "description": "Map exploration",
+      "order": 11
+    },
+    {
+      "src": "/images/12.jpg",
+      "title": "Screenshot 12",
+      "description": "Combat sequence",
+      "order": 12
+    },
+    {
+      "src": "/images/13.jpg",
+      "title": "Screenshot 13",
+      "description": "Player customization",
+      "order": 13
+    },
+    {
+      "src": "/images/14.jpg",
+      "title": "Screenshot 14",
+      "description": "Game environment",
+      "order": 14
+    },
+    {
+      "src": "/images/15.jpg",
+      "title": "Screenshot 15",
+      "description": "Action sequence",
+      "order": 15
+    },
+    {
+      "src": "/images/16.jpg",
+      "title": "Screenshot 16",
+      "description": "Team coordination",
+      "order": 16
+    },
+    {
+      "src": "/images/17.jpg",
+      "title": "Screenshot 17",
+      "description": "Strategic gameplay",
+      "order": 17
+    },
+    {
+      "src": "/images/18.jpg",
+      "title": "Screenshot 18",
+      "description": "Intense battle",
+      "order": 18
+    },
+    {
+      "src": "/images/19.jpg",
+      "title": "Screenshot 19",
+      "description": "Victory celebration",
+      "order": 19
+    },
+    {
+      "src": "/images/20.jpg",
+      "title": "Screenshot 20",
+      "description": "Game mechanics",
+      "order": 20
+    },
+    {
+      "src": "/images/21.jpg",
+      "title": "Screenshot 21",
+      "description": "Player skills",
+      "order": 21
+    },
+    {
+      "src": "/images/22.jpg",
+      "title": "Screenshot 22",
+      "description": "Map details",
+      "order": 22
+    },
+    {
+      "src": "/images/23.jpg",
+      "title": "Screenshot 23",
+      "description": "Final showcase",
+      "order": 23
+    }
+  ]
+}

@@ -1,6 +1,7 @@
-*.pk3
-*.tar.gz
-*.zip
-*.so
+# Release binaries stay on GitHub Releases (not in the Pages tree)
+zz-osp-pak8be.pk3
+osp2-be-win.zip
+osp2-be-linux.tar.gz
+cgamex86_64.so
 .DS_Store
 Thumbs.db

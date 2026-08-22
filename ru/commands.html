@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSP2-BE - Консольные команды</title>
+    <link rel="icon" href="/assets/blender_180.png" type="image/png">
+    <link rel="stylesheet" href="/styles/style.css?v=1.4">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="cache-control" content="no-cache">
+    <meta name="expires" content="0">
+    <meta name="pragma" content="no-cache">
+    <style>
+        html, body {
+            background-color: #000000 !important;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body data-page="commands">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="/ru/index.html" class="logo-link">
+                    <img src="/assets/blender_180.png" alt="Logo" class="logo-img">
+                </a>
+                <a href="https://q3a.space/" class="site-link" title="q3a.space">Q3A.SPACE</a>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="/ru/gallery.html" class="nav-link">Галерея</a>
+                <a href="/ru/commands.html" class="nav-link">Консольные команды</a>
+                <a href="/ru/compilations.html" class="nav-link">Сборки</a>
+                <a href="/ru/tools.html" class="nav-link">++</a>
+            </div>
+            
+            <div class="nav-language">
+                <a href="/en/commands.html" class="lang-link">EN</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="commands-container">
+            <!-- Search Section -->
+            <div class="search-section">
+                <div class="search-container">
+                    <img src="/assets/search.png" alt="Search" class="search-icon">
+                    <input type="text" id="command-search" class="search-input" placeholder="Поиск команд...">
+                    <button id="clear-search" class="clear-search-btn" title="Очистить поиск">×</button>
+                </div>
+                <div class="search-stats">
+                    <span id="search-results-count">Всего команд: 0</span>
+                </div>
+            </div>
+            
+            <div id="commands-content" class="commands-content">
+                <!-- Commands content will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <script src="/scripts/language-manager.js?v=1.3"></script>
+    <script src="/scripts/navigation.js?v=1.3"></script>
+    <script src="/scripts/command-loader.js?v=1.3"></script>
+    
+    <!-- Simple Analytics - 100% privacy-first analytics -->
+    <script data-collect-dnt="true" async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+    <script async data-collect="downloads, outbound" data-extensions="pk3" data-use-title="true" data-full-urls="false"
+        src="https://scripts.simpleanalyticscdn.com/auto-events.js"></script>
+</body>
+</html>

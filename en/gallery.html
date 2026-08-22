@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSP2-BE - Gallery</title>
+    <link rel="icon" href="/assets/blender_180.png" type="image/png">
+    <link rel="stylesheet" href="/styles/style.css?v=1.4">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="cache-control" content="no-cache">
+    <meta name="expires" content="0">
+    <meta name="pragma" content="no-cache">
+    <style>
+        html, body {
+            background-color: #000000 !important;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body data-page="gallery">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="/en/index.html" class="logo-link">
+                    <img src="/assets/blender_180.png" alt="Logo" class="logo-img">
+                </a>
+                <a href="https://q3a.space/" class="site-link" title="q3a.space">Q3A.SPACE</a>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="/en/gallery.html" class="nav-link">Gallery</a>
+                <a href="/en/commands.html" class="nav-link">Console Commands</a>
+                <a href="/en/compilations.html" class="nav-link">Compilations</a>
+                <a href="/en/tools.html" class="nav-link">++</a>
+            </div>
+            
+            <div class="nav-language">
+                <a href="/ru/gallery.html" class="lang-link">RU</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="gallery-container">
+            <div class="gallery-header">
+                <div class="view-mode-toggle">
+                    <span class="toggle-label-text">Mode</span>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="modeToggle" class="toggle-input">
+                        <label for="modeToggle" class="toggle-label">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Gallery View -->
+            <div id="mainGallery" class="main-gallery">
+                <div class="gallery-slider">
+                    <button id="prevBtn" class="slider-btn prev-btn">‹</button>
+                    <div class="gallery-image-container">
+                        <img id="mainImage" class="gallery-main-image" alt="">
+                        <div class="image-info">
+                            <h3 id="imageTitle" class="image-title"></h3>
+                            <p id="imageDescription" class="image-description"></p>
+                        </div>
+                    </div>
+                    <button id="nextBtn" class="slider-btn next-btn">›</button>
+                </div>
+                
+                <!-- Thumbnails -->
+                <div id="thumbnails" class="thumbnails-container"></div>
+            </div>
+            
+            <!-- Thumbnail Grid View -->
+            <div id="thumbnailGrid" class="thumbnail-grid hidden">
+                <div class="grid-container" id="gridContainer"></div>
+            </div>
+            
+            <!-- Fullscreen Overlay -->
+            <div id="fullscreenOverlay" class="fullscreen-overlay hidden">
+                <div class="fullscreen-controls">
+                    <button id="fullscreenPrev" class="fullscreen-btn">‹</button>
+                    <button id="closeFullscreen" class="fullscreen-btn">×</button>
+                    <button id="fullscreenNext" class="fullscreen-btn">›</button>
+                </div>
+                <img id="fullscreenImage" class="fullscreen-image" alt="Fullscreen image">
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Apply saved view mode immediately to prevent visual switching
+        // This script runs synchronously before gallery.js loads
+        (function() {
+            const savedMode = localStorage.getItem('galleryViewMode');
+            const isThumbnailMode = savedMode === 'thumbnail';
+            
+            const mainGallery = document.getElementById('mainGallery');
+            const thumbnailGrid = document.getElementById('thumbnailGrid');
+            const modeToggle = document.getElementById('modeToggle');
+            
+            if (mainGallery && thumbnailGrid) {
+                if (isThumbnailMode) {
+                    mainGallery.classList.add('hidden');
+                    thumbnailGrid.classList.remove('hidden');
+                } else {
+                    mainGallery.classList.remove('hidden');
+                    thumbnailGrid.classList.add('hidden');
+                }
+            }
+            
+            if (modeToggle) {
+                modeToggle.checked = isThumbnailMode;
+            }
+        })();
+    </script>
+    <script src="/scripts/language-manager.js?v=1.3"></script>
+    <script src="/scripts/navigation.js?v=1.3"></script>
+    <script src="/scripts/thumbnail-optimizer.js?v=1.3"></script>
+    <script src="/scripts/fullscreen-module.js?v=1.3"></script>
+    <script src="/scripts/preview-module.js?v=1.3"></script>
+    <script src="/scripts/swipe-module.js?v=1.3"></script>
+    <script src="/scripts/gallery.js?v=1.3"></script>
+    
+    <!-- Simple Analytics - 100% privacy-first analytics -->
+    <script data-collect-dnt="true" async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+    <script async data-collect="downloads, outbound" data-extensions="pk3" data-use-title="true" data-full-urls="false"
+        src="https://scripts.simpleanalyticscdn.com/auto-events.js"></script>
+</body>
+</html>

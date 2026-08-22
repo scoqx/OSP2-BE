@@ -1,0 +1,420 @@
+.font-maker-tool-root{
+  color-scheme: dark;
+  --black:#000000;
+  --white:#FFFFFF;
+  --red:#FF0000;
+  --border-color: rgba(255, 255, 255, 0.25);
+}
+.font-maker-tool-root *{box-sizing:border-box;margin:0;padding:0}
+.font-maker-tool-root{
+  background:var(--black);
+  color:var(--white);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.font-maker-tool-app{
+  width:100%;
+  max-width:1400px;
+  background:var(--black);
+  padding:12px 20px 16px;
+}
+.font-maker-tool-app h1{
+  font-size:1.2rem;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  margin:0;
+  margin-bottom:4px;
+}
+.font-maker-tool-app h1 span{color:var(--red);}
+.font-maker-tool-app .subtitle{
+  font-size:.8rem;
+  color:rgba(255,255,255,0.7);
+  margin:0 0 12px;
+}
+.fm-header{
+  margin-bottom:4px;
+}
+
+.fm-main{
+  display:grid;
+  grid-template-columns:360px 1fr;
+  gap:16px;
+}
+.fm-left{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.fm-row{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.fm-two{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.fm-right{
+  border:1px solid var(--border-color);
+  border-radius:10px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-height:520px;
+}
+.fm-preview-tabs{
+  display:flex;
+  gap:8px;
+}
+.preview-tab{
+  border:1px solid var(--border-color);
+  background:transparent;
+  color:rgba(255,255,255,0.8);
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.preview-tab.active{
+  background:var(--red);
+  border-color:var(--red);
+  color:#fff;
+}
+.preview-info{
+  margin-bottom:6px;
+  color:rgba(255,255,255,0.7);
+  font-size:0.75rem;
+}
+
+.font-maker-tool-app .form-group{
+  margin-bottom:10px;
+}
+
+.font-maker-tool-app label{
+  display:block;
+  margin-bottom:4px;
+  font-weight:500;
+  color:var(--white);
+  font-size:0.75rem;
+}
+
+.font-maker-tool-app input[type="file"],
+.font-maker-tool-app input[type="text"],
+.font-maker-tool-app input[type="number"],
+.font-maker-tool-app textarea{
+  width:100%;
+  padding:6px 8px;
+  border:1px solid var(--border-color);
+  border-radius:6px;
+  background:var(--black);
+  color:var(--white);
+  font-size:0.8rem;
+  outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+
+.font-maker-tool-app input[type="file"]{
+  cursor:pointer;
+}
+
+.font-maker-tool-app input:focus{
+  border-color:var(--red);
+  box-shadow:0 0 0 1px rgba(255,0,0,0.5);
+}
+
+.font-maker-tool-app .file-info{
+  margin-top:6px;
+  padding:6px;
+  background:rgba(255,255,255,0.05);
+  border-radius:4px;
+  font-size:0.7rem;
+  color:rgba(255,255,255,0.8);
+  border:1px solid var(--border-color);
+}
+
+.font-maker-tool-app .button-group{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.font-maker-tool-app button{
+  border-radius:999px;
+  border:1px solid var(--red);
+  background:#000000;
+  color:var(--white);
+  padding:6px 12px;
+  font-size:0.75rem;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  transition:background .15s,border-color .15s,transform .08s,box-shadow .15s;
+}
+
+.font-maker-tool-app button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  background:#000000;
+  border-color:rgba(255,255,255,0.25);
+  box-shadow:none;
+}
+
+.font-maker-tool-app button:hover:not(:disabled){
+  background:var(--red);
+  border-color:var(--red);
+  box-shadow:0 0 16px rgba(255,0,0,0.6);
+}
+
+.font-maker-tool-app button:active:not(:disabled){
+  transform:scale(.97);
+}
+
+.font-maker-tool-app .btn-secondary{
+  border-color:rgba(255,255,255,0.4);
+}
+
+.font-maker-tool-app .btn-secondary:hover:not(:disabled){
+  background:rgba(255,255,255,0.1);
+  border-color:rgba(255,255,255,0.6);
+  box-shadow:0 0 16px rgba(255,255,255,0.3);
+}
+
+.font-maker-tool-app .preview-container{
+  max-height:360px;
+  overflow:auto;
+  border:1px solid var(--border-color);
+  border-radius:6px;
+  background:#1a1a1a;
+  padding:6px;
+}
+
+.font-maker-tool-app .preview-canvas{
+  border:1px solid var(--border-color);
+  border-radius:6px;
+  max-width:100%;
+  width:100%;
+  background:#1a1a1a;
+  display:block;
+  margin:0 auto;
+}
+
+.font-maker-tool-app .status{
+  margin-top:6px;
+  padding:10px;
+  border-radius:6px;
+  font-size:0.85rem;
+  display:none;
+}
+
+.font-maker-tool-app .status.success{
+  background:rgba(0,255,0,0.2);
+  color:#00ff00;
+  border:1px solid rgba(0,255,0,0.5);
+  display:block;
+}
+
+.font-maker-tool-app .status.error{
+  background:rgba(255,0,0,0.2);
+  color:#ff0000;
+  border:1px solid rgba(255,0,0,0.5);
+  display:block;
+}
+
+.font-maker-tool-app .status.info{
+  background:rgba(0,150,255,0.2);
+  color:#66b3ff;
+  border:1px solid rgba(0,150,255,0.5);
+  display:block;
+}
+
+.font-maker-tool-app .download-links{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.font-maker-tool-app .download-link{
+  padding:6px 12px;
+  background:rgba(0,255,0,0.2);
+  color:#00ff00;
+  text-decoration:none;
+  border-radius:999px;
+  font-weight:500;
+  display:inline-block;
+  transition:background .3s;
+  border:1px solid rgba(0,255,0,0.5);
+  font-size:0.75rem;
+}
+
+.font-maker-tool-app .download-link:hover{
+  background:rgba(0,255,0,0.3);
+  border-color:rgba(0,255,0,0.7);
+}
+
+.font-maker-tool-app .grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+  gap:15px;
+}
+
+.font-maker-tool-app small{
+  font-size:0.65rem;
+  color:rgba(255,255,255,0.6);
+  display:block;
+  margin-top:2px;
+}
+
+.font-maker-tool-app .char-preview{
+  margin-top:10px;
+  padding:8px;
+  background:rgba(255,255,255,0.05);
+  border-radius:6px;
+  border:1px solid var(--border-color);
+}
+
+.font-maker-tool-app .char-preview h3{
+  font-size:0.85rem;
+  margin-bottom:6px;
+  color:var(--white);
+}
+
+.font-maker-tool-app .char-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(30px, 1fr));
+  gap:4px;
+  max-height:150px;
+  overflow-y:auto;
+  padding:6px;
+  background:rgba(0,0,0,0.3);
+  border-radius:4px;
+}
+
+.font-maker-tool-app .char-item{
+  aspect-ratio:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,0.1);
+  border-radius:4px;
+  font-size:12px;
+  cursor:pointer;
+  transition:all 0.2s;
+  border:1px solid var(--border-color);
+}
+
+.font-maker-tool-app .char-item:hover{
+  background:var(--red);
+  color:white;
+  border-color:var(--red);
+}
+
+.font-maker-tool-app table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:0.75rem;
+}
+
+.font-maker-tool-app table thead{
+  background:var(--red);
+  color:white;
+  position:sticky;
+  top:0;
+}
+
+.font-maker-tool-app table th,
+.font-maker-tool-app table td{
+  padding:6px;
+  text-align:left;
+  border:1px solid var(--border-color);
+}
+
+.font-maker-tool-app table tbody tr{
+  background:rgba(255,255,255,0.05);
+}
+
+.font-maker-tool-app table tbody tr:nth-child(even){
+  background:rgba(255,255,255,0.02);
+}
+
+.font-maker-tool-app .info-box{
+  margin-top:6px;
+  padding:6px;
+  background:rgba(0,150,255,0.08);
+  border-radius:4px;
+  border-left:3px solid var(--red);
+  border:1px solid rgba(0,150,255,0.25);
+}
+
+.font-maker-tool-app .info-box small{
+  color:rgba(255,255,255,0.8);
+  font-size:0.7rem;
+}
+
+.fm-preview-tabs{
+  display:flex;
+  gap:8px;
+}
+.preview-tab{
+  padding:6px 12px;
+  font-size:0.8rem;
+  background:var(--red);
+  border:1px solid var(--red);
+  color:#fff;
+  border-radius:6px;
+}
+.fm-test-grid{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(120px,1fr));
+  gap:8px;
+  align-items:end;
+}
+.fm-test-grid label{
+  font-size:0.75rem;
+  margin-bottom:2px;
+}
+.fm-test-flags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  font-size:0.75rem;
+  align-items:center;
+}
+.fm-test-flags input{
+  width:auto;
+}
+.fm-test-result canvas{
+  width:100%;
+  background:#000;
+  border:1px solid var(--border-color);
+  border-radius:4px;
+}
+.fm-test-result{
+  padding:6px;
+  border:1px solid var(--border-color);
+  border-radius:6px;
+  background:rgba(0,0,0,0.5);
+  overflow-x:auto;
+}
+.fm-row textarea{
+  min-height:60px;
+  font-family:monospace;
+}
+
+@media (max-width: 1100px){
+  .fm-main{
+    grid-template-columns:1fr;
+  }
+}
+
+
+
+
+
+
+
+

@@ -1,0 +1,9 @@
+# Netlify redirects (if using Netlify)
+# Root now handles language preference via JavaScript
+/ /index.html 200
+
+# Support page redirect
+/support /support.html 200
+
+# Cache clear service
+/service /service.html 200

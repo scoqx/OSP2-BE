@@ -1,6 +1,6 @@
-# OSP2-BE downloads
+﻿# OSP2-BE downloads
 
-Public release artifacts for [OSP2-BE](https://q3a.space/osp2/).
+Public release artifacts for [OSP2-BE](https://osp2.q3a.space/).
 
 | File | URL |
 |------|-----|
@@ -10,4 +10,6 @@ Public release artifacts for [OSP2-BE](https://q3a.space/osp2/).
 | Version changelog | https://github.com/scoqx/osp2-be/releases/latest/download/version_changelog.txt |
 | Full changelog | https://github.com/scoqx/osp2-be/releases/latest/download/changelog_be.txt |
 
-Source: private/build repo OSP2-PBE. Site: https://q3a.space/osp2/
+Source: private/build repo OSP2-PBE. Site: https://osp2.q3a.space/
+
+

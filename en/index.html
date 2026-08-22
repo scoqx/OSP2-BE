@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSP2-BE</title>
+    <link rel="icon" href="/assets/blender_180.png" type="image/png">
+    <link rel="stylesheet" href="/styles/style.css?v=1.4">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="cache-control" content="no-cache">
+    <meta name="expires" content="0">
+    <meta name="pragma" content="no-cache">
+</head>
+<body data-page="home">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="/en/index.html" class="logo-link">
+                    <img src="/assets/blender_180.png" alt="Logo" class="logo-img">
+                </a>
+                <a href="https://q3a.space/" class="site-link" title="q3a.space">Q3A.SPACE</a>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="/en/gallery.html" class="nav-link">Gallery</a>
+                <a href="/en/commands.html" class="nav-link">Console Commands</a>
+                <a href="/en/compilations.html" class="nav-link">Compilations</a>
+                <a href="/en/tools.html" class="nav-link">++</a>
+            </div>
+            
+            <div class="nav-language">
+                <a href="/ru/index.html" class="lang-link">RU</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-container">
+            <div class="text-section">
+                <div class="home-intro">
+                    <h1 class="main-title">OSP2-BE</h1>
+                    <h2 class="subtitle">Quake 3 Arena mod</h2>
+                    <p class="description">
+                        Extended edition of the OSP2.<br>
+                        OSP2 is an attempt to recover the old OSP mod source code and improve upon it.<br>
+                        Based on vanilla Q3 and OSP files analysis.
+                    </p>
+                    
+                    <div id="contactInfo" class="contact-info">
+                        <div class="contact-row">
+                            <img src="/assets/blender_180_osp2.png" alt="OSP2 icon" />
+                            <strong>OSP2:</strong>
+                            <a href="https://www.moddb.com/mods/osp2" target="_blank" rel="noopener noreferrer">ModDB</a>
+                            - <a href="https://github.com/snems/OSP2" target="_blank" rel="noopener noreferrer">Source code</a>
+                            - by Snems
+                        </div>
+                        <div class="contact-row">
+                            <img src="/assets/blender_180.png" alt="OSP2-BE icon" />
+                            <strong>OSP2-BE:</strong>
+                            <a href="https://www.moddb.com/mods/osp2-be" target="_blank" rel="noopener noreferrer">ModDB</a>
+                            - by diwoc
+                            <span class="contact-email">
+                                <a class="contact-email-link" href="mailto:diwoc@outlook.com" aria-label="Send email">
+                                    <img src="/assets/email.png" alt="Send email" class="contact-email-icon">
+                                    <span class="contact-email-text">Send email</span>
+                                </a>
+                            </span>
+                        </div>
+                        <div class="contact-row">
+                            <img src="/assets/telegram.png" alt="Telegram icon" />
+                            <strong>Community:</strong>
+                            <a href="https://t.me/q3_osp2" target="_blank" rel="noopener noreferrer">OSP2 Chat</a>
+                        </div>
+                        <div class="contact-row">
+                            <img src="/assets/acknowledge.png" alt="Acknowledgements" style="width: 20px; height: 20px; object-fit: contain;" />
+                            <strong><a href="/en/acknowledgements.html" class="donate-link">Acknowledgements</a></strong>
+                        </div>
+                        <!-- <div class="contact-row">
+                            <img src="/assets/coin.png" alt="Coin icon" style="width: 20px; height: 20px; object-fit: contain;" />
+                            <strong><a href="#" onclick="openSupportModal(); return false;" class="donate-link">Support Project</a></strong>
+                        </div> -->
+                    </div>
+                </div>
+
+                <div class="installation-section">
+                    <button class="installation-toggle" id="installationToggle">
+                        <span class="toggle-icon">▶</span>
+                        <h3>OSP2-BE Installation</h3>
+                    </button>
+                    <div class="installation-content hidden">
+                        <p style="color: #999; font-size: 0.9rem; margin-bottom: var(--spacing-sm);">
+                            The mod requires original OSP 1.03 resources or compatible files to work properly.
+                        </p>
+                        <ol style="color: var(--text-color); margin-bottom: var(--spacing-sm); margin-left: 0; padding-left: var(--spacing-md);">
+                            <li style="margin-bottom: var(--spacing-sm);">Download the required .pk3 file above</li>
+                            <li style="margin-bottom: var(--spacing-sm);">Download original <a href="https://www.moddb.com/mods/osp/downloads/osp-mod-103a-full" target="_blank" rel="noopener noreferrer">OSP 1.03</a> or <a href="/assets/zz-osp-oldres.pk3" target="_blank">OSP 1.03 resources</a></li>
+                            <li>Place all files in the <code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px;">osp</code> folder in your Quake 3 Arena directory</li>
+                        </ol>
+                        <p style="color: #999; font-size: 0.9rem; margin-bottom: var(--spacing-sm);">
+                            For other mods use the appropriate folder (or any other folder of your choice):
+                        </p>
+                        <ul style="color: var(--text-color); font-size: 0.9rem; margin-left: var(--spacing-md); margin-bottom: 0;">
+                            <li style="margin-bottom: var(--spacing-xs);"><code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px;">efreeze</code> for Q3Retro</li>
+                            <li style="margin-bottom: var(--spacing-xs);"><code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px;">unfreeze</code> for FPSClassico</li>
+                        </ul>
+                        <p style="color: #999; font-size: 0.9rem; margin-top: var(--spacing-sm);">
+                            <em>Note: OSP2 also requires original OSP 1.03 resources to work correctly.</em>
+                        </p>
+                    </div>
+                </div>
+
+                <section class="changelog-section">
+                    <div class="changelog-header">
+                        <h2 class="changelog-title">Changelog</h2>
+                        <button id="changelog-search-toggle" class="changelog-search-toggle" title="Search">
+                            <img src="/assets/search.png" alt="Search" class="search-icon">
+                        </button>
+                        <!-- Search Section -->
+                        <div class="changelog-search-section hidden">
+                            <div class="search-container">
+                                <input type="text" id="changelog-search" class="search-input" placeholder="Search changelog...">
+                                <button id="clear-changelog-search" class="clear-search-btn" title="Clear search">×</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="changelog-container">
+                        <pre id="changelog-content" class="changelog-content"></pre>
+                    </div>
+                </section>
+            </div>
+
+            <div class="download-section">
+                <div class="download-cards-equal">
+                    <div class="download-card">
+                    <h3 class="download-title">
+                        <img src="/assets/blender_180.png" alt="OSP2-BE icon" class="download-title-icon">
+                        OSP2-BE
+                    </h3>
+                    <p id="version-text" class="version-text">…</p>
+                    <p id="version-date" class="version-date"></p>
+                    <a class="download-button" id="downloadBtn" href="https://github.com/scoqx/osp2-be/releases/latest/download/zz-osp-pak8be.pk3" target="_blank" rel="noopener noreferrer">Download .pk3</a>
+                    <a class="download-button" href="/assets/Updater%20OSP2-BE%20(win).zip?v=20260820" target="_blank" rel="noopener noreferrer">Updater</a>
+                    <a class="download-button" href="https://github.com/scoqx/osp2-be/releases/latest/download/osp2-be-linux.tar.gz" target="_blank" rel="noopener noreferrer">.so</a>
+                    </div>
+                </div>
+                
+                <div class="download-card" style="margin-top: var(--spacing-md);">
+                    <h3 class="download-title">
+                        <img src="/assets/blender_180_osp2.png" alt="OSP2 icon" class="download-title-icon">
+                        OSP2
+                    </h3>
+                    <p id="version-text-osp2" class="version-text"></p>
+                    <p id="version-date-osp2" class="version-date"></p>
+                    <a class="download-button" href="https://github.com/snems/OSP2/releases/download/latest/zz-osp-pak8.pk3" target="_blank" rel="noopener noreferrer">Download QVM</a>
+                </div>
+                
+                <button class="clear-cache-button" id="clearCacheBtn" onclick="clearCache()">Clear Cache</button>
+            </div>
+        </div>
+
+        <!-- Модальное окно DonationAlerts -->
+        <div class="donation-modal" id="donationModal">
+            <div class="donation-modal-content">
+                <button class="donation-modal-close" id="closeModal">&times;</button>
+                <h3>DonationAlerts</h3>
+                <img src="/assets/dalink-qr-code.png" alt="DonationAlerts QR Code" class="donation-qr-image">
+                <p style="color: #999; margin-bottom: var(--spacing-lg);">Scan QR code with your phone camera</p>
+                <a href="https://dalink.to/diwoc" target="_blank" rel="noopener noreferrer" class="download-button" style="display: inline-block;">
+                    Or open link
+                </a>
+            </div>
+        </div>
+
+        <!-- Модальное окно Криптовалюты -->
+        <div class="donation-modal" id="cryptoModal">
+            <div class="donation-modal-content">
+                <button class="donation-modal-close" id="closeCryptoModal">&times;</button>
+                <h3>Support with Cryptocurrency</h3>
+                
+                <div class="crypto-tabs">
+                    <button class="crypto-tab active" data-crypto="ton">TON</button>
+                    <button class="crypto-tab" data-crypto="usdt">USDT</button>
+                </div>
+
+                <div class="crypto-content active" data-crypto-content="ton">
+                    <div style="text-align: center; margin: var(--spacing-lg) 0;">
+                        <h4 style="color: var(--text-color); margin-bottom: var(--spacing-md); font-size: 1.2rem;">TON</h4>
+                    </div>
+                    <div class="crypto-address" data-address="UQB8lmg6ibQ-42P35JmhKxpBLy09zyjSOSIGmZcHzqBCjWD_">
+                        UQB8lmg6ibQ-42P35JmhKxpBLy09zyjSOSIGmZcHzqBCjWD_
+                    </div>
+                </div>
+
+                <div class="crypto-content" data-crypto-content="usdt">
+                    <div style="text-align: center; margin: var(--spacing-lg) 0 var(--spacing-md) 0;">
+                        <h4 style="color: var(--text-color); margin-bottom: var(--spacing-sm); font-size: 1.2rem;">USDT</h4>
+                    </div>
+                    
+                    <div style="margin-bottom: var(--spacing-lg);">
+                        <h5 style="color: var(--text-color); margin-bottom: var(--spacing-sm); font-size: 0.95rem; text-align: center;">TRC20 (TRON)</h5>
+                        <div class="crypto-address" data-address="TJs5hBLzHZEkff5hqZ81ZdtQV1ixDBwcgd">
+                            TJs5hBLzHZEkff5hqZ81ZdtQV1ixDBwcgd
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: var(--spacing-lg);">
+                        <h5 style="color: var(--text-color); margin-bottom: var(--spacing-sm); font-size: 0.95rem; text-align: center;">TON</h5>
+                        <div class="crypto-address" data-address="UQB8lmg6ibQ-42P35JmhKxpBLy09zyjSOSIGmZcHzqBCjWD_">
+                            UQB8lmg6ibQ-42P35JmhKxpBLy09zyjSOSIGmZcHzqBCjWD_
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: var(--spacing-md);">
+                        <h5 style="color: var(--text-color); margin-bottom: var(--spacing-sm); font-size: 0.95rem; text-align: center;">ERC20 (Ethereum)</h5>
+                        <div class="crypto-address" data-address="0x6283Fa1D9F820919789269a96840eC46DAf417E9">
+                            0x6283Fa1D9F820919789269a96840eC46DAf417E9
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно Карты РФ -->
+        <div class="donation-modal" id="cardModal">
+            <div class="donation-modal-content">
+                <button class="donation-modal-close" id="closeCardModal">&times;</button>
+                <h3>Russian Bank Card</h3>
+                <div style="text-align: center; margin: var(--spacing-lg) 0;">
+                    <p style="color: #999; margin-bottom: var(--spacing-lg); font-size: 0.9rem;">For transfers within Russia</p>
+                </div>
+                <div class="crypto-address" data-address="2204240202057131">
+                    2204 2402 0205 7131
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/scripts/language-manager.js?v=1.3"></script>
+    <script src="/scripts/navigation.js?v=1.3"></script>
+    <script src="/scripts/index.js?v=1.4"></script>
+    <script src="/scripts/support-modal.js?v=1.3"></script>
+    
+    <!-- Главное модальное окно поддержки -->
+    <!-- <div class="donation-modal" id="supportModal">
+        <div class="donation-modal-content">
+            <button class="donation-modal-close" id="closeSupportModal">&times;</button>
+            <h3>Support Project</h3>
+            <div class="support-links">
+                <div class="support-link-item">
+                    <button type="button" id="openCardModal">RU Bank Card</button>
+                </div>
+                <div class="support-link-item">
+                    <a href="https://donatty.com/diwoc" target="_blank" rel="noopener noreferrer">Donatty</a>
+                </div>
+                <div class="support-link-item">
+                    <button type="button" id="openDonationModal">DonationAlerts</button>
+                </div>
+                <div class="support-link-item">
+                    <button type="button" id="openCryptoModal">Crypto</button>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- Simple Analytics - 100% privacy-first analytics -->
+    <script data-collect-dnt="true" async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+    <script async data-collect="downloads, outbound" data-extensions="pk3" data-use-title="true" data-full-urls="false"
+        src="https://scripts.simpleanalyticscdn.com/auto-events.js"></script>
+</body>
+</html>

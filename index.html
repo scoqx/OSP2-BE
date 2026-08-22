@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSP2-BE</title>
+    <link rel="icon" href="/assets/blender_180.png" type="image/png">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+        // Clear cache
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+            });
+        }
+        
+        // Check saved language preference
+        const savedLang = localStorage.getItem('preferredLanguage');
+        
+        // Redirect to saved language or default to English
+        if (savedLang === 'ru') {
+            window.location.replace('/ru/index.html');
+        } else {
+            window.location.replace('/en/index.html');
+        }
+    </script>
+</head>
+<body>
+    <p>Redirecting... / Перенаправление...</p>
+    <noscript>
+        <p>Please enable JavaScript or go to <a href="/en/index.html">English version</a> or <a href="/ru/index.html">Russian version</a></p>
+        <p>Пожалуйста, включите JavaScript или перейдите на <a href="/en/index.html">английскую версию</a> или <a href="/ru/index.html">русскую версию</a></p>
+    </noscript>
+</body>
+</html>

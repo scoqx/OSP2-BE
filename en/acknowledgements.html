@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSP2-BE - Acknowledgements</title>
+    <link rel="icon" href="/assets/blender_180.png" type="image/png">
+    <link rel="stylesheet" href="/styles/style.css?v=1.4">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="cache-control" content="no-cache">
+    <meta name="expires" content="0">
+    <meta name="pragma" content="no-cache">
+    <style>
+        html, body { background-color: #000000 !important; margin: 0; padding: 0; }
+        .credits-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+        }
+        .credits-container h1 {
+            font-size: 1.8rem;
+            margin-bottom: var(--spacing-xl);
+            color: var(--text-color);
+        }
+        .credits-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-xl);
+            align-items: stretch;
+        }
+        @media (max-width: 900px) {
+            .credits-grid { grid-template-columns: 1fr; }
+        }
+        .credits-section {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+        }
+        .credits-container h2 {
+            font-size: 1.3rem;
+            margin: 0 0 var(--spacing-md) 0;
+            color: var(--text-color);
+        }
+        .credits-container h3 {
+            font-size: calc(1.1rem + 2px);
+            margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+            color: var(--text-color);
+        }
+        .credits-container h3:first-of-type { margin-top: 0; }
+        .credits-container h4 {
+            font-size: calc(1rem + 2px);
+            margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+            color: var(--text-color);
+        }
+        .credits-container h4:first-of-type { margin-top: 0; }
+        .credits-container p, .credits-container li {
+            color: var(--text-color);
+            margin-bottom: var(--spacing-sm);
+            line-height: 1.6;
+        }
+        .credits-container ul {
+            margin: 0 0 var(--spacing-sm) 0;
+            padding-left: var(--spacing-md);
+        }
+        .credits-container a {
+            color: var(--text-color);
+            text-decoration: underline;
+        }
+        .credits-container a:hover {
+            color: #000000;
+            text-shadow: 0 0 8px #ffffff;
+        }
+        .credits-footer {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid rgba(255,255,255,0.3);
+        }
+        .credits-container .note {
+            color: #999;
+            font-size: 0.95rem;
+            font-style: italic;
+        }
+        .credits-category {
+            margin-bottom: var(--spacing-xl);
+        }
+        .credits-category-title {
+            font-size: 1.4rem;
+            margin: 0 0 var(--spacing-md) 0;
+            color: var(--text-color);
+        }
+        .credits-category:first-of-type .credits-category-title { margin-top: 0; }
+        .credits-left-col {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xl);
+            min-height: 0;
+        }
+        .credits-left-col .credits-thanks {
+            margin-top: 0;
+            flex: 1;
+            min-height: 0;
+        }
+        .credits-grid .credits-section {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body data-page="credits">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="/en/index.html" class="logo-link">
+                    <img src="/assets/blender_180.png" alt="Logo" class="logo-img">
+                </a>
+                <a href="https://q3a.space/" class="site-link" title="q3a.space">Q3A.SPACE</a>
+            </div>
+            <div class="nav-menu">
+                <a href="/en/gallery.html" class="nav-link">Gallery</a>
+                <a href="/en/commands.html" class="nav-link">Console Commands</a>
+                <a href="/en/compilations.html" class="nav-link">Compilations</a>
+                <a href="/en/tools.html" class="nav-link">++</a>
+            </div>
+            <div class="nav-language">
+                <a href="/ru/acknowledgements.html" class="lang-link">RU</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="credits-container">
+            <h1>Acknowledgements</h1>
+
+            <div class="credits-category">
+                <h2 class="credits-category-title">OSP2-BE</h2>
+                <div class="credits-grid">
+                    <section class="credits-section credits-contributions">
+                        <h3>Contributions</h3>
+                        <p>OSP2-BE incorporates code from several notable Quake mods and projects:</p>
+                        <ul>
+                            <li><strong>OSP2</strong>: <a href="https://github.com/snems/OSP2" target="_blank" rel="noopener noreferrer">GitHub Link</a></li>
+                            <li><strong>baseq3a</strong>: <a href="https://github.com/ec-/baseq3a" target="_blank" rel="noopener noreferrer">GitHub Link</a></li>
+                            <li><strong>XQ3E Engine</strong>: <a href="https://github.com/xq3e/engine" target="_blank" rel="noopener noreferrer">GitHub Link</a></li>
+                            <li><strong>Unlagged Mod by Nail Toronto</strong></li>
+                            <li><strong>Ratmod</strong>: <a href="https://github.com/rdntcntrl/ratoa_gamecode" target="_blank" rel="noopener noreferrer">GitHub Link</a></li>
+                            <li><strong>Nemesis</strong>: <a href="https://github.com/dledmonds/quake3-nemesis-1.16n" target="_blank" rel="noopener noreferrer">GitHub Link</a></li>
+                        </ul>
+                    </section>
+
+                    <section class="credits-section credits-resources">
+                        <h3>Resources</h3>
+                        <h4>Icons</h4>
+                        <p><strong>Source:</strong> <a href="https://www.flaticon.com" target="_blank" rel="noopener noreferrer">Flaticon.com</a></p>
+                        <h4>Sounds</h4>
+                        <p><strong>Source:</strong> <a href="https://freesound.org" target="_blank" rel="noopener noreferrer">Freesound.org</a></p>
+                        <h4>Fullbright player model skins</h4>
+                        <p><strong>Source:</strong> <a href="https://playmorepromode.com/" target="_blank" rel="noopener noreferrer">CPMA (Challenge ProMode Arena)</a></p>
+
+                        <p class="note">Original authors of individual elements are not specified; icons were edited, sounds were converted.</p>
+                    </section>
+
+                    <section class="credits-section credits-thanks">
+                        <h3>Community contribution</h3>
+                        <p>Snems, Kr3m, Mirage, Mus1n, Zenx, Tuborg, Meta, Konstalker, LWP9KE</p>
+                    </section>
+
+                    <section class="credits-section credits-financial">
+                        <h3>Financial Backers</h3>
+                        <p>RTGoosevity, enq3, John Coffey, Maked, Roskoshny, Anonymous player #1, Anonymous player #2</p>
+                    </section>
+                </div>
+            </div>
+
+            <div class="credits-category">
+                <h2 class="credits-category-title">Website</h2>
+                <section class="credits-section">
+                    <h3>Icons</h3>
+                    <p>Icons from <a href="https://www.flaticon.com" target="_blank" rel="noopener noreferrer">Flaticon.com</a> used without modifications.</p>
+                </section>
+            </div>
+
+            <div class="credits-footer">
+                <p class="note">If you are the original author of any resource used in OSP2-BE or on this site and would like to be credited, please contact the <a href="mailto:diwoc@outlook.com">author</a>.</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="/scripts/language-manager.js?v=1.3"></script>
+    <script src="/scripts/navigation.js?v=1.3"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Project - OSP2-BE</title>
+    <link rel="icon" href="/assets/blender_180.png" type="image/png">
+    <script>
+        // Check saved language preference
+        const savedLang = localStorage.getItem('preferredLanguage');
+        
+        // Redirect to saved language or default to English with support modal
+        if (savedLang === 'ru') {
+            window.location.replace('/ru/index.html#support');
+        } else {
+            window.location.replace('/en/index.html#support');
+        }
+    </script>
+</head>
+<body>
+    <p>Redirecting... / Перенаправление...</p>
+    <noscript>
+        <p>Please enable JavaScript or go to <a href="/en/index.html#support">English version</a> or <a href="/ru/index.html#support">Russian version</a></p>
+        <p>Пожалуйста, включите JavaScript или перейдите на <a href="/en/index.html#support">английскую версию</a> или <a href="/ru/index.html#support">русскую версию</a></p>
+    </noscript>
+</body>
+</html>
