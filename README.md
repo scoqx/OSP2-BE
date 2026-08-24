@@ -1,7 +1,7 @@
 # OSP2-BE: Extended OSP2 version
 
 Visit website for handy console commands search and check out Ready to play Quake 3 Compilations
-## https://q3a.space/osp2/
+## https://osp2.q3a.space/
 
 ### Deploy downloads (GitHub Releases)
 
@@ -16,15 +16,7 @@ CI publishes build/download assets to public repo **[scoqx/osp2-be](https://gith
 1. Create a fine-grained PAT on account **scoqx** with **Contents: Read and write** on repository `scoqx/osp2-be`.
 2. Add repository secret **`OSP2_BE_RELEASE_TOKEN`** on OSP2-PBE (the value of that PAT).
 3. Makefile CI job `create-release` and workflow_dispatch **Deploy version files** use this secret.
-4. Version text files are also mirrored onto `scoqx/osp2-be` **main** (for the website UI; release assets lack browser CORS).
-
-### Deploy cfg + version text to q3a.space (CI)
-
-Jobs `deploy-to-q3a-space` / `deploy-cfg-to-q3a-space` **rsync** `OSP2.cfg`, `OSP2English.cfg`, `version.txt`, `version_changelog.txt`, and `changelog_be.txt` into `/opt/ruthless-stats/web/osp2/assets/` (site UI reads these same-origin). Large downloads (pk3 / `.so`) stay on GitHub Releases only.
-
-1. GitHub **Environment** `q3a-deploy` with **Required reviewers**.
-2. Secrets: `Q3A_DEPLOY_SSH_KEY` (required); optional `Q3A_DEPLOY_HOST` (default `5.188.224.180`), `Q3A_DEPLOY_USER` (default `root`).
-3. On the server, put the matching **public** key in `authorized_keys` with `restrict` + `command=` (e.g. `rrsync -wo /opt/ruthless-stats/web/osp2/assets`) so the key cannot open a full shell.
+4. `OSP2.cfg`, `OSP2English.cfg`, and version text are also mirrored onto `scoqx/osp2-be` **main** (`assets/` for the site UI, plus root copies of the text files). Large downloads (pk3 / `.so`) stay on GitHub Releases only.
 
 ## 🔧 Contributions
 
