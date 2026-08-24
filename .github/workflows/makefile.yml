@@ -118,6 +118,8 @@ jobs:
           retention-days: 5
 
   windows-mingw:
+    # needs: sync-version-assets
+    # if: always() && (needs.sync-version-assets.result == 'success' || needs.sync-version-assets.result == 'skipped')
     name: Windows MinGW
 
     runs-on: windows-2022
@@ -149,7 +151,7 @@ jobs:
           retention-days: 5
 
   verify-build-artifacts:
-    needs: [linux]
+    needs: [linux, windows-mingw]
     if: >-
       github.ref == 'refs/heads/master' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
