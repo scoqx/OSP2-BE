@@ -10,7 +10,7 @@ typedef struct chatFilterTableNode_s
 
 #define CG_CHATFILTER_MAX 128
 
-static chatFilterTableNode_t filterNames[CG_CHATFILTER_MAX];
+chatFilterTableNode_t filterNames[CG_CHATFILTER_MAX];
 
 static chatFilterTableNode_t* CG_ChatfilterFindName(const char* name)
 {

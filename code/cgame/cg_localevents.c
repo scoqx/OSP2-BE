@@ -1,4 +1,4 @@
-#include "superhud.h"
+#include "superhud/superhud.h"
 #include "cg_local.h"
 #include "../qcommon/be_font_shadow.h"
 

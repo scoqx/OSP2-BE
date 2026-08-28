@@ -311,7 +311,7 @@ static void UI_DrawErrorScreenInfoVersion(void)
 		UI_FontSelect(fontIndex);
 	}
 
-	versionPtr = OSP_VERSION;
+	versionPtr = XSTRINGIFY(OSP_VERSION);
 	if (!Q_strncmp(versionPtr, "be-", 3))
 	{
 		versionPtr += 3;

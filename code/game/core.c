@@ -1261,3 +1261,7 @@ void phy_reset(void)
 	phy_rampslide_speedmin     = 0;
 	Com_Printf("Physics Reset\n");
 }
+
+int IntClamp(int n, int min, int max) {if (n>max) {return max;} else if (n<min) {return min;} else {return n;}}
+int IntMin  (int n, int min)          {if (n<min) {return min;} else {return n;}}
+int IntMax  (int n, int max)          {if (n>max) {return max;} else {return n;}}

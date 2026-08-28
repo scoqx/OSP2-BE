@@ -1,7 +1,7 @@
 #ifndef CG_BE_CHATWINDOW_H
 #define CG_BE_CHATWINDOW_H
 
-#include "cg_local.h"
+#include "../cg_local.h"
 
 #define BE_CHAT_FONT_W_BASE     6.0f
 #define BE_CHAT_FONT_H_BASE     10.0f

@@ -22,8 +22,7 @@ jobs:
 
       - name: Regenerate version.txt and version_changelog.txt
         run: |
-          cd build/qvm
-          make ../../assets/version.txt ../../assets/version_changelog.txt
+          python3 ./tools/parse_changelog.py changelog_be.txt assets/version.txt assets/version_changelog.txt
 
       - name: Stage release assets
         run: |
@@ -76,5 +75,5 @@ jobs:
             echo "Site assets already up to date on main"
             exit 0
           fi
-          git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
-          git push origin HEAD:main
+          # git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
+          # git push origin HEAD:main

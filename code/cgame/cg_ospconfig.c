@@ -522,8 +522,8 @@ void CG_RevealBeUserInfo(void)
 	}
 	cgs.beUserinfoRevealed = qtrue;
 
-	trap_Cvar_Register(&osp_client, "osp_client", "1008_OSP2_" OSP_VERSION, CVAR_USERINFO | CVAR_ROM);
-	trap_Cvar_Set("osp_client", "1008_OSP2_" OSP_VERSION);
+	trap_Cvar_Register(&osp_client, "osp_client", "1008_OSP2_" XSTRINGIFY(OSP_VERSION), CVAR_USERINFO | CVAR_ROM);
+	trap_Cvar_Set("osp_client", "1008_OSP2_" XSTRINGIFY(OSP_VERSION));
 	trap_Cvar_Update(&osp_client);
 
 	trap_Cvar_Register(&be_features, "be_features", "", CVAR_ROM | CVAR_USERINFO);

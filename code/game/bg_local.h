@@ -122,6 +122,7 @@ extern int uf_rampjump;
 /* Set once per PmoveSingle: OVERCLIP, or 1.0f when uf_rampjump (keeps ClipVelocity branch-free). */
 extern float pm_overclip;
 
+void PM_OneSidedClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 void PM_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 void PM_ClipVelocityOSP(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 void PM_AddTouchEnt(int entityNum);

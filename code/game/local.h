@@ -198,5 +198,7 @@ void VectorReflect(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 void VectorReflect2D(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 void VectorReflectOS(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
 void VectorReflectBC(vec3_t in, vec3_t normal, vec3_t out, float overbounce);
-
+int IntClamp(int n, int min, int max);
+int IntMin(int n, int min);
+int IntMax(int n, int max);
 #endif // PHY_LOCAL_H

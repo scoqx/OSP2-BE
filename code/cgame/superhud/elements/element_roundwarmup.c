@@ -1,6 +1,6 @@
-#include "cg_local.h"
+#include "../../cg_local.h"
 #include "../superhud_private.h"
-#include "../qcommon/qcommon.h"
+#include "../../../qcommon/qcommon.h"
 
 /* style bitmask: bit0 = compact time (%.1f, no " sec"); bit1 = time color via ^1/^2/^3/^8 prefix */
 #define SHUD_ROUNDWARMUP_STYLE_COMPACT     (1 << 0)

@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef CG_LOCAL_H
 #define CG_LOCAL_H
 #include "../qcommon/q_shared.h"
-#include "../qcommon/osp_version.h"
 #include "tr_types.h"
 #include "../game/bg_public.h"
 #include "cg_public.h"
@@ -327,7 +326,7 @@ typedef struct centity_s
 
 typedef struct markPoly_s
 {
-	struct markPoly_s*   prevMark, *nextMark;
+	struct markPoly_s*   prevMark, * nextMark;
 	int         time;
 	qhandle_t   markShader;
 	qboolean    alphaFade;      // fade alpha instead of rgb
@@ -383,7 +382,7 @@ typedef enum
 
 typedef struct localEntity_s
 {
-	struct localEntity_s*    prev, *next;
+	struct localEntity_s*    prev, * next;
 	leType_t        leType;
 	int             leFlags;
 
@@ -2700,6 +2699,8 @@ void QDECL CG_PrintOnce(const char* msg, ...);
 void CG_StartMusic(void);
 
 void CG_UpdateCvars(int maxEntries);
+
+int CG_LowAmmoThresholdFor(int weapon);
 
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);

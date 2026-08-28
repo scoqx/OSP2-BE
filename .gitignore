@@ -1,8 +1,4 @@
-!build
-build/qvm/vm/
-build/qvm/zz-osp-pak8be.pk3
-build/library/build/
-build/tests/build/
+build
 dll
 
 backup/mapdata/

@@ -267,18 +267,6 @@ static void q3a_AirControl(vec3_t wishdir, float wishspeed)
 	VectorAdd(pm->ps->velocity, fwAccel, pm->ps->velocity);
 }
 
-static int IntMax(int n, int max)
-{
-	if (n > max)
-	{
-		return max;
-	}
-	else
-	{
-		return n;
-	}
-}
-
 void q3a_AirMove(void)
 {
 	int       i;
@@ -557,30 +545,6 @@ void q3a_WalkMove(void)
 	core_StepSlideMove(qtrue);
 	// Store (internal) pmoveData
 	pm->pmd.a = accelerate;  // accel chosen for this frame
-}
-
-static void PM_OneSidedClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce)
-{
-	float    backoff;
-	float    change;
-	int        i;
-
-	backoff = DotProduct(in, normal);
-
-	if (backoff < 0)
-	{
-		backoff *= overbounce;
-	}
-	else
-	{
-		backoff = 0;
-	}
-
-	for (i = 0 ; i < 3 ; i++)
-	{
-		change = normal[i] * backoff;
-		out[i] = in[i] - change;
-	}
 }
 
 void q3a_move(pmove_t* pmove)

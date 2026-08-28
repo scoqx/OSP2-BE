@@ -217,7 +217,7 @@ models/players/visor/animation.cfg, etc
 */
 static qboolean CG_ParseAnimationFile(const char* filename, clientInfo_t* ci)
 {
-	char*        text_p, *prev;
+	char*        text_p, * prev;
 	int         len;
 	int         i;
 	char*        token;
@@ -898,7 +898,7 @@ Load it now, taking the disk hits.
 */
 static void CG_LoadClientInfo(clientInfo_t* ci)
 {
-	const char*  dir, *fallback;
+	const char*  dir, * fallback;
 	int         i, modelloaded;
 	const char*  s;
 	int         clientNum;

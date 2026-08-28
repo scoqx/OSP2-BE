@@ -271,7 +271,7 @@ static void CG_InterpolatePlayerState(qboolean grabAngles)
 	float           f;
 	int             i;
 	playerState_t*   out;
-	snapshot_t*      prev, *next;
+	snapshot_t*      prev, * next;
 
 	out = &cg.predictedPlayerState;
 	prev = cg.snap;
@@ -531,11 +531,6 @@ We detect prediction errors and allow them to be decayed off over several frames
 to ease the jerk.
 =================
 */
-
-static vec_t VectorDistance(vec3_t a, vec3_t b)
-{
-	return (vec_t)sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
-}
 
 /*
 =================

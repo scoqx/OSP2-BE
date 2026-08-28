@@ -183,43 +183,6 @@ static qboolean vq4_CheckJump(void)
 }
 
 
-int IntClamp(int n, int min, int max)
-{
-	if (n > max)
-	{
-		return max;
-	}
-	else if (n < min)
-	{
-		return min;
-	}
-	else
-	{
-		return n;
-	}
-}
-int IntMin(int n, int min)
-{
-	if (n < min)
-	{
-		return min;
-	}
-	else
-	{
-		return n;
-	}
-}
-static int IntMax(int n, int max)
-{
-	if (n > max)
-	{
-		return max;
-	}
-	else
-	{
-		return n;
-	}
-}
 void vq4_AirMove(void)
 {
 	int       i;

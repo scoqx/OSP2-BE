@@ -1,22 +1,6 @@
-#include "cg_local.h"
+#include "../../cg_local.h"
 #include "../superhud_private.h"
-#include "../qcommon/qcommon.h"
-
-/* Low ammo thresholds - same as in CG_CheckAmmo */
-static int lowAmmoThresholds[WP_NUM_WEAPONS] =
-{
-	/* WP_NONE */            0,
-	/* WP_GAUNTLET */        0,
-	/* WP_MACHINEGUN */      30,
-	/* WP_SHOTGUN */         5,
-	/* WP_GRENADE_LAUNCHER */5,
-	/* WP_ROCKET_LAUNCHER */ 5,
-	/* WP_LIGHTNING */       30,
-	/* WP_RAILGUN */         5,
-	/* WP_PLASMAGUN */       30,
-	/* WP_BFG */             5,
-	/* WP_GRAPPLING_HOOK */  0
-};
+#include "../../../qcommon/qcommon.h"
 
 typedef struct
 {
@@ -97,7 +81,7 @@ void CG_SHUDElementSBAmBRoutine(void* context)
 		}
 
 		/* Use same thresholds as CG_CheckAmmo */
-		threshold = lowAmmoThresholds[wp];
+		threshold = CG_LowAmmoThresholdFor(wp);
 		isLowAmmo = qfalse;
 		if (ammo == 0)
 		{
