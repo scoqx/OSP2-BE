@@ -75,5 +75,5 @@ jobs:
             echo "Site assets already up to date on main"
             exit 0
           fi
-          git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
-          git push origin HEAD:main
+          # git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
+          # git push origin HEAD:main

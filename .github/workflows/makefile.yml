@@ -16,7 +16,7 @@ on:
       - 'build/*'
       - 'util/*'
   pull_request:
-    branches: ["master"]
+    # branches: ["master"]
     paths-ignore:
       - '**.md'
       - 'assets/docs/changelog_be_r.txt'
@@ -30,7 +30,7 @@ on:
 
 jobs:
   sync-version-assets:
-    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    # if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -47,17 +47,17 @@ jobs:
           echo "=== version_changelog.txt (line 1) ==="
           head -1 assets/version_changelog.txt
 
-      - name: Commit and push version assets to OSP2-PBE
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add assets/version.txt assets/version_changelog.txt
-          if git diff --staged --quiet; then
-            echo "Version assets already up to date in repo"
-            exit 0
-          fi
-          git commit -m "Sync version.txt and version_changelog.txt from osp_version.h [skip ci]"
-          git push
+      # - name: Commit and push version assets to OSP2-PBE
+      #   run: |
+      #     git config user.name "GitHub Actions"
+      #     git config user.email "actions@github.com"
+      #     git add assets/version.txt assets/version_changelog.txt
+      #     if git diff --staged --quiet; then
+      #       echo "Version assets already up to date in repo"
+      #       exit 0
+      #     fi
+      #     git commit -m "Sync version.txt and version_changelog.txt from osp_version.h [skip ci]"
+      #     git push
 
   linux:
     # needs: sync-version-assets
@@ -152,10 +152,10 @@ jobs:
 
   verify-build-artifacts:
     needs: [linux, windows-mingw]
-    if: >-
-      github.ref == 'refs/heads/master' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      needs.linux.result == 'success'
+    # if: >-
+    #   github.ref == 'refs/heads/master' &&
+    #   (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+    #   needs.linux.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifacts
@@ -258,8 +258,8 @@ jobs:
             echo "Site assets already up to date on main"
             exit 0
           fi
-          git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
-          git push origin HEAD:main
+          # git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
+          # git push origin HEAD:main
 
   deploy-to-status-server:
     needs: [verify-build-artifacts]
@@ -307,15 +307,15 @@ jobs:
             --status-config source-repo/be_status_server.conf \
             --status-dir status-repo
 
-      - name: Update mod_sig in deploy/response.conf
-        working-directory: status-repo
-        run: python3 gen_status_sig.py --write -c deploy/response.conf
+      # - name: Update mod_sig in deploy/response.conf
+      #   working-directory: status-repo
+      #   run: python3 gen_status_sig.py --write -c deploy/response.conf
 
-      - name: Commit and push to osp2be-status-server
-        run: |
-          cd status-repo
-          git config user.name "${{ env.GIT_USER_NAME }}"
-          git config user.email "${{ env.GIT_USER_EMAIL }}"
-          git add deploy/version_changelog.txt deploy/response.conf
-          git diff --quiet --cached || git commit -m "Update version_changelog and status version [auto]"
-          git push origin ${{ env.STATUS_BRANCH }}
+      # - name: Commit and push to osp2be-status-server
+      #   run: |
+      #     cd status-repo
+      #     git config user.name "${{ env.GIT_USER_NAME }}"
+      #     git config user.email "${{ env.GIT_USER_EMAIL }}"
+      #     git add deploy/version_changelog.txt deploy/response.conf
+      #     git diff --quiet --cached || git commit -m "Update version_changelog and status version [auto]"
+      #     git push origin ${{ env.STATUS_BRANCH }}
