@@ -280,7 +280,7 @@ jobs:
           path: source-repo
 
       - name: Pull latest master
-        run: git -C source-repo pull --ff-only origin master
+        run: git -C source-repo pull --ff-only origin meta/build/cmake-osp2
 
       - name: Build fresh version.txt and version_changelog.txt
         run: |
