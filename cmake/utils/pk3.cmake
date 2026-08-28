@@ -37,6 +37,7 @@ function(add_pk3)
 
     set(PK3_DEPENDS
       ${ARG_VM_DIR}/vm/cgame.qvm
+      ${ARG_VM_DIR}/vm/ui.qvm
       ${ARG_VM_TARGETS}
       qvm_tools)
   else()

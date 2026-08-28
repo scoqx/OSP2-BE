@@ -15,17 +15,17 @@ on:
       - 'docs/*'
       - 'build/*'
       - 'util/*'
-  pull_request:
-    # branches: ["master"]
-    paths-ignore:
-      - '**.md'
-      - 'assets/docs/changelog_be_r.txt'
-      - 'assets/version.txt'
-      - 'assets/version_changelog.txt'
-      - '.gitignore'
-      - 'docs/*'
-      - 'build/*'
-      - 'util/*'
+  # pull_request:
+  #   branches: ["master"]
+  #   paths-ignore:
+  #     - '**.md'
+  #     - 'assets/docs/changelog_be_r.txt'
+  #     - 'assets/version.txt'
+  #     - 'assets/version_changelog.txt'
+  #     - '.gitignore'
+  #     - 'docs/*'
+  #     - 'build/*'
+  #     - 'util/*'
   workflow_dispatch:
 
 jobs:
