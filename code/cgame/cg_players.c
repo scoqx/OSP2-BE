@@ -941,7 +941,7 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 			CG_Error("CG_RegisterClientModelname( %s, %s, %s, %s %s ) failed", ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName, teamname);
 		}
 
-		/* Original model failed — do not probe sound/player/<missing>/*.wav */
+		// Original model failed — do not probe sound/player/<missing>/*.wav
 		modelloaded = qfalse;
 
 		// fall back to default team name
