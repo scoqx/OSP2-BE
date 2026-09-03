@@ -1158,7 +1158,7 @@ void CG_RefillStatsRequestTokens(void)
 
 qboolean CG_TrySendStatsRequest(void)
 {
-	if (cgs.fpsclassico)
+	if (CG_GetUserInfoProfile() > BE_USERINFO_OSP103)
 		return qfalse;
 	if (cg.intermissionStarted)
 		return qfalse;
@@ -1210,7 +1210,7 @@ qboolean CG_TrySendDstatusRequest(void)
 {
 	int intervalMs;
 
-	if (cgs.fpsclassico)
+	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
 		return qfalse;
 	if (cg.intermissionStarted)
 		return qfalse;

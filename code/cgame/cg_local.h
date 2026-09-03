@@ -1136,6 +1136,7 @@ typedef struct
 	/* Incremental prediction (cg_optimizePrediction / UnFreeZe unlagged) */
 	int         lastPredictedCommand;
 	int         lastServerTime;
+	int         timeResidual; /* mega health/armor 1Hz countdown (baseq3a) */
 	playerState_t savedPmoveStates[NUM_SAVED_STATES];
 	int         stateHead, stateTail;
 
@@ -2033,7 +2034,7 @@ typedef struct
 	beChatWindowMetrics_t beChatMetrics;
 	customWeaponStats_t beWeaponStats[WP_NUM_WEAPONS];
 	qboolean        beSupportedServer;
-	qboolean        beUserinfoRevealed; /* BE USERINFO + full osp_client published (!fpsclassico) */
+	int             userinfoProfile; /* last CG_ApplyUserInfoProfile mode (BE_USERINFO_*) */
 	qboolean        engineFontAtlas;    /* trap_R_RegisterFontAtlas_Q3E available + TTF preloaded */
 	vec3_t          beBrightWeaponsColor[WP_NUM_WEAPONS];
 	qboolean        beBrightWeaponsBeinfoSet[WP_NUM_WEAPONS];
@@ -2052,6 +2053,12 @@ typedef struct
 	int             missilePredictRlSpeed;
 	int             missilePredictPgSpeed;
 	int             missilePredictBfgSpeed;
+	int             beMovementLockFps; /* CS 912: 0=off */
+	qboolean        beMovementLockCsPresent; /* CS 912 string received (even "0") */
+	int             sv_pmove_accurate; /* CS_SYSTEMINFO: OSP enum 0/1/2 (not CS912 lock) */
+	qboolean        pmove_fixed; /* CS_SYSTEMINFO: fixed pmove sampling (baseq3a parity) */
+	int             pmove_msec; /* CS_SYSTEMINFO: pmove chunk ms when pmove_fixed */
+	int             pmoveMode; /* PMODE_OSP, PMODE_BASEQ3A, PMODE_OSDF */
 	/* CS 911: mode 1 = ruthless body; mode 3 = metarena single-token scale; else AABB cube */
 	qboolean        hbEnabled;
 	int             hbMode;
@@ -3068,6 +3075,7 @@ void CG_UpdateAllClientsInfo(void);
     cgs.q3mskRoundWarmup = (qboolean)((cgs.q3msk || cgs.ruthless) && cgs.gametype == GT_TEAM && cgs.osp.gameTypeFreeze)
 void CG_UpdateRuthlessFromServerinfo(void);
 void CG_PmovePhysicsUpdate(void);
+void CG_ParseMovementLockConfigString(const char* str);
 /* In non-team modes (FFA, Tournament, SP) everyone except self is enemy; else use team/rt */
 #define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype < GT_TEAM) ? 1 : ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team))))
 #define CG_CACHED_IS_ENEMY_NUM(n) (((n) >= 0 && (n) < MAX_CLIENTS) ? cg.isEnemyView[(n)] : qfalse)
@@ -3321,6 +3329,7 @@ extern vec4_t scoreboard_specColor;
 qboolean CG_ConsoleCommand(void);
 void CG_InitConsoleCommands(void);
 void CG_OSPPrintTime_f(void);
+void CG_OSPClientAuth_f(void);
 void CG_OSPMoTD_f(void);
 void CG_ScoresDown_f(void);
 void CG_OSPWStatsDown_f(void);
@@ -3826,10 +3835,17 @@ qboolean CG_ClientMarkerIsFrozen(const clientInfo_t* ci);
 
 qboolean CG_OSPIsGameTypeTDM(void);
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup);
+#define BE_USERINFO_BE       0
+#define BE_USERINFO_OSP2     1
+#define BE_USERINFO_OSP103   2
+#define BE_USERINFO_UNFREEZE 3
+#define BE_USERINFO_VANILLA  4
+
+int CG_GetUserInfoProfile(void);
+void CG_ApplyUserInfoProfile(int profile);
+void CG_UserInfoStripAll(void);
 void CG_OSPUpdateUserInfo(qboolean arg);
 void CG_BEUpdateUserInfo(void);
-void CG_RevealBeUserInfo(void);
-void CG_ApplyFpsclassicoSafeUserInfo(void);
 void CG_ApplyUnfreezePhysFromServerinfo(void);
 
 void CG_OSPConfigSetMode(int value);
@@ -3844,6 +3860,7 @@ void CG_OSPConfigCustomClientSet(int value);
 void CG_OSPConfigCustomClient2Set(int value);
 void CG_OSPConfigModeSet(int value);
 void CG_OSPSetMode(int value);
+void CG_PmovePhysicsResetBaseGlobals(void);
 void CG_OSPConfigFreezeModeSet(int value);
 void CG_OSPConfigDisableBEFeatures(int value);
 void CG_OSP2BEOnComMaxfpsChanged(int value);

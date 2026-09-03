@@ -31,6 +31,9 @@ qboolean modifState[5];
 char modifStrDown[5][MODIFSTR_SIZE];
 char modifStrUp[5][MODIFSTR_SIZE];
 
+extern void BG_OSPAuthInit(void);
+extern void BG_OSPAuthUpdateName(char* str);
+extern void BG_OSPAuthGetSecret(char* str);
 
 void CG_TargetCommand_f(void)
 {
@@ -173,6 +176,10 @@ static void CG_GetRoundStatsInfo_f(void)
 	{
 		return;
 	}
+	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
+	{
+		return;
+	}
 	cg.roundStatsReceived = qfalse;
 	trap_SendClientCommand("getroundstatsinfo");
 }
@@ -187,6 +194,10 @@ Request CA match-total damage aggregates from the server.
 static void CG_GetRoundStatsAllInfo_f(void)
 {
 	if (cg.demoPlayback)
+	{
+		return;
+	}
+	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
 	{
 		return;
 	}
@@ -565,17 +576,47 @@ void CG_OSPClientVersion_f(void)
 
 void CG_OSPClientConfig_f(void)
 {
-	const char* physics = "VQ3";
+	const char* physics = "OSP VQ3";
 	const char* conf;
 	const char* val;
 	const char* serverinfo;
 	const char* systeminfo;
 
-	if (cgs.osp.server_mode & 1)
+	serverinfo = CG_ConfigString(CS_SERVERINFO);
+
+	/* Predict branch label: OSDF > Q3MSK > BASEQ3A > OSP (CS 806) */
+	if (cgs.pmove_phy_movetype >= 0)
 	{
-		physics = "Promode";
+		if (cgs.pmove_phy_movetype == 0) /* CPM */
+		{
+			physics = "OSDF CPMA";
+		}
+		else if (cgs.pmove_phy_movetype == 3) /* VQ3 */
+		{
+			physics = "OSDF VQ3";
+		}
+		else
+		{
+			physics = "OSDF";
+		}
 	}
-	else if (cgs.osp.server_mode & 2)
+	else if (cgs.q3msk)
+	{
+		physics = "Q3MSK VQ3";
+	}
+	else if (Info_ValueForKey(serverinfo, "g_altFlags")[0])
+	{
+		physics = "BASEQ3A";
+	}
+	else if (cgs.osp.server_mode & OSP_SERVER_MODE_CPMA)
+	{
+		physics = "CPMA Promode";
+	}
+	else if (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE)
+	{
+		physics = "OSP Promode";
+	}
+	else if (cgs.osp.server_mode & OSP_SERVER_MODE_CQ3)
 	{
 		physics = "CQ3";
 	}
@@ -629,7 +670,6 @@ void CG_OSPClientConfig_f(void)
 		CG_Printf("    ^3Maxpackets maximum:          ^3%i\n", cgs.osp.serverConfigMaximumMaxpackets);
 	}
 
-	serverinfo = CG_ConfigString(CS_SERVERINFO);
 	val = Info_ValueForKey(serverinfo, "g_altFlags");
 	if (val[0])
 	{
@@ -648,7 +688,16 @@ void CG_OSPClientConfig_f(void)
 	val = Info_ValueForKey(systeminfo, "pmove_accurate");
 	if (val[0])
 	{
-		CG_Printf("    ^3pmove_accurate:              ^3%s\n", val);
+		CG_Printf("    ^3pmove_accurate (OSP):        ^3%s\n", val);
+	}
+	if (cgs.beMovementLockCsPresent)
+	{
+		CG_Printf("    ^3CS912 lock:                   ^3%i\n", cgs.beMovementLockFps);
+	}
+	if (cgs.pmove_phy_movetype >= 0)
+	{
+		CG_Printf("    ^3pmove_fixed (sys):            ^3%i / msec %i\n",
+		          cgs.pmove_fixed ? 1 : 0, cgs.pmove_msec);
 	}
 }
 
@@ -851,6 +900,30 @@ void CG_OSPPrintTime_f(void)
 	qtime_t qtime;
 	trap_RealTime(&qtime);
 	CG_Printf("\n^9Current time: ^7%02d:%02d:%02d (%02d %s %d)\n\n", qtime.tm_hour, qtime.tm_min, qtime.tm_sec, qtime.tm_mday, monthName[qtime.tm_mon], qtime.tm_year + 1900);
+}
+
+void CG_OSPClientAuth_f(void)
+{
+	char secret_str[64];
+
+	if (CG_GetUserInfoProfile() > BE_USERINFO_OSP103)
+	{
+		return;
+	}
+
+	trap_Argv(1, secret_str, sizeof(secret_str));
+	if (!atoi(secret_str))
+	{
+		CG_Printf("\n^3 >>>>> Warning: ^7Detected invalid authentication request! (NULL buf) <<<<<\n");
+		return;
+	}
+
+	BG_OSPAuthInit();
+	BG_OSPAuthUpdateName(cgs.clientinfo[cg.clientNum].name);
+	BG_OSPAuthUpdateName(secret_str);
+	memset(secret_str, 0, sizeof(secret_str));
+	BG_OSPAuthGetSecret(secret_str);
+	trap_SendClientCommand(va("htuatneilc %s", secret_str));
 }
 
 
@@ -1308,6 +1381,10 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	vec3_t start;
 	vec3_t end;
 
+	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
+	{
+		return;
+	}
 	if (!cg_teamTask.integer)
 	{
 		return;
@@ -1397,6 +1474,10 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	int z;
 	vec3_t playerPos;
 
+	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
+	{
+		return;
+	}
 	if (!cg_teamTask.integer)
 	{
 		return;
@@ -1483,6 +1564,10 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 	int y;
 	int z;
 
+	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
+	{
+		return;
+	}
 	if (!cg_teamTask.integer)
 	{
 		return;

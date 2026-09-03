@@ -481,6 +481,7 @@ void CG_Respawn(void)
 	cg.thisFrameTeleport = qtrue;
 	cg.weaponSelectTime = cg.time;
 	cg.weaponSelect = cg_respawnWeapon.integer ? cg_respawnWeapon.integer : cg.snap->ps.weapon;
+	cg.timeResidual = cg.snap->ps.commandTime + 1000;
 	if ((cg_zoomAutoReset.integer & 2) && cg.zoomed)
 	{
 		cg.zoomed = qfalse;

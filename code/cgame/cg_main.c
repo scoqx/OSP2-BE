@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
 #include "../qcommon/beinfo_cfg.h"
+#include "../game/bg_local.h"
 
 int forceModelModificationCount = -1;
 
@@ -641,9 +642,6 @@ vmCvar_t        cg_teamTaskSentPos;
 
 cgFontIndices_t cgFontIndices;
 
-static qboolean teamoverlay_registered = qfalse;
-static qboolean teamoverlay2_registered = qfalse;
-
 cvarTable_t cvarTable[] =
 {
 	{ &osp_client, "osp_client", "1008", CVAR_ROM },
@@ -717,6 +715,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawTeamOverlay},
+	/* UnFreeZe parity: register before cg_scorePlums / cg_delag so USERINFO wire order matches */
+	{ &teamoverlay2, "teamoverlay2", "0", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE },
 	{ &cg_stats, "cg_stats", "0",  },
 	{ &cg_buildScript, "com_buildScript", "0",  },
 	{ &cg_paused, "cl_paused", "0", CVAR_ROM },
@@ -728,14 +728,14 @@ cvarTable_t cvarTable[] =
 	// { &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0",  },
 	{ &cg_timescale, "timescale", "1",  },
 	{ &cg_scorePlums, "cg_scorePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
-	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_ARCHIVE | CVAR_USERINFO },
+	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_ARCHIVE },
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT },
 	{ &pmove_fixed, "pmove_fixed", "0", 0, CG_LocalEventCvarChanged_pmove_fixed},
 	{ &pmove_msec, "pmove_msec", "8",  },
-	{ &phy_movetype, "phy_movetype", "-1", CVAR_SYSTEMINFO | CVAR_ROM, CG_LocalEventCvarChanged_phy_movetype },
+	{ &phy_movetype, "phy_movetype", "-1", CVAR_SYSTEMINFO, CG_LocalEventCvarChanged_phy_movetype },
 	{ &phy_snapVectors, "g_snapVectors", "0", CVAR_SYSTEMINFO },
 	{ &phy_cpm_crouchslide_time, "phy_cpm_crouchslide_time", "1000", CVAR_ROM },
-	{ &phy_overbounce_fix, "phy_overbounce_fix", "1", CVAR_ARCHIVE },
+	{ &phy_overbounce_fix, "phy_overbounce_fix", "1", CVAR_SYSTEMINFO },
 	{ &cg_noTaunt, "cg_noTaunt", "0", CVAR_ARCHIVE },
 	{ &cg_noProjectileTrail, "cg_noProjectileTrail", "0", CVAR_ARCHIVE },
 	{ &cg_oldRail, "cg_oldRail", "1", CVAR_ARCHIVE },
@@ -3090,6 +3090,30 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_RegisterCvars();
 	CG_RegisterCvarDescriptions();
+	/* Drop sticky USERINFO from prior OSP/BE session before any Set/Update */
+	CG_UserInfoStripAll();
+
+	/* SERVERINFO known immediately — detect before be_features / fonts / ParseServerinfo */
+	trap_GetGameState(&cgs.gameState);
+	s = CG_ConfigString(CS_GAME_VERSION);
+	if (strcmp(s, GAME_VERSION))
+	{
+		CG_Error("Client/Server game mismatch: %s/%s", GAME_VERSION, s);
+	}
+	{
+		const char* serverStr;
+		const char* adminPrefix;
+		serverStr = CG_ConfigString(CS_SERVERINFO);
+		if (strstr(serverStr, "administrator") || strstr(serverStr, "adminless"))
+		{
+			cgs.fpsclassico = qtrue;
+		}
+		adminPrefix = strstr(serverStr, ".Admin\\");
+		if (strstr(serverStr, ".Admin\\X") || (adminPrefix && CG_AdminNameEqualsRateX7(adminPrefix + 7)))
+		{
+			cgs.q3msk = qtrue;
+		}
+	}
 
 	/* restore r_gamma from uc_gamma only when ui_forceGamma 1; when 0 we don't restore */
 	{
@@ -3166,16 +3190,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_LoadFonts();
 	CG_UpdateFontIndices();
 
-	// get the gamestate from the client system
-	trap_GetGameState(&cgs.gameState);
-
-	// check version
-	s = CG_ConfigString(CS_GAME_VERSION);
-	if (strcmp(s, GAME_VERSION))
-	{
-		CG_Error("Client/Server game mismatch: %s/%s", GAME_VERSION, s);
-	}
-
 // Different constants for different OSP versions; probably should keep only one variant
 	cgs.osp.stats_mask = 0xffff;
 	cgs.osp.stats_shift = 0x10;
@@ -3184,53 +3198,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cgs.levelStartTime = atoi(s);
 
 	CG_ParseServerinfo();
-	/* fpsclassico, q3msk, ruthless known at connect - inline, run once */
-	{
-		const char* serverStr;
-		const char* adminPrefix;
-		serverStr = CG_ConfigString(CS_SERVERINFO);
-		if (strstr(serverStr, "administrator") || strstr(serverStr, "adminless"))
-		{
-			cgs.fpsclassico = qtrue;
-			CG_ApplyUnfreezePhysFromServerinfo();
-		}
-		adminPrefix = strstr(serverStr, ".Admin\\");
-		if (strstr(serverStr, ".Admin\\X") || (adminPrefix && CG_AdminNameEqualsRateX7(adminPrefix + 7)))
-		{
-			cgs.q3msk = qtrue;
-		}
-		CG_UpdateRuthlessFromServerinfo();
-	}
-	/* USERINFO: safe-by-default; reveal BE keys only when not fpsclassico */
-	if (cgs.fpsclassico)
-	{
-		CG_ApplyFpsclassicoSafeUserInfo();
-	}
-	else
-	{
-		CG_RevealBeUserInfo();
-	}
-	/* teamoverlay: UnFreeZe uses teamoverlay2 always on; OSP uses teamoverlay */
-	if (cgs.fpsclassico)
-	{
-		if (!teamoverlay2_registered)
-		{
-			trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "1", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
-			teamoverlay2_registered = qtrue;
-		}
-		trap_Cvar_Set("teamoverlay2", "1");
-		trap_Cvar_Update(&teamoverlay2);
-	}
-	else if (cgs.gametype >= GT_TEAM)
-	{
-		if (!teamoverlay_registered)
-		{
-			trap_Cvar_Register(&teamoverlay, "teamoverlay", "1", CVAR_USERINFO | CVAR_ROM);
-			teamoverlay_registered = qtrue;
-		}
-		trap_Cvar_Set("teamoverlay", "1");
-		trap_Cvar_Update(&teamoverlay);
-	}
+	/* USERINFO profile (be_hide; fpsclassico forces unfreeze) */
+	CG_ApplyUserInfoProfile(CG_GetUserInfoProfile());
 
 	CG_Printf("\n^7Loaded [^9OSP2-BE^7] client version: ^9%s\n", OSP_VERSION);
 
@@ -3262,6 +3231,14 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 			cgs.hbWide = 0;
 			cgs.hbHgh = 0;
 			cgs.hbScale = 0;
+			cgs.beMovementLockFps = 0;
+			cgs.beMovementLockCsPresent = qfalse;
+			cgs.sv_pmove_accurate = 0;
+			cgs.pmove_fixed = qfalse;
+			cgs.pmove_msec = 8;
+			cgs.pmoveMode = PMODE_OSP;
+			pmode_q3msk_lock = 0;
+			pmode_osdf = 0;
 		}
 		else
 		{
@@ -3306,6 +3283,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 			{
 				CG_ParseHitboxConfigString(CG_ConfigString(CS_OSP2BE_HITBOX));
 			}
+
+			CG_ParseMovementLockConfigString(CG_ConfigString(CS_OSP2BE_MOVEMENT_LOCK));
 
 			CG_SpectatorItems_OnConfigStringChanged();
 			CG_ShadowItems_OnConfigStringChanged();

@@ -33,6 +33,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 int uf_baseq3;
 int uf_osp;
 int uf_rampjump;
+int pmode_q3msk_lock;
+int pmode_q3msk;
+int pmode_osdf; /* 1: phy_PmoveSingle predict — baseq3a/metarena shared helpers, not OSP */
 
 #if defined(UI) || defined(Q3UI)
 Q_EXPORT int modePickupDistance = 36;    // default VQ3 value

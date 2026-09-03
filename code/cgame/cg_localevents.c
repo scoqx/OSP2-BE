@@ -74,12 +74,13 @@ void CG_LocalEventCvarChanged_cg_drawTimer(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
 {
-	/* UnFreeZe: teamoverlay2 always 1; OSP/BE: keep teamoverlay for tinfo */
-	if (cgs.fpsclassico)
+	/* UnFreeZe profile: keep teamoverlay2=1 so server still sends tinfo HP
+	 * even when the local overlay draw is off. OSP/BE: teamoverlay for tinfo. */
+	if (CG_GetUserInfoProfile() == BE_USERINFO_UNFREEZE)
 	{
 		trap_Cvar_Set("teamoverlay2", "1");
 	}
-	else
+	else if (CG_GetUserInfoProfile() <= BE_USERINFO_OSP103)
 	{
 		trap_Cvar_Set("teamoverlay", "1");
 	}
@@ -753,12 +754,10 @@ void CG_LocalEventCvarChanged_cg_accuracyFontSize(cvarTable_t* cvart)
 }
 void CG_LocalEventCvarChanged_be_fontShadowOffset(cvarTable_t* cvart)
 {
-	(void)cvart;
 	BeFontShadow_UpdateBitmap(be_fontShadowOffset.string);
 }
 void CG_LocalEventCvarChanged_be_ttfShadowOffset(cvarTable_t* cvart)
 {
-	(void)cvart;
 	BeFontShadow_UpdateTtf(be_ttfShadowOffset.string);
 }
 void CG_LocalEventCvarChanged_cg_teamTaskFont(cvarTable_t* cvart)
@@ -1572,7 +1571,7 @@ void CG_LocalEventCvarChanged_cg_simpleItemsRadius(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_entityOverpolate(cvarTable_t* cvart)
 {
-	cvart->vmCvar->value = Com_Clamp(-1.0f, 1.0f, cvart->vmCvar->value);
+	// cvart->vmCvar->value = Com_Clamp(-1.0f, 1.0f, cvart->vmCvar->value);
 }
 
 void CG_LocalEventCvarChanged_cg_numbersSet(cvarTable_t* cvart)

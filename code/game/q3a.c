@@ -203,7 +203,7 @@ static qboolean q3a_CheckJump(void)
 		{
 			pm->ps->stats[STAT_TIME_LASTJUMP] = pm->cmd.serverTime;    // Reset the timer: We can jump, but dj timer is off.
 		}
-		pm->ps->stats[STAT_OSP_PHYS] = phy_jump_timebuffer;
+		/* metarena does not set STAT_OSP_PHYS here — do not invent it on predict */
 	}
 	//:: vq3 or CPM jump selection end
 

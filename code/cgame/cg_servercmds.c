@@ -352,6 +352,20 @@ static void CG_ParseTeamInfo(void)
 
 /*
 ================
+CG_ParseMovementLockConfigString
+
+CS 912: presence (even "0") enables q3msk lock + stock step; value is FPS lock target.
+================
+ */
+void CG_ParseMovementLockConfigString(const char* str)
+{
+	cgs.beMovementLockCsPresent = (str && str[0]) ? qtrue : qfalse;
+	cgs.beMovementLockFps = cgs.beMovementLockCsPresent ? atoi(str) : 0;
+	CG_PmovePhysicsUpdate();
+}
+
+/*
+================
 CG_ParseSysteminfo
 
 Sync phy_movetype / sv_fps from CS_SYSTEMINFO.
@@ -382,24 +396,72 @@ void CG_ParseSysteminfo(void)
 	val = Info_ValueForKey(info, "g_snapVectors");
 	trap_Cvar_Set("g_snapVectors", val[0] ? val : "0");
 
+	val = Info_ValueForKey(info, "phy_overbounce_fix");
+	trap_Cvar_Set("phy_overbounce_fix", val[0] ? val : "1");
+
 	val = Info_ValueForKey(info, "pmove_float");
 	trap_Cvar_Set("pmove_float", val[0] ? val : "0");
 
+	val = Info_ValueForKey(info, "pmove_fixed");
+	if (val[0])
+	{
+		cgs.pmove_fixed = atoi(val) ? qtrue : qfalse;
+	}
+	else
+	{
+		trap_Cvar_Update(&pmove_fixed);
+		cgs.pmove_fixed = pmove_fixed.integer ? qtrue : qfalse;
+	}
+
+	val = Info_ValueForKey(info, "pmove_msec");
+	if (val[0])
+	{
+		cgs.pmove_msec = atoi(val);
+	}
+	else
+	{
+		trap_Cvar_Update(&pmove_msec);
+		cgs.pmove_msec = pmove_msec.integer;
+	}
+	if (cgs.pmove_msec < 8)
+	{
+		cgs.pmove_msec = 8;
+	}
+	else if (cgs.pmove_msec > 33)
+	{
+		cgs.pmove_msec = 33;
+	}
+
 	val = Info_ValueForKey(info, "pmove_accurate");
-	trap_Cvar_Set("pmove_accurate", val[0] ? val : "0");
+	if (val[0])
+	{
+		int acc;
+
+		trap_Cvar_Set("pmove_accurate", val);
+		acc = atoi(val);
+		if (acc < 0)
+		{
+			acc = 0;
+		}
+		else if (acc > 2)
+		{
+			acc = 2;
+		}
+		cgs.sv_pmove_accurate = acc;
+	}
+	else
+	{
+		trap_Cvar_Set("pmove_accurate", "0");
+		cgs.sv_pmove_accurate = 0;
+	}
 
 	trap_Cvar_Update(&phy_movetype);
 	trap_Cvar_Update(&phy_snapVectors);
+	trap_Cvar_Update(&phy_overbounce_fix);
 	trap_Cvar_Update(&pmove_float);
 	trap_Cvar_Update(&pmove_accurate);
 
-	cgs.pmove_phy_movetype = movetype;
 	CG_PmovePhysicsUpdate();
-
-	if (cgs.pmove_phy_movetype < 0)
-	{
-		CG_OSPSetMode(cgs.osp.server_mode);
-	}
 }
 
 /*
@@ -723,7 +785,8 @@ static void CG_ConfigStringModified(void)
 			{
 				cg.showWStats = qtrue;
 				/* send getstatsinfo only once when intermission starts, not every second */
-				if (!prevIntermissionStarted && cg.intermissionStarted && !cgs.fpsclassico)
+				if (!prevIntermissionStarted && cg.intermissionStarted
+				        && CG_GetUserInfoProfile() <= BE_USERINFO_OSP103)
 				{
 					trap_SendClientCommand("getstatsinfo");
 					cg.statsRequestSentInIntermission = qtrue;
@@ -793,10 +856,6 @@ static void CG_ConfigStringModified(void)
 			CG_ShaderStateChanged();
 			break;
 		case CS_OSP2BE_SUPPORTED:
-			if (cgs.fpsclassico)
-			{
-				break;
-			}
 			CG_OSPSupportedBEServer(atoi(str) ? qtrue : qfalse);
 			break;
 		case CS_OSP2BE_DISABLED_FEATURES:
@@ -855,6 +914,13 @@ static void CG_ConfigStringModified(void)
 				break;
 			}
 			CG_ParseHitboxConfigString(str);
+			break;
+		case CS_OSP2BE_MOVEMENT_LOCK:
+			if (cgs.fpsclassico)
+			{
+				break;
+			}
+			CG_ParseMovementLockConfigString(str);
 			break;
 		default:
 			if (num >= CS_OSP2BE_ITEM_CATALOG0 && num <= CS_OSP2BE_ITEM_CATALOG_LAST)
@@ -2791,9 +2857,10 @@ void CG_ServerCommand(void)
 				}
 				return;
 			}
-			/* psohtua - no-op, check last */
+			/* psohtua */
 			if (cmd[1] == 's' && cmd[2] == 'o' && cmd[3] == 'h' && cmd[4] == 't' && cmd[5] == 'u' && cmd[6] == 'a' && cmd[7] == '\0')
 			{
+				CG_OSPClientAuth_f();
 				return;
 			}
 			/* "pui" — packed item pickup notify (metarena) */

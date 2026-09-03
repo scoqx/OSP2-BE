@@ -999,6 +999,8 @@ void phy_PmoveSingle(pmove_t* pmove)
 	//::::::::::::::
 	// Initialize
 	pm = pmove;
+	/* shared PM_SlideMove/PM_FlyMove use pm_overclip — metarena/baseq3a = OVERCLIP */
+	pm_overclip = OVERCLIP;
 	// this counter lets us debug movement problems with a journal
 	// by setting a conditional breakpoint for the previous frame
 	c_pmove++;
@@ -1188,7 +1190,7 @@ void phy_move(pmove_t* pmove)
 // phy_reset
 //  Reset all values to vq3 behavior, in case some init function is missing one of them
 //:::::::::::::
-void phy_reset(void)
+static void phy_reset(void)
 {
 	phy_stopspeed              = pm_stopspeed;
 	// Crouch

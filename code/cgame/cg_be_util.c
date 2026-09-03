@@ -96,8 +96,8 @@ void CG_UpdateBeFeatures(void)
 	}
 
 	cgs.beFeaturesEnabled = beFlags & ~cgs.beDisableFeatures;
-	/* On fpsclassico keep be_features out of userinfo (safe / sticky USERINFO) */
-	if (changed && !cgs.fpsclassico)
+	/* be_features in userinfo only for BE profile */
+	if (changed && CG_GetUserInfoProfile() == BE_USERINFO_BE)
 		trap_Cvar_Set("be_features", va("%d", beFlags));
 	if (!cgs.beEnabled || (cgs.beDisableFeatures & CG_BE_MODELSOUND))
 		CG_ClearForcedSounds();
@@ -151,12 +151,11 @@ void CG_UpdateFontIndices(void)
 
 int CG_ApplyFpsclassicoDisableMask(int raw)
 {
-	if (!cgs.fpsclassico)
+	if (cgs.fpsclassico)
 	{
-		return raw;
+		return 0; /* server cannot disable any BE features */
 	}
-	/* fpsclassico: only team WH / hitbox may be server-blocked; ignore other CS 888 bits */
-	return raw & (CG_BE_TEAM_FOE_WH | CG_BE_HITBOX);
+	return raw;
 }
 
 void CG_PrintDisabledFeatures(qboolean request)
@@ -165,23 +164,7 @@ void CG_PrintDisabledFeatures(qboolean request)
 
 	if (cgs.fpsclassico)
 	{
-		if (value & (CG_BE_TEAM_FOE_WH | CG_BE_HITBOX))
-		{
-			char buffer[256] = "   [^9OSP2-BE^7] ^1Disabled^7 features: ";
-			qboolean first = qtrue;
-
-			if (value & CG_BE_TEAM_FOE_WH)
-			{
-				Q_strcat(buffer, sizeof(buffer), first ? "Team wh / Player xray" : ", team wh / Player xray");
-				first = qfalse;
-			}
-			if (value & CG_BE_HITBOX)
-			{
-				Q_strcat(buffer, sizeof(buffer), first ? "Hitbox" : ", hitbox");
-			}
-			CG_Printf("%s\n", buffer);
-		}
-		else if (request)
+		if (request)
 		{
 			CG_Printf("   [^9OSP2-BE^7] All features enabled.\n");
 		}

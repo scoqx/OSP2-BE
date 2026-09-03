@@ -134,6 +134,12 @@ extern "C" {
  *   Ruthless/Devotion: "1 <wide> <hgh>" — body cylinder only (head removed; legacy mode 2 = same)
  *   Metarena/OSDF:     single-token "<scale>" (>0 = cylinder AABB*scale; "0"/empty = AABB cube) */
 #define CS_OSP2BE_HITBOX                       911
+#define CS_OSP2BE_MOVEMENT_LOCK                912  /* FPS lock: 0=off, >0=q3msk-style velocity quantize */
+
+/* Client predict physics branch (cgs.pmoveMode); game code uses pmode_q3msk_lock */
+#define PMODE_OSP                              0
+#define PMODE_BASEQ3A                          1
+#define PMODE_OSDF                             2
 
 /*
  * Item catalog (OSP2BE): CS 890..909 concatenated (20 KiB max).
@@ -285,6 +291,7 @@ typedef struct pmove_s
 	int         pmove_msec;
 	int         pmove_float;
 	int         pmove_accurate;
+	int         pmove_lock_fps;     /* CS 912: 0=off, >0=target FPS for movement lock */
 
 	/* movement_t selector; client sets from CS 806 (OSP_SERVER_MODE_*) */
 	int         pmove_movement;
@@ -358,6 +365,10 @@ typedef enum
 	/* g_freeze (ruthless): own progress% + thawing% — see BE_CUSTOM_* */
 	STAT_BE_CUSTOM = 15
 } statIndex_t;
+
+/* stats[STAT_EXTFLAGS] — q3msk overbounce: WalkMove uses AirMove while set */
+#define EXTFL_SLIDING 1
+#define EXTFL_OVERBOUNCE 2
 
 /* UnFreeZe cgame uses ps->stats[8] for rampjump doublejump window (same index as STAT_RAIL_DELAY). */
 #define STAT_UNFREEZE_PHYS	STAT_RAIL_DELAY
@@ -1016,6 +1027,13 @@ void    BG_PlayerStateToEntityState(playerState_t* ps, entityState_t* s, qboolea
 void    BG_PlayerStateToEntityStateExtraPolate(playerState_t* ps, entityState_t* s, int time, qboolean snap);
 
 qboolean    BG_PlayerTouchesItem(playerState_t* ps, entityState_t* item, int atTime);
+
+//
+// bg_auth.c
+//
+void G_OSPAuthInit(void);
+void G_OSPAuthUpdateName(char* str);
+void G_OSPAuthGetSecret(char* str);
 
 
 #define ARENAS_PER_TIER     4

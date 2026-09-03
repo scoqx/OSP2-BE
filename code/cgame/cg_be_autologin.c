@@ -464,7 +464,7 @@ void CG_BE_AutologinFrame(void)
 	{
 		return;
 	}
-	if (cgs.fpsclassico)
+	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
 	{
 		return;
 	}

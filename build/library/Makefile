@@ -468,6 +468,7 @@ CGOBJ_ = \
   $(B)/$(MOD)/game/bg_misc.o \
   $(B)/$(MOD)/game/bg_pmove.o \
   $(B)/$(MOD)/game/bg_slidemove.o \
+  $(B)/$(MOD)/game/bg_auth.o \
   $(B)/$(MOD)/game/core.o \
   $(B)/$(MOD)/game/slidemove.o \
   $(B)/$(MOD)/game/q3a.o \

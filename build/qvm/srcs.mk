@@ -12,7 +12,7 @@ CG_SRC = \
  cg_consolecmds cg_draw cg_drawtools cg_ospdrawstring cg_dyeicons cg_effects cg_ents cg_event cg_info \
  cg_localents cg_players cg_playerstate cg_predict cg_scoreboard cg_marks cg_medals \
  cg_servercmds cg_snapshot cg_view cg_weapons cg_printui cg_teamtasks_utils cg_teamtasks_draw cg_teamtasks_selwheel \
- bg_slidemove bg_pmove bg_lib bg_misc \
+ bg_slidemove bg_pmove bg_lib bg_misc bg_auth \
  core slidemove q3a vq1 vjk vq4 \
  q_math q_shared cg_ospconfig cg_osputil cg_osphud cg_unlagged cg_playerscolors\
  cg_localevents cg_customloc cg_maplocs cg_mapbundle cg_spawns cg_shadowitems cg_killconfirm cg_spectatoritems cg_tpexit cg_globalpos cg_worldflags cg_cvardescriptions common\

@@ -31,24 +31,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static  pmove_t     cg_pmove;
 
-static void CG_PmovePhysicsResetBaseGlobals(void)
-{
-	extern float pm_spectatorfriction;
-
-	pm_stopspeed = 100.0f;
-	pm_duckScale = 0.25f;
-	pm_swimScale = 0.50f;
-	pm_wadeScale = 0.70f;
-	pm_accelerate = 10.0f;
-	pm_airaccelerate = 1.0f;
-	pm_wateraccelerate = 4.0f;
-	pm_flyaccelerate = 8.0f;
-	pm_friction = 6.0f;
-	pm_waterfriction = 1.0f;
-	pm_flightfriction = 3.0f;
-	pm_spectatorfriction = 5.0f;
-}
-
 static  int         cg_numSolidEntities;
 static  centity_t*   cg_solidEntities[MAX_ENTITIES_IN_SNAPSHOT];
 static  int         cg_numTriggerEntities;
@@ -539,24 +521,101 @@ static vec_t VectorDistance(vec3_t a, vec3_t b)
 
 /*
 =================
+CG_ApplyPmoveMovementFields
+
+OSP: pmove_accurate 0/1/2 from systeminfo.
+CS912/baseq3a: lock_fps from CS912; local pmove_accurate > 0 overrides as FPS lock (baseq3a parity).
+=================
+*/
+static void CG_ApplyPmoveMovementFields(pmove_t* pm)
+{
+	/* UnFreeZe path: no OSP lock_fps / accurate dither — only SnapVector if uf_baseq3 */
+	if (cgs.fpsclassico)
+	{
+		pm->pmove_lock_fps = 0;
+		pm->pmove_accurate = 0;
+		return;
+	}
+
+	if (cgs.beMovementLockCsPresent && cgs.pmoveMode == PMODE_OSP)
+	{
+		trap_Cvar_Update(&pmove_accurate);
+		if (pmove_accurate.integer > 0)
+		{
+			/* client override: numeric FPS like CS 912 (e.g. 115) */
+			pm->pmove_lock_fps = pmove_accurate.integer;
+			pm->pmove_accurate = 0;
+		}
+		else
+		{
+			pm->pmove_lock_fps = cgs.beMovementLockFps;
+			pm->pmove_accurate = 0;
+		}
+	}
+	else
+	{
+		pm->pmove_lock_fps = 0;
+		pm->pmove_accurate = (cgs.pmoveMode == PMODE_OSP) ? cgs.sv_pmove_accurate : 0;
+	}
+}
+
+/*
+=================
 CG_PmovePhysicsUpdate
 
-Select client predict pmove step once per serverinfo / phy_movetype change.
+Select client predict physics branch once per serverinfo / phy / CS912 change.
 =================
 */
 void CG_PmovePhysicsUpdate(void)
 {
 	static int last_phy_movetype = -2;
 	static int last_g_snapVectors = -2;
+	static int last_mode = PMODE_OSP;
+	int         mode;
 	int         movetype;
+	const char* info;
+	const char* val;
 
-	trap_Cvar_Update(&phy_movetype);
+	/* Prefer SYSTEMINFO key over stale local cvar (metarena phy_movetype=0).
+	 * Do not re-read movetype from vmCvar right after trap_Cvar_Set — Update can lag
+	 * one frame and briefly fall into PMODE_OSP with fake CS806 PROMODEbit. */
+	info = CG_ConfigString(CS_SYSTEMINFO);
+	val = Info_ValueForKey(info, "phy_movetype");
+	if (val[0])
+	{
+		movetype = atoi(val);
+		if (phy_movetype.integer != movetype)
+		{
+			trap_Cvar_Set("phy_movetype", va("%i", movetype));
+		}
+	}
+	else
+	{
+		trap_Cvar_Update(&phy_movetype);
+		movetype = phy_movetype.integer;
+	}
+
 	trap_Cvar_Update(&phy_snapVectors);
-	movetype = phy_movetype.integer;
 
 	if (movetype >= 0)
 	{
-		if (last_phy_movetype < 0)
+		mode = PMODE_OSDF;
+	}
+	else
+	{
+		mode = PMODE_OSP;
+	}
+
+	cgs.pmoveMode = mode;
+	/* q3msk lock: full stock baseq3a pmove + EXTFL NOOB landing */
+	pmode_q3msk_lock = (cgs.q3msk && cgs.beMovementLockCsPresent && !cgs.fpsclassico) ? 1 : 0;
+	pmode_q3msk = cgs.q3msk ? 1 : 0;
+	/* metarena / OSDF: phy path still calls shared PM_WaterMove/PM_FlyMove — keep them vanilla */
+	pmode_osdf = (mode == PMODE_OSDF) ? 1 : 0;
+
+	if (mode == PMODE_OSDF)
+	{
+		if (last_phy_movetype < 0 || last_mode != PMODE_OSDF)
 		{
 			CG_PmovePhysicsResetBaseGlobals();
 		}
@@ -568,15 +627,96 @@ void CG_PmovePhysicsUpdate(void)
 	}
 	else
 	{
-		if (last_phy_movetype >= 0)
+		if (last_mode != PMODE_OSP || last_mode == PMODE_BASEQ3A)
 		{
 			CG_OSPSetMode(cgs.osp.server_mode);
+		}
+		/* q3msk stock pmove: CS806 may look like PROMODEbut water/friction are vanilla.
+		 * Wrong pm_waterfriction (0.5 vs 1.0) causes ~0.1 ankle-water predict drift. */
+		if (pmode_q3msk || pmode_q3msk_lock)
+		{
+			CG_PmovePhysicsResetBaseGlobals();
 		}
 		cgs.pmove_phy_movetype = -1;
 	}
 
+	last_mode = mode;
 	last_phy_movetype = movetype;
 	last_g_snapVectors = phy_snapVectors.integer;
+}
+
+/*
+=================
+CG_CheckTimers
+
+Mega health/armor countdown and predicted powerup expiry (baseq3a).
+=================
+*/
+static void CG_CheckTimers(void)
+{
+	int i;
+
+	if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
+	{
+		return;
+	}
+
+	if (cg.predictedPlayerState.stats[STAT_HEALTH] <= 0)
+	{
+		return;
+	}
+
+	if (cg.snap->ps.pm_type == PM_INTERMISSION)
+	{
+		return;
+	}
+
+	if (cg.timeResidual && cg.predictedPlayerState.commandTime >= cg.timeResidual && !cg.thisFrameTeleport)
+	{
+		cg.timeResidual += 1000;
+		if (cg.predictedPlayerState.powerups[PW_REGEN])
+		{
+			int maxhealth = cg.predictedPlayerState.stats[STAT_MAX_HEALTH];
+
+			if (cg.predictedPlayerState.stats[STAT_HEALTH] < maxhealth)
+			{
+				cg.predictedPlayerState.stats[STAT_HEALTH] += 15;
+				if (cg.predictedPlayerState.stats[STAT_HEALTH] > maxhealth * 1.1f)
+				{
+					cg.predictedPlayerState.stats[STAT_HEALTH] = (int)(maxhealth * 1.1f);
+				}
+			}
+			else if (cg.predictedPlayerState.stats[STAT_HEALTH] < maxhealth * 2)
+			{
+				cg.predictedPlayerState.stats[STAT_HEALTH] += 5;
+				if (cg.predictedPlayerState.stats[STAT_HEALTH] > maxhealth * 2)
+				{
+					cg.predictedPlayerState.stats[STAT_HEALTH] = maxhealth * 2;
+				}
+			}
+		}
+		else if (cg.predictedPlayerState.stats[STAT_HEALTH] > cg.predictedPlayerState.stats[STAT_MAX_HEALTH])
+		{
+			cg.predictedPlayerState.stats[STAT_HEALTH]--;
+		}
+
+		if (cg.predictedPlayerState.stats[STAT_ARMOR] > cg.predictedPlayerState.stats[STAT_MAX_HEALTH])
+		{
+			cg.predictedPlayerState.stats[STAT_ARMOR]--;
+		}
+	}
+
+	for (i = 0; i < MAX_POWERUPS; i++)
+	{
+		if (!cg.predictedPlayerState.powerups[i])
+		{
+			continue;
+		}
+		if (cg.predictedPlayerState.powerups[i] < cg.predictedPlayerState.commandTime)
+		{
+			cg.predictedPlayerState.powerups[i] = 0;
+		}
+	}
 }
 
 /*
@@ -585,7 +725,6 @@ CG_IsUnacceptableError
 
 Compare snapshot playerState to a previously predicted state for incremental
 prediction (cg_optimizePrediction). Return 0 if differences are acceptable.
-Adapted from UnFreeZe / unlagged — without EF_NOPREDICT / timeResidual.
 =================
 */
 static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolean* forceMove)
@@ -733,6 +872,27 @@ static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolea
 		return 14;
 	}
 
+	/* mega health/armor 1Hz countdown: resync saved states (baseq3a) */
+	if (pps->stats[STAT_HEALTH] == ps->stats[STAT_HEALTH] + 1
+	        && ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH])
+	{
+		cg.timeResidual = ps->commandTime + 1000;
+		for (n = 0; n < NUM_SAVED_STATES; n++)
+		{
+			cg.savedPmoveStates[n].stats[STAT_HEALTH] = ps->stats[STAT_HEALTH];
+		}
+	}
+
+	if (pps->stats[STAT_ARMOR] == ps->stats[STAT_ARMOR] - 1
+	        && ps->stats[STAT_ARMOR] >= ps->stats[STAT_MAX_HEALTH])
+	{
+		cg.timeResidual = ps->commandTime + 1000;
+		for (n = 0; n < NUM_SAVED_STATES; n++)
+		{
+			cg.savedPmoveStates[n].stats[STAT_ARMOR] = ps->stats[STAT_ARMOR];
+		}
+	}
+
 	for (i = 0; i < MAX_STATS; i++)
 	{
 		if (i == STAT_CLIENTS_READY)
@@ -743,9 +903,24 @@ static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolea
 			}
 			continue;
 		}
+		/* BASEQ3A / q3msk / OSDF: ignore timers that churn or are 16-bit truncated on the wire */
+		if ((cgs.beMovementLockCsPresent || cgs.pmove_phy_movetype >= 0) &&
+		        (i == STAT_OSP_PHYS || i == STAT_OSP_10 || i == STAT_WEAPON_DELAY || i == STAT_TIME_LASTJUMP))
+		{
+			for (n = 0; n < NUM_SAVED_STATES; n++)
+			{
+				cg.savedPmoveStates[n].stats[i] = ps->stats[i];
+			}
+			continue;
+		}
+		/* q3msk: client-predicted overbounce flag; server never sends it in snapshots */
+		if (cgs.q3msk && (cgs.ratFlags & RAT_NOOVERBOUNCE) && i == STAT_EXTFLAGS)
+		{
+			continue;
+		}
 		if (pps->stats[i] != ps->stats[i])
 		{
-			if (cg_showmiss.integer > 1)
+			if (cg_showmiss.integer > 2)
 			{
 				CG_Printf("stats[%i] %i => %i ", i, pps->stats[i], ps->stats[i]);
 			}
@@ -841,6 +1016,9 @@ void CG_PredictPlayerState(void)
 		return;
 	}
 
+	/* Keep phy_movetype / OSDF branch in sync with SYSTEMINFO (metarena) */
+	CG_PmovePhysicsUpdate();
+
 	// prepare for pmove
 	cg_pmove.ps = &cg.predictedPlayerState;
 	cg_pmove.trace = CG_Trace;
@@ -865,7 +1043,16 @@ void CG_PredictPlayerState(void)
 	{
 		cg_pmove.tracemask &= ~CONTENTS_BODY;
 	}
-	cg_pmove.noFootsteps = (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE) || (cgs.dmflags & DF_NO_FOOTSTEPS) > 0;
+	/* Metarena maps VQ3/CPM → CS806 "1" (OSP PROMODEbit). Server has no noFootsteps
+	 * and always emits CrashLand footsteps — PROMODEbit must not silence them on OSDF. */
+	if (cgs.pmove_phy_movetype >= 0)
+	{
+		cg_pmove.noFootsteps = (cgs.dmflags & DF_NO_FOOTSTEPS) > 0;
+	}
+	else
+	{
+		cg_pmove.noFootsteps = (cgs.osp.server_mode & OSP_SERVER_MODE_PROMODE) || (cgs.dmflags & DF_NO_FOOTSTEPS) > 0;
+	}
 
 	// save the state before the pmove so we can detect transitions
 	oldPlayerState = cg.predictedPlayerState;
@@ -908,7 +1095,47 @@ void CG_PredictPlayerState(void)
 		cg.physicsTime = cg.snap->serverTime;
 	}
 
-	if (pmove_msec.integer < 8)
+	/* OSDF CPM/CQ3: STAT_TIME_LASTJUMP is absolute serverTime but stats[] are
+	 * networked as signed 16-bit — expand so DJ / air-step timers match the server. */
+	if (cgs.pmove_phy_movetype == CPM || cgs.pmove_phy_movetype == CQ3)
+	{
+		int last = cg.predictedPlayerState.stats[STAT_TIME_LASTJUMP];
+		int now = cg.predictedPlayerState.commandTime;
+		int age = now - last;
+		int exp;
+
+		if (last > 0 && (age < 0 || age >= 60000))
+		{
+			exp = (now & ~0xFFFF) | (last & 0xFFFF);
+			if (exp > now)
+			{
+				exp -= 0x10000;
+			}
+			if (now - exp > 0x8000)
+			{
+				exp += 0x10000;
+			}
+			if (exp > now)
+			{
+				exp -= 0x10000;
+			}
+			cg.predictedPlayerState.stats[STAT_TIME_LASTJUMP] = exp;
+		}
+	}
+
+	if (cgs.fpsclassico)
+	{
+		/* UnFreeZe clamps pmove_msec to 1..33 */
+		if (pmove_msec.integer < 1)
+		{
+			trap_Cvar_Set("pmove_msec", "1");
+		}
+		else if (pmove_msec.integer > 33)
+		{
+			trap_Cvar_Set("pmove_msec", "33");
+		}
+	}
+	else if (pmove_msec.integer < 8)
 	{
 		trap_Cvar_Set("pmove_msec", "8");
 	}
@@ -917,14 +1144,37 @@ void CG_PredictPlayerState(void)
 		trap_Cvar_Set("pmove_msec", "33");
 	}
 
-	cg_pmove.pmove_fixed = pmove_fixed.integer;// | cg_pmove_fixed.integer;
-	cg_pmove.pmove_msec = pmove_msec.integer;
+	/*
+	 * OSDF / metarena (baseq3a+phy) and q3msk lock: chop frames like the server
+	 * (SYSTEMINFO pmove_fixed/msec). Local pmove_fixed on OSP-only servers stays.
+	 * Metarena has no pmove_float — keep float only when systeminfo says so.
+	 */
 	cg_pmove.pmove_float = pmove_float.integer;
-	cg_pmove.pmove_accurate = pmove_accurate.integer;
+	if (cgs.pmove_phy_movetype >= 0
+	        || (cgs.q3msk && cgs.beMovementLockCsPresent && !cgs.fpsclassico))
+	{
+		cg_pmove.pmove_fixed = cgs.pmove_fixed;
+		cg_pmove.pmove_msec = cgs.pmove_msec;
+		if (cgs.pmove_phy_movetype >= 0)
+		{
+			/* metarena / OSDF servers: no pmove_float in game */
+			cg_pmove.pmove_float = 0;
+		}
+	}
+	else
+	{
+		cg_pmove.pmove_fixed = pmove_fixed.integer;
+		cg_pmove.pmove_msec = pmove_msec.integer;
+	}
+	CG_ApplyPmoveMovementFields(&cg_pmove);
 	cg_pmove.pmove_ratflags = cgs.ratFlags;
 
 	cg_pmove.pmove_movement = MOVEMENT_VQ3;
-	if (cgs.beAutohop == 0)
+	if (cgs.beMovementLockCsPresent && !cgs.fpsclassico)
+	{
+		cg_pmove.pmove_autohop = 0;
+	}
+	else if (cgs.beAutohop == 0)
 	{
 		cg_pmove.pmove_autohop = 0;
 	}
@@ -970,7 +1220,7 @@ void CG_PredictPlayerState(void)
 				errorcode = CG_IsUnacceptableError(&cg.predictedPlayerState, &cg.savedPmoveStates[i], &moved);
 				if (errorcode)
 				{
-					if (cg_showmiss.integer > 1)
+					if (cg_showmiss.integer > 2)
 					{
 						CG_Printf("errorcode %d at %d\n", errorcode, cg.time);
 					}
@@ -1055,16 +1305,36 @@ void CG_PredictPlayerState(void)
 				{
 					if (!VectorCompare(oldPlayerState.origin, adjusted))
 					{
-						int     dt;
+						float   err;
 
-						dt = cg.time - cg_pmove.cmd.serverTime;
-						if (dt > 0)
+						VectorSubtract(oldPlayerState.origin, adjusted, delta);
+						err = VectorLength(delta);
+						/* skip float dust; keep any real miss visible at showmiss 1 */
+						if (err > 0.1f)
 						{
-							CG_Printf("prediction error %.3f\n", VectorDistance(oldPlayerState.origin, adjusted) * (1000.0f / (float)dt));
+							CG_Printf("prediction error %.3f\n", err);
 						}
-						else
+						/* dxyz/pmtrail for land/stair misses (~0.4+), not only >1 */
+						if (cg_showmiss.integer >= 2 && err > 0.3f)
 						{
-							CG_Printf("prediction error %.3f\n", VectorDistance(oldPlayerState.origin, adjusted));
+							CG_Printf("  dxyz: %.3f %.3f %.3f  predO: %.1f %.1f %.1f  snapO: %.1f %.1f %.1f\n",
+							          delta[0], delta[1], delta[2],
+							          adjusted[0], adjusted[1], adjusted[2],
+							          oldPlayerState.origin[0], oldPlayerState.origin[1], oldPlayerState.origin[2]);
+							CG_Printf("  predV: %.1f %.1f %.1f  snapV: %.1f %.1f %.1f  gnd=%i/%i lock=%i noob=%i q3msk=%i osdf=%i phy=%i\n",
+							          cg.predictedPlayerState.velocity[0],
+							          cg.predictedPlayerState.velocity[1],
+							          cg.predictedPlayerState.velocity[2],
+							          oldPlayerState.velocity[0],
+							          oldPlayerState.velocity[1],
+							          oldPlayerState.velocity[2],
+							          cg.predictedPlayerState.groundEntityNum,
+							          oldPlayerState.groundEntityNum,
+							          cg_pmove.pmove_lock_fps,
+							          (cgs.ratFlags & RAT_NOOVERBOUNCE) ? 1 : 0,
+							          pmode_q3msk_lock,
+							          pmode_osdf,
+							          cgs.pmove_phy_movetype);
 						}
 					}
 				}
@@ -1109,7 +1379,7 @@ void CG_PredictPlayerState(void)
 
 		if (cg_pmove.pmove_fixed)
 		{
-			cg_pmove.cmd.serverTime = ((cg_pmove.cmd.serverTime + pmove_msec.integer - 1) / pmove_msec.integer) * pmove_msec.integer;
+			cg_pmove.cmd.serverTime = ((cg_pmove.cmd.serverTime + cg_pmove.pmove_msec - 1) / cg_pmove.pmove_msec) * cg_pmove.pmove_msec;
 		}
 
 		if (!cg_optimizePrediction.integer ||
@@ -1166,6 +1436,11 @@ void CG_PredictPlayerState(void)
 			}
 
 			CG_TouchTriggerPrediction();
+			/* baseq3a megaHP/armor timers — not in UnFreeZe cgame predict */
+			if (!cgs.fpsclassico)
+			{
+				CG_CheckTimers();
+			}
 
 			if (cg_optimizePrediction.integer)
 			{
@@ -1191,7 +1466,7 @@ void CG_PredictPlayerState(void)
 		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);
 	}
 
-	if (cg_showmiss.integer > 1)
+	if (cg_showmiss.integer > 3)
 	{
 		CG_Printf("[%i : %i] ", cg_pmove.cmd.serverTime, cg.time);
 	}

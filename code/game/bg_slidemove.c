@@ -316,57 +316,74 @@ void PM_StepSlideMove(qboolean gravity)
 	pm->trace(&trace, start_o, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask);
 	VectorSet(up, 0, 0, 1);
 	// never step up when you still have up velocity
-	if (uf_rampjump)
 	{
-		/* UnFreeZe: stock step early-out (no stats[8] / physBoost gate in PM_StepSlideMove) */
-		if (pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 || DotProduct(trace.plane.normal, up) < 0.7))
+		qboolean stockStepEarly;
+		qboolean ospStepUp;
+
+		stockStepEarly = (qboolean)(uf_rampjump || pmode_q3msk_lock || pmode_osdf);
+		/* q3msk/OSDF/metarena: stock sweep step-up like baseq3a - not OSP point test */
+		ospStepUp = (qboolean)(!pmode_q3msk_lock && !uf_rampjump && !pmode_osdf);
+
+		if (stockStepEarly)
 		{
-			return;
-		}
-	}
-	else
-	{
-		const int physStat = pm->ps->stats[STAT_OSP_PHYS];
-		const int physBoost = modePromodePhysKoeff;
+			float upVel;
 
-		if (pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 || DotProduct(trace.plane.normal, up) < 0.7)
-		        && ((pm->ps->velocity[2] > (physBoost + modeJumpVelocity)) || physStat <= 0))
+			/* UnFreeZe / q3msk lock: stock step early-out (no stats[8] / physBoost gate).
+			 * lock_fps quantize can leave +Z of 1/64 which falsely blocks step-up onto ledges. */
+			upVel = pm->ps->velocity[2];
+			if (pmode_q3msk_lock && upVel > 0.0f && upVel < (1.0f / 64.0f))
+			{
+				upVel = 0.0f;
+			}
+			if (upVel > 0.0f && (trace.fraction == 1.0 || DotProduct(trace.plane.normal, up) < 0.7))
+			{
+				return;
+			}
+		}
+		else
 		{
-			return;
+			const int physStat = pm->ps->stats[STAT_OSP_PHYS];
+			const int physBoost = modePromodePhysKoeff;
+
+			if (pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 || DotProduct(trace.plane.normal, up) < 0.7)
+			        && ((pm->ps->velocity[2] > (physBoost + modeJumpVelocity)) || physStat <= 0))
+			{
+				return;
+			}
 		}
-	}
 
-	VectorCopy(start_o, up);
-	up[2] += actualStepHeight;
+		VectorCopy(start_o, up);
+		up[2] += actualStepHeight;
 
-	/* OSP 1.03: point test at +step (start==end). Sweep start_o->up is ioquake3;
-	   a ceiling makes fraction<1 / not allsolid and would copy into the brush. */
-	if (uf_rampjump)
-	{
-		pm->trace(&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
-	}
-	else
-	{
-		pm->trace(&trace, up, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
-	}
-	if (trace.allsolid)
-	{
-		if (pm->debugLevel)
+		/* OSP 1.03: point test at +step (start==end). Sweep start_o->up is ioquake3;
+		   a ceiling makes fraction<1 / not allsolid and would copy into the brush. */
+		if (ospStepUp)
 		{
-			Com_Printf("%i:bend can't step\n", c_pmove);
+			pm->trace(&trace, up, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
 		}
-		return;     // can't step up
-	}
+		else
+		{
+			pm->trace(&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
+		}
+		if (trace.allsolid)
+		{
+			if (pm->debugLevel)
+			{
+				Com_Printf("%i:bend can't step\n", c_pmove);
+			}
+			return;     // can't step up
+		}
 
-	if (uf_rampjump)
-	{
-		stepSize = trace.endpos[2] - start_o[2];
-		VectorCopy(trace.endpos, pm->ps->origin);
-	}
-	else
-	{
-		stepSize = actualStepHeight;
-		VectorCopy(up, pm->ps->origin);
+		if (ospStepUp)
+		{
+			stepSize = actualStepHeight;
+			VectorCopy(up, pm->ps->origin);
+		}
+		else
+		{
+			stepSize = trace.endpos[2] - start_o[2];
+			VectorCopy(trace.endpos, pm->ps->origin);
+		}
 	}
 	VectorCopy(start_v, pm->ps->velocity);
 
@@ -382,12 +399,13 @@ void PM_StepSlideMove(qboolean gravity)
 	}
 	if (trace.fraction < 1.0)
 	{
-		if (!uf_rampjump && pm->ps->stats[STAT_OSP_10])
+		if (!uf_rampjump && !pmode_q3msk_lock && !pmode_osdf && pm->ps->stats[STAT_OSP_10])
 		{
 			PM_ClipVelocityOSP(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, pm_overclip);
 			return;
 		}
-		PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, pm_overclip);
+		PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity,
+		                (pmode_osdf || pmode_q3msk_lock) ? OVERCLIP : pm_overclip);
 	}
 
 #if 0

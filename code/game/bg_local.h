@@ -119,6 +119,9 @@ extern int modeFPSClassico;    // FPSClassico server flag
 extern int uf_baseq3;
 extern int uf_osp;
 extern int uf_rampjump;
+extern int pmode_q3msk_lock; /* 1: q3msk+CS912 — stock baseq3a predict + EXTFL NOOB */
+extern int pmode_q3msk;      /* 1: q3msk server — EXTFL/OneSided gate */
+extern int pmode_osdf;       /* 1: OSDF/metarena — vanilla shared PM_* (not OSP stepmove/swim) */
 /* Set once per PmoveSingle: OVERCLIP, or 1.0f when uf_rampjump (keeps ClipVelocity branch-free). */
 extern float pm_overclip;
 

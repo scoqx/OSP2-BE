@@ -48,6 +48,10 @@ float   pm_spectatorfriction = 5.0f;
 
 int     c_pmove = 0;
 
+#define NO_RESPAWN_OVERBOUNCE 250
+
+static int pm_respawntimer = 0;
+
 /*
 ===============
 PM_AddEvent
@@ -476,6 +480,30 @@ qboolean PM_CheckJump(void)
 		return qfalse;
 	}
 
+	if (pmode_q3msk_lock)
+	{
+		pml.groundPlane = qfalse;
+		pml.walking = qfalse;
+		pm->ps->pm_flags |= PMF_JUMP_HELD;
+
+		pm->ps->groundEntityNum = ENTITYNUM_NONE;
+		pm->ps->velocity[2] = JUMP_VELOCITY;
+		PM_AddEvent(EV_JUMP);
+
+		if (pm->cmd.forwardmove >= 0)
+		{
+			PM_ForceLegsAnim(LEGS_JUMP);
+			pm->ps->pm_flags &= ~PMF_BACKWARDS_JUMP;
+		}
+		else
+		{
+			PM_ForceLegsAnim(LEGS_JUMPB);
+			pm->ps->pm_flags |= PMF_BACKWARDS_JUMP;
+		}
+
+		return qtrue;
+	}
+
 	pml.groundPlane = qfalse;       // jumping away
 	pml.walking = qfalse;
 	pm->ps->pm_flags |= PMF_JUMP_HELD;
@@ -498,7 +526,7 @@ qboolean PM_CheckJump(void)
 	}
 	else
 	{
-		/* Default OSP / VQ3 / Promode — unchanged */
+		/* Default OSP / VQ3 / Promode - unchanged */
 		if (modePredictionKoeff1 != 0 && pm->ps->velocity[2] > 0)
 		{
 			pm->ps->velocity[2] += modeJumpVelocity;
@@ -675,7 +703,15 @@ void PM_WaterMove(void)
 	VectorCopy(wishvel, wishdir);
 	wishspeed = VectorNormalize(wishdir);
 
-	if (pm->waterlevel == 1)
+	/* metarena/baseq3a/UnFreeZe: single pm_swimScale. OSP uses modeSwimScale1/2. */
+	if (pmode_osdf || modeFPSClassico)
+	{
+		if (wishspeed > pm->ps->speed * pm_swimScale)
+		{
+			wishspeed = pm->ps->speed * pm_swimScale;
+		}
+	}
+	else if (pm->waterlevel == 1)
 	{
 		if (wishspeed > pm->ps->speed * modeSwimScale2)
 		{
@@ -698,7 +734,7 @@ void PM_WaterMove(void)
 		vel = VectorLength(pm->ps->velocity);
 		// slide along the ground plane
 		PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
-		                pm->ps->velocity, pm_overclip);
+		                pm->ps->velocity, pmode_osdf ? OVERCLIP : pm_overclip);
 
 		VectorNormalize(pm->ps->velocity);
 		VectorScale(pm->ps->velocity, vel, pm->ps->velocity);
@@ -840,6 +876,8 @@ void PM_AirMove(void)
 	float       scale;
 	usercmd_t   cmd;
 	float         accel;
+	float       zspeed;
+	qboolean    trackOverbounce;
 
 	PM_Friction();
 
@@ -869,45 +907,52 @@ void PM_AirMove(void)
 	wishspeed *= scale;
 	wishspeedOrig = wishspeed;
 
-	if (!uf_rampjump && modeCpmaPmove && modePredictionKoeff2)
+	if (uf_rampjump || pmode_q3msk_lock)
 	{
-		PM_AirControl(pm, wishdir, wishspeedOrig);
-	}
-
-	if (uf_rampjump)
-	{
-		/* UnFreeZe path B: stock air accel only (no OSP promode strafe / air control) */
-		accel = pm_airaccelerate;
-	}
-	else if (DotProduct(pm->ps->velocity, wishvel) < 0)
-	{
-		accel = modePromode_pm_airaccelerate_1;
+		/* UnFreeZe / q3msk lock: stock air accel only */
+		PM_Accelerate(wishdir, wishspeed, pm_airaccelerate);
 	}
 	else
 	{
-		accel = pm_airaccelerate;
-	}
-
-	if (!uf_rampjump && (pm->ps->movementDir == 2 || pm->ps->movementDir == 6))
-	{
-		if (wishspeed > modeWishspeedLimit)
+		if (modeCpmaPmove && modePredictionKoeff2)
 		{
-			wishspeed = modeWishspeedLimit;
+			PM_AirControl(pm, wishdir, wishspeedOrig);
 		}
-		accel = modePromode_pm_airaccelerate_2;
-	}
-	// not on ground, so little effect on velocity
-	PM_Accelerate(wishdir, wishspeed, accel);
 
-	if (!uf_rampjump && !modeCpmaPmove && modePredictionKoeff2)
-	{
-		PM_AirControl(pm, wishdir, wishspeedOrig);
+		if (DotProduct(pm->ps->velocity, wishvel) < 0)
+		{
+			accel = modePromode_pm_airaccelerate_1;
+		}
+		else
+		{
+			accel = pm_airaccelerate;
+		}
+
+		if (pm->ps->movementDir == 2 || pm->ps->movementDir == 6)
+		{
+			if (wishspeed > modeWishspeedLimit)
+			{
+				wishspeed = modeWishspeedLimit;
+			}
+			accel = modePromode_pm_airaccelerate_2;
+		}
+		/* not on ground, so little effect on velocity */
+		PM_Accelerate(wishdir, wishspeed, accel);
+
+		if (!modeCpmaPmove && modePredictionKoeff2)
+		{
+			PM_AirControl(pm, wishdir, wishspeedOrig);
+		}
+
+		if (modeCpmaPmove)
+		{
+			PM_CpmaCapGroundPlaneSpeed();
+		}
 	}
 
-	if (modeCpmaPmove)
-	{
-		PM_CpmaCapGroundPlaneSpeed();
-	}
+	/* q3msk NO OVERBOUNCE: track vertical clip to set EXTFL_OVERBOUNCE */
+	trackOverbounce = (qboolean)(pmode_q3msk && (pm->pmove_ratflags & RAT_NOOVERBOUNCE));
+	zspeed = pm->ps->velocity[2];
 
 	// we may have a ground plane that is very steep, even
 	// though we don't have a groundentity
@@ -929,6 +974,19 @@ void PM_AirMove(void)
 #endif
 
 	PM_StepSlideMove(qtrue);
+
+	if (trackOverbounce)
+	{
+		/* collided with ground? no: set overbounce flag for next WalkMove */
+		if (zspeed < pm->ps->velocity[2])
+		{
+			pm->ps->stats[STAT_EXTFLAGS] &= ~EXTFL_OVERBOUNCE;
+		}
+		else
+		{
+			pm->ps->stats[STAT_EXTFLAGS] |= EXTFL_OVERBOUNCE;
+		}
+	}
 }
 
 /*
@@ -975,6 +1033,9 @@ void PM_WalkMove(void)
 	usercmd_t   cmd;
 	float       accelerate;
 	float       vel;
+	float       walkclip;
+
+	walkclip = pmode_q3msk_lock ? OVERCLIP : pm_overclip;
 
 	if (pm->waterlevel > 2 && DotProduct(pml.forward, pml.groundTrace.plane.normal) > 0)
 	{
@@ -984,9 +1045,10 @@ void PM_WalkMove(void)
 	}
 
 
-	if (PM_CheckJump())
+	if (PM_CheckJump() || (pmode_q3msk && (pm->pmove_ratflags & RAT_NOOVERBOUNCE)
+	                       && (pm->ps->stats[STAT_EXTFLAGS] & EXTFL_OVERBOUNCE)))
 	{
-		// jumped away
+		// jumped away / q3msk kill-overbounce air path
 		if (pm->waterlevel > 1)
 		{
 			PM_WaterMove();
@@ -994,6 +1056,7 @@ void PM_WalkMove(void)
 		else
 		{
 			PM_AirMove();
+			pm->ps->stats[STAT_EXTFLAGS] &= ~EXTFL_OVERBOUNCE;
 		}
 		return;
 	}
@@ -1014,8 +1077,8 @@ void PM_WalkMove(void)
 	pml.right[2] = 0;
 
 	// project the forward and right directions onto the ground plane
-	PM_ClipVelocity(pml.forward, pml.groundTrace.plane.normal, pml.forward, pm_overclip);
-	PM_ClipVelocity(pml.right, pml.groundTrace.plane.normal, pml.right, pm_overclip);
+	PM_ClipVelocity(pml.forward, pml.groundTrace.plane.normal, pml.forward, walkclip);
+	PM_ClipVelocity(pml.right, pml.groundTrace.plane.normal, pml.right, walkclip);
 	//
 	VectorNormalize(pml.forward);
 	VectorNormalize(pml.right);
@@ -1040,25 +1103,46 @@ void PM_WalkMove(void)
 		}
 	}
 
-	// clamp the speed lower if wading or walking on the bottom
+	/* clamp the speed lower if wading or walking on the bottom
+	 * q3msk server: if (waterlevel != 1) { apply waterScale } — ankle = full wishspeed */
 	if (pm->waterlevel)
 	{
 		float   waterScale;
 
-		waterScale = pm->waterlevel / 3.0;
-
-		if (pm->waterlevel == 1)
+		if (pmode_q3msk || pmode_q3msk_lock)
 		{
-			waterScale = 1.0f - (1.0f - modeSwimScale2) * waterScale;
+			if (pm->waterlevel != 1)
+			{
+				waterScale = pm->waterlevel / 3.0f;
+				waterScale = 1.0f - (1.0f - pm_swimScale) * waterScale;
+				if (wishspeed > pm->ps->speed * waterScale)
+				{
+					wishspeed = pm->ps->speed * waterScale;
+				}
+			}
 		}
 		else
 		{
-			waterScale = 1.0f - (1.0f - modeSwimScale1) * waterScale;
-		}
+			waterScale = pm->waterlevel / 3.0f;
 
-		if (wishspeed > pm->ps->speed * waterScale)
-		{
-			wishspeed = pm->ps->speed * waterScale;
+			/* UnFreeZe: vanilla pm_swimScale. OSP uses modeSwimScale1/2. */
+			if (modeFPSClassico)
+			{
+				waterScale = 1.0f - (1.0f - pm_swimScale) * waterScale;
+			}
+			else if (pm->waterlevel == 1)
+			{
+				waterScale = 1.0f - (1.0f - modeSwimScale2) * waterScale;
+			}
+			else
+			{
+				waterScale = 1.0f - (1.0f - modeSwimScale1) * waterScale;
+			}
+
+			if (wishspeed > pm->ps->speed * waterScale)
+			{
+				wishspeed = pm->ps->speed * waterScale;
+			}
 		}
 	}
 
@@ -1088,15 +1172,24 @@ void PM_WalkMove(void)
 //		pm->ps->velocity[2] = 0;
 	}
 
-	vel = VectorLength(pm->ps->velocity);
+	if (pm_respawntimer)
+	{
+		/* no more overbounce at respawn (baseq3a) */
+		PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
+		                pm->ps->velocity, walkclip);
+	}
+	else
+	{
+		vel = VectorLength(pm->ps->velocity);
 
-	// slide along the ground plane
-	PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
-	                pm->ps->velocity, pm_overclip);
+		// slide along the ground plane
+		PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
+		                pm->ps->velocity, walkclip);
 
-	// don't decrease velocity when going up or down a slope
-	VectorNormalize(pm->ps->velocity);
-	VectorScale(pm->ps->velocity, vel, pm->ps->velocity);
+		// don't decrease velocity when going up or down a slope
+		VectorNormalize(pm->ps->velocity);
+		VectorScale(pm->ps->velocity, vel, pm->ps->velocity);
+	}
 
 	// don't do anything if standing still
 	if (!pm->ps->velocity[0] && !pm->ps->velocity[1])
@@ -1322,7 +1415,8 @@ void PM_CrashLand(void)
 		}
 		else
 		{
-			if (pm->noFootsteps == 0)
+			/* OSDF/metarena: always emit soft-land footstep (server has no noFootsteps). */
+			if (pmode_osdf || pm->noFootsteps == 0)
 			{
 				PM_AddEvent(PM_FootstepForSurface());
 			}
@@ -1804,7 +1898,8 @@ void PM_Footsteps(void)
 		if (pm->waterlevel == 0)
 		{
 			// on ground will only play sounds if running
-			if (footstep && !pm->noFootsteps)
+			/* OSDF/metarena: server ignores noFootsteps (field absent) */
+			if (footstep && (pmode_osdf || !pm->noFootsteps))
 			{
 				PM_AddEvent(PM_FootstepForSurface());
 			}
@@ -2117,7 +2212,15 @@ void PM_Weapon(void)
 			addTime = 1000;
 			break;
 		case WP_MACHINEGUN:
-			addTime = 100; //-V1037
+			/* UnFreeZe PM_Weapon: baseq3 ? 100 : 75; else stock 100 */
+			if (modeFPSClassico)
+			{
+				addTime = uf_baseq3 ? 100 : 75;
+			}
+			else
+			{
+				addTime = 100; //-V1037
+			}
 			break;
 		case WP_GRENADE_LAUNCHER:
 			addTime = modeGrenadeTime; //-V1037
@@ -2141,7 +2244,7 @@ void PM_Weapon(void)
 			{
 				addTime = 1500;
 			}
-			/* stats[8] is UnFreeZe phys timer when uf_rampjump — do not clobber */
+			/* stats[8] is UnFreeZe phys timer when uf_rampjump: do not clobber */
 			if (!uf_rampjump)
 			{
 				pm->ps->stats[STAT_RAIL_DELAY] = modeCpmaPmove ? 1250 : 1500;
@@ -2236,6 +2339,24 @@ void PM_DropTimers(void)
 			pm->ps->torsoTimer = 0;
 		}
 	}
+
+	/* OSDF / metarena (baseq3a+phy): crouchslide pack timer */
+	{
+		int crouch = pm->ps->stats[STAT_OSDF_PACK] & OSDF_CROUCH_MASK;
+
+		if (crouch)
+		{
+			if (pml.msec >= crouch)
+			{
+				pm->ps->stats[STAT_OSDF_PACK] &= ~OSDF_CROUCH_MASK;
+			}
+			else
+			{
+				pm->ps->stats[STAT_OSDF_PACK] = (pm->ps->stats[STAT_OSDF_PACK] & ~OSDF_CROUCH_MASK)
+				                                | ((crouch - pml.msec) & OSDF_CROUCH_MASK);
+			}
+		}
+	}
 }
 
 /*
@@ -2266,7 +2387,7 @@ void PM_UpdateViewAngles(playerState_t* ps, const usercmd_t* cmd)
 		return;
 	}
 
-	// circularly clamp the angles with deltas
+	/* baseq3a / metarena: & 0xFFFF on pitch clamp (ceiling look desync without it) */
 	for (i = 0 ; i < 3 ; i++)
 	{
 		temp = cmd->angles[i] + ps->delta_angles[i];
@@ -2275,12 +2396,12 @@ void PM_UpdateViewAngles(playerState_t* ps, const usercmd_t* cmd)
 			// don't let the player look up or down more than 90 degrees
 			if (temp > 16000)
 			{
-				ps->delta_angles[i] = 16000 - cmd->angles[i];
+				ps->delta_angles[i] = (16000 - cmd->angles[i]) & 0xFFFF;
 				temp = 16000;
 			}
 			else if (temp < -16000)
 			{
-				ps->delta_angles[i] = -16000 - cmd->angles[i];
+				ps->delta_angles[i] = (-16000 - cmd->angles[i]) & 0xFFFF;
 				temp = -16000;
 			}
 		}
@@ -2331,6 +2452,46 @@ void trap_SnapVector(float* v);
 
 void PM_FinalizeVelocity(int do_snap)
 {
+	if (pm->pmove_lock_fps > 0)
+	{
+		if (pm->ps->stats[STAT_HEALTH] > 0)
+		{
+			int i;
+			float fps;
+			float fac;
+
+			fps = (float)pm->pmove_lock_fps;
+			fac = (float)pml.msec / (1000.0f / fps);
+
+			for (i = 0; i < 3; ++i)
+			{
+				if (fabs(pm->ps->velocity[i] - pml.previous_velocity[i]) > 0.200f / fac)
+				{
+					if (pm->ps->velocity[i] < 0)
+					{
+						pm->ps->velocity[i] -= 0.200f * fac;
+					}
+					else
+					{
+						pm->ps->velocity[i] += 0.200f * fac;
+					}
+				}
+			}
+
+			VectorScale(pm->ps->velocity, 64.0f, pm->ps->velocity);
+			VectorScale(pm->ps->velocity, 1.0f / 64.0f, pm->ps->velocity);
+		}
+		else if (!pm->pmove_float && do_snap)
+		{
+			if (pm->ps->powerups[PW_FLIGHT] && !pml.groundPlane)
+			{
+				return;
+			}
+			trap_SnapVector(pm->ps->velocity);
+		}
+		return;
+	}
+
 	if (pm->pmove_accurate && pm->ps->stats[STAT_HEALTH] > 0)
 	{
 		if (VectorLengthSquared(pm->ps->velocity) < 0.25f)
@@ -2379,6 +2540,12 @@ void PmoveSingle(pmove_t* pmove)
 
 	/* Hot path: resolve UnFreeZe overclip once; default stays OVERCLIP (1.001). */
 	pm_overclip = uf_rampjump ? 1.0f : OVERCLIP;
+
+	/* Drop stale baseq3a respawn timer across predict frames on UnFreeZe path. */
+	if (uf_rampjump || modeFPSClassico)
+	{
+		pm_respawntimer = 0;
+	}
 
 	// this counter lets us debug movement problems with a journal
 	// by setting a conditional breakpoint fot the previous frame
@@ -2498,6 +2665,15 @@ void PmoveSingle(pmove_t* pmove)
 		pm->cmd.upmove = 0;
 	}
 
+	if (pm_respawntimer)
+	{
+		pm_respawntimer -= pml.msec;
+		if (pm_respawntimer < 0)
+		{
+			pm_respawntimer = 0;
+		}
+	}
+
 	if (pm->ps->pm_type == PM_SPECTATOR)
 	{
 		PM_CheckDuck();
@@ -2544,10 +2720,12 @@ void PmoveSingle(pmove_t* pmove)
 	// set groundentity
 	PM_GroundTrace();
 
-	// remove overbounce
-	if (pml.groundPlane && (pm->pmove_ratflags & RAT_NOOVERBOUNCE))
+	/* remove overbounce (OSP/ratmod g_altFlags): pre-walk OneSided.
+	 * q3msk uses EXTFL_OVERBOUNCE + AirMove instead -" do not OneSided there. */
+	if (pml.groundPlane && (pm->pmove_ratflags & RAT_NOOVERBOUNCE) && !pmode_q3msk)
 	{
-		PM_OneSidedClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal, pm->ps->velocity, pm_overclip);
+		PM_OneSidedClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
+		                        pm->ps->velocity, pm_overclip);
 	}
 
 	if (pm->ps->pm_type == PM_DEAD)
@@ -2564,7 +2742,7 @@ void PmoveSingle(pmove_t* pmove)
 			pm->ps->stats[STAT_UNFREEZE_PHYS] -= pml.msec;
 		}
 	}
-	else
+	else if (!pmode_q3msk_lock)
 	{
 		if (pm->ps->stats[STAT_OSP_PHYS] > 0)
 		{
@@ -2625,16 +2803,25 @@ void PmoveSingle(pmove_t* pmove)
 	// entering / leaving water splashes
 	PM_WaterEvents();
 
+	/* baseq3a: don't snap velocity in free-fly or flight friction cannot stop */
+	if (pm->ps->powerups[PW_FLIGHT] && !pml.groundPlane)
+	{
+		if (!pm->pmove_lock_fps && !pm->pmove_accurate && !pm->pmove_float)
+		{
+			return;
+		}
+	}
+
 	// snap some parts of playerstate to save network bandwidth
 	if (modeFPSClassico && !uf_baseq3)
 	{
 		/* UnFreeZe path B: float velocity (unless server asked float/accurate finalize) */
-		if (pm->pmove_accurate || pm->pmove_float)
+		if (pm->pmove_lock_fps || pm->pmove_accurate || pm->pmove_float)
 		{
 			PM_FinalizeVelocity(1);
 		}
 	}
-	else if (pm->pmove_accurate || pm->pmove_float)
+	else if (pm->pmove_lock_fps || pm->pmove_accurate || pm->pmove_float)
 	{
 		PM_FinalizeVelocity(1);
 	}
@@ -2723,6 +2910,17 @@ void Pmove(pmove_t* pmove)
 	}
 
 	pmove->ps->pmove_framecount = (pmove->ps->pmove_framecount + 1) & ((1 << PS_PMOVEFRAMECOUNTBITS) - 1);
+
+	/* baseq3a anti-overbounce after spawn -" UnFreeZe has stock WalkMove only */
+	if ((pmove->ps->pm_flags & PMF_RESPAWNED) && pm_respawntimer == 0
+	        && !uf_rampjump && !modeFPSClassico)
+	{
+		pm_respawntimer = NO_RESPAWN_OVERBOUNCE;
+	}
+	else if (uf_rampjump || modeFPSClassico)
+	{
+		pm_respawntimer = 0;
+	}
 
 	// chop the move up if it is too long, to prevent framerate
 	// dependent behavior

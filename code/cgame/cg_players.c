@@ -515,6 +515,39 @@ static qboolean CG_RegisterClientSkin(clientInfo_t* ci, const char* teamName, co
 	return qtrue;
 }
 
+/* Names whose models/players/<name>/lower.md3 was missing — skip FS on retry. */
+#define CG_MISSING_MODEL_CACHE_SIZE 32
+static char cg_missingModelNames[CG_MISSING_MODEL_CACHE_SIZE][MAX_QPATH];
+static int cg_missingModelNext;
+
+static qboolean CG_IsMissingModelCached(const char* modelName)
+{
+	int i;
+
+	for (i = 0; i < CG_MISSING_MODEL_CACHE_SIZE; i++)
+	{
+		if (cg_missingModelNames[i][0] && Q_stricmp(cg_missingModelNames[i], modelName) == 0)
+			return qtrue;
+	}
+	return qfalse;
+}
+
+static void CG_CacheMissingModel(const char* modelName)
+{
+	int i;
+
+	if (!modelName || !modelName[0])
+		return;
+	for (i = 0; i < CG_MISSING_MODEL_CACHE_SIZE; i++)
+	{
+		if (Q_stricmp(cg_missingModelNames[i], modelName) == 0)
+			return;
+	}
+	i = cg_missingModelNext % CG_MISSING_MODEL_CACHE_SIZE;
+	cg_missingModelNext++;
+	Q_strncpyz(cg_missingModelNames[i], modelName, sizeof(cg_missingModelNames[i]));
+}
+
 /*
 ==========================
 CG_RegisterClientModelname
@@ -528,6 +561,9 @@ static qboolean CG_RegisterClientModelname(clientInfo_t* ci, const char* modelNa
 	int vertex_light_num;
 	qboolean failed_flag = qfalse;
 
+	if (CG_IsMissingModelCached(modelName))
+		return qfalse;
+
 	if (headModelName[0] == '\0')
 	{
 		headName = modelName;
@@ -540,26 +576,17 @@ static qboolean CG_RegisterClientModelname(clientInfo_t* ci, const char* modelNa
 	ci->legsModel = trap_R_RegisterModel(filename);
 	if (!ci->legsModel)
 	{
-		Com_sprintf(filename, sizeof(filename), "models/players/characters/%s/lower.md3", modelName);
-		ci->legsModel = trap_R_RegisterModel(filename);
-		if (!ci->legsModel)
-		{
-			Com_Printf("Failed to load model file %s\n", filename);
-			return qfalse;
-		}
+		CG_CacheMissingModel(modelName);
+		Com_Printf("Failed to load model file %s\n", filename);
+		return qfalse;
 	}
 
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/upper.md3", modelName);
 	ci->torsoModel = trap_R_RegisterModel(filename);
 	if (!ci->torsoModel)
 	{
-		Com_sprintf(filename, sizeof(filename), "models/players/characters/%s/upper.md3", modelName);
-		ci->torsoModel = trap_R_RegisterModel(filename);
-		if (!ci->torsoModel)
-		{
-			Com_Printf("Failed to load model file %s\n", filename);
-			return qfalse;
-		}
+		Com_Printf("Failed to load model file %s\n", filename);
+		return qfalse;
 	}
 
 
@@ -914,6 +941,9 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 			CG_Error("CG_RegisterClientModelname( %s, %s, %s, %s %s ) failed", ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName, teamname);
 		}
 
+		/* Original model failed — do not probe sound/player/<missing>/*.wav */
+		modelloaded = qfalse;
+
 		// fall back to default team name
 		if (cgs.gametype >= GT_TEAM)
 		{
@@ -923,7 +953,6 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 				if (!CG_RegisterClientModelname(ci, "sarge", skin, "sarge", skin, teamname))
 				{
 					CG_Error("DEFAULT_TEAM_MODEL / skin (%s/%s) failed to register", DEFAULT_TEAM_MODEL, skin);
-					modelloaded = qfalse;
 				}
 			}
 		}
@@ -934,7 +963,6 @@ static void CG_LoadClientInfo(clientInfo_t* ci)
 				if (!CG_RegisterClientModelname(ci, "sarge", "default", "sarge", "default", teamname))
 				{
 					CG_Error("DEFAULT_TEAM_MODEL / skin (%s/%s) failed to register", DEFAULT_TEAM_MODEL, "default");
-					modelloaded = qfalse;
 				}
 			}
 		}
