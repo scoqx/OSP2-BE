@@ -1093,3 +1093,11 @@ SuperHUD:
 * FPSClassico team status fix
 * Various fixes
 * SuperHUD: Mirage's configs updated
+
+28.08.2026 be v1.08
++ FPSClassico playerless fix
++ OSP2 sync (osp_auth)
++ q3msk movement prediction
+* FPSClassico movement/weapon prediction fix
+* metarena movement prediction fix 
+* perfomance optimisation
