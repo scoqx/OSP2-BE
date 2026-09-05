@@ -1136,7 +1136,6 @@ typedef struct
 	/* Incremental prediction (cg_optimizePrediction / UnFreeZe unlagged) */
 	int         lastPredictedCommand;
 	int         lastServerTime;
-	int         timeResidual; /* mega health/armor 1Hz countdown (baseq3a) */
 	playerState_t savedPmoveStates[NUM_SAVED_STATES];
 	int         stateHead, stateTail;
 
@@ -2016,7 +2015,7 @@ typedef struct
 	int             beTourneyLockedMaxfps;
 	int             beEnabled;            /* cached be_enabled.integer */
 	int             beFeaturesEnabled;    /* final bitmask: enabled features */
-	qboolean        damageInfoAllowed;    /* cached: CA=true, fpsclassico=false, else BE|OSP */
+	qboolean        damageInfoAllowed;    /* cached: CA=true, else BE|OSP */
 	qboolean        beMarkedTeam[MAX_CLIENTS];
 	/* Base team colors from cvars (before cg_myTeam remapping) */
 	vec4_t          baseRedTeamColor;
@@ -2034,7 +2033,6 @@ typedef struct
 	beChatWindowMetrics_t beChatMetrics;
 	customWeaponStats_t beWeaponStats[WP_NUM_WEAPONS];
 	qboolean        beSupportedServer;
-	int             userinfoProfile; /* last CG_ApplyUserInfoProfile mode (BE_USERINFO_*) */
 	qboolean        engineFontAtlas;    /* trap_R_RegisterFontAtlas_Q3E available + TTF preloaded */
 	vec3_t          beBrightWeaponsColor[WP_NUM_WEAPONS];
 	qboolean        beBrightWeaponsBeinfoSet[WP_NUM_WEAPONS];
@@ -2053,9 +2051,8 @@ typedef struct
 	int             missilePredictRlSpeed;
 	int             missilePredictPgSpeed;
 	int             missilePredictBfgSpeed;
-	int             beMovementLockFps; /* CS 912: 0=off */
-	qboolean        beMovementLockCsPresent; /* CS 912 string received (even "0") */
-	int             sv_pmove_accurate; /* CS_SYSTEMINFO: OSP enum 0/1/2 (not CS912 lock) */
+	int             cs_pmove_lock_fps; /* CS 912: 0=off, >0=target FPS (q3msk-style lock) */
+	qboolean        cs_pmove_lock_present; /* CS 912 received (even "0") */
 	qboolean        pmove_fixed; /* CS_SYSTEMINFO: fixed pmove sampling (baseq3a parity) */
 	int             pmove_msec; /* CS_SYSTEMINFO: pmove chunk ms when pmove_fixed */
 	int             pmoveMode; /* PMODE_OSP, PMODE_BASEQ3A, PMODE_OSDF */
@@ -2069,7 +2066,7 @@ typedef struct
 	qboolean        q3msk;        // Q3msk.net
 	qboolean        ruthless;     /* q3a.space* hostname (colors ignored) */
 	qboolean        q3mskRoundWarmup; /* q3msk/ruthless freeze team round warmup active */
-	qboolean        fpsclassico;  // fpsclasico.com
+	/* qboolean        gamename_unfreeze; */  /* SERVERINFO gamename=unfreeze — disabled */
 	qboolean        uf_baseq3;    /* UnFreeZe SERVERINFO path A */
 	qboolean        uf_osp;
 	qboolean        uf_rampjump;  /* default ON when gamename=unfreeze and key missing */
@@ -2707,6 +2704,7 @@ void QDECL CG_PrintOnce(const char* msg, ...);
 void CG_StartMusic(void);
 
 void CG_UpdateCvars(int maxEntries);
+// void CG_ToggleUpdateCvars_f(void);
 
 int CG_CrosshairPlayer(void);
 int CG_LastAttacker(void);
@@ -3835,18 +3833,9 @@ qboolean CG_ClientMarkerIsFrozen(const clientInfo_t* ci);
 
 qboolean CG_OSPIsGameTypeTDM(void);
 qboolean CG_OSPIsStatsHidden(qboolean check_gametype, qboolean check_warmup);
-#define BE_USERINFO_BE       0
-#define BE_USERINFO_OSP2     1
-#define BE_USERINFO_OSP103   2
-#define BE_USERINFO_UNFREEZE 3
-#define BE_USERINFO_VANILLA  4
-
-int CG_GetUserInfoProfile(void);
-void CG_ApplyUserInfoProfile(int profile);
-void CG_UserInfoStripAll(void);
 void CG_OSPUpdateUserInfo(qboolean arg);
 void CG_BEUpdateUserInfo(void);
-void CG_ApplyUnfreezePhysFromServerinfo(void);
+/* void CG_ApplyUnfreezePhysFromServerinfo(void); */
 
 void CG_OSPConfigSetMode(int value);
 void CG_OSPConfigPmoveSet(int value);

@@ -644,7 +644,7 @@ cgFontIndices_t cgFontIndices;
 
 cvarTable_t cvarTable[] =
 {
-	{ &osp_client, "osp_client", "1008", CVAR_ROM },
+	{ &osp_client, "osp_client", "1008_OSP2_" OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
@@ -715,8 +715,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_drawTeamOverlay},
-	/* UnFreeZe parity: register before cg_scorePlums / cg_delag so USERINFO wire order matches */
-	{ &teamoverlay2, "teamoverlay2", "0", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE },
+	{ &teamoverlay, "teamoverlay", "1", CVAR_USERINFO | CVAR_ROM },
+	{ &teamoverlay2, "teamoverlay2", "0", CVAR_ROM | CVAR_NOTABCOMPLETE },
 	{ &cg_stats, "cg_stats", "0",  },
 	{ &cg_buildScript, "com_buildScript", "0",  },
 	{ &cg_paused, "cl_paused", "0", CVAR_ROM },
@@ -728,7 +728,7 @@ cvarTable_t cvarTable[] =
 	// { &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0",  },
 	{ &cg_timescale, "timescale", "1",  },
 	{ &cg_scorePlums, "cg_scorePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
-	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_ARCHIVE },
+	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT },
 	{ &pmove_fixed, "pmove_fixed", "0", 0, CG_LocalEventCvarChanged_pmove_fixed},
 	{ &pmove_msec, "pmove_msec", "8",  },
@@ -1023,8 +1023,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_roundStats_widthCutoff, "cg_roundStats_widthCutoff", "0", CVAR_ARCHIVE },
 	{ &cg_teamIndicatorFade, "cg_teamIndicatorFade", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamIndicatorFade },
 	{ &cg_teamIndicatorFadeRadius, "cg_teamIndicatorFadeRadius", "256", CVAR_ARCHIVE, },
-	{ &be_features, "be_features", "", CVAR_ROM },
-	{ &compilation_build, "compilation_build", "", CVAR_ROM },
+	{ &be_features, "be_features", "", CVAR_ROM | CVAR_USERINFO },
+	{ &compilation_build, "compilation_build", "", CVAR_ROM | CVAR_USERINFO },
 	{ &be_enabled, "be_enabled", "1", CVAR_ARCHIVE /* | CVAR_USERINFO */, CG_LocalEventBeFeaturesChanged },
 	{ &cg_clearOnLevelLoad, "cg_clearOnLevelLoad", "0", CVAR_ARCHIVE },
 	{ &cg_spectPOV, "cg_spectPOV", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
@@ -1050,9 +1050,9 @@ cvarTable_t cvarTable[] =
 	{ &cg_exec_ca, "cg_exec_ca", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_ctf, "cg_exec_ctf", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
 	{ &cg_exec_freeze, "cg_exec_freeze", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_exec_gametype },
-	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE },
+	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
-	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE },
+	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_autoHop},
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
@@ -1402,11 +1402,17 @@ void CG_RegisterCvars(void)
 #define CG_CVARS_UPDATE_SLICES  6
 
 static int cvarUpdateSliceIndex;
+// static qboolean updateCvarsDisabled;
 
 void CG_UpdateCvars(int maxEntries)
 {
 	int         processed;
 	cvarTable_t* cv;
+
+	// if (updateCvarsDisabled)
+	// {
+	// 	return;
+	// }
 
 	if (cvarTableSize <= 0)
 	{
@@ -1450,6 +1456,20 @@ void CG_UpdateCvars(int maxEntries)
 		}
 	}
 }
+
+// void CG_ToggleUpdateCvars_f(void)
+// {
+// 	if (updateCvarsDisabled)
+// 	{
+// 		updateCvarsDisabled = qfalse;
+// 		CG_Printf("CG_UpdateCvars ^2enabled\n");
+// 	}
+// 	else
+// 	{
+// 		updateCvarsDisabled = qtrue;
+// 		CG_Printf("CG_UpdateCvars ^1disabled\n");
+// 	}
+// }
 
 int CG_CrosshairPlayer(void)
 {
@@ -3090,8 +3110,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_RegisterCvars();
 	CG_RegisterCvarDescriptions();
-	/* Drop sticky USERINFO from prior OSP/BE session before any Set/Update */
-	CG_UserInfoStripAll();
 
 	/* SERVERINFO known immediately — detect before be_features / fonts / ParseServerinfo */
 	trap_GetGameState(&cgs.gameState);
@@ -3102,11 +3120,13 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	}
 	{
 		const char* serverStr;
+		const char* gamename;
 		const char* adminPrefix;
 		serverStr = CG_ConfigString(CS_SERVERINFO);
-		if (strstr(serverStr, "administrator") || strstr(serverStr, "adminless"))
+		gamename = Info_ValueForKey(serverStr, "gamename");
+		if (!Q_stricmp(gamename, "unfreeze"))
 		{
-			cgs.fpsclassico = qtrue;
+			CG_Error("OSP2-BE no longer supports this server.");
 		}
 		adminPrefix = strstr(serverStr, ".Admin\\");
 		if (strstr(serverStr, ".Admin\\X") || (adminPrefix && CG_AdminNameEqualsRateX7(adminPrefix + 7)))
@@ -3198,8 +3218,6 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	cgs.levelStartTime = atoi(s);
 
 	CG_ParseServerinfo();
-	/* USERINFO profile (be_hide; fpsclassico forces unfreeze) */
-	CG_ApplyUserInfoProfile(CG_GetUserInfoProfile());
 
 	CG_Printf("\n^7Loaded [^9OSP2-BE^7] client version: ^9%s\n", OSP_VERSION);
 
@@ -3214,8 +3232,9 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		char* tmp_ptr;
 		const char* conf;
 
-		/* BE CS 887–910: on fpsclassico only CS 888 team WH / hitbox block is read */
-		if (cgs.fpsclassico)
+#if 0
+		/* BE CS 887–910: on gamename=unfreeze only CS 888 team WH / hitbox block is read */
+		if (cgs.gamename_unfreeze)
 		{
 			cgs.beSupportedServer = qfalse;
 			CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
@@ -3231,9 +3250,8 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 			cgs.hbWide = 0;
 			cgs.hbHgh = 0;
 			cgs.hbScale = 0;
-			cgs.beMovementLockFps = 0;
-			cgs.beMovementLockCsPresent = qfalse;
-			cgs.sv_pmove_accurate = 0;
+			cgs.cs_pmove_lock_fps = 0;
+			cgs.cs_pmove_lock_present = qfalse;
 			cgs.pmove_fixed = qfalse;
 			cgs.pmove_msec = 8;
 			cgs.pmoveMode = PMODE_OSP;
@@ -3241,6 +3259,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 			pmode_osdf = 0;
 		}
 		else
+#endif
 		{
 			/* Before custom client / SHUD load (may send beinfo via CG_BEUpdateUserInfo) */
 			CG_OSPSupportedBEServer(atoi(CG_ConfigString(CS_OSP2BE_SUPPORTED)) ? qtrue : qfalse);
@@ -3321,17 +3340,17 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 		CG_OSPConfigMinTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MIN)));
 		CG_OSPConfigMaxTimenudgeSet(atoi(CG_ConfigString(CS_OSP_TIMENUDGE_MAX)));
 		CG_OSPConfigClanBaseTDMSet(atoi(CG_ConfigString(CS_OSP_CLAN_BASE_TEAM_DM)));
-		if (!cgs.fpsclassico)
+		CG_OSPConfigFreezeModeSet(atoi(CG_ConfigString(CS_OSP_FREEZE_GAME_TYPE)));
+#if 0
+		if (!cgs.gamename_unfreeze)
 		{
 			CG_OSPConfigFreezeModeSet(atoi(CG_ConfigString(CS_OSP_FREEZE_GAME_TYPE)));
 		}
 		else
 		{
-			if (strstr(CG_ConfigString(CS_SERVERINFO), "gamename\\unfreeze"))
-			{
-				cgs.osp.gameTypeFreeze = 1;
-			}
+			cgs.osp.gameTypeFreeze = 1;
 		}
+#endif
 
 		{
 			const char* st;
@@ -3370,7 +3389,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 			}
 		}
 
-		/* cache damageInfoAllowed - gametype, fpsclassico, custom_client_2, beDisableFeatures all known */
+		/* cache damageInfoAllowed - gametype, custom_client_2, beDisableFeatures all known */
 		CG_UpdateDamageInfoAllowed();
 
 		/****/

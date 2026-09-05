@@ -176,10 +176,6 @@ static void CG_GetRoundStatsInfo_f(void)
 	{
 		return;
 	}
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
-	{
-		return;
-	}
 	cg.roundStatsReceived = qfalse;
 	trap_SendClientCommand("getroundstatsinfo");
 }
@@ -194,10 +190,6 @@ Request CA match-total damage aggregates from the server.
 static void CG_GetRoundStatsAllInfo_f(void)
 {
 	if (cg.demoPlayback)
-	{
-		return;
-	}
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
 	{
 		return;
 	}
@@ -632,7 +624,13 @@ void CG_OSPClientConfig_f(void)
 		CG_Printf("    ^3Timer(deprecated):           %s\n", CG_YES_NO_STR(cgs.osp.custom_client & OSP_CUSTOM_CLIENT_TIMER_FLAG));
 	}
 
-	if (!cgs.fpsclassico)
+	conf = CG_ConfigString(CS_OSP2BE_TOURNEY_RESTRICTIONS);
+	if (conf && conf[0])
+	{
+		CG_Printf("    ^3FPS restriction:             %s\n", CG_YES_NO_STR(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK));
+	}
+#if 0
+	if (!cgs.gamename_unfreeze)
 	{
 		conf = CG_ConfigString(CS_OSP2BE_TOURNEY_RESTRICTIONS);
 		if (conf && conf[0])
@@ -640,6 +638,7 @@ void CG_OSPClientConfig_f(void)
 			CG_Printf("    ^3FPS restriction:             %s\n", CG_YES_NO_STR(cgs.beTourneyMode & OSP2BE_TOURNEY_MODE_FPS_LOCK));
 		}
 	}
+#endif
 
 	conf = CG_ConfigString(CS_OSP_CUSTOM_CLIENT2);
 	if (conf && conf[0])
@@ -690,9 +689,9 @@ void CG_OSPClientConfig_f(void)
 	{
 		CG_Printf("    ^3pmove_accurate (OSP):        ^3%s\n", val);
 	}
-	if (cgs.beMovementLockCsPresent)
+	if (cgs.cs_pmove_lock_present)
 	{
-		CG_Printf("    ^3CS912 lock:                   ^3%i\n", cgs.beMovementLockFps);
+		CG_Printf("    ^3CS912 lock:                   ^3%i\n", cgs.cs_pmove_lock_fps);
 	}
 	if (cgs.pmove_phy_movetype >= 0)
 	{
@@ -905,11 +904,6 @@ void CG_OSPPrintTime_f(void)
 void CG_OSPClientAuth_f(void)
 {
 	char secret_str[64];
-
-	if (CG_GetUserInfoProfile() > BE_USERINFO_OSP103)
-	{
-		return;
-	}
 
 	trap_Argv(1, secret_str, sizeof(secret_str));
 	if (!atoi(secret_str))
@@ -1381,10 +1375,6 @@ void CG_SendTeamTaskMark(int toClient, int templateID)
 	vec3_t start;
 	vec3_t end;
 
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
-	{
-		return;
-	}
 	if (!cg_teamTask.integer)
 	{
 		return;
@@ -1474,10 +1464,6 @@ void CG_SendTeamTaskMarkOverhead(int toClient, int templateID)
 	int z;
 	vec3_t playerPos;
 
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
-	{
-		return;
-	}
 	if (!cg_teamTask.integer)
 	{
 		return;
@@ -1564,10 +1550,6 @@ void CG_SendTeamTaskMarkAtPosition(int toClient, int templateID, vec3_t position
 	int y;
 	int z;
 
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
-	{
-		return;
-	}
 	if (!cg_teamTask.integer)
 	{
 		return;
@@ -2747,6 +2729,7 @@ static consoleCommand_t commands[] =
 	{ "showfont", CG_ShowFont_f },
 	{ "dpi", CG_DPI_f },
 	{ "belist", CG_PrintNewCommandsBE_f },
+	// { "updateCvars", CG_ToggleUpdateCvars_f },
 	// { "salist", cg_printsa_f },
 	{ "allowedfeatures", CG_BEdisabledFeatures_f },
 	{ "fonts", CG_Fonts_f },

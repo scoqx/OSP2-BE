@@ -1,9 +1,14 @@
-28.08.2026 be v1.07e
-+ FPSClassico  
+04.09.2026 be v1.08a
++ Pain sound fix
+
+03.09.2026 be v1.08
++ FPSClassico playerless fix
 + OSP2 sync (osp_auth)
 + q3msk movement prediction
 * FPSClassico movement/weapon prediction fix
 * metarena movement prediction fix 
+* perfomance optimisation
+
 
 20.08.2026 be v1.07d2
 * FPSClassico team status fix

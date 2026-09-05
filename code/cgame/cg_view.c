@@ -1601,6 +1601,11 @@ static void CG_ClientInfoUpdateFrame(void)
 	localCi = &cgs.clientinfo[cg.clientNum];
 	myRealTeam = isCA ? localCi->rt : localCi->team;
 	myStateTeam = cg.snap->ps.persistant[PERS_TEAM];
+	/* Follow copies viewed PS (incl. PERS_TEAM). Dead team players keep real team in
+	 * clientinfo — models/colors already use that; keep isEnemyView in sync. */
+	if ((cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+	        (myRealTeam == TEAM_RED || myRealTeam == TEAM_BLUE))
+		myStateTeam = myRealTeam;
 	isSpectator = (qboolean)(myRealTeam == TEAM_SPECTATOR || myStateTeam == TEAM_SPECTATOR);
 	spectFollowPOV = qfalse;
 	followCi = NULL;

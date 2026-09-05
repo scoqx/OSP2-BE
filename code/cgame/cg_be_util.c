@@ -96,8 +96,7 @@ void CG_UpdateBeFeatures(void)
 	}
 
 	cgs.beFeaturesEnabled = beFlags & ~cgs.beDisableFeatures;
-	/* be_features in userinfo only for BE profile */
-	if (changed && CG_GetUserInfoProfile() == BE_USERINFO_BE)
+	if (changed)
 		trap_Cvar_Set("be_features", va("%d", beFlags));
 	if (!cgs.beEnabled || (cgs.beDisableFeatures & CG_BE_MODELSOUND))
 		CG_ClearForcedSounds();
@@ -151,10 +150,12 @@ void CG_UpdateFontIndices(void)
 
 int CG_ApplyFpsclassicoDisableMask(int raw)
 {
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		return 0; /* server cannot disable any BE features */
 	}
+#endif
 	return raw;
 }
 
@@ -162,7 +163,8 @@ void CG_PrintDisabledFeatures(qboolean request)
 {
 	int value = cgs.beDisableFeatures;
 
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		if (request)
 		{
@@ -170,6 +172,7 @@ void CG_PrintDisabledFeatures(qboolean request)
 		}
 		return;
 	}
+#endif
 
 	if (value == 0)
 	{
@@ -440,10 +443,12 @@ void CG_UpdateDamageInfoAllowed(void)
 	{
 		cgs.damageInfoAllowed = qtrue;
 	}
-	else if (cgs.fpsclassico)
+#if 0
+	else if (cgs.gamename_unfreeze)
 	{
 		cgs.damageInfoAllowed = qfalse;
 	}
+#endif
 	else
 	{
 		cgs.damageInfoAllowed = (CG_BE_FEATURE_ENABLED(CG_BE_DAMAGEINFO) || OSP_CUSTOM_CLIENT_2_IS_DMG_INFO_ALLOWED());

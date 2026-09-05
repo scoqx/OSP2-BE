@@ -359,8 +359,8 @@ CS 912: presence (even "0") enables q3msk lock + stock step; value is FPS lock t
  */
 void CG_ParseMovementLockConfigString(const char* str)
 {
-	cgs.beMovementLockCsPresent = (str && str[0]) ? qtrue : qfalse;
-	cgs.beMovementLockFps = cgs.beMovementLockCsPresent ? atoi(str) : 0;
+	cgs.cs_pmove_lock_present = (str && str[0]) ? qtrue : qfalse;
+	cgs.cs_pmove_lock_fps = cgs.cs_pmove_lock_present ? atoi(str) : 0;
 	CG_PmovePhysicsUpdate();
 }
 
@@ -437,7 +437,6 @@ void CG_ParseSysteminfo(void)
 	{
 		int acc;
 
-		trap_Cvar_Set("pmove_accurate", val);
 		acc = atoi(val);
 		if (acc < 0)
 		{
@@ -447,12 +446,11 @@ void CG_ParseSysteminfo(void)
 		{
 			acc = 2;
 		}
-		cgs.sv_pmove_accurate = acc;
+		trap_Cvar_Set("pmove_accurate", va("%d", acc));
 	}
 	else
 	{
 		trap_Cvar_Set("pmove_accurate", "0");
-		cgs.sv_pmove_accurate = 0;
 	}
 
 	trap_Cvar_Update(&phy_movetype);
@@ -529,11 +527,12 @@ void CG_ParseServerinfo(void)
 	CG_CvarTouch("cl_timenudge");
 
 	CG_ParseSysteminfo();
-
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		CG_ApplyUnfreezePhysFromServerinfo();
 	}
+#endif
 }
 
 /*
@@ -549,27 +548,36 @@ void CG_SetConfigValues(void)
 
 	s = CG_ConfigString(CS_SCORES1);
 	cgs.scores1 = atoi(s);
-	if (!cgs.fpsclassico)
+	cgs.osp.osp_teamcount1 = -1;
+	Q_sscanf(s, "%i %i", &cgs.scores1, &cgs.osp.osp_teamcount1);
+#if 0
+	if (!cgs.gamename_unfreeze)
 	{
 		cgs.osp.osp_teamcount1 = -1;
 		Q_sscanf(s, "%i %i", &cgs.scores1, &cgs.osp.osp_teamcount1);
 	}
+#endif
 	s_prevScores1 = cgs.scores1;
 
 	s = CG_ConfigString(CS_SCORES2);
 	cgs.scores2 = atoi(s);
-	if (!cgs.fpsclassico)
+	cgs.osp.osp_teamcount2 = -1;
+	Q_sscanf(s, "%i %i", &cgs.scores2, &cgs.osp.osp_teamcount2);
+#if 0
+	if (!cgs.gamename_unfreeze)
 	{
 		cgs.osp.osp_teamcount2 = -1;
 		Q_sscanf(s, "%i %i", &cgs.scores2, &cgs.osp.osp_teamcount2);
 	}
+#endif
 	s_prevScores2 = cgs.scores2;
-
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		cgs.osp.osp_teamcount1 = atoi(CG_ConfigString(CS_REDPLAYERALIVE));
 		cgs.osp.osp_teamcount2 = atoi(CG_ConfigString(CS_BLUEPLAYERALIVE));
 	}
+#endif
 
 	cgs.osp.lastStandingSoundPlayed1 = (cgs.osp.osp_teamcount1 == 1);
 	cgs.osp.lastStandingSoundPlayed2 = (cgs.osp.osp_teamcount2 == 1);
@@ -710,7 +718,22 @@ static void CG_ConfigStringModified(void)
 			osp = &cgs.osp;
 
 			Q_sscanf(str, "%i", &newScore);
-			if (!cgs.fpsclassico)
+			if (teamNum == 1)
+			{
+				osp->osp_teamcount1 = -1;
+				Q_sscanf(str, "%i %i", &newScore, &osp->osp_teamcount1);
+				if (osp->osp_teamcount1 != 1)
+					osp->lastStandingSoundPlayed1 = qfalse;
+			}
+			else
+			{
+				osp->osp_teamcount2 = -1;
+				Q_sscanf(str, "%i %i", &newScore, &osp->osp_teamcount2);
+				if (osp->osp_teamcount2 != 1)
+					osp->lastStandingSoundPlayed2 = qfalse;
+			}
+#if 0
+			if (!cgs.gamename_unfreeze)
 			{
 				if (teamNum == 1)
 				{
@@ -727,6 +750,7 @@ static void CG_ConfigStringModified(void)
 						osp->lastStandingSoundPlayed2 = qfalse;
 				}
 			}
+#endif
 			if (cgs.gametype == GT_TEAM && CG_OSPIsGameTypeFreeze() && *prevScore != newScore)
 			{
 				CG_ClearRoundSpecificTeamTaskMarks();
@@ -736,20 +760,24 @@ static void CG_ConfigStringModified(void)
 		}
 		break;
 		case CS_REDPLAYERALIVE:
-			if (cgs.fpsclassico)
+#if 0
+			if (cgs.gamename_unfreeze)
 			{
 				cgs.osp.osp_teamcount1 = atoi(str);
 				if (cgs.osp.osp_teamcount1 != 1)
 					cgs.osp.lastStandingSoundPlayed1 = qfalse;
 			}
+#endif
 			break;
 		case CS_BLUEPLAYERALIVE:
-			if (cgs.fpsclassico)
+#if 0
+			if (cgs.gamename_unfreeze)
 			{
 				cgs.osp.osp_teamcount2 = atoi(str);
 				if (cgs.osp.osp_teamcount2 != 1)
 					cgs.osp.lastStandingSoundPlayed2 = qfalse;
 			}
+#endif
 			break;
 		case CS_LEVEL_START_TIME:
 			cgs.levelStartTime = atoi(str);
@@ -785,8 +813,7 @@ static void CG_ConfigStringModified(void)
 			{
 				cg.showWStats = qtrue;
 				/* send getstatsinfo only once when intermission starts, not every second */
-				if (!prevIntermissionStarted && cg.intermissionStarted
-				        && CG_GetUserInfoProfile() <= BE_USERINFO_OSP103)
+				if (!prevIntermissionStarted && cg.intermissionStarted)
 				{
 					trap_SendClientCommand("getstatsinfo");
 					cg.statsRequestSentInIntermission = qtrue;
@@ -863,18 +890,22 @@ static void CG_ConfigStringModified(void)
 			CG_UpdateDamageInfoAllowed();
 			break;
 		case CS_OSP2BE_TOURNEY_RESTRICTIONS:
-			if (cgs.fpsclassico)
+#if 0
+			if (cgs.gamename_unfreeze)
 			{
 				break;
 			}
+#endif
 			cgs.beTourneyMode = atoi(str);
 			CG_BETourneyRestrict();
 			break;
 		case CS_OSP2BE_MISSILE_PREDICT:
-			if (cgs.fpsclassico)
+#if 0
+			if (cgs.gamename_unfreeze)
 			{
 				break;
 			}
+#endif
 		{
 			int enabled = 0;
 			int prestep = 0;
@@ -909,28 +940,37 @@ static void CG_ConfigStringModified(void)
 		}
 		break;
 		case CS_OSP2BE_HITBOX:
-			if (cgs.fpsclassico)
+#if 0
+			if (cgs.gamename_unfreeze)
 			{
 				break;
 			}
+#endif
 			CG_ParseHitboxConfigString(str);
 			break;
 		case CS_OSP2BE_MOVEMENT_LOCK:
-			if (cgs.fpsclassico)
+#if 0
+			if (cgs.gamename_unfreeze)
 			{
 				break;
 			}
+#endif
 			CG_ParseMovementLockConfigString(str);
 			break;
 		default:
 			if (num >= CS_OSP2BE_ITEM_CATALOG0 && num <= CS_OSP2BE_ITEM_CATALOG_LAST)
 			{
-				if (!cgs.fpsclassico)
+				CG_SpectatorItems_OnConfigStringChanged();
+				CG_ShadowItems_OnConfigStringChanged();
+				CG_MapCatalog_OnConfigStringChanged();
+#if 0
+				if (!cgs.gamename_unfreeze)
 				{
 					CG_SpectatorItems_OnConfigStringChanged();
 					CG_ShadowItems_OnConfigStringChanged();
 					CG_MapCatalog_OnConfigStringChanged();
 				}
+#endif
 			}
 			else if (num >= CS_MODELS && num < CS_MODELS + MAX_MODELS)
 			{

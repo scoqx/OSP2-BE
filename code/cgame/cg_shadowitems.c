@@ -329,10 +329,12 @@ static qboolean CG_ShadowItems_TryLoadCatalogConfigstrings(void)
 	int             len;
 	int             serverSlotKey;
 
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		return qfalse;
 	}
+#endif
 
 	cg_shadowCatalogPayload[0] = '\0';
 	len = 0;
@@ -861,10 +863,12 @@ void CG_ShadowItems_Load(void)
 
 void CG_ShadowItems_OnConfigStringChanged(void)
 {
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		return;
 	}
+#endif
 	CG_ShadowItems_Reload();
 }
 

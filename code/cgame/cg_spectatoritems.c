@@ -281,10 +281,12 @@ static void CG_SpectatorItems_BuildCatalogPayload(char* buf, int bufSize)
 	int         i;
 
 	buf[0] = '\0';
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		return;
 	}
+#endif
 	for (i = 0; i < CS_OSP2BE_ITEM_CATALOG_COUNT; i++)
 	{
 		chunk = CG_ConfigString(CS_OSP2BE_ITEM_CATALOG0 + i);
@@ -483,10 +485,12 @@ void CG_SpectatorItems_OnConfigStringChanged(void)
 {
 	static char payload[MAX_STRING_CHARS * CS_OSP2BE_ITEM_CATALOG_COUNT];
 
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		return;
 	}
+#endif
 
 	CG_SHUDRefreshSpectatorItemSpawnsTeamTables();
 	CG_SpectatorItems_BuildCatalogPayload(payload, sizeof(payload));

@@ -114,8 +114,8 @@ extern int modeUnknown2;    //3528
 extern int modeUnknown3;    //352c
 extern int modeUnknown4;    //3530
 extern int modeShotgunPromode;    //3514
-extern int modeFPSClassico;    // FPSClassico server flag
-/* UnFreeZe phys flags (fpsclassico predict) — set from SERVERINFO via CG_ApplyUnfreezePhysFromServerinfo */
+extern int modeGamenameUnfreeze;    /* gamename=unfreeze */
+/* Phys flags for gamename=unfreeze predict — set from SERVERINFO via CG_ApplyUnfreezePhysFromServerinfo */
 extern int uf_baseq3;
 extern int uf_osp;
 extern int uf_rampjump;

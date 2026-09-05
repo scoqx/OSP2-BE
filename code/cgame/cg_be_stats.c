@@ -1158,8 +1158,6 @@ void CG_RefillStatsRequestTokens(void)
 
 qboolean CG_TrySendStatsRequest(void)
 {
-	if (CG_GetUserInfoProfile() > BE_USERINFO_OSP103)
-		return qfalse;
 	if (cg.intermissionStarted)
 		return qfalse;
 
@@ -1210,8 +1208,6 @@ qboolean CG_TrySendDstatusRequest(void)
 {
 	int intervalMs;
 
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
-		return qfalse;
 	if (cg.intermissionStarted)
 		return qfalse;
 	if (!cgs.q3msk || (cgs.gametype != GT_TEAM && cgs.gametype != GT_CTF) || !cgs.osp.gameTypeFreeze)
@@ -1249,10 +1245,12 @@ qboolean CG_GetDeadInFreeze(int clientNum)
  */
 qboolean CG_BEStatsIsShowing(void)
 {
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		return qfalse;
 	}
+#endif
 	if (!cg.showWStats)
 	{
 		return qfalse;
@@ -1271,10 +1269,12 @@ void CG_BEStatsShowStatsInfo(void)
 
 	cg.beStatsShowing = qfalse;
 
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		return;
 	}
+#endif
 
 	if (!cg.showWStats)
 		return;

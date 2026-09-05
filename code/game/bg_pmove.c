@@ -512,7 +512,7 @@ qboolean PM_CheckJump(void)
 
 	if (uf_rampjump)
 	{
-		/* UnFreeZe path B (fpsclasico): additive jump + stats[8] window */
+		/* UnFreeZe path B (gamename=unfreeze): additive jump + stats[8] window */
 		pm->ps->velocity[2] += JUMP_VELOCITY;
 		if (pm->ps->velocity[2] < JUMP_VELOCITY)
 		{
@@ -704,7 +704,7 @@ void PM_WaterMove(void)
 	wishspeed = VectorNormalize(wishdir);
 
 	/* metarena/baseq3a/UnFreeZe: single pm_swimScale. OSP uses modeSwimScale1/2. */
-	if (pmode_osdf || modeFPSClassico)
+	if (pmode_osdf || modeGamenameUnfreeze)
 	{
 		if (wishspeed > pm->ps->speed * pm_swimScale)
 		{
@@ -1126,7 +1126,7 @@ void PM_WalkMove(void)
 			waterScale = pm->waterlevel / 3.0f;
 
 			/* UnFreeZe: vanilla pm_swimScale. OSP uses modeSwimScale1/2. */
-			if (modeFPSClassico)
+			if (modeGamenameUnfreeze)
 			{
 				waterScale = 1.0f - (1.0f - pm_swimScale) * waterScale;
 			}
@@ -2213,7 +2213,7 @@ void PM_Weapon(void)
 			break;
 		case WP_MACHINEGUN:
 			/* UnFreeZe PM_Weapon: baseq3 ? 100 : 75; else stock 100 */
-			if (modeFPSClassico)
+			if (modeGamenameUnfreeze)
 			{
 				addTime = uf_baseq3 ? 100 : 75;
 			}
@@ -2232,7 +2232,7 @@ void PM_Weapon(void)
 			addTime = 100; //-V1037
 			break;
 		case WP_RAILGUN:
-			if (modeUnknown2 || modeFPSClassico)
+			if (modeUnknown2 || modeGamenameUnfreeze)
 			{
 				addTime = 1000;
 			}
@@ -2542,7 +2542,7 @@ void PmoveSingle(pmove_t* pmove)
 	pm_overclip = uf_rampjump ? 1.0f : OVERCLIP;
 
 	/* Drop stale baseq3a respawn timer across predict frames on UnFreeZe path. */
-	if (uf_rampjump || modeFPSClassico)
+	if (uf_rampjump || modeGamenameUnfreeze)
 	{
 		pm_respawntimer = 0;
 	}
@@ -2813,7 +2813,7 @@ void PmoveSingle(pmove_t* pmove)
 	}
 
 	// snap some parts of playerstate to save network bandwidth
-	if (modeFPSClassico && !uf_baseq3)
+	if (modeGamenameUnfreeze && !uf_baseq3)
 	{
 		/* UnFreeZe path B: float velocity (unless server asked float/accurate finalize) */
 		if (pm->pmove_lock_fps || pm->pmove_accurate || pm->pmove_float)
@@ -2913,11 +2913,11 @@ void Pmove(pmove_t* pmove)
 
 	/* baseq3a anti-overbounce after spawn -" UnFreeZe has stock WalkMove only */
 	if ((pmove->ps->pm_flags & PMF_RESPAWNED) && pm_respawntimer == 0
-	        && !uf_rampjump && !modeFPSClassico)
+	        && !uf_rampjump && !modeGamenameUnfreeze)
 	{
 		pm_respawntimer = NO_RESPAWN_OVERBOUNCE;
 	}
-	else if (uf_rampjump || modeFPSClassico)
+	else if (uf_rampjump || modeGamenameUnfreeze)
 	{
 		pm_respawntimer = 0;
 	}

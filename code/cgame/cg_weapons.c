@@ -2969,7 +2969,8 @@ void CG_FireWeapon(centity_t* cent)
 			cg_doubleShootAddTime[WP_GRAPPLING_HOOK] = 360;
 			cg_doubleShootAddTimeInited = qtrue;
 		}
-		cg_doubleShootAddTime[WP_MACHINEGUN] = cgs.fpsclassico ? 70 : 90;
+		cg_doubleShootAddTime[WP_MACHINEGUN] = 90;
+		/* cg_doubleShootAddTime[WP_MACHINEGUN] = cgs.gamename_unfreeze ? 70 : 90; */
 		cg_doubleShootAddTime[WP_GRENADE_LAUNCHER] = modeGrenadeTime - 100;
 		addTime = cg_doubleShootAddTime[ent->weapon];
 		if (cg.predictedPlayerState.powerups[PW_HASTE])

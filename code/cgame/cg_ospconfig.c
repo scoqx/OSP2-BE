@@ -136,11 +136,13 @@ void CG_OSPSetMode(int value)
 {
 #define OSP_SET_MODE_VARIANT(VAL, VAL_VQ3, VAL_CQ3, VAL_PROMODE) (VAL&OSP_SERVER_MODE_PROMODE ? VAL_PROMODE : (VAL&OSP_SERVER_MODE_CQ3 ? VAL_CQ3 : VAL_VQ3))
 
-	/* UnFreeZe / fpsclassico: stock VQ3 movement + uf_* phys only (ignore OSP CS 806) */
-	if (cgs.fpsclassico)
+#if 0
+	/* gamename=unfreeze: stock VQ3 movement + uf_* phys only (ignore OSP CS 806) */
+	if (cgs.gamename_unfreeze)
 	{
 		value = OSP_SERVER_MODE_VQ3;
 	}
+#endif
 
 	modeCpmaPmove                      = 0;
 	modeJumpVelocity                   = 270;
@@ -161,7 +163,10 @@ void CG_OSPSetMode(int value)
 		modeSwimScale2                     = 0.585f;
 		pm_waterfriction                   = 0.5f;
 		pm_wateraccelerate                 = 5.0f;
-		if (!cgs.fpsclassico)
+		modeGrenadeTime = 800;
+		modeFinishWeaponChangeTime = 0;
+#if 0
+		if (!cgs.gamename_unfreeze)
 		{
 			modeGrenadeTime = 800;
 			modeFinishWeaponChangeTime = 0;
@@ -172,6 +177,7 @@ void CG_OSPSetMode(int value)
 			modeFinishWeaponChangeTime = 200;
 			modeGrenadeTime = 600;
 		}
+#endif
 		modeBeginWeaponChangeTime          = 0;
 		modePMNoAmmoTime                   = 100;
 		modeShotgunKoeff                   = 1000;
@@ -205,7 +211,10 @@ void CG_OSPSetMode(int value)
 		modeMaxAmmoGrenade                 = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
 		modeMaxAmmoRocket                  = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
 		modeMaxAmmoRail                    = OSP_SET_MODE_VARIANT(value, 200, 100, 100);//-V583
-		if (!cgs.fpsclassico)
+		modeGrenadeTime = OSP_SET_MODE_VARIANT(value, 800, 800, 700);//-V583
+		modeFinishWeaponChangeTime         = OSP_SET_MODE_VARIANT(value, 250, 250, 0);//-V583
+#if 0
+		if (!cgs.gamename_unfreeze)
 		{
 			modeGrenadeTime = OSP_SET_MODE_VARIANT(value, 800, 800, 700);//-V583
 			modeFinishWeaponChangeTime         = OSP_SET_MODE_VARIANT(value, 250, 250, 0);//-V583
@@ -215,6 +224,7 @@ void CG_OSPSetMode(int value)
 			modeFinishWeaponChangeTime = 200;
 			modeGrenadeTime = 600;
 		}
+#endif
 		modeBeginWeaponChangeTime          = OSP_SET_MODE_VARIANT(value, 200, 200, 0);//-V583
 		modePMNoAmmoTime                   = OSP_SET_MODE_VARIANT(value, 500, 500, 100);//-V583
 		modeShotgunPromode                 = OSP_SET_MODE_VARIANT(value, 0, 2, 1);
@@ -225,19 +235,22 @@ void CG_OSPSetMode(int value)
 	modeUnknown2                       = value & OSP_SERVER_MODE_PROMODE_OPT1 ? 1 : 0;
 	modeUnknown3                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 200 : 0;
 	modeUnknown4                       = value & OSP_SERVER_MODE_PROMODE_OPT2 ? 100 : 0;
-	modeFPSClassico                    = cgs.fpsclassico ? 1 : 0;
-	if (cgs.fpsclassico)
+#if 0
+	modeGamenameUnfreeze                    = cgs.gamename_unfreeze ? 1 : 0;
+	if (cgs.gamename_unfreeze)
 	{
 		/* Path A/B sets finish + grenade times from SERVERINFO (uf_baseq3). */
 		CG_ApplyUnfreezePhysFromServerinfo();
 	}
+#endif
 }
 
+#if 0
 /*
 =================
 CG_ApplyUnfreezePhysFromServerinfo
 
-Mirror UnFreeZe CG_ParseServerinfo phys flags for fpsclassico client predict.
+Mirror SERVERINFO phys flags for gamename=unfreeze client predict.
 Path B (gamename=unfreeze, no g_baseq3): empty g_rampjump → rampjump ON.
 =================
 */
@@ -257,7 +270,7 @@ void CG_ApplyUnfreezePhysFromServerinfo(void)
 	cgs.uf_osp = qfalse;
 	cgs.uf_rampjump = qfalse;
 
-	if (!cgs.fpsclassico)
+	if (!cgs.gamename_unfreeze)
 	{
 		return;
 	}
@@ -285,7 +298,7 @@ void CG_ApplyUnfreezePhysFromServerinfo(void)
 	}
 	else
 	{
-		/* Path B — UnFreeZe.fpsclasico.de et al. */
+		/* Path B — gamename=unfreeze without g_baseq3 */
 		uf_baseq3 = 0;
 		uf_osp = 0;
 		uf_rampjump = (!gRampjump[0] || Q_stricmp(gRampjump, "0") != 0) ? 1 : 0;
@@ -298,253 +311,8 @@ void CG_ApplyUnfreezePhysFromServerinfo(void)
 	cgs.uf_osp = uf_osp ? qtrue : qfalse;
 	cgs.uf_rampjump = uf_rampjump ? qtrue : qfalse;
 }
+#endif
 
-
-static qboolean teamoverlay_registered = qfalse;
-
-int CG_GetUserInfoProfile(void)
-{
-	char buf[MAX_CVAR_VALUE_STRING];
-	int hide;
-
-	if (cgs.fpsclassico)
-	{
-		return BE_USERINFO_UNFREEZE; /* always unfreeze userinfo on fpsclassico */
-	}
-	trap_Cvar_VariableStringBuffer("be_hide", buf, sizeof(buf));
-	if (!buf[0])
-	{
-		return BE_USERINFO_BE;
-	}
-	hide = atoi(buf);
-	if (hide < 0)
-	{
-		return BE_USERINFO_BE;
-	}
-	if (hide > BE_USERINFO_VANILLA)
-	{
-		return BE_USERINFO_VANILLA;
-	}
-	return hide;
-}
-
-void CG_UserInfoStripAll(void)
-{
-	trap_Cvar_Set("osp_client", "");
-	trap_Cvar_Update(&osp_client);
-	trap_Cvar_Set("be_features", "");
-	trap_Cvar_Update(&be_features);
-	trap_Cvar_Set("compilation_build", "");
-	trap_Cvar_Update(&compilation_build);
-
-	trap_Cvar_Register(&cg_smoothClients, "cg_smoothClients", cg_smoothClients.string, CVAR_ARCHIVE);
-	trap_Cvar_Update(&cg_smoothClients);
-	trap_Cvar_Register(&cg_delag, "cg_delag", cg_delag.string, CVAR_ARCHIVE);
-	trap_Cvar_Update(&cg_delag);
-	trap_Cvar_Register(&cg_damagePlums, "cg_damagePlums", cg_damagePlums.string, CVAR_ARCHIVE);
-	trap_Cvar_Update(&cg_damagePlums);
-	trap_Cvar_Register(&cg_damagePlumsWeapons, "cg_damagePlumsWeapons", cg_damagePlumsWeapons.string, CVAR_ARCHIVE);
-	trap_Cvar_Update(&cg_damagePlumsWeapons);
-	trap_Cvar_Register(&cg_scorePlums, "cg_scorePlums", cg_scorePlums.string, CVAR_ARCHIVE);
-	trap_Cvar_Update(&cg_scorePlums);
-
-	trap_Cvar_Set("teamoverlay", "");
-	trap_Cvar_Update(&teamoverlay);
-	/* Empty value drops key from userinfo; cvar stays in table for UnFreeZe register-order parity */
-	trap_Cvar_Set("teamoverlay2", "");
-	trap_Cvar_Update(&teamoverlay2);
-
-	trap_Cvar_Register(NULL, "team_model", DEFAULT_TEAM_MODEL, CVAR_ARCHIVE);
-	trap_Cvar_Register(NULL, "team_headmodel", DEFAULT_TEAM_HEAD, CVAR_ARCHIVE);
-}
-
-static void CG_UserInfoEnableVmCvar(vmCvar_t* vm, const char* name, const char* value, int flags)
-{
-	trap_Cvar_Register(vm, name, value, flags);
-	trap_Cvar_Set(name, value);
-	trap_Cvar_Update(vm);
-}
-
-/* Empty Set removes key from userinfo; value is restored later in enable order. */
-static void CG_UserInfoDetachVmCvar(vmCvar_t* vm, const char* name, const char* saved, int flags)
-{
-	trap_Cvar_Register(vm, name, saved[0] ? saved : "0", flags | CVAR_USERINFO);
-	trap_Cvar_Set(name, "");
-	trap_Cvar_Register(vm, name, saved[0] ? saved : "0", flags);
-	trap_Cvar_Update(vm);
-}
-
-static void CG_UserInfoEnableModels(const char* model, const char* headmodel)
-{
-	trap_Cvar_Register(NULL, "model", model[0] ? model : DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
-	trap_Cvar_Set("model", model[0] ? model : DEFAULT_MODEL);
-	trap_Cvar_Register(NULL, "headmodel", headmodel[0] ? headmodel : DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
-	trap_Cvar_Set("headmodel", headmodel[0] ? headmodel : DEFAULT_MODEL);
-}
-
-static void CG_UserInfoEnableTeamModels(const char* team_model, const char* team_headmodel)
-{
-	trap_Cvar_Register(NULL, "team_model", team_model[0] ? team_model : DEFAULT_TEAM_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
-	trap_Cvar_Set("team_model", team_model[0] ? team_model : DEFAULT_TEAM_MODEL);
-	trap_Cvar_Register(NULL, "team_headmodel", team_headmodel[0] ? team_headmodel : DEFAULT_TEAM_HEAD, CVAR_USERINFO | CVAR_ARCHIVE);
-	trap_Cvar_Set("team_headmodel", team_headmodel[0] ? team_headmodel : DEFAULT_TEAM_HEAD);
-}
-
-static void CG_UserInfoEnableTeamoverlay(void)
-{
-	if (cgs.gametype < GT_TEAM)
-	{
-		return;
-	}
-	if (!teamoverlay_registered)
-	{
-		trap_Cvar_Register(&teamoverlay, "teamoverlay", "1", CVAR_USERINFO | CVAR_ROM);
-		teamoverlay_registered = qtrue;
-	}
-	else
-	{
-		trap_Cvar_Register(&teamoverlay, "teamoverlay", teamoverlay.string, CVAR_USERINFO | CVAR_ROM);
-	}
-	trap_Cvar_Set("teamoverlay", "1");
-	trap_Cvar_Update(&teamoverlay);
-}
-
-static void CG_UserInfoEnableTeamoverlay2(void)
-{
-	/* Already in cvarTable (after cg_drawTeamOverlay) — only restore USERINFO value */
-	trap_Cvar_Register(&teamoverlay2, "teamoverlay2", "1", CVAR_USERINFO | CVAR_ROM | CVAR_NOTABCOMPLETE);
-	trap_Cvar_Set("teamoverlay2", "1");
-	trap_Cvar_Update(&teamoverlay2);
-}
-
-static void CG_UserInfoEnableOspClient(const char* value)
-{
-	trap_Cvar_Register(&osp_client, "osp_client", value, CVAR_USERINFO | CVAR_ROM);
-	trap_Cvar_Set("osp_client", value);
-	trap_Cvar_Update(&osp_client);
-}
-
-/*
-=================
-CG_ApplyUserInfoProfile
-
-Strip optional USERINFO keys, then re-enable in native register order:
-  OSP2 / OSP1.03 / BE: osp_client, [BE keys], teamoverlay, scorePlums, smoothClients, model*, team_*
-  UnFreeZe:             teamoverlay2, scorePlums, cg_delag, model*, team_*
-  Vanilla / baseq3a:    model, headmodel
-=================
-*/
-void CG_ApplyUserInfoProfile(int profile)
-{
-	char model[MAX_QPATH];
-	char headmodel[MAX_QPATH];
-	char team_model[MAX_QPATH];
-	char team_headmodel[MAX_QPATH];
-	char scorePlums[MAX_CVAR_VALUE_STRING];
-	char smoothClients[MAX_CVAR_VALUE_STRING];
-	char delag[MAX_CVAR_VALUE_STRING];
-	char damagePlums[MAX_CVAR_VALUE_STRING];
-	char damagePlumsWeapons[MAX_CVAR_VALUE_STRING];
-	char beFeatures[MAX_CVAR_VALUE_STRING];
-	char compilationBuild[MAX_CVAR_VALUE_STRING];
-
-	trap_Cvar_VariableStringBuffer("model", model, sizeof(model));
-	trap_Cvar_VariableStringBuffer("headmodel", headmodel, sizeof(headmodel));
-	trap_Cvar_VariableStringBuffer("team_model", team_model, sizeof(team_model));
-	trap_Cvar_VariableStringBuffer("team_headmodel", team_headmodel, sizeof(team_headmodel));
-
-	Q_strncpyz(scorePlums, cg_scorePlums.string, sizeof(scorePlums));
-	Q_strncpyz(smoothClients, cg_smoothClients.string, sizeof(smoothClients));
-	Q_strncpyz(delag, cg_delag.string, sizeof(delag));
-	Q_strncpyz(damagePlums, cg_damagePlums.string, sizeof(damagePlums));
-	Q_strncpyz(damagePlumsWeapons, cg_damagePlumsWeapons.string, sizeof(damagePlumsWeapons));
-	Q_strncpyz(beFeatures, be_features.string, sizeof(beFeatures));
-	Q_strncpyz(compilationBuild, compilation_build.string, sizeof(compilationBuild));
-
-	CG_UserInfoStripAll();
-
-	/*
-	 * Detach only keys this profile will re-append. Detaching others and then
-	 * restoring via Set() can re-insert them into userinfo if USERINFO flags stick.
-	 */
-	trap_Cvar_Register(NULL, "model", model[0] ? model : DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
-	trap_Cvar_Set("model", "");
-	trap_Cvar_Register(NULL, "headmodel", headmodel[0] ? headmodel : DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
-	trap_Cvar_Set("headmodel", "");
-
-	switch (profile)
-	{
-		case BE_USERINFO_BE:
-			CG_UserInfoDetachVmCvar(&cg_scorePlums, "cg_scorePlums", scorePlums, CVAR_ARCHIVE);
-			CG_UserInfoDetachVmCvar(&cg_smoothClients, "cg_smoothClients", smoothClients, CVAR_ARCHIVE);
-			CG_UserInfoDetachVmCvar(&cg_damagePlums, "cg_damagePlums", damagePlums, CVAR_ARCHIVE);
-			CG_UserInfoDetachVmCvar(&cg_damagePlumsWeapons, "cg_damagePlumsWeapons", damagePlumsWeapons, CVAR_ARCHIVE);
-			trap_Cvar_Register(NULL, "team_model", team_model[0] ? team_model : DEFAULT_TEAM_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
-			trap_Cvar_Set("team_model", "");
-			trap_Cvar_Register(NULL, "team_headmodel", team_headmodel[0] ? team_headmodel : DEFAULT_TEAM_HEAD, CVAR_USERINFO | CVAR_ARCHIVE);
-			trap_Cvar_Set("team_headmodel", "");
-
-			/* OSP2 order + BE keys after osp_client */
-			CG_UserInfoEnableOspClient("1008_OSP2_" OSP_VERSION);
-			CG_UserInfoEnableVmCvar(&be_features, "be_features", beFeatures, CVAR_ROM | CVAR_USERINFO);
-			CG_UserInfoEnableVmCvar(&compilation_build, "compilation_build", compilationBuild, CVAR_ROM | CVAR_USERINFO);
-			CG_UserInfoEnableVmCvar(&cg_damagePlums, "cg_damagePlums", damagePlums, CVAR_ARCHIVE | CVAR_USERINFO);
-			CG_UserInfoEnableVmCvar(&cg_damagePlumsWeapons, "cg_damagePlumsWeapons", damagePlumsWeapons, CVAR_ARCHIVE | CVAR_USERINFO);
-			CG_UserInfoEnableTeamoverlay();
-			CG_UserInfoEnableVmCvar(&cg_scorePlums, "cg_scorePlums", scorePlums, CVAR_ARCHIVE | CVAR_USERINFO);
-			CG_UserInfoEnableVmCvar(&cg_smoothClients, "cg_smoothClients", smoothClients, CVAR_ARCHIVE | CVAR_USERINFO);
-			CG_UserInfoEnableModels(model, headmodel);
-			CG_UserInfoEnableTeamModels(team_model, team_headmodel);
-			CG_UpdateBeFeatures();
-			trap_Cvar_Update(&be_features);
-			break;
-
-		case BE_USERINFO_OSP2:
-		case BE_USERINFO_OSP103:
-			CG_UserInfoDetachVmCvar(&cg_scorePlums, "cg_scorePlums", scorePlums, CVAR_ARCHIVE);
-			CG_UserInfoDetachVmCvar(&cg_smoothClients, "cg_smoothClients", smoothClients, CVAR_ARCHIVE);
-			trap_Cvar_Register(NULL, "team_model", team_model[0] ? team_model : DEFAULT_TEAM_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
-			trap_Cvar_Set("team_model", "");
-			trap_Cvar_Register(NULL, "team_headmodel", team_headmodel[0] ? team_headmodel : DEFAULT_TEAM_HEAD, CVAR_USERINFO | CVAR_ARCHIVE);
-			trap_Cvar_Set("team_headmodel", "");
-
-			CG_UserInfoEnableOspClient(profile == BE_USERINFO_OSP103 ? "1008" : "1008_OSP2_" OSP_VERSION);
-			CG_UserInfoEnableTeamoverlay();
-			CG_UserInfoEnableVmCvar(&cg_scorePlums, "cg_scorePlums", scorePlums, CVAR_ARCHIVE | CVAR_USERINFO);
-			CG_UserInfoEnableVmCvar(&cg_smoothClients, "cg_smoothClients", smoothClients, CVAR_ARCHIVE | CVAR_USERINFO);
-			CG_UserInfoEnableModels(model, headmodel);
-			CG_UserInfoEnableTeamModels(team_model, team_headmodel);
-			break;
-
-		case BE_USERINFO_UNFREEZE:
-			CG_UserInfoDetachVmCvar(&cg_scorePlums, "cg_scorePlums", scorePlums, CVAR_ARCHIVE);
-			CG_UserInfoDetachVmCvar(&cg_delag, "cg_delag", delag, CVAR_ARCHIVE);
-			trap_Cvar_Register(NULL, "team_model", team_model[0] ? team_model : DEFAULT_TEAM_MODEL, CVAR_USERINFO | CVAR_ARCHIVE);
-			trap_Cvar_Set("team_model", "");
-			trap_Cvar_Register(NULL, "team_headmodel", team_headmodel[0] ? team_headmodel : DEFAULT_TEAM_HEAD, CVAR_USERINFO | CVAR_ARCHIVE);
-			trap_Cvar_Set("team_headmodel", "");
-
-			/* UnFreeZe: teamoverlay2, scorePlums, cg_delag, then models */
-			CG_UserInfoEnableTeamoverlay2();
-			CG_UserInfoEnableVmCvar(&cg_scorePlums, "cg_scorePlums", scorePlums, CVAR_ARCHIVE | CVAR_USERINFO);
-			CG_UserInfoEnableVmCvar(&cg_delag, "cg_delag", delag, CVAR_ARCHIVE | CVAR_USERINFO);
-			CG_UserInfoEnableModels(model, headmodel);
-			CG_UserInfoEnableTeamModels(team_model, team_headmodel);
-			break;
-
-		case BE_USERINFO_VANILLA:
-		default:
-			/* baseq3a: model / headmodel only (no team_* USERINFO) */
-			CG_UserInfoEnableModels(model, headmodel);
-			trap_Cvar_Register(NULL, "team_model", team_model[0] ? team_model : DEFAULT_TEAM_MODEL, CVAR_ARCHIVE);
-			trap_Cvar_Set("team_model", team_model[0] ? team_model : DEFAULT_TEAM_MODEL);
-			trap_Cvar_Register(NULL, "team_headmodel", team_headmodel[0] ? team_headmodel : DEFAULT_TEAM_HEAD, CVAR_ARCHIVE);
-			trap_Cvar_Set("team_headmodel", team_headmodel[0] ? team_headmodel : DEFAULT_TEAM_HEAD);
-			break;
-	}
-
-	cgs.userinfoProfile = profile;
-}
 
 void CG_OSPUpdateUserInfo(qboolean arg)
 {
@@ -552,10 +320,6 @@ void CG_OSPUpdateUserInfo(qboolean arg)
 	char* cmd;
 	int using_jpeg;
 	if (cg.demoPlayback)
-	{
-		return;
-	}
-	if (CG_GetUserInfoProfile() > BE_USERINFO_OSP103)
 	{
 		return;
 	}
@@ -745,17 +509,11 @@ void CG_OSPConfigMaxTimenudgeSet(int value)
 	CG_CvarTouch("cl_timenudge");
 }
 
-/* Supported OSP2-BE server (CS 887). Only when visible as BE (be_hide 0). */
+/* Supported OSP2-BE server (CS 887). */
 void CG_OSPSupportedBEServer(qboolean value)
 {
 	const char* info;
 	const char* gamename;
-
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
-	{	
-		cgs.beSupportedServer = qfalse;
-		return;
-	}
 
 	info = CG_ConfigString(CS_SERVERINFO);
 	gamename = Info_ValueForKey(info, "gamename");
@@ -778,11 +536,6 @@ void CG_BEUpdateUserInfo(void)
 	int mapdata;          /* BE_INFO_MAPDATA */
 
 	if (cg.demoPlayback)
-	{
-		return;
-	}
-
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
 	{
 		return;
 	}

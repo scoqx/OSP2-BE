@@ -74,16 +74,8 @@ void CG_LocalEventCvarChanged_cg_drawTimer(cvarTable_t* cvart)
 
 void CG_LocalEventCvarChanged_cg_drawTeamOverlay(cvarTable_t* cvart)
 {
-	/* UnFreeZe profile: keep teamoverlay2=1 so server still sends tinfo HP
-	 * even when the local overlay draw is off. OSP/BE: teamoverlay for tinfo. */
-	if (CG_GetUserInfoProfile() == BE_USERINFO_UNFREEZE)
-	{
-		trap_Cvar_Set("teamoverlay2", "1");
-	}
-	else if (CG_GetUserInfoProfile() <= BE_USERINFO_OSP103)
-	{
-		trap_Cvar_Set("teamoverlay", "1");
-	}
+	/* Keep teamoverlay=1 so server still sends tinfo HP even when local overlay draw is off. */
+	trap_Cvar_Set("teamoverlay", "1");
 }
 
 void CG_LocalEventCvarChanged_cl_maxpackets(cvarTable_t* cvart)

@@ -491,13 +491,15 @@ void CG_MapCatalog_OnConfigStringChanged(void)
 	int         i;
 	int         len;
 
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		cg_mapCatalogPayload[0] = '\0';
 		(void)CG_MapSpawns_LoadFromCatalog("");
 		(void)CG_MapTPExit_LoadFromCatalog("");
 		return;
 	}
+#endif
 
 	cg_mapCatalogPayload[0] = '\0';
 	len = 0;

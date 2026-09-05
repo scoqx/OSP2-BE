@@ -1323,7 +1323,8 @@ static void CG_CalcEntityLerpPositions(centity_t* cent)
 	if (cent->currentState.eType == ET_MISSILE && cent->currentState.weapon != WP_GRAPPLING_HOOK
 	        && cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR && !cg.demoPlayback)
 	{
-		if (cgs.fpsclassico)
+#if 0
+		if (cgs.gamename_unfreeze)
 		{
 			/* UnFreeZe default nudge addend 0 → fixed +30ms; do not read cg_projectileNudge */
 			if (cent->currentState.otherEntityNum == cg.clientNum
@@ -1332,7 +1333,9 @@ static void CG_CalcEntityLerpPositions(centity_t* cent)
 				timeshift = 30;
 			}
 		}
-		else if (cg_projectileNudge.integer)
+		else
+#endif
+		if (cg_projectileNudge.integer)
 		{
 			int serverTick = 0;
 			if (cg.nextSnap && cg.snap)

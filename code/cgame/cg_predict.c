@@ -518,39 +518,42 @@ to ease the jerk.
 =================
 CG_ApplyPmoveMovementFields
 
-OSP: pmove_accurate 0/1/2 from systeminfo.
-CS912/baseq3a: lock_fps from CS912; local pmove_accurate > 0 overrides as FPS lock (baseq3a parity).
+Two different mechanisms (do not mix):
+  pmove_accurate cvar — SYSTEMINFO enum 0/1/2 (OSP dither).
+  cs_pmove_lock_*     — CS 912 FPS lock (q3msk); local pmove_accurate>0 overrides as FPS.
 =================
 */
 static void CG_ApplyPmoveMovementFields(pmove_t* pm)
 {
-	/* UnFreeZe path: no OSP lock_fps / accurate dither — only SnapVector if uf_baseq3 */
-	if (cgs.fpsclassico)
+#if 0
+	/* gamename=unfreeze: no OSP lock_fps / accurate dither */
+	if (cgs.gamename_unfreeze)
 	{
 		pm->pmove_lock_fps = 0;
 		pm->pmove_accurate = 0;
 		return;
 	}
+#endif
 
-	if (cgs.beMovementLockCsPresent && cgs.pmoveMode == PMODE_OSP)
+	trap_Cvar_Update(&pmove_accurate);
+	if (cgs.cs_pmove_lock_present && cgs.pmoveMode == PMODE_OSP)
 	{
-		trap_Cvar_Update(&pmove_accurate);
 		if (pmove_accurate.integer > 0)
 		{
-			/* client override: numeric FPS like CS 912 (e.g. 115) */
+			/* client override: numeric FPS (e.g. 115), not OSP enum */
 			pm->pmove_lock_fps = pmove_accurate.integer;
 			pm->pmove_accurate = 0;
 		}
 		else
 		{
-			pm->pmove_lock_fps = cgs.beMovementLockFps;
+			pm->pmove_lock_fps = cgs.cs_pmove_lock_fps;
 			pm->pmove_accurate = 0;
 		}
 	}
 	else
 	{
 		pm->pmove_lock_fps = 0;
-		pm->pmove_accurate = (cgs.pmoveMode == PMODE_OSP) ? cgs.sv_pmove_accurate : 0;
+		pm->pmove_accurate = (cgs.pmoveMode == PMODE_OSP) ? pmove_accurate.integer : 0;
 	}
 }
 
@@ -603,7 +606,8 @@ void CG_PmovePhysicsUpdate(void)
 
 	cgs.pmoveMode = mode;
 	/* q3msk lock: full stock baseq3a pmove + EXTFL NOOB landing */
-	pmode_q3msk_lock = (cgs.q3msk && cgs.beMovementLockCsPresent && !cgs.fpsclassico) ? 1 : 0;
+	pmode_q3msk_lock = (cgs.q3msk && cgs.cs_pmove_lock_present) ? 1 : 0;
+	/* pmode_q3msk_lock = (cgs.q3msk && cgs.cs_pmove_lock_present && !cgs.gamename_unfreeze) ? 1 : 0; */
 	pmode_q3msk = cgs.q3msk ? 1 : 0;
 	/* metarena / OSDF: phy path still calls shared PM_WaterMove/PM_FlyMove — keep them vanilla */
 	pmode_osdf = (mode == PMODE_OSDF) ? 1 : 0;
@@ -642,80 +646,6 @@ void CG_PmovePhysicsUpdate(void)
 
 /*
 =================
-CG_CheckTimers
-
-Mega health/armor countdown and predicted powerup expiry (baseq3a).
-=================
-*/
-static void CG_CheckTimers(void)
-{
-	int i;
-
-	if (cg.predictedPlayerState.pm_type == PM_SPECTATOR)
-	{
-		return;
-	}
-
-	if (cg.predictedPlayerState.stats[STAT_HEALTH] <= 0)
-	{
-		return;
-	}
-
-	if (cg.snap->ps.pm_type == PM_INTERMISSION)
-	{
-		return;
-	}
-
-	if (cg.timeResidual && cg.predictedPlayerState.commandTime >= cg.timeResidual && !cg.thisFrameTeleport)
-	{
-		cg.timeResidual += 1000;
-		if (cg.predictedPlayerState.powerups[PW_REGEN])
-		{
-			int maxhealth = cg.predictedPlayerState.stats[STAT_MAX_HEALTH];
-
-			if (cg.predictedPlayerState.stats[STAT_HEALTH] < maxhealth)
-			{
-				cg.predictedPlayerState.stats[STAT_HEALTH] += 15;
-				if (cg.predictedPlayerState.stats[STAT_HEALTH] > maxhealth * 1.1f)
-				{
-					cg.predictedPlayerState.stats[STAT_HEALTH] = (int)(maxhealth * 1.1f);
-				}
-			}
-			else if (cg.predictedPlayerState.stats[STAT_HEALTH] < maxhealth * 2)
-			{
-				cg.predictedPlayerState.stats[STAT_HEALTH] += 5;
-				if (cg.predictedPlayerState.stats[STAT_HEALTH] > maxhealth * 2)
-				{
-					cg.predictedPlayerState.stats[STAT_HEALTH] = maxhealth * 2;
-				}
-			}
-		}
-		else if (cg.predictedPlayerState.stats[STAT_HEALTH] > cg.predictedPlayerState.stats[STAT_MAX_HEALTH])
-		{
-			cg.predictedPlayerState.stats[STAT_HEALTH]--;
-		}
-
-		if (cg.predictedPlayerState.stats[STAT_ARMOR] > cg.predictedPlayerState.stats[STAT_MAX_HEALTH])
-		{
-			cg.predictedPlayerState.stats[STAT_ARMOR]--;
-		}
-	}
-
-	for (i = 0; i < MAX_POWERUPS; i++)
-	{
-		if (!cg.predictedPlayerState.powerups[i])
-		{
-			continue;
-		}
-		if (cg.predictedPlayerState.powerups[i] < cg.predictedPlayerState.commandTime)
-		{
-			cg.predictedPlayerState.powerups[i] = 0;
-		}
-	}
-}
-
-/*
-=================
 CG_IsUnacceptableError
 
 Compare snapshot playerState to a previously predicted state for incremental
@@ -735,7 +665,7 @@ static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolea
 	}
 
 	VectorSubtract(pps->origin, ps->origin, delta);
-	if (VectorLengthSquared(delta) > (cgs.fpsclassico ? 0.0625f : (0.01f * 0.01f)))
+	if (VectorLengthSquared(delta) > (0.01f * 0.01f))
 	{
 		if (cg_showmiss.integer > 2)
 		{
@@ -745,7 +675,7 @@ static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolea
 	}
 
 	VectorSubtract(pps->velocity, ps->velocity, delta);
-	if (VectorLengthSquared(delta) > (cgs.fpsclassico ? 0.0625f : (0.01f * 0.01f)))
+	if (VectorLengthSquared(delta) > (0.01f * 0.01f))
 	{
 		if (cg_showmiss.integer > 2)
 		{
@@ -867,11 +797,10 @@ static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolea
 		return 14;
 	}
 
-	/* mega health/armor 1Hz countdown: resync saved states (baseq3a) */
+	/* mega health/armor 1Hz countdown: resync saved states so optimizePrediction does not full-repredict */
 	if (pps->stats[STAT_HEALTH] == ps->stats[STAT_HEALTH] + 1
 	        && ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH])
 	{
-		cg.timeResidual = ps->commandTime + 1000;
 		for (n = 0; n < NUM_SAVED_STATES; n++)
 		{
 			cg.savedPmoveStates[n].stats[STAT_HEALTH] = ps->stats[STAT_HEALTH];
@@ -881,7 +810,6 @@ static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolea
 	if (pps->stats[STAT_ARMOR] == ps->stats[STAT_ARMOR] - 1
 	        && ps->stats[STAT_ARMOR] >= ps->stats[STAT_MAX_HEALTH])
 	{
-		cg.timeResidual = ps->commandTime + 1000;
 		for (n = 0; n < NUM_SAVED_STATES; n++)
 		{
 			cg.savedPmoveStates[n].stats[STAT_ARMOR] = ps->stats[STAT_ARMOR];
@@ -899,7 +827,7 @@ static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolea
 			continue;
 		}
 		/* BASEQ3A / q3msk / OSDF: ignore timers that churn or are 16-bit truncated on the wire */
-		if ((cgs.beMovementLockCsPresent || cgs.pmove_phy_movetype >= 0) &&
+		if ((cgs.cs_pmove_lock_present || cgs.pmove_phy_movetype >= 0) &&
 		        (i == STAT_OSP_PHYS || i == STAT_OSP_10 || i == STAT_WEAPON_DELAY || i == STAT_TIME_LASTJUMP))
 		{
 			for (n = 0; n < NUM_SAVED_STATES; n++)
@@ -1011,9 +939,6 @@ void CG_PredictPlayerState(void)
 		return;
 	}
 
-	/* Keep phy_movetype / OSDF branch in sync with SYSTEMINFO (metarena) */
-	CG_PmovePhysicsUpdate();
-
 	// prepare for pmove
 	cg_pmove.ps = &cg.predictedPlayerState;
 	cg_pmove.trace = CG_Trace;
@@ -1118,7 +1043,8 @@ void CG_PredictPlayerState(void)
 		}
 	}
 
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 	{
 		/* UnFreeZe clamps pmove_msec to 1..33 */
 		if (pmove_msec.integer < 1)
@@ -1130,7 +1056,9 @@ void CG_PredictPlayerState(void)
 			trap_Cvar_Set("pmove_msec", "33");
 		}
 	}
-	else if (pmove_msec.integer < 8)
+	else
+#endif
+	if (pmove_msec.integer < 8)
 	{
 		trap_Cvar_Set("pmove_msec", "8");
 	}
@@ -1146,7 +1074,7 @@ void CG_PredictPlayerState(void)
 	 */
 	cg_pmove.pmove_float = pmove_float.integer;
 	if (cgs.pmove_phy_movetype >= 0
-	        || (cgs.q3msk && cgs.beMovementLockCsPresent && !cgs.fpsclassico))
+	        || (cgs.q3msk && cgs.cs_pmove_lock_present))
 	{
 		cg_pmove.pmove_fixed = cgs.pmove_fixed;
 		cg_pmove.pmove_msec = cgs.pmove_msec;
@@ -1165,7 +1093,7 @@ void CG_PredictPlayerState(void)
 	cg_pmove.pmove_ratflags = cgs.ratFlags;
 
 	cg_pmove.pmove_movement = MOVEMENT_VQ3;
-	if (cgs.beMovementLockCsPresent && !cgs.fpsclassico)
+	if (cgs.cs_pmove_lock_present)
 	{
 		cg_pmove.pmove_autohop = 0;
 	}
@@ -1431,11 +1359,6 @@ void CG_PredictPlayerState(void)
 			}
 
 			CG_TouchTriggerPrediction();
-			/* baseq3a megaHP/armor timers — not in UnFreeZe cgame predict */
-			if (!cgs.fpsclassico)
-			{
-				CG_CheckTimers();
-			}
 
 			if (cg_optimizePrediction.integer)
 			{

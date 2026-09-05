@@ -464,10 +464,6 @@ void CG_BE_AutologinFrame(void)
 	{
 		return;
 	}
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
-	{
-		return;
-	}
 	if (!cgs.beSupportedServer)
 	{
 		return;

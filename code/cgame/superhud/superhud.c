@@ -547,10 +547,12 @@ static void CG_SHUDFillFrameContext(superhudFrameContext_t* fc)
 	{
 		fc->is_promode = (cgs.pmove_phy_movetype == 0) ? qtrue : qfalse; /* OSDF CPM */
 	}
-	else if (cgs.fpsclassico)
+#if 0
+	else if (cgs.gamename_unfreeze)
 	{
-		fc->is_promode = qfalse; /* UnFreeZe/stock VQ3 */
+		fc->is_promode = qfalse; /* gamename=unfreeze / stock VQ3 */
 	}
+#endif
 	else
 	{
 		fc->is_promode = (cgs.osp.server_mode & (OSP_SERVER_MODE_PROMODE | OSP_SERVER_MODE_CPMA)) ? qtrue : qfalse;

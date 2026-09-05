@@ -55,7 +55,7 @@ int modeUnknown2;    //3528
 int modeUnknown3;    //352c
 int modeUnknown4;    //3530
 int modeShotgunPromode;    //3514
-int modeFPSClassico;    // FPSClassico server flag
+int modeGamenameUnfreeze;    /* gamename=unfreeze */
 float pm_overclip = OVERCLIP;
 /*
 

@@ -71,11 +71,6 @@ void CG_BE_AuthFrame(void)
 		cg_beAuthFrameDone = qtrue;
 		return;
 	}
-	if (CG_GetUserInfoProfile() != BE_USERINFO_BE)
-	{
-		cg_beAuthFrameDone = qtrue;
-		return;
-	}
 	if (!cgs.beSupportedServer)
 	{
 		cg_beAuthFrameDone = qtrue;

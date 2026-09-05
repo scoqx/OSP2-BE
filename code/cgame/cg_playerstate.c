@@ -481,7 +481,6 @@ void CG_Respawn(void)
 	cg.thisFrameTeleport = qtrue;
 	cg.weaponSelectTime = cg.time;
 	cg.weaponSelect = cg_respawnWeapon.integer ? cg_respawnWeapon.integer : cg.snap->ps.weapon;
-	cg.timeResidual = cg.snap->ps.commandTime + 1000;
 	if ((cg_zoomAutoReset.integer & 2) && cg.zoomed)
 	{
 		cg.zoomed = qfalse;
@@ -637,6 +636,7 @@ void CG_DamageSound(playerState_t* ps, playerState_t* ops)
 	}
 }
 
+#if 0
 /* UnFreeZe: PERS_ATTACKEE_ARMOR = (health << 8) | armor; pitch by remaining durability */
 static sfxHandle_t CG_PickUnfreezeHitSound(int health, int armor)
 {
@@ -670,6 +670,7 @@ static sfxHandle_t CG_PickUnfreezeHitSound(int health, int armor)
 	}
 	return cgs.media.hitSound;
 }
+#endif
 
 void CG_HitSound(playerState_t* ps, playerState_t* ops)
 {
@@ -684,8 +685,9 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		lgcd = (int)( lgcd / 1.3f );
 	}
 
-	/* fpsclassico / UnFreeZe: hithi/hitlo/hit by remaining HP/armor; no stack/LG defer */
-	if (cgs.fpsclassico)
+#if 0
+	/* gamename=unfreeze: hithi/hitlo/hit by remaining HP/armor; no stack/LG defer */
+	if (cgs.gamename_unfreeze)
 	{
 		const int atta = ps->persistant[PERS_ATTACKEE_ARMOR];
 		int armor;
@@ -709,6 +711,7 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		CG_PlayHitSound(CG_PickUnfreezeHitSound(health, armor), ps, ops);
 		return;
 	}
+#endif
 
 	if (!hits && !delayedDmg)
 	{

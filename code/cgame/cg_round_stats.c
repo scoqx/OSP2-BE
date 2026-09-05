@@ -306,8 +306,10 @@ static void CG_RoundStatsDrawSeparator(float *y, float windowWidth)
 
 qboolean CG_RoundStatsIsShowing(void)
 {
-	if (cgs.fpsclassico)
+#if 0
+	if (cgs.gamename_unfreeze)
 		return qfalse;
+#endif
 
 	/* +roundstats: show last cached snapshot, no server request */
 	if (cg.roundStatsHold && cg.roundStatsSupported)
