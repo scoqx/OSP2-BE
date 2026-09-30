@@ -1,2 +1,7 @@
 04.09.2026 be v1.08a
 + Pain sound fix
+
+(unreleased)
++ cg_lightningTrail - alternative fading LG trail (bit mask: 1 walls, 2 hits on players in the air, 4 heat gradient)
++ cg_lightningTrailTime
++ cg_lightningTrailWidth

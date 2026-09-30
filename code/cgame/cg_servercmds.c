@@ -608,7 +608,7 @@ void CG_ShaderStateChanged(void)
 	o = CG_ConfigString(CS_SHADERSTATE);
 	while (o && *o)
 	{
-		n = strstr(o, "=");
+		n = (char*)strstr(o, "=");
 		if (n && *n)
 		{
 			strncpy(originalShader, o, n - o);

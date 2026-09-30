@@ -1714,6 +1714,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_AddPacketEntities();         /* after calcViewValues, so predicted player state is correct */
 		CG_AddPredictedMissiles();
 		CG_AddMarks();
+		CG_AddLGTrails();
 		CG_AddParticles();
 		CG_AddLocalEntities();
 	}
