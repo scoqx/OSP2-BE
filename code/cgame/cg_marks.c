@@ -50,6 +50,7 @@ void    CG_InitMarkPolys(void)
 	int     i;
 
 	memset(cg_markPolys, 0, sizeof(cg_markPolys));
+	CG_LGTrailReset();
 
 	cg_activeMarkPolys.nextMark = &cg_activeMarkPolys;
 	cg_activeMarkPolys.prevMark = &cg_activeMarkPolys;

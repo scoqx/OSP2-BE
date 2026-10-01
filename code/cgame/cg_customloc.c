@@ -165,7 +165,7 @@ qboolean CG_CustomLocationsTeamChatCode(const char* str, vec3_t cloc, char** clo
 	int x, y, z;
 
 	/* find and decode string: ($x$y$z) */
-	*cloc_begin = strstr(str, "($");
+	*cloc_begin = (char*)strstr(str, "($");
 	if (*cloc_begin == NULL)
 	{
 		return qfalse;

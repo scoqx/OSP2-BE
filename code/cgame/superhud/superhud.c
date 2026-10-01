@@ -1256,7 +1256,7 @@ void CG_SHUDEventTeamChat(const char* message, int senderClientNum)
 
 	if (ch_FilterLocationsTeamchat.integer)
 	{
-		loc_start = strchr(message, '(');
+		loc_start = (char*)strchr(message, '(');
 		if (loc_start)
 		{
 			loc_start = strchr(loc_start + 1, '(');

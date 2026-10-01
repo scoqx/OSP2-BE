@@ -622,3 +622,16 @@ enemyLightningBoltNew11 //cg_altLightning 11
 		rgbGen vertex
 	}
 }
+
+
+// cg_lightningTrail: alternative LG trail (vertex color: beam color / heat gradient -> black)
+lgTrailBurn
+{
+	polygonOffset
+	cull none
+	{
+		map $whiteimage
+		blendFunc GL_ONE GL_ONE
+		rgbGen vertex
+	}
+}

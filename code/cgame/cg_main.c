@@ -202,6 +202,9 @@ vmCvar_t           cg_followpowerup;
 vmCvar_t           cg_followviewcam;
 vmCvar_t           cg_forceColors;
 vmCvar_t           cg_lightningImpact;
+vmCvar_t           cg_lightningTrail;
+vmCvar_t           cg_lightningTrailTime;
+vmCvar_t           cg_lightningTrailWidth;
 vmCvar_t           cg_MaxlocationWidth;
 vmCvar_t           cg_muzzleFlash;
 vmCvar_t           cg_nochatbeep;
@@ -771,6 +774,9 @@ cvarTable_t cvarTable[] =
 	{ &cg_followviewcam, "cg_followviewcam", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_followviewcam},
 	{ &cg_forceColors, "cg_forceColors", "0", CVAR_ARCHIVE },
 	{ &cg_lightningImpact, "cg_lightningImpact", "0", CVAR_ARCHIVE },
+	{ &cg_lightningTrail, "cg_lightningTrail", "0", CVAR_ARCHIVE },
+	{ &cg_lightningTrailTime, "cg_lightningTrailTime", "400", CVAR_ARCHIVE },
+	{ &cg_lightningTrailWidth, "cg_lightningTrailWidth", "1.5", CVAR_ARCHIVE },
 	{ &cg_MaxlocationWidth, "cg_MaxlocationWidth", "16", CVAR_ARCHIVE },
 	{ &cg_muzzleFlash, "cg_muzzleFlash", "1", CVAR_ARCHIVE },
 	{ &cg_nochatbeep, "cg_noChatBeep", "0", CVAR_ARCHIVE },
@@ -2495,6 +2501,7 @@ static void CG_RegisterGraphics(void)
 	}
 
 	cgs.media.holeMarkShader = trap_R_RegisterShader("gfx/damage/hole_lg_mrk");
+	cgs.media.lightningTrailShader = trap_R_RegisterShader("lgTrailBurn");
 	cgs.media.holeMarkNoPicMipShader = trap_R_RegisterShader("gfx/damage/hole_lg_mrkNopPicMip");
 	if (!cgs.media.holeMarkNoPicMipShader)
 	{

@@ -1752,6 +1752,438 @@ static void CG_CalculateWeaponPosition(vec3_t origin, vec3_t angles)
 
 /*
 ===============
+CG_LightningColorsOverride
+
+Color override for the LG beam (cg_altLightningColor / cg_teamLightningColor /
+cg_enemyLightningColor). Returns NULL when the default beam color must be used.
+===============
+*/
+static const playerColors_t* CG_LightningColorsOverride(qboolean isOurClient, qboolean isEnemyClient)
+{
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING))
+	{
+		return NULL;
+	}
+	if (isOurClient && cgs.osp.myColorsOverride.isLightningColorSet)
+	{
+		return &cgs.osp.myColors;
+	}
+	if (isEnemyClient && cgs.osp.enemyColorsOverride.isLightningColorSet)
+	{
+		return &cgs.osp.enemyColors;
+	}
+	if (!isOurClient && !isEnemyClient && cgs.osp.teamColorsOverride.isLightningColorSet)
+	{
+		return &cgs.osp.teamColors;
+	}
+	if (!isOurClient && cgs.osp.myColorsOverride.isLightningColorSet)
+	{
+		return &cgs.osp.myColors;
+	}
+	return NULL;
+}
+
+/*
+============================================================================
+
+LG ALTERNATIVE TRAIL (cg_lightningTrail, bit mask)
+
+Independent of cg_lightningImpact (that one only controls the crackle sprite).
+
+One ring buffer of hit points per client. Every frame the buffer is drawn as a
+single ribbon; vertex color depends on the age of the point. Wall points lie
+on the surface, player hit points stay in the air and are drawn as a
+billboard ribbon facing the camera. No local entities / marks are allocated.
+
+  cg_lightningTrail bits:
+    0 - off
+    1 - trail on walls (standard LG wall marks are removed)
+    2 - trail of hits on players in the air (standard LG blood dots are removed)
+    4 - "heat" gradient white -> yellow -> red -> black, ignores lightning colors
+        (if neither 1 nor 2 is set, 4 works as 1|4)
+
+============================================================================
+*/
+#define LGT_WALLS       1
+#define LGT_HITS        2
+#define LGT_HEAT        4
+
+#define LGT_MAX         48       // points per client
+#define LGT_MIN_DIST    6.0f     // min distance between points, units
+#define LGT_MAX_DIST    128.0f   // bigger jump breaks the ribbon
+#define LGT_BREAK_MS    120      // pause in firing breaks the ribbon
+#define LGT_MIN_DOT     0.7f     // surface angle limit (corner) for a continuous ribbon
+#define LGT_LIFT        0.5f     // lift above the surface, against z-fighting
+
+typedef struct
+{
+	vec3_t    pos;
+	vec3_t    normal;            // wall points only
+	int       time;
+	qboolean  air;               // hit on a player (in the air), not on a wall
+	qboolean  brk;               // not connected to the previous point
+} lgtSample_t;
+
+typedef struct
+{
+	lgtSample_t  s[LGT_MAX];
+	int          head;           // index of the newest point
+	int          count;
+	vec3_t       color;
+	int          lastCall;
+	qboolean     pendingBreak;
+} lgtHistory_t;
+
+static lgtHistory_t lgtHistory[MAX_CLIENTS];
+
+void CG_LGTrailReset(void)
+{
+	memset(lgtHistory, 0, sizeof(lgtHistory));
+}
+
+/*
+===============
+CG_LGTrailMask
+
+Effective cg_lightningTrail mask (0 = feature off).
+===============
+*/
+static int CG_LGTrailMask(void)
+{
+	int m = cg_lightningTrail.integer & (LGT_WALLS | LGT_HITS | LGT_HEAT);
+
+	if ((m & LGT_HEAT) && !(m & (LGT_WALLS | LGT_HITS)))
+	{
+		m |= LGT_WALLS;
+	}
+	return m;
+}
+
+/*
+===============
+CG_LGTrailUpdate
+
+Separate LG trail entry point, called from CG_LightningBolt for every firing
+beam. Does nothing when cg_lightningTrail is 0.
+===============
+*/
+static void CG_LGTrailUpdate(int clientNum, const trace_t* tr, const playerColors_t* colors)
+{
+	lgtHistory_t*  h;
+	lgtSample_t*   prev;
+	lgtSample_t*   s;
+	int            mask;
+	qboolean       air, brk;
+	float          distSq;
+	float          dot;
+
+	mask = CG_LGTrailMask();
+	if (!mask || clientNum < 0 || clientNum >= MAX_CLIENTS)
+	{
+		return;
+	}
+	h = &lgtHistory[clientNum];
+
+	if (cg.time - h->lastCall > LGT_BREAK_MS)
+	{
+		h->pendingBreak = qtrue;
+	}
+	h->lastCall = cg.time;
+
+	if (tr->fraction >= 1.0f)
+	{
+		h->pendingBreak = qtrue;
+		return;
+	}
+
+	if (tr->entityNum == ENTITYNUM_WORLD)
+	{
+		// static world surface
+		if (!(mask & LGT_WALLS) || (tr->surfaceFlags & SURF_NOIMPACT))
+		{
+			h->pendingBreak = qtrue;
+			return;
+		}
+		air = qfalse;
+	}
+	else if (tr->entityNum >= 0 && tr->entityNum < MAX_CLIENTS)
+	{
+		// hit on a player
+		if (!(mask & LGT_HITS))
+		{
+			h->pendingBreak = qtrue;
+			return;
+		}
+		air = qtrue;
+	}
+	else
+	{
+		h->pendingBreak = qtrue;
+		return;
+	}
+
+	if (colors)
+	{
+		VectorCopy(colors->lightning, h->color);
+	}
+	else
+	{
+		VectorSet(h->color, 0.55f, 0.65f, 1.0f);   // default beam tint
+	}
+
+	prev = h->count ? &h->s[h->head] : NULL;
+	if (prev)
+	{
+		distSq = DistanceSquared(prev->pos, tr->endpos);
+		dot = air ? 1.0f : DotProduct(prev->normal, tr->plane.normal);
+		if (prev->air == air && distSq < LGT_MIN_DIST * LGT_MIN_DIST && dot >= LGT_MIN_DOT)
+		{
+			// the beam stays on the same spot: keep it hot
+			prev->time = cg.time;
+			h->pendingBreak = qfalse;
+			return;
+		}
+		brk = h->pendingBreak || prev->air != air || distSq > LGT_MAX_DIST * LGT_MAX_DIST || dot < LGT_MIN_DOT;
+	}
+	else
+	{
+		brk = qtrue;
+	}
+
+	h->head = prev ? (h->head + 1) % LGT_MAX : 0;
+	if (h->count < LGT_MAX)
+	{
+		h->count++;
+	}
+	s = &h->s[h->head];
+	VectorCopy(tr->endpos, s->pos);
+	if (air)
+	{
+		VectorClear(s->normal);
+	}
+	else
+	{
+		VectorCopy(tr->plane.normal, s->normal);
+	}
+	s->air = air;
+	s->time = cg.time;
+	s->brk = brk;
+	h->pendingBreak = qfalse;
+}
+
+/*
+===============
+CG_LGTrailColor
+
+Color of a point by its age. heat: white -> yellow -> red -> black,
+otherwise the beam color fading to black.
+===============
+*/
+static void CG_LGTrailColor(int age, int life, const vec3_t base, qboolean heat, vec3_t out)
+{
+	static const float heatStops[][4] =
+	{
+		// t     r     g     b
+		{ 0.00f, 1.0f, 1.0f, 1.0f },   // white
+		{ 0.20f, 1.0f, 0.9f, 0.1f },   // yellow
+		{ 0.55f, 0.9f, 0.1f, 0.0f },   // red
+		{ 1.00f, 0.0f, 0.0f, 0.0f },   // black
+	};
+	float t = (float)age / (float)life;
+	int i;
+
+	if (t >= 1.0f)
+	{
+		VectorClear(out);
+		return;
+	}
+	if (t < 0.0f)
+	{
+		t = 0.0f;
+	}
+
+	if (!heat)
+	{
+		float k = 1.0f - t;
+
+		VectorScale(base, k * k, out);   // cools down fast, smolders long
+		return;
+	}
+
+	for (i = 0; i < 3; i++)
+	{
+		if (t <= heatStops[i + 1][0])
+		{
+			float f = (t - heatStops[i][0]) / (heatStops[i + 1][0] - heatStops[i][0]);
+
+			out[0] = heatStops[i][1] + (heatStops[i + 1][1] - heatStops[i][1]) * f;
+			out[1] = heatStops[i][2] + (heatStops[i + 1][2] - heatStops[i][2]) * f;
+			out[2] = heatStops[i][3] + (heatStops[i + 1][3] - heatStops[i][3]) * f;
+			return;
+		}
+	}
+	VectorClear(out);
+}
+
+static void CG_LGTrailQuad(const vec3_t a, const vec3_t b, const vec3_t c, const vec3_t d,
+                           const vec3_t col0, const vec3_t col1)
+{
+	polyVert_t v[4];
+	int i, j;
+	const float* col;
+	float f;
+
+	VectorCopy(a, v[0].xyz);
+	VectorCopy(b, v[1].xyz);
+	VectorCopy(c, v[2].xyz);
+	VectorCopy(d, v[3].xyz);
+	for (i = 0; i < 4; i++)
+	{
+		col = (i < 2) ? col0 : col1;
+		v[i].st[0] = 0.0f;
+		v[i].st[1] = 0.0f;
+		for (j = 0; j < 3; j++)
+		{
+			f = col[j];
+			if (f < 0.0f) f = 0.0f;
+			if (f > 1.0f) f = 1.0f;
+			v[i].modulate[j] = (byte)(f * 255.0f);
+		}
+		v[i].modulate[3] = 255;
+	}
+	trap_R_AddPolyToScene(cgs.media.lightningTrailShader, 4, v);
+}
+
+/*
+===============
+CG_AddLGTrails
+
+Called once per frame, draws the trails of all clients (also after the
+beam is released, so the line keeps cooling down).
+===============
+*/
+void CG_AddLGTrails(void)
+{
+	int      clientNum, j, life, mask;
+	float    half;
+	qboolean heat;
+	vec3_t   L[LGT_MAX];
+	vec3_t   R[LGT_MAX];
+	vec3_t   N[LGT_MAX];
+	vec3_t   C[LGT_MAX];
+
+	mask = CG_LGTrailMask();
+	if (!mask || !cgs.media.lightningTrailShader)
+	{
+		return;
+	}
+	heat = (mask & LGT_HEAT) != 0;
+
+	life = cg_lightningTrailTime.integer;
+	if (life < 100) life = 100;
+	if (life > 5000) life = 5000;
+	half = cg_lightningTrailWidth.value;
+	if (half < 0.5f) half = 0.5f;
+	if (half > 16.0f) half = 16.0f;
+
+	for (clientNum = 0; clientNum < MAX_CLIENTS; clientNum++)
+	{
+		lgtHistory_t*  h = &lgtHistory[clientNum];
+		int            oldest;
+
+		// drop the points which are already cold
+		while (h->count)
+		{
+			oldest = (h->head - h->count + 1 + LGT_MAX) % LGT_MAX;
+			if (cg.time - h->s[oldest].time <= life)
+			{
+				break;
+			}
+			h->count--;
+		}
+		if (!h->count)
+		{
+			continue;
+		}
+		oldest = (h->head - h->count + 1 + LGT_MAX) % LGT_MAX;
+
+		// side vectors for every point, so neighbouring quads share their edges
+		for (j = 0; j < h->count; j++)
+		{
+			lgtSample_t*  s = &h->s[(oldest + j) % LGT_MAX];
+			qboolean      hasPrev = (j > 0 && !s->brk);
+			qboolean      hasNext = (j < h->count - 1 && !h->s[(oldest + j + 1) % LGT_MAX].brk);
+			vec3_t        dir, side, center;
+
+			CG_LGTrailColor(cg.time - s->time, life, h->color, heat, C[j]);
+
+			if (s->air)
+			{
+				// in the air: ribbon faces the camera
+				VectorSubtract(cg.refdef.vieworg, s->pos, N[j]);
+				if (VectorNormalize(N[j]) < 0.001f)
+				{
+					VectorCopy(cg.refdef.viewaxis[0], N[j]);
+					VectorNegate(N[j], N[j]);
+				}
+				VectorCopy(s->pos, center);
+			}
+			else
+			{
+				VectorCopy(s->normal, N[j]);
+				VectorMA(s->pos, LGT_LIFT, s->normal, center);
+			}
+
+			if (hasPrev || hasNext)
+			{
+				const lgtSample_t* p = hasPrev ? &h->s[(oldest + j - 1) % LGT_MAX] : s;
+				const lgtSample_t* n = hasNext ? &h->s[(oldest + j + 1) % LGT_MAX] : s;
+
+				VectorSubtract(n->pos, p->pos, dir);
+				CrossProduct(dir, N[j], side);
+				if (VectorNormalize(side) < 0.001f)
+				{
+					PerpendicularVector(side, N[j]);
+				}
+			}
+			else
+			{
+				PerpendicularVector(side, N[j]);
+			}
+			VectorMA(center, half, side, L[j]);
+			VectorMA(center, -half, side, R[j]);
+		}
+
+		for (j = 0; j < h->count; j++)
+		{
+			lgtSample_t*  s = &h->s[(oldest + j) % LGT_MAX];
+			qboolean      hasPrev = (j > 0 && !s->brk);
+			qboolean      hasNext = (j < h->count - 1 && !h->s[(oldest + j + 1) % LGT_MAX].brk);
+
+			if (hasNext)
+			{
+				CG_LGTrailQuad(L[j], R[j], R[j + 1], L[j + 1], C[j], C[j + 1]);
+			}
+			else if (!hasPrev)
+			{
+				// single point (the beam stays on one spot): small hot square
+				vec3_t fwd, sideVec, a, b, c, d;
+
+				VectorSubtract(L[j], R[j], sideVec);         // 2 * half * side
+				CrossProduct(N[j], sideVec, fwd);            // second axis on the surface
+				VectorNormalize(fwd);
+				VectorMA(L[j], half, fwd, a);
+				VectorMA(R[j], half, fwd, b);
+				VectorMA(R[j], -half, fwd, c);
+				VectorMA(L[j], -half, fwd, d);
+				CG_LGTrailQuad(a, b, c, d, C[j], C[j]);
+			}
+		}
+	}
+}
+
+/*
+===============
 CG_LightningBolt
 
 Origin will be the exact tag point, which is slightly
@@ -1872,31 +2304,8 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 			const playerColors_t* colors;
 			qboolean useColorShader;
 
-			colors = NULL;
-			useColorShader = qfalse;
-			if (CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING))
-			{
-				if (isOurClient && cgs.osp.myColorsOverride.isLightningColorSet)
-				{
-					colors = &cgs.osp.myColors;
-					useColorShader = qtrue;
-				}
-				else if (isEnemyClient && cgs.osp.enemyColorsOverride.isLightningColorSet)
-				{
-					colors = &cgs.osp.enemyColors;
-					useColorShader = qtrue;
-				}
-				else if (!isOurClient && !isEnemyClient && cgs.osp.teamColorsOverride.isLightningColorSet)
-				{
-					colors = &cgs.osp.teamColors;
-					useColorShader = qtrue;
-				}
-				else if (!isOurClient && cgs.osp.myColorsOverride.isLightningColorSet)
-				{
-					colors = &cgs.osp.myColors;
-					useColorShader = qtrue;
-				}
-			}
+			colors = CG_LightningColorsOverride(isOurClient, isEnemyClient);
+			useColorShader = (colors != NULL);
 			if (useColorShader)
 			{
 				beam.customShader = cg_nomip.integer & 1 ? cgs.media.enemyLightningBoltNoPicMip[shaft_type] : cgs.media.enemyLightningBolt[shaft_type];
@@ -1910,6 +2319,9 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		}
 
 		trap_R_AddRefEntityToScene(&beam);
+
+		// alternative trail (cg_lightningTrail), independent of cg_lightningImpact
+		CG_LGTrailUpdate(cent->currentState.number, &trace, CG_LightningColorsOverride(isOurClient, isEnemyClient));
 
 		if (trace.fraction < 1.0f && cg_lightningImpact.integer)
 		{
@@ -3525,6 +3937,13 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 			break;
 	}
 
+	// cg_lightningTrail & 1: the LG wall mark is replaced by the alternative trail (CG_AddLGTrails)
+	if (mark && (mark == cgs.media.holeMarkShader || mark == cgs.media.holeMarkNoPicMipShader)
+    && (CG_LGTrailMask() & LGT_WALLS))
+	{
+        mark = 0;
+	}
+
 	if (sfx)
 	{
 		trap_S_StartSound(origin, ENTITYNUM_WORLD, CHAN_AUTO, sfx);
@@ -3571,6 +3990,10 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 	//
 	// impact mark
 	//
+	if (!mark)
+	{
+		return;
+	}
 	alphaFade = (mark == cgs.media.energyMarkShader);   // plasma fades alpha, all others fade color
 	if (weapon == WP_RAILGUN)
 	{
@@ -3594,7 +4017,11 @@ CG_MissileHitPlayer
 */
 void CG_MissileHitPlayer(int weapon, vec3_t origin, vec3_t dir, int entityNum)
 {
-	CG_Bleed(origin, entityNum);
+	// cg_lightningTrail & 2: LG hits on players are shown by the trail, no blood dots
+	if (!(weapon == WP_LIGHTNING && (CG_LGTrailMask() & LGT_HITS)))
+	{
+		CG_Bleed(origin, entityNum);
+	}
 
 	/* some weapons will make an explosion with the blood, while
 	   others will just make the blood */

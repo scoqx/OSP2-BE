@@ -1328,6 +1328,7 @@ typedef struct
 	qhandle_t   burnMarkNoPicMipShader;
 	qhandle_t   holeMarkShader;
 	qhandle_t   holeMarkNoPicMipShader;
+	qhandle_t   lightningTrailShader;   // cg_lightningTrail: alternative LG trail ribbon
 	qhandle_t   energyMarkShader;
 	qhandle_t   energyMarkNoPicMipShader;
 
@@ -2243,6 +2244,9 @@ extern vmCvar_t           cg_followpowerup;
 extern vmCvar_t           cg_followviewcam;
 extern vmCvar_t           cg_forceColors;
 extern vmCvar_t           cg_lightningImpact;
+extern vmCvar_t           cg_lightningTrail;
+extern vmCvar_t           cg_lightningTrailTime;
+extern vmCvar_t           cg_lightningTrailWidth;
 extern vmCvar_t           cg_MaxlocationWidth;
 extern vmCvar_t           cg_muzzleFlash;
 extern vmCvar_t           cg_nochatbeep;
@@ -3152,6 +3156,8 @@ void CG_ApplyPlasmaEntityColor(int owner, refEntity_t* ent, qhandle_t* shader);
 void CG_AddPlasmaMissileDlight(vec3_t origin, int ownerNum, qhandle_t spawnShader, const vec3_t spawnTeamColor);
 void CG_AddPlasmaMissileScene(vec3_t origin, int ownerNum, qhandle_t spawnShader, const vec3_t spawnTeamColor, qboolean addDlight);
 void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, impactSound_t soundType);
+void CG_LGTrailReset(void);
+void CG_AddLGTrails(void);
 void CG_MissileHitPlayer(int weapon, vec3_t origin, vec3_t dir, int entityNum);
 void CG_ShotgunFire(entityState_t* es);
 void CG_Bullet(vec3_t origin, int sourceEntityNum, vec3_t normal, qboolean flesh, int fleshEntityNum);
