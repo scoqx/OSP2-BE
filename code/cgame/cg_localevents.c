@@ -1499,12 +1499,14 @@ void CG_LocalEventCvarChanged_cg_printui(cvarTable_t* cvart)
 	{
 		// Clear all elements
 		int i;
+		int cleared = 0;
 		for (i = 0; i < 32; i++)
 		{
 			if (cg.printui[i].active)
 			{
 				CG_PrintUIRemoveFromActiveList(i);
 				cg.printui[i].active = qfalse;
+				cleared++;
 			}
 		}
 	}

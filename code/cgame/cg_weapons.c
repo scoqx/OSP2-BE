@@ -1790,7 +1790,7 @@ LG ALTERNATIVE TRAIL (cg_lightningTrail, bit mask)
 
 Independent of cg_lightningImpact (that one only controls the crackle sprite).
 
-One ring buffer of hit points per client. Every frame the buffer is drawn as a
+One ring buffer (head/tail) of hit points per client. Every frame the buffer is drawn as a
 single ribbon; vertex color depends on the age of the point. Wall points lie
 on the surface, player hit points stay in the air and are drawn as a
 billboard ribbon facing the camera. No local entities / marks are allocated.
@@ -1808,7 +1808,8 @@ billboard ribbon facing the camera. No local entities / marks are allocated.
 #define LGT_HITS        2
 #define LGT_HEAT        4
 
-#define LGT_MAX         48       // points per client
+#define LGT_MAX         48       // max points per client
+#define LGT_RING_SIZE   (LGT_MAX + 1)   // one slot always stays free: head == tail means "empty"
 #define LGT_MIN_DIST    6.0f     // min distance between points, units
 #define LGT_MAX_DIST    128.0f   // bigger jump breaks the ribbon
 #define LGT_BREAK_MS    120      // pause in firing breaks the ribbon
@@ -1826,9 +1827,9 @@ typedef struct
 
 typedef struct
 {
-	lgtSample_t  s[LGT_MAX];
-	int          head;           // index of the newest point
-	int          count;
+	lgtSample_t  s[LGT_RING_SIZE];
+	int          head;           // index where the next point is written (one past the newest)
+	int          tail;           // index of the oldest point
 	vec3_t       color;
 	int          lastCall;
 	qboolean     pendingBreak;
@@ -1839,6 +1840,16 @@ static lgtHistory_t lgtHistory[MAX_CLIENTS];
 void CG_LGTrailReset(void)
 {
 	memset(lgtHistory, 0, sizeof(lgtHistory));
+}
+
+static int CG_LGTrailNext(int index)
+{
+	return (index + 1) % LGT_RING_SIZE;
+}
+
+static int CG_LGTrailPrev(int index)
+{
+	return (index + LGT_RING_SIZE - 1) % LGT_RING_SIZE;
 }
 
 /*
@@ -1931,7 +1942,7 @@ static void CG_LGTrailUpdate(int clientNum, const trace_t* tr, const playerColor
 		VectorSet(h->color, 0.55f, 0.65f, 1.0f);   // default beam tint
 	}
 
-	prev = h->count ? &h->s[h->head] : NULL;
+	prev = (h->head != h->tail) ? &h->s[CG_LGTrailPrev(h->head)] : NULL;
 	if (prev)
 	{
 		distSq = DistanceSquared(prev->pos, tr->endpos);
@@ -1950,12 +1961,13 @@ static void CG_LGTrailUpdate(int clientNum, const trace_t* tr, const playerColor
 		brk = qtrue;
 	}
 
-	h->head = prev ? (h->head + 1) % LGT_MAX : 0;
-	if (h->count < LGT_MAX)
-	{
-		h->count++;
-	}
 	s = &h->s[h->head];
+	h->head = CG_LGTrailNext(h->head);
+	if (h->head == h->tail)
+	{
+		// the ring is full: the oldest point is dropped
+		h->tail = CG_LGTrailNext(h->tail);
+	}
 	VectorCopy(tr->endpos, s->pos);
 	if (air)
 	{
@@ -1981,7 +1993,7 @@ otherwise the beam color fading to black.
 */
 static void CG_LGTrailColor(int age, int life, const vec3_t base, qboolean heat, vec3_t out)
 {
-	static const float heatStops[][4] =
+	static const vec_t heatStops[][4] =
 	{
 		// t     r     g     b
 		{ 0.00f, 1.0f, 1.0f, 1.0f },   // white
@@ -1989,22 +2001,12 @@ static void CG_LGTrailColor(int age, int life, const vec3_t base, qboolean heat,
 		{ 0.55f, 0.9f, 0.1f, 0.0f },   // red
 		{ 1.00f, 0.0f, 0.0f, 0.0f },   // black
 	};
-	float t = (float)age / (float)life;
+	vec_t t = Com_Clamp(0.0f, 1.0f, (vec_t)age / (vec_t)life);
 	int i;
-
-	if (t >= 1.0f)
-	{
-		VectorClear(out);
-		return;
-	}
-	if (t < 0.0f)
-	{
-		t = 0.0f;
-	}
 
 	if (!heat)
 	{
-		float k = 1.0f - t;
+		vec_t k = 1.0f - t;
 
 		VectorScale(base, k * k, out);   // cools down fast, smolders long
 		return;
@@ -2014,7 +2016,7 @@ static void CG_LGTrailColor(int age, int life, const vec3_t base, qboolean heat,
 	{
 		if (t <= heatStops[i + 1][0])
 		{
-			float f = (t - heatStops[i][0]) / (heatStops[i + 1][0] - heatStops[i][0]);
+			vec_t f = (t - heatStops[i][0]) / (heatStops[i + 1][0] - heatStops[i][0]);
 
 			out[0] = heatStops[i][1] + (heatStops[i + 1][1] - heatStops[i][1]) * f;
 			out[1] = heatStops[i][2] + (heatStops[i + 1][2] - heatStops[i][2]) * f;
@@ -2022,7 +2024,7 @@ static void CG_LGTrailColor(int age, int life, const vec3_t base, qboolean heat,
 			return;
 		}
 	}
-	VectorClear(out);
+	VectorCopy(&heatStops[3][1], out);   // the last stop (column 0 is the time, skip it)
 }
 
 static void CG_LGTrailQuad(const vec3_t a, const vec3_t b, const vec3_t c, const vec3_t d,
@@ -2030,8 +2032,7 @@ static void CG_LGTrailQuad(const vec3_t a, const vec3_t b, const vec3_t c, const
 {
 	polyVert_t v[4];
 	int i, j;
-	const float* col;
-	float f;
+	const vec_t* col;
 
 	VectorCopy(a, v[0].xyz);
 	VectorCopy(b, v[1].xyz);
@@ -2044,10 +2045,7 @@ static void CG_LGTrailQuad(const vec3_t a, const vec3_t b, const vec3_t c, const
 		v[i].st[1] = 0.0f;
 		for (j = 0; j < 3; j++)
 		{
-			f = col[j];
-			if (f < 0.0f) f = 0.0f;
-			if (f > 1.0f) f = 1.0f;
-			v[i].modulate[j] = (byte)(f * 255.0f);
+			v[i].modulate[j] = (byte)(Com_Clamp(0.0f, 1.0f, col[j]) * 255.0f);
 		}
 		v[i].modulate[3] = 255;
 	}
@@ -2064,13 +2062,12 @@ beam is released, so the line keeps cooling down).
 */
 void CG_AddLGTrails(void)
 {
-	int      clientNum, j, life, mask;
+	int      clientNum, it, j, life, mask;
 	float    half;
 	qboolean heat;
-	vec3_t   L[LGT_MAX];
-	vec3_t   R[LGT_MAX];
-	vec3_t   N[LGT_MAX];
-	vec3_t   C[LGT_MAX];
+	vec3_t   edgeLeft[LGT_MAX];
+	vec3_t   edgeRight[LGT_MAX];
+	vec3_t   pointNormal[LGT_MAX];
 
 	mask = CG_LGTrailMask();
 	if (!mask || !cgs.media.lightningTrailShader)
@@ -2079,104 +2076,99 @@ void CG_AddLGTrails(void)
 	}
 	heat = (mask & LGT_HEAT) != 0;
 
-	life = cg_lightningTrailTime.integer;
-	if (life < 100) life = 100;
-	if (life > 5000) life = 5000;
-	half = cg_lightningTrailWidth.value;
-	if (half < 0.5f) half = 0.5f;
-	if (half > 16.0f) half = 16.0f;
+	life = Com_ClampInt(100, 5000, cg_lightningTrailTime.integer);
+	half = Com_Clamp(0.5f, 16.0f, cg_lightningTrailWidth.value);
 
 	for (clientNum = 0; clientNum < MAX_CLIENTS; clientNum++)
 	{
 		lgtHistory_t*  h = &lgtHistory[clientNum];
-		int            oldest;
 
 		// drop the points which are already cold
-		while (h->count)
+		while (h->tail != h->head && cg.time - h->s[h->tail].time > life)
 		{
-			oldest = (h->head - h->count + 1 + LGT_MAX) % LGT_MAX;
-			if (cg.time - h->s[oldest].time <= life)
-			{
-				break;
-			}
-			h->count--;
+			h->tail = CG_LGTrailNext(h->tail);
 		}
-		if (!h->count)
+		if (h->tail == h->head)
 		{
 			continue;
 		}
-		oldest = (h->head - h->count + 1 + LGT_MAX) % LGT_MAX;
 
 		// side vectors for every point, so neighbouring quads share their edges
-		for (j = 0; j < h->count; j++)
+		for (j = 0, it = h->tail; it != h->head; it = CG_LGTrailNext(it), j++)
 		{
-			lgtSample_t*  s = &h->s[(oldest + j) % LGT_MAX];
-			qboolean      hasPrev = (j > 0 && !s->brk);
-			qboolean      hasNext = (j < h->count - 1 && !h->s[(oldest + j + 1) % LGT_MAX].brk);
-			vec3_t        dir, side, center;
-
-			CG_LGTrailColor(cg.time - s->time, life, h->color, heat, C[j]);
+			const lgtSample_t*  s = &h->s[it];
+			int                 next = CG_LGTrailNext(it);
+			qboolean            hasPrev = (it != h->tail && !s->brk);
+			qboolean            hasNext = (next != h->head && !h->s[next].brk);
+			vec3_t              dir, side, center;
 
 			if (s->air)
 			{
 				// in the air: ribbon faces the camera
-				VectorSubtract(cg.refdef.vieworg, s->pos, N[j]);
-				if (VectorNormalize(N[j]) < 0.001f)
+				VectorSubtract(cg.refdef.vieworg, s->pos, pointNormal[j]);
+				if (VectorNormalize(pointNormal[j]) < 0.001f)
 				{
-					VectorCopy(cg.refdef.viewaxis[0], N[j]);
-					VectorNegate(N[j], N[j]);
+					VectorCopy(cg.refdef.viewaxis[0], pointNormal[j]);
+					VectorNegate(pointNormal[j], pointNormal[j]);
 				}
 				VectorCopy(s->pos, center);
 			}
 			else
 			{
-				VectorCopy(s->normal, N[j]);
+				VectorCopy(s->normal, pointNormal[j]);
 				VectorMA(s->pos, LGT_LIFT, s->normal, center);
 			}
 
 			if (hasPrev || hasNext)
 			{
-				const lgtSample_t* p = hasPrev ? &h->s[(oldest + j - 1) % LGT_MAX] : s;
-				const lgtSample_t* n = hasNext ? &h->s[(oldest + j + 1) % LGT_MAX] : s;
+				const lgtSample_t* p = hasPrev ? &h->s[CG_LGTrailPrev(it)] : s;
+				const lgtSample_t* n = hasNext ? &h->s[next] : s;
 
 				VectorSubtract(n->pos, p->pos, dir);
-				CrossProduct(dir, N[j], side);
+				CrossProduct(dir, pointNormal[j], side);
 				if (VectorNormalize(side) < 0.001f)
 				{
-					PerpendicularVector(side, N[j]);
+					PerpendicularVector(side, pointNormal[j]);
 				}
 			}
 			else
 			{
-				PerpendicularVector(side, N[j]);
+				PerpendicularVector(side, pointNormal[j]);
 			}
-			VectorMA(center, half, side, L[j]);
-			VectorMA(center, -half, side, R[j]);
+			VectorMA(center, half, side, edgeLeft[j]);
+			VectorMA(center, -half, side, edgeRight[j]);
 		}
 
-		for (j = 0; j < h->count; j++)
+		for (j = 0, it = h->tail; it != h->head; it = CG_LGTrailNext(it), j++)
 		{
-			lgtSample_t*  s = &h->s[(oldest + j) % LGT_MAX];
-			qboolean      hasPrev = (j > 0 && !s->brk);
-			qboolean      hasNext = (j < h->count - 1 && !h->s[(oldest + j + 1) % LGT_MAX].brk);
+			const lgtSample_t*  s = &h->s[it];
+			int                 next = CG_LGTrailNext(it);
+			qboolean            hasPrev = (it != h->tail && !s->brk);
+			qboolean            hasNext = (next != h->head && !h->s[next].brk);
+			vec3_t              color;
+
+			CG_LGTrailColor(cg.time - s->time, life, h->color, heat, color);
 
 			if (hasNext)
 			{
-				CG_LGTrailQuad(L[j], R[j], R[j + 1], L[j + 1], C[j], C[j + 1]);
+				vec3_t  nextColor;
+
+				CG_LGTrailColor(cg.time - h->s[next].time, life, h->color, heat, nextColor);
+				CG_LGTrailQuad(edgeLeft[j], edgeRight[j], edgeRight[j + 1], edgeLeft[j + 1], color, nextColor);
 			}
 			else if (!hasPrev)
 			{
 				// single point (the beam stays on one spot): small hot square
 				vec3_t fwd, sideVec, a, b, c, d;
 
-				VectorSubtract(L[j], R[j], sideVec);         // 2 * half * side
-				CrossProduct(N[j], sideVec, fwd);            // second axis on the surface
+				VectorSubtract(edgeLeft[j], edgeRight[j], sideVec);   // 2 * half * side
+				CrossProduct(pointNormal[j], sideVec, fwd);           // second axis on the surface
 				VectorNormalize(fwd);
-				VectorMA(L[j], half, fwd, a);
-				VectorMA(R[j], half, fwd, b);
-				VectorMA(R[j], -half, fwd, c);
-				VectorMA(L[j], -half, fwd, d);
-				CG_LGTrailQuad(a, b, c, d, C[j], C[j]);
+				VectorMA(edgeLeft[j], half, fwd, a);
+				VectorMA(edgeRight[j], half, fwd, b);
+				VectorMA(edgeRight[j], -half, fwd, c);
+				VectorMA(edgeLeft[j], -half, fwd, d);
+				CG_LGTrailQuad(a, b, c, d, color, color);
 			}
 		}
 	}
