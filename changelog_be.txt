@@ -1109,3 +1109,11 @@ SuperHUD:
 + cg_lightningTrail - alternative fading LG trail (bit mask: 1 walls, 2 hits on players in the air, 4 heat gradient)
 + cg_lightningTrailTime
 + cg_lightningTrailWidth
+
+31.10.2026 be v1.10
++ Build system from CMake PR (#4)
++ Disable remote status version-check; main-menu bar always shows Welcome!
++ Changelog / full changelog still available from local assets
+
+31.10.2026 be v1.10a
+- Status server disabled
