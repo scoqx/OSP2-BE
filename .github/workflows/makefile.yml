@@ -183,7 +183,7 @@ jobs:
           echo "All builds produced required artifacts"
 
   # Publish downloads to https://github.com/scoqx/osp2-be/releases/tag/latest
-  # Requires secret OSP2_BE_RELEASE_TOKEN (fine-grained PAT, Contents: Write on scoqx/osp2-be).
+  # Requires secret OSP2_BE_RELEASE_TOKEN (fine-grained PAT, Contents: Write on scoqx/osp2-be and scoqx/osp2-be-web).
   create-release:
     if: success()
     needs: [verify-build-artifacts]
@@ -232,13 +232,14 @@ jobs:
           body: |
             OSP2-BE download assets. Stable URLs use `/releases/latest/download/<file>`.
 
-      # Site UI (GitHub Pages) reads cfg/version from scoqx/osp2-be main (assets/ + root copies).
-      - name: Mirror cfg and version text to scoqx/osp2-be main
+      # Site UI (GitHub Pages) reads cfg/version from scoqx/osp2-be-web main (assets/ + root copies).
+      # Same token as the release: Contents write on scoqx/osp2-be and scoqx/osp2-be-web.
+      - name: Mirror cfg and version text to scoqx/osp2-be-web main
         env:
           TOKEN: ${{ secrets.OSP2_BE_RELEASE_TOKEN }}
         run: |
           set -euo pipefail
-          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/scoqx/osp2-be.git" mirror-repo
+          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/scoqx/osp2-be-web.git" mirror-repo
           mkdir -p mirror-repo/assets
           cp release-assets/version.txt mirror-repo/version.txt
           cp release-assets/version_changelog.txt mirror-repo/version_changelog.txt
@@ -258,64 +259,5 @@ jobs:
             echo "Site assets already up to date on main"
             exit 0
           fi
-          # git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
-          # git push origin HEAD:main
-
-  deploy-to-status-server:
-    needs: [verify-build-artifacts]
-    if: success()
-    runs-on: ubuntu-latest
-    env:
-      STATUS_REPO: scoqx/osp2be-status-server
-      STATUS_BRANCH: main
-      GIT_USER_NAME: GitHub Actions
-      GIT_USER_EMAIL: actions@github.com
-    steps:
-      - name: Checkout OSP2-PBE (latest master after version sync)
-        uses: actions/checkout@v6
-        with:
-          ref: master
-          fetch-depth: 0
-          submodules: recursive
-          path: source-repo
-
-      - name: Pull latest master
-        run: git -C source-repo pull --ff-only origin meta/build/cmake-osp2
-
-      - name: Build fresh version.txt and version_changelog.txt
-        run: |
-          cd source-repo
-          python3 ./tools/parse_changelog.py changelog_be.txt assets/version.txt assets/version_changelog.txt
-          echo "=== version.txt ==="
-          cat assets/version.txt
-          echo "=== version_changelog.txt (line 1) ==="
-          head -1 assets/version_changelog.txt
-
-      - name: Checkout osp2be-status-server
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ env.STATUS_REPO }}
-          ref: ${{ env.STATUS_BRANCH }}
-          token: ${{ secrets.BE_SERVER_STATUS }}
-          path: status-repo
-
-      - name: Patch response.conf and version_changelog.txt
-        run: |
-          python3 source-repo/scripts/patch_osp2be_status_server.py \
-            --version-txt source-repo/assets/version.txt \
-            --changelog source-repo/assets/version_changelog.txt \
-            --status-config source-repo/be_status_server.conf \
-            --status-dir status-repo
-
-      # - name: Update mod_sig in deploy/response.conf
-      #   working-directory: status-repo
-      #   run: python3 gen_status_sig.py --write -c deploy/response.conf
-
-      # - name: Commit and push to osp2be-status-server
-      #   run: |
-      #     cd status-repo
-      #     git config user.name "${{ env.GIT_USER_NAME }}"
-      #     git config user.email "${{ env.GIT_USER_EMAIL }}"
-      #     git add deploy/version_changelog.txt deploy/response.conf
-      #     git diff --quiet --cached || git commit -m "Update version_changelog and status version [auto]"
-      #     git push origin ${{ env.STATUS_BRANCH }}
+          git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
+          git push origin HEAD:main

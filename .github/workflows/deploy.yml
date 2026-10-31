@@ -1,4 +1,4 @@
-# Deploy version/changelog to scoqx/osp2-be Releases + cfg/version to scoqx/osp2-be main.
+# Deploy version/changelog to scoqx/osp2-be Releases + cfg/version to scoqx/osp2-be-web main.
 # Requires secret OSP2_BE_RELEASE_TOKEN.
 # See README "Deploy downloads".
 
@@ -50,12 +50,12 @@ jobs:
           body: |
             OSP2-BE download assets. Stable URLs use `/releases/latest/download/<file>`.
 
-      - name: Mirror cfg and version text to scoqx/osp2-be main
+      - name: Mirror cfg and version text to scoqx/osp2-be-web main
         env:
           TOKEN: ${{ secrets.OSP2_BE_RELEASE_TOKEN }}
         run: |
           set -euo pipefail
-          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/scoqx/osp2-be.git" mirror-repo
+          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/scoqx/osp2-be-web.git" mirror-repo
           mkdir -p mirror-repo/assets
           cp release-assets/version.txt mirror-repo/version.txt
           cp release-assets/version_changelog.txt mirror-repo/version_changelog.txt
@@ -75,5 +75,5 @@ jobs:
             echo "Site assets already up to date on main"
             exit 0
           fi
-          # git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
-          # git push origin HEAD:main
+          git commit -m "Sync cfg, version.txt, version_changelog.txt, changelog_be.txt"
+          git push origin HEAD:main
