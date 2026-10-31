@@ -5,6 +5,7 @@ set(BOTHGAMES_SOURCES
     ${SOURCE_DIR}/game/bg_misc.c
     ${SOURCE_DIR}/game/bg_pmove.c
     ${SOURCE_DIR}/game/bg_slidemove.c
+    ${SOURCE_DIR}/game/bg_auth.c
     ${SOURCE_DIR}/game/core.c
     ${SOURCE_DIR}/game/q3a.c
     ${SOURCE_DIR}/game/vjk.c
