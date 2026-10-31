@@ -1,58 +1,37 @@
-# OSP2-BE: Extended OSP2 version
+# OSP2-BE
 
-Visit website for handy console commands search and check out Ready to play Quake 3 Compilations
-## https://osp2.q3a.space/
+## [osp2.q3a.space](https://osp2.q3a.space/)
 
-### Deploy downloads (GitHub Releases)
+## Build
 
-CI publishes build/download assets to public repo **[scoqx/osp2-be](https://github.com/scoqx/osp2-be)** release tag `latest`:
+Requires CMake 3.25+, Ninja, and a C compiler (GCC/Clang, or MinGW on Windows).
 
-- https://github.com/scoqx/osp2-be/releases/latest/download/zz-osp-pak8be.pk3
-- https://github.com/scoqx/osp2-be/releases/latest/download/osp2-be-linux.tar.gz
-- https://github.com/scoqx/osp2-be/releases/latest/download/version.txt
-- https://github.com/scoqx/osp2-be/releases/latest/download/version_changelog.txt
-- https://github.com/scoqx/osp2-be/releases/latest/download/changelog_be.txt
+```
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
 
-1. The GitHub release is published with the workflow `GITHUB_TOKEN` (`contents: write`). No PAT is required for that step.
-2. Create a fine-grained PAT on account **scoqx** with **Contents: Read and write** on repository `scoqx/osp2-be-web`.
-3. Add repository secret **`OSP2_BE_RELEASE_TOKEN`** on OSP2-BE (the value of that PAT). Makefile CI and **Deploy version files** use it only to push cfg and version text to the website.
-4. `OSP2.cfg`, `OSP2English.cfg`, and version text are mirrored onto `scoqx/osp2-be-web` **main** (`assets/` for the site UI, plus root copies of the text files). Large downloads (pk3 / libraries) stay on GitHub Releases only.
+Release output is `build/Release/osp/`:
 
-## 🔧 Contributions
+- `zz-osp-pak8be.pk3` — assets and QVMs
+- `vm/cgame.qvm`, `vm/ui.qvm`
+- `cgamex86_64.so` / `cgamex86_64.dll` and `uix86_64.so` / `uix86_64.dll`
+
+`BUILD_MOD_LIBRARIES`, `BUILD_MOD_QVMS`, and `BUILD_MOD_PK3` default to `ON`. `BUILD_TESTS` defaults to `OFF`.
+
+## Contributions
 
 OSP2-BE incorporates code from several notable Quake mods and projects:
-- **OSP2 by snems**: [Github Link](https://github.com/snems/OSP2)
-- **baseq3a by Cyrax**: [GitHub Link](https://github.com/ec-/baseq3a)
-- **XQ3E Engine**: [GitHub Link](https://github.com/xq3e/engine)
+
+- **OSP2 by snems**: [GitHub](https://github.com/snems/OSP2)
+- **baseq3a by Cyrax**: [GitHub](https://github.com/ec-/baseq3a)
+- **XQ3E Engine**: [GitHub](https://github.com/xq3e/engine)
 - **Unlagged Mod by Nail Toronto**
-- **Ratmod**: [GitHub Link](https://github.com/rdntcntrl/ratoa_gamecode)
-- **Devotion**: [GitHub Link](https://github.com/alcachofass/devotion)
-- **Quake 3 1.16n extensions (X-Mod)**: [GitHub Link](https://github.com/navgg/Quake-3-1.16n-extensions)
-- **Nemesis Client 1.16n**: [GitHub Link](https://github.com/dledmonds/quake3-nemesis-1.16n)
+- **Ratmod**: [GitHub](https://github.com/rdntcntrl/ratoa_gamecode)
+- **Devotion**: [GitHub](https://github.com/alcachofass/devotion)
+- **Quake 3 1.16n extensions (X-Mod)**: [GitHub](https://github.com/navgg/Quake-3-1.16n-extensions)
+- **Nemesis Client 1.16n**: [GitHub](https://github.com/dledmonds/quake3-nemesis-1.16n)
 
-Some Assets taken from:
+Some assets taken from:
+
 - **CPMA**: https://playmorepromode.com/
-
-
-## ✨ BE-Features
-
-
-
-## 📞 Contacts
-
-Join the OSP2 community on Telegram for updates, discussions, and support:
-- [Telegram Channel](https://t.me/q3osp2)
-- [Telegram Chat](https://t.me/q3_osp2)
-
-## 🛠 New Commands
-
-See [docs/commands.md](docs/commands.md) for a comprehensive list of new commands and how to use them.
-
-Example configuration file: `OSP2English.cfg` located inside the mod directory.
-
-## 📥 Installation
-
-To install OSP2-BE:
-
-1. **Install Quake 3** and the **OSP mod v1.03** or **OSP 1.03 resouces** (from website).
-2. Copy the mod files (pack or library) into the `osp` folder within your Quake 3 directory.
