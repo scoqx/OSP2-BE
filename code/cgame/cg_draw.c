@@ -24,7 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // active (after loading) gameplay
 
 #include "cg_local.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 
 int sortedTeamPlayers[TEAM_MAXOVERLAY];
 int numSortedTeamPlayers;
@@ -45,7 +45,7 @@ Draws large numbers for status bar and powerups
 */
 void CG_DrawField(int x, int y, int width, int value, int w, int h)
 {
-	char    num[16], *ptr;
+	char    num[16], * ptr;
 	int     l;
 	int     frame;
 
@@ -2730,7 +2730,7 @@ qboolean CG_DrawIntermission(void)
 	return result;
 }
 
-void CG_OSPDrawIntermission()
+void CG_OSPDrawIntermission(void)
 {
 	int i;
 
@@ -3161,7 +3161,7 @@ void CG_OSPDrawNewCredits(void)
 	// version
 	CG_OSPDrawStringNew(
 	    x + w - 2, y,
-	    OSP_VERSION,
+	    XSTRINGIFY(OSP_VERSION),
 	    colorBlack,
 	    NULL,
 	    6, 8,

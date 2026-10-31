@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // when the snapshot transitions like all the other entities
 
 #include "cg_local.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 
 /* Map weapon index -> exec cvar; no cgs copy, read cvar.string at use */
 static const vmCvar_t* const execWeaponCvars[WP_NUM_WEAPONS] =
@@ -51,21 +51,6 @@ CG_CheckAmmo
 If the ammo has gone low enough to generate the warning, play a sound
 ==============
 */
-
-static int lowAmmoThresholds[WP_NUM_WEAPONS] =
-{
-	/* WP_NONE */            0,
-	/* WP_GAUNTLET */        0,
-	/* WP_MACHINEGUN */      30,
-	/* WP_SHOTGUN */         5,
-	/* WP_GRENADE_LAUNCHER */5,
-	/* WP_ROCKET_LAUNCHER */ 5,
-	/* WP_LIGHTNING */       30,
-	/* WP_RAILGUN */         5,
-	/* WP_PLASMAGUN */       30,
-	/* WP_BFG */             5,
-	/* WP_GRAPPLING_HOOK */  0
-};
 
 /* CG_CheckAmmo state: file scope so inlined body in CG_TransitionPlayerState can use it */
 static int lowAmmoWarningPrev[WP_NUM_WEAPONS] = {0};
@@ -306,6 +291,30 @@ static void CG_UpdateLightningTracking(const playerState_t* ps, customWeaponStat
 
 /*
 ==============
+CG_LowAmmoThresholdFor
+==============
+*/
+int CG_LowAmmoThresholdFor(int weapon) {
+	static int lowAmmoThresholds[WP_NUM_WEAPONS] =
+	{
+		/* WP_NONE */            0,
+		/* WP_GAUNTLET */        0,
+		/* WP_MACHINEGUN */      30,
+		/* WP_SHOTGUN */         5,
+		/* WP_GRENADE_LAUNCHER */5,
+		/* WP_ROCKET_LAUNCHER */ 5,
+		/* WP_LIGHTNING */       30,
+		/* WP_RAILGUN */         5,
+		/* WP_PLASMAGUN */       30,
+		/* WP_BFG */             5,
+		/* WP_GRAPPLING_HOOK */  0
+	};
+
+	return lowAmmoThresholds[weapon];
+}
+
+/*
+==============
 CG_CheckAmmo
 ==============
 */
@@ -338,7 +347,7 @@ static void CG_CheckAmmo(void)
 		cg.lowAmmoWarning = 0;
 		return;
 	}
-	threshold = lowAmmoThresholds[weapon];
+	threshold = CG_LowAmmoThresholdFor(weapon);
 	if (ammo > prevAmmoSaved)
 	{
 		cg.lowAmmoWarning = 0;

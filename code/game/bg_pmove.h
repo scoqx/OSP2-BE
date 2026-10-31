@@ -90,6 +90,8 @@ LIB_ONLY_STATIC void PM_Animate(void);
 void PM_UpdateViewAngles(playerState_t* ps, const usercmd_t* cmd);
 LIB_ONLY_STATIC void PM_CheckDuck(void);
 LIB_ONLY_STATIC void PM_FlyMove(void);
+LIB_ONLY_STATIC void PM_OneSidedClipVelocity(vec3_t in, vec3_t normal,
+                                             vec3_t out, float overbounce);
 LIB_ONLY_STATIC void PM_DropTimers(void);
 LIB_ONLY_STATIC void PM_NoclipMove(void);
 LIB_ONLY_STATIC void PM_SetWaterLevel(void);

@@ -1511,6 +1511,11 @@ static void UI_ServerStatus_EnsureChangelogForBarExpand(void)
 		return;
 	}
 
+	if (!uiServerStatus.changelogReady)
+	{
+		UI_ServerStatus_LoadLocalChangelog();
+	}
+
 	UI_ServerStatus_EnsureLocalChangelogForOffline();
 }
 
@@ -2986,80 +2991,11 @@ static void UI_ServerStatus_GetBarMessage(const char** outText, vec4_t outColor)
 		return;
 	}
 
-	if (ui_statusOffline)
-	{
-		*outText = "Status servers offline";
-		outColor[0] = 0.55f;
-		outColor[1] = 0.55f;
-		outColor[2] = 0.55f;
-		outColor[3] = 1.0f;
-		return;
-	}
-
-	if (ui_statusBadKey)
-	{
-		*outText = "Invalid status";
-		outColor[0] = 1.0f;
-		outColor[1] = 0.0f;
-		outColor[2] = 0.0f;
-		outColor[3] = 1.0f;
-		return;
-	}
-
-	if (!uiServerStatus.received)
-	{
-		*outText = "Connecting";
-		outColor[0] = 1.0f;
-		outColor[1] = 1.0f;
-		outColor[2] = 1.0f;
-		outColor[3] = 1.0f;
-		return;
-	}
-
-	if (!uiServerStatus.valid)
-	{
-		*outText = "Offline";
-		outColor[0] = 0.55f;
-		outColor[1] = 0.55f;
-		outColor[2] = 0.55f;
-		outColor[3] = 1.0f;
-		return;
-	}
-
-	if (uiServerStatus.last)
-	{
-		*outText = "Ready to play";
-		outColor[0] = 0.2f;
-		outColor[1] = 0.85f;
-		outColor[2] = 0.2f;
-		outColor[3] = 1.0f;
-		return;
-	}
-
-	if (uiServerStatus.unreleased)
-	{
-		*outText = "Unreleased build";
-		outColor[0] = 0.0f;
-		outColor[1] = 1.0f;
-		outColor[2] = 1.0f;
-		outColor[3] = 1.0f;
-		return;
-	}
-
-	if (UI_ServerStatus_UpdateRequired())
-	{
-		*outText = "Update required!";
-		outColor[0] = 1.0f;
-		outColor[1] = 0.0f;
-		outColor[2] = 0.0f;
-		outColor[3] = 1.0f;
-		return;
-	}
-
-	*outText = "Update available";
-	outColor[0] = 1.0f;
-	outColor[1] = 1.0f;
-	outColor[2] = 0.0f;
+	/* Remote version-check disabled: always Welcome! Local changelog still expands. */
+	*outText = "Welcome!";
+	outColor[0] = 0.2f;
+	outColor[1] = 0.85f;
+	outColor[2] = 0.2f;
 	outColor[3] = 1.0f;
 }
 
@@ -3517,8 +3453,19 @@ void UI_ServerStatus_FetchOnMainMenu(void)
 	}
 
 	UI_ServerStatus_FetchPrepare();
-	UI_ServerStatus_Secheck2BeginDual(UI_BeinfoCfg_GetStatusServerPrimary(),
-	                                  UI_BeinfoCfg_GetStatusServerAlternate());
+	/* Do not contact osp2be status servers for version checks. */
+	ui_statusOffline = qfalse;
+	ui_statusBadKey = qfalse;
+	uiServerStatus.valid = qtrue;
+	uiServerStatus.received = qtrue;
+	uiServerStatus.last = qtrue;
+	uiServerStatus.unreleased = qfalse;
+	uiServerStatus.version[0] = '\0';
+	uiServerStatus.titleText[0] = '\0';
+	uiServerStatus.flags = 0;
+	uiServerStatus.hfv[0] = '\0';
+	UI_ServerStatus_LoadLocalChangelog();
+	trap_Cvar_Set("ui_beStatusChecked", "1");
 }
 
 void UI_ServerStatus_OnFetchTimeout(void)
@@ -3799,7 +3746,7 @@ static const char* UI_ServerStatus_LocalVersionCompareString(void)
 {
 	const char*     v;
 
-	v = OSP_VERSION;
+	v = XSTRINGIFY(OSP_VERSION);
 	if (!Q_strncmp(v, "be-", 3))
 	{
 		return v + 3;

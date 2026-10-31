@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 #include "chatWindow/be_chatwindow.h"
 
 static int xstats1_received_count = 0;
@@ -603,7 +603,7 @@ void CG_ShaderStateChanged(void)
 	char newShader[MAX_QPATH];
 	char timeOffset[16];
 	const char* o;
-	char* n, *t;
+	char* n, * t;
 
 	o = CG_ConfigString(CS_SHADERSTATE);
 	while (o && *o)
@@ -1009,7 +1009,7 @@ void CG_AddToTeamChat(char* str, int size)
 	int w;
 	int h;
 	int chatHeight;
-	char* p, *ls;
+	char* p, * ls;
 	int lastcolor;
 	int overlayWidth;
 	int teamchatWidth;
@@ -1592,7 +1592,7 @@ static void CG_InjectCustomLoc(char* str, int size)
 
 	if (customLocationsEnabled != 0)
 	{
-		char* cloc_begin, *cloc_end;
+		char* cloc_begin, * cloc_end;
 		int free_left;
 		vec3_t cloc;
 		if (CG_CustomLocationsTeamChatCode(str, cloc, &cloc_begin, &cloc_end))

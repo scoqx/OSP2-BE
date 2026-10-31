@@ -647,7 +647,7 @@ cgFontIndices_t cgFontIndices;
 
 cvarTable_t cvarTable[] =
 {
-	{ &osp_client, "osp_client", "1008_OSP2_" OSP_VERSION, CVAR_USERINFO | CVAR_ROM },
+	{ &osp_client, "osp_client", XSTRINGIFY(OSP_CLIENT), CVAR_USERINFO | CVAR_ROM },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
@@ -1507,6 +1507,13 @@ void CG_PrintLog(char* msg)
 	}
 }
 
+#ifdef __GNUC__
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 1, 2)))
+#else
+__attribute__((format(printf, 1, 2)))
+#endif
+#endif
 void QDECL CG_Printf(const char* msg, ...)
 {
 	va_list     argptr;
@@ -1533,6 +1540,13 @@ Prints a message only once per unique message string within a time window.
 Uses a hash-based tracking system with timestamps to allow re-printing after a delay.
 ================
 */
+#ifdef __GNUC__
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 1, 2)))
+#else
+__attribute__((format(printf, 1, 2)))
+#endif
+#endif
 void QDECL CG_PrintOnce(const char* msg, ...)
 {
 	typedef struct
@@ -1591,6 +1605,11 @@ void QDECL CG_PrintOnce(const char* msg, ...)
 
 #ifdef __GNUC__
 __attribute__((noreturn))
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 1, 2)))
+#else
+__attribute__((format(printf, 1, 2)))
+#endif
 #endif
 void QDECL CG_Error(const char* msg, ...)
 {
@@ -1613,6 +1632,11 @@ void QDECL CG_Error(const char* msg, ...)
 
 #ifdef __GNUC__
 __attribute__((noreturn))
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 2, 3)))
+#else
+__attribute__((format(printf, 2, 3)))
+#endif
 #endif
 void QDECL Com_Error(int level, const char* error, ...)
 {
@@ -1626,6 +1650,13 @@ void QDECL Com_Error(int level, const char* error, ...)
 	CG_Error("%s", text);
 }
 
+#ifdef __GNUC__
+#if defined(__MINGW64__)
+__attribute__((format(gnu_printf, 1, 2)))
+#else
+__attribute__((format(printf, 1, 2)))
+#endif
+#endif
 void QDECL Com_Printf(const char* msg, ...)
 {
 	va_list     argptr;
@@ -1668,7 +1699,7 @@ static void CG_RegisterItemSounds(int itemNum)
 {
 	gitem_t*         item;
 	char            data[MAX_QPATH];
-	char*            s, *start;
+	char*            s, * start;
 	int             len;
 
 	item = &bg_itemlist[ itemNum ];
@@ -2558,15 +2589,13 @@ static void CG_RegisterGraphics(void)
 	CG_ClearParticles();
 }
 
-
-
 /*
 =======================
 CG_BuildSpectatorString
 
 =======================
 */
-void CG_BuildSpectatorString()
+void CG_BuildSpectatorString(void)
 {
 	int i;
 	cg.spectatorList[0] = 0;
@@ -3226,7 +3255,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	CG_ParseServerinfo();
 
-	CG_Printf("\n^7Loaded [^9OSP2-BE^7] client version: ^9%s\n", OSP_VERSION);
+	CG_Printf("\n^7Loaded [^9OSP2-BE^7] client version: ^9%s\n", XSTRINGIFY(OSP_VERSION));
 
 	CG_OSPPrintTime_f();
 

@@ -1,6 +1,6 @@
-#include "cg_local.h"
+#include "../../cg_local.h"
 #include "../superhud_private.h"
-#include "../qcommon/qcommon.h"
+#include "../../../qcommon/qcommon.h"
 
 #define SHUD_CENTERMSG_WRAP_DEFAULT 40
 #define SHUD_CENTERMSG_WRAP_MAX     255

@@ -1,6 +1,6 @@
-#include "cg_local.h"
+#include "../../cg_local.h"
 #include "../superhud_private.h"
-#include "../qcommon/qcommon.h"
+#include "../../../qcommon/qcommon.h"
 
 /* style bitmask: 1 = ally-only (hide auto-thaw), 2 = overlay doublebar */
 #define SHUD_THAW_STYLE_ALLY_ONLY  1

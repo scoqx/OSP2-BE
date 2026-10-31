@@ -70,6 +70,17 @@ extern "C" {
 #define Q_EXPORT
 #endif
 
+// CMake passes OSP2 configuration, like version or osp_client, through
+// defines via compiler flags. Unfortunately, it lacks capability to
+// create define with string literal content, so it's rather raw symbols.
+// Q3LCC does not have this problem.
+#ifdef Q3_VM
+#define XSTRINGIFY(x) x
+#else
+#define XSTRINGIFY(x) STRINGIFY(x)
+#define STRINGIFY(x) #x
+#endif
+
 /**********************************************************************
   VM Considerations
 
@@ -88,7 +99,7 @@ extern "C" {
 
 #ifdef Q3_VM
 
-#include "bg_lib.h"
+#include "../game/bg_lib.h"
 
 #else
 
@@ -404,6 +415,10 @@ static float LittleFloat(const float* l)
 }
 #endif
 
+#endif
+
+#if !defined(Q3_VM) && !defined(ID_INLINE)
+#define ID_INLINE
 #endif
 
 //=============================================================
@@ -740,6 +755,8 @@ void ByteToDir(int b, vec3_t dir);
 #define VectorMA(v, s, b, o)    _VectorMA(v,s,b,o)
 
 #endif
+
+vec_t VectorDistance(vec3_t a, vec3_t b);
 
 #ifdef __LCC__
 #ifdef VectorCopy

@@ -23,7 +23,7 @@ or (at your option) any later version.
  */
 
 #include "cg_local.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 #include "../qcommon/qcommon.h"
 
 typedef struct

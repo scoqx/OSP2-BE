@@ -141,51 +141,6 @@ static void UI_Ospstr_BindEngine(int fontIndex, float aw, float ah, int proporti
 vec4_t defaultBorderSize = {1, 1, 1, 1};
 vec4_t thicBorderSize = {2, 2, 2, 2};
 
-/* Helper functions */
-static qboolean UI_OSPCharHexToInt(char c, int* out)
-{
-	if (c >= '0' && c <= '9')
-	{
-		*out = c - '0';
-		return qtrue;
-	}
-	if (c >= 'a' && c <= 'f')
-	{
-		*out = c - 'a' + 10;
-		return qtrue;
-	}
-	if (c >= 'A' && c <= 'F')
-	{
-		*out = c - 'A' + 10;
-		return qtrue;
-	}
-	return qfalse;
-}
-
-static qboolean UI_Hex16GetColor(const char* str, float* color)
-{
-	int d1;
-	int d2;
-	int color_int;
-	if (!str) return qfalse;
-
-	if (!UI_OSPCharHexToInt(str[0], &d1))
-	{
-		return  qfalse;
-	}
-
-	if (!UI_OSPCharHexToInt(str[1], &d2))
-	{
-		return  qfalse;
-	}
-
-	color_int = d1 * 16 + d2;
-
-	*color = (float)color_int;
-	*color /= 255.0f;
-
-	return qtrue;
-}
 
 static qboolean UI_FileExist(const char* file)
 {

@@ -1,6 +1,6 @@
-#include "cg_local.h"
+#include "../../cg_local.h"
 #include "../superhud_private.h"
-#include "../qcommon/qcommon.h"
+#include "../../../qcommon/qcommon.h"
 
 #define FPS_MAX_FRAMES  4
 typedef struct

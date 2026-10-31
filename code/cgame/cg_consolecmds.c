@@ -24,7 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // executed by a key binding
 
 #include "cg_local.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 
 #define MODIFSTR_SIZE 256
 qboolean modifState[5];
@@ -559,7 +559,7 @@ void CG_OSPHUDprev_f(void)
 
 void CG_OSPClientVersion_f(void)
 {
-	CG_Printf("^3OSP2 Client Version:^7 %s\n", OSP_VERSION);
+	CG_Printf("^3OSP2 Client Version:^7 %s\n", XSTRINGIFY(OSP_VERSION));
 }
 
 #define CG_YES_NO_STR(VAL) ((VAL) ? "^2Yes" : "^1No")
@@ -613,7 +613,7 @@ void CG_OSPClientConfig_f(void)
 		physics = "CQ3";
 	}
 
-	CG_Printf("^5OSP2 Server-forced settings:\n", OSP_VERSION);
+	CG_Printf("^5OSP2 Server-forced settings:\n", XSTRINGIFY(OSP_VERSION));
 	CG_Printf("    ^3OSP2-BE ^3Supported server:    %s\n", CG_YES_NO_STR(cgs.beSupportedServer));
 	CG_Printf("    ^3Physics:                     ^2%s\n", physics);
 
@@ -2466,7 +2466,7 @@ void CG_BEHelp_f(void)
 	const char* cvarName;
 	const char* description;
 	char currentValue[MAX_CVAR_VALUE_STRING];
-	cvarTable_t* cvarTable;
+	cvarTable_t* cvarEntry;
 	const char* defaultValue;
 
 	if (trap_Argc() < 2)
@@ -2549,10 +2549,10 @@ void CG_BEHelp_f(void)
 		trap_Cvar_VariableStringBuffer(cvarName, currentValue, sizeof(currentValue));
 
 		/* Get default value */
-		cvarTable = CG_GetCgCvarByName(cvarName);
-		if (cvarTable && cvarTable->defaultString)
+		cvarEntry = CG_GetCgCvarByName(cvarName);
+		if (cvarEntry && cvarEntry->defaultString)
 		{
-			defaultValue = cvarTable->defaultString;
+			defaultValue = cvarEntry->defaultString;
 		}
 		else
 		{

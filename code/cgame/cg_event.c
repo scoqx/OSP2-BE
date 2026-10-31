@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_event.c -- handle entity events at snapshot or playerstate transitions
 
 #include "cg_local.h"
-#include "superhud.h"
+#include "superhud/superhud.h"
 
 //==========================================================================
 
@@ -37,7 +37,7 @@ Also called by scoreboard drawing
 const char*  CG_PlaceString(int rank)
 {
 	static char str[64];
-	char*    s, *t;
+	char*    s, * t;
 
 	if (rank & RANK_TIED_FLAG)
 	{

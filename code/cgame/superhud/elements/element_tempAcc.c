@@ -1,6 +1,6 @@
-#include "cg_local.h"
+#include "../../cg_local.h"
 #include "../superhud_private.h"
-#include "../qcommon/qcommon.h"
+#include "../../../qcommon/qcommon.h"
 
 #define SHUD_STYLE_FLOAT       (1 << 0)
 #define SHUD_STYLE_COLORIZED   (1 << 1)

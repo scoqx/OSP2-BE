@@ -88,6 +88,11 @@ equ trap_LAN_ServerIsVisible				-85
 equ trap_LAN_CompareServers					-86
 equ trap_FS_Seek		-87
 equ trap_SetPbClStatus -88
+equ trap_CL_UI_RankUserLogin -89
+equ trap_CL_UI_RankGetLeauges -90
+equ trap_CL_UI_RankUserCreate -91
+equ trap_CL_UI_RankUserReset -92
+equ trap_CL_UI_RankUserRequestLogout -93
 
 equ	memset						-101
 equ	memcpy						-102

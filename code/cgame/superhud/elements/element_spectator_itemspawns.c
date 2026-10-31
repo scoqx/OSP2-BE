@@ -1,6 +1,6 @@
-#include "cg_local.h"
+#include "../../cg_local.h"
 #include "../superhud_private.h"
-#include "../qcommon/qcommon.h"
+#include "../../../qcommon/qcommon.h"
 
 #define SHUD_ITEMSPAWNS_ROW_PAD    2
 #define SHUD_ITEMSPAWNS_MIN_GAP    4
