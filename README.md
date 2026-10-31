@@ -13,9 +13,9 @@ CI publishes build/download assets to public repo **[scoqx/osp2-be](https://gith
 - https://github.com/scoqx/osp2-be/releases/latest/download/version_changelog.txt
 - https://github.com/scoqx/osp2-be/releases/latest/download/changelog_be.txt
 
-1. Create a fine-grained PAT on account **scoqx** with **Contents: Read and write** on repositories `scoqx/osp2-be` and `scoqx/osp2-be-web`.
-2. Add repository secret **`OSP2_BE_RELEASE_TOKEN`** on OSP2-BE (the value of that PAT).
-3. Makefile CI job `create-release` and workflow_dispatch **Deploy version files** use this secret.
+1. The GitHub release is published with the workflow `GITHUB_TOKEN` (`contents: write`). No PAT is required for that step.
+2. Create a fine-grained PAT on account **scoqx** with **Contents: Read and write** on repository `scoqx/osp2-be-web`.
+3. Add repository secret **`OSP2_BE_RELEASE_TOKEN`** on OSP2-BE (the value of that PAT). Makefile CI and **Deploy version files** use it only to push cfg and version text to the website.
 4. `OSP2.cfg`, `OSP2English.cfg`, and version text are mirrored onto `scoqx/osp2-be-web` **main** (`assets/` for the site UI, plus root copies of the text files). Large downloads (pk3 / libraries) stay on GitHub Releases only.
 
 ## 🔧 Contributions

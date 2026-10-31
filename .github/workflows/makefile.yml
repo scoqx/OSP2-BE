@@ -182,14 +182,14 @@ jobs:
           fi
           echo "All builds produced required artifacts"
 
-  # Publish downloads to https://github.com/scoqx/osp2-be/releases/tag/latest
-  # Requires secret OSP2_BE_RELEASE_TOKEN (fine-grained PAT, Contents: Write on scoqx/osp2-be and scoqx/osp2-be-web).
+  # Publish downloads to this repo's release tag latest.
+  # GITHUB_TOKEN creates the release. OSP2_BE_RELEASE_TOKEN is only for scoqx/osp2-be-web.
   create-release:
     if: success()
     needs: [verify-build-artifacts]
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v8
@@ -215,8 +215,7 @@ jobs:
       - name: Publish to scoqx/osp2-be (tag latest)
         uses: softprops/action-gh-release@v3
         with:
-          repository: scoqx/osp2-be
-          token: ${{ secrets.OSP2_BE_RELEASE_TOKEN }}
+          token: ${{ github.token }}
           tag_name: latest
           name: Latest
           prerelease: false
@@ -233,7 +232,7 @@ jobs:
             OSP2-BE download assets. Stable URLs use `/releases/latest/download/<file>`.
 
       # Site UI (GitHub Pages) reads cfg/version from scoqx/osp2-be-web main (assets/ + root copies).
-      # Same token as the release: Contents write on scoqx/osp2-be and scoqx/osp2-be-web.
+      # PAT needs Contents: Read and write on scoqx/osp2-be-web only.
       - name: Mirror cfg and version text to scoqx/osp2-be-web main
         env:
           TOKEN: ${{ secrets.OSP2_BE_RELEASE_TOKEN }}

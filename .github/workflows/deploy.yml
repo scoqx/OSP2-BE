@@ -5,7 +5,7 @@
 name: Deploy version files
 
 permissions:
-  contents: read
+  contents: write
 
 on:
   workflow_dispatch:
@@ -36,8 +36,7 @@ jobs:
       - name: Update scoqx/osp2-be release text assets
         uses: softprops/action-gh-release@v3
         with:
-          repository: scoqx/osp2-be
-          token: ${{ secrets.OSP2_BE_RELEASE_TOKEN }}
+          token: ${{ github.token }}
           tag_name: latest
           name: Latest
           prerelease: false
