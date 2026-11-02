@@ -1646,6 +1646,202 @@ static void CG_OSPPrintXStats(void)
 
 /*
 =================
+CG_StuffSafeName
+
+A demo / screenshot name sent in a stuff command, such as
+"Player1-vs-Player2-q3dm6-(Player1)-2026.11.02-15.30.00". The server only
+removes \ / : " * ? < > | and colour codes, so player and host names keep
+any other byte 0x01-0xff ("..", "$", clan tag characters). Refuse only
+what could end the quoted argument or leave the demos / screenshots
+directory
+=================
+*/
+static qboolean CG_StuffSafeName(const char* name)
+{
+	const char* p;
+
+	if (!*name)
+	{
+		return qfalse;
+	}
+	for (p = name; *p; ++p)
+	{
+		if (strchr("\"\n\r;\\/:", *p))
+		{
+			return qfalse;
+		}
+	}
+	return qtrue;
+}
+
+/*
+=================
+CG_StuffSafeTextPath
+
+The condump file of the OSP stats dump: a relative .txt path such as
+"stats/2026.11.02/153000.txt"
+=================
+*/
+static qboolean CG_StuffSafeTextPath(const char* path)
+{
+	const char* p;
+	int len;
+
+	len = strlen(path);
+	if (len < 5 || Q_stricmp(path + len - 4, ".txt") || *path == '/' || strstr(path, ".."))
+	{
+		return qfalse;
+	}
+	for (p = path; *p; ++p)
+	{
+		if (!((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') ||
+		        *p == '_' || *p == '-' || *p == '.' || *p == '/'))
+		{
+			return qfalse;
+		}
+	}
+	return qtrue;
+}
+
+/*
+=================
+CG_ServerCommandStuffOne
+
+One ';'-separated command of a stuff command. Only the commands OSP servers
+send are run (autorecord, autoscreenshot, the stats dump), and the console
+line is rebuilt from the parsed tokens
+=================
+*/
+static void CG_ServerCommandStuffOne(char* text)
+{
+	char tok[3][MAX_OSPATH];    // demo names (players, map, host, date) are often longer than MAX_QPATH
+	char* p;
+	int argc;
+
+	p = text;
+	for (argc = 0; argc < 3; ++argc)
+	{
+		Q_strncpyz(tok[argc], COM_ParseExt(&p, qfalse), sizeof(tok[argc]));
+		if (!tok[argc][0])
+		{
+			break;
+		}
+	}
+	if (argc == 0)
+	{
+		return;
+	}
+
+	// through the command buffer, so that it stays in order with the record around it
+	if (argc == 3 && (!Q_stricmp(tok[0], "set") || !Q_stricmp(tok[0], "seta")) && !Q_stricmp(tok[1], "g_synchronousClients") &&
+	        (!strcmp(tok[2], "0") || !strcmp(tok[2], "1")) && !*COM_ParseExt(&p, qfalse))
+	{
+		trap_SendConsoleCommand(va("set g_synchronousClients %s\n", tok[2]));
+		return;
+	}
+	if (argc == 1 && (!Q_stricmp(tok[0], "clear") || !Q_stricmp(tok[0], "currenttime") || !Q_stricmp(tok[0], "stoprecord")))
+	{
+		trap_SendConsoleCommand(va("%s\n", tok[0]));
+		return;
+	}
+	if (!Q_stricmp(tok[0], "record") || !Q_stricmp(tok[0], "screenshot") || !Q_stricmp(tok[0], "screenshotJPEG"))
+	{
+		if (argc == 1)
+		{
+			trap_SendConsoleCommand(va("%s\n", tok[0]));
+			return;
+		}
+		if (argc == 2 && CG_StuffSafeName(tok[1]))
+		{
+			trap_SendConsoleCommand(va("%s \"%s\"\n", tok[0], tok[1]));
+			return;
+		}
+	}
+	if (argc == 2 && !Q_stricmp(tok[0], "condump") && CG_StuffSafeTextPath(tok[1]))
+	{
+		trap_SendConsoleCommand(va("condump \"%s\"\n", tok[1]));
+		return;
+	}
+	CG_Printf("^3Ignored server stuff command: ^7%s\n", text);
+}
+
+/*
+=================
+CG_ServerCommandStuff
+
+stuff <text>: console commands sent by the server ('' -> ', ' -> ").
+The text used to be executed if it contained one of the allowed command
+names anywhere, so "clear;<anything>" ran any console command. Now every
+command is checked on its own, see CG_ServerCommandStuffOne
+=================
+*/
+static void CG_ServerCommandStuff(void)
+{
+	char command[1024];
+	char command2[1024];
+	char* s;
+	char* next;
+	int len;
+
+	if (cg.demoPlayback)
+	{
+		return;
+	}
+
+	trap_Args(&command[0], 0x400);
+	command[1023] = 0;
+
+	len = strlen(&command[0]);
+
+	{
+		char* ptr = &command[0];
+		char* out = &command2[0];
+		int i;
+		for (i = 0; *ptr && i < len;)
+		{
+			if (*ptr == '\'')
+			{
+				++ptr;
+				if (*ptr == '\'')
+				{
+					*out++ = '\'';
+				}
+				else
+				{
+					*out++ = '"';
+				}
+				++ptr;
+				++i;
+			}
+			else
+			{
+				*out++ = *ptr++;
+				++i;
+			}
+		}
+		*out = 0;
+	}
+
+	for (s = command2; s && *s; s = next)
+	{
+		next = s;
+		while (*next && *next != ';' && *next != '\n' && *next != '\r')
+		{
+			++next;
+		}
+		if (*next)
+		{
+			*next++ = 0;
+		}
+		else
+		{
+			next = NULL;
+		}
+		CG_ServerCommandStuffOne(s);
+	}
+}
+/*
+=================
 CG_InjectCustomLoc
 
 Replace location coordinates with location name
@@ -3344,45 +3540,7 @@ void CG_ServerCommand(void)
 			/* "stuff" */
 			if (cmd[1] == 't' && cmd[2] == 'u' && cmd[3] == 'f' && cmd[4] == 'f' && cmd[5] == '\0')
 			{
-				char command[1024];
-				char command2[1024];
-				int len;
-				char* ptr;
-				char* out;
-				int i;
-
-				if (!cg.demoPlayback)
-				{
-					trap_Args(&command[0], 0x400);
-					command[1023] = 0;
-					len = strlen(&command[0]);
-					ptr = &command[0];
-					out = &command2[0];
-					for (i = 0; *ptr && i < len;)
-					{
-						if (*ptr == '\'')
-						{
-							++ptr;
-							*out++ = (*ptr == '\'') ? '\'' : '"';
-							++ptr;
-							++i;
-						}
-						else
-						{
-							*out++ = *ptr++;
-							++i;
-						}
-					}
-					*out = 0;
-					if (strstr(command2, "screenshot") ||
-					        strstr(command2, "set g_synchronous") ||
-					        strstr(command2, "clear") ||
-					        strstr(command2, "currenttime") ||
-					        strstr(command2, "stoprecord"))
-					{
-						trap_SendConsoleCommand(command2);
-					}
-				}
+				CG_ServerCommandStuff();
 				return;
 			}
 			/* "specsinfo" */
