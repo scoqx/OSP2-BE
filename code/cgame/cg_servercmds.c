@@ -218,9 +218,13 @@ static void CG_ParseTeamInfo(void)
 	allyBsCount = 0;
 
 	numSortedTeamPlayers = atoi(CG_Argv(1));
-	if (numSortedTeamPlayers > TEAM_MAXOVERLAY)
+	// the count and every client number come from the server: clamp the count to the
+	// overlay table and to what the command actually carries, reject bad client numbers
+	if (numSortedTeamPlayers < 0 || numSortedTeamPlayers > TEAM_MAXOVERLAY ||
+	        numSortedTeamPlayers * 6 + 2 > trap_Argc())
 	{
-		numSortedTeamPlayers = TEAM_MAXOVERLAY;
+		numSortedTeamPlayers = 0;
+		return;
 	}
 
 	for (i = 0 ; i < numSortedTeamPlayers ; i++)
@@ -230,6 +234,11 @@ static void CG_ParseTeamInfo(void)
 		int oldTeamPowerups;
 
 		client = atoi(CG_Argv(i * 6 + 2));
+		if (client < 0 || client >= MAX_CLIENTS)
+		{
+			numSortedTeamPlayers = 0;
+			return;
+		}
 
 		ci = &cgs.clientinfo[ client ];
 
@@ -243,9 +252,17 @@ static void CG_ParseTeamInfo(void)
 		oldArmor = ci->armor;
 		oldTeamPowerups = ci->teamPowerups;
 		ci->location = atoi(CG_Argv(i * 6 + 3));
+		if (ci->location < 0 || ci->location >= MAX_LOCATIONS)
+		{
+			ci->location = 0;
+		}
 		ci->health = atoi(CG_Argv(i * 6 + 4));
 		ci->armor = atoi(CG_Argv(i * 6 + 5));
 		ci->curWeapon = atoi(CG_Argv(i * 6 + 6));
+		if (ci->curWeapon < 0 || ci->curWeapon >= WP_NUM_WEAPONS)
+		{
+			ci->curWeapon = WP_NONE;
+		}
 		ci->teamPowerups = atoi(CG_Argv(i * 6 + 7));
 
 		if (oldHealth > 0 && ci->health <= 0)
