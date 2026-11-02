@@ -998,7 +998,11 @@ double fabs(double x)
 #define is_digit(c)     ((unsigned)to_digit(c) <= 9)
 #define to_char(n)      ((n) + '0')
 
-void AddInt(char** buf_p, int val, int width, int flags)
+// bounded output for vsnprintf: end points at the byte reserved for the
+// terminating zero, nothing is written at or past it, but buf keeps counting
+#define BG_PUTC(buf, end, c)    do { if ((buf) < (end)) { *(buf) = (c); } (buf)++; } while (0)
+
+void AddInt(char** buf_p, char* end, int val, int width, int flags)
 {
 	char    text[32];
 	int     digits;
@@ -1029,29 +1033,30 @@ void AddInt(char** buf_p, int val, int width, int flags)
 	{
 		while (digits < width)
 		{
-			*buf++ = (flags & ZEROPAD) ? '0' : ' ';
+			BG_PUTC(buf, end, (flags & ZEROPAD) ? '0' : ' ');
 			width--;
 		}
 	}
 
 	while (digits--)
 	{
-		*buf++ = text[digits];
+		BG_PUTC(buf, end, text[digits]);
 		width--;
 	}
 
 	if (flags & LADJUST)
 	{
-		while (width--)
+		// width is negative when the number is wider than the field
+		while (width-- > 0)
 		{
-			*buf++ = (flags & ZEROPAD) ? '0' : ' ';
+			BG_PUTC(buf, end, (flags & ZEROPAD) ? '0' : ' ');
 		}
 	}
 
 	*buf_p = buf;
 }
 
-void AddFloat(char** buf_p, float fval, int width, int prec)
+void AddFloat(char** buf_p, char* end, float fval, int width, int prec)
 {
 	char    text[32];
 	int     digits;
@@ -1085,19 +1090,22 @@ void AddFloat(char** buf_p, float fval, int width, int prec)
 
 	while (digits < width)
 	{
-		*buf++ = ' ';
+		BG_PUTC(buf, end, ' ');
 		width--;
 	}
 
 	while (digits--)
 	{
-		*buf++ = text[digits];
+		BG_PUTC(buf, end, text[digits]);
 	}
 
 	*buf_p = buf;
 
 	if (prec < 0)
 		prec = 6;
+	// the fraction digits go through text[]
+	if (prec > sizeof(text))
+		prec = sizeof(text);
 	// write the fraction
 	digits = 0;
 	while (digits < prec)
@@ -1111,17 +1119,17 @@ void AddFloat(char** buf_p, float fval, int width, int prec)
 	if (digits > 0)
 	{
 		buf = *buf_p;
-		*buf++ = '.';
+		BG_PUTC(buf, end, '.');
 		for (prec = 0; prec < digits; prec++)
 		{
-			*buf++ = text[prec];
+			BG_PUTC(buf, end, text[prec]);
 		}
 		*buf_p = buf;
 	}
 }
 
 
-void AddString(char** buf_p, char* string, int width, int prec)
+void AddString(char** buf_p, char* end, char* string, int width, int prec)
 {
 	int     size;
 	char*    buf;
@@ -1153,12 +1161,12 @@ void AddString(char** buf_p, char* string, int width, int prec)
 
 	while (size--)
 	{
-		*buf++ = *string++;
+		BG_PUTC(buf, end, *string++);
 	}
 
 	while (width-- > 0)
 	{
-		*buf++ = ' ';
+		BG_PUTC(buf, end, ' ');
 	}
 
 	*buf_p = buf;
@@ -1243,7 +1251,7 @@ Q_EXPORT int BG_sprintf(char* buf, const char* format, ...)
 	int retval;
 
 	va_start(argptr, format);
-	retval = vsprintf(buf, format, argptr);
+	retval = vsnprintf(buf, 32768, format, argptr);
 	va_end(argptr);
 
 	return retval;
@@ -1251,7 +1259,10 @@ Q_EXPORT int BG_sprintf(char* buf, const char* format, ...)
 
 
 /*
-vsprintf
+vsnprintf
+
+Writes at most size - 1 characters and always terminates the output (size > 0).
+Returns the length the full output would have had, like C99 vsnprintf.
 
 I'm not going to support a bunch of the more arcane stuff in here
 just to keep it simpler.  For example, the '*' and '$' are not
@@ -1259,17 +1270,24 @@ currently supported.  I've tried to make it so that it will just
 parse and ignore formats we don't support.
 */
 #if defined ( Q3_VM )
-int vsprintf(char* buffer, const char* fmt, va_list argptr)
+int vsnprintf(char* buffer, size_t size, const char* fmt, va_list argptr)
 {
 	int*     arg;
 	char*    buf_p;
+	char*    end;
 	char    ch;
 	int     flags;
 	int     width;
 	int     prec;
 	int     n;
 
+	if (size == 0)
+	{
+		return 0;
+	}
+
 	buf_p = buffer;
+	end = buffer + size - 1;
 	arg = (int*)argptr;
 
 	while (qtrue)
@@ -1277,7 +1295,7 @@ int vsprintf(char* buffer, const char* fmt, va_list argptr)
 		// run through the format string until we hit a '%' or '\0'
 		for (ch = *fmt; (ch = *fmt) != '\0' && ch != '%'; fmt++)
 		{
-			*buf_p++ = ch;
+			BG_PUTC(buf_p, end, ch);
 		}
 		if (ch == '\0')
 		{
@@ -1342,16 +1360,16 @@ reswitch:
 				arg++;
 				goto rflag;
 			case 'c':
-				*buf_p++ = (char) * arg;
+				BG_PUTC(buf_p, end, (char) * arg);
 				arg++;
 				break;
 			case 'd':
 			case 'i':
-				AddInt(&buf_p, *arg, width, flags);
+				AddInt(&buf_p, end, *arg, width, flags);
 				arg++;
 				break;
 			case 'f':
-				AddFloat(&buf_p, *(double*)arg, width, prec);
+				AddFloat(&buf_p, end, *(double*)arg, width, prec);
 #ifdef __LCC__
 				arg += 1;   // everything is 32 bit in my compiler
 #else
@@ -1359,26 +1377,32 @@ reswitch:
 #endif
 				break;
 			case 's':
-				AddString(&buf_p, (char*)(intptr_t)*arg, width, prec);
+				AddString(&buf_p, end, (char*)(intptr_t)*arg, width, prec);
 				arg++;
 				break;
 			case '%':
-				*buf_p++ = ch;
+				BG_PUTC(buf_p, end, ch);
 				break;
 			default:
-				*buf_p++ = (char) * arg;
+				BG_PUTC(buf_p, end, (char) * arg);
 				arg++;
 				break;
 		}
 	}
 
 done:
-	*buf_p = 0;
+	*(buf_p < end ? buf_p : end) = 0;
 	return buf_p - buffer;
+}
+
+/* Legacy unbounded entry points still used by UI helpers; prefer vsnprintf. */
+int vsprintf(char* buffer, const char* fmt, va_list argptr)
+{
+	return vsnprintf(buffer, 32768, fmt, argptr);
 }
 #endif
 
 Q_EXPORT int Q_vsprintf(char* buffer, const char* fmt, va_list argptr)
 {
-	return vsprintf(buffer, fmt, argptr);
+	return vsnprintf(buffer, 32768, fmt, argptr);
 }

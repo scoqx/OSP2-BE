@@ -71,6 +71,7 @@ int toupper(int c);
 double atof(const char* string);
 int atoi(const char* string);
 
+int vsnprintf(char* buffer, size_t size, const char* fmt, va_list argptr);
 int vsprintf(char* buffer, const char* fmt, va_list argptr);
 int Q_vsprintf(char* buffer, const char* fmt, va_list argptr);
 char* BG_StripColor(char* string);

@@ -21,7 +21,7 @@ void QDECL Com_Error(int level, const char* fmt, ...)
 	char        text[2048];
 
 	va_start(argptr, fmt);
-	Q_vsprintf(text, fmt, argptr);
+	vsnprintf(text, sizeof(text), fmt, argptr);
 	va_end(argptr);
 
 	trap_Error(text);
@@ -33,7 +33,7 @@ void QDECL Com_Printf(const char* fmt, ...)
 	char        text[2048];
 
 	va_start(argptr, fmt);
-	Q_vsprintf(text, fmt, argptr);
+	vsnprintf(text, sizeof(text), fmt, argptr);
 	va_end(argptr);
 
 	trap_Print(text);
