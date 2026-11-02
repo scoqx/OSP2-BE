@@ -518,6 +518,11 @@ void CG_ParseServerinfo(void)
 	cgs.timelimit = timelimitVal;
 	cgs.timelimitMsec = timelimitVal * 60 * 1000;
 	cgs.maxclients = atoi(Info_ValueForKey(info, "sv_maxclients"));
+	/* drives loops over cgs.clientinfo[MAX_CLIENTS]; the value is server-supplied */
+	if (cgs.maxclients < 1 || cgs.maxclients > MAX_CLIENTS)
+	{
+		cgs.maxclients = MAX_CLIENTS;
+	}
 	val = Info_ValueForKey(info, "mapname");
 	Com_sprintf(cgs.mapname, sizeof(cgs.mapname), "maps/%s.bsp", val);
 	/* Pure client: engine ROM mapname stays "nomap"; sync from serverinfo (Quake3e Cvar_SetSafe allows ROM). */
