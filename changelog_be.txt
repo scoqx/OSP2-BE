@@ -1117,3 +1117,6 @@ SuperHUD:
 
 31.10.2026 be v1.10a
 - Status server disabled
+
+02.11.2026 be v1.10b
++ OSP2 Synchronization
