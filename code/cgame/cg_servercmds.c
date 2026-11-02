@@ -1418,7 +1418,7 @@ static void CG_OSPPrintXStats(void)
 	Q_strncpyz(&str[0], cgs.clientinfo[client_id].name, 32);
 	Q_CleanStr(str);
 
-	CG_Printf(va("\n^7Accuracy info for: ^3%s^7\n\n", str));
+	CG_Printf("\n^7Accuracy info for: ^3%s^7\n\n", str);
 	CG_Printf("Weapon          Accrcy Hits/Atts Kills Deaths Pickup Drops\n");
 	CG_Printf("----------------------------------------------------------\n");
 	if (wstats_condition == 0)
@@ -1440,7 +1440,7 @@ static void CG_OSPPrintXStats(void)
 			kills_value = atoi(CG_Argv(index++));
 			deaths_value = atoi(CG_Argv(index++));
 
-			CG_Printf(va("^3%-12s: ", weaponNames[i]));
+			CG_Printf("^3%-12s: ", weaponNames[i]);
 
 			if (atts_value & stats_mask || hits_value & stats_mask)
 			{
@@ -1452,7 +1452,7 @@ static void CG_OSPPrintXStats(void)
 				{
 					accuracy = 100.0 * ((hits_value & stats_mask) / (float)(atts_value & stats_mask));
 				}
-				CG_Printf(va("^7%6.1f ^5%4d/%-4d ", accuracy, hits_value & stats_mask, atts_value & stats_mask));
+				CG_Printf("^7%6.1f ^5%4d/%-4d ", accuracy, hits_value & stats_mask, atts_value & stats_mask);
 				damage_activity = qtrue;
 			}
 			else
@@ -1466,11 +1466,11 @@ static void CG_OSPPrintXStats(void)
 
 			if (i > 2)
 			{
-				CG_Printf(va("^2%5d ^1%6d ^3%6d ^1%5d\n", kills_value, deaths_value, atts_value >> stats_shift, hits_value >> stats_shift));
+				CG_Printf("^2%5d ^1%6d ^3%6d ^1%5d\n", kills_value, deaths_value, atts_value >> stats_shift, hits_value >> stats_shift);
 			}
 			else
 			{
-				CG_Printf(va("^2%5d ^1%6d\n", kills_value, deaths_value));
+				CG_Printf("^2%5d ^1%6d\n", kills_value, deaths_value);
 			}
 		}
 	}
@@ -1980,7 +1980,7 @@ static void CG_OSPAstats(qboolean top)
 		treshold = top ? average : acc;
 		color_code = level >= treshold ? "^3" : "^7";
 
-		CG_Printf(va("%s%5.1f ^5%4d/%-4d ^2%5d ^1%6d %s%s\n", color_code, acc, hits, atts, kills, deaths, color_code, cgs.clientinfo[client_num].name_clean));
+		CG_Printf("%s%5.1f ^5%4d/%-4d ^2%5d ^1%6d %s%s\n", color_code, acc, hits, atts, kills, deaths, color_code, cgs.clientinfo[client_num].name_clean);
 	}
 	CG_Printf("\n\n");
 }
@@ -2024,7 +2024,7 @@ static void CG_OSPBstats(qboolean top)
 
 		acc = atts > 0 ? (float)(100 * atts) / (float)hits : 0;
 
-		CG_Printf(va("^3%s ^7%5.1f ^5%4d/%-4d ^2%5d ^1%6d ^7%s\n", weaponShortNames[number_of_weapon], acc, atts, hits, kills, deaths, cgs.clientinfo[client_num].name_clean));
+		CG_Printf("^3%s ^7%5.1f ^5%4d/%-4d ^2%5d ^1%6d ^7%s\n", weaponShortNames[number_of_weapon], acc, atts, hits, kills, deaths, cgs.clientinfo[client_num].name_clean);
 
 		number_of_weapon = atoi(CG_Argv(a++));
 	}
