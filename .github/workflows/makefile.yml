@@ -261,7 +261,9 @@ jobs:
 
       # softprops will not move an existing tag; force latest -> this master tip so
       # Source code zip / tag commit match the published build.
-      - name: Point latest tag at current master tip
+      # Recreate the release (not just patch assets) so GitHub shows a fresh
+      # "published" time instead of the original release date.
+      - name: Point latest tag at current master tip and recreate release shell
         working-directory: source-repo
         env:
           GH_TOKEN: ${{ github.token }}
@@ -271,6 +273,8 @@ jobs:
           echo "Moving tag latest -> ${SHA}"
           git tag -f latest "${SHA}"
           git push -f origin refs/tags/latest
+          # Keep the tag; drop the release object so the next create gets a new published_at.
+          gh release delete latest --repo "${{ github.repository }}" --yes 2>/dev/null || true
 
       - name: Publish to scoqx/osp2-be (tag latest)
         uses: softprops/action-gh-release@v3
