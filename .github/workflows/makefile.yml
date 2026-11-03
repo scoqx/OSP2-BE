@@ -182,8 +182,10 @@ jobs:
           fi
           echo "All builds produced required artifacts"
 
-  # Publish downloads to this repo's release tag latest.
-  # GITHUB_TOKEN creates the release. OSP2_BE_RELEASE_TOKEN is only for scoqx/osp2-be-web.
+  # Always keep exactly two rolling releases:
+  #   latest  — current build (GitHub "Latest")
+  #   previous — prior version (only rotated when version.txt changes)
+  # GITHUB_TOKEN creates the releases. OSP2_BE_RELEASE_TOKEN is only for scoqx/osp2-be-web.
   create-release:
     if: success()
     needs: [verify-build-artifacts]
@@ -199,6 +201,7 @@ jobs:
         with:
           ref: master
           path: source-repo
+          fetch-depth: 0
 
       - name: Stage release assets
         run: |
@@ -212,12 +215,70 @@ jobs:
           cp source-repo/changelog_be.txt release-assets/changelog_be.txt
           ls -lh release-assets/
 
+      # If latest already exists and its version.txt differs from this build,
+      # copy current latest assets into the previous release before overwriting latest.
+      - name: Promote current latest to previous (on version change)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          NEW_VERSION="$(tr -d '\r\n' < release-assets/version.txt)"
+          echo "New version: ${NEW_VERSION}"
+
+          if ! gh release view latest --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "No latest release yet — skip previous promotion"
+            exit 0
+          fi
+
+          mkdir -p previous-assets
+          gh release download latest --repo "${{ github.repository }}" --dir previous-assets --clobber
+
+          OLD_VERSION=""
+          if [ -f previous-assets/version.txt ]; then
+            OLD_VERSION="$(tr -d '\r\n' < previous-assets/version.txt)"
+          fi
+          echo "Current latest version: ${OLD_VERSION:-<missing version.txt>}"
+
+          if [ -z "${OLD_VERSION}" ]; then
+            echo "latest has no version.txt — skip previous promotion"
+            exit 0
+          fi
+          if [ "${OLD_VERSION}" = "${NEW_VERSION}" ]; then
+            echo "Same version rebuild — leave previous untouched, only refresh latest"
+            exit 0
+          fi
+
+          echo "Version changed (${OLD_VERSION} -> ${NEW_VERSION}); refreshing previous release"
+          gh release delete previous --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
+          # Drop empty dir noise; upload whatever latest had.
+          find previous-assets -type f -print
+          gh release create previous \
+            --repo "${{ github.repository }}" \
+            --title "Previous version (${OLD_VERSION})" \
+            --notes "Previous OSP2-BE build (${OLD_VERSION}). Superseded by Latest (${NEW_VERSION}). Stable URL: /releases/download/previous/<file>" \
+            --latest=false \
+            previous-assets/*
+
+      # softprops will not move an existing tag; force latest -> this master tip so
+      # Source code zip / tag commit match the published build.
+      - name: Point latest tag at current master tip
+        working-directory: source-repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse HEAD)"
+          echo "Moving tag latest -> ${SHA}"
+          git tag -f latest "${SHA}"
+          git push -f origin refs/tags/latest
+
       - name: Publish to scoqx/osp2-be (tag latest)
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ github.token }}
           tag_name: latest
           name: Latest
+          target_commitish: ${{ github.sha }}
           prerelease: false
           make_latest: true
           files: |
@@ -229,7 +290,8 @@ jobs:
             release-assets/changelog_be.txt
           generate_release_notes: false
           body: |
-            OSP2-BE download assets. Stable URLs use `/releases/latest/download/<file>`.
+            OSP2-BE current build. Stable URLs: `/releases/latest/download/<file>`.
+            Previous build (when available): `/releases/download/previous/<file>`.
 
       # Site UI (GitHub Pages) reads cfg/version from scoqx/osp2-be-web main (assets/ + root copies).
       # PAT needs Contents: Read and write on scoqx/osp2-be-web only.

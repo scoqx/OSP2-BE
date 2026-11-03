@@ -47,7 +47,8 @@ jobs:
             release-assets/changelog_be.txt
           generate_release_notes: false
           body: |
-            OSP2-BE download assets. Stable URLs use `/releases/latest/download/<file>`.
+            OSP2-BE current build. Stable URLs: `/releases/latest/download/<file>`.
+            Previous build (when available): `/releases/download/previous/<file>`.
 
       - name: Mirror cfg and version text to scoqx/osp2-be-web main
         env:
