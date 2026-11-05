@@ -21,6 +21,7 @@
 #define BEINFO_CFG_KEY_STATUS_SERVER1   "be_statusServer1"
 #define BEINFO_CFG_KEY_STATUS_SERVER2   "be_statusServer2"
 #define BEINFO_CFG_KEY_BRIGHT_PREFIX    "brightcolor_"
+#define BEINFO_CFG_KEY_FLASH_PREFIX     "flashcolor_"
 
 static char     beinfo_statusServer1[BEINFO_CFG_STATUS_ADDR_MAX];
 static char     beinfo_statusServer2[BEINFO_CFG_STATUS_ADDR_MAX];
@@ -45,6 +46,7 @@ static int                 beinfo_ttfFontCount;
 
 #if defined(CGAME)
 static beinfoBrightColorFn_t beinfo_brightColorHandler;
+static beinfoBrightColorFn_t beinfo_flashColorHandler;
 #endif
 
 static qboolean BeinfoCfg_IsCommentHash(const char* p)
@@ -800,25 +802,13 @@ static qboolean BeinfoCfg_ParseBrightColorValues(char** text, float* r, float* g
 	return qtrue;
 }
 
-static void BeinfoCfg_HandleBrightColorKey(const char* key, char** text)
+static void BeinfoCfg_HandleColorKey(const char* key, int prefixLen, beinfoBrightColorFn_t handler, char** text)
 {
 	const char* classname;
-	int         prefixLen;
 	float       r;
 	float       g;
 	float       b;
 	float       a;
-
-	if (!key || !key[0] || !text)
-	{
-		return;
-	}
-
-	prefixLen = (int)strlen(BEINFO_CFG_KEY_BRIGHT_PREFIX);
-	if (Q_stricmpn(key, BEINFO_CFG_KEY_BRIGHT_PREFIX, prefixLen))
-	{
-		return;
-	}
 
 	classname = key + prefixLen;
 
@@ -832,9 +822,9 @@ static void BeinfoCfg_HandleBrightColorKey(const char* key, char** text)
 		return;
 	}
 
-	if (beinfo_brightColorHandler)
+	if (handler)
 	{
-		beinfo_brightColorHandler(classname, r, g, b, a);
+		handler(classname, r, g, b, a);
 	}
 }
 
@@ -850,7 +840,14 @@ static void BeinfoCfg_ParseCgameEntry(const char* key, char** text)
 	prefixLen = (int)strlen(BEINFO_CFG_KEY_BRIGHT_PREFIX);
 	if (!Q_stricmpn(key, BEINFO_CFG_KEY_BRIGHT_PREFIX, prefixLen))
 	{
-		BeinfoCfg_HandleBrightColorKey(key, text);
+		BeinfoCfg_HandleColorKey(key, prefixLen, beinfo_brightColorHandler, text);
+		return;
+	}
+
+	prefixLen = (int)strlen(BEINFO_CFG_KEY_FLASH_PREFIX);
+	if (!Q_stricmpn(key, BEINFO_CFG_KEY_FLASH_PREFIX, prefixLen))
+	{
+		BeinfoCfg_HandleColorKey(key, prefixLen, beinfo_flashColorHandler, text);
 		return;
 	}
 
@@ -985,6 +982,11 @@ static void BeinfoCfg_ParseBuffer(char* buf)
 void BeinfoCfg_SetBrightColorHandler(beinfoBrightColorFn_t fn)
 {
 	beinfo_brightColorHandler = fn;
+}
+
+void BeinfoCfg_SetFlashColorHandler(beinfoBrightColorFn_t fn)
+{
+	beinfo_flashColorHandler = fn;
 }
 #endif
 

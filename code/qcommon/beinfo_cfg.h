@@ -22,6 +22,7 @@ qboolean BeinfoCfg_GetTtfFontShadow(const char* name, float* offX, float* offY);
 
 #if defined(CGAME)
 void BeinfoCfg_SetBrightColorHandler(beinfoBrightColorFn_t fn);
+void BeinfoCfg_SetFlashColorHandler(beinfoBrightColorFn_t fn);
 #endif
 
 #endif /* BEINFO_CFG_H */

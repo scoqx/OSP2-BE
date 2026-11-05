@@ -308,7 +308,7 @@ static void* CG_SHUDElementTeamCreateEx(const superhudConfig_t* config, int line
 	lcfg.rect.value[2] = cellW;
 	CG_SHUDTextMakeContext(&lcfg, &element->ctxHealthArmor);
 	element->ctxHealthArmor.width = teamOverlay.healthAndArmorLenPix;
-	element->ctxHealthArmor.flags |= DS_FORCE_COLOR;
+	element->ctxHealthArmor.flags |= DS_FORCE_COLOR | DS_PLAIN;
 	if (alignRight)
 	{
 		element->ctxHealthArmor.coord.named.x = cellX + cellW;

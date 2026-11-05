@@ -25,6 +25,7 @@ static float ospstr_ttfTuneOffset[ENG_FONTS_FONT_INDEX_MAX];
 static float ospstr_ttfShadowOffX[ENG_FONTS_FONT_INDEX_MAX];
 static float ospstr_ttfShadowOffY[ENG_FONTS_FONT_INDEX_MAX];
 static int   ospstr_ttfTuneScaleMod = -1;
+static int   ospstr_ttfTuneGeneration;
 static int   ospstr_ttfTuneOffMod = -1;
 static int   ospstr_ttfShadowMod = -1;
 static int   ospstr_ttfTuneFontCount = -1;
@@ -89,6 +90,7 @@ static void ospstr_ensure_ttf_tune(void)
 	}
 
 	ospstr_ttfTuneScaleMod = be_ttfScale.modificationCount;
+	ospstr_ttfTuneGeneration++;
 	ospstr_ttfTuneOffMod = be_ttfFontOffset.modificationCount;
 	ospstr_ttfShadowMod = be_ttfShadowOffset.modificationCount;
 	ospstr_ttfTuneFontCount = CG_GetFontCount();
@@ -112,6 +114,24 @@ static void ospstr_bind_engine(int fontIndex, float aw, float ah, int proportion
 	const fontAtlasInfo_t* font;
 	float                  need;
 	float                  ref;
+	static int             boundFont = -1;
+	static float           boundW;
+	static float           boundH;
+	static int             boundProportional = -1;
+	static int             boundTuneGeneration = -1;
+
+	/* Strings usually come in runs of one style, so most calls have nothing to do. */
+	ospstr_ensure_ttf_tune();
+	if (fontIndex == boundFont && aw == boundW && ah == boundH && proportional == boundProportional &&
+	        boundTuneGeneration == ospstr_ttfTuneGeneration)
+	{
+		return;
+	}
+	boundFont = fontIndex;
+	boundW = aw;
+	boundH = ah;
+	boundProportional = proportional;
+	boundTuneGeneration = ospstr_ttfTuneGeneration;
 
 	if (!cgs.engineFontAtlas)
 	{
@@ -161,7 +181,6 @@ static void ospstr_bind_engine(int fontIndex, float aw, float ah, int proportion
 		float s;
 		float off;
 
-		ospstr_ensure_ttf_tune();
 		if (fontIndex >= 0 && fontIndex < ENG_FONTS_FONT_INDEX_MAX)
 		{
 			s = ospstr_ttfTuneScale[fontIndex];
@@ -197,6 +216,11 @@ static qboolean ospstr_is_plain(const char* string, int flags)
 	if (!string)
 	{
 		return qfalse;
+	}
+
+	if (flags & DS_PLAIN)
+	{
+		return qtrue;
 	}
 
 	p = (const unsigned char*)string;
@@ -643,10 +667,6 @@ static float ospstr_layout_commands(text_command_t* cmd, int* stopIdx, const cg_
 	return ospstr_measure_commands(cmd, s, metrics, aw, ah, proportional, (float)cgs.glconfig.vidWidth);
 }
 
-static void ospstr_update_shadow_alpha(vec4_t shadowCol, float shadowFade, float textAlpha)
-{
-	shadowCol[3] = shadowFade * textAlpha;
-}
 
 static void ospstr_modulate_channel_alpha(vec4_t out, const vec4_t in, float textAlpha)
 {
@@ -827,7 +847,7 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 
 	if (shadowEnabled)
 	{
-		ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
+		shadowCol[3] = shadowFade * color[3];
 	}
 
 	vidWidth = (float)cgs.glconfig.vidWidth;
@@ -850,7 +870,7 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 		if (shadowEnabled)
 		{
 			VectorCopy(shadowColor, shadowCol);
-			ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
+			shadowCol[3] = shadowFade * color[3];
 		}
 		ax = startAx;
 
@@ -927,7 +947,11 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 							aw1 = aw;
 						}
 
-						if (shadowEnabled && pass == 0)
+						if (index == ' ')
+						{
+							/* an empty quad, nothing to send to the renderer */
+						}
+						else if (shadowEnabled && pass == 0)
 						{
 							trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
 						}
@@ -967,7 +991,7 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 
 				case OSP_TEXT_CMD_SHADOW_COLOR:
 					VectorCopy(curr->value.color, shadowCol);
-					ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
+					shadowCol[3] = shadowFade * color[3];
 					if (shadowEnabled && pass == 0)
 					{
 						trap_R_SetColor(shadowCol);
@@ -983,7 +1007,7 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 					}
 					if (shadowEnabled)
 					{
-						ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
+						shadowCol[3] = shadowFade * color[3];
 					}
 					if (shadowEnabled && pass == 0)
 					{
@@ -1004,7 +1028,7 @@ static void ospstr_render_commands(text_command_t* text_commands, int stopIdx,
 					}
 					if (shadowEnabled)
 					{
-						ospstr_update_shadow_alpha(shadowCol, shadowFade, color[3]);
+						shadowCol[3] = shadowFade * color[3];
 					}
 					if (shadowEnabled && pass == 0)
 					{
@@ -1082,42 +1106,6 @@ static float ospstr_plain_slice_measure(const unsigned char* start, const unsign
 	return ax;
 }
 
-static int ospstr_plain_slice_fit_bytes(const unsigned char* start, const unsigned char* end,
-                                        const cg_osp_font_metric_t* metrics, float aw, int proportional,
-                                        float limitPx)
-{
-	const unsigned char* s;
-	const unsigned char* lastFit;
-	float ax;
-	float gw;
-
-	if (limitPx <= 0.0f)
-	{
-		return 0;
-	}
-
-	ax = 0.0f;
-	lastFit = start;
-	s = start;
-	while (s < end && *s)
-	{
-		gw = OSPSTR_GLYPH_W(metrics, *s, aw, proportional);
-		if (ax + gw > limitPx)
-		{
-			break;
-		}
-		ax += gw;
-		s++;
-		lastFit = s;
-	}
-
-	if (lastFit == start && s < end && *s)
-	{
-		return 1;
-	}
-	return (int)(lastFit - start);
-}
-
 static qboolean ospstr_text_control_disabled_fast(char controlChar, int mask)
 {
 	if (!mask)
@@ -1155,14 +1143,11 @@ static qboolean ospstr_text_control_disabled_fast(char controlChar, int mask)
 	}
 }
 
-static float ospstr_rich_slice_measure_fit(const char* start, const char* end, int flags,
-        float aw, float ah, int proportional, const cg_osp_font_metric_t* metrics,
-        qboolean limitWidth, float limitPx, int* outFitBytes)
+static float ospstr_rich_slice_measure(const char* start, const char* end, int flags,
+                                       float aw, float ah, int proportional, const cg_osp_font_metric_t* metrics)
 {
 	const char* from;
-	const char* lastFit;
 	float ax;
-	float gw;
 	const emoji_t* em;
 	int dteMask;
 	int flashOn;
@@ -1171,10 +1156,6 @@ static float ospstr_rich_slice_measure_fit(const char* start, const char* end, i
 
 	if (!start)
 	{
-		if (outFitBytes)
-		{
-			*outFitBytes = 0;
-		}
 		return 0.0f;
 	}
 
@@ -1184,7 +1165,6 @@ static float ospstr_rich_slice_measure_fit(const char* start, const char* end, i
 	}
 
 	ax = 0.0f;
-	lastFit = start;
 	from = start;
 	dteMask = cg_disableTextEffects.integer;
 	flashOn = (cg.time & 0x3ff) >= 512;
@@ -1229,15 +1209,9 @@ static float ospstr_rich_slice_measure_fit(const char* start, const char* end, i
 					from += 2;
 					continue;
 				case '^':
-				gw = OSPSTR_GLYPH_W(metrics, '^', aw, proportional);
-				if (limitWidth && ax + gw > limitPx)
-				{
-					goto done;
-				}
-				ax += gw;
-				lastFit = from + 1;
-				from += 1;
-				continue;
+					ax += OSPSTR_GLYPH_W(metrics, '^', aw, proportional);
+					from += 1;
+					continue;
 				case 'X':
 				case 'x':
 					from += 8;
@@ -1260,39 +1234,14 @@ static float ospstr_rich_slice_measure_fit(const char* start, const char* end, i
 			em = CG_OSPGetEmoji(from);
 			if (em != NULL && from + em->len <= end)
 			{
-				gw = ah;
-				if (limitWidth && ax + gw > limitPx)
-				{
-					goto done;
-				}
-				ax += gw;
-				lastFit = from + em->len;
+				ax += ah;
 				from += em->len;
 				continue;
 			}
 		}
 
-		gw = OSPSTR_GLYPH_W(metrics, (unsigned char)from[0], aw, proportional);
-		if (limitWidth && ax + gw > limitPx)
-		{
-			break;
-		}
-		ax += gw;
-		lastFit = from + 1;
+		ax += OSPSTR_GLYPH_W(metrics, (unsigned char)from[0], aw, proportional);
 		from++;
-	}
-
-done:
-	if (outFitBytes)
-	{
-		int fit;
-
-		fit = (int)(lastFit - start);
-		if (fit < 1 && from < end && *from)
-		{
-			fit = 1;
-		}
-		*outFitBytes = fit;
 	}
 
 	return ax;
@@ -1411,7 +1360,11 @@ static void ospstr_draw_plain_mono(const char* string, float ax, float ay, float
 				{
 					fm = &metrics[*s];
 					tc = fm->tc_mono;
-					if (shadowEnabled && pass == 0)
+					if (*s == ' ')
+					{
+						/* an empty quad, nothing to send to the renderer */
+					}
+					else if (shadowEnabled && pass == 0)
 					{
 						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw, ah, tc[0], tc[1], tc[2], tc[3], sh);
 					}
@@ -1528,7 +1481,11 @@ static void ospstr_draw_plain_prop(const char* string, float ax, float ay, float
 
 					tc = fm->tc_prop;
 					aw1 = fm->width * aw;
-					if (shadowEnabled && pass == 0)
+					if (*s == ' ')
+					{
+						/* an empty quad, nothing to send to the renderer */
+					}
+					else if (shadowEnabled && pass == 0)
 					{
 						trap_R_DrawStretchPic(ax + xx_add, ay + yy_add, aw1, ah, tc[0], tc[1], tc[2], tc[3], sh);
 					}
@@ -1582,7 +1539,7 @@ static void ospstr_draw_plain(const char* string, float ax, float ay, float aw, 
 			yy_add = aw * be_fontShadowOffY;
 		}
 		Vector4Copy(shadowColor, shadowCol);
-		ospstr_update_shadow_alpha(shadowCol, shadowColor[3], color[3]);
+		shadowCol[3] = shadowColor[3] * color[3];
 	}
 	else
 	{
@@ -1600,6 +1557,21 @@ static void ospstr_draw_plain(const char* string, float ax, float ay, float aw, 
 		ospstr_draw_plain_mono(string, ax, ay, aw, ah, color, shadowCol, shadowEnabled,
 		                       xx_add, yy_add, metrics, sh, maxWidth, maxChars, widthIsChars, vidWidth);
 	}
+}
+
+/*
+A very small TTF scale can round glyph advances down to zero while the glyphs still
+draw at full width. Measure by character count then, so the background keeps its size.
+*/
+static float ospstr_fallback_width(const char* string, float aw, int maxWidth, int widthIsChars)
+{
+	int n = 0;
+
+	while (string[n] && (!widthIsChars || n < maxWidth))
+	{
+		n++;
+	}
+	return (float)n * aw;
 }
 
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor,
@@ -1670,6 +1642,10 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 		{
 			expectedLength = ospstr_plain_measure(string, metrics, aw, proportional,
 			                                      widthIsChars ? 0.0f : mw, maxWidth, widthIsChars);
+			if (expectedLength <= 0.0f && string[0])
+			{
+				expectedLength = ospstr_fallback_width(string, aw, maxWidth, widthIsChars);
+			}
 		}
 
 		if (flags & (DS_HCENTER | DS_HRIGHT))
@@ -1819,8 +1795,7 @@ float CG_OSPDrawStringNewSliceWidth(const char* start, const char* end, float ch
 	}
 	else
 	{
-		width = ospstr_rich_slice_measure_fit(start, sliceEnd, flags, aw, ah, proportional, metrics,
-		                                      qfalse, 0.0f, NULL);
+		width = ospstr_rich_slice_measure(start, sliceEnd, flags, aw, ah, proportional, metrics);
 	}
 
 	if (cgs.screenXScale_Old > 0.0f)
@@ -1829,56 +1804,4 @@ float CG_OSPDrawStringNewSliceWidth(const char* start, const char* end, float ch
 	}
 
 	return width;
-}
-
-int CG_OSPDrawStringNewFitBytes(const char* start, const char* end, float maxVirtWidth, float charWidth,
-                                float charHeight, int flags, int fontIndex)
-{
-	float aw;
-	float ah;
-	float limitPx;
-	int proportional;
-	int fitBytes;
-	const cg_osp_font_metric_t* metrics;
-	const char* sliceEnd;
-	const unsigned char* pStart;
-	const unsigned char* pEnd;
-
-	if (!start || !start[0] || maxVirtWidth <= 0.0f)
-	{
-		return 0;
-	}
-
-	sliceEnd = ospstr_slice_end(start, end);
-	if (sliceEnd <= start)
-	{
-		return 0;
-	}
-
-	ospstr_slice_setup(charWidth, charHeight, flags, fontIndex, &aw, &ah, &proportional, &metrics);
-	limitPx = maxVirtWidth * cgs.screenXScale_Old;
-
-	pStart = (const unsigned char*)start;
-	pEnd = (const unsigned char*)sliceEnd;
-
-	if (ospstr_is_plain(start, flags))
-	{
-		fitBytes = ospstr_plain_slice_fit_bytes(pStart, pEnd, metrics, aw, proportional, limitPx);
-	}
-	else
-	{
-		(void)ospstr_rich_slice_measure_fit(start, sliceEnd, flags, aw, ah, proportional, metrics,
-		                                    qtrue, limitPx, &fitBytes);
-	}
-
-	if (fitBytes < 1 && sliceEnd > start && *start)
-	{
-		fitBytes = 1;
-	}
-	if (fitBytes > (int)(sliceEnd - start))
-	{
-		fitBytes = (int)(sliceEnd - start);
-	}
-
-	return fitBytes;
 }

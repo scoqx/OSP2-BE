@@ -497,7 +497,6 @@ static void CG_AddMoveScaleFade(localEntity_t* le)
 	refEntity_t* re;
 	float       c;
 	vec3_t      delta;
-	float       len;
 
 	re = &le->refEntity;
 
@@ -526,15 +525,22 @@ static void CG_AddMoveScaleFade(localEntity_t* le)
 		re->radius = le->radius * (1.0 - c) + 8;
 	}
 
-	BG_EvaluateTrajectory(&le->pos, cg.time, re->origin);
+	/* Smoke trails and static rail rings do not move, and there can be hundreds of them. */
+	if (le->pos.trType == TR_LINEAR && !le->pos.trDelta[0] && !le->pos.trDelta[1] && !le->pos.trDelta[2])
+	{
+		VectorCopy(le->pos.trBase, re->origin);
+	}
+	else
+	{
+		BG_EvaluateTrajectory(&le->pos, cg.time, re->origin);
+	}
 	if (le->leFlags & LEF_MOVE_OLDORIGIN)
 		BG_EvaluateTrajectory(&le->pos2, cg.time, re->oldorigin);
 
 	// if the view would be "inside" the sprite, kill the sprite
 	// so it doesn't add too much overdraw
 	VectorSubtract(re->origin, cg.refdef.vieworg, delta);
-	len = VectorLength(delta);
-	if (len < le->radius)
+	if (DotProduct(delta, delta) < le->radius * le->radius)
 	{
 		CG_FreeLocalEntity(le);
 		return;

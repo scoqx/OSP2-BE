@@ -26,6 +26,7 @@ void* CG_SHUDElementFPSCreate(const superhudConfig_t* config)
 
 void CG_SHUDElementFPSRoutine(void* context)
 {
+	static char fpsBuf[16];
 	shudElementFPS_t* element = (shudElementFPS_t*)context;
 	float     fps_val;
 	int     fps_val_int;
@@ -57,14 +58,12 @@ void CG_SHUDElementFPSRoutine(void* context)
 		++fps_val_int;
 	}
 
-	if (element->config.style.isSet && element->config.style.value == 1)
+	CG_FormatInt(fpsBuf, sizeof(fpsBuf), fps_val_int);
+	if (!(element->config.style.isSet && element->config.style.value == 1))
 	{
-		element->ctx.text = va("%i", fps_val_int);
+		Q_strcat(fpsBuf, sizeof(fpsBuf), "fps");
 	}
-	else
-	{
-		element->ctx.text = va("%ifps", fps_val_int);
-	}
+	element->ctx.text = fpsBuf;
 
 	CG_SHUDTextPrint(&element->config, &element->ctx);
 }

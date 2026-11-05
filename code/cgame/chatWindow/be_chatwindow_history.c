@@ -8,6 +8,10 @@ cg_be_chatwindow_history.c — Message history, row cache, scrolling.
 #include "be_chatwindow.h"
 #include "../../ui/keycodes.h"
 
+/* With the time filter on, the visible messages only change when one expires. */
+static int beChatRowsCacheExpireTime;
+static int beChatRowsCacheMsgTime;
+
 static void CG_BEChat_InvalidateRowsCache(void)
 {
 	beChatRowsCacheWriteIdx = -1;
@@ -636,11 +640,13 @@ static void CG_BEChat_RebuildRowsCacheAt(float maxWidth, qboolean timeFilter)
 	int linesBack;
 	int total;
 	int flatIdx;
+	int expireTime;
 	char msgBuf[BE_CHAT_LINE_CHARS];
 
 	history = &cgs.beChatHistory;
 	total = 0;
 	flatIdx = 0;
+	expireTime = 0x7FFFFFFF;
 	beChatFlatFull = qfalse;
 	beChatFlatCount = 0;
 
@@ -663,6 +669,10 @@ static void CG_BEChat_RebuildRowsCacheAt(float maxWidth, qboolean timeFilter)
 
 		CG_BEChat_MessageDisplayText(linesBack, msgBuf, sizeof(msgBuf));
 		entry = CG_BEChat_HistoryEntry(linesBack);
+		if (timeFilter && entry->addTime + cg_chatWindowMessageTime.integer < expireTime)
+		{
+			expireTime = entry->addTime + cg_chatWindowMessageTime.integer;
+		}
 		defaultColor = CG_BEChat_LineDefaultColor(entry);
 		start = 0;
 		rowInMsg = 0;
@@ -694,6 +704,8 @@ static void CG_BEChat_RebuildRowsCacheAt(float maxWidth, qboolean timeFilter)
 	beChatRowsCacheTimeFilter = timeFilter;
 	beChatRowsCacheFrameTime = cg.time;
 	beChatRowsCacheTotal = total;
+	beChatRowsCacheExpireTime = expireTime;
+	beChatRowsCacheMsgTime = cg_chatWindowMessageTime.integer;
 }
 static void CG_BEChat_EnsureRowsCache(float maxWidth, qboolean timeFilter)
 {
@@ -704,7 +716,9 @@ static void CG_BEChat_EnsureRowsCache(float maxWidth, qboolean timeFilter)
 	        beChatRowsCacheCount == history->count &&
 	        beChatRowsCacheWidth == maxWidth &&
 	        beChatRowsCacheTimeFilter == timeFilter &&
-	        (!timeFilter || beChatRowsCacheFrameTime == cg.time))
+	        (!timeFilter || (beChatRowsCacheMsgTime == cg_chatWindowMessageTime.integer &&
+	                         cg.time >= beChatRowsCacheFrameTime && /* a demo restart moves time back */
+	                         cg.time <= beChatRowsCacheExpireTime)))
 	{
 		return;
 	}

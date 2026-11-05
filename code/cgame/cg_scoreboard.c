@@ -1300,7 +1300,7 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 	}
 	else if (cg_scoreboardShowId.integer)
 	{
-		Com_sprintf(string, 1024, "%i", score->client);
+		CG_FormatInt(string, sizeof(string), score->client);
 		CG_OSPDrawStringNew(x + 20, y + 4, string, colorWhite, colorBlack, lWidth, lHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 	}
 	VectorClear(headAngles);
@@ -1362,7 +1362,7 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 		{
 			if (cgs.osp.gameTypeFreeze)
 			{
-				Com_sprintf(string, 1024, "%i", score->scoreFlags);
+				CG_FormatInt(string, sizeof(string), score->scoreFlags);
 			}
 			else
 			{
@@ -1377,7 +1377,7 @@ void CG_BEDrawTeamClientScore(int x, int y, const score_t* score, const float* c
 		Com_sprintf(string, 1024, "^%i%3i", pingColor, score->ping);
 		CG_OSPDrawStringNew(x + 152, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 
-		Com_sprintf(string, 1024, "%i", score->time);
+		CG_FormatInt(string, sizeof(string), score->time);
 		CG_OSPDrawStringNew(x + 184, y, string, color, colorBlack, bWidth, bHeight, SCREEN_WIDTH, DS_HRIGHT | proportional | DS_SHADOW, font, NULL, NULL, NULL);
 
 		Com_sprintf(string, 1024, "%s", &ci->name);

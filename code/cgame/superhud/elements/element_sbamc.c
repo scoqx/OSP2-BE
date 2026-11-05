@@ -30,6 +30,10 @@ void* CG_SHUDElementSBAmCCreate(const superhudConfig_t* config)
 
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
+	if (CG_TEXT_IS_PLAIN_INT(element->config.text.value))
+	{
+		element->ctx.flags |= DS_PLAIN;
+	}
 
 	return element;
 }
@@ -80,7 +84,7 @@ void CG_SHUDElementSBAmCRoutine(void* context)
 
 	Vector4Copy(finalColor, element->ctx.color);
 
-	element->ctx.text = va(element->config.text.value, ammo > 0 ? ammo : 0);
+	element->ctx.text = CG_SHUDFormatTextInt(element->config.text.value, ammo > 0 ? ammo : 0);
 
 	CG_SHUDTextPrintNew(&element->config, &element->ctx, qfalse);
 }

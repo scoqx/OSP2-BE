@@ -148,9 +148,25 @@ static void CG_BEChat_RefreshWindowLayoutCache(void)
 	float w;
 	float h;
 	float minH;
+	static int parsedPosMod = -1;
+	static int parsedSizeMod = -1;
+	static float parsedX, parsedY, parsedW, parsedH;
 
-	CG_BEChat_ParseCvarPairInts(cg_chatWindowPos.string, BE_CHAT_WIN_DEF_X, BE_CHAT_WIN_DEF_Y, &x, &y);
-	CG_BEChat_ParseCvarPairInts(cg_chatWindowSize.string, BE_CHAT_WIN_DEF_W, BE_CHAT_WIN_DEF_H, &w, &h);
+	/* Parse only when the cvars change: this runs every frame. */
+	if (parsedPosMod != cg_chatWindowPos.modificationCount)
+	{
+		parsedPosMod = cg_chatWindowPos.modificationCount;
+		CG_BEChat_ParseCvarPairInts(cg_chatWindowPos.string, BE_CHAT_WIN_DEF_X, BE_CHAT_WIN_DEF_Y, &parsedX, &parsedY);
+	}
+	if (parsedSizeMod != cg_chatWindowSize.modificationCount)
+	{
+		parsedSizeMod = cg_chatWindowSize.modificationCount;
+		CG_BEChat_ParseCvarPairInts(cg_chatWindowSize.string, BE_CHAT_WIN_DEF_W, BE_CHAT_WIN_DEF_H, &parsedW, &parsedH);
+	}
+	x = parsedX;
+	y = parsedY;
+	w = parsedW;
+	h = parsedH;
 
 	minH = BECHAT_INPUT_ROW_H + BECHAT_PAD * 2.0f + BECHAT_CHAR_H;
 	if (w < BE_CHAT_WIN_MIN_W)

@@ -294,7 +294,9 @@ void CG_SHUDElementPwRoutine(void* context)
 	{
 		if (!pwElement->isHoldable)
 		{
-			element->textCtx.text = va("%d", pwElement->time);
+			static char pwTimeBuf[16];
+
+			element->textCtx.text = CG_FormatInt(pwTimeBuf, sizeof(pwTimeBuf), pwElement->time);
 			CG_SHUDTextPrint(&element->config, &element->textCtx);
 		}
 	}

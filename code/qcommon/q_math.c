@@ -1342,15 +1342,32 @@ void AngleVectors(const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 	static float        sr, sp, sy, cr, cp, cy;
 	// static to help MS compiler fp bugs
 
+	/* Trig is a syscall in the VM, and pitch and roll are usually zero. */
 	angle = angles[YAW] * (M_PI * 2 / 360);
 	sy = sin(angle);
 	cy = cos(angle);
-	angle = angles[PITCH] * (M_PI * 2 / 360);
-	sp = sin(angle);
-	cp = cos(angle);
-	angle = angles[ROLL] * (M_PI * 2 / 360);
-	sr = sin(angle);
-	cr = cos(angle);
+	if (angles[PITCH] == 0.0f)
+	{
+		sp = 0.0f;
+		cp = 1.0f;
+	}
+	else
+	{
+		angle = angles[PITCH] * (M_PI * 2 / 360);
+		sp = sin(angle);
+		cp = cos(angle);
+	}
+	if (angles[ROLL] == 0.0f)
+	{
+		sr = 0.0f;
+		cr = 1.0f;
+	}
+	else
+	{
+		angle = angles[ROLL] * (M_PI * 2 / 360);
+		sr = sin(angle);
+		cr = cos(angle);
+	}
 
 	if (forward)
 	{

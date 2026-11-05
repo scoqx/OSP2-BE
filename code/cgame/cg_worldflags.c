@@ -755,26 +755,46 @@ static void CG_WorldFlags_UpdateAllyCarrierDrops(void)
 	}
 }
 
+static qboolean CG_WorldFlags_IsStackDropOf(const cg_worldFlagState_t* flag, int clientNum)
+{
+	return flag->dropValid && flag->dropAtGlobalPos && flag->dropClientNum == clientNum;
+}
+
+/*
+Clients whose dropped flag is held at their global position. There are only two flags,
+so hot loops use this list instead of asking about all 64 clients.
+*/
+int CG_WorldFlags_GetStackDropClients(int outClients[2])
+{
+	int count = 0;
+
+	if (cg_worldFlagRed.dropValid && cg_worldFlagRed.dropAtGlobalPos &&
+	        (unsigned)cg_worldFlagRed.dropClientNum < MAX_CLIENTS)
+	{
+		outClients[count++] = cg_worldFlagRed.dropClientNum;
+	}
+	if (cg_worldFlagBlue.dropValid && cg_worldFlagBlue.dropAtGlobalPos &&
+	        (unsigned)cg_worldFlagBlue.dropClientNum < MAX_CLIENTS &&
+	        !(count && outClients[0] == cg_worldFlagBlue.dropClientNum))
+	{
+		outClients[count++] = cg_worldFlagBlue.dropClientNum;
+	}
+	return count;
+}
+
 qboolean CG_WorldFlags_ClientHasStackDropFlag(int clientNum)
 {
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
 	{
 		return qfalse;
 	}
-	if (cg_worldFlagRed.dropValid && cg_worldFlagRed.dropAtGlobalPos && cg_worldFlagRed.dropClientNum == clientNum)
-	{
-		return qtrue;
-	}
-	if (cg_worldFlagBlue.dropValid && cg_worldFlagBlue.dropAtGlobalPos && cg_worldFlagBlue.dropClientNum == clientNum)
-	{
-		return qtrue;
-	}
-	return qfalse;
+	return CG_WorldFlags_IsStackDropOf(&cg_worldFlagRed, clientNum) ||
+	       CG_WorldFlags_IsStackDropOf(&cg_worldFlagBlue, clientNum);
 }
 
 void CG_WorldFlags_GetStackDropFlagColor(int clientNum, vec4_t color)
 {
-	if (cg_worldFlagRed.dropValid && cg_worldFlagRed.dropAtGlobalPos && cg_worldFlagRed.dropClientNum == clientNum)
+	if (CG_WorldFlags_IsStackDropOf(&cg_worldFlagRed, clientNum))
 	{
 		CG_WorldFlags_GetFlagColor(qtrue, color);
 		return;

@@ -1136,6 +1136,7 @@ static int CG_ShadowItems_MatchCent(centity_t* cent, int mask, int visibleDraw)
 	return bestPoint;
 }
 
+/* CG_AddShadowItems has already dropped inactive, hidden and occupied points. */
 static int CG_ShadowItems_GhostAlpha(int pointIdx, int mode, int mask)
 {
 	int     slot;
@@ -1154,26 +1155,8 @@ static int CG_ShadowItems_GhostAlpha(int pointIdx, int mode, int mask)
 	int     alpha;
 	int     crossStart;
 	float   fade;
-	const cg_shadowItemPoint_t* pt;
-
-	if (pointIdx < 0 || pointIdx >= cg_shadowItemCount
-	        || !cg_shadowPointActive[mode][pointIdx])
-	{
-		return 0;
-	}
-
-	pt = &cg_shadowItemPoints[pointIdx];
-	if (!(mask & pt->shadowCat) || cg_shadowItemVisibleDraw[pointIdx])
-	{
-		return 0;
-	}
 
 	slot = cg_shadowItemSlotId[pointIdx];
-	if (slot >= 0 && slot < CG_SHADOW_ITEM_SLOT_MAX && cg_shadowItemSlotVisible[slot])
-	{
-		return 0;
-	}
-
 	n = (slot >= 0 && slot < CG_SHADOW_ITEM_SLOT_MAX)
 	    ? cg_shadowItemSlotMemberCount[slot] : 1;
 	if (n <= 1)
@@ -1375,8 +1358,11 @@ int CG_ShadowItems_NoteLiveItem(centity_t* cent)
 	return CG_ShadowItems_MatchCent(cent, cg_shadowFrameMask, 1);
 }
 
+#define CG_SHADOW_CULL_RADIUS 96.0f
+
 void CG_AddShadowItems(void)
 {
+	qboolean    cull;
 	int         i;
 	int         idx;
 	int         slot;
@@ -1400,6 +1386,7 @@ void CG_AddShadowItems(void)
 
 	mode = cg_shadowFrameMode;
 	mask = cg_shadowFrameMask;
+	cull = CG_ViewCullAllowed();
 
 	for (i = 0; i < cg.snap->numEntities; i++)
 	{
@@ -1427,6 +1414,12 @@ void CG_AddShadowItems(void)
 
 		slot = cg_shadowItemSlotId[idx];
 		if (slot >= 0 && slot < CG_SHADOW_ITEM_SLOT_MAX && cg_shadowItemSlotVisible[slot])
+		{
+			continue;
+		}
+
+		/* Ghosts stay put apart from the bob, and no item model is near this radius. */
+		if (cull && CG_SPHERE_OUT_OF_VIEW(pt->origin, CG_SHADOW_CULL_RADIUS))
 		{
 			continue;
 		}

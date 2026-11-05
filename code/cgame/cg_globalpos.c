@@ -28,8 +28,7 @@ static qboolean CG_GlobalPosFriendMarkersAllowed(void)
 	{
 		return qfalse;
 	}
-	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
-	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+	isSpec = CG_MARKER_VIEW_IS_SPECTATOR();
 	if (isSpec)
 	{
 		if (CG_DrawFriendForSpecs() || cg_specMode.integer == 2)
@@ -130,8 +129,7 @@ void CG_UpdateTeamGlobalPosFrame(void)
 		return;
 	}
 
-	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
-	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+	isSpec = CG_MARKER_VIEW_IS_SPECTATOR();
 
 	cg.teamTinfoLocations = qtrue;
 
@@ -242,11 +240,7 @@ static qboolean CG_TeamMarkerSameStackPoint(const clientInfo_t* a, const vec3_t 
 	{
 		return qtrue;
 	}
-	if (DistanceSquared(oa, ob) < (72.0f * 72.0f))
-	{
-		return qtrue;
-	}
-	return qfalse;
+	return DistanceSquared(oa, ob) < (72.0f * 72.0f);
 }
 
 /*
@@ -306,42 +300,44 @@ sorted dead / frozen / alive (0 = lowest on screen), then clientNum.
 static void CG_FillTeamMarkerStackIndex(int stackIndex[MAX_CLIENTS], int stackGroupSize[MAX_CLIENTS], qboolean gameModeNotSpectator)
 {
 	vec3_t origins[MAX_CLIENTS];
-	qboolean hasOrigin[MAX_CLIENTS];
 	int sortKey[MAX_CLIENTS];
+	int active[MAX_CLIENTS];
+	int nActive;
 	int i;
-	int j;
+	int k;
+	int ii;
+	int jj;
+	int ci;
+	int cj;
 
 	memset(stackIndex, 0, MAX_CLIENTS * sizeof(stackIndex[0]));
 	if (stackGroupSize)
 	{
 		memset(stackGroupSize, 0, MAX_CLIENTS * sizeof(stackGroupSize[0]));
 	}
-	memset(hasOrigin, 0, sizeof(hasOrigin));
 
 	if (!cg.snap)
 	{
 		return;
 	}
 
-	for (i = 0; i < MAX_CLIENTS; i++)
+	nActive = 0;
+	for (k = 0; k < cg.numValidClients; k++)
 	{
-		clientInfo_t* ci;
+		clientInfo_t* info;
 
+		i = cg.validClients[k];
 		if (i == cg.snap->ps.clientNum)
 		{
 			continue;
 		}
 
-		ci = &cgs.clientinfo[i];
-		if (!ci->infoValid)
+		info = &cgs.clientinfo[i];
+		if (gameModeNotSpectator && CG_CACHED_IS_ENEMY_CI(info))
 		{
 			continue;
 		}
-		if (gameModeNotSpectator && CG_CACHED_IS_ENEMY_CI(ci))
-		{
-			continue;
-		}
-		if (ci->team == TEAM_SPECTATOR)
+		if (info->team == TEAM_SPECTATOR)
 		{
 			continue;
 		}
@@ -349,37 +345,32 @@ static void CG_FillTeamMarkerStackIndex(int stackIndex[MAX_CLIENTS], int stackGr
 		{
 			continue;
 		}
-		hasOrigin[i] = qtrue;
 		sortKey[i] = CG_TeamMarkerStackSortKey(i);
+		active[nActive++] = i;
 	}
 
-	for (i = 0; i < MAX_CLIENTS; i++)
+	/* Over the active clients only, instead of all 64x64 slots. */
+	for (ii = 0; ii < nActive; ii++)
 	{
-		if (!hasOrigin[i])
+		ci = active[ii];
+		for (jj = 0; jj < nActive; jj++)
 		{
-			continue;
-		}
-		for (j = 0; j < MAX_CLIENTS; j++)
-		{
-			if (!hasOrigin[j])
-			{
-				continue;
-			}
-			if (!CG_TeamMarkerSameStackPoint(&cgs.clientinfo[i], origins[i], &cgs.clientinfo[j], origins[j]))
+			cj = active[jj];
+			if (!CG_TeamMarkerSameStackPoint(&cgs.clientinfo[ci], origins[ci], &cgs.clientinfo[cj], origins[cj]))
 			{
 				continue;
 			}
 			if (stackGroupSize)
 			{
-				stackGroupSize[i]++;
+				stackGroupSize[ci]++;
 			}
-			if (j == i)
+			if (cj == ci)
 			{
 				continue;
 			}
-			if (sortKey[j] < sortKey[i] || (sortKey[j] == sortKey[i] && j < i))
+			if (sortKey[cj] < sortKey[ci] || (sortKey[cj] == sortKey[ci] && cj < ci))
 			{
-				stackIndex[i]++;
+				stackIndex[ci]++;
 			}
 		}
 	}
@@ -392,6 +383,8 @@ int CG_TeamMarkerStackEffectiveSize(int clientNum)
 	clientInfo_t* ci;
 	int           i;
 	vec3_t        dropOrigin;
+	int           drops[2];
+	int           dropCount;
 
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS)
 	{
@@ -410,25 +403,24 @@ int CG_TeamMarkerStackEffectiveSize(int clientNum)
 		return n;
 	}
 
-	for (i = 0; i < MAX_CLIENTS; i++)
+	dropCount = CG_WorldFlags_GetStackDropClients(drops);
+	for (i = 0; i < dropCount; i++)
 	{
-		if (!CG_WorldFlags_ClientHasStackDropFlag(i))
+		const clientInfo_t* dropCi = &cgs.clientinfo[drops[i]];
+
+		if (!dropCi->infoValid)
 		{
 			continue;
 		}
-		if (!cgs.clientinfo[i].infoValid)
+		if (!CG_ClientTeamMarkerOrigin(drops[i], dropOrigin))
 		{
-			continue;
-		}
-		if (!CG_ClientTeamMarkerOrigin(i, dropOrigin))
-		{
-			if (!cgs.clientinfo[i].globalPos)
+			if (!dropCi->globalPos)
 			{
 				continue;
 			}
-			VectorCopy(cgs.clientinfo[i].globalPosOrigin, dropOrigin);
+			VectorCopy(dropCi->globalPosOrigin, dropOrigin);
 		}
-		if (CG_TeamMarkerSameStackPoint(ci, origin, &cgs.clientinfo[i], dropOrigin))
+		if (CG_TeamMarkerSameStackPoint(ci, origin, dropCi, dropOrigin))
 		{
 			return n + 1;
 		}
@@ -450,12 +442,16 @@ void CG_EnsureTeamMarkerStackCache(qboolean gameModeNotSpectator)
 	cg.teamMarkerStackCacheAlliesOnly = gameModeNotSpectator;
 }
 
+/*
+followTeamFilter: only clients of this team, or TEAM_SPECTATOR for no such limit.
+useEnemyFilter: when there is no followTeamFilter, drop enemies.
+*/
 static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, qboolean* wantShow,
         qhandle_t* friendShader, float** friendColor, qboolean useTeamFoeWh, qboolean useTeamFrozen,
-        qboolean isSpec)
+        int followTeamFilter, qboolean useEnemyFilter, int drawMode, qboolean isCA)
 {
 	qboolean isFrozenTinfo;
-	int drawMode;
+	int otherTeam;
 
 	*wantShow = qfalse;
 	*friendShader = 0;
@@ -474,59 +470,15 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 	{
 		return;
 	}
-	if (ci->infoValid && isSpec)
+	if (ci->infoValid && followTeamFilter != TEAM_SPECTATOR)
 	{
-		if (cg_specMode.integer == 2)
+		otherTeam = isCA ? ci->rt : ci->team;
+		if (otherTeam != followTeamFilter)
 		{
-			if ((cg.snap->ps.pm_flags & PMF_FOLLOW) &&
-			        cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS)
-			{
-				clientInfo_t* followCi;
-				int followTeam;
-				int otherTeam;
-				qboolean isCA;
-
-				followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
-				if (!followCi->infoValid)
-				{
-					return;
-				}
-				isCA = CG_OSPIsGameTypeCA(cgs.gametype);
-				followTeam = isCA ? followCi->rt : followCi->team;
-				otherTeam = isCA ? ci->rt : ci->team;
-				if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
-				{
-					return;
-				}
-			}
-		}
-		else if (!CG_DrawFriendForSpecs())
-		{
-			clientInfo_t* followCi;
-			int followTeam;
-			int otherTeam;
-			qboolean isCA;
-
-			if (!(cg.snap->ps.pm_flags & PMF_FOLLOW) ||
-			        cg.snap->ps.clientNum < 0 || cg.snap->ps.clientNum >= MAX_CLIENTS)
-			{
-				return;
-			}
-			followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
-			if (!followCi->infoValid)
-			{
-				return;
-			}
-			isCA = CG_OSPIsGameTypeCA(cgs.gametype);
-			followTeam = isCA ? followCi->rt : followCi->team;
-			otherTeam = isCA ? ci->rt : ci->team;
-			if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
-			{
-				return;
-			}
+			return;
 		}
 	}
-	else if (ci->infoValid && CG_CACHED_IS_ENEMY_CI(ci))
+	else if (ci->infoValid && useEnemyFilter && CG_CACHED_IS_ENEMY_CI(ci))
 	{
 		return;
 	}
@@ -538,7 +490,6 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 		return;
 	}
 
-	drawMode = CG_DrawFriendMode();
 	if (isFrozenTinfo)
 	{
 		if (!cg.teamMarkers.clientHasFrozenAllyMarkNear[clientNum] &&
@@ -571,6 +522,73 @@ static void CG_GlobalPosFriendFloatSpritePick(int clientNum, clientInfo_t* ci, q
 	*wantShow = (*friendShader != 0);
 }
 
+/*
+Spectators who see only the followed player's team. Returns qfalse when nobody can be shown,
+and leaves followTeam alone when there is no such limit.
+*/
+static qboolean CG_GlobalPosFollowTeamForSpec(qboolean isCA, int* followTeam)
+{
+	const qboolean following = (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+	                           cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS;
+	const clientInfo_t* followCi;
+
+	if (cg_specMode.integer == 2 ? !following : CG_DrawFriendForSpecs())
+	{
+		return qtrue;
+	}
+	if (!following)
+	{
+		return qfalse;
+	}
+	followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+	if (!followCi->infoValid)
+	{
+		return qfalse;
+	}
+	*followTeam = isCA ? followCi->rt : followCi->team;
+	return *followTeam != TEAM_SPECTATOR;
+}
+
+static void CG_AddStackDropFlagSprites(qboolean isSpec)
+{
+	int drops[2];
+	int dropCount;
+	int i;
+
+	dropCount = CG_WorldFlags_GetStackDropClients(drops);
+	for (i = 0; i < dropCount; i++)
+	{
+		const int clientNum = drops[i];
+		clientInfo_t* ci = &cgs.clientinfo[clientNum];
+		vec3_t spriteOrigin;
+		vec4_t dropColor;
+		int n;
+
+		if (clientNum == cg.snap->ps.clientNum || !ci->globalPos)
+		{
+			continue;
+		}
+		if (ci->infoValid && (ci->team == TEAM_SPECTATOR || (!isSpec && CG_CACHED_IS_ENEMY_CI(ci))))
+		{
+			continue;
+		}
+
+		VectorCopy(ci->globalPosOrigin, spriteOrigin);
+		n = CG_TeamMarkerStackEffectiveSize(clientNum);
+		if (n > 1)
+		{
+			const float step = 0.6f * (CG_FloatSpriteRadiusAtDist(ci->globalPosOrigin,
+			                           cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer, 0.0f) * 2.0f);
+
+			spriteOrigin[2] += (n - 1) * (step * 0.5f);
+		}
+		CG_WorldFlags_GetStackDropFlagColor(clientNum, dropColor);
+		CG_AddFloatSpriteAtOriginParams(spriteOrigin, clientNum, cgs.media.teamTasksFlag, dropColor,
+		                                cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer,
+		                                GLOBAL_POS_DRAW_ALPHA, 0.0f);
+	}
+}
+
 void CG_AddGlobalPosFriendFloatSprites(void)
 {
 	int i;
@@ -582,60 +600,34 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 	qhandle_t     friendShader;
 	float*        friendColor;
 	vec3_t        spriteOrigin;
+	int           followTeamFilter;
+	qboolean      useEnemyFilter;
+	qboolean      isCA;
+	int           drawMode;
+	qboolean      drawFriends;
 
 	if (!CG_DrawFriendMode() || !CG_GlobalPosFriendMarkersAllowed())
 	{
 		return;
 	}
 
-	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
-	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+	isSpec = CG_MARKER_VIEW_IS_SPECTATOR();
 	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
 
 	CG_EnsureTeamMarkerStackCache(!isSpec);
 
-	for (i = 0; i < MAX_CLIENTS; i++)
+	followTeamFilter = TEAM_SPECTATOR;
+	useEnemyFilter = !isSpec;
+	isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+	drawMode = CG_DrawFriendMode();
+	drawFriends = !isSpec || CG_GlobalPosFollowTeamForSpec(isCA, &followTeamFilter);
+
+	CG_AddStackDropFlagSprites(isSpec);
+
+	if (!drawFriends)
 	{
-		vec4_t dropColor;
-		int n;
-		float step;
-
-		if (i == cg.snap->ps.clientNum)
-		{
-			continue;
-		}
-		if (!CG_WorldFlags_ClientHasStackDropFlag(i))
-		{
-			continue;
-		}
-
-		ci = &cgs.clientinfo[i];
-		if (!ci->globalPos)
-		{
-			continue;
-		}
-		if (ci->infoValid && ci->team == TEAM_SPECTATOR)
-		{
-			continue;
-		}
-		if (ci->infoValid && !isSpec && CG_CACHED_IS_ENEMY_CI(ci))
-		{
-			continue;
-		}
-
-		VectorCopy(ci->globalPosOrigin, spriteOrigin);
-		n = CG_TeamMarkerStackEffectiveSize(i);
-		if (n > 1)
-		{
-			step = 0.6f * (CG_FloatSpriteRadiusAtDist(ci->globalPosOrigin,
-			               cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer, 0.0f) * 2.0f);
-			spriteOrigin[2] += ((n - 1) * 2 - (n - 1)) * (step * 0.5f);
-		}
-		CG_WorldFlags_GetStackDropFlagColor(i, dropColor);
-		CG_AddFloatSpriteAtOriginParams(spriteOrigin, i, cgs.media.teamTasksFlag, dropColor,
-		                                cg_floatSpriteMinSize.value, cg_floatSpriteMaxDist.integer,
-		                                GLOBAL_POS_DRAW_ALPHA, 0.0f);
+		return;
 	}
 
 	for (i = 0; i < MAX_CLIENTS; i++)
@@ -651,7 +643,8 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 
 		ci = &cgs.clientinfo[i];
 		CG_GlobalPosFriendFloatSpritePick(i, ci, &wantShow, &friendShader, &friendColor,
-		                                  useTeamFoeWh, useTeamFrozen, isSpec);
+		                                  useTeamFoeWh, useTeamFrozen, followTeamFilter,
+		                                  useEnemyFilter, drawMode, isCA);
 		if (!wantShow)
 		{
 			continue;
@@ -686,8 +679,7 @@ void CG_DrawGlobalPosFriendHudMarkers(void)
 		return;
 	}
 
-	isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
-	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+	isSpec = CG_MARKER_VIEW_IS_SPECTATOR();
 	useTeamFrozen = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FROZEN);
 	useTeamFoeWh = CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH);
 

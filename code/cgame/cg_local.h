@@ -331,6 +331,8 @@ typedef struct markPoly_s
 	qhandle_t   markShader;
 	qboolean    alphaFade;      // fade alpha instead of rgb
 	float       color[4];
+	vec3_t      cullOrigin;     // sphere around the whole mark
+	float       cullRadius;
 	poly_t      poly;
 	polyVert_t  verts[MAX_VERTS_ON_POLY];
 } markPoly_t;
@@ -557,6 +559,10 @@ typedef struct weaponInfo_s
 
 	float           flashDlight;
 	vec3_t          flashDlightColor;
+	vec3_t          baseFlashDlightColor;   // used while the weapon's cg_dlight* is empty
+	vec3_t          baseMissileDlightColor;
+	qboolean        dlightColorIsSet;       // the weapon's cg_dlight* holds a color
+	qhandle_t       flashColorShader;       // flash that takes the entity color, 0 when there is none
 	sfxHandle_t     flashSound[4];      // fast firing weapons randomly choose
 
 	qhandle_t       weaponIcon;
@@ -826,6 +832,10 @@ typedef struct
 typedef struct
 {
 	int         clientFrame;        // incremented each frame
+	int         portalFrame;        // last clientFrame with a portal entity: the scene is also seen from elsewhere
+	float       viewPlanes[4][4];   // sides of the view facing inwards: normal and distance
+	int         validClients[MAX_CLIENTS];  // infoValid clients in ascending order, filled each frame
+	int         numValidClients;
 
 	int         clientNum;
 
@@ -2036,6 +2046,8 @@ typedef struct
 	qboolean        engineFontAtlas;    /* trap_R_RegisterFontAtlas_Q3E available + TTF preloaded */
 	vec3_t          beBrightWeaponsColor[WP_NUM_WEAPONS];
 	qboolean        beBrightWeaponsBeinfoSet[WP_NUM_WEAPONS];
+	vec3_t      beFlashColor[WP_NUM_WEAPONS];       /* beinfo flashcolor_weapon_* */
+	qboolean    beFlashColorSet[WP_NUM_WEAPONS];
 	float           beBrightWeaponsBeinfoOpaque[WP_NUM_WEAPONS];
 	vec4_t          beBrightItemsColor[MAX_ITEMS];
 	qboolean        beBrightItemsBeinfoSet[MAX_ITEMS];
@@ -2264,6 +2276,7 @@ extern vmCvar_t           cg_smokeradius_gl;
 extern vmCvar_t           cg_smokeradius_rl;
 extern vmCvar_t           cg_smokedensity_gl;
 extern vmCvar_t           cg_smokedensity_rl;
+extern vmCvar_t           cg_smokeNew;
 extern vmCvar_t           cg_swapSkins;
 extern vmCvar_t           cg_teamRails;
 extern vmCvar_t           cg_trueLightning;
@@ -2780,6 +2793,15 @@ typedef struct
 	qboolean some_flag;
 } OSP_PrintInfo_t;
 
+/* Trig of half the view's field of view, shared by everything that projects to the screen. */
+typedef struct
+{
+	float tanX, tanY;
+	float sinX, sinY;
+	float cosX, cosY;
+} viewFovTrig_t;
+const viewFovTrig_t* CG_ViewFovTrig(void);
+
 void CG_AdjustFrom640(float* x, float* y, float* w, float* h);
 void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean correctWide);
 void CG_FillRect(float x, float y, float width, float height, const float* color);
@@ -2809,7 +2831,6 @@ void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColo
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor, vec4_t shadowColor, float charWidth, float charHeight, int maxWidth, int flags, int fontIndex, vec4_t background, vec4_t border, vec4_t borderColor);
 float CG_OSPDrawStringNewTextWidth(const char* string, float charWidth, float charHeight, int flags, int fontIndex);
 float CG_OSPDrawStringNewSliceWidth(const char* start, const char* end, float charWidth, float charHeight, int flags, int fontIndex);
-int CG_OSPDrawStringNewFitBytes(const char* start, const char* end, float maxVirtWidth, float charWidth, float charHeight, int flags, int fontIndex);
 
 typedef struct cg_osp_font_metric_s
 {
@@ -2822,6 +2843,11 @@ typedef struct cg_osp_font_metric_s
 
 qhandle_t CG_OSPFontShaderForHeight(int fontIndex, float charHeight);
 const cg_osp_font_metric_t* CG_OSPFontMetricsPtr(int fontIndex);
+
+/* Same text as "%i" without going through vsnprintf, which is slow in the VM. Returns buf. */
+char* CG_FormatInt(char* buf, int buflen, int val);
+#define CG_TEXT_IS_PLAIN_INT(fmt) \
+	((fmt) && (fmt)[0] == '%' && ((fmt)[1] == 'i' || (fmt)[1] == 'd') && (fmt)[2] == '\0')
 
 int CG_GetFontCount(void);
 void CG_FontSelect(int index);
@@ -2910,6 +2936,7 @@ enum
 	DS_MAX_WIDTH_IS_CHARS = 0x80,// flag for calculation
 	DS_CTE_COLOR    = 0x100,// allow ^cT/^cE team/enemy inline colors
 	DS_EMOJI        = 0x200,// allow emoji (must not overlap DS_VTOP/DS_VCENTER)
+	DS_PLAIN        = 0x400,// caller guarantees no color codes or emoji in the text
 };
 void CG_DrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxChars, int flags);
 
@@ -3068,6 +3095,10 @@ void CG_UpdateAllClientsInfo(void);
     (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
 #define CG_IS_DEAD() (cg.snap && (cg.snap->ps.pm_type == PM_DEAD || cg.snap->ps.pm_type == PM_SPINTERMISSION))
 #define CG_IS_LOCAL_CLIENT_SPECTATOR() ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
+/* Who the team markers are for. A dead player in freeze modes gets TEAM_SPECTATOR in the snapshot
+   between follow targets while still on a team, and must keep seeing the markers of that team. */
+#define CG_MARKER_VIEW_IS_SPECTATOR() (CG_IS_LOCAL_CLIENT_SPECTATOR() || \
+                                       (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR && (cg.snap->ps.pm_flags & PMF_FOLLOW)))
 #define CG_IS_LOCAL_CLIENT_ON_SCREEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
 #define CG_IS_LOCAL_CLIENT_1STPOS_FROZEN() (cg.snap && cg.snap->ps.clientNum == cg.clientNum && cg.snap->ps.pm_type == PM_FREEZE)
 #define CG_IS_FROZEN_ENTITY(cent) ((cent)->currentValid && cgs.osp.gameTypeFreeze && (cent)->currentState.eType == ET_PLAYER && ((cent)->currentState.powerups & (1 << PW_BATTLESUIT)) && (cent)->currentState.weapon == WP_NONE && ((cent) - cg_entities >= MAX_CLIENTS && (cent)->currentState.otherEntityNum >= 0 && (cent)->currentState.otherEntityNum <= MAX_CLIENTS) && (cent)->currentState.otherEntityNum2 != TEAM_PROXY_MARKER)
@@ -3086,10 +3117,13 @@ void CG_ParseMovementLockConfigString(const char* str);
 #define CG_CACHED_IS_ENEMY_POWERUP_NUM(n) (((n) >= 0 && (n) < MAX_CLIENTS) ? cg.isEnemyPowerupVisual[(n)] : qfalse)
 #define CG_CACHED_IS_ENEMY_POWERUP_CI(ci) CG_CACHED_IS_ENEMY_POWERUP_NUM((int)((ci) - cgs.clientinfo))
 /* Enemy from current view: per-frame cache in CG_ClientInfoUpdateFrame; hot paths use CG_CACHED_IS_ENEMY_* */
-/* Specs see both teams; hide warmup BS for everyone. In-game: allies only. */
+qboolean CG_ClientMarkerIsFrozen(const clientInfo_t* ci);
+/* Specs see both teams; hide warmup BS for everyone. In-game: allies only.
+ * Freeze: PW_BATTLESUIT in tinfo/entity marks ice, not a real battlesuit — never show as PU. */
 #define CG_HIDE_ALLY_BATTLESUIT_UI(ci) \
-    (cg.hideAllyBattlesuitUi && \
-     (CG_IS_LOCAL_CLIENT_SPECTATOR() || !CG_CACHED_IS_ENEMY_CI(ci)))
+    ((cg.hideAllyBattlesuitUi && \
+      (CG_IS_LOCAL_CLIENT_SPECTATOR() || !CG_CACHED_IS_ENEMY_CI(ci))) || \
+     CG_ClientMarkerIsFrozen(ci))
 qboolean CG_IsWarmup(void);
 qboolean CG_IsIntermission(void);
 
@@ -3125,7 +3159,14 @@ void CG_PositionEntityOnTag(refEntity_t* entity, const refEntity_t* parent,
 void CG_PositionRotatedEntityOnTag(refEntity_t* entity, const refEntity_t* parent,
                                    qhandle_t parentModel, char* tagName);
 
-qboolean CG_IsKillerGhostBody(const entityState_t* s);
+/* Only for what is seen from the view: with a portal in the scene (CG_ViewCullAllowed) it shows other places too. */
+#define CG_ViewCullAllowed() (cg.portalFrame + 1 < cg.clientFrame)
+#define CG_PLANE_DIST(o, p) ((o)[0] * (p)[0] + (o)[1] * (p)[1] + (o)[2] * (p)[2] - (p)[3])
+#define CG_SPHERE_OUT_OF_VIEW(o, r) (CG_PLANE_DIST(o, cg.viewPlanes[0]) < -(r) || CG_PLANE_DIST(o, cg.viewPlanes[1]) < -(r) || \
+                                     CG_PLANE_DIST(o, cg.viewPlanes[2]) < -(r) || CG_PLANE_DIST(o, cg.viewPlanes[3]) < -(r))
+
+#define CG_KILLER_GHOST_POWERUPS ((1 << PW_QUAD) | (1 << PW_INVIS))
+#define CG_IS_KILLER_GHOST_BODY(s) ((s)->weapon == 0 && ((s)->powerups & CG_KILLER_GHOST_POWERUPS) == CG_KILLER_GHOST_POWERUPS)
 
 
 //
@@ -3180,6 +3221,7 @@ float CG_GetWeaponTempAccuracy(int weapon);
 void CG_SetWeaponBrightColorWorld(refEntity_t* ent, int weaponNum);
 void CG_InitBrightWeaponsColors(void);
 void CG_BeinfoApplyBrightColor(const char* classname, float r, float g, float b, float a);
+void CG_BeinfoApplyFlashColor(const char* classname, float r, float g, float b, float a);
 qhandle_t CG_SelectBrightWeaponsShader(void);
 void CG_ApplyBrightBrassIfNeeded(localEntity_t* le);
 /* icons/dye/colors.cfg — default powerup / classic flag tints (0.0–1.0) */
@@ -3211,6 +3253,8 @@ qboolean CG_ApplyBrightItem(refEntity_t* ent, int itemNum, int gitype);
 //
 void    CG_InitMarkPolys(void);
 void    CG_AddMarks(void);
+void    CG_ShadowMark(int entityNum, qhandle_t shader, const vec3_t origin, const vec3_t dir,
+                      float orientation, float red, float green, float blue);
 void    CG_ImpactMark(qhandle_t markShader,
                       const vec3_t origin, const vec3_t dir,
                       float orientation,
@@ -3477,6 +3521,7 @@ qboolean CG_WorldFlags_TryConsumeDroppedFlagTeamMark(int markType, const vec3_t 
 void CG_WorldFlags_DrawWorld(void);
 void CG_WorldFlags_AddSceneSprites(void);
 void CG_WorldFlags_DrawBorderHudMarkers(void);
+int CG_WorldFlags_GetStackDropClients(int outClients[2]);
 qboolean CG_WorldFlags_ClientHasStackDropFlag(int clientNum);
 void CG_WorldFlags_GetStackDropFlagColor(int clientNum, vec4_t color);
 
@@ -3833,7 +3878,6 @@ void CG_OSPCvarsRestrictValues(void);
 #define CG_OSPIsGameTypeCA(gt) ((gt) >= GT_CA)
 qboolean CG_OSPIsGameTypeFreeze(void);
 qboolean CG_ClientInfoIsFreezeTinfoFrozen(const clientInfo_t* ci);
-qboolean CG_ClientMarkerIsFrozen(const clientInfo_t* ci);
 #define CG_OBITUARY_DROP_PU_MASK \
     ((1 << PW_QUAD) | (1 << PW_BATTLESUIT) | (1 << PW_HASTE) | \
      (1 << PW_INVIS) | (1 << PW_REGEN) | (1 << PW_FLIGHT))

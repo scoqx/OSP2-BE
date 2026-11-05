@@ -2886,7 +2886,11 @@ static void CG_SwingAngles(float destination, float swingTolerance, float clampT
 	if (!*swinging)
 	{
 		// see if a swing should be started
-		swing = AngleSubtract(*angle, destination);
+		swing = *angle - destination;
+		if (swing > 180.0f || swing < -180.0f)
+		{
+			swing = AngleSubtract(*angle, destination);
+		}
 		if (swing > swingTolerance || swing < -swingTolerance)
 		{
 			*swinging = qtrue;
@@ -2900,8 +2904,12 @@ static void CG_SwingAngles(float destination, float swingTolerance, float clampT
 
 	// modify the speed depending on the delta
 	// so it doesn't seem so linear
-	swing = AngleSubtract(destination, *angle);
-	scale = fabs(swing);
+	swing = destination - *angle;
+	if (swing > 180.0f || swing < -180.0f)
+	{
+		swing = AngleSubtract(destination, *angle);
+	}
+	scale = (swing < 0.0f) ? -swing : swing;
 	if (scale < swingTolerance * 0.5)
 	{
 		scale = 0.5;
@@ -2938,7 +2946,11 @@ static void CG_SwingAngles(float destination, float swingTolerance, float clampT
 	}
 
 	// clamp to no more than tolerance
-	swing = AngleSubtract(destination, *angle);
+	swing = destination - *angle;
+	if (swing > 180.0f || swing < -180.0f)
+	{
+		swing = AngleSubtract(destination, *angle);
+	}
 	if (swing > clampTolerance)
 	{
 		*angle = AngleMod(destination - (clampTolerance - 1));
@@ -2977,6 +2989,75 @@ static void CG_AddPainTwitch(centity_t* cent, vec3_t torsoAngles)
 	}
 }
 
+
+/*
+Sine from a table with linear steps. Off by under 0.00001, which nobody can see on a model.
+AnglesToAxis itself must stay exact: movement prediction has to match the server.
+*/
+#define CG_SIN_TABLE_SIZE 1024
+
+static float cg_sinTable[CG_SIN_TABLE_SIZE + 1];
+static qboolean cg_sinTableReady;
+
+static float CG_TableSin(float degrees)
+{
+	float pos;
+	float frac;
+	int index;
+
+	pos = degrees * (CG_SIN_TABLE_SIZE / 360.0f);
+	index = (int)pos;
+	if (pos < index)
+	{
+		index--;
+	}
+	frac = pos - index;
+	index &= CG_SIN_TABLE_SIZE - 1;
+	return cg_sinTable[index] + (cg_sinTable[index + 1] - cg_sinTable[index]) * frac;
+}
+
+static void CG_ModelAnglesToAxis(const vec3_t angles, vec3_t axis[3])
+{
+	float sy, cy, sp, cp, sr, cr;
+
+	if (!cg_sinTableReady)
+	{
+		int i;
+
+		for (i = 0; i <= CG_SIN_TABLE_SIZE; i++)
+		{
+			cg_sinTable[i] = sin(i * (float)M_PI * 2.0f / CG_SIN_TABLE_SIZE);
+		}
+		cg_sinTableReady = qtrue;
+	}
+
+	sy = CG_TableSin(angles[YAW]);
+	cy = CG_TableSin(angles[YAW] + 90.0f);
+	sp = 0.0f;
+	cp = 1.0f;
+	if (angles[PITCH] != 0.0f)
+	{
+		sp = CG_TableSin(angles[PITCH]);
+		cp = CG_TableSin(angles[PITCH] + 90.0f);
+	}
+	sr = 0.0f;
+	cr = 1.0f;
+	if (angles[ROLL] != 0.0f)
+	{
+		sr = CG_TableSin(angles[ROLL]);
+		cr = CG_TableSin(angles[ROLL] + 90.0f);
+	}
+
+	axis[0][0] = cp * cy;
+	axis[0][1] = cp * sy;
+	axis[0][2] = -sp;
+	axis[1][0] = sr * sp * cy - cr * sy;
+	axis[1][1] = sr * sp * sy + cr * cy;
+	axis[1][2] = sr * cp;
+	axis[2][0] = cr * sp * cy + sr * sy;
+	axis[2][1] = cr * sp * sy - sr * cy;
+	axis[2][2] = cr * cp;
+}
 
 /*
 ===============
@@ -3112,9 +3193,9 @@ static void CG_PlayerAngles(centity_t* cent, vec3_t legs[3], vec3_t torso[3], ve
 	// pull the angles back out of the hierarchial chain
 	AnglesSubtract(headAngles, torsoAngles, headAngles);
 	AnglesSubtract(torsoAngles, legsAngles, torsoAngles);
-	AnglesToAxis(legsAngles, legs);
-	AnglesToAxis(torsoAngles, torso);
-	AnglesToAxis(headAngles, head);
+	CG_ModelAnglesToAxis(legsAngles, legs);
+	CG_ModelAnglesToAxis(torsoAngles, torso);
+	CG_ModelAnglesToAxis(headAngles, head);
 }
 
 
@@ -3262,7 +3343,7 @@ static void CG_PlayerPowerups(centity_t* cent)
 	vec4_t  tint;
 	vec3_t  flagLightRgb;
 
-	if (CG_IsKillerGhostBody(&cent->currentState))
+	if (CG_IS_KILLER_GHOST_BODY(&cent->currentState))
 	{
 		const float* tc;
 
@@ -3589,18 +3670,18 @@ static void CG_PlayerSprites(centity_t* cent, const clientInfo_t* ci, int client
 
 	drawMode = CG_DrawFriendMode();
 	if (!rewardShader && drawMode && !(cent->currentState.eFlags & EF_DEAD) &&
-	        !CG_IsKillerGhostBody(&cent->currentState) &&
+	        !CG_IS_KILLER_GHOST_BODY(&cent->currentState) &&
 	        (cgs.gametype >= GT_TEAM || CG_IS_LOCAL_CLIENT_SPECTATOR() ||
 	         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)))
 	{
 		qboolean isSpec;
 		qboolean showFriend;
 
-		isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
-		         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+		isSpec = CG_MARKER_VIEW_IS_SPECTATOR();
 		if (!isSpec)
 		{
-			showFriend = (cg.snap->ps.persistant[PERS_TEAM] == ci->team);
+			showFriend = (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) ?
+			             !CG_CACHED_IS_ENEMY_CI(ci) : (cg.snap->ps.persistant[PERS_TEAM] == ci->team);
 		}
 		else if (cg_specMode.integer == 2)
 		{
@@ -3764,8 +3845,7 @@ void CG_TeamProxyDrawFriendMarkers(centity_t* cent)
 	        && (cgs.gametype >= GT_TEAM || CG_IS_LOCAL_CLIENT_SPECTATOR()
 	            || (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)))
 	{
-		isSpec = CG_IS_LOCAL_CLIENT_SPECTATOR() ||
-		         (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+		isSpec = CG_MARKER_VIEW_IS_SPECTATOR();
 		if (!isSpec)
 		{
 			showFriend = !CG_CACHED_IS_ENEMY_CI(ci);
@@ -3915,7 +3995,7 @@ Also called by CG_Missile for quad rockets, but nobody can tell...
 */
 void CG_AddRefEntityWithPowerups(refEntity_t* ent, entityState_t* state, int team)
 {
-	if (CG_IsKillerGhostBody(state))
+	if (CG_IS_KILLER_GHOST_BODY(state))
 	{
 		ent->customShader = cgs.media.invisShader;
 		trap_R_AddRefEntityToScene(ent);
@@ -4520,8 +4600,8 @@ static qboolean CG_PlayerShadow(centity_t* cent, float* shadowPlane)
 	shadowColor[1] = shadowColor[1] * (1.0f - shadowTrace.fraction);
 	shadowColor[2] = shadowColor[2] * (1.0f - shadowTrace.fraction);
 	shadowYawAngle = (cg_shadows.integer == -1) ? 0.0f : cent->pe.legs.yawAngle;
-	CG_ImpactMark(shadowMarkShader, shadowTrace.endpos, shadowTrace.plane.normal,
-	              shadowYawAngle, shadowColor[0], shadowColor[1], shadowColor[2], 1, qfalse, 24, qtrue, qtrue);
+	CG_ShadowMark(cent->currentState.number, shadowMarkShader, shadowTrace.endpos, shadowTrace.plane.normal,
+	              shadowYawAngle, shadowColor[0], shadowColor[1], shadowColor[2]);
 	return qtrue;
 }
 
@@ -4992,7 +5072,7 @@ void CG_FriendHudMarkerAtOriginExt(vec3_t origin, const clientInfo_t* ci, int cl
 		return;
 	if (cgs.gametype < GT_TEAM)
 		return;
-	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR && CG_IS_LOCAL_CLIENT_SPECTATOR())
 		return;
 	if (clientNum == cg.snap->ps.clientNum)
 		return;
@@ -5055,7 +5135,9 @@ void CG_FriendHudMarkerAtOriginExt(vec3_t origin, const clientInfo_t* ci, int cl
 		CG_HudBorderMarker(origin, color, cg_friendHudMarkerSize.value * sz,
 		                   isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader, baseAngle);
 
-		/* Powerup pulse: duplicate of the marker arrow, powerup-colored, staggered so several are distinguishable */
+		/* Powerup pulse: duplicate of the marker arrow, powerup-colored, staggered so several are distinguishable.
+		 * Frozen: skip — PW_BATTLESUIT is the ice marker. */
+		if (!isFrozen)
 		{
 			static const int puList[6] = { PW_QUAD, PW_BATTLESUIT, PW_HASTE, PW_INVIS, PW_REGEN, PW_FLIGHT };
 			int puCount;
@@ -5077,7 +5159,7 @@ void CG_FriendHudMarkerAtOriginExt(vec3_t origin, const clientInfo_t* ci, int cl
 			if (puCount > 0)
 			{
 				float baseRadius = cg_friendHudMarkerSize.value * sz;
-				qhandle_t arrowShader = isFrozen ? cgs.media.frozenFoeTagShader : cgs.media.friendShader;
+				qhandle_t arrowShader = cgs.media.friendShader;
 				int slot = 0;
 
 				for (k = 0; k < 6; k++)
@@ -5146,7 +5228,7 @@ static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clie
 {
 	qboolean isFrozen;
 
-	if (CG_IsKillerGhostBody(&cent->currentState))
+	if (CG_IS_KILLER_GHOST_BODY(&cent->currentState))
 		return;
 
 	isFrozen = CG_IS_FROZEN_ENTITY(cent);
@@ -5265,8 +5347,8 @@ void CG_Player(centity_t* cent)
 
 	CG_PlayerAngles(cent, legs.axis, torso.axis, head.axis);
 	CG_PlayerAnimation(cent, &legs.oldframe, &legs.frame, &legs.backlerp, &torso.oldframe, &torso.frame, &torso.backlerp);
-	if ((CG_IsKillerGhostBody(&cent->currentState) && cg_killerGhost.integer == 1) ||
-	        (!CG_IsKillerGhostBody(&cent->currentState) && cent->currentState.powerups) ||
+	if ((CG_IS_KILLER_GHOST_BODY(&cent->currentState) && cg_killerGhost.integer == 1) ||
+	        (!CG_IS_KILLER_GHOST_BODY(&cent->currentState) && cent->currentState.powerups) ||
 	        (localCi->team == TEAM_SPECTATOR && cg_spectGlow.integer))
 		CG_PlayerPowerups(cent);
 	CG_PlayerSprites(cent, ci, clientNum, useTeamFrozen, useTeamFoeWh);

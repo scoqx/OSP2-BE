@@ -1388,10 +1388,20 @@ static int CG_ClientInfoUpdateEnemyViewFrame(qboolean teamMode, qboolean gtAllEn
 	qboolean isEnemy;
 	clientInfo_t* ci;
 	team_t rosterTeam;
+	static byte wasValid[MAX_CLIENTS];
+	static int lastTeamMode = -1;
 
 	cg.teamPlayerCountRed = 0;
 	cg.teamPlayerCountBlue = 0;
 
+	/* Empty slots are the rule: clear what they hold only once. */
+	if (teamMode != lastTeamMode)
+	{
+		memset(wasValid, 1, sizeof(wasValid));
+		lastTeamMode = teamMode;
+	}
+
+	cg.numValidClients = 0;
 	count = 0;
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
@@ -1399,6 +1409,11 @@ static int CG_ClientInfoUpdateEnemyViewFrame(qboolean teamMode, qboolean gtAllEn
 
 		if (!ci->infoValid)
 		{
+			if (!wasValid[i])
+			{
+				continue;
+			}
+			wasValid[i] = qfalse;
 			cg.isEnemyView[i] = qfalse;
 			cg.isEnemyPowerupVisual[i] = qfalse;
 			if (teamMode)
@@ -1410,6 +1425,8 @@ static int CG_ClientInfoUpdateEnemyViewFrame(qboolean teamMode, qboolean gtAllEn
 			}
 			continue;
 		}
+		wasValid[i] = qtrue;
+		cg.validClients[cg.numValidClients++] = i;
 
 		count++;
 
@@ -1630,6 +1647,27 @@ static void CG_ClientInfoUpdateFrame(void)
 		CG_ClientInfoUpdateHealthBlinkPhases();
 }
 
+static void CG_UpdateViewPlanes(void)
+{
+	const viewFovTrig_t* trig = CG_ViewFovTrig();
+	const float* forward = cg.refdef.viewaxis[0];
+	const float* right = cg.refdef.viewaxis[1];
+	const float* up = cg.refdef.viewaxis[2];
+	int i;
+
+	for (i = 0; i < 3; i++)
+	{
+		cg.viewPlanes[0][i] = forward[i] * trig->sinX + right[i] * trig->cosX;
+		cg.viewPlanes[1][i] = forward[i] * trig->sinX - right[i] * trig->cosX;
+		cg.viewPlanes[2][i] = forward[i] * trig->sinY + up[i] * trig->cosY;
+		cg.viewPlanes[3][i] = forward[i] * trig->sinY - up[i] * trig->cosY;
+	}
+	for (i = 0; i < 4; i++)
+	{
+		cg.viewPlanes[i][3] = DotProduct(cg.viewPlanes[i], cg.refdef.vieworg);
+	}
+}
+
 /*
 =================
 CG_DrawActiveFrame
@@ -1698,6 +1736,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 
 	// build cg.refdef
 	inwater = CG_CalcViewValues();
+	CG_UpdateViewPlanes();
 
 	// first person blend blobs, done after AnglesToAxis
 	if (!cg.renderingThirdPerson && cg_damageDraw.integer)

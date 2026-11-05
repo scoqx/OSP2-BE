@@ -1,6 +1,6 @@
 set(MOD_NAME OSP2BE)
 set(MOD_VERSION 1.10)
-set(MOD_VERSION_FULL "1.10")
+set(MOD_VERSION_FULL "1.10b-beta")
 
 set(BASEGAME osp)
 

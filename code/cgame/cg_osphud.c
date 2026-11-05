@@ -101,7 +101,7 @@ static void CG_OSPDrawStatusBarString(int x, int y, int len, int w, int h, int v
 	}
 
 
-	Com_sprintf(buf, 16, "%i", val);
+	CG_FormatInt(buf, sizeof(buf), val);
 	bufLen = strlen(buf);
 
 	if (bufLen > len) bufLen = len;
@@ -1368,6 +1368,7 @@ static void CG_OSPDrawQ3CompWeapon2(int x, int y, int weapon, int num, float* co
 
 static void CG_OSPDrawQ3CompStatusbar(void)
 {
+	char numBuf[16];
 	playerState_t* ps;
 	centity_t* cent;
 	vec3_t pos1;
@@ -1634,7 +1635,7 @@ static void CG_OSPDrawQ3CompStatusbar(void)
 		}
 		CG_FillRect(260.0f, 424.0f, (float)wBar, 24.0f, rectColor);
 		CG_DrawStringExt(260, 430, "Health", colorWhite, 0, 0, 10, 12, 0);
-		str = va("%d", health);
+		str = CG_FormatInt(numBuf, sizeof(numBuf), health);
 		len = CG_DrawStrlen(str);
 		CG_DrawStringExt((410 - (len * 16)), 426, str, colorWhite, 0, 0, 16, 22, 0);
 	}
@@ -1693,7 +1694,7 @@ static void CG_OSPDrawQ3CompStatusbar(void)
 
 		CG_FillRect(260.0f, 452.0f, wBar, 24.0f, colorArmor);
 		CG_DrawStringExt(0x104, 0x1cb, "Armor", colorWhite, 0, 0, 10, 12, 0);
-		str = va("%d", armor);
+		str = CG_FormatInt(numBuf, sizeof(numBuf), armor);
 		len = CG_DrawStrlen(str);
 		CG_DrawStringExt(410 - (len * 16), 454, str, colorWhite, 0, 0, 16, 22, 0);
 	}

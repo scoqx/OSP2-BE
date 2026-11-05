@@ -2217,6 +2217,8 @@ qboolean CG_CrosshairTeamHealthAllowed(void)
 	return CG_IS_LOCAL_CLIENT_SPECTATOR();
 }
 
+#define CROSSHAIR_SCAN_MS 16
+
 /*
 =================
 CG_ScanForCrosshairEntity
@@ -2228,6 +2230,16 @@ void CG_ScanForCrosshairEntity(void)
 	vec3_t start, end;
 	int content;
 	vec3_t l;
+	static int lastScanTime;
+
+	/* Each scan is two traces against the world and all entities. Names fade over a second and
+	   the distance is a HUD readout, so about 60 scans a second are enough at any fps.
+	   Time going back means a demo restart. */
+	if (cg.time >= lastScanTime && cg.time - lastScanTime < CROSSHAIR_SCAN_MS)
+	{
+		return;
+	}
+	lastScanTime = cg.time;
 
 	VectorCopy(cg.refdef.vieworg, start);
 	VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
@@ -3332,8 +3344,20 @@ qboolean CG_IsPointVisibleFromView(const vec3_t point)
 	return (trace.fraction == 1.0f);
 }
 
-static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameModeNotSpectator, qboolean isSpec,
-        qboolean useTeamFrozen, vec3_t markerOrigin, centity_t** outCent)
+/* Who gets a team indicator this frame. The same for every client, so it is worked out once. */
+typedef struct
+{
+	qboolean gameModeNotSpectator;
+	qboolean useTeamFrozen;
+	qboolean isCA;
+	qboolean requireLineOfSight;    // cg_friendsWallhack bit 2 is off
+	int      followTeam;            // only this team, or TEAM_SPECTATOR for no such limit
+	qboolean filterEnemies;         // with no followTeam: drop enemies unless allowEnemies
+	qboolean allowEnemies;
+} teamIndicatorFilter_t;
+
+static qboolean CG_TeamIndicatorClientVisible(int clientIndex, const teamIndicatorFilter_t* filter,
+        vec3_t markerOrigin, centity_t** outCent)
 {
 	centity_t* cent;
 	clientInfo_t* ci;
@@ -3348,7 +3372,8 @@ static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameMode
 	}
 
 	ci = &cgs.clientinfo[clientIndex];
-	if (!ci->infoValid || (gameModeNotSpectator && CG_CACHED_IS_ENEMY_CI(ci)))
+	if (!ci->infoValid || ci->team == TEAM_SPECTATOR ||
+	        (filter->gameModeNotSpectator && CG_CACHED_IS_ENEMY_CI(ci)))
 	{
 		return qfalse;
 	}
@@ -3368,70 +3393,9 @@ static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameMode
 		cent = &cg_entities[clientIndex];
 	}
 
-	if (!CG_ClientTeamMarkerOrigin(clientIndex, markerOrigin))
+	if (filter->followTeam != TEAM_SPECTATOR)
 	{
-		return qfalse;
-	}
-
-	if (ci->team == TEAM_SPECTATOR)
-	{
-		return qfalse;
-	}
-
-	/* cg_specMode 2: free-spec all; follow >= GT_TEAM viewed team; follow FFA none */
-	if (isSpec && cg_specMode.integer == 2)
-	{
-		qboolean isFollow;
-
-		isFollow = (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
-		           cg.snap->ps.clientNum >= 0 && cg.snap->ps.clientNum < MAX_CLIENTS;
-		if (isFollow)
-		{
-			clientInfo_t* followCi;
-			int followTeam;
-			int otherTeam;
-			qboolean isCA;
-
-			if (cgs.gametype < GT_TEAM)
-			{
-				return qfalse;
-			}
-			followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
-			if (!followCi->infoValid)
-			{
-				return qfalse;
-			}
-			isCA = CG_OSPIsGameTypeCA(cgs.gametype);
-			followTeam = isCA ? followCi->rt : followCi->team;
-			otherTeam = isCA ? ci->rt : ci->team;
-			if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
-			{
-				return qfalse;
-			}
-			isEnemy = qfalse;
-		}
-		else
-		{
-			isEnemy = (ci->isFrozenEnt || !gameModeNotSpectator) ? CG_CACHED_IS_ENEMY_CI(ci) : qfalse;
-		}
-	}
-	/* Follow without PI_SPECTATOR: only teammates of the viewed player (ignore isEnemyView / spectPOV). */
-	else if (isSpec && !(cg_teamIndicator.integer & PI_SPECTATOR))
-	{
-		clientInfo_t* followCi;
-		int followTeam;
-		int otherTeam;
-		qboolean isCA;
-
-		followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
-		if (!followCi->infoValid)
-		{
-			return qfalse;
-		}
-		isCA = CG_OSPIsGameTypeCA(cgs.gametype);
-		followTeam = isCA ? followCi->rt : followCi->team;
-		otherTeam = isCA ? ci->rt : ci->team;
-		if (followTeam == TEAM_SPECTATOR || otherTeam != followTeam)
+		if ((filter->isCA ? ci->rt : ci->team) != filter->followTeam)
 		{
 			return qfalse;
 		}
@@ -3439,24 +3403,28 @@ static qboolean CG_TeamIndicatorClientVisible(int clientIndex, qboolean gameMode
 	}
 	else
 	{
-		isEnemy = (ci->isFrozenEnt || !gameModeNotSpectator) ? CG_CACHED_IS_ENEMY_CI(ci) : qfalse;
-		if (isEnemy && (!isSpec || !(cg_teamIndicator.integer & PI_SPECTATOR)))
+		isEnemy = (ci->isFrozenEnt || !filter->gameModeNotSpectator) ? CG_CACHED_IS_ENEMY_CI(ci) : qfalse;
+		if (filter->filterEnemies && isEnemy && !filter->allowEnemies)
 		{
 			return qfalse;
 		}
 	}
 
+	if (!CG_ClientTeamMarkerOrigin(clientIndex, markerOrigin))
+	{
+		return qfalse;
+	}
+
 	allyFrozenForVis = CG_ClientMarkerIsFrozen(ci);
 
 	friendVisible = qtrue;
-	needVis = ((cg_friendsWallhack.integer & 2) == 0) ||
-	          (allyFrozenForVis && !isEnemy && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen));
+	needVis = filter->requireLineOfSight ||
+	          (allyFrozenForVis && !isEnemy && (!cg_friendsWallhackFrozen.integer || !filter->useTeamFrozen));
 	if (needVis)
 	{
 		friendVisible = CG_IsPointVisibleFromView(markerOrigin);
 	}
-	if (!friendVisible && ((cg_friendsWallhack.integer & 2) == 0 ||
-	                       (allyFrozenForVis && !isEnemy && (!cg_friendsWallhackFrozen.integer || !useTeamFrozen))))
+	if (!friendVisible && needVis)
 	{
 		return qfalse;
 	}
@@ -3489,6 +3457,13 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 	float* pLift;
 	qboolean markerDead;
 	qboolean markerFrozen;
+	qboolean hasStackDrop;
+	float stackPitch;
+	int stackN;
+
+	hasStackDrop = CG_WorldFlags_ClientHasStackDropFlag(clientNum);
+	stackPitch = 0.0f;
+	stackN = 0;
 
 	markerFrozen = CG_ClientMarkerIsFrozen(ci);
 	markerDead = markerFrozen ? qfalse :
@@ -3528,22 +3503,15 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 	}
 
 	stackBaseY = headY;
-	if (cg.teamMarkerStackGroupSize[clientNum] > 1 || CG_WorldFlags_ClientHasStackDropFlag(clientNum))
+	if (cg.teamMarkerStackGroupSize[clientNum] > 1 || hasStackDrop)
 	{
-		float pitch;
-		float halfPitch;
-		int n;
-		int idx;
-		qboolean layoutHealthRows;
+		qboolean layoutHealthRows = hasStats || hasStatsBars;
 
-		layoutHealthRows = hasStats || hasStatsBars;
-		pitch = CG_TeamIndicatorLayoutPitch(h, hasName, hasStats, hasStatsBars, hasIcon, layoutHealthRows);
-		halfPitch = pitch * 0.5f;
-		n = CG_TeamMarkerStackEffectiveSize(clientNum);
-		idx = cg.teamMarkerStackIndex[clientNum];
-		if (n > 1)
+		stackPitch = CG_TeamIndicatorLayoutPitch(h, hasName, hasStats, hasStatsBars, hasIcon, layoutHealthRows);
+		stackN = CG_TeamMarkerStackEffectiveSize(clientNum);
+		if (stackN > 1)
 		{
-			headY -= (idx * 2 - (n - 1)) * halfPitch;
+			headY -= (cg.teamMarkerStackIndex[clientNum] * 2 - (stackN - 1)) * stackPitch * 0.5f;
 		}
 	}
 
@@ -3568,7 +3536,8 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		}
 	}
 
-	bgColor[3] = cg_teamIndicatorBgOpaque.value * fade;
+	/* The string drawer multiplies this by the text alpha, which already carries the fade. */
+	bgColor[3] = cg_teamIndicatorBgOpaque.value;
 	nameColor[3] = cg_teamIndicatorOpaque.value * fade;
 	if (ci->globalPos)
 	{
@@ -3576,27 +3545,19 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		nameColor[3] *= 0.5f;
 	}
 
-	if (CG_WorldFlags_ClientHasStackDropFlag(clientNum) && cgs.media.teamTasksFlag)
+	if (hasStackDrop && cgs.media.teamTasksFlag)
 	{
 		vec4_t dropColor;
 		float flagSizeH;
 		float flagSizeW;
 		float flagX;
 		float flagY;
-		float pitchDrop;
-		float halfPitchDrop;
-		int n;
-		qboolean layoutHealthRows;
 
-		layoutHealthRows = hasStats || hasStatsBars;
-		n = CG_TeamMarkerStackEffectiveSize(clientNum);
-		pitchDrop = CG_TeamIndicatorLayoutPitch(h, hasName, hasStats, hasStatsBars, hasIcon, layoutHealthRows);
-		halfPitchDrop = pitchDrop * 0.5f;
 		CG_WorldFlags_GetStackDropFlagColor(clientNum, dropColor);
 		dropColor[3] *= nameColor[3];
 		flagSizeH = h;
 		flagSizeW = h * 0.75f;
-		flagY = stackBaseY - ((n - 1) * 2 - (n - 1)) * halfPitchDrop;
+		flagY = stackBaseY - (stackN - 1) * stackPitch * 0.5f;
 		flagX = headX - (flagSizeW * 0.5f);
 		flagY -= flagSizeH * 0.5f;
 		CG_DrawPicWithColor(flagX, flagY, flagSizeW, flagSizeH, dropColor, cgs.media.teamTasksFlag);
@@ -3623,8 +3584,9 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		CG_DrawPicWithColor(flagX, flagY, flagSizeW, flagSizeH, flagColor, cgs.media.teamTasksFlag);
 	}
 
-	/* Powerup icons over indicator: horizontal row with a 1s heartbeat pulse (POWERUP_BLINK_TIME) */
-	if (!markerDead)
+	/* Powerup icons over indicator: horizontal row with a 1s heartbeat pulse (POWERUP_BLINK_TIME).
+	 * Not for frozen players: their PW_BATTLESUIT marks the ice, it is not a real powerup. */
+	if (!markerDead && !markerFrozen)
 	{
 		static const int puList[6] = { PW_QUAD, PW_BATTLESUIT, PW_HASTE, PW_INVIS, PW_REGEN, PW_FLIGHT };
 		int puCount;
@@ -3734,42 +3696,43 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 
 	if (hasName)
 	{
-		char tmpName[MAX_QPATH];
+		const char* nameStr;
+		int nameFlags;
 		vec4_t border;
 		vec4_t borderColor;
 		vec4_t shadowColorWithAlpha;
 
-		Vector4Set(border, 0.0f, 0.0f, 0.0f, 0.0f);
-		Vector4Set(borderColor, 0.0f, 0.0f, 0.0f, 0.0f);
 		Vector4Set(shadowColorWithAlpha, 0.0f, 0.0f, 0.0f, nameColor[3]);
 		if (markerFrozen)
 		{
-			border[3] = 1.0f;
+			Vector4Set(border, 0.0f, 0.0f, 0.0f, 1.0f);
 			Vector4Copy(colorCyan, borderColor);
 			borderColor[3] = nameColor[3];
 		}
 
+		nameFlags = DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER | DS_MAX_WIDTH_IS_CHARS;
 		if (cg_teamIndicator.integer & PI_NAME_CLEAN)
 		{
-			Q_strncpyz(tmpName, ci->name_clean, sizeof(tmpName));
+			nameStr = ci->name_clean;
+			nameFlags |= DS_PLAIN;
 		}
 		else
 		{
-			Q_strncpyz(tmpName, ci->name, sizeof(tmpName));
+			nameStr = ci->name;
 		}
 
 		CG_OSPDrawStringNew(
 		    headX, headY,
-		    tmpName,
+		    nameStr,
 		    nameColor,
 		    shadowColorWithAlpha,
 		    w, h,
 		    cg_teamIndicatorMaxLength.integer,
-		    DS_SHADOW | DS_PROPORTIONAL | DS_HCENTER | DS_MAX_WIDTH_IS_CHARS,
+		    nameFlags,
 		    cgFontIndices.teamIndicator,
 		    bgColor,
-		    border,
-		    borderColor
+		    markerFrozen ? border : NULL,
+		    markerFrozen ? borderColor : NULL
 		);
 	}
 	if (isSpec || cgs.beMarkedTeam[clientNum])
@@ -3823,7 +3786,7 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		float h2 = h - 2.0f;
 		float w2;
 		int hbStyle = cg_healthBarStyle.integer;
-		int statsFlags = DS_PROPORTIONAL | DS_HCENTER;
+		int statsFlags = DS_PROPORTIONAL | DS_HCENTER | DS_PLAIN;
 
 		if (hbStyle & HBAR_STYLE_SHADOW)
 		{
@@ -3895,8 +3858,57 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 	}
 }
 
+/*
+Returns qfalse when no client can pass the filter this frame.
+*/
+static qboolean CG_TeamIndicatorMakeFilter(teamIndicatorFilter_t* filter, qboolean isSpec, qboolean isFollowSpec)
+{
+	const clientInfo_t* followCi;
+
+	filter->isCA = CG_OSPIsGameTypeCA(cgs.gametype);
+	filter->requireLineOfSight = !(cg_friendsWallhack.integer & 2);
+	filter->followTeam = TEAM_SPECTATOR;
+	filter->filterEnemies = qfalse;
+	filter->allowEnemies = qfalse;
+
+	if (isSpec && cg_specMode.integer == 2)
+	{
+		/* cg_specMode 2: free-spec sees everyone, follow sees the viewed team, follow in FFA nobody */
+		if (!isFollowSpec)
+		{
+			filter->filterEnemies = qtrue;
+			filter->allowEnemies = qtrue;
+			return qtrue;
+		}
+		if (cgs.gametype < GT_TEAM)
+		{
+			return qfalse;
+		}
+	}
+	else if (!isSpec || (cg_teamIndicator.integer & PI_SPECTATOR))
+	{
+		filter->filterEnemies = qtrue;
+		filter->allowEnemies = isSpec;
+		return qtrue;
+	}
+	else if (!isFollowSpec)
+	{
+		return qfalse;
+	}
+
+	/* Follow: only teammates of the viewed player */
+	followCi = &cgs.clientinfo[cg.snap->ps.clientNum];
+	if (!followCi->infoValid)
+	{
+		return qfalse;
+	}
+	filter->followTeam = filter->isCA ? followCi->rt : followCi->team;
+	return filter->followTeam != TEAM_SPECTATOR;
+}
+
 void CG_DrawPlayerIndicatorOnScreen(void)
 {
+	int k;
 	qboolean gameModeNotSpectator;
 	qboolean useTeamFrozen;
 	qboolean isSpec;
@@ -3908,6 +3920,11 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 	float invFadeRadius;
 	int indicatorFadeRadiusSq;
 	int i;
+	teamIndicatorFilter_t filter;
+	int visibleClients[MAX_CLIENTS];
+	vec3_t visibleOrigins[MAX_CLIENTS];
+	centity_t* visibleCents[MAX_CLIENTS];
+	int numVisible;
 
 	if (!cg.snap)
 	{
@@ -3962,36 +3979,38 @@ void CG_DrawPlayerIndicatorOnScreen(void)
 	indicatorFadeRadiusSq = (cg_teamIndicatorFadeRadius.value > 0.0f) ?
 	                        (cg_teamIndicatorFadeRadius.value * cg_teamIndicatorFadeRadius.value) : 0;
 
-	for (i = 0; i < MAX_CLIENTS; i++)
+	if (!CG_TeamIndicatorMakeFilter(&filter, isSpec, isFollowSpec))
 	{
-		vec3_t markerOrigin;
+		return;
+	}
+	filter.gameModeNotSpectator = gameModeNotSpectator;
+	filter.useTeamFrozen = useTeamFrozen;
 
-		if (CG_TeamIndicatorClientVisible(i, gameModeNotSpectator, isSpec, useTeamFrozen, markerOrigin, NULL))
+	/* Collect first: the stack layout is only needed when someone is shown, and visibility
+	   can trace, so it must not run twice. */
+	numVisible = 0;
+	for (k = 0; k < cg.numValidClients; k++)
+	{
+		i = cg.validClients[k];
+		if (CG_TeamIndicatorClientVisible(i, &filter, visibleOrigins[numVisible], &visibleCents[numVisible]))
 		{
-			break;
+			visibleClients[numVisible++] = i;
 		}
 	}
-	if (i >= MAX_CLIENTS)
+	if (!numVisible)
 	{
 		return;
 	}
 
 	CG_EnsureTeamMarkerStackCache(gameModeNotSpectator);
 
-	for (i = 0; i < MAX_CLIENTS; i++)
+	for (i = 0; i < numVisible; i++)
 	{
-		centity_t* cent;
-		clientInfo_t* ci;
-		vec3_t markerOrigin;
+		const int clientNum = visibleClients[i];
 
-		if (!CG_TeamIndicatorClientVisible(i, gameModeNotSpectator, isSpec, useTeamFrozen, markerOrigin, &cent))
-		{
-			continue;
-		}
-
-		ci = &cgs.clientinfo[i];
-		CG_DrawTeamIndicatorForClient(i, cent, ci, markerOrigin, hasName, hasStats, hasStatsBars, hasIcon,
-		                              isSpec, invFadeRadius, indicatorFadeRadiusSq);
+		CG_DrawTeamIndicatorForClient(clientNum, visibleCents[i], &cgs.clientinfo[clientNum], visibleOrigins[i],
+		                              hasName, hasStats, hasStatsBars, hasIcon, isSpec, invFadeRadius,
+		                              indicatorFadeRadiusSq);
 	}
 }
 

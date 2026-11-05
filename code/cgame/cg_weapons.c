@@ -24,6 +24,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "cg_local.h"
 #include "../game/bg_local.h"
 
+static qboolean CG_PlasmaColorFromCvars(int owner, vec4_t color);
+
 static const vec3_t weaponBrightColors[WP_NUM_WEAPONS] =
 {
 	{0, 0, 0},  // WP_NONE (unused)
@@ -784,6 +786,26 @@ void CG_RailTrail2(clientInfo_t* ci, vec3_t start, vec3_t end)
 #define RAIL_EFFECT_BASE_SPACING    16
 
 /*
+sin in half-degree steps. A trail can have hundreds of segments with three trig
+syscalls each, and the angles here are whole degrees anyway.
+*/
+#define RAIL_SIN_STEPS 720
+
+static float railSinTable[RAIL_SIN_STEPS];
+static qboolean railSinTableReady;
+
+static void CG_RailSinTableInit(void)
+{
+	int k;
+
+	for (k = 0; k < RAIL_SIN_STEPS; k++)
+	{
+		railSinTable[k] = sin((float)k * (float)M_PI / 360.0f);
+	}
+	railSinTableReady = qtrue;
+}
+
+/*
 ====================
 CG_AddRailEffect - CG_RailTrail2 effect(AF trail)
 ====================
@@ -793,12 +815,17 @@ void CG_AddRailEffect(localEntity_t* le)
 	refEntity_t* re;
 	refEntity_t particle;
 	vec3_t forward, right, up, posx, posy, pos, oldpos, move, vec;
-	float c, len, radius, theta, sn, cs, spacing, fade, invLen;
-	int i, r, g, b, step, maxStep;
+	float c, len, radius, sn, cs, spacing, fade, invLen;
+	int i, r, g, b, step, maxStep, timeDeg, k;
 
 	if (cg_railRingsRadius.value <= 0.0f)
 	{
 		return;
+	}
+
+	if (!railSinTableReady)
+	{
+		CG_RailSinTableInit();
 	}
 
 	re = &le->refEntity;
@@ -848,16 +875,28 @@ void CG_AddRailEffect(localEntity_t* le)
 	AxisClear(particle.axis);
 
 	VectorCopy(move, oldpos);
+	timeDeg = cg.time % 360;
 
 	for (step = 0; step < maxStep; step++)
 	{
 		i = (int)(step * spacing);
-		radius = cg_railRingsRadius.value * sin((float)i * invLen * (float)M_PI) * fade;
 
-		theta = (float)(i - cg.time % 360) * M_PI / 180 * 2;
+		/* i / len goes from 0 to 1, half a circle in half-degree steps */
+		k = (int)((float)i * invLen * 360.0f);
+		if (k > 360)
+		{
+			k = 360;
+		}
+		radius = cg_railRingsRadius.value * railSinTable[k] * fade;
 
-		cs = cos(theta);
-		sn = sin(theta);
+		/* the angle is 2 * (i - timeDeg) whole degrees, which is 4 * (i - timeDeg) table steps */
+		k = (4 * (i - timeDeg)) % RAIL_SIN_STEPS;
+		if (k < 0)
+		{
+			k += RAIL_SIN_STEPS;
+		}
+		sn = railSinTable[k];
+		cs = railSinTable[(k + RAIL_SIN_STEPS / 4) % RAIL_SIN_STEPS];
 
 		VectorScale(right, cs, posx);
 		VectorScale(up, sn, posy);
@@ -1132,6 +1171,7 @@ void CG_UpdateWeaponDlightColor(weapon_t weapon)
 		NULL,//WP_GRAPPLING_HOOK
 	};
 	const vmCvar_t* cvar;
+	weaponInfo_t* info;
 	vec4_t color;
 
 	if (weapon <= WP_NONE || weapon >= WP_NUM_WEAPONS || ((cvar = weaponCvars[weapon]) == NULL))
@@ -1139,13 +1179,57 @@ void CG_UpdateWeaponDlightColor(weapon_t weapon)
 		return;
 	}
 
-	if (CG_ParseColorStr(cvar->string, color))
+	info = &cg_weapons[weapon];
+	if (!info->registered)
 	{
-		VectorCopy(color, cg_weapons[weapon].flashDlightColor);
-		VectorCopy(color, cg_weapons[weapon].missileDlightColor);
-		VectorCopy(color, cg_weapons[weapon].explosionDlightColor);
+		return;
 	}
 
+	info->dlightColorIsSet = (cvar->string[0] && CG_ParseColorStr(cvar->string, color)) ? qtrue : qfalse;
+	if (info->dlightColorIsSet)
+	{
+		VectorCopy(color, info->flashDlightColor);
+		VectorCopy(color, info->missileDlightColor);
+		VectorCopy(color, info->explosionDlightColor);
+	}
+	else
+	{
+		VectorCopy(info->baseFlashDlightColor, info->flashDlightColor);
+		VectorCopy(info->baseMissileDlightColor, info->missileDlightColor);
+		VectorCopy(info->baseFlashDlightColor, info->explosionDlightColor);
+	}
+}
+
+/*
+=================
+CG_FlashColorShaderName
+
+Railgun flashes already take their color from the shader in pak0, grapple has no color setting.
+=================
+*/
+static const char* CG_FlashColorShaderName(weapon_t weapon)
+{
+	switch (weapon)
+	{
+		case WP_GAUNTLET:
+			return "models/weapons2/gauntlet/gauntlet3_color";
+		case WP_MACHINEGUN:
+			return "models/weapons2/machinegun/f_machinegun_color";
+		case WP_SHOTGUN:
+			return "models/weapons2/shotgun/f_shotgun_color";
+		case WP_GRENADE_LAUNCHER:
+			return "models/weapons2/grenadel/f_grenadel_color";
+		case WP_ROCKET_LAUNCHER:
+			return "models/weapons2/rocketl/f_rocketl_color";
+		case WP_LIGHTNING:
+			return "models/weapons2/lightning/f_lightning_color";
+		case WP_PLASMAGUN:
+			return "models/weapons2/plasma/f_plasma_color";
+		case WP_BFG:
+			return "models/weapons2/bfg/f_bfg_color";
+		default:
+			return NULL;
+	}
 }
 
 /*
@@ -1525,6 +1609,12 @@ void CG_RegisterWeapon(int weaponNum)
 			weaponInfo->flashSound[0] = trap_S_RegisterSound("sound/weapons/rocket/rocklf1a.wav", qfalse);
 			break;
 	}
+	VectorCopy(weaponInfo->flashDlightColor, weaponInfo->baseFlashDlightColor);
+	VectorCopy(weaponInfo->missileDlightColor, weaponInfo->baseMissileDlightColor);
+	if (CG_FlashColorShaderName(weaponNum))
+	{
+		weaponInfo->flashColorShader = trap_R_RegisterShader(CG_FlashColorShaderName(weaponNum));
+	}
 	CG_UpdateWeaponDlightColor(weaponNum);
 }
 
@@ -1760,12 +1850,8 @@ Color override for the LG beam (cg_altLightningColor / cg_teamLightningColor /
 cg_enemyLightningColor). Returns NULL when the default beam color must be used.
 ===============
 */
-static const playerColors_t* CG_LightningColorsOverride(qboolean isOurClient, qboolean isEnemyClient)
+static const playerColors_t* CG_LightningColorsFromCvars(qboolean isOurClient, qboolean isEnemyClient)
 {
-	if (!CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING))
-	{
-		return NULL;
-	}
 	if (isOurClient && cgs.osp.myColorsOverride.isLightningColorSet)
 	{
 		return &cgs.osp.myColors;
@@ -1783,6 +1869,25 @@ static const playerColors_t* CG_LightningColorsOverride(qboolean isOurClient, qb
 		return &cgs.osp.myColors;
 	}
 	return NULL;
+}
+
+static const playerColors_t* CG_LightningColorsOverride(qboolean isOurClient, qboolean isEnemyClient)
+{
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_ENEMYLIGHTNING))
+	{
+		return NULL;
+	}
+	return CG_LightningColorsFromCvars(isOurClient, isEnemyClient);
+}
+
+static void CG_LightningShooterRelation(const centity_t* cent, qboolean* isOurClient, qboolean* isEnemyClient)
+{
+	*isOurClient = cent->currentState.number == cg.clientNum;
+	if (!*isOurClient && cg_spectPOV.integer && cg.snap &&
+	        (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+	        cent->currentState.number == cg.snap->ps.clientNum)
+		*isOurClient = qtrue;
+	*isEnemyClient = !*isOurClient && CG_CACHED_IS_ENEMY_NUM(cent->currentState.number);
 }
 
 /*
@@ -2206,12 +2311,7 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 
 	shaft_type = cg_altLightning.integer;
 	isViewClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
-	isOurClient = cent->currentState.number == cg.clientNum;
-	if (!isOurClient && cg_spectPOV.integer && cg.snap &&
-	        (cg.snap->ps.pm_flags & PMF_FOLLOW) &&
-	        cent->currentState.number == cg.snap->ps.clientNum)
-		isOurClient = qtrue;
-	isEnemyClient = !isOurClient && CG_CACHED_IS_ENEMY_NUM(cent->currentState.number);
+	CG_LightningShooterRelation(cent, &isOurClient, &isEnemyClient);
 	isDelagEnabled = (cg_delag.integer & 1 || cg_delag.integer & 2) && !cg.demoPlayback;
 
 	if (cent->currentState.weapon != WP_LIGHTNING)
@@ -2515,6 +2615,59 @@ void CG_ApplyBrightBrassIfNeeded(localEntity_t* le)
 }
 
 /*
+=================
+CG_FlashColor
+
+The color of a muzzle flash. Flash colors do not depend on what the server allows.
+Returns qfalse when the standard flash must be drawn.
+=================
+*/
+static qboolean CG_FlashColor(weapon_t weaponNum, const weaponInfo_t* weapon, const centity_t* cent, vec3_t color)
+{
+	if (!weapon->flashColorShader)
+	{
+		return qfalse;
+	}
+
+	if (weaponNum == WP_LIGHTNING)
+	{
+		const playerColors_t* colors;
+		qboolean isOurClient;
+		qboolean isEnemyClient;
+
+		CG_LightningShooterRelation(cent, &isOurClient, &isEnemyClient);
+		colors = CG_LightningColorsFromCvars(isOurClient, isEnemyClient);
+		if (colors)
+		{
+			VectorCopy(colors->lightning, color);
+			return qtrue;
+		}
+	}
+	else
+	{
+		vec4_t plasmaColor;
+
+		if (weaponNum == WP_PLASMAGUN && CG_PlasmaColorFromCvars(cent->currentState.clientNum, plasmaColor))
+		{
+			VectorCopy(plasmaColor, color);
+			return qtrue;
+		}
+		if (weapon->dlightColorIsSet)
+		{
+			VectorCopy(weapon->flashDlightColor, color);
+			return qtrue;
+		}
+	}
+
+	if (cgs.beFlashColorSet[weaponNum])
+	{
+		VectorCopy(cgs.beFlashColor[weaponNum], color);
+		return qtrue;
+	}
+	return qfalse;
+}
+
+/*
 =============
 CG_AddPlayerWeapon
 
@@ -2534,6 +2687,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	centity_t*       nonPredictedCent;
 	orientation_t    lerped;
 	vec4_t           gunColor;
+	vec3_t           flashColor;
 	qboolean        ghostGun;
 	qboolean isOwnGun;
 	qboolean isEnemy;
@@ -2999,6 +3153,13 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		flash.shaderRGBA[1] = (byte)(255 * ci->colors.railCore[1]);
 		flash.shaderRGBA[2] = (byte)(255 * ci->colors.railCore[2]);
 	}
+	else if (CG_FlashColor(weaponNum, weapon, nonPredictedCent, flashColor))
+	{
+		flash.customShader = weapon->flashColorShader;
+		flash.shaderRGBA[0] = (byte)(255 * flashColor[0]);
+		flash.shaderRGBA[1] = (byte)(255 * flashColor[1]);
+		flash.shaderRGBA[2] = (byte)(255 * flashColor[2]);
+	}
 	CG_PositionRotatedEntityOnTag(&flash, &gun, weapon->weaponModel, "tag_flash");
 	/* continuous (LG/gauntlet/hook): show flash and effects only when actually firing */
 	if (weaponNum == WP_LIGHTNING || weaponNum == WP_GAUNTLET || weaponNum == WP_GRAPPLING_HOOK)
@@ -3428,19 +3589,14 @@ void CG_FireWeapon(centity_t* cent)
 
 /*
 =================
-CG_PlasmaColorForOwner
+CG_PlasmaColorFromCvars
 
-Returns qtrue when cg_plasmaColor / cg_enemyPlasmaColor apply for this shooter.
+Returns qtrue when cg_plasmaColor / cg_enemyPlasmaColor hold a color for this shooter.
 =================
 */
-qboolean CG_PlasmaColorForOwner(int owner, vec4_t color)
+static qboolean CG_PlasmaColorFromCvars(int owner, vec4_t color)
 {
 	const clientInfo_t* ci;
-
-	if (!CG_BE_FEATURE_ENABLED(CG_BE_PLASMAGUN_COLOR))
-	{
-		return qfalse;
-	}
 
 	if (!color || owner < 0 || owner >= MAX_CLIENTS)
 	{
@@ -3479,6 +3635,22 @@ qboolean CG_PlasmaColorForOwner(int owner, vec4_t color)
 	}
 
 	return qtrue;
+}
+
+/*
+=================
+CG_PlasmaColorForOwner
+
+Returns qtrue when plasma bolts and impacts of this shooter take a custom color.
+=================
+*/
+qboolean CG_PlasmaColorForOwner(int owner, vec4_t color)
+{
+	if (!CG_BE_FEATURE_ENABLED(CG_BE_PLASMAGUN_COLOR))
+	{
+		return qfalse;
+	}
+	return CG_PlasmaColorFromCvars(owner, color);
 }
 
 static qboolean CG_PlasmaAltUsesOldColorAssets(void)

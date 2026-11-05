@@ -62,4 +62,14 @@ Per-font оптический `scale` / вертикальный `offset` для
 
 `brightcolor_team_CTF_*` — только при `cg_oldFlags` с битом **1** (старые модели флагов: значения 1 и 3). При 0 и 2 — dye-модели, цвета команд / без override из cfg.
 
+`flashcolor_weapon_<name> …` — цвет вспышки выстрела в тех же форматах, например `flashcolor_weapon_machinegun FFFF00;`. Имена оружия те же, что у `brightcolor_weapon_*`. Работает для всех оружий, кроме `railgun` и `grapplinghook`. Применяется, только когда у оружия нет своего цвета:
+
+| Оружие | Свой цвет |
+|--------|-----------|
+| `lightning` | `cg_altLightningColor` / `cg_teamLightningColor` / `cg_enemyLightningColor` |
+| `plasmagun` | `cg_plasmaColor` / `cg_enemyPlasmaColor`, затем `cg_dlightPG` |
+| остальные | `cg_dlight*` |
+
+Если цвета нет нигде, рисуется стандартная вспышка. Цвет вспышки не зависит от того, что разрешает сервер.
+
 Парсер: `code/qcommon/beinfo_cfg.c` (UI и cgame).

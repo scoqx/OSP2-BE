@@ -239,23 +239,19 @@ static void CG_SHUDElementVisPrepare(superhudElement_t* el)
 
 /*
  * Return qtrue if the element should be drawn this frame (visflags vs frame context).
+ * Most boolean visflags collapse to hidePos/hideNeg masks filled once per frame.
  */
-static qboolean CG_SHUDElementVisible(const superhudElement_t* el, const superhudFrameContext_t* fc,
-                                      qboolean be_health_low)
+static qboolean CG_SHUDElementVisible(const superhudElement_t* el, const superhudFrameContext_t* fc)
 {
 	const superhudElementVis_t* vis;
 	int vflags;
 	int vflagsNeg;
-	int vflagsExt;
-	int vflagsNegExt;
 	int frameChecks;
 	qboolean is_spectator_for_element;
 
 	vis = &el->vis;
 	vflags = vis->vflags;
 	vflagsNeg = vis->vflagsNeg;
-	vflagsExt = vis->vflagsExt;
-	vflagsNegExt = vis->vflagsNegExt;
 	frameChecks = vis->frameChecks;
 
 	if (fc->is_intermission && !vis->showInIntermission)
@@ -282,6 +278,13 @@ static qboolean CG_SHUDElementVisible(const superhudElement_t* el, const superhu
 		return qtrue;
 	}
 
+	if ((vflags & fc->hidePos) || (vflagsNeg & fc->hideNeg) ||
+	        (vis->vflagsExt & fc->hidePosExt) || (vis->vflagsNegExt & fc->hideNegExt))
+	{
+		return qfalse;
+	}
+
+	/* Key/GT/weapon need per-element intersection with dynamic masks. */
 	if ((frameChecks & SHUD_FCHK_KEY_SHOW) && fc->keyHideMask && (vflags & fc->keyHideMask))
 	{
 		return qfalse;
@@ -289,39 +292,6 @@ static qboolean CG_SHUDElementVisible(const superhudElement_t* el, const superhu
 	if ((frameChecks & SHUD_FCHK_GT_SHOW) && (vflags & fc->gtHideMask))
 	{
 		return qfalse;
-	}
-	if (frameChecks & SHUD_FCHK_TEAM)
-	{
-		if ((vflags & SE_TEAM_ONLY) && !fc->is_team_game)
-		{
-			return qfalse;
-		}
-		if ((vflagsNeg & SE_TEAM_ONLY) && fc->is_team_game)
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_SCORES)
-	{
-		if ((vflags & SE_SCORES_HIDE) && fc->is_scores)
-		{
-			return qfalse;
-		}
-		if ((vflagsNeg & SE_SCORES_HIDE) && !fc->is_scores)
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_DEMO)
-	{
-		if ((vflags & SE_DEMO_HIDE) && fc->demo_playback)
-		{
-			return qfalse;
-		}
-		if ((vflagsNeg & SE_DEMO_HIDE) && !fc->demo_playback)
-		{
-			return qfalse;
-		}
 	}
 	if ((frameChecks & SHUD_FCHK_KEY_NEG) && (vflagsNeg & ~fc->keyHideMask & SE_KEY_ANY))
 	{
@@ -331,109 +301,10 @@ static qboolean CG_SHUDElementVisible(const superhudElement_t* el, const superhu
 	{
 		return qfalse;
 	}
-	if (frameChecks & SHUD_FCHK_HEALTH)
-	{
-		if ((vflags & SE_HEALTH_LOW) && !be_health_low)
-		{
-			return qfalse;
-		}
-		if ((vflagsNeg & SE_HEALTH_LOW) && be_health_low)
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_WARMUP)
-	{
-		if ((vflags & SE_WARMUP) && !fc->is_warmup)
-		{
-			return qfalse;
-		}
-		if ((vflagsNeg & SE_WARMUP) && fc->is_warmup)
-		{
-			return qfalse;
-		}
-	}
 	if (frameChecks & SHUD_FCHK_WEAPON)
 	{
 		if (((vflags & SE_WEAPON_ANY) && !(vflags & fc->weaponVis)) ||
 		        ((vflagsNeg & SE_WEAPON_ANY) && (vflagsNeg & fc->weaponVis)))
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_ENTERCHAT)
-	{
-		if ((vflagsExt & SE_ENTERCHAT) && !fc->is_enterchat)
-		{
-			return qfalse;
-		}
-		if ((vflagsNegExt & SE_ENTERCHAT) && fc->is_enterchat)
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_SHOWCHAT)
-	{
-		if ((vflagsExt & SE_SHOWCHAT) && !fc->is_showchat)
-		{
-			return qfalse;
-		}
-		if ((vflagsNegExt & SE_SHOWCHAT) && fc->is_showchat)
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_PRINTUI)
-	{
-		if ((vflagsExt & SE_PRINTUI) && !fc->is_printui)
-		{
-			return qfalse;
-		}
-		if ((vflagsNegExt & SE_PRINTUI) && fc->is_printui)
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_BESTATS)
-	{
-		if ((vflagsExt & SE_BESTATS) && !fc->is_bestats)
-		{
-			return qfalse;
-		}
-		if ((vflagsNegExt & SE_BESTATS) && fc->is_bestats)
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_CONSOLE)
-	{
-		if ((vflagsExt & SE_CONSOLE) && !fc->is_console)
-		{
-			return qfalse;
-		}
-		if ((vflagsNegExt & SE_CONSOLE) && fc->is_console)
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_MENU)
-	{
-		if ((vflagsExt & SE_MENU) && !fc->is_menu)
-		{
-			return qfalse;
-		}
-		if ((vflagsNegExt & SE_MENU) && fc->is_menu)
-		{
-			return qfalse;
-		}
-	}
-	if (frameChecks & SHUD_FCHK_PROMODE)
-	{
-		if ((vflagsExt & SE_PROMODE) && !fc->is_promode)
-		{
-			return qfalse;
-		}
-		if ((vflagsNegExt & SE_PROMODE) && fc->is_promode)
 		{
 			return qfalse;
 		}
@@ -510,6 +381,22 @@ static void CG_SHUDFinalizeElementChain(superhudElement_t** head)
 }
 
 /* Per-frame player/HUD state used by CG_SHUDElementVisible (see superhudElementVis_t). */
+/*
+A flag means "show when true", a negated flag "show when false".
+So when the condition holds, elements with the negated flag are hidden, otherwise those with the flag.
+*/
+static void CG_SHUDVisCondition(qboolean holds, unsigned int flag, int* hidePositive, int* hideNegated)
+{
+	if (holds)
+	{
+		*hideNegated |= flag;
+	}
+	else
+	{
+		*hidePositive |= flag;
+	}
+}
+
 static void CG_SHUDFillFrameContext(superhudFrameContext_t* fc)
 {
 	int gt;
@@ -525,8 +412,11 @@ static void CG_SHUDFillFrameContext(superhudFrameContext_t* fc)
 	 * Free-float only (PM_SPECTATOR): hide player HUD without SE_SPECT.
 	 * Chase uses the followed PS (pm_type NORMAL/DEAD/…) so StatusBar etc. still draw.
 	 * TeamRed/Blue routines still gate on CG_IS_LOCAL_CLIENT_SPECTATOR().
+	 * The first snapshots after joining already say TEAM_SPECTATOR but still have PM_NORMAL.
 	 */
-	fc->is_spectator = (cg.snap && cg.snap->ps.pm_type == PM_SPECTATOR) ? qtrue : qfalse;
+	fc->is_spectator = (cg.snap && (cg.snap->ps.pm_type == PM_SPECTATOR ||
+	                                (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR &&
+	                                 !(cg.snap->ps.pm_flags & PMF_FOLLOW)))) ? qtrue : qfalse;
 	fc->is_dead = (pm_type == PM_DEAD || pm_type == PM_FREEZE);
 	fc->is_intermission = (pm_type == PM_INTERMISSION);
 	fc->is_team_game = (gt >= GT_TEAM);
@@ -602,6 +492,29 @@ static void CG_SHUDFillFrameContext(superhudFrameContext_t* fc)
 	}
 	while (++i < 8);
 	fc->keyHideMask = keyHideMask;
+
+	fc->be_health_low = cg.beIsHealthLow;
+
+	/* Most visflags are yes/no for the whole frame: turn them into masks, so that
+	   each element needs one AND instead of a branch per flag. */
+	fc->hidePos = 0;
+	fc->hideNeg = 0;
+	fc->hidePosExt = 0;
+	fc->hideNegExt = 0;
+
+	CG_SHUDVisCondition(fc->is_team_game, SE_TEAM_ONLY, &fc->hidePos, &fc->hideNeg);
+	CG_SHUDVisCondition(!fc->is_scores, SE_SCORES_HIDE, &fc->hidePos, &fc->hideNeg);
+	CG_SHUDVisCondition(!fc->demo_playback, SE_DEMO_HIDE, &fc->hidePos, &fc->hideNeg);
+	CG_SHUDVisCondition(fc->be_health_low, SE_HEALTH_LOW, &fc->hidePos, &fc->hideNeg);
+	CG_SHUDVisCondition(fc->is_warmup, SE_WARMUP, &fc->hidePos, &fc->hideNeg);
+
+	CG_SHUDVisCondition(fc->is_enterchat, SE_ENTERCHAT, &fc->hidePosExt, &fc->hideNegExt);
+	CG_SHUDVisCondition(fc->is_showchat, SE_SHOWCHAT, &fc->hidePosExt, &fc->hideNegExt);
+	CG_SHUDVisCondition(fc->is_printui, SE_PRINTUI, &fc->hidePosExt, &fc->hideNegExt);
+	CG_SHUDVisCondition(fc->is_bestats, SE_BESTATS, &fc->hidePosExt, &fc->hideNegExt);
+	CG_SHUDVisCondition(fc->is_console, SE_CONSOLE, &fc->hidePosExt, &fc->hideNegExt);
+	CG_SHUDVisCondition(fc->is_menu, SE_MENU, &fc->hidePosExt, &fc->hideNegExt);
+	CG_SHUDVisCondition(fc->is_promode, SE_PROMODE, &fc->hidePosExt, &fc->hideNegExt);
 }
 
 static void CG_SHUDExecuteCommands(const char* commands)
@@ -625,6 +538,8 @@ static void CG_SHUDExecuteCommands(const char* commands)
 
 	trap_SendConsoleCommand(commandBuffer);
 }
+
+static qboolean shud_visContextValid;
 
 qboolean CG_SHUDLoadConfigPrivate(const char* filename, qboolean silent)
 {
@@ -948,6 +863,7 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename, qboolean silent)
 
 	CG_SHUDRoutenesDestroy(elementsHead);
 	elementsHead = newElementsHead;
+	shud_visContextValid = qfalse;
 	CG_SHUDRefreshSpectatorItemSpawnsTeamTables();
 
 	if (!silent)
@@ -1111,13 +1027,45 @@ void CG_SHUDLoadConfig(qboolean silent)
 }
 
 /*
+Visibility depends only on the element's fixed flags and on this context, which rarely changes.
+The context holds nothing but ints.
+*/
+static superhudFrameContext_t shud_visContext;
+
+static qboolean CG_SHUDVisContextUnchanged(const superhudFrameContext_t* fc)
+{
+	const int* a = (const int*)fc;
+	const int* b = (const int*)&shud_visContext;
+	qboolean same = shud_visContextValid;
+	int i;
+
+	if (same)
+	{
+		for (i = 0; i < (int)(sizeof(*fc) / sizeof(int)); i++)
+		{
+			if (a[i] != b[i])
+			{
+				same = qfalse;
+				break;
+			}
+		}
+	}
+	if (!same)
+	{
+		shud_visContext = *fc;
+		shud_visContextValid = qtrue;
+	}
+	return same;
+}
+
+/*
  * SuperHUD draw pass: fill frame context once, then each element's routine if visible.
  */
 void CG_SHUDRoutine(void)
 {
 	superhudElement_t* last = elementsHead;
 	superhudFrameContext_t* fc = &superhudGlobalContext.frame;
-	qboolean be_health_low;
+	qboolean visSame;
 
 	CG_DrawCrosshair();
 	if (CG_DrawIntermission() == 0)
@@ -1135,11 +1083,15 @@ void CG_SHUDRoutine(void)
 	cg.beStatsShowing = CG_BEStatsIsShowing();
 
 	CG_SHUDFillFrameContext(fc);
-	be_health_low = cg.beIsHealthLow;
+	visSame = CG_SHUDVisContextUnchanged(fc);
 
 	while (last)
 	{
-		if (CG_SHUDElementVisible(last, fc, be_health_low) && last->element.routine)
+		if (!visSame)
+		{
+			last->visibleCached = CG_SHUDElementVisible(last, fc);
+		}
+		if (last->visibleCached && last->element.routine)
 		{
 			last->element.routine(last->element.context);
 		}

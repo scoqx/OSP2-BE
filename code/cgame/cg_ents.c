@@ -1125,6 +1125,7 @@ static void CG_Portal(centity_t* cent)
 	refEntity_t         ent;
 	entityState_t*       s1;
 
+	cg.portalFrame = cg.clientFrame;
 	s1 = &cent->currentState;
 
 	// create the render entity
@@ -1427,26 +1428,6 @@ CG_AddCEntity
 
 ===============
 */
-/*
-================
-CG_IsKillerGhostBody
-Killer-ghost corpses: entityState weapon 0 with Quad and Invis bits only (server marker).
-================
-*/
-qboolean CG_IsKillerGhostBody(const entityState_t* s)
-{
-	const int mask = (1 << PW_QUAD) | (1 << PW_INVIS);
-	if (s->weapon != 0)
-	{
-		return qfalse;
-	}
-	if ((s->powerups & mask) != mask)
-	{
-		return qfalse;
-	}
-	return qtrue;
-}
-
 static void CG_AddCEntity(centity_t* cent)
 {
 	// event-only entities will have been dealt with already
@@ -1460,7 +1441,7 @@ static void CG_AddCEntity(centity_t* cent)
 		return;
 	}
 
-	if (cent->currentState.eType == ET_PLAYER && !cg_killerGhost.integer && CG_IsKillerGhostBody(&cent->currentState))
+	if (cent->currentState.eType == ET_PLAYER && !cg_killerGhost.integer && CG_IS_KILLER_GHOST_BODY(&cent->currentState))
 	{
 		return;
 	}

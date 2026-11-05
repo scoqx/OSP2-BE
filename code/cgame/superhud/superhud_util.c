@@ -254,6 +254,15 @@ void CG_SHUDConfigPickColor_Runtime(const superhudConfig_t* config, vec4_t color
 	vec4_t temp;
 	float preservedAlpha;
 
+	/* A fixed color cannot change, only team and enemy colors need the lookup below. */
+	if (config->color.isSet && config->color.value.type == SUPERHUD_COLOR_RGBA)
+	{
+		color[0] = config->color.value.rgba[0];
+		color[1] = config->color.value.rgba[1];
+		color[2] = config->color.value.rgba[2];
+		return;
+	}
+
 	/* Save current alpha for restoration */
 	preservedAlpha = color[3];
 
@@ -784,23 +793,58 @@ qboolean CG_SHUDGetFadeColor(const vec4_t from_color, vec4_t out, const superhud
 	return qtrue;
 }
 
+const char* CG_SHUDFormatTextInt(char* fmt, int value)
+{
+	static char plainBuf[16];
+
+	if (CG_TEXT_IS_PLAIN_INT(fmt))
+	{
+		return CG_FormatInt(plainBuf, sizeof(plainBuf), value);
+	}
+	return va(fmt, value);
+}
+
 const char* CG_SHUDVaTextWithInt(superhudConfig_t* config, int value)
 {
 	char* text;
+	int prefixLen;
+	static char plainBuf[32];
 
 	if (!config->text.isSet || !config->text.value[0])
 	{
-		return va("%i", value);
+		return CG_FormatInt(plainBuf, sizeof(plainBuf), value);
 	}
 
 	text = config->text.value;
 
 	if (strchr(text, '%'))
 	{
-		return va(text, value);
+		return CG_SHUDFormatTextInt(text, value);
 	}
 
-	return va("%s%i", text, value);
+	/* A prefix and at most 11 characters of the number have to fit. */
+	if ((int)strlen(text) >= (int)sizeof(plainBuf) - 11)
+	{
+		return va("%s%i", text, value);
+	}
+
+	Q_strncpyz(plainBuf, text, sizeof(plainBuf));
+	prefixLen = strlen(plainBuf);
+	return CG_FormatInt(plainBuf + prefixLen, (int)sizeof(plainBuf) - prefixLen, value) - prefixLen;
+}
+
+static int CG_SHUDTextFlagsWithCte(const superhudConfig_t* cfg, const superhudTextContext_t* ctx)
+{
+	int flags;
+
+	flags = ctx->flags;
+	/* Config text "..." only: the same pointer, or the same content when decor bound a copy */
+	if (cfg && cfg->text.isSet && cfg->text.value[0] &&
+	        (ctx->text == cfg->text.value || !strcmp(ctx->text, cfg->text.value)))
+	{
+		flags |= DS_CTE_COLOR;
+	}
+	return flags;
 }
 
 void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
@@ -813,14 +857,7 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 	}
 
 	CG_SHUDConfigPickColor_Runtime(cfg, ctx->color);
-
-	flags = ctx->flags;
-	/* Config text "..." only — pointer or same content (decor may bind create-time config*) */
-	if (cfg && cfg->text.isSet && cfg->text.value[0] &&
-	        (ctx->text == cfg->text.value || !strcmp(ctx->text, cfg->text.value)))
-	{
-		flags |= DS_CTE_COLOR;
-	}
+	flags = CG_SHUDTextFlagsWithCte(cfg, ctx);
 
 	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                    ctx->coord.named.y,
@@ -848,12 +885,7 @@ void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* ctx
 	if (colorOverride)
 		CG_SHUDConfigPickColor_Runtime(cfg, ctx->color);
 
-	flags = ctx->flags;
-	if (cfg && cfg->text.isSet && cfg->text.value[0] &&
-	        (ctx->text == cfg->text.value || !strcmp(ctx->text, cfg->text.value)))
-	{
-		flags |= DS_CTE_COLOR;
-	}
+	flags = CG_SHUDTextFlagsWithCte(cfg, ctx);
 
 	CG_OSPDrawStringNew(ctx->coord.named.x,
 	                    ctx->coord.named.y,

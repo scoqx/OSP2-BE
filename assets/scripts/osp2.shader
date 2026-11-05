@@ -834,6 +834,169 @@ sprites/plasma_color
 	}
 }
 
+// cg_smokeNew 1. Created/edited by diwoc for Black edition, 2024
+smokePuffNew
+{
+	nopicmip
+	nomipmaps
+	cull none
+	entityMergable
+	{
+		map gfx/misc/smokepuff3_new.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen		vertex
+		alphaGen	vertex
+	}
+}
+
+hasteSmokePuffNew
+{
+	nopicmip
+	nomipmaps
+	cull none
+	entityMergable
+	{
+		map gfx/misc/smokepuff3_new.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen		vertex
+		alphaGen	vertex
+	}
+}
+
+// Muzzle flashes that can be colored: _color takes the entity color, _color2 stays white
+models/weapons2/gauntlet/gauntlet3_color
+{
+	cull disable
+	sort additive
+	{
+		animMap 10 models/weapons2/gauntlet/gauntlet3_color.jpg models/weapons2/gauntlet/gauntlet4_color.jpg
+		blendfunc GL_ONE GL_ONE
+		rgbgen entity
+	}
+	{
+		animMap 10 models/weapons2/gauntlet/gauntlet3_color2.jpg models/weapons2/gauntlet/gauntlet4_color2.jpg
+		blendfunc GL_ONE GL_ONE
+	}
+}
+
+models/weapons2/machinegun/f_machinegun_color
+{
+	sort additive
+	cull disable
+	{
+		map models/weapons2/machinegun/f_machinegun_color.jpg
+		blendfunc GL_ONE GL_ONE
+		rgbgen entity
+	}
+	{
+		map models/weapons2/machinegun/f_machinegun_color2.jpg
+		blendfunc GL_ONE GL_ONE
+	}
+}
+
+models/weapons2/shotgun/f_shotgun_color
+{
+	sort additive
+	cull disable
+	{
+		map models/weapons2/shotgun/f_shotgun_color.jpg
+		blendfunc GL_ONE GL_ONE
+		rgbgen entity
+	}
+	{
+		map models/weapons2/shotgun/f_shotgun_color2.jpg
+		blendfunc GL_ONE GL_ONE
+	}
+}
+
+models/weapons2/grenadel/f_grenadel_color
+{
+	sort additive
+	cull disable
+	{
+		map models/weapons2/grenadel/f_grenadel_color.jpg
+		blendfunc GL_ONE GL_ONE
+		rgbgen entity
+	}
+	{
+		map models/weapons2/grenadel/f_grenadel_color2.jpg
+		blendfunc GL_ONE GL_ONE
+	}
+}
+
+models/weapons2/rocketl/f_rocketl_color
+{
+	sort additive
+	cull disable
+	{
+		map models/weapons2/rocketl/f_rocketl_color.jpg
+		blendfunc GL_ONE GL_ONE
+		rgbgen entity
+	}
+	{
+		map models/weapons2/rocketl/f_rocketl_color2.jpg
+		blendfunc GL_ONE GL_ONE
+	}
+}
+
+models/weapons2/lightning/f_lightning_color
+{
+	sort additive
+	cull disable
+	{
+		map models/weapons2/lightning/f_lightning_color.jpg
+		blendfunc GL_ONE GL_ONE
+		rgbgen entity
+	}
+	{
+		map models/weapons2/lightning/f_lightning_color2.jpg
+		blendfunc GL_ONE GL_ONE
+	}
+}
+
+models/weapons2/plasma/f_plasma_color
+{
+	sort additive
+	cull disable
+	{
+		map models/weapons2/plasma/f_plasma_color.jpg
+		blendfunc GL_ONE GL_ONE
+		rgbgen entity
+	}
+	{
+		map models/weapons2/plasma/f_plasma_color2.jpg
+		blendfunc GL_ONE GL_ONE
+	}
+}
+
+models/weapons2/bfg/f_bfg_color
+{
+	sort additive
+	cull disable
+	{
+		clampmap models/weapons2/bfg/f_bfg_color.jpg
+		blendfunc GL_ONE GL_ONE
+		tcmod rotate 360
+		rgbgen entity
+	}
+	{
+		clampmap models/weapons2/bfg/f_bfg_color2.jpg
+		blendfunc GL_ONE GL_ONE
+		tcmod rotate 360
+	}
+	{
+		clampmap models/weapons2/bfg/f_bfg2_color.jpg
+		blendfunc GL_ONE GL_ONE
+		tcmod rotate -129
+		rgbgen entity
+	}
+	{
+		clampmap models/weapons2/bfg/f_bfg2_color2.jpg
+		blendfunc GL_ONE GL_ONE
+		tcmod rotate -129
+	}
+}
+
 // cg_drawSpawns 2 — client-only spawn markers (color via entity, no weapon plasma shader)
 sprites/spawn_mark_plasma
 {

@@ -1072,6 +1072,58 @@ void CG_FontSelect(int index)
 	}
 }
 
+const viewFovTrig_t* CG_ViewFovTrig(void)
+{
+	static viewFovTrig_t trig;
+	static float cachedFovX = -1.0f;
+	static float cachedFovY = -1.0f;
+
+	if (cg.refdef.fov_x != cachedFovX || cg.refdef.fov_y != cachedFovY)
+	{
+		const float halfX = cg.refdef.fov_x * (float)M_PI / 360.0f;
+		const float halfY = cg.refdef.fov_y * (float)M_PI / 360.0f;
+
+		cachedFovX = cg.refdef.fov_x;
+		cachedFovY = cg.refdef.fov_y;
+		trig.sinX = sin(halfX);
+		trig.cosX = cos(halfX);
+		trig.sinY = sin(halfY);
+		trig.cosY = cos(halfY);
+		trig.tanX = trig.sinX / trig.cosX;
+		trig.tanY = trig.sinY / trig.cosY;
+	}
+	return &trig;
+}
+
+char* CG_FormatInt(char* buf, int buflen, int val)
+{
+	char digits[16];
+	unsigned int v;
+	int n;
+	int i;
+
+	v = val < 0 ? 0u - (unsigned int)val : (unsigned int)val;
+	n = 0;
+	do
+	{
+		digits[n++] = (char)('0' + v % 10u);
+		v /= 10u;
+	}
+	while (v);
+
+	i = 0;
+	if (val < 0 && i < buflen - 1)
+	{
+		buf[i++] = '-';
+	}
+	while (n > 0 && i < buflen - 1)
+	{
+		buf[i++] = digits[--n];
+	}
+	buf[i] = '\0';
+	return buf;
+}
+
 qhandle_t CG_OSPFontShaderForHeight(int fontIndex, float charHeight)
 {
 	const font_t* f;
@@ -3750,7 +3802,7 @@ qboolean CG_WorldToScreen(const vec3_t world, float* x, float* y)
 {
 	vec3_t trans;
 	float px, py, z;
-	float hfov_x, hfov_y;
+	const viewFovTrig_t* fovTrig;
 	float tanX, tanY;
 	float invZ;
 	float xc, yc;
@@ -3763,10 +3815,9 @@ qboolean CG_WorldToScreen(const vec3_t world, float* x, float* y)
 	if (z <= 0.001f)
 		return qfalse;
 
-	hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
-	hfov_y = cg.refdef.fov_y * (float)M_PI / 360.0f;
-	tanX = tan(hfov_x);
-	tanY = tan(hfov_y);
+	fovTrig = CG_ViewFovTrig();
+	tanX = fovTrig->tanX;
+	tanY = fovTrig->tanY;
 	xc = (float)SCREEN_WIDTH * 0.5f;
 	yc = (float)SCREEN_HEIGHT * 0.5f;
 	invZ = 1.0f / z;

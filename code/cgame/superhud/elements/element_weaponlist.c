@@ -7,6 +7,7 @@ typedef struct
 	superhudConfig_t config;
 	superhudConfig_t tmp_config;
 	superhudTextContext_t position;
+	superhudTextContext_t measureCtx; /* font metrics for ammo width; built once */
 	float x; // main x point of whole weaponlist
 	float y; // main y point of whole weaponlist
 	float w; // width of one weapon
@@ -14,6 +15,9 @@ typedef struct
 	float ammoWidth; // width of ammo field
 	int ammoMax;
 	int weaponNum;
+	int cachedStatWeapons;
+	int cachedAmmoMaxForWidth;
+	int slotWeapon[WP_NUM_WEAPONS];
 	char ammo[WP_NUM_WEAPONS][8];
 	vec4_t border[WP_NUM_WEAPONS];
 	vec4_t borderColor[WP_NUM_WEAPONS];
@@ -42,20 +46,225 @@ void* CG_SHUDElementWeaponListCreate(const superhudConfig_t* config)
 	element->h = element->config.rect.value[3];
 
 	CG_SHUDTextMakeContext(&element->tmp_config, &element->ammoCount[0]);
+	CG_SHUDTextMakeContext(&element->tmp_config, &element->measureCtx);
 
-	element->ammoMax = -1; //force update width
+	element->ammoMax = -1; /* force update width */
+	element->cachedStatWeapons = -1;
+	element->cachedAmmoMaxForWidth = -1;
+	element->weaponNum = 0;
 
 	return element;
 }
 
-static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, superhudAlignH_t align)
+static void CG_SHUDElementWeaponListApplySlotStyle(shudElementWeaponList_t* element, int slot, int wpi, int weapon)
 {
-	int wpi, statWeapons;
+	if (wpi != weapon)
+	{
+		if (element->config.bgcolor.isSet)
+		{
+			CG_SHUDConfigPickBgColor(&element->tmp_config, element->back[slot].color, qfalse);
+		}
+		else
+		{
+			memset(element->back[slot].color, 0, sizeof(element->back[slot].color));
+		}
+		Vector4Set(element->border[slot], 0, 0, 0, 0);
+		Vector4Set(element->borderColor[slot], 0, 0, 0, 0);
+		return;
+	}
+
+	if (element->config.color2.isSet)
+	{
+		Vector4Copy(element->tmp_config.color2.value.rgba, element->back[slot].color);
+	}
+	else
+	{
+		memset(element->back[slot].color, 0, sizeof(element->back[slot].color));
+	}
+
+	if (element->config.border.isSet)
+	{
+		Vector4Copy(element->config.border.value, element->border[slot]);
+	}
+	else
+	{
+		Vector4Set(element->border[slot], 0, 0, 0, 0);
+	}
+
+	if (element->config.borderColor.isSet)
+	{
+		CG_SHUDConfigPickBorderColor(&element->config, element->borderColor[slot], qfalse);
+	}
+	else
+	{
+		Vector4Set(element->borderColor[slot], 1, 1, 1, 0);
+	}
+}
+
+/* What can change while the layout stays: ammo, the icon of a weapon registered late, selection, team colors. */
+static void CG_SHUDElementWeaponListUpdateSlots(shudElementWeaponList_t* element, int weapon)
+{
+	int i;
+	int ammo;
+	float colorA;
+
+	colorA = element->tmp_config.color.isSet ? element->tmp_config.color.value.rgba[3] : 1.0f;
+
+	for (i = 0; i < element->weaponNum; ++i)
+	{
+		element->weaponIcon[i].image = cg_weapons[element->slotWeapon[i]].weaponIcon;
+		CG_SHUDElementWeaponListApplySlotStyle(element, i, element->slotWeapon[i], weapon);
+
+		ammo = CG_SHUDGetAmmo(element->slotWeapon[i]);
+		CG_FormatInt(&element->ammo[i][0], 8, ammo);
+		element->ammoCount[i].text = &element->ammo[i][0];
+
+		if (ammo == 0)
+		{
+			vec4_t tmpColor;
+			Vector4Copy(colorRed, tmpColor);
+			tmpColor[3] = colorA;
+			Vector4Copy(tmpColor, element->ammoCount[i].color);
+		}
+		else
+		{
+			CG_SHUDConfigPickColor_Init(&element->tmp_config, element->ammoCount[i].color);
+		}
+	}
+}
+
+static void CG_SHUDElementWeaponListRebuild(shudElementWeaponList_t* element, superhudAlignH_t align,
+        int statWeapons, int ammo_max)
+{
+	int wpi;
 	int x, y, w, h;
 	int total;
-	int ammo_max = 0;
+
+	if (ammo_max > element->ammoMax)
+	{
+		element->ammoMax = ammo_max;
+	}
+	if (element->ammoMax < 0)
+	{
+		element->ammoMax = 0;
+	}
+
+	if (element->cachedAmmoMaxForWidth != element->ammoMax)
+	{
+		element->ammoWidth = CG_OSPDrawStringNewTextWidth(
+		                         va("%d", element->ammoMax),
+		                         element->measureCtx.coord.named.w,
+		                         0.0f,
+		                         element->measureCtx.flags,
+		                         element->measureCtx.fontIndex);
+		element->ammoWidth += element->measureCtx.coord.named.w / 6.0f;
+		element->cachedAmmoMaxForWidth = element->ammoMax;
+	}
+
+	for (wpi = WP_MACHINEGUN, total = 0; wpi < WP_NUM_WEAPONS; ++wpi)
+	{
+		if ((statWeapons & (1 << wpi)) != 0)
+		{
+			++total;
+		}
+	}
+
+	if (align == SUPERHUD_ALIGNH_CENTER)
+	{
+		x = element->x - total * (element->w + element->ammoWidth) / 2;
+		y = element->y;
+	}
+	else
+	{
+		x = element->x;
+		y = element->y - total * element->h / 2;
+	}
+	w = element->w;
+	h = element->h;
+
+	element->weaponNum = 0;
+
+	for (wpi = WP_MACHINEGUN; wpi < WP_NUM_WEAPONS; ++wpi)
+	{
+		if ((statWeapons & (1 << wpi)) == 0)
+		{
+			continue;
+		}
+
+		element->slotWeapon[element->weaponNum] = wpi;
+
+		element->tmp_config.alignV.value = SUPERHUD_ALIGNV_TOP;
+		element->tmp_config.alignV.isSet = qtrue;
+
+		if (align != SUPERHUD_ALIGNH_RIGHT)
+		{
+			element->tmp_config.alignH.value = SUPERHUD_ALIGNH_LEFT;
+			element->tmp_config.alignH.isSet = qtrue;
+		}
+		else
+		{
+			element->tmp_config.alignH.value = SUPERHUD_ALIGNH_RIGHT;
+			element->tmp_config.alignH.isSet = qtrue;
+		}
+
+		element->tmp_config.rect.value[0] = x;
+		element->tmp_config.rect.value[1] = y;
+		element->tmp_config.rect.value[2] = w;
+		element->tmp_config.rect.value[3] = h;
+		CG_SHUDDrawMakeContext(&element->tmp_config, &element->weaponIcon[element->weaponNum]);
+
+		element->tmp_config.rect.value[0] = x;
+		if (align == SUPERHUD_ALIGNH_RIGHT)
+		{
+			element->tmp_config.rect.value[0] -= element->ammoWidth;
+		}
+		element->tmp_config.rect.value[1] = y;
+		element->tmp_config.rect.value[2] = w + element->ammoWidth;
+		element->tmp_config.rect.value[3] = h;
+		CG_SHUDDrawMakeContext(&element->tmp_config, &element->back[element->weaponNum]);
+
+		if (align != SUPERHUD_ALIGNH_RIGHT)
+		{
+			element->tmp_config.rect.value[0] = x + w;
+		}
+		else
+		{
+			element->tmp_config.rect.value[0] = x - element->ammoWidth;
+		}
+		element->tmp_config.rect.value[1] = y;
+		element->tmp_config.rect.value[2] = element->ammoWidth;
+		element->tmp_config.rect.value[3] = h;
+
+		element->tmp_config.alignV.value = SUPERHUD_ALIGNV_CENTER;
+		element->tmp_config.alignV.isSet = qtrue;
+		element->tmp_config.alignH.value = SUPERHUD_ALIGNH_CENTER;
+		element->tmp_config.alignH.isSet = qtrue;
+		element->tmp_config.textAlign.value = SUPERHUD_ALIGNH_CENTER;
+		element->tmp_config.textAlign.isSet = qtrue;
+
+		CG_SHUDTextMakeContext(&element->tmp_config, &element->ammoCount[element->weaponNum]);
+		element->ammoCount[element->weaponNum].text = &element->ammo[element->weaponNum][0];
+
+		if (align == SUPERHUD_ALIGNH_CENTER)
+		{
+			x += w + element->ammoWidth;
+		}
+		else
+		{
+			y += h;
+		}
+		++element->weaponNum;
+	}
+
+	element->cachedStatWeapons = statWeapons;
+}
+
+static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, superhudAlignH_t align)
+{
+	int wpi;
+	int statWeapons;
 	int weapon;
-	int ammo;
+	int ammo_max = 0;
 
 	if (!cg.snap)
 	{
@@ -65,7 +274,6 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 	statWeapons = cg.snap->ps.stats[STAT_WEAPONS];
 	weapon = cg.snap->ps.weapon;
 
-	//update width
 	for (wpi = WP_MACHINEGUN; wpi < WP_NUM_WEAPONS; ++wpi)
 	{
 		if ((statWeapons & (1 << wpi)) != 0)
@@ -78,188 +286,16 @@ static void CG_SHUDElementWeaponListSetup(shudElementWeaponList_t* element, supe
 		}
 	}
 
-	if (ammo_max > element->ammoMax)
+	/* The layout depends on the owned weapons and the width of the ammo column. */
+	if (statWeapons != element->cachedStatWeapons ||
+	        element->weaponNum <= 0 ||
+	        ammo_max > element->ammoMax ||
+	        element->ammoMax < 0)
 	{
-		element->ammoMax = ammo_max;
+		CG_SHUDElementWeaponListRebuild(element, align, statWeapons, ammo_max);
 	}
 
-	if (element->ammoMax < 0)
-	{
-		element->ammoMax = 0;
-	}
-
-	{
-		superhudTextContext_t measureCtx;
-
-		CG_SHUDTextMakeContext(&element->tmp_config, &measureCtx);
-		element->ammoWidth = CG_OSPDrawStringNewTextWidth(va("%d", element->ammoMax), measureCtx.coord.named.w, 0.0f, measureCtx.flags, measureCtx.fontIndex);
-		element->ammoWidth += measureCtx.coord.named.w / 6.0f;
-	}
-
-
-	for (wpi = WP_MACHINEGUN, total = 0; wpi < WP_NUM_WEAPONS; ++wpi)
-	{
-		if ((statWeapons & (1 << wpi)) != 0)
-		{
-			++total;
-		}
-	}
-
-	if (align == SUPERHUD_ALIGNH_CENTER)
-	{
-		x = element->x - total * (element->w + element->ammoWidth) / 2; //shift to center
-		y = element->y;
-	}
-	else
-	{
-		x = element->x;
-		y = element->y - total * element->h / 2; //shift to center
-	}
-	w = element->w;
-	h = element->h;
-
-	element->weaponNum = 0;
-
-	for (wpi = WP_MACHINEGUN; wpi < WP_NUM_WEAPONS; ++wpi)
-	{
-		if ((statWeapons & (1 << wpi)) != 0)
-		{
-			// icon
-			element->tmp_config.alignV.value = SUPERHUD_ALIGNV_TOP;
-			element->tmp_config.alignV.isSet = qtrue;
-
-			// left and center aligned left
-			if (align != SUPERHUD_ALIGNH_RIGHT)
-			{
-				element->tmp_config.alignH.value = SUPERHUD_ALIGNH_LEFT;
-				element->tmp_config.alignH.isSet = qtrue;
-			}
-			else
-			{
-				element->tmp_config.alignH.value = SUPERHUD_ALIGNH_RIGHT;
-				element->tmp_config.alignH.isSet = qtrue;
-			}
-
-			element->tmp_config.rect.value[0] = x;
-			element->tmp_config.rect.value[1] = y;
-			element->tmp_config.rect.value[2] = w;
-			element->tmp_config.rect.value[3] = h;
-			CG_SHUDDrawMakeContext(&element->tmp_config, &element->weaponIcon[element->weaponNum]);
-			element->weaponIcon[element->weaponNum].image = cg_weapons[wpi].weaponIcon;
-
-			// selection and background
-			element->tmp_config.rect.value[0] = x;
-			if (align == SUPERHUD_ALIGNH_RIGHT)
-			{
-				element->tmp_config.rect.value[0] -= element->ammoWidth;
-			}
-			element->tmp_config.rect.value[1] = y;
-			element->tmp_config.rect.value[2] = w + element->ammoWidth;
-			element->tmp_config.rect.value[3] = h;
-			CG_SHUDDrawMakeContext(&element->tmp_config, &element->back[element->weaponNum]);
-			if (wpi != weapon)
-			{
-				if (element->config.bgcolor.isSet)
-				{
-					CG_SHUDConfigPickBgColor(&element->tmp_config, element->back[element->weaponNum].color, qfalse);
-				}
-				else
-				{
-					memset(element->back[element->weaponNum].color, 0, sizeof(element->back[element->weaponNum].color));
-				}
-			}
-			else
-			{
-				if (element->config.color2.isSet)
-				{
-					Vector4Copy(element->tmp_config.color2.value.rgba, element->back[element->weaponNum].color);
-				}
-				else
-				{
-					memset(element->back[element->weaponNum].color, 0, sizeof(element->back[element->weaponNum].color));
-				}
-			}
-
-			if (wpi == weapon)
-			{
-				if (element->config.border.isSet)
-				{
-					Vector4Copy(element->config.border.value, element->border[element->weaponNum]);
-				}
-				else
-				{
-					Vector4Set(element->border[element->weaponNum], 0, 0, 0, 0);
-				}
-
-				if (element->config.borderColor.isSet)
-				{
-					CG_SHUDConfigPickBorderColor(&element->config, element->borderColor[element->weaponNum], qfalse);
-				}
-				else
-				{
-					Vector4Set(element->borderColor[element->weaponNum], 1, 1, 1, 0);
-				}
-			}
-
-			else
-			{
-				Vector4Set(element->border[element->weaponNum], 0, 0, 0, 0);
-				Vector4Set(element->borderColor[element->weaponNum], 0, 0, 0, 0);
-			}
-
-			/* ammo — own column (ammoWidth), centered in the background box */
-			if (align != SUPERHUD_ALIGNH_RIGHT)
-			{
-				element->tmp_config.rect.value[0] = x + w;
-			}
-			else
-			{
-				element->tmp_config.rect.value[0] = x - element->ammoWidth;
-			}
-			element->tmp_config.rect.value[1] = y;
-			element->tmp_config.rect.value[2] = element->ammoWidth;
-			element->tmp_config.rect.value[3] = h;
-
-			element->tmp_config.alignV.value = SUPERHUD_ALIGNV_CENTER;
-			element->tmp_config.alignV.isSet = qtrue;
-
-			element->tmp_config.alignH.value = SUPERHUD_ALIGNH_CENTER;
-			element->tmp_config.alignH.isSet = qtrue;
-
-			element->tmp_config.textAlign.value = SUPERHUD_ALIGNH_CENTER;
-			element->tmp_config.textAlign.isSet = qtrue;
-
-			CG_SHUDTextMakeContext(&element->tmp_config, &element->ammoCount[element->weaponNum]);
-			element->ammoCount[element->weaponNum].text = &element->ammo[element->weaponNum][0];
-
-			ammo = CG_SHUDGetAmmo(wpi);
-
-			Com_sprintf(&element->ammo[element->weaponNum][0], 8, "%i", ammo);
-
-			if (ammo == 0)
-			{
-				vec4_t tmpColor;
-				Vector4Copy(colorRed, tmpColor);
-				tmpColor[3] = element->tmp_config.color.value.rgba[3];
-				Vector4Copy(tmpColor, element->ammoCount[element->weaponNum].color);
-			}
-			else
-			{
-				Vector4Copy(element->tmp_config.color.value.rgba, element->ammoCount[element->weaponNum].color);
-			}
-
-			if (align == SUPERHUD_ALIGNH_CENTER)
-			{
-				x += w + element->ammoWidth;
-			}
-			else
-			{
-				y += h;
-			}
-			++element->weaponNum;
-		}
-	}
-
+	CG_SHUDElementWeaponListUpdateSlots(element, weapon);
 }
 
 void CG_SHUDElementWeaponListRoutine(void* context)
@@ -269,7 +305,6 @@ void CG_SHUDElementWeaponListRoutine(void* context)
 
 	CG_SHUDElementWeaponListSetup(element, element->config.textAlign.value);
 
-	//draw background, weapon icon and ammo count
 	for (i = 0; i < element->weaponNum; ++i)
 	{
 		CG_SHUDFillWithColor(&element->back[i].coord, element->back[i].color);

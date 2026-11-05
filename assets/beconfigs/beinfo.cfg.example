@@ -10,6 +10,8 @@
 #   cgame  — brightcolor_<name> R G B A  или  RRGGBB / RRGGBBAA (hex, напр. FF00FF10)
 #		предметы: cg_drawBrightItems; 
 #		ружие: cg_drawBrightWeapons;
+#   	   — flashcolor_weapon_<name> R G B A  или  RRGGBB — цвет вспышки выстрела, когда нет своего цвета
+#   		(lightning: cg_*LightningColor, plasmagun: cg_*PlasmaColor, затем cg_dlightPG, остальные: cg_dlight*)
 #
 # brightcolor_* применяется только когда нет «своего» цвета:
 #   	item_quad / item_enviro — пока пусты cg_quadDamageColor / cg_battleSuitColor
@@ -77,5 +79,14 @@ AddVar
 		brightcolor_weapon_railgun 0 1 1 1;
 		brightcolor_weapon_plasmagun 1 0 1 1;
 		brightcolor_weapon_bfg 0 0 1 1;
+		# weapon flashes
+		flashcolor_weapon_gauntlet 0.6 0.6 1 1;
+		flashcolor_weapon_machinegun 1 1 0 1;
+		flashcolor_weapon_shotgun 1 1 0 1;
+		flashcolor_weapon_grenadelauncher 1 0.75 0 1;
+		flashcolor_weapon_rocketlauncher 1 0.75 0 1;
+		flashcolor_weapon_lightning 0.6 0.6 1 1;
+		flashcolor_weapon_plasmagun 0.6 0.6 1 1;
+		flashcolor_weapon_bfg 1 0.7 1 1;
 	}
 }

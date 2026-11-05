@@ -735,8 +735,8 @@ qboolean CG_ComputeHudBorderWorldPos(vec3_t origin, float markerRadius, float of
 	vec3_t dir;
 	float front, left, up;
 	vec3_t flu;
-	float r, inc, az;
-	float hfov_x, hfov_y;
+	float r;
+	const viewFovTrig_t* fovTrig;
 	float tanX, tanY, cosX, cosY, sinX, sinY;
 	float phi, cosPhi, sinPhi;
 	float dist, ratio;
@@ -762,23 +762,20 @@ qboolean CG_ComputeHudBorderWorldPos(vec3_t origin, float markerRadius, float of
 		return qfalse;
 	}
 
-	hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
-	hfov_y = cg.refdef.fov_y * (float)M_PI / 360.0f;
-	az = atan2(flu[1], flu[0]);
-	inc = acos(flu[2] / r);
-	inc = (float)M_PI * 0.5f - inc;
+	fovTrig = CG_ViewFovTrig();
+	tanX = fovTrig->tanX;
+	tanY = fovTrig->tanY;
+	cosX = fovTrig->cosX;
+	cosY = fovTrig->cosY;
+	sinX = fovTrig->sinX;
+	sinY = fovTrig->sinY;
 
-	if (front > 0.0f && fabs(az) < hfov_x && fabs(inc) < hfov_y)
+	/* Inside the view: the azimuth is within the horizontal half-angle and the elevation
+	   within the vertical one. Compared by tangent and sine, no angles needed. */
+	if (front > 0.0f && fabs(flu[1]) < front * tanX && fabs(flu[2]) < r * sinY)
 	{
 		return qfalse;
 	}
-
-	tanX = tan(hfov_x);
-	tanY = tan(hfov_y);
-	cosX = cos(hfov_x);
-	cosY = cos(hfov_y);
-	sinX = sin(hfov_x);
-	sinY = sin(hfov_y);
 
 	dist = 8.0f;
 	circleSz = 100.0f;

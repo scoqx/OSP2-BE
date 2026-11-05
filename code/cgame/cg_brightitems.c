@@ -236,6 +236,23 @@ static void CG_BeinfoBrightWeaponOverride(const char* classname, float r, float 
 	cgs.beBrightWeaponsBeinfoSet[weapon] = qtrue;
 }
 
+void CG_BeinfoApplyFlashColor(const char* classname, float r, float g, float b, float a)
+{
+	weapon_t weapon;
+
+	(void)a;
+	weapon = CG_BrightWeaponByClassname(classname);
+	if (weapon <= WP_NONE || weapon >= WP_NUM_WEAPONS)
+	{
+		return;
+	}
+
+	cgs.beFlashColor[weapon][0] = r;
+	cgs.beFlashColor[weapon][1] = g;
+	cgs.beFlashColor[weapon][2] = b;
+	cgs.beFlashColorSet[weapon] = qtrue;
+}
+
 static void CG_BeinfoBrightItemOverride(const char* classname, float r, float g, float b, float a)
 {
 	vec4_t color;

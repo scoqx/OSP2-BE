@@ -143,6 +143,12 @@ static void CG_ClipMoveToEntities(const vec3_t start, const vec3_t mins, const v
 		}
 		else
 		{
+			/* The engine's temp box is always CONTENTS_BODY, so this mask cannot hit it. */
+			if (!(mask & CONTENTS_BODY))
+			{
+				continue;
+			}
+
 			// encoded bbox
 			x = (ent->solid & 255);
 			zd = ((ent->solid >> 8) & 255);

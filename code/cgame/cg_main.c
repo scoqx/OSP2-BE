@@ -223,6 +223,7 @@ vmCvar_t           cg_smokeradius_gl;
 vmCvar_t           cg_smokeradius_rl;
 vmCvar_t           cg_smokedensity_gl;
 vmCvar_t           cg_smokedensity_rl;
+vmCvar_t           cg_smokeNew;
 vmCvar_t           cg_swapSkins;
 vmCvar_t           cg_teamRails;
 vmCvar_t           cg_trueLightning;
@@ -795,6 +796,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_smokeradius_rl, "cg_smokeradius_rl", "64", CVAR_ARCHIVE },
 	{ &cg_smokedensity_gl, "cg_smokedensity_gl", "50", CVAR_ARCHIVE },
 	{ &cg_smokedensity_rl, "cg_smokedensity_rl", "50", CVAR_ARCHIVE },
+	{ &cg_smokeNew, "cg_smokeNew", "1", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &cg_swapSkins, "cg_swapSkins", "0", 0, CG_LocalEventCvarChanged_cg_swapSkins},
 	{ &cg_teamRails, "cg_teamRails", "0", CVAR_ARCHIVE },
 	{ &cg_trueLightning, "cg_trueLightning", "1.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_trueLightning},
@@ -909,15 +911,15 @@ cvarTable_t cvarTable[] =
 
 	{ &ch_crosshairAutoScale,  "ch_crosshairAutoScale", "1",  CVAR_ARCHIVE},
 
-	{ &cg_dlightGauntlet, "cg_dlightGauntlet", "9999FF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightGauntlet },
-	{ &cg_dlightMG,       "cg_dlightMG",       "FFFF00", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightMG },
-	{ &cg_dlightSG,       "cg_dlightSG",       "FFFF00", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightSG },
-	{ &cg_dlightGL,       "cg_dlightGL",       "FFBF00", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightGL },
-	{ &cg_dlightRL,       "cg_dlightRL",       "FFBF00", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightRL },
-	{ &cg_dlightLG,       "cg_dlightLG",       "9999FF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightLG },
-	{ &cg_dlightRG,       "cg_dlightRG",       "FF8000", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightRG },
-	{ &cg_dlightPG,       "cg_dlightPG",       "9999FF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightPG },
-	{ &cg_dlightBFG,      "cg_dlightBFG",      "FFB2FF", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightBFG },
+	{ &cg_dlightGauntlet, "cg_dlightGauntlet", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightGauntlet },
+	{ &cg_dlightMG,       "cg_dlightMG",       "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightMG },
+	{ &cg_dlightSG,       "cg_dlightSG",       "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightSG },
+	{ &cg_dlightGL,       "cg_dlightGL",       "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightGL },
+	{ &cg_dlightRL,       "cg_dlightRL",       "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightRL },
+	{ &cg_dlightLG,       "cg_dlightLG",       "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightLG },
+	{ &cg_dlightRG,       "cg_dlightRG",       "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightRG },
+	{ &cg_dlightPG,       "cg_dlightPG",       "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightPG },
+	{ &cg_dlightBFG,      "cg_dlightBFG",      "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightBFG },
 	{ &cg_gunColor,       "cg_gunColor",      "White", CVAR_ARCHIVE },
 	{ &cg_gunOpaque,      "cg_gunOpaque",      "0.15", CVAR_ARCHIVE },
 	{ &cg_drawBrightWeapons, "cg_drawBrightWeapons", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
@@ -2089,9 +2091,14 @@ static void CG_RegisterGraphics(void)
 	cgs.media.scoreboardScore = trap_R_RegisterShaderNoMip("menu/tab/score.tga");
 	cgs.media.scoreboardTime = trap_R_RegisterShaderNoMip("menu/tab/time.tga");
 
-	cgs.media.smokePuffShader = trap_R_RegisterShader("smokePuff");
+	cgs.media.smokePuffShader = cg_smokeNew.integer ? trap_R_RegisterShader("smokePuffNew") : 0;
+	if (!cgs.media.smokePuffShader)
+	{
+		cgs.media.smokePuffShader = trap_R_RegisterShader("smokePuff");
+	}
 
-	cgs.media.smokePuffNoPicMipShader = trap_R_RegisterShader("smokePuffNoPicMip");
+	/* The new smoke is nopicmip already, so it needs no separate shader for cg_nomip. */
+	cgs.media.smokePuffNoPicMipShader = cg_smokeNew.integer ? cgs.media.smokePuffShader : trap_R_RegisterShader("smokePuffNoPicMip");
 	if (!cgs.media.smokePuffNoPicMipShader)
 	{
 		cgs.media.smokePuffNoPicMipShader = cgs.media.smokePuffShader;
@@ -2315,7 +2322,11 @@ static void CG_RegisterGraphics(void)
 	cgs.media.battleWeaponShaderDye = trap_R_RegisterShader("powerups/battleWeaponDye");
 	cgs.media.invisShader = trap_R_RegisterShader("powerups/invisibility");
 	cgs.media.regenShader = trap_R_RegisterShader("powerups/regen");
-	cgs.media.hastePuffShader = trap_R_RegisterShader("hasteSmokePuff");
+	cgs.media.hastePuffShader = cg_smokeNew.integer ? trap_R_RegisterShader("hasteSmokePuffNew") : 0;
+	if (!cgs.media.hastePuffShader)
+	{
+		cgs.media.hastePuffShader = trap_R_RegisterShader("hasteSmokePuff");
+	}
 
 	cgs.media.freezeShader = trap_R_RegisterShader("freezeShader");
 	cgs.media.freezeMarkShader = trap_R_RegisterShader("freezeMarkShader");
@@ -3194,6 +3205,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_InitTeamColors();
 	CG_InitBrightItemsColors();
 	BeinfoCfg_SetBrightColorHandler(CG_BeinfoApplyBrightColor);
+	BeinfoCfg_SetFlashColorHandler(CG_BeinfoApplyFlashColor);
 	BeinfoCfg_Load();
 
 	/* be_features before fonts; font indices after CG_LoadFonts (bitmap + TTF) */

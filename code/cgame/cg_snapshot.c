@@ -63,6 +63,7 @@ cent->nextState is moved to cent->currentState and events are fired
 void CG_TransitionEntity(centity_t* cent)
 {
 	if (!cent->interpolate &&
+	        cg_debugServer.integer == 5 &&
 	        cent->nextState.eType == ET_MISSILE &&
 	        cent->nextState.otherEntityNum == cg.predictedPlayerState.clientNum)
 	{

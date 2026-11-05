@@ -449,6 +449,7 @@ typedef struct superhudElement_s
 	superHUDConfigElement_t element;
 	superhudConfig_t config;
 	superhudElementVis_t vis;
+	qboolean visibleCached;     // CG_SHUDElementVisible for the context in shud_visContext
 	struct superhudElement_s* next;
 }
 superhudElement_t;
@@ -460,6 +461,11 @@ typedef struct
 	int weaponVis;
 	int gtHideMask;
 	int keyHideMask;
+	/* An element is hidden this frame if (vflags & hidePos) or (vflagsNeg & hideNeg). */
+	int hidePos;
+	int hideNeg;
+	int hidePosExt;
+	int hideNegExt;
 	qboolean is_dead;
 	qboolean is_intermission;
 	qboolean is_team_game;
@@ -474,6 +480,7 @@ typedef struct
 	qboolean is_menu;
 	qboolean is_promode;
 	qboolean demo_playback;
+	qboolean be_health_low;
 } superhudFrameContext_t;
 
 typedef struct superHUDConfigCommand_s
@@ -990,6 +997,7 @@ typedef struct
 
 void CG_SHUDBarMakeContext(const superhudConfig_t* in, superhudBarContext_t* out, float max);
 void CG_SHUDTextMakeContext(const superhudConfig_t* in, superhudTextContext_t* out);
+const char* CG_SHUDFormatTextInt(char* fmt, int value);
 const char* CG_SHUDVaTextWithInt(superhudConfig_t* config, int value);
 void CG_SHUDDrawStretchPic(superhudCoord_t coord, const superhudCoord_t coordPicture, const float* color, qhandle_t shader);
 void CG_SHUDDrawMakeContext(const superhudConfig_t* cfg, superhudDrawContext_t* out);

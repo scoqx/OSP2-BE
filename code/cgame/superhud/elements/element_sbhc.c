@@ -31,6 +31,10 @@ void* CG_SHUDElementSBHCCreate(const superhudConfig_t* config)
 	CG_SHUDTextMakeContext(&element->config, &element->ctx);
 	CG_SHUDFillAndFrameForText(&element->config, &element->ctx);
 	element->ctx.flags |= DS_FORCE_COLOR;
+	if (CG_TEXT_IS_PLAIN_INT(element->config.text.value))
+	{
+		element->ctx.flags |= DS_PLAIN;
+	}
 
 	return element;
 }
@@ -49,7 +53,7 @@ void CG_SHUDElementSBHCRoutine(void* context)
 	display = hp > 0 ? hp : 0;
 	if ((style & SHUD_SBCOUNT_STYLE_CAP999) && display > 999)
 		display = 999;
-	element->ctx.text = va(element->config.text.value, display);
+	element->ctx.text = CG_SHUDFormatTextInt(element->config.text.value, display);
 
 	if (hp <= 0 && element->config.color.isSet)
 		Vector4Copy(element->config.color.value.rgba, element->ctx.color);

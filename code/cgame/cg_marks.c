@@ -39,6 +39,34 @@ markPoly_t  cg_markPolys[MAX_MARK_POLYS];
 static      int markTotal;
 
 /*
+Player blob shadows only need new geometry when they move onto something else.
+trap_CM_MarkFragments costs about 34 us, so between refreshes the last result is
+moved along with the player. Slots are direct-mapped by entity number; a collision
+only costs a refresh.
+*/
+#define SHADOW_CACHE_SLOTS      128
+#define SHADOW_CACHE_POLYS      12
+#define SHADOW_CACHE_VERTS      48
+#define SHADOW_CACHE_MS         16
+#define SHADOW_CACHE_MAX_MS     64      // when a frame's refreshes are used up, a shadow may wait this long
+#define SHADOW_REFRESH_PER_FRAME 2      // keeps many refreshes from landing in a single frame
+#define SHADOW_CACHE_MAX_MOVE   16.0f
+
+typedef struct
+{
+	int         entityNum;      // +1, so that a cleared slot is empty
+	int         time;
+	qhandle_t   shader;
+	vec3_t      origin;
+	vec3_t      normal;
+	int         numPolys;
+	int         polyVerts[SHADOW_CACHE_POLYS];
+	polyVert_t  verts[SHADOW_CACHE_VERTS];
+} shadowCache_t;
+
+static shadowCache_t cg_shadowCache[SHADOW_CACHE_SLOTS];
+
+/*
 ===================
 CG_InitMarkPolys
 
@@ -49,6 +77,7 @@ void    CG_InitMarkPolys(void)
 {
 	int     i;
 
+	memset(cg_shadowCache, 0, sizeof(cg_shadowCache));
 	memset(cg_markPolys, 0, sizeof(cg_markPolys));
 	CG_LGTrailReset();
 
@@ -242,8 +271,187 @@ void CG_ImpactMark(qhandle_t markShader, const vec3_t origin, const vec3_t dir,
 		mark->color[1] = green;
 		mark->color[2] = blue;
 		mark->color[3] = alpha;
+		VectorCopy(origin, mark->cullOrigin);
+		/* the corners of the square, and fragments lie up to 20 units off the plane */
+		mark->cullRadius = radius * 1.5f + 32.0f;
 		memcpy(mark->verts, verts, mf->numPoints * sizeof(verts[0]));
 		markTotal++;
+	}
+}
+
+/*
+=================
+CG_ShadowRefresh
+
+Fills the cache slot with new shadow geometry. Returns qfalse when it does not fit,
+and then the slot stays empty and the shadow was already submitted with color.
+=================
+*/
+static qboolean CG_ShadowRefresh(shadowCache_t* c, qhandle_t shader, const vec3_t origin, const vec3_t dir,
+                                 float orientation, const byte* color)
+{
+	vec3_t          axis[3];
+	vec3_t          originalPoints[4];
+	vec3_t          markPoints[MAX_MARK_POINTS];
+	vec3_t          projection;
+	markFragment_t  markFragments[MAX_MARK_FRAGMENTS], * mf;
+	float           texCoordScale;
+	const float     radius = 24.0f;
+	int             numFragments, numVerts, i, j;
+	qboolean        fits;
+
+	VectorNormalize2(dir, axis[0]);
+	PerpendicularVector(axis[1], axis[0]);
+	RotatePointAroundVector(axis[2], axis[0], axis[1], orientation);
+	CrossProduct(axis[0], axis[2], axis[1]);
+
+	texCoordScale = 0.5f / radius;
+
+	for (i = 0 ; i < 3 ; i++)
+	{
+		originalPoints[0][i] = origin[i] - radius * axis[1][i] - radius * axis[2][i];
+		originalPoints[1][i] = origin[i] + radius * axis[1][i] - radius * axis[2][i];
+		originalPoints[2][i] = origin[i] + radius * axis[1][i] + radius * axis[2][i];
+		originalPoints[3][i] = origin[i] - radius * axis[1][i] + radius * axis[2][i];
+	}
+
+	VectorScale(dir, -20, projection);
+	numFragments = trap_CM_MarkFragments(4, (void*)originalPoints,
+	                                     projection, MAX_MARK_POINTS, markPoints[0],
+	                                     MAX_MARK_FRAGMENTS, markFragments);
+
+	numVerts = 0;
+	for (i = 0, mf = markFragments ; i < numFragments ; i++, mf++)
+	{
+		numVerts += mf->numPoints > MAX_VERTS_ON_POLY ? MAX_VERTS_ON_POLY : mf->numPoints;
+	}
+	fits = numFragments <= SHADOW_CACHE_POLYS && numVerts <= SHADOW_CACHE_VERTS;
+
+	numVerts = 0;
+	for (i = 0, mf = markFragments ; i < numFragments ; i++, mf++)
+	{
+		polyVert_t  temp[MAX_VERTS_ON_POLY];
+		polyVert_t* v = fits ? &c->verts[numVerts] : temp;
+		const int   n = mf->numPoints > MAX_VERTS_ON_POLY ? MAX_VERTS_ON_POLY : mf->numPoints;
+
+		for (j = 0 ; j < n ; j++)
+		{
+			vec3_t delta;
+
+			VectorCopy(markPoints[mf->firstPoint + j], v[j].xyz);
+			VectorSubtract(v[j].xyz, origin, delta);
+			v[j].st[0] = 0.5f + DotProduct(delta, axis[1]) * texCoordScale;
+			v[j].st[1] = 0.5f + DotProduct(delta, axis[2]) * texCoordScale;
+			v[j].modulate[0] = color[0];
+			v[j].modulate[1] = color[1];
+			v[j].modulate[2] = color[2];
+			v[j].modulate[3] = 255;
+		}
+
+		if (fits)
+		{
+			c->polyVerts[i] = n;
+			numVerts += n;
+		}
+		else
+		{
+			trap_R_AddPolyToScene(shader, n, temp);
+		}
+	}
+
+	if (fits)
+	{
+		c->numPolys = numFragments;
+	}
+	return fits;
+}
+
+/*
+=================
+CG_ShadowMark
+
+Same picture as CG_ImpactMark with a radius of 24 and temporary set, without
+asking the engine to clip against the world on every frame.
+=================
+*/
+void CG_ShadowMark(int entityNum, qhandle_t shader, const vec3_t origin, const vec3_t dir,
+                   float orientation, float red, float green, float blue)
+{
+	shadowCache_t*  c;
+	polyVert_t      verts[MAX_VERTS_ON_POLY];
+	polyVert_t*     src;
+	vec3_t          move;
+	byte            color[3];
+	int             age, i, j;
+	qboolean        reuse;
+	static int      refreshFrame = -1;
+	static int      refreshCount;
+
+	/* Behind the camera it cannot be seen, with room for the shadow's own radius. */
+	VectorSubtract(origin, cg.refdef.vieworg, move);
+	if (CG_ViewCullAllowed() && DotProduct(move, cg.refdef.viewaxis[0]) < -48.0f)
+	{
+		return;
+	}
+
+	color[0] = red * 255;
+	color[1] = green * 255;
+	color[2] = blue * 255;
+
+	c = &cg_shadowCache[entityNum % SHADOW_CACHE_SLOTS];
+	age = cg.time - c->time;
+	VectorSubtract(origin, c->origin, move);
+
+	if (refreshFrame != cg.clientFrame)
+	{
+		refreshFrame = cg.clientFrame;
+		refreshCount = 0;
+	}
+
+	/* Still valid geometry that is merely old waits when this frame already did its share.
+	   Anything that moved onto a different surface refreshes right away. */
+	reuse = c->entityNum == entityNum + 1 && c->shader == shader &&
+	        age >= 0 && age < SHADOW_CACHE_MAX_MS &&
+	        (age < SHADOW_CACHE_MS || refreshCount >= SHADOW_REFRESH_PER_FRAME) &&
+	        DotProduct(dir, c->normal) > 0.999f &&
+	        fabs(DotProduct(move, dir)) < 1.0f &&
+	        DotProduct(move, move) < SHADOW_CACHE_MAX_MOVE * SHADOW_CACHE_MAX_MOVE;
+
+	if (!reuse)
+	{
+		const qboolean isNew = c->entityNum != entityNum + 1;
+
+		refreshCount++;
+
+		if (!CG_ShadowRefresh(c, shader, origin, dir, orientation, color))
+		{
+			c->entityNum = 0;
+			return;
+		}
+		c->entityNum = entityNum + 1;
+		c->shader = shader;
+		/* Start players at different ages so they do not all refresh in the same frame. */
+		c->time = isNew ? cg.time - (entityNum & 3) * 4 : cg.time;
+		VectorCopy(origin, c->origin);
+		VectorCopy(dir, c->normal);
+		VectorClear(move);
+	}
+
+	src = c->verts;
+	for (i = 0 ; i < c->numPolys ; i++)
+	{
+		const int n = c->polyVerts[i];
+
+		for (j = 0 ; j < n ; j++)
+		{
+			verts[j] = src[j];
+			VectorAdd(src[j].xyz, move, verts[j].xyz);
+			verts[j].modulate[0] = color[0];
+			verts[j].modulate[1] = color[1];
+			verts[j].modulate[2] = color[2];
+		}
+		trap_R_AddPolyToScene(shader, n, verts);
+		src += n;
 	}
 }
 
@@ -262,11 +470,15 @@ void CG_AddMarks(void)
 	markPoly_t*  mp, * next;
 	int         t;
 	int         fade;
+	qboolean    cull;
 
 	if (!cg_addMarks.integer)
 	{
 		return;
 	}
+
+	/* A portal shows the marks from another place, so then all of them go to the renderer. */
+	cull = CG_ViewCullAllowed();
 
 	mp = cg_activeMarkPolys.nextMark;
 	for (; mp != &cg_activeMarkPolys ; mp = next)
@@ -279,6 +491,12 @@ void CG_AddMarks(void)
 		if (cg.time > mp->time + MARK_TOTAL_TIME)
 		{
 			CG_FreeMarkPoly(mp);
+			continue;
+		}
+
+		/* Fading is worked out from the time, so a skipped mark looks right when it comes back. */
+		if (cull && CG_SPHERE_OUT_OF_VIEW(mp->cullOrigin, mp->cullRadius))
+		{
 			continue;
 		}
 
