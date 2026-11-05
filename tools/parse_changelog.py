@@ -41,7 +41,8 @@ def write_latest_version(filename: str, changelog: list[str]):
     version_line = changelog[-1].split("\n", 1)[0]
     version_name = version_line.split(" ")[2]
 
-    file.write(version_name)
+    # Only the number, without the leading "v"
+    file.write(version_name.strip().removeprefix("v"))
 
 
 def write_latest_change(filename: str, changelog: list[str]):

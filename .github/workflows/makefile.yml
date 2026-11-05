@@ -203,6 +203,11 @@ jobs:
           path: source-repo
           fetch-depth: 0
 
+      # The version files in git are not kept up to date: changelog_be.txt is the source.
+      - name: Regenerate version files
+        working-directory: source-repo
+        run: python3 tools/parse_changelog.py changelog_be.txt assets/version.txt assets/version_changelog.txt
+
       - name: Stage release assets
         run: |
           set -euo pipefail
