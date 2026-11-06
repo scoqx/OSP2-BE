@@ -12,6 +12,7 @@ void CG_SHUDLoadConfig(qboolean silent);
 void CG_SHUDRoutine(void);
 
 void CG_SHUDEventFrag(const char* message);
+qboolean CG_SHUDDrawFragMessage(const char* message, int time);
 void CG_SHUDEventKillConfirm(qboolean confirmed);
 void CG_SHUDEventChat(const char* message, int senderClientNum);
 void CG_SHUDEventTeamChat(const char* message, int senderClientNum);

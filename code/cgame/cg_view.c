@@ -263,6 +263,13 @@ static void CG_OffsetThirdPersonView(void)
 	{
 		focusAngles[YAW] = cg.predictedPlayerState.stats[STAT_DEAD_YAW];
 		cg.refdefViewAngles[YAW] = cg.predictedPlayerState.stats[STAT_DEAD_YAW];
+
+		if (cg_killcamState == CG_KILLCAM_PENDING || cg_killcamState == CG_KILLCAM_CORPSE)
+		{
+			CG_KillcamDeadAngles(focusAngles);
+			cg.refdefViewAngles[YAW] = focusAngles[YAW];
+			cg.refdefViewAngles[PITCH] = focusAngles[PITCH];
+		}
 	}
 
 	if (focusAngles[PITCH] > 45)
@@ -1692,6 +1699,11 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		return;
 	}
 
+	if (cg_killcamState != CG_KILLCAM_OFF)
+	{
+		CG_KillcamFrame(serverTime);
+	}
+
 	// any looped sounds will be respecified as entities
 	// are added to the render list
 	trap_S_ClearLoopingSounds(qfalse);
@@ -1732,10 +1744,14 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	// CG_CheckStatChanges();
 
 	// decide on third person view
-	cg.renderingThirdPerson = (cg_thirdPerson.integer && (cg.demoPlayback || cgs.localServer)) || (cg.snap->ps.stats[STAT_HEALTH] <= 0);
+	cg.renderingThirdPerson = (cg_thirdPerson.integer && (cg.demoPlayback || cgs.localServer)) || (cg.snap->ps.stats[STAT_HEALTH] <= 0) || cg_killcamState == CG_KILLCAM_REPLAY;
 
 	// build cg.refdef
 	inwater = CG_CalcViewValues();
+	if (cg_killcamState == CG_KILLCAM_REPLAY)
+	{
+		CG_KillcamApplyView();
+	}
 	CG_UpdateViewPlanes();
 
 	// first person blend blobs, done after AnglesToAxis

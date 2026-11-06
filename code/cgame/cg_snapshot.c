@@ -157,6 +157,57 @@ void CG_SetInitialSnapshot(snapshot_t* snap)
 
 
 /*
+==================
+CG_ResyncSnapshot
+
+Time jumps to this snapshot, for the killcam: everything that remembers the old
+time starts anew. The events of the snapshot have passed and do not fire.
+cg.time must already be set.
+==================
+*/
+void CG_ResyncSnapshot(snapshot_t* snap)
+{
+	int i;
+
+	memset(cg_entities, 0, sizeof(cg_entities));
+	memset(&cg.predictedPlayerEntity, 0, sizeof(cg.predictedPlayerEntity));
+
+	CG_InitLocalEntities();
+	CG_ClearParticles();
+	CG_LGTrailReset();
+
+	cg.snap = snap;
+	cg.nextSnap = NULL;
+	cg.validPPS = qfalse;
+	cg.thisFrameTeleport = qtrue;
+	cg.nextFrameTeleport = qfalse;
+	cg.oldTime = cg.time;
+	cg.landTime = 0;
+	cg.stepTime = 0;
+	cg.duckTime = 0;
+	cg.damageTime = 0;
+	cg.predictedErrorTime = 0;
+
+	BG_PlayerStateToEntityState(&snap->ps, &cg_entities[ snap->ps.clientNum ].currentState, qfalse);
+	CG_BuildSolidList();
+
+	for (i = 0 ; i < snap->numEntities ; i++)
+	{
+		const entityState_t* state = &snap->entities[ i ];
+		centity_t*           cent = &cg_entities[ state->number ];
+
+		cent->currentState = *state;
+		cent->currentValid = qtrue;
+		cent->snapShotTime = snap->serverTime;
+
+		CG_ResetEntity(cent);
+
+		cent->previousEvent = (state->eType > ET_EVENTS) ? 1 : state->event;
+	}
+}
+
+
+/*
 ===================
 CG_TransitionSnapshot
 
@@ -222,8 +273,8 @@ static void CG_TransitionSnapshot(void)
 
 		// if we are not doing client side movement prediction for any
 		// reason, then the client events and view changes will be issued now
-		if (cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW)
-		        || cg_nopredict.integer || cg_synchronousClients.integer)
+		if (cg_killcamState != CG_KILLCAM_REPLAY && (cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW)
+		        || cg_nopredict.integer || cg_synchronousClients.integer))
 		{
 			CG_TransitionPlayerState(ps, ops);
 		}
@@ -309,10 +360,9 @@ times if the client system fails to return a
 valid snapshot.
 ========================
 */
-static snapshot_t* CG_ReadNextSnapshot(void)
+qboolean CG_ReadEngineSnapshot(snapshot_t* dest)
 {
 	qboolean    r;
-	snapshot_t*  dest;
 
 	if (cg.latestSnapshotNum > cgs.processedSnapshotNum + 1000)
 	{
@@ -322,8 +372,6 @@ static snapshot_t* CG_ReadNextSnapshot(void)
 
 	while (cgs.processedSnapshotNum < cg.latestSnapshotNum)
 	{
-		dest = (cg.snap == &cg.activeSnapshots[0]) ? &cg.activeSnapshots[1] : &cg.activeSnapshots[0];
-
 		cgs.processedSnapshotNum++;
 		r = trap_GetSnapshot(cgs.processedSnapshotNum, dest);
 
@@ -340,7 +388,7 @@ static snapshot_t* CG_ReadNextSnapshot(void)
 			lagometer.snapshotSamples[lagometer.snapshotCount & (LAG_SAMPLES - 1)] = dest->ping;
 			lagometer.snapshotFlags[lagometer.snapshotCount & (LAG_SAMPLES - 1)] = dest->snapFlags;
 			lagometer.snapshotCount++;
-			return dest;
+			return qtrue;
 		}
 
 		// dropped packet: snapshot never arrived or too old
@@ -349,7 +397,35 @@ static snapshot_t* CG_ReadNextSnapshot(void)
 	}
 
 	// nothing left to read
-	return NULL;
+	return qfalse;
+}
+
+static snapshot_t* CG_ReadNextSnapshot(void)
+{
+	snapshot_t* dest = (cg.snap == &cg.activeSnapshots[0]) ? &cg.activeSnapshots[1] : &cg.activeSnapshots[0];
+
+	if (cg_killcamRingRead)
+	{
+		if (CG_KillcamReadRing(dest))
+		{
+			return dest;
+		}
+		if (cg_killcamState == CG_KILLCAM_REPLAY)
+		{
+			return NULL;
+		}
+		cg_killcamRingRead = qfalse;
+	}
+
+	if (!CG_ReadEngineSnapshot(dest))
+	{
+		return NULL;
+	}
+	if (cg_killcam.integer)
+	{
+		CG_KillcamRecordSnapshot(dest);
+	}
+	return dest;
 }
 
 
@@ -458,7 +534,7 @@ void CG_ProcessSnapshots(void)
 
 	// spectOrigModel: refresh client info when spectated player changes
 	// refresh client info when viewed player changes (spect orig model or demo POV switch)
-	if ((cg.demoPlayback && cg.clientNum != cg.snap->ps.clientNum) ||
+	if ((cg.demoPlayback && cg_killcamState != CG_KILLCAM_REPLAY && cg.clientNum != cg.snap->ps.clientNum) ||
 	        (cg_spectOrigModel.integer && last_spect_player != cg.snap->ps.clientNum))
 	{
 		if (cg.demoPlayback)

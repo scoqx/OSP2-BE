@@ -186,6 +186,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_smokeradius_rl", "Rocket smoke trail radius" },
 	{ "cg_smokedensity_gl", "Grenade smoke trail density." },
 	{ "cg_smokedensity_rl", "Rocket smoke trail density." },
+	{ "cg_killcam", "After your death, replay the last seconds from behind the killer. Starts in 1 second, ends when you respawn.\n  ^20^7 - off\n  ^21^7 - on" },
 	{ "cg_smokeNew", "Smoke look, applied by ^3vid_restart^7.\n  ^20^7 - old\n  ^21^7 - new, black" },
 	{ "cg_swapSkins", "Swap enemy and team model skins. Set ^20^7 to use correct team skins." },
 	{ "cg_teamRails", "Use team-colored railgun trails, use ^3cg_teamRailColors ^7and ^3cg_enemyRailColors^7 to set color.\n Set ^20^7 to disable." },

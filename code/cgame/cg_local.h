@@ -2277,6 +2277,7 @@ extern vmCvar_t           cg_smokeradius_rl;
 extern vmCvar_t           cg_smokedensity_gl;
 extern vmCvar_t           cg_smokedensity_rl;
 extern vmCvar_t           cg_smokeNew;
+extern vmCvar_t           cg_killcam;
 extern vmCvar_t           cg_swapSkins;
 extern vmCvar_t           cg_teamRails;
 extern vmCvar_t           cg_trueLightning;
@@ -3322,6 +3323,29 @@ void CG_GetTeamTaskMarkerShaderAndColor(int markType, qhandle_t* shader, vec4_t 
 //
 void CG_ProcessSnapshots(void);
 void CG_TransitionEntity(centity_t* cent);
+qboolean CG_ReadEngineSnapshot(snapshot_t* dest);
+void CG_ResyncSnapshot(snapshot_t* snap);
+
+//
+// cg_killcam.c
+//
+#define CG_KILLCAM_OFF      0
+#define CG_KILLCAM_PENDING  1
+#define CG_KILLCAM_REPLAY   2
+#define CG_KILLCAM_CORPSE   3   /* the replay is over, still dead */
+extern int      cg_killcamState;
+extern qboolean cg_killcamRingRead;
+void CG_KillcamRecordSnapshot(const snapshot_t* snap);
+qboolean CG_KillcamReadRing(snapshot_t* dest);
+void CG_KillcamOnObituary(int target, int attacker);
+void CG_KillcamMapRestart(void);
+void CG_KillcamFrame(int serverTime);
+void CG_KillcamApplyView(void);
+void CG_KillcamDeadAngles(vec3_t angles);
+void CG_KillcamDraw2D(void);
+void CG_KillcamDrawFade(void);
+void CG_Obituary(entityState_t* ent);
+void CG_CalcEntityLerpPositions(centity_t* cent);
 
 //
 // cg_info.c

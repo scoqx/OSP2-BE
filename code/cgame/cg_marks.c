@@ -193,6 +193,12 @@ void CG_ImpactMark(qhandle_t markShader, const vec3_t origin, const vec3_t dir,
 		return;
 	}
 
+	/* The live game has already left these marks on the walls */
+	if (cg_killcamState == CG_KILLCAM_REPLAY && !temporary)
+	{
+		return;
+	}
+
 	if (radius <= 0)
 	{
 		CG_Error("CG_ImpactMark called with <= 0 radius");

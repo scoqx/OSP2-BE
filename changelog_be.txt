@@ -1121,9 +1121,10 @@ SuperHUD:
 02.11.2026 be v1.10b
 + OSP2 Synchronization
 
-06.11.2026 be v1.10c-beta
+06.11.2026 be v1.10c-beta2
 + Colorable weapon's flash
-+ New black smoke (cg_smokeNew 0 - old)
++ cg_killCam 0/1
++ cg_smokeNew 1 - black smoke
 + Replaced default smokepuff2b (for breath/shotgun)
 * Performance optimisation
 * Various fixes

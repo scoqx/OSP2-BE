@@ -219,7 +219,7 @@ void CG_OSPObituaryFreeze(entityState_t* es, char* targetName)
 CG_Obituary
 =============
 */
-static void CG_Obituary(entityState_t* ent)
+void CG_Obituary(entityState_t* ent)
 {
 	int         mod;
 	int         target, attacker;
@@ -241,6 +241,11 @@ static void CG_Obituary(entityState_t* ent)
 	mod = ent->eventParm;
 
 	isUnfreezeEvent = (mod == MOD_UNKNOWN) && cgs.osp.gameTypeFreeze;
+
+	if (!isUnfreezeEvent)
+	{
+		CG_KillcamOnObituary(target, attacker);
+	}
 
 	if (attacker == cg.snap->ps.clientNum &&
 	        target != cg.snap->ps.clientNum &&
@@ -1589,7 +1594,11 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 
 		case EV_OBITUARY:
 			DEBUGNAME("EV_OBITUARY");
-			CG_Obituary(es);
+			/* What comes from the killcam's history has already run */
+			if (!cg_killcamRingRead)
+			{
+				CG_Obituary(es);
+			}
 			break;
 
 		//

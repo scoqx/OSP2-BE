@@ -1115,6 +1115,30 @@ void CG_SHUDRoutine(void)
 	}
 }
 
+/* Draws just the frag message element, with the rest of the HUD hidden. False if the HUD has none. */
+qboolean CG_SHUDDrawFragMessage(const char* message, int time)
+{
+	superhudGlobalContext_t* ctx = &superhudGlobalContext;
+	superhudElement_t* el;
+	qboolean drawn = qfalse;
+
+	Q_strncpyz(ctx->fragmessage.message, message, sizeof(ctx->fragmessage.message));
+	ctx->fragmessage.time = time;
+
+	for (el = elementsHead; el; el = el->next)
+	{
+		if (el->element.routine == CG_SHUDElementFragMessageRoutine)
+		{
+			el->element.routine(el->element.context);
+			drawn = qtrue;
+		}
+	}
+
+	/* Not to be shown again once the HUD is back */
+	ctx->fragmessage.time = 0;
+	return drawn;
+}
+
 void CG_SHUDEventFrag(const char* message)
 {
 	superhudGlobalContext_t* ctx = &superhudGlobalContext;

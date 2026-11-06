@@ -224,6 +224,7 @@ vmCvar_t           cg_smokeradius_rl;
 vmCvar_t           cg_smokedensity_gl;
 vmCvar_t           cg_smokedensity_rl;
 vmCvar_t           cg_smokeNew;
+vmCvar_t           cg_killcam;
 vmCvar_t           cg_swapSkins;
 vmCvar_t           cg_teamRails;
 vmCvar_t           cg_trueLightning;
@@ -797,6 +798,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_smokedensity_gl, "cg_smokedensity_gl", "50", CVAR_ARCHIVE },
 	{ &cg_smokedensity_rl, "cg_smokedensity_rl", "50", CVAR_ARCHIVE },
 	{ &cg_smokeNew, "cg_smokeNew", "1", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &cg_killcam, "cg_killcam", "1", CVAR_ARCHIVE },
 	{ &cg_swapSkins, "cg_swapSkins", "0", 0, CG_LocalEventCvarChanged_cg_swapSkins},
 	{ &cg_teamRails, "cg_teamRails", "0", CVAR_ARCHIVE },
 	{ &cg_trueLightning, "cg_trueLightning", "1.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_trueLightning},

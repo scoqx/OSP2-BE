@@ -1187,6 +1187,7 @@ static void CG_MapRestart(void)
 	CG_InitMarkPolys();
 	CG_ClearParticles();
 	CG_BEAdminCmd_Clear();
+	CG_KillcamMapRestart();
 
 	// make sure the "3 frags left" warnings play again
 	cg.fraglimitWarnings = 0;

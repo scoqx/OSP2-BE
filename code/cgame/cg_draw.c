@@ -4315,6 +4315,12 @@ static void CG_Draw2D(void)
 	if (!cg_draw2D.integer)
 		return;
 
+	if (cg_killcamState == CG_KILLCAM_REPLAY)
+	{
+		CG_KillcamDraw2D();
+		return;
+	}
+
 	if (cgs.osp.testFont[0])
 	{
 		CG_DrawTestFont(cgs.osp.testFont);
@@ -4502,6 +4508,10 @@ void CG_DrawActive(stereoFrame_t stereoView)
 	CG_OSPDrawEmojiListOverlay();
 	CG_BEChat_Draw();
 
+	if (cg_killcamState != CG_KILLCAM_OFF)
+	{
+		CG_KillcamDrawFade();
+	}
 }
 
 /*
