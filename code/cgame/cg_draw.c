@@ -2190,7 +2190,8 @@ qboolean CG_CrosshairTargetIsTeamAlly(const clientInfo_t* ci)
 	{
 		return qfalse;
 	}
-	viewTeam = CG_CrosshairViewTeam();
+	/* In a killcam we look with the killer: we are his enemy, unless it was a teamkill */
+	viewTeam = CG_KILLCAM_EYES_ACTIVE() ? cgs.clientinfo[cg_killcamEyesClient].team : CG_CrosshairViewTeam();
 	if (viewTeam == TEAM_FREE || viewTeam == TEAM_SPECTATOR)
 	{
 		return qfalse;
@@ -2224,12 +2225,39 @@ qboolean CG_CrosshairTeamHealthAllowed(void)
 CG_ScanForCrosshairEntity
 =================
 */
+/* The server does not send a client its own entity, so we are not in the list CG_Trace clips against */
+static void CG_ScanKillcamVictim(trace_t* trace, const vec3_t start, const vec3_t end)
+{
+	static const vec3_t mins = { -15, -15, -24 };
+	vec3_t  maxs = { 15, 15, 32 };
+	trace_t victim;
+	const playerState_t* ps = &cg.predictedPlayerState;
+
+	if (ps->clientNum != cg.clientNum || ps->pm_type != PM_NORMAL || ps->stats[STAT_HEALTH] <= 0)
+	{
+		return;
+	}
+	if (ps->pm_flags & PMF_DUCKED)
+	{
+		maxs[2] = 16;
+	}
+	trap_CM_TransformedBoxTrace(&victim, start, end, vec3_origin, vec3_origin, trap_CM_TempBoxModel(mins, maxs),
+	                            CONTENTS_BODY, ps->origin, vec3_origin);
+	if (victim.fraction < trace->fraction)
+	{
+		trace->fraction = victim.fraction;
+		trace->entityNum = ps->clientNum;
+		VectorCopy(victim.endpos, trace->endpos);
+	}
+}
+
 void CG_ScanForCrosshairEntity(void)
 {
 	trace_t trace;
 	vec3_t start, end;
 	int content;
 	vec3_t l;
+	int skip;
 	static int lastScanTime;
 
 	/* Each scan is two traces against the world and all entities. Names fade over a second and
@@ -2244,14 +2272,21 @@ void CG_ScanForCrosshairEntity(void)
 	VectorCopy(cg.refdef.vieworg, start);
 	VectorMA(start, 131072, cg.refdef.viewaxis[0], end);
 
-	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
-	         cg.snap->ps.clientNum, CONTENTS_SOLID);
+	/* The view of a killcam is inside the killer's body */
+	skip = CG_KILLCAM_EYES_ACTIVE() ? cg_killcamEyesClient : cg.snap->ps.clientNum;
 
-	VectorSubtract(cg.snap->ps.origin, trace.endpos, l);
+	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
+	         skip, CONTENTS_SOLID);
+
+	VectorSubtract(CG_KILLCAM_EYES_ACTIVE() ? start : cg.snap->ps.origin, trace.endpos, l);
 	crosshairData.distance = VectorLength(l);
 
 	CG_Trace(&trace, start, vec3_origin, vec3_origin, end,
-	         cg.snap->ps.clientNum, CONTENTS_SOLID | CONTENTS_BODY);
+	         skip, CONTENTS_SOLID | CONTENTS_BODY);
+	if (CG_KILLCAM_EYES_ACTIVE())
+	{
+		CG_ScanKillcamVictim(&trace, start, end);
+	}
 	if (trace.entityNum >= MAX_CLIENTS)
 	{
 		if (cgs.osp.gameTypeFreeze && trace.entityNum < MAX_GENTITIES)
@@ -2269,14 +2304,14 @@ void CG_ScanForCrosshairEntity(void)
 					if (cg_drawCrosshairNames.integer == 2)
 					{
 						if (cgs.gametype <= GT_SINGLE_PLAYER ||
-						        (cgs.gametype >= GT_TEAM && CG_CACHED_IS_ENEMY_CI(ci)))
+						        (cgs.gametype >= GT_TEAM && (CG_KILLCAM_EYES_ACTIVE() ? !CG_CrosshairTargetIsTeamAlly(ci) : CG_CACHED_IS_ENEMY_CI(ci))))
 						{
 							return;
 						}
 					}
 					else if (cg_drawCrosshairNames.integer == 3)
 					{
-						if (cgs.gametype >= GT_TEAM && !CG_CACHED_IS_ENEMY_CI(ci))
+						if (cgs.gametype >= GT_TEAM && (CG_KILLCAM_EYES_ACTIVE() ? CG_CrosshairTargetIsTeamAlly(ci) : !CG_CACHED_IS_ENEMY_CI(ci)))
 						{
 							return;
 						}
@@ -2633,7 +2668,8 @@ void CG_DrawCrosshairNames(void)
 	if (cg.renderingThirdPerson != 0) return;
 	if (global_viewlistFirstOption > 1) return;
 
-	if ((cg_drawCrosshairNames.integer == 2) &&
+	/* The scan has already filtered the killcam's target by the killer's team */
+	if ((cg_drawCrosshairNames.integer == 2) && !CG_KILLCAM_EYES_ACTIVE() &&
 	        ((cg.snap->ps.persistant[PERS_TEAM] == TEAM_FREE) ||
 	         (cg.snap->ps.persistant[PERS_TEAM] == cgs.clientinfo[cg.crosshairClientNum].team) ||
 	         cgs.osp.gameTypeFreeze ||
@@ -3780,7 +3816,9 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 	}
 	else if (hasStats && !markerDead && ci->health > 0)
 	{
-		char statsText[16];
+		static char statsTexts[MAX_CLIENTS][16];
+		static int  statsHealth[MAX_CLIENTS];
+		static int  statsArmor[MAX_CLIENTS];
 		vec4_t statsColor;
 		vec4_t statsShadow;
 		float h2 = h - 2.0f;
@@ -3796,7 +3834,12 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 		if (h2 < 4.0f) h2 = 4.0f;
 		w2 = h2 * 0.8f;
 
-		Com_sprintf(statsText, sizeof(statsText), "[%d/%d]", ci->health, ci->armor);
+		if (!statsTexts[clientNum][0] || statsHealth[clientNum] != ci->health || statsArmor[clientNum] != ci->armor)
+		{
+			Com_sprintf(statsTexts[clientNum], sizeof(statsTexts[clientNum]), "[%d/%d]", ci->health, ci->armor);
+			statsHealth[clientNum] = ci->health;
+			statsArmor[clientNum] = ci->armor;
+		}
 
 		if (hbStyle & HBAR_STYLE_FONT_BLACK)
 		{
@@ -3812,7 +3855,7 @@ static void CG_DrawTeamIndicatorForClient(int clientNum, centity_t* cent, client
 
 		CG_OSPDrawStringNew(
 		    headX, headY + h,
-		    statsText,
+		    statsTexts[clientNum],
 		    statsColor,
 		    statsShadow,
 		    w2, h2,
@@ -4317,6 +4360,15 @@ static void CG_Draw2D(void)
 
 	if (cg_killcamState == CG_KILLCAM_REPLAY)
 	{
+		/* Through the killer's eyes: his damage frame. Our own low health is not his. */
+		if (CG_KILLCAM_EYES_ACTIVE())
+		{
+			const qboolean healthLow = cg.beIsHealthLow;
+
+			cg.beIsHealthLow = qfalse;
+			CG_DrawDamageFrame();
+			cg.beIsHealthLow = healthLow;
+		}
 		CG_KillcamDraw2D();
 		return;
 	}
@@ -4349,6 +4401,11 @@ static void CG_Draw2D(void)
 	// Team indicator
 	if (CG_BE_FEATURE_ENABLED(CG_BE_TEAM_INDICATOR) && cg_teamIndicator.integer)
 		CG_DrawPlayerIndicatorOnScreen();
+
+	if (cg_visualSounds.integer && !cg.showScores)
+	{
+		CG_DrawVisualSounds();
+	}
 
 	if (cg.beShowCredits)
 	{

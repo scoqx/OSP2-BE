@@ -59,6 +59,9 @@ typedef struct
 	qhandle_t   shader;
 	vec3_t      origin;
 	vec3_t      normal;
+	vec3_t      moved;          // how far the verts are from where they were made
+	byte        color[3];       // what the verts hold
+	int         numVerts;
 	int         numPolys;
 	int         polyVerts[SHADOW_CACHE_POLYS];
 	polyVert_t  verts[SHADOW_CACHE_VERTS];
@@ -368,6 +371,7 @@ static qboolean CG_ShadowRefresh(shadowCache_t* c, qhandle_t shader, const vec3_
 	if (fits)
 	{
 		c->numPolys = numFragments;
+		c->numVerts = numVerts;
 	}
 	return fits;
 }
@@ -384,11 +388,10 @@ void CG_ShadowMark(int entityNum, qhandle_t shader, const vec3_t origin, const v
                    float orientation, float red, float green, float blue)
 {
 	shadowCache_t*  c;
-	polyVert_t      verts[MAX_VERTS_ON_POLY];
 	polyVert_t*     src;
 	vec3_t          move;
 	byte            color[3];
-	int             age, i, j;
+	int             age, i;
 	qboolean        reuse;
 	static int      refreshFrame = -1;
 	static int      refreshCount;
@@ -441,23 +444,42 @@ void CG_ShadowMark(int entityNum, qhandle_t shader, const vec3_t origin, const v
 		VectorCopy(origin, c->origin);
 		VectorCopy(dir, c->normal);
 		VectorClear(move);
+		VectorClear(c->moved);
+		c->color[0] = color[0];
+		c->color[1] = color[1];
+		c->color[2] = color[2];
+	}
+
+	/* The verts stay where they were last drawn: a player standing still needs nothing here. */
+	if (move[0] != c->moved[0] || move[1] != c->moved[1] || move[2] != c->moved[2])
+	{
+		vec3_t step;
+
+		VectorSubtract(move, c->moved, step);
+		VectorCopy(move, c->moved);
+		for (i = 0 ; i < c->numVerts ; i++)
+		{
+			VectorAdd(c->verts[i].xyz, step, c->verts[i].xyz);
+		}
+	}
+	if (color[0] != c->color[0] || color[1] != c->color[1] || color[2] != c->color[2])
+	{
+		c->color[0] = color[0];
+		c->color[1] = color[1];
+		c->color[2] = color[2];
+		for (i = 0 ; i < c->numVerts ; i++)
+		{
+			c->verts[i].modulate[0] = color[0];
+			c->verts[i].modulate[1] = color[1];
+			c->verts[i].modulate[2] = color[2];
+		}
 	}
 
 	src = c->verts;
 	for (i = 0 ; i < c->numPolys ; i++)
 	{
-		const int n = c->polyVerts[i];
-
-		for (j = 0 ; j < n ; j++)
-		{
-			verts[j] = src[j];
-			VectorAdd(src[j].xyz, move, verts[j].xyz);
-			verts[j].modulate[0] = color[0];
-			verts[j].modulate[1] = color[1];
-			verts[j].modulate[2] = color[2];
-		}
-		trap_R_AddPolyToScene(shader, n, verts);
-		src += n;
+		trap_R_AddPolyToScene(shader, c->polyVerts[i], src);
+		src += c->polyVerts[i];
 	}
 }
 
@@ -469,6 +491,20 @@ CG_AddMarks
 */
 #define MARK_TOTAL_TIME     10000
 #define MARK_FADE_TIME      1000
+
+/* Further than this behind a view plane, a mark cannot come into view in the time below even in a fast turn,
+   unless it is very far away, where it is small anyway. */
+#define MARK_CULL_FAR_MARGIN    256.0f
+#define MARK_CULL_FAR_MS        16
+/* The same, a quarter of the distance for a quarter of the time. Closer than this, it is tested every frame. */
+#define MARK_CULL_NEAR_MARGIN   64.0f
+#define MARK_CULL_NEAR_MS       4
+/* A visible mark that has just left the view only costs the renderer one more poly for a moment */
+#define MARK_CULL_VISIBLE_MS    32
+/* Added to the times above. Marks made together must not come up for the test together, or every fourth
+   frame does all the work. */
+#define MARK_CULL_SPREAD(mp)    ((int)((mp) - cg_markPolys) & 15)
+#define MARK_CULL_HOLD_MAX      (MARK_CULL_VISIBLE_MS + 15)
 
 void CG_AddMarks(void)
 {
@@ -486,6 +522,13 @@ void CG_AddMarks(void)
 	/* A portal shows the marks from another place, so then all of them go to the renderer. */
 	cull = CG_ViewCullAllowed();
 
+	/* New marks go to the head of the list, so the ones to remove are all at the tail */
+	while (cg_activeMarkPolys.prevMark != &cg_activeMarkPolys &&
+	        cg.time > cg_activeMarkPolys.prevMark->time + MARK_TOTAL_TIME)
+	{
+		CG_FreeMarkPoly(cg_activeMarkPolys.prevMark);
+	}
+
 	mp = cg_activeMarkPolys.nextMark;
 	for (; mp != &cg_activeMarkPolys ; mp = next)
 	{
@@ -493,17 +536,40 @@ void CG_AddMarks(void)
 		// still have it
 		next = mp->nextMark;
 
-		// see if it is time to completely remove it
-		if (cg.time > mp->time + MARK_TOTAL_TIME)
-		{
-			CG_FreeMarkPoly(mp);
-			continue;
-		}
-
 		/* Fading is worked out from the time, so a skipped mark looks right when it comes back. */
-		if (cull && CG_SPHERE_OUT_OF_VIEW(mp->cullOrigin, mp->cullRadius))
+		if (cull)
 		{
-			continue;
+			/* Time can go back in a killcam: then the difference is out of range and the mark is tested */
+			t = mp->cullUntil - cg.time;
+			if (t > 0 && t <= MARK_CULL_HOLD_MAX)
+			{
+				if (mp->cullHidden)
+				{
+					continue;
+				}
+			}
+			else if (CG_SPHERE_OUT_OF_VIEW(mp->cullOrigin, mp->cullRadius))
+			{
+				mp->cullHidden = qtrue;
+				if (CG_SPHERE_OUT_OF_VIEW(mp->cullOrigin, mp->cullRadius + MARK_CULL_FAR_MARGIN))
+				{
+					mp->cullUntil = cg.time + MARK_CULL_FAR_MS + MARK_CULL_SPREAD(mp);
+				}
+				else if (CG_SPHERE_OUT_OF_VIEW(mp->cullOrigin, mp->cullRadius + MARK_CULL_NEAR_MARGIN))
+				{
+					mp->cullUntil = cg.time + MARK_CULL_NEAR_MS + (MARK_CULL_SPREAD(mp) & 3);
+				}
+				else
+				{
+					mp->cullUntil = cg.time;
+				}
+				continue;
+			}
+			else
+			{
+				mp->cullHidden = qfalse;
+				mp->cullUntil = cg.time + MARK_CULL_VISIBLE_MS + MARK_CULL_SPREAD(mp);
+			}
 		}
 
 		// fade out the energy bursts
@@ -531,8 +597,10 @@ void CG_AddMarks(void)
 
 		// fade all marks out with time
 		t = mp->time + MARK_TOTAL_TIME - cg.time;
-		if (t < MARK_FADE_TIME)
+		/* The fade changes by one in 4 ms: no eye tells a step of four, and no need to rewrite every vertex for less */
+		if (t < MARK_FADE_TIME && t >> 4 != mp->fadeStep)
 		{
+			mp->fadeStep = t >> 4;
 			fade = 255 * t / MARK_FADE_TIME;
 			if (mp->alphaFade)
 			{

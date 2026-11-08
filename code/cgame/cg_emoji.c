@@ -742,6 +742,10 @@ void CG_OSPLoadEmoji(void)
 	file_size = trap_FS_FOpenFile(CG_EMOJI_CONFIG_NAME, &filehandle, 0);
 	if (file_size <= 0)
 	{
+		if (filehandle)
+		{
+			trap_FS_FCloseFile(filehandle);
+		}
 		CG_Printf("\n*** ERROR: Could not open emoji config \"%s\"\n", CG_EMOJI_CONFIG_NAME);
 	}
 	else if (file_size >= 16384)

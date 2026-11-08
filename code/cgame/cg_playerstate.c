@@ -602,6 +602,8 @@ static void pushReward(sfxHandle_t sfx, qhandle_t shader, int rewardCount)
 CG_CheckLocalSounds
 ==================
 */
+static void CG_PlayHitSoundForDamage(int damage, playerState_t* ps, playerState_t* ops);
+
 static void CG_PlayHitSound(sfxHandle_t sound, playerState_t* ps, playerState_t* ops)
 {
 	if (cg_lightningSilent.integer && ops->weapon == WP_LIGHTNING)
@@ -774,26 +776,46 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		// TODO we need some solution when we take quad cuz sometimes with LG dmg + delayedDMG > 25
 		//damage = ops->powerups[PW_QUAD] ? 26 : damage; // for a homogeneous sound with quad
 
-		if ((cgs.damageInfoAllowed
-		        && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
+#ifdef CG_PREDICT_HITSCAN
+		/* cg_predictHitscan has already played this one */
+		if (cg_predictHitscan.integer && CG_PredictHitscanConfirm())
 		{
-			int index;
-			if (damage > 75) index = 3;
-			else if (damage > 50) index = 2;
-			else if (damage > 25) index = 1;
-			else index = 0;
-
-			if (cg_hitSounds.integer > 1)   // reversed: higher damage - higher tone
-				index = 3 - index;
-
-			CG_PlayHitSound(cgs.media.hitSounds[index], ps, ops);
+			return;
 		}
-		else
-		{
-			CG_PlayHitSound(cgs.media.hitSound, ps, ops);
-		}
+#endif
+
+		CG_PlayHitSoundForDamage(damage, ps, ops);
 	}
 }
+
+static void CG_PlayHitSoundForDamage(int damage, playerState_t* ps, playerState_t* ops)
+{
+	if ((cgs.damageInfoAllowed
+	        && cg_hitSounds.integer) || cgs.osp.server_mode == OSP_SERVER_MODE_PROMODE || cgs.osp.server_mode == OSP_SERVER_MODE_CQ3)
+	{
+		int index;
+		if (damage > 75) index = 3;
+		else if (damage > 50) index = 2;
+		else if (damage > 25) index = 1;
+		else index = 0;
+
+		if (cg_hitSounds.integer > 1)   // reversed: higher damage - higher tone
+			index = 3 - index;
+
+		CG_PlayHitSound(cgs.media.hitSounds[index], ps, ops);
+	}
+	else
+	{
+		CG_PlayHitSound(cgs.media.hitSound, ps, ops);
+	}
+}
+
+#ifdef CG_PREDICT_HITSCAN
+void CG_PlayPredictedHitSound(int damage)
+{
+	CG_PlayHitSoundForDamage(damage, &cg.predictedPlayerState, &cg.predictedPlayerState);
+}
+#endif
 /*
 ==================
 CG_CheckLocalSounds
@@ -814,7 +836,7 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 	CG_HitSound(ps, ops);
 
 
-	if (ps->stats[STAT_HEALTH] < ops->stats[STAT_HEALTH] - 1 && ps->stats[STAT_HEALTH] > 0)
+	if (ps->stats[STAT_HEALTH] < ops->stats[STAT_HEALTH] - 1 && ps->stats[STAT_HEALTH] > 0 && !CG_KILLCAM_FIRST_PERSON())
 		CG_PainEvent(&cg.predictedPlayerEntity, ps->stats[STAT_HEALTH]);
 
 	reward = qfalse;
@@ -994,7 +1016,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	}
 
 	// damage events (player is getting wounded)
-	if (ps->damageEvent != ops->damageEvent && ps->damageCount)
+	if (ps->damageEvent != ops->damageEvent && ps->damageCount && !CG_KILLCAM_FIRST_PERSON())
 	{
 		CG_DamageFeedback(ps->damageYaw, ps->damagePitch, ps->damageCount);
 	}

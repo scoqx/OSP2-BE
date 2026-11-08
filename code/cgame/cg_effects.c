@@ -285,6 +285,12 @@ void CG_DamagePlum(int client, vec3_t org, int damage)
 		return;
 	}
 
+	// the replay brings back the events of our own hits
+	if (cg_killcamState == CG_KILLCAM_REPLAY)
+	{
+		return;
+	}
+
 
 	totalDamage = damage;
 	isMultiHit = qfalse;

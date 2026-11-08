@@ -277,6 +277,10 @@ static qboolean CG_MapBundle_LoadFromBundleFile(const char* bundlePath, const ch
 		fileSize = trap_FS_FOpenFile(bundlePath, &fh, FS_READ);
 		if (fileSize <= 0 || !fh)
 		{
+			if (fh)
+			{
+				trap_FS_FCloseFile(fh);
+			}
 			return qfalse;
 		}
 
@@ -611,9 +615,12 @@ static void CG_TestQ3lb_PrintFileSize(const char* path)
 	int             len;
 
 	len = trap_FS_FOpenFile(path, &fh, FS_READ);
-	if (len > 0 && fh)
+	if (fh)
 	{
 		trap_FS_FCloseFile(fh);
+	}
+	if (len > 0 && fh)
+	{
 		CG_Printf("  ^2%6i^7  ^7%s^7\n", len, path);
 	}
 	else

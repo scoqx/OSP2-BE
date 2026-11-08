@@ -225,6 +225,13 @@ vmCvar_t           cg_smokedensity_gl;
 vmCvar_t           cg_smokedensity_rl;
 vmCvar_t           cg_smokeNew;
 vmCvar_t           cg_killcam;
+vmCvar_t           cg_smoothTime;
+vmCvar_t           cg_visualSounds;
+vmCvar_t           s_volume;
+vmCvar_t           cg_autoFollow;
+#ifdef CG_PREDICT_HITSCAN
+vmCvar_t           cg_predictHitscan;
+#endif
 vmCvar_t           cg_swapSkins;
 vmCvar_t           cg_teamRails;
 vmCvar_t           cg_trueLightning;
@@ -538,6 +545,7 @@ vmCvar_t        cg_autoHop;
 vmCvar_t        cg_damagePlums;
 vmCvar_t        cg_damagePlumSize;
 vmCvar_t        cg_damagePlumsWeapons;
+vmCvar_t        cg_damagePlumsColor;
 vmCvar_t        cg_chatColor;
 vmCvar_t        cg_teamChatColor;
 vmCvar_t        cg_countdownTimer;
@@ -798,7 +806,14 @@ cvarTable_t cvarTable[] =
 	{ &cg_smokedensity_gl, "cg_smokedensity_gl", "50", CVAR_ARCHIVE },
 	{ &cg_smokedensity_rl, "cg_smokedensity_rl", "50", CVAR_ARCHIVE },
 	{ &cg_smokeNew, "cg_smokeNew", "1", CVAR_ARCHIVE | CVAR_LATCH },
-	{ &cg_killcam, "cg_killcam", "1", CVAR_ARCHIVE },
+	{ &cg_killcam, "cg_killcam", "2", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
+	{ &cg_smoothTime, "cg_smoothTime", "0", CVAR_ARCHIVE },
+	{ &cg_visualSounds, "cg_visualSounds", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_visualSounds },
+	{ &s_volume, "s_volume", "0.8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_s_volume },
+	{ &cg_autoFollow, "cg_autoFollow", "0", CVAR_ARCHIVE },
+#ifdef CG_PREDICT_HITSCAN
+	{ &cg_predictHitscan, "cg_predictHitscan", "0", CVAR_ARCHIVE },
+#endif
 	{ &cg_swapSkins, "cg_swapSkins", "0", 0, CG_LocalEventCvarChanged_cg_swapSkins},
 	{ &cg_teamRails, "cg_teamRails", "0", CVAR_ARCHIVE },
 	{ &cg_trueLightning, "cg_trueLightning", "1.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_trueLightning},
@@ -1063,6 +1078,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_damagePlums, "cg_damagePlums", "1", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
 	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
+	{ &cg_damagePlumsColor, "cg_damagePlumsColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damagePlumsColor },
 	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_autoHop},
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
@@ -2695,6 +2711,12 @@ void CG_StartMusic(void)
 	char*    s;
 	char    parm1[MAX_QPATH], parm2[MAX_QPATH];
 
+	if (cg_visualSounds.integer)
+	{
+		trap_S_StopBackgroundTrack();
+		return;
+	}
+
 	// start the background music
 	s = (char*)CG_ConfigString(CS_MUSIC);
 	Q_strncpyz(parm1, COM_Parse(&s), sizeof(parm1));
@@ -2755,6 +2777,7 @@ void CG_CheckFogBypass(void)
 void CG_InitCvars(void)
 {
 	CG_CvarTouch("ch_crosshairColor");
+	CG_CvarTouch("cg_damagePlumsColor");
 	CG_CvarTouch("ch_crosshairActionColor");
 	CG_CvarTouch("ch_crosshairActionColorLow");
 	CG_CvarTouch("ch_crosshairActionColorMid");
@@ -2945,6 +2968,10 @@ void CG_ParseCompilationInfo(void)
 	fileSize = trap_FS_FOpenFile("cversion", &fileHandle, FS_READ);
 	if (fileSize <= 0 || !fileHandle)
 	{
+		if (fileHandle)
+		{
+			trap_FS_FCloseFile(fileHandle);
+		}
 		trap_Cvar_Set("compilation_build", "");
 		return;
 	}
@@ -3556,6 +3583,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 	CG_SetConfigValues();
 
 	CG_StartMusic();
+	CG_VisualSoundsHint();
 
 	CG_LoadingString("");
 
@@ -3672,6 +3700,11 @@ CG_EventHandling
 */
 void CG_EventHandling(int type)
 {
+	/* The engine took the key catcher back: Esc during a replay */
+	if (type == CGAME_EVENT_NONE && cg_killcamState == CG_KILLCAM_REPLAY && !CG_BEChat_IsOpen())
+	{
+		CG_KillcamSkip();
+	}
 	CG_BEChat_EventHandling(type);
 }
 
@@ -3679,6 +3712,11 @@ void CG_EventHandling(int type)
 
 void CG_KeyEvent(int key, qboolean down)
 {
+	if (cg_killcamState == CG_KILLCAM_REPLAY && !CG_BEChat_IsOpen())
+	{
+		CG_KillcamKeyEvent(key, down);
+		return;
+	}
 	CG_BEChat_KeyEvent(key, down);
 }
 

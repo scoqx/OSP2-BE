@@ -843,7 +843,13 @@ BG_FindItemForPowerup
 */
 gitem_t* BG_FindItemForPowerup(powerup_t pw)
 {
+	static gitem_t* found[PW_NUM_POWERUPS];
 	int     i;
+
+	if (pw >= 0 && pw < PW_NUM_POWERUPS && found[pw])
+	{
+		return found[pw];
+	}
 
 	for (i = 0 ; i < bg_numItems ; i++)
 	{
@@ -852,6 +858,10 @@ gitem_t* BG_FindItemForPowerup(powerup_t pw)
 		        bg_itemlist[i].giType == IT_PERSISTANT_POWERUP) &&
 		        bg_itemlist[i].giTag == pw)
 		{
+			if (pw >= 0 && pw < PW_NUM_POWERUPS)
+			{
+				found[pw] = &bg_itemlist[i];
+			}
 			return &bg_itemlist[i];
 		}
 	}

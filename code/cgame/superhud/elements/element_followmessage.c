@@ -26,6 +26,13 @@ void CG_SHUDElementFollowMessageRoutine(void* context)
 	shudElementFollowMessage_t* element = (shudElementFollowMessage_t*)context;
 	const char* str;
 
+	if (cg_killcamState == CG_KILLCAM_REPLAY)
+	{
+		element->ctx.text = CG_KillcamFollowText();
+		CG_SHUDTextPrint(&element->config, &element->ctx);
+		return;
+	}
+
 	if (!CG_IsFollowing())
 	{
 		return;

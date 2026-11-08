@@ -859,7 +859,7 @@ void CG_SHUDTextPrint(const superhudConfig_t* cfg, superhudTextContext_t* ctx)
 	CG_SHUDConfigPickColor_Runtime(cfg, ctx->color);
 	flags = CG_SHUDTextFlagsWithCte(cfg, ctx);
 
-	CG_OSPDrawStringNew(ctx->coord.named.x,
+	CG_OSPDrawStringCached(&ctx->recSlot, ctx->coord.named.x,
 	                    ctx->coord.named.y,
 	                    ctx->text,
 	                    ctx->color,
@@ -887,7 +887,7 @@ void CG_SHUDTextPrintNew(const superhudConfig_t* cfg, superhudTextContext_t* ctx
 
 	flags = CG_SHUDTextFlagsWithCte(cfg, ctx);
 
-	CG_OSPDrawStringNew(ctx->coord.named.x,
+	CG_OSPDrawStringCached(&ctx->recSlot, ctx->coord.named.x,
 	                    ctx->coord.named.y,
 	                    ctx->text,
 	                    ctx->color,

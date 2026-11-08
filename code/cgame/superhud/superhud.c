@@ -43,6 +43,19 @@ static void CG_SHUDRoutenesDestroy(superhudElement_t* shud)
 
 }
 
+/* Shown in a killcam replay unless the HUD says !killcam */
+static qboolean CG_SHUDKillcamByDefault(void (*routine)(void* context))
+{
+	return routine == CG_SHUDElementFragMessageRoutine ||
+	       routine == CG_SHUDElementFollowMessageRoutine ||
+	       routine == CG_SHUDElementGameTimeRoutine ||
+	       routine == CG_SHUDElementTargetNameRoutine ||
+	       routine == CG_SHUDElementNameRoutine ||
+	       routine == CG_SHUDElementPlayerNameRoutine ||
+	       routine == CG_SHUDElementAttackerNameRoutine ||
+	       routine == CG_SHUDElementRewardRoutine;
+}
+
 static void CG_SHUDUpdateVisflags(superHUDConfigElement_t* element, const superhudConfig_t* config)
 {
 	if (element && config && config->visflags.isSet)
@@ -572,6 +585,7 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename, qboolean silent)
 	if (rc == 0)
 	{
 		CG_Printf("^1SuperHUD: config file: %s is empty.\n", superhudFilename);
+		trap_FS_FCloseFile(fileHandle);
 		return qfalse;
 	}
 
@@ -793,6 +807,11 @@ qboolean CG_SHUDLoadConfigPrivate(const char* filename, qboolean silent)
 			if (newElementLast->element.create)
 			{
 				newElementLast->element.context = newElementLast->element.create(&newElementLast->config);
+
+				if (CG_SHUDKillcamByDefault(newElementLast->element.routine))
+				{
+					newElementLast->element.visibilityExt |= SE_KILLCAM;
+				}
 
 				CG_SHUDUpdateVisflags(&newElementLast->element, &newElementLast->config);
 
@@ -1115,28 +1134,41 @@ void CG_SHUDRoutine(void)
 	}
 }
 
-/* Draws just the frag message element, with the rest of the HUD hidden. False if the HUD has none. */
-qboolean CG_SHUDDrawFragMessage(const char* message, int time)
+/* In a killcam replay only the elements with the killcam visflag are drawn. No frag message before the death. */
+void CG_SHUDDrawKillcam(const char* fragMessage, int fragTime, qboolean* followDrawn, qboolean* fragDrawn)
 {
 	superhudGlobalContext_t* ctx = &superhudGlobalContext;
 	superhudElement_t* el;
-	qboolean drawn = qfalse;
 
-	Q_strncpyz(ctx->fragmessage.message, message, sizeof(ctx->fragmessage.message));
-	ctx->fragmessage.time = time;
+	*followDrawn = qfalse;
+	*fragDrawn = qfalse;
+
+	ctx->fragmessage.time = 0;
+	if (fragMessage)
+	{
+		Q_strncpyz(ctx->fragmessage.message, fragMessage, sizeof(ctx->fragmessage.message));
+		ctx->fragmessage.time = fragTime;
+	}
 
 	for (el = elementsHead; el; el = el->next)
 	{
-		if (el->element.routine == CG_SHUDElementFragMessageRoutine)
+		if (!(el->vis.vflagsExt & SE_KILLCAM) || !el->element.routine)
 		{
-			el->element.routine(el->element.context);
-			drawn = qtrue;
+			continue;
+		}
+		el->element.routine(el->element.context);
+		if (el->element.routine == CG_SHUDElementFollowMessageRoutine)
+		{
+			*followDrawn = qtrue;
+		}
+		else if (el->element.routine == CG_SHUDElementFragMessageRoutine && fragMessage)
+		{
+			*fragDrawn = qtrue;
 		}
 	}
 
 	/* Not to be shown again once the HUD is back */
 	ctx->fragmessage.time = 0;
-	return drawn;
 }
 
 void CG_SHUDEventFrag(const char* message)

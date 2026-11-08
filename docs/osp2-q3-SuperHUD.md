@@ -273,6 +273,7 @@ execute { cg_fov 100; exec myconfig.cfg }
 - teamonly - видно в только в командных режимах
 - spectator - видно в режиме спектатора
 - dead - видно если игрок мертв
+- killcam - видно при просмотре killcam. Включено по умолчанию у fragmessage, followmessage, gametime, targetname, name_own, name_nme, player_name, attackername, rewardicons, rewardnumbers; убрать - !killcam
 - warmup - видно во время разминки (warmup)
 - promode - видно при CPM-физике (OSDF CPM, OSP Promode, CPMA Promode)
 - enterchat - видно когда открыт /enterchat

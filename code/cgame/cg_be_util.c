@@ -93,6 +93,8 @@ void CG_UpdateBeFeatures(void)
 		if (cg_footsteps.integer == 2)
 			beFlags |= CG_BE_METAL_FOOTSTEPS, changed = qtrue;
 		beFlags |= CG_BE_AUTOJUMP, changed = qtrue;
+		if (cg_killcam.integer)
+			beFlags |= CG_BE_KILLCAM, changed = qtrue;
 	}
 
 	cgs.beFeaturesEnabled = beFlags & ~cgs.beDisableFeatures;
@@ -282,6 +284,11 @@ void CG_PrintDisabledFeatures(qboolean request)
 		if (value & CG_BE_HITBOX)
 		{
 			Q_strcat(buffer, sizeof(buffer), first ? "Hitbox" : ", hitbox");
+			first = qfalse;
+		}
+		if (value & CG_BE_KILLCAM)
+		{
+			Q_strcat(buffer, sizeof(buffer), first ? "Killcam" : ", killcam");
 			first = qfalse;
 		}
 		// if (value & CG_BE_FREEZE_SOUND_FIX)
@@ -609,6 +616,10 @@ void CG_Get_f(void)
 
 	if (fileSize <= 0 || !fileHandle)
 	{
+		if (fileHandle)
+		{
+			trap_FS_FCloseFile(fileHandle);
+		}
 		CG_Printf("^1File not found: %s\n", filePath);
 		return;
 	}

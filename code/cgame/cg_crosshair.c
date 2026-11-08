@@ -25,7 +25,7 @@ static qhandle_t CG_CrosshairGetShader(void)
 	qhandle_t shader;
 	int crosshair;
 
-	switch (cg.predictedPlayerState.weapon)
+	switch (CG_KILLCAM_EYES_ACTIVE() ? cg_entities[cg_killcamEyesClient].currentState.weapon : cg.predictedPlayerState.weapon)
 	{
 		case WP_GAUNTLET:
 			crosshair = cg_drawCrosshairGauntlet.integer;
@@ -304,14 +304,18 @@ void CG_DrawCrosshair(void)
 	qhandle_t decorShader = 0;
 	qboolean aspectFix = qfalse;
 
-	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ||
-	        cg.renderingThirdPerson ||
-	        global_viewlistFirstOption > 1)
+	if (global_viewlistFirstOption > 1)
 	{
 		return;
 	}
 
-	if ((cg_scoreboardBE.integer & 128) &&
+	if (!CG_KILLCAM_EYES_ACTIVE() &&
+	        (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR || cg.renderingThirdPerson))
+	{
+		return;
+	}
+
+	if ((cg_scoreboardBE.integer & 128) && !CG_KILLCAM_EYES_ACTIVE() &&
 	        (cg.showScores || cg.scoreBoardShowing ||
 	         cg.predictedPlayerState.pm_type == PM_INTERMISSION ||
 	         (!cg.warmup && cg.predictedPlayerState.pm_type == PM_DEAD)))

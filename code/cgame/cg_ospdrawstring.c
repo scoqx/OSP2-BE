@@ -12,6 +12,117 @@ Single-pass parse; plain-text fast path; static command buffer.
 
 static text_command_t ospstr_cmdbuf[OSP_TEXT_CMD_MAX];
 
+/*
+A HUD element mostly draws the same string in the same place, and most of the cost is getting from
+the text to the quads. So what a call sends to the renderer is recorded and sent again while the
+call stays the same. A record depends on: the text, position, size, colors, width, flags, font, the
+TTF tune generation, the shadow offset and cg_disableTextEffects. Text that blinks by time is not kept.
+*/
+#define OSPSTR_REC_SLOTS        96
+#define OSPSTR_REC_TEXT         64
+#define OSPSTR_REC_OPS          72
+#define OSPSTR_REC_MISS_MS      50      /* two misses this close: the element changes all the time */
+#define OSPSTR_REC_OFF_MS       1000
+
+#define OSPSTR_OP_COLOR         (-1)
+#define OSPSTR_OP_COLOR_NULL    (-2)
+
+typedef struct
+{
+	float       v[8];
+	qhandle_t   shader;
+} ospstrRecOp_t;
+
+typedef struct
+{
+	qboolean    valid;
+	float       x, y, w, h;
+	int         maxWidth, flags, fontIndex, tune, textEffects;
+	float       shadowOffX, shadowOffY;
+	vec4_t      setColor, shadowColor, background, border, borderColor;
+	int         hasColors;      /* which of the optional colors the call had */
+	char        text[OSPSTR_REC_TEXT];
+	int         numOps;
+	int         lastMiss;
+	int         offUntil;
+	ospstrRecOp_t ops[OSPSTR_REC_OPS];
+} ospstrRec_t;
+
+static ospstrRec_t  ospstr_recs[OSPSTR_REC_SLOTS];
+static int          ospstr_recsUsed;
+static ospstrRec_t* ospstr_rec;         /* being recorded, or NULL */
+static qboolean     ospstr_recFailed;
+static qboolean     ospstr_usedTime;
+static int          ospstr_recLastColor;    /* its last color op, or -1 */
+
+static void ospstr_rec_pic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t shader)
+{
+	ospstrRecOp_t* op;
+
+	if (ospstr_rec->numOps >= OSPSTR_REC_OPS)
+	{
+		ospstr_recFailed = qtrue;
+		return;
+	}
+	op = &ospstr_rec->ops[ospstr_rec->numOps++];
+	op->v[0] = x;
+	op->v[1] = y;
+	op->v[2] = w;
+	op->v[3] = h;
+	op->v[4] = s1;
+	op->v[5] = t1;
+	op->v[6] = s2;
+	op->v[7] = t2;
+	op->shader = shader;
+}
+
+static void ospstr_rec_color(const float* color)
+{
+	ospstrRecOp_t* op;
+
+	/* Setting the color it already has is left out of the record */
+	if (ospstr_recLastColor >= 0)
+	{
+		op = &ospstr_rec->ops[ospstr_recLastColor];
+		if (color ? (op->shader == OSPSTR_OP_COLOR && op->v[0] == color[0] && op->v[1] == color[1] &&
+		             op->v[2] == color[2] && op->v[3] == color[3]) : op->shader == OSPSTR_OP_COLOR_NULL)
+		{
+			return;
+		}
+	}
+	if (ospstr_rec->numOps >= OSPSTR_REC_OPS)
+	{
+		ospstr_recFailed = qtrue;
+		return;
+	}
+	ospstr_recLastColor = ospstr_rec->numOps;
+	op = &ospstr_rec->ops[ospstr_rec->numOps++];
+	if (color)
+	{
+		op->v[0] = color[0];
+		op->v[1] = color[1];
+		op->v[2] = color[2];
+		op->v[3] = color[3];
+		op->shader = OSPSTR_OP_COLOR;
+	}
+	else
+	{
+		op->shader = OSPSTR_OP_COLOR_NULL;
+	}
+}
+
+/* Everything this file sends to the renderer goes through these */
+#define trap_R_DrawStretchPic(x, y, w, h, s1, t1, s2, t2, shader) \
+	do { \
+		if (ospstr_rec) { ospstr_rec_pic((x), (y), (w), (h), (s1), (t1), (s2), (t2), (shader)); } \
+		trap_R_DrawStretchPic((x), (y), (w), (h), (s1), (t1), (s2), (t2), (shader)); \
+	} while (0)
+#define trap_R_SetColor(color) \
+	do { \
+		if (ospstr_rec) { ospstr_rec_color(color); } \
+		trap_R_SetColor(color); \
+	} while (0)
+
 /* Module-local engine font context for measure/draw (cgame is single-threaded). */
 static const fontAtlasInfo_t* ospstr_eng;
 static float                  ospstr_engUnit;
@@ -301,7 +412,7 @@ static int ospstr_build_commands(const char* in, int flags, text_command_t* comm
 	{
 		if (from[0] == '^' && from[1] && from[1] != '^')
 		{
-			if (CG_TextControlDisabled(from[1]))
+			if (cg_disableTextEffects.integer && CG_TextControlDisabled(from[1]))
 			{
 				from += 2;
 				continue;
@@ -310,7 +421,7 @@ static int ospstr_build_commands(const char* in, int flags, text_command_t* comm
 			{
 				case 'f':
 					from += 2;
-					if ((cg.time & 0x3ff) >= 512)
+					if (((ospstr_usedTime = qtrue, cg.time) & 0x3ff) >= 512)
 					{
 						while (*from && !(from[0] == '^' && (from[1] == 'N' || from[1] == 'F')))
 						{
@@ -320,7 +431,7 @@ static int ospstr_build_commands(const char* in, int flags, text_command_t* comm
 					continue;
 				case 'F':
 					from += 2;
-					if ((cg.time & 0x3ff) < 512)
+					if (((ospstr_usedTime = qtrue, cg.time) & 0x3ff) < 512)
 					{
 						while (*from && !(from[0] == '^' && (from[1] == 'N' || from[1] == 'f')))
 						{
@@ -335,6 +446,7 @@ static int ospstr_build_commands(const char* in, int flags, text_command_t* comm
 						VectorCopy(back_color, commands[i].value.color);
 						i++;
 					}
+					ospstr_usedTime = qtrue;
 					b = cg.time & 0x7ff;
 					if (b > 1024)
 					{
@@ -352,6 +464,7 @@ static int ospstr_build_commands(const char* in, int flags, text_command_t* comm
 						VectorCopy(back_color, commands[i].value.color);
 						i++;
 					}
+					ospstr_usedTime = qtrue;
 					b = cg.time & 0x7ff;
 					if (b > 1024)
 					{
@@ -431,7 +544,7 @@ static int ospstr_build_commands(const char* in, int flags, text_command_t* comm
 					}
 					/* fallthrough: palette letter c */
 				default:
-					if (!CG_TextControlDisabled(from[1]) && ospstr_is_palette_color_char(from[1]))
+					if (!(cg_disableTextEffects.integer && CG_TextControlDisabled(from[1])) && ospstr_is_palette_color_char(from[1]))
 					{
 						commands[i].type = OSP_TEXT_CMD_TEXT_COLOR;
 						ospstr_palette_color_from_char(from[1], commands[i].value.color);
@@ -1167,7 +1280,7 @@ static float ospstr_rich_slice_measure(const char* start, const char* end, int f
 	ax = 0.0f;
 	from = start;
 	dteMask = cg_disableTextEffects.integer;
-	flashOn = (cg.time & 0x3ff) >= 512;
+	flashOn = ((ospstr_usedTime = qtrue, cg.time) & 0x3ff) >= 512;
 	flashOff = !flashOn;
 	emojiEnabled = (flags & DS_EMOJI) ? qtrue : qfalse;
 
@@ -1701,6 +1814,126 @@ void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setC
 	ospstr_render_commands(text_commands, stopIdx, ax, ay, aw, ah, setColor, shadowColor, flags, metrics, sh,
 	                       proportional);
 	trap_R_SetColor(NULL);
+}
+
+/* Five times for every string on the screen, and most of the colors are not given */
+#define OSPSTR_REC_COLOR_SAME(stored, now, bit, hasColors) \
+	((now) ? (((hasColors) & (bit)) && (stored)[0] == (now)[0] && (stored)[1] == (now)[1] && \
+	          (stored)[2] == (now)[2] && (stored)[3] == (now)[3]) : !((hasColors) & (bit)))
+
+static void ospstr_rec_color_store(float* stored, const float* now, int bit, int* hasColors)
+{
+	if (now)
+	{
+		Vector4Copy(now, stored);
+		*hasColors |= bit;
+	}
+}
+
+/* slot belongs to the caller: starts as 0, and -1 means no room for it */
+void CG_OSPDrawStringCached(int* slot, float x, float y, const char* string, const vec4_t setColor,
+                            vec4_t shadowColor, float charWidth, float charHeight, int maxWidth, int flags,
+                            int fontIndex, vec4_t background, vec4_t border, vec4_t borderColor)
+{
+	ospstrRec_t* r;
+	int          left;
+	int          i;
+
+	ospstr_ensure_ttf_tune();
+
+	if (!*slot)
+	{
+		*slot = (ospstr_recsUsed < OSPSTR_REC_SLOTS) ? ++ospstr_recsUsed : -1;
+	}
+	if (*slot < 0 || !string)
+	{
+		CG_OSPDrawStringNew(x, y, string, setColor, shadowColor, charWidth, charHeight, maxWidth, flags, fontIndex, background, border, borderColor);
+		return;
+	}
+	r = &ospstr_recs[*slot - 1];
+
+	if (r->valid && r->x == x && r->y == y && r->w == charWidth && r->h == charHeight &&
+	        r->maxWidth == maxWidth && r->flags == flags && r->fontIndex == fontIndex &&
+	        r->tune == ospstr_ttfTuneGeneration && r->textEffects == cg_disableTextEffects.integer &&
+	        r->shadowOffX == be_fontShadowOffX && r->shadowOffY == be_fontShadowOffY &&
+	        !strcmp(r->text, string) &&
+	        OSPSTR_REC_COLOR_SAME(r->setColor, setColor, 1, r->hasColors) &&
+	        OSPSTR_REC_COLOR_SAME(r->shadowColor, shadowColor, 2, r->hasColors) &&
+	        OSPSTR_REC_COLOR_SAME(r->background, background, 4, r->hasColors) &&
+	        OSPSTR_REC_COLOR_SAME(r->border, border, 8, r->hasColors) &&
+	        OSPSTR_REC_COLOR_SAME(r->borderColor, borderColor, 16, r->hasColors))
+	{
+		for (i = 0; i < r->numOps; i++)
+		{
+			const ospstrRecOp_t* op = &r->ops[i];
+
+			if (op->shader == OSPSTR_OP_COLOR)
+			{
+				trap_R_SetColor(op->v);
+			}
+			else if (op->shader == OSPSTR_OP_COLOR_NULL)
+			{
+				trap_R_SetColor(NULL);
+			}
+			else
+			{
+				trap_R_DrawStretchPic(op->v[0], op->v[1], op->v[2], op->v[3], op->v[4], op->v[5], op->v[6], op->v[7], op->shader);
+			}
+		}
+		return;
+	}
+
+	/* Time going back in a killcam puts this out of range, and then the element is tried again */
+	left = r->offUntil - cg.time;
+	r->valid = qfalse;
+	if (left > 0 && left <= OSPSTR_REC_OFF_MS)
+	{
+		CG_OSPDrawStringNew(x, y, string, setColor, shadowColor, charWidth, charHeight, maxWidth, flags, fontIndex, background, border, borderColor);
+		return;
+	}
+	if (cg.time >= r->lastMiss && cg.time - r->lastMiss < OSPSTR_REC_MISS_MS)
+	{
+		r->offUntil = cg.time + OSPSTR_REC_OFF_MS;
+	}
+	r->lastMiss = cg.time;
+
+	if (strlen(string) >= OSPSTR_REC_TEXT)
+	{
+		CG_OSPDrawStringNew(x, y, string, setColor, shadowColor, charWidth, charHeight, maxWidth, flags, fontIndex, background, border, borderColor);
+		return;
+	}
+
+	r->numOps = 0;
+	ospstr_recLastColor = -1;
+	ospstr_rec = r;
+	ospstr_recFailed = qfalse;
+	ospstr_usedTime = qfalse;
+	CG_OSPDrawStringNew(x, y, string, setColor, shadowColor, charWidth, charHeight, maxWidth, flags, fontIndex, background, border, borderColor);
+	ospstr_rec = NULL;
+	if (ospstr_recFailed || ospstr_usedTime)
+	{
+		return;
+	}
+
+	r->x = x;
+	r->y = y;
+	r->w = charWidth;
+	r->h = charHeight;
+	r->maxWidth = maxWidth;
+	r->flags = flags;
+	r->fontIndex = fontIndex;
+	r->tune = ospstr_ttfTuneGeneration;
+	r->textEffects = cg_disableTextEffects.integer;
+	r->shadowOffX = be_fontShadowOffX;
+	r->shadowOffY = be_fontShadowOffY;
+	Q_strncpyz(r->text, string, sizeof(r->text));
+	r->hasColors = 0;
+	ospstr_rec_color_store(r->setColor, setColor, 1, &r->hasColors);
+	ospstr_rec_color_store(r->shadowColor, shadowColor, 2, &r->hasColors);
+	ospstr_rec_color_store(r->background, background, 4, &r->hasColors);
+	ospstr_rec_color_store(r->border, border, 8, &r->hasColors);
+	ospstr_rec_color_store(r->borderColor, borderColor, 16, &r->hasColors);
+	r->valid = qtrue;
 }
 
 float CG_OSPDrawStringNewTextWidth(const char* string, float charWidth, float charHeight, int flags, int fontIndex)

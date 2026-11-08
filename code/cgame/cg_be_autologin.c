@@ -152,12 +152,11 @@ static qboolean CG_BE_AlFileExists(void)
 	int len;
 
 	len = trap_FS_FOpenFile(BE_AL_FILE, &f, FS_READ);
-	if (len <= 0 || !f)
+	if (f)
 	{
-		return qfalse;
+		trap_FS_FCloseFile(f);
 	}
-	trap_FS_FCloseFile(f);
-	return qtrue;
+	return len > 0 && f;
 }
 
 static qboolean CG_BE_AlParseInner(const byte *inner, int innerLen,

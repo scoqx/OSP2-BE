@@ -36,13 +36,14 @@ The server can selectively disable specific BE features via configstring **888**
 | 65536   | Replace steps   | Remove footsteps on metal surfaces                            |
 | 131072  | Autojump        | Automatic jump                                                |
 | 262144  | Hitbox          | Forbid hitbox display                                         |
+| 524288  | Killcam         | Forbid the death replay (`cg_killcam`)                        |
 
 ```c
 // Disable damage info (1024) and fullbright (2048)
 set cs 888 "3072"
 
 // Disable all features
-set cs 888 "524287"
+set cs 888 "1048575"
 ```
 
 Players can check availability with `/allowedfeatures`.

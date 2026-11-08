@@ -233,11 +233,16 @@ static qboolean CG_ParseAnimationFile(const char* filename, clientInfo_t* ci)
 	len = trap_FS_FOpenFile(filename, &f, FS_READ);
 	if (len <= 0)
 	{
+		if (f)
+		{
+			trap_FS_FCloseFile(f);
+		}
 		return qfalse;
 	}
 	if (len >= sizeof(text) - 1)
 	{
 		CG_Printf("File %s too long\n", filename);
+		trap_FS_FCloseFile(f);
 		return qfalse;
 	}
 	trap_FS_Read(text, len, f);
@@ -810,7 +815,13 @@ static footstep_t CG_GetFootstepsForSoundModel(const char* modelName)
 	Com_sprintf(filename, sizeof(filename), "models/players/%s/animation.cfg", modelName);
 	len = trap_FS_FOpenFile(filename, &f, FS_READ);
 	if (len <= 0 || len >= (int)sizeof(text) - 1)
+	{
+		if (f)
+		{
+			trap_FS_FCloseFile(f);
+		}
 		return FOOTSTEP_TOTAL;
+	}
 	trap_FS_Read(text, len, f);
 	text[len] = 0;
 	trap_FS_FCloseFile(f);
@@ -2999,11 +3010,12 @@ AnglesToAxis itself must stay exact: movement prediction has to match the server
 static float cg_sinTable[CG_SIN_TABLE_SIZE + 1];
 static qboolean cg_sinTableReady;
 
-static float CG_TableSin(float degrees)
+static void CG_TableSinCos(float degrees, float* outSin, float* outCos)
 {
 	float pos;
 	float frac;
 	int index;
+	int cosIndex;
 
 	pos = degrees * (CG_SIN_TABLE_SIZE / 360.0f);
 	index = (int)pos;
@@ -3012,8 +3024,10 @@ static float CG_TableSin(float degrees)
 		index--;
 	}
 	frac = pos - index;
+	cosIndex = (index + CG_SIN_TABLE_SIZE / 4) & (CG_SIN_TABLE_SIZE - 1);
 	index &= CG_SIN_TABLE_SIZE - 1;
-	return cg_sinTable[index] + (cg_sinTable[index + 1] - cg_sinTable[index]) * frac;
+	*outSin = cg_sinTable[index] + (cg_sinTable[index + 1] - cg_sinTable[index]) * frac;
+	*outCos = cg_sinTable[cosIndex] + (cg_sinTable[cosIndex + 1] - cg_sinTable[cosIndex]) * frac;
 }
 
 static void CG_ModelAnglesToAxis(const vec3_t angles, vec3_t axis[3])
@@ -3031,21 +3045,18 @@ static void CG_ModelAnglesToAxis(const vec3_t angles, vec3_t axis[3])
 		cg_sinTableReady = qtrue;
 	}
 
-	sy = CG_TableSin(angles[YAW]);
-	cy = CG_TableSin(angles[YAW] + 90.0f);
+	CG_TableSinCos(angles[YAW], &sy, &cy);
 	sp = 0.0f;
 	cp = 1.0f;
 	if (angles[PITCH] != 0.0f)
 	{
-		sp = CG_TableSin(angles[PITCH]);
-		cp = CG_TableSin(angles[PITCH] + 90.0f);
+		CG_TableSinCos(angles[PITCH], &sp, &cp);
 	}
 	sr = 0.0f;
 	cr = 1.0f;
 	if (angles[ROLL] != 0.0f)
 	{
-		sr = CG_TableSin(angles[ROLL]);
-		cr = CG_TableSin(angles[ROLL] + 90.0f);
+		CG_TableSinCos(angles[ROLL], &sr, &cr);
 	}
 
 	axis[0][0] = cp * cy;
@@ -3262,7 +3273,8 @@ static void CG_BreathPuffs(centity_t* cent, refEntity_t* head)
 	{
 		return;
 	}
-	if (cent->currentState.number == cg.snap->ps.clientNum && !cg.renderingThirdPerson)
+	if ((cent->currentState.number == cg.snap->ps.clientNum && !cg.renderingThirdPerson) ||
+	        CG_KILLCAM_EYES_OF(cent->currentState.number))
 	{
 		return;
 	}
@@ -4386,6 +4398,7 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 	ci = &cgs.clientinfo[cent->currentState.clientNum];
 
 	if ((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
+	        CG_KILLCAM_EYES_OF(cent->currentState.number) ||
 	        cent->currentState.eFlags & EF_DEAD ||
 	        (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && cent->currentState.powerups & (1 << PW_BATTLESUIT)) ||
 	        cent->currentState.powerups & (1 << PW_INVIS))
@@ -4733,6 +4746,7 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 
 			if (cg_drawOutline.integer && ci->infoValid &&
 			        !(cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) &&
+			        !CG_KILLCAM_EYES_OF(cent->currentState.number) &&
 			        !(cent->currentState.eFlags & EF_DEAD) &&
 			        !(cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE && (cent->currentState.powerups & (1 << PW_BATTLESUIT))) &&
 			        !(cent->currentState.powerups & (1 << PW_INVIS)) &&
@@ -4953,7 +4967,8 @@ static void CG_PlayerSpecXrayBegin(centity_t* cent)
 	if (cgs.osp.gameTypeFreeze && cent->currentState.weapon == WP_NONE &&
 	        (cent->currentState.powerups & (1 << PW_BATTLESUIT)))
 		return;
-	if (cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson)
+	if ((cent->currentState.number == cg.predictedPlayerState.clientNum && !cg.renderingThirdPerson) ||
+	        CG_KILLCAM_EYES_OF(cent->currentState.number))
 		return;
 
 	clientNum = cent->currentState.clientNum;
@@ -5247,6 +5262,8 @@ static void CG_FriendHudMarker(centity_t* cent, const clientInfo_t* ci, int clie
 CG_Player
 ===============
 */
+#define PLAYER_CULL_RADIUS      192.0f  /* the body and a margin for a fast turn */
+
 void CG_Player(centity_t* cent)
 {
 	clientInfo_t*    ci;
@@ -5327,7 +5344,11 @@ void CG_Player(centity_t* cent)
 
 	renderfx = 0;
 
-	if (cent->currentState.number == cg.snap->ps.clientNum)
+	if (CG_KILLCAM_EYES_OF(cent->currentState.number))
+	{
+		renderfx = RF_THIRD_PERSON;
+	}
+	else if (cent->currentState.number == cg.snap->ps.clientNum)
 	{
 		if (!cg.renderingThirdPerson)
 		{
@@ -5351,6 +5372,17 @@ void CG_Player(centity_t* cent)
 	        (!CG_IS_KILLER_GHOST_BODY(&cent->currentState) && cent->currentState.powerups) ||
 	        (localCi->team == TEAM_SPECTATOR && cg_spectGlow.integer))
 		CG_PlayerPowerups(cent);
+	/* Far out of view nothing of the body can be seen, and the renderer would only cull it. Angles and
+	   animation above stay up to date, so the player looks right on coming into view. What a shot
+	   leaves in the view is still drawn, with no body or gun behind it. */
+	if (cent->currentState.number != cg.snap->ps.clientNum && CG_ViewCullAllowed() &&
+	        CG_SPHERE_OUT_OF_VIEW(cent->lerpOrigin, PLAYER_CULL_RADIUS))
+	{
+		CG_FriendHudMarker(cent, ci, clientNum, useTeamFrozen, useTeamFoeWh);
+		CG_AddPlayerWeaponHidden(cent);
+		return;
+	}
+
 	CG_PlayerSprites(cent, ci, clientNum, useTeamFrozen, useTeamFoeWh);
 
 	// add the shadow

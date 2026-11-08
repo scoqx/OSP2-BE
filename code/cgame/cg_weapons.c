@@ -2310,7 +2310,8 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 	qboolean isDelagEnabled;
 
 	shaft_type = cg_altLightning.integer;
-	isViewClient = cent->currentState.number == cg.predictedPlayerState.clientNum;
+	/* In a killcam replay our own body is seen from outside: its beam is drawn like anyone else's */
+	isViewClient = cent->currentState.number == cg.predictedPlayerState.clientNum && cg_killcamState != CG_KILLCAM_REPLAY;
 	CG_LightningShooterRelation(cent, &isOurClient, &isEnemyClient);
 	isDelagEnabled = (cg_delag.integer & 1 || cg_delag.integer & 2) && !cg.demoPlayback;
 
@@ -2347,8 +2348,9 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 			VectorCopy(cg.predictedPlayerState.origin, muzzlePoint);
 			muzzlePoint[2] += DEFAULT_VIEWHEIGHT;
 		}
-		else if (isViewClient && tl)
+		else if ((isViewClient && tl) || CG_KILLCAM_EYES_OF(cent->currentState.number))
 		{
+			/* In a first person killcam the view is the killer's aim, as smoothed for the screen */
 			VectorCopy(cg.refdefViewAngles, baseAngles);
 			VectorCopy(cg.refdef.vieworg, muzzlePoint);
 		}
@@ -2675,6 +2677,29 @@ Used for both the view weapon (ps is valid) and the world model / other characte
 The main player has this called for BOTH cases; effects like light and sound are done only for world model.
 =============
 */
+/* The loops of a weapon in the world */
+static void CG_AddPlayerWeaponSounds(centity_t* cent)
+{
+	const weapon_t weaponNum = cent->currentState.weapon;
+	weaponInfo_t*  weapon;
+
+	if (!cg_weapons[weaponNum].registered)
+		CG_RegisterWeapon(weaponNum);
+	weapon = &cg_weapons[weaponNum];
+	if (!weapon->weaponModel)
+		return;
+
+	cent->pe.lightningFiring = qfalse;
+	if ((cent->currentState.eFlags & EF_FIRING) && weapon->firingSound &&
+	        (cent->currentState.number != cg.clientNum || cg.snap->ps.weaponstate == WEAPON_READY || cg.snap->ps.weaponstate == WEAPON_FIRING))
+	{
+		trap_S_AddLoopingSound(cent->currentState.number, cent->lerpOrigin, vec3_origin, weapon->firingSound);
+		cent->pe.lightningFiring = qtrue;
+	}
+	else if (weapon->readySound)
+		trap_S_AddLoopingSound(cent->currentState.number, cent->lerpOrigin, vec3_origin, weapon->readySound);
+}
+
 void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent, int team)
 {
 	clientInfo_t*    ci;
@@ -2772,15 +2797,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	/* --- world model only: looping weapon sounds (LG etc.) --- */
 	if (!ps)
 	{
-		cent->pe.lightningFiring = qfalse;
-		if ((cent->currentState.eFlags & EF_FIRING) && weapon->firingSound &&
-		        (cent->currentState.number != cg.clientNum || cg.snap->ps.weaponstate == WEAPON_READY || cg.snap->ps.weaponstate == WEAPON_FIRING))
-		{
-			trap_S_AddLoopingSound(cent->currentState.number, cent->lerpOrigin, vec3_origin, weapon->firingSound);
-			cent->pe.lightningFiring = qtrue;
-		}
-		else if (weapon->readySound)
-			trap_S_AddLoopingSound(cent->currentState.number, cent->lerpOrigin, vec3_origin, weapon->readySound);
+		CG_AddPlayerWeaponSounds(cent);
 	}
 
 	/* --- gun position/orient from tag_weapon + cg_gunPos (left/center/right) --- */
@@ -2807,12 +2824,10 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 
 	VectorMA(gun.origin, lerped.origin[2], parent->axis[2], gun.origin);
 	{
-		vec3_t tempAxis[3];
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
-		MatrixMultiply(lerped.axis, parent->axis, tempAxis);
+		MatrixMultiply(lerped.axis, parent->axis, gun.axis);
 #pragma GCC diagnostic pop
-		AxisCopy(tempAxis, gun.axis);
 	}
 	gun.backlerp = parent->backlerp;
 
@@ -2878,57 +2893,62 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		qhandle_t quadGunShader = 0;
 		int pwClientNum;
 
-		pwIsEnemy = qfalse;
-		needPwEnemy = qfalse;
-		if (pwBattle && (cg.enemyBattleSuitColorEnabled || cg.battleSuitColorEnabled))
+		useEnemyMono = useBattleMono = useEnemyQuadMono = useQuadMono = qfalse;
+		if (pwBattle || pwQuad)
 		{
-			needPwEnemy = qtrue;
-		}
-		if (pwQuad && (cg.enemyQuadDamageColorEnabled || cg.quadDamageColorEnabled))
-		{
-			needPwEnemy = qtrue;
-		}
-		pwClientNum = cent->currentState.clientNum;
-		if ((pwClientNum < 0 || pwClientNum >= MAX_CLIENTS) &&
-		        cent->currentState.number >= 0 && cent->currentState.number < MAX_CLIENTS)
-		{
-			pwClientNum = cent->currentState.number;
-		}
-		if (needPwEnemy && pwClientNum >= 0 && pwClientNum < MAX_CLIENTS)
-		{
-			pwIsEnemy = CG_CACHED_IS_ENEMY_POWERUP_NUM(pwClientNum);
-		}
-		useEnemyMono = pwBattle && cg.enemyBattleSuitColorEnabled && pwIsEnemy;
-		useBattleMono = pwBattle && cg.battleSuitColorEnabled && !useEnemyMono;
-		useEnemyQuadMono = pwQuad && cg.enemyQuadDamageColorEnabled && pwIsEnemy;
-		useQuadMono = pwQuad && cg.quadDamageColorEnabled && !useEnemyQuadMono;
+			pwIsEnemy = qfalse;
+			needPwEnemy = qfalse;
+			if (pwBattle && (cg.enemyBattleSuitColorEnabled || cg.battleSuitColorEnabled))
+			{
+				needPwEnemy = qtrue;
+			}
+			if (pwQuad && (cg.enemyQuadDamageColorEnabled || cg.quadDamageColorEnabled))
+			{
+				needPwEnemy = qtrue;
+			}
+			pwClientNum = cent->currentState.clientNum;
+			if ((pwClientNum < 0 || pwClientNum >= MAX_CLIENTS) &&
+			        cent->currentState.number >= 0 && cent->currentState.number < MAX_CLIENTS)
+			{
+				pwClientNum = cent->currentState.number;
+			}
+			if (needPwEnemy && pwClientNum >= 0 && pwClientNum < MAX_CLIENTS)
+			{
+				pwIsEnemy = CG_CACHED_IS_ENEMY_POWERUP_NUM(pwClientNum);
+			}
+			useEnemyMono = pwBattle && cg.enemyBattleSuitColorEnabled && pwIsEnemy;
+			useBattleMono = pwBattle && cg.battleSuitColorEnabled && !useEnemyMono;
+			useEnemyQuadMono = pwQuad && cg.enemyQuadDamageColorEnabled && pwIsEnemy;
+			useQuadMono = pwQuad && cg.quadDamageColorEnabled && !useEnemyQuadMono;
 
-		if (pwBattle)
-		{
-			if (useEnemyMono || useBattleMono)
+			if (pwBattle)
 			{
-				battleShader = cgs.media.battleWeaponShaderDye;
+				if (useEnemyMono || useBattleMono)
+				{
+					battleShader = cgs.media.battleWeaponShaderDye;
+				}
+				else
+				{
+					battleShader = cgs.media.battleWeaponShader;
+				}
 			}
-			else
+			if (pwQuad)
 			{
-				battleShader = cgs.media.battleWeaponShader;
+				if (useEnemyQuadMono || useQuadMono)
+				{
+					quadGunShader = cgs.media.quadWeaponShaderDye;
+				}
+				else if (!ps && team == TEAM_RED && cgs.media.redQuadWeaponShader)
+				{
+					quadGunShader = cgs.media.redQuadWeaponShader;
+				}
+				else
+				{
+					quadGunShader = cgs.media.quadWeaponShader;
+				}
 			}
 		}
-		if (pwQuad)
-		{
-			if (useEnemyQuadMono || useQuadMono)
-			{
-				quadGunShader = cgs.media.quadWeaponShaderDye;
-			}
-			else if (!ps && team == TEAM_RED && cgs.media.redQuadWeaponShader)
-			{
-				quadGunShader = cgs.media.redQuadWeaponShader;
-			}
-			else
-			{
-				quadGunShader = cgs.media.quadWeaponShader;
-			}
-		}
+
 		if (cg_fragEffect.integer &&
 		        cg_fragEffectTime.integer > 0 &&
 		        cg.time < cg.fragWeaponEffectTime &&
@@ -3168,7 +3188,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 		{
 			if (cg_muzzleFlash.integer || cent->currentState.clientNum != cg.clientNum)
 				trap_R_AddRefEntityToScene(&flash);
-			if (ps || cg.renderingThirdPerson || cent->currentState.number != cg.predictedPlayerState.clientNum)
+			if (ps || ((cg.renderingThirdPerson || cent->currentState.number != cg.predictedPlayerState.clientNum) && !CG_KILLCAM_BEAM_FROM_VIEW(cent->currentState.number)))
 			{
 				if (weaponNum == WP_LIGHTNING)
 					CG_LightningBolt(nonPredictedCent, flash.origin);
@@ -3184,7 +3204,7 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	{
 		if (cg_muzzleFlash.integer || cent->currentState.clientNum != cg.clientNum)
 			trap_R_AddRefEntityToScene(&flash);
-		if (ps || cg.renderingThirdPerson || cent->currentState.number != cg.predictedPlayerState.clientNum)
+		if (ps || ((cg.renderingThirdPerson || cent->currentState.number != cg.predictedPlayerState.clientNum) && !CG_KILLCAM_SHOOTS_FROM_VIEW(cent->currentState.number)))
 		{
 			if (weaponNum == WP_RAILGUN)
 				CG_SpawnRailTrail(cent, flash.origin);
@@ -3197,6 +3217,52 @@ void CG_AddPlayerWeapon(refEntity_t* parent, playerState_t* ps, centity_t* cent,
 	}
 }
 
+/*
+The weapon of a player far out of view: what can be heard, and what a shot leaves in the view.
+The beam and the trail start at the eyes and not at the gun: that end is out of view anyway,
+and this way it takes no model tags.
+*/
+void CG_AddPlayerWeaponHidden(centity_t* cent)
+{
+	const weapon_t weaponNum = cent->currentState.weapon;
+	const qboolean continuous = weaponNum == WP_LIGHTNING || weaponNum == WP_GAUNTLET || weaponNum == WP_GRAPPLING_HOOK;
+	weaponInfo_t*  weapon;
+	vec3_t         forward, origin;
+
+	CG_AddPlayerWeaponSounds(cent);
+
+	if (continuous ? !(cent->currentState.eFlags & EF_FIRING) :
+	        (cg.time - cent->muzzleFlashTime > MUZZLE_FLASH_TIME && !cent->pe.railgunFlash))
+	{
+		return;
+	}
+	weapon = &cg_weapons[weaponNum];
+	if (!weapon->weaponModel || !weapon->flashModel)
+	{
+		return;
+	}
+
+	AngleVectors(cent->lerpAngles, forward, NULL, NULL);
+	VectorCopy(cent->lerpOrigin, origin);
+	origin[2] += DEFAULT_VIEWHEIGHT;
+	VectorMA(origin, 14, forward, origin);
+
+	if (weaponNum == WP_LIGHTNING)
+	{
+		CG_LightningBolt(cent, origin);
+	}
+	else if (weaponNum == WP_RAILGUN)
+	{
+		CG_SpawnRailTrail(cent, origin);
+	}
+	if (weapon->flashDlightColor[0] || weapon->flashDlightColor[1] || weapon->flashDlightColor[2])
+	{
+		trap_R_AddLightToScene(origin, 300 + (rand() & 31),
+		                       weapon->flashDlightColor[0], weapon->flashDlightColor[1], weapon->flashDlightColor[2]);
+	}
+}
+
+
 
 /*
 ==============
@@ -3207,13 +3273,6 @@ Add the weapon, and flash for the player's view
 */
 void CG_AddViewWeapon(playerState_t* ps)
 {
-	refEntity_t hand;
-	centity_t* cent;
-	clientInfo_t* ci;
-	float fovOffset;
-	vec3_t angles;
-	weaponInfo_t* weapon;
-
 	if (ps->persistant[PERS_TEAM] == TEAM_SPECTATOR || ps->pm_type == PM_INTERMISSION || cg.renderingThirdPerson)
 		return;
 
@@ -3232,6 +3291,18 @@ void CG_AddViewWeapon(playerState_t* ps)
 	// if (cg.testGun)
 	//  return;
 
+	CG_AddViewWeaponFor(ps, &cg.predictedPlayerEntity);
+}
+
+/* The gun in the view, with the firing and the animation of cent */
+void CG_AddViewWeaponFor(playerState_t* ps, centity_t* cent)
+{
+	refEntity_t hand;
+	clientInfo_t* ci;
+	float fovOffset;
+	vec3_t angles;
+	weaponInfo_t* weapon;
+
 	// drop gun lower at higher fov
 	if (cg_fov.integer > 90)
 	{
@@ -3242,7 +3313,6 @@ void CG_AddViewWeapon(playerState_t* ps)
 		fovOffset = 0;
 	}
 
-	cent = &cg.predictedPlayerEntity;   // &cg_entities[cg.snap->ps.clientNum];
 	if (!cg_weapons[ps->weapon].registered)
 		CG_RegisterWeapon(ps->weapon);
 	weapon = &cg_weapons[ps->weapon];
@@ -3268,7 +3338,7 @@ void CG_AddViewWeapon(playerState_t* ps)
 	hand.renderfx = RF_DEPTHHACK | RF_FIRST_PERSON | RF_MINLIGHT;
 
 	// add everything onto the hand
-	CG_AddPlayerWeapon(&hand, ps, &cg.predictedPlayerEntity, ps->persistant[PERS_TEAM]);
+	CG_AddPlayerWeapon(&hand, ps, cent, ps->persistant[PERS_TEAM]);
 }
 
 /*
@@ -4121,6 +4191,10 @@ void CG_MissileHitWall(int weapon, int clientNum, vec3_t origin, vec3_t dir, imp
 	if (sfx)
 	{
 		trap_S_StartSound(origin, ENTITYNUM_WORLD, CHAN_AUTO, sfx);
+		if (cg_visualSounds.integer && sfx == cgs.media.sfx_rockexp)
+		{
+			CG_VisualSounds_NoteExplosion(origin, ENTITYNUM_WORLD, weapon);
+		}
 	}
 
 	//

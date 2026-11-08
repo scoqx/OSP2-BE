@@ -289,6 +289,24 @@ void CG_LocalEventCvarChanged_handicap(cvarTable_t* cvart)
 	global_handicap = handicap.integer;
 }
 
+void CG_LocalEventCvarChanged_cg_visualSounds(cvarTable_t* cvart)
+{
+	CG_StartMusic();
+}
+
+void CG_VisualSoundsHint(void)
+{
+	if (s_volume.value <= 0 && !cg_visualSounds.integer)
+	{
+		CG_Printf("^7[^9BE^7] Sound is muted. Try ^3cg_visualSounds 1^7: sound icons around the crosshair.\n");
+	}
+}
+
+void CG_LocalEventCvarChanged_s_volume(cvarTable_t* cvart)
+{
+	CG_VisualSoundsHint();
+}
+
 void CG_LocalEventCvarChanged_s_ambient(cvarTable_t* cvart)
 {
 	trap_SendConsoleCommand("vid_restart;\n");
@@ -414,6 +432,11 @@ static void CG_LocalEventCvarParseColor(cvarTable_t* cvart, vec4_t color)
 		Com_Printf("^1Color is wrong, default value used\n");
 		CG_ParseColorStr(cvart->defaultString, color);
 	}
+}
+
+void CG_LocalEventCvarChanged_cg_damagePlumsColor(cvarTable_t* cvart)
+{
+	CG_LocalEventCvarParseColor(cvart, cg_damagePlumsBaseColor);
 }
 
 void CG_LocalEventCvarChanged_ch_crosshairColor(cvarTable_t* cvart)

@@ -2484,6 +2484,7 @@ void CG_BEHelp_f(void)
 		CG_BEHelp_PrintFeature("cg_friendsWallhack", CG_BE_TEAM_FOE_WH, "Show teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_drawHudMarkers", CG_BE_HUD_MARKERS, "Display teammate markers on the HUD", 0);
 		CG_BEHelp_PrintFeature("cg_drawHitBox", CG_BE_HITBOX, "Draw enemy hitboxes", 0);
+		CG_BEHelp_PrintFeature("cg_killcam", CG_BE_KILLCAM, "Replay of your death through the killer's view", 0);
 		CG_BEHelp_PrintFeature("cg_playerXray", CG_BE_TEAM_FOE_WH, "Player silhouettes through walls. In-game: teammates only. Bitmask: 1=on, 2=model colors, 4=bright weapons, 8=spect/demo all (else follow=allies of viewed)", 0);
 		CG_BEHelp_PrintFeature("cg_friendsWallhackFrozen", CG_BE_TEAM_FROZEN, "Show frozen teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);

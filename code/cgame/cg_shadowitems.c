@@ -1302,8 +1302,6 @@ static void CG_ShadowItems_BuildModelBuckets(void)
 
 static void CG_ShadowItems_BeginFrame(void)
 {
-	int     k;
-
 	if (cg_shadowFrameSerial == cg.clientFrame)
 	{
 		return;
@@ -1333,13 +1331,15 @@ static void CG_ShadowItems_BeginFrame(void)
 
 	cg_shadowFrameActive = qtrue;
 	memset(cg_shadowItemSlotVisible, 0, sizeof(cg_shadowItemSlotVisible));
-	for (k = 0; k < cg_shadowItemCount; k++)
-	{
-		cg_shadowItemVisibleDraw[k] = qfalse;
-		cg_shadowMatchBestEnt[k] = -1;
-		cg_shadowMatchBestAbsDz[k] = CG_SHADOW_MATCH_Z + 1.0f;
-	}
+	memset(cg_shadowItemVisibleDraw, 0, cg_shadowItemCount * sizeof(cg_shadowItemVisibleDraw[0]));
+	/* -1 in every slot. The distance next to it is only read for a slot that has an entity. */
+	memset(cg_shadowMatchBestEnt, -1, cg_shadowItemCount * sizeof(cg_shadowMatchBestEnt[0]));
 }
+
+/* CG_Item asks twice about each item: the bob phase can use the answer of the first search */
+static int cg_shadowLastNoteEnt = -1;
+static int cg_shadowLastNoteFrame;
+static int cg_shadowLastNotePoint;
 
 int CG_ShadowItems_NoteLiveItem(centity_t* cent)
 {
@@ -1355,7 +1355,10 @@ int CG_ShadowItems_NoteLiveItem(centity_t* cent)
 		return -1;
 	}
 
-	return CG_ShadowItems_MatchCent(cent, cg_shadowFrameMask, 1);
+	cg_shadowLastNoteEnt = cent->currentState.number;
+	cg_shadowLastNoteFrame = cg.clientFrame;
+	cg_shadowLastNotePoint = CG_ShadowItems_MatchCent(cent, cg_shadowFrameMask, 1);
+	return cg_shadowLastNotePoint;
 }
 
 #define CG_SHADOW_CULL_RADIUS 96.0f
@@ -1486,6 +1489,12 @@ int CG_ShadowItems_MapPointForItemBob(centity_t* cent)
 	if (!cent || cg_simpleItems.integer || !cg_shadowItemCount || !CG_ShadowItems_GameAllows())
 	{
 		return -1;
+	}
+
+	if (cg_shadowLastNotePoint >= 0 && cg_shadowLastNoteFrame == cg.clientFrame &&
+	        cg_shadowLastNoteEnt == cent->currentState.number)
+	{
+		return cg_shadowLastNotePoint;
 	}
 
 	return CG_ShadowItems_MatchCent(cent, CG_SHADOW_ITEMS_CATEGORY_MASK, -1);

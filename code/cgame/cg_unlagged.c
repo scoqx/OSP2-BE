@@ -24,6 +24,66 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 predictedMissile_t cg_predictedMissiles[MAX_PREDICTED_MISSILES];
 
+#ifdef CG_PREDICT_HITSCAN
+/*
+=======================
+cg_predictHitscan
+
+The hit sound for rail and LG at the moment of the shot, from what the client
+sees, not waiting for the server. The server's sound for the same hit is then
+skipped. The server may decide otherwise, and a false sound is the price.
+Not for MG and SG: their spread is random on the server.
+=======================
+*/
+#define PREDICT_HIT_LIGHTNING_RANGE 768
+#define PREDICT_HIT_CONFIRM_MS      150     /* on top of the ping */
+
+static int cg_predictedHitTime;
+
+qboolean CG_PredictHitscanConfirm(void)
+{
+	return cg_predictedHitTime && cg.time - cg_predictedHitTime <= cg.snap->ping + PREDICT_HIT_CONFIRM_MS;
+}
+
+static void CG_PredictHitscanHit(int weapon)
+{
+	const playerState_t* ps = &cg.predictedPlayerState;
+	const int range = (weapon == WP_RAILGUN) ? 8192 : PREDICT_HIT_LIGHTNING_RANGE;
+	const clientInfo_t*  ci;
+	const centity_t*     target;
+	vec3_t  forward, start, end;
+	trace_t trace;
+
+	if (cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg.intermissionStarted ||
+	        cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	{
+		return;
+	}
+
+	AngleVectors(ps->viewangles, forward, NULL, NULL);
+	VectorCopy(ps->origin, start);
+	start[2] += ps->viewheight;
+	VectorMA(start, 14, forward, start);
+	VectorMA(start, range, forward, end);
+	CG_Trace(&trace, start, vec3_origin, vec3_origin, end, ps->clientNum, MASK_SHOT);
+
+	if (trace.entityNum >= MAX_CLIENTS || trace.entityNum == ps->clientNum)
+	{
+		return;
+	}
+	target = &cg_entities[trace.entityNum];
+	ci = &cgs.clientinfo[trace.entityNum];
+	if (!target->currentValid || target->currentState.eType != ET_PLAYER || (target->currentState.eFlags & EF_DEAD) ||
+	        (cgs.gametype >= GT_TEAM && ci->team == cgs.clientinfo[ps->clientNum].team))
+	{
+		return;
+	}
+
+	cg_predictedHitTime = cg.time;
+	CG_PlayPredictedHitSound(weapon == WP_RAILGUN ? 100 : 8);
+}
+#endif
+
 /*
 =======================
 CG_PredictWeaponEffects
@@ -45,6 +105,13 @@ void CG_PredictWeaponEffects(centity_t* cent)
 	{
 		return;
 	}
+
+#ifdef CG_PREDICT_HITSCAN
+	if (cg_predictHitscan.integer && (ent->weapon == WP_RAILGUN || ent->weapon == WP_LIGHTNING))
+	{
+		CG_PredictHitscanHit(ent->weapon);
+	}
+#endif
 
 
 	// was it a rail attack?

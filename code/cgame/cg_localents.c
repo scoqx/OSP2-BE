@@ -492,37 +492,56 @@ void CG_AddRailtube(localEntity_t* le)
 CG_AddMoveScaleFade
 ==================
 */
+#define LE_FADE_UPDATE_MS 16
+/* Held for LE_FADE_UPDATE_MS, so only what is well out of view is skipped: a fast turn must not show it late */
+#define LE_CULL_MARGIN 128.0f
+
 static void CG_AddMoveScaleFade(localEntity_t* le)
 {
+	qboolean    updated;
 	refEntity_t* re;
 	float       c;
 	vec3_t      delta;
+	int         left;
 
 	re = &le->refEntity;
 
-	if (le->fadeInTime > le->startTime && cg.time < le->fadeInTime)
+	/* Fade and size change slowly, and there can be hundreds of these. Time going back means a killcam. */
+	left = le->fadeUpdateTime - cg.time;
+	updated = left <= 0 || left > LE_FADE_UPDATE_MS + 7;
+	if (!updated && le->viewHidden)
 	{
-		// fade / grow time
-		c = 1.0 - (float)(le->fadeInTime - cg.time) / (le->fadeInTime - le->startTime);
+		return;
 	}
-	else
+	if (updated)
 	{
-		// fade / grow time
-		c = (le->endTime - cg.time) * le->lifeRate;
-	}
+		/* Spread over the frames: puffs made together must not update together */
+		le->fadeUpdateTime = cg.time + LE_FADE_UPDATE_MS + ((int)(le - cg_localEntities) & 7);
 
-	re->shaderRGBA[3] = 0xff * c * le->color[3];
+		if (le->fadeInTime > le->startTime && cg.time < le->fadeInTime)
+		{
+			// fade / grow time
+			c = 1.0 - (float)(le->fadeInTime - cg.time) / (le->fadeInTime - le->startTime);
+		}
+		else
+		{
+			// fade / grow time
+			c = (le->endTime - cg.time) * le->lifeRate;
+		}
 
-	if (le->leFlags & LEF_FADE_RGB)
-	{
-		re->shaderRGBA[0] = (byte)(0xff * c * le->color[0]);
-		re->shaderRGBA[1] = (byte)(0xff * c * le->color[1]);
-		re->shaderRGBA[2] = (byte)(0xff * c * le->color[2]);
-	}
+		re->shaderRGBA[3] = 0xff * c * le->color[3];
 
-	if (!(le->leFlags & LEF_PUFF_DONT_SCALE))
-	{
-		re->radius = le->radius * (1.0 - c) + 8;
+		if (le->leFlags & LEF_FADE_RGB)
+		{
+			re->shaderRGBA[0] = (byte)(0xff * c * le->color[0]);
+			re->shaderRGBA[1] = (byte)(0xff * c * le->color[1]);
+			re->shaderRGBA[2] = (byte)(0xff * c * le->color[2]);
+		}
+
+		if (!(le->leFlags & LEF_PUFF_DONT_SCALE))
+		{
+			re->radius = le->radius * (1.0 - c) + 8;
+		}
 	}
 
 	/* Smoke trails and static rail rings do not move, and there can be hundreds of them. */
@@ -543,6 +562,17 @@ static void CG_AddMoveScaleFade(localEntity_t* le)
 	if (DotProduct(delta, delta) < le->radius * le->radius)
 	{
 		CG_FreeLocalEntity(le);
+		return;
+	}
+
+	/* The renderer does not cull sprites. The puff lives on as usual and shows when the view comes back. */
+	if (updated)
+	{
+		le->viewHidden = re->reType == RT_SPRITE && CG_ViewCullAllowed() &&
+		                 CG_SPHERE_OUT_OF_VIEW(re->origin, re->radius + LE_CULL_MARGIN);
+	}
+	if (le->viewHidden)
+	{
 		return;
 	}
 
@@ -813,6 +843,16 @@ void CG_AddScorePlum(localEntity_t* le)
 	}
 }
 
+/* cg_damagePlumsColor: the color of small hits, and where the colors of bigger ones start from */
+vec4_t cg_damagePlumsBaseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+static void CG_DamagePlumSetBaseColor(refEntity_t* re)
+{
+	re->shaderRGBA[0] = (byte)(cg_damagePlumsBaseColor[0] * 255.0f);
+	re->shaderRGBA[1] = (byte)(cg_damagePlumsBaseColor[1] * 255.0f);
+	re->shaderRGBA[2] = (byte)(cg_damagePlumsBaseColor[2] * 255.0f);
+}
+
 static void CG_DamagePlumSetColor(int colorDamage, refEntity_t* re)
 {
 	float t;
@@ -826,18 +866,18 @@ static void CG_DamagePlumSetColor(int colorDamage, refEntity_t* re)
 
 	if (colorDamage < 25)
 	{
-		re->shaderRGBA[0] = 0xff;
-		re->shaderRGBA[1] = 0xff;
-		re->shaderRGBA[2] = 0xff;
+		CG_DamagePlumSetBaseColor(re);
 		return;
 	}
 
 	if (colorDamage < 50)
 	{
+		const float* base = cg_damagePlumsBaseColor;
+
 		t = (float)(colorDamage - 25) * (1.0f / 25.0f);
-		r = 255.0f;
-		g = 255.0f;
-		b = 255.0f + t * (80.0f - 255.0f);
+		r = base[0] * 255.0f + t * (255.0f - base[0] * 255.0f);
+		g = base[1] * 255.0f + t * (255.0f - base[1] * 255.0f);
+		b = base[2] * 255.0f + t * (80.0f - base[2] * 255.0f);
 	}
 	else if (colorDamage < 75)
 	{
@@ -974,9 +1014,7 @@ void CG_AddDamagePlum(localEntity_t* le)
 
 		if (cg_damagePlums.integer & CG_DAMAGEPLUMS_NOCOLOR)
 		{
-			re->shaderRGBA[0] = 0xff;
-			re->shaderRGBA[1] = 0xff;
-			re->shaderRGBA[2] = 0xff;
+			CG_DamagePlumSetBaseColor(re);
 		}
 		else
 		{

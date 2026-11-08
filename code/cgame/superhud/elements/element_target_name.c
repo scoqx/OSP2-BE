@@ -29,7 +29,7 @@ void CG_SHUDElementTargetNameRoutine(void* context)
 
 	if (cg_drawCrosshair.integer == 0) return;
 	if (cg_drawCrosshairNames.integer == 0) return;
-	if (cg.renderingThirdPerson != 0) return;
+	if (cg.renderingThirdPerson != 0 && !CG_KILLCAM_EYES_ACTIVE()) return;
 	if (global_viewlistFirstOption > 1) return;
 
 	if (cg.crosshairClientTime == 0) return;
@@ -45,7 +45,11 @@ void CG_SHUDElementTargetNameRoutine(void* context)
 	// our team OR not team only OR not our freeze team
 	if (cgs.gametype >= GT_TEAM && cg_drawCrosshairNames.integer == 2)
 	{
-		if (cgs.osp.gameTypeFreeze)
+		if (CG_KILLCAM_EYES_ACTIVE())
+		{
+			hide = !CG_CrosshairTargetIsTeamAlly(ci);
+		}
+		else if (cgs.osp.gameTypeFreeze)
 		{
 			hide = ci->rt != cg.snap->ps.persistant[PERS_TEAM];
 		}

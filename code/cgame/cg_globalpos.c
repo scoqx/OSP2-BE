@@ -429,9 +429,12 @@ int CG_TeamMarkerStackEffectiveSize(int clientNum)
 	return n;
 }
 
+#define TEAM_MARKER_STACK_REFRESH_MS 16
+
 void CG_EnsureTeamMarkerStackCache(qboolean gameModeNotSpectator)
 {
-	if (cg.teamMarkerStackCacheTime == cg.time &&
+	/* The layout only says who stands together: it can wait a few frames. Time going back means a killcam. */
+	if (cg.time >= cg.teamMarkerStackCacheTime && cg.time - cg.teamMarkerStackCacheTime < TEAM_MARKER_STACK_REFRESH_MS &&
 	        cg.teamMarkerStackCacheAlliesOnly == gameModeNotSpectator)
 	{
 		return;
@@ -592,6 +595,7 @@ static void CG_AddStackDropFlagSprites(qboolean isSpec)
 void CG_AddGlobalPosFriendFloatSprites(void)
 {
 	int i;
+	int k;
 	clientInfo_t* ci;
 	qboolean      useTeamFoeWh;
 	qboolean      useTeamFrozen;
@@ -630,18 +634,19 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 		return;
 	}
 
-	for (i = 0; i < MAX_CLIENTS; i++)
+	for (k = 0; k < cg.numValidClients; k++)
 	{
 		int n;
 		int idx;
 		float step;
 
-		if (i == cg.snap->ps.clientNum)
+		i = cg.validClients[k];
+		ci = &cgs.clientinfo[i];
+		if (i == cg.snap->ps.clientNum || !ci->globalPos)
 		{
 			continue;
 		}
 
-		ci = &cgs.clientinfo[i];
 		CG_GlobalPosFriendFloatSpritePick(i, ci, &wantShow, &friendShader, &friendColor,
 		                                  useTeamFoeWh, useTeamFrozen, followTeamFilter,
 		                                  useEnemyFilter, drawMode, isCA);
@@ -669,6 +674,7 @@ void CG_AddGlobalPosFriendFloatSprites(void)
 void CG_DrawGlobalPosFriendHudMarkers(void)
 {
 	int i;
+	int k;
 	clientInfo_t* ci;
 	qboolean useTeamFrozen;
 	qboolean useTeamFoeWh;
@@ -686,20 +692,16 @@ void CG_DrawGlobalPosFriendHudMarkers(void)
 	{
 		CG_EnsureTeamMarkerStackCache(!isSpec);
 
-		for (i = 0; i < MAX_CLIENTS; i++)
+		for (k = 0; k < cg.numValidClients; k++)
 		{
 			int angle;
 			int n;
 			int idx;
 			qboolean isFrozenTinfo;
 
-			if (!cg.snap || i == cg.snap->ps.clientNum)
-			{
-				continue;
-			}
-
+			i = cg.validClients[k];
 			ci = &cgs.clientinfo[i];
-			if (!ci->globalPos)
+			if (!cg.snap || i == cg.snap->ps.clientNum || !ci->globalPos)
 			{
 				continue;
 			}

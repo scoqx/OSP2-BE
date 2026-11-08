@@ -1128,3 +1128,12 @@ SuperHUD:
 + Replaced default smokepuff2b (for breath/shotgun)
 * Performance optimisation
 * Various fixes
+
+08.11.2026 be v1.10c-beta3
++ cg_killcam 2 - first person
++ cg_autoFollow
++ cg_visualSounds 0/1/2 - sound icons around the crosshair (light/dark)
++ cg_damagePlumsColor - color of damage plums
++ cg_smoothTime 0/1 - test: even steps of game time
+* Performance optimisation
+* Various fixes

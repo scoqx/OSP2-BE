@@ -245,6 +245,10 @@ void CG_Obituary(entityState_t* ent)
 	if (!isUnfreezeEvent)
 	{
 		CG_KillcamOnObituary(target, attacker);
+		if (cg_autoFollow.integer)
+		{
+			CG_AutoFollowOnObituary(target, attacker);
+		}
 	}
 
 	if (attacker == cg.snap->ps.clientNum &&
@@ -1580,6 +1584,10 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			if (cent->currentState.number != cg.snap->ps.clientNum)
 			{
 				CG_PainEvent(cent, es->eventParm);
+				if (CG_KILLCAM_EYES_OF(cent->currentState.number))
+				{
+					CG_KillcamEyesPain(es->eventParm);
+				}
 			}
 			break;
 

@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #error "Do not use in VM build"
 #endif
 
+#define CG_SKIP_SOUND_WRAP
 #include "cg_local.h"
 
 static int (QDECL* syscall)(int arg, ...) = (int (QDECL*)(int, ...)) - 1;

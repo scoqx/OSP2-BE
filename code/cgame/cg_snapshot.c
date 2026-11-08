@@ -187,6 +187,11 @@ void CG_ResyncSnapshot(snapshot_t* snap)
 	cg.duckTime = 0;
 	cg.damageTime = 0;
 	cg.predictedErrorTime = 0;
+	cg.crosshairClientTime = 0;
+	cg.itemPickupTime = 0;
+	cg.itemPickupBlendTime = 0;
+	cg.powerupTime = 0;
+	cg.teamMarkers.pickupItemTime = 0;
 
 	BG_PlayerStateToEntityState(&snap->ps, &cg_entities[ snap->ps.clientNum ].currentState, qfalse);
 	CG_BuildSolidList();
@@ -421,7 +426,7 @@ static snapshot_t* CG_ReadNextSnapshot(void)
 	{
 		return NULL;
 	}
-	if (cg_killcam.integer)
+	if (CG_BE_FEATURE_ENABLED(CG_BE_KILLCAM))
 	{
 		CG_KillcamRecordSnapshot(dest);
 	}

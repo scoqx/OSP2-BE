@@ -375,6 +375,8 @@ typedef enum
 #define SE_MENU_STR "menu"
 #define SE_PROMODE (1 << 6)
 #define SE_PROMODE_STR "promode"
+#define SE_KILLCAM (1 << 7)
+#define SE_KILLCAM_STR "killcam"
 
 #define SE_SHUD_STYLE1 (1 << 0)
 #define SE_SHUD_STYLE1_STR "style1"
@@ -937,6 +939,7 @@ typedef struct
 	int width;
 	int fontIndex;
 	const char* text;
+	int recSlot;    /* for CG_OSPDrawStringCached */
 } superhudTextContext_t;
 
 typedef struct

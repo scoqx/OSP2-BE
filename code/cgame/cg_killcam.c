@@ -15,6 +15,7 @@ is not in the history, and the camera then stays on the victim.
 */
 #include "cg_local.h"
 #include "superhud/superhud.h"
+#include "../ui/keycodes.h"
 
 #define KC_START_DELAY_MS   1000    /* from the death to the start of the replay */
 #define KC_PREROLL_MS       2500    /* replayed before the death */
@@ -29,6 +30,16 @@ is not in the history, and the camera then stays on the victim.
 
 #define KC_CAM_TURN_SPEED   0.012f  /* share of the way to the aim per millisecond */
 
+/* cg_killcam 2: the killer's aim comes in snapshots, and a straight line between them turns in pieces.
+   The view takes the average of that line over a window centred on the moment. The snapshots after it
+   are in the record already, so there is no lag. The window is one snapshot interval each way: then the
+   corners at the snapshots are gone. A curve through every snapshot was tried and shook more than the line.
+   A bigger turn than this between two snapshots is a jump, and the average stops there. */
+#define KC_EYES_JUMP_DEG    90.0f
+#define KC_EYES_WINDOW_MAX  60      /* ms each way */
+#define KC_EYES_SAMPLES     9
+#define KC_EYES_KEYS        10
+
 #define KC_CAM_RANGE        50
 #define KC_CAM_HEIGHT       24
 #define KC_CAM_SIDE         (-15)
@@ -42,6 +53,7 @@ typedef struct
 } kcRecord_t;
 
 int      cg_killcamState;
+int      cg_killcamEyesClient = -1;
 qboolean cg_killcamRingRead;
 
 /* Only the entities a snapshot really holds are stored, not all 256 slots */
@@ -60,6 +72,15 @@ static int      kc_deathTime;
 static int      kc_startTime;
 static int      kc_delay;
 static qboolean kc_stop;
+static qboolean kc_skip;
+static int      kc_endingAt;      /* live time an early end started to fade out, 0 when not ending */
+
+/* The view held while the replay fades out with the killer gone */
+static qboolean kc_holdView;
+static qboolean kc_heldViewValid;
+static vec3_t   kc_heldOrigin;
+static vec3_t   kc_heldAngles;
+static vec3_t   kc_heldAxis[3];
 
 /* The camera on our body: follows the killer until the replay, then stays as it was */
 static float    kc_deadYaw;
@@ -69,6 +90,16 @@ static qboolean kc_deadViewValid;
 static float    kc_camYaw;
 static float    kc_camPitch;
 static qboolean kc_camValid;
+
+/* The killer's aim in the recorded snapshots around cg.snap, turned into one unbroken curve */
+static int   kc_eyesKeyTime[KC_EYES_KEYS];
+static float kc_eyesKeyAngle[KC_EYES_KEYS][2];
+static int   kc_eyesKeyCount;
+static int   kc_eyesKeysFor;        /* the cg.snap time they were gathered for */
+static int         kc_eyesHealth;
+
+static int      kc_killerAwards;
+static qboolean kc_killerAwardsKnown;
 
 static int kc_liveTime;
 static int kc_fadeInStart;
@@ -127,7 +158,8 @@ static void CG_KillcamRingGet(int index, snapshot_t* dest)
 
 void CG_KillcamRecordSnapshot(const snapshot_t* snap)
 {
-	if (cg.demoPlayback || snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	/* In freeze modes the dead become spectators soon, and the replay still needs what comes next */
+	if (cg.demoPlayback || (snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR && cg_killcamState == CG_KILLCAM_OFF))
 	{
 		return;
 	}
@@ -151,7 +183,7 @@ qboolean CG_KillcamReadRing(snapshot_t* dest)
 
 void CG_KillcamOnObituary(int target, int attacker)
 {
-	if (cg_killcamState != CG_KILLCAM_OFF || !cg_killcam.integer || cg.demoPlayback || cg.warmup ||
+	if (cg_killcamState != CG_KILLCAM_OFF || !CG_BE_FEATURE_ENABLED(CG_BE_KILLCAM) || cg.demoPlayback || cg.warmup ||
 	        target != cg.clientNum || (cg.snap->ps.pm_flags & PMF_FOLLOW) ||
 	        attacker < 0 || attacker >= MAX_CLIENTS || attacker == target)
 	{
@@ -186,8 +218,10 @@ void CG_KillcamMapRestart(void)
 /* The replay is over for the live game: we are back in it or the match has ended */
 static qboolean CG_KillcamLiveWantsStop(const snapshot_t* snap)
 {
+	/* In freeze modes the spawn count also changes when the dead become spectators */
 	return snap->ps.pm_type == PM_INTERMISSION ||
-	       (snap->ps.clientNum == cg.clientNum && snap->ps.persistant[PERS_SPAWN_COUNT] != kc_spawnCount);
+	       (snap->ps.clientNum == cg.clientNum && snap->ps.persistant[PERS_SPAWN_COUNT] != kc_spawnCount &&
+	        snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR);
 }
 
 static void CG_KillcamRememberObits(const snapshot_t* snap)
@@ -281,12 +315,26 @@ static void CG_KillcamBegin(int serverTime)
 	kc_cursor = index + 1;
 	kc_delay = serverTime - cg.activeSnapshots[0].serverTime;
 	kc_stop = qfalse;
+	kc_skip = qfalse;
+	kc_endingAt = 0;
+	kc_holdView = qfalse;
+	kc_heldViewValid = qfalse;
+	kc_killerAwardsKnown = qfalse;
+	cg.rewardStack = 0;
+	cg.rewardTime = 0;
 	kc_camValid = qfalse;
+	kc_eyesKeysFor = -1;
+	kc_eyesHealth = 0;
+	cg_killcamEyesClient = -1;
 
 	cg_killcamState = CG_KILLCAM_REPLAY;
 	cg_killcamRingRead = qtrue;
 	cg.time = cg.activeSnapshots[0].serverTime;
 	CG_ResyncSnapshot(&cg.activeSnapshots[0]);
+
+	/* Fire must reach us and not the server, where it means respawn. Also when it is held already. */
+	trap_SendConsoleCommand("-attack\n");
+	trap_Key_SetCatcher(trap_Key_GetCatcher() | KEYCATCH_CGAME);
 }
 
 static void CG_KillcamEnd(int serverTime)
@@ -295,6 +343,12 @@ static void CG_KillcamEnd(int serverTime)
 
 	cg_killcamState = CG_KILLCAM_OFF;
 	kc_fadeInStart = serverTime;
+	cg.rewardTime = 0;
+
+	if (!CG_BEChat_IsOpen())
+	{
+		trap_Key_SetCatcher(trap_Key_GetCatcher() & ~KEYCATCH_CGAME);
+	}
 
 	/* Newer ones are read from the ring as usual until it runs out, then the engine takes over */
 	while (index > kc_first && KC_RECORD(index)->serverTime > serverTime)
@@ -327,7 +381,7 @@ void CG_KillcamFrame(int serverTime)
 
 	if (cg_killcamState == CG_KILLCAM_CORPSE)
 	{
-		if (!cg_killcam.integer || CG_KillcamLiveWantsStop(cg.snap) ||
+		if (!CG_BE_FEATURE_ENABLED(CG_BE_KILLCAM) || CG_KillcamLiveWantsStop(cg.snap) ||
 		        cg.snap->ps.clientNum != cg.clientNum || (cg.snap->ps.pm_flags & PMF_FOLLOW))
 		{
 			cg_killcamState = CG_KILLCAM_OFF;
@@ -337,7 +391,7 @@ void CG_KillcamFrame(int serverTime)
 
 	if (cg_killcamState == CG_KILLCAM_PENDING)
 	{
-		if (!cg_killcam.integer || CG_KillcamLiveWantsStop(cg.snap))
+		if (!CG_BE_FEATURE_ENABLED(CG_BE_KILLCAM) || CG_KillcamLiveWantsStop(cg.snap))
 		{
 			cg_killcamState = CG_KILLCAM_OFF;
 		}
@@ -351,14 +405,25 @@ void CG_KillcamFrame(int serverTime)
 	{
 		cg.time = serverTime;
 		CG_KillcamDrainLiveSnapshots();
-		if (kc_stop || !cg_killcam.integer || serverTime - kc_delay >= kc_deathTime + KC_POSTROLL_MS)
+		/* An early end fades out first, as the planned one does in its last moment */
+		if (!kc_endingAt && (kc_stop || kc_skip || !CG_BE_FEATURE_ENABLED(CG_BE_KILLCAM)))
 		{
+			kc_endingAt = serverTime;
+		}
+		if ((kc_endingAt && serverTime - kc_endingAt >= KC_FADE_MS) || serverTime - kc_delay >= kc_deathTime + KC_POSTROLL_MS)
+		{
+			kc_endingAt = 0;
 			CG_KillcamEnd(serverTime);
 		}
 		else
 		{
 			cg.time = serverTime - kc_delay;
 			cg.demoPlayback = qtrue;
+			/* A chat window takes the catcher away when it closes */
+			if (!(trap_Key_GetCatcher() & KEYCATCH_CGAME))
+			{
+				trap_Key_SetCatcher(trap_Key_GetCatcher() | KEYCATCH_CGAME);
+			}
 		}
 	}
 }
@@ -415,6 +480,285 @@ void CG_KillcamDeadAngles(vec3_t angles)
 	angles[PITCH] = kc_deadPitch;
 }
 
+/* The killer's medal in the HUD, with its sound. The server tells only that he has one for now, so no count.
+   What he has when we first see him was earned before the replay, so only what comes after that is shown.
+   A new one takes the place of the last at once: a replay is too short for them to wait in a queue. */
+static void CG_KillcamCheckAwards(const centity_t* killer)
+{
+	const int awards = killer->currentState.eFlags & (EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET |
+	                   EF_AWARD_DEFEND | EF_AWARD_ASSIST | EF_AWARD_CAP);
+	const int added = kc_killerAwardsKnown ? awards & ~kc_killerAwards : 0;
+	sfxHandle_t sound;
+
+	kc_killerAwards = awards;
+	kc_killerAwardsKnown = qtrue;
+	if (!added)
+	{
+		return;
+	}
+
+	if (added & EF_AWARD_IMPRESSIVE)
+	{
+		cg.rewardShader[0] = cgs.media.medalImpressive;
+		sound = cgs.media.impressiveSound;
+	}
+	else if (added & EF_AWARD_EXCELLENT)
+	{
+		cg.rewardShader[0] = cgs.media.medalExcellent;
+		sound = cgs.media.excellentSound;
+	}
+	else if (added & EF_AWARD_GAUNTLET)
+	{
+		cg.rewardShader[0] = cgs.media.medalGauntlet;
+		sound = cgs.media.humiliationSound;
+	}
+	else if (added & EF_AWARD_DEFEND)
+	{
+		cg.rewardShader[0] = cgs.media.medalDefend;
+		sound = cgs.media.defendSound;
+	}
+	else if (added & EF_AWARD_ASSIST)
+	{
+		cg.rewardShader[0] = cgs.media.medalAssist;
+		sound = cgs.media.assistSound;
+	}
+	else
+	{
+		cg.rewardShader[0] = cgs.media.medalCapture;
+		sound = cgs.media.captureAwardSound;
+	}
+	cg.rewardCount[0] = 0;
+	cg.rewardTime = cg.time;
+
+	if (!(cg_drawRewards.integer & DRAW_REWARDS_NOSOUND))
+	{
+		trap_S_StartLocalSound(sound, CHAN_ANNOUNCER);
+	}
+}
+
+static qboolean CG_KillcamEntityAngles(const snapshot_t* snap, int number, vec3_t out)
+{
+	int i;
+
+	for (i = 0; i < snap->numEntities; i++)
+	{
+		if (snap->entities[i].number == number)
+		{
+			VectorCopy(snap->entities[i].apos.trBase, out);
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+/* The killer's angles in a record. A record is a snapshot cut after its entities. */
+static qboolean CG_KillcamRecordAngles(int index, int number, vec3_t out)
+{
+	return CG_KillcamEntityAngles((const snapshot_t*)(kc_ring + KC_RECORD(index)->offset), number, out);
+}
+
+static void CG_KillcamEyesGatherKeys(int number)
+{
+	int    here = -1;
+	int    first, last, i, axis;
+	vec3_t a, prev;
+
+	kc_eyesKeysFor = cg.snap->serverTime;
+	kc_eyesKeyCount = 0;
+
+	for (i = kc_cursor; i >= kc_first && i >= kc_cursor - 4; i--)
+	{
+		if (i < kc_next && KC_RECORD(i)->serverTime == cg.snap->serverTime)
+		{
+			here = i;
+			break;
+		}
+	}
+	if (here < 0 || !CG_KillcamRecordAngles(here, number, a))
+	{
+		return;
+	}
+
+	/* Back from cg.snap, then forward, as long as he is there and does not jump */
+	first = here;
+	VectorCopy(a, prev);
+	while (first - 1 >= kc_first && here - (first - 1) < KC_EYES_KEYS / 2)
+	{
+		vec3_t b;
+		if (!CG_KillcamRecordAngles(first - 1, number, b) ||
+		        fabs(AngleSubtract(b[YAW], prev[YAW])) >= KC_EYES_JUMP_DEG || fabs(AngleSubtract(b[PITCH], prev[PITCH])) >= KC_EYES_JUMP_DEG)
+		{
+			break;
+		}
+		VectorCopy(b, prev);
+		first--;
+	}
+	last = here;
+	VectorCopy(a, prev);
+	while (last + 1 < kc_next && last + 1 - first < KC_EYES_KEYS)
+	{
+		vec3_t b;
+		if (!CG_KillcamRecordAngles(last + 1, number, b) ||
+		        fabs(AngleSubtract(b[YAW], prev[YAW])) >= KC_EYES_JUMP_DEG || fabs(AngleSubtract(b[PITCH], prev[PITCH])) >= KC_EYES_JUMP_DEG)
+		{
+			break;
+		}
+		VectorCopy(b, prev);
+		last++;
+	}
+
+	/* Unbroken: each angle is the one before plus the short way to it */
+	for (i = first; i <= last; i++)
+	{
+		CG_KillcamRecordAngles(i, number, a);
+		kc_eyesKeyTime[kc_eyesKeyCount] = KC_RECORD(i)->serverTime;
+		for (axis = PITCH; axis <= YAW; axis++)
+		{
+			kc_eyesKeyAngle[kc_eyesKeyCount][axis] = kc_eyesKeyCount ?
+			        kc_eyesKeyAngle[kc_eyesKeyCount - 1][axis] + AngleSubtract(a[axis], prev[axis]) : a[axis];
+			prev[axis] = a[axis];
+		}
+		kc_eyesKeyCount++;
+	}
+}
+
+/* The straight line between the keys at time t */
+static float CG_KillcamEyesLine(int axis, float t)
+{
+	int j;
+
+	for (j = 0; j < kc_eyesKeyCount - 2 && t > kc_eyesKeyTime[j + 1]; j++)
+	{
+	}
+	return kc_eyesKeyAngle[j][axis] + (kc_eyesKeyAngle[j + 1][axis] - kc_eyesKeyAngle[j][axis]) *
+	       (t - kc_eyesKeyTime[j]) / (float)(kc_eyesKeyTime[j + 1] - kc_eyesKeyTime[j]);
+}
+
+/* Angles of the killer's aim at cg.time. Without the snapshots around it, the stock straight line. */
+static void CG_KillcamEyesAngles(centity_t* killer, vec3_t out)
+{
+	float t, w, sum[2];
+	int   k, axis;
+
+	VectorCopy(killer->lerpAngles, out);
+	if (!cg.nextSnap || cg.nextSnap->serverTime <= cg.snap->serverTime)
+	{
+		return;
+	}
+	if (kc_eyesKeysFor != cg.snap->serverTime)
+	{
+		CG_KillcamEyesGatherKeys(killer->currentState.number);
+	}
+	if (kc_eyesKeyCount < 2)
+	{
+		return;
+	}
+
+	/* The same width each way, as far as the record goes */
+	t = cg.snap->serverTime + cg.frameInterpolation * (cg.nextSnap->serverTime - cg.snap->serverTime);
+	w = (float)(cg.nextSnap->serverTime - cg.snap->serverTime);
+	if (w > KC_EYES_WINDOW_MAX)
+	{
+		w = KC_EYES_WINDOW_MAX;
+	}
+	if (w > t - kc_eyesKeyTime[0])
+	{
+		w = t - kc_eyesKeyTime[0];
+	}
+	if (w > kc_eyesKeyTime[kc_eyesKeyCount - 1] - t)
+	{
+		w = kc_eyesKeyTime[kc_eyesKeyCount - 1] - t;
+	}
+	if (w < 0)
+	{
+		return;
+	}
+
+	sum[0] = sum[1] = 0;
+	for (k = 0; k < KC_EYES_SAMPLES; k++)
+	{
+		const float at = t - w + 2.0f * w * k / (KC_EYES_SAMPLES - 1);
+		sum[0] += CG_KillcamEyesLine(PITCH, at);
+		sum[1] += CG_KillcamEyesLine(YAW, at);
+	}
+	for (axis = PITCH; axis <= YAW; axis++)
+	{
+		out[axis] = AngleMod(sum[axis] / KC_EYES_SAMPLES);
+	}
+}
+
+/* EV_PAIN of the killer in a first person replay: what our own damage would show. It has no direction. */
+void CG_KillcamEyesPain(int health)
+{
+	int damage = kc_eyesHealth > 0 ? kc_eyesHealth - health : 20;
+
+	kc_eyesHealth = health;
+	if (damage < 1)
+	{
+		damage = 1;
+	}
+	CG_DamageFeedback(255, 255, damage);
+}
+
+/* cg_killcam 2: the killer's eyes. His body is hidden, CG_KillcamAddViewWeapon gives him his gun. */
+static void CG_KillcamApplyEyes(centity_t* killer)
+{
+	const int legsAnim = killer->currentState.legsAnim & ~ANIM_TOGGLEBIT;
+	int viewheight = DEFAULT_VIEWHEIGHT;
+
+	if (killer->currentState.eFlags & EF_DEAD)
+	{
+		viewheight = DEAD_VIEWHEIGHT;
+	}
+	else if (legsAnim == LEGS_WALKCR || legsAnim == LEGS_IDLECR)
+	{
+		viewheight = CROUCH_VIEWHEIGHT;
+	}
+
+	VectorCopy(killer->lerpOrigin, cg.refdef.vieworg);
+	cg.refdef.vieworg[2] += viewheight;
+	CG_KillcamEyesAngles(killer, cg.refdefViewAngles);
+	AnglesToAxis(cg.refdefViewAngles, cg.refdef.viewaxis);
+
+	cg.bobcycle = 0;
+	cg.bobfracsin = 0;
+	cg.xyspeed = 0;
+	cg_killcamEyesClient = kc_killer;
+}
+
+void CG_KillcamAddViewWeapon(void)
+{
+	playerState_t ps;
+	centity_t*    killer;
+
+	if (cg_killcamEyesClient < 0)
+	{
+		return;
+	}
+	killer = &cg_entities[cg_killcamEyesClient];
+	if (!cg_drawGun.integer)
+	{
+		/* The beam with no gun, as CG_AddViewWeapon draws it */
+		vec3_t origin;
+
+		VectorMA(cg.refdef.vieworg, -8, cg.refdef.viewaxis[2], origin);
+		CG_LightningBolt(killer, origin);
+		return;
+	}
+	if (killer->currentState.weapon == WP_NONE)
+	{
+		return;
+	}
+
+	ps = cg.predictedPlayerState;
+	ps.clientNum = cg_killcamEyesClient;
+	ps.weapon = killer->currentState.weapon;
+	ps.eFlags = killer->currentState.eFlags;
+	ps.pm_type = PM_NORMAL;
+	ps.persistant[PERS_TEAM] = cgs.clientinfo[cg_killcamEyesClient].team;
+	CG_AddViewWeaponFor(&ps, killer);
+}
+
 /* Behind the killer, looking at the victim. With no killer in the snapshot the view stays as it is. */
 void CG_KillcamApplyView(void)
 {
@@ -424,12 +768,28 @@ void CG_KillcamApplyView(void)
 	trace_t    trace;
 	vec3_t     eye, target, forward, right, camOrg;
 
+	cg_killcamEyesClient = -1;
+
 	if (!killer->currentValid || kc_killer == cg.snap->ps.clientNum)
 	{
+		/* After our death there is nothing more to show without him: the replay ends here instead of
+		   switching to whoever is left in view, on the last view of him while it fades out */
+		if (!killer->currentValid && cg.time >= kc_deathTime)
+		{
+			kc_stop = qtrue;
+			kc_holdView = qtrue;
+		}
 		return;
 	}
 
 	CG_KillcamLerpKiller(killer);
+	CG_KillcamCheckAwards(killer);
+
+	if (cg_killcam.integer == 2)
+	{
+		CG_KillcamApplyEyes(killer);
+		return;
+	}
 
 	VectorCopy(killer->lerpOrigin, eye);
 	eye[2] += DEFAULT_VIEWHEIGHT;
@@ -488,19 +848,84 @@ void CG_KillcamApplyView(void)
 	AnglesToAxis(cg.refdefViewAngles, cg.refdef.viewaxis);
 }
 
+const char* CG_KillcamFollowText(void)
+{
+	return va("killcam %s^7", cgs.clientinfo[kc_killer].name);
+}
+
+/* After CG_KillcamApplyView: remember the view, or keep the remembered one while it fades out */
+void CG_KillcamHoldView(void)
+{
+	if (kc_holdView && kc_heldViewValid)
+	{
+		VectorCopy(kc_heldOrigin, cg.refdef.vieworg);
+		VectorCopy(kc_heldAngles, cg.refdefViewAngles);
+		AxisCopy(kc_heldAxis, cg.refdef.viewaxis);
+		return;
+	}
+	if (!kc_holdView)
+	{
+		VectorCopy(cg.refdef.vieworg, kc_heldOrigin);
+		VectorCopy(cg.refdefViewAngles, kc_heldAngles);
+		AxisCopy(cg.refdef.viewaxis, kc_heldAxis);
+		kc_heldViewValid = qtrue;
+	}
+}
+
+void CG_KillcamSkip(void)
+{
+	kc_skip = qtrue;
+}
+
+void CG_KillcamKeyEvent(int key, qboolean down)
+{
+	if (down && (key == K_MOUSE1 || key == trap_Key_GetKey("+attack")))
+	{
+		CG_KillcamSkip();
+	}
+}
+
 void CG_KillcamDraw2D(void)
 {
-	CG_DrawBigString(SCREEN_WIDTH / 2, 40, "KILLCAM", 1.0f, DS_HCENTER | DS_SHADOW, 0);
+	const char* message = NULL;
+	qboolean    followDrawn = qfalse;
+	qboolean    fragDrawn = qfalse;
 
-	/* From the moment we die in the replay */
+	if (CG_KILLCAM_EYES_ACTIVE())
+	{
+		CG_DrawCrosshair();
+	}
+
+	/* From the moment we die in the replay, as the killer saw it */
 	if (cg.time >= kc_deathTime)
 	{
-		const char* message = va("You were fragged by %s^7", cgs.clientinfo[kc_killer].name);
+		message = va("You fragged %s^7", cgs.clientinfo[cg.clientNum].name);
+	}
 
-		if (!cg_shud.integer || !CG_SHUDDrawFragMessage(message, kc_deathTime))
-		{
-			CG_DrawBigString(SCREEN_WIDTH / 2, 120, message, 1.0f, DS_HCENTER | DS_SHADOW, 0);
-		}
+	if (cg_shud.integer)
+	{
+		CG_SHUDDrawKillcam(message, kc_deathTime, &followDrawn, &fragDrawn);
+	}
+	else
+	{
+		CG_DrawReward();
+	}
+
+	if (!cg_shud.integer && CG_KILLCAM_EYES_ACTIVE())
+	{
+		/* The stock names draw only in first person */
+		cg.renderingThirdPerson = qfalse;
+		CG_DrawCrosshairNames();
+		cg.renderingThirdPerson = qtrue;
+	}
+
+	if (!followDrawn)
+	{
+		CG_DrawBigString(SCREEN_WIDTH / 2, 40, CG_KillcamFollowText(), 1.0f, DS_HCENTER | DS_SHADOW, 0);
+	}
+	if (message && !fragDrawn)
+	{
+		CG_DrawBigString(SCREEN_WIDTH / 2, 120, message, 1.0f, DS_HCENTER | DS_SHADOW, 0);
 	}
 }
 
@@ -523,6 +948,15 @@ void CG_KillcamDrawFade(void)
 			{
 				alpha = fadeOut;
 			}
+			/* Ending early */
+			if (kc_endingAt)
+			{
+				const float fadeEnd = (float)(kc_liveTime - kc_endingAt) / KC_FADE_MS;
+				if (fadeEnd > alpha)
+				{
+					alpha = fadeEnd;
+				}
+			}
 		}
 	}
 
@@ -540,4 +974,179 @@ void CG_KillcamDrawFade(void)
 	trap_R_SetColor(color);
 	trap_R_DrawStretchPic(0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, 0, 0, 0, 0, cgs.media.whiteShader);
 	trap_R_SetColor(NULL);
+}
+
+/*
+===========================================================================
+cg_autoFollow: always watch someone alive.
+- In the modes where the dead watch their team (CA, Freeze): after our death, a living teammate, and the
+  next one when that one dies. Elsewhere the follow command would take a player out of the game.
+- As a spectator, in any mode: when the one we follow dies, his killer if alive, else the next living
+  player by number. Where the dead come back, only if he is not back after a while.
+===========================================================================
+*/
+#define AF_DELAY_MS     1000    /* with no killcam to wait for */
+#define AF_NEXT_MS      500     /* after the one we follow dies, where the dead stay dead */
+#define AF_RESPAWN_MS   2000    /* the same where they come back: he may be back by then */
+#define AF_RETRY_MS     1000
+#define AF_DEAD_MS      4000    /* a player who died this recently is not picked: dead, or only just back */
+
+qboolean cg_autoFollowActive;
+static int      af_nextTry;
+static qboolean af_needNew;
+static int      af_victim;
+static int      af_killer;
+static qboolean af_spectator;   /* following as a spectator, not after our own death */
+static int      af_deathTime[MAX_CLIENTS];
+
+static qboolean CG_AutoFollowDeadStay(void)
+{
+	return CG_OSPIsGameTypeCA(cgs.gametype) || cgs.osp.gameTypeFreeze;
+}
+
+static qboolean CG_AutoFollowMode(void)
+{
+	return !cg.demoPlayback && !cg.warmup && CG_AutoFollowDeadStay();
+}
+
+/* A real spectator: in Clan Arena the dead are spectators too, but keep their real team */
+static qboolean CG_AutoFollowIsSpectator(void)
+{
+	const clientInfo_t* ci = &cgs.clientinfo[cg.clientNum];
+
+	return ci->team == TEAM_SPECTATOR && (!CG_OSPIsGameTypeCA(cgs.gametype) || ci->rt == TEAM_SPECTATOR);
+}
+
+void CG_AutoFollowOnObituary(int target, int attacker)
+{
+	if (target >= 0 && target < MAX_CLIENTS)
+	{
+		af_deathTime[target] = cg.time;
+	}
+	if (cg.demoPlayback)
+	{
+		return;
+	}
+	if (target == cg.clientNum && CG_AutoFollowMode() && !CG_AutoFollowIsSpectator())
+	{
+		cg_autoFollowActive = qtrue;
+		af_spectator = qfalse;
+		af_needNew = qtrue;
+		af_victim = -1;
+		af_killer = -1;
+		af_nextTry = cg.time + AF_DELAY_MS;
+	}
+	else if ((cg.snap->ps.pm_flags & PMF_FOLLOW) && target == cg.snap->ps.clientNum &&
+	         ((cg_autoFollowActive && !af_spectator && CG_AutoFollowMode()) || CG_AutoFollowIsSpectator()))
+	{
+		af_spectator = CG_AutoFollowIsSpectator();
+		cg_autoFollowActive = qtrue;
+		af_needNew = qtrue;
+		af_victim = target;
+		af_killer = attacker;
+		af_nextTry = cg.time + (CG_AutoFollowDeadStay() ? AF_NEXT_MS : AF_RESPAWN_MS);
+	}
+}
+
+/* Alive as far as we can tell: in the game, not seen dead, and not just killed */
+static qboolean CG_AutoFollowAlive(int client, int team)
+{
+	const clientInfo_t* ci;
+	const centity_t*    cent;
+
+	if (client < 0 || client >= MAX_CLIENTS || client == cg.clientNum || client == af_victim)
+	{
+		return qfalse;
+	}
+	ci = &cgs.clientinfo[client];
+	if (!ci->infoValid || ci->team == TEAM_SPECTATOR || (team >= 0 && ci->team != team))
+	{
+		return qfalse;
+	}
+	if (team >= 0 && ci->health <= 0)
+	{
+		return qfalse;
+	}
+	if (af_deathTime[client] && cg.time >= af_deathTime[client] && cg.time - af_deathTime[client] < AF_DEAD_MS)
+	{
+		return qfalse;
+	}
+	cent = &cg_entities[client];
+	if (cent->currentValid && (cent->currentState.eFlags & EF_DEAD))
+	{
+		return qfalse;
+	}
+	return qtrue;
+}
+
+/* As a spectator: the killer, else the next one by number after the one who died */
+static int CG_AutoFollowPick(void)
+{
+	const int team = af_spectator ? -1 : cgs.clientinfo[cg.clientNum].team;
+	const int start = af_victim >= 0 ? af_victim : cg.clientNum;
+	int i;
+
+	if (af_spectator && af_killer != af_victim && CG_AutoFollowAlive(af_killer, team))
+	{
+		return af_killer;
+	}
+	for (i = 1; i <= cgs.maxclients; i++)
+	{
+		const int client = (start + i) % cgs.maxclients;
+		if (CG_AutoFollowAlive(client, team))
+		{
+			return client;
+		}
+	}
+	return -1;
+}
+
+void CG_AutoFollowFrame(void)
+{
+	int next;
+
+	if (!cg_autoFollow.integer || !cg.snap || cg.demoPlayback)
+	{
+		cg_autoFollowActive = qfalse;
+		return;
+	}
+	if (af_spectator)
+	{
+		/* Back in the game, or no longer following */
+		if (!CG_AutoFollowIsSpectator() || !(cg.snap->ps.pm_flags & PMF_FOLLOW))
+		{
+			cg_autoFollowActive = qfalse;
+			return;
+		}
+	}
+	/* The dead here are spectators with full health in the snapshot, so a team tells who is back in the game */
+	else if (!CG_AutoFollowMode() ||
+	         (cg.snap->ps.clientNum == cg.clientNum && cg.snap->ps.stats[STAT_HEALTH] > 0 &&
+	          cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR))
+	{
+		cg_autoFollowActive = qfalse;
+		return;
+	}
+
+	/* The killcam comes first */
+	if (cg_killcamState == CG_KILLCAM_PENDING || cg_killcamState == CG_KILLCAM_REPLAY || !af_needNew || cg.time < af_nextTry)
+	{
+		return;
+	}
+
+	/* The server may have put us on someone already, or the one who died is back */
+	if ((cg.snap->ps.pm_flags & PMF_FOLLOW) &&
+	        (cg.snap->ps.clientNum != af_victim || (cg.snap->ps.stats[STAT_HEALTH] > 0 && cg.snap->ps.pm_type != PM_DEAD)))
+	{
+		af_needNew = qfalse;
+		return;
+	}
+
+	af_nextTry = cg.time + AF_RETRY_MS;
+	next = CG_AutoFollowPick();
+	if (next >= 0)
+	{
+		trap_SendConsoleCommand(va("follow %i\n", next));
+		af_needNew = qfalse;
+	}
 }

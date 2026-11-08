@@ -1646,9 +1646,19 @@ static void CG_ClientInfoUpdateFrame(void)
 		}
 	}
 
-	cg.realNumClients = CG_ClientInfoUpdateEnemyViewFrame(teamMode, gtAllEnemies,
-	                    swapPwEnemy, isCA, isSpectator, spectFollowPOV,
-	                    myRealTeam, myStateTeam, followTeam, followCi);
+	/* All of it comes from the snapshot and from what the server commands with it say.
+	   The cvars among it are picked up soon enough by the time they come up. */
+	{
+		static int lastSnapTime = -1;
+
+		if (cg.snap->serverTime != lastSnapTime || !(cg.clientFrame & 15))
+		{
+			lastSnapTime = cg.snap->serverTime;
+			cg.realNumClients = CG_ClientInfoUpdateEnemyViewFrame(teamMode, gtAllEnemies,
+			                    swapPwEnemy, isCA, isSpectator, spectFollowPOV,
+			                    myRealTeam, myStateTeam, followTeam, followCi);
+		}
+	}
 
 	if (teamMode)
 		CG_ClientInfoUpdateHealthBlinkPhases();
@@ -1677,6 +1687,98 @@ static void CG_UpdateViewPlanes(void)
 
 /*
 =================
+CG_SteadyServerTime
+
+cg_smoothTime. The engine's frames are even, but on each snapshot it corrects game time by +1 or -2 ms, so at 250 fps
+a step of 4 ms is now and then 5 or 2. Here those corrections are left out: time goes in steps of the
+usual frame length and comes back to the engine's time only when it is out of a small band.
+A step the corrections can't explain is a real change of the frame's length and is taken as it is.
+Time never goes back. Demos have no corrections and don't come here.
+=================
+*/
+#define STEADY_TIME_AVERAGE     0.005f  /* share of a new step in the average */
+#define STEADY_TIME_AVERAGE_NEW 0.02f   /* same, for a step of another length */
+#define STEADY_TIME_WHOLE       0.15f   /* the average this close to a whole number is that number */
+#define STEADY_TIME_AHEAD       2       /* ms ahead of the engine's time */
+#define STEADY_TIME_BEHIND      5       /* ms behind it */
+#define STEADY_TIME_JUMP        30      /* ms */
+
+static qboolean steadyTimeValid;
+static int      steadyTimeRaw;
+static int      steadyTimeWhole;
+static float    steadyTimeFrac;
+static float    steadyTimeStep;
+
+static int CG_SteadyServerTime(int raw)
+{
+	const int step = raw - steadyTimeRaw;
+	float usual;
+	int rounded;
+	int off;
+	int next;
+
+	if (!steadyTimeValid || step < 0)
+	{
+		steadyTimeValid = qtrue;
+		steadyTimeRaw = raw;
+		steadyTimeWhole = raw;
+		steadyTimeFrac = 0;
+		steadyTimeStep = 4;
+		return raw;
+	}
+	steadyTimeRaw = raw;
+
+	if (step == 0)
+	{
+		return steadyTimeWhole;
+	}
+
+	usual = steadyTimeStep;
+	rounded = (int)(usual + 0.5f);
+	if (usual - rounded < STEADY_TIME_WHOLE && rounded - usual < STEADY_TIME_WHOLE)
+	{
+		usual = rounded;
+	}
+
+	if (step - rounded > 1 || step - rounded < -2)
+	{
+		steadyTimeStep += ((step > steadyTimeStep * 2 ? steadyTimeStep * 2 : step) - steadyTimeStep) * STEADY_TIME_AVERAGE_NEW;
+		next = steadyTimeWhole + step;
+	}
+	else
+	{
+		steadyTimeStep += (step - steadyTimeStep) * STEADY_TIME_AVERAGE;
+		steadyTimeFrac += usual;
+		next = (int)steadyTimeFrac;
+		steadyTimeFrac -= next;
+		next += steadyTimeWhole;
+	}
+
+	off = raw - next;
+	if (off > STEADY_TIME_JUMP)
+	{
+		next = raw;
+		steadyTimeFrac = 0;
+	}
+	else if (off > STEADY_TIME_BEHIND)
+	{
+		next++;
+	}
+	else if (off < -STEADY_TIME_JUMP)
+	{
+		next = steadyTimeWhole;
+	}
+	else if (off < -STEADY_TIME_AHEAD && next > steadyTimeWhole)
+	{
+		next--;
+	}
+
+	steadyTimeWhole = next;
+	return next;
+}
+
+/*
+=================
 CG_DrawActiveFrame
 
 Generates and draws a game scene and status information at the given time.
@@ -1685,6 +1787,15 @@ Generates and draws a game scene and status information at the given time.
 void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoPlayback)
 {
 	int     inwater;
+
+	if (cg_smoothTime.integer && !demoPlayback)
+	{
+		serverTime = CG_SteadyServerTime(serverTime);
+	}
+	else
+	{
+		steadyTimeValid = qfalse;
+	}
 
 	cg.time = serverTime;
 	cg.demoPlayback = demoPlayback;
@@ -1702,6 +1813,10 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	if (cg_killcamState != CG_KILLCAM_OFF)
 	{
 		CG_KillcamFrame(serverTime);
+	}
+	if (cg_autoFollowActive)
+	{
+		CG_AutoFollowFrame();
 	}
 
 	// any looped sounds will be respecified as entities
@@ -1751,11 +1866,13 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	if (cg_killcamState == CG_KILLCAM_REPLAY)
 	{
 		CG_KillcamApplyView();
+		CG_KillcamHoldView();
 	}
 	CG_UpdateViewPlanes();
 
 	// first person blend blobs, done after AnglesToAxis
-	if (!cg.renderingThirdPerson && cg_damageDraw.integer)
+	/* A first person killcam shows the killer's damage the same way */
+	if ((!cg.renderingThirdPerson || CG_KILLCAM_EYES_ACTIVE()) && cg_damageDraw.integer)
 	{
 		CG_DamageBlendBlob();
 	}
@@ -1796,7 +1913,14 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		CG_WorldFlags_Update();
 	}
 
-	CG_AddViewWeapon(&cg.predictedPlayerState);
+	if (cg_killcamState == CG_KILLCAM_REPLAY)
+	{
+		CG_KillcamAddViewWeapon();
+	}
+	else
+	{
+		CG_AddViewWeapon(&cg.predictedPlayerState);
+	}
 
 	// add buffered sounds
 	CG_PlayBufferedSounds();

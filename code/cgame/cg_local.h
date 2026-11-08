@@ -333,6 +333,9 @@ typedef struct markPoly_s
 	float       color[4];
 	vec3_t      cullOrigin;     // sphere around the whole mark
 	float       cullRadius;
+	int         cullUntil;      // the last cull result holds until this time
+	qboolean    cullHidden;     // that result: far out of view
+	int         fadeStep;       // the fade its vertex colors were last set for
 	poly_t      poly;
 	polyVert_t  verts[MAX_VERTS_ON_POLY];
 } markPoly_t;
@@ -384,6 +387,8 @@ typedef enum
 
 typedef struct localEntity_s
 {
+	int             fadeUpdateTime; // CG_AddMoveScaleFade: when it is next due
+	qboolean        viewHidden;     // out of view at that time
 	struct localEntity_s*    prev, * next;
 	leType_t        leType;
 	int             leFlags;
@@ -1558,6 +1563,37 @@ typedef struct
 	sfxHandle_t useNothingSound;
 	sfxHandle_t wearOffSound;
 	sfxHandle_t footsteps[FOOTSTEP_TOTAL][4];
+	qhandle_t vsAmmoGenericIcon;
+	qhandle_t vsArmorGenericIcon;
+	qhandle_t vsDeadIcon;
+	qhandle_t vsEnviroIcon;
+	qhandle_t vsExplosionIcon;
+	qhandle_t vsFootstepsIcon;
+	sfxHandle_t vsGrappleFireSound;
+	qhandle_t vsGrappleIcon;
+	sfxHandle_t vsGrapplePullSound;
+	qhandle_t vsHasteIcon;
+	qhandle_t vsHealth25Icon;
+	qhandle_t vsHealth50Icon;
+	qhandle_t vsHealth5Icon;
+	qhandle_t vsJumpIcon;
+	qhandle_t vsJumpPadIcon;
+	qhandle_t vsKeyIcon;
+	qhandle_t vsLandIcon;
+	qhandle_t vsMegaHealthIcon;
+	qhandle_t vsPain100Icon;
+	qhandle_t vsPain25Icon;
+	qhandle_t vsPain50Icon;
+	qhandle_t vsPain75Icon;
+	qhandle_t vsPowerupIcon;
+	qhandle_t vsQuadIcon;
+	qhandle_t vsShardIcon;
+	qhandle_t vsSpawnIcon;
+	qhandle_t vsTauntIcon;
+	qhandle_t vsTeleportIcon;
+	qhandle_t vsWeaponGenericIcon;
+	qhandle_t vsWeaponIcon[MAX_WEAPONS];
+	qhandle_t vsWeaponSwapIcon;
 	sfxHandle_t sfx_lghit1;
 	sfxHandle_t sfx_lghit2;
 	sfxHandle_t sfx_lghit3;
@@ -1799,6 +1835,7 @@ typedef struct
 #define CG_BE_METAL_FOOTSTEPS   (1 << 16) // 65536
 #define CG_BE_AUTOJUMP          (1 << 17) // 131072
 #define CG_BE_HITBOX            (1 << 18) // 262144
+#define CG_BE_KILLCAM           (1 << 19) // 524288
 
 #define CG_SHADOW_ITEMS_CAT_HEALTH      (1 << 0)
 #define CG_SHADOW_ITEMS_CAT_ARMOR       (1 << 1)
@@ -2278,6 +2315,15 @@ extern vmCvar_t           cg_smokedensity_gl;
 extern vmCvar_t           cg_smokedensity_rl;
 extern vmCvar_t           cg_smokeNew;
 extern vmCvar_t           cg_killcam;
+extern vmCvar_t           cg_smoothTime;
+extern vmCvar_t           cg_visualSounds;
+extern vmCvar_t           s_volume;
+extern vmCvar_t           cg_autoFollow;
+/* Hit sound prediction for rail and LG. It is right only on a server built for it, so it stays out of the build. */
+/* #define CG_PREDICT_HITSCAN */
+#ifdef CG_PREDICT_HITSCAN
+extern vmCvar_t           cg_predictHitscan;
+#endif
 extern vmCvar_t           cg_swapSkins;
 extern vmCvar_t           cg_teamRails;
 extern vmCvar_t           cg_trueLightning;
@@ -2538,6 +2584,8 @@ extern vmCvar_t         cg_exec_ctf;
 extern vmCvar_t         cg_exec_freeze;
 extern vmCvar_t         cg_damagePlums;
 extern vmCvar_t         cg_damagePlumsWeapons;
+extern vmCvar_t         cg_damagePlumsColor;
+extern vec4_t           cg_damagePlumsBaseColor;
 extern vmCvar_t         cg_damagePlumSize;
 extern vmCvar_t         cg_teamTaskMarkTime;
 extern vmCvar_t         cg_teamTask;
@@ -2829,6 +2877,9 @@ void CG_ModulateVec4ForCustomItemDyeIconForClient(int itemNum, int clientNum, ve
 
 void CG_OSPDrawStringPrepare(const char* from, char* to, int size);
 void CG_OSPDrawString(float x, float y, const char* string, const vec4_t setColor, float charWidth, float charHeight, int maxWidth, int flags, vec4_t background);
+void CG_OSPDrawStringCached(int* slot, float x, float y, const char* string, const vec4_t setColor,
+                            vec4_t shadowColor, float charWidth, float charHeight, int maxWidth, int flags,
+                            int fontIndex, vec4_t background, vec4_t border, vec4_t borderColor);
 void CG_OSPDrawStringNew(float x, float y, const char* string, const vec4_t setColor, vec4_t shadowColor, float charWidth, float charHeight, int maxWidth, int flags, int fontIndex, vec4_t background, vec4_t border, vec4_t borderColor);
 float CG_OSPDrawStringNewTextWidth(const char* string, float charWidth, float charHeight, int flags, int fontIndex);
 float CG_OSPDrawStringNewSliceWidth(const char* start, const char* end, float charWidth, float charHeight, int flags, int fontIndex);
@@ -3145,6 +3196,8 @@ void CG_CheckEvents(centity_t* cent);
 const char*  CG_PlaceString(int rank);
 void CG_EntityEvent(centity_t* cent, vec3_t position);
 void CG_PainEvent(centity_t* cent, int health);
+void CG_KillcamEyesPain(int health);
+void CG_DamageFeedback(int yawByte, int pitchByte, int damage);
 
 
 //
@@ -3341,9 +3394,34 @@ void CG_KillcamOnObituary(int target, int attacker);
 void CG_KillcamMapRestart(void);
 void CG_KillcamFrame(int serverTime);
 void CG_KillcamApplyView(void);
+void CG_KillcamHoldView(void);
 void CG_KillcamDeadAngles(vec3_t angles);
 void CG_KillcamDraw2D(void);
 void CG_KillcamDrawFade(void);
+void CG_AddPlayerWeaponHidden(centity_t* cent);
+const char* CG_KillcamFollowText(void);
+void CG_KillcamKeyEvent(int key, qboolean down);
+void CG_KillcamSkip(void);
+void CG_DrawCrosshairNames(void);
+void CG_KillcamAddViewWeapon(void);
+void CG_AddViewWeaponFor(playerState_t* ps, centity_t* cent);
+void CG_LightningBolt(centity_t* cent, float* origin);
+extern int cg_killcamEyesClient;    /* the killer whose eyes the first person replay looks through, or -1 */
+#define CG_KILLCAM_EYES_ACTIVE() (cg_killcamState == CG_KILLCAM_REPLAY && cg_killcamEyesClient >= 0)
+#define CG_KILLCAM_EYES_OF(number) (cg_killcamState == CG_KILLCAM_REPLAY && (number) == cg_killcamEyesClient)
+/* A first person replay: what our own player state says about us is not shown */
+#define CG_KILLCAM_FIRST_PERSON() (cg_killcamState == CG_KILLCAM_REPLAY && cg_killcam.integer == 2)
+/* The killer's shots start at the gun in the view, not at the hidden model around the camera.
+   With no gun drawn the beam still does, as it does for the local player, and the rest stays on the model. */
+#define CG_KILLCAM_SHOOTS_FROM_VIEW(number) (CG_KILLCAM_EYES_OF(number) && cg_drawGun.integer)
+#define CG_KILLCAM_BEAM_FROM_VIEW(number) CG_KILLCAM_EYES_OF(number)
+void CG_AutoFollowOnObituary(int target, int attacker);
+void CG_AutoFollowFrame(void);
+extern qboolean cg_autoFollowActive;
+#ifdef CG_PREDICT_HITSCAN
+qboolean CG_PredictHitscanConfirm(void);
+void CG_PlayPredictedHitSound(int damage);
+#endif
 void CG_Obituary(entityState_t* ent);
 void CG_CalcEntityLerpPositions(centity_t* cent);
 
@@ -3712,6 +3790,17 @@ void        trap_S_StopLoopingSound(int entnum);
 void        trap_S_StartLocalSound(sfxHandle_t sfx, int channelNum);
 void        trap_S_ClearLoopingSounds(qboolean killall);
 void        trap_S_AddLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx);
+
+/* The sounds also go to cg_visualSounds. cg_syscalls.c and cg_visualsounds.c call the real ones. */
+void CG_VisualSounds_Note(const vec3_t origin, int entityNum, sfxHandle_t sfx, qboolean looping);
+void CG_VisualSounds_NoteExplosion(const vec3_t origin, int clientNum, int weapon);
+void CG_DrawVisualSounds(void);
+void CG_WrappedStartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfx);
+void CG_WrappedAddLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx);
+#ifndef CG_SKIP_SOUND_WRAP
+#define trap_S_StartSound(origin, entityNum, entchannel, sfx) CG_WrappedStartSound((origin), (entityNum), (entchannel), (sfx))
+#define trap_S_AddLoopingSound(entityNum, origin, velocity, sfx) CG_WrappedAddLoopingSound((entityNum), (origin), (velocity), (sfx))
+#endif
 void        trap_S_AddRealLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx);
 void        trap_S_UpdateEntityPosition(int entityNum, const vec3_t origin);
 
@@ -3721,6 +3810,14 @@ void        trap_S_Respatialize(int entityNum, const vec3_t origin, vec3_t axis[
 sfxHandle_t trap_S_RegisterSound(const char* sample, qboolean compressed);       // returns buzz if not found
 void        trap_S_StartBackgroundTrack(const char* intro, const char* loop);    // empty name stops music
 void    trap_S_StopBackgroundTrack(void);
+
+/* With cg_visualSounds these do not reach the engine either: nothing to set back, no cvar touched */
+void CG_WrappedStartLocalSound(sfxHandle_t sfx, int channelNum);
+void CG_WrappedAddRealLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx);
+#ifndef CG_SKIP_SOUND_WRAP
+#define trap_S_StartLocalSound(sfx, channelNum) CG_WrappedStartLocalSound((sfx), (channelNum))
+#define trap_S_AddRealLoopingSound(entityNum, origin, velocity, sfx) CG_WrappedAddRealLoopingSound((entityNum), (origin), (velocity), (sfx))
+#endif
 
 
 void        trap_R_LoadWorldMap(const char* mapname);
@@ -4207,6 +4304,9 @@ void CG_LocalEventCvarChanged_cg_teamModel(cvarTable_t* cvart);
 
 void CG_LocalEventCvarChanged_handicap(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_s_ambient(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_visualSounds(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_s_volume(cvarTable_t* cvart);
+void CG_VisualSoundsHint(void);
 void CG_LocalEventCvarChanged_pmove_fixed(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_phy_movetype(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_hitSounds(cvarTable_t* cvart);
@@ -4228,6 +4328,7 @@ void CG_LocalEventCvarChanged_cg_shud(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_cg_shudStyle(cvarTable_t* cvart);
 
 void CG_LocalEventCvarChanged_ch_crosshairColor(cvarTable_t* cvart);
+void CG_LocalEventCvarChanged_cg_damagePlumsColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ch_crosshairActionColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ch_crosshairDecorColor(cvarTable_t* cvart);
 void CG_LocalEventCvarChanged_ch_crosshairDecorActionColor(cvarTable_t* cvart);
