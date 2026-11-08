@@ -138,8 +138,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_noTaunt", "Disable gesture animation and sound. Set ^20^7 to enable taunt/gesture." },
 	{ "cg_noProjectileTrail", "Disable projectile trails (Rocket/Grenade/OldPlasma). Set ^20^7 to enable trails." },
 	{ "cg_oldRail", "Select old rail trail style. Set ^20^7 to select Quake 3 Arena style." },
-	{ "cg_oldRocket", "Enable old rocket boom style. Set ^20^7 to select Quake 3 Arena style." },
-	{ "cg_oldPlasma", "Enable old plasma trail style\n  ^20^7 - new plasma trail\n  ^21^7 - old plasma trail" },
+	{ "cg_newRocket", "New rocket and explosion. Its light and flash are white unless cg_dlightRL is set.\n  ^20^7 - off\n  ^21^7 - on" },
 	{ "cg_altGrenades", "Make grenades more brighter. Set ^20^7 to use default grenades." },
 	{ "cg_altLightning", "Choose alternate lightning gun beam. Using shaders ^9lightningBoltNew3^7..^9lightningBoltNew15 and ^9lightningBoltNewNoPicMip3^7..^9lightningBoltNewNoPicMip15^7\n  0 - default beam\n  1...15 - custom beams" },
 	{ "cg_clientLog", "Enables client-side logging option. A non-zero value of 'X' (where 'X' is 1 or higher) enables logging all of messages issued during gameplay. All entries are appended to osp/client_logs/clientX.txt text file." },
@@ -186,6 +185,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_smokeradius_rl", "Rocket smoke trail radius" },
 	{ "cg_smokedensity_gl", "Grenade smoke trail density." },
 	{ "cg_smokedensity_rl", "Rocket smoke trail density." },
+	{ "cg_announcerText", "Announcer subtitles. Set 0 to disable." },
 	{ "cg_visualSounds", "Draws sound icons around the crosshair, in the direction of each sound. Game audio is turned off.\n  ^20^7 - off\n  ^21^7 - on, light icons\n  ^22^7 - on, dark icons" },
 	{ "cg_autoFollow", "Always follow someone alive: when the followed player dies, switch to another.\n  ^20^7 - off\n  ^21^7 - on" },
 #ifdef CG_PREDICT_HITSCAN

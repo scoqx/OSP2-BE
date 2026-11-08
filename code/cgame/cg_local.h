@@ -872,6 +872,7 @@ typedef struct
 
 	int         timelimitWarnings;  // 5 min, 1 min, overtime
 	int         fraglimitWarnings;
+	int         fragWeaponEffectStart;      /* cg.time of the frag: a killcam replay runs on earlier times */
 	int         fragWeaponEffectTime;
 	int         fragWeaponEffectClientNum;
 
@@ -1317,8 +1318,6 @@ typedef struct
 	qhandle_t   shotgunSmokePuffNoPicMipShader;
 	qhandle_t   plasmaBallShader;
 	qhandle_t   plasmaBallNoPicMipShader;
-	qhandle_t   plasmaNewBallShader;
-	qhandle_t   plasmaNewBallNoPicMipShader;
 	qhandle_t   grenadeCPMANoPicMipShader;
 	qhandle_t   grenadeCPMANoPicMipShaderNew;
 	qhandle_t   grenadeCPMAModel;
@@ -1398,6 +1397,9 @@ typedef struct
 	qhandle_t   bulletExplosionShaderNoPicMip;
 	qhandle_t   rocketExplosionShader;
 	qhandle_t   rocketExplosionShaderNoPicMip;
+	qhandle_t   rocketNewExplosionShader;
+	qhandle_t   rocketNewExplosionShaderNoPicMip;
+	qhandle_t   rocketNewModel;
 	qhandle_t   grenadeExplosionShader;
 	qhandle_t   grenadeExplosionShaderNoPicMip;
 	qhandle_t   bfgExplosionShader;
@@ -2257,8 +2259,7 @@ extern vmCvar_t           phy_overbounce_fix;
 extern vmCvar_t           cg_noTaunt;
 extern vmCvar_t           cg_noProjectileTrail;
 extern vmCvar_t           cg_oldRail;
-extern vmCvar_t           cg_oldRocket;
-extern vmCvar_t           cg_oldPlasma;
+extern vmCvar_t           cg_newRocket;
 extern vmCvar_t           cg_altGrenades;
 extern vmCvar_t           cg_altLightning;
 extern vmCvar_t           cg_altPlasma;
@@ -2855,6 +2856,18 @@ void CG_AdjustFrom640(float* x, float* y, float* w, float* h);
 void CG_AdjustFrom640_Old(float* x, float* y, float* w, float* h, qboolean correctWide);
 void CG_FillRect(float x, float y, float width, float height, const float* color);
 void CG_DrawHealthBar(float x, float y, float width, float height, int health, int armor, float alpha, int fontIndex, qboolean useCvarTextStyle, vec4_t* barColorSrc, qboolean teamOverlayHealthBar);
+/* trailClient >= 0: what that teammate just lost stays in red and drains away (team overlay) */
+void CG_DrawHealthBarEx(float x, float y, float width, float height, int health, int armor, float alpha, int fontIndex, qboolean useCvarTextStyle, vec4_t* barColorSrc, qboolean teamOverlayHealthBar, int trailClient);
+
+/* Lost health on a bar: the value it still shows, back where the loss started and draining to the real one */
+typedef enum
+{
+	HEALTH_TRAIL_HEALTH,
+	HEALTH_TRAIL_ARMOR,
+	HEALTH_TRAIL_KINDS
+} healthTrailKind_t;
+float CG_HealthTrail(int clientNum, healthTrailKind_t kind, int value);
+extern const vec4_t cg_healthTrailColor;
 void CG_DrawPicOld(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPic(float x, float y, float width, float height, qhandle_t hShader);
 void CG_DrawPicWithColor(float x, float y, float w, float h, const vec4_t color, qhandle_t shader);
@@ -3391,6 +3404,7 @@ extern qboolean cg_killcamRingRead;
 void CG_KillcamRecordSnapshot(const snapshot_t* snap);
 qboolean CG_KillcamReadRing(snapshot_t* dest);
 void CG_KillcamOnObituary(int target, int attacker);
+void CG_KillcamReplayObituary(const entityState_t* es);
 void CG_KillcamMapRestart(void);
 void CG_KillcamFrame(int serverTime);
 void CG_KillcamApplyView(void);
@@ -3405,6 +3419,15 @@ void CG_KillcamSkip(void);
 void CG_DrawCrosshairNames(void);
 void CG_KillcamAddViewWeapon(void);
 void CG_AddViewWeaponFor(playerState_t* ps, centity_t* cent);
+/* cg_newRocket 1: the rocket from its own model */
+#define CG_MISSILE_MODEL(weaponNum, wi) \
+	(((weaponNum) == WP_ROCKET_LAUNCHER && cg_newRocket.integer && cgs.media.rocketNewModel) ? cgs.media.rocketNewModel : (wi)->missileModel)
+void CG_FastSinCos(float degrees, float* outSin, float* outCos);
+void CG_DrawInformationFade(void);
+void CG_PolyBatchFlush(void);
+polyVert_t* CG_PolyBatchAlloc(qhandle_t shader, int numVerts);
+void CG_ModelAnglesToAxis(const vec3_t angles, vec3_t axis[3]);
+float CG_TanHalfFov(float fovDegrees);
 void CG_LightningBolt(centity_t* cent, float* origin);
 extern int cg_killcamEyesClient;    /* the killer whose eyes the first person replay looks through, or -1 */
 #define CG_KILLCAM_EYES_ACTIVE() (cg_killcamState == CG_KILLCAM_REPLAY && cg_killcamEyesClient >= 0)
@@ -3810,6 +3833,16 @@ void        trap_S_Respatialize(int entityNum, const vec3_t origin, vec3_t axis[
 sfxHandle_t trap_S_RegisterSound(const char* sample, qboolean compressed);       // returns buzz if not found
 void        trap_S_StartBackgroundTrack(const char* intro, const char* loop);    // empty name stops music
 void    trap_S_StopBackgroundTrack(void);
+
+/* Announcer captions (cg_announcer.c, cg_announcerText) */
+#define ANNOUNCER_MAX_LINES 4
+void        CG_AnnouncerClear(void);
+void        CG_AnnouncerText(const char* text);
+const char* CG_AnnouncerLine(int age, int* time);
+void        CG_AnnouncerSound(sfxHandle_t sfx);
+void        CG_AnnouncerSoundName(const char* name);
+void        CG_AnnouncerCountdown(int secondsLeft);
+extern vmCvar_t cg_announcerText;
 
 /* With cg_visualSounds these do not reach the engine either: nothing to set back, no cvar touched */
 void CG_WrappedStartLocalSound(sfxHandle_t sfx, int channelNum);

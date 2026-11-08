@@ -537,6 +537,35 @@ CG_CalcFov
 Fixed fov at intermissions, otherwise account for fov variable and zooms.
 ====================
 */
+/*
+=================
+CG_TanHalfFov
+
+tan(fov / 2) for markers and sprites that keep their size on screen. The fov rarely
+changes, so the last two answers are kept: tan() is an engine call.
+=================
+*/
+float CG_TanHalfFov(float fovDegrees)
+{
+	static float fov[2] = { -1.0f, -1.0f };
+	static float result[2];
+	static int   next;
+	int          i;
+
+	for (i = 0; i < 2; i++)
+	{
+		if (fov[i] == fovDegrees)
+		{
+			return result[i];
+		}
+	}
+	i = next;
+	next ^= 1;
+	fov[i] = fovDegrees;
+	result[i] = tan(fovDegrees * (float)M_PI / 360.0f);
+	return result[i];
+}
+
 #define WAVE_AMPLITUDE  1
 #define WAVE_FREQUENCY  0.4
 
@@ -1069,6 +1098,7 @@ static void CG_PowerupTimerSounds(void)
 		        (tBs == 0 && cg_prevBattleSuitEnd > cg.oldTime))
 		{
 			trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_ITEM, cgs.media.roundWarmup0Sound);
+			CG_AnnouncerCountdown(0);
 		}
 	}
 
@@ -1122,6 +1152,11 @@ static void CG_PowerupTimerSounds(void)
 			if (sfx)
 			{
 				trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_ITEM, sfx);
+				/* the beeps before a round: one for each second left */
+				if (roundWarmupActive && i == PW_BATTLESUIT)
+				{
+					CG_AnnouncerCountdown((t - cg.time) / POWERUP_BLINK_TIME + 1);
+				}
 			}
 		}
 	}
@@ -1977,6 +2012,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 
 	// actually issue the rendering calls
 	CG_DrawActive(stereoView);
+	CG_DrawInformationFade();
 
 	if (cg_stats.integer)
 	{

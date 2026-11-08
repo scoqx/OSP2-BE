@@ -1315,24 +1315,25 @@ MatrixMultiply
 */
 void MatrixMultiply(float in1[3][3], float in2[3][3], float out[3][3])
 {
-	out[0][0] = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] +
-	            in1[0][2] * in2[2][0];
-	out[0][1] = in1[0][0] * in2[0][1] + in1[0][1] * in2[1][1] +
-	            in1[0][2] * in2[2][1];
-	out[0][2] = in1[0][0] * in2[0][2] + in1[0][1] * in2[1][2] +
-	            in1[0][2] * in2[2][2];
-	out[1][0] = in1[1][0] * in2[0][0] + in1[1][1] * in2[1][0] +
-	            in1[1][2] * in2[2][0];
-	out[1][1] = in1[1][0] * in2[0][1] + in1[1][1] * in2[1][1] +
-	            in1[1][2] * in2[2][1];
-	out[1][2] = in1[1][0] * in2[0][2] + in1[1][1] * in2[1][2] +
-	            in1[1][2] * in2[2][2];
-	out[2][0] = in1[2][0] * in2[0][0] + in1[2][1] * in2[1][0] +
-	            in1[2][2] * in2[2][0];
-	out[2][1] = in1[2][0] * in2[0][1] + in1[2][1] * in2[1][1] +
-	            in1[2][2] * in2[2][1];
-	out[2][2] = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] +
-	            in1[2][2] * in2[2][2];
+	/* Each element read once into a local: the QVM compiler would load every one of them three times.
+	   Same products and sums in the same order, so the result does not change. */
+	const float b00 = in2[0][0], b01 = in2[0][1], b02 = in2[0][2];
+	const float b10 = in2[1][0], b11 = in2[1][1], b12 = in2[1][2];
+	const float b20 = in2[2][0], b21 = in2[2][1], b22 = in2[2][2];
+	float a0, a1, a2;
+
+	a0 = in1[0][0]; a1 = in1[0][1]; a2 = in1[0][2];
+	out[0][0] = a0 * b00 + a1 * b10 + a2 * b20;
+	out[0][1] = a0 * b01 + a1 * b11 + a2 * b21;
+	out[0][2] = a0 * b02 + a1 * b12 + a2 * b22;
+	a0 = in1[1][0]; a1 = in1[1][1]; a2 = in1[1][2];
+	out[1][0] = a0 * b00 + a1 * b10 + a2 * b20;
+	out[1][1] = a0 * b01 + a1 * b11 + a2 * b21;
+	out[1][2] = a0 * b02 + a1 * b12 + a2 * b22;
+	a0 = in1[2][0]; a1 = in1[2][1]; a2 = in1[2][2];
+	out[2][0] = a0 * b00 + a1 * b10 + a2 * b20;
+	out[2][1] = a0 * b01 + a1 * b11 + a2 * b21;
+	out[2][2] = a0 * b02 + a1 * b12 + a2 * b22;
 }
 
 

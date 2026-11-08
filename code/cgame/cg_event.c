@@ -262,6 +262,7 @@ void CG_Obituary(entityState_t* ent)
 		if (cg_fragEffect.integer && cg_fragEffectTime.integer > 0)
 		{
 			cg.fragWeaponEffectClientNum = attacker;
+			cg.fragWeaponEffectStart = cg.time;
 			cg.fragWeaponEffectTime = cg.time + cg_fragEffectTime.integer;
 		}
 	}
@@ -1454,6 +1455,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			{
 				trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_AUTO, CG_CustomSound(es->number, s));
 			}
+			CG_AnnouncerSoundName(s);
 			break;
 
 		case EV_GLOBAL_TEAM_SOUND:  // play from the player's head so it never diminishes
@@ -1602,10 +1604,14 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 
 		case EV_OBITUARY:
 			DEBUGNAME("EV_OBITUARY");
-			/* What comes from the killcam's history has already run */
+			/* What comes from the killcam's history has already run: only the frags of the one watched play again */
 			if (!cg_killcamRingRead)
 			{
 				CG_Obituary(es);
+			}
+			else
+			{
+				CG_KillcamReplayObituary(es);
 			}
 			break;
 

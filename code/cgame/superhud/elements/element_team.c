@@ -8,6 +8,7 @@
 #define TEAM_STYLE2_AP_YFRAC      0.77f
 #define TEAM_STYLE2_BAR_A0        0.33f
 #define TEAM_STYLE2_BAR_A1        0.66f
+#define TEAM_STYLE2_LOSS_A        0.75f
 #define TEAM_STYLE2_DEFAULT_NAMEW 12
 /* Frame thickness 1.0 at this row height; scales down for smaller squares */
 #define TEAM_STYLE2_FRAME_REF_H   48.0f
@@ -131,6 +132,33 @@ static void CG_SHUDTeamStyle2DrawBar(float x, float y, float maxW, float h, int 
 		fw = maxW * ((float)over / 100.0f);
 		c[3] = TEAM_STYLE2_BAR_A1;
 		CG_FillRect(x, y, fw, h, c);
+	}
+}
+
+/* What was just lost, in red, past the end of the bar: both layers as the bar draws them */
+static void CG_SHUDTeamStyle2DrawLoss(float x, float y, float maxW, float h, int value, float shown)
+{
+	vec4_t c;
+	int layer;
+
+	if (maxW <= 0.0f || h <= 0.0f || shown <= (float)value)
+	{
+		return;
+	}
+	Vector4Copy(cg_healthTrailColor, c);
+	c[3] = TEAM_STYLE2_LOSS_A;
+	for (layer = 0; layer < 2; layer++)
+	{
+		float a = (float)value - 100.0f * layer;
+		float b = shown - 100.0f * layer;
+
+		if (a < 0.0f) a = 0.0f;
+		if (a > 100.0f) a = 100.0f;
+		if (b > 100.0f) b = 100.0f;
+		if (b > a)
+		{
+			CG_FillRect(x + maxW * a / 100.0f, y, maxW * (b - a) / 100.0f, h, c);
+		}
 	}
 }
 
@@ -576,6 +604,10 @@ static void CG_SHUDElementTeamRoutineStyle2(shudElementTeam_t* element, clientIn
 
 	CG_SHUDTeamStyle2DrawBar(contentX, rowY, contentW, hpH, ci->health, hpColor);
 	CG_SHUDTeamStyle2DrawBar(contentX, apY, contentW, apH, ci->armor, apColor);
+	CG_SHUDTeamStyle2DrawLoss(contentX, rowY, contentW, hpH, ci->health,
+	                          CG_HealthTrail(clientNum, HEALTH_TRAIL_HEALTH, ci->health));
+	CG_SHUDTeamStyle2DrawLoss(contentX, apY, contentW, apH, ci->armor,
+	                          CG_HealthTrail(clientNum, HEALTH_TRAIL_ARMOR, ci->armor));
 
 	Vector4Set(element->ctxName.color, 1.0f, 1.0f, 1.0f, 1.0f);
 	element->ctxName.text = ci->name_clean;
@@ -822,13 +854,13 @@ void CG_SHUDElementTeamRoutine(void* context)
 			{
 				barX -= (float)element->ctxHealthArmor.width;
 			}
-			CG_DrawHealthBar(barX,
-			                 element->config.rect.value[1],
-			                 (float)element->ctxHealthArmor.width,
-			                 element->config.rect.value[3],
-			                 ci->health, ci->armor, element->config.color.value.rgba[3],
-			                 (cg_teamHealthBar.integer == 2) ? element->ctxHealthArmor.fontIndex : -1, qfalse,
-			                 barColorSrc, qtrue);
+			CG_DrawHealthBarEx(barX,
+			                   element->config.rect.value[1],
+			                   (float)element->ctxHealthArmor.width,
+			                   element->config.rect.value[3],
+			                   ci->health, ci->armor, element->config.color.value.rgba[3],
+			                   (cg_teamHealthBar.integer == 2) ? element->ctxHealthArmor.fontIndex : -1, qfalse,
+			                   barColorSrc, qtrue, clientNum);
 		}
 		else
 		{

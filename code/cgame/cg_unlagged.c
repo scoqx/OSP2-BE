@@ -380,7 +380,7 @@ void CG_AddPredictedMissiles(void)
 		VectorCopy(origin, ent.oldorigin);
 		ent.reType = RT_MODEL;
 		ent.skinNum = cg.clientFrame & 1;
-		ent.hModel = weapon->missileModel;
+		ent.hModel = CG_MISSILE_MODEL(pm->weapon, weapon);
 		ent.renderfx = weapon->missileRenderfx | RF_NOSHADOW;
 		if (VectorNormalize2(pm->pos.trDelta, ent.axis[0]) == 0)
 		{

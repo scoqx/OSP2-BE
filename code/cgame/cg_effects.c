@@ -925,8 +925,8 @@ void CG_HudBorderMarker(vec3_t origin, vec4_t color, float radius, qhandle_t sha
 		return;
 	}
 
-	hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
-	tanX = tan(hfov_x);
+	(void)hfov_x;
+	tanX = CG_TanHalfFov(cg.refdef.fov_x);
 	markerRadius = 0.5f * radius * tanX;
 	if (markerRadius < 0.1f)
 	{
@@ -988,8 +988,8 @@ void CG_DrawPulseMarker(vec3_t origin, float markerRadius, float pulseScale, con
 		return;
 	}
 
-	hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
-	tanX = tan(hfov_x);
+	(void)hfov_x;
+	tanX = CG_TanHalfFov(cg.refdef.fov_x);
 	posRadius = 0.5f * markerRadius * tanX;
 	if (posRadius < 0.1f)
 	{

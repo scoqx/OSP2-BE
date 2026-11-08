@@ -504,6 +504,112 @@ void CG_DrawTeamBackground(int x, int y, int w, int h, float alpha, int team)
 #define HBAR_STYLE_FONT_BLACK      4
 #define HBAR_STYLE_SHADOW          8
 #define HBAR_FILL_ALPHA_SCALE      0.65f
+#define HBAR_TRAIL_ALPHA_SCALE     0.85f
+
+#define HEALTH_TRAIL_HOLD_MS       250     /* the loss stays in full a moment, to be seen */
+#define HEALTH_TRAIL_DRAIN_MS      500     /* then goes down to the real value */
+#define HEALTH_TRAIL_STALE_MS      1000    /* not drawn this long: nothing to go on from */
+#define HEALTH_TRAIL_ROT_MAX       100     /* above this health and armor count down by one a second: not a loss */
+#define HEALTH_TRAIL_ROT_MS        1000
+#define HEALTH_TRAIL_ROT_STEP_MAX  2       /* a shaft hit (6) puts 3 into health and 3 into armor: that is a loss */
+
+const vec4_t cg_healthTrailColor = { 1.0f, 0.1f, 0.1f, 1.0f };
+
+typedef struct
+{
+	float   shown;      /* where the bar ends now, the red part included */
+	float   from;       /* where the drain started */
+	int     value;      /* the real value last time */
+	int     valueTime;  /* when it last changed */
+	int     dropTime;   /* when the last loss came */
+	int     lastTime;   /* when it was last drawn; 0 never */
+} healthTrail_t;
+
+static healthTrail_t cg_healthTrails[MAX_CLIENTS][HEALTH_TRAIL_KINDS];
+
+float CG_HealthTrail(int clientNum, healthTrailKind_t kind, int value)
+{
+	healthTrail_t* t;
+	int elapsed;
+
+	if (value < 0)
+	{
+		value = 0;
+	}
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS || kind < 0 || kind >= HEALTH_TRAIL_KINDS)
+	{
+		return (float)value;
+	}
+	t = &cg_healthTrails[clientNum][kind];
+
+	/* first time, time went back (killcam, restart), a gap, or a heal past what is shown: nothing lost to show */
+	if (!t->lastTime || cg.time < t->lastTime || cg.time - t->lastTime > HEALTH_TRAIL_STALE_MS || (float)value >= t->shown)
+	{
+		t->shown = t->from = (float)value;
+		if (value != t->value || !t->lastTime)
+		{
+			t->valueTime = cg.time;
+		}
+		t->value = value;
+		t->dropTime = 0;
+		t->lastTime = cg.time;
+		return (float)value;
+	}
+
+	if (value < t->value)
+	{
+		/* over 100 the value counts down by one a second: that much since the last change is no loss */
+		int rot = (cg.time - t->valueTime) / HEALTH_TRAIL_ROT_MS + 1;
+		qboolean rotting;
+
+		/* a long quiet then a hit is a loss: the countdown never gets that far between two reports */
+		if (rot > HEALTH_TRAIL_ROT_STEP_MAX)
+		{
+			rot = HEALTH_TRAIL_ROT_STEP_MAX;
+		}
+		rotting = t->value > HEALTH_TRAIL_ROT_MAX && value >= HEALTH_TRAIL_ROT_MAX && t->value - value <= rot;
+
+		if (!rotting)
+		{
+			/* a new loss: the red part holds again from where it is */
+			t->from = t->shown;
+			t->dropTime = cg.time;
+		}
+		else if (t->dropTime && cg.time - t->dropTime >= HEALTH_TRAIL_HOLD_MS + HEALTH_TRAIL_DRAIN_MS)
+		{
+			t->dropTime = 0;
+		}
+	}
+	if (value != t->value)
+	{
+		t->valueTime = cg.time;
+	}
+	t->value = value;
+	t->lastTime = cg.time;
+
+	if (!t->dropTime)
+	{
+		t->shown = (float)value;
+		return t->shown;
+	}
+	elapsed = cg.time - t->dropTime - HEALTH_TRAIL_HOLD_MS;
+	if (elapsed <= 0)
+	{
+		t->shown = t->from;
+	}
+	else if (elapsed >= HEALTH_TRAIL_DRAIN_MS)
+	{
+		t->shown = (float)value;
+	}
+	else
+	{
+		float f = (float)elapsed / (float)HEALTH_TRAIL_DRAIN_MS;
+
+		f = f * f * (3.0f - 2.0f * f);
+		t->shown = t->from + ((float)value - t->from) * f;
+	}
+	return t->shown;
+}
 
 /*
 ================
@@ -516,6 +622,11 @@ fontIndex: -1 = bar only, >= 0 = bar and values.
 barColorSrc: optional RGB from cg.healthColorByClient (blink/levels); alpha channel is ignored.
 */
 void CG_DrawHealthBar(float x, float y, float width, float height, int health, int armor, float alpha, int fontIndex, qboolean useCvarTextStyle, vec4_t* barColorSrc, qboolean teamOverlayHealthBar)
+{
+	CG_DrawHealthBarEx(x, y, width, height, health, armor, alpha, fontIndex, useCvarTextStyle, barColorSrc, teamOverlayHealthBar, -1);
+}
+
+void CG_DrawHealthBarEx(float x, float y, float width, float height, int health, int armor, float alpha, int fontIndex, qboolean useCvarTextStyle, vec4_t* barColorSrc, qboolean teamOverlayHealthBar, int trailClient)
 {
 	int style;
 	float r;
@@ -577,6 +688,21 @@ void CG_DrawHealthBar(float x, float y, float width, float height, int health, i
 	}
 	color[3] = alpha * HBAR_FILL_ALPHA_SCALE;
 	CG_FillRect(bx, by, r * bw, bh, color);
+
+	if (trailClient >= 0)
+	{
+		/* each part on its own, so that the countdown over 100 of either is no loss */
+		float lost = CG_GetTotalHitPoints((int)(CG_HealthTrail(trailClient, HEALTH_TRAIL_HEALTH, health) + 0.5f),
+		                                  (int)(CG_HealthTrail(trailClient, HEALTH_TRAIL_ARMOR, armor) + 0.5f)) / 400.0f;
+
+		if (lost > 1.0f) lost = 1.0f;
+		if (lost > r)
+		{
+			Vector4Copy(cg_healthTrailColor, color);
+			color[3] = alpha * HBAR_TRAIL_ALPHA_SCALE;
+			CG_FillRect(bx + r * bw, by, (lost - r) * bw, bh, color);
+		}
+	}
 
 	if (fontIndex < 0)
 		return;
@@ -1126,9 +1252,9 @@ static float CG_DrawTeamOverlay(float y, qboolean right, qboolean upper)
 
 			if (cg_teamHealthBar.integer >= 1)
 			{
-				CG_DrawHealthBar((float)xx, (float)y, 7.0f * TINYCHAR_WIDTH, (float)TINYCHAR_HEIGHT, ci->health, ci->armor, 1.0f,
-				                 (cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue,
-				                 &cg.healthColorByClient[sortedTeamPlayers[i]], qtrue);
+				CG_DrawHealthBarEx((float)xx, (float)y, 7.0f * TINYCHAR_WIDTH, (float)TINYCHAR_HEIGHT, ci->health, ci->armor, 1.0f,
+				                   (cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue,
+				                   &cg.healthColorByClient[sortedTeamPlayers[i]], qtrue, sortedTeamPlayers[i]);
 			}
 			else
 			{
@@ -4551,7 +4677,8 @@ void CG_DrawActive(stereoFrame_t stereoView)
 			CG_DrawSelwheelPointers();
 	}
 
-	// draw 3D view
+	// draw 3D view; nothing batched may be left out of it
+	CG_PolyBatchFlush();
 	trap_R_RenderScene(&cg.refdef);
 
 	// restore original viewpoint if running stereo
@@ -4592,8 +4719,6 @@ void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, flo
 	refEntity_t ent;
 	float dist;
 	vec3_t centerPos;
-	float hfov_x;
-	float hfov_y;
 	float radius;
 	float dx;
 	float dy;
@@ -4627,8 +4752,6 @@ void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, flo
 	if (a < 0) a = 0;
 
 	// Calculate FOV
-	hfov_x = cg.refdef.fov_x * M_PI / 360.0f;
-	hfov_y = cg.refdef.fov_y * M_PI / 360.0f;
 
 	// Calculate position based on screen coordinates
 	// Convert screen position to 3D position in front of camera
@@ -4639,8 +4762,8 @@ void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, flo
 	dy = y - (float)SCREEN_HEIGHT * 0.5f;
 
 	// Convert screen offset to 3D offset on plane in front of camera
-	offsetX = dx * tan(hfov_x) / (SCREEN_WIDTH * 0.5f) * dist;
-	offsetY = -dy * tan(hfov_y) / (SCREEN_HEIGHT * 0.5f) * dist; // Negative because screen Y increases downward
+	offsetX = dx * CG_TanHalfFov(cg.refdef.fov_x) / (SCREEN_WIDTH * 0.5f) * dist;
+	offsetY = -dy * CG_TanHalfFov(cg.refdef.fov_y) / (SCREEN_HEIGHT * 0.5f) * dist; // Negative because screen Y increases downward
 
 	// Start from center position in front of camera
 	VectorScale(cg.refdef.viewaxis[0], dist, centerPos);
@@ -4658,7 +4781,7 @@ void CG_DrawRotatedPic(float x, float y, float w, float h, qhandle_t shader, flo
 
 	// Calculate size based on screen size and FOV
 	// Convert screen width to 3D radius
-	radius = w * 0.5f * tan(hfov_x) / (SCREEN_WIDTH * 0.5f) * dist;
+	radius = w * 0.5f * CG_TanHalfFov(cg.refdef.fov_x) / (SCREEN_WIDTH * 0.5f) * dist;
 	ent.radius = radius;
 
 	if (ent.radius < 0.1f)

@@ -255,7 +255,7 @@ static void CG_General(centity_t* cent)
 	}
 
 	// convert angles to axis
-	AnglesToAxis(cent->lerpAngles, ent.axis);
+	CG_ModelAnglesToAxis(cent->lerpAngles, ent.axis);
 
 	// add to refresh list
 	trap_R_AddRefEntityToScene(&ent);
@@ -540,9 +540,11 @@ void CG_AddWorldItem3D(const vec3_t inOrigin, int modelindex, int entNumber, int
 
 	if (itemFx & 1)
 	{
-		float scale;
+		float scale, s, c;
 		scale = 0.005f + entNumber * 0.00001f;
-		origin[2] += 4.0f + cos((cg.time + 1000) * scale) * 4.0f;
+		/* the time in radians, as cos() took it, into degrees */
+		CG_FastSinCos((float)(cg.time + 1000) * scale * (180.0f / (float)M_PI), &s, &c);
+		origin[2] += 4.0f + c * 4.0f;
 	}
 
 	if (itemFx & 2)
@@ -693,7 +695,7 @@ void CG_AddWorldItem3D(const vec3_t inOrigin, int modelindex, int entNumber, int
 					ent.origin[2] += 12;
 					spinAngles[1] = (cg.time & 1023) * 360.0f / -1024.0f;
 				}
-				AnglesToAxis(spinAngles, ent.axis);
+				CG_ModelAnglesToAxis(spinAngles, ent.axis);
 				if (frac != 1.0f)
 				{
 					VectorScale(ent.axis[0], frac, ent.axis[0]);
@@ -897,7 +899,7 @@ static void CG_Missile(centity_t* cent)
 
 	// flicker between two skins
 	ent.skinNum = cg.clientFrame & 1;
-	ent.hModel = weapon->missileModel;
+	ent.hModel = CG_MISSILE_MODEL(s1->weapon, weapon);
 	ent.renderfx = weapon->missileRenderfx | RF_NOSHADOW;
 
 	if (cent->currentState.weapon == WP_GRENADE_LAUNCHER && cg_altGrenades.integer)
@@ -1029,7 +1031,7 @@ static void CG_Grapple(centity_t* cent)
 
 	// flicker between two skins
 	ent.skinNum = cg.clientFrame & 1;
-	ent.hModel = weapon->missileModel;
+	ent.hModel = CG_MISSILE_MODEL(s1->weapon, weapon);
 	ent.renderfx = weapon->missileRenderfx | RF_NOSHADOW;
 
 	// convert direction of travel into axis
@@ -1057,7 +1059,7 @@ static void CG_Mover(centity_t* cent)
 	memset(&ent, 0, sizeof(ent));
 	VectorCopy(cent->lerpOrigin, ent.origin);
 	VectorCopy(cent->lerpOrigin, ent.oldorigin);
-	AnglesToAxis(cent->lerpAngles, ent.axis);
+	CG_ModelAnglesToAxis(cent->lerpAngles, ent.axis);
 
 	ent.renderfx = RF_NOSHADOW;
 
@@ -1405,7 +1407,7 @@ static void CG_TeamBase(centity_t* cent)
 		model.reType = RT_MODEL;
 		VectorCopy(cent->lerpOrigin, model.lightingOrigin);
 		VectorCopy(cent->lerpOrigin, model.origin);
-		AnglesToAxis(cent->currentState.angles, model.axis);
+		CG_ModelAnglesToAxis(cent->currentState.angles, model.axis);
 		if (cent->currentState.modelindex == TEAM_RED)
 		{
 			model.hModel = cgs.media.redFlagBaseModel;

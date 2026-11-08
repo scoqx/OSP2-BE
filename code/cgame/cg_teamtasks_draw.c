@@ -786,8 +786,8 @@ void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark)
 	}
 
 	distance = MAX(distance, 1.0f);
-	hfov_x = refdef->fov_x * (float)M_PI / 360.0f;
-	size = 1.0f / tan(hfov_x) * 1000.0f / distance;
+	(void)hfov_x;
+	size = 1.0f / CG_TanHalfFov(refdef->fov_x) * 1000.0f / distance;
 	size = MIN(maxScale, size);
 	size = MAX(minScale, size);
 

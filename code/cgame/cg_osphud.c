@@ -2100,9 +2100,9 @@ static float CG_OSPDrawTeamOverlay(float y, qboolean right, qboolean upper)
 				{
 					barX = (float)teamOverlay.armorOffsetChar;
 				}
-				CG_DrawHealthBar(barX, y, barW, (float)h, ci->health, ci->armor, 1.0f,
-				                 (cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue,
-				                 &cg.healthColorByClient[sortedTeamPlayers[i]], qtrue);
+				CG_DrawHealthBarEx(barX, y, barW, (float)h, ci->health, ci->armor, 1.0f,
+				                   (cg_teamHealthBar.integer == 2) ? 0 : -1, qtrue,
+				                   &cg.healthColorByClient[sortedTeamPlayers[i]], qtrue, sortedTeamPlayers[i]);
 			}
 			else
 			{

@@ -3010,6 +3010,17 @@ AnglesToAxis itself must stay exact: movement prediction has to match the server
 static float cg_sinTable[CG_SIN_TABLE_SIZE + 1];
 static qboolean cg_sinTableReady;
 
+static void CG_SinTableInit(void)
+{
+	int i;
+
+	for (i = 0; i <= CG_SIN_TABLE_SIZE; i++)
+	{
+		cg_sinTable[i] = sin(i * (float)M_PI * 2.0f / CG_SIN_TABLE_SIZE);
+	}
+	cg_sinTableReady = qtrue;
+}
+
 static void CG_TableSinCos(float degrees, float* outSin, float* outCos)
 {
 	float pos;
@@ -3030,19 +3041,24 @@ static void CG_TableSinCos(float degrees, float* outSin, float* outCos)
 	*outCos = cg_sinTable[cosIndex] + (cg_sinTable[cosIndex + 1] - cg_sinTable[cosIndex]) * frac;
 }
 
-static void CG_ModelAnglesToAxis(const vec3_t angles, vec3_t axis[3])
+/* Sine and cosine of an angle in degrees, for what is only drawn: no engine call */
+void CG_FastSinCos(float degrees, float* outSin, float* outCos)
+{
+	if (!cg_sinTableReady)
+	{
+		CG_SinTableInit();
+	}
+	CG_TableSinCos(degrees, outSin, outCos);
+}
+
+/* AnglesToAxis for what is only drawn. Not for movement or anything the server must agree on. */
+void CG_ModelAnglesToAxis(const vec3_t angles, vec3_t axis[3])
 {
 	float sy, cy, sp, cp, sr, cr;
 
 	if (!cg_sinTableReady)
 	{
-		int i;
-
-		for (i = 0; i <= CG_SIN_TABLE_SIZE; i++)
-		{
-			cg_sinTable[i] = sin(i * (float)M_PI * 2.0f / CG_SIN_TABLE_SIZE);
-		}
-		cg_sinTableReady = qtrue;
+		CG_SinTableInit();
 	}
 
 	CG_TableSinCos(angles[YAW], &sy, &cy);
@@ -3174,7 +3190,7 @@ static void CG_PlayerAngles(centity_t* cent, vec3_t legs[3], vec3_t torso[3], ve
 
 		speed *= 0.05f;
 
-		AnglesToAxis(legsAngles, axis);
+		CG_ModelAnglesToAxis(legsAngles, axis);
 		side = speed * DotProduct(velocity, axis[1]);
 		if (cg_showPlayerLean.integer != 0)
 		{
@@ -5139,8 +5155,8 @@ void CG_FriendHudMarkerAtOriginExt(vec3_t origin, const clientInfo_t* ci, int cl
 		vec4_t color;
 
 		dist = MAX(dist, 1.0f);
-		hfov_x = cg.refdef.fov_x * (float)M_PI / 360.0f;
-		sz = 1.0f / tan(hfov_x) * 150.0f / dist;
+		(void)hfov_x;
+		sz = 1.0f / CG_TanHalfFov(cg.refdef.fov_x) * 150.0f / dist;
 		sz = MIN(cg_friendHudMarkerMaxScale.value, MAX(cg_friendHudMarkerMinScale.value, sz));
 		if ((cg_healthColorLevels.integer & 2) || ci->health <= 0)
 			Vector4Copy(colorWhite, color);

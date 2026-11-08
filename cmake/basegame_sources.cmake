@@ -36,6 +36,7 @@ set(CGAME_SOURCES
     ${SOURCE_DIR}/cgame/cg_snapshot.c
     ${SOURCE_DIR}/cgame/cg_killcam.c
     ${SOURCE_DIR}/cgame/cg_visualsounds.c
+    ${SOURCE_DIR}/cgame/cg_announcer.c
     ${SOURCE_DIR}/cgame/cg_view.c
     ${SOURCE_DIR}/cgame/cg_weapons.c
     ${SOURCE_DIR}/cgame/cg_printui.c
@@ -79,6 +80,7 @@ set(CGAME_SOURCES
     ${SOURCE_DIR}/cgame/superhud/elements/element_attacker_name.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_attacker_icon.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_fragmessage.c
+    ${SOURCE_DIR}/cgame/superhud/elements/element_announcer.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_rankmessage.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_ng.c
     ${SOURCE_DIR}/cgame/superhud/elements/element_ngp.c

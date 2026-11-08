@@ -44,6 +44,7 @@ ELEMENT { ELEMENT_COMMAND VALUE; ELEMENT_COMMAND VALUE; }
 | FollowMessage                 | Сообщение "Following PlayerName".                            |
 | FPS                           | Счетчик FPS.                                                 |
 | FragMessage                   | Сообщение о полученном фраге.                                |
+| Announcer                     | Слова диктора текстом: 4 последние фразы (cg_announcerText). direction B - новая снизу (по умолчанию), T - новая сверху. |
 | KillConfirm                   | Kill Confirm: "Kill confirmed" / "Kill returned".            |
 | GameTime                      | Игровое время.                                               |
 | ItemPickup                    | Название подобранного итема и игровое время.                 |

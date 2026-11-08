@@ -20,3 +20,19 @@ set(CGAME_MODULE cgame)
 set(UI_MODULE ui)
 
 set(ASSETS_LOCATION ${CMAKE_SOURCE_DIR}/assets)
+
+# The changelogs the menu shows (latest entry, full list newest first), every version and beta
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+  execute_process(
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/parse_changelog.py ${MOD_CHANGELOG}
+            ${CMAKE_BINARY_DIR}/version_from_changelog.txt
+            ${ASSETS_LOCATION}/version_changelog.txt
+            ${ASSETS_LOCATION}/docs/changelog_be_r.txt
+    RESULT_VARIABLE MOD_CHANGELOG_RESULT)
+  if(NOT MOD_CHANGELOG_RESULT EQUAL 0)
+    message(WARNING "parse_changelog.py failed, the menu changelogs are not updated")
+  endif()
+else()
+  message(WARNING "Python 3 not found, the menu changelogs are not updated")
+endif()

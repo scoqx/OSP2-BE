@@ -1129,11 +1129,19 @@ SuperHUD:
 * Performance optimisation
 * Various fixes
 
-08.11.2026 be v1.10c-beta3
+08.11.2026 be v1.10c-beta4
 + cg_killcam 2 - first person
 + cg_autoFollow
 + cg_visualSounds 0/1/2 - sound icons around the crosshair (light/dark)
 + cg_damagePlumsColor - color of damage plums
 + cg_smoothTime 0/1 - test: even steps of game time
++ cg_announcerText - announcer subtitles
++ cg_newRocket 
+- cg_oldRocket, cg_oldPlasma
++ Team overlay: visual improvement
++ New menu textures: background, buttons, frames, HQ font
+- InfoDetail fading
+- New bulletExplosion (machinegun and shotgun)
+- Some default menu cvars values has been changed
 * Performance optimisation
 * Various fixes

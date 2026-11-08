@@ -20,7 +20,7 @@ SERVER STATUS (getstatus / mod_sig, main menu bar)
 #define UI_STATUS_CHANGELOG_FILE        "version_changelog.txt"
 #define UI_STATUS_FULL_CHANGELOG_FILE   "docs/changelog_be_r.txt"
 #define UI_STATUS_CHANGELOG_READ_MAX    8192
-#define UI_STATUS_FULL_CHANGELOG_MAX    32768
+#define UI_STATUS_FULL_CHANGELOG_MAX    65536
 #define UI_STATUS_FULL_CHANGELOG_TOP    200.0f
 #define UI_STATUS_FULL_BTN_LABEL        "Full changelog"
 #define UI_STATUS_CHAR_WIDTH            8.0f
@@ -2910,9 +2910,9 @@ static void UI_ServerStatus_GetBarMessage(const char** outText, vec4_t outColor)
 
 	/* Remote version-check disabled: always Welcome! Local changelog still expands. */
 	*outText = "Welcome!";
-	outColor[0] = 0.2f;
-	outColor[1] = 0.85f;
-	outColor[2] = 0.2f;
+	outColor[0] = 1.0f;
+	outColor[1] = 1.0f;
+	outColor[2] = 1.0f;
 	outColor[3] = 1.0f;
 }
 

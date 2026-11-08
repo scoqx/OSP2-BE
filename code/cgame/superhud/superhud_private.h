@@ -615,6 +615,9 @@ void* CG_SHUDElementAttackerIconCreate(const superhudConfig_t* config);
 void CG_SHUDElementAttackerIconRoutine(void* context);
 void CG_SHUDElementAttackerIconDestroy(void* context);
 
+void* CG_SHUDElementAnnouncerCreate(const superhudConfig_t* config);
+void CG_SHUDElementAnnouncerRoutine(void* context);
+void CG_SHUDElementAnnouncerDestroy(void* context);
 void* CG_SHUDElementFragMessageCreate(const superhudConfig_t* config);
 void CG_SHUDElementFragMessageRoutine(void* context);
 void CG_SHUDElementFragMessageDestroy(void* context);

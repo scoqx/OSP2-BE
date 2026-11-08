@@ -832,8 +832,11 @@ void CG_CheckLocalSounds(playerState_t* ps, playerState_t* ops)
 	// incoming damage changes
 	CG_DamageSound(ps, ops);
 
-	// hit changes
-	CG_HitSound(ps, ops);
+	// hit changes; a killcam replay replays our own old hits, they are not new ones
+	if (cg_killcamState != CG_KILLCAM_REPLAY)
+	{
+		CG_HitSound(ps, ops);
+	}
 
 
 	if (ps->stats[STAT_HEALTH] < ops->stats[STAT_HEALTH] - 1 && ps->stats[STAT_HEALTH] > 0 && !CG_KILLCAM_FIRST_PERSON())

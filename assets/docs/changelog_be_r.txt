@@ -1,3 +1,29 @@
+09.11.2026 be v1.10c-beta4
++ cg_announcerText - announcer as text (SuperHUD element announcer)
++ Team overlay: health a teammate just lost shows in red and drains away
++ cg_newRocket 
++ New menu textures: background, buttons, frames, HQ font
+- cg_oldRocket, cg_oldPlasma
+- InfoDetail fading
+- New bulletExplosion (machinegun and shotgun)
+- Some default menu cvars values has been changed
+08.11.2026 be v1.10c-beta3
++ cg_killcam 2 - first person
++ cg_autoFollow
++ cg_visualSounds 0/1/2 - sound icons around the crosshair (light/dark)
++ cg_damagePlumsColor - color of damage plums
++ cg_smoothTime 0/1 - test: even steps of game time
+* Performance optimisation
+* Various fixes
+
+06.11.2026 be v1.10c-beta2
++ Colorable weapon's flash
++ cg_killCam 0/1
++ cg_smokeNew 1 - black smoke
++ Replaced default smokepuff2b (for breath/shotgun)
+* Performance optimisation
+* Various fixes
+
 02.11.2026 be v1.10b
 + OSP2 Synchronization
 
@@ -707,6 +733,7 @@ SHUD:
 SHUD: 
 + visflags, gt_ffa, gt_tourney, gt_tdm, gt_ctf, gt_unfreeze, gt_clanarena
 
+
 03.09.2025 be v0.94e
 SHUD:
 + config - ChikiPiki.cfg (by Musin)
@@ -1062,7 +1089,6 @@ SHUD:
 
 07.04.2025 be v0.032
   + cg_drawHitBox 3
-    
 
 06.04.2025 be v0.032
   + cg_drawHitBox 2

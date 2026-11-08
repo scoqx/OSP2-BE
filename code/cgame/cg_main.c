@@ -169,8 +169,7 @@ vmCvar_t           phy_overbounce_fix;
 vmCvar_t           cg_noTaunt;
 vmCvar_t           cg_noProjectileTrail;
 vmCvar_t           cg_oldRail;
-vmCvar_t           cg_oldRocket;
-vmCvar_t           cg_oldPlasma;
+vmCvar_t           cg_newRocket;
 vmCvar_t           cg_altGrenades;
 vmCvar_t           cg_altLightning;
 vmCvar_t           cg_altPlasma;
@@ -227,6 +226,7 @@ vmCvar_t           cg_smokeNew;
 vmCvar_t           cg_killcam;
 vmCvar_t           cg_smoothTime;
 vmCvar_t           cg_visualSounds;
+vmCvar_t           cg_announcerText;
 vmCvar_t           s_volume;
 vmCvar_t           cg_autoFollow;
 #ifdef CG_PREDICT_HITSCAN
@@ -752,8 +752,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_noTaunt, "cg_noTaunt", "0", CVAR_ARCHIVE },
 	{ &cg_noProjectileTrail, "cg_noProjectileTrail", "0", CVAR_ARCHIVE },
 	{ &cg_oldRail, "cg_oldRail", "1", CVAR_ARCHIVE },
-	{ &cg_oldRocket, "cg_oldRocket", "1", CVAR_ARCHIVE },
-	{ &cg_oldPlasma, "cg_oldPlasma", "1", CVAR_ARCHIVE },
+	{ &cg_newRocket, "cg_newRocket", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_dlightRL },
 	{ &cg_altGrenades, "cg_altGrenades", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_altLightning, "cg_altLightning", "0", CVAR_ARCHIVE },
 	{ &cg_ammoCheck, "cg_ammoCheck", "0", CVAR_ARCHIVE },
@@ -785,8 +784,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_forceColors, "cg_forceColors", "0", CVAR_ARCHIVE },
 	{ &cg_lightningImpact, "cg_lightningImpact", "0", CVAR_ARCHIVE },
 	{ &cg_lightningTrail, "cg_lightningTrail", "0", CVAR_ARCHIVE },
-	{ &cg_lightningTrailTime, "cg_lightningTrailTime", "400", CVAR_ARCHIVE },
-	{ &cg_lightningTrailWidth, "cg_lightningTrailWidth", "1.5", CVAR_ARCHIVE },
+	{ &cg_lightningTrailTime, "cg_lightningTrailTime", "2000", CVAR_ARCHIVE },
+	{ &cg_lightningTrailWidth, "cg_lightningTrailWidth", "0.5", CVAR_ARCHIVE },
 	{ &cg_MaxlocationWidth, "cg_MaxlocationWidth", "16", CVAR_ARCHIVE },
 	{ &cg_muzzleFlash, "cg_muzzleFlash", "1", CVAR_ARCHIVE },
 	{ &cg_nochatbeep, "cg_noChatBeep", "0", CVAR_ARCHIVE },
@@ -809,6 +808,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_killcam, "cg_killcam", "2", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_smoothTime, "cg_smoothTime", "0", CVAR_ARCHIVE },
 	{ &cg_visualSounds, "cg_visualSounds", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_visualSounds },
+	{ &cg_announcerText, "cg_announcerText", "1", CVAR_ARCHIVE },
 	{ &s_volume, "s_volume", "0.8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_s_volume },
 	{ &cg_autoFollow, "cg_autoFollow", "0", CVAR_ARCHIVE },
 #ifdef CG_PREDICT_HITSCAN
@@ -1186,7 +1186,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_drawTPexit, "cg_drawTPexit", "0", CVAR_ARCHIVE },
 	{ &cg_shadowItems, "cg_shadowItems", "0", CVAR_ARCHIVE },
 	{ &cg_worldFlags, "cg_worldFlags", "3", CVAR_ARCHIVE },
-	{ &cg_oldFloatSprites, "cg_oldFloatSprites", "1", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &cg_oldFloatSprites, "cg_oldFloatSprites", "0", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO },
 	{ &pmove_accurate, "pmove_accurate", "0", CVAR_SYSTEMINFO },
 	{ &cg_chatWindowNumLock, "cg_chatWindowNumLock", "1", CVAR_ARCHIVE | CVAR_NEW },
@@ -2136,18 +2136,6 @@ static void CG_RegisterGraphics(void)
 	if (!cgs.media.plasmaBallNoPicMipShader)
 	{
 		cgs.media.plasmaBallNoPicMipShader = cgs.media.plasmaBallShader;
-	}
-
-	cgs.media.plasmaNewBallShader = trap_R_RegisterShader("sprites/plasma1new");
-	if (!cgs.media.plasmaNewBallShader)
-	{
-		cgs.media.plasmaNewBallShader = cgs.media.plasmaBallShader;
-	}
-
-	cgs.media.plasmaNewBallNoPicMipShader = trap_R_RegisterShader("sprites/plasma1newNoPicMip");
-	if (!cgs.media.plasmaNewBallNoPicMipShader)
-	{
-		cgs.media.plasmaNewBallNoPicMipShader = cgs.media.plasmaNewBallShader;
 	}
 
 	// pre alpha plasma ball

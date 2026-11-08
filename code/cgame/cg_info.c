@@ -71,6 +71,23 @@ static int                      loadingItemsReported;
 static int                      loadingClientsExpected;
 static int                      loadingClientsReported;
 
+/* After the loading screen the game comes in under it while it fades out */
+#define LOADING_FADE_MS             600
+#define LOADING_FADE_FRAME_MAX_MS   20      // the first frames of a map are slow: they must not eat the fade
+static float                    loadingAlpha = 1.0f;
+static qboolean                 loadingFading;      // drawn by CG_DrawInformationFade, over the game
+static qboolean                 loadingShown;
+static int                      loadingFadeLast;
+static int                      loadingFadeTime;
+
+static void CG_LoadingColor(const vec4_t in, vec4_t out)
+{
+	out[0] = in[0];
+	out[1] = in[1];
+	out[2] = in[2];
+	out[3] = in[3] * loadingAlpha;
+}
+
 
 static void CG_DrawLoadingPicSquare(float x, float y, float w, float h, qhandle_t shader)
 {
@@ -83,6 +100,16 @@ static void CG_DrawLoadingPicSquare(float x, float y, float w, float h, qhandle_
 	ay = y * cgs.screenYScale + cgs.screenYBias;
 	aw = w * cgs.screenXScale;
 	ah = h * cgs.screenYScale;
+	if (loadingAlpha < 1.0f)
+	{
+		vec4_t color;
+
+		CG_LoadingColor(colorWhite, color);
+		trap_R_SetColor(color);
+		trap_R_DrawStretchPic(ax, ay, aw, ah, 0, 0, 1, 1, shader);
+		trap_R_SetColor(NULL);
+		return;
+	}
 	trap_R_DrawStretchPic(ax, ay, aw, ah, 0, 0, 1, 1, shader);
 }
 
@@ -155,17 +182,22 @@ static int CG_LoadingCountActiveClients(void)
 	return count;
 }
 
+/* In the coordinates of the loading text (UI_DrawProportionalString2): both directions scale with the
+   screen width, so the bar keeps its place between the lines and its size on any screen shape. */
 static void CG_DrawLoadingProgressBarPic(float x, float y, float w, float h, float texS2,
         const vec4_t color, qhandle_t shader)
 {
+	vec4_t faded;
+
 	if (!shader || w <= 0.0f || h <= 0.0f)
 	{
 		return;
 	}
 
-	trap_R_SetColor(color);
-	CG_AdjustFrom640(&x, &y, &w, &h);
-	trap_R_DrawStretchPic(x, y, w, h, 0.0f, 0.0f, texS2, 1.0f, shader);
+	CG_LoadingColor(color, faded);
+	trap_R_SetColor(faded);
+	trap_R_DrawStretchPic(x * cgs.screenXScale_Old + cgs.screenXBias_Old, y * cgs.screenXScale_Old,
+	                      w * cgs.screenXScale_Old, h * cgs.screenXScale_Old, 0.0f, 0.0f, texS2, 1.0f, shader);
 	trap_R_SetColor(NULL);
 }
 
@@ -190,16 +222,18 @@ static void CG_DrawLoadingProgressBar(void)
 		return;
 	}
 
+	/* The place and size it had on a 16:9 screen, where it was made, in the text's coordinates:
+	   there one unit of height was 0.75 of one of the text. */
 	w = 240.0f;
-	h = 12.0f;
+	h = 12.0f * 0.75f;
 	x = (640.0f - w) * 0.5f;
 	if (Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "sv_cheats")[0] == '1')
 	{
-		y = LOADING_STATUS_Y + 68.0f;
+		y = (LOADING_STATUS_Y + 68.0f) * 0.75f;
 	}
 	else
 	{
-		y = LOADING_STATUS_Y + 76.0f;
+		y = (LOADING_STATUS_Y + 76.0f) * 0.75f;
 	}
 
 	fraction = loadingBarFraction;
@@ -242,7 +276,8 @@ static void CG_DrawLoadingIcons(void)
 
 	bottomItemY = 480.0f - LOADING_ICON_MARGIN_BOTTOM - LOADING_ITEM_ICON_SIZE;
 
-	for (n = 0; n < loadingItemIconCount; n++)
+	/* the items are gone as soon as the fade over the game starts, the players fade with the screen */
+	for (n = 0; n < loadingItemIconCount && !loadingFading; n++)
 	{
 		x = CG_LoadingIconBaseX() + (float)n * LOADING_ITEM_ICON_STEP;
 		CG_DrawLoadingPicSquare(x, bottomItemY, LOADING_ITEM_ICON_SIZE, LOADING_ITEM_ICON_SIZE, loadingItemIcons[n]);
@@ -450,6 +485,19 @@ void CG_DrawInformation(void)
 	char        buf[1024];
 	char        versionStr[64];
 	const char* versionPtr;
+	vec4_t      white;
+	vec4_t      black;
+
+	/* Drawn as the loading screen: its fade starts over when the game shows.
+	   Not from the fade itself, whose first frame is also at full alpha. */
+	if (!loadingFading)
+	{
+		loadingShown = qtrue;
+		loadingFadeTime = 0;
+		loadingFadeLast = 0;
+	}
+	CG_LoadingColor(colorWhite, white);
+	CG_LoadingColor(colorBlack, black);
 
 	info = CG_ConfigString(CS_SERVERINFO);
 	sysInfo = CG_ConfigString(CS_SYSTEMINFO);
@@ -460,7 +508,7 @@ void CG_DrawInformation(void)
 	{
 		levelshot = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
 	}
-	trap_R_SetColor(NULL);
+	trap_R_SetColor(white);
 	CG_DrawPicOld(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, levelshot);
 
 	// blend a detail texture over it (be_infoDetail: 0 off, 1 tiled, 2 fullscreen)
@@ -473,6 +521,7 @@ void CG_DrawInformation(void)
 		else
 			trap_R_DrawStretchPic(0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, 0, 0, 2.5, 2, detail);
 	}
+	trap_R_SetColor(NULL);
 
 	// draw the icons of things as they are loaded
 	CG_DrawLoadingIcons();
@@ -482,12 +531,12 @@ void CG_DrawInformation(void)
 	if (cg.infoScreenText[0])
 	{
 		UI_DrawProportionalString(320, LOADING_STATUS_Y, va("Loading... %s", cg.infoScreenText),
-		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
+		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white);
 	}
 	else
 	{
 		UI_DrawProportionalString(320, LOADING_STATUS_Y, "Awaiting snapshot...",
-		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
+		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white);
 	}
 
 	// draw info string information
@@ -502,7 +551,7 @@ void CG_DrawInformation(void)
 		Q_strncpyz(buf, Info_ValueForKey(info, "sv_hostname"), 1024);
 		Q_CleanStr(buf);
 		UI_DrawProportionalString(320, y, buf,
-		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
+		                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white);
 		y += PROP_HEIGHT;
 
 		// pure server
@@ -510,7 +559,7 @@ void CG_DrawInformation(void)
 		if (s[0] == '1')
 		{
 			UI_DrawProportionalString(320, y, "Pure Server",
-			                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
+			                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white);
 			y += PROP_HEIGHT;
 		}
 
@@ -519,7 +568,7 @@ void CG_DrawInformation(void)
 		if (s[0])
 		{
 			UI_DrawProportionalString(320, y, s,
-			                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite);
+			                          UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white);
 			y += PROP_HEIGHT;
 		}
 
@@ -533,7 +582,7 @@ void CG_DrawInformation(void)
 	if (s[0])
 	{
 		UI_DrawProportionalStringScaled(320, y, s,
-		                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+		                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white,
 		                                LOADING_INFO_FONT_SCALE);
 		y += LOADING_INFO_LINE_HEIGHT;
 	}
@@ -543,7 +592,7 @@ void CG_DrawInformation(void)
 	if (s[0] == '1')
 	{
 		UI_DrawProportionalStringScaled(320, y, "CHEATS ARE ENABLED",
-		                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+		                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white,
 		                                LOADING_INFO_FONT_SCALE);
 		y += LOADING_INFO_LINE_HEIGHT;
 	}
@@ -574,7 +623,7 @@ void CG_DrawInformation(void)
 			break;
 	}
 	UI_DrawProportionalStringScaled(320, y, s,
-	                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+	                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white,
 	                                LOADING_INFO_FONT_SCALE);
 	y += LOADING_INFO_LINE_HEIGHT;
 
@@ -582,7 +631,7 @@ void CG_DrawInformation(void)
 	if (value)
 	{
 		UI_DrawProportionalStringScaled(320, y, va("timelimit %i", value),
-		                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+		                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white,
 		                                LOADING_INFO_FONT_SCALE);
 		y += LOADING_INFO_LINE_HEIGHT;
 	}
@@ -593,7 +642,7 @@ void CG_DrawInformation(void)
 		if (value)
 		{
 			UI_DrawProportionalStringScaled(320, y, va("fraglimit %i", value),
-			                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+			                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white,
 			                                LOADING_INFO_FONT_SCALE);
 			y += LOADING_INFO_LINE_HEIGHT;
 		}
@@ -605,7 +654,7 @@ void CG_DrawInformation(void)
 		if (value)
 		{
 			UI_DrawProportionalStringScaled(320, y, va("capturelimit %i", value),
-			                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite,
+			                                UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, white,
 			                                LOADING_INFO_FONT_SCALE);
 			y += LOADING_INFO_LINE_HEIGHT;
 		}
@@ -619,11 +668,63 @@ void CG_DrawInformation(void)
 	}
 	Com_sprintf(versionStr, sizeof(versionStr), "OSP2-BE(%s)", versionPtr);
 	CG_OSPDrawStringNew(640.0f, 467.0f, versionStr,
-	                    colorWhite, colorBlack,
+	                    white, black,
 	                    8.0f, 12.0f,
 	                    SCREEN_WIDTH,
 	                    DS_HRIGHT | DS_PROPORTIONAL | DS_SHADOW,
 	                    cgFontIndices.infoVersion, NULL, NULL, NULL);
 
 	CG_DrawLoadingProgressBar();
+}
+
+/*
+====================
+CG_DrawInformationFade
+
+Once the game is drawn, the loading screen stays over it a moment longer and fades out.
+Call after everything else of the frame is drawn.
+====================
+*/
+void CG_DrawInformationFade(void)
+{
+	int now, step;
+
+	if (!loadingShown)
+	{
+		return;
+	}
+
+	now = trap_Milliseconds();
+	step = loadingFadeLast ? now - loadingFadeLast : 0;
+	if (step > LOADING_FADE_FRAME_MAX_MS)
+	{
+		step = LOADING_FADE_FRAME_MAX_MS;
+	}
+	if (step < 0)
+	{
+		step = 0;
+	}
+	loadingFadeLast = now;
+	loadingFadeTime += step;
+	if (loadingFadeTime >= LOADING_FADE_MS)
+	{
+		loadingShown = qfalse;
+		return;
+	}
+
+	{
+		const float t = (float)loadingFadeTime / LOADING_FADE_MS;
+
+		/* eases in and out, gently at both ends */
+		loadingAlpha = 1.0f - t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
+	}
+	if (loadingAlpha < 0.001f)
+	{
+		loadingAlpha = 1.0f;
+		return;
+	}
+	loadingFading = qtrue;
+	CG_DrawInformation();
+	loadingFading = qfalse;
+	loadingAlpha = 1.0f;
 }

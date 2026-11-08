@@ -39,6 +39,60 @@ markPoly_t  cg_markPolys[MAX_MARK_POLYS];
 static      int markTotal;
 
 /*
+===================================================================
+
+POLY BATCH
+
+Polys made each frame (the LG trail) are written straight here, and go to the renderer
+in one trap_R_AddPolysToScene per run of the same shader and vertex count. Whoever
+adds polys here flushes before the end of its pass, so nothing lands in another scene.
+Polys that already lie elsewhere (marks, particles) are not copied in: on 2026-11-08
+the copy cost more QVM instructions than the engine calls it saved.
+
+===================================================================
+*/
+#define POLY_BATCH_VERTS    256
+
+static polyVert_t   cg_polyBatchVerts[POLY_BATCH_VERTS];
+static qhandle_t    cg_polyBatchShader;
+static int          cg_polyBatchPolyVerts;
+static int          cg_polyBatchPolys;
+
+void CG_PolyBatchFlush(void)
+{
+	if (cg_polyBatchPolys)
+	{
+		if (cg_polyBatchPolys == 1)
+		{
+			trap_R_AddPolyToScene(cg_polyBatchShader, cg_polyBatchPolyVerts, cg_polyBatchVerts);
+		}
+		else
+		{
+			trap_R_AddPolysToScene(cg_polyBatchShader, cg_polyBatchPolyVerts, cg_polyBatchVerts, cg_polyBatchPolys);
+		}
+		cg_polyBatchPolys = 0;
+	}
+}
+
+/* Where to write the verts of one more poly, already counted */
+polyVert_t* CG_PolyBatchAlloc(qhandle_t shader, int numVerts)
+{
+	polyVert_t* v;
+
+	if (cg_polyBatchPolys &&
+	        (shader != cg_polyBatchShader || numVerts != cg_polyBatchPolyVerts ||
+	         (cg_polyBatchPolys + 1) * numVerts > POLY_BATCH_VERTS))
+	{
+		CG_PolyBatchFlush();
+	}
+	cg_polyBatchShader = shader;
+	cg_polyBatchPolyVerts = numVerts;
+	v = &cg_polyBatchVerts[cg_polyBatchPolys * numVerts];
+	cg_polyBatchPolys++;
+	return v;
+}
+
+/*
 Player blob shadows only need new geometry when they move onto something else.
 trap_CM_MarkFragments costs about 34 us, so between refreshes the last result is
 moved along with the player. Slots are direct-mapped by entity number; a collision
@@ -476,10 +530,25 @@ void CG_ShadowMark(int entityNum, qhandle_t shader, const vec3_t origin, const v
 	}
 
 	src = c->verts;
-	for (i = 0 ; i < c->numPolys ; i++)
+	for (i = 0 ; i < c->numPolys ;)
 	{
-		trap_R_AddPolyToScene(shader, c->polyVerts[i], src);
-		src += c->polyVerts[i];
+		const int n = c->polyVerts[i];
+		int       run = 1;
+
+		while (i + run < c->numPolys && c->polyVerts[i + run] == n)
+		{
+			run++;
+		}
+		if (run == 1)
+		{
+			trap_R_AddPolyToScene(shader, n, src);
+		}
+		else
+		{
+			trap_R_AddPolysToScene(shader, n, src, run);
+		}
+		src += n * run;
+		i += run;
 	}
 }
 
@@ -1442,10 +1511,7 @@ void CG_AddParticleToScene(cparticle_t* p, vec3_t org, float alpha)
 		return;
 	}
 
-	if (p->type == P_WEATHER || p->type == P_WEATHER_TURBULENT || p->type == P_WEATHER_FLURRY)
-		trap_R_AddPolyToScene(p->pshader, 4, verts);
-	else
-		trap_R_AddPolyToScene(p->pshader, 4, verts);
+	trap_R_AddPolyToScene(p->pshader, 4, verts);
 
 }
 

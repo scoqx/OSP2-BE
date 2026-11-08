@@ -35,6 +35,7 @@ static superHUDConfigElement_t superHUDConfigItemElements[] =
 	{ "respawnmessage", SE_DEAD, CG_SHUDElementRespawnMessageCreate, CG_SHUDElementRespawnMessageRoutine, CG_SHUDElementRespawnMessageDestroy },
 	{ "spectators", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementSpectatorsCreate, CG_SHUDElementSpectatorsRoutine, CG_SHUDElementSpectatorsDestroy },
 	{ "fps", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementFPSCreate, CG_SHUDElementFPSRoutine, CG_SHUDElementFPSDestroy },
+	{ "announcer", SE_IM | SE_SPECT | SE_DEAD, CG_SHUDElementAnnouncerCreate, CG_SHUDElementAnnouncerRoutine, CG_SHUDElementAnnouncerDestroy },
 	{ "fragmessage", SE_SPECT, CG_SHUDElementFragMessageCreate, CG_SHUDElementFragMessageRoutine, CG_SHUDElementFragMessageDestroy, NULL, 0, qtrue },
 	{ "killconfirm", 0, CG_SHUDElementKillConfirmCreate, CG_SHUDElementKillConfirmRoutine, CG_SHUDElementKillConfirmDestroy },
 	{ "centermessage", SE_SPECT | SE_DEAD, CG_SHUDElementCenterMessageCreate, CG_SHUDElementCenterMessageRoutine, CG_SHUDElementCenterMessageDestroy },

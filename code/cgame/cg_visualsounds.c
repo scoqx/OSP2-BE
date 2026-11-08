@@ -1378,6 +1378,8 @@ void CG_WrappedStartSound( vec3_t origin, int entityNum, int entchannel, sfxHand
 }
 
 void CG_WrappedStartLocalSound( sfxHandle_t sfx, int channelNum ) {
+	/* every local sound of cgame passes here: the announcer's ones get their caption, heard or not */
+	CG_AnnouncerSound( sfx );
 	if ( !cg_visualSounds.integer ) {
 		trap_S_StartLocalSound( sfx, channelNum );
 	}

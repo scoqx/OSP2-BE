@@ -107,6 +107,11 @@ static int kc_fadeInStart;
 static int kc_seenObits[KC_MAX_SEEN_OBITS];
 static int kc_numSeenObits;
 
+/* The last frag of the one watched in the replay, as he saw it */
+#define KC_FRAG_MESSAGE_MS  3000
+static char kc_fragMessage[MAX_STRING_CHARS];
+static int  kc_fragTime;
+
 #define KC_RECORD(index) (&kc_records[(index) % KC_MAX_RECORDS])
 
 static void CG_KillcamRingPut(const snapshot_t* snap)
@@ -200,6 +205,44 @@ void CG_KillcamOnObituary(int target, int attacker)
 	kc_startTime = cg.time + KC_START_DELAY_MS;
 	kc_deadViewValid = qfalse;
 	cg_killcamState = CG_KILLCAM_PENDING;
+}
+
+/*
+A frag of the one watched, from the replayed history (his frags of others too, before or after ours):
+the message, and in first person the effect on his weapon and the frag sound, as he had them.
+*/
+void CG_KillcamReplayObituary(const entityState_t* es)
+{
+	const int target = es->otherEntityNum;
+	const int attacker = es->otherEntityNum2;
+
+	if (cg_killcamState != CG_KILLCAM_REPLAY || attacker != kc_killer || target == attacker ||
+	        target < 0 || target >= MAX_CLIENTS)
+	{
+		return;
+	}
+	/* in the freeze modes this is a thaw, not a frag */
+	if (es->eventParm == MOD_UNKNOWN && cgs.osp.gameTypeFreeze)
+	{
+		return;
+	}
+
+	Com_sprintf(kc_fragMessage, sizeof(kc_fragMessage), "You fragged %s^7", cgs.clientinfo[target].name);
+	kc_fragTime = cg.time;
+
+	if (cg_killcam.integer == 2)
+	{
+		if (cg_fragSound.integer)
+		{
+			trap_S_StartLocalSound(CG_GetFragSound(), CHAN_LOCAL_SOUND);
+		}
+		if (cg_fragEffect.integer && cg_fragEffectTime.integer > 0)
+		{
+			cg.fragWeaponEffectClientNum = attacker;
+			cg.fragWeaponEffectStart = cg.time;
+			cg.fragWeaponEffectTime = cg.time + cg_fragEffectTime.integer;
+		}
+	}
 }
 
 void CG_KillcamMapRestart(void)
@@ -326,6 +369,8 @@ static void CG_KillcamBegin(int serverTime)
 	kc_eyesKeysFor = -1;
 	kc_eyesHealth = 0;
 	cg_killcamEyesClient = -1;
+	kc_fragMessage[0] = '\0';
+	kc_fragTime = 0;
 
 	cg_killcamState = CG_KILLCAM_REPLAY;
 	cg_killcamRingRead = qtrue;
@@ -888,6 +933,7 @@ void CG_KillcamKeyEvent(int key, qboolean down)
 void CG_KillcamDraw2D(void)
 {
 	const char* message = NULL;
+	int         fragTime = 0;
 	qboolean    followDrawn = qfalse;
 	qboolean    fragDrawn = qfalse;
 
@@ -896,15 +942,23 @@ void CG_KillcamDraw2D(void)
 		CG_DrawCrosshair();
 	}
 
-	/* From the moment we die in the replay, as the killer saw it */
-	if (cg.time >= kc_deathTime)
+	/* Every frag of the killer as it comes in the replay, as he saw it. Ours stays to the end: it is what the
+	   replay is about. Without the event in the history (lost in a gap), ours still shows from our death. */
+	if (kc_fragTime && cg.time >= kc_fragTime &&
+	        (cg.time - kc_fragTime < KC_FRAG_MESSAGE_MS || cg.time >= kc_deathTime))
+	{
+		message = kc_fragMessage;
+		fragTime = kc_fragTime;
+	}
+	if (cg.time >= kc_deathTime && (!message || kc_fragTime < kc_deathTime - 1000))
 	{
 		message = va("You fragged %s^7", cgs.clientinfo[cg.clientNum].name);
+		fragTime = kc_deathTime;
 	}
 
 	if (cg_shud.integer)
 	{
-		CG_SHUDDrawKillcam(message, kc_deathTime, &followDrawn, &fragDrawn);
+		CG_SHUDDrawKillcam(message, fragTime, &followDrawn, &fragDrawn);
 	}
 	else
 	{
