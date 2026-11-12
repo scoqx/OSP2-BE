@@ -1387,12 +1387,22 @@ void CG_CalcEntityLerpPositions(centity_t* cent)
 #endif
 		if (cg_projectileNudge.integer)
 		{
-			/* the real tick, also through a snapshot gap (no jump of a tick there) */
-			int serverTick = CG_ServerTick();
+			const qboolean predictOn = (cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled;
+			int serverTick = 0;
+
+			if (predictOn)
+			{
+				/* the real tick, also through a snapshot gap: the predicted bolts' clock */
+				serverTick = CG_ServerTick();
+			}
+			else if (cg.nextSnap && cg.snap)
+			{
+				/* no missile predict: as OSP2, the snapshot pair, 0 without the next one */
+				serverTick = cg.nextSnap->serverTime - cg.snap->serverTime;
+			}
 			// if it's one of ours
 			if ((cent->currentState.otherEntityNum) == cg.clientNum
-			        && ((cg_projectileNudge.integer & 2)
-			            || ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled)))
+			        && ((cg_projectileNudge.integer & 2) || predictOn))
 			{
 				// +1 server frame — same clock as CG_AddPredictedMissiles (Devotion),
 				// plus the predicted bolt's lead once this missile took it over
