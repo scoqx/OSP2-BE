@@ -1388,18 +1388,13 @@ void CG_CalcEntityLerpPositions(centity_t* cent)
 		if (cg_projectileNudge.integer)
 		{
 			const qboolean predictOn = (cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled;
-			int serverTick = 0;
-
-			if (predictOn)
-			{
-				/* the real tick, also through a snapshot gap: the predicted bolts' clock */
-				serverTick = CG_ServerTick();
-			}
-			else if (cg.nextSnap && cg.snap)
-			{
-				/* no missile predict: as OSP2, the snapshot pair, 0 without the next one */
-				serverTick = cg.nextSnap->serverTime - cg.snap->serverTime;
-			}
+			/*
+			 * The real tick, steady through a snapshot gap. The snapshot pair (OSP2)
+			 * is 0 with no next snapshot and 2-3 ticks after a late one, so at
+			 * 250 fps against 60 Hz snapshots the missile jumps back and forth
+			 * 10-50u (cg_debugServer 5 JUMP lines).
+			 */
+			int serverTick = CG_ServerTick();
 			// if it's one of ours
 			if ((cent->currentState.otherEntityNum) == cg.clientNum
 			        && ((cg_projectileNudge.integer & 2) || predictOn))
@@ -1448,6 +1443,13 @@ void CG_CalcEntityLerpPositions(centity_t* cent)
 		                          cg.snap->serverTime, cg.time, cent->lerpOrigin,
 		                          cent->lerpAngles, cent->lerpAngles);
 	}
+
+#ifdef CG_DEBUG_SERVER
+	if ((cg_debugServer.integer == 5 || cg_debugServer.integer == 6) && cent->currentState.eType == ET_MISSILE)
+	{
+		CG_DebugServerMissileFrame(cent, timeshift);
+	}
+#endif
 }
 
 /*

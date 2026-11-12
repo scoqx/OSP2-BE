@@ -76,7 +76,8 @@ static int cg_debugIntervalLastWeapon;
 
 typedef struct
 {
-	vec3_t muzzle;
+	vec3_t muzzle;      /* from the post-move origin (the client's predicted bolt) */
+	vec3_t muzzleOld;   /* from the pre-move origin (server g_delagMissileFromPos 0) */
 	int fireTime;   /* cg.time of the fire event */
 	int cmdTime;    /* serverTime of the firing usercmd, 0 - unknown */
 } cg_debugMissileFire_t;
@@ -104,6 +105,7 @@ static void CG_DebugServerPushMissileFire(void)
 	playerState_t* ps;
 	vec3_t forward;
 	vec3_t muzzle;
+	vec3_t muzzleOld;
 	int slot;
 
 	int cmdTime = 0;
@@ -115,6 +117,8 @@ static void CG_DebugServerPushMissileFire(void)
 		AngleVectors(cg.missileFireAngles, forward, NULL, NULL);
 		VectorCopy(cg.missileFireOriginNew, muzzle);
 		muzzle[2] += cg.missileFireViewHeight;
+		VectorCopy(cg.missileFireOriginOld, muzzleOld);
+		muzzleOld[2] += cg.missileFireViewHeight;
 		cmdTime = cg.missileFireTime;
 	}
 	else
@@ -122,8 +126,10 @@ static void CG_DebugServerPushMissileFire(void)
 		AngleVectors(ps->viewangles, forward, NULL, NULL);
 		VectorCopy(ps->origin, muzzle);
 		muzzle[2] += ps->viewheight;
+		VectorCopy(muzzle, muzzleOld);
 	}
 	VectorMA(muzzle, 14, forward, muzzle);
+	VectorMA(muzzleOld, 14, forward, muzzleOld);
 
 	if (cg_debugMissileCount >= CG_DEBUG_MISSILE_QUEUE)
 	{
@@ -132,6 +138,7 @@ static void CG_DebugServerPushMissileFire(void)
 	}
 	slot = (cg_debugMissileHead + cg_debugMissileCount) % CG_DEBUG_MISSILE_QUEUE;
 	VectorCopy(muzzle, cg_debugMissileQueue[slot].muzzle);
+	VectorCopy(muzzleOld, cg_debugMissileQueue[slot].muzzleOld);
 	cg_debugMissileQueue[slot].fireTime = cg.time;
 	cg_debugMissileQueue[slot].cmdTime = cmdTime;
 	cg_debugMissileCount++;
@@ -185,6 +192,7 @@ void CG_DebugServerOnMissileAppear(const entityState_t* es)
 {
 	vec3_t appear;
 	vec3_t predMuzzle;
+	vec3_t predMuzzleOld;
 	float distPred;
 	float distBase;
 	float muzzleDelta;
@@ -225,6 +233,7 @@ void CG_DebugServerOnMissileAppear(const entityState_t* es)
 	}
 
 	VectorCopy(cg_debugMissileQueue[cg_debugMissileHead].muzzle, predMuzzle);
+	VectorCopy(cg_debugMissileQueue[cg_debugMissileHead].muzzleOld, predMuzzleOld);
 	cmdTime = cg_debugMissileQueue[cg_debugMissileHead].cmdTime;
 	cg_debugMissileHead = (cg_debugMissileHead + 1) % CG_DEBUG_MISSILE_QUEUE;
 	cg_debugMissileCount--;
@@ -269,6 +278,106 @@ void CG_DebugServerOnMissileAppear(const entityState_t* es)
 		CG_Printf("   ^3PRESTEP %i MS^7 (= %.0fu, fire frame %i - trTime %i)\n",
 		          prestep, speed * prestep * 0.001f, atTime - tick, es->pos.trTime);
 	}
+	/* which origin the server launched from: the smaller distance to trBase wins */
+	{
+		float dNew = Distance(es->pos.trBase, predMuzzle);
+		float dOld = Distance(es->pos.trBase, predMuzzleOld);
+
+		CG_Printf("   ^3MUZZLE^7 trBase to: post-move ^5%.1f^7u, pre-move ^5%.1f^7u (move %.1fu) -> server uses ^3%s^7\n",
+		          dNew, dOld, Distance(predMuzzle, predMuzzleOld),
+		          Distance(predMuzzle, predMuzzleOld) < 1.0f ? "either (no move)" : (dOld < dNew ? "PRE-move (oldOrigin)" : "POST-move (origin)"));
+	}
+}
+
+/*
+==============
+CG_DebugServerMissileFrame
+
+cg_debugServer 5 (ours) / 6 (others'): how a missile is drawn frame by frame
+after it comes in: the nudge (timeshift) it got, the snapshot pair it came
+from, and the step it made against the step its speed gives. A step far off
+the expected one is a jump the player sees.
+==============
+*/
+#define CG_DEBUG_MISSILE_FRAMES 10
+
+static int    cg_dbgMslTrTime[MAX_GENTITIES];
+static int    cg_dbgMslFrames[MAX_GENTITIES];
+static int    cg_dbgMslLastTime[MAX_GENTITIES];
+static int    cg_dbgMslLastShift[MAX_GENTITIES];
+static vec3_t cg_dbgMslLastOrigin[MAX_GENTITIES];
+
+void CG_DebugServerMissileFrame(const centity_t* cent, int timeshift)
+{
+	const entityState_t* es = &cent->currentState;
+	const qboolean ours = (es->otherEntityNum == cg.predictedPlayerState.clientNum) ? qtrue : qfalse;
+	const int num = es->number;
+	int pair = 0;
+	int dt;
+	float speed;
+	float step;
+	float expect;
+	qboolean jump;
+
+	if (!CG_DebugServerIsMissileWeapon(es->weapon) || num < 0 || num >= MAX_GENTITIES || !cg.snap)
+	{
+		return;
+	}
+	if ((cg_debugServer.integer == 5) != ours)
+	{
+		return;
+	}
+	if (cg.snap && cg.nextSnap)
+	{
+		pair = cg.nextSnap->serverTime - cg.snap->serverTime;
+	}
+	speed = VectorLength(es->pos.trDelta);
+
+	if (cg_dbgMslTrTime[num] != es->pos.trTime)
+	{
+		char snapsStr[16];
+		char timeNudge[16];
+
+		trap_Cvar_VariableStringBuffer("snaps", snapsStr, sizeof(snapsStr));
+		trap_Cvar_VariableStringBuffer("cl_timeNudge", timeNudge, sizeof(timeNudge));
+		cg_dbgMslTrTime[num] = es->pos.trTime;
+		cg_dbgMslFrames[num] = 0;
+		cg_dbgMslLastTime[num] = cg.time;
+		cg_dbgMslLastShift[num] = timeshift;
+		VectorCopy(cent->lerpOrigin, cg_dbgMslLastOrigin[num]);
+		CG_Printf("^3%s %s^7 #%i in: nudge ^5%i^7, CS910 missiles ^5%s^7, sv_fps(cs) ^5%i^7, tick ^5%i^7, pair ^5%i^7, snaps ^5%s^7, ping ^5%i^7 (pingMs %.0f), shift ^5%i^7ms, speed %.0f, age %ims, timeNudge %s\n",
+		          ours ? "OWN" : "ENEMY", weaponNames[es->weapon], num,
+		          cg_projectileNudge.integer,
+		          ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled) ? "on" : "off",
+		          cgs.sv_fps, CG_ServerTick(), pair, snapsStr, cg.snap->ping, cgs.osp.pingMs,
+		          timeshift, speed, cg.time + timeshift - es->pos.trTime,
+		          timeNudge);
+		return;
+	}
+	if (cg_dbgMslLastTime[num] == cg.time)
+	{
+		/* placed again this frame (the predict handoff): keep the last one */
+		cg_dbgMslLastShift[num] = timeshift;
+		VectorCopy(cent->lerpOrigin, cg_dbgMslLastOrigin[num]);
+		return;
+	}
+
+	dt = cg.time - cg_dbgMslLastTime[num];
+	step = Distance(cent->lerpOrigin, cg_dbgMslLastOrigin[num]);
+	expect = speed * dt * 0.001f;
+	jump = (expect > 0.0f && (step > expect * 1.5f + 2.0f || step < expect * 0.5f - 2.0f)) ? qtrue : qfalse;
+
+	if (cg_dbgMslFrames[num] < CG_DEBUG_MISSILE_FRAMES || jump)
+	{
+		CG_Printf("   %s#%i f%i: dt %i, shift %i (%s%i), pair %i%s, step ^5%.0f^7u expect %.0fu%s\n",
+		          ours ? "" : "enemy ", num, cg_dbgMslFrames[num] + 1, dt, timeshift,
+		          timeshift >= cg_dbgMslLastShift[num] ? "+" : "", timeshift - cg_dbgMslLastShift[num], pair, cg.nextSnap ? "" : " ^1NO NEXT SNAP^7",
+		          step, expect, jump ? " ^1JUMP^7" : "");
+	}
+	cg_dbgMslFrames[num]++;
+	cg_dbgMslLastTime[num] = cg.time;
+	cg_dbgMslLastShift[num] = timeshift;
+	VectorCopy(cent->lerpOrigin, cg_dbgMslLastOrigin[num]);
 }
 #endif /* CG_DEBUG_SERVER */
 

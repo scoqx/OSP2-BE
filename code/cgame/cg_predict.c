@@ -1377,6 +1377,10 @@ void CG_PredictPlayerState(void)
 #endif
 				   )
 				{
+#ifdef CG_DEBUG_SERVER
+					/* before the Pmove: the server's oldOrigin, for the spawn log */
+					VectorCopy(cg.predictedPlayerState.origin, cg.missileFireOriginOld);
+#endif
 					oldEventSeq = cg.predictedPlayerState.eventSequence;
 					stashFire = qtrue;
 				}

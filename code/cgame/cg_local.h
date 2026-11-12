@@ -1158,6 +1158,9 @@ typedef struct
 	int         missileFireTime;
 	int         missileFireViewHeight;
 	vec3_t      missileFireOriginNew; /* post-pmove origin of the firing command */
+#ifdef CG_DEBUG_SERVER
+	vec3_t      missileFireOriginOld; /* cg_debugServer 5: pre-pmove origin (the server's oldOrigin) */
+#endif
 	vec3_t      missileFireAngles;
 
 	/* Incremental prediction (cg_optimizePrediction / UnFreeZe unlagged) */
@@ -3588,6 +3591,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
 #ifdef CG_DEBUG_SERVER
 void CG_DebugServerOnFireWeapon(int weapon);
 void CG_DebugServerOnMissileAppear(const entityState_t* es);
+void CG_DebugServerMissileFrame(const centity_t* cent, int timeshift);
 #endif
 void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
