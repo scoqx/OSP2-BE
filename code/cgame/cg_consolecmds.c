@@ -218,13 +218,18 @@ void CG_ScoresDown_f(void)
 	cg.showAccuracy = qtrue;
 }
 
-static void CG_ScoresUp_f(void)
+void CG_ScoresUp_f(void)
 {
 	if (cg.showScores)
 	{
 		cg.showScores = qfalse;
 		cg.showAccuracy = qfalse;
 		cg.scoreFadeTime = cg.time;
+		/* dead: the one that showed by itself goes too */
+		if (cg.predictedPlayerState.pm_type == PM_DEAD)
+		{
+			cg.deadScoresHidden = qtrue;
+		}
 	}
 }
 
@@ -2485,7 +2490,7 @@ void CG_BEHelp_f(void)
 		CG_BEHelp_PrintFeature("cg_drawHudMarkers", CG_BE_HUD_MARKERS, "Display teammate markers on the HUD", 0);
 		CG_BEHelp_PrintFeature("cg_drawHitBox", CG_BE_HITBOX, "Draw enemy hitboxes", 0);
 		CG_BEHelp_PrintFeature("cg_killcam", CG_BE_KILLCAM, "Replay of your death through the killer's view", 0);
-		CG_BEHelp_PrintFeature("cg_playerXray", CG_BE_TEAM_FOE_WH, "Player silhouettes through walls. In-game: teammates only. Bitmask: 1=on, 2=model colors, 4=bright weapons, 8=spect/demo all (else follow=allies of viewed)", 0);
+		CG_BEHelp_PrintFeature("cg_playerXray", CG_BE_TEAM_FOE_WH, "Player silhouettes through walls. In-game: teammates only (sv_cheats 1: everyone). Bitmask: 1=on, 2=model colors, 4=bright weapons, 8=spect/demo all (else follow=allies of viewed)", 0);
 		CG_BEHelp_PrintFeature("cg_friendsWallhackFrozen", CG_BE_TEAM_FROZEN, "Show frozen teammate markers through walls", 0);
 		CG_BEHelp_PrintFeature("cg_altGrenades", CG_BE_ALT_GRENADES, "Alternative grenade appearance", 0);
 		CG_BEHelp_PrintFeature("cg_enemyLightningColor", CG_BE_ENEMYLIGHTNING, "Lightning gun beam color override", 0);
@@ -2851,6 +2856,11 @@ qboolean CG_ConsoleCommand(void)
 	{
 		if (!Q_stricmp(cmd, commands[i].cmd))
 		{
+			if (cg_killcamState == CG_KILLCAM_REPLAY)
+			{
+				CG_KillcamConsoleCommand(commands[i].function);
+				return qtrue;
+			}
 			commands[i].function();
 			return qtrue;
 		}

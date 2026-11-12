@@ -22,6 +22,7 @@
 #define BEINFO_CFG_KEY_STATUS_SERVER2   "be_statusServer2"
 #define BEINFO_CFG_KEY_BRIGHT_PREFIX    "brightcolor_"
 #define BEINFO_CFG_KEY_FLASH_PREFIX     "flashcolor_"
+#define BEINFO_CFG_KEY_KILLCAM_FONT     "interface_killcam_font"
 
 static char     beinfo_statusServer1[BEINFO_CFG_STATUS_ADDR_MAX];
 static char     beinfo_statusServer2[BEINFO_CFG_STATUS_ADDR_MAX];
@@ -45,6 +46,8 @@ static beinfoTtfFontTune_t beinfo_ttfFonts[BEINFO_TTF_FONTS_MAX];
 static int                 beinfo_ttfFontCount;
 
 #if defined(CGAME)
+/* interface_killcam_font: a font name or index, resolved by cgame after the fonts load */
+static char                  beinfo_killcamFont[MAX_QPATH];
 static beinfoBrightColorFn_t beinfo_brightColorHandler;
 static beinfoBrightColorFn_t beinfo_flashColorHandler;
 #endif
@@ -56,6 +59,44 @@ static qboolean BeinfoCfg_IsCommentHash(const char* p)
 		return qfalse;
 	}
 	return (p[0] == '#') ? qtrue : qfalse;
+}
+
+static qboolean BeinfoCfg_IsHexDigit(char c);
+
+static qboolean BeinfoCfg_IsHexColorLength(int len)
+{
+	return (len == 3 || len == 4 || len == 6 || len == 8) ? qtrue : qfalse;
+}
+
+/* p points at '#': "#RGB", "#RGBA", "#RRGGBB" or "#RRGGBBAA" followed by end/space/';' */
+static qboolean BeinfoCfg_IsHashHexColor(const char* p)
+{
+	int n;
+
+	if (!p || p[0] != '#')
+	{
+		return qfalse;
+	}
+	n = 0;
+	while (BeinfoCfg_IsHexDigit(p[1 + n]))
+	{
+		n++;
+	}
+	if (!BeinfoCfg_IsHexColorLength(n))
+	{
+		return qfalse;
+	}
+	switch (p[1 + n])
+	{
+		case '\0':
+		case ' ':
+		case '\t':
+		case '\r':
+		case ';':
+			return qtrue;
+		default:
+			return qfalse;
+	}
 }
 
 static void BeinfoCfg_StripCommentLines(char* buf)
@@ -103,10 +144,17 @@ static void BeinfoCfg_StripCommentLines(char* buf)
 
 		if (!BeinfoCfg_IsCommentHash(scan))
 		{
-			comment = strchr(lineBuf, '#');
-			if (comment && (comment == lineBuf || comment[-1] == ' ' || comment[-1] == '\t'))
+			/* " #RRGGBB" mid-line is a hex color value, not a comment */
+			comment = lineBuf;
+			while ((comment = strchr(comment, '#')) != NULL)
 			{
-				*comment = '\0';
+				if ((comment == lineBuf || comment[-1] == ' ' || comment[-1] == '\t') &&
+				        !BeinfoCfg_IsHashHexColor(comment))
+				{
+					*comment = '\0';
+					break;
+				}
+				comment++;
 			}
 
 			lineLen = (int)strlen(lineBuf);
@@ -232,11 +280,24 @@ static void BeinfoCfg_HexBytePairToFloat(const char* hex, float* out)
 	*out = (float)v / 255.0f;
 }
 
-static qboolean BeinfoCfg_ParseBrightColorHexToken(const char* token, float* r, float* g, float* b, float* a)
+static void BeinfoCfg_HexNibbleToFloat(char c, float* out)
+{
+	*out = (float)(BeinfoCfg_HexNibble(c) * 17) / 255.0f;
+}
+
+/*
+ * Hex color: [#|0x]RGB, RGBA, RRGGBB or RRGGBBAA (alpha defaults to 1).
+ * *isBare is set when there is no '#'/'0x' prefix and all digits are decimal,
+ * i.e. the token could also be a plain number (see BeinfoCfg_ParseHexColorArg).
+ */
+static qboolean BeinfoCfg_ParseHexColorToken(const char* token, float* r, float* g, float* b, float* a,
+        qboolean* isBare)
 {
 	const char* p;
 	int         len;
 	int         i;
+	qboolean    prefixed;
+	qboolean    allDecimal;
 	char        buf[MAX_TOKEN_CHARS];
 
 	if (!token || !r || !g || !b || !a)
@@ -247,36 +308,97 @@ static qboolean BeinfoCfg_ParseBrightColorHexToken(const char* token, float* r, 
 	Q_strncpyz(buf, token, sizeof(buf));
 	BeinfoCfg_TrimValue(buf);
 	p = buf;
+	prefixed = qfalse;
 	if (p[0] == '#')
 	{
-		return qfalse;
+		p++;
+		prefixed = qtrue;
+	}
+	else if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
+	{
+		p += 2;
+		prefixed = qtrue;
 	}
 	len = (int)strlen(p);
-	if (len != 6 && len != 8)
+	if (!BeinfoCfg_IsHexColorLength(len))
 	{
 		return qfalse;
 	}
+	allDecimal = qtrue;
 	for (i = 0; p[i]; i++)
 	{
 		if (!BeinfoCfg_IsHexDigit(p[i]))
 		{
 			return qfalse;
 		}
+		if (p[i] < '0' || p[i] > '9')
+		{
+			allDecimal = qfalse;
+		}
 	}
 
-	BeinfoCfg_HexBytePairToFloat(p + 0, r);
-	BeinfoCfg_HexBytePairToFloat(p + 2, g);
-	BeinfoCfg_HexBytePairToFloat(p + 4, b);
-	if (len == 8)
+	if (len <= 4)
 	{
-		BeinfoCfg_HexBytePairToFloat(p + 6, a);
+		BeinfoCfg_HexNibbleToFloat(p[0], r);
+		BeinfoCfg_HexNibbleToFloat(p[1], g);
+		BeinfoCfg_HexNibbleToFloat(p[2], b);
+		if (len == 4)
+		{
+			BeinfoCfg_HexNibbleToFloat(p[3], a);
+		}
+		else
+		{
+			*a = 1.0f;
+		}
 	}
 	else
 	{
-		*a = 1.0f;
+		BeinfoCfg_HexBytePairToFloat(p + 0, r);
+		BeinfoCfg_HexBytePairToFloat(p + 2, g);
+		BeinfoCfg_HexBytePairToFloat(p + 4, b);
+		if (len == 8)
+		{
+			BeinfoCfg_HexBytePairToFloat(p + 6, a);
+		}
+		else
+		{
+			*a = 1.0f;
+		}
 	}
 
+	if (isBare)
+	{
+		*isBare = (!prefixed && allDecimal) ? qtrue : qfalse;
+	}
 	return qtrue;
+}
+
+/*
+ * Parse token as a hex color. A bare all-decimal token ("100", "1000") that is
+ * followed by another number on the same line is left for the "R G B A" form.
+ * token must not point into COM_ParseExt's buffer (we peek the next token).
+ */
+static qboolean BeinfoCfg_ParseHexColorArg(const char* token, char** text, float* r, float* g, float* b, float* a)
+{
+	qboolean isBare;
+	char*    save;
+	char*    next;
+	qboolean nextNumeric;
+
+	if (!BeinfoCfg_ParseHexColorToken(token, r, g, b, a, &isBare))
+	{
+		return qfalse;
+	}
+	if (!isBare || !text || !*text)
+	{
+		return qtrue;
+	}
+
+	save = *text;
+	next = COM_ParseExt(text, qfalse);
+	nextNumeric = BeinfoCfg_TokenLooksNumeric(next);
+	*text = save;
+	return nextNumeric ? qfalse : qtrue;
 }
 
 static char beinfo_pendingToken[MAX_TOKEN_CHARS];
@@ -297,6 +419,7 @@ static void BeinfoCfg_PendingPush(const char* token)
 static void BeinfoCfg_SkipKeyArguments(char** text)
 {
 	char*   token;
+	char    tokenBuf[MAX_TOKEN_CHARS];
 	float   skipR;
 	float   skipG;
 	float   skipB;
@@ -331,14 +454,15 @@ static void BeinfoCfg_SkipKeyArguments(char** text)
 		return;
 	}
 
-	if (BeinfoCfg_ParseBrightColorHexToken(token, &skipR, &skipG, &skipB, &skipA))
+	Q_strncpyz(tokenBuf, token, sizeof(tokenBuf));
+	if (BeinfoCfg_ParseHexColorArg(tokenBuf, text, &skipR, &skipG, &skipB, &skipA))
 	{
 		return;
 	}
 
-	if (!BeinfoCfg_TokenLooksNumeric(token))
+	if (!BeinfoCfg_TokenLooksNumeric(tokenBuf))
 	{
-		BeinfoCfg_PendingPush(token);
+		BeinfoCfg_PendingPush(tokenBuf);
 		return;
 	}
 
@@ -393,8 +517,9 @@ static qboolean BeinfoCfg_UiKeyIsKnown(const char* key)
 
 	return qfalse;
 }
+#endif
 
-static qboolean BeinfoCfg_ReadUiValue(char** text, char* value, int valueSize)
+static qboolean BeinfoCfg_ReadStringValue(char** text, char* value, int valueSize)
 {
 	char* token;
 
@@ -434,6 +559,7 @@ static qboolean BeinfoCfg_ReadUiValue(char** text, char* value, int valueSize)
 	return qtrue;
 }
 
+#if defined(Q3UI) || defined(UI)
 static void BeinfoCfg_ApplyUiPair(const char* key, const char* value)
 {
 	if (!key || !key[0] || !value || !value[0])
@@ -712,7 +838,7 @@ static void BeinfoCfg_ParseUiBlock(char** text)
 
 		if (BeinfoCfg_UiKeyIsKnown(key))
 		{
-			if (BeinfoCfg_ReadUiValue(text, value, sizeof(value)))
+			if (BeinfoCfg_ReadStringValue(text, value, sizeof(value)))
 			{
 				BeinfoCfg_ApplyUiPair(key, value);
 			}
@@ -760,6 +886,7 @@ static qboolean BeinfoCfg_ParseFloatToken(char** text, float* out)
 static qboolean BeinfoCfg_ParseBrightColorValues(char** text, float* r, float* g, float* b, float* a)
 {
 	char* token;
+	char  tokenBuf[MAX_TOKEN_CHARS];
 
 	if (!text || !r || !g || !b || !a)
 	{
@@ -777,19 +904,20 @@ static qboolean BeinfoCfg_ParseBrightColorValues(char** text, float* r, float* g
 		return qfalse;
 	}
 
-	BeinfoCfg_TrimValue(token);
-	if (BeinfoCfg_ParseBrightColorHexToken(token, r, g, b, a))
+	Q_strncpyz(tokenBuf, token, sizeof(tokenBuf));
+	BeinfoCfg_TrimValue(tokenBuf);
+	if (BeinfoCfg_ParseHexColorArg(tokenBuf, text, r, g, b, a))
 	{
 		return qtrue;
 	}
 
-	if (!BeinfoCfg_TokenLooksNumeric(token))
+	if (!BeinfoCfg_TokenLooksNumeric(tokenBuf))
 	{
-		BeinfoCfg_PendingPush(token);
+		BeinfoCfg_PendingPush(tokenBuf);
 		return qfalse;
 	}
 
-	*r = (float)atof(token);
+	*r = (float)atof(tokenBuf);
 	if (!BeinfoCfg_ParseFloatToken(text, g) || !BeinfoCfg_ParseFloatToken(text, b))
 	{
 		return qfalse;
@@ -848,6 +976,12 @@ static void BeinfoCfg_ParseCgameEntry(const char* key, char** text)
 	if (!Q_stricmpn(key, BEINFO_CFG_KEY_FLASH_PREFIX, prefixLen))
 	{
 		BeinfoCfg_HandleColorKey(key, prefixLen, beinfo_flashColorHandler, text);
+		return;
+	}
+
+	if (!Q_stricmp(key, BEINFO_CFG_KEY_KILLCAM_FONT))
+	{
+		BeinfoCfg_ReadStringValue(text, beinfo_killcamFont, sizeof(beinfo_killcamFont));
 		return;
 	}
 
@@ -988,6 +1122,11 @@ void BeinfoCfg_SetFlashColorHandler(beinfoBrightColorFn_t fn)
 {
 	beinfo_flashColorHandler = fn;
 }
+
+const char* BeinfoCfg_GetKillcamFont(void)
+{
+	return beinfo_killcamFont;
+}
 #endif
 
 void BeinfoCfg_Load(void)
@@ -1002,6 +1141,9 @@ void BeinfoCfg_Load(void)
 	beinfo_statusServer2[0] = '\0';
 	beinfo_ttfFontCount = 0;
 	Com_Memset(beinfo_ttfFonts, 0, sizeof(beinfo_ttfFonts));
+#if defined(CGAME)
+	beinfo_killcamFont[0] = '\0';
+#endif
 
 	len = trap_FS_FOpenFile(BEINFO_CFG_FILE, &f, FS_READ);
 	if (len <= 0)

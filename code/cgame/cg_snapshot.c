@@ -283,6 +283,11 @@ static void CG_TransitionSnapshot(void)
 		{
 			CG_TransitionPlayerState(ps, ops);
 		}
+		else if (cg_killcamState == CG_KILLCAM_REPLAY)
+		{
+			/* the killer's hits on us, as he had them: hit sound, crosshair, damage plum */
+			CG_KillcamHitsOnUs(ps, ops);
+		}
 	}
 
 }

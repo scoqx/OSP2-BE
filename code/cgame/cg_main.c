@@ -201,6 +201,7 @@ vmCvar_t           cg_followpowerup;
 vmCvar_t           cg_followviewcam;
 vmCvar_t           cg_forceColors;
 vmCvar_t           cg_lightningImpact;
+vmCvar_t           cg_lightningImpactCap;
 vmCvar_t           cg_lightningTrail;
 vmCvar_t           cg_lightningTrailTime;
 vmCvar_t           cg_lightningTrailWidth;
@@ -229,9 +230,6 @@ vmCvar_t           cg_visualSounds;
 vmCvar_t           cg_announcerText;
 vmCvar_t           s_volume;
 vmCvar_t           cg_autoFollow;
-#ifdef CG_PREDICT_HITSCAN
-vmCvar_t           cg_predictHitscan;
-#endif
 vmCvar_t           cg_swapSkins;
 vmCvar_t           cg_teamRails;
 vmCvar_t           cg_trueLightning;
@@ -411,6 +409,7 @@ vmCvar_t        cg_teamOutlineSize;
 vmCvar_t        cg_underwaterFovWarp;
 vmCvar_t        cg_altBlood;
 vmCvar_t        cg_altBloodColor;
+vmCvar_t        cg_blackBlood;
 vmCvar_t        cg_shotGunTracer;
 vmCvar_t        cg_railRingsRadius;
 vmCvar_t        cg_railRingsRotation;
@@ -575,7 +574,6 @@ vmCvar_t        cg_altRail;
 vmCvar_t        cg_altRailBeefy;
 vmCvar_t        cg_teamTaskNewSounds;
 vmCvar_t        cg_teamTaskVersion;
-vmCvar_t        cg_railFix;
 vmCvar_t        cg_freezeSoundFix;
 vmCvar_t        be_infoDetail;
 vmCvar_t        cg_enhancedInterpolation;
@@ -651,6 +649,7 @@ vmCvar_t        cg_enemyAltShadowColor;
 vmCvar_t        cg_playerXray;
 vmCvar_t        cg_specMode;
 vmCvar_t        cg_teamTaskSentPos;
+vmCvar_t        cg_predictHitscan;
 
 
 cgFontIndices_t cgFontIndices;
@@ -783,6 +782,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_followviewcam, "cg_followviewcam", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_followviewcam},
 	{ &cg_forceColors, "cg_forceColors", "0", CVAR_ARCHIVE },
 	{ &cg_lightningImpact, "cg_lightningImpact", "0", CVAR_ARCHIVE },
+	{ &cg_lightningImpactCap, "cg_lightningImpactCap", "192", CVAR_ARCHIVE },
 	{ &cg_lightningTrail, "cg_lightningTrail", "0", CVAR_ARCHIVE },
 	{ &cg_lightningTrailTime, "cg_lightningTrailTime", "2000", CVAR_ARCHIVE },
 	{ &cg_lightningTrailWidth, "cg_lightningTrailWidth", "0.5", CVAR_ARCHIVE },
@@ -811,9 +811,6 @@ cvarTable_t cvarTable[] =
 	{ &cg_announcerText, "cg_announcerText", "1", CVAR_ARCHIVE },
 	{ &s_volume, "s_volume", "0.8", CVAR_ARCHIVE, CG_LocalEventCvarChanged_s_volume },
 	{ &cg_autoFollow, "cg_autoFollow", "0", CVAR_ARCHIVE },
-#ifdef CG_PREDICT_HITSCAN
-	{ &cg_predictHitscan, "cg_predictHitscan", "0", CVAR_ARCHIVE },
-#endif
 	{ &cg_swapSkins, "cg_swapSkins", "0", 0, CG_LocalEventCvarChanged_cg_swapSkins},
 	{ &cg_teamRails, "cg_teamRails", "0", CVAR_ARCHIVE },
 	{ &cg_trueLightning, "cg_trueLightning", "1.0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_trueLightning},
@@ -964,6 +961,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_underwaterFovWarp, "cg_underwaterFovWarp", "1", CVAR_ARCHIVE },
 	{ &cg_altBlood, "cg_altBlood", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_altBloodColor, "cg_altBloodColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_altBloodColor },
+	{ &cg_blackBlood, "cg_blackBlood", "1", CVAR_ARCHIVE },
 	{ &cg_altPlasma, "cg_altPlasma", "0", CVAR_ARCHIVE },
 	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE },
 	{ &cg_shotGunTracer, "cg_shotGunTracer", "1", CVAR_ARCHIVE },
@@ -1079,7 +1077,8 @@ cvarTable_t cvarTable[] =
 	{ &cg_damagePlumSize, "cg_damagePlumSize", "8.0", CVAR_ARCHIVE },
 	{ &cg_damagePlumsWeapons, "cg_damagePlumsWeapons", "511", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_damagePlumsColor, "cg_damagePlumsColor", "White", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_damagePlumsColor },
-	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_autoHop},
+	// userinfo: a qalive (Quake Live) server reads it for the QL autohop, as for QL clients
+	{ &cg_autoHop, "cg_autoHop", "1", CVAR_ARCHIVE | CVAR_USERINFO, CG_LocalEventCvarChanged_cg_autoHop},
 	{ &cg_chatColor, "cg_chatColor", "2", CVAR_ARCHIVE },
 	{ &cg_teamChatColor, "cg_teamChatColor", "5", CVAR_ARCHIVE },
 	{ &cg_teamTaskMarkTime, "cg_teamTaskMarkTime", "5000", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_teamTaskMarkTime },
@@ -1128,7 +1127,6 @@ cvarTable_t cvarTable[] =
 	{ &cg_altRailBeefy, "cg_altRailBeefy", "0", CVAR_ARCHIVE },
 	{ &cg_teamTaskNewSounds, "cg_teamTaskNewSounds", "1", CVAR_ARCHIVE },
 	// { &cg_teamTaskVersion, "cg_teamTaskVersion", "0", CVAR_ARCHIVE | CVAR_NEW },
-	{ &cg_railFix, "cg_railFix", "0", CVAR_ARCHIVE },
 	{ &cg_freezeSoundFix, "cg_freezeSoundFix", "", CVAR_ARCHIVE },
 	{ &cg_enhancedInterpolation, "cg_enhancedInterpolation", "0", CVAR_ARCHIVE },
 	{ &cg_entityOverpolate, "cg_entityOverpolate", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_entityOverpolate },
@@ -1204,6 +1202,9 @@ cvarTable_t cvarTable[] =
 	{ &cg_playerXray, "cg_playerXray", "6", CVAR_ARCHIVE | CVAR_NEW, CG_LocalEventBeFeaturesChanged },
 	{ &cg_specMode, "cg_specMode", "0", CVAR_ARCHIVE, CG_LocalEventBeFeaturesChanged },
 	{ &cg_teamTaskSentPos, "cg_teamTaskSentPos", "320 20", CVAR_ARCHIVE | CVAR_NEW },
+#ifdef CG_PREDICT_HITSCAN
+	{ &cg_predictHitscan, "cg_predictHitscan", "0", CVAR_ARCHIVE | CVAR_NEW },
+#endif
 
 };
 
@@ -2098,7 +2099,7 @@ static void CG_RegisterGraphics(void)
 	cgs.media.botSkillShaders[5] = trap_R_RegisterShader("menu/art/skill6.tga");
 
 
-	cgs.media.viewBloodShader = trap_R_RegisterShader("viewBloodBlend");
+	cgs.media.viewBloodShader = trap_R_RegisterShader("blood_screen");
 	cgs.media.damageIndicatorCenter = trap_R_RegisterShaderNoMip("damageIndicator2");
 	cgs.media.vignetteShader = trap_R_RegisterShader("gfx/vignette");
 
@@ -2178,6 +2179,11 @@ static void CG_RegisterGraphics(void)
 		cgs.media.spawnMarkPlasmaShader = cgs.media.plasmaBallColorShader;
 	}
 	cgs.media.bloodTrailShader = trap_R_RegisterShader("bloodTrail");
+	cgs.media.bloodTrailShader2 = trap_R_RegisterShader("bloodTrail2");
+	if (!cgs.media.bloodTrailShader2)
+	{
+		cgs.media.bloodTrailShader2 = cgs.media.bloodTrailShader;
+	}
 	cgs.media.lagometerShader = trap_R_RegisterShader("lagometer");
 	cgs.media.connectionShader = trap_R_RegisterShader("disconnectedNew");
 	cgs.media.waterBubbleShader = trap_R_RegisterShader("waterBubble");
@@ -2398,6 +2404,8 @@ static void CG_RegisterGraphics(void)
 
 
 	cgs.media.teamStatusBar = trap_R_RegisterShader("gfx/2d/colorbar.tga");
+	/* the killcam's REC dot, in every mode: circleShader is the same picture, for team modes only */
+	cgs.media.killcamReplayShader = trap_R_RegisterShader("gfx/2d/hudres/killcamReplay");
 
 	cgs.media.armorModel[0] = trap_R_RegisterModel("models/powerups/armor/armor_gre.md3");
 	cgs.media.armorIcon[0]  = trap_R_RegisterShaderNoMip("icons/iconr_green");
@@ -2599,6 +2607,11 @@ static void CG_RegisterGraphics(void)
 		if (!modelName[0])
 		{
 			break;
+		}
+		/* the OSP server fills some slots with "-1": no model, only a warning from the renderer */
+		if (modelName[0] == '-')
+		{
+			continue;
 		}
 		cgs.gameModels[i] = trap_R_RegisterModel(modelName);
 	}
@@ -3177,6 +3190,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 	/* SERVERINFO known immediately — detect before be_features / fonts / ParseServerinfo */
 	trap_GetGameState(&cgs.gameState);
+	CG_QLMovementUpdate();
 	s = CG_ConfigString(CS_GAME_VERSION);
 	if (strcmp(s, GAME_VERSION))
 	{
@@ -3306,10 +3320,10 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 			cgs.beTourneyMode = 0;
 			cgs.missilePredictEnabled = qfalse;
 			cgs.missilePrestep = 0;
-			cgs.missilePredictFromPos = 1;
 			cgs.missilePredictRlSpeed = 0;
 			cgs.missilePredictPgSpeed = 0;
 			cgs.missilePredictBfgSpeed = 0;
+			cgs.hitscanPredictEnabled = qfalse;
 			cgs.hbEnabled = qfalse;
 			cgs.hbMode = 0;
 			cgs.hbWide = 0;
@@ -3334,35 +3348,7 @@ int CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum)
 
 			CG_OSPConfigDisableBEFeatures(atoi(CG_ConfigString(CS_OSP2BE_DISABLED_FEATURES)));
 
-			{
-				const char* mp = CG_ConfigString(CS_OSP2BE_MISSILE_PREDICT);
-				int enabled = 0;
-				int prestep = 0;
-				int rl = 0, pg = 0, bfg = 0;
-				int fromPos = 1;
-				int n;
-
-				cgs.missilePredictEnabled = qfalse;
-				cgs.missilePrestep = 0;
-				cgs.missilePredictFromPos = 1;
-				cgs.missilePredictRlSpeed = 0;
-				cgs.missilePredictPgSpeed = 0;
-				cgs.missilePredictBfgSpeed = 0;
-				n = 0;
-				if (mp && mp[0])
-				{
-					n = Q_sscanf(mp, "%i %i %i %i %i %i", &enabled, &prestep, &rl, &pg, &bfg, &fromPos);
-				}
-				if (n >= 5 && enabled)
-				{
-					cgs.missilePredictEnabled = qtrue;
-					cgs.missilePrestep = prestep;
-					cgs.missilePredictRlSpeed = rl;
-					cgs.missilePredictPgSpeed = pg;
-					cgs.missilePredictBfgSpeed = bfg;
-					cgs.missilePredictFromPos = (n >= 6) ? (fromPos ? 1 : 0) : 1;
-				}
-			}
+			CG_PredictInfoUpdate();
 
 			{
 				CG_ParseHitboxConfigString(CG_ConfigString(CS_OSP2BE_HITBOX));
@@ -3705,12 +3691,25 @@ void CG_KeyEvent(int key, qboolean down)
 		CG_KillcamKeyEvent(key, down);
 		return;
 	}
-	CG_BEChat_KeyEvent(key, down);
+	{
+		const int saved = CG_KillcamLiveTimeEnter();
+		CG_BEChat_KeyEvent(key, down);
+		cg.time = saved;
+	}
 }
 
 void CG_MouseEvent(int x, int y)
 {
-	CG_BEChat_MouseEvent(x, y);
+	if (cg_killcamState == CG_KILLCAM_REPLAY && !CG_BEChat_IsOpen())
+	{
+		CG_KillcamMouseEvent(x, y);
+		return;
+	}
+	{
+		const int saved = CG_KillcamLiveTimeEnter();
+		CG_BEChat_MouseEvent(x, y);
+		cg.time = saved;
+	}
 }
 
 char* CG_OSPGetCvarName(vmCvar_t* cvar)

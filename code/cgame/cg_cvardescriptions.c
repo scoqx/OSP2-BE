@@ -164,6 +164,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_followpowerup", "Allows client to auto-follow powerup pickup if spectating. Set ^20^7 to disable." },
 	{ "cg_followviewcam", "Toggles use of dynamic or specific player follow mode of the viewcam. Set ^20^7 to disable." },
 	{ "cg_lightningImpact", "Draw Lightning beam hit effect. Set ^20^7 to hide." },
+	{ "cg_lightningImpactCap", "Distance below which the Lightning beam hit effect shrinks, down to 1/8 of its size at point blank, as in Quake Live. Set ^20^7 for the full size at any distance." },
 	{ "cg_lightningTrail", "Alt LG trail, bit mask:\n^21^7 walls (replaces marks)\n^22^7 hits on players in air (replaces blood)\n^24^7 heat gradient, ignores LG color\nSet ^20^7 to disable." },
 	{ "cg_lightningTrailTime", "Alternative LG trail cooling time in ms (100-5000). Used by cg_lightningTrail." },
 	{ "cg_lightningTrailWidth", "Alternative LG trail half-width in units (0.5-16). Used by cg_lightningTrail." },
@@ -188,9 +189,6 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_announcerText", "Announcer subtitles. Set 0 to disable." },
 	{ "cg_visualSounds", "Draws sound icons around the crosshair, in the direction of each sound. Game audio is turned off.\n  ^20^7 - off\n  ^21^7 - on, light icons\n  ^22^7 - on, dark icons" },
 	{ "cg_autoFollow", "Always follow someone alive: when the followed player dies, switch to another.\n  ^20^7 - off\n  ^21^7 - on" },
-#ifdef CG_PREDICT_HITSCAN
-	{ "cg_predictHitscan", "Test: play the hit sound for railgun and lightning gun at once, not waiting for the server. On a miss the server does not confirm, so a false sound is possible.\n  ^20^7 - off\n  ^21^7 - on" },
-#endif
 	{ "cg_killcam", "After your death, replay the last seconds through the killer's view. Starts in 1 second, ends when you respawn. Fire or Esc skips it and does not respawn you. Other keys do not work during the replay.\n  ^20^7 - off\n  ^21^7 - from behind the killer\n  ^22^7 - from the killer's eyes" },
 	{ "cg_smoothTime", "Test: even steps of game time. The engine corrects it by 1-2 ms on each snapshot; here those corrections are left out, and other players and effects move evenly. Your own movement is not changed.\n  ^20^7 - off\n  ^21^7 - on" },
 	{ "cg_smokeNew", "Smoke look, applied by ^3vid_restart^7.\n  ^20^7 - old\n  ^21^7 - new, black" },
@@ -307,7 +305,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_damageFrameSize", "Thickness for ^3cg_damageDrawFrame^7\n  ^21^7 - ^2512^7" },
 	{ "cg_damageFrameOpaque", "Opacity for ^3cg_damageDrawFrame^7 and ^3cg_damageDraw^7 ^23^7 vignette\n  ^20.1^7 - ^21.0^7" },
 	{ "cg_shud_currentWeapons", "Weapon selection for the SHUD element. Bitmask:\n  ^21^7 - Gauntlet\n  ^22^7 - Machine Gun\n  ^24^7 - Shotgun\n  ^28^7 - Grenade Launcher\n  ^216^7 - Rocket Launcher\n  ^232^7 - Lightning Gun\n  ^264^7 - Railgun\n  ^2128^7 - Plasma Gun" },
-	{ "cg_drawHitBox", "Draw hitboxes.\n  ^20^7 - disabled\n  ^21^7 - bounding edges\n  ^22^7 - solid color++\n  ^23^7 - solid color" },
+	{ "cg_drawHitBox", "Draw hitboxes.\n  ^20^7 - disabled\n  ^21^7 - bounding edges\n  ^22^7 - solid color++\n  ^23^7 - solid color\nOn qalive with g_playerCylinders: Quake Live body cylinder + head sphere (CS 911 mode 4)." },
 	{ "cg_hitBoxColor", "Set color for ^3cg_drawHitBox ^2\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
 	{ "cg_drawGunForceAspect", "Fix weapon stretching when using 4:3 aspect ratio on widescreen. Set ^20^7 to disable." },
 	{ "cg_drawOutline", "Set player outline rendering mode. Use ^3cg_enemyOutline*^7 and ^3cg_teamOutline*^7 to change colors and style.\n  ^20^7 - disabled\n  ^21^7 - enemies only\n  ^22^7 - teammates only\n  ^23^7 - all players" },
@@ -319,6 +317,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_underwaterFovWarp", "Underwater camera warp effect. Set ^20^7 to disable." },
 	{ "cg_altBlood", "Alternative blood effects on model hit\nUses shaders ^6bloodExplosionNew^7, ^6bloodExplosionNew#^7, where # is a number from 2 to 17\n  ^20^7 - disabled, default blood\n  ^21^7-^216^7 for customization" },
 	{ "cg_altBloodColor", "Color of blood on model hit.\n \"^2color^7\" - color name, digit, hex, T or E (team/enemy)" },
+	{ "cg_blackBlood", "Black blood tint for screen splat, hit spurts, gib trails and stains.\n  ^20^7 - red\n  ^21^7 - black" },
 	{ "cg_altPlasma", "Alternative plasma projectile and trail rendering\n  ^20^7 - disabled\n  ^21^7 - enabled\n  ^22^7 - pre-alpha shader\n  ^23^7 - QL projectile (sprites/plasmaQL), half-size explosion" },
 	{ "cg_drawRewards", "Draw rewards (e.g. excellent, impressive etc).\n  ^20^7 - disabled (float sprite enabled)\n  ^21^7 - fully enabled\n  ^22^7 - disable icon on hud\n  ^24^7 - disable float sprite\n  ^28^7 - disable sound" },
 	{ "cg_shotGunTracer", "Draw tracer for flying shotgun pellets. Set ^20^7 to disable." },
@@ -381,7 +380,7 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_friendHudMarkerMaxScale", "Maximum additional scale factor based on distance (applied to base size)." },
 	{ "cg_friendHudMarkerMinScale", "Minimum scale factor based on distance." },
 	{ "cg_friendsWallhack", "Teammate wallhack and map positions. Bitmask:\n  ^20^7 - disabled\n  ^21^7 - foe marker through walls\n  ^22^7 - ^3team indicator^7 through walls\n  ^24^7 - allies global pos" },
-	{ "cg_playerXray", "Player silhouettes through walls. In-game: teammates only. Bitmask:\n  ^21^7 - on\n  ^22^7 - model colors\n  ^24^7 - bright weapon colors\n  ^28^7 - spectator/demo: all players" },
+	{ "cg_playerXray", "Player silhouettes through walls. In-game: teammates only (sv_cheats 1: everyone). Bitmask:\n  ^21^7 - on\n  ^22^7 - model colors\n  ^24^7 - bright weapon colors\n  ^28^7 - spectator/demo: all players" },
 	{ "cg_drawHudMarkers", "Display teammate markers on the HUD. Set ^20 ^7to disable." },
 	{ "cg_scoreboardRtColors", "Color of the red team scoreboard. ^3cg_scoreboardBE^7 must be enabled \n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Yellow^7\", \"^2T E T^7\", \"^20099FF 99FF00 99FF00^7\" or \"^24 Red 4^7\"." },
 	{ "cg_scoreboardBtColors", "Color of the blue team scoreboard. ^3cg_scoreboardBE^7 must be enabled\n  ^2<color> <color> <color>^7 separated by space. Third argument is optional. For example \"^2Red Green Blue^7\", \"^2E T E^7\", \"^20099FF 99FF00 20099FF^7\" or \"^24 Red 2^7\"." },
@@ -445,7 +444,6 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_altRailBeefy", "Thicker rail core for altRail 2–5. Set ^21^7 for thick core." },
 	{ "cg_teamTaskNewSounds", "New team task sounds. Bitmask:\n  ^21^7 - default sound\n  ^22^7 - accept sound\n  ^24^7 - deny sound" },
 	// { "cg_teamTaskVersion", "Team task coordinate range. ^20^7 - old bounds ±3000 (compat with old clients)\n  ^21^7 - new bounds ±4096 (fixes offset on large maps). All clients on server must use same value." },
-	{ "cg_railFix", "Fix rail trail start point. Set ^20^7 to disable." },
 	{ "cg_freezeSoundFix", "Replace freeze sound with alternative sound. Set ^20^7 to disable." },
 	{ "be_infoDetail", "Detail shader draw type (loading / connect).\n  ^20^7 - disabled\n  ^21^7 - default\n  ^22^7 - fullscreen" },
 	{ "cg_enhancedInterpolation", "Enhanced (polynomial) interpolation for other players' positions. Set ^21^7 to enable. Use ^3cg_entityOverpolate^7 to tune offset." },
@@ -515,6 +513,9 @@ static cvarDescriptionTable_t cvarDescriptionTable[] =
 	{ "cg_teamTaskSentPos", "Position of own team task sent marker at top of screen (tHere, tPickup, etc.).\n  ^2X^7 - X only (Y stays ^220^7)\n  ^2X Y^7 - both coordinates\nDefault: ^2320 20^7" },
 	{ "cg_specMode", "Enemy markers while spectating (^3cg_teamIndicator^7, ^3cg_drawFriend^7, ^3cg_playerXray^7 — if enabled).\n  ^20^7 - default\n  ^22^7 - following a player: that team only; free camera: everyone" },
 	{ "cg_giveName", "Replace invisible, duplicate, and noname player names with names. Requires ^3vid_restart^7\n  ^20^7 - off\n  ^21^7 - on (all players)\n  ^22^7 - on (only duplicates/invisible/noname)" },
+#ifdef CG_PREDICT_HITSCAN
+	{ "cg_predictHitscan", "Show your hits instantly, without waiting for the server. Works only on servers with unlagged.\n  ^20^7 - off\n  ^21^7 - on\n  ^22^7 - on, with damage plums" },
+#endif
 };
 
 

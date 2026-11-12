@@ -407,6 +407,51 @@ void CG_UpdateAndDrawSelwheelMark(void)
 
 /*
 =================
+CG_SelwheelMouseMove
+
+Mouse counts straight from the engine, when they do not turn the view (a killcam replay has the mouse).
+The same way as turning would move the mark: counts * sensitivity * m_yaw (0.022) * wheel sensitivity.
+=================
+*/
+void CG_SelwheelMouseMove(int dx, int dy)
+{
+	float sens;
+	float scale;
+	float centerX;
+	float centerY;
+	float maxRadius;
+	float ox;
+	float oy;
+	float dist;
+
+	if (!cg.ttwheelMarkActive || (!dx && !dy))
+	{
+		return;
+	}
+	sens = cg.teamMarkers.sensitivityAdjusted ? cg.teamMarkers.savedSensitivity : sensitivity.value;
+	sens *= 0.022f * cg_teamTaskWheelSensitivity.value;
+
+	cg.teamMarkers.ttwheelMarkX += dx * sens;
+	cg.teamMarkers.ttwheelMarkY += dy * sens;
+
+	CG_GetScreenCenter(&centerX, &centerY);
+	scale = cg_teamTaskWheelScale.value;
+	if (scale <= 0.0f)
+		scale = 1.0f;
+	maxRadius = (SELWHEEL_ICON_RADIUS + SELWHEEL_MARK_MAX_RADIUS_OFFSET) * scale;
+	ox = cg.teamMarkers.ttwheelMarkX - centerX;
+	oy = cg.teamMarkers.ttwheelMarkY - centerY;
+	dist = sqrt(ox * ox + oy * oy);
+	if (dist > maxRadius)
+	{
+		cg.teamMarkers.ttwheelMarkX = centerX + ox * maxRadius / dist;
+		cg.teamMarkers.ttwheelMarkY = centerY + oy * maxRadius / dist;
+	}
+	cg.teamMarkers.lastMovementTime = cg.time;
+}
+
+/*
+=================
 CG_GetSelwheelIconAtPosition
 
 Check if position (x, y) is over any icon, return icon index or -1

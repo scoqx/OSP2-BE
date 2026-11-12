@@ -128,13 +128,20 @@ extern "C" {
 #define CS_OSP2BE_ITEM_CATALOG0                890
 #define CS_OSP2BE_ITEM_CATALOG_COUNT           20
 #define CS_OSP2BE_ITEM_CATALOG_LAST            (CS_OSP2BE_ITEM_CATALOG0 + CS_OSP2BE_ITEM_CATALOG_COUNT - 1)
-/* BE-only: "1 <prestep> <rlSpeed> <pgSpeed> <bfgSpeed>" when client missile predict is on */
-#define CS_OSP2BE_MISSILE_PREDICT              910
+/* BE-only, what the client may predict, an info string (see CG_PredictInfoUpdate):
+ *   \pr\<1 missiles | 2 hitscan>\pre\<ms>\rl\pg\bfg <speeds>\seed\<0|1>\mg\mgt\sg\lg\rg <damage>
+ *   Old form "1 <prestep> <rlSpeed> <pgSpeed> <bfgSpeed> ..." = missiles only. */
+#define CS_OSP2BE_PREDICT                      910  /* was CS_OSP2BE_MISSILE_PREDICT */
 /* CS 911 player damage hitbox (shared slot):
  *   Ruthless/Devotion: "1 <wide> <hgh>" — body cylinder only (head removed; legacy mode 2 = same)
+ *   qalive:            "4 <scale>" — QL cylinder body + head sphere (sv_cylinderScale)
  *   Metarena/OSDF:     single-token "<scale>" (>0 = cylinder AABB*scale; "0"/empty = AABB cube) */
 #define CS_OSP2BE_HITBOX                       911
 #define CS_OSP2BE_MOVEMENT_LOCK                912  /* FPS lock: 0=off, >0=q3msk-style velocity quantize */
+/* qalive (Quake Live) server: its CS_PMOVEINFO / CS_WEAPONINFO, sent to Q3 clients
+   here. A non-empty 940 means QL movement (bg_pmove_ql.c). */
+#define CS_OSP2BE_QL_PMOVEINFO                 940
+#define CS_OSP2BE_QL_WEAPONINFO                941
 
 /* Client predict physics branch (cgs.pmoveMode); game code uses pmode_q3msk_lock */
 #define PMODE_OSP                              0

@@ -474,6 +474,7 @@ void CG_DamageFeedback(int yawByte, int pitchByte, int damage)
 		kick = 10;
 	}
 	cg.damageValue = kick;
+	cg.damageBloodRotation = random() * 360.0f;
 	cg.v_dmg_time = cg.time + DAMAGE_TIME;
 	cg.damageTime = cg.snap->serverTime;
 }
@@ -487,6 +488,7 @@ A respawn happened this snapshot. Reads from cgs (respawnWeapon, zoomAutoReset),
 */
 void CG_Respawn(void)
 {
+	cg.deadScoresHidden = qfalse;
 	cg.thisFrameTeleport = qtrue;
 	cg.weaponSelectTime = cg.time;
 	cg.weaponSelect = cg_respawnWeapon.integer ? cg_respawnWeapon.integer : cg.snap->ps.weapon;
@@ -683,10 +685,11 @@ static sfxHandle_t CG_PickUnfreezeHitSound(int health, int armor)
 }
 #endif
 
+static int stackedDmg = 0;  /* cg_stackHitSounds: shared with the predicted hits */
+
 void CG_HitSound(playerState_t* ps, playerState_t* ops)
 {
 	static int delayedDmg = 0;
-	static int stackedDmg = 0;
 
 	int deltaTime  = cg.time - cgs.osp.lastHitTime;
 	int hits    = ps->persistant[PERS_HITS] - ops->persistant[PERS_HITS];
@@ -739,6 +742,13 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 	}
 
 	//hits > 0 here
+#ifdef CG_PREDICT_HITSCAN
+	/* the hit prediction has already played this one */
+	if (hits > 0 && CG_HITSCAN_PREDICT_ON() && CG_PredictHitscanConfirm())
+	{
+		return;
+	}
+#endif
 	{
 		const int atta = ps->persistant[PERS_ATTACKEE_ARMOR];
 		int damage;
@@ -776,14 +786,6 @@ void CG_HitSound(playerState_t* ps, playerState_t* ops)
 		// TODO we need some solution when we take quad cuz sometimes with LG dmg + delayedDMG > 25
 		//damage = ops->powerups[PW_QUAD] ? 26 : damage; // for a homogeneous sound with quad
 
-#ifdef CG_PREDICT_HITSCAN
-		/* cg_predictHitscan has already played this one */
-		if (cg_predictHitscan.integer && CG_PredictHitscanConfirm())
-		{
-			return;
-		}
-#endif
-
 		CG_PlayHitSoundForDamage(damage, ps, ops);
 	}
 }
@@ -810,12 +812,23 @@ static void CG_PlayHitSoundForDamage(int damage, playerState_t* ps, playerState_
 	}
 }
 
-#ifdef CG_PREDICT_HITSCAN
+/* A hit of ours we know before the server's PERS_HITS (hit prediction, a killcam replay):
+   the sound and the crosshair hit, stacked as the server's hits in CG_HitSound */
 void CG_PlayPredictedHitSound(int damage)
 {
+	if (cg_stackHitSounds.integer && cg.time - cgs.osp.lastHitTime < cg_stackHitSoundsTimeout.integer)
+	{
+		stackedDmg += damage;
+		damage = stackedDmg;
+	}
+	else
+	{
+		stackedDmg = 0;
+	}
+	cgs.osp.lastHitTime = cg.time;
+	cgs.osp.lastHitDamage = damage;
 	CG_PlayHitSoundForDamage(damage, &cg.predictedPlayerState, &cg.predictedPlayerState);
 }
-#endif
 /*
 ==================
 CG_CheckLocalSounds

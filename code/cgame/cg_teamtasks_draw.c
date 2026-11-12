@@ -1905,6 +1905,8 @@ void CG_AddTeamTaskOverheadSprites(void)
 	}
 }
 
+static void CG_DrawTeamTaskSentMark(teamTaskMark_t* mark, const teamTaskMarkConstants_t* constants);
+
 void CG_DrawTeamTaskMarks(void)
 {
 	int i;
@@ -1932,30 +1934,56 @@ void CG_DrawTeamTaskMarks(void)
 		CG_RenderTeamTaskMark(mark, &renderData, &constants);
 
 		/* Own HERE_DEAD/WARN_DEAD as overhead in first person (pickup/item uses CATEGORY 1 overhead path above, no second draw) */
-		if (!cg.renderingThirdPerson && CG_IS_LOCAL_CLIENT_ON_SCREEN() && !CG_IsClientFreeFloat() &&
-		        mark->clientNum == cg.clientNum &&
-		        (mark->markType == TEAMTASK_HERE_DEAD || mark->markType == TEAMTASK_WARN_DEAD))
+		if (!cg.renderingThirdPerson && CG_IS_LOCAL_CLIENT_ON_SCREEN() && !CG_IsClientFreeFloat())
 		{
-			teamTaskMarkRenderData_t overheadRenderData;
-
-			overheadRenderData.x = tm->sentPosX;
-			overheadRenderData.y = tm->sentPosY;
-			overheadRenderData.h = 10.0f * constants.scale;
-			overheadRenderData.w = overheadRenderData.h * 0.75f;
-			overheadRenderData.iconW = overheadRenderData.w * 4;
-			overheadRenderData.iconH = overheadRenderData.h * 4;
-			overheadRenderData.font = constants.font;
-			overheadRenderData.distance = 100.0f;
-			overheadRenderData.fade = 1.0f;
-			overheadRenderData.endFade = CG_CalculateEndFade(mark->endTime, cg.time);
-			overheadRenderData.nameFade = 0.0f;
-			overheadRenderData.showSpawnEffect = qfalse;
-			overheadRenderData.spawnFade = 1.0f;
-			overheadRenderData.spawnScale = 1.0f;
-			overheadRenderData.isHovering = qfalse;
-			Vector4Copy(mark->color, overheadRenderData.color);
-			overheadRenderData.color[3] *= constants.opaque * overheadRenderData.endFade;
-			CG_RenderTeamTaskMark(mark, &overheadRenderData, &constants);
+			CG_DrawTeamTaskSentMark(mark, &constants);
 		}
+	}
+}
+
+/* Our own HERE_DEAD/WARN_DEAD at cg_teamTaskSentPos: the sign that it has gone out */
+static void CG_DrawTeamTaskSentMark(teamTaskMark_t* mark, const teamTaskMarkConstants_t* constants)
+{
+	const cgs_teamMarkers_t* tm = &cg.teamMarkers;
+	teamTaskMarkRenderData_t overheadRenderData;
+
+	if (mark->clientNum != cg.clientNum ||
+	        (mark->markType != TEAMTASK_HERE_DEAD && mark->markType != TEAMTASK_WARN_DEAD))
+	{
+		return;
+	}
+	overheadRenderData.x = tm->sentPosX;
+	overheadRenderData.y = tm->sentPosY;
+	overheadRenderData.h = 10.0f * constants->scale;
+	overheadRenderData.w = overheadRenderData.h * 0.75f;
+	overheadRenderData.iconW = overheadRenderData.w * 4;
+	overheadRenderData.iconH = overheadRenderData.h * 4;
+	overheadRenderData.font = constants->font;
+	overheadRenderData.distance = 100.0f;
+	overheadRenderData.fade = 1.0f;
+	overheadRenderData.endFade = CG_CalculateEndFade(mark->endTime, cg.time);
+	overheadRenderData.nameFade = 0.0f;
+	overheadRenderData.showSpawnEffect = qfalse;
+	overheadRenderData.spawnFade = 1.0f;
+	overheadRenderData.spawnScale = 1.0f;
+	overheadRenderData.isHovering = qfalse;
+	Vector4Copy(mark->color, overheadRenderData.color);
+	overheadRenderData.color[3] *= constants->opaque * overheadRenderData.endFade;
+	CG_RenderTeamTaskMark(mark, &overheadRenderData, constants);
+}
+
+/* Killcam replay: the world marks are of the replay, only the ones we send now are shown, at the top */
+void CG_DrawTeamTaskSentMarks(void)
+{
+	int i;
+	teamTaskMarkConstants_t constants;
+	cgs_teamMarkers_t* tm = &cg.teamMarkers;
+
+	if (!tm->drawTeamTasks || tm->numTeamTaskMarks == 0)
+		return;
+	CG_InitTeamTaskMarkConstants(&constants);
+	for (i = 0; i < tm->numTeamTaskMarks; i++)
+	{
+		CG_DrawTeamTaskSentMark(&tm->teamTaskMarks[i], &constants);
 	}
 }

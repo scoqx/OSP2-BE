@@ -23,6 +23,8 @@ qboolean BeinfoCfg_GetTtfFontShadow(const char* name, float* offX, float* offY);
 #if defined(CGAME)
 void BeinfoCfg_SetBrightColorHandler(beinfoBrightColorFn_t fn);
 void BeinfoCfg_SetFlashColorHandler(beinfoBrightColorFn_t fn);
+/* cgame { interface_killcam_font }: font name or index as written, "" if not set */
+const char* BeinfoCfg_GetKillcamFont(void);
 #endif
 
 #endif /* BEINFO_CFG_H */

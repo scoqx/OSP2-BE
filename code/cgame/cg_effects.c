@@ -285,8 +285,8 @@ void CG_DamagePlum(int client, vec3_t org, int damage)
 		return;
 	}
 
-	// the replay brings back the events of our own hits
-	if (cg_killcamState == CG_KILLCAM_REPLAY)
+	// the replay brings back the events of our own hits; the killer's hits on us are made there
+	if (cg_killcamState == CG_KILLCAM_REPLAY && !cg_killcamOwnPlum)
 	{
 		return;
 	}
@@ -458,6 +458,28 @@ localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
 
 /*
 =================
+CG_GetBloodColor
+
+Default red blood; cg_blackBlood 1 forces black (screen / hit / gibs).
+=================
+*/
+void CG_GetBloodColor(vec4_t color)
+{
+	if (cg_blackBlood.integer)
+	{
+		color[0] = color[1] = color[2] = 0.0f;
+	}
+	else
+	{
+		color[0] = 1.0f;
+		color[1] = 0.0f;
+		color[2] = 0.0f;
+	}
+	color[3] = 1.0f;
+}
+
+/*
+=================
 CG_Bleed
 
 This is the spurt of blood when a character gets hit
@@ -467,6 +489,7 @@ void CG_Bleed(vec3_t origin, int entityNum)
 {
 	localEntity_t* ex;
 	int alt = cg_altBlood.integer;
+	vec4_t bloodColor;
 
 	if (!com_blood.integer)
 	{
@@ -482,23 +505,21 @@ void CG_Bleed(vec3_t origin, int entityNum)
 	VectorCopy(origin, ex->refEntity.origin);
 	ex->refEntity.reType = RT_SPRITE;
 	ex->refEntity.rotation = rand() % 360;
-	ex->refEntity.radius = 24;
+	ex->refEntity.radius = (alt)? 24 : 14;
+	ex->refEntity.shaderTime = cg.time / 1000.0f;
 
 	if (CG_BE_FEATURE_ENABLED(CG_BE_ALT_BLOOD) && alt)
 	{
-		vec4_t bloodColor;
-
 		if (alt < MAX_ALT_SHADERS)
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[alt - 1];
 		else
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[0];
 
 		Vector4Copy(cg.beAltBloodColor, bloodColor);
-
-		ex->refEntity.shaderRGBA[0] = bloodColor[0] * 255;
-		ex->refEntity.shaderRGBA[1] = bloodColor[1] * 255;
-		ex->refEntity.shaderRGBA[2] = bloodColor[2] * 255;
-		ex->refEntity.shaderRGBA[3] = bloodColor[3] * 255;
+		if (cg_blackBlood.integer)
+		{
+			bloodColor[0] = bloodColor[1] = bloodColor[2] = 0.0f;
+		}
 	}
 	else
 	{
@@ -506,7 +527,14 @@ void CG_Bleed(vec3_t origin, int entityNum)
 			ex->refEntity.customShader = cgs.media.bloodExplosionShader;
 		else
 			ex->refEntity.customShader = cgs.media.bloodExplosionNoPicMipShader;
+
+		CG_GetBloodColor(bloodColor);
 	}
+
+	ex->refEntity.shaderRGBA[0] = bloodColor[0] * 255;
+	ex->refEntity.shaderRGBA[1] = bloodColor[1] * 255;
+	ex->refEntity.shaderRGBA[2] = bloodColor[2] * 255;
+	ex->refEntity.shaderRGBA[3] = bloodColor[3] * 255;
 
 	// don't show player's own blood in view
 	if (entityNum == cg.snap->ps.clientNum)
@@ -1181,7 +1209,9 @@ void CG_TeamTaskMark(vec3_t coord, int markType, int clientNum, int toClient)
 		}
 	}
 
-	if (cg.teamMarkers.teamTaskFlags & CG_TEAMTASK_MARKSOUND)
+	/* our own mark sent from a killcam replay: no sound over it, the mark at the top says it went out */
+	if ((cg.teamMarkers.teamTaskFlags & CG_TEAMTASK_MARKSOUND) &&
+	        !(cg_killcamState == CG_KILLCAM_REPLAY && clientNum == cg.clientNum))
 	{
 		sfxHandle_t soundToPlay;
 		soundToPlay = 0;

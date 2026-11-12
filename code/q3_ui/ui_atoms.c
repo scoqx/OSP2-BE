@@ -221,10 +221,15 @@ void UI_PopMenu(void)
 	}
 }
 
+void UI_PublishGameKeys(void);
+
 void UI_ForceMenuOff(void)
 {
 	uis.menusp     = 0;
 	uis.activemenu = NULL;
+
+	/* bindings may have changed in the menu */
+	UI_PublishGameKeys();
 
 	if (trap_Cvar_VariableValue("ui_forceGamma"))
 	{
@@ -1604,11 +1609,125 @@ static void NeedCDKeyAction(qboolean result)
 }
 
 
+/*
+=================
+UI_PublishGameKeys
+
+cgame can not read bindings, and in a killcam replay it has the keys: it gets here which keys hold
++scores, +ttwheel, enterchat and enterchatteam, also inside a bind of several commands ("+scores; +shudkey2").
+=================
+*/
+#define UI_GAMEKEYS_MAX 512
+
+static qboolean UI_BindingHas(const char* binding, const char* command)
+{
+	const int len = strlen(command);
+	const char* p = binding;
+
+	while (*p)
+	{
+		while (*p == ' ' || *p == ';' || *p == '\t')
+		{
+			p++;
+		}
+		if (!Q_stricmpn(p, command, len) && (p[len] == '\0' || p[len] == ' ' || p[len] == ';' || p[len] == '\t'))
+		{
+			return qtrue;
+		}
+		while (*p && *p != ';')
+		{
+			p++;
+		}
+	}
+	return qfalse;
+}
+
+/* a +command anywhere in the bind */
+static qboolean UI_BindingHasHold(const char* binding)
+{
+	const char* p = binding;
+
+	while (*p)
+	{
+		while (*p == ' ' || *p == ';' || *p == '\t')
+		{
+			p++;
+		}
+		if (*p == '+')
+		{
+			return qtrue;
+		}
+		while (*p && *p != ';')
+		{
+			p++;
+		}
+	}
+	return qfalse;
+}
+
+void UI_PublishGameKeys(void)
+{
+	char binding[256];
+	char scores[128];
+	char wheel[128];
+	char chat[128];
+	char chatTeam[128];
+	char pass[128];
+	int  key;
+
+	pass[0] = '\0';
+	scores[0] = '\0';
+	wheel[0] = '\0';
+	chat[0] = '\0';
+	chatTeam[0] = '\0';
+	for (key = 1; key < UI_GAMEKEYS_MAX; key++)
+	{
+		trap_Key_GetBindingBuf(key, binding, sizeof(binding));
+		if (!binding[0])
+		{
+			continue;
+		}
+		if (UI_BindingHas(binding, "+scores"))
+		{
+			Q_strcat(scores, sizeof(scores), va("%i ", key));
+		}
+		if (UI_BindingHas(binding, "+ttwheel"))
+		{
+			Q_strcat(wheel, sizeof(wheel), va("%i ", key));
+		}
+		if (UI_BindingHas(binding, "enterchat"))
+		{
+			Q_strcat(chat, sizeof(chat), va("%i ", key));
+		}
+		if (UI_BindingHas(binding, "enterchatteam"))
+		{
+			Q_strcat(chatTeam, sizeof(chatTeam), va("%i ", key));
+		}
+		/* run as they are by the killcam: the bind text goes to ui_kcBind<key>, cgame runs it with vstr.
+		   Not with a +command in it: that one would wait for a release that never comes. */
+		if ((UI_BindingHas(binding, "say") || UI_BindingHas(binding, "say_team") ||
+		        UI_BindingHas(binding, "tHere") || UI_BindingHas(binding, "tWarn")) && !UI_BindingHasHold(binding) &&
+		        strlen(pass) + 5 < sizeof(pass))
+		{
+			Q_strcat(pass, sizeof(pass), va("%i ", key));
+			trap_Cvar_Set(va("ui_kcBind%i", key), binding);
+		}
+	}
+	trap_Cvar_Set("ui_keysScores", scores);
+	trap_Cvar_Set("ui_keysTtwheel", wheel);
+	trap_Cvar_Set("ui_keysChat", chat);
+	trap_Cvar_Set("ui_keysChatTeam", chatTeam);
+	trap_Cvar_Set("ui_keysKillcamBinds", pass);
+}
+
 void UI_SetActiveMenu(uiMenuCommand_t menu)
 {
 	// this should be the ONLY way the menu system is brought up
 	// enusure minumum menu data is cached
 	Menu_Cache();
+
+	/* bindings may have changed in the menu or the console */
+	UI_PublishGameKeys();
 
 	switch (menu)
 	{
@@ -2310,6 +2429,7 @@ void UI_Init(void)
 
 	UI_InitGameinfo();
 	UI_BeinfoCfg_Load();
+	UI_PublishGameKeys();
 
 	// cache redundant calulations
 	UI_VideoCheck(-99999);

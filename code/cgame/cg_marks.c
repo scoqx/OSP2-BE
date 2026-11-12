@@ -1090,7 +1090,12 @@ void CG_AddParticleToScene(cparticle_t* p, vec3_t org, float alpha)
 		}
 
 		if (p->color == BLOODRED)
-			VectorSet(color, 0.22f, 0.0f, 0.0f);
+		{
+			if (cg_blackBlood.integer)
+				VectorSet(color, 0.0f, 0.0f, 0.0f);
+			else
+				VectorSet(color, 0.22f, 0.0f, 0.0f);
+		}
 		else if (p->color == GREY75)
 		{
 			float   len;
@@ -1297,7 +1302,12 @@ void CG_AddParticleToScene(cparticle_t* p, vec3_t org, float alpha)
 		float sinR, cosR;
 
 		if (p->color == BLOODRED)
-			VectorSet(color, 1, 1, 1);
+		{
+			if (cg_blackBlood.integer)
+				VectorSet(color, 0.0f, 0.0f, 0.0f);
+			else
+				VectorSet(color, 1.0f, 0.0f, 0.0f);
+		}
 		else
 			VectorSet(color, 0.5, 0.5, 0.5);
 

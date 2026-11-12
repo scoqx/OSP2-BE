@@ -61,6 +61,13 @@ static const announcerCaption_t cg_announcerCaptions[] =
 	{ "sound/teamplay/flagtaken_opponent.wav",  "The enemy flag was taken",     &cgs.media.takenOpponentSound },
 	{ "sound/teamplay/flagreturn_yourteam.wav", "Your flag was returned",       &cgs.media.returnYourTeamSound },
 	{ "sound/teamplay/flagreturn_opponent.wav", "The enemy flag was returned",  &cgs.media.returnOpponentSound },
+	/* powerup pickups: the global sound everyone hears (EV_GLOBAL_ITEM_PICKUP) */
+	{ "sound/items/quaddamage.wav",             "Quad Damage",                  NULL },
+	{ "sound/items/protect.wav",                "Battle Suit",                  NULL },
+	{ "sound/items/haste.wav",                  "Haste",                        NULL },
+	{ "sound/items/invisibility.wav",           "Invisibility",                 NULL },
+	{ "sound/items/regeneration.wav",           "Regeneration",                 NULL },
+	{ "sound/items/flight.wav",                 "Flight",                       NULL },
 };
 
 #define ANNOUNCER_NUM_CAPTIONS ((int)(sizeof(cg_announcerCaptions) / sizeof(cg_announcerCaptions[0])))
@@ -129,7 +136,7 @@ void CG_AnnouncerSound(sfxHandle_t sfx)
 	}
 	for (i = 0; i < ANNOUNCER_NUM_CAPTIONS; i++)
 	{
-		if (*cg_announcerCaptions[i].handle == sfx)
+		if (cg_announcerCaptions[i].handle && *cg_announcerCaptions[i].handle == sfx)
 		{
 			CG_AnnouncerText(cg_announcerCaptions[i].text);
 			return;

@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/q_shared.h"
 #include "tr_types.h"
 #include "../game/bg_public.h"
+#include "../game/bg_pmove_ql.h"
 #include "cg_public.h"
 
 #ifdef __cplusplus
@@ -69,7 +70,10 @@ extern "C" {
 
 #define CG_MEDAL_TYPE_COUNT     6
 #define CG_MEDAL_FRAME_COUNT    48
-
+	
+/* Own hitscan hit prediction (cg_unlagged.c); the server turns it on through CS 910 */
+#define CG_PREDICT_HITSCAN
+	
 typedef struct
 {
 	qhandle_t   shader;
@@ -775,6 +779,7 @@ typedef struct cgFontIndices_s
 	int roundStats;
 	int emojiList;
 	int chatWindow;
+	int killcam; /* beinfo.cfg cgame { interface_killcam_font } */
 } cgFontIndices_t;
 
 /* Runtime printui entry: startTime = cg.time, duration/fade, active; updated every frame */
@@ -944,6 +949,7 @@ typedef struct
 	int         teamScores[2];
 	score_t     scores[MAX_CLIENTS];
 	qboolean    showScores;
+	qboolean    deadScoresHidden;   /* dead: the scoreboard shows by itself until +scores is pressed and let go */
 	qboolean    showAccuracy;
 	qboolean    showWStats;
 	qboolean    beStatsShowing; /* BEStats window actually drawn this frame (like scoreBoardShowing) */
@@ -1045,6 +1051,7 @@ typedef struct
 	// blend blobs
 	float       damageTime;
 	float       damageX, damageY, damageValue;
+	float       damageBloodRotation;	/* fixed random angle for blood splat this hit */
 
 	// status bar head
 	float       headYaw;
@@ -1144,8 +1151,7 @@ typedef struct
 	qboolean    missileFireValid;
 	int         missileFireTime;
 	int         missileFireViewHeight;
-	vec3_t      missileFireOriginOld; /* pre-pmove origin (fromPos 0) */
-	vec3_t      missileFireOriginNew; /* post-pmove origin (fromPos 1) */
+	vec3_t      missileFireOriginNew; /* post-pmove origin of the firing command */
 	vec3_t      missileFireAngles;
 
 	/* Incremental prediction (cg_optimizePrediction / UnFreeZe unlagged) */
@@ -1324,6 +1330,7 @@ typedef struct
 	qhandle_t   waterBubbleShader;
 	qhandle_t   snowflakeShader;
 	qhandle_t   bloodTrailShader;
+	qhandle_t   bloodTrailShader2;
 
 	qhandle_t   numberShaders[11];
 
@@ -1484,6 +1491,7 @@ typedef struct
 	qhandle_t sizeCursor;
 	qhandle_t customShader[16];
 	qhandle_t circleShader;
+	qhandle_t killcamReplayShader;
 
 	// team tasks
 	qhandle_t teamTasksAttack;
@@ -2096,12 +2104,19 @@ typedef struct
 	int             sv_fps;      /* CS_SYSTEMINFO sv_fps; default 20 if missing */
 	int             beAutohop;   /* legacy; unused — client +autojump / cg_autoHop */
 	int             ratFlags;    /* g_altFlags from CS_SERVERINFO */
-	qboolean        missilePredictEnabled; /* CS_OSP2BE_MISSILE_PREDICT enabled */
+	qboolean        missilePredictEnabled; /* CS_OSP2BE_PREDICT pr & 1 */
+	qboolean        qlMovement;            /* qalive (Quake Live) server: predict with bg_pmove_ql.c */
 	int             missilePrestep;
-	int             missilePredictFromPos; /* 0=oldOrigin, 1=current (g_delagMissileFromPos) */
 	int             missilePredictRlSpeed;
 	int             missilePredictPgSpeed;
 	int             missilePredictBfgSpeed;
+	qboolean        hitscanPredictEnabled; /* CS_OSP2BE_PREDICT pr & 2; use CG_HITSCAN_PREDICT_ON() */
+	qboolean        hitscanPredictSeed;    /* MG/SG spread seeded from the command time */
+	int             hitscanDamageMg;
+	int             hitscanDamageMgTeam;   /* MG in GT_TEAM */
+	int             hitscanDamageSg;       /* per pellet */
+	int             hitscanDamageLg;
+	int             hitscanDamageRg;
 	int             cs_pmove_lock_fps; /* CS 912: 0=off, >0=target FPS (q3msk-style lock) */
 	qboolean        cs_pmove_lock_present; /* CS 912 received (even "0") */
 	qboolean        pmove_fixed; /* CS_SYSTEMINFO: fixed pmove sampling (baseq3a parity) */
@@ -2293,6 +2308,7 @@ extern vmCvar_t           cg_followpowerup;
 extern vmCvar_t           cg_followviewcam;
 extern vmCvar_t           cg_forceColors;
 extern vmCvar_t           cg_lightningImpact;
+extern vmCvar_t           cg_lightningImpactCap;
 extern vmCvar_t           cg_lightningTrail;
 extern vmCvar_t           cg_lightningTrailTime;
 extern vmCvar_t           cg_lightningTrailWidth;
@@ -2320,11 +2336,6 @@ extern vmCvar_t           cg_smoothTime;
 extern vmCvar_t           cg_visualSounds;
 extern vmCvar_t           s_volume;
 extern vmCvar_t           cg_autoFollow;
-/* Hit sound prediction for rail and LG. It is right only on a server built for it, so it stays out of the build. */
-/* #define CG_PREDICT_HITSCAN */
-#ifdef CG_PREDICT_HITSCAN
-extern vmCvar_t           cg_predictHitscan;
-#endif
 extern vmCvar_t           cg_swapSkins;
 extern vmCvar_t           cg_teamRails;
 extern vmCvar_t           cg_trueLightning;
@@ -2476,6 +2487,7 @@ extern vmCvar_t         cg_teamOutlineSize;
 extern vmCvar_t         cg_underwaterFovWarp;
 extern vmCvar_t         cg_altBlood;
 extern vmCvar_t         cg_altBloodColor;
+extern vmCvar_t         cg_blackBlood;
 extern vmCvar_t         cg_shotGunTracer;
 extern vmCvar_t         cg_railRingsRadius;
 extern vmCvar_t         cg_railRingsRotation;
@@ -2639,7 +2651,6 @@ extern vmCvar_t         cg_altRail;
 extern vmCvar_t         cg_altRailBeefy;
 extern vmCvar_t         cg_teamTaskNewSounds;
 extern vmCvar_t         cg_teamTaskVersion;
-extern vmCvar_t         cg_railFix;
 extern vmCvar_t         cg_freezeSoundFix;
 // extern vmCvar_t          cg_snow;
 extern vmCvar_t         be_infoDetail;
@@ -2715,6 +2726,7 @@ extern vmCvar_t         cg_enemyAltShadowColor;
 extern vmCvar_t         cg_playerXray;
 extern vmCvar_t         cg_specMode;
 extern vmCvar_t         cg_teamTaskSentPos;
+extern vmCvar_t         cg_predictHitscan;
 
 
 
@@ -3158,6 +3170,8 @@ void CG_UpdateAllClientsInfo(void);
     ((cgs.gametype == GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 #define CG_IsLocalClientOnScreen() \
     (cg.snap && cg.snap->ps.clientNum == cg.clientNum)
+/* Dead, the scoreboard shows by itself, until +scores is pressed and let go (back on respawn) */
+#define CG_SCORES_DEAD_AUTO() (cg.predictedPlayerState.pm_type == PM_DEAD && !cg.deadScoresHidden)
 #define CG_IS_DEAD() (cg.snap && (cg.snap->ps.pm_type == PM_DEAD || cg.snap->ps.pm_type == PM_SPINTERMISSION))
 #define CG_IS_LOCAL_CLIENT_SPECTATOR() ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt == TEAM_SPECTATOR) : (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR))
 /* Who the team markers are for. A dead player in freeze modes gets TEAM_SPECTATOR in the snapshot
@@ -3175,6 +3189,7 @@ void CG_UpdateAllClientsInfo(void);
 void CG_UpdateRuthlessFromServerinfo(void);
 void CG_PmovePhysicsUpdate(void);
 void CG_ParseMovementLockConfigString(const char* str);
+void CG_QLMovementUpdate(void);
 /* In non-team modes (FFA, Tournament, SP) everyone except self is enemy; else use team/rt */
 #define CG_IS_ENEMY_SIMPLE(ci) ((ci) != NULL && (ci) != &cgs.clientinfo[cg.clientNum] && ((cgs.gametype < GT_TEAM) ? 1 : ((cgs.gametype >= GT_CA) ? (cgs.clientinfo[cg.clientNum].rt != (ci)->rt) : (cgs.clientinfo[cg.clientNum].team != (ci)->team))))
 #define CG_CACHED_IS_ENEMY_NUM(n) (((n) >= 0 && (n) < MAX_CLIENTS) ? cg.isEnemyView[(n)] : qfalse)
@@ -3361,6 +3376,7 @@ void CG_GibPlayer(vec3_t playerOrigin);
 void CG_BigExplode(vec3_t playerOrigin);
 
 void CG_Bleed(vec3_t origin, int entityNum);
+void CG_GetBloodColor(vec4_t color);
 
 localEntity_t* CG_MakeExplosion(vec3_t origin, vec3_t dir,
                                 qhandle_t hModel, qhandle_t shader, int msec,
@@ -3374,6 +3390,7 @@ void CG_TestSkullMarker(void);
 void CG_TeamTaskUpdateFrame(void);
 void CG_AddTeamTaskOverheadSprites(void);
 void CG_DrawTeamTaskMarks(void);
+void CG_DrawTeamTaskSentMarks(void);
 void CG_DrawTeamTaskBorderHudMarkers(void);
 void CG_DrawTeamTaskBorderMarker(teamTaskMark_t* mark);
 
@@ -3410,12 +3427,23 @@ void CG_KillcamFrame(int serverTime);
 void CG_KillcamApplyView(void);
 void CG_KillcamHoldView(void);
 void CG_KillcamDeadAngles(vec3_t angles);
+void CG_KillcamHitsOnUs(const playerState_t* ps, const playerState_t* ops);
+extern qboolean cg_killcamOwnPlum;
 void CG_KillcamDraw2D(void);
 void CG_KillcamDrawFade(void);
+void CG_KillcamDrawFrame(void);
 void CG_AddPlayerWeaponHidden(centity_t* cent);
 const char* CG_KillcamFollowText(void);
 void CG_KillcamKeyEvent(int key, qboolean down);
+int CG_KillcamLiveClock(void);
+int CG_KillcamLiveTimeEnter(void);
+void CG_KillcamConsoleCommand(void (*function)(void));
+void CG_KillcamMouseEvent(int dx, int dy);
+void CG_KillcamDrawLive2D(void);
 void CG_KillcamSkip(void);
+void CG_ScoresUp_f(void);
+void CG_SelwheelMarkStop(void);
+void CG_SelwheelMouseMove(int dx, int dy);
 void CG_DrawCrosshairNames(void);
 void CG_KillcamAddViewWeapon(void);
 void CG_AddViewWeaponFor(playerState_t* ps, centity_t* cent);
@@ -3442,9 +3470,14 @@ void CG_AutoFollowOnObituary(int target, int attacker);
 void CG_AutoFollowFrame(void);
 extern qboolean cg_autoFollowActive;
 #ifdef CG_PREDICT_HITSCAN
+/* the server turns it on; cg_predictHitscan forces it for a test (LG/RG only without the server's seed) */
+#define CG_HITSCAN_PREDICT_ON() (cgs.hitscanPredictEnabled || cg_predictHitscan.integer)
 qboolean CG_PredictHitscanConfirm(void);
-void CG_PlayPredictedHitSound(int damage);
+qboolean CG_PredictHitscanConfirmPlum(int client, int damage);
+void CG_PredictHitscanSavePoses(void);
+void CG_ShotgunPatternHits(float* origin, float* origin2, int seed, int skipNum, int* hits);
 #endif
+void CG_PlayPredictedHitSound(int damage);
 void CG_Obituary(entityState_t* ent);
 void CG_CalcEntityLerpPositions(centity_t* cent);
 
@@ -4183,6 +4216,11 @@ if(!TESTPTR){\
 //
 void CG_PredictWeaponEffects(centity_t* cent);
 void CG_AddPredictedMissiles(void);
+void CG_PredictInfoUpdate(void);
+int CG_ServerTick(void);
+int CG_MissileHandoffShift(const centity_t* cent);
+qboolean CG_MissileHandoffDone(const centity_t* cent);
+void CG_MissileHandoffSet(const centity_t* cent, int slot);
 
 #define MAX_PREDICTED_MISSILES 32
 typedef struct

@@ -1581,7 +1581,16 @@ void CG_RegisterItemVisuals(int itemNum)
 	memset(itemInfo, 0, sizeof(itemInfo_t));
 	itemInfo->registered = qtrue;
 
-	itemInfo->models[0] = trap_R_RegisterModel(item->world_model[0]);
+	/* item 0 is the empty one ("no holdable", "no pickup"): nothing to load */
+	if (!item->classname)
+	{
+		return;
+	}
+
+	if (item->world_model[0])
+	{
+		itemInfo->models[0] = trap_R_RegisterModel(item->world_model[0]);
+	}
 
 	itemInfo->icon = item->icon ? trap_R_RegisterShader(item->icon) : 0;
 
@@ -2356,9 +2365,10 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 		{
 			vec3_t angles;
 			vec3_t dir;
+			float dist;
 
 			VectorSubtract(beam.oldorigin, beam.origin, dir);
-			VectorNormalize(dir);
+			dist = VectorNormalize(dir);
 			memset(&beam, 0, sizeof(beam));
 			beam.hModel = cgs.media.lightningExplosionModel;
 			VectorMA(trace.endpos, -16, dir, beam.origin);
@@ -2366,6 +2376,21 @@ void CG_LightningBolt(centity_t* cent, float* origin)
 			angles[1] = rand() % 360;
 			angles[2] = rand() % 360;
 			AnglesToAxis(angles, beam.axis);
+
+			/* Quake Live: the crackle shrinks when the hit is closer than cg_lightningImpactCap */
+			if (cg_lightningImpactCap.integer > 0 && dist < cg_lightningImpactCap.integer)
+			{
+				float scale = dist / (float)cg_lightningImpactCap.integer;
+
+				if (scale < 0.125f)
+				{
+					scale = 0.125f;
+				}
+				beam.nonNormalizedAxes = qtrue;
+				VectorScale(beam.axis[0], scale, beam.axis[0]);
+				VectorScale(beam.axis[1], scale, beam.axis[1]);
+				VectorScale(beam.axis[2], scale, beam.axis[2]);
+			}
 			trap_R_AddRefEntityToScene(&beam);
 		}
 	}
@@ -3558,7 +3583,13 @@ void CG_FireWeapon(centity_t* cent)
 	cent->muzzleFlashTime = cg.time;
 
 	if (ent->weapon == WP_LIGHTNING && cent->pe.lightningFiring)
+	{
+#ifdef CG_PREDICT_HITSCAN
+		/* every cell of the beam is a shot of its own */
+		CG_PredictWeaponEffects(cent);
+#endif
 		return;
+	}
 
 	if (cent->currentState.number == cg.predictedPlayerState.clientNum)
 		CG_DebugServerOnFireWeapon(ent->weapon);
@@ -4253,12 +4284,22 @@ void CG_Tracer(vec3_t source, vec3_t dest)
 CG_ShotgunPellet
 ================
 */
+static int* cg_shotgunHits;    /* CG_ShotgunPatternHits: count the pellets, draw nothing */
+
 static void CG_ShotgunPellet(vec3_t start, vec3_t end, int skipNum)
 {
 	trace_t     tr;
 	int         sourceContentType, destContentType;
 
 	CG_Trace(&tr, start, NULL, NULL, end, skipNum, MASK_SHOT);
+	if (cg_shotgunHits)
+	{
+		if (tr.entityNum < MAX_CLIENTS && !(tr.surfaceFlags & SURF_NOIMPACT))
+		{
+			cg_shotgunHits[tr.entityNum]++;
+		}
+		return;
+	}
 	if (cg_shotGunTracer.integer)
 	{
 		if (!(tr.surfaceFlags & SURF_NOIMPACT))
@@ -4343,6 +4384,56 @@ void CG_ShotgunPattern(float* origin, float* origin2, int seed, int otherEntityN
 	vec3_t      up;
 	int         max;
 
+	/*
+	 * qalive / Quake Live: EV_SHOTGUN origin2 is a world point (muzzle+forward*4096).
+	 * Retail CG_ShotgunPattern does normalize(origin2 - origin), then a 20-pellet
+	 * concentric ring (radii 4000/8000/12000) with optional seed jitter.
+	 * Q3/OSP servers still send a pure direction in origin2 — keep the old path.
+	 */
+	if (cgs.qlMovement)
+	{
+		float angle;
+		float ringRadius;
+		float jitter;
+
+		VectorSubtract(origin2, origin, forward);
+		VectorNormalize(forward);
+		PerpendicularVector(right, forward);
+		CrossProduct(forward, right, up);
+
+		for (i = 0; i < 20; i++)
+		{
+			if (i < 6)
+			{
+				jitter = 0.4f;
+				ringRadius = 4000.0f;
+				angle = (float)(i - 20) * 1.0471976f;
+			}
+			else if (i < 12)
+			{
+				jitter = 0.3f;
+				ringRadius = 8000.0f;
+				/* retail adds literal +30.0 radians, not 30 degrees */
+				angle = (float)i * 1.0471976f + 30.0f;
+			}
+			else
+			{
+				jitter = 0.2f;
+				ringRadius = 12000.0f;
+				angle = (float)i * 0.7853982f;
+			}
+
+			r = (cos(angle) + Q_crandom(&seed) * jitter) * ringRadius;
+			u = (sin(angle) + Q_crandom(&seed) * jitter) * ringRadius;
+
+			VectorMA(origin, 8192 * 16, forward, end);
+			VectorMA(end, r, right, end);
+			VectorMA(end, u, up, end);
+			CG_ShotgunPellet(origin, end, otherEntityNum);
+		}
+		return;
+	}
+
 	VectorNormalize2(origin2, forward);
 	PerpendicularVector(right, forward);
 	CrossProduct(forward, right, up);
@@ -4380,6 +4471,20 @@ void CG_ShotgunPattern(float* origin, float* origin2, int seed, int otherEntityN
 		VectorMA(end, u, up, end);
 		CG_ShotgunPellet(origin, end, otherEntityNum);
 	}
+}
+
+/*
+==============
+CG_ShotgunPatternHits
+
+The same pattern with no effects: hits[client] gets the pellets that landed.
+==============
+*/
+void CG_ShotgunPatternHits(float* origin, float* origin2, int seed, int skipNum, int* hits)
+{
+	cg_shotgunHits = hits;
+	CG_ShotgunPattern(origin, origin2, seed, skipNum);
+	cg_shotgunHits = NULL;
 }
 
 /*

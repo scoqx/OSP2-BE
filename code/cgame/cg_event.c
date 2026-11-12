@@ -1059,6 +1059,10 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 				if (item->pickup_sound)
 				{
 					trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_AUTO, trap_S_RegisterSound(item->pickup_sound, qfalse));
+					if (item->giType == IT_POWERUP)
+					{
+						CG_AnnouncerSoundName(item->pickup_sound);
+					}
 				}
 
 				// For powerups, check if it appeared in playerState (local or spectated player)
@@ -1213,6 +1217,13 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 
 		case EV_DAMAGEPLUM:
 			DEBUGNAME("EV_DAMAGEPLUM");
+#ifdef CG_PREDICT_HITSCAN
+			/* the hit prediction has already drawn this one */
+			if (CG_PredictHitscanConfirmPlum(cent->currentState.otherEntityNum, cent->currentState.time))
+			{
+				break;
+			}
+#endif
 			if (cg_damagePlums.integer & CG_DAMAGEPLUMS_ACTIVE)
 			{
 				CG_DamagePlum(cent->currentState.otherEntityNum, cent->lerpOrigin, cent->currentState.time);
@@ -1347,8 +1358,8 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			{
 				vec3_t railStart;
 
-				// If cg_railFix is enabled, use muzzle position from weapon model for first person view
-				if (cg_railFix.integer && es->clientNum == cg.predictedPlayerState.clientNum &&
+				// our own shot in first person: start at the drawn gun's muzzle tag
+				if (es->clientNum == cg.predictedPlayerState.clientNum &&
 				        !cg.renderingThirdPerson && !cg.demoPlayback)
 				{
 					// Calculate muzzle position from weapon model tag
@@ -1357,6 +1368,16 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 						// Fallback to original position if model tag lookup fails
 						VectorCopy(es->origin2, railStart);
 					}
+				}
+				else if (es->clientNum != cg.predictedPlayerState.clientNum)
+				{
+					// someone else's shot, as Quake Live draws it (retail cgamex86
+					// CG_RailTrail 0x1004F961): 5 units along the viewer's left axis and 4
+					// down it, which lines the trail up with the shooter's gun model as we
+					// see it. CG_RailTrail takes 4 off world z again, so put that back.
+					VectorMA(es->origin2, 5.0f, cg.refdef.viewaxis[1], railStart);
+					VectorMA(railStart, -4.0f, cg.refdef.viewaxis[2], railStart);
+					railStart[2] += 4.0f;
 				}
 				else
 				{

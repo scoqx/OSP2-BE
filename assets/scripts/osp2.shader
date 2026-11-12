@@ -590,6 +590,97 @@ plasmaExplosionQL
 	}
 }
 
+// cg_damageDraw 1 — overwrites stock viewBloodBlend / blood_screen
+blood_screen
+{
+	sort nearest
+	nopicmip
+	nomipmaps
+	{
+		clampmap gfx/damage/blood_screen.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+viewBloodBlend
+{
+	sort nearest
+	nopicmip
+	nomipmaps
+	{
+		clampmap gfx/damage/blood_screen.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+// hit spurt — overwrites stock bloodExplosion (tint/alpha from code)
+bloodExplosion
+{
+	cull disable
+	nopicmip
+	{
+		animmap 5 models/weaphits/blood201.tga models/weaphits/blood202.tga models/weaphits/blood203.tga models/weaphits/blood204.tga models/weaphits/blood205.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+bloodExplosionNoPicMip
+{
+	cull disable
+	nopicmip
+	nomipmaps
+	{
+		animmap 5 models/weaphits/blood201.tga models/weaphits/blood202.tga models/weaphits/blood203.tga models/weaphits/blood204.tga models/weaphits/blood205.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+// wall marks — overwrites stock bloodMark
+bloodMark
+{
+	nopicmip
+	polygonOffset
+	{
+		clampmap gfx/damage/blood_stain.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+// gib trail — overwrites stock bloodTrail (random 1 of 2 in code)
+bloodTrail
+{
+	nopicmip
+	entityMergable
+	{
+		clampmap gfx/damage/blood_sprut_1.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
+bloodTrail2
+{
+	nopicmip
+	entityMergable
+	{
+		clampmap gfx/damage/blood_sprut_2.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		rgbGen vertex
+		alphaGen vertex
+	}
+}
+
 // cg_altBlood
 bloodExplosionNew
 {
@@ -1210,3 +1301,15 @@ icons/flight
 }
 
 //===================================================
+
+// killcam: the blinking play icon before "REPLAY"; mipmapped, drawn small
+gfx/2d/hudres/killcamReplay
+{
+	nopicmip
+	{
+		map gfx/2d/hudres/play.tga
+		blendFunc blend
+		rgbGen vertex
+		alphaGen vertex
+	}
+}

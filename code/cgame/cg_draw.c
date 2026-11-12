@@ -4486,6 +4486,7 @@ static void CG_Draw2D(void)
 
 	if (cg_killcamState == CG_KILLCAM_REPLAY)
 	{
+		CG_KillcamDrawFrame();
 		/* Through the killer's eyes: his damage frame. Our own low health is not his. */
 		if (CG_KILLCAM_EYES_ACTIVE())
 		{
@@ -4496,6 +4497,7 @@ static void CG_Draw2D(void)
 			cg.beIsHealthLow = healthLow;
 		}
 		CG_KillcamDraw2D();
+		CG_KillcamDrawLive2D();
 		return;
 	}
 
@@ -4690,7 +4692,11 @@ void CG_DrawActive(stereoFrame_t stereoView)
 	/* Unified 2D HUD (single entry, cached cvars, flat branches) */
 	CG_Draw2D();
 	CG_OSPDrawEmojiListOverlay();
-	CG_BEChat_Draw();
+	{
+		const int chatSavedTime = CG_KillcamLiveTimeEnter();
+		CG_BEChat_Draw();
+		cg.time = chatSavedTime;
+	}
 
 	if (cg_killcamState != CG_KILLCAM_OFF)
 	{

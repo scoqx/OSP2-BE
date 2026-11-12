@@ -125,7 +125,7 @@ void CG_BEChat_AddLine(const char* text, int senderClientNum, int msgKind)
 				last->repeat = 1;
 			}
 			last->repeat++;
-			last->addTime = cg.time;
+			last->addTime = CG_KillcamLiveClock();
 			CG_BEChat_InvalidateRowsCache();
 			if (!beChatHistoryRestoreActive)
 			{
@@ -140,7 +140,7 @@ void CG_BEChat_AddLine(const char* text, int senderClientNum, int msgKind)
 	Q_strncpyz(history->lines[index].text, text, sizeof(history->lines[index].text));
 	history->lines[index].senderClientNum = senderClientNum;
 	history->lines[index].repeat = 1;
-	history->lines[index].addTime = cg.time;
+	history->lines[index].addTime = CG_KillcamLiveClock();
 	history->lines[index].msgKind = msgKind;
 	history->writeIndex++;
 	if (history->count < lineMax)

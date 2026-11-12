@@ -139,16 +139,22 @@ void CG_BloodTrail(localEntity_t* le)
 
 	for (; t <= t2; t += step)
 	{
+		vec4_t bloodColor;
+		qhandle_t trailShader;
+
 		BG_EvaluateTrajectory(&le->pos, t, newOrigin);
+
+		CG_GetBloodColor(bloodColor);
+		trailShader = (rand() & 1) ? cgs.media.bloodTrailShader : cgs.media.bloodTrailShader2;
 
 		blood = CG_SmokePuff(newOrigin, vec3_origin,
 		                     20,       // radius
-		                     1, 1, 1, 1,   // color
+		                     bloodColor[0], bloodColor[1], bloodColor[2], bloodColor[3],
 		                     2000,     // trailTime
 		                     t,        // startTime
 		                     0,        // fadeInTime
 		                     0,        // flags
-		                     cgs.media.bloodTrailShader);
+		                     trailShader);
 		// use the optimized version
 		blood->leType = LE_FALL_SCALE_FADE;
 		// drop a total of 40 units over its lifetime
@@ -190,8 +196,12 @@ void CG_FragmentBounceMark(localEntity_t* le, trace_t* trace)
 				}
 				else
 				{
+					vec4_t bloodColor;
+
+					CG_GetBloodColor(bloodColor);
 					CG_ImpactMark(cgs.media.bloodMarkShader, offset, trace->plane.normal, random() * 360,
-					              1, 1, 1, 1, qtrue, radius, qfalse, qfalse);
+					              bloodColor[0], bloodColor[1], bloodColor[2], bloodColor[3],
+					              qtrue, radius, qfalse, qfalse);
 				}
 			}
 		}
@@ -206,8 +216,12 @@ void CG_FragmentBounceMark(localEntity_t* le, trace_t* trace)
 			}
 			else
 			{
+				vec4_t bloodColor;
+
+				CG_GetBloodColor(bloodColor);
 				CG_ImpactMark(cgs.media.bloodMarkShader, trace->endpos, trace->plane.normal, random() * 360,
-				              1, 1, 1, 1, qtrue, radius, qfalse, qfalse);
+				              bloodColor[0], bloodColor[1], bloodColor[2], bloodColor[3],
+				              qtrue, radius, qfalse, qfalse);
 			}
 		}
 	}

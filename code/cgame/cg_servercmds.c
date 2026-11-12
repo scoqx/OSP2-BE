@@ -369,6 +369,26 @@ static void CG_ParseTeamInfo(void)
 
 /*
 ================
+CG_QLMovementUpdate
+
+qalive (Quake Live) server: CS 940 carries its pmove_* settings and turns on
+Quake Live movement prediction (bg_pmove_ql.c), CS 941 its weapon fire intervals.
+================
+*/
+void CG_QLMovementUpdate(void)
+{
+	const char* pmoveInfo = CG_ConfigString(CS_OSP2BE_QL_PMOVEINFO);
+
+	cgs.qlMovement = pmoveInfo[0] ? qtrue : qfalse;
+	if (cgs.qlMovement)
+	{
+		QLPM_ParsePmoveInfo(pmoveInfo);
+		QLPM_ParseWeaponInfo(CG_ConfigString(CS_OSP2BE_QL_WEAPONINFO));
+	}
+}
+
+/*
+================
 CG_ParseMovementLockConfigString
 
 CS 912: presence (even "0") enables q3msk lock + stock step; value is FPS lock target.
@@ -546,6 +566,7 @@ void CG_ParseServerinfo(void)
 
 	cgs.killConfirmMode = atoi(Info_ValueForKey(info, "g_killConfirm"));
 	cgs.ratFlags = atoi(Info_ValueForKey(info, "g_altFlags"));
+	CG_PredictInfoUpdate();
 	CG_CvarTouch("cl_timenudge");
 
 	CG_ParseSysteminfo();
@@ -954,46 +975,13 @@ static void CG_ConfigStringModified(void)
 			cgs.beTourneyMode = atoi(str);
 			CG_BETourneyRestrict();
 			break;
-		case CS_OSP2BE_MISSILE_PREDICT:
-#if 0
-			if (cgs.gamename_unfreeze)
-			{
-				break;
-			}
-#endif
-		{
-			int enabled = 0;
-			int prestep = 0;
-			int rl = 0, pg = 0, bfg = 0;
-			int fromPos = 1;
-			int n;
-
-			cgs.missilePredictEnabled = qfalse;
-			cgs.missilePrestep = 0;
-			cgs.missilePredictFromPos = 1;
-			cgs.missilePredictRlSpeed = 0;
-			cgs.missilePredictPgSpeed = 0;
-			cgs.missilePredictBfgSpeed = 0;
-			n = 0;
-			if (str && str[0])
-			{
-				n = Q_sscanf(str, "%i %i %i %i %i %i", &enabled, &prestep, &rl, &pg, &bfg, &fromPos);
-			}
-			if (n >= 5 && enabled)
-			{
-				cgs.missilePredictEnabled = qtrue;
-				cgs.missilePrestep = prestep;
-				cgs.missilePredictRlSpeed = rl;
-				cgs.missilePredictPgSpeed = pg;
-				cgs.missilePredictBfgSpeed = bfg;
-				cgs.missilePredictFromPos = (n >= 6) ? (fromPos ? 1 : 0) : 1;
-			}
-			else
-			{
-				memset(cg_predictedMissiles, 0, sizeof(cg_predictedMissiles));
-			}
-		}
-		break;
+		case CS_OSP2BE_QL_PMOVEINFO:
+		case CS_OSP2BE_QL_WEAPONINFO:
+			CG_QLMovementUpdate();
+			break;
+		case CS_OSP2BE_PREDICT:
+			CG_PredictInfoUpdate();
+			break;
 		case CS_OSP2BE_HITBOX:
 #if 0
 			if (cgs.gamename_unfreeze)

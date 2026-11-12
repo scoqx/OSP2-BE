@@ -811,7 +811,7 @@ qboolean CG_DrawOldScoreboard(void)
 		return qfalse;
 	}
 
-	if (cg.showScores || cg.predictedPlayerState.pm_type == PM_DEAD ||
+	if (cg.showScores || CG_SCORES_DEAD_AUTO() ||
 	        cg.predictedPlayerState.pm_type == PM_INTERMISSION)
 	{
 		fade = cg_scoreTransparency.value;
@@ -1563,7 +1563,7 @@ qboolean CG_OSPDrawScoretable(void)
 	{
 		return qfalse;
 	}
-	if (!cg.showScores && cg.predictedPlayerState.pm_type != PM_DEAD && cg.predictedPlayerState.pm_type != PM_INTERMISSION)
+	if (!cg.showScores && !CG_SCORES_DEAD_AUTO() && cg.predictedPlayerState.pm_type != PM_INTERMISSION)
 	{
 		color = (vec4_t*)CG_FadeColor(cg.scoreFadeTime, 0xc8);
 	}
@@ -2082,7 +2082,7 @@ qboolean CG_BEDrawTeamScoretable(void)
 		return qfalse;
 	}
 
-	if (!cg.showScores && cg.predictedPlayerState.pm_type != PM_DEAD && cg.predictedPlayerState.pm_type != PM_INTERMISSION)
+	if (!cg.showScores && !CG_SCORES_DEAD_AUTO() && cg.predictedPlayerState.pm_type != PM_INTERMISSION)
 	{
 		color = (vec4_t*)CG_FadeColor(cg.scoreFadeTime, 0xc8);
 	}

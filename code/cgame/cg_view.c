@@ -498,7 +498,7 @@ static void CG_OffsetFirstPersonView(void)
 
 void CG_ZoomDown_f(void)
 {
-	if (cg.zoomed)
+	if (cg.zoomed || cg_killcamState == CG_KILLCAM_REPLAY)
 	{
 		return;
 	}
@@ -518,6 +518,10 @@ void CG_ZoomUp_f(void)
 
 void CG_ZoomToggle_f(void)
 {
+	if (cg_killcamState == CG_KILLCAM_REPLAY)
+	{
+		return;
+	}
 	if (cg.zoomed)
 	{
 		cg.zoomed = qfalse;
@@ -774,11 +778,15 @@ static void CG_DamageBlendBlob(void)
 	}
 	else
 	{
+		vec4_t bloodColor;
+
+		CG_GetBloodColor(bloodColor);
 		ent.radius = cg.damageValue * 3;
+		ent.rotation = cg.damageBloodRotation;
 		ent.customShader = cgs.media.viewBloodShader;
-		ent.shaderRGBA[0] = 255;
-		ent.shaderRGBA[1] = 255;
-		ent.shaderRGBA[2] = 255;
+		ent.shaderRGBA[0] = bloodColor[0] * 255;
+		ent.shaderRGBA[1] = bloodColor[1] * 255;
+		ent.shaderRGBA[2] = bloodColor[2] * 255;
 		ent.shaderRGBA[3] = 200 * (1.0 - ((float)t / maxTime));
 	}
 
@@ -1864,7 +1872,11 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	// set up cg.snap and possibly cg.nextSnap
 	CG_ProcessSnapshots();
 
-	CG_BEChat_Frame(stereoView);
+	{
+		const int chatSavedTime = CG_KillcamLiveTimeEnter();
+		CG_BEChat_Frame(stereoView);
+		cg.time = chatSavedTime;
+	}
 
 	// if we haven't received any snapshots yet, all
 	// we can draw is the information screen
@@ -1930,7 +1942,12 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 	        cg_teamTask.integer ||
 	        CG_BE_FEATURE_ENABLED(CG_BE_TEAMTASKS) ||
 	        cg.teamMarkers.supportedServer)
+	{
+		/* marks live in live time, also during a killcam replay */
+		const int ttSavedTime = CG_KillcamLiveTimeEnter();
 		CG_TeamTaskUpdateFrame();
+		cg.time = ttSavedTime;
+	}
 
 	CG_ScanForCrosshairEntity();
 	if ((cg_friendsWallhack.integer & CG_FRIENDS_WALLHACK_GLOBAL_POS) && CG_BE_FEATURE_ENABLED(CG_BE_TEAM_FOE_WH) &&

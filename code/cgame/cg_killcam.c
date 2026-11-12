@@ -44,6 +44,11 @@ is not in the history, and the camera then stays on the victim.
 #define KC_CAM_HEIGHT       24
 #define KC_CAM_SIDE         (-15)
 
+/* Killer died in the replay: pull back from the corpse and orbit while looking at it */
+#define KC_DEAD_CAM_RANGE   80
+#define KC_DEAD_CAM_HEIGHT  28
+#define KC_DEAD_ORBIT_SPEED 0.04f   /* degrees of yaw per millisecond */
+
 typedef struct
 {
 	int offset;
@@ -91,6 +96,11 @@ static float    kc_camYaw;
 static float    kc_camPitch;
 static qboolean kc_camValid;
 
+/* First-person / third-person both switch to this when the killer dies mid-replay */
+static qboolean kc_deadKillerView;
+static int      kc_killerDeadAt;
+static float    kc_deadKillerYaw0;
+
 /* The killer's aim in the recorded snapshots around cg.snap, turned into one unbroken curve */
 static int   kc_eyesKeyTime[KC_EYES_KEYS];
 static float kc_eyesKeyAngle[KC_EYES_KEYS][2];
@@ -111,6 +121,9 @@ static int kc_numSeenObits;
 #define KC_FRAG_MESSAGE_MS  3000
 static char kc_fragMessage[MAX_STRING_CHARS];
 static int  kc_fragTime;
+
+/* The scoreboard in a replay: only while its key is held there. Before and after, on our body, it is as it always is. */
+static qboolean kc_scoresHeld;
 
 #define KC_RECORD(index) (&kc_records[(index) % KC_MAX_RECORDS])
 
@@ -259,12 +272,13 @@ void CG_KillcamMapRestart(void)
 }
 
 /* The replay is over for the live game: we are back in it or the match has ended */
+/* The intermission does not stop it: the death that ends the match is the one most worth seeing, and the
+   intermission waits for the replay (it ends by itself where the replayed history reaches the intermission) */
 static qboolean CG_KillcamLiveWantsStop(const snapshot_t* snap)
 {
 	/* In freeze modes the spawn count also changes when the dead become spectators */
-	return snap->ps.pm_type == PM_INTERMISSION ||
-	       (snap->ps.clientNum == cg.clientNum && snap->ps.persistant[PERS_SPAWN_COUNT] != kc_spawnCount &&
-	        snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR);
+	return snap->ps.clientNum == cg.clientNum && snap->ps.persistant[PERS_SPAWN_COUNT] != kc_spawnCount &&
+	       snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR;
 }
 
 static void CG_KillcamRememberObits(const snapshot_t* snap)
@@ -335,6 +349,9 @@ static void CG_KillcamBegin(int serverTime)
 
 	cg_killcamState = CG_KILLCAM_CORPSE;
 	kc_fadeInStart = serverTime;
+	/* drop zoom: the replay clock jumps, zoomTime would make the fov bounce */
+	cg.zoomed = qfalse;
+	cg.zoomTime = 0;
 
 	if (kc_first == kc_next)
 	{
@@ -365,7 +382,13 @@ static void CG_KillcamBegin(int serverTime)
 	kc_killerAwardsKnown = qfalse;
 	cg.rewardStack = 0;
 	cg.rewardTime = 0;
+	/* the replay's clock goes back over our own last hit and pickup: the crosshair would show them again */
+	cgs.osp.lastHitTime = 0;
+	cgs.osp.lastHitDamage = 0;
+	cg.itemPickupBlendTime = 0;
 	kc_camValid = qfalse;
+	kc_deadKillerView = qfalse;
+	kc_killerDeadAt = 0;
 	kc_eyesKeysFor = -1;
 	kc_eyesHealth = 0;
 	cg_killcamEyesClient = -1;
@@ -374,6 +397,9 @@ static void CG_KillcamBegin(int serverTime)
 
 	cg_killcamState = CG_KILLCAM_REPLAY;
 	cg_killcamRingRead = qtrue;
+	kc_scoresHeld = qfalse;
+	cg.showScores = qfalse;
+	cg.showAccuracy = qfalse;
 	cg.time = cg.activeSnapshots[0].serverTime;
 	CG_ResyncSnapshot(&cg.activeSnapshots[0]);
 
@@ -387,8 +413,16 @@ static void CG_KillcamEnd(int serverTime)
 	int index = kc_next - 1;
 
 	cg_killcamState = CG_KILLCAM_OFF;
+	cg_killcamEyesClient = -1;
 	kc_fadeInStart = serverTime;
 	cg.rewardTime = 0;
+	if (kc_scoresHeld || cg.showScores)
+	{
+		kc_scoresHeld = qfalse;
+		cg.showScores = qfalse;
+		cg.showAccuracy = qfalse;
+	}
+	cg.deadScoresHidden = qfalse;
 
 	if (!CG_BEChat_IsOpen())
 	{
@@ -427,7 +461,8 @@ void CG_KillcamFrame(int serverTime)
 	if (cg_killcamState == CG_KILLCAM_CORPSE)
 	{
 		if (!CG_BE_FEATURE_ENABLED(CG_BE_KILLCAM) || CG_KillcamLiveWantsStop(cg.snap) ||
-		        cg.snap->ps.clientNum != cg.clientNum || (cg.snap->ps.pm_flags & PMF_FOLLOW))
+		        cg.snap->ps.clientNum != cg.clientNum || (cg.snap->ps.pm_flags & PMF_FOLLOW) ||
+		        cg.snap->ps.pm_type == PM_INTERMISSION)
 		{
 			cg_killcamState = CG_KILLCAM_OFF;
 		}
@@ -745,17 +780,53 @@ void CG_KillcamEyesPain(int health)
 	CG_DamageFeedback(255, 255, damage);
 }
 
+qboolean cg_killcamOwnPlum;
+
+/* A replayed snapshot: the killer's hits on us, as he had them. Only ours are known: his playerstate and his
+   damage plums never came to us. The damage is what our health and armor lost with him as the attacker
+   (PERS_ATTACKER is set on every hit; the fall and the world are ENTITYNUM_WORLD).
+   Not ps->damageEvent: the server counts it only with the pain sound, once in 700 ms, and not on the
+   killing hit at all, so LG ticks and the killing rail were lost. */
+void CG_KillcamHitsOnUs(const playerState_t* ps, const playerState_t* ops)
+{
+	int    damage;
+	vec3_t org;
+
+	if (ps->clientNum != ops->clientNum || ps->persistant[PERS_ATTACKER] != kc_killer || kc_killer == ps->clientNum)
+	{
+		return;
+	}
+	damage = (ops->stats[STAT_HEALTH] + ops->stats[STAT_ARMOR]) - (ps->stats[STAT_HEALTH] + ps->stats[STAT_ARMOR]);
+	if (damage < 1)
+	{
+		return;
+	}
+	/* health and armor over 100 tick down by one a second, the attacker stays from the last hit */
+	if (damage <= 2 && (ops->stats[STAT_HEALTH] > 100 || ops->stats[STAT_ARMOR] > 100))
+	{
+		return;
+	}
+
+	CG_PlayPredictedHitSound(damage);
+
+	if (cg_damagePlums.integer & CG_DAMAGEPLUMS_ACTIVE)
+	{
+		/* where the server puts it: two heights of the box over the origin */
+		VectorCopy(ps->origin, org);
+		org[2] += (ps->pm_flags & PMF_DUCKED) ? 2 * 16 : 2 * 32;
+		cg_killcamOwnPlum = qtrue;
+		CG_DamagePlum(cg.predictedPlayerState.clientNum, org, damage);
+		cg_killcamOwnPlum = qfalse;
+	}
+}
+
 /* cg_killcam 2: the killer's eyes. His body is hidden, CG_KillcamAddViewWeapon gives him his gun. */
 static void CG_KillcamApplyEyes(centity_t* killer)
 {
 	const int legsAnim = killer->currentState.legsAnim & ~ANIM_TOGGLEBIT;
 	int viewheight = DEFAULT_VIEWHEIGHT;
 
-	if (killer->currentState.eFlags & EF_DEAD)
-	{
-		viewheight = DEAD_VIEWHEIGHT;
-	}
-	else if (legsAnim == LEGS_WALKCR || legsAnim == LEGS_IDLECR)
+	if (legsAnim == LEGS_WALKCR || legsAnim == LEGS_IDLECR)
 	{
 		viewheight = CROUCH_VIEWHEIGHT;
 	}
@@ -769,6 +840,84 @@ static void CG_KillcamApplyEyes(centity_t* killer)
 	cg.bobfracsin = 0;
 	cg.xyspeed = 0;
 	cg_killcamEyesClient = kc_killer;
+}
+
+/* Killer died during the replay: pull back from the corpse, look at it, slowly orbit until the replay ends.
+   Used for both first- and third-person killcam so the view is not stuck inside the body (outlines vanish there). */
+static void CG_KillcamApplyDeadKillerView(centity_t* killer)
+{
+	static const vec3_t camMins = { -6, -6, -6 };
+	static const vec3_t camMaxs = { 6, 6, 6 };
+	trace_t trace;
+	vec3_t  focus, view, forward, desired;
+	float   frac;
+
+	VectorCopy(killer->lerpOrigin, focus);
+	focus[2] += 12;
+
+	if (!kc_deadKillerView)
+	{
+		if (kc_camValid)
+		{
+			kc_deadKillerYaw0 = kc_camYaw;
+		}
+		else
+		{
+			vec3_t a;
+
+			/* First person had no cam state: start from the killer's last aim, then turn to the corpse */
+			CG_KillcamEyesAngles(killer, a);
+			kc_deadKillerYaw0 = a[YAW];
+			kc_camYaw = a[YAW];
+			kc_camPitch = AngleNormalize180(a[PITCH]);
+			kc_camValid = qtrue;
+		}
+		kc_killerDeadAt = cg.time;
+		kc_deadKillerView = qtrue;
+	}
+
+	desired[YAW] = kc_deadKillerYaw0 + (cg.time - kc_killerDeadAt) * KC_DEAD_ORBIT_SPEED;
+	desired[PITCH] = 15;
+	desired[ROLL] = 0;
+	AngleVectors(desired, forward, NULL, NULL);
+
+	VectorCopy(focus, view);
+	view[2] += KC_DEAD_CAM_HEIGHT;
+	VectorMA(view, -(float)KC_DEAD_CAM_RANGE, forward, view);
+	CG_Trace(&trace, focus, camMins, camMaxs, view, killer->currentState.number, MASK_SOLID);
+	VectorCopy(trace.endpos, cg.refdef.vieworg);
+
+	VectorSubtract(focus, cg.refdef.vieworg, forward);
+	if (VectorNormalize(forward) < 1)
+	{
+		return;
+	}
+	vectoangles(forward, desired);
+
+	if (kc_camValid)
+	{
+		frac = cg.frametime * KC_CAM_TURN_SPEED;
+		if (frac > 1.0f)
+		{
+			frac = 1.0f;
+		}
+		kc_camYaw = LerpAngle(kc_camYaw, desired[YAW], frac);
+		kc_camPitch = LerpAngle(kc_camPitch, desired[PITCH], frac);
+	}
+	else
+	{
+		kc_camYaw = desired[YAW];
+		kc_camPitch = desired[PITCH];
+		kc_camValid = qtrue;
+	}
+	cg.refdefViewAngles[YAW] = kc_camYaw;
+	cg.refdefViewAngles[PITCH] = kc_camPitch;
+	cg.refdefViewAngles[ROLL] = 0;
+	AnglesToAxis(cg.refdefViewAngles, cg.refdef.viewaxis);
+
+	cg.bobcycle = 0;
+	cg.bobfracsin = 0;
+	cg.xyspeed = 0;
 }
 
 void CG_KillcamAddViewWeapon(void)
@@ -815,6 +964,15 @@ void CG_KillcamApplyView(void)
 
 	cg_killcamEyesClient = -1;
 
+	/* The replayed history has reached the intermission: the players are gone from the map, the replay ends
+	   on the last view while it fades out, and the intermission is shown after it */
+	if (cg.snap->ps.pm_type == PM_INTERMISSION)
+	{
+		kc_stop = qtrue;
+		kc_holdView = qtrue;
+		return;
+	}
+
 	if (!killer->currentValid || kc_killer == cg.snap->ps.clientNum)
 	{
 		/* After our death there is nothing more to show without him: the replay ends here instead of
@@ -829,6 +987,13 @@ void CG_KillcamApplyView(void)
 
 	CG_KillcamLerpKiller(killer);
 	CG_KillcamCheckAwards(killer);
+
+	if (killer->currentState.eFlags & EF_DEAD)
+	{
+		CG_KillcamApplyDeadKillerView(killer);
+		return;
+	}
+	kc_deadKillerView = qfalse;
 
 	if (cg_killcam.integer == 2)
 	{
@@ -922,11 +1087,247 @@ void CG_KillcamSkip(void)
 	kc_skip = qtrue;
 }
 
+/*
+What we do ourselves during a replay (the scoreboard, team tasks) is about the live game, not the replayed one:
+around it cg.snap is the newest live snapshot, where we are dead, and the time is live. Only the head of
+the snapshot is taken: none of this looks at its entities.
+*/
+typedef struct
+{
+	snapshot_t*     snap;
+	int             time;
+	qboolean        demoPlayback;
+	playerState_t   predicted;
+	qboolean        withPredicted;
+} kcLiveSave_t;
+
+static snapshot_t   kc_liveView;
+static kcLiveSave_t kc_liveSave;
+static qboolean     kc_liveEntered;
+
+static qboolean CG_KillcamLiveEnter(qboolean withPredicted)
+{
+	const kcRecord_t* record;
+
+	if (kc_liveEntered || kc_first >= kc_next)
+	{
+		return qfalse;
+	}
+	record = KC_RECORD(kc_next - 1);
+	memcpy(&kc_liveView, kc_ring + record->offset, (const char*)kc_liveView.entities - (const char*)&kc_liveView);
+	kc_liveView.numEntities = 0;
+	kc_liveView.numServerCommands = 0;
+
+	kc_liveSave.snap = cg.snap;
+	kc_liveSave.time = cg.time;
+	kc_liveSave.demoPlayback = cg.demoPlayback;
+	kc_liveSave.withPredicted = withPredicted;
+	if (withPredicted)
+	{
+		kc_liveSave.predicted = cg.predictedPlayerState;
+		cg.predictedPlayerState = kc_liveView.ps;
+	}
+	cg.snap = &kc_liveView;
+	cg.time = kc_liveTime;
+	cg.demoPlayback = qfalse;
+	kc_liveEntered = qtrue;
+	return qtrue;
+}
+
+static void CG_KillcamLiveLeave(void)
+{
+	if (!kc_liveEntered)
+	{
+		return;
+	}
+	cg.snap = kc_liveSave.snap;
+	cg.time = kc_liveSave.time;
+	cg.demoPlayback = kc_liveSave.demoPlayback;
+	if (kc_liveSave.withPredicted)
+	{
+		cg.predictedPlayerState = kc_liveSave.predicted;
+	}
+	kc_liveEntered = qfalse;
+}
+
+/* The replay moves cg.time back by the delay, the chat window lives in live time all along:
+   its input grace, key repeat and message ages would wait out the whole delay otherwise */
+int CG_KillcamLiveClock(void)
+{
+	return (cg_killcamState == CG_KILLCAM_REPLAY && !kc_liveEntered) ? kc_liveTime : cg.time;
+}
+
+/* A cgame console command during a replay: it is about the live game (tHere takes our death place,
+   the team task wheel sends its command this way too), so it runs in the live state */
+void CG_KillcamConsoleCommand(void (*function)(void))
+{
+	if (CG_KillcamLiveEnter(qtrue))
+	{
+		function();
+		CG_KillcamLiveLeave();
+		return;
+	}
+	function();
+}
+
+/* For what lives in live time (chat, team task marks): cg.time is live inside, the caller puts the returned one back */
+int CG_KillcamLiveTimeEnter(void)
+{
+	const int saved = cg.time;
+
+	cg.time = CG_KillcamLiveClock();
+	return saved;
+}
+
+/* The keys that hold the command, also in a bind of several ("+scores; +shudkey2"): ui reads the bindings
+   (cgame can not) and lists them in uiCvar, "9 180 ". The exact bind is still found without it. */
+static qboolean CG_KillcamKeyListed(int key, const char* uiCvar)
+{
+	char        list[128];
+	const char* p;
+
+	trap_Cvar_VariableStringBuffer(uiCvar, list, sizeof(list));
+	for (p = list; *p;)
+	{
+		while (*p == ' ')
+		{
+			p++;
+		}
+		if (!*p)
+		{
+			break;
+		}
+		if (atoi(p) == key)
+		{
+			return qtrue;
+		}
+		while (*p && *p != ' ')
+		{
+			p++;
+		}
+	}
+	return qfalse;
+}
+
+static qboolean CG_KillcamKeyBound(int key, const char* command, const char* uiCvar)
+{
+	const int bound = trap_Key_GetKey(command);
+
+	return ((bound > 0 && key == bound) || CG_KillcamKeyListed(key, uiCvar)) ? qtrue : qfalse;
+}
+
+/* The replay has the keys and the mouse: the scoreboard and the team task wheel are taken from it here */
 void CG_KillcamKeyEvent(int key, qboolean down)
 {
-	if (down && (key == K_MOUSE1 || key == trap_Key_GetKey("+attack")))
+	/* No bind runs while we hold the keys: the chat window is opened from here.
+	   The key's char event and release then go to the chat, which skips them by its input grace and latch. */
+	if (CG_KillcamKeyBound(key, "enterchat", "ui_keysChat"))
+	{
+		if (down)
+		{
+			const int saved = CG_KillcamLiveTimeEnter();
+			CG_BEChat_Open();
+			cg.time = saved;
+		}
+		return;
+	}
+	if (CG_KillcamKeyBound(key, "enterchatteam", "ui_keysChatTeam"))
+	{
+		if (down)
+		{
+			const int saved = CG_KillcamLiveTimeEnter();
+			CG_BEChat_Team_f();
+			cg.time = saved;
+		}
+		return;
+	}
+	/* say, say_team, tHere, tWarn: ui keeps such a bind in ui_kcBind<key>, it runs as it is.
+	   cgame commands in it run in the live state (CG_KillcamConsoleCommand). */
+	if (CG_KillcamKeyListed(key, "ui_keysKillcamBinds"))
+	{
+		if (down)
+		{
+			trap_SendConsoleCommand(va("vstr ui_kcBind%i\n", key));
+		}
+		return;
+	}
+	if (CG_KillcamKeyBound(key, "+scores", "ui_keysScores"))
+	{
+		if (CG_KillcamLiveEnter(qtrue))
+		{
+			if (down)
+			{
+				CG_ScoresDown_f();
+			}
+			else
+			{
+				CG_ScoresUp_f();
+			}
+			kc_scoresHeld = down;
+			CG_KillcamLiveLeave();
+		}
+		return;
+	}
+	if (CG_KillcamKeyBound(key, "+ttwheel", "ui_keysTtwheel"))
+	{
+		if (CG_KillcamLiveEnter(qtrue))
+		{
+			if (down)
+			{
+				CG_SelwheelMarkStart();
+				/* what is under the crosshair is in the replay, not where we are */
+				cg.teamMarkers.smartTargetType = 1;
+				VectorClear(cg.teamMarkers.smartTargetPos);
+				cg.teamMarkers.smartTargetEntityNum = -1;
+			}
+			else if (cg.ttwheelMarkActive)
+			{
+				CG_SelwheelMarkStop();
+			}
+			CG_KillcamLiveLeave();
+		}
+		return;
+	}
+	if (down && !cg.ttwheelMarkActive && (key == K_MOUSE1 || key == trap_Key_GetKey("+attack")))
 	{
 		CG_KillcamSkip();
+	}
+}
+
+void CG_KillcamMouseEvent(int dx, int dy)
+{
+	if (cg.ttwheelMarkActive)
+	{
+		CG_SelwheelMouseMove(dx, dy);
+	}
+}
+
+/* Over the replay: the live scoreboard and the team task wheel */
+void CG_KillcamDrawLive2D(void)
+{
+	/* the mark we send from the wheel shows up at the top, as when alive: it has gone out */
+	{
+		const int saved = CG_KillcamLiveTimeEnter();
+		CG_DrawTeamTaskSentMarks();
+		cg.time = saved;
+	}
+	if (cg.ttwheelMarkActive)
+	{
+		CG_UpdateAndDrawSelwheelMark();
+	}
+	if ((kc_scoresHeld && cg.showScores) || (cg.scoreFadeTime && kc_liveTime - cg.scoreFadeTime < FADE_TIME))
+	{
+		/* the replayed player state stays: in the live one we are dead, and that holds the scoreboard open */
+		if (CG_KillcamLiveEnter(qfalse))
+		{
+			CG_DrawIntermission();
+			CG_KillcamLiveLeave();
+		}
+	}
+	if (cg.ttwheelMarkActive && CG_KillcamLiveEnter(qtrue))
+	{
+		CG_DrawSelwheelIcons();
+		CG_KillcamLiveLeave();
 	}
 }
 
@@ -981,6 +1382,48 @@ void CG_KillcamDraw2D(void)
 	{
 		CG_DrawBigString(SCREEN_WIDTH / 2, 120, message, 1.0f, DS_HCENTER | DS_SHADOW, 0);
 	}
+}
+
+#define KC_BAR_HEIGHT     48.0f
+#define KC_BAR_ALPHA      0.35f
+#define KC_LABEL_CHAR_W   12.0f
+#define KC_LABEL_CHAR_H   16.0f
+#define KC_LABEL_ICON     14.0f
+#define KC_LABEL_GAP      6.0f
+#define KC_LABEL_MARGIN   16.0f
+#define KC_LABEL_PULSE_MS 1200
+
+/* The cinema frame of the replay, under the HUD: bars at the top and the bottom, "▶ REPLAY" in the corner */
+void CG_KillcamDrawFrame(void)
+{
+	static const vec4_t barColor = {0, 0, 0, KC_BAR_ALPHA};
+	vec4_t      color = {1.0f, 0.1f, 0.1f, 1.0f};
+	const float midY = KC_BAR_HEIGHT * 0.5f;
+	const int   font = cgFontIndices.killcam;
+	const int   flags = DS_PROPORTIONAL | DS_VCENTER | DS_FORCE_COLOR | DS_PLAIN;
+	/* top left corner: the icon at the margin, the word after it */
+	const float iconCx = KC_LABEL_MARGIN + KC_LABEL_ICON * 0.5f;
+	const float textX = KC_LABEL_MARGIN + KC_LABEL_ICON + KC_LABEL_GAP;
+
+	CG_FillRect(0, 0, SCREEN_WIDTH, KC_BAR_HEIGHT, barColor);
+	CG_FillRect(0, SCREEN_HEIGHT - KC_BAR_HEIGHT, SCREEN_WIDTH, KC_BAR_HEIGHT, barColor);
+
+	/* the icon and the word pulse as one, by live time: the replay one jumps back at its start */
+	color[3] = 0.65f + 0.35f * sin((float)(kc_liveTime % KC_LABEL_PULSE_MS) * (2.0f * M_PI / KC_LABEL_PULSE_MS));
+
+	if (cgs.media.killcamReplayShader)
+	{
+		/* square on a wide screen too: the size by height, around its 640 place */
+		const float size = KC_LABEL_ICON * cgs.screenYScale_Old;
+
+		trap_R_SetColor(color);
+		trap_R_DrawStretchPic(iconCx * cgs.screenXScale_Old - size * 0.5f, midY * cgs.screenYScale_Old - size * 0.5f,
+		                      size, size, 0, 0, 1, 1, cgs.media.killcamReplayShader);
+		trap_R_SetColor(NULL);
+	}
+
+	CG_OSPDrawStringNew(textX, midY, "REPLAY", color, NULL, KC_LABEL_CHAR_W, KC_LABEL_CHAR_H, SCREEN_WIDTH,
+	                    flags, font, NULL, NULL, NULL);
 }
 
 void CG_KillcamDrawFade(void)

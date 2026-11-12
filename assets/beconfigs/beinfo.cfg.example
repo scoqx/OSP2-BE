@@ -7,7 +7,8 @@
 #   ttfFonts — per-font настройки (bare name/fonts.cfg); 
 #		ключи scale / offset / shadowOffset перезаписывают
 #   	be_ttfScale / be_ttfFontOffset / be_ttfShadowOffset
-#   cgame  — brightcolor_<name> R G B A  или  RRGGBB / RRGGBBAA (hex, напр. FF00FF10)
+#   cgame  — interface_killcam_font <name|index> — шрифт REPLAY в killcam
+#   	   — brightcolor_<name> R G B A  или  RRGGBB / RRGGBBAA (hex, напр. FF00FF10)
 #		предметы: cg_drawBrightItems; 
 #		ружие: cg_drawBrightWeapons;
 #   	   — flashcolor_weapon_<name> R G B A  или  RRGGBB — цвет вспышки выстрела, когда нет своего цвета
@@ -37,20 +38,22 @@ AddVar
 
 	cgame
 	{
+		# killcam: font of "REPLAY" (name from fonts.cfg or index)
+		# interface_killcam_font roboto;
 		# armor
-		brightcolor_item_armor_shard 0.49 0.69 0.28 1;
+		brightcolor_item_armor_shard #004a94;
 		brightcolor_item_armor_combat 1 1 0 1;
 		brightcolor_item_armor_body 1 0 0 1;
 		brightcolor_item_armor_jacket 0 1 0 1;
 		# health
-		brightcolor_item_health_small 0 1 0 1;
+		brightcolor_item_health_small #00b0a7;
 		brightcolor_item_health 1 1 0 1;
 		brightcolor_item_health_large 1 0.5 0 1;
 		brightcolor_item_health_mega 0.15 0.6 0.95 1;
 		# ammo
 		brightcolor_ammo_shells 1 0.5 0 1;
 		brightcolor_ammo_bullets 1 1 0 1;
-		brightcolor_ammo_grenades 0 1 0 1;
+		brightcolor_ammo_grenades #0000ff;
 		brightcolor_ammo_cells 1 0 1 1;
 		brightcolor_ammo_lightning 1 1 1 1;
 		brightcolor_ammo_rockets 1 0 0 1;
@@ -73,7 +76,7 @@ AddVar
 		brightcolor_weapon_gauntlet 1 1 1 1;
 		brightcolor_weapon_machinegun 1 1 0 1;
 		brightcolor_weapon_shotgun 1 0.5 0 1;
-		brightcolor_weapon_grenadelauncher 0 1 0 1;
+		brightcolor_weapon_grenadelauncher #0000ff;
 		brightcolor_weapon_rocketlauncher 1 0 0 1;
 		brightcolor_weapon_lightning 1 1 1 1;
 		brightcolor_weapon_railgun 0 1 1 1;
@@ -83,7 +86,7 @@ AddVar
 		flashcolor_weapon_gauntlet 0.6 0.6 1 1;
 		flashcolor_weapon_machinegun 1 1 0 1;
 		flashcolor_weapon_shotgun 1 1 0 1;
-		flashcolor_weapon_grenadelauncher 1 0.75 0 1;
+		flashcolor_weapon_grenadelauncher #0000ff;
 		flashcolor_weapon_rocketlauncher 1 0.75 0 1;
 		flashcolor_weapon_lightning 0.6 0.6 1 1;
 		flashcolor_weapon_plasmagun 0.6 0.6 1 1;

@@ -49,14 +49,19 @@ static void CG_UpdateOtherClientsInfo(void);
 void CG_UpdateAllClientsInfo(void);
 static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new);
 
-/* Outline draw cache at file scope (CG_PlayerOutlineBegin / per body part) */
+/* Outline draw cache at file scope (CG_PlayerOutlineBegin / per body part).
+   lastOutlineFrame: must not reuse a previous frame — killcam eyes leave
+   outlineCachedDraw false on the killer, and after the replay that cent can be
+   the first again (own body skipped as spectator), so the stale "no outline" sticks. */
 static centity_t* lastOutlineCent;
+static int        lastOutlineFrame = -1;
 static qboolean outlineCachedDraw;
 static qhandle_t outlineCachedShader;
 static byte outlineCachedColorBytes[4];
 
 /* Player X-ray draw cache (CG_PlayerSpecXrayBegin / per body part) */
 static centity_t* lastXrayCent;
+static int        lastXrayFrame = -1;
 static qboolean xrayCachedDraw;
 static byte xrayCachedLegsRGBA[4];
 static byte xrayCachedTorsoRGBA[4];
@@ -1055,7 +1060,9 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 		return;
 
 	ci = &cgs.clientinfo[clientNum];
-	if (!newInfo || !ci->infoValid || !cg.nextSnap ||
+	/* A killcam replay reads its own history, cg.nextSnap is often empty while the live commands run:
+	   the mark we send from it would be lost */
+	if (!newInfo || !ci->infoValid || (!cg.nextSnap && cg_killcamState != CG_KILLCAM_REPLAY) ||
 	        CG_IS_LOCAL_CLIENT_SPECTATOR() || CG_IS_ENEMY_SIMPLE(newInfo) || CG_TeamTaskFilterIsNameMuted(ci->name_original))
 		return;
 
@@ -1129,6 +1136,13 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 
 			foundEnemy = qfalse;
 			searchRadius = 128.0f; /* Search radius for finding enemy near received coordinates */
+
+			/* A killcam replay has the players where they were, not where they are: the sent point */
+			if (cg_killcamState == CG_KILLCAM_REPLAY)
+			{
+				CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+				return;
+			}
 
 			/* Try to find enemy player near received coordinates (players at 0..MAX_CLIENTS-1) */
 			for (i = 0; i < MAX_CLIENTS; i++)
@@ -1388,6 +1402,13 @@ void CG_ClientInfoUpdateTeamTask(const clientInfo_t* newInfo, int clientNum)
 				searchRadius = 256.0f;
 				powerupFlag = (templateID == TEAMTASK_REDFLAG_CARRIER) ? PW_REDFLAG : PW_BLUEFLAG;
 
+				/* A killcam replay has the players where they were: the sent point */
+				if (cg_killcamState == CG_KILLCAM_REPLAY)
+				{
+					CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+					return;
+				}
+
 				for (i = 0; i < MAX_CLIENTS; i++)
 				{
 					cent = &cg_entities[i];
@@ -1419,6 +1440,12 @@ do_aim_point:
 				trace_t trace;
 				centity_t* cent;
 
+				/* A killcam replay has the sender where he was and our view is the killer's: the sent point */
+				if (cg_killcamState == CG_KILLCAM_REPLAY)
+				{
+					CG_TeamTaskMark(coord, templateID, clientNum, toClient);
+					break;
+				}
 				/* Inline: aim point only when needed; use cg_entities[clientNum] directly (we know client) */
 				if (clientNum == cg.clientNum)
 				{
@@ -4324,19 +4351,110 @@ static void CG_HitBoxDrawVertCylinder(const vec3_t origin, float bodyR, float z0
 	}
 }
 
+/* UV-ish sphere (lat bands x lon sides) for QL head hitbox. */
+static void CG_HitBoxDrawSphere(const vec3_t center, float radius,
+                                qhandle_t hitboxShaderEdge, qhandle_t hitboxShaderSide)
+{
+	polyVert_t verts[4];
+	vec3_t rings[CG_HB_SIDES / 2 + 1][CG_HB_SIDES];
+	int bands = CG_HB_SIDES / 2;
+	int i, j, i2, j2;
+	float lat, lon, clat, slat, clon, slon;
+
+	if (radius < 0.5f)
+	{
+		return;
+	}
+
+	CG_HitBoxFillVertsColor(verts);
+
+	for (i = 0; i <= bands; i++)
+	{
+		lat = ((float)i / (float)bands) * M_PI; /* 0..pi */
+		clat = cos(lat);
+		slat = sin(lat);
+		for (j = 0; j < CG_HB_SIDES; j++)
+		{
+			lon = (float)j * (2.0f * M_PI / (float)CG_HB_SIDES);
+			clon = cos(lon);
+			slon = sin(lon);
+			rings[i][j][0] = center[0] + radius * slat * clon;
+			rings[i][j][1] = center[1] + radius * slat * slon;
+			rings[i][j][2] = center[2] + radius * clat;
+		}
+	}
+
+	for (i = 0; i < bands; i++)
+	{
+		i2 = i + 1;
+		for (j = 0; j < CG_HB_SIDES; j++)
+		{
+			j2 = (j + 1) % CG_HB_SIDES;
+			CG_HitBoxAddQuad(hitboxShaderSide, verts,
+			                 rings[i][j], rings[i][j2], rings[i2][j2], rings[i2][j]);
+		}
+	}
+	(void)hitboxShaderEdge;
+}
+
 /*
  * Mode 1 = Ruthless CS "1 <wide> <hgh>" — absolute radius/height.
  * Mode 3 = Metarena CS "<scale>" — radius = 15 * scale (ignore solid XY; server may
  * briefly network scaled bounds after G_HitScanTrace). Height from solid Z.
+ * Mode 4 = qalive / Quake Live: vertical cylinder (flat caps) + head sphere.
+ *   Matches CM_TraceCylinderAndHead: center = AABB mid, radius = min(halfW,halfH),
+ *   cylinder radius *= scale (sv_cylinderScale, default 1.1), head sphere on AABB
+ *   top with radius 0.7 * unscaled.
  */
 static void CG_AddCylinderHitBox(centity_t* cent, float minsZ, float maxsZ,
-                                 qhandle_t hitboxShaderEdge, qhandle_t hitboxShaderSide)
+                                 float halfXY, qhandle_t hitboxShaderEdge, qhandle_t hitboxShaderSide)
 {
 	vec3_t origin;
 	float bodyR, bodyH, z0, z1;
 	float standExtent;
 
 	VectorCopy(cent->lerpOrigin, origin);
+
+	if (cgs.hbMode == 4)
+	{
+		/* QL AABB local mid → world; cylinder spans full solid Z */
+		float centerZ, halfW, halfH, unscaledR, scale;
+		vec3_t head;
+
+		halfW = halfXY;
+		if (halfW < 1.0f)
+		{
+			halfW = 15.0f;
+		}
+		centerZ = 0.5f * (minsZ + maxsZ);
+		halfH = maxsZ - centerZ;
+		if (halfH < 0.0f)
+		{
+			halfH = -halfH;
+		}
+		unscaledR = (halfH < halfW) ? halfH : halfW;
+		if (unscaledR < 1.0f)
+		{
+			unscaledR = 1.0f;
+		}
+		scale = cgs.hbScale > 0.0f ? cgs.hbScale : 1.1f;
+		bodyR = unscaledR * scale;
+		z0 = origin[2] + minsZ;
+		z1 = origin[2] + maxsZ;
+		if (z1 < z0 + 1.0f)
+		{
+			z1 = z0 + 1.0f;
+		}
+
+		CG_HitBoxDrawVertCylinder(origin, bodyR, z0, z1, hitboxShaderEdge, hitboxShaderSide);
+
+		/* Head on top of AABB (origin + maxsZ), radius 0.7 * unscaled body radius */
+		head[0] = origin[0];
+		head[1] = origin[1];
+		head[2] = origin[2] + maxsZ;
+		CG_HitBoxDrawSphere(head, unscaledR * 0.7f, hitboxShaderEdge, hitboxShaderSide);
+		return;
+	}
 
 	if (cgs.hbMode == 3)
 	{
@@ -4473,12 +4591,19 @@ void CG_AddHitBox(centity_t* cent, team_t team)
 		hitboxShaderSide = cgs.osp.hboxShader_nocull;
 	}
 
-	/* CS 911: mode 1 "1 wide hgh" (Ruthless); mode 3 "<scale>" (Metarena). Else AABB. */
+	/* CS 911: mode 1 "1 wide hgh" (Ruthless); mode 3 "<scale>" (Metarena);
+	 * mode 4 "4 scale" (qalive QL cylinder+head). Else AABB. */
 	if (cgs.hbEnabled &&
 	    ((cgs.hbMode == 1 && cgs.hbWide > 0.0f && cgs.hbHgh > 0.0f) ||
-	     (cgs.hbMode == 3 && cgs.hbScale > 0.0f)))
+	     (cgs.hbMode == 3 && cgs.hbScale > 0.0f) ||
+	     (cgs.hbMode == 4 && cgs.hbScale > 0.0f)))
 	{
-		CG_AddCylinderHitBox(cent, mins[2], maxs[2], hitboxShaderEdge, hitboxShaderSide);
+		float halfXY = maxs[0];
+		if (halfXY < 1.0f)
+		{
+			halfXY = 15.0f;
+		}
+		CG_AddCylinderHitBox(cent, mins[2], maxs[2], halfXY, hitboxShaderEdge, hitboxShaderSide);
 		return;
 	}
 
@@ -4736,6 +4861,11 @@ static void CG_PlayerOutlineBegin(centity_t* cent, qboolean useOutline, qboolean
 	vec4_t outlineColor = {0, 0, 0, 0};
 	vec3_t uniqueColorVec = {0, 0, 0};
 
+	if (cg.clientFrame != lastOutlineFrame)
+	{
+		lastOutlineFrame = cg.clientFrame;
+		lastOutlineCent = NULL;
+	}
 	if (cent != lastOutlineCent)
 	{
 		lastOutlineCent = cent;
@@ -4952,7 +5082,7 @@ void CG_PlayerSpecXrayAddWeapon(refEntity_t* ent, int weaponNum)
 ===============
 CG_PlayerSpecXrayBegin
 Compute X-ray silhouette state once per cent.
-In-game: teammates only.
+In-game: teammates only (sv_cheats 1: all players).
 Spect/demo + bit 8: all players.
 Spect/demo without bit 8: follow → allies of viewed player; free-spec/FFA → none.
 ===============
@@ -4966,6 +5096,11 @@ static void CG_PlayerSpecXrayBegin(centity_t* cent)
 	qboolean hasInvis;
 	byte alpha;
 
+	if (cg.clientFrame != lastXrayFrame)
+	{
+		lastXrayFrame = cg.clientFrame;
+		lastXrayCent = NULL;
+	}
 	if (cent == lastXrayCent)
 		return;
 
@@ -4995,10 +5130,11 @@ static void CG_PlayerSpecXrayBegin(centity_t* cent)
 	if (!ci->infoValid)
 		return;
 
-	/* playing: teammates only (FFA has none) */
+	/* playing: teammates only (FFA has none); sv_cheats 1: everyone */
 	if (!cg.demoPlayback && !CG_IS_LOCAL_CLIENT_SPECTATOR())
 	{
-		if (CG_IS_ENEMY_SIMPLE(ci))
+		if (CG_IS_ENEMY_SIMPLE(ci) &&
+		        Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "sv_cheats")[0] != '1')
 			return;
 	}
 	/* cg_specMode 2: free-spec all; follow >= GT_TEAM viewed team; follow FFA none */

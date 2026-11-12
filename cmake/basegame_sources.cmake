@@ -5,6 +5,10 @@ set(BOTHGAMES_SOURCES
     ${SOURCE_DIR}/game/bg_misc.c
     ${SOURCE_DIR}/game/bg_pmove.c
     ${SOURCE_DIR}/game/bg_slidemove.c
+    ${SOURCE_DIR}/game/bg_pmove_ql.c
+    ${SOURCE_DIR}/game/ql/ql_bg_pmove.c
+    ${SOURCE_DIR}/game/ql/ql_bg_slidemove.c
+    ${SOURCE_DIR}/game/ql/ql_glue.c
     ${SOURCE_DIR}/game/bg_auth.c
     ${SOURCE_DIR}/game/core.c
     ${SOURCE_DIR}/game/q3a.c
@@ -231,6 +235,8 @@ set(CGAME_HEADERS
     ${SOURCE_DIR}/cgame/tr_types.h
     ${SOURCE_DIR}/game/bg_lib.h
     ${SOURCE_DIR}/game/bg_pmove.h
+    ${SOURCE_DIR}/game/bg_pmove_ql.h
+    ${SOURCE_DIR}/game/bg_pmove_ql_io.h
     ${SOURCE_DIR}/game/bg_local.h
     ${SOURCE_DIR}/game/bg_public.h
     ${SOURCE_DIR}/game/q3a.h

@@ -910,6 +910,47 @@ static int CG_IsUnacceptableError(playerState_t* ps, playerState_t* pps, qboolea
 	return 0;
 }
 
+/*
+=================
+CG_QLStepSmooth
+
+Quake Live movement sends no EV_STEP: the step up is in qlpm_stepHeight /
+qlpm_stepTime (QL pmove_t stepHeight / stepTime). Smooth it like EV_STEP_*
+does. Commands are predicted again every frame, so a step is applied once.
+=================
+*/
+static int cg_qlLastStepTime;
+
+static void CG_QLStepSmooth(void)
+{
+	int delta;
+	float oldStep;
+
+	if (qlpm_stepTime <= cg_qlLastStepTime)
+	{
+		if (qlpm_stepTime < cg_qlLastStepTime - 1000)
+		{
+			cg_qlLastStepTime = qlpm_stepTime;  // map restart: server time went back
+		}
+		return;
+	}
+	cg_qlLastStepTime = qlpm_stepTime;
+
+	if (cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg_nopredict.integer || cg_synchronousClients.integer)
+	{
+		return;
+	}
+
+	delta = cg.time - cg.stepTime;
+	oldStep = delta < STEP_TIME ? cg.stepChange * (STEP_TIME - delta) / STEP_TIME : 0;
+	cg.stepChange = oldStep + qlpm_stepHeight;
+	if (cg.stepChange > MAX_STEP_CHANGE)
+	{
+		cg.stepChange = MAX_STEP_CHANGE;
+	}
+	cg.stepTime = cg.time;
+}
+
 void CG_PredictPlayerState(void)
 {
 	int         cmdNum, current;
@@ -1319,21 +1360,42 @@ void CG_PredictPlayerState(void)
 			int oldEventSeq = 0;
 
 			/* Missile predict: stash muzzle only on attack frames for RL/PG/BFG */
-			if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
-			        && (cg_pmove.cmd.buttons & BUTTON_ATTACK))
+			if (cg_pmove.cmd.buttons & BUTTON_ATTACK)
 			{
 				int w = cg.predictedPlayerState.weapon;
 
-				if (w == WP_ROCKET_LAUNCHER || w == WP_PLASMAGUN || w == WP_BFG)
+				if (((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
+				        && (w == WP_ROCKET_LAUNCHER || w == WP_PLASMAGUN || w == WP_BFG))
+#ifdef CG_PREDICT_HITSCAN
+				        || (CG_HITSCAN_PREDICT_ON()
+				            && (w == WP_MACHINEGUN || w == WP_SHOTGUN || w == WP_LIGHTNING || w == WP_RAILGUN))
+#endif
+				   )
 				{
-					VectorCopy(cg.predictedPlayerState.origin, cg.missileFireOriginOld);
 					oldEventSeq = cg.predictedPlayerState.eventSequence;
 					stashFire = qtrue;
 				}
 			}
 
 			// run the Pmove
-			if (cgs.pmove_phy_movetype >= 0)
+			if (cgs.qlMovement)
+			{
+				// qalive (Quake Live) server: its own movement, see bg_pmove_ql.c
+				// The server sets QL PMF_NO_AUTOHOP from cg_autoHop in our userinfo; the
+				// bit is not on the Q3 wire, so set it the same way here.
+				if (cg_autoHop.integer == 0)
+				{
+					cg.predictedPlayerState.pm_flags |= QLPM_PMF_NO_AUTOHOP;
+				}
+				else
+				{
+					cg.predictedPlayerState.pm_flags &= ~QLPM_PMF_NO_AUTOHOP;
+				}
+				cg_pmove.movetype = 0;
+				QLPM_Pmove(&cg_pmove);
+				CG_QLStepSmooth();
+			}
+			else if (cgs.pmove_phy_movetype >= 0)
 			{
 				cg_pmove.movetype = cgs.pmove_phy_movetype;
 				PmoveEx(&cg_pmove, phy_PmoveSingle);

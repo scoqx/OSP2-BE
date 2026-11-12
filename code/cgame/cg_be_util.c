@@ -15,6 +15,7 @@ distributed under the terms of the project's primary license.
 
 #include "cg_local.h"
 #include "../qcommon/qcommon.h"
+#include "../qcommon/beinfo_cfg.h"
 
 void CG_UpdateBeFeatures(void)
 {
@@ -148,6 +149,7 @@ void CG_UpdateFontIndices(void)
 	newVal = CG_FontIndexFromCvar(&cg_chatWindowFont);
 	if (newVal != cgFontIndices.chatWindow)
 		cgFontIndices.chatWindow = newVal;
+	cgFontIndices.killcam = CG_FontIndexFromString(BeinfoCfg_GetKillcamFont());
 }
 
 int CG_ApplyFpsclassicoDisableMask(int raw)
@@ -659,6 +661,8 @@ CG_ParseHitboxConfigString
 
 CS_OSP2BE_HITBOX (911):
   Ruthless: "1 <wide> <hgh>" — body cylinder only (head removed; legacy "2 ..." same)
+  qalive:   "4 <scale>" — Quake Live cylinder body + head sphere
+             (radius = min(halfW,halfH)*scale, head = 0.7*unscaled on AABB top)
   Metarena/OSDF: single-token "<scale>" (>0 = cylinder AABB*scale; "0"/empty/ambiguous = AABB cube)
 ================
 */
@@ -688,6 +692,15 @@ void CG_ParseHitboxConfigString(const char* str)
 		cgs.hbMode = 1;
 		cgs.hbWide = wide;
 		cgs.hbHgh = hgh;
+		return;
+	}
+
+	/* Mode 4 = Quake Live cylinder + head (optional scale, default 1.1) */
+	if (n >= 1 && enabled == 4)
+	{
+		cgs.hbEnabled = qtrue;
+		cgs.hbMode = 4;
+		cgs.hbScale = (n >= 2 && wide > 0.0f) ? wide : 1.1f;
 		return;
 	}
 

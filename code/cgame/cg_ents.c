@@ -805,32 +805,63 @@ static void CG_Missile(centity_t* cent)
 	}
 	weapon = &cg_weapons[s1->weapon];
 
-	/* Drop matching predicted bolt when network missile arrives (Devotion-style) */
+	/*
+	 * Drop matching predicted bolt when network missile arrives (Devotion-style).
+	 * The server's trTime is about a ping + a tick after the predicted one; take
+	 * the bolt nearest to that, so a fast PG stream pairs in order.
+	 */
 	if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
 	        && s1->otherEntityNum == cg.clientNum
 	        && (s1->weapon == WP_ROCKET_LAUNCHER
 	            || s1->weapon == WP_PLASMAGUN
-	            || s1->weapon == WP_BFG))
+	            || s1->weapon == WP_BFG)
+	        && !CG_MissileHandoffDone(cent))
 	{
 		int i;
-		int fps = cgs.sv_fps > 0 ? cgs.sv_fps : 20;
-		int window = (int)(1.5f * 1000 / fps);
+		int tick = CG_ServerTick();
+		int ping = cg.snap ? cg.snap->ping : 0;
+		int window = (tick * 3) / 2;
+		int lateMax;
+		int best = -1;
+		int bestErr = 0;
 
+		if (ping < 0)
+		{
+			ping = 0;
+		}
+		lateMax = ping + 4 * tick + 100;
 		for (i = 0; i < MAX_PREDICTED_MISSILES; i++)
 		{
 			predictedMissile_t* pm = &cg_predictedMissiles[i];
+			int d;
+			int err;
 
 			if (!pm->active || pm->weapon != s1->weapon)
 			{
 				continue;
 			}
-			if (s1->pos.trTime - window > pm->pos.trTime
-			        || s1->pos.trTime + window < pm->pos.trTime)
+			d = s1->pos.trTime - pm->pos.trTime;
+			if (d < -window || d > lateMax)
 			{
 				continue;
 			}
-			pm->active = qfalse;
-			break;
+			err = d - (ping + tick);
+			if (err < 0)
+			{
+				err = -err;
+			}
+			if (best < 0 || err < bestErr)
+			{
+				best = i;
+				bestErr = err;
+			}
+		}
+		if (best >= 0)
+		{
+			CG_MissileHandoffSet(cent, best);
+			cg_predictedMissiles[best].active = qfalse;
+			/* this frame too: it was placed before the handoff, a ping back */
+			CG_CalcEntityLerpPositions(cent);
 		}
 	}
 
@@ -1333,22 +1364,16 @@ void CG_CalcEntityLerpPositions(centity_t* cent)
 #endif
 		if (cg_projectileNudge.integer)
 		{
-			int serverTick = 0;
-			if (cg.nextSnap && cg.snap)
-			{
-				serverTick = cg.nextSnap->serverTime - cg.snap->serverTime;
-			}
+			/* the real tick, also through a snapshot gap (no jump of a tick there) */
+			int serverTick = CG_ServerTick();
 			// if it's one of ours
 			if ((cent->currentState.otherEntityNum) == cg.clientNum
 			        && ((cg_projectileNudge.integer & 2)
 			            || ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled)))
 			{
-				// +1 server frame — same clock as CG_AddPredictedMissiles (Devotion)
-				timeshift = serverTick;
-				if (timeshift <= 0)
-				{
-					timeshift = cgs.sv_fps > 0 ? (1000 / cgs.sv_fps) : 50;
-				}
+				// +1 server frame — same clock as CG_AddPredictedMissiles (Devotion),
+				// plus the predicted bolt's lead once this missile took it over
+				timeshift = serverTick + CG_MissileHandoffShift(cent);
 			}
 			// if it's not, and it's not a grenade launcher
 			else if ((cent->currentState.weapon != WP_GRENADE_LAUNCHER) && (cg_projectileNudge.integer & 1))
@@ -1626,4 +1651,7 @@ void CG_AddPacketEntities(void)
 	CG_AddMapSpawns();
 	CG_AddMapTPExits();
 	CG_AddShadowItems();
+#ifdef CG_PREDICT_HITSCAN
+	CG_PredictHitscanSavePoses();
+#endif
 }
