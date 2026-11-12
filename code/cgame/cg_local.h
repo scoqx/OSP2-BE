@@ -1888,11 +1888,11 @@ typedef struct
 #define  OSP_SERVER_MODE_PROMODE_OPT1      0x11
 #define  OSP_SERVER_MODE_PROMODE_OPT2      0x21
 
-/* shotgun spread patterns: CS 910 sgp, else by the server mode (CG_ShotgunPatternType) */
-#define  SGP_VQ3    0   /* "vq3":  11 pellets, random spread 700 */
-#define  SGP_CPM    1   /* "cpm":  OSP promode / CQ3, 16 pellets, table * 900 + random */
-#define  SGP_CNQ3   2   /* "cnq3": CPMA (CNQ3 servers), 16 pellets, fixed table * 1000 */
-#define  SGP_QL     3   /* "ql":   Quake Live, 20 pellets on 3 fixed rings */
+/* shotgun spread patterns, by the physics (CS 806) or a QL server (CS 940): CG_ShotgunPatternType */
+#define  SGP_VQ3    0   /* VQ3: 11 pellets, random spread 700 */
+#define  SGP_CPM    1   /* OSP promode and CQ3: 16 pellets, table * 900 + random */
+#define  SGP_CPMA   2   /* CPMA: 16 pellets, fixed table * 1000 */
+#define  SGP_QL     3   /* Quake Live: 20 pellets on 3 fixed rings */
 int CG_ShotgunPatternType(void);
 
 #define  CS_OSP_CUSTOM_CLIENT_DEFAULT 47
@@ -2136,7 +2136,6 @@ typedef struct
 	float           hitscanMgSpread;       /* MG spread, and crouched (QL ironsights) */
 	float           hitscanMgSpreadDucked;
 	float           hitscanQuadFactor;
-	int             shotgunPattern;        /* CS 910 sgp, SGP_*; -1 = by the server mode */
 	int             cs_pmove_lock_fps; /* CS 912: 0=off, >0=target FPS (q3msk-style lock) */
 	qboolean        cs_pmove_lock_present; /* CS 912 received (even "0") */
 	qboolean        pmove_fixed; /* CS_SYSTEMINFO: fixed pmove sampling (baseq3a parity) */

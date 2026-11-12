@@ -4355,10 +4355,10 @@ CG_ShotgunPattern
 Perform the same traces the server did to locate the
 hit splashes.
 
-Four patterns (SGP_*). CS 910 sgp picks one; without it the server mode
-does: CS 940 (qalive) = ql, CPMA = cnq3, OSP promode / CQ3 = cpm, else vq3.
-Each matches its server: baseq3 / OSP ShotgunPattern, ruthless (cpm, cnq3),
-qalive ShotgunPattern (ql).
+Four patterns (SGP_*), from what the server is: a Quake Live server says so
+(CS 940, qalive ShotgunPattern), else the OSP physics of CS 806 gives it:
+VQ3, promode and CQ3 (one pattern in OSP 1.03, bg_promode.c), CPMA. They
+match baseq3 / OSP ShotgunPattern and ruthless.
 ================
 */
 
@@ -4380,17 +4380,13 @@ typedef struct
 
 int CG_ShotgunPatternType(void)
 {
-	if (cgs.shotgunPattern >= SGP_VQ3 && cgs.shotgunPattern <= SGP_QL)
-	{
-		return cgs.shotgunPattern;
-	}
 	if (cgs.qlMovement)
 	{
 		return SGP_QL;
 	}
 	if (modeCpmaPmove)
 	{
-		return SGP_CNQ3;
+		return SGP_CPMA;
 	}
 	return modeShotgunPromode ? SGP_CPM : SGP_VQ3;
 }
@@ -4443,7 +4439,7 @@ static int CG_ShotgunPellets(int pattern, int seed, qboolean exact, sgPellet_t* 
 			}
 			break;
 
-		case SGP_CNQ3:
+		case SGP_CPMA:
 			/* CPMA QVM: fixed table, no Q_crandom, koeff 1000 */
 			for (i = 0; i < 32; i += 2, n++)
 			{
@@ -4513,7 +4509,7 @@ void CG_ShotgunPattern(float* origin, float* origin2, int seed, int otherEntityN
 CG_ShotgunPatternDamage
 
 The server's blast with no effects: damage[client] gets the damage of the
-pellets that landed, quad in. Per pellet: vq3 10, cpm / cnq3 6, or CS 910 sg;
+pellets that landed, quad in. Per pellet: VQ3 10, CPM / CPMA 6, or CS 910 sg;
 ql the inner ring sg and the rest sgo, quad first, then falloff (sgf per sgr
 units, not under 1), as qalive ShotgunPellet.
 ==============

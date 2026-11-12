@@ -39,21 +39,21 @@ has no switch of its own. An info string:
   rl, pg, bfg   missile speeds
   seed  1: MG and SG spread is seeded from the command time (cmd serverTime
         & 255), so it can be predicted. 0 or missing: only LG, RG and a
-        shotgun pattern with no random part (cnq3, ql) are.
+        shotgun pattern with no random part (CPMA, QL) are.
   mg, mgt, sg, lg, rg   hitscan damage: MG, MG in team deathmatch, SG per
         pellet, LG, RG. For the hit sound and the damage plum.
 
+The shotgun pattern is not in here: the physics gives it (CS 806, see
+CG_ShotgunPatternType), and a Quake Live server says so itself (CS 940).
+
 Shotgun and machinegun (all optional):
 
-  sgp   shotgun pattern: vq3 | cpm | cnq3 | ql (SGP_*). Missing: by the
-        server mode (CS 940 = ql, CPMA = cnq3, promode / CQ3 = cpm, else vq3).
-        It draws the blast too, not only the prediction.
-  sgo   ql: damage of a middle / outer ring pellet (sg is the inner ring)
-  sgf, sgr   ql: falloff, sgf off a pellet per sgr units of range
+  sgo   QL: damage of a middle / outer ring pellet (sg is the inner ring)
+  sgf, sgr   QL: falloff, sgf off a pellet per sgr units of range
   mgs, mgsd  MG spread standing and crouched (QL g_ironsights_mg); 200
   qd    quad damage factor; 3
 
-  qalive: \pr\3\...\seed\1\mg\5\mgt\5\mgs\150\mgsd\150\sgp\ql\sg\5\sgo\5\sgf\0\sgr\768\lg\6\rg\80\qd\3
+  qalive: \pr\3\...\seed\1\mg\5\mgt\5\mgs\150\mgsd\150\sg\5\sgo\5\sgf\0\sgr\768\lg\6\rg\80\qd\3
 
 A missing key has the stock value. The old form "1 <pre> <rl> <pg> <bfg> ..."
 is missiles only, its later fields are ignored.
@@ -91,29 +91,11 @@ void CG_PredictInfoUpdate(void)
 	cgs.hitscanMgSpread = 200.0f;
 	cgs.hitscanMgSpreadDucked = 200.0f;
 	cgs.hitscanQuadFactor = 3.0f;
-	cgs.shotgunPattern = -1;
 
 	if (str && str[0] == '\\')
 	{
 		const char* v;
 
-		v = Info_ValueForKey(str, "sgp");
-		if (!Q_stricmp(v, "vq3"))
-		{
-			cgs.shotgunPattern = SGP_VQ3;
-		}
-		else if (!Q_stricmp(v, "cpm"))
-		{
-			cgs.shotgunPattern = SGP_CPM;
-		}
-		else if (!Q_stricmp(v, "cnq3") || !Q_stricmp(v, "cpma"))
-		{
-			cgs.shotgunPattern = SGP_CNQ3;
-		}
-		else if (!Q_stricmp(v, "ql"))
-		{
-			cgs.shotgunPattern = SGP_QL;
-		}
 		cgs.hitscanDamageSgOuter = CG_PredictInfoInt(str, "sgo", -1);
 		cgs.hitscanSgFalloff = CG_PredictInfoInt(str, "sgf", 0);
 		cgs.hitscanSgFalloffRange = CG_PredictInfoInt(str, "sgr", 0);
@@ -348,7 +330,7 @@ against these: by then a new snapshot may have moved lerpOrigin already.
 */
 /*
 The weapons a shot of which is predicted. MG needs the server's seed; SG too,
-unless its pattern has no random part at all (cnq3, and the hit rings of ql).
+unless its pattern has no random part at all (CPMA, and the hit rings of QL).
 */
 static qboolean CG_PredictHitscanWeapon(int weapon)
 {
@@ -362,9 +344,9 @@ static qboolean CG_PredictHitscanWeapon(int weapon)
 	}
 	if (weapon == WP_SHOTGUN)
 	{
-		const int sgp = CG_ShotgunPatternType();
+		const int pattern = CG_ShotgunPatternType();
 
-		return (cgs.hitscanPredictSeed || sgp == SGP_CNQ3 || sgp == SGP_QL) ? qtrue : qfalse;
+		return (cgs.hitscanPredictSeed || pattern == SGP_CPMA || pattern == SGP_QL) ? qtrue : qfalse;
 	}
 	return qfalse;
 }
