@@ -1335,7 +1335,10 @@ void CG_SHUDEventObituaries(int attacker, int target, int mod, qboolean unfrozen
 		if (!unfrozen)
 		{
 			dropMask = cg.obituaryDropMask[target];
-			if (!dropMask)
+			/* teamPowerups is tinfo, teammates only: for an enemy it is whatever was
+			 * left from when they were on our side (or we on theirs), never fresh. */
+			if (!dropMask && ci->infoValid &&
+			        (!CG_CACHED_IS_ENEMY_CI(ci) || CG_IS_LOCAL_CLIENT_SPECTATOR()))
 			{
 				dropMask = ci->teamPowerups & CG_OBITUARY_DROP_PU_MASK;
 			}

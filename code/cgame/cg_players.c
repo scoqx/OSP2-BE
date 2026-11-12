@@ -1500,7 +1500,9 @@ static void CG_ForceNewClientInfo(clientInfo_t* old, clientInfo_t* new)
 	/* tinfo-only fields are not in configstrings; keep them across refresh so
 	 * team overlay / teamRed/Blue do not flash dead until the next tinfo
 	 * (e.g. spectOrigModel / spectPOV follow switch → CG_UpdateAllClientsInfo). */
-	preserveTinfo = old->infoValid;
+	/* A team change (shuffle, swap, join) makes the old tinfo stale: it was sent
+	 * while the player was on the other side, an enemy never gets a fresh one. */
+	preserveTinfo = old->infoValid && old->team == new->team;
 	if (preserveTinfo)
 	{
 		savedHealth = old->health;
