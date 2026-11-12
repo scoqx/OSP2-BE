@@ -1419,6 +1419,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 				break;
 			}
 			s = CG_ConfigString(CS_SOUNDS + es->eventParm);
+#ifdef CG_DEBUG_SERVER
 			if (cg_debugServer.integer == 4)
 			{
 				CG_Printf("^3[SOUND]^7 EV_GENERAL_SOUND index=^2%i^7 sound=^2%s^7 ent=^2%i^7%s\n",
@@ -1427,6 +1428,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 				          es->number,
 				          cgs.gameSounds[es->eventParm] ? " ^5registered" : "");
 			}
+#endif
 			if (cg_freezeSoundFix.integer != 0)
 			{
 				soundHandle = CG_GetFreezeSoundReplacement(s, es->eventParm);
@@ -1460,6 +1462,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 				break;
 			}
 			s = CG_ConfigString(CS_SOUNDS + es->eventParm);
+#ifdef CG_DEBUG_SERVER
 			if (cg_debugServer.integer == 4)
 			{
 				CG_Printf("^3[SOUND]^7 EV_GLOBAL_SOUND index=^2%i^7 sound=^2%s^7 ent=^2%i^7%s\n",
@@ -1468,6 +1471,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 				          es->number,
 				          cgs.gameSounds[es->eventParm] ? " ^5registered" : "");
 			}
+#endif
 			if (cgs.gameSounds[ es->eventParm ])
 			{
 				trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_AUTO, cgs.gameSounds[ es->eventParm ]);

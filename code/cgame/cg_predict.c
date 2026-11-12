@@ -1364,8 +1364,13 @@ void CG_PredictPlayerState(void)
 			{
 				int w = cg.predictedPlayerState.weapon;
 
-				if (((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
+				if ((((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled)
 				        && (w == WP_ROCKET_LAUNCHER || w == WP_PLASMAGUN || w == WP_BFG))
+#ifdef CG_DEBUG_SERVER
+				        /* cg_debugServer 5 too: the missile spawn log takes the firing command from here */
+				        || (cg_debugServer.integer == 5
+				            && (w == WP_ROCKET_LAUNCHER || w == WP_PLASMAGUN || w == WP_BFG || w == WP_GRENADE_LAUNCHER))
+#endif
 #ifdef CG_PREDICT_HITSCAN
 				        || (CG_HITSCAN_PREDICT_ON()
 				            && (w == WP_MACHINEGUN || w == WP_SHOTGUN || w == WP_LIGHTNING || w == WP_RAILGUN))

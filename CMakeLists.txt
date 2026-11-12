@@ -16,6 +16,7 @@ option(BUILD_MOD_LIBRARIES "Build OSP2 gamecode as native libraries" ON)
 option(BUILD_MOD_QVMS "Build OSP2 gamecode as qvms" ON)
 option(BUILD_MOD_PK3 "Make .pk3 with assets and (if enabled) qvms" ON)
 option(BUILD_TESTS "Build tests" OFF)
+option(OSP2BE_DEBUG "Debug tools in cgame: the cg_debugServer cvar and its logs (CG_DEBUG_SERVER)" OFF)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)

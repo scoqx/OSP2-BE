@@ -1,4 +1,4 @@
-11.11.2026 be v1.10c-beta5
+12.11.2026 be v1.10c-beta5
 + Killcam improved
 + cg_lightningImpactCap (from QL)
 + cg_blackBlood 0/1

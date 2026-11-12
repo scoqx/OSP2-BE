@@ -865,6 +865,29 @@ static void CG_Missile(centity_t* cent)
 		}
 	}
 
+#ifdef CG_DEBUG_SERVER
+	/* cg_debugServer 5: where our missile is drawn on its first frame */
+	if (cg_debugServer.integer == 5 && s1->otherEntityNum == cg.predictedPlayerState.clientNum
+	        && (s1->weapon == WP_ROCKET_LAUNCHER || s1->weapon == WP_PLASMAGUN
+	            || s1->weapon == WP_BFG || s1->weapon == WP_GRENADE_LAUNCHER))
+	{
+		static int drawnTrTime[MAX_GENTITIES];
+		int num = s1->number;
+
+		if (num >= 0 && num < MAX_GENTITIES && drawnTrTime[num] != s1->pos.trTime)
+		{
+			float speed = VectorLength(s1->pos.trDelta);
+			float fromBase = Distance(cent->lerpOrigin, s1->pos.trBase);
+
+			drawnTrTime[num] = s1->pos.trTime;
+			CG_Printf("   ^3DRAWN^7 first frame: age ^5%.0f^7ms (%.0fu from trBase), ^5%.0f^7u from your eyes now, you moved ^5%.0f^7u from trBase\n",
+			          speed > 0 ? fromBase * 1000.0f / speed : 0.0f, fromBase,
+			          Distance(cent->lerpOrigin, cg.refdef.vieworg),
+			          Distance(cg.refdef.vieworg, s1->pos.trBase));
+		}
+	}
+#endif
+
 	// calculate the axis
 	VectorCopy(s1->angles, cent->lerpAngles);
 

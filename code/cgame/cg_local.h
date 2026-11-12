@@ -73,6 +73,12 @@ extern "C" {
 	
 /* Own hitscan hit prediction (cg_unlagged.c); the server turns it on through CS 910 */
 #define CG_PREDICT_HITSCAN
+
+/*
+CG_DEBUG_SERVER: the cg_debugServer cvar and its console logs. Only in a debug
+build (cmake -DOSP2BE_DEBUG=ON, or build.cmd debug); a release build has neither
+the cvar nor the code.
+*/
 	
 typedef struct
 {
@@ -1882,6 +1888,13 @@ typedef struct
 #define  OSP_SERVER_MODE_PROMODE_OPT1      0x11
 #define  OSP_SERVER_MODE_PROMODE_OPT2      0x21
 
+/* shotgun spread patterns: CS 910 sgp, else by the server mode (CG_ShotgunPatternType) */
+#define  SGP_VQ3    0   /* "vq3":  11 pellets, random spread 700 */
+#define  SGP_CPM    1   /* "cpm":  OSP promode / CQ3, 16 pellets, table * 900 + random */
+#define  SGP_CNQ3   2   /* "cnq3": CPMA (CNQ3 servers), 16 pellets, fixed table * 1000 */
+#define  SGP_QL     3   /* "ql":   Quake Live, 20 pellets on 3 fixed rings */
+int CG_ShotgunPatternType(void);
+
 #define  CS_OSP_CUSTOM_CLIENT_DEFAULT 47
 #define  CS_OSP_CUSTOM_CLIENT2_DEFAULT 0
 
@@ -2114,9 +2127,16 @@ typedef struct
 	qboolean        hitscanPredictSeed;    /* MG/SG spread seeded from the command time */
 	int             hitscanDamageMg;
 	int             hitscanDamageMgTeam;   /* MG in GT_TEAM */
-	int             hitscanDamageSg;       /* per pellet */
+	int             hitscanDamageSg;       /* per pellet (QL: the inner ring); -1 = the pattern's stock */
+	int             hitscanDamageSgOuter;  /* QL: the middle and outer rings; -1 = as hitscanDamageSg */
+	int             hitscanSgFalloff;      /* QL: damage off per hitscanSgFalloffRange units */
+	int             hitscanSgFalloffRange;
 	int             hitscanDamageLg;
 	int             hitscanDamageRg;
+	float           hitscanMgSpread;       /* MG spread, and crouched (QL ironsights) */
+	float           hitscanMgSpreadDucked;
+	float           hitscanQuadFactor;
+	int             shotgunPattern;        /* CS 910 sgp, SGP_*; -1 = by the server mode */
 	int             cs_pmove_lock_fps; /* CS 912: 0=off, >0=target FPS (q3msk-style lock) */
 	qboolean        cs_pmove_lock_present; /* CS 912 received (even "0") */
 	qboolean        pmove_fixed; /* CS_SYSTEMINFO: fixed pmove sampling (baseq3a parity) */
@@ -2666,7 +2686,9 @@ extern vmCvar_t         cg_enemyBattleSuitColor;
 extern vmCvar_t         cg_mutePowerUpCountdown;
 extern vmCvar_t         cg_myTeam;
 extern vmCvar_t         cg_roundSound;
+#ifdef CG_DEBUG_SERVER
 extern vmCvar_t         cg_debugServer;
+#endif
 extern vmCvar_t         cg_quadDamageColor;
 extern vmCvar_t         cg_enemyQuadDamageColor;
 extern vmCvar_t         cg_floatSpriteMaxDist;
@@ -3470,12 +3492,12 @@ void CG_AutoFollowOnObituary(int target, int attacker);
 void CG_AutoFollowFrame(void);
 extern qboolean cg_autoFollowActive;
 #ifdef CG_PREDICT_HITSCAN
-/* the server turns it on; cg_predictHitscan forces it for a test (LG/RG only without the server's seed) */
+/* the server turns it on whatever the cvar is; cg_predictHitscan forces it elsewhere (LG/RG only without the server's seed) */
 #define CG_HITSCAN_PREDICT_ON() (cgs.hitscanPredictEnabled || cg_predictHitscan.integer)
 qboolean CG_PredictHitscanConfirm(void);
 qboolean CG_PredictHitscanConfirmPlum(int client, int damage);
 void CG_PredictHitscanSavePoses(void);
-void CG_ShotgunPatternHits(float* origin, float* origin2, int seed, int skipNum, int* hits);
+void CG_ShotgunPatternDamage(float* origin, float* origin2, int seed, int skipNum, float quad, int* damage);
 #endif
 void CG_PlayPredictedHitSound(int damage);
 void CG_Obituary(entityState_t* ent);
@@ -3564,8 +3586,10 @@ qboolean CG_ClientSupportsTeamTask(int clientNum);
 //
 void CG_Respawn(void);
 void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops);
+#ifdef CG_DEBUG_SERVER
 void CG_DebugServerOnFireWeapon(int weapon);
 void CG_DebugServerOnMissileAppear(const entityState_t* es);
+#endif
 void CG_CheckTeamChangeCommands(team_t prevTeam, team_t currentTeam);
 void CG_CheckChangedPredictableEvents(playerState_t* ps);
 

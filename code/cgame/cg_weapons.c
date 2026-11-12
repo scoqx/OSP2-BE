@@ -3591,8 +3591,10 @@ void CG_FireWeapon(centity_t* cent)
 		return;
 	}
 
+#ifdef CG_DEBUG_SERVER
 	if (cent->currentState.number == cg.predictedPlayerState.clientNum)
 		CG_DebugServerOnFireWeapon(ent->weapon);
+#endif
 
 	if ((cent->currentState.powerups & (1 << PW_QUAD)) && cg.time > cgs.osp.quadSoundTime)
 	{
@@ -4284,22 +4286,12 @@ void CG_Tracer(vec3_t source, vec3_t dest)
 CG_ShotgunPellet
 ================
 */
-static int* cg_shotgunHits;    /* CG_ShotgunPatternHits: count the pellets, draw nothing */
-
 static void CG_ShotgunPellet(vec3_t start, vec3_t end, int skipNum)
 {
 	trace_t     tr;
 	int         sourceContentType, destContentType;
 
 	CG_Trace(&tr, start, NULL, NULL, end, skipNum, MASK_SHOT);
-	if (cg_shotgunHits)
-	{
-		if (tr.entityNum < MAX_CLIENTS && !(tr.surfaceFlags & SURF_NOIMPACT))
-		{
-			cg_shotgunHits[tr.entityNum]++;
-		}
-		return;
-	}
 	if (cg_shotGunTracer.integer)
 	{
 		if (!(tr.surfaceFlags & SURF_NOIMPACT))
@@ -4361,11 +4353,16 @@ static void CG_ShotgunPellet(vec3_t start, vec3_t end, int skipNum)
 CG_ShotgunPattern
 
 Perform the same traces the server did to locate the
-hit splashes
+hit splashes.
+
+Four patterns (SGP_*). CS 910 sgp picks one; without it the server mode
+does: CS 940 (qalive) = ql, CPMA = cnq3, OSP promode / CQ3 = cpm, else vq3.
+Each matches its server: baseq3 / OSP ShotgunPattern, ruthless (cpm, cnq3),
+qalive ShotgunPattern (ql).
 ================
 */
 
-const float shotgunPatternMap[32] =
+static const float shotgunPatternMap[32] =
 {
 	0.25, 0.10, 0.10, 0.25, 0.70, 0.30, 0.30, 0.70,
 	-0.25, 0.10, -0.10, 0.25, -0.70, 0.30, -0.30, 0.70,
@@ -4373,119 +4370,210 @@ const float shotgunPatternMap[32] =
 	-0.25, -0.10, -0.10, -0.25, -0.70, -0.30, -0.30, -0.70
 };
 
-void CG_ShotgunPattern(float* origin, float* origin2, int seed, int otherEntityNum)
-{
-	int         i;
-	float       r;
-	float         u;
-	vec3_t      end;
-	vec3_t      forward;
-	vec3_t      right;
-	vec3_t      up;
-	int         max;
+#define SG_MAX_PELLETS  20
 
-	/*
-	 * qalive / Quake Live: EV_SHOTGUN origin2 is a world point (muzzle+forward*4096).
-	 * Retail CG_ShotgunPattern does normalize(origin2 - origin), then a 20-pellet
-	 * concentric ring (radii 4000/8000/12000) with optional seed jitter.
-	 * Q3/OSP servers still send a pure direction in origin2 — keep the old path.
-	 */
+typedef struct
+{
+	float r, u;     /* offsets at the range 8192 * 16 */
+	qboolean inner; /* ql: the inner ring, full damage */
+} sgPellet_t;
+
+int CG_ShotgunPatternType(void)
+{
+	if (cgs.shotgunPattern >= SGP_VQ3 && cgs.shotgunPattern <= SGP_QL)
+	{
+		return cgs.shotgunPattern;
+	}
 	if (cgs.qlMovement)
 	{
-		float angle;
-		float ringRadius;
-		float jitter;
+		return SGP_QL;
+	}
+	if (modeCpmaPmove)
+	{
+		return SGP_CNQ3;
+	}
+	return modeShotgunPromode ? SGP_CPM : SGP_VQ3;
+}
 
+/*
+The pellets of one blast. exact: the server's hits; else the drawn blast,
+which on ql has the retail client's jitter (the server's rings have none).
+*/
+static int CG_ShotgunPellets(int pattern, int seed, qboolean exact, sgPellet_t* p)
+{
+	int i, n = 0;
+
+	switch (pattern)
+	{
+		case SGP_QL:
+			for (i = 0; i < 20; i++, n++)
+			{
+				float angle, ringRadius, jitter;
+
+				if (i < 6)
+				{
+					jitter = 0.4f;
+					ringRadius = 4000.0f;
+					angle = (float)(i - 20) * 1.0471976f;
+				}
+				else if (i < 12)
+				{
+					jitter = 0.3f;
+					ringRadius = 8000.0f;
+					/* retail adds literal +30.0 radians, not 30 degrees */
+					angle = (float)i * 1.0471976f + 30.0f;
+				}
+				else
+				{
+					jitter = 0.2f;
+					ringRadius = 12000.0f;
+					angle = (float)i * 0.7853982f;
+				}
+				if (exact)
+				{
+					p[n].r = cos(angle) * ringRadius;
+					p[n].u = sin(angle) * ringRadius;
+				}
+				else
+				{
+					p[n].r = (cos(angle) + Q_crandom(&seed) * jitter) * ringRadius;
+					p[n].u = (sin(angle) + Q_crandom(&seed) * jitter) * ringRadius;
+				}
+				p[n].inner = (i < 6) ? qtrue : qfalse;
+			}
+			break;
+
+		case SGP_CNQ3:
+			/* CPMA QVM: fixed table, no Q_crandom, koeff 1000 */
+			for (i = 0; i < 32; i += 2, n++)
+			{
+				p[n].r = 16.0f * 1000.0f * shotgunPatternMap[i];
+				p[n].u = 16.0f * 1000.0f * shotgunPatternMap[i + 1];
+				p[n].inner = qfalse;
+			}
+			break;
+
+		case SGP_CPM:
+			for (i = 0; i < 32; i += 2, n++)
+			{
+				p[n].r = 16.0f * 900.0f * (shotgunPatternMap[i] + (Q_crandom(&seed) / 10.0f));
+				p[n].u = 16.0f * 900.0f * (shotgunPatternMap[i + 1] + (Q_crandom(&seed) / 10.0f));
+				p[n].inner = qfalse;
+			}
+			break;
+
+		default:
+			for (n = 0; n < 11; n++)
+			{
+				p[n].r = 16.0f * Q_crandom(&seed) * 700.0f;
+				p[n].u = 16.0f * Q_crandom(&seed) * 700.0f;
+				p[n].inner = qfalse;
+			}
+			break;
+	}
+	return n;
+}
+
+/* forward, right, up of a blast: qalive sends a world point in origin2, Q3 a direction */
+static void CG_ShotgunAxis(const float* origin, const float* origin2, vec3_t forward, vec3_t right, vec3_t up)
+{
+	if (cgs.qlMovement)
+	{
 		VectorSubtract(origin2, origin, forward);
 		VectorNormalize(forward);
-		PerpendicularVector(right, forward);
-		CrossProduct(forward, right, up);
-
-		for (i = 0; i < 20; i++)
-		{
-			if (i < 6)
-			{
-				jitter = 0.4f;
-				ringRadius = 4000.0f;
-				angle = (float)(i - 20) * 1.0471976f;
-			}
-			else if (i < 12)
-			{
-				jitter = 0.3f;
-				ringRadius = 8000.0f;
-				/* retail adds literal +30.0 radians, not 30 degrees */
-				angle = (float)i * 1.0471976f + 30.0f;
-			}
-			else
-			{
-				jitter = 0.2f;
-				ringRadius = 12000.0f;
-				angle = (float)i * 0.7853982f;
-			}
-
-			r = (cos(angle) + Q_crandom(&seed) * jitter) * ringRadius;
-			u = (sin(angle) + Q_crandom(&seed) * jitter) * ringRadius;
-
-			VectorMA(origin, 8192 * 16, forward, end);
-			VectorMA(end, r, right, end);
-			VectorMA(end, u, up, end);
-			CG_ShotgunPellet(origin, end, otherEntityNum);
-		}
-		return;
-	}
-
-	VectorNormalize2(origin2, forward);
-	PerpendicularVector(right, forward);
-	CrossProduct(forward, right, up);
-
-	if (modeShotgunPromode)
-	{
-		max = modeShotgunNumberOfPellets * 2;
 	}
 	else
 	{
-		max = modeShotgunNumberOfPellets;
+		VectorNormalize2(origin2, forward);
 	}
+	PerpendicularVector(right, forward);
+	CrossProduct(forward, right, up);
+}
 
-	for (i = 0; i < max; ++i)
+void CG_ShotgunPattern(float* origin, float* origin2, int seed, int otherEntityNum)
+{
+	sgPellet_t  pellets[SG_MAX_PELLETS];
+	vec3_t      end, forward, right, up;
+	int         i, n;
+
+	CG_ShotgunAxis(origin, origin2, forward, right, up);
+	n = CG_ShotgunPellets(CG_ShotgunPatternType(), seed, qfalse, pellets);
+	for (i = 0; i < n; i++)
 	{
-		if (modeCpmaPmove)
-		{
-			/* CPMA QVM: fixed table, no Q_crandom. koeff 1000 from CG_OSPSetMode. */
-			r = 16.0f * modeShotgunKoeff * shotgunPatternMap[i++];
-			u = 16.0f * modeShotgunKoeff * shotgunPatternMap[i];
-		}
-		else if (modeShotgunPromode != 0)
-		{
-			r = 16.0f * modeShotgunKoeff * (shotgunPatternMap[i++] + (Q_crandom(&seed) / 10.0f));
-			u = 16.0f * modeShotgunKoeff * (shotgunPatternMap[i] + (Q_crandom(&seed) / 10.0f));
-		}
-		else
-		{
-			r = 16.0f * Q_crandom(&seed) * modeShotgunKoeff;
-			u = 16.0f * Q_crandom(&seed) * modeShotgunKoeff;
-		}
-
 		VectorMA(origin, 8192 * 16, forward, end);
-		VectorMA(end, r, right, end);
-		VectorMA(end, u, up, end);
+		VectorMA(end, pellets[i].r, right, end);
+		VectorMA(end, pellets[i].u, up, end);
 		CG_ShotgunPellet(origin, end, otherEntityNum);
 	}
 }
 
+#ifdef CG_PREDICT_HITSCAN
 /*
 ==============
-CG_ShotgunPatternHits
+CG_ShotgunPatternDamage
 
-The same pattern with no effects: hits[client] gets the pellets that landed.
+The server's blast with no effects: damage[client] gets the damage of the
+pellets that landed, quad in. Per pellet: vq3 10, cpm / cnq3 6, or CS 910 sg;
+ql the inner ring sg and the rest sgo, quad first, then falloff (sgf per sgr
+units, not under 1), as qalive ShotgunPellet.
 ==============
 */
-void CG_ShotgunPatternHits(float* origin, float* origin2, int seed, int skipNum, int* hits)
+void CG_ShotgunPatternDamage(float* origin, float* origin2, int seed, int skipNum, float quad, int* damage)
 {
-	cg_shotgunHits = hits;
-	CG_ShotgunPattern(origin, origin2, seed, skipNum);
-	cg_shotgunHits = NULL;
+	sgPellet_t  pellets[SG_MAX_PELLETS];
+	vec3_t      end, forward, right, up;
+	trace_t     tr;
+	int         i, n;
+	const int   pattern = CG_ShotgunPatternType();
+	int         base, outer;
+
+	base = cgs.hitscanDamageSg;
+	if (base < 0)
+	{
+		base = (pattern == SGP_QL) ? 5 : (pattern == SGP_VQ3) ? 10 : 6;
+	}
+	outer = cgs.hitscanDamageSgOuter >= 0 ? cgs.hitscanDamageSgOuter : base;
+
+	CG_ShotgunAxis(origin, origin2, forward, right, up);
+	n = CG_ShotgunPellets(pattern, seed, qtrue, pellets);
+	for (i = 0; i < n; i++)
+	{
+		int d;
+
+		VectorMA(origin, 8192 * 16, forward, end);
+		VectorMA(end, pellets[i].r, right, end);
+		VectorMA(end, pellets[i].u, up, end);
+		CG_Trace(&tr, origin, NULL, NULL, end, skipNum, MASK_SHOT);
+		if (tr.entityNum >= MAX_CLIENTS || (tr.surfaceFlags & SURF_NOIMPACT))
+		{
+			continue;
+		}
+		if (pattern == SGP_QL)
+		{
+			d = (int)((pellets[i].inner ? base : outer) * quad);
+			if (cgs.hitscanSgFalloff && cgs.hitscanSgFalloffRange > 0)
+			{
+				int dist = (int)Distance(origin, tr.endpos);
+
+				while (dist > 0)
+				{
+					dist -= cgs.hitscanSgFalloffRange;
+					d -= cgs.hitscanSgFalloff;
+				}
+				if (d < 1)
+				{
+					d = 1;
+				}
+			}
+		}
+		else
+		{
+			d = (int)(base * quad);
+		}
+		damage[tr.entityNum] += d;
+	}
 }
+#endif
 
 /*
 ==============

@@ -590,7 +590,9 @@ vmCvar_t        cg_enemyBattleSuitColor;
 vmCvar_t        cg_mutePowerUpCountdown;
 vmCvar_t        cg_myTeam;
 vmCvar_t        cg_roundSound;
+#ifdef CG_DEBUG_SERVER
 vmCvar_t        cg_debugServer;
+#endif
 vmCvar_t        cg_quadDamageColor;
 vmCvar_t        cg_enemyQuadDamageColor;
 vmCvar_t        cg_floatSpriteMaxDist;
@@ -1140,7 +1142,9 @@ cvarTable_t cvarTable[] =
 	{ &cg_mutePowerUpCountdown, "cg_mutePowerUpCountdown", "0", CVAR_ARCHIVE },
 	{ &cg_myTeam, "cg_myTeam", "0", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_myTeam },
 	{ &cg_roundSound, "cg_roundSound", "2", CVAR_ARCHIVE },
+#ifdef CG_DEBUG_SERVER
 	{ &cg_debugServer, "cg_debugServer", "0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE },
+#endif
 	{ &cg_quadDamageColor, "cg_quadDamageColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_quadDamageColor },
 	{ &cg_enemyQuadDamageColor, "cg_enemyQuadDamageColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyQuadDamageColor  },
 	{ &cg_floatSpriteMaxDist, "cg_floatSpriteMaxDist", "0", CVAR_ARCHIVE },

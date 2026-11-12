@@ -61,6 +61,7 @@ static int prevAmmo = 0;
 /* Lightning weapon tracking state (was CG_UpdateWeaponTracking), file scope for CG_UpdateLightningTracking */
 static int lastHitsValueLightning = 0;
 
+#ifdef CG_DEBUG_SERVER
 /* cg_debugServer 2: shot on one weapon -> switch to another (ms) */
 static int cg_debugShotTime;
 static int cg_debugShotWeapon;
@@ -76,7 +77,8 @@ static int cg_debugIntervalLastWeapon;
 typedef struct
 {
 	vec3_t muzzle;
-	int fireTime;
+	int fireTime;   /* cg.time of the fire event */
+	int cmdTime;    /* serverTime of the firing usercmd, 0 - unknown */
 } cg_debugMissileFire_t;
 
 static cg_debugMissileFire_t cg_debugMissileQueue[CG_DEBUG_MISSILE_QUEUE];
@@ -104,10 +106,23 @@ static void CG_DebugServerPushMissileFire(void)
 	vec3_t muzzle;
 	int slot;
 
+	int cmdTime = 0;
+
 	ps = &cg.predictedPlayerState;
-	AngleVectors(ps->viewangles, forward, NULL, NULL);
-	VectorCopy(ps->origin, muzzle);
-	muzzle[2] += ps->viewheight;
+	/* the firing command stashed by the predict loop: its time and muzzle, as the server runs it */
+	if (cg.missileFireValid && cg.missileFireTime <= cg.time && cg.time - cg.missileFireTime < 250)
+	{
+		AngleVectors(cg.missileFireAngles, forward, NULL, NULL);
+		VectorCopy(cg.missileFireOriginNew, muzzle);
+		muzzle[2] += cg.missileFireViewHeight;
+		cmdTime = cg.missileFireTime;
+	}
+	else
+	{
+		AngleVectors(ps->viewangles, forward, NULL, NULL);
+		VectorCopy(ps->origin, muzzle);
+		muzzle[2] += ps->viewheight;
+	}
 	VectorMA(muzzle, 14, forward, muzzle);
 
 	if (cg_debugMissileCount >= CG_DEBUG_MISSILE_QUEUE)
@@ -118,6 +133,7 @@ static void CG_DebugServerPushMissileFire(void)
 	slot = (cg_debugMissileHead + cg_debugMissileCount) % CG_DEBUG_MISSILE_QUEUE;
 	VectorCopy(muzzle, cg_debugMissileQueue[slot].muzzle);
 	cg_debugMissileQueue[slot].fireTime = cg.time;
+	cg_debugMissileQueue[slot].cmdTime = cmdTime;
 	cg_debugMissileCount++;
 }
 
@@ -175,6 +191,8 @@ void CG_DebugServerOnMissileAppear(const entityState_t* es)
 	int trAge;
 	int atTime;
 	int weapon;
+	int cmdTime;
+	float speed;
 
 	if (cg_debugServer.integer != 5 || !es || !cg.snap)
 	{
@@ -207,6 +225,7 @@ void CG_DebugServerOnMissileAppear(const entityState_t* es)
 	}
 
 	VectorCopy(cg_debugMissileQueue[cg_debugMissileHead].muzzle, predMuzzle);
+	cmdTime = cg_debugMissileQueue[cg_debugMissileHead].cmdTime;
 	cg_debugMissileHead = (cg_debugMissileHead + 1) % CG_DEBUG_MISSILE_QUEUE;
 	cg_debugMissileCount--;
 
@@ -217,10 +236,41 @@ void CG_DebugServerOnMissileAppear(const entityState_t* es)
 	distBase = Distance(appear, es->pos.trBase);
 	muzzleDelta = Distance(es->pos.trBase, predMuzzle);
 	trAge = atTime - es->pos.trTime;
+	speed = VectorLength(es->pos.trDelta);
 
-	CG_Printf("%s offset: appear ^5%.0f^7u from pred, ^5%.0f^7u from trBase, muzzle delta ^5%.0f^7u, trAge ^5%d^7ms ping ^5%d^7\n",
-	          weaponNames[weapon], distPred, distBase, muzzleDelta, trAge, (int)cgs.osp.pingMs);
+	/*
+	prestep: how far back of the firing command the server put trTime.
+	Stock vq3 is level.time - 50, so it is 50 minus the delay of the command
+	on the server; an unlagged server (cmd time - prestep) gives the prestep
+	itself. The u it is worth at this speed is the spawn jump from the muzzle.
+	*/
+	CG_Printf("^3%s spawn^7 #%i: snap ^5%i^7 trTime ^5%i^7 -> in the first snap ^5%i^7ms / ^5%.0f^7u from trBase, ^5%.0f^7u from our muzzle\n",
+	          weaponNames[weapon], es->number, atTime, es->pos.trTime, trAge, distBase, distPred);
+	if (cmdTime)
+	{
+		CG_Printf("   prestep (cmd %i - trTime) ^5%i^7ms = ^5%.0f^7u, snap - cmd ^5%i^7ms, muzzle delta ^5%.0f^7u, CS pre ^5%i^7, speed ^5%.0f^7, tick ^5%i^7, ping ^5%i^7\n",
+		          cmdTime, cmdTime - es->pos.trTime, speed * (cmdTime - es->pos.trTime) * 0.001f, atTime - cmdTime,
+		          muzzleDelta, cgs.missilePrestep, speed, CG_ServerTick(), cg.snap->ping);
+	}
+	else
+	{
+		CG_Printf("   prestep: no firing command, muzzle delta ^5%.0f^7u, CS pre ^5%i^7, speed ^5%.0f^7, tick ^5%i^7, ping ^5%i^7\n",
+		          muzzleDelta, cgs.missilePrestep, speed, CG_ServerTick(), cg.snap->ping);
+	}
+	/*
+	The server fires on the frame before the snapshot the missile first comes in
+	(the command runs between frames, at the last frame's level.time), so its
+	prestep is that frame's time minus trTime. Off by a tick if a snapshot was dropped.
+	*/
+	{
+		int tick = CG_ServerTick();
+		int prestep = atTime - tick - es->pos.trTime;
+
+		CG_Printf("   ^3PRESTEP %i MS^7 (= %.0fu, fire frame %i - trTime %i)\n",
+		          prestep, speed * prestep * 0.001f, atTime - tick, es->pos.trTime);
+	}
 }
+#endif /* CG_DEBUG_SERVER */
 
 /*
 ==============
@@ -1066,6 +1116,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 		}
 	}
 
+#ifdef CG_DEBUG_SERVER
 	if (cg_debugServer.integer == 2 && ps->clientNum == cg.snap->ps.clientNum)
 	{
 		if (ps->weaponstate == WEAPON_FIRING && ops->weaponstate != WEAPON_FIRING &&
@@ -1102,6 +1153,7 @@ void CG_TransitionPlayerState(playerState_t* ps, playerState_t* ops)
 	{
 		CG_DebugServerClearMissileQueue();
 	}
+#endif
 
 	// Exec on weapon
 	if (cg_exec_weapons.integer && (ps->weapon != ops->weapon && ps->weapon != WP_NONE))

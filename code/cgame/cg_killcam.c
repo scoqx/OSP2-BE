@@ -1393,7 +1393,7 @@ void CG_KillcamDraw2D(void)
 #define KC_LABEL_MARGIN   16.0f
 #define KC_LABEL_PULSE_MS 1200
 
-/* The cinema frame of the replay, under the HUD: bars at the top and the bottom, "▶ REPLAY" in the corner */
+/* The cinema frame of the replay, under the HUD: bars at the top and the bottom, "REPLAY ▶" in the corner */
 void CG_KillcamDrawFrame(void)
 {
 	static const vec4_t barColor = {0, 0, 0, KC_BAR_ALPHA};
@@ -1401,9 +1401,10 @@ void CG_KillcamDrawFrame(void)
 	const float midY = KC_BAR_HEIGHT * 0.5f;
 	const int   font = cgFontIndices.killcam;
 	const int   flags = DS_PROPORTIONAL | DS_VCENTER | DS_FORCE_COLOR | DS_PLAIN;
-	/* top left corner: the icon at the margin, the word after it */
-	const float iconCx = KC_LABEL_MARGIN + KC_LABEL_ICON * 0.5f;
-	const float textX = KC_LABEL_MARGIN + KC_LABEL_ICON + KC_LABEL_GAP;
+	/* top left corner: the word at the margin, the icon after it (its centre in 640 space) */
+	const float textX = KC_LABEL_MARGIN;
+	const float iconCx = textX + CG_OSPDrawStringNewTextWidth("REPLAY", KC_LABEL_CHAR_W, KC_LABEL_CHAR_H, flags, font) +
+	                     KC_LABEL_GAP + KC_LABEL_ICON * 0.5f;
 
 	CG_FillRect(0, 0, SCREEN_WIDTH, KC_BAR_HEIGHT, barColor);
 	CG_FillRect(0, SCREEN_HEIGHT - KC_BAR_HEIGHT, SCREEN_WIDTH, KC_BAR_HEIGHT, barColor);

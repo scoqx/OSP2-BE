@@ -1069,11 +1069,14 @@ static void CG_PowerupTimerSounds(void)
 	int     tBs;
 	qboolean roundWarmupActive;
 	static int cg_prevBattleSuitEnd;
+#ifdef CG_DEBUG_SERVER
 	static int cg_prevRoundStartState;
 	static int cg_roundWarmupBsEndTime;
+#endif
 
 	roundWarmupActive = (qboolean)(cgs.q3mskRoundWarmup && cgs.roundStartState == 2);
 
+#ifdef CG_DEBUG_SERVER
 	if (cg_debugServer.integer == 1)
 	{
 		if (cgs.q3mskRoundWarmup && cg_prevRoundStartState != cgs.roundStartState)
@@ -1096,6 +1099,7 @@ static void CG_PowerupTimerSounds(void)
 		cg_prevRoundStartState = cgs.roundStartState;
 		cg_roundWarmupBsEndTime = 0;
 	}
+#endif
 
 	/* Round warmup "0": battlesuit timer ended while in warmup */
 	if (roundWarmupActive && cg_roundSound.integer == 2 && cgs.media.roundWarmup0Sound &&
@@ -1110,6 +1114,7 @@ static void CG_PowerupTimerSounds(void)
 		}
 	}
 
+#ifdef CG_DEBUG_SERVER
 	if (roundWarmupActive && cg_debugServer.integer == 1 && cg_prevBattleSuitEnd > 0)
 	{
 		tBs = cg.snap->ps.powerups[PW_BATTLESUIT];
@@ -1119,6 +1124,7 @@ static void CG_PowerupTimerSounds(void)
 			cg_roundWarmupBsEndTime = cg_prevBattleSuitEnd;
 		}
 	}
+#endif
 
 	cg_prevBattleSuitEnd = cg.snap->ps.powerups[PW_BATTLESUIT];
 
