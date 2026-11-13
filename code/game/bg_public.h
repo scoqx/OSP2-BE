@@ -129,7 +129,7 @@ extern "C" {
 #define CS_OSP2BE_ITEM_CATALOG_COUNT           20
 #define CS_OSP2BE_ITEM_CATALOG_LAST            (CS_OSP2BE_ITEM_CATALOG0 + CS_OSP2BE_ITEM_CATALOG_COUNT - 1)
 /* BE-only, what the client may predict, an info string (see CG_PredictInfoUpdate):
- *   \pr\<1 missiles | 2 hitscan>\pre\<ms>\rl\pg\bfg <speeds>\seed\<0|1>\mg\mgt\sg\lg\rg <damage>
+ *   \pr\<1 missiles | 2 hitscan>\pre\<ms>\rl\pg\bfg <speeds>\seed\<0|1>\mg\sg\lg\rg <damage>
  *   Old form "1 <prestep> <rlSpeed> <pgSpeed> <bfgSpeed> ..." = missiles only. */
 #define CS_OSP2BE_PREDICT                      910  /* was CS_OSP2BE_MISSILE_PREDICT */
 /* CS 911 player damage hitbox (shared slot):

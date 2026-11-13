@@ -2129,7 +2129,6 @@ typedef struct
 	qboolean        hitscanPredictEnabled; /* CS_OSP2BE_PREDICT pr & 2; use CG_HITSCAN_PREDICT_ON() */
 	qboolean        hitscanPredictSeed;    /* MG/SG spread seeded from the command time */
 	int             hitscanDamageMg;
-	int             hitscanDamageMgTeam;   /* MG in GT_TEAM */
 	int             hitscanDamageSg;       /* per pellet (QL: the inner ring); -1 = the pattern's stock */
 	int             hitscanDamageSgOuter;  /* QL: the middle and outer rings; -1 = as hitscanDamageSg */
 	int             hitscanSgFalloff;      /* QL: damage off per hitscanSgFalloffRange units */

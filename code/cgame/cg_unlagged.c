@@ -32,7 +32,7 @@ CG_PredictInfoUpdate
 What the server lets us predict, from CS 910. The server decides, the client
 has no switch of its own. An info string:
 
-  \pr\3\pre\50\rl\900\pg\2000\bfg\2000\seed\1\mg\7\mgt\5\sg\10\lg\8\rg\100
+  \pr\3\pre\50\rl\900\pg\2000\bfg\2000\seed\1\mg\7\sg\10\lg\8\rg\100
 
   pr    1 missiles (also needs RAT_PREDICTMISSILES), 2 hitscan hits
   pre   missile prestep, ms: the server starts its missile that far ahead
@@ -40,8 +40,10 @@ has no switch of its own. An info string:
   seed  1: MG and SG spread is seeded from the command time (cmd serverTime
         & 255), so it can be predicted. 0 or missing: only LG, RG and a
         shotgun pattern with no random part (CPMA, QL) are.
-  mg, mgt, sg, lg, rg   hitscan damage: MG, MG in team deathmatch, SG per
-        pellet, LG, RG. For the hit sound and the damage plum.
+  mg, sg, lg, rg   hitscan damage: MG, SG per pellet, LG, RG, as the server
+        deals it (it picks the MG damage by the mode, the client does not).
+        For the hit sound and the damage plum. With no pr bit 2 the stock
+        values are used (MG 7, 5 in team deathmatch).
 
 The shotgun pattern is not in here: the physics gives it (CS 806, see
 CG_ShotgunPatternType), and a Quake Live server says so itself (CS 940).
@@ -53,7 +55,7 @@ Shotgun and machinegun (all optional):
   mgs, mgsd  MG spread standing and crouched (QL g_ironsights_mg); 200
   qd    quad damage factor; 3
 
-  qalive: \pr\3\...\seed\1\mg\5\mgt\5\mgs\150\mgsd\150\sg\5\sgo\5\sgf\0\sgr\768\lg\6\rg\80\qd\3
+  qalive: \pr\3\...\seed\1\mg\5\mgs\150\mgsd\150\sg\5\sgo\5\sgf\0\sgr\768\lg\6\rg\80\qd\3
 
 A missing key has the stock value. The old form "1 <pre> <rl> <pg> <bfg> ..."
 is missiles only, its later fields are ignored.
@@ -81,7 +83,6 @@ void CG_PredictInfoUpdate(void)
 	cgs.missilePredictBfgSpeed = 2000;
 	cgs.hitscanPredictSeed = qfalse;
 	cgs.hitscanDamageMg = 7;
-	cgs.hitscanDamageMgTeam = 5;
 	cgs.hitscanDamageSg = -1;
 	cgs.hitscanDamageSgOuter = -1;
 	cgs.hitscanSgFalloff = 0;
@@ -122,7 +123,6 @@ void CG_PredictInfoUpdate(void)
 		cgs.missilePredictBfgSpeed = CG_PredictInfoInt(str, "bfg", cgs.missilePredictBfgSpeed);
 		cgs.hitscanPredictSeed = CG_PredictInfoInt(str, "seed", 0) ? qtrue : qfalse;
 		cgs.hitscanDamageMg = CG_PredictInfoInt(str, "mg", cgs.hitscanDamageMg);
-		cgs.hitscanDamageMgTeam = CG_PredictInfoInt(str, "mgt", cgs.hitscanDamageMgTeam);
 		cgs.hitscanDamageSg = CG_PredictInfoInt(str, "sg", cgs.hitscanDamageSg);
 		cgs.hitscanDamageLg = CG_PredictInfoInt(str, "lg", cgs.hitscanDamageLg);
 		cgs.hitscanDamageRg = CG_PredictInfoInt(str, "rg", cgs.hitscanDamageRg);
@@ -762,7 +762,8 @@ static void CG_PredictHitscanFire(int weapon)
 		}
 		else
 		{
-			damage = (cgs.gametype == GT_TEAM) ? cgs.hitscanDamageMgTeam : cgs.hitscanDamageMg;
+			/* the server's MG damage (CS 910 mg) as it is: the server picks it by the mode; stock without it */
+			damage = cgs.hitscanPredictEnabled ? cgs.hitscanDamageMg : ((cgs.gametype == GT_TEAM) ? 5 : 7);
 		}
 		CG_PredictHitscanAdd(trace.entityNum, weapon, (int)(damage * quad));
 	}
