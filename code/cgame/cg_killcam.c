@@ -124,6 +124,8 @@ static int  kc_fragTime;
 
 /* The scoreboard in a replay: only while its key is held there. Before and after, on our body, it is as it always is. */
 static qboolean kc_scoresHeld;
+/* push to talk pressed in the replay: its key, let go when the replay ends */
+static int kc_voipKey;
 
 #define KC_RECORD(index) (&kc_records[(index) % KC_MAX_RECORDS])
 
@@ -423,6 +425,13 @@ static void CG_KillcamEnd(int serverTime)
 		cg.showAccuracy = qfalse;
 	}
 	cg.deadScoresHidden = qfalse;
+
+	/* the release will go to the binds now, which never saw the press: let go of push to talk here */
+	if (kc_voipKey)
+	{
+		trap_SendConsoleCommand(va("-voiprecord %i\n", kc_voipKey));
+		kc_voipKey = 0;
+	}
 
 	if (!CG_BEChat_IsOpen())
 	{
@@ -1248,6 +1257,21 @@ void CG_KillcamKeyEvent(int key, qboolean down)
 		if (down)
 		{
 			trap_SendConsoleCommand(va("vstr ui_kcBind%i\n", key));
+		}
+		return;
+	}
+	/* push to talk: the press is ours to pass on.
+	   The engine runs the release of a + bind itself while cgame holds the keys. */
+	if (CG_KillcamKeyBound(key, "+voiprecord", "ui_keysVoip"))
+	{
+		if (down)
+		{
+			trap_SendConsoleCommand(va("+voiprecord %i\n", key));
+			kc_voipKey = key;
+		}
+		else if (key == kc_voipKey)
+		{
+			kc_voipKey = 0;
 		}
 		return;
 	}

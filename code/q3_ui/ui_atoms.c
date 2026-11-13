@@ -1673,9 +1673,11 @@ void UI_PublishGameKeys(void)
 	char chat[128];
 	char chatTeam[128];
 	char pass[128];
+	char voip[128];
 	int  key;
 
 	pass[0] = '\0';
+	voip[0] = '\0';
 	scores[0] = '\0';
 	wheel[0] = '\0';
 	chat[0] = '\0';
@@ -1703,6 +1705,11 @@ void UI_PublishGameKeys(void)
 		{
 			Q_strcat(chatTeam, sizeof(chatTeam), va("%i ", key));
 		}
+		/* push to talk, pressed in the killcam */
+		if (UI_BindingHas(binding, "+voiprecord") && strlen(voip) + 5 < sizeof(voip))
+		{
+			Q_strcat(voip, sizeof(voip), va("%i ", key));
+		}
 		/* run as they are by the killcam: the bind text goes to ui_kcBind<key>, cgame runs it with vstr.
 		   Not with a +command in it: that one would wait for a release that never comes. */
 		if ((UI_BindingHas(binding, "say") || UI_BindingHas(binding, "say_team") ||
@@ -1718,6 +1725,7 @@ void UI_PublishGameKeys(void)
 	trap_Cvar_Set("ui_keysChat", chat);
 	trap_Cvar_Set("ui_keysChatTeam", chatTeam);
 	trap_Cvar_Set("ui_keysKillcamBinds", pass);
+	trap_Cvar_Set("ui_keysVoip", voip);
 }
 
 void UI_SetActiveMenu(uiMenuCommand_t menu)
