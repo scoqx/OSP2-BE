@@ -10,7 +10,7 @@ typedef struct chatFilterTableNode_s
 
 #define CG_CHATFILTER_MAX 128
 
-chatFilterTableNode_t filterNames[CG_CHATFILTER_MAX];
+static chatFilterTableNode_t chatFilterNames[CG_CHATFILTER_MAX];
 
 static chatFilterTableNode_t* CG_ChatfilterFindName(const char* name)
 {
@@ -20,7 +20,7 @@ static chatFilterTableNode_t* CG_ChatfilterFindName(const char* name)
 
 	hash = Com_GenerateHashValue(name, CG_CHATFILTER_MAX);
 
-	target = &filterNames[hash];
+	target = &chatFilterNames[hash];
 
 	while (target && (isNotFound = Q_stricmp(name, target->name)))
 	{
@@ -119,7 +119,7 @@ void CG_ChatfilterDeleteName(const char* name)
 
 	hash = Com_GenerateHashValue(name, CG_CHATFILTER_MAX);
 
-	target = &filterNames[hash];
+	target = &chatFilterNames[hash];
 
 	while (target && (isNotFound = Q_stricmp(name, target->name)))
 	{
@@ -127,7 +127,7 @@ void CG_ChatfilterDeleteName(const char* name)
 	}
 	if (isNotFound) return;
 
-	if (target == &filterNames[hash])
+	if (target == &chatFilterNames[hash])
 	{
 		//root node
 		if (target->name) Z_Free(target->name);
@@ -166,7 +166,7 @@ void CG_ChatfilterAddName(const char* name)
 
 	hash = Com_GenerateHashValue(name, CG_CHATFILTER_MAX);
 
-	target = &filterNames[hash];
+	target = &chatFilterNames[hash];
 
 	while (target->name)
 	{
@@ -404,7 +404,7 @@ void CG_ChatfilterSaveFile(const char* filename)
 
 	for (i = 0; i < CG_CHATFILTER_MAX; ++i)
 	{
-		ptr = &filterNames[i];
+		ptr = &chatFilterNames[i];
 
 		while (ptr->name)
 		{

@@ -104,7 +104,7 @@ typedef struct teamTaskFilterTableNode_s
 
 #define CG_TEAMTASKFILTER_MAX 128
 
-extern teamTaskFilterTableNode_t filterNames[CG_TEAMTASKFILTER_MAX];
+static teamTaskFilterTableNode_t teamTaskFilterNames[CG_TEAMTASKFILTER_MAX];
 
 static teamTaskFilterTableNode_t* CG_TeamTaskFilterFindName(const char* name)
 {
@@ -114,7 +114,7 @@ static teamTaskFilterTableNode_t* CG_TeamTaskFilterFindName(const char* name)
 
 	hash = Com_GenerateHashValue(name, CG_TEAMTASKFILTER_MAX);
 
-	target = &filterNames[hash];
+	target = &teamTaskFilterNames[hash];
 
 	while (target && (isNotFound = Q_stricmp(name, target->name)))
 	{
@@ -160,7 +160,7 @@ void CG_TeamTaskFilterDeleteName(const char* name)
 
 	hash = Com_GenerateHashValue(name, CG_TEAMTASKFILTER_MAX);
 
-	target = &filterNames[hash];
+	target = &teamTaskFilterNames[hash];
 
 	while (target && (isNotFound = Q_stricmp(name, target->name)))
 	{
@@ -171,7 +171,7 @@ void CG_TeamTaskFilterDeleteName(const char* name)
 		return;
 	}
 
-	if (target == &filterNames[hash])
+	if (target == &teamTaskFilterNames[hash])
 	{
 		if (target->name)
 		{
@@ -214,7 +214,7 @@ void CG_TeamTaskFilterAddName(const char* name)
 
 	hash = Com_GenerateHashValue(name, CG_TEAMTASKFILTER_MAX);
 
-	target = &filterNames[hash];
+	target = &teamTaskFilterNames[hash];
 
 	while (target->name)
 	{
@@ -304,7 +304,7 @@ void CG_TeamTaskFilterSaveFile(const char* filename)
 
 	for (i = 0; i < CG_TEAMTASKFILTER_MAX; ++i)
 	{
-		ptr = &filterNames[i];
+		ptr = &teamTaskFilterNames[i];
 
 		while (ptr->name)
 		{
