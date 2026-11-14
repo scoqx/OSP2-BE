@@ -515,11 +515,8 @@ void CG_Bleed(vec3_t origin, int entityNum)
 		else
 			ex->refEntity.customShader = cgs.media.bloodExplosionShaderNew[0];
 
+		// cg_altBlood has priority: its own color, cg_blackBlood does not apply
 		Vector4Copy(cg.beAltBloodColor, bloodColor);
-		if (cg_blackBlood.integer)
-		{
-			bloodColor[0] = bloodColor[1] = bloodColor[2] = 0.0f;
-		}
 	}
 	else
 	{

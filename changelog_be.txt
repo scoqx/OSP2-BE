@@ -1157,3 +1157,7 @@ SuperHUD:
 + Rail 3rd person beam fix? (QL)
 - cg_railFix (fix implented)
 + beinfo.cfg: hex colors RGB/RGBA/RRGGBB/RRGGBBAA, optional # or 0x prefix
+
+14.11.2026 be v1.10c-beta6
++ Various fixes
+* cg_altBlood overrides cg_blackBlood on hits
