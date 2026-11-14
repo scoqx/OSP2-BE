@@ -2123,6 +2123,8 @@ typedef struct
 	qboolean        missilePredictEnabled; /* CS_OSP2BE_PREDICT pr & 1 */
 	qboolean        qlMovement;            /* qalive (Quake Live) server: predict with bg_pmove_ql.c */
 	int             missilePrestep;
+	float           muzzleForward;         /* CS_OSP2BE_PREDICT mz: shot start in front of the eye; 14 (Q3) if missing */
+	float           muzzleForwardDucked;   /* CS_OSP2BE_PREDICT mzd: the same crouched */
 	int             missilePredictRlSpeed;
 	int             missilePredictPgSpeed;
 	int             missilePredictBfgSpeed;
@@ -4243,6 +4245,7 @@ if(!TESTPTR){\
 void CG_PredictWeaponEffects(centity_t* cent);
 void CG_AddPredictedMissiles(void);
 void CG_PredictInfoUpdate(void);
+float CG_PredictMuzzleForward(int pmFlags);
 int CG_ServerTick(void);
 int CG_MissileHandoffShift(const centity_t* cent);
 qboolean CG_MissileHandoffDone(const centity_t* cent);

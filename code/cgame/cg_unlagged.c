@@ -37,6 +37,8 @@ has no switch of its own. An info string:
   pr    1 missiles (also needs RAT_PREDICTMISSILES), 2 hitscan hits
   pre   missile prestep, ms: the server starts its missile that far ahead
   rl, pg, bfg   missile speeds
+  mz, mzd   where shots start, units in front of the eye, standing and
+        crouched. Missing: 14, Quake III. qalive (g_muzzlePointQL 1): 5 / 3.
   seed  1: MG and SG spread is seeded from the command time (cmd serverTime
         & 255), so it can be predicted. 0 or missing: only LG, RG and a
         shotgun pattern with no random part (CPMA, QL) are.
@@ -64,6 +66,18 @@ The handoff shift (CG_MissileHandoffShift) keeps our network missile on the
 predicted bolt's clock whatever launch delag the server uses.
 =======================
 */
+/*
+=======================
+CG_PredictMuzzleForward
+
+How far in front of the eye the server starts a shot (CS 910 mz / mzd).
+=======================
+*/
+float CG_PredictMuzzleForward(int pmFlags)
+{
+	return (pmFlags & PMF_DUCKED) ? cgs.muzzleForwardDucked : cgs.muzzleForward;
+}
+
 static int CG_PredictInfoInt(const char* info, const char* key, int def)
 {
 	const char* v = Info_ValueForKey(info, key);
@@ -78,6 +92,8 @@ void CG_PredictInfoUpdate(void)
 
 	cgs.missilePredictEnabled = qfalse;
 	cgs.missilePrestep = 0;
+	cgs.muzzleForward = 14.0f;
+	cgs.muzzleForwardDucked = 14.0f;
 	cgs.missilePredictRlSpeed = 900;
 	cgs.missilePredictPgSpeed = 2000;
 	cgs.missilePredictBfgSpeed = 2000;
@@ -109,6 +125,16 @@ void CG_PredictInfoUpdate(void)
 		if (v[0])
 		{
 			cgs.hitscanMgSpreadDucked = atof(v);
+		}
+		v = Info_ValueForKey(str, "mz");
+		if (v[0])
+		{
+			cgs.muzzleForward = cgs.muzzleForwardDucked = atof(v);
+		}
+		v = Info_ValueForKey(str, "mzd");
+		if (v[0])
+		{
+			cgs.muzzleForwardDucked = atof(v);
 		}
 		v = Info_ValueForKey(str, "qd");
 		if (v[0])
@@ -650,16 +676,11 @@ static void CG_PredictHitscanFire(int weapon)
 	cg.missileFireValid = qfalse;
 	if (cgs.qlMovement)
 	{
-		/* qalive CalcMuzzlePointOrigin: the snapped entity origin, 5 forward, 3 crouched */
+		/* qalive CalcMuzzlePointOrigin: from the snapped entity origin */
 		SnapVector(muzzle);
-		muzzle[2] += viewheight;
-		VectorMA(muzzle, (ps->pm_flags & PMF_DUCKED) ? 3 : 5, forward, muzzle);
 	}
-	else
-	{
-		muzzle[2] += viewheight;
-		VectorMA(muzzle, 14, forward, muzzle);
-	}
+	muzzle[2] += viewheight;
+	VectorMA(muzzle, CG_PredictMuzzleForward(ps->pm_flags), forward, muzzle);
 
 	CG_PredictHitscanSwapPoses();
 
@@ -872,7 +893,7 @@ void CG_PredictWeaponEffects(centity_t* cent)
 			VectorCopy(cg.predictedPlayerState.origin, muzzlePoint);
 			muzzlePoint[2] += cg.predictedPlayerState.viewheight;
 		}
-		VectorMA(muzzlePoint, 14, forward, muzzlePoint);
+		VectorMA(muzzlePoint, CG_PredictMuzzleForward(cg.predictedPlayerState.pm_flags), forward, muzzlePoint);
 		SnapVector(muzzlePoint);
 
 		pm = NULL;

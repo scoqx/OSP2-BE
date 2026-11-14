@@ -128,8 +128,8 @@ static void CG_DebugServerPushMissileFire(void)
 		muzzle[2] += ps->viewheight;
 		VectorCopy(muzzle, muzzleOld);
 	}
-	VectorMA(muzzle, 14, forward, muzzle);
-	VectorMA(muzzleOld, 14, forward, muzzleOld);
+	VectorMA(muzzle, CG_PredictMuzzleForward(ps->pm_flags), forward, muzzle);
+	VectorMA(muzzleOld, CG_PredictMuzzleForward(ps->pm_flags), forward, muzzleOld);
 
 	if (cg_debugMissileCount >= CG_DEBUG_MISSILE_QUEUE)
 	{
