@@ -1235,7 +1235,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 		case EV_MISSILE_HIT:
 			DEBUGNAME("EV_MISSILE_HIT");
 			ByteToDir(es->eventParm, dir);
-			if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
+			if (cgs.missilePredictEnabled
 			        && (es->weapon == WP_ROCKET_LAUNCHER
 			            || es->weapon == WP_PLASMAGUN
 			            || es->weapon == WP_BFG))
@@ -1264,7 +1264,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 				}
 				/* else: explosion already predicted; hitsound from CG_HitSound on PS */
 			}
-			else
+			else if (!(es->weapon == WP_LIGHTNING && CG_PredictLightningImpactTake(position)))
 			{
 				CG_MissileHitPlayer(es->weapon, position, dir, es->otherEntityNum);
 			}
@@ -1273,7 +1273,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 		case EV_MISSILE_MISS:
 			DEBUGNAME("EV_MISSILE_MISS");
 			ByteToDir(es->eventParm, dir);
-			if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
+			if (cgs.missilePredictEnabled
 			        && (es->weapon == WP_ROCKET_LAUNCHER
 			            || es->weapon == WP_PLASMAGUN
 			            || es->weapon == WP_BFG))
@@ -1301,7 +1301,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 					CG_MissileHitWall(es->weapon, es->otherEntityNum, position, dir, IMPACTSOUND_DEFAULT);
 				}
 			}
-			else
+			else if (!(es->weapon == WP_LIGHTNING && CG_PredictLightningImpactTake(position)))
 			{
 				CG_MissileHitWall(es->weapon, es->otherEntityNum, position, dir, IMPACTSOUND_DEFAULT);
 			}
@@ -1310,7 +1310,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 		case EV_MISSILE_MISS_METAL:
 			DEBUGNAME("EV_MISSILE_MISS_METAL");
 			ByteToDir(es->eventParm, dir);
-			if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
+			if (cgs.missilePredictEnabled
 			        && (es->weapon == WP_ROCKET_LAUNCHER
 			            || es->weapon == WP_PLASMAGUN
 			            || es->weapon == WP_BFG))
@@ -1338,7 +1338,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 					CG_MissileHitWall(es->weapon, es->otherEntityNum, position, dir, IMPACTSOUND_METAL);
 				}
 			}
-			else
+			else if (!(es->weapon == WP_LIGHTNING && CG_PredictLightningImpactTake(position)))
 			{
 				CG_MissileHitWall(es->weapon, es->otherEntityNum, position, dir, IMPACTSOUND_METAL);
 			}
@@ -1349,7 +1349,7 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 			cent->currentState.weapon = WP_RAILGUN;
 			// if the end was on a nomark surface, don't make an explosion
 			if (es->clientNum == cg.predictedPlayerState.clientNum &&
-			        (cg_delag.integer & 1 || cg_delag.integer & 4) && !cg.demoPlayback)
+			        (cg_delag.integer & 1 || cg_delag.integer & 4 || CG_HITSCAN_PREDICT_ON()) && !cg.demoPlayback)
 			{
 				// do nothing, because it was already predicted
 				//Com_Printf("Ignoring rail trail event\n");
@@ -1397,17 +1397,45 @@ void CG_EntityEvent(centity_t* cent, vec3_t position)
 		case EV_BULLET_HIT_WALL:
 			DEBUGNAME("EV_BULLET_HIT_WALL");
 			ByteToDir(es->eventParm, dir);
-			CG_Bullet(es->pos.trBase, es->otherEntityNum, dir, qfalse, ENTITYNUM_WORLD);
+			/* ours is drawn at the shot already (hitscan predict) */
+			if (!CG_PredictHitscanOwnImpact(WP_MACHINEGUN, es->otherEntityNum))
+			{
+				CG_Bullet(es->pos.trBase, es->otherEntityNum, dir, qfalse, ENTITYNUM_WORLD);
+			}
+#ifdef CG_DEBUG_SERVER
+			if (CG_DBGP(CG_DBGP_SEED) && es->otherEntityNum == cg.predictedPlayerState.clientNum)
+			{
+				CG_DebugPredictSeedServer(WP_MACHINEGUN, es->pos.trBase, -1);
+			}
+#endif
 			break;
 
 		case EV_BULLET_HIT_FLESH:
 			DEBUGNAME("EV_BULLET_HIT_FLESH");
-			CG_Bullet(es->pos.trBase, es->otherEntityNum, dir, qtrue, es->eventParm);
+			if (!CG_PredictHitscanOwnImpact(WP_MACHINEGUN, es->otherEntityNum))
+			{
+				CG_Bullet(es->pos.trBase, es->otherEntityNum, dir, qtrue, es->eventParm);
+			}
+#ifdef CG_DEBUG_SERVER
+			if (CG_DBGP(CG_DBGP_SEED) && es->otherEntityNum == cg.predictedPlayerState.clientNum)
+			{
+				CG_DebugPredictSeedServer(WP_MACHINEGUN, es->pos.trBase, -1);
+			}
+#endif
 			break;
 
 		case EV_SHOTGUN:
 			DEBUGNAME("EV_SHOTGUN");
-			CG_ShotgunFire(es);
+			if (!CG_PredictHitscanOwnImpact(WP_SHOTGUN, es->otherEntityNum))
+			{
+				CG_ShotgunFire(es);
+			}
+#ifdef CG_DEBUG_SERVER
+			if (CG_DBGP(CG_DBGP_SEED) && es->otherEntityNum == cg.predictedPlayerState.clientNum)
+			{
+				CG_DebugPredictSeedServer(WP_SHOTGUN, es->pos.trBase, es->eventParm & 255);
+			}
+#endif
 			break;
 
 		case EV_GENERAL_SOUND:

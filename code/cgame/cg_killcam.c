@@ -278,9 +278,17 @@ void CG_KillcamMapRestart(void)
    intermission waits for the replay (it ends by itself where the replayed history reaches the intermission) */
 static qboolean CG_KillcamLiveWantsStop(const snapshot_t* snap)
 {
+	if (snap->ps.clientNum != cg.clientNum || snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	{
+		return qfalse;
+	}
 	/* In freeze modes the spawn count also changes when the dead become spectators */
-	return snap->ps.clientNum == cg.clientNum && snap->ps.persistant[PERS_SPAWN_COUNT] != kc_spawnCount &&
-	       snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR;
+	if (snap->ps.persistant[PERS_SPAWN_COUNT] != kc_spawnCount)
+	{
+		return qtrue;
+	}
+	/* alive again without a new spawn (thawed, revived): the replay is over */
+	return (snap->ps.pm_type == PM_NORMAL && snap->ps.stats[STAT_HEALTH] > 0) ? qtrue : qfalse;
 }
 
 static void CG_KillcamRememberObits(const snapshot_t* snap)

@@ -2691,6 +2691,15 @@ extern vmCvar_t         cg_myTeam;
 extern vmCvar_t         cg_roundSound;
 #ifdef CG_DEBUG_SERVER
 extern vmCvar_t         cg_debugServer;
+/* cg_debugPredict bits: 1 the state (CS 910), 2 missiles, 4 hitscan, 8 MG/SG seed */
+extern vmCvar_t         cg_debugPredict;
+#define CG_DBGP_STATE   1
+#define CG_DBGP_MISSILE 2
+#define CG_DBGP_HITSCAN 4
+#define CG_DBGP_SEED    8   /* MG / SG seed: ours against the server's */
+void CG_DebugPredictSeedServer(int weapon, const vec3_t point, int serverSeed);
+#define CG_DBGP(bit)    (cg_debugPredict.integer & (bit))
+void CG_DebugPredictStatus(const char* why);
 #endif
 extern vmCvar_t         cg_quadDamageColor;
 extern vmCvar_t         cg_enemyQuadDamageColor;
@@ -3495,10 +3504,15 @@ void CG_AutoFollowOnObituary(int target, int attacker);
 void CG_AutoFollowFrame(void);
 extern qboolean cg_autoFollowActive;
 #ifdef CG_PREDICT_HITSCAN
-/* the server turns it on whatever the cvar is; cg_predictHitscan forces it elsewhere (LG/RG only without the server's seed) */
-#define CG_HITSCAN_PREDICT_ON() (cgs.hitscanPredictEnabled || cg_predictHitscan.integer)
+/* testing: cg_predictHitscan 0 turns it off also when the server turns it on (CS 910 pr & 2);
+   without the server it forces it (LG/RG only without the server's seed) */
+#define CG_HITSCAN_PREDICT_ON() (cg_predictHitscan.integer != 0)
 qboolean CG_PredictHitscanConfirm(void);
 qboolean CG_PredictHitscanConfirmPlum(int client, int damage);
+/* our MG / SG / LG impacts are drawn at the shot: the server's event of the same shot is skipped */
+qboolean CG_PredictHitscanOwnImpact(int weapon, int shooter);
+void CG_PredictLightningImpactAdd(const vec3_t origin);
+qboolean CG_PredictLightningImpactTake(const vec3_t origin);
 void CG_PredictHitscanSavePoses(void);
 void CG_ShotgunPatternDamage(float* origin, float* origin2, int seed, int skipNum, float quad, int* damage);
 #endif

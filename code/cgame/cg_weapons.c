@@ -3554,7 +3554,16 @@ void CG_FireWeapon(centity_t* cent)
 			if (cg_doubleShootTime < 0)
 				cg_doubleShootTime = 0;
 			if (cg_doubleShootTime > 0)
+			{
+#ifdef CG_DEBUG_SERVER
+				if (CG_DBGP(CG_DBGP_MISSILE | CG_DBGP_HITSCAN))
+				{
+					CG_Printf("^3predict:^7 EV_FIRE_WEAPON wp %i ^1dropped^7 by the double-shot guard (%i ms left)\n",
+					          ent->weapon, cg_doubleShootTime);
+				}
+#endif
 				return;
+			}
 		}
 		if (!cg_doubleShootAddTimeInited)
 		{

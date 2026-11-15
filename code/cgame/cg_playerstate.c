@@ -348,7 +348,7 @@ void CG_DebugServerMissileFrame(const centity_t* cent, int timeshift)
 		CG_Printf("^3%s %s^7 #%i in: nudge ^5%i^7, CS910 missiles ^5%s^7, sv_fps(cs) ^5%i^7, tick ^5%i^7, pair ^5%i^7, snaps ^5%s^7, ping ^5%i^7 (pingMs %.0f), shift ^5%i^7ms, speed %.0f, age %ims, timeNudge %s\n",
 		          ours ? "OWN" : "ENEMY", weaponNames[es->weapon], num,
 		          cg_projectileNudge.integer,
-		          ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled) ? "on" : "off",
+		          cgs.missilePredictEnabled ? "on" : "off",
 		          cgs.sv_fps, CG_ServerTick(), pair, snapsStr, cg.snap->ping, cgs.osp.pingMs,
 		          timeshift, speed, cg.time + timeshift - es->pos.trTime,
 		          timeNudge);

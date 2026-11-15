@@ -592,6 +592,7 @@ vmCvar_t        cg_myTeam;
 vmCvar_t        cg_roundSound;
 #ifdef CG_DEBUG_SERVER
 vmCvar_t        cg_debugServer;
+vmCvar_t        cg_debugPredict;
 #endif
 vmCvar_t        cg_quadDamageColor;
 vmCvar_t        cg_enemyQuadDamageColor;
@@ -1144,6 +1145,7 @@ cvarTable_t cvarTable[] =
 	{ &cg_roundSound, "cg_roundSound", "2", CVAR_ARCHIVE },
 #ifdef CG_DEBUG_SERVER
 	{ &cg_debugServer, "cg_debugServer", "0", CVAR_ARCHIVE | CVAR_NOTABCOMPLETE },
+	{ &cg_debugPredict, "cg_debugPredict", "0", CVAR_NOTABCOMPLETE },
 #endif
 	{ &cg_quadDamageColor, "cg_quadDamageColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_quadDamageColor },
 	{ &cg_enemyQuadDamageColor, "cg_enemyQuadDamageColor", "", CVAR_ARCHIVE, CG_LocalEventCvarChanged_cg_enemyQuadDamageColor  },

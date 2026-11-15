@@ -34,7 +34,7 @@ has no switch of its own. An info string:
 
   \pr\3\pre\50\rl\900\pg\2000\bfg\2000\seed\1\mg\7\sg\10\lg\8\rg\100
 
-  pr    1 missiles (also needs RAT_PREDICTMISSILES), 2 hitscan hits
+  pr    1 missiles, 2 hitscan hits (CS 910 alone turns them on)
   pre   missile prestep, ms: the server starts its missile that far ahead
   rl, pg, bfg   missile speeds
   mz, mzd   where shots start, units in front of the eye, standing and
@@ -173,7 +173,83 @@ void CG_PredictInfoUpdate(void)
 	{
 		memset(cg_predictedMissiles, 0, sizeof(cg_predictedMissiles));
 	}
+#ifdef CG_DEBUG_SERVER
+	if (CG_DBGP(CG_DBGP_STATE))
+	{
+		CG_DebugPredictStatus("CS 910 / serverinfo update");
+	}
+#endif
 }
+
+#ifdef CG_DEBUG_SERVER
+static const char* CG_DebugPredictSgPattern(int pattern)
+{
+	switch (pattern)
+	{
+		case SGP_VQ3:
+			return "vq3 (random)";
+		case SGP_CPM:
+			return "cpm (table + random)";
+		case SGP_CPMA:
+			return "cnq3/cpma (fixed)";
+		case SGP_QL:
+			return "ql (fixed rings)";
+		default:
+			return "?";
+	}
+}
+
+/*
+=======================
+CG_DebugPredictStatus
+
+cg_debugPredict 1: everything the predict switches on, and why it is off.
+=======================
+*/
+void CG_DebugPredictStatus(const char* why)
+{
+	const char* cs = CG_ConfigString(CS_OSP2BE_PREDICT);
+	const char* altFlags = Info_ValueForKey(CG_ConfigString(CS_SERVERINFO), "g_altFlags");
+	const int pattern = CG_ShotgunPatternType();
+
+	CG_Printf("^3=== predict state^7 (%s) ===\n", why);
+	CG_Printf("  CS %i: \"%s\"%s\n", CS_OSP2BE_PREDICT, cs,
+	          !cs[0] ? " ^1EMPTY^7" : (cs[0] == '\\' ? " (info form)" : " ^3(old form: missiles only)^7"));
+	CG_Printf("  serverinfo g_altFlags \"%s\" (not needed for the predict)\n", altFlags);
+	CG_Printf("  parsed: missiles %s, hitscan %s, seed %i, pre %i, rl %i pg %i bfg %i\n",
+	          cgs.missilePredictEnabled ? "^2on^7" : "^1off^7", cgs.hitscanPredictEnabled ? "^2on^7" : "^1off^7",
+	          cgs.hitscanPredictSeed, cgs.missilePrestep,
+	          cgs.missilePredictRlSpeed, cgs.missilePredictPgSpeed, cgs.missilePredictBfgSpeed);
+	CG_Printf("  damage: mg %i sg %i (outer %i, falloff %i/%i) lg %i rg %i, qd %.1f; mg spread %.0f / %.0f ducked\n",
+	          cgs.hitscanDamageMg, cgs.hitscanDamageSg, cgs.hitscanDamageSgOuter, cgs.hitscanSgFalloff,
+	          cgs.hitscanSgFalloffRange, cgs.hitscanDamageLg, cgs.hitscanDamageRg, cgs.hitscanQuadFactor,
+	          cgs.hitscanMgSpread, cgs.hitscanMgSpreadDucked);
+	CG_Printf("  shotgun pattern %s, qlMovement %i, gametype %i, cg_predictHitscan %i, cg_delag %i, cg_damagePlums %i\n",
+	          CG_DebugPredictSgPattern(pattern), cgs.qlMovement, cgs.gametype,
+	          cg_predictHitscan.integer, cg_delag.integer, cg_damagePlums.integer);
+
+	/* the verdict */
+	if (cgs.missilePredictEnabled)
+	{
+		CG_Printf("  ^2MISSILES: predicted^7 (RL PG BFG)\n");
+	}
+	else
+	{
+		CG_Printf("  ^1MISSILES: off^7 - CS 910 pr has no bit 1\n");
+	}
+	if (CG_HITSCAN_PREDICT_ON())
+	{
+		CG_Printf("  ^2HITSCAN: on^7 (%s): LG RG%s%s\n",
+		          cgs.hitscanPredictEnabled ? "server pr & 2, cg_predictHitscan on" : "no server pr & 2, forced by cg_predictHitscan",
+		          cgs.hitscanPredictSeed ? " MG" : " (no MG: no seed)",
+		          (cgs.hitscanPredictSeed || pattern == SGP_CPMA || pattern == SGP_QL) ? " SG" : " (no SG: no seed, random pattern)");
+	}
+	else
+	{
+		CG_Printf("  ^1HITSCAN: off^7 - cg_predictHitscan 0 (CS 910 pr & 2 %s)\n", cgs.hitscanPredictEnabled ? "is on" : "is off too");
+	}
+}
+#endif
 
 /*
 =======================
@@ -289,10 +365,10 @@ client sees, not waiting for the server. The server's sound and plum for the
 same hit are then skipped. The server may decide otherwise, and a false hit is
 the price.
 
-The server turns it on (CS 910 pr & 2) and gives the damage: then it is on
-whatever cg_predictHitscan is, and the plum follows cg_damagePlums. Without the
-server cg_predictHitscan 1 forces it, with the stock damage, and
-cg_predictHitscan 2 predicts the damage plum as well. LG and RG always,
+While it is tested, cg_predictHitscan 0 turns it off also when the server
+turns it on (CS 910 pr & 2). With the server the damage is the server's and the
+plum follows cg_damagePlums; without it cg_predictHitscan 1 forces it, with the
+stock damage, and cg_predictHitscan 2 predicts the damage plum as well. LG and RG always,
 MG and SG only when it seeds their spread from the command time (seed 1).
 
 The trace is the server's one: the time and the muzzle of the firing command,
@@ -305,7 +381,7 @@ cg_debugServer 6 logs predictions and server confirms to the console
 #define PHS_SOUND   1       /* pending: the server's hit sound is still to come */
 #define PHS_PLUM    2       /* pending: the server's damage plum is still to come */
 #ifdef CG_DEBUG_SERVER
-#define PHS_LOG     (cg_debugServer.integer == 6)
+#define PHS_LOG     (cg_debugServer.integer == 6 || CG_DBGP(CG_DBGP_HITSCAN))
 #endif
 
 #define PREDICT_HIT_LIGHTNING_RANGE 768
@@ -375,6 +451,80 @@ static qboolean CG_PredictHitscanWeapon(int weapon)
 		return (cgs.hitscanPredictSeed || pattern == SGP_CPMA || pattern == SGP_QL) ? qtrue : qfalse;
 	}
 	return qfalse;
+}
+
+/*
+Impacts of our own shots drawn at the shot (MG, SG, LG). The server's event of
+the same shot is then skipped. MG and SG events name the shooter; an LG impact
+(EV_MISSILE_HIT / MISS) does not, so it is taken by place: a predicted LG impact
+near it, not older than a ping and a bit.
+*/
+qboolean CG_PredictHitscanOwnImpact(int weapon, int shooter)
+{
+	if (shooter != cg.predictedPlayerState.clientNum || !CG_HITSCAN_PREDICT_ON() || !CG_PredictHitscanWeapon(weapon))
+	{
+		return qfalse;
+	}
+	if (cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	{
+		return qfalse;
+	}
+	return qtrue;
+}
+
+#define PREDICT_LG_IMPACTS      16
+#define PREDICT_LG_IMPACT_DIST  48.0f
+
+typedef struct
+{
+	int    time;    /* cg.time, 0 - free or taken */
+	vec3_t origin;
+} predictedImpact_t;
+
+static predictedImpact_t cg_predictedLgImpacts[PREDICT_LG_IMPACTS];
+
+void CG_PredictLightningImpactAdd(const vec3_t origin)
+{
+	int i;
+	predictedImpact_t* slot = &cg_predictedLgImpacts[0];
+
+	for (i = 0; i < PREDICT_LG_IMPACTS; i++)
+	{
+		if (cg_predictedLgImpacts[i].time < slot->time)
+		{
+			slot = &cg_predictedLgImpacts[i];
+		}
+	}
+	slot->time = cg.time;
+	VectorCopy(origin, slot->origin);
+}
+
+qboolean CG_PredictLightningImpactTake(const vec3_t origin)
+{
+	int i;
+	const int window = (cg.snap ? cg.snap->ping : 0) + PREDICT_HIT_CONFIRM_MS;
+	predictedImpact_t* best = NULL;
+
+	if (!CG_PredictHitscanOwnImpact(WP_LIGHTNING, cg.predictedPlayerState.clientNum))
+	{
+		return qfalse;
+	}
+	for (i = 0; i < PREDICT_LG_IMPACTS; i++)
+	{
+		predictedImpact_t* p = &cg_predictedLgImpacts[i];
+
+		if (p->time && cg.time - p->time <= window && Distance(p->origin, origin) < PREDICT_LG_IMPACT_DIST &&
+		        (!best || p->time < best->time))
+		{
+			best = p;
+		}
+	}
+	if (!best)
+	{
+		return qfalse;
+	}
+	best->time = 0;
+	return qtrue;
 }
 
 /*
@@ -633,6 +783,144 @@ static void CG_PredictHitscanAdd(int victim, int weapon, int damage)
 #endif
 }
 
+#ifdef CG_DEBUG_SERVER
+/*
+cg_debugPredict 8: is our MG / SG seed the server's one.
+SG: the server sends its seed in EV_SHOTGUN (eventParm). MG: it does not, so
+the seed is found from where the server's bullet hit: of the 256 seeds, the
+one whose ray goes nearest to that point.
+*/
+#define DBG_SEED_SHOTS 16
+
+typedef struct
+{
+	int    time;        /* cg.time, 0 - free */
+	int    weapon;
+	int    seed;        /* ours: the firing command's serverTime & 255 */
+	int    fireTime;
+	float  spread;
+	vec3_t muzzle, forward, right, up;
+} dbgSeedShot_t;
+
+static dbgSeedShot_t cg_dbgSeedShots[DBG_SEED_SHOTS];
+
+static void CG_DebugSeedRecord(int weapon, int fireTime, const vec3_t muzzle, const vec3_t forward,
+                               const vec3_t right, const vec3_t up, float spread)
+{
+	int i;
+	dbgSeedShot_t* shot = &cg_dbgSeedShots[0];
+
+	if (!CG_DBGP(CG_DBGP_SEED))
+	{
+		return;
+	}
+	for (i = 0; i < DBG_SEED_SHOTS; i++)
+	{
+		if (!cg_dbgSeedShots[i].time || cg_dbgSeedShots[i].time < shot->time)
+		{
+			shot = &cg_dbgSeedShots[i];
+			if (!shot->time)
+			{
+				break;
+			}
+		}
+	}
+	shot->time = cg.time;
+	shot->weapon = weapon;
+	shot->fireTime = fireTime;
+	shot->seed = fireTime & 255;
+	shot->spread = spread;
+	VectorCopy(muzzle, shot->muzzle);
+	VectorCopy(forward, shot->forward);
+	VectorCopy(right, shot->right);
+	VectorCopy(up, shot->up);
+}
+
+/* how far the ray of this MG seed goes from the point */
+static float CG_DebugSeedMgOff(const dbgSeedShot_t* shot, int s, const vec3_t point)
+{
+	int    seed = s;
+	float  r, u, along;
+	vec3_t end, dir, rel;
+
+	r = Q_random(&seed) * M_PI * 2.0f;
+	u = sin(r) * Q_crandom(&seed) * shot->spread * 16;
+	r = cos(r) * Q_crandom(&seed) * shot->spread * 16;
+	VectorMA(shot->muzzle, 8192 * 16, shot->forward, end);
+	VectorMA(end, r, shot->right, end);
+	VectorMA(end, u, shot->up, end);
+	VectorSubtract(end, shot->muzzle, dir);
+	VectorNormalize(dir);
+	VectorSubtract(point, shot->muzzle, rel);
+	along = DotProduct(rel, dir);
+	VectorMA(rel, -along, dir, rel);
+	return VectorLength(rel);
+}
+
+/* the server's shot of ours came: SG with its seed, MG (serverSeed -1) with where it hit */
+void CG_DebugPredictSeedServer(int weapon, const vec3_t point, int serverSeed)
+{
+	int i;
+	dbgSeedShot_t* shot = NULL;
+
+	if (!CG_DBGP(CG_DBGP_SEED))
+	{
+		return;
+	}
+	for (i = 0; i < DBG_SEED_SHOTS; i++)
+	{
+		dbgSeedShot_t* s = &cg_dbgSeedShots[i];
+
+		if (s->time && s->weapon == weapon && cg.time - s->time < 1000 && (!shot || s->time < shot->time))
+		{
+			shot = s;
+		}
+	}
+	if (!shot)
+	{
+		CG_Printf("^3seed^7 %s: server %s, ^1no predicted shot^7 to compare (hitscan predict off, or MG/SG not predicted)\n",
+		          weapon == WP_SHOTGUN ? "SG" : "MG", serverSeed >= 0 ? va("%i", serverSeed) : "hit");
+		return;
+	}
+	shot->time = 0;
+
+	if (weapon == WP_SHOTGUN)
+	{
+		const int delta = (serverSeed - shot->seed) & 255;
+
+		CG_Printf("^3seed^7 SG: ours ^5%i^7 (cmd %i), server ^5%i^7 -> %s\n", shot->seed, shot->fireTime, serverSeed,
+		          delta == 0 ? "^2MATCH^7" : va("^1DIFFER^7 by %+i (server = cmd %+i ms, & 255)", delta > 127 ? delta - 256 : delta, delta > 127 ? delta - 256 : delta));
+		return;
+	}
+
+	{
+		const float ours = CG_DebugSeedMgOff(shot, shot->seed, point);
+		int   best = 0;
+		float bestOff = 1e9f;
+		int   delta;
+
+		for (i = 0; i < 256; i++)
+		{
+			const float off = CG_DebugSeedMgOff(shot, i, point);
+
+			if (off < bestOff)
+			{
+				bestOff = off;
+				best = i;
+			}
+		}
+		delta = (best - shot->seed) & 255;
+		if (delta > 127)
+		{
+			delta -= 256;
+		}
+		CG_Printf("^3seed^7 MG: ours ^5%i^7 (cmd %i) off %.1fu, server hit fits seed ^5%i^7 (off %.1fu), %.0fu away -> %s\n",
+		          shot->seed, shot->fireTime, ours, best, bestOff, Distance(point, shot->muzzle),
+		          ours <= bestOff + 1.0f ? "^2MATCH^7" : va("^1DIFFER^7 by %i (server cmd time %+i ms?)", delta, delta));
+	}
+}
+#endif
+
 static void CG_PredictHitscanFire(int weapon)
 {
 	const playerState_t* ps = &cg.predictedPlayerState;
@@ -645,18 +933,49 @@ static void CG_PredictHitscanFire(int weapon)
 
 	if (!CG_PredictHitscanWeapon(weapon))
 	{
+#ifdef CG_DEBUG_SERVER
+		if (PHS_LOG && weapon != WP_GAUNTLET && weapon != WP_ROCKET_LAUNCHER && weapon != WP_PLASMAGUN &&
+		        weapon != WP_BFG && weapon != WP_GRENADE_LAUNCHER)
+		{
+			CG_Printf("^3phs:^7 wp %i ^1not predicted^7: %s\n", weapon,
+			          weapon == WP_MACHINEGUN ? "MG needs seed 1 in CS 910" :
+			          weapon == WP_SHOTGUN ? "SG needs seed 1, or a fixed pattern (CPMA / QL)" : "not a hitscan weapon");
+		}
+#endif
 		return;
 	}
 	if (cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg.intermissionStarted ||
 	        cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
 	{
+#ifdef CG_DEBUG_SERVER
+		if (PHS_LOG)
+		{
+			CG_Printf("^3phs:^7 wp %i ^1skipped^7: demo %i follow %i intermission %i spectator %i\n", weapon,
+			          cg.demoPlayback, (cg.snap->ps.pm_flags & PMF_FOLLOW) ? 1 : 0, cg.intermissionStarted,
+			          cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR);
+		}
+#endif
 		return;
 	}
 	/* no damage there: the freeze round warmup, and the Clan Arena warmup */
 	if ((cgs.q3mskRoundWarmup && cgs.roundStartState == 2) || (cgs.gametype == GT_CA && cg.warmup))
 	{
+#ifdef CG_DEBUG_SERVER
+		if (PHS_LOG)
+		{
+			CG_Printf("^3phs:^7 wp %i ^1skipped^7: warmup with no damage\n", weapon);
+		}
+#endif
 		return;
 	}
+#ifdef CG_DEBUG_SERVER
+	if (PHS_LOG)
+	{
+		CG_Printf("^3phs:^7 fire wp %i, cmd %s (%i), ping %i\n", weapon,
+		          (cg.missileFireValid && cg.missileFireTime <= cg.time && cg.time - cg.missileFireTime < 250) ? "stashed" : "^3not stashed^7",
+		          cg.missileFireValid ? cg.time - cg.missileFireTime : -1, cg.snap->ping);
+	}
+#endif
 
 	/* the firing command, as the server will run it */
 	if (cg.missileFireValid && cg.missileFireTime <= cg.time && cg.time - cg.missileFireTime < 250)
@@ -704,6 +1023,20 @@ static void CG_PredictHitscanFire(int weapon)
 		memset(damage, 0, sizeof(damage));
 		/* the quad is in: per pellet, and on QL before the falloff */
 		CG_ShotgunPatternDamage(muzzle, dir, fireTime & 255, ps->clientNum, quad, damage);
+#ifdef CG_DEBUG_SERVER
+		CG_DebugSeedRecord(WP_SHOTGUN, fireTime, muzzle, forward, right, up, 0.0f);
+#endif
+		/* the blast at once, against the same poses: smoke, tracers, marks, blood; the server's EV_SHOTGUN is skipped */
+		{
+			entityState_t es;
+
+			memset(&es, 0, sizeof(es));
+			VectorCopy(muzzle, es.pos.trBase);
+			VectorCopy(dir, es.origin2);
+			es.eventParm = fireTime & 255;
+			es.otherEntityNum = ps->clientNum;
+			CG_ShotgunFire(&es);
+		}
 		CG_PredictHitscanSwapPoses();
 		for (i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -727,6 +1060,9 @@ static void CG_PredictHitscanFire(int weapon)
 		VectorMA(muzzle, 8192 * 16, forward, end);
 		VectorMA(end, r, right, end);
 		VectorMA(end, u, up, end);
+#ifdef CG_DEBUG_SERVER
+		CG_DebugSeedRecord(WP_MACHINEGUN, fireTime, muzzle, forward, right, up, spread);
+#endif
 	}
 	else
 	{
@@ -773,6 +1109,31 @@ static void CG_PredictHitscanFire(int weapon)
 	CG_Trace(&trace, muzzle, vec3_origin, vec3_origin, end, ps->clientNum, MASK_SHOT);
 	CG_PredictHitscanSwapPoses();
 
+	/* the impact at once; the server's one of ours is skipped (CG_PredictHitscanOwnImpact) */
+	if (trace.fraction < 1.0f && !(trace.surfaceFlags & SURF_NOIMPACT))
+	{
+		const qboolean flesh = (trace.entityNum < MAX_CLIENTS &&
+		                        cg_entities[trace.entityNum].currentState.eType == ET_PLAYER) ? qtrue : qfalse;
+
+		if (weapon == WP_MACHINEGUN)
+		{
+			CG_Bullet(trace.endpos, ps->clientNum, trace.plane.normal, flesh, trace.entityNum);
+		}
+		else
+		{
+			CG_PredictLightningImpactAdd(trace.endpos);
+			if (flesh)
+			{
+				CG_MissileHitPlayer(WP_LIGHTNING, trace.endpos, trace.plane.normal, trace.entityNum);
+			}
+			else
+			{
+				CG_MissileHitWall(WP_LIGHTNING, ps->clientNum, trace.endpos, trace.plane.normal,
+				                  (trace.surfaceFlags & SURF_METALSTEPS) ? IMPACTSOUND_METAL : IMPACTSOUND_DEFAULT);
+			}
+		}
+	}
+
 	if (trace.fraction < 1.0f && !(trace.surfaceFlags & SURF_NOIMPACT) && CG_PredictHitscanTarget(trace.entityNum))
 	{
 		int damage;
@@ -788,6 +1149,13 @@ static void CG_PredictHitscanFire(int weapon)
 		}
 		CG_PredictHitscanAdd(trace.entityNum, weapon, (int)(damage * quad));
 	}
+#ifdef CG_DEBUG_SERVER
+	else if (PHS_LOG)
+	{
+		CG_Printf("^3phs:^7 wp %i miss: frac %.2f ent %i%s\n", weapon, trace.fraction, trace.entityNum,
+		          (trace.fraction < 1.0f && trace.entityNum < MAX_CLIENTS) ? " (a player, not a target: team / dead / us)" : "");
+	}
+#endif
 }
 #endif
 
@@ -800,7 +1168,7 @@ lightning gun is done in CG_LightningBolt, since it was just a matter
 of setting the right origin and angles.
 
 Also spawns local RL/PG/BFG bolts when server advertises missile predict
-(RAT_PREDICTMISSILES + CS_OSP2BE_PREDICT).
+(CS_OSP2BE_PREDICT pr & 1).
 =======================
 */
 void CG_PredictWeaponEffects(centity_t* cent)
@@ -818,11 +1186,30 @@ void CG_PredictWeaponEffects(centity_t* cent)
 	{
 		CG_PredictHitscanFire(ent->weapon);
 	}
+#ifdef CG_DEBUG_SERVER
+	else if (CG_DBGP(CG_DBGP_HITSCAN) && (ent->weapon == WP_MACHINEGUN || ent->weapon == WP_SHOTGUN ||
+	         ent->weapon == WP_LIGHTNING || ent->weapon == WP_RAILGUN))
+	{
+		CG_Printf("^3phs:^7 wp %i ^1off^7: cg_predictHitscan 0\n", ent->weapon);
+	}
+#endif
+#endif
+#ifdef CG_DEBUG_SERVER
+	if (CG_DBGP(CG_DBGP_MISSILE) && (ent->weapon == WP_ROCKET_LAUNCHER || ent->weapon == WP_PLASMAGUN || ent->weapon == WP_BFG))
+	{
+		if (!cgs.missilePredictEnabled || cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW))
+		{
+			CG_Printf("^3pms:^7 fire wp %i ^1no bolt^7: %s%s%s\n", ent->weapon,
+			          cgs.missilePredictEnabled ? "" : "CS 910 pr has no bit 1 ",
+			          cg.demoPlayback ? "demo " : "", (cg.snap->ps.pm_flags & PMF_FOLLOW) ? "follow" : "");
+		}
+	}
 #endif
 
 
 	// was it a rail attack?
-	if (ent->weapon == WP_RAILGUN && (cg_delag.integer & 1 || cg_delag.integer & 4) && !cg.demoPlayback)
+	/* the rail at the shot: cg_delag 1/4, or with the hitscan predict on */
+	if (ent->weapon == WP_RAILGUN && (cg_delag.integer & 1 || cg_delag.integer & 4 || CG_HITSCAN_PREDICT_ON()) && !cg.demoPlayback)
 	{
 		vec3_t      muzzlePoint, forward, right, up;
 		trace_t trace;
@@ -862,7 +1249,7 @@ void CG_PredictWeaponEffects(centity_t* cent)
 			CG_MissileHitWall(ent->weapon, cg.predictedPlayerState.clientNum, trace.endpos, trace.plane.normal, IMPACTSOUND_DEFAULT);
 		}
 	}
-	else if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
+	else if (cgs.missilePredictEnabled
 	         && !cg.demoPlayback
 	         && !(cg.snap->ps.pm_flags & PMF_FOLLOW)
 	         && (ent->weapon == WP_ROCKET_LAUNCHER
@@ -877,6 +1264,8 @@ void CG_PredictWeaponEffects(centity_t* cent)
 		int ping;
 		int lifetime;
 		int fireTime;
+		qboolean stashed = cg.missileFireValid;
+
 		if (cg.missileFireValid)
 		{
 			fireTime = cg.missileFireTime;
@@ -955,6 +1344,15 @@ void CG_PredictWeaponEffects(centity_t* cent)
 		/* until the network missile is here: a ping and some ticks (fps holds the tick) */
 		lifetime = ping + 3 * fps + 50;
 		pm->removeTime = cg.time + lifetime;
+#ifdef CG_DEBUG_SERVER
+		if (CG_DBGP(CG_DBGP_MISSILE))
+		{
+			CG_Printf("^3pms:^7 fire wp %i ^2bolt^7 #%i: trTime %i (cmd %i - pre %i), %s, speed %i, lives %i ms (ping %i, tick %i)\n",
+			          ent->weapon, (int)(pm - cg_predictedMissiles), pm->pos.trTime, fireTime, cgs.missilePrestep,
+			          stashed ? "cmd stashed" : "^3cmd not stashed^7",
+			          speed, lifetime, ping, fps);
+		}
+#endif
 	}
 	// do not delag shotgun and machinegun for comaptibility to old OSP servers
 }
@@ -975,7 +1373,21 @@ void CG_AddPredictedMissiles(void)
 	const weaponInfo_t* weapon;
 	trace_t tr;
 
-	if (!(cgs.ratFlags & RAT_PREDICTMISSILES) || !cgs.missilePredictEnabled)
+#ifdef CG_DEBUG_SERVER
+	{
+		static int lastDebugPredict;
+
+		if (cg_debugPredict.integer != lastDebugPredict)
+		{
+			lastDebugPredict = cg_debugPredict.integer;
+			if (CG_DBGP(CG_DBGP_STATE))
+			{
+				CG_DebugPredictStatus("cg_debugPredict set");
+			}
+		}
+	}
+#endif
+	if (!cgs.missilePredictEnabled)
 	{
 		return;
 	}
@@ -993,6 +1405,14 @@ void CG_AddPredictedMissiles(void)
 		}
 		if (pm->removeTime < cg.time)
 		{
+#ifdef CG_DEBUG_SERVER
+			if (CG_DBGP(CG_DBGP_MISSILE))
+			{
+				CG_Printf("^3pms:^7 bolt #%i wp %i %s\n", i, pm->weapon,
+				          pm->exploded ? "done (exploded, no network missile took it)" :
+				          "^1expired^7: no network missile took it over (CG_Missile handoff found none)");
+			}
+#endif
 			pm->active = qfalse;
 			continue;
 		}

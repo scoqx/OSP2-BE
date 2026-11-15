@@ -810,7 +810,7 @@ static void CG_Missile(centity_t* cent)
 	 * The server's trTime is about a ping + a tick after the predicted one; take
 	 * the bolt nearest to that, so a fast PG stream pairs in order.
 	 */
-	if ((cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled
+	if (cgs.missilePredictEnabled
 	        && s1->otherEntityNum == cg.clientNum
 	        && (s1->weapon == WP_ROCKET_LAUNCHER
 	            || s1->weapon == WP_PLASMAGUN
@@ -856,6 +856,22 @@ static void CG_Missile(centity_t* cent)
 				bestErr = err;
 			}
 		}
+#ifdef CG_DEBUG_SERVER
+		if (CG_DBGP(CG_DBGP_MISSILE))
+		{
+			if (best >= 0)
+			{
+				CG_Printf("^3pms:^7 network wp %i #%i ^2took bolt #%i^7: trTime - bolt %i ms (expected ping %i + tick %i, off %i)\n",
+				          s1->weapon, s1->number, best, s1->pos.trTime - cg_predictedMissiles[best].pos.trTime,
+				          ping, tick, bestErr);
+			}
+			else
+			{
+				CG_Printf("^3pms:^7 network wp %i #%i ^1no bolt to take^7 (window -%i..+%i ms)\n",
+				          s1->weapon, s1->number, window, lateMax);
+			}
+		}
+#endif
 		if (best >= 0)
 		{
 			CG_MissileHandoffSet(cent, best);
@@ -1387,7 +1403,7 @@ void CG_CalcEntityLerpPositions(centity_t* cent)
 #endif
 		if (cg_projectileNudge.integer)
 		{
-			const qboolean predictOn = (cgs.ratFlags & RAT_PREDICTMISSILES) && cgs.missilePredictEnabled;
+			const qboolean predictOn = cgs.missilePredictEnabled;
 			/*
 			 * The real tick, steady through a snapshot gap. The snapshot pair (OSP2)
 			 * is 0 with no next snapshot and 2-3 ticks after a late one, so at
