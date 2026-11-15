@@ -86,6 +86,7 @@ itemInfo_t          cg_items[MAX_ITEMS];
 
 
 vmCvar_t           osp_client;
+vmCvar_t           cg_xName;
 vmCvar_t           osp_hidden;
 vmCvar_t           osp_debug;
 vmCvar_t           cg_autoswitch;
@@ -659,6 +660,7 @@ cgFontIndices_t cgFontIndices;
 cvarTable_t cvarTable[] =
 {
 	{ &osp_client, "osp_client", XSTRINGIFY(OSP_CLIENT), CVAR_USERINFO | CVAR_ROM },
+	{ &cg_xName, "x_name", "", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &osp_hidden, "osp_print_issues", "0", CVAR_ARCHIVE },
 	{ &osp_debug, "osp_debug", "0", CVAR_ARCHIVE },
 	{ &cg_autoswitch, "cg_autoswitch", "0", CVAR_ARCHIVE },
@@ -2701,6 +2703,27 @@ const char* CG_ConfigString(int index)
 		CG_Error("CG_ConfigString: bad index: %i", index);
 	}
 	return cgs.gameState.stringData + cgs.gameState.stringOffsets[ index ];
+}
+
+/*
+=================
+CG_ConfigStringName
+
+Player name from a CS_PLAYERS configstring: prefers the extended "xn" name
+(xq3osp servers, sourced from the client's x_name userinfo key, up to 512 chars)
+and falls back to the legacy "n" key on plain servers.
+=================
+*/
+const char* CG_ConfigStringName(const char* info)
+{
+	const char* v;
+
+	v = Info_ValueForKey(info, "xn");
+	if (!v[0])
+	{
+		v = Info_ValueForKey(info, "n");
+	}
+	return v;
 }
 
 //==================================================================

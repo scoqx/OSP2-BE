@@ -186,11 +186,11 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 	{
 		if (cgs.gametype >= GT_TEAM && (element->config.style.isSet && element->config.style.value == 2))
 		{
-			Q_strncpyz(entry->runtime.attackerName, cgs.clientinfo[entry->attacker].name_clean, MAX_QPATH);
+			Q_strncpyz(entry->runtime.attackerName, cgs.clientinfo[entry->attacker].name_clean, sizeof(entry->runtime.attackerName));
 		}
 		else
 		{
-			Q_strncpyz(entry->runtime.attackerName, cgs.clientinfo[entry->attacker].name, MAX_QPATH);
+			Q_strncpyz(entry->runtime.attackerName, cgs.clientinfo[entry->attacker].name, sizeof(entry->runtime.attackerName));
 		}
 	}
 
@@ -198,11 +198,11 @@ static void CG_SHUDElementObituariesInitializeRuntime(shudElementObituaries_t* e
 	{
 		if (cgs.gametype >= GT_TEAM && (element->config.style.isSet && element->config.style.value == 2))
 		{
-			Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name_clean, MAX_QPATH);
+			Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name_clean, sizeof(entry->runtime.targetName));
 		}
 		else
 		{
-			Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name, MAX_QPATH);
+			Q_strncpyz(entry->runtime.targetName, cgs.clientinfo[entry->target].name, sizeof(entry->runtime.targetName));
 		}
 	}
 

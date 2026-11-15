@@ -82,15 +82,13 @@ void* CG_SHUDElementCenterMessageCreate(const superhudConfig_t* config)
 void CG_SHUDElementCenterMessageRoutine(void* context)
 {
 	shudElementCenterMessage_t* element = (shudElementCenterMessage_t*)context;
-	char* to_print;
-	char* end;
+	const char* to_print;
+	const char* end;
 	float startY;
 	float lineH;
 	float y;
 	float fadeAlpha;
 	int lineCount;
-	int i;
-	int space;
 	int wrapChars;
 	char buf[SHUD_CENTERMSG_WRAP_MAX + 1];
 
@@ -148,30 +146,7 @@ void CG_SHUDElementCenterMessageRoutine(void* context)
 	end = cg.centerPrint + sizeof(cg.centerPrint);
 	while (to_print < end && *to_print != 0)
 	{
-		space = 0;
-		i = 0;
-		do
-		{
-			if (to_print[i] == ' ')
-			{
-				space = i;
-			}
-			if (!to_print[i] || to_print[i] == '\n')
-			{
-				space = i;
-				break;
-			}
-		}
-		while (++i < wrapChars);
-
-		if (space && space != i)
-		{
-			to_print += space + 1;
-		}
-		else
-		{
-			to_print += i + 1;
-		}
+		to_print = CG_CenterWrapLine(to_print, wrapChars, buf, sizeof(buf));
 		lineCount++;
 	}
 
@@ -199,33 +174,7 @@ void CG_SHUDElementCenterMessageRoutine(void* context)
 	to_print = cg.centerPrint;
 	while (to_print < end && *to_print != 0)
 	{
-		space = 0;
-		i = 0;
-		do
-		{
-			if (to_print[i] == ' ')
-			{
-				space = i;
-			}
-			if (!to_print[i] || to_print[i] == '\n')
-			{
-				space = i;
-				break;
-			}
-			buf[i] = to_print[i];
-		}
-		while (++i < wrapChars);
-
-		if (space && space != i)
-		{
-			buf[space] = 0;
-			to_print += space + 1;
-		}
-		else
-		{
-			buf[i] = 0;
-			to_print += i + 1;
-		}
+		to_print = CG_CenterWrapLine(to_print, wrapChars, buf, sizeof(buf));
 
 		element->ctx.coord.named.x = element->baseX;
 		element->ctx.coord.named.y = y;

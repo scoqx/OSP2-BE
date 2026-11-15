@@ -1052,8 +1052,8 @@ typedef struct
 		vec4_t attackerColor;
 		vec4_t targetColor;
 		vec4_t enemyColor;
-		char attackerName[MAX_QPATH];
-		char targetName[MAX_QPATH];
+		char attackerName[MAX_CLIENTNAME];
+		char targetName[MAX_CLIENTNAME];
 		int maxVisibleChars;
 		float baseX;
 		float attackerWidth;

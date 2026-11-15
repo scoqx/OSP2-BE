@@ -455,7 +455,7 @@ void CG_LoadingClient(int clientNum)
 		}
 	}
 
-	Q_strncpyz(personality, Info_ValueForKey(info, "n"), sizeof(personality));
+	Q_strncpyz(personality, CG_ConfigStringName(info), sizeof(personality));
 	Q_CleanStr(personality);
 
 	if (cgs.gametype == GT_SINGLE_PLAYER)

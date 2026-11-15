@@ -25,7 +25,7 @@ void CG_SHUDElementPlayerNameRoutine(void* context)
 {
 	shudElementPlayerName* element = (shudElementPlayerName*)context;
 
-	char textBuffer[MAX_QPATH];
+	char textBuffer[MAX_CLIENTNAME];
 
 	int clientNum = cg.snap->ps.clientNum;
 

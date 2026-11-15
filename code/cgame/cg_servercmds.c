@@ -2443,8 +2443,8 @@ static void CG_ReplacePlayerNameInChat(char* text, int textSize, int clientNum)
 	/* Replacement names end with '*' character in name_clean */
 	{
 		int nameCleanLen;
-		char replacementNameClean[MAX_QPATH];
-		char tempName[MAX_QPATH];
+		char replacementNameClean[MAX_CLIENTNAME];
+		char tempName[MAX_CLIENTNAME];
 		const char* nameInCiName;
 		const char* nameStart;
 		const char* nameEnd;
@@ -3280,7 +3280,7 @@ void CG_ServerCommand(void)
 
 				if (isTellMessage && ma == MESSAGE_ALLOWED_PLAYER)
 				{
-					char senderName[MAX_QPATH];
+					char senderName[MAX_CLIENTNAME];
 					int  replyTo;
 
 					if (CG_ChatExtractSenderName(rawChat, senderName, sizeof(senderName)))

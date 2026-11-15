@@ -474,13 +474,16 @@ typedef struct playerColors_s
 #define SKIN_TYPE_PM        1
 #define SKIN_TYPE_FB        2
 
+// matches the server-side netname limit (xq3osp game/g_local.h MAX_NETNAME)
+#define MAX_CLIENTNAME      512
+
 typedef struct
 {
 	qboolean        infoValid;
 
-	char            name_original[MAX_QPATH];
-	char            name_clean[MAX_QPATH];
-	char            name[MAX_QPATH];
+	char            name_original[MAX_CLIENTNAME];
+	char            name_clean[MAX_CLIENTNAME];
+	char            name[MAX_CLIENTNAME];
 	qboolean        nameIsInvisible;
 	team_t          team; // best
 
@@ -980,7 +983,7 @@ typedef struct
 	globalRoundStatsSettings_t roundStatsSettings;
 	qboolean    scoreBoardShowing;
 	int         scoreFadeTime;
-	char        killerName[MAX_NAME_LENGTH];
+	char        killerName[MAX_CLIENTNAME];
 	char        spectatorList[MAX_STRING_CHARS];        // list of names
 	int         spectatorLen;                                               // length of list
 	float       spectatorWidth;                                         // width in device units
@@ -2198,6 +2201,7 @@ extern  itemInfo_t      cg_items[MAX_ITEMS];
 extern  markPoly_t      cg_markPolys[MAX_MARK_POLYS];
 
 extern vmCvar_t           osp_client;
+extern vmCvar_t           cg_xName;
 extern vmCvar_t           osp_hidden;
 extern vmCvar_t           osp_debug;
 extern vmCvar_t           cg_autoswitch;
@@ -2797,6 +2801,7 @@ extern cvarTable_t cvarTable[];
 extern int cvarTableSize;
 
 const char* CG_ConfigString(int index);
+const char* CG_ConfigStringName(const char* info);
 const char* CG_Argv(int arg);
 
 void QDECL CG_Printf(const char* msg, ...);
@@ -3019,6 +3024,7 @@ typedef struct
 text_command_t* CG_CompileText(const char* text, int flags);
 void CG_CompiledTextDestroy(text_command_t* root);
 qboolean CG_TextControlDisabled(char controlChar);
+const char* CG_CenterWrapLine(const char* text, int wrapChars, char* buf, int bufSize);
 void CG_OSPDrawGradientFrame(float x, float y, float width, float height, int border, int direction, float speed, float gradientScale, int colored);
 
 extern vec4_t defaultBorderSize;

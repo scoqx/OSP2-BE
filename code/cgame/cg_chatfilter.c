@@ -300,7 +300,7 @@ int CG_ChatClientNumFromSenderName(const char* senderName)
 
 int CG_ChatResolveSenderClientNum(const char* rawMessage, int serverClientNum)
 {
-	char senderName[MAX_QPATH];
+	char senderName[MAX_CLIENTNAME];
 
 	if (serverClientNum >= 0 && serverClientNum < MAX_CLIENTS && cgs.clientinfo[serverClientNum].infoValid)
 	{
@@ -319,7 +319,7 @@ int CG_ChatResolveSenderClientNum(const char* rawMessage, int serverClientNum)
 messageAllowed_t CG_ChatCheckMessageAllowed(const char* message)
 {
 	const chatFilterTableNode_t* target;
-	char name[MAX_QPATH];
+	char name[MAX_CLIENTNAME];
 
 	if (!CG_ChatExtractSenderName(message, name, sizeof(name)))
 	{

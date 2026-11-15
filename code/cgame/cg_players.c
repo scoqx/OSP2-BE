@@ -2086,7 +2086,7 @@ static void CG_GenerateReplacementName(unsigned short xid, const char* originalN
 	int originalColorCode;
 	const char* selectedName;
 	int attempt;
-	char tmpName[MAX_QPATH];
+	char tmpName[MAX_CLIENTNAME];
 
 	/* Initialize hash */
 	CRC_Init(&hash);
@@ -2243,8 +2243,8 @@ static void CG_PlayerNameApplyDisplay(clientInfo_t* ci, int clientNum, qboolean 
 	qboolean useXID;
 	qboolean willGetReplacementName;
 	qboolean isNoname;
-	char replacementName[MAX_QPATH];
-	char nameCodesBuf[MAX_QPATH * 2];
+	char replacementName[MAX_CLIENTNAME];
+	char nameCodesBuf[MAX_CLIENTNAME * 2];
 	const char* displayName;
 	const char* nameForColor;
 
@@ -2487,9 +2487,9 @@ void CG_NewClientInfo(int clientNum)
 	CG_PlayerXIDCalc(configstring, &newInfo);
 
 	// isolate the player's name
-	v = Info_ValueForKey(configstring, "n");
-	Q_strncpyz(newInfo.name_original, v, sizeof(newInfo.name));
-	Q_strncpyz(newInfo.name_clean, v, sizeof(newInfo.name));
+	v = CG_ConfigStringName(configstring);
+	Q_strncpyz(newInfo.name_original, v, sizeof(newInfo.name_original));
+	Q_strncpyz(newInfo.name_clean, v, sizeof(newInfo.name_clean));
 	CG_RemoveChatEscapeCharAll(newInfo.name_clean);
 	newInfo.nameIsInvisible = CG_PlayerNameIsInvisible(&newInfo);
 
