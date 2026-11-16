@@ -2487,6 +2487,10 @@ void CG_NewClientInfo(int clientNum)
 	CG_PlayerXIDCalc(configstring, &newInfo);
 
 	// isolate the player's name
+	if (!cgs.serverHasXName && Info_ValueForKey(configstring, "xn")[0])
+	{
+		cgs.serverHasXName = qtrue;
+	}
 	v = CG_ConfigStringName(configstring);
 	Q_strncpyz(newInfo.name_original, v, sizeof(newInfo.name_original));
 	Q_strncpyz(newInfo.name_clean, v, sizeof(newInfo.name_clean));

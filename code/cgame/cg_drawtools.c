@@ -769,7 +769,7 @@ const char* CG_CenterWrapLine(const char* text, int wrapChars, char* buf, int bu
 	if (s == text && *s && *s != '\n')
 	{
 		/* safety: never return without making progress */
-		s += 2;
+		s += s[1] ? 2 : 1;
 	}
 
 	buf[bi] = '\0';

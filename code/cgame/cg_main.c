@@ -2718,12 +2718,16 @@ const char* CG_ConfigStringName(const char* info)
 {
 	const char* v;
 
-	v = Info_ValueForKey(info, "xn");
-	if (!v[0])
+	/* plain servers never send "xn": skip the extra info scan (per-frame callers) */
+	if (cgs.serverHasXName)
 	{
-		v = Info_ValueForKey(info, "n");
+		v = Info_ValueForKey(info, "xn");
+		if (v[0])
+		{
+			return v;
+		}
 	}
-	return v;
+	return Info_ValueForKey(info, "n");
 }
 
 //==================================================================

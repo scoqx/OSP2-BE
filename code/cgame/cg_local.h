@@ -2167,6 +2167,7 @@ typedef struct
 	newStatsInfo_t newStats;
 	newStatsInfo_t statsAll[MAX_CLIENTS];
 	int             itemCatalogMode; /* CS 890 leading hex nibble: bitmask 1=shadow 2=pui 4=spawns 8=tpexit */
+	qboolean        serverHasXName; /* some CS_PLAYERS carried "xn" (extended name), set in CG_NewClientInfo */
 } cgs_t;
 
 /* Crosshair colors/distance (top-level global) */
