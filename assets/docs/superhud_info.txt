@@ -261,6 +261,14 @@ execute { cg_fov 100; exec myconfig.cfg }
 - Style 1 - цвет значений задаётся через `color` для > healthMid и `color2` для < healthMid
 - Style 2 - Ограничивает вывод значением 999
 
+### Score_OWN, Score_NME
+
+- Цвета зависят от того, ваша ли ячейка: `Color2` / `BgColor2` / `BorderColor2` - ваша, `Color` / `BgColor` / `BorderColor` - не ваша. Если `...2` не задан, используется основной цвет. Для текста и для поля логика одинаковая.
+- Ваша ячейка: в командных режимах - всегда `Score_OWN`; в FFA - ячейка с вашим счётом.
+- `Image` + `Rect` - режим поля: фон (`Fill` + `BgColor`), картинка и рамка (`Border` + `BorderColor`) рисуются на весь `Rect`, а не вокруг текста.
+- Пример пустого поля 40x40 с жёлтой рамкой только на своей ячейке:
+  `Score_NME { rect 0 0 40 40; image white; color 0 0 0 0; border 1 1 1 1; bordercolor 0 0 0 0; bordercolor2 1 1 0 1 }`
+
 ### Score_Limit, Timelimit
 
 - Команда `Text` задаёт свой текст, который выводится перед числовым значением (без `Text` — только число). Пример: `text "Limit: "` → `Limit: 20`

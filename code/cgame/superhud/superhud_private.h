@@ -1246,6 +1246,7 @@ void CG_SHUDParseWeaponMaxValue(const char* valueStr, int* maxammo, int arraySiz
 void CG_SHUDFillAndFrameForText(superhudConfig_t* cfg, superhudTextContext_t* ctx);
 qboolean CG_SHUDDrawBorder(const superhudConfig_t* cfg);
 void CG_SHUDConfigPickBorderColor(const superhudConfig_t* config, float* color, qboolean alphaOverride);
+void CG_SHUDConfigPickColorValue(const superhudColor_t* value, float* color);
 void CG_SHUDDrawBorderDirect(const superhudCoord_t* coord, const vec4_t border, const vec4_t borderColor);
 
 #ifdef __cplusplus

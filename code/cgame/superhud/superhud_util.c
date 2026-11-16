@@ -219,6 +219,13 @@ void CG_SHUDConfigPickBgColor(const superhudConfig_t* config, float* color, qboo
 	                              color, alphaOverride);
 }
 
+void CG_SHUDConfigPickColorValue(const superhudColor_t* value, float* color)
+{
+	qboolean isSet = qtrue;
+	qboolean altIsSet = qfalse;
+	CG_SHUDConfigPickColorGeneric(&isSet, value, &altIsSet, value, color, qtrue);
+}
+
 void CG_SHUDConfigPickBorderColor(const superhudConfig_t* config, float* color, qboolean alphaOverride)
 {
 	CG_SHUDConfigPickColorGeneric(&config->borderColor.isSet, &config->borderColor.value,
