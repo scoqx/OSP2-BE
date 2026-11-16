@@ -970,7 +970,7 @@ float CG_DrawAttacker(float y)
 	else
 	{
 		info = CG_ConfigString(CS_PLAYERS + clientNum);
-		name = Info_ValueForKey(info, "n");
+		name = CG_ConfigStringName(info);
 	}
 	y += size;
 	CG_DrawBigString(SCREEN_WIDTH - 1, y, name, 0.5f, DS_HRIGHT | DS_SHADOW, 0);
@@ -4894,7 +4894,7 @@ void CG_OSPDraw3DModel(float x, float y, float w, float h, qhandle_t model, qhan
 void CG_OSPDrawCenterString(void)
 {
 	float* fadeColor;
-	char* to_print;
+	const char* to_print;
 	int y;
 	int font = cgFontIndices.centerMessages;
 	if (!cg_drawCenterMessages.integer)
@@ -4912,37 +4912,10 @@ void CG_OSPDrawCenterString(void)
 	y = cg.centerPrintY - (cg.centerPrintLines * 8);
 	for (to_print = cg.centerPrint; to_print < (to_print + sizeof(cg.centerPrint)) && *to_print != 0;)
 	{
-		int i;
-		int space;
-		char buf[48];
+		char buf[256];
 		int flags = (cg_drawCenterMessages.integer & 2) ? DS_SHADOW : 0;
-		space = 0;
-		i = 0;
-		do
-		{
-			if (to_print[i] == ' ')
-			{
-				space = i;
-			}
-			if (!to_print[i] || to_print[i] == '\n')
-			{
-				space = i;
-				break;
-			}
-			buf[i]  = to_print[i];
-		}
-		while (++i < 40);
 
-		if (space && space != i)
-		{
-			buf[space] = 0;
-			to_print += space + 1;
-		}
-		else
-		{
-			buf[i] = 0;
-			to_print += i + 1;
-		}
+		to_print = CG_CenterWrapLine(to_print, 40, buf, sizeof(buf));
 
 		CG_OSPDrawStringNew(SCREEN_WIDTH / 2.0f,
 		                    y,

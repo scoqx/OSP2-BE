@@ -685,8 +685,98 @@ void CG_DrawSmallStringColor(int x, int y, const char* s, vec4_t color, int flag
 /*
  * Text compiler
  */
-qboolean CG_TextControlDisabled(char controlChar)
+static qboolean CG_WrapIsHex(char c)
 {
+	return ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) ? qtrue : qfalse;
+}
+
+/*
+=================
+CG_CenterWrapLine
+
+Copies one center-print line of at most wrapChars VISIBLE characters into buf
+(until '\n' or end of text). ^? pairs and ^x/^XRRGGBB codes are copied as atomic
+zero-width units, so a line is never split in the middle of a color code and the
+visible budget is not spent on them. Word-wraps at the last space when the budget
+runs out mid-word. Returns the start of the next line.
+=================
+*/
+const char* CG_CenterWrapLine(const char* text, int wrapChars, char* buf, int bufSize)
+{
+	int vis = 0;
+	int bi = 0;
+	int spaceBi = -1;
+	const char* afterSpace = NULL;
+	const char* s = text;
+
+	while (*s && *s != '\n')
+	{
+		int len;
+
+		if (*s == '^' && s[1])
+		{
+			if ((s[1] == 'x' || s[1] == 'X') &&
+			        CG_WrapIsHex(s[2]) && CG_WrapIsHex(s[3]) && CG_WrapIsHex(s[4]) &&
+			        CG_WrapIsHex(s[5]) && CG_WrapIsHex(s[6]) && CG_WrapIsHex(s[7]))
+			{
+				len = 8;
+			}
+			else
+			{
+				len = 2;
+			}
+		}
+		else
+		{
+			if (vis >= wrapChars)
+			{
+				break;
+			}
+			len = 1;
+		}
+
+		if (bi + len >= bufSize)
+		{
+			break;
+		}
+
+		if (len == 1 && *s == ' ')
+		{
+			spaceBi = bi;
+			afterSpace = s + 1;
+		}
+
+		memcpy(buf + bi, s, len);
+		bi += len;
+		s += len;
+		if (len == 1)
+		{
+			vis++;
+		}
+	}
+
+	if (vis >= wrapChars && *s && *s != '\n' && spaceBi > 0)
+	{
+		/* word wrap: end the line at the last space, resume right after it */
+		bi = spaceBi;
+		s = afterSpace;
+	}
+	else if (*s == '\n')
+	{
+		s++;
+	}
+
+	if (s == text && *s && *s != '\n')
+	{
+		/* safety: never return without making progress */
+		s += s[1] ? 2 : 1;
+	}
+
+	buf[bi] = '\0';
+	return s;
+}
+
+qboolean CG_TextControlDisabled(char controlChar){
 	int mask;
 
 	mask = cg_disableTextEffects.integer;

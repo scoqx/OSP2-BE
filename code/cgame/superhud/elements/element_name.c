@@ -52,7 +52,7 @@ static void CG_SHUDElementNameGetPairFFA(const char** own, const char** nme)
 	}
 
 	info = CG_ConfigString(CS_PLAYERS + clientNum);
-	*nme = Info_ValueForKey(info, "n");
+	*nme = CG_ConfigStringName(info);
 }
 
 static void CG_SHUDElementNameGetPair1vs1(const char** own, const char** nme)

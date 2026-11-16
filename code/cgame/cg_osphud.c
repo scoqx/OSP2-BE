@@ -2300,7 +2300,7 @@ static void CG_OSPDrawWeaponBar_4_5(float pos_y)
 	int statWeapons;
 	int numberOfWeapons;
 	float* color = colorWhite;
-	char* str;
+	const char* str;
 
 	if (ch_Weaponswitch.integer == 2)
 	{
@@ -3204,7 +3204,7 @@ static void CG_OSPDrawPlayerIcon(float x, float y, float w, float h, int attacke
 static float CG_OSPDrawWeaponSwitchAttacker(float y)
 {
 	int attacker;
-	char* str;
+	const char* str;
 	vec3_t color;
 
 	if (cg.predictedPlayerState.stats[STAT_HEALTH] <= 0)
@@ -3240,7 +3240,7 @@ static float CG_OSPDrawWeaponSwitchAttacker(float y)
 	}
 	else
 	{
-		str = Info_ValueForKey(CG_ConfigString(attacker + CS_PLAYERS), "n");
+		str = CG_ConfigStringName(CG_ConfigString(attacker + CS_PLAYERS));
 	}
 	y += 60.0f;
 	CG_DrawBigString(SCREEN_WIDTH - 1, y, str, 0.5f, DS_HRIGHT | DS_SHADOW, 0);

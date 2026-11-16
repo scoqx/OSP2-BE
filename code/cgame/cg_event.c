@@ -141,7 +141,7 @@ CG_OSPObituaryFreeze
 */
 void CG_OSPObituaryFreeze(entityState_t* es, char* targetName)
 {
-	char actorName[64];
+	char actorName[MAX_CLIENTNAME];
 	int actorId;
 	int targetId;
 	char actorNameNormalized[64];
@@ -159,11 +159,11 @@ void CG_OSPObituaryFreeze(entityState_t* es, char* targetName)
 	/* Use processed name from clientInfo if available, otherwise fallback to config string */
 	if (actorId >= 0 && actorId < MAX_CLIENTS && cgs.clientinfo[actorId].infoValid)
 	{
-		Q_strncpyz(&actorName[0], cgs.clientinfo[actorId].name, 64);
+		Q_strncpyz(&actorName[0], cgs.clientinfo[actorId].name, sizeof(actorName));
 	}
 	else
 	{
-		Q_strncpyz(&actorName[0], Info_ValueForKey(cs, "n"), 64);
+		Q_strncpyz(&actorName[0], CG_ConfigStringName(cs), sizeof(actorName));
 	}
 	if (rand() & 1)
 	{
@@ -227,8 +227,8 @@ void CG_Obituary(entityState_t* ent)
 	char*        message2;
 	const char*  targetInfo;
 	const char*  attackerInfo;
-	char        targetName[MAX_QPATH];
-	char        attackerName[MAX_QPATH];
+	char        targetName[MAX_CLIENTNAME];
+	char        attackerName[MAX_CLIENTNAME];
 	gender_t    gender;
 	clientInfo_t*    ci;
 	score_t* scores;
@@ -307,7 +307,7 @@ void CG_Obituary(entityState_t* ent)
 	}
 	else
 	{
-		Q_strncpyz(targetName, Info_ValueForKey(targetInfo, "n"), sizeof(targetName) - 2);
+		Q_strncpyz(targetName, CG_ConfigStringName(targetInfo), sizeof(targetName) - 2);
 	}
 
 	strcat(targetName, S_COLOR_WHITE);
@@ -428,7 +428,7 @@ void CG_Obituary(entityState_t* ent)
 			}
 			else
 			{
-				Q_strncpyz(&targetName[0], Info_ValueForKey(targetInfo, "n"), sizeof(targetName) - 2);
+				Q_strncpyz(&targetName[0], CG_ConfigStringName(targetInfo), sizeof(targetName) - 2);
 			}
 			strcat(&targetName[0], "^7");
 			CG_ObituaryFragmessage(va("You fragged %s", targetName));
@@ -449,7 +449,7 @@ void CG_Obituary(entityState_t* ent)
 		}
 		else
 		{
-			Q_strncpyz(attackerName, Info_ValueForKey(attackerInfo, "n"), sizeof(attackerName) - 2);
+			Q_strncpyz(attackerName, CG_ConfigStringName(attackerInfo), sizeof(attackerName) - 2);
 		}
 		strcat(attackerName, S_COLOR_WHITE);
 		// check for kill messages about the current clientNum
