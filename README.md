@@ -56,7 +56,7 @@ OSP2-BE incorporates code from or builds on work from these Quake projects and c
 - [OSP2 by snems](https://github.com/snems/OSP2)
 - [baseq3a by Cyrax](https://github.com/ec-/baseq3a)
 - [XQ3E Engine](https://github.com/xq3e/engine)
-- Unlagged Mod by Nail Toronto
+- Unlagged Mod by Neil Toronto
 - [Ratmod](https://github.com/rdntcntrl/ratoa_gamecode)
 - [Devotion](https://github.com/alcachofass/devotion)
 - [Quake 3 1.16n extensions (X-Mod)](https://github.com/navgg/Quake-3-1.16n-extensions)
