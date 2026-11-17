@@ -2,7 +2,7 @@
 
 # OSP2-BE
 
-### A Quake III Arena mod for the OSP scene — and beyond.
+### A Quake III Arena mod for OSP servers and other communities.
 
 A community-driven continuation of the classic arena FPS experience, bringing together game code, virtual machine modules, and assets for players and developers who want to build on OSP-inspired gameplay.
 
